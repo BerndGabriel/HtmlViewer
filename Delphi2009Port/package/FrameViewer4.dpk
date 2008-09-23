@@ -1,0 +1,58 @@
+package FrameViewer4;
+
+{$R *.RES}
+{$R 'framview.dcr'}
+{$R 'htmlview.dcr'}
+{$R 'frambrwz.dcr'}
+{$ALIGN OFF}
+{$ASSERTIONS OFF}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA OFF}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $00400000}
+{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  vcl40,
+  VCLJPG40;
+
+contains
+  framview in 'framview.pas',
+  htmlview in 'htmlview.pas',
+  Readhtml in 'readhtml.pas',
+  Htmlsbs1 in 'Htmlsbs1.pas',
+  Htmlsubs in 'htmlsubs.pas',
+  HTMLUn2 in 'HTMLUn2.pas',
+  vwPrint in 'vwPrint.pas',
+  MetaFilePrinter in 'MetaFilePrinter.pas',
+  URLSubs in 'URLSubs.pas',
+  FramBrwz in 'FramBrwz.pas',
+  DitherUnit in 'DitherUnit.pas',
+  HTMLCompEdit in 'HTMLCompEdit.pas',
+  StyleUn in 'StyleUn.pas',
+  StylePars in 'StylePars.pas',
+  HTMLGif2 in 'HTMLGif2.pas',
+  HtmlGif1 in 'htmlgif1.pas',
+  PNGZLIB1 in 'PNGZLIB1.pas',
+  PngImage1 in 'PngImage1.pas',
+  FrameViewerReg in 'FrameViewerReg.pas',
+  GDIPL2A in 'GDIPL2A.pas';
+
+end.

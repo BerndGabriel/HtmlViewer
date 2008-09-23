@@ -1,0 +1,36 @@
+  PNG_ERROR_INVALID_HEADER = 'Imagem Portable Graphics Network inválida, ela ' +
+    ' tem um header (cabeçario) de identificação inválido.';
+  PNG_ERROR_INVALID_CHUNK_INDEX = 'A posição de chunk especificada está fora ' +
+    'do limite.';
+  PNG_ERROR_INVALID_CHUNK_CLASS_INDEX = 'A posição de classe de chunk ' +
+    ' especificado está fora de limite.';
+  PNG_ERROR_CHUNK_INVALID_CRC = 'Não foi possível ler a imagem PNG, ela tem ' +
+    'informações inválidas. ';
+  PNG_ERROR_IHDR_NOT_FIRST = 'Essa imagem PNG não é válida, o chunk IHDR ' +
+    ' tanto pode não estar presente como não ser o primeiro chunk.';
+  PNG_ERROR_NO_IDAT = 'A imagem atual sendo carregada não tem informações, ' +
+    'portanto não pode ser carregada.';
+  PNG_ERROR_INVALID_PLTE = 'A imagem atual sendo carregada tem uma paleta ' +
+    'de cores inválida.';
+  PNG_ERROR_INVALID_COLOR_TYPE = 'Não foi possível ler a imagem atual porque ' +
+    'ela tem um sistema de cores desconhecido.';
+  PNG_ERROR_INVALID_FILTER_TYPE = 'A imagem não pode ser carregada porque ' +
+    'ela tem uma paleta de filtros desconhecida.';
+  PNG_ERROR_INVALID_INTERLACE = 'A imagem tem um sistema de interlace ' +
+    'desconhecidos.';
+  PNG_ERROR_UNKOWN_CRITICAL_CHUNK = 'A imagem atual sendo carregada contem ' +
+    'chunk(s) crítico(s) desconhecidos pelo decodificador.';
+  PNG_ERROR_NO_PALETTE = 'A imagem sendo carregada requer uma paleta mas ' +
+    'ela não está disponível.';
+  PNG_INVALID_COLOR_TYPE = 'Não foi possível obter informações de ' +
+    'transparência porque o método de cor da imagem atual não é RGB (Valor 3).';
+  CHUNK_NOT_CHILD = 'O chunk especificado não pertence a lista que contém ' +
+    'o método sendo utilizado por isso a função não pode ser completada.';
+  TIME_CORRUPTED = 'Não foi possível obter informações do chunk tIME porque ' +
+    'ele é inválido';
+  PNG_SHARE = 'Oque você está testando agora usa o TPNGImage, um ' +
+    'decodificador do formato Portable Graphics Network feito por guba ' +
+    '(gubah@sti.com.br) que não está totalmente pronto, mas está ficando ' +
+    'bom, não ?'#13#10#13#10 + 'Qualquer dúvidas, críticas ou sugestões ' +
+    'deverão ser enviadas para o seguinte email:'#13#10 + 'gubah@sti.com.br';
+  PNG_SHARE_TITLE = 'Versão beta do TPNGImage (gubah@sti.com.br)';
