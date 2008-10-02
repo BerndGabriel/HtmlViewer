@@ -346,24 +346,6 @@ type
     destructor Destroy; override;
     end;
 
-function StreamToString(Stream: TStream): string;
-var
-  SL: TStringList;
-begin
-Result := '';
-try
-  SL := TStringList.Create;
-  try
-    SL.LoadFromStream(Stream);
-    Result := SL.Text;
-  finally
-    Stream.Position := 0;  
-    SL.Free;
-    end;
-except
-  end;
-end;
-
 {----------------SplitURL}
 procedure SplitURL(const Src: string; var FName, Dest: string);
 {Split an URL into filename and Destination}

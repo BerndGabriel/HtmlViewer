@@ -107,7 +107,7 @@ end;
 
 procedure TForm1.Open1Click(Sender: TObject);
 var
-  Stream: TMemoryStream;
+  Stream: TStringStream;
   S: string;
 begin
 CheckFileSave;
@@ -117,11 +117,10 @@ else OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 OpenDialog.FilterIndex := 1;
 if OpenDialog.Execute then
   begin
-  Stream := TMemoryStream.Create;
+  Stream := TStringStream.Create;
   try
     Stream.LoadFromFile(OpenDialog.Filename);
-    SetLength(S, Stream.Size);
-    Move(Stream.Memory^, S[1], Stream.Size);
+    S := Stream.DataString;
     RichEdit.Text := S;
     (*Viewer.LoadFromBuffer(PChar(S), Stream.Size); *) {already called by previous statement}
     CurrentFile := OpenDialog.Filename;

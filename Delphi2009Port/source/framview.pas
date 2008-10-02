@@ -2206,11 +2206,6 @@ end;
 function TFrameSet.TriggerEvent(const Src: string; PEV: PEventRec): boolean;
 var
   AName: string;
-  {$IFDEF UNICODE}
-  BStream: TStringStream;
-  {$ELSE}
-  BStream: TMemoryStream;
-  {$ENDIF}
   Strings: TStrings;
   Stream: TStream;
   Buffer: PChar;
@@ -2222,7 +2217,7 @@ with PEV^ do
   Buffer := Nil; BuffSize := 0;
   AName := '';
   AString := '';
-  Stream := Nil;     
+  Stream := Nil;
   with FrameViewer do
     if Assigned(FOnStringsRequest) then
       begin
@@ -2231,7 +2226,7 @@ with PEV^ do
       if Result then
         begin
         LStyle := lsString;
-        AString := Strings.Text;   
+        AString := Strings.Text;
         end;
       end
     else if Assigned(FOnStreamRequest) then
@@ -2241,24 +2236,7 @@ with PEV^ do
       if Result then
         begin
         LStyle := lsString;
-        {$IFDEF UNICODE}
-        BStream := TStringStream.Create('' , TEncoding.Default);
-        try
-          BStream.LoadFromStream(Stream);
-          AString := BStream.DataString;
-        finally
-          BStream.Free;
-        end;
-        {$ELSE}
-        BStream := TMemoryStream.Create;
-        try
-          BStream.LoadFromStream(Stream);
-          SetLength(AString, BStream.Size);
-          Move(BStream.Memory^, AString[1], BStream.Size);
-        finally
-          BStream.Free;
-        end;
-        {$ENDIF}
+        AString := StreamToString(Stream);
         end;
       end
     else if Assigned(FOnBufferRequest) then

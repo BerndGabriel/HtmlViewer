@@ -570,6 +570,8 @@ type
     property Cursor: TCursor read GetCursor write SetCursor default crIBeam;
     end;
 
+function StreamToString(Stream: TStream): string;
+
 implementation
 
 uses
@@ -577,6 +579,41 @@ uses
 
 const
   ScrollGap = 20;
+
+function StreamToString(Stream: TStream): string;
+var
+{$IFDEF UNICODE}
+  BStream: TStringStream;
+{$ELSE}
+  BStream: TMemoryStream;
+{$ENDIF}
+begin
+  Result := '';
+  if Stream.Size > 0 then
+  try
+    {$IFDEF UNICODE}
+    BStream := TStringStream.Create('' , TEncoding.Default);
+    try
+      BStream.LoadFromStream(Stream);
+      Result := BStream.DataString;
+    finally
+      BStream.Free;
+    end;
+    {$ELSE}
+    BStream := TMemoryStream.Create;
+    try
+      BStream.LoadFromStream(Stream);
+      SetLength(Result, BStream.Size);
+      Move(BStream.Memory^, Result[1], BStream.Size);
+    finally
+      BStream.Free;
+    end;
+    {$ENDIF}
+
+    Stream.Position := 0;
+  except
+  end;
+end;
 
 type
   PositionObj = class(TObject)
@@ -1049,8 +1086,7 @@ try
 
   if ft in [HTMLType, TextType] then
     begin
-    SetLength(FDocumentSource, AStream.Size div SizeOf(Char));
-    Move(AStream.Memory^, FDocumentSource[1], AStream.Size * SizeOf(Char));
+    FDocumentSource := StreamToString(AStream);
     end
   else FDocumentSource := '';
   if Assigned(FOnParseBegin) then
