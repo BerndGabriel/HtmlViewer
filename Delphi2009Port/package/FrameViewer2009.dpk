@@ -1,4 +1,4 @@
-package FrameViewer6;
+package FrameViewer2009;
 
 {$R *.res}
 {$R 'framview.dcr'}
@@ -31,15 +31,16 @@ package FrameViewer6;
 
 requires
   vcl,
-  vcljpg,
-  designide;
+  vclimg,
+  designide,
+  rtl;
 
 contains
   framview in '..\source\framview.pas',
   htmlview in '..\source\htmlview.pas',
-  Readhtml in '..\source\readhtml.pas',
+  readhtml in '..\source\readhtml.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
-  Htmlsubs in '..\source\htmlsubs.pas',
+  htmlsubs in '..\source\htmlsubs.pas',
   HTMLUn2 in '..\source\HTMLUn2.pas',
   vwPrint in '..\source\vwPrint.pas',
   MetaFilePrinter in '..\source\MetaFilePrinter.pas',
@@ -50,9 +51,8 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   StylePars in '..\source\StylePars.pas',
   HTMLGif2 in '..\source\HTMLGif2.pas',
-  HtmlGif1 in '..\source\htmlgif1.pas',
-  zLIbEx1 in '..\source\zlibEx1.pas',
-  PngImage1 in '..\source\PngImage1.pas',
+  htmlgif1 in '..\source\htmlgif1.pas',
+  zlibEx1 in '..\source\zlibEx1.pas',
   PngLang1 in '..\source\PngLang1.pas',
   FrameViewerReg in 'FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas';

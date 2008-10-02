@@ -1,4 +1,4 @@
-package FrameViewer6;
+package FrameViewer2007;
 
 {$R *.res}
 {$R 'framview.dcr'}
@@ -32,7 +32,8 @@ package FrameViewer6;
 requires
   vcl,
   vcljpg,
-  designide;
+  designide,
+  rtl;
 
 contains
   framview in '..\source\framview.pas',
