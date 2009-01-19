@@ -3367,10 +3367,10 @@ var
   NewBitmap: TBitmap;
 begin
 Result := TBitmap.Create;
-if Image is TGpBitmap then
-  NewBitmap := TGpBitmap(Image).GetTBitmap
+if Image is TGpImage then
+  NewBitmap := TGpImage(Image).GetTBitmap
 else
-  NewBitmap := TBitmap(Image);
+  NewBitmap := Image as TBitmap;
 Result.Assign(NewBitmap);
 if NewBitmap.Width = 1 then
   Result.Width := IntMin(100, W)
