@@ -1,55 +1,49 @@
 object AboutBox: TAboutBox
-  Left = 740
-  Top = 213
+  Left = 452
+  Height = 265
+  Top = 214
   Width = 375
-  Height = 291
   BorderIcons = [biSystemMenu]
   Caption = 'About'
-  Color = clBtnFace
+  ClientHeight = 265
+  ClientWidth = 375
   Constraints.MinHeight = 265
   Constraints.MinWidth = 375
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
   Font.Height = -13
   Font.Name = 'System'
-  Font.Style = []
-  OldCreateOrder = True
   Position = poScreenCenter
-  DesignSize = (
-    367
-    257)
-  PixelsPerInch = 96
-  TextHeight = 16
+  LCLVersion = '0.9.28.2'
   object BitBtn1: TBitBtn
-    Left = 284
-    Top = 224
-    Width = 75
+    Left = 292
     Height = 25
+    Top = 232
+    Width = 75
     Anchors = [akRight, akBottom]
-    TabOrder = 0
     Kind = bkOK
+    ModalResult = 1
+    TabOrder = 0
   end
-  object Viewer: THtmlViewer
+  object Viewer: THTMLViewer
     Left = 8
+    Height = 214
     Top = 8
-    Width = 352
-    Height = 206
+    Width = 360
+    ViewImages = False
     Enabled = False
     TabOrder = 1
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Anchors = [akTop, akLeft, akRight, akBottom]
     BorderStyle = htNone
-    CharSet = DEFAULT_CHARSET
+    HistoryMaxCount = 0
     DefFontName = 'Times New Roman'
     DefPreFontName = 'Courier New'
-    HistoryMaxCount = 0
-    HtOptions = []
     NoSelect = True
-    PrintMarginBottom = 2
+    ScrollBars = ssNone
+    CharSet = DEFAULT_CHARSET
     PrintMarginLeft = 2
     PrintMarginRight = 2
     PrintMarginTop = 2
+    PrintMarginBottom = 2
     PrintScale = 1
-    ScrollBars = ssNone
-    ViewImages = False
+    htOptions = []
   end
 end

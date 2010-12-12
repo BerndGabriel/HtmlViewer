@@ -84,14 +84,14 @@ type
 
   THTMLBorderStyle = (htFocused, htNone, htSingle);
   TRightClickParameters = class(TObject)
-    URL, Target: string;
+    URL, Target: ThtString;
     Image: TImageObj;
     ImageX, ImageY: Integer;
     ClickWord: WideString;
   end;
   TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
-  THotSpotEvent = procedure(Sender: TObject; const SRC: string) of object;
-  THotSpotClickEvent = procedure(Sender: TObject; const SRC: string; var Handled: Boolean) of object;
+  THotSpotEvent = procedure(Sender: TObject; const SRC: ThtString) of object;
+  THotSpotClickEvent = procedure(Sender: TObject; const SRC: ThtString; var Handled: Boolean) of object;
   TProcessingEvent = procedure(Sender: TObject; ProcessingOn: Boolean) of object;
   TPagePrinted = procedure(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer;
     var StopPrinting: Boolean) of object;
@@ -99,9 +99,9 @@ type
     var XL, XR: Integer; var StopPrinting: Boolean) of object;
   TImageClickEvent = procedure(Sender, Obj: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer) of object;
   TImageOverEvent = procedure(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer) of object;
-  TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: string) of object;
-  TParseEvent = procedure(Sender: TObject; var Source: string) of object;
-  TFilenameExpanded = procedure(Sender: TObject; var Filename: string) of object;
+  TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: ThtString) of object;
+  TParseEvent = procedure(Sender: TObject; var Source: ThtString) of object;
+  TFilenameExpanded = procedure(Sender: TObject; var Filename: ThtString) of object;
 
   THtmlViewerOption = (
     htOverLinksActive, htNoLinkUnderline, htPrintTableBackground,
@@ -169,31 +169,31 @@ type
   private
     FViewerState: THtmlViewerState;
     FBackGround: TColor;
-    FBase: string;
-    FBaseEx: string;
-    FBaseTarget: string;
+    FBase: ThtString;
+    FBaseEx: ThtString;
+    FBaseTarget: ThtString;
     FBorderStyle: THTMLBorderStyle;
     FCaretPos: Integer;
     FCharset: TFontCharset; {see htmlun2.pas for Delphi 2 TFontCharSet definition}
     FCodePage: Integer;
-    FCurrentFile: string;
+    FCurrentFile: ThtString;
     FCurrentFileType: ThtmlFileType;
-    FDocumentSource: string;
+    FDocumentSource: ThtString;
     FFontColor: TColor;
     FFontName: TFontName;
     FFontSize: Integer;
-    FHistory, FTitleHistory: TStrings;
+    FHistory, FTitleHistory: ThtStrings;
     FHistoryIndex: Integer;
     FHistoryMaxCount: Integer;
     FHotSpotColor, FVisitedColor, FOverColor: TColor;
     FImageCacheCount: Integer;
     FImageStream: TMemoryStream;
-    FLinkAttributes: TStringList;
+    FLinkAttributes: ThtStringList;
     FLinkStart: TPoint;
     FLinkText: WideString;
     FMarginHeight, FMarginWidth: Integer;
     FMaxVertical: Integer;
-    FNameList: TStringList;
+    FNameList: ThtStringList;
     FNoSelect: Boolean;
     FOnDragDrop: TDragDropEvent;
     FOnDragOver: TDragOverEvent;
@@ -226,7 +226,7 @@ type
     FOptions: THtmlViewerOptions;
     FPage: Integer;
     FPositionHistory: TFreeList;
-    FPreFontName: string;
+    FPreFontName: ThtString;
     FPrintedSize: TPoint;
     FPrintMarginBottom: Double;
     FPrintMarginLeft: Double;
@@ -234,15 +234,15 @@ type
     FPrintMarginTop: Double;
     FPrintScale: Double;
     FRefreshDelay: Integer;
-    FRefreshURL: string;
+    FRefreshURL: ThtString;
     FScaleX, FScaleY: single;
     FScrollBars: TScrollStyle;
     FSectionList: TSectionList;
-    FServerRoot: string;
-    FTarget: string;
-    FTitle: string;
-    FTitleAttr: string;
-    FURL: string;
+    FServerRoot: ThtString;
+    FTarget: ThtString;
+    FTitle: ThtString;
+    FTitleAttr: ThtString;
+    FURL: ThtString;
     FVisitedMaxCount: Integer;
     FWidthRatio: Double;
     HTMLTimer: TTimer;
@@ -256,13 +256,13 @@ type
 //
     Sel1: Integer;
 // These fields are set in SubmitForm and read in WMFormSubmit
-    FAction, FFormTarget, FEncType, FMethod: string;
+    FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 //
     function CreateHeaderFooter: THtmlViewer;
-    function GetBase: string;
-    function GetBaseTarget: string;
-    function GetCurrentFile: string;
+    function GetBase: ThtString;
+    function GetBaseTarget: ThtString;
+    function GetCurrentFile: ThtString;
     function GetCursor: TCursor;
     function GetDragDrop: TDragDropEvent;
     function GetDragOver: TDragOverEvent;
@@ -270,10 +270,10 @@ type
     function GetFormData: TFreeList;
     function GetHScrollBarRange: Integer;
     function GetHScrollPos: Integer;
-    function GetIDControl(const ID: string): TObject;
-    function GetIDDisplay(const ID: string): TPropDisplay;
+    function GetIDControl(const ID: ThtString): TObject;
+    function GetIDDisplay(const ID: ThtString): TPropDisplay;
     function GetLinkList: TList;
-    function GetNameList: TStringList;
+    function GetNameList: ThtStringList;
     function GetOnBitmapRequest: TGetBitmapEvent;
     function GetOnExpandName: TExpandNameEvent;
     function GetOnFileBrowse: TFileBrowseEvent;
@@ -294,19 +294,19 @@ type
     function GetScrollPos: Integer;
     function GetSelLength: Integer;
     function GetSelText: WideString;
-    function GetTitle: string;
+    function GetTitle: ThtString;
     //function GetViewerStateBit(Index: THtmlViewerStateBit): Boolean;
     function GetViewImages: Boolean;
     function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: WideString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
-    procedure DoImage(Sender: TObject; const SRC: string; var Stream: TMemoryStream);
+    procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream);
     procedure DoLogic;
     procedure DoScrollBars;
     procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
     procedure DrawBorder;
     procedure FormControlEnterEvent(Sender: TObject);
-    procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: string);
+    procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
     procedure HTMLDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure HTMLDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure HTMLTimerTimer(Sender: TObject);
@@ -315,7 +315,7 @@ type
     procedure Scroll(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
     procedure ScrollTo(Y: Integer);
     procedure SetActiveColor(Value: TColor);
-    procedure SetBase(Value: string);
+    procedure SetBase(Value: ThtString);
     procedure SetBorderStyle(Value: THTMLBorderStyle);
     procedure SetCaretPos(Value: Integer);
     procedure SetCharset(Value: TFontCharset);
@@ -328,7 +328,7 @@ type
     procedure SetHistoryMaxCount(Value: Integer);
     procedure SetHotSpotColor(Value: TColor);
     procedure SetHScrollPos(Value: Integer);
-    procedure SetIDDisplay(const ID: string; Value: TPropDisplay);
+    procedure SetIDDisplay(const ID: ThtString; Value: TPropDisplay);
     procedure SetImageCacheCount(Value: Integer);
     procedure SetNoSelect(Value: Boolean);
     procedure SetOnBitmapRequest(Handler: TGetBitmapEvent);
@@ -354,13 +354,13 @@ type
     procedure SetScrollPos(Value: Integer);
     procedure SetSelLength(Value: Integer);
     procedure SetSelStart(Value: Integer);
-    procedure SetServerRoot(Value: string);
+    procedure SetServerRoot(Value: ThtString);
     procedure SetupAndLogic;
     procedure SetViewerStateBit(Index: THtmlViewerStateBit; Value: Boolean);
     procedure SetViewImages(Value: Boolean);
     procedure SetVisitedColor(Value: TColor);
     procedure SetVisitedMaxCount(Value: Integer);
-    procedure SubmitForm(Sender: TObject; const Action, Target, EncType, Method: string; Results: ThtStringList);
+    procedure SubmitForm(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList);
     procedure UpdateImageCache;
     procedure WMFormSubmit(var Message: TMessage); message WM_FormSubmit;
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
@@ -383,15 +383,15 @@ type
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
     procedure HTMLPaint(Sender: TObject); virtual;
-    procedure LoadFile(const FileName: string; ft: ThtmlFileType); virtual;
-    procedure LoadString(const Source, Reference: string; ft: ThtmlFileType);
+    procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
+    procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
     procedure PaintWindow(DC: HDC); override;
     procedure SetCursor(Value: TCursor); {$ifdef LCL} override; {$endif LCL}
     procedure SetOnScript(Handler: TScriptEvent); override;
   public
     FrameOwner: TObject;
     HScrollBar: TScrollBar;
-    Visited: TStringList; {visited URLs}
+    Visited: ThtStringList; {visited URLs}
     VScrollBar: T32ScrollBar;
 
     constructor Create(AOwner: TComponent); override;
@@ -405,9 +405,9 @@ type
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTextByIndices(AStart, ALast: Integer): WideString;
-    function GetURL(X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType;
-    function HtmlExpandFilename(const Filename: string): string; override;
-    function InsertImage(const Src: string; Stream: TMemoryStream): Boolean;
+    function GetURL(X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
+    function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
+    function InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 {$ifndef FPC_TODO_PRINTING}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
@@ -415,14 +415,14 @@ type
 {$endif}
     function NumPrinterPages(out WidthRatio: Double): Integer; overload;
     function NumPrinterPages: Integer; overload;
-    function PositionTo(Dest: string): Boolean;
+    function PositionTo(Dest: ThtString): Boolean;
     function PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer; virtual;
     function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord}
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
     procedure AbortPrint;
-    procedure AddVisitedLink(const S: string);
-    procedure BumpHistory(const FileName, Title: string; OldPos: Integer; OldFormData: TFreeList; ft: ThtmlFileType);
+    procedure AddVisitedLink(const S: ThtString);
+    procedure BumpHistory(const FileName, Title: ThtString; OldPos: Integer; OldFormData: TFreeList; ft: ThtmlFileType);
     procedure CheckVisitedLinks;
     procedure Clear; virtual;
     procedure ClearHistory;
@@ -435,50 +435,50 @@ type
     procedure htProgressEnd;
     procedure htProgressInit;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    procedure LoadFromFile(const FileName: string);
-    procedure LoadFromString(const S: AnsiString; const Reference: string = ''); overload;
-    procedure LoadFromString(const S: WideString; const Reference: string = ''); overload;
-    procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: string = '');
-    procedure LoadFromStream(const AStream: TStream; const Reference: string = '');
-    procedure LoadStrings(const Strings: TStrings; const Reference: string = '');
-    procedure LoadImageFile(const FileName: string);
-    procedure LoadStream(const URL: string; AStream: TMemoryStream; ft: ThtmlFileType);
-    procedure LoadTextFile(const FileName: string);
-    procedure LoadTextFromString(const S: string);
-    procedure LoadTextStrings(Strings: TStrings);
+    procedure LoadFromFile(const FileName: ThtString);
+    procedure LoadFromString(const S: AnsiString; const Reference: ThtString = ''); overload;
+    procedure LoadFromString(const S: WideString; const Reference: ThtString = ''); overload;
+    procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = '');
+    procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = '');
+    procedure LoadStrings(const Strings: ThtStrings; const Reference: ThtString = '');
+    procedure LoadImageFile(const FileName: ThtString);
+    procedure LoadStream(const URL: ThtString; AStream: TMemoryStream; ft: ThtmlFileType);
+    procedure LoadTextFile(const FileName: ThtString);
+    procedure LoadTextFromString(const S: ThtString);
+    procedure LoadTextStrings(Strings: ThtStrings);
     procedure NumPrinterPages(MFPrinter: TMetaFilePrinter; out Width, Height: Integer); overload;
     procedure OpenPrint;
     procedure Print(FromPage, ToPage: Integer);
     procedure Reformat;
     procedure Reload;
     procedure Repaint; override;
-    procedure ReplaceImage(const NameID: string; NewImage: TStream);
+    procedure ReplaceImage(const NameID: ThtString; NewImage: TStream);
     procedure SelectAll;
     procedure SetStringBitmapList(BitmapList: TStringBitmapList);
     procedure TriggerUrlAction;
     procedure UrlAction;
 
-    property Base: string read GetBase write SetBase;
-    property BaseTarget: string read GetBaseTarget;
+    property Base: ThtString read GetBase write SetBase;
+    property BaseTarget: ThtString read GetBaseTarget;
     property CaretPos: Integer read FCaretPos write SetCaretPos;
     property CodePage: Integer read FCodePage write FCodePage;
-    property CurrentFile: string read GetCurrentFile;
-    property DocumentSource: string read FDocumentSource;
-    property DocumentTitle: string read GetTitle;
+    property CurrentFile: ThtString read GetCurrentFile;
+    property DocumentSource: ThtString read FDocumentSource;
+    property DocumentTitle: ThtString read GetTitle;
     property FormControlList: TList read GetFormControlList;
     property FormData: TFreeList read GetFormData write SetFormData;
-    property History: TStrings read FHistory;
+    property History: ThtStrings read FHistory;
     property HistoryIndex: Integer read FHistoryIndex write SetHistoryIndex;
     property HScrollBarPosition: Integer read GetHScrollPos write SetHScrollPos;
     property HScrollBarRange: Integer read GetHScrollBarRange;
-    property IDControl[const ID: string]: TObject read GetIDControl;
-    property IDDisplay[const ID: string]: TPropDisplay read GetIDDisplay write SetIDDisplay;
-    property LinkAttributes: TStringList read FLinkAttributes;
+    property IDControl[const ID: ThtString]: TObject read GetIDControl;
+    property IDDisplay[const ID: ThtString]: TPropDisplay read GetIDDisplay write SetIDDisplay;
+    property LinkAttributes: ThtStringList read FLinkAttributes;
     property LinkList: TList read GetLinkList;
     property LinkStart: TPoint read FLinkStart;
     property LinkText: WideString read FLinkText write FLinkText;
     property MaxVertical: Integer read FMaxVertical;
-    property NameList: TStringList read GetNameList;
+    property NameList: ThtStringList read GetNameList;
     property OnExpandName: TExpandNameEvent read GetOnExpandName write SetOnExpandName;
     property OnLinkDrawn: TLinkDrawnEvent read FOnLinkDrawn write FOnLinkDrawn;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
@@ -489,10 +489,10 @@ type
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read FCaretPos write SetSelStart;
     property SelText: WideString read GetSelText;
-    property Target: string read FTarget write FTarget;
-    property TitleAttr: string read FTitleAttr;
-    property TitleHistory: TStrings read FTitleHistory;
-    property URL: string read FURL write FURL;
+    property Target: ThtString read FTarget write FTarget;
+    property TitleAttr: ThtString read FTitleAttr;
+    property TitleHistory: ThtStrings read FTitleHistory;
+    property URL: ThtString read FURL write FURL;
     property ViewerState: THtmlViewerState read FViewerState;
     property VScrollBarPosition: Integer read GetScrollPos write SetScrollPos;
     property VScrollBarRange: Integer read GetScrollBarRange;
@@ -532,7 +532,7 @@ type
     property PrintMarginTop: Double read FPrintMarginTop write FPrintMarginTop;
     property PrintScale: Double read FPrintScale write SetPrintScale;
     property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
-    property ServerRoot: string read FServerRoot write SetServerRoot;
+    property ServerRoot: ThtString read FServerRoot write SetServerRoot;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
     property VisitedMaxCount: Integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
 
@@ -592,10 +592,10 @@ type
 {$endif}
   end;
 
-function IsHtmlExt(const Ext: string): Boolean;
-function IsImageExt(const Ext: string): Boolean;
-function IsTextExt(const Ext: string): Boolean;
-function getFileType(const S: string): THtmlFileType;
+function IsHtmlExt(const Ext: ThtString): Boolean;
+function IsImageExt(const Ext: ThtString): Boolean;
+function IsTextExt(const Ext: ThtString): Boolean;
+function getFileType(const S: ThtString): THtmlFileType;
 
 implementation
 
@@ -615,27 +615,27 @@ type
   end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
-function IsHtmlExt(const Ext: string): Boolean;
+function IsHtmlExt(const Ext: ThtString): Boolean;
 begin
   Result := (Ext = '.html') or (Ext = '.css') or (Ext = '.htm') or (Ext = '.php');
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
-function IsImageExt(const Ext: string): Boolean;
+function IsImageExt(const Ext: ThtString): Boolean;
 begin
   Result := (Ext = '.gif') or (Ext = '.jpg') or (Ext = '.jpeg') or (Ext = '.png') or (Ext = '.bmp');
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
-function IsTextExt(const Ext: string): Boolean;
+function IsTextExt(const Ext: ThtString): Boolean;
 begin
   Result := (Ext = '.txt');
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
-function getFileType(const S: string): THtmlFileType;
+function getFileType(const S: ThtString): THtmlFileType;
 var
-  Ext: string;
+  Ext: ThtString;
 begin
   Ext := LowerCase(ExtractFileExt(S));
   if IsHtmlExt(Ext) then
@@ -727,16 +727,16 @@ begin
   SetImageCacheCount(5);
   SetOptions([htPrintTableBackground, htPrintMonochromeBlack]);
 
-  FHistory := TStringList.Create;
+  FHistory := ThtStringList.Create;
   FPositionHistory := TFreeList.Create;
-  FTitleHistory := TStringList.Create;
+  FTitleHistory := ThtStringList.Create;
 
-  Visited := TStringList.Create;
+  Visited := ThtStringList.Create;
   HTMLTimer := TTimer.Create(Self);
   HTMLTimer.Enabled := False;
   HTMLTimer.Interval := 200;
   HTMLTimer.OnTimer := HTMLTimerTimer;
-  FLinkAttributes := TStringList.Create;
+  FLinkAttributes := ThtStringList.Create;
 
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
@@ -788,10 +788,10 @@ begin
   end;
 end;
 
-procedure THtmlViewer.LoadFile(const FileName: string; ft: ThtmlFileType);
+procedure THtmlViewer.LoadFile(const FileName: ThtString; ft: ThtmlFileType);
 var
-  Dest, FName, OldFile: string;
-  SBuffer: string;
+  Dest, FName, OldFile: ThtString;
+  SBuffer: ThtString;
   OldCursor: TCursor;
 begin
   with Screen do
@@ -861,14 +861,14 @@ begin
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
-procedure THtmlViewer.LoadFromFile(const FileName: string);
+procedure THtmlViewer.LoadFromFile(const FileName: ThtString);
 var
-  OldFile, OldTitle: string;
+  OldFile, OldTitle: ThtString;
   OldPos: Integer;
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
   (*Stream: TMemoryStream;  //debugging aid
-  Indent, Tree: string; *)
+  Indent, Tree: ThtString; *)
 begin
   if vsProcessing in FViewerState then
     Exit;
@@ -906,9 +906,9 @@ end;
 
 {----------------THtmlViewer.LoadTextFile}
 
-procedure THtmlViewer.LoadTextFile(const FileName: string);
+procedure THtmlViewer.LoadTextFile(const FileName: ThtString);
 var
-  OldFile, OldTitle: string;
+  OldFile, OldTitle: ThtString;
   OldPos: Integer;
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
@@ -937,9 +937,9 @@ end;
 
 {----------------THtmlViewer.LoadImageFile}
 
-procedure THtmlViewer.LoadImageFile(const FileName: string);
+procedure THtmlViewer.LoadImageFile(const FileName: ThtString);
 var
-  OldFile, OldTitle: string;
+  OldFile, OldTitle: ThtString;
   OldPos: Integer;
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
@@ -969,7 +969,7 @@ end;
 
 {----------------THtmlViewer.LoadStrings}
 
-procedure THtmlViewer.LoadStrings(const Strings: TStrings; const Reference: string);
+procedure THtmlViewer.LoadStrings(const Strings: ThtStrings; const Reference: ThtString);
 begin
   LoadString(Strings.Text, Reference, HTMLType);
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
@@ -978,16 +978,16 @@ end;
 
 {----------------THtmlViewer.LoadTextStrings}
 
-procedure THtmlViewer.LoadTextStrings(Strings: TStrings);
+procedure THtmlViewer.LoadTextStrings(Strings: ThtStrings);
 begin
   LoadString(Strings.Text, '', TextType);
 end;
 
 {----------------THtmlViewer.LoadFromBuffer}
 
-procedure THtmlViewer.LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: string);
+procedure THtmlViewer.LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString);
 var
-  S: string;
+  S: ThtString;
 begin
   SetString(S, Buffer, BufLenTChars); // Yunqa.de: SetString() is faster than SetLength().
   LoadString(S, Reference, HTMLType);
@@ -997,26 +997,26 @@ end;
 
 {----------------THtmlViewer.LoadTextFromString}
 
-procedure THtmlViewer.LoadTextFromString(const S: string);
+procedure THtmlViewer.LoadTextFromString(const S: ThtString);
 begin
   LoadString(S, '', TextType);
 end;
 
 {----------------THtmlViewer.LoadFromString}
 {$ifdef UNICODE}
-procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: string);
+procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: ThtString);
 begin
   LoadFromString(MultibyteToWideString(CodePage, S), Reference);
 end;
 
-procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: string);
+procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: ThtString);
 begin
   LoadString(S, Reference, HTMLType);
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 {$else}
-procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: string);
+procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: ThtString);
 begin
   LoadString(S, Reference, HTMLType);
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
@@ -1025,7 +1025,7 @@ end;
 
 {$IFDEF Delphi6_Plus}
 
-procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: string);
+procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: ThtString);
 begin
   LoadFromString(#$EF + #$BB + #$BF + UTF8Encode(S), Reference);
 end;
@@ -1034,10 +1034,10 @@ end;
 
 {----------------THtmlViewer.LoadString}
 
-procedure THtmlViewer.LoadString(const Source, Reference: string; ft: ThtmlFileType);
+procedure THtmlViewer.LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
 var
   I: Integer;
-  Dest, FName, OldFile: string;
+  Dest, FName, OldFile: ThtString;
 
 begin
   if vsProcessing in FViewerState then
@@ -1091,9 +1091,9 @@ end;
 
 {----------------THtmlViewer.LoadFromStream}
 
-procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: string);
+procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString);
 var
-  S: string;
+  S: ThtString;
 begin
   S := LoadStringFromStream(AStream);
   LoadString(S, Reference, HTMLType);
@@ -1101,17 +1101,17 @@ begin
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
-procedure THtmlViewer.DoImage(Sender: TObject; const SRC: string; var Stream: TMemoryStream);
+procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream);
 begin
   Stream := FImageStream;
 end;
 
 {----------------THtmlViewer.LoadStream}
 
-procedure THtmlViewer.LoadStream(const URL: string; AStream: TMemoryStream; ft: ThtmlFileType);
+procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TMemoryStream; ft: ThtmlFileType);
 var
   SaveOnImageRequest: TGetImageEvent;
-  SBuffer: string;
+  SBuffer: ThtString;
 begin
   if (vsProcessing in FViewerState) or not Assigned(AStream) then
     Exit;
@@ -1412,7 +1412,7 @@ end;
 
 procedure THtmlViewer.URLAction;
 var
-  S, Dest: string;
+  S, Dest: ThtString;
   I: Integer;
   OldPos: Integer;
 
@@ -1467,10 +1467,10 @@ end;
 
 {----------------THtmlViewer.AddVisitedLink}
 
-procedure THtmlViewer.AddVisitedLink(const S: string);
+procedure THtmlViewer.AddVisitedLink(const S: ThtString);
 var
   I, J: Integer;
-  S1, UrlTmp: string;
+  S1, UrlTmp: ThtString;
 begin
   if Assigned(FrameOwner) or (FVisitedMaxCount = 0) then
     Exit; {TFrameViewer will take care of visited links}
@@ -1507,7 +1507,7 @@ end;
 procedure THtmlViewer.CheckVisitedLinks;
 var
   I, J: Integer;
-  S, S1: string;
+  S, S1: ThtString;
 begin
   if FVisitedMaxCount = 0 then
     Exit;
@@ -1537,7 +1537,7 @@ var
   InText: Boolean;
   Dummy: TUrlTarget;
   DummyFC: TIDObject {TImageFormControlObj};
-  DummyTitle: string;
+  DummyTitle: ThtString;
 begin
   inherited MouseDown(Button, Shift, X, Y);
 
@@ -1664,7 +1664,7 @@ procedure THtmlViewer.HTMLMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 var
   UrlTarget: TUrlTarget;
-  Url, Target: string;
+  Url, Target: ThtString;
   FormControl: TIDObject {TImageFormControlObj};
   Obj: TObject;
   IX, IY: Integer;
@@ -2100,7 +2100,7 @@ begin
     PaintPanel.Cursor := UpDownCursor;
 end;
 
-function THtmlViewer.PositionTo(Dest: string): Boolean;
+function THtmlViewer.PositionTo(Dest: ThtString): Boolean;
 var
   I: Integer;
   Obj: TObject;
@@ -2124,7 +2124,7 @@ begin
 end;
 
 function THtmlViewer.GetURL(X, Y: Integer; var UrlTarg: TUrlTarget;
-  var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType;
+  var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
 begin
   Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff,
     UrlTarg, FormControl, ATitle);
@@ -2177,7 +2177,7 @@ end;
 
 {----------------THtmlViewer.InsertImage}
 
-function THtmlViewer.InsertImage(const Src: string; Stream: TMemoryStream): Boolean;
+function THtmlViewer.InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
 var
   OldPos: Integer;
   ReFormat: Boolean;
@@ -2204,28 +2204,28 @@ begin
   end;
 end;
 
-function THtmlViewer.GetBase: string;
+function THtmlViewer.GetBase: ThtString;
 begin
   Result := FBase;
 end;
 
-procedure THtmlViewer.SetBase(Value: string);
+procedure THtmlViewer.SetBase(Value: ThtString);
 begin
   FBase := Value;
   FBaseEx := Value;
 end;
 
-function THtmlViewer.GetBaseTarget: string;
+function THtmlViewer.GetBaseTarget: ThtString;
 begin
   Result := FBaseTarget;
 end;
 
-function THtmlViewer.GetTitle: string;
+function THtmlViewer.GetTitle: ThtString;
 begin
   Result := FTitle;
 end;
 
-function THtmlViewer.GetCurrentFile: string;
+function THtmlViewer.GetCurrentFile: ThtString;
 begin
   Result := FCurrentFile;
 end;
@@ -2430,7 +2430,7 @@ begin
   Invalidate;
 end;
 
-function THtmlViewer.HTMLExpandFilename(const Filename: string): string;
+function THtmlViewer.HTMLExpandFilename(const Filename: ThtString): ThtString;
 begin
   {pass http: and other protocols except for file:///}
   if (Pos('://', Filename) > 1) and (Pos('file://', Lowercase(Filename)) = 0) then
@@ -2456,7 +2456,7 @@ end;
 
 {----------------THtmlViewer.BumpHistory}
 
-procedure THtmlViewer.BumpHistory(const FileName, Title: string;
+procedure THtmlViewer.BumpHistory(const FileName, Title: ThtString;
   OldPos: Integer; OldFormData: TFreeList; ft: ThtmlFileType);
 var
   I: Integer;
@@ -2611,7 +2611,7 @@ begin
   Result := FSectionList.FormControlList;
 end;
 
-function THtmlViewer.GetNameList: TStringList;
+function THtmlViewer.GetNameList: ThtStringList;
 begin
   Result := FNameList;
 end;
@@ -4518,7 +4518,7 @@ begin
     FSectionList.SubmitForm := nil;
 end;
 
-procedure THtmlViewer.SubmitForm(Sender: TObject; const Action, Target, EncType, Method: string;
+procedure THtmlViewer.SubmitForm(Sender: TObject; const Action, Target, EncType, Method: ThtString;
   Results: ThtStringList);
 begin
   if Assigned(FOnFormSubmit) then
@@ -4538,7 +4538,7 @@ end;
 procedure THtmlViewer.WMFormSubmit(var Message: TMessage);
 begin
   FOnFormSubmit(Self, FAction, FFormTarget, FEncType, FMethod, FStringList);
-end; {user disposes of the TStringList}
+end; {user disposes of the ThtStringList}
 
 function THtmlViewer.Find(const S: WideString; MatchCase: Boolean): Boolean;
 begin
@@ -4717,7 +4717,7 @@ var
     end
   end;
 
-  function GetHeader(const HTML: string): string;
+  function GetHeader(const HTML: ThtString): ThtString;
   const
     Version = 'Version:1.0'#13#10;
     StartHTML = 'StartHTML:';
@@ -4733,7 +4733,7 @@ var
       Length(EndFragment) + 4 * NumberLengthAndCR +
       2; {2 for last CRLF}
   var
-    URLString: string;
+    URLString: ThtString;
     StartHTMLIndex,
       EndHTMLIndex,
       StartFragmentIndex,
@@ -4758,7 +4758,7 @@ var
       URLString + #13#10;
   end;
 
-  function Truncate(const S: string): string;
+  function Truncate(const S: ThtString): ThtString;
   var
     I: Integer;
   begin
@@ -4768,7 +4768,7 @@ var
       Result := Copy(Result, 1, I + Length(EndFrag) - 1);
   end;
 
-  procedure RemoveTag(const Tag: string);
+  procedure RemoveTag(const Tag: ThtString);
   {remove all the tags that look like "<tag .....>" }
   var
     I: Integer;
@@ -4792,10 +4792,10 @@ var
     end;
   end;
 
-  procedure MessUp(const S: string);
+  procedure MessUp(const S: ThtString);
   var
     I: Integer;
-    L: string;
+    L: ThtString;
   begin
     L := Lowercase(HTML);
     I := Pos(S, L);
@@ -4829,7 +4829,7 @@ var
   procedure InsertDefaultFontInfo;
   var
     I: Integer;
-    S, L: string;
+    S, L: ThtString;
     HeadFound: Boolean;
   begin
     L := LowerCase(HTML);
@@ -4905,7 +4905,7 @@ begin
   HTML := Copy(HTML, 1, EnSrc - 1);
 {Also remove any tags on the end}
   BackupToContent;
-{insert the StartFrag string}
+{insert the StartFrag ThtString}
   Insert(StartFrag, HTML, StSrc);
 {Remove all Meta tags, in particular the ones that specify language, but others
  seem to cause problems also}
@@ -4920,7 +4920,7 @@ begin
   HTML := ConvertToUTF8(HTML);
 {Add Doctype tag at start}
   HTML := DocType + HTML;
-{Append the EndFrag string}
+{Append the EndFrag ThtString}
   HTML := HTML + EndFrag;
 {Add the header to start}
   HTML := GetHeader(HTML) + HTML;
@@ -5159,12 +5159,12 @@ begin
   end;
 end;
 
-procedure THtmlViewer.SetServerRoot(Value: string);
+procedure THtmlViewer.SetServerRoot(Value: ThtString);
 begin
   FServerRoot := ExcludeTrailingPathDelimiter(Trim(Value));
 end;
 
-procedure THtmlViewer.HandleMeta(Sender: TObject; const HttpEq, Name, Content: string);
+procedure THtmlViewer.HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
 var
   DelTime, I: Integer;
 begin
@@ -5281,7 +5281,7 @@ begin
     end;
 end;
 
-procedure THtmlViewer.ReplaceImage(const NameID: string; NewImage: TStream);
+procedure THtmlViewer.ReplaceImage(const NameID: ThtString; NewImage: TStream);
 var
   I: Integer;
   OldPos: Integer;
@@ -5301,7 +5301,7 @@ begin
     end;
 end;
 
-function THtmlViewer.GetIDControl(const ID: string): TObject;
+function THtmlViewer.GetIDControl(const ID: ThtString): TObject;
 var
   I: Integer;
   Obj: TObject;
@@ -5323,7 +5323,7 @@ begin
     end;
 end;
 
-function THtmlViewer.GetIDDisplay(const ID: string): TPropDisplay;
+function THtmlViewer.GetIDDisplay(const ID: ThtString): TPropDisplay;
 var
   I: Integer;
   Obj: TObject;
@@ -5338,7 +5338,7 @@ begin
     end;
 end;
 
-procedure THtmlViewer.SetIDDisplay(const ID: string; Value: TPropDisplay);
+procedure THtmlViewer.SetIDDisplay(const ID: ThtString; Value: TPropDisplay);
 var
   I: Integer;
   Obj: TObject;

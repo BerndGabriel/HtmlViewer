@@ -35,7 +35,7 @@ uses
   UrlSubs, StyleUn, HtmlGlobals, HtmlGif2;
 
 const
-  VersionNo = '10.01';
+  VersionNo = '10.2';
   MaxHScroll = 6000; {max horizontal display in pixels}
   HandCursor = 10101;
   OldThickIBeamCursor = 2;
@@ -130,31 +130,31 @@ type
   TAttribute = class(TObject) {holds a tag attribute}
   public
     Which: Symb; {symbol of attribute such as HrefSy}
-    WhichName: string;
+    WhichName: ThtString;
     Value: Integer; {numeric value if appropriate}
     Percent: boolean; {if value is in percent}
-    Name: string; {String (mixed case), value after '=' sign}
+    Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
     constructor Create(ASym: Symb; AValue: Integer;
-      const NameStr, ValueStr: string; ACodePage: Integer);
+      const NameStr, ValueStr: ThtString; ACodePage: Integer);
   end;
 
   TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
   private
     Prop: TProperties;
-    SaveID: string;
-    function GetClass: string;
-    function GetID: string;
-    function GetTitle: string;
+    SaveID: ThtString;
+    function GetClass: ThtString;
+    function GetID: ThtString;
+    function GetTitle: ThtString;
     function GetStyle: TProperties;
   public
     destructor Destroy; override;
     procedure Clear; override;
     function Find(Sy: Symb; var T: TAttribute): boolean;
-    function CreateStringList: TStringList;
-    property TheClass: string read GetClass;
-    property TheID: string read GetID;
-    property TheTitle: string read GetTitle;
+    function CreateStringList: ThtStringList;
+    property TheClass: ThtString read GetClass;
+    property TheID: ThtString read GetID;
+    property TheTitle: ThtString read GetTitle;
     property TheStyle: TProperties read GetStyle;
   end;
 
@@ -169,16 +169,16 @@ type
     destructor Destroy; override;
   end;
 
-  TStringBitmapList = class(TStringList)
+  TStringBitmapList = class(ThtStringList)
       {a list of bitmap filenames and TBitmapItems}
   public
     MaxCache: Integer;
     constructor Create;
     destructor Destroy; override;
     procedure Clear; override;
-    function AddObject(const S: string; AObject: TObject): Integer; override;
-    procedure DecUsage(const S: string);
-    procedure IncUsage(const S: string);
+    function AddObject(const S: ThtString; AObject: TObject): Integer; override;
+    procedure DecUsage(const S: ThtString);
+    procedure IncUsage(const S: ThtString);
     procedure BumpAndCheck;
     procedure PurgeCache;
     function GetImage(I: Integer): TgpObject;
@@ -223,15 +223,15 @@ type
     function GetLast: Integer;
   public
     URL,
-      Target: string;
+      Target: ThtString;
     ID: Integer;
-    Attr: string;
+    Attr: ThtString;
     utText: TutText;
     TabIndex: Integer;
     constructor Create;
     procedure Copy(UT: TUrlTarget);
     destructor Destroy; override;
-    procedure Assign(const AnUrl, ATarget: string; L: TAttributeList; AStart: Integer);
+    procedure Assign(const AnUrl, ATarget: ThtString; L: TAttributeList; AStart: Integer);
     procedure Clear;
     procedure SetLast(List: TList; ALast: Integer);
     property Start: Integer read GetStart;
@@ -239,13 +239,13 @@ type
   end;
 
   TMapItem = class(TObject) {holds a client map info}
-    MapName: string;
-    Areas: TStringList; {holds the URL and region handle}
-    AreaTargets: TStringList; {holds the target window}
-    AreaTitles: TStringList; {the Title strings}
+    MapName: ThtString;
+    Areas: ThtStringList; {holds the URL and region handle}
+    AreaTargets: ThtStringList; {holds the target window}
+    AreaTitles: ThtStringList; {the Title strings}
     constructor Create;
     destructor Destroy; override;
-    function GetURL(X, Y: Integer; var URLTarg: TURLTarget; var ATitle: string): boolean;
+    function GetURL(X, Y: Integer; var URLTarg: TURLTarget; var ATitle: ThtString): boolean;
     procedure AddArea(Attrib: TAttributeList);
   end;
 
@@ -311,24 +311,24 @@ type
   PIndexArray = ^IndexArray;
   ChrArray = array[1..TokenLeng] of WideChar;
 
-  {Simplified variant of TokenObj, to temporarily keep a string of ANSI
+  {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
    characters along with their original indices.}
   TCharCollection = class
   private
-    FChars: string;
+    FChars: ThtString;
     FIndices: PIndexArray;
     FCurrentIndex: Integer;
     function GetSize: Integer;
-    function GetAsString: string;
+    function GetAsString: ThtString;
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Add(C: Char; Index: Integer);
+    procedure Add(C: ThtChar; Index: Integer);
     procedure Clear;
     procedure Concat(T: TCharCollection);
 
-    property AsString: string read GetAsString;
-    property Chars: string read FChars;
+    property AsString: ThtString read GetAsString;
+    property Chars: ThtString read FChars;
     property Indices: PIndexArray read FIndices;
     property Size: Integer read GetSize;
   end;
@@ -371,15 +371,15 @@ type
     property List: TSectionBaseList read FList;
   end;
 
-  TIDNameList = class(TStringList)
+  TIDNameList = class(ThtStringList)
   private
     OwnerList: TSectionBaseList;
   public
     constructor Create(List: TSectionBaseList);
     destructor Destroy; override;
     procedure Clear; override;
-    function AddObject(const S: string; AObject: TObject): Integer; override;
-    procedure AddChPosObject(const S: string; Pos: Integer);
+    function AddObject(const S: ThtString; AObject: TObject): Integer; override;
+    procedure AddChPosObject(const S: ThtString; Pos: Integer);
   end;
 
 {$IFNDEF NoMetafile}
@@ -428,12 +428,12 @@ type
     SpecHeight: Integer; {as specified by <img or panel> tag}
     PercentWidth: boolean; {if width is percent}
     PercentHeight: boolean; {if height is percent}
-    ImageTitle: string;
+    ImageTitle: ThtString;
 {$ifdef UNICODE}
     FAlt: AnsiString;
-    FAltW: string; {the alt= attribute}
+    FAltW: ThtString; {the alt= attribute}
 {$else}
-    FAlt: string; {the alt= attribute}
+    FAlt: ThtString; {the alt= attribute}
     FAltW: WideString;
 {$endif}
 
@@ -445,11 +445,11 @@ type
     NoBorder: boolean; {set if don't want blue border}
     BorderSize: Integer;
     constructor CreateCopy(T: TFloatingObj);
-    procedure SetAlt(CodePage: Integer; const Value: String);
+    procedure SetAlt(CodePage: Integer; const Value: ThtString);
     procedure DrawLogic(SectionList: TSectionBaseList; Canvas: TCanvas;
       FO: TFontObjBase; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     procedure ProcessProperties(Prop: TProperties);
-    property Alt: String read {$ifdef UNICODE} FAltW {$else} FAlt {$endif};
+    property Alt: ThtString read {$ifdef UNICODE} FAltW {$else} FAlt {$endif};
   end;
 
   TBlockBase = class;
@@ -485,7 +485,7 @@ type
     function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; virtual;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; virtual;
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
-      var FormControl: TIDObject{TImageFormControlObj}; var ATitle: string): guResultType; virtual;
+      var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
     function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; virtual;
     procedure AddSectionsToList; virtual;
     procedure CopyToClipboard; virtual;
@@ -510,12 +510,12 @@ type
     property Items[Index: Integer]: TSectionBase read getItem; default;
   end;
 
-  TGetStreamEvent = procedure(Sender: TObject; const SRC: string; var Stream: TMemoryStream) of object;
-  TIncludeType = procedure(Sender: TObject; const Command: string; Params: TStrings; var IString: string) of object;
-  TLinkType = procedure(Sender: TObject; const Rel, Rev, Href: string) of object;
-  TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: string) of object;
-  TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: string) of object;
-  TSoundType = procedure(Sender: TObject; const SRC: string; Loop: Integer; Terminate: boolean) of object;
+  TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
+  TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; var IString: ThtString) of object;
+  TLinkType = procedure(Sender: TObject; const Rel, Rev, Href: ThtString) of object;
+  TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: ThtString) of object;
+  TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;
+  TSoundType = procedure(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: boolean) of object;
 
   TViewerBase = class(TWinControl)
   private
@@ -549,7 +549,7 @@ type
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    function HtmlExpandFilename(const Filename: string): string; virtual; abstract;
+    function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
     function ShowFocusRect: Boolean; virtual; abstract;
   end;
 
@@ -558,7 +558,7 @@ type
     procedure wmerase(var msg: TMessage); message WM_ERASEBKGND;
   public
     function CreateSubFrameSet(FrameSet: TObject): TObject; virtual; abstract;
-    procedure AddFrame(FrameSet: TObject; Attr: TAttributeList; const FName: string); virtual; abstract;
+    procedure AddFrame(FrameSet: TObject; Attr: TAttributeList; const FName: ThtString); virtual; abstract;
     procedure DoAttributes(FrameSet: TObject; Attr: TAttributeList); virtual; abstract;
     procedure EndFrameSet(FrameSet: TObject); virtual; abstract;
   end;
@@ -574,30 +574,30 @@ function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; var Extent: Integer): Integer;
 function WidePos(SubStr, S: WideString): Integer;
 function WideTrim(const S: WideString): WideString;
-function WideUpperCase1(const S: WideString): WideString;
-function WideLowerCase1(const S: WideString): WideString;
-function WideSameText1(const S1, S2: WideString): boolean;
-function WideSameStr1(const S1, S2: WideString): boolean;
-function PosX(const SubStr, S: string; Offset: Integer = 1): Integer;
+function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
+function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
+function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
+function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
    {find substring in S starting at Offset}
 
 function CalcClipRect(Canvas: TCanvas; const Rect: TRect; Printing: boolean): TRect;
 procedure GetClippingRgn(Canvas: TCanvas; const ARect: TRect; Printing: boolean; var Rgn, SaveRgn: HRgn);
 
-function LoadImageFromFile(const FName: string; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 function LoadImageFromStream(Stream: TMemoryStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-// unused: function GetImageAndMaskFromFile(const Filename: string; var Transparent: Transparency;
+// unused: function GetImageAndMaskFromFile(const Filename: ThtString; var Transparent: Transparency;
 //  var Mask: TBitmap): TgpObject;
 
   {convert an HTML style filename to one for Dos}
-function HTMLServerToDos(FName, Root: string): string;
+function HTMLServerToDos(FName, Root: ThtString): ThtString;
 
 procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: WideString);
 
 procedure FinishTransparentBitmap(ahdc: HDC; InImage, Mask: TBitmap; xStart, yStart, W, H: Integer);
 function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBitmap;
 //function GetImageAndMaskFromStream(Stream: TMemoryStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-// unused: function KindOfImageFile(FName: string): ImageType;
+// unused: function KindOfImageFile(FName: ThtString): ImageType;
 //function KindOfImage(Start: Pointer): ImageType;
 procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);
 procedure FormControlRect(Canvas: TCanvas; X1: Integer;
@@ -646,7 +646,7 @@ type
 {----------------StrLenW}
 
 function StrLenW(Str: PWideChar): Cardinal;
-{returns number of characters in a string excluding the null terminator}
+{returns number of characters in a ThtString excluding the null terminator}
 
 asm
        MOV     EDX, EDI
@@ -826,16 +826,25 @@ end;
 
 {----------------WideUpperCase1}
 
+{$ifdef UNICODE}
+
 function WideUpperCase1(const S: WideString): WideString;
-{$IFNDEF UNICODE}
+begin
+  Result := WideUpperCase(S);
+end;
+
+function WideLowerCase1(const S: WideString): WideString;
+begin
+  Result := WideLowerCase(S);
+end;
+
+{$else}
+
+function WideUpperCase1(const S: WideString): WideString;
 var
   Len, NewLen: Integer;
   Tmp: string;
-{$ENDIF}
 begin
-{$IFDEF UNICODE}
-  Result := WideUpperCase(S);
-{$ELSE}
   Len := Length(S);
   if not IsWin32Platform then
   begin
@@ -852,19 +861,13 @@ begin
     SetLength(Result, Len);
     MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
   end;
-{$ENDIF}
 end;
 
 function WideLowerCase1(const S: WideString): WideString;
-{$IFNDEF UNICODE}
 var
   Len, NewLen: Integer;
   Tmp: string;
-{$ENDIF}
 begin
-{$IFDEF UNICODE}
-  Result := WideLowerCase(S);
-{$ELSE}
   Len := Length(S);
   if not IsWin32Platform then
   begin
@@ -881,8 +884,9 @@ begin
     SetLength(Result, Len);
     MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
   end;
-{$ENDIF}
 end;
+
+{$endif}
 
 function WideSameText1(const S1, S2: WideString): boolean;
 begin
@@ -894,10 +898,10 @@ begin
   Result := S1 = S2;
 end;
 
-function PosX(const SubStr, S: string; Offset: Integer = 1): Integer;
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 {find substring in S starting at Offset}
 var
-  S1: string;
+  S1: ThtString;
   I: Integer;
 begin
   if Offset <= 1 then
@@ -974,7 +978,7 @@ begin
   SelectClipRgn(Canvas.Handle, Rgn);
 end;
 
-function HTMLServerToDos(FName, Root: string): string;
+function HTMLServerToDos(FName, Root: ThtString): ThtString;
 {Add Prefix Root only if first character is '\' but not '\\'}
 begin
   Result := Trim(HTMLToDos(FName));
@@ -1139,7 +1143,7 @@ end;
 
 {$IFDEF Ver90}
 
-procedure Assert(B: boolean; const S: string);
+procedure Assert(B: boolean; const S: ThtString);
 begin {dummy Assert for Delphi 2}
 end;
 {$ENDIF}
@@ -1188,14 +1192,14 @@ begin
   inherited Destroy;
 end;
 
-function TStringBitmapList.AddObject(const S: string; AObject: TObject): Integer;
+function TStringBitmapList.AddObject(const S: ThtString; AObject: TObject): Integer;
 begin
   Result := inherited AddObject(S, AObject);
   if AObject is TBitmapItem then
     Inc(TBitmapItem(AObject).UsageCount);
 end;
 
-procedure TStringBitmapList.DecUsage(const S: string);
+procedure TStringBitmapList.DecUsage(const S: ThtString);
 var
   I: Integer;
 begin
@@ -1208,7 +1212,7 @@ begin
     end;
 end;
 
-procedure TStringBitmapList.IncUsage(const S: string);
+procedure TStringBitmapList.IncUsage(const S: ThtString);
 var
   I: Integer;
 begin
@@ -1293,7 +1297,7 @@ begin
 end;
 
 constructor TAttribute.Create(ASym: Symb; AValue: Integer;
-  const NameStr, ValueStr: string; ACodePage: Integer);
+  const NameStr, ValueStr: ThtString; ACodePage: Integer);
 begin
   inherited Create;
   Which := ASym;
@@ -1331,20 +1335,20 @@ begin
   Result := False;
 end;
 
-function TAttributeList.CreateStringList: TStringList;
+function TAttributeList.CreateStringList: ThtStringList;
 var
   I: Integer;
 begin
-  Result := TStringList.Create;
+  Result := ThtStringList.Create;
   for I := 0 to Count - 1 do
     with TAttribute(Items[I]) do
       Result.Add(WhichName + '=' + Name);
 end;
 
-function TAttributeList.GetClass: string;
+function TAttributeList.GetClass: ThtString;
 var
   T: TAttribute;
-  S: string;
+  S: ThtString;
   I: Integer;
 begin
   Result := '';
@@ -1369,7 +1373,7 @@ begin
   end;
 end;
 
-function TAttributeList.GetID: string;
+function TAttributeList.GetID: ThtString;
 var
   T: TAttribute;
 begin
@@ -1381,7 +1385,7 @@ begin
   end;
 end;
 
-function TAttributeList.GetTitle: string;
+function TAttributeList.GetTitle: ThtString;
 var
   T: TAttribute;
 begin
@@ -1425,9 +1429,9 @@ end;
 var
   Sequence: Integer = 10;
 
-procedure TUrlTarget.Assign(const AnUrl, ATarget: string; L: TAttributeList; AStart: Integer);
+procedure TUrlTarget.Assign(const AnUrl, ATarget: ThtString; L: TAttributeList; AStart: Integer);
 var
-  SL: TStringList;
+  SL: ThtStringList;
 begin
   Url := AnUrl;
   Target := ATarget;
@@ -1593,9 +1597,9 @@ end;
 constructor TMapItem.Create;
 begin
   inherited Create;
-  Areas := TStringList.Create;
-  AreaTargets := TStringList.Create;
-  AreaTitles := TStringList.Create;
+  Areas := ThtStringList.Create;
+  AreaTargets := ThtStringList.Create;
+  AreaTitles := ThtStringList.Create;
 end;
 
 destructor TMapItem.Destroy;
@@ -1610,7 +1614,7 @@ begin
   inherited Destroy;
 end;
 
-function TMapItem.GetURL(X, Y: Integer; var URLTarg: TUrlTarget; var ATitle: string): boolean;
+function TMapItem.GetURL(X, Y: Integer; var URLTarg: TUrlTarget; var ATitle: ThtString): boolean;
 var
   I: Integer;
 begin
@@ -1636,8 +1640,8 @@ const
   MAXCNT = 300;
 var
   I, Cnt, Rad: Integer;
-  HRef, S, Target, Title: string;
-  S1, Nm: string;
+  HRef, S, Target, Title: ThtString;
+  S1, Nm: ThtString;
   Coords: array[0..MAXCNT] of Integer;
   Rect: TRect absolute Coords;
   Handle: THandle;
@@ -1740,7 +1744,7 @@ begin
   end;
 end;
 
-//function KindOfImageFile(FName: string): ImageType;
+//function KindOfImageFile(FName: ThtString): ImageType;
 //var
 //  Mem: TMemoryStream;
 //begin
@@ -1868,7 +1872,7 @@ end;
 //  pngPalette: array[0..255] of RGB;
 //  dataSize: Integer;
 //  chunkType: array[0..4] of AnsiChar;
-//  chunkTypeStr: string;
+//  chunkTypeStr: ThtString;
 //  done: Boolean;
 //  Ar: array[0..10] of byte;
 //  Alpha: array[0..255] of byte;
@@ -1911,7 +1915,7 @@ end;
 //      Stream.Read(dataSize, 4);
 //      dataSize := IntSwap(dataSize);
 //      Stream.Read(chunkType, 4);
-//      chunkType[4] := #0; {make sure string is NULL terminated}
+//      chunkType[4] := #0; {make sure ThtString is NULL terminated}
 //      chunkTypeStr := StrPas(chunkType);
 //      if chunkTypeStr = 'IHDR' then
 //      begin
@@ -1963,7 +1967,7 @@ end;
 //
 //{$A+}
 //
-//function TransparentGIF(const FName: string; var Color: TColor): boolean;
+//function TransparentGIF(const FName: ThtString; var Color: TColor): boolean;
 //{Looks at a GIF image file to see if it's a transparent GIF.}
 //{Needed for OnBitmapRequest Event handler}
 //var
@@ -2036,7 +2040,7 @@ end;
 
 //{----------------GetImageAndMaskFromFile}
 //
-//function GetImageAndMaskFromFile(const Filename: string; var Transparent: Transparency;
+//function GetImageAndMaskFromFile(const Filename: ThtString; var Transparent: Transparency;
 //  var Mask: TBitmap): TgpObject;
 //var
 //  Stream: TMemoryStream;
@@ -2227,7 +2231,7 @@ begin
   end;
 end;
 
-//function GetImageFromFile(const Filename: string): TBitmap;
+//function GetImageFromFile(const Filename: ThtString): TBitmap;
 //{used only externally in OnBitmapRequest handler}
 //var
 //  IT: ImageType;
@@ -2333,7 +2337,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
-function LoadImageFromFile(const FName: string; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 // extracted from TSectionList.GetTheBitmap() and redesigned.
 // Now the image file is loaded once only (was: 2 to 3 times) and GetImageAndMaskFromFile() is obsolete.
 var
@@ -2966,7 +2970,7 @@ begin
   inherited Clear;
 end;
 
-function TIDNameList.AddObject(const S: string; AObject: TObject): Integer;
+function TIDNameList.AddObject(const S: ThtString; AObject: TObject): Integer;
 var
   I: Integer;
 begin
@@ -2982,7 +2986,7 @@ begin
   Result := inherited AddObject(S, AObject);
 end;
 
-procedure TIDNameList.AddChPosObject(const S: string; Pos: Integer);
+procedure TIDNameList.AddChPosObject(const S: ThtString; Pos: Integer);
 var
   ChPosObj: TChPosObj;
 begin
@@ -3088,12 +3092,12 @@ end;
 //  if Ord(W) > 255 then
 //    Result := False
 //  else
-//    Result := Char(W) in S;
+//    Result := ThtChar(W) in S;
 //end;
 
 {----------------TCharCollection.GetAsString:}
 
-function TCharCollection.GetAsString: string;
+function TCharCollection.GetAsString: ThtString;
 begin
   Result := Copy(FChars, 1, FCurrentIndex);
 end;
@@ -3118,7 +3122,7 @@ begin
   inherited;
 end;
 
-procedure TCharCollection.Add(C: Char; Index: Integer);
+procedure TCharCollection.Add(C: ThtChar; Index: Integer);
 begin
   if FCurrentIndex = Length(FChars) then
   begin
@@ -3146,7 +3150,7 @@ begin
     SetLength(FChars, K + 50);
     ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
   end;
-  Move(PChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(Char)); //@@@ Tiburon: todo test
+  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
   Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
   FCurrentIndex := K;
 end;
@@ -3207,8 +3211,8 @@ begin
 {$IFDEF Delphi6_Plus}
   if IsWin95 and (CodePage = CP_UTF8) then
   begin
-  {Provide initial space. The resulting string will never be longer than the
-   UTF-8 encoded string.}
+  {Provide initial space. The resulting ThtString will never be longer than the
+   UTF-8 encoded ThtString.}
     if Len = -1 then
       Len := Length(S);
     SetLength(Result, Len + 1); {add 1 for #0 terminator}
@@ -3217,8 +3221,8 @@ begin
   else
 {$ENDIF}
   begin
-  {Provide initial space. The resulting string will never be longer than the
-   UTF-8 or multibyte encoded string.}
+  {Provide initial space. The resulting ThtString will never be longer than the
+   UTF-8 or multibyte encoded ThtString.}
     SetLength(Result, 2 * Len);
     NewLen := MultiByteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
     if NewLen = 0 then
@@ -3234,7 +3238,7 @@ var
   NewLen, Len: Integer;
 begin
 {$IFDEF Delphi6_Plus}
-  if CodePage = CP_UTF8 then {UTF-8 encoded string.}
+  if CodePage = CP_UTF8 then {UTF-8 encoded ThtString.}
     Result := UTF8Encode(W)
   else
 {$ENDIF}
@@ -3274,7 +3278,7 @@ begin
 end;
 
 procedure TokenObj.AddString(S: TCharCollection; CodePage: Integer);
-// Takes the given string S and converts it to Unicode using the given code page.
+// Takes the given ThtString S and converts it to Unicode using the given code page.
 // If we are on Windows 95 then CP_UTF8 (and CP_UTF7) are not supported.
 // We compensate for this by using a Delphi function.
 // Note: There are more code pages (including CP_UTF7), which are not supported
@@ -3287,7 +3291,7 @@ var
 
 begin
   Len := S.FCurrentIndex;
-{$ifdef UNICODE}
+{$ifdef UseUnicode}
   if Len > 0 then
     WS := Copy(S.FChars, 1, Len)
   else
@@ -3297,7 +3301,7 @@ begin
 {$endif}
   NewLen := Length(WS);
 
-  {Store the wide string and character indices.}
+  {Store the wide ThtString and character indices.}
   if Len = NewLen then {single byte character set or at least no multibyte conversion}
     for I := 1 to NewLen do
       AddUnicodeChar(WS[I], S.FIndices[I])
@@ -4396,7 +4400,7 @@ end;
 
 function TSectionBase.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
 begin
   Result := [];
 end;
@@ -4618,16 +4622,16 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.11.2010 --
-procedure TFloatingObj.SetAlt(CodePage: Integer; const Value: String);
+procedure TFloatingObj.SetAlt(CodePage: Integer; const Value: ThtString);
 begin
-{$ifdef UNICODE}
+{$ifdef UseUnicode}
   FAltW := Value;
-  while (Length(FAltW) > 0) and (FAltW[Length(FAltW)] in [#$D, #$A]) do
+  while (Length(FAltW) > 0) and (FAltW[Length(FAltW)] in [CrChar, LfChar]) do
     Delete(FAltW, Length(FAltW), 1);
   FAlt := WideStringToMultibyte(CodePage, FAltW);
 {$else}
   FAlt := Value;
-  while (Length(FAlt) > 0) and (FAlt[Length(FAlt)] in [#$D, #$A]) do
+  while (Length(FAlt) > 0) and (FAlt[Length(FAlt)] in [CrChar, LfChar]) do
     Delete(FAlt, Length(FAlt), 1);
   FAltW := MultibyteToWideString(CodePage, FAlt);
 {$endif}

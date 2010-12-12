@@ -47,7 +47,7 @@ PackageDLLOutputDir=
 PackageDCPOutputDir=
 SearchPath=..\..\package\lib\delphi6;..\..\source;$(DELPHI)\Lib\Debug;L:\src\SHAREW~1\jedi\jcl\jcl\lib\d6\debug
 Packages=Vcl50;Vclx50;VclSmp50;Vcldb50;vclado50;ibevnt50;Vclbde50;vcldbx50;Qrpt50;TeeUI50;TeeDB50;Tee50;TeeQR50;VCLIB50;Vclmid50;vclie50;Inetdb50;Inet50;NMFast50;webmid50;dclocx50;dclaxserver50;Dss50;madExcept_;madDisAsm_;madBasic_;vcl;rtl;vclx;dsnap;dbrtl;inet;vcldb;bdertl;qrpt;dsnapcon;VclSmp;SynEdit_D6;JVCL200_R60;VSOLBar50;Tee;VirtualTreesD6;mint_components;TeeUI;TeeDB;TeeGL;visualclx;TeeTree1D6;TeeQR;mint_DeveloperExpress;mint_shareware;BegaD6;ThemeManagerD6;JvCtrlsD6R;JvCustomD6R;JvMMD6R;CodeSiteLoggingVcl;CodeSiteDBToolsVcl
-Conditionals=INCLUDE_ORACLE_MONITOR;MAD;SHIFTSYMBOLTYPE_REQUIREMENTS;TMintEmployeeEqualsTMintEmployeeRow;madExcept;TMintResourceEqualsTMintResourceTreeNode
+Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
@@ -65,7 +65,7 @@ IncludeVerInfo=1
 AutoIncBuild=0
 MajorVer=10
 MinorVer=0
-Release=0
+Release=2
 Build=0
 Debug=0
 PreRelease=0
@@ -77,7 +77,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=HtmlViewer Team
 FileDescription=
-FileVersion=10.0.0.0
+FileVersion=10.0.2.0
 InternalName=
 LegalCopyright=
 LegalTrademarks=
@@ -85,14 +85,13 @@ OriginalFilename=
 ProductName=FrameViewer Demo
 ProductVersion=10.0.0.0
 Comments=meet us at http://code.google.com/p/thtmlviewer/
-[Excluded Packages]
-c:\programme\borland\delphi6\Bin\dclnet60.bpl=Borland Internet Components
-c:\programme\borland\delphi6\Bin\dclwbm60.bpl=Borland InternetExpress Components
-c:\programme\borland\delphi6\Bin\dclwebsnap60.bpl=Borland WebSnap Components
-c:\programme\borland\delphi6\Bin\dclsoap60.bpl=Borland SOAP Components
-[HistoryLists\hlConditionals]
+[HistoryLists\hlDebugSourcePath]
 Count=1
-Item0=INCLUDE_ORACLE_MONITOR;MAD;SHIFTSYMBOLTYPE_REQUIREMENTS;TMintEmployeeEqualsTMintEmployeeRow;madExcept;TMintResourceEqualsTMintResourceTreeNode
+Item0=UseTNT
+[HistoryLists\hlConditionals]
+Count=2
+Item0=UseTNT
+Item1=INCLUDE_ORACLE_MONITOR;MAD;SHIFTSYMBOLTYPE_REQUIREMENTS;TMintEmployeeEqualsTMintEmployeeRow;madExcept;TMintResourceEqualsTMintResourceTreeNode
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;

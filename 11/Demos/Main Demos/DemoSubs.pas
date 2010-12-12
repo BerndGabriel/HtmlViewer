@@ -25,7 +25,7 @@ are covered by separate copyright notices located in those modules.
 
 unit DemoSubs;
 
-{$include htmlcons.inc}
+{$include ..\..\source\htmlcons.inc}
 
 interface
 

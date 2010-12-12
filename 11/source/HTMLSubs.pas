@@ -61,20 +61,6 @@ interface
 uses
   Windows, Messages, Classes, Graphics, Controls, ExtCtrls,
 {$ifdef LCL}Interfaces, {$endif}
-{$IFDEF UseTNT}
-  TntStdCtrls,
-  {$ifdef Compiler17_Plus}
-    WideStrings,
-  {$else}
-    TntWideStrings,
-  {$endif}
-{$ELSE UseTNT}
-  {$IFDEF UseElPack}
-  ElListBox, ElCombos, ElEdits, ElPopBtn,
-  {$ELSE UseElPack}
-    StdCtrls,
-  {$ENDIF UseElPack}
-{$ENDIF UseTNT}
   HtmlGlobals, HtmlUn2, StyleUn, HtmlGif2;
 
 type
@@ -84,41 +70,8 @@ type
     MasterList: TObject;
   public
     constructor Create(AMasterList: TObject);
-    procedure AddModifyProp(const Selector, Prop, Value: string); override;
+    procedure AddModifyProp(const Selector, Prop, Value: ThtString); override;
   end;
-
-  ThtEdit = class(
-    {$IFDEF UseTNT}TTntEdit{$ELSE}
-    {$IFDEF UseElPack}TElEdit{$ELSE}
-    TEdit{$ENDIF}{$ENDIF})
-  protected
-    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-  end;
-
-{$IFDEF UseTNT}
-  ThtButton = TTntButton;
-  ThtMemo = TTntMemo;
-  ThtCombobox = TTntCombobox;
-  ThtListbox = TTntListbox;
-  ThtStringList = TWideStringList;
-  ThtString = WideString;
-{$ELSE}
-{$IFDEF UseElPack}
-  ThtButton = TElPopupButton;
-  ThtMemo = TElMemo;
-  ThtCombobox = TElCombobox;
-  ThtListbox = TElListbox;
-  ThtStringList = TWideStringList;
-  ThtString = WideString;
-{$ELSE}
-  ThtButton = TButton;
-  ThtMemo = TMemo;
-  ThtCombobox = TCombobox;
-  ThtListbox = TListbox;
-  ThtStringList = TStringList;
-  ThtString = string;
-{$ENDIF}
-{$ENDIF}
 
   ThvPanel = class(TPanel)
   public
@@ -127,19 +80,19 @@ type
     property Visible: boolean read FVisible write SetVisible default True;
   end;
 
-  TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: string; ARect: TRect) of object;
-  TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: string) of object;
-  TGetBitmapEvent = procedure(Sender: TObject; const SRC: string; var Bitmap: TBitmap; var Color: TColor) of object;
-  TGetImageEvent = procedure(Sender: TObject; const SRC: string; var Stream: TMemoryStream) of object;
+  TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: ThtString; ARect: TRect) of object;
+  TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: ThtString) of object;
+  TGetBitmapEvent = procedure(Sender: TObject; const SRC: ThtString; var Bitmap: TBitmap; var Color: TColor) of object;
+  TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
   TGottenImageEvent = TGetImageEvent;
-  TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: string; Results: ThtStringList) of object;
-  TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: string; Panel: ThvPanel) of object;
+  TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList) of object;
+  TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: ThtString; Panel: ThvPanel) of object;
   TPanelDestroyEvent = procedure(Sender: TObject; Panel: ThvPanel) of object;
   TPanelPrintEvent = procedure(Sender: TObject; Panel: ThvPanel; const Bitmap: TBitmap) of object;
-  TObjectTagEvent = procedure(Sender: TObject; Panel: ThvPanel; const Attributes, Params: TStringList; var WantPanel: boolean) of object;
-  TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: string) of object;
-  ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: string) of object;
-  TExpandNameEvent = procedure(Sender: TObject; const SRC: string; var Result: string) of object;
+  TObjectTagEvent = procedure(Sender: TObject; Panel: ThvPanel; const Attributes, Params: ThtStringList; var WantPanel: boolean) of object;
+  TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: ThtString) of object;
+  ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: ThtString) of object;
+  TExpandNameEvent = procedure(Sender: TObject; const SRC: ThtString; var Result: ThtString) of object;
   TCell = class;
   TBlockCell = class;
   TCellBasic = class;
@@ -161,12 +114,12 @@ type
   private
     Section: TSection;
     FVisited, FHover: boolean;
-    Title: string;
+    Title: ThtString;
     FYValue: Integer;
     Active: boolean;
     procedure SetVisited(Value: boolean);
     procedure SetHover(Value: boolean);
-    function GetURL: string;
+    function GetURL: ThtString;
     procedure SetAllHovers(List: TList; Value: boolean);
     procedure CreateFIArray;
 {$IFNDEF NoTabLink}
@@ -194,7 +147,7 @@ type
     function GetOverhang: Integer;
     function GetHeight(var Desc: Integer): Integer;
 
-    property URL: string read GetURL;
+    property URL: ThtString read GetURL;
     property Visited: boolean read FVisited write SetVisited;
     property Hover: boolean read FHover write SetHover;
     property YValue: Integer read FYValue;
@@ -246,28 +199,28 @@ type
     procedure SetHover(Value: HoverType);
   public
     ObjHeight, ObjWidth: Integer; {width as drawn}
-    Source: string; {the src= attribute}
+    Source: ThtString; {the src= attribute}
     Image: TgpObject; {bitmap possibly converted from GIF, Jpeg, etc or animated GIF}
     OrigImage: TgpObject; {same as above unless swapped}
     Mask: TBitmap; {Image's mask if needed for transparency}
     ParentSectionList: TSectionList;
     Transparent: Transparency; {None, Lower Left Corner, or Transp GIF}
     IsMap, UseMap: boolean;
-    MapName: string;
+    MapName: ThtString;
     MyFormControl: TImageFormControlObj; {if an <INPUT type=image}
     MyCell: TCellBasic;
     Swapped: boolean; {image has been replaced}
     Missing: boolean; {waiting for image to be downloaded}
 
     constructor Create(MasterList: TSectionBaseList; Position: Integer; L: TAttributeList);
-    constructor SimpleCreate(MasterList: TSectionBaseList; const AnURL: string);
+    constructor SimpleCreate(MasterList: TSectionBaseList; const AnURL: ThtString);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TImageObj);
     destructor Destroy; override;
     procedure DrawLogic(SectionList: TSectionBaseList; Canvas: TCanvas;
       FO: TFontObjBase; AvailableWidth, AvailableHeight: Integer); override;
     procedure DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: TgpObject; ddMask: TBitmap);
     procedure Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj);
-    function InsertImage(const UName: string; Error: boolean; var Reformat: boolean): boolean;
+    function InsertImage(const UName: ThtString; Error: boolean; var Reformat: boolean): boolean;
 
     property Bitmap: TBitmap read GetBitmap;
     property Hover: HoverType read FHover write SetHover;
@@ -299,8 +252,8 @@ type
     procedure AKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   public
     MasterList: TSectionList;
-    Method: string;
-    Action, Target, EncType: string;
+    Method: ThtString;
+    Action, Target, EncType: ThtString;
     ControlList: TFreeList;
     NonHiddenCount: Integer;
     constructor Create(AMasterList: TSectionList; L: TAttributeList);
@@ -309,10 +262,10 @@ type
     procedure InsertControl(Ctrl: TFormControlObj);
     procedure ResetControls;
     function GetFormSubmission: ThtStringList;
-    procedure SubmitTheForm(const ButtonSubmission: string);
-    procedure SetFormData(SL: TStringList);
+    procedure SubmitTheForm(const ButtonSubmission: ThtString);
+    procedure SetFormData(SL: ThtStringList);
     procedure SetSizes(Canvas: TCanvas);
-    procedure ControlKeyPress(Sender: TObject; var Key: char);
+    procedure ControlKeyPress(Sender: TObject; var Key: Char);
   end;
 
   TFormControlObj = class(TIDObject)
@@ -320,10 +273,10 @@ type
     FYValue: Integer;
     Active: boolean;
     PaintBitmap: TBitmap;
-    AttributeList: TStringList;
-    FTitle: string;
+    AttributeList: ThtStringList;
+    FTitle: ThtString;
     function GetControl: TWinControl; virtual;
-    function GetAttribute(const AttrName: string): string;
+    function GetAttribute(const AttrName: ThtString): ThtString;
   protected
     CodePage: Integer;
     procedure DoOnChange; virtual;
@@ -334,20 +287,20 @@ type
     MasterList: TSectionList;
     MyForm: ThtmlForm;
     Value: ThtString;
-    FName, FID: string;
+    FName, FID: ThtString;
     FormAlign: AlignmentType;
     HSpaceL, HSpaceR, VSpaceT, VSpaceB, BordT, BordB: Integer;
     FHeight, FWidth: Integer;
     PercentWidth: boolean;
     Disabled: boolean;
-      Readonly: boolean;
+    Readonly: boolean;
     BkColor: TColor;
     FControl: TWinControl;
     ShowIt: boolean;
-    OnClickMessage: string;
-    OnFocusMessage: string;
-    OnBlurMessage: string;
-    OnChangeMessage: string;
+    OnClickMessage: ThtString;
+    OnFocusMessage: ThtString;
+    OnBlurMessage: ThtString;
+    OnChangeMessage: ThtString;
 
     constructor Create(AMasterList: TSectionList; Position: Integer; L: TAttributeList);
     constructor CreateCopy(T: TFormControlObj);
@@ -365,11 +318,11 @@ type
     procedure FormControlClick(Sender: TObject);
 
     property TheControl: TWinControl read GetControl; {the Delphi control, TButton, TMemo, etc}
-    property Name: string read FName; {Name given to control}
-    property ID: string read FID; {ID attribute of control}
+    property Name: ThtString read FName; {Name given to control}
+    property ID: ThtString read FID; {ID attribute of control}
     property YValue: Integer read FYValue;
-    property AttributeValue[const AttrName: string]: string read GetAttribute;
-    property Title: string read FTitle write FTitle;
+    property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
+    property Title: ThtString read FTitle write FTitle;
   end;
 
   TImageFormControlObj = class(TFormControlObj)
@@ -390,7 +343,7 @@ type
 
   TEditFormControlObj = class(TFormControlObj)
   private
-    EnterContents: string;
+    EnterContents: ThtString;
     tmAveCharWidth: Integer;
   protected
     procedure DoOnChange; override;
@@ -398,7 +351,7 @@ type
   public
     EditSize: Integer;
     constructor Create(AMasterList: TSectionList; Position: Integer;
-      L: TAttributeList; const Typ: string; Prop: TProperties);
+      L: TAttributeList; const Typ: ThtString; Prop: TProperties);
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -414,7 +367,7 @@ type
     Which: WhichType;
     MyEdit: TEditFormControlObj;
     constructor Create(AMasterList: TSectionList; Position: Integer;
-      L: TAttributeList; const Typ: string; Prop: TProperties);
+      L: TAttributeList; const Typ: ThtString; Prop: TProperties);
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ButtonClick(Sender: TObject);
     procedure SetHeightWidth(Canvas: TCanvas); override;
@@ -546,7 +499,7 @@ type
     function FindTextWidth(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
     function FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
-    function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj}; var ATitle: string): guResultType; override;
+    function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
     function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
     procedure AddChar(C: WideChar; Index: Integer); virtual;
     procedure AddOpBrk;
@@ -593,7 +546,7 @@ type
 
     MargArrayO: TVMarginArray;
     OwnerCell: TCellBasic;
-    TagClass: string; {debugging aid}
+    TagClass: ThtString; {debugging aid}
     NewWidth: Integer;
     ClearAddon: Integer;
     Indent: Integer;
@@ -605,7 +558,7 @@ type
     DrawList: TList;
     NoMask: boolean;
     ClientContentBot: Integer;
-    BlockTitle: string;
+    BlockTitle: ThtString;
     MyRect: TRect;
     RefIMgr: TIndentManager;
 
@@ -625,7 +578,7 @@ type
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; virtual;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType; override;
+      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
     function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
     procedure CollapseMargins;
@@ -633,7 +586,7 @@ type
     procedure DrawBlock(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
     procedure DrawSort;
     procedure DrawTheList(Canvas: TCanvas; ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
-    procedure FormTree(const Indent: string; var Tree: string);
+    procedure FormTree(const Indent: ThtString; var Tree: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
   end;
 
@@ -677,7 +630,7 @@ type
     TableBlock: TTableBlock;
     FCaptionBlock: TBlock;
     Justify: JustifyType;
-    TableID: string;
+    TableID: ThtString;
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic;
       Attributes: TAttributeList; ATableBlock: TTableBlock);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
@@ -707,7 +660,7 @@ type
     FirstLineHt: Integer;
   public
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic;
-      Sy: Symb; APlain: boolean; AIndexType: char;
+      Sy: Symb; APlain: boolean; AIndexType: ThtChar;
       AListNumb, ListLevel: Integer; Attributes: TAttributeList);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
     destructor Destroy; override;
@@ -723,7 +676,7 @@ type
   public
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic; Attributes: TAttributeList);
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType; override;
+      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth: Integer; var Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -760,7 +713,7 @@ type
     RowSpanHeight: Integer; {height of largest rowspan}
     BkGnd: boolean;
     BkColor: TColor;
-    BkImage: string;
+    BkImage: ThtString;
     APRec: PtPositionRec;
     BreakBefore, BreakAfter, KeepIntact: boolean;
     RowType: TRowType;
@@ -783,7 +736,7 @@ type
   TColObj = class
     colWidth: Integer;
     colAsPercent: boolean;
-    colAlign: string;
+    colAlign: ThtString;
     colVAlign: AlignmentType;
   end;
 
@@ -828,7 +781,7 @@ type
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
     destructor Destroy; override;
     procedure DoColumns(Width: Integer; AsPercent: boolean;
-      VAlign: AlignmentType; const Align: string);
+      VAlign: AlignmentType; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
     procedure AddDummyCells;
     procedure GetMinMaxAbs(Canvas: TCanvas; var TotalMinWidth,
@@ -843,7 +796,7 @@ type
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
       var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-      var ATitle: string): guResultType; override;
+      var ATitle: ThtString): guResultType; override;
     function PtInObject(X: Integer; Y: Integer; var Obj: TObject;
       var IX, IY: Integer): boolean; override;
     function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
@@ -875,7 +828,7 @@ type
     BkGnd: boolean;
     BkColor: TColor;
     tcContentBot, tcDrawTop, tcDrawBot: Integer;
-    OwnersTag: string;
+    OwnersTag: ThtString;
     Owner: TBlock;
 
     constructor Create(Master: TSectionBaseList);
@@ -889,7 +842,7 @@ type
     function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X: Integer;
       Y, XRef, YRef: Integer): Integer; virtual;
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
-      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType; virtual;
+      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
     function PtInObject(X: Integer; Y: Integer; var Obj: TObject;
       var IX, IY: Integer): boolean;
     function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
@@ -900,7 +853,7 @@ type
     function FindSourcePos(DocPos: Integer): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
     procedure AddSectionsToList;
-    procedure FormTree(const Indent: string; var Tree: string);
+    procedure FormTree(const Indent: ThtString; var Tree: ThtString);
   end;
 
   TCell = class(TCellBasic)
@@ -917,11 +870,11 @@ type
 
   TCellObjCell = class(TCell)
     MyRect: TRect;
-    Title: string;
-    Url, Target: string;
+    Title: ThtString;
+    Url, Target: ThtString;
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellObjCell);
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
-      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType; override;
+      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
   end;
 
   TBlockCell = class(TCellBasic)
@@ -963,14 +916,14 @@ type
     BackGround: TColor;
     // end of copied by move() in CreateCopy()
     // don't copy strings via move()
-    PreFontName: string; {<pre>, <code> font for document}
+    PreFontName: ThtString; {<pre>, <code> font for document}
 
     OnBackgroundChange: TNotifyEvent;
     BackgroundBitmap: TGpObject; //TBitmap;
     BackgroundMask: TBitmap;
     BackgroundAniGif: TGifImage;
     BackgroundPRec: PtPositionRec;
-    BitmapName: string; {name of background bitmap}
+    BitmapName: ThtString; {name of background bitmap}
     BitmapLoaded: boolean; {if background bitmap is loaded}
     htmlFormList: TFreeList;
     AGifList: TList; {list of all animated Gifs}
@@ -986,7 +939,7 @@ type
     Timer: TTimer; {for animated GIFs}
     FormControlList: TList; {List of all TFormControlObj's in this SectionList}
     PanelList: TList; {List of all TPanelObj's in this SectionList}
-    MissingImages: TStringList; {images to be supplied later}
+    MissingImages: ThtStringList; {images to be supplied later}
     ControlEnterEvent: TNotifyEvent;
     LinkList: TList; {List of links (TFontObj's)}
     ActiveLink: TFontObj;
@@ -1004,7 +957,7 @@ type
     ProgressStart: Integer;
     IsCopy: boolean; {set when printing or making bitmap/metafile}
     NoOutput: boolean;
-    TabOrderList: TStringList;
+    TabOrderList: ThtStringList;
     FirstPageItem: boolean;
     StopTab: boolean;
     InlineList: TFreeList; {actually TInlineList, a list of InlineRec's}
@@ -1028,10 +981,10 @@ type
     function GetFormcontrolData: TFreeList;
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTheBitmap(const BMName: string;
+    function GetTheBitmap(const BMName: ThtString;
       var Transparent: Transparency; var AMask: TBitmap; var FromCache, Delay: boolean): TgpObject;
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType; override;
+      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
     procedure CancelActives;
     procedure CheckGIFList(Sender: TObject);
     procedure Clear; override;
@@ -1039,14 +992,14 @@ type
     procedure CopyToClipboardA(Leng: Integer);
     procedure GetBackgroundBitmap;
     procedure HideControls;
-    procedure InsertImage(const Src: string; Stream: TMemoryStream; var Reformat: boolean);
+    procedure InsertImage(const Src: ThtString; Stream: TMemoryStream; var Reformat: boolean);
     procedure LButtonDown(Down: boolean);
     procedure ProcessInlines(SIndex: Integer; Prop: TProperties; Start: boolean);
     procedure SetBackground(ABackground: TColor);
-    procedure SetBackgroundBitmap(const Name: string; const APrec: PtPositionRec);
+    procedure SetBackgroundBitmap(const Name: ThtString; const APrec: PtPositionRec);
     procedure SetFormcontrolData(T: TFreeList);
     procedure SetYOffset(Y: Integer);
-    procedure SetFonts(const Name, PreName: string; ASize: Integer;
+    procedure SetFonts(const Name, PreName: ThtString; ASize: Integer;
       AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
       LnksActive: boolean; LinkUnderLine: boolean; ACharSet: TFontCharSet;
       MarginHeight, MarginWidth: Integer);
@@ -1086,7 +1039,7 @@ type
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellObj);
     destructor Destroy; override;
   private
-    procedure InitializeCell(TablePadding: Integer; const BkImageName: string;
+    procedure InitializeCell(TablePadding: Integer; const BkImageName: ThtString;
       const APRec: PtPositionRec; Border: boolean);
     procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer;
       Border: boolean; Light, Dark: TColor);
@@ -1128,9 +1081,9 @@ type
   public
     MasterList: TSectionList;
     SIndex: Integer;
-    procedure PopAProp(const Tag: string);
+    procedure PopAProp(const Tag: ThtString);
     procedure PopProp;
-    procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: string; AProps: TProperties);
+    procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
   end;
 
   function htCompareText(const T1, T2: ThtString): Integer;
@@ -1146,8 +1099,8 @@ var
 var
   PropStack: THtmlPropStack;
   Title: UnicodeString;
-  Base: string;
-  BaseTarget: string;
+  Base: ThtString;
+  BaseTarget: ThtString;
   NoBreak: boolean; {set when in <NoBr>}
 
 implementation
@@ -1157,12 +1110,13 @@ uses
   HtmlSbs1
   {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
 
+//-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
 begin
-{$ifdef UseUnicodeControls}
+{$ifdef UseUnicode}
   Result := WideCompareText(T1, T2);
 {$else}
-  Result := CompareText(T1, T2);
+  Result := AnsiCompareText(T1, T2);
 {$endif}
 end;
 
@@ -1184,22 +1138,10 @@ type
   TSectionClass = class of TSectionBase;
   EProcessError = class(Exception);
 
-
 type
-  THtmlButton = {$IFDEF UseTnt}TTntButton{$ELSE}TButton{$ENDIF};
-  THtmlCheckBox = {$IFDEF UseTnt}TTntCheckBox{$ELSE}TCheckBox{$ENDIF};
-  THtmlRadioButton = {$IFDEF UseTnt}TTntRadioButton{$ELSE}TRadioButton{$ENDIF};
-
-procedure ThtEdit.KeyDown(var Key: Word; Shift: TShiftState);
-begin
-  if (Key = Ord('A')) and ([ssCtrl] = Shift) then
-    SelectAll;
-end;
-
-type
-  TFormRadioButton = class(THtmlRadioButton)
+  TFormRadioButton = class(ThtRadioButton)
   private
-    IDName: string;
+    IDName: ThtString;
     FChecked: boolean;
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
   protected
@@ -1210,7 +1152,7 @@ type
     property Checked: boolean read GetChecked write SetChecked;
   end;
 
-  TFormCheckBox = class(THtmlCheckBox)
+  TFormCheckBox = class(ThtCheckBox)
   private
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
   end;
@@ -1369,7 +1311,7 @@ begin
   TabControl.Parent := PntPanel;
 
   if TabIndex > 0 then
-  {Adding leading 0's to the number string allows it to be sorted numerically,
+  {Adding leading 0's to the number ThtString allows it to be sorted numerically,
    and the Count takes care of duplicates}
     with Section.ParentSectionList.TabOrderList do
       AddObject(Format('%.5d%.3d', [TabIndex, Count]), TabControl);
@@ -1487,7 +1429,7 @@ begin
   end;
 end;
 
-function TFontObj.GetURL: string;
+function TFontObj.GetURL: ThtString;
 begin
   try
     Result := UrlTarget.Url;
@@ -1650,7 +1592,7 @@ end;
 constructor TImageObj.Create(MasterList: TSectionBaseList; Position: Integer; L: TAttributeList);
 var
   I: Integer;
-  S: string;
+  S: ThtString;
   NewSpace: Integer;
   T: TAttribute;
 begin
@@ -1764,7 +1706,7 @@ begin
   VSpaceB := VSpaceT;
 end;
 
-constructor TImageObj.SimpleCreate(MasterList: TSectionBaseList; const AnURL: string);
+constructor TImageObj.SimpleCreate(MasterList: TSectionBaseList; const AnURL: ThtString);
 begin
   inherited Create;
   ParentSectionList := MasterList as TSectionList;
@@ -1951,7 +1893,7 @@ end;
 
 {----------------TImageObj.InsertImage}
 
-function TImageObj.InsertImage(const UName: string; Error: boolean; var Reformat: boolean): boolean;
+function TImageObj.InsertImage(const UName: ThtString; Error: boolean; var Reformat: boolean): boolean;
 var
   TmpImage: TgpObject;
   FromCache, Delay: boolean;
@@ -2009,7 +1951,7 @@ var
   TmpImage: TgpObject;
   ImHeight, ImWidth: Integer;
   ViewImages, FromCache: boolean;
-  Rslt: string;
+  Rslt: ThtString;
   ARect: TRect;
   SubstImage: Boolean;
   HasBlueBox: Boolean;
@@ -2739,7 +2681,7 @@ end;
 
 procedure ThtmlForm.DoRadios(Radio: TRadioButtonFormControlObj);
 var
-  S: string;
+  S: ThtString;
   Ctrl: TFormControlObj;
   I: Integer;
 begin
@@ -2762,7 +2704,7 @@ end;
 
 procedure ThtmlForm.AKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 var
-  S: string;
+  S: ThtString;
   Ctrl: TFormControlObj;
   I: Integer;
   List: TList;
@@ -2807,7 +2749,7 @@ begin
     TFormControlObj(ControlList.Items[I]).ResetToValue;
 end;
 
-procedure ThtmlForm.ControlKeyPress(Sender: TObject; var Key: char);
+procedure ThtmlForm.ControlKeyPress(Sender: TObject; var Key: Char);
 begin
   if (Sender is ThtEdit) then
     if (Key = #13) then
@@ -2836,7 +2778,7 @@ begin
     end;
 end;
 
-procedure ThtmlForm.SubmitTheForm(const ButtonSubmission: string);
+procedure ThtmlForm.SubmitTheForm(const ButtonSubmission: ThtString);
 var
   I, J: Integer;
   SL: ThtStringList;
@@ -2863,10 +2805,10 @@ begin
   end;
 end;
 
-procedure ThtmlForm.SetFormData(SL: TStringList);
+procedure ThtmlForm.SetFormData(SL: ThtStringList);
 var
   I, J, K, Index: Integer;
-  Value: string;
+  Value: ThtString;
   FormControl: TFormControlObj;
 begin
   for I := 0 to ControlList.Count - 1 do
@@ -2922,7 +2864,7 @@ begin
         OnChangeSy: OnChangeMessage := Name;
         TabIndexSy:
           if Value > 0 then
-            {Adding leading 0's to the number string allows it to be sorted numerically,
+            {Adding leading 0's to the number ThtString allows it to be sorted numerically,
              and the Count takes care of duplicates}
             with AMasterList.TabOrderList do
               AddObject(Format('%.5d%.3d', [Value, Count]), Self);
@@ -3104,7 +3046,7 @@ begin
     MasterList.ObjectClick(MasterList.TheOwner, Self, OnClickMessage);
 end;
 
-function TFormControlObj.GetAttribute(const AttrName: string): string;
+function TFormControlObj.GetAttribute(const AttrName: ThtString): ThtString;
 begin
   Result := AttributeList.Values[AttrName];
 end;
@@ -3120,8 +3062,8 @@ begin
   XPos := -1; {so a button press won't submit image data}
 
   PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
-  FControl := THtmlButton.Create(PntPanel);
-  with THtmlButton(FControl) do
+  FControl := ThtButton.Create(PntPanel);
+  with ThtButton(FControl) do
   begin
     Left := -4000; {so will be invisible until placed}
     Width := 1;
@@ -3184,7 +3126,7 @@ end;
 {----------------TEditFormControlObj.Create}
 
 constructor TEditFormControlObj.Create(AMasterList: TSectionList;
-  Position: Integer; L: TAttributeList; const Typ: string; Prop: TProperties);
+  Position: Integer; L: TAttributeList; const Typ: ThtString; Prop: TProperties);
 var
   T: TAttribute;
   PntPanel: TWinControl; //TPaintPanel;
@@ -3219,13 +3161,7 @@ begin
     FHeight := Height; {Height can change when font assigned}
     tmAveCharWidth := Tmp.tmAveCharWidth;
     Tmp.Free;
-{$ifdef UNICODE}
-{$else}
-    if UnicodeControls then
-      Text := MultibyteToWideString(CodePage, Value)
-    else
-{$endif}
-      Text := Value;
+    Text := Value;
     if L.Find(MaxLengthSy, T) then
       MaxLength := T.Value;
     if Typ = 'password' then
@@ -3273,12 +3209,7 @@ begin
     SetBkMode(Canvas.Handle, Windows.Transparent);
     Canvas.Brush.Style := bsClear;
     ARect := Rect(X1 + Addon, Y1, X1 + Width - (Addon div 2), Y1 + Height);
-{$ifdef UseUnicodeControls}
-      ExtTextOutW(Canvas.Handle, X1 + Addon, Y1 + (Height - H2) div 2, ETO_CLIPPED, @ARect,
-        PWideChar(Text), Length(Text), nil);
-{$else}
-      Canvas.TextRect(ARect, X1 + Addon, Y1 + (Height - H2) div 2 - 1, Text);
-{$endif}
+    ThtCanvas(Canvas).htTextRect(ARect, ARect.Left, Y1 + (Height - H2) div 2 - 1, Text);
   end
 end;
 
@@ -3329,7 +3260,7 @@ end;
 {----------------TButtonFormControlObj.Create}
 
 constructor TButtonFormControlObj.Create(AMasterList: TSectionList;
-  Position: Integer; L: TAttributeList; const Typ: string;
+  Position: Integer; L: TAttributeList; const Typ: ThtString;
   Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
@@ -3416,14 +3347,14 @@ begin
       FormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, True, MasterList.PrintMonoBlack, False, clWhite);
       H2 := Canvas.TextHeight('A');
       SetTextAlign(Canvas.handle, TA_Center + TA_Top);
-      Canvas.TextRect(Rect(X1, Y1, X1 + Width, Y1 + Height), X1 + (Width div 2), Y1 + (Height - H2) div 2, Value);
+      ThtCanvas(Canvas).htTextRect(Rect(X1, Y1, X1 + Width, Y1 + Height), X1 + (Width div 2), Y1 + (Height - H2) div 2, Value);
     end;
   end;
 end;
 
 procedure TButtonFormControlObj.ButtonClick(Sender: TObject);
 var
-  S: string;
+  S: ThtString;
 begin
   FormControlClick(Self);
   if Which = ResetB then
@@ -3495,14 +3426,14 @@ end;
 
 procedure TCheckBoxFormControlObj.ResetToValue;
 begin
-  THtmlCheckBox(FControl).Checked := IsChecked;
+  ThtCheckBox(FControl).Checked := IsChecked;
 end;
 
 procedure TCheckBoxFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
 var
   x, y: Integer;
 begin
-  with THtmlCheckBox(FControl) do
+  with ThtCheckBox(FControl) do
   begin
     FormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, Disabled, clWhite);
     if Checked then
@@ -3519,31 +3450,31 @@ end;
 
 function TCheckBoxFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
 begin
-  Result := (Index = 0) and THtmlCheckBox(FControl).Checked;
+  Result := (Index = 0) and ThtCheckBox(FControl).Checked;
   if Result then
     S := FName + '=' + Value;
 end;
 
 procedure TCheckBoxFormControlObj.SetDataInit;
 begin
-  THtmlCheckBox(FControl).Checked := False; {not checked unless later data says so}
+  ThtCheckBox(FControl).Checked := False; {not checked unless later data says so}
 end;
 
 procedure TCheckBoxFormControlObj.SetData(Index: Integer; const V: ThtString);
 begin
   if htCompareText(V, Value) = 0 then
-    THtmlCheckBox(FControl).Checked := True;
+    ThtCheckBox(FControl).Checked := True;
 end;
 
 procedure TCheckBoxFormControlObj.SaveContents;
 {Save the current value to see if it has changed when focus is lost}
 begin
-  WasChecked := THtmlCheckBox(FControl).Checked;
+  WasChecked := ThtCheckBox(FControl).Checked;
 end;
 
 procedure TCheckBoxFormControlObj.DoOnChange;
 begin
-  if THtmlCheckBox(FControl).Checked <> WasChecked then
+  if ThtCheckBox(FControl).Checked <> WasChecked then
     if Assigned(MasterList.ObjectChange) then
       MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
 end;
@@ -3808,7 +3739,7 @@ end;
 
 function TCellBasic.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
 {Y is absolute}
 var
   I: Integer;
@@ -3926,7 +3857,7 @@ begin
   end;
 end;
 
-procedure TCellBasic.FormTree(const Indent: string; var Tree: string);
+procedure TCellBasic.FormTree(const Indent: ThtString; var Tree: ThtString);
 var
   I: Integer;
   Item: TSectionBase;
@@ -4059,7 +3990,7 @@ constructor TBlock.Create(Master: TSectionList; Prop: TProperties;
   AnOwnerCell: TCellBasic; Attributes: TAttributeList);
 var
   Clr: ClearAttrType;
-  S: string;
+  S: ThtString;
 begin
   inherited Create(Master, Prop);
   OwnerCell := AnOwnerCell;
@@ -4122,7 +4053,7 @@ var
   TopAuto, Done: boolean;
   TB: TSectionBase;
   LastMargin, Negs, I: Integer;
-  Tag: string;
+  Tag: ThtString;
 begin
   ConvVertMargins(MargArrayO, 400, {height not known at this point}
     EmSize, ExSize, MargArray, TopAuto, BottomAuto);
@@ -4285,7 +4216,7 @@ end;
 {----------------TBlock.GetURL}
 
 function TBlock.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: string): guResultType;
+  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
 begin
   case Display of
     pdNone: Result := [];
@@ -5411,10 +5342,10 @@ begin
       TSectionBase(Items[I]).Draw1(Canvas, ARect, MyCell.IMgr, X, XRef, YRef);
 end;
 
-procedure TBlock.FormTree(const Indent: string; var Tree: string);
+procedure TBlock.FormTree(const Indent: ThtString; var Tree: ThtString);
 var
-  MyIndent: string;
-  TM, BM: string;
+  MyIndent: ThtString;
+  TM, BM: ThtString;
 begin
   MyIndent := Indent + '   ';
   TM := IntToStr(MargArray[MarginTop]);
@@ -5960,11 +5891,11 @@ end;
 {----------------TBlockLI.Create}
 
 constructor TBlockLI.Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic;
-  Sy: Symb; APlain: boolean; AIndexType: char; AListNumb,
+  Sy: Symb; APlain: boolean; AIndexType: ThtChar; AListNumb,
   ListLevel: Integer; Attributes: TAttributeList);
 var
   Tmp: ListBulletType;
-  S: string;
+  S: ThtString;
   TmpFont: TMyFont;
 begin
   inherited Create(Master, Prop, AnOwnerCell, Attributes);
@@ -6076,14 +6007,14 @@ function TBlockLI.Draw1(Canvas: TCanvas; const ARect: TRect;
 
 const
   MaxRoman = 20;
-  LowRoman: array[1..MaxRoman] of string = ('i', 'ii', 'iii', 'iv', 'v', 'vi',
+  LowRoman: array[1..MaxRoman] of ThtString = ('i', 'ii', 'iii', 'iv', 'v', 'vi',
     'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii',
     'xviii', 'xix', 'xx');
-  HighRoman: array[1..MaxRoman] of string = ('I', 'II', 'III', 'IV', 'V', 'VI',
+  HighRoman: array[1..MaxRoman] of ThtString = ('I', 'II', 'III', 'IV', 'V', 'VI',
     'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII',
     'XVIII', 'XIX', 'XX');
 var
-  NStr: string;
+  NStr: ThtString;
   BkMode, TAlign: Integer;
   PenColor, BrushColor: TColor;
   PenStyle: TPenStyle;
@@ -6167,7 +6098,7 @@ constructor TBodyBlock.Create(Master: TSectionList; Prop: TProperties;
   AnOwnerCell: TCellBasic; Attributes: TAttributeList);
 var
   PRec: PtPositionRec;
-  Image: string;
+  Image: ThtString;
   Val: TColor;
 begin
   inherited;
@@ -6184,7 +6115,7 @@ end;
 
 function TBodyBlock.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
 begin
   if (BlockTitle <> '') then
   begin
@@ -6281,14 +6212,14 @@ begin
   AGifList := TList.Create;
   MapList := TFreeList.Create;
   FormControlList := TList.Create;
-  MissingImages := TStringList.Create;
+  MissingImages := ThtStringList.Create;
   MissingImages.Sorted := False;
   LinkList := TList.Create;
   PanelList := TList.Create;
   Styles := THtmlStyleList.Create(Self);
   DrawList := TDrawList.Create;
   PositionList := TList.Create;
-  TabOrderList := TStringList.Create;
+  TabOrderList := ThtStringList.Create;
   TabOrderList.Sorted := True;
   TabOrderList.Duplicates := dupAccept;
   InLineList := TInlineList.Create(Self);
@@ -6309,15 +6240,15 @@ begin
 // r14: Added some fixes for object copies done using Move(), re-checked Unicode Support, minor fixes for file structure
 // was: System.Move(T.ShowImages, ShowImages, DWord(@Background) - DWord(@ShowImages) + Sizeof(Integer));
   //BG, 08.06.2010: Issue 9: Getting black background
-  // this Move() copied 24 fields including a string, not only ShowImages.
-  // re-introduce Move() after moving string out of the moved area between ShowImages and Background.
+  // this Move() copied 24 fields including a ThtString, not only ShowImages.
+  // re-introduce Move() after moving ThtString out of the moved area between ShowImages and Background.
   //ShowImages := T.ShowImages;
   System.Move(T.ShowImages, ShowImages, DWord(@Background) - DWord(@ShowImages) + Sizeof(Integer));
   PreFontName := T.PreFontName;
   htmlFormList := TFreeList.Create; {no copy of list made}
   AGifList := TList.Create;
   MapList := TFreeList.Create;
-  MissingImages := TStringList.Create;
+  MissingImages := ThtStringList.Create;
   PanelList := TList.Create;
   DrawList := TDrawList.Create;
   ScaleX := 1.0;
@@ -6346,7 +6277,7 @@ end;
 
 function TSectionList.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
 var
   OldLink: TFontObj;
   OldImage: TImageObj;
@@ -6766,7 +6697,7 @@ begin
     Timer.Enabled := AGifList.Count >= 1;
 end;
 
-procedure TSectionList.SetFonts(const Name, PreName: string; ASize: Integer;
+procedure TSectionList.SetFonts(const Name, PreName: ThtString; ASize: Integer;
   AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
   LnksActive: boolean; LinkUnderLine: boolean; ACharSet: TFontCharSet;
   MarginHeight, MarginWidth: Integer);
@@ -6789,7 +6720,7 @@ begin
     OnBackgroundChange(Self);
 end;
 
-procedure TSectionList.SetBackgroundBitmap(const Name: string; const APrec: PtPositionRec);
+procedure TSectionList.SetBackgroundBitmap(const Name: ThtString; const APrec: PtPositionRec);
 begin
   BackgroundBitmap := nil;
   BackgroundAniGif := nil;
@@ -6800,10 +6731,10 @@ end;
 
 {----------------TSectionList.InsertImage}
 
-procedure TSectionList.InsertImage(const Src: string; Stream: TMemoryStream;
+procedure TSectionList.InsertImage(const Src: ThtString; Stream: TMemoryStream;
   var Reformat: boolean);
 var
-  UName: string;
+  UName: ThtString;
   I, J: Integer;
   Pair: TBitmapItem;
   Rformat, Error: boolean;
@@ -6863,7 +6794,7 @@ end;
 
 {----------------TSectionList.GetTheBitmap}
 
-function TSectionList.GetTheBitmap(const BMName: string; var Transparent: Transparency;
+function TSectionList.GetTheBitmap(const BMName: ThtString; var Transparent: Transparency;
   var AMask: TBitmap; var FromCache, Delay: boolean): TgpObject;
 {Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy
  them}
@@ -6871,7 +6802,7 @@ function TSectionList.GetTheBitmap(const BMName: string; var Transparent: Transp
  TGif here}
 
 var
-  UName: string;
+  UName: ThtString;
   I: Integer;
   Pair: TBitmapItem;
   Tr: Transparency;
@@ -6990,7 +6921,7 @@ var
   Dummy1: Transparency;
   TmpResult: TgpObject;
   FromCache, Delay: boolean;
-  Rslt: string;
+  Rslt: ThtString;
 begin
   if ShowImages and not BitmapLoaded and (BitmapName <> '') then
   begin
@@ -7061,7 +6992,7 @@ begin
   try
     for I := 0 to T.Count - 1 do
       if htmlFormList.Count > I then
-        ThtmlForm(htmlFormList[I]).SetFormData(TStringList(T[I]));
+        ThtmlForm(htmlFormList[I]).SetFormData(ThtStringList(T[I]));
   except end;
 end;
 
@@ -7070,7 +7001,7 @@ end;
 function TSectionList.FindDocPos(SourcePos: Integer; Prev: boolean): Integer;
 begin
   Result := inherited FindDocPos(SourcePos, Prev);
-  if Result < 0 then {if not found return 1 past last char}
+  if Result < 0 then {if not found return 1 past last ThtChar}
     Result := Len;
 end;
 
@@ -7143,7 +7074,7 @@ begin
 end;
 
 procedure TInlineList.AdjustValues;
-{convert all the list data from source char positions to display char positions}
+{convert all the list data from source ThtChar positions to display ThtChar positions}
 var
   I: Integer;
 begin
@@ -7185,7 +7116,7 @@ constructor TCellObj.Create(Master: TSectionBaseList; AVAlign: AlignmentType; At
 var
   I, AutoCount: Integer;
   Color: TColor;
-  BackgroundImage: string;
+  BackgroundImage: ThtString;
   Percent: boolean;
   Algn: AlignmentType;
   J: PropIndices;
@@ -7262,7 +7193,7 @@ begin
       Cell.BkGnd := True;
       Cell.BkColor := Color;
     end;
-    Prop.GetBackgroundImage(BackgroundImage); {'none' will change string to empty}
+    Prop.GetBackgroundImage(BackgroundImage); {'none' will change ThtString to empty}
     if BackgroundImage <> '' then
     begin
       BGImage := TImageObj.SimpleCreate(Master, BackgroundImage);
@@ -7342,7 +7273,7 @@ end;
 
 {----------------TCellObj.InitializeCell}
 
-procedure TCellObj.InitializeCell(TablePadding: Integer; const BkImageName: string;
+procedure TCellObj.InitializeCell(TablePadding: Integer; const BkImageName: ThtString;
   const APRec: PtPositionRec; Border: boolean);
 begin
   if PadTop < 0 then
@@ -7653,7 +7584,7 @@ begin
       BkGnd := True;
       BkColor := Color;
     end;
-    Prop.GetBackgroundImage(BkImage); {'none' will change string to empty}
+    Prop.GetBackgroundImage(BkImage); {'none' will change ThtString to empty}
     if BkImage <> '' then
       Prop.GetBackgroundPos(Prop.EmSize, Prop.ExSize, APRec);
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);
@@ -7966,7 +7897,7 @@ end;
 {----------------THtmlTable.DoColumns}
 
 procedure THtmlTable.DoColumns(Width: Integer; AsPercent: boolean;
-  VAlign: AlignmentType; const Align: string);
+  VAlign: AlignmentType; const Align: ThtString);
 {add the <col> info to the ColInfo list}
 var
   Col: TColObj;
@@ -9274,7 +9205,7 @@ end;
 
 function THtmlTable.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
 var
   TableOK: boolean;
 
@@ -9578,7 +9509,7 @@ constructor TSection.Create(AMasterList: TSectionList; L: TAttributeList;
 var
   FO: TFontObj;
   T: TAttribute;
-  S: string;
+  S: ThtString;
   Clr: ClearAttrType;
   Percent: boolean;
 begin
@@ -9872,7 +9803,7 @@ begin
       and (BuffS[I + 1] = ' ') then
       Remove(I + 1);
 
-  I := WidePos(WideString(' ' + #8), BuffS); {#8 is break char}
+  I := WidePos(WideString(' ' + #8), BuffS); {#8 is break ThtChar}
   while I > 0 do
   begin
     Remove(I);
@@ -10070,7 +10001,7 @@ function TSection.AddFormControl(Which: Symb; AMasterList: TSectionList;
 var
   T: TAttribute;
   FCO: TFormControlObj;
-  S: string;
+  S: ThtString;
   IO: TImageObj;
   ButtonControl: TButtonFormControlObj;
 
@@ -10251,7 +10182,7 @@ begin
   ImageAtStart := True;
   ImgHt := 0;
 
-  BrChr := StrScanW(TheStart, BrkCh); {see if a break char}
+  BrChr := StrScanW(TheStart, BrkCh); {see if a break ThtChar}
   if Assigned(BrChr) and (BrChr - TheStart < Max) then
   begin
     Max := BrChr - TheStart;
@@ -10459,7 +10390,7 @@ begin
 
   Max := 0;
   P := Buff;
-  P1 := StrScanW(P, BrkCh); {look for break char}
+  P1 := StrScanW(P, BrkCh); {look for break ThtChar}
   while Assigned(P1) do
   begin
     Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, False));
@@ -10477,7 +10408,7 @@ begin
     P1 := P;
     I := P1 - Buff + 1;
     while P^ <> #0 do
-    {find the next string of chars that can't be wrapped}
+    {find the next ThtString of chars that can't be wrapped}
     begin
       if CanWrap(P1^) and (Brk[I] = 'y') then
       begin
@@ -10541,17 +10472,17 @@ begin
     if J = 0 then {it's and image}
     begin
       Wid := Images.GetWidthAt(Start - Buff, Align, HSpcL, HSpcR, FlObj);
-    {Here we count floating images as 1 char but do not include their width,
+    {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
       if not (Align in [ALeft, ARight]) then
         Inc(Result, Wid + HSpcL + HSpcR);
-      Dec(N); {image counts as one char}
+      Dec(N); {image counts as one ThtChar}
       Inc(Start);
     end
     else if J1 = 0 then
     begin
       Inc(Result, TFormControlList(FormControls).GetWidthAt(Start - Buff, HSpcL, HSpcR) + HSpcL + HSpcR);
-      Dec(N); {control counts as one char}
+      Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
     else
@@ -10588,20 +10519,20 @@ begin
     if J = 0 then {it's an image}
     begin
       Wid := Images.GetWidthAt(Start - Buff, Align, HSpcL, HSpcR, FlObj);
-    {Here we count floating images as 1 char but do not include their width,
+    {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
       if not (Align in [ALeft, ARight]) then
       begin
         Result := Result + Wid + HSpcL + HSpcR;
       end;
-      Dec(N); {image counts as one char}
+      Dec(N); {image counts as one ThtChar}
       Inc(Start);
     end
     else if J1 = 0 then
     begin
       Result := Result + TFormControlList(FormControls).GetWidthAt(Start - Buff, HSpcL, HSpcR);
       Result := Result + HSpcL + HSpcR;
-      Dec(N); {control counts as one char}
+      Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
     else
@@ -10917,7 +10848,7 @@ begin {TSection.DrawLogic}
     if Tmp > 0 then
     begin
       //BG, 24.01.2010: do not move down images or trailing spaces.
-      P := PStart + N - 1; {the last char that fits}
+      P := PStart + N - 1; {the last ThtChar that fits}
       if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
       or (P^ = BrkCh) then
       begin {move past spaces so as not to print any on next line}
@@ -10946,7 +10877,7 @@ begin {TSection.DrawLogic}
     end
     else
     begin
-      P := PStart + N - 1; {the last char that fits}
+      P := PStart + N - 1; {the last ThtChar that fits}
       if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
       or (P^ = BrkCh) then
       begin {move past spaces so as not to print any on next line}
@@ -11397,9 +11328,9 @@ var
             else
               TopP := Y; {never get here}
             end;
-            if FControl is THtmlRadioButton then
+            if FControl is ThtRadioButton then
               Inc(Topp, 2)
-            else if FControl is THtmlCheckbox then
+            else if FControl is ThtCheckBox then
               Inc(Topp, 1);
           {Check for border}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -11758,7 +11689,7 @@ end;
 
 function TSection.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
  {Y is absolute}
 var
   I, L, Index, Width, IX, IY, Posn: Integer;
@@ -11767,7 +11698,7 @@ var
   IMap, UMap: boolean;
   MapItem: TMapItem;
   ImageObj: TImageObj;
-  Tmp: string;
+  Tmp: ThtString;
 
   function MakeCopy(UrlTarget: TUrlTarget): TUrlTarget;
   begin
@@ -11897,7 +11828,7 @@ begin
         Break;
       Inc(H, TotalHt);
       Inc(I);
-      Inc(L1, LR.Ln); {L1 accumulates char count of previous lines}
+      Inc(L1, LR.Ln); {L1 accumulates ThtChar count of previous lines}
     end;
     if (I >= Count) then
       Exit;
@@ -11944,7 +11875,7 @@ end;
 {----------------TSection.FindString}
 
 function TSection.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
-{find the first occurance of the string, ToFind, with a cursor value >= to From.
+{find the first occurance of the ThtString, ToFind, with a cursor value >= to From.
  ToFind is in lower case if MatchCase is False.  ToFind is known to have a length
  of at least one.
 }
@@ -11975,7 +11906,7 @@ end;
 {----------------TSection.FindStringR}
 
 function TSection.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
-{find the first occurance of the string, ToFind, with a cursor value <= to From.
+{find the first occurance of the ThtString, ToFind, with a cursor value <= to From.
  ToFind is in lower case if MatchCase is False.  ToFind is known to have a length
  of at least one.
 }
@@ -11999,20 +11930,20 @@ begin
   if not MatchCase then
     ToSearch := WideLowerCase1(ToSearch); {ToFind already lower case}
 
-{search backwards for the end char of ToFind}
+{search backwards for the end ThtChar of ToFind}
   P := StrRScanW(PWideChar(ToSearch), ToFind[ToFindLen]);
   while Assigned(P) and (P - PWideChar(ToSearch) + 1 >= ToFindLen) do
   begin
-  {pick out a string of proper length from end char to see if it matches}
+  {pick out a ThtString of proper length from end ThtChar to see if it matches}
     SetString(ToMatch, P - ToFindLen + 1, ToFindLen);
     if WideSameStr1(ToFind, ToMatch) then
     begin {matches, return the cursor position}
       Result := StartCurs + (P - ToFindLen + 1 - PWideChar(ToSearch));
       Exit;
     end;
-  {doesn't match, shorten string to search for next search}
+  {doesn't match, shorten ThtString to search for next search}
     ToSearch := Copy(ToSearch, 1, P - PWideChar(ToSearch));
-  {and search backwards for end char again}
+  {and search backwards for end ThtChar again}
     P := StrRScanW(PWideChar(ToSearch), ToFind[ToFindLen]);
   end;
 end;
@@ -12180,7 +12111,7 @@ var
   PntPanel: TWinControl; //TPaintPanel;
   I: Integer;
   NewSpace: Integer;
-  S, Source, AName, AType: string;
+  S, Source, AName, AType: ThtString;
 begin
   inherited Create;
   fMasterList := AMasterList;
@@ -12514,7 +12445,7 @@ end;
 
 function TCellObjCell.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
-  var ATitle: string): guResultType;
+  var ATitle: ThtString): guResultType;
 {Y is absolute}
 begin
   Result := inherited GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
@@ -12748,7 +12679,7 @@ end;
 constructor THorzLine.Create(AMasterList: TSectionList; L: TAttributeList;
   Prop: TProperties);
 var
-  LwName: string;
+  LwName: ThtString;
   I: Integer;
   TmpColor: TColor;
 begin
@@ -12967,7 +12898,7 @@ end;
 { THtmlPropStack }
 
 { Add a TProperties to the PropStack. }
-procedure THtmlPropStack.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: string; AProps: TProperties);
+procedure THtmlPropStack.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
 var
   NewProp: TProperties;
 begin
@@ -12987,7 +12918,7 @@ begin
     Delete(TopIndex);
 end;
 
-procedure THtmlPropStack.PopAProp(const Tag: string);
+procedure THtmlPropStack.PopAProp(const Tag: ThtString);
 {pop and free a TProperties from the Prop stack.  It should be on top but in
  case of a nesting error, find it anyway}
 var
@@ -13009,7 +12940,7 @@ end;
 
 { THtmlStyleList }
 
-procedure THtmlStyleList.AddModifyProp(const Selector, Prop, Value: string);
+procedure THtmlStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
 {strings are all lowercase here}
 var
   I: Integer;
@@ -13272,6 +13203,7 @@ begin
     Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
   end;
 end;
+
 
 initialization
 {$ifdef UNICODE}

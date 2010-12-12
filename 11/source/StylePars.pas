@@ -35,28 +35,27 @@ uses
 
 
 type
-  CharFunction = function: Char;
+  CharFunction = function: ThtChar;
 
-procedure DoStyle(Styles: TStyleList; var C: char; GC: CharFunction; const APath: string; FromLink: boolean);
-procedure ParsePropertyStr(const PropertyStr: string; var Propty: TProperties);
-function SortContextualItems(S: string): string;
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; GC: CharFunction; const APath: ThtString; FromLink: boolean);
+procedure ParsePropertyStr(const PropertyStr: ThtString; var Propty: TProperties);
+function SortContextualItems(S: ThtString): ThtString;
 
 implementation
 
 
 const
   NeedPound = True;
-  EofChar = #0;
 
 type
-  TProcessProc = procedure(Obj: TObject; Selectors: TStringList; Prop, Value: string);
+  TProcessProc = procedure(Obj: TObject; Selectors: ThtStringList; Prop, Value: ThtString);
 
 var
-  LCh, Back: char;
+  LCh, Back: ThtChar;
   Get: CharFunction;
-  LinkPath: string;
+  LinkPath: ThtString;
 
-function GetC: char;
+function GetC: ThtChar;
 begin
   if Back <> #0 then
   begin
@@ -72,7 +71,7 @@ end;
 procedure GetCh;
 var
   Comment: boolean;
-  NextCh, LastCh: char;
+  NextCh, LastCh: ThtChar;
 begin
   repeat {in case a comment immediately follows another comment}
     Comment := False;
@@ -98,16 +97,16 @@ end;
 
 procedure SkipWhiteSpace;
 begin
-  while (LCh in [' ']) do
+  while (LCh = ' ') do
     GetCh;
 end;
 
 {----------------RemoveQuotes}
 
-function RemoveQuotes(const S: string): string;
-{if string is a quoted string, remove the quotes (either ' or ")}
+function RemoveQuotes(const S: ThtString): ThtString;
+{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
 begin
-  if (Length(S) >= 2) and (S[1] in ['''', '"']) and (S[Length(S)] = S[1]) then
+  if (Length(S) >= 2) and (S[1] in [ThtChar(''''), ThtChar('"')]) and (S[Length(S)] = S[1]) then
     Result := Copy(S, 2, Length(S) - 2)
   else
     Result := S;
@@ -115,7 +114,7 @@ end;
 
 {----------------AddPath}
 
-function AddPath(S: string): string;
+function AddPath(S: ThtString): ThtString;
 {for <link> styles, the path is relative to that of the stylesheet directory
  and must be added now}
 begin
@@ -138,7 +137,7 @@ end;
 
 {----------------ProcessProperty}
 
-procedure ProcessProperty(Styles: TObject; Selectors: TStringList; Prop, Value: string);
+procedure ProcessProperty(Styles: TObject; Selectors: ThtStringList; Prop, Value: ThtString);
 var
   I: integer;
 begin
@@ -153,13 +152,13 @@ type
     FontX, BackgroundX, ListStyleX, BorderColorX,
     BorderStyleX);
 var
-  ShortHands: array[Low(ShortIndex)..High(ShortIndex)] of string =
+  ShortHands: array[Low(ShortIndex)..High(ShortIndex)] of ThtString =
   ('margin', 'padding', 'border-width', 'border',
     'border-top', 'border-right', 'border-bottom', 'border-left',
     'font', 'background', 'list-style', 'border-color',
     'border-style');
 
-function FindShortHand(S: string; var Index: ShortIndex): boolean;
+function FindShortHand(S: ThtString; var Index: ShortIndex): boolean;
 var
   I: ShortIndex;
 begin
@@ -173,15 +172,15 @@ begin
   Result := False;
 end;
 
-procedure SplitString(Src: string; var Dest: array of string; var Count: integer);
-{Split a Src string into pieces returned in the Dest string array.  Splitting
- is on spaces with spaces within quotes being ignored.  String containing a '/'
+procedure SplitString(Src: ThtString; var Dest: array of ThtString; var Count: integer);
+{Split a Src ThtString into pieces returned in the Dest ThtString array.  Splitting
+ is on spaces with spaces within quotes being ignored.  ThtString containing a '/'
  are also split to allow for the "size/line-height" Font construct. }
 var
   I, Q, Q1, N: integer;
-  Z: string;
+  Z: ThtString;
   Done: boolean;
-  Match: char;
+  Match: ThtChar;
 begin
   Src := Trim(Src);
   I := Pos('  ', Src);
@@ -209,7 +208,7 @@ begin
       if (Q1 > 0) and ((Q > 0) and (Q1 < Q) or (Q = 0)) then
       begin
         Q := Q1;
-        Match := ''''; {the matching quote char}
+        Match := ''''; {the matching quote ThtChar}
       end
       else
         Match := '"';
@@ -223,7 +222,7 @@ begin
         Z := Z + Copy(Src, 1, I - 1);
         Delete(Src, 1, I);
       end
-      else {Q<I} {quoted string found}
+      else {Q<I} {quoted ThtString found}
       begin
         Z := Z + Copy(Src, 1, Q); {copy to quote}
         Delete(Src, 1, Q);
@@ -255,9 +254,9 @@ begin
   Count := N;
 end;
 
-procedure ExtractParn(var Src: string; var Dest: array of string; var Count: integer);
+procedure ExtractParn(var Src: ThtString; var Dest: array of ThtString; var Count: integer);
 {Look for strings in parenthesis like "url(....)" or rgb(...)".  Return these in
- Dest Array.  Return Src without the extracted string}
+ Dest Array.  Return Src without the extracted ThtString}
 var
   I, J: integer;
 
@@ -279,7 +278,7 @@ begin
   end;
 end;
 
-procedure DoFont(Styles: TObject; Selectors: TStringList; Prop, Value: string;
+procedure DoFont(Styles: TObject; Selectors: ThtStringList; Prop, Value: ThtString;
   Process: TProcessProc);
 { do the Font shorthand property specifier }
 type
@@ -288,16 +287,16 @@ type
     larger, smaller, xxsmall, xsmall, small, medium, large,
     xlarge, xxlarge);
 const
-  FontWords: array[italic..xxlarge] of string =
+  FontWords: array[italic..xxlarge] of ThtString =
   ('italic', 'oblique', 'normal', 'bolder', 'lighter', 'bold', 'small-caps',
     'larger', 'smaller', 'xx-small', 'x-small', 'small', 'medium', 'large',
     'x-large', 'xx-large');
 var
-  S: array[0..6] of string;
+  S: array[0..6] of ThtString;
   Count, I: integer;
   Index: FontEnum;
 
-  function FindWord(const S: string; var Index: FontEnum): boolean;
+  function FindWord(const S: ThtString; var Index: FontEnum): boolean;
   var
     I: FontEnum;
   begin
@@ -334,7 +333,7 @@ begin
       end;
       continue;
     end;
-    if S[I, 1] in ['0'..'9'] then
+    if S[I, 1] in [ThtChar('0')..ThtChar('9')] then
     begin
     {the following will pass 100pt, 100px, but not 100 or larger}
       if StrToIntDef(S[I], -1) < 100 then
@@ -345,12 +344,12 @@ begin
   end;
 end;
 
-procedure DoBackground(Styles: TObject; Selectors: TStringList; Prop, Value: string;
+procedure DoBackground(Styles: TObject; Selectors: ThtStringList; Prop, Value: ThtString;
   Process: TProcessProc);
 { do the Background shorthand property specifier }
 var
-  S: array[0..6] of string;
-  S1: string;
+  S: array[0..6] of ThtString;
+  S1: ThtString;
   Count, I, N: integer;
   Dummy: TColor;
 
@@ -405,18 +404,18 @@ begin
     Process(Styles, Selectors, 'background-position', S1);
 end;
 
-procedure DoBorder(Styles: TObject; Selectors: TStringList; Prop, Value: string;
+procedure DoBorder(Styles: TObject; Selectors: ThtStringList; Prop, Value: ThtString;
   Process: TProcessProc);
 { do the Border, Border-Top/Right/Bottom/Left shorthand properties.  However, there
   currently is only one style and color supported for all border sides }
 var
-  S: array[0..6] of string;
+  S: array[0..6] of ThtString;
   Count, I: integer;
   Dummy: TColor;
 
-  function FindStyle(const S: string): boolean;
+  function FindStyle(const S: ThtString): boolean;
   const
-    Ar: array[1..9] of string = ('none', 'solid', 'dashed', 'dotted', 'double', 'groove',
+    Ar: array[1..9] of ThtString = ('none', 'solid', 'dashed', 'dotted', 'double', 'groove',
       'inset', 'outset', 'ridge');
   var
     I: integer;
@@ -455,11 +454,11 @@ begin
   end;
 end;
 
-procedure DoListStyle(Styles: TObject; Selectors: TStringList; Prop, Value: string;
+procedure DoListStyle(Styles: TObject; Selectors: ThtStringList; Prop, Value: ThtString;
   Process: TProcessProc);
 { do the List-Style shorthand property specifier }
 var
-  S: array[0..6] of string;
+  S: array[0..6] of ThtString;
   Count, I: integer;
 
 begin
@@ -480,15 +479,15 @@ end;
 
 {----------------DoMarginItems}
 
-procedure DoMarginItems(X: ShortIndex; Styles: TObject; Selectors: TStringList;
-  Prop, Value: string; Process: TProcessProc);
+procedure DoMarginItems(X: ShortIndex; Styles: TObject; Selectors: ThtStringList;
+  Prop, Value: ThtString; Process: TProcessProc);
 { Do the Margin, Border, Padding shorthand property specifiers}
 var
-  S: array[0..3] of string;
+  S: array[0..3] of ThtString;
   I, Count: integer;
   Index: array[0..3] of PropIndices;
 
-  procedure DoIndex(ix: PropIndices; const AValue: string);
+  procedure DoIndex(ix: PropIndices; const AValue: ThtString);
   begin
     Process(Styles, Selectors, PropWords[ix], AValue);
   end;
@@ -537,8 +536,8 @@ end;
 
 {----------------SortContextualItems}
 
-function SortContextualItems(S: string): string;
-{Put a string of contextual items in a standard form for comparison purposes.
+function SortContextualItems(S: ThtString): ThtString;
+{Put a ThtString of contextual items in a standard form for comparison purposes.
  div.ghi#def:hover.abc
    would become
  div.abc.ghi:hover#def
@@ -547,9 +546,9 @@ function SortContextualItems(S: string): string;
 const
   Eos = #0;
 var
-  Ch, C: char;
-  SS: string;
-  SL: TStringList;
+  Ch, C: ThtChar;
+  SS: ThtString;
+  SL: ThtStringList;
   Done: boolean;
   I: integer;
 
@@ -564,7 +563,7 @@ var
 
 begin
   Result := '';
-  SL := TStringList.Create; {TStringlist to do sorting}
+  SL := ThtStringList.Create; {ThtStringList to do sorting}
   try
     SL.Sorted := True;
     Done := False;
@@ -583,9 +582,12 @@ begin
         else
           C := '0';
         end;
-        SS := C + Ch;
+        SetLength(SS, 2);
+        SS[1] := C;
+        SS[2] := Ch;
+        //SS := C + Ch;
         GetCh;
-        while Ch in ['a'..'z', '0'..'9', '_', '-'] do
+        while Ch in [ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), ThtChar('_'), ThtChar('-')] do
         begin
           SS := SS + Ch;
           GetCh;
@@ -602,23 +604,23 @@ end;
 
 {----------------GetSelectors}
 
-procedure GetSelectors(Styles: TStyleList; Selectors: TStringList);
+procedure GetSelectors(Styles: TStyleList; Selectors: ThtStringList);
 {Get a series of selectors seperated by ',', like:  H1, H2, .foo }
 var
-  S: string;
+  S: ThtString;
   Sort: Boolean;
   Cnt: integer;
 
-  function FormatContextualSelector(S: string; Sort: boolean): string;
+  function FormatContextualSelector(S: ThtString; Sort: boolean): ThtString;
   {Takes a contextual selector and reverses the order.  Ex: 'div p em' will
    change to 'em Np div'.   N is a number added.  The first digit of N is
    the number of extra selector items.  The remainder of the number is a sequnce
    number which serves to sort entries by time parsed.}
   var
     I, Cnt: integer;
-    //Tmp: string;
+    //Tmp: ThtString;
 
-    function DoSort(St: string): string;
+    function DoSort(St: ThtString): ThtString;
     begin
       if Sort then
         Result := SortContextualItems(St)
@@ -680,7 +682,8 @@ begin
     S := '';
     Sort := False;
     Cnt := 0;
-    while LCh in ['A'..'Z', 'a'..'z', '0'..'9', ' ', '.', ':', '#', '-', '_', '*', '>'] do
+    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'),
+      SpcChar, DotChar, ThtChar(':'), ThtChar('#'), MinusChar, ThtChar('_'), ThtChar('*'), GreaterChar] do
     begin
       case LCh of
         '.', ':', '#': {2 or more of these in an item will require a sort to put
@@ -700,17 +703,17 @@ begin
     S := FormatContextualSelector(S, Sort);
     Selectors.Add(S);
   until LCh <> ',';
-  while not (LCh in ['{', '<', EofChar]) do
+  while not ((LCh = '{') or (LCh = '<') or (LCh = EofChar)) do
     GetCh;
 end;
 
 {----------------GetCollection}
 
-procedure GetCollection(Styles: TStyleList; Selectors: TStringList);
+procedure GetCollection(Styles: TStyleList; Selectors: ThtStringList);
 //Read a series of property, value pairs such as "Text-Align: Center;" between
 //  '{', '}'  brackets. Add these to the Styles list for the specified selectors
 var
-  Prop, Value, Value1: string;
+  Prop, Value, Value1: ThtString;
   Index: ShortIndex;
 begin
   if LCh <> '{' then
@@ -719,18 +722,18 @@ begin
   repeat
     Prop := '';
     SkipWhiteSpace;
-    while LCh in ['A'..'Z', 'a'..'z', '0'..'9', '-'] do
+    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar] do
     begin
       Prop := Prop + LCh;
       GetCh;
     end;
     Prop := Trim(LowerCase(Prop));
     SkipWhiteSpace;
-    if LCh in [':', '='] then
+    if (LCh = ':') or (LCh = '=') then
     begin
       GetCh;
       Value := '';
-      while not (LCh in [';', '}', '<', EofChar]) do
+      while not ((LCh = ';') or (LCh = '}') or (LCh = '<') or (LCh = EofChar)) do
       begin
         Value := Value + LCh;
         GetCh;
@@ -760,23 +763,25 @@ begin
     SkipWhiteSpace;
     if LCh = ';' then
       GetCh;
-    while not (LCh in ['A'..'Z', 'a'..'z', '0'..'9', '-', '}', '<', EofChar]) do
+    while not (LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'),
+      MinusChar, ThtChar('}'), LessChar, EofChar])
+    do
       GetCh;
-  until LCh in ['}', '<', EofChar];
+  until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
   if LCh = '}' then
     GetCh;
 end;
 
 {----------------DoStyle}
 
-procedure DoStyle(Styles: TStyleList; var C: char; GC: CharFunction;
-  const APath: string; FromLink: boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; GC: CharFunction;
+  const APath: ThtString; FromLink: boolean);
 var
-  Selectors: TStringList;
+  Selectors: ThtStringList;
 
   procedure ReadAt; {read thru @import or some other @}
   var
-    Media: string;
+    Media: ThtString;
 
     procedure Brackets;
     begin
@@ -788,24 +793,24 @@ var
           GetSelectors(Styles, Selectors);
           GetCollection(Styles, Selectors);
           SkipWhiteSpace;
-        until LCh in ['}', '<', EOFChar];
+        until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
       end
       else
         repeat // read thru nested '{...}' pairs
           GetCh;
           if LCh = '{' then
             Brackets;
-        until LCh in ['}', '<', EOFChar];
+        until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
       if LCh = '}' then
         GetCh;
     end;
 
   begin
-    Media := ''; {read the Media string}
+    Media := ''; {read the Media ThtString}
     repeat
       GetCh;
       Media := Media + LCh;
-    until LCh in ['{', ';', '<', EOFChar];
+    until (LCh = ';') or (LCh = '{') or (LCh = '<') or (LCh = EofChar);
     if LCh = '{' then
       Brackets
     else if LCh = ';' then
@@ -819,13 +824,13 @@ begin
   if C = ^M then
     C := ' ';
 
-  LCh := ' '; {This trick is needed if the first char is part of comment, '/*'}
+  LCh := ' '; {This trick is needed if the first ThtChar is part of comment, '/*'}
   Back := C;
 
-  Selectors := TStringList.Create;
+  Selectors := ThtStringList.Create;
 
   try
-    while LCh in [' ', '<', '>', '!', '-'] do {'<' will probably be present from <style>}
+    while (LCh = ' ') or (LCh = '<') or (LCh = '>') or (LCh = '!') or (LCh = '-') do {'<' will probably be present from <style>}
       GetCh;
     repeat
       if LCh = '@' then
@@ -834,7 +839,7 @@ begin
       begin {someone left a tag here, ignore it}
         repeat
           GetCh;
-        until LCh in [' ', EOFChar];
+        until (LCh = ' ') or (LCh = EOFChar);
         SkipWhiteSpace;
       end
       else
@@ -843,10 +848,10 @@ begin
         GetSelectors(Styles, Selectors);
         GetCollection(Styles, Selectors);
       end;
-      while LCh in [' ', '-', '>'] do
+      while (LCh = ' ') or (LCh = '-') or (LCh = '>') do
         GetCh;
     until (LCh = EOFChar) or ((LCh = '<') and not FromLink);
-    C := UpCase(LCh);
+    C := htUpCase(LCh);
   finally
     Selectors.Free;
   end;
@@ -856,17 +861,17 @@ end;
 
 {----------------MyProcess}
 
-procedure MyProcess(Propty: TObject; Selectors: TStringList; Prop, Value: string);
+procedure MyProcess(Propty: TObject; Selectors: ThtStringList; Prop, Value: ThtString);
 begin
   (Propty as TProperties).AddPropertyByName(Prop, Value);
 end;
 
 {----------------ParsePropertyStr}
 
-procedure ParsePropertyStr(const PropertyStr: string; var Propty: TProperties);
+procedure ParsePropertyStr(const PropertyStr: ThtString; var Propty: TProperties);
 var
-  Prop, Value, Value1, S: string;
-  LCh: char;
+  Prop, Value, Value1, S: ThtString;
+  LCh: ThtChar;
   I: integer;
   Index: ShortIndex;
 
@@ -885,7 +890,7 @@ var
 
   procedure SkipWhiteSpace;
   begin
-    while (LCh in [' ']) do
+    while LCh = ' ' do
       GetCh;
   end;
 
@@ -897,18 +902,18 @@ begin
   repeat
     Prop := '';
     SkipWhiteSpace;
-    while LCh in ['A'..'Z', 'a'..'z', '0'..'9', '-'] do
+    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar] do
     begin
       Prop := Prop + LCh;
       GetCh;
     end;
     Prop := Trim(Prop);
     SkipWhiteSpace;
-    if LCh in [':', '='] then
+    if (LCh = ':') or (LCh = '=') then
     begin
       GetCh;
       Value := '';
-      while not (LCh in [';', EofChar]) do
+      while not ((LCh = ';') or (LCh = EofChar)) do
       begin
         Value := Value + LCh;
         GetCh;
@@ -935,9 +940,9 @@ begin
     SkipWhiteSpace;
     if LCh = ';' then
       GetCh;
-    while not (LCh in ['A'..'Z', 'a'..'z', '0'..'9', '-', EofChar]) do
+    while not (LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar, EofChar]) do
       GetCh;
-  until LCh in [EofChar];
+  until LCh = EofChar;
 end;
 
 end.

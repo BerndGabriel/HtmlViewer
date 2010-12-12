@@ -27,13 +27,14 @@ package FrameViewer2007;
 {$IMAGEBASE $400000}
 {$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
-{$IMPLICITBUILD OFF}
+{$IMPLICITBUILD ON}
 
 requires
   vcl,
   vcljpg,
   designide,
-  rtl;
+  rtl,
+  TntUnicodeVclD11;
 
 contains
   framview in '..\source\framview.pas',

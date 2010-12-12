@@ -49,7 +49,7 @@ Key Variables:
   Ch:
       The same character in upper case.
   LCToken:
-      A string which is associated with the current token.  If Sy is TextSy,
+      A ThtString which is associated with the current token.  If Sy is TextSy,
       then LCToken contains the text.
   Attributes:
       A list of TAttribute's for tokens such as <img>, <a>, which have
@@ -76,33 +76,29 @@ unit Readhtml;
 interface
 uses
   Messages, Classes, Graphics, Controls,
-  HtmlGlobals, HtmlUn2, StyleUn;
+  HtmlGlobals, HtmlUn2, HtmlSubs, StyleUn;
 
 type
   LoadStyleType = (lsFile, lsString, lsInclude);
 
-procedure ParseHTMLString(const S: string; ASectionList: TList;
+procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
   AIncludeEvent: TIncludeType;
   ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-procedure ParseTextString(const S: string; ASectionList: TList);
+procedure ParseTextString(const S: ThtString; ASectionList: TList);
 
 procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
-  ALoadStyle: LoadStyleType; const FName, S: string; AMetaEvent: TMetaType);
-function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: string;
+  ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
+function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
   FrameViewer: TFrameViewerBase): boolean;
-function TranslateCharset(const Content: string; var Charset: TFontCharset): boolean;
-procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: string; AProp: TProperties);
-procedure PopAProp(const Tag: string);
+function TranslateCharset(const Content: ThtString; var Charset: TFontCharset): boolean;
+procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
+procedure PopAProp(const Tag: ThtString);
 
 implementation
 
 uses
   Windows, SysUtils, Math, {$IFDEF Delphi6_Plus}Variants, {$ENDIF}
-  HtmlSubs, HtmlSbs1, HtmlView, StylePars, UrlSubs;
-
-const
-  Tab = #9;
-  EofChar = #0;
+  HtmlSbs1, HtmlView, StylePars, UrlSubs;
 
 var
   Sy: Symb;
@@ -117,7 +113,7 @@ var
   BodyBlock: TBodyBlock;
   ListLevel: integer;
   TableLevel: integer;
-  Entities: TStringList;
+  Entities: ThtStringList;
   InComment: boolean;
   LinkSearch: boolean;
   IsUTF8: boolean;
@@ -126,7 +122,7 @@ var
 const
   MaxRes = 82;
   MaxEndRes = 62;
-  ResWords: array[1..MaxRes] of string = (
+  ResWords: array[1..MaxRes] of ThtString = (
     'HTML', 'TITLE', 'BODY', 'HEAD', 'B', 'I', 'H', 'EM', 'STRONG', 'U',
     'CITE', 'VAR', 'TT', 'CODE', 'KBD', 'SAMP', 'OL', 'UL', 'DIR', 'MENU',
     'DL', 'A', 'ADDRESS', 'BLOCKQUOTE', 'PRE', 'CENTER', 'TABLE', 'TD', 'TH', 'CAPTION',
@@ -171,17 +167,17 @@ const
 type
   EParseError = class(Exception);
 var
-  LCh, Ch: Char;
+  LCh, Ch: ThtChar;
   LastChar: (lcOther, lcCR, lcLF);
   Value: integer;
   LCToken: TokenObj;
   LoadStyle: LoadStyleType;
-  Buff, BuffEnd: PChar;
-  DocS: string;
+  Buff, BuffEnd: PhtChar;
+  DocS: ThtString;
   HaveTranslated: boolean;
 
-  IBuff, IBuffEnd: PChar;
-  SIBuff: string;
+  IBuff, IBuffEnd: PhtChar;
+  SIBuff: ThtString;
   IncludeEvent: TIncludeType;
   CallingObject: TViewerBase;
   SaveLoadStyle: LoadStyleType;
@@ -194,7 +190,7 @@ begin
   Result := PropStack.Count - 1;
 end;
 
-function SymbToStr(Sy: Symb): string;
+function SymbToStr(Sy: Symb): ThtString;
 var
   I: integer;
 begin
@@ -207,7 +203,7 @@ begin
   Result := '';
 end;
 
-function EndSymbToStr(Sy: Symb): string;
+function EndSymbToStr(Sy: Symb): ThtString;
 var
   I: integer;
 begin
@@ -233,10 +229,10 @@ begin
   Result := HtmlSy; {won't match}
 end;
 
-function StrToSymb(const S: string): Symb;
+function StrToSymb(const S: ThtString): Symb;
 var
   I: integer;
-  S1: string;
+  S1: ThtString;
 begin
   S1 := UpperCase(S);
   for I := 1 to MaxRes do
@@ -248,9 +244,9 @@ begin
   Result := OtherSy;
 end;
 
-function GetNameValueParameter(var Name, Value: string): boolean; forward;
+function GetNameValueParameter(var Name, Value: ThtString): boolean; forward;
 
-function ReadChar: char;
+function ReadChar: ThtChar;
 begin
   case LoadStyle of
     lsString:
@@ -282,15 +278,15 @@ begin
   end;
   if (Cardinal(Buff) and $FFF = 0) {about every 4000 chars}
     and not LinkSearch and Assigned(PropStack.MasterList) and (DocS <> '') then
-    THtmlViewerBase(CallingObject).htProgress(((Buff - PChar(DocS)) * PropStack.MasterList.ProgressStart) div (BuffEnd - PChar(DocS)));
+    THtmlViewerBase(CallingObject).htProgress(((Buff - PhtChar(DocS)) * PropStack.MasterList.ProgressStart) div (BuffEnd - PhtChar(DocS)));
 end;
 
 {----------------GetchBasic; }
 
-function GetchBasic: char; {read a character}
+function GetchBasic: ThtChar; {read a character}
 begin
   LCh := ReadChar;
-  case LCh of {skip a ^J after a ^M or a ^M after a ^J}
+  case LCh of {skip a ^J after a CrChar or a CrChar after a ^J}
     ^M: if LastChar = lcLF then
         LCh := ReadChar;
     ^J: if LastChar = lcCR then
@@ -301,16 +297,16 @@ begin
     ^J:
       begin
         LastChar := lcLF;
-        LCh := ^M;
+        LCh := CrChar;
       end;
   else
     begin
       LastChar := lcOther;
-      if LCh = Tab then
-        LCh := ' ';
+      if LCh = TabChar then
+        LCh := SpcChar;
     end;
   end;
-  Ch := UpCase(LCh);
+  Ch := htUpCase(LCh);
   if (LCh = EofChar) and InComment then
     raise EParseError.Create('Open Comment at End of HTML File');
   Result := LCh
@@ -319,11 +315,11 @@ end;
 {-------------GetCh}
 
 procedure GetCh;
-{Return next char in Lch, its uppercase value in Ch.  Ignore comments}
+{Return next ThtChar in Lch, its uppercase value in Ch.  Ignore comments}
 var
   Done, Comment: boolean;
 
-  function Peek: char; {take a look at the next char}
+  function Peek: ThtChar; {take a look at the next ThtChar}
   begin
     case LoadStyle of
       lsString:
@@ -358,11 +354,11 @@ var
       begin
         while Ch = '-' do
           GetChBasic; {any number of '-'}
-        while (Ch = ' ') or (Ch = ^M) do
+        while (Ch = SpcChar) or (Ch = CrChar) do
           GetChBasic; {eat white space}
         if Ch = '!' then
           GetChBasic; {accept --!> also}
-        Done := Ch = '>';
+        Done := Ch = GreaterChar;
       end
       else
         Done := False;
@@ -370,9 +366,9 @@ var
     InComment := False;
   end;
 
-  procedure ReadToGT; {read to the next '>' }
+  procedure ReadToGT; {read to the next GreaterChar }
   begin
-    while Ch <> '>' do
+    while Ch <> GreaterChar do
       GetChBasic;
     InComment := False;
   end;
@@ -380,9 +376,9 @@ var
   procedure DoInclude;
   {recursive suggestions by Ben Geerdes}
   var
-    S, Name, Value: string;
-    Rest: string;
-    SL: TStringList;
+    S, Name, Value: ThtString;
+    Rest: ThtString;
+    SL: ThtStringList;
     SaveLCToken: TokenObj;
   begin
     S := '';
@@ -390,12 +386,12 @@ var
     LCToken := TokenObj.Create;
     try
       GetChBasic;
-      while Ch in ['A'..'Z', '_', '0'..'9'] do
+      while Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('_'), ThtChar('0')..ThtChar('9')] do
       begin
         S := S + LCh;
         GetChBasic;
       end;
-      SL := TStringList.Create;
+      SL := ThtStringList.Create;
       while GetNameValueParameter(Name, Value) do
         SL.Add(Name + '=' + Value);
       DoDashDash;
@@ -408,7 +404,7 @@ var
           SaveLoadStyle := LoadStyle;
         LoadStyle := lsInclude;
         SIBuff := SIBuff + Rest;
-        IBuff := PChar(SIBuff);
+        IBuff := PhtChar(SIBuff);
         IBuffEnd := IBuff + Length(SIBuff);
       end;
     finally
@@ -422,7 +418,7 @@ begin {Getch}
    {comments may be either '<! stuff >' or '<!-- stuff -->'  }
     Comment := False;
     GetchBasic;
-    if (Ch = '<') and not InScript then
+    if (Ch = LessChar) and not InScript then
     begin
       if Peek = '!' then
       begin
@@ -453,7 +449,7 @@ begin {Getch}
         GetChBasic;
         repeat
           GetChBasic;
-        until (Ch = '%') and (Peek = '>') or (Ch = EOFChar);
+        until (Ch = '%') and (Peek = GreaterChar) or (Ch = EOFChar);
         GetChBasic;
       end;
     end;
@@ -464,17 +460,17 @@ end;
 
 procedure SkipWhiteSpace;
 begin
-  while (LCh in [' ', Tab, ^M]) do
+  while (LCh in [SpcChar, TabChar, CrChar]) do
     GetCh;
 end;
 
 procedure GetEntity(T: TokenObj; CodePage: integer); forward;
-function GetEntityStr(CodePage: integer): string; forward;
+function GetEntityStr(CodePage: integer): ThtString; forward;
 
-function GetQuotedValue(var S: string): boolean;
-{get a quoted string but strip the quotes}
+function GetQuotedValue(var S: ThtString): boolean;
+{get a quoted ThtString but strip the quotes}
 var
-  Term: char;
+  Term: ThtChar;
   SaveSy: Symb;
 begin
   Result := False;
@@ -486,32 +482,32 @@ begin
   GetCh;
   while not (Ch in [Term, EofChar]) do
   begin
-    if LCh = '&' then
+    if LCh = AmperChar then
       S := S + GetEntityStr(CP_ACP)
     else
     begin
-      if LCh = ^M then
-        S := S + ' '
+      if LCh = CrChar then
+        S := S + SpcChar
       else
         S := S + LCh;
       GetCh;
     end;
   end;
   if Ch = Term then
-    GetCh; {pass termination char}
+    GetCh; {pass termination ThtChar}
   Sy := SaveSy;
 end;
 
 {----------------GetNameValueParameter}
 
-function GetNameValueParameter(var Name, Value: string): boolean;
+function GetNameValueParameter(var Name, Value: ThtString): boolean;
 begin
   Result := False;
   SkipWhiteSpace;
   Name := '';
-  if not (Ch in ['A'..'Z']) then
+  if not (Ch in [ThtChar('A')..ThtChar('Z')]) then
     Exit;
-  while Ch in ['A'..'Z', '_', '0'..'9'] do
+  while Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('_'), ThtChar('0')..ThtChar('9')] do
   begin
     Name := Name + LCh;
     GetCh;
@@ -526,8 +522,8 @@ begin
 
   SkipWhiteSpace;
   if not GetQuotedValue(Value) then
-  {in case quotes left off string}
-    while not (Ch in [' ', Tab, ^M, '-', '>', EofChar]) do {need to exclude '-' to find '-->'}
+  {in case quotes left off ThtString}
+    while not (Ch in [SpcChar, TabChar, CrChar, MinusChar, GreaterChar, EofChar]) do {need to exclude '-' to find '-->'}
     begin
       Value := Value + LCh;
       GetCh;
@@ -536,25 +532,25 @@ end;
 
 {----------------GetValue}
 
-function GetValue(var S: string; var Value: integer): boolean;
-{read a numeric.  Also reads a string if it looks like a numeric initially}
+function GetValue(var S: ThtString; var Value: integer): boolean;
+{read a numeric.  Also reads a ThtString if it looks like a numeric initially}
 var
   Code: integer;
   ValD: double;
 begin
-  Result := Ch in ['-', '+', '0'..'9'];
+  Result := Ch in [ThtChar('-'), ThtChar('+'), ThtChar('0')..ThtChar('9')];
   if not Result then
     Exit;
   Value := 0;
-  if Ch in ['-', '+'] then
+  if Ch in [ThtChar('-'), ThtChar('+')] then
   begin
     S := Ch;
     GetCh;
   end
   else
     S := '';
-  while not (Ch in [' ', Tab, ^M, '>', '%', EofChar]) do
-    if LCh = '&' then
+  while not (Ch in [SpcChar, TabChar, CrChar, GreaterChar, PercentChar, EofChar]) do
+    if LCh = AmperChar then
       S := S + GetEntityStr(PropStack.Last.CodePage)
     else
     begin
@@ -579,11 +575,11 @@ end;
 
 {----------------GetQuotedStr}
 
-function GetQuotedStr(var S: string; var Value: integer; WantCrLf: boolean; Sym: Symb): boolean;
-{get a quoted string but strip the quotes, check to see if it is numerical}
+function GetQuotedStr(var S: ThtString; var Value: integer; WantCrLf: boolean; Sym: Symb): boolean;
+{get a quoted ThtString but strip the quotes, check to see if it is numerical}
 var
-  Term: char;
-  S1: string;
+  Term: ThtChar;
+  S1: ThtString;
   Code: integer;
   ValD: double;
   SaveSy: Symb;
@@ -597,9 +593,9 @@ begin
   GetCh;
   while not (Ch in [Term, EofChar]) do
   begin
-    if LCh <> ^M then
+    if LCh <> CrChar then
     begin
-      if LCh = '&' then
+      if LCh = AmperChar then
       begin
 {$ifdef UNICODE}
 {$else}
@@ -617,21 +613,21 @@ begin
     end
     else if WantCrLf then
     begin
-      S := S + ^M + ^J;
+      S := S + CrChar + ^J;
       GetCh;
     end
     else
       GetCh;
   end;
   if Ch = Term then
-    GetCh; {pass termination char}
+    GetCh; {pass termination ThtChar}
   S1 := Trim(S);
   if Pos('%', S1) = Length(S1) then
     SetLength(S1, Length(S1) - 1);
 {see if S1 evaluates to a numerical value.  Note that something like
  S1 = 'e8196' can give exception because of the 'e'}
   Value := 0;
-  if (Length(S1) > 0) and (S1[1] in ['0'..'9', '+', '-', '.']) then
+  if (Length(S1) > 0) and (S1[1] in [ThtChar('0')..ThtChar('9'), ThtChar('+'), ThtChar('-'), ThtChar('.')]) then
   try
     Val(S1, ValD, Code);
     Value := Round(ValD);
@@ -642,10 +638,10 @@ end;
 
 {----------------GetSomething}
 
-procedure GetSomething(var S: string);
+procedure GetSomething(var S: ThtString);
 begin
-  while not (Ch in [' ', Tab, ^M, '>', EofChar]) do
-    if LCh = '&' then
+  while not (Ch in [SpcChar, TabChar, CrChar, GreaterChar, EofChar]) do
+    if LCh = AmperChar then
       S := S + GetEntityStr(PropStack.Last.CodePage)
     else
     begin
@@ -656,13 +652,13 @@ end;
 
 {----------------GetID}
 
-function GetID(var S: string): boolean;
+function GetID(var S: ThtString): boolean;
 
 begin
   Result := False;
-  if not (Ch in ['A'..'Z']) then
+  if not (Ch in [ThtChar('A')..ThtChar('Z')]) then
     Exit;
-  while Ch in ['A'..'Z', '-', '0'..'9'] do
+  while Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('-'), ThtChar('0')..ThtChar('9')] do
   begin
     S := S + Ch;
     GetCh;
@@ -672,12 +668,12 @@ end;
 
 {----------------GetAttribute}
 
-function GetAttribute(var Sym: Symb; var St: string;
-  var S: string; var Val: integer): boolean;
+function GetAttribute(var Sym: Symb; var St: ThtString;
+  var S: ThtString; var Val: integer): boolean;
 
 const
   MaxAttr = 84;
-  Attrib: array[1..MaxAttr] of string =
+  Attrib: array[1..MaxAttr] of ThtString =
   ('HREF', 'NAME', 'SRC', 'ALT', 'ALIGN', 'TEXT', 'BGCOLOR', 'LINK',
     'BACKGROUND', 'COLSPAN', 'ROWSPAN', 'BORDER', 'CELLPADDING',
     'CELLSPACING', 'VALIGN', 'WIDTH', 'START', 'VALUE', 'TYPE',
@@ -739,27 +735,27 @@ begin
   GetCh;
 
   SkipWhiteSpace;
-  if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted string or a number}
+  if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
     if not GetValue(S, Val) then
-      GetSomething(S); {in case quotes left off string}
+      GetSomething(S); {in case quotes left off ThtString}
   if (Sym = IDSy) and (S <> '') and Assigned(PropStack.MasterList) and not LinkSearch then
     PropStack.MasterList.IDNameList.AddChPosObject(S, PropStack.SIndex);
 end;
 
 {-------------GetTag}
 
-function GetTag: boolean; {Pick up a Tag or pass a single '<'}
+function GetTag: boolean; {Pick up a Tag or pass a single LessChar}
 var
   Done, EndTag: Boolean;
-  Compare: string;
-  SymStr: string;
-  AttrStr: string;
+  Compare: ThtString;
+  SymStr: ThtString;
+  AttrStr: ThtString;
   I: Integer;
   L: integer;
   Save: integer;
   Sym: Symb;
 begin
-  if Ch <> '<' then
+  if Ch <> LessChar then
   begin
     Result := False;
     Exit;
@@ -781,7 +777,7 @@ begin
       EndTag := False;
 
   else
-    {an odd '<'}
+    {an odd LessChar}
     Sy := TextSy;
     LCToken.AddUnicodeChar('<', Save);
     Exit;
@@ -801,7 +797,7 @@ begin
             Compare := Compare + Ch;
           end;
           GetCh;
-          Done := Done or (Ch in ['1'..'6']) and (Compare = 'H');
+          Done := Done or (Ch in [ThtChar('1')..ThtChar('6')]) and (Compare = 'H');
         end;
     else
       Done := True;
@@ -817,7 +813,7 @@ begin
     end;
   SkipWhiteSpace;
   Value := 0;
-  if ((Sy = HeadingSy) or (Sy = HeadingEndSy)) and (Ch in ['1'..'6']) then
+  if ((Sy = HeadingSy) or (Sy = HeadingEndSy)) and (Ch in [ThtChar('1')..ThtChar('6')]) then
   begin
     Value := ord(Ch) - ord('0');
     GetCh;
@@ -827,7 +823,7 @@ begin
   while GetAttribute(Sym, SymStr, AttrStr, L) do
     Attributes.Add(TAttribute.Create(Sym, L, SymStr, AttrStr, PropStack.Last.Codepage));
 
-  while (Ch <> '>') and (Ch <> EofChar) do
+  while (Ch <> GreaterChar) and (Ch <> EofChar) do
     GetCh;
   if not (Sy in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
     GetCh;
@@ -840,39 +836,38 @@ var
   SaveIndex: Integer;
   Buffer: TCharCollection;
   CodePage: Integer;
-
 begin
   Sy := TextSy;
   CodePage := PropStack.Last.CodePage;
   Buffer := TCharCollection.Create;
   try
-    Result := not (LCh in [#1..#8, EOFChar, '<']);
-    while not (LCh in [#1..#8, EOFChar, '<']) do
+    Result := not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar]);
+    while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar]) do
     begin
-      while LCh = '&' do
+      while LCh = AmperChar do
         GetEntity(LCToken, CodePage);
 
       // Get any normal text.
       repeat
         SaveIndex := PropStack.SIndex;
         // Collect all leading white spaces.
-        if LCh in [' ', #13, #10, Tab] then
+        if LCh in [SpcChar, CrChar, LfChar, TabChar] then
         begin
           if not LinkSearch then
-            Buffer.Add(' ', SaveIndex);
+            Buffer.Add(SpcChar, SaveIndex);
           // Skip other white spaces.
           repeat
             GetCh;
-          until not (LCh in [' ', #13, #10, Tab]);
+          until not (LCh in [SpcChar, CrChar, LfChar, TabChar]);
         end;
         // Collect any non-white space characters which are not special.
-        while not (LCh in [#1..#8, EOFChar, '<', '&', ' ', #13, #10, Tab]) do
+        while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar, SpcChar, CrChar, LfChar, TabChar]) do
         begin
           if not LinkSearch then
             Buffer.Add(LCh, PropStack.SIndex);
           GetCh;
         end;
-      until LCh in [#1..#8, EOFChar, '<', '&'];
+      until (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar]);
       if Buffer.Size > 0 then
       begin
         LCToken.AddString(Buffer, CodePage);
@@ -880,7 +875,7 @@ begin
       end;
     end;
 
-    // Flush any pending ANSI string data.
+    // Flush any pending ANSI ThtString data.
     if Buffer.Size > 0 then
       LCToken.AddString(Buffer, CodePage);
   finally
@@ -898,12 +893,12 @@ begin {already have fresh character loaded here}
     Sy := EofSy
   else if not GetTag then
     if not CollectText then
-      if LCh in [#0..#8] then
+      if LCh in [ThtChar(#0)..ThtChar(#8)] then
         LCh := '?';
 end;
 
 { Add a TProperties to the PropStack. }
-procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: string; AProp: TProperties);
+procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
 begin
   PropStack.PushNewProp(Tag, AClass, AnID, APseudo, ATitle, AProp);
 end;
@@ -914,7 +909,7 @@ begin
   PropStack.PopProp;
 end;
 
-procedure PopAProp(const Tag: string);
+procedure PopAProp(const Tag: ThtString);
 {pop and free a TProperties from the Prop stack.  It should be on top but in
  case of a nesting error, find it anyway}
 //var
@@ -938,18 +933,18 @@ end;
 procedure DoTextArea(TxtArea: TTextAreaFormControlObj);
 {read and save the text for a TextArea form control}
 var
-  S: string;
-  Token: string;
+  S: ThtString;
+  Token: ThtString;
 
   procedure Next1;
     {Special Next routine to get the next token}
 
     procedure GetTag1; {simplified Pick up a Tag routine}
     begin
-      Token := '<';
+      Token := LessChar;
       GetCh;
       Sy := CommandSy;
-      while not (LCh in [' ', ^M, Tab, '>']) do
+      while not (LCh in [SpcChar, CrChar, TabChar, GreaterChar]) do
       begin
         Token := Token + LCh;
         GetCh;
@@ -962,7 +957,7 @@ var
 
     function IsText1: boolean;
     begin
-      while (Length(Token) < 100) and not (LCh in [^M, '<', '&', EofChar]) do
+      while (Length(Token) < 100) and not (LCh in [CrChar, LessChar, AmperChar, EofChar]) do
       begin
         Token := Token + LCh;
         GetCh;
@@ -981,14 +976,14 @@ var
     LCToken.Clear;
     if LCh = EofChar then
       Sy := EofSy
-    else if LCh = ^M then
+    else if LCh = CrChar then
     begin
       Sy := EolSy;
       GetCh;
     end
-    else if LCh = '<' then
+    else if LCh = LessChar then
     begin GetTag1; Exit; end
-    else if LCh = '&' then
+    else if LCh = AmperChar then
     begin
 {$ifdef UNICODE}
 {$else}
@@ -1017,7 +1012,7 @@ begin
       TextSy: S := S + Token;
       EolSy:
         begin
-          S := S + ^M + ^J;
+          S := S + CrChar + ^J;
           TxtArea.AddStr(S);
           S := '';
         end;
@@ -1026,18 +1021,18 @@ begin
     end;
     Next1;
   end;
-  while not (LCh in ['>', EofChar]) do
-    GetCh; {remove chars to and past '>'}
+  while not (LCh in [GreaterChar, EofChar]) do
+    GetCh; {remove chars to and past GreaterChar}
   GetCh;
   if S <> '' then
     TxtArea.AddStr(S);
   TxtArea.ResetToValue;
 end;
 
-function FindAlignment: string; {pick up Align= attribute}
+function FindAlignment: ThtString; {pick up Align= attribute}
 var
   T: TAttribute;
-  S: string;
+  S: ThtString;
 begin
   Result := '';
   if Attributes.Find(AlignSy, T) then
@@ -1052,7 +1047,7 @@ end;
 
 procedure CheckForAlign;
 var
-  S: string;
+  S: ThtString;
 begin
   S := FindAlignment;
   if S <> '' then
@@ -1232,7 +1227,7 @@ begin
 end;
 
 type
-  TCellManager = class(TStringList)
+  TCellManager = class(ThtStringList)
     Table: ThtmlTable;
     constructor Create(ATable: ThtmlTable);
     function FindColNum(Row: integer): integer;
@@ -1240,8 +1235,8 @@ type
   end;
 {TCellManager is used to keep track of the column where the next table cell is
  going when handling the <col> tag.  Because of colspan and rowspan attributes,
- this can be a messy process.  A StringList is used with a string for each
- row.  Initially, the string is filled with 'o's.  As each cell is added, 'o's
+ this can be a messy process.  A StringList is used with a ThtString for each
+ row.  Initially, the ThtString is filled with 'o's.  As each cell is added, 'o's
  are changed to 'x's in accordance with the sixe of the cell.
 }
 {----------------TCellManager.Create}
@@ -1265,7 +1260,7 @@ procedure TCellManager.AddCell(Row: integer; CellObj: TCellObj);
 {Adds this cell to the specified row}
 var
   I, J, K, Span: integer;
-  S1: string;
+  S1: ThtString;
 begin
 {make sure there's enough rows to handle any RowSpan for this cell}
   while Count < Row + CellObj.RowSpan do
@@ -1304,11 +1299,11 @@ var
   xWidth, cWidth: integer;
   xAsPercent, cAsPercent: boolean;
   xVAlign, cVAlign: AlignmentType;
-  xAlign, cAlign: string;
+  xAlign, cAlign: ThtString;
   Algn: AlignmentType;
 
   procedure ReadColAttributes(var Width: integer; var AsPercent: boolean;
-    var Valign: AlignmentType; var Align: string; var Span: integer);
+    var Valign: AlignmentType; var Align: ThtString; var Span: integer);
   var
     I: integer;
   begin
@@ -1392,7 +1387,7 @@ var
   SetJustify: JustifyType;
   CM: TCellManager;
   CellNum: integer;
-  TdTh: string;
+  TdTh: ThtString;
   ColOK: boolean;
   CaptionBlock: TBlock;
   CombineBlock: TTableAndCaptionBlock;
@@ -1408,7 +1403,7 @@ var
 
   function GetVAlign(Default: AlignmentType): AlignmentType;
   var
-    S: string;
+    S: ThtString;
     T: TAttribute;
   begin
     Result := Default;
@@ -1679,7 +1674,7 @@ begin
           end;
       else
         begin
-          if ((Sy = TextSy) and (LCToken.S = ' ')) or (Sy = CommandSy) then
+          if ((Sy = TextSy) and (LCToken.S = SpcChar)) or (Sy = CommandSy) then
             Next {discard single spaces here}
           else
           begin
@@ -1744,7 +1739,7 @@ var
   WS: WideString;
   SaveNoBreak: boolean;
   CodePage: integer;
-  Attr: TStringList;
+  Attr: ThtStringList;
   T: TAttribute;
 begin
   SaveNoBreak := NoBreak;
@@ -1821,7 +1816,7 @@ end;
 
 procedure DoScript(Ascript: TScriptEvent);
 var
-  Text: string;
+  Text: ThtString;
 
   procedure Next1;
     {Special Next routine to get the next token}
@@ -1830,15 +1825,15 @@ var
     var
       Count: integer;
     begin
-      Text := '<';
+      Text := LessChar;
       GetCh;
-      if not (Ch in ['A'..'Z', '/']) then
+      if not (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('/')]) then
       begin
         Sy := TextSy;
         Exit;
       end;
       Sy := CommandSy; {catch all}
-      while (Ch in ['A'..'Z', '/']) do
+      while (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('/')]) do
       begin
         Text := Text + LCh;
         GetCh;
@@ -1846,18 +1841,18 @@ var
       if CompareText(Text, '</script') = 0 then
         Sy := ScriptEndSy;
       Count := 0;
-      while not (LCh in ['>', EofChar]) and (Count < 6) do
+      while not (LCh in [GreaterChar, EofChar]) and (Count < 6) do
       begin
-        if LCh = ^M then
-          Text := Text + ' '
+        if LCh = CrChar then
+          Text := Text + SpcChar
         else
           Text := Text + LCh;
         GetCh;
         Inc(Count);
       end;
-      if LCh = '>' then
+      if LCh = GreaterChar then
       begin
-        Text := Text + '>';
+        Text := Text + GreaterChar;
         if Sy = ScriptEndSy then
           InScript := False;
         GetCh;
@@ -1868,17 +1863,17 @@ var
     Text := '';
     if LCh = EofChar then
       Sy := EofSy
-    else if LCh = ^M then
+    else if LCh = CrChar then
     begin
       Sy := EolSy;
       GetCh;
     end
-    else if LCh = '<' then
+    else if LCh = LessChar then
       GetTag1
     else
     begin
       Sy := TextSy;
-      while not (LCh in [^M, '<', EofChar]) do
+      while not (LCh in [CrChar, LessChar, EofChar]) do
       begin
         Text := Text + LCh;
         GetCh;
@@ -1887,9 +1882,9 @@ var
   end;
 
 var
-  Lang, Name: string;
+  Lang, Name: ThtString;
   T: TAttribute;
-  S, Src: string;
+  S, Src: ThtString;
 begin
   {on entry, do not have the next character for <script>}
   if Assigned(AScript) then
@@ -1920,7 +1915,7 @@ begin
       while (Sy <> ScriptEndSy) and (Sy <> EofSy) do
       begin
         if Sy = EolSy then
-          S := S + ^M^J
+          S := S + CrChar + LfChar
         else
           S := S + Text;
         Next1;
@@ -1942,19 +1937,19 @@ end;
 procedure DoP(const TermSet: SymbSet); forward;
 procedure DoBr(const TermSet: SymbSet); forward;
 
-function DoObjectTag(var C: Char; var N, IX: integer): boolean;
+function DoObjectTag(var C: ThtChar; var N, IX: integer): boolean;
 var
   WantPanel: boolean;
-  SL, Params: TStringList;
+  SL, Params: ThtStringList;
   Prop: TProperties;
   PO: TPanelObj;
-  S: string;
+  S: ThtString;
   T: TAttribute;
 
   procedure SavePosition;
   begin
     C := LCh;
-    N := Buff - PChar(DocS);
+    N := Buff - PhtChar(DocS);
     IX := PropStack.SIndex;
   end;
 
@@ -1979,7 +1974,7 @@ begin
       PO := Section.CreatePanel(Attributes, SectionList);
       PO.ProcessProperties(PropStack.Last);
       WantPanel := False;
-      Params := TStringList.Create;
+      Params := ThtStringList.Create;
       Params.Sorted := False;
       repeat
         SavePosition;
@@ -2032,22 +2027,22 @@ var
   TxtArea: TTextAreaFormControlObj;
   FormControl: TFormControlObj;
   T: TAttribute;
-  Tmp: string;
+  Tmp: ThtString;
   HeadingBlock: TBlock;
   HRBlock: THRBlock;
   HorzLine: THorzLine;
-  HeadingStr, Link: string;
+  HeadingStr, Link: ThtString;
   Done, FoundHRef: boolean;
   IO: TFloatingObj;
   Page: TPage;
   SaveSy: Symb;
   Prop: TProperties;
-  C: Char;
+  C: ThtChar;
   N, IX: integer;
 
   procedure ChangeTheFont(Sy: Symb; Pre: boolean);
   var
-    FaceName: string;
+    FaceName: ThtString;
     CharSet: TFontCharSet;
     NewColor: TColor;
     NewSize, I: integer;
@@ -2062,7 +2057,7 @@ var
         case Which of
           SizeSy:
             begin
-              if (Length(Name) >= 2) and (Name[1] in ['+', '-']) then
+              if (Length(Name) >= 2) and (Name[1] in [ThtChar('+'), ThtChar('-')]) then
                 Value := BaseFontSize + Value;
               NewSize := Max(1, Min(7, Value)); {limit 1..7}
               if (Sy = BaseFontSy) then
@@ -2111,14 +2106,14 @@ var
   procedure DoPreSy;
   var
     S: TokenObj;
-    Tmp, Link: string;
+    Tmp, Link: ThtString;
     Done, InForm, InP: boolean;
     I, InitialStackIndex: integer;
     PreBlock, FormBlock, PBlock: TBlock;
     SaveSy: Symb;
     FoundHRef: boolean;
     Prop: TProperties;
-    C: Char;
+    C: ThtChar;
     N, IX: integer;
     Before, After, Intact: boolean;
 
@@ -2133,14 +2128,14 @@ var
       CodePage := PropStack.Last.CodePage;
       Buffer := TCharCollection.Create;
       try
-        Result := not (LCh in [#1..#8, EOFChar, '<', ^M]);
-        while not (LCh in [#1..#8, EOFChar, '<', ^M]) do
+        Result := not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, CrChar]);
+        while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, CrChar]) do
         begin
-          while LCh = '&' do {look for entities}
+          while LCh = AmperChar do {look for entities}
             GetEntity(S, CodePage);
 
         {Get any normal text, includein spaces}
-          while not (LCh in [#1..#8, EOFChar, '<', '&', ^M]) do
+          while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar, CrChar]) do
           begin
             Buffer.Add(LCh, PropStack.SIndex);
             GetCh;
@@ -2218,7 +2213,7 @@ var
             begin
               Next;
               case Sy of
-                TextSy: {this would be an isolated '<'}
+                TextSy: {this would be an isolated LessChar}
                   S.AddUnicodeChar('<', PropStack.SIndex);
                 BRSy:
                   begin
@@ -2233,7 +2228,7 @@ var
                     PopAProp('br');
                     Section := TPreFormated.Create(PropStack.MasterList, nil, PropStack.Last,
                       CurrentUrlTarget, SectionList, False);
-                    if Ch = ^M then
+                    if Ch = CrChar then
                       GetCh;
                   end;
                 PSy:
@@ -2251,7 +2246,7 @@ var
                       Section.CheckFree;
                       Section.Free;
                     end;
-                    if Ch = ^M then
+                    if Ch = CrChar then
                       GetCh;
                     PushNewProp('p', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
                     PBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
@@ -2389,14 +2384,14 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     C := LCh;
-                    N := Buff - PChar(DocS);
+                    N := Buff - PhtChar(DocS);
                     IX := PropStack.SIndex;
                     DoObjectTag(C, N, IX);
                     LCh := C;
-                    Ch := UpCase(LCh);
-                    Buff := PChar(DocS) + N;
+                    Ch := htUpCase(LCh);
+                    Buff := PhtChar(DocS) + N;
                     PropStack.SIndex := IX;
-                    if Ch = ^M then
+                    if Ch = CrChar then
                       GetCh;
                   end;
                 PageSy:
@@ -2468,9 +2463,12 @@ var
                 ScriptSy: DoScript(PropStack.MasterList.ScriptEvent);
               end;
             end;
+
           ^M:
             begin NewSection; GetCh; end;
-          EofChar: Done := True;
+
+          #0:
+            Done := True;
         else
           begin {all other chars}
             if not CollectPreText then
@@ -2501,7 +2499,7 @@ begin
       begin
         if not Assigned(Section) then
         begin {don't create a section for a single space}
-          if (LCToken.Leng >= 1) and (LCToken.S <> ' ') then
+          if (LCToken.Leng >= 1) and (LCToken.S <> SpcChar) then
           begin
             Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
               CurrentUrlTarget, SectionList, True);
@@ -2812,7 +2810,7 @@ begin
       end;
   else
     begin
-      Assert(False, 'DoCommon can''t handle <' + SymbToStr(Sy) + '>');
+      Assert(False, 'DoCommon can''t handle <' + SymbToStr(Sy) + GreaterChar);
       Next; {as loop protection}
     end;
   end;
@@ -2823,7 +2821,7 @@ end; {DoCommon}
 procedure DoP(const TermSet: SymbSet);
 var
   NewBlock: TBlock;
-  LastAlign, LastClass, LastID, LastTitle: string;
+  LastAlign, LastClass, LastID, LastTitle: ThtString;
   LastStyle: TProperties;
 begin
   if PSy in TermSet then
@@ -2925,7 +2923,7 @@ begin
   Next;
 end;
 
-procedure DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: integer; Index: char; Plain: boolean; const TermSet: SymbSet);
+procedure DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: integer; Index: ThtChar; Plain: boolean; const TermSet: SymbSet);
 var
   Done: boolean;
   //LiBlock: TBlock;
@@ -3005,7 +3003,7 @@ var
   T: TAttribute;
   LineCount: integer;
   Plain: boolean;
-  Index: char;
+  Index: ThtChar;
   NewBlock: TBlock;
   EndSym: Symb;
   LiBlock: TBlockLi;
@@ -3132,6 +3130,30 @@ begin
   Next;
 end;
 
+{$ifdef UseUnicode}
+{$else}
+
+{----------------IsIso2022JP:}
+
+function IsIso2022JP: boolean;
+{look for iso-2022-jp Japanese file}
+var
+  I, J, K, L: integer;
+begin
+  Result := False;
+  I := Pos(#$1b'$@', DocS); {look for starting sequence}
+  J := Pos(#$1b'$B', DocS);
+  I := Max(I, J); {pick a positive value}
+  if I > 0 then
+  begin {now look for ending sequence after the start}
+    K := PosX(#$1b'(J', DocS, I);
+    L := PosX(#$1b'(B', DocS, I);
+    K := Max(K, L); {pick a positive value}
+    if K > 0 then {start and end sequence found}
+      Result := True;
+  end;
+end;
+
 function EUCToShiftJis(const E: string): string;
 var
   i, j, k, s, t: integer;
@@ -3154,7 +3176,7 @@ begin
         s := (j + 1) div 2 + 112
       else
         s := (j + 1) div 2 + 176;
-      Result := Result + char(s);
+      Result := Result + ThtChar(s);
     end
     else
     begin {second byte}
@@ -3168,7 +3190,7 @@ begin
       end
       else
         t := k + 126;
-      Result := Result + char(t);
+      Result := Result + ThtChar(t);
     end;
 end;
 
@@ -3176,7 +3198,7 @@ function JISToShiftJis(const E: string): string;
 var
   i, j, k, s, t, Len: integer;
   WhichByte: 0..2;
-  C: char;
+  C: Char;
 begin
   Len := Length(E);
   i := 1;
@@ -3210,7 +3232,7 @@ begin
             s := (j + 1) div 2 + 112
           else
             s := (j + 1) div 2 + 176;
-          Result := Result + char(s);
+          Result := Result + Char(s);
           WhichByte := 2;
         end;
       2:
@@ -3224,19 +3246,20 @@ begin
           end
           else
             t := k + 126;
-          Result := Result + char(t);
+          Result := Result + Char(t);
           WhichByte := 1;
         end;
     end;
     Inc(i);
   end;
 end;
+{$endif}
 
 //  The official CharSet definitions:
 //    http://www.iana.org/assignments/character-sets
 //    http://www.iana.org/assignments/ianacharset-mib
 type
-  XRec = record S: string; CSet: TFontCharset; end;
+  XRec = record S: ThtString; CSet: TFontCharset; end;
 const
   MaxX = 47;
   EUCJP_CharSet = 30; {unused number}
@@ -3289,9 +3312,13 @@ const
     (S: '8859-15'; CSet: ANSI_CHARSET), {almost Ansi, but not quite}
     (S: 'tis-620'; CSet: THAI_CHARSET));
 
-function TranslateCharset(const Content: string; var Charset: TFontCharset): boolean;
+function TranslateCharset(const Content: ThtString; var Charset: TFontCharset): boolean;
 var
-  I, N: integer;
+  I: Integer;
+{$ifdef UseUnicode}
+{$else}
+  N: Integer;
+{$endif}
 begin
   Result := False;
   for I := 1 to MaxX do
@@ -3299,18 +3326,21 @@ begin
     begin
       Charset := XTable[I].CSet;
       Result := True;
+{$ifdef UseUnicode}
+{$else}
       if CharSet = EUCJP_CharSet then
       begin
         if not HaveTranslated then
         begin
-          N := Buff - PChar(DocS);
+          N := Buff - PhtChar(DocS);
           DocS := EUCToShiftJis(DocS); {translate to ShiftJis}
-          Buff := PChar(DocS) + N; {DocS probably moves}
-          BuffEnd := PChar(Docs) + Length(DocS);
+          Buff := PhtChar(DocS) + N; {DocS probably moves}
+          BuffEnd := PhtChar(Docs) + Length(DocS);
           HaveTranslated := True;
         end;
         CharSet := SHIFTJIS_CHARSET;
       end;
+{$endif}
       Break;
     end;
 end;
@@ -3320,7 +3350,7 @@ end;
 procedure DoMeta(Sender: TObject);
 var
   T: TAttribute;
-  HttpEq, Name, Content: string;
+  HttpEq, Name, Content: ThtString;
   CharSet: TFontCharset;
 begin
   if Attributes.Find(HttpEqSy, T) then
@@ -3368,12 +3398,12 @@ begin
 end;
 
 var
-  slS: string;
+  slS: ThtString;
   slI: integer;
 
-function slGet: char;
+function slGet: ThtChar;
 
-function Get: char;
+function Get: ThtChar;
   begin
     if slI <= Length(slS) then
     begin
@@ -3387,21 +3417,21 @@ begin
   repeat
     Result := Get;
   until (Result <> ^J);
-  if Result = Tab then
-    Result := ' ';
+  if Result = TabChar then
+    Result := SpcChar;
 end;
 
 procedure DoStyleLink; {handle <link> for stylesheets}
 var
-  Style: String;
-  C: char;
+  Style: ThtString;
+  C: ThtChar;
   I: integer;
-  Url, Rel, Rev: string;
+  Url, Rel, Rev: ThtString;
   OK: boolean;
   Request: TGetStreamEvent;
   RStream: TMemoryStream;
   Viewer: ThtmlViewer;
-  Path: string;
+  Path: ThtString;
 begin
   OK := False;
   for I := 0 to Attributes.Count - 1 do
@@ -3594,7 +3624,7 @@ begin
       StyleSy:
         begin
           DoStyle(PropStack.MasterList.Styles, LCh, GetChBasic, '', False);
-          Ch := UpCase(LCh); {LCh is returned so next char is available}
+          Ch := htUpCase(LCh); {LCh is returned so next ThtChar is available}
           Next;
         end;
 
@@ -3611,7 +3641,7 @@ begin
   Next;
 end;
 
-procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: string);
+procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
 var
   NewFrameSet: TObject;
 begin
@@ -3646,27 +3676,6 @@ begin
   FrameViewer.EndFrameSet(FrameSet);
 end;
 
-{----------------IsIso2022JP:}
-
-function IsIso2022JP: boolean;
-{look for iso-2022-jp Japanese file}
-var
-  I, J, K, L: integer;
-begin
-  Result := False;
-  I := Pos(#$1b'$@', DocS); {look for starting sequence}
-  J := Pos(#$1b'$B', DocS);
-  I := Max(I, J); {pick a positive value}
-  if I > 0 then
-  begin {now look for ending sequence after the start}
-    K := PosX(#$1b'(J', DocS, I);
-    L := PosX(#$1b'(B', DocS, I);
-    K := Max(K, L); {pick a positive value}
-    if K > 0 then {start and end sequence found}
-      Result := True;
-  end;
-end;
-
 {----------------ParseInit}
 
 procedure ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
@@ -3691,12 +3700,14 @@ begin
   I := Pos(#0, DocS);
   while (I > 0) and (Num < NullsAllowed) do
   begin {be somewhat forgiving if there are a few nulls}
-    DocS[I] := ' ';
+    DocS[I] := SpcChar;
     I := Pos(#0, DocS);
     Inc(Num);
   end;
   if I > 0 then
     SetLength(DocS, I - 1); {file has a problem, too many Nulls}
+{$ifdef UseUnicode}
+{$else}
 {look for UTF-8 marker}
   if (Length(DocS) > 3) and (DocS[1] = #$EF) and (DocS[2] = #$BB) and (DocS[3] = #$BF) then
   begin
@@ -3708,13 +3719,14 @@ begin
   else
   {look for iso-2022-jp Japanese file} if IsIso2022Jp then
     begin
-      DocS := JISToShiftJis(DocS); {watch it, changes PChar(DocS) }
+      DocS := JISToShiftJis(DocS); {watch it, changes PhtChar(DocS) }
       HaveTranslated := True;
       PropStack[0].AssignCharSet(ShiftJIS_CharSet);
     end;
+{$endif}    
   if CallingObject is ThtmlViewer then
     ThtmlViewer(CallingObject).CodePage := PropStack[0].CodePage;
-  Buff := PChar(DocS);
+  Buff := PhtChar(DocS);
   BuffEnd := Buff + Length(DocS);
   IBuff := nil;
 
@@ -3743,7 +3755,7 @@ end;
 
 {----------------ParseHTMLString}
 
-procedure ParseHTMLString(const S: string; ASectionList: TList;
+procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
   AIncludeEvent: TIncludeType;
   ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
 {$IFNDEF NoTabLink}
@@ -3783,7 +3795,7 @@ begin
     end;
   {reset a few things}
     PropStack.SIndex := SaveSIndex;
-    Buff := PChar(DocS);
+    Buff := PhtChar(DocS);
 {$ENDIF}
 
     LinkSearch := False;
@@ -3842,7 +3854,7 @@ begin
       case Ch of
         ^M:
           begin NewSection; GetCh; end;
-        EofChar: Done := True;
+        #0: Done := True;
       else
         begin {all other chars}
           S.AddUnicodeChar(WideChar(LCh), PropStack.SIndex);
@@ -3866,7 +3878,7 @@ end;
 
 {----------------ParseTextString}
 
-procedure ParseTextString(const S: string; ASectionList: TList);
+procedure ParseTextString(const S: ThtString; ASectionList: TList);
 begin
   DocS := S;
   ParseInit(ASectionList, nil);
@@ -3888,7 +3900,7 @@ end;
 {-------------FrameParseString}
 
 procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
-  ALoadStyle: LoadStyleType; const FName, S: string; AMetaEvent: TMetaType);
+  ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
 
   procedure Parse;
   var
@@ -3953,6 +3965,8 @@ begin
       DocS := S;
     LoadStyle := lsString;
   {look for iso-2022-jp Japanese file}
+{$ifdef UseUnicode}
+{$else}
     if IsIso2022Jp then
     begin
       DocS := JISToShiftJis(DocS);
@@ -3960,8 +3974,9 @@ begin
     end
     else
       HaveTranslated := False;
+{$endif}
 
-    Buff := PChar(DocS);
+    Buff := PhtChar(DocS);
     BuffEnd := Buff + Length(DocS);
     try
       Parse;                                          
@@ -3977,7 +3992,7 @@ end;
 
 {----------------IsFrameString}
 
-function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: string;
+function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
   FrameViewer: TFrameViewerBase): boolean;
 
   function Parse: boolean;
@@ -4033,7 +4048,7 @@ begin
     else
       DocS := S;
     LoadStyle := lsString;
-    Buff := PChar(DocS);
+    Buff := PhtChar(DocS);
     BuffEnd := Buff + Length(DocS);
     try
       Result := Parse;
@@ -4053,22 +4068,22 @@ var
   SaveIndex: Integer;
   Buffer,
     Entity: TCharCollection;
-  X: char;
+  X: ThtChar;
 
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
-  // Adds the given value as new char to the buffer.
+  // Adds the given value as new ThtChar to the buffer.
   begin
     // If the given value is less than 256 then it is considered as a character which
     // must be converted to Unicode, otherwise it is already a Unicode character.
     if I = 9 then
-      Buffer.Add(' ', SaveIndex)
-    else if I < ord(' ') then {control char}
+      Buffer.Add(SpcChar, SaveIndex)
+    else if I < ord(SpcChar) then {control ThtChar}
       Buffer.Add('?', SaveIndex) {is there an error symbol to use here?}
     else if (I >= 127) and (I <= 159) and not ForceUnicode then
-      Buffer.Add(Char(I), SaveIndex) {127 to 159 not valid Unicode}
+      Buffer.Add(ThtChar(I), SaveIndex) {127 to 159 not valid Unicode}
     else
     begin
-      // Unicode character. Flush any pending ANSI string data before storing it.
+      // Unicode character. Flush any pending ANSI ThtString data before storing it.
       if Buffer.Size > 0 then
       begin
         T.AddString(Buffer, CodePage);
@@ -4083,7 +4098,7 @@ begin
   try
     begin
     // A mask character. This introduces special characters and must be followed
-    // by a '#' char or one of the predefined (named) entities.
+    // by a '#' ThtChar or one of the predefined (named) entities.
       SaveIndex := PropStack.SIndex;
       GetCh;
       case LCh of
@@ -4095,12 +4110,12 @@ begin
             // Hex digits given.
               X := LCh; {either 'x' or 'X', save in case of error}
               GetCh;
-              if Ch in ['A'..'F', '0'..'9'] then
+              if Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] then
               begin
                 I := 0;
-                while Ch in ['A'..'F', '0'..'9'] do
+                while Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] do
                 begin
-                  if Ch in ['0'..'9'] then
+                  if Ch in [ThtChar('0')..ThtChar('9')] then
                     I := 16 * I + (Ord(Ch) - Ord('0'))
                   else
                     I := 16 * I + (Ord(Ch) - Ord('A') + 10);
@@ -4113,17 +4128,17 @@ begin
               end
               else
               begin
-                Buffer.Add('&', SaveIndex);
+                Buffer.Add(AmperChar, SaveIndex);
                 Buffer.Add(X, SaveIndex + 1);
               end;
             end
             else
             begin
             // Decimal digits given.
-              if Ch in ['0'..'9'] then
+              if Ch in [ThtChar('0')..ThtChar('9')] then
               begin
                 I := 0;
-                while Ch in ['0'..'9'] do
+                while Ch in [ThtChar('0')..ThtChar('9')] do
                 begin
                   I := 10 * I + (Ord(Ch) - Ord('0'));
                   GetCh;
@@ -4134,7 +4149,7 @@ begin
                   GetCh;
               end
               else
-                Buffer.Add('&', SaveIndex);
+                Buffer.Add(AmperChar, SaveIndex);
             end;
           end;
       else
@@ -4143,13 +4158,13 @@ begin
         try
           N := 0;
           // Pick up the entity name.
-          while (Ch in ['A'..'Z', '0'..'9']) and (N <= 10) do
+          while (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
           begin
             Entity.Add(LCh, PropStack.SIndex);
             GetCh;
             Inc(N);
           end;
-          // Now convert entity string into a character value. If there is no
+          // Now convert entity ThtString into a character value. If there is no
           // entity with that name simply add all characters as they are.
           if Entities.Find(Entity.AsString, I) then
           begin
@@ -4160,7 +4175,7 @@ begin
           end
           else
           begin
-            Buffer.Add('&', SaveIndex);
+            Buffer.Add(AmperChar, SaveIndex);
             Buffer.Concat(Entity);
           end;
         finally
@@ -4175,22 +4190,22 @@ begin
   end;
 end;
 
-function GetEntityStr(CodePage: integer): string;
-{read an entity and return it as a string.}
+function GetEntityStr(CodePage: integer): ThtString;
+{read an entity and return it as a ThtString.}
 var
   I, N: Integer;
   Collect,
-    Entity: string;
+    Entity: ThtString;
 
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
-  // Adds the given value as new char to the string.
+  // Adds the given value as new ThtChar to the ThtString.
   var
     W: WideChar;
-    Buffer: array[0..10] of char;
+    Buffer: array[0..10] of ThtChar;
   begin
     if I = 9 then
-      Result := ' '
-    else if I < ord(' ') then {control char}
+      Result := SpcChar
+    else if I < ord(SpcChar) then {control ThtChar}
       Result := '?' {is there an error symbol to use here?}
     else if (I >= 127) and (I <= 159) and not ForceUnicode then
       Result := Chr(I)
@@ -4210,10 +4225,10 @@ var
   end;
 
 begin
-  if LCh = '&' then
+  if LCh = AmperChar then
   begin
   // A mask character. This introduces special characters and must be followed
-  // by a '#' char or one of the predefined (named) entities.
+  // by a '#' ThtChar or one of the predefined (named) entities.
     Collect := '';
     NextCh;
     case LCh of
@@ -4224,16 +4239,16 @@ begin
           begin
           // Hex digits given.
             NextCh;
-            if Ch in ['A'..'F', '0'..'9'] then
+            if Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] then
             begin
               I := 0;
-              while Ch in ['A'..'F', '0'..'9'] do
+              while Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] do
               begin
-                if Ch in ['0'..'9'] then
+                if Ch in [ThtChar('0')..ThtChar('9')] then
                   I := 16 * I + (Ord(Ch) - Ord('0'))
                 else
                   I := 16 * I + (Ord(Ch) - Ord('A') + 10);
-                NextCh;
+                GetCh;
               end;
               AddNumericChar(I, False);
             // Skip the trailing semicolon.
@@ -4246,10 +4261,10 @@ begin
           else
           begin
           // Decimal digits given.
-            if Ch in ['0'..'9'] then
+            if Ch in [ThtChar('0')..ThtChar('9')] then
             begin
               I := 0;
-              while Ch in ['0'..'9'] do
+              while Ch in [ThtChar('0')..ThtChar('9')] do
               begin
                 I := 10 * I + (Ord(Ch) - Ord('0'));
                 NextCh;
@@ -4268,14 +4283,14 @@ begin
       Entity := '';
       N := 0;
       // Pick up the entity name.
-      while (Ch in ['A'..'Z', '0'..'9']) and (N <= 10) do
+      while (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
       begin
         Entity := Entity + LCh;
         NextCh;
         Inc(N);
       end;
 
-      // Now convert entity string into a character value. If there is no
+      // Now convert entity ThtString into a character value. If there is no
       // entity with that name simply add all characters as they are.
       if Entities.Find(Entity, I) and ((Ch = ';') or (Integer(Entities.Objects[I]) <= 255)) then
       begin
@@ -4294,13 +4309,13 @@ end;
 
 type
   TEntity = record
-    Name: string;
+    Name: ThtString;
     Value: WideChar;
   end;
 
 const
   EntityCount = 253;
-  // Note: the entities will be sorted into a string list to make binary search possible.
+  // Note: the entities will be sorted into a ThtString list to make binary search possible.
   EntityDefinitions: array[0..EntityCount - 1] of TEntity = (
     // ISO 8859-1 characters
     (Name: 'nbsp'; Value: #160), // no-break space = non-breaking space, U+00A0 ISOnum
@@ -4604,12 +4619,12 @@ const
 
 {$IFNDEF Delphi6_Plus}
 type
-  TCaseSensitiveStringList = class(TStringList)
+  TCaseSensitiveStringList = class(ThtStringList)
   public
-    function Find(const S: string; var Index: Integer): Boolean; override;
+    function Find(const S: ThtString; var Index: Integer): Boolean; override;
   end;
 
-function TCaseSensitiveStringList.Find(const S: string; var Index: Integer): Boolean;
+function TCaseSensitiveStringList.Find(const S: ThtString; var Index: Integer): Boolean;
 {a case sensitive Find}
 var
   L, H, I, C: Integer;
@@ -4662,7 +4677,7 @@ begin
 // Put the Entities into a sorted StringList for faster access.
   if Entities = nil then
   begin
-    Entities := TStringList.Create;
+    Entities := ThtStringList.Create;
     with Entities do
     begin
       CaseSensitive := True;

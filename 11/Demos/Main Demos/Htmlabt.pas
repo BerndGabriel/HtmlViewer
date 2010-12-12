@@ -35,7 +35,7 @@ uses
 {$ifdef LCL}
   LResources, LCLVersion,
 {$endif}
-  Htmlview, StdCtrls;
+  HtmlGlobals, Htmlview, StdCtrls, HTMLUn2;
 
 const
   Version = '10.2';
@@ -48,7 +48,8 @@ type
     BitBtn1: TBitBtn;
     Viewer: THTMLViewer;
   public
-    constructor CreateIt(Owner: TComponent; const ProgName, CompName: string);
+    constructor CreateIt(Owner: TComponent; const ProgName, CompName: string); overload;
+    constructor CreateIt(Owner: TComponent; const Message: ThtString); overload;
   end;
 
 implementation
@@ -57,6 +58,87 @@ implementation
 {$else}
 {$R *.DFM}
 {$endif}
+
+function ConfigInfo: String;
+begin
+  Result := '<ul><li>compiled with ' +
+{$ifdef Ver90}
+    'Delphi 2'
+{$endif}
+{$ifdef Ver93}
+    'C++Builder 1'
+{$endif}
+{$ifdef Ver100}
+    'Delphi 3'
+{$endif}
+{$ifdef Ver110}
+    'C++Builder 3'
+{$endif}
+{$ifdef Ver120}
+    'Delphi 4'
+{$endif}
+{$ifdef Ver125}
+    'C++Builder 4'
+{$endif}
+{$ifdef Ver130}
+  {$ifdef BCB}
+    'C++Builder 5'
+  {$else}
+    'Delphi 5'
+  {$endif}
+{$endif}
+{$ifdef Ver140}
+    'Delphi 6'
+{$endif}
+{$ifdef Ver150}
+    'Delphi 7'
+{$endif}
+{$ifdef Ver170}
+    'Delphi 2005'
+{$endif}
+{$ifdef Ver185}
+    'Delphi 2007'
+{$else}
+  {$ifdef Ver180}
+      'Delphi 2006'
+  {$endif}
+{$endif}
+{$ifdef Ver200}
+    'Delphi 2009'
+{$endif}
+{$ifdef Ver210}
+    'Delphi 2010'
+{$endif}
+{$ifdef LCL}
+    'Lazarus ' + lcl_version
+{$endif}
+    ;
+
+{$ifdef UseTNT}
+  Result := Result + '<li>Using TNT unicode controls.';
+{$else}
+  {$ifdef UseElPack}
+    Result := Result + '<li>Using ElPack unicode controls.';
+  {$else}
+    {$ifdef UNICODE}
+      {$ifdef LCL}
+        Result := Result + '<li>Using LCL unicode character controls.';
+      {$else}
+        Result := Result + '<li>Using VCL unicode character controls.';
+      {$endif}
+    {$else}
+      {$ifdef LCL}
+        Result := Result + '<li>Using LCL single byte character controls.';
+      {$else}
+        Result := Result + '<li>Using VCL single byte character controls.';
+      {$endif}
+    {$endif}
+  {$endif}
+{$endif}
+
+  Result := Result + '</ul>';
+end;
+
 
 constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName: string);
 var
@@ -67,65 +149,29 @@ begin
   Viewer.DefFontName := 'MS Sans Serif';
   Viewer.DefFontSize := 9;
   Viewer.DefFontColor := clNavy;
-  S :='<body bgcolor="ffffeb" text="000080">'+
+  S :='<body text="000080">'+
     '<center>'+
     '<h1>'+ProgName+'</h1>'+
     '<font color="Maroon">A demo program for the '+CompName+' component</font>'+
-    '<h3>Version '+Version+' compiled with '+
-{$ifdef Ver90}
-    'Delphi 2'+
-{$endif}
-{$ifdef Ver93}
-    'C++Builder 1'+
-{$endif}
-{$ifdef Ver100}
-    'Delphi 3'+
-{$endif}
-{$ifdef Ver110}
-    'C++Builder 3'+
-{$endif}
-{$ifdef Ver120}
-    'Delphi 4'+
-{$endif}
-{$ifdef Ver125}
-    'C++Builder 4'+
-{$endif}
-{$ifdef Ver130}
-  {$ifdef BCB}
-    'C++Builder 5'+
-  {$else}
-    'Delphi 5'+
-  {$endif}
-{$endif}
-{$ifdef Ver140}
-    'Delphi 6'+
-{$endif}
-{$ifdef Ver150}
-    'Delphi 7'+
-{$endif}
-{$ifdef Ver170}
-    'Delphi 2005'+
-{$endif}
-{$ifdef Ver185}
-    'Delphi 2007'+
-{$else}
-  {$ifdef Ver180}
-      'Delphi 2006'+
-  {$endif}
-{$endif}
-{$ifdef Ver200}
-    'Delphi 2009'+
-{$endif}
-{$ifdef Ver210}
-    'Delphi 2010'+
-{$endif}
-{$ifdef LCL}
-    'Lazarus ' + lcl_version +
-{$endif}
-    '</h3>'+
+    '<h3>Version '+Version+'</h3>'+
     '</center>'+
+    ConfigInfo +
     '</body>';
-  Viewer.LoadFromBuffer(@S[1], Length(S), '');
+  Viewer.LoadFromString(S);
+end;
+
+
+constructor TAboutBox.CreateIt(Owner: TComponent;
+  const Message: ThtString);
+begin
+  inherited Create(Owner);
+  inherited Loaded;
+  if Owner is TCustomForm then
+    Caption := TCustomForm(Owner).Caption;
+  Viewer.DefFontName := 'Verdana';
+  Viewer.DefFontSize := 12;
+  Viewer.DefFontColor := clBlack;
+  Viewer.LoadFromString('<body>' + Message + '</body>');
 end;
 
 initialization

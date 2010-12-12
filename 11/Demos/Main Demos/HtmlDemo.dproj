@@ -73,7 +73,7 @@
     <DCCReference Include="PrintStatusForm.pas">
       <Form>PrnStatusForm</Form>
     </DCCReference>
-    <DCCReference Include="Submit.pas">
+    <DCCReference Include="SubmitTNT.PAS">
       <Form>SubmitForm</Form>
     </DCCReference>
   </ItemGroup>

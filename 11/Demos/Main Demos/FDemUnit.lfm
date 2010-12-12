@@ -1,28 +1,24 @@
 object Form1: TForm1
-  Left = 135
-  Top = 398
+  Left = 209
+  Height = 292
+  Top = 333
+  Width = 494
   Caption = 'Frame Demo'
-  ClientHeight = 290
-  ClientWidth = 502
-  Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
+  ClientHeight = 272
+  ClientWidth = 494
   Font.Height = -13
   Font.Name = 'System'
-  Font.Style = []
   Menu = MainMenu1
-  OldCreateOrder = True
-  Position = poDesktopCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 16
+  Position = poDesktopCenter
+  LCLVersion = '0.9.28.2'
   object FrameViewer: TFrameViewer
     Left = 0
+    Height = 218
     Top = 27
-    Width = 502
-    Height = 236
+    Width = 494
     CharSet = DEFAULT_CHARSET
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
@@ -45,11 +41,11 @@ object Form1: TForm1
     OnProgress = FrameViewerProgress
     OnRightClick = FrameViewerRightClick
     OnSoundRequest = SoundRequest
-    PrintMarginBottom = 3.000000000000000000
-    PrintMarginLeft = 2.000000000000000000
-    PrintMarginRight = 2.000000000000000000
-    PrintMarginTop = 2.000000000000000000
-    PrintScale = 1.000000000000000000
+    PrintMarginBottom = 3
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintScale = 1
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
@@ -57,91 +53,83 @@ object Form1: TForm1
   end
   object Panel1: TPanel
     Left = 0
-    Top = 0
-    Width = 502
     Height = 27
+    Top = 0
+    Width = 494
     Align = alTop
     BevelOuter = bvNone
     BorderWidth = 2
+    ClientHeight = 27
+    ClientWidth = 494
     TabOrder = 1
-    DesignSize = (
-      502
-      27)
     object ReloadButton: TButton
       Left = 2
+      Height = 23
       Top = 2
       Width = 65
-      Height = 23
-      Anchors = [akLeft, akTop, akBottom]
+      Align = alLeft
       Caption = '&Reload'
       Enabled = False
-      TabOrder = 0
       OnClick = ReloadClick
+      TabOrder = 0
     end
     object FwdButton: TButton
       Left = 67
+      Height = 23
       Top = 2
       Width = 65
-      Height = 23
-      Anchors = [akLeft, akTop, akBottom]
+      Align = alLeft
       Caption = '&Fwd'
       Enabled = False
-      TabOrder = 1
       OnClick = FwdButtonClick
+      TabOrder = 1
     end
     object BackButton: TButton
       Left = 132
+      Height = 23
       Top = 2
       Width = 65
-      Height = 23
-      Anchors = [akLeft, akTop, akBottom]
+      Align = alLeft
       Caption = '&Back'
       Enabled = False
-      TabOrder = 2
       OnClick = BackButtonClick
+      TabOrder = 2
     end
     object Edit2: TEdit
       Left = 197
+      Height = 23
       Top = 2
-      Width = 303
-      Height = 24
-      Anchors = [akLeft, akTop, akRight, akBottom]
+      Width = 295
+      Align = alClient
       TabOrder = 3
     end
   end
-  object MediaPlayer: TMediaPlayer
-    Left = 76
-    Top = 115
-    Width = 253
-    Height = 30
-    Visible = False
-    TabOrder = 2
-    OnNotify = MediaPlayerNotify
-  end
   object Panel3: TPanel
     Left = 0
-    Top = 263
-    Width = 502
     Height = 27
+    Top = 245
+    Width = 494
     Align = alBottom
     Alignment = taLeftJustify
     BevelOuter = bvNone
     BorderWidth = 2
-    TabOrder = 3
+    ClientHeight = 27
+    ClientWidth = 494
+    TabOrder = 2
     object ProgressBar: TProgressBar
-      Left = 350
+      Left = 342
+      Height = 23
       Top = 2
       Width = 150
-      Height = 23
       Align = alRight
       TabOrder = 0
       Visible = False
     end
     object InfoPanel: TPanel
       Left = 2
-      Top = 2
-      Width = 348
       Height = 23
+      Top = 2
+      Width = 340
       Align = alClient
       Alignment = taLeftJustify
       BevelOuter = bvLowered
@@ -149,8 +137,8 @@ object Form1: TForm1
     end
   end
   object MainMenu1: TMainMenu
-    Left = 360
-    Top = 72
+    left = 360
+    top = 72
     object File1: TMenuItem
       Caption = '&File'
       OnClick = File1Click
@@ -227,30 +215,21 @@ object Form1: TForm1
     end
   end
   object OpenDialog: TOpenDialog
-    DefaultExt = 'htm'
+    DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    Left = 320
-    Top = 72
+    left = 320
+    top = 72
   end
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    Left = 400
-    Top = 72
-  end
-  object PrintDialog: TPrintDialog
-    FromPage = 1
-    MinPage = 1
-    MaxPage = -1
-    Options = [poPageNums]
-    ToPage = 1
-    Left = 272
-    Top = 73
+    left = 400
+    top = 72
   end
   object PopupMenu: TPopupMenu
-    Left = 360
-    Top = 105
+    left = 360
+    top = 105
     object ViewImage: TMenuItem
       Caption = '&View Image'
       OnClick = ViewImageClick
@@ -271,11 +250,7 @@ object Form1: TForm1
     Enabled = False
     Interval = 200
     OnTimer = Timer1Timer
-    Left = 236
-    Top = 66
-  end
-  object PrinterSetupDialog: TPrinterSetupDialog
-    Left = 440
-    Top = 65
+    left = 272
+    top = 72
   end
 end

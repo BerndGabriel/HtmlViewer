@@ -127,6 +127,10 @@
     {$define TransparentStretchBltMissing}
   {$endif}
 
+  {$ifdef Compiler17_Plus}
+    {$define UseInline}
+  {$endif}
+
   { Set Delphi Compiler Switches }
 
   {$ifdef ver150}  {Delphi 7}
@@ -216,14 +220,6 @@
         {Defining UseElpack allows the Elpack Unicode controls to be used for
         HTML Form controls in place of the Delphi TEdit, TButton, TListbox,
         TCombobox, and TMemo controls.  See "Using Third Party Controls" below.}
-
-{$ifdef UseTNT}
-  {$define UseUnicodeControls}
-{$endif}
-{$ifdef UseElpack}
-  {$define UseUnicodeControls}
-{$endif}
-
 {
 Using Third Party Unicode Controls
 
@@ -248,7 +244,7 @@ time constant, "UseTNT" or "UseElpack".  You can define these in htmlcons.inc or
 in the Project|Options dialog, Directories/Conditionals tab.  Be sure and do a
 complete Build on your application after changing these compile time constants.
 
-htmlsubs.pas defines several new symbols to represent the form controls and types
+HtmlGlobals.pas defines several new symbols to represent the form controls and types
 depending on the set of controls being used. These types are
 ThtEdit, ThtButton, ThtMemo, ThtCombobox, ThtListbox, ThtString and ThtStringList.
 
@@ -268,4 +264,36 @@ should become:
       if TFormControlObj(Items[I]).TheControl is ThtEdit then
         ThtEdit(TFormControlObj(Items[I]).TheControl).Text := ........
 }
+{
+  At last decide, which kind of strings to use:
+  if "UseUnicode" is defined
+    WideChars and WideStrings are used.
+  Otherwize
+    AnsiChars and AnsiString are used.
+
+  HtmlGlobals defines types Tht* according to these settings.
+}
+{$ifdef UseTNT}
+  {$define UseUnicode}
+{$endif}
+{$ifdef UseElpack}
+  {$define UseUnicode}
+{$endif}
+{$ifdef UNICODE}
+  {$define UseUnicode}
+{$endif}
+
+{$ifdef UseUnicode}
+{$else}
+{$endif}
+
+{$ifdef UseUnicode}
+  {$ifdef UNICODE}
+  {$else}
+  {$endif}
+{$else}
+  {$ifdef UNICODE}
+  {$else}
+  {$endif}
+{$endif}
 

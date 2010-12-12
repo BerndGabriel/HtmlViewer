@@ -31,7 +31,7 @@ interface
 
 uses
   Windows, Classes, Graphics{$ifdef LCL}, Interfaces{$endif}, Controls,
-  HtmlUn2, HtmlSubs, StyleUn;
+  HtmlGlobals, HtmlUn2, HtmlSubs, StyleUn;
 
 type
 
@@ -39,7 +39,7 @@ type
   public
     Value: ThtString; {<option>  Value=  }
     Selected: boolean; {set if Selected found in <option>}
-    Attributes: TStringList; {list of <option> attributes}
+    Attributes: ThtStringList; {list of <option> attributes}
     destructor Destroy; override;
   end;
 
@@ -81,7 +81,7 @@ type
     destructor Destroy; override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
-    procedure AddStr(const WS: WideString; Selected: boolean; Attr: TStringList; CodePage: integer);
+    procedure AddStr(const S: WideString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
     procedure ResetToValue; override;
     procedure SetHeightWidth(Canvas: TCanvas); override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
@@ -272,32 +272,18 @@ begin
   SetTextAlign(Canvas.handle, TA_Left + TA_Top);
   ARect := Rect(X1 + Addon, Y1 + Addon, X1 + LB.Width - 2 * Addon, Y1 + LB.Height - 2 * Addon);
   for I := LB.TopIndex to Min(LB.Items.Count - 1, LB.TopIndex + LBSize - 1) do
-{$ifdef UseUnicodeControls}
-    ExtTextOutW(Canvas.Handle, X1 + Addon, Y1 + Addon + (I - LB.TopIndex) * H2, ETO_CLIPPED, @ARect,
-      PWideChar(LB.Items[I]), Length(LB.Items[I]), nil)
-{$else}
-    Canvas.TextRect(ARect, X1 + Addon, Y1 + Addon + (I - LB.TopIndex) * H2, LB.Items[I]);
-{$endif}
+    ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + (I - LB.TopIndex) * H2, LB.Items[I]);
 end;
 
-procedure TListBoxFormControlObj.AddStr(const WS: WideString; Selected: boolean;
-  Attr: TStringList; CodePage: integer);
+procedure TListBoxFormControlObj.AddStr(const S: WideString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
 var
   Opt: TOptionObj;
   DC: HDC;
   OldFont: THandle;
   ExtS: TSize;
-  S1, S2: ThtString;
+  S1, S2: WideString;
 begin
-{$ifdef UNICODE}
-  S1 := WS;
-{$else}
-  {$ifdef UseUnicodeControls}
-  S1 := WS;
-  {$else}
-  S1 := WideStringToMultibyte(CodePage, WS);
-  {$endif}
-{$endif}
+  S1 := S;
   if S1 = '' then
     S1 := ' ';
   Opt := TOptionObj.Create;
@@ -317,11 +303,11 @@ begin
   DC := GetDC(0);
   try
     OldFont := SelectObject(DC, TheFont.Handle);
-{$ifdef UseUnicodeControls}
+{.$ifdef UseUnicode}
     GetTextExtentPoint32W(DC, PWideChar(S1), Length(S1), ExtS);
-{$else}
-    GetTextExtentPoint32(DC, PChar(S1), Length(S1), ExtS);
-{$endif}
+{.$else}
+//    GetTextExtentPoint32A(DC, PChar(S1), Length(S1), ExtS);
+{.$endif}
     SelectObject(DC, OldFont);
   finally
     ReleaseDC(0, DC);
@@ -541,12 +527,7 @@ begin
   Canvas.Font := CB.Font;
   SetTextAlign(Canvas.handle, TA_Left + TA_Top);
   ARect := Rect(X1 + 4, Y1 + 4, X1 + CB.Width - 8, Y1 + CB.Height - 3);
-{$ifdef UseUnicodeControls}
-  ExtTextOutW(Canvas.Handle, X1 + 4, Y1 + 4, ETO_CLIPPED, @ARect,
-    PWideChar(CB.Items[CB.ItemIndex]), Length(CB.Items[CB.ItemIndex]), nil)
-{$else}
-  Canvas.TextRect(ARect, X1 + 4, Y1 + 4, CB.Items[CB.ItemIndex]);
-{$endif}
+  ThtCanvas(Canvas).htTextRect(ARect, X1 + 4, Y1 + 4, CB.Items[CB.ItemIndex]);
 end;
 
 procedure TComboFormControlObj.SetHeightWidth(ACanvas: TCanvas);
@@ -710,12 +691,7 @@ begin
     SetTextAlign(Canvas.handle, TA_Left + TA_Top);
     ARect := Rect(X1 + Addon, Y1 + Addon, X1 + Width - 2 * Addon, Y1 + Height - 2 * Addon);
     for I := 0 to Min(Lines.Count - 1, Rows - 1) do
-{$ifdef UseUnicodeControls}
-      ExtTextOutW(Canvas.Handle, X1 + Addon, Y1 + Addon + I * H2, ETO_CLIPPED, @ARect,
-        PWideChar(Lines[I]), Length(Lines[I]), nil)
-{$else}
-      Canvas.TextRect(ARect, X1 + Addon, Y1 + Addon + I * H2, Lines[I]);
-{$endif}
+      ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + I * H2, Lines[I]);
   end;
 end;
 

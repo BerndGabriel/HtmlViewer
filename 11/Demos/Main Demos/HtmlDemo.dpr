@@ -4,7 +4,7 @@ program HtmlDemo;
 uses
   Forms,
   demounit in 'demounit.pas' {Form1},
-  Submit in 'Submit.pas' {SubmitForm},
+  SubmitTNT in 'SubmitTNT.PAS' {SubmitForm},
   Fontdlg in 'Fontdlg.pas' {FontForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},

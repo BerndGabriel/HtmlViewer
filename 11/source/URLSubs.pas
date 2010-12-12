@@ -24,47 +24,50 @@ are covered by separate copyright notices located in those modules.
 }
 unit URLSubs;
 
+{.$I htmlcons.inc}
+
 interface
 
-{$I htmlcons.inc}
+uses
+  HtmlGlobals;
 
 {***************************************************************************************************
  * URL processing methods
  **************************************************************************************************}
 
-procedure ParseURL(const url: string; var Proto, User, Pass, Host, Port, Path: string);
+procedure ParseURL(const url: ThtString; var Proto, User, Pass, Host, Port, Path: ThtString);
 {François PIETTE's URL parsing procedure}
 
-procedure SplitString(var Str: string; Sep: Char; out Spall: string);
+procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
 {Split Str at first appearance of Sep into Str and Spall. Spall starts with Sep.}
 
-procedure SplitDest(const Src: string; out Name, Dest: string); overload;
-procedure SplitDest(var Src: string; out Dest: string); overload;
+procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload;
+procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
 {Split local destination from an URL at first appearance of '#', returns Dest with separating '#'}
 
-procedure SplitQuery(const Src: string; out Name, Query: string); overload;
-procedure SplitQuery(var Src: string; out Query: string); overload;
+procedure SplitQuery(const Src: ThtString; out Name, Query: ThtString); overload;
+procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload;
 {Split query from an URL at first appearance of '?', returns Query with separating '?'}
 
-function GetBase(const URL: string): string; deprecated;
-function GetURLBase(const URL: string): string;
+function GetBase(const URL: ThtString): ThtString; deprecated;
+function GetURLBase(const URL: ThtString): ThtString;
 {Given an URL, get the base directory}
 
-function Combine(Base, APath: string): string; deprecated;
-function CombineURL(Base, APath: string): string;
+function Combine(Base, APath: ThtString): ThtString; deprecated;
+function CombineURL(Base, APath: ThtString): ThtString;
 {combine a base and a path taking into account that overlap might exist}
 {needs work for cases where directories might overlap}
 
-function IsFullURL(const URL: string): boolean;
+function IsFullURL(const URL: ThtString): boolean;
 {set if contains a protocol}
 
-function GetProtocol(const URL: string): string;
+function GetProtocol(const URL: ThtString): ThtString;
 {return the http, mailto, etc in lower case}
 
-function GetURLExtension(const URL: string): string;
+function GetURLExtension(const URL: ThtString): ThtString;
 {returns extension without the '.', mixed case}
 
-function GetURLFilenameAndExt(const URL: string): string;
+function GetURLFilenameAndExt(const URL: ThtString): ThtString;
 {returns mixed case after last /}
 
 
@@ -72,17 +75,17 @@ function GetURLFilenameAndExt(const URL: string): string;
  * both URL and DOS processing methods
  **************************************************************************************************}
 
-function Normalize(const URL: string): string;
+function Normalize(const URL: ThtString): ThtString;
 {lowercase, trim, and make sure a '/' terminates a hostname, adds http://}
 
-function DosToHTML(FName: string): string;
+function DosToHTML(FName: ThtString): ThtString;
 {convert an Dos style filename to one for HTML.  Does not add the file:///}
 
-function DosToHtmlNoSharp(FName: string): string;
+function DosToHtmlNoSharp(FName: ThtString): ThtString;
 {convert a Dos style filename to one for HTML.  Does not add the file:///.
  use where "#" is not being used as a local position but rather is part of filename.}
 
-function HTMLToDos(FName: string): string;
+function HTMLToDos(FName: ThtString): ThtString;
 {convert an HTML style filename to one for Dos}
 
 
@@ -90,7 +93,7 @@ function HTMLToDos(FName: string): string;
  * DOS processing methods
  **************************************************************************************************}
 
-function CombineDos(const Base, Path: string): string;
+function CombineDos(const Base, Path: ThtString): ThtString;
 {combine a base and a path}
 
 
@@ -102,7 +105,7 @@ uses
 
 {----------------GetURLBase}
 
-function GetURLBase(const URL: string): string;
+function GetURLBase(const URL: ThtString): ThtString;
 {Given an URL, get the base directory}
 var
   I, J, Q: integer;
@@ -123,13 +126,13 @@ begin
   Result := Result + '/';
 end;
 
-function GetBase(const URL: string): string;
+function GetBase(const URL: ThtString): ThtString;
 begin
   Result := GetURLBase(URL);
 end;
 
 {----------------Combine}
-function CombineDos(const Base, Path: string): string;
+function CombineDos(const Base, Path: ThtString): ThtString;
 var
   L: Integer;
 begin
@@ -146,17 +149,17 @@ begin
       Result := Base + '\' + Path;
 end;
 
-function Combine(Base, APath: string): string;
+function Combine(Base, APath: ThtString): ThtString;
 begin
   Result := CombineURL(Base, APath);
 end;
 
-function CombineURL(Base, APath: string): string;
+function CombineURL(Base, APath: ThtString): ThtString;
 {combine a base and a path taking into account that overlap might exist}
 {needs work for cases where directories might overlap}
 var
   I, J, K: integer;
-  Proto: string;
+  Proto: ThtString;
 begin
   Base := Trim(Base);
   Proto := GetProtocol(Base);
@@ -221,12 +224,12 @@ begin
   end;
 end;
 
-function Normalize(const URL: string): string;
+function Normalize(const URL: ThtString): ThtString;
 {trim, and make sure a '/' terminates a hostname and http:// is present.
  In other words, if there is only 2 /'s, put one on the end}
 var
   I, J, LastSlash: integer;
-  Query: string;
+  Query: ThtString;
 begin
   Result := Trim(URL);
   J := Pos('?', Result);
@@ -257,10 +260,10 @@ begin
   Result := Result + Query;
 end;
 
-function IsFullURL(const URL: string): boolean;
+function IsFullURL(const URL: ThtString): boolean;
 var
   N: integer;
-  S: string;
+  S: ThtString;
 begin
   N := Pos('?', Url);
   if N > 0 then
@@ -271,10 +274,10 @@ begin
   Result := (N > 0) and (N < Pos('/', S)) or (Pos('mailto:', Lowercase(S)) <> 0);
 end;
 
-function GetProtocol(const URL: string): string;
+function GetProtocol(const URL: ThtString): ThtString;
 var
-  User, Pass, Port, Host, Path: string;
-  S: string;
+  User, Pass, Port, Host, Path: ThtString;
+  S: ThtString;
   I: integer;
 begin
   I := Pos('?', URL);
@@ -286,7 +289,7 @@ begin
   Result := Lowercase(Result);
 end;
 
-function GetURLExtension(const URL: string): string;
+function GetURLExtension(const URL: ThtString): ThtString;
 var
   I, N: integer;
 begin
@@ -307,7 +310,7 @@ begin
     end;
 end;
 
-function GetURLFilenameAndExt(const URL: string): string;
+function GetURLFilenameAndExt(const URL: ThtString): ThtString;
 var
   I: integer;
 begin
@@ -320,14 +323,14 @@ begin
     end;
 end;
 
-{ Find the count'th occurence of the s string in the t string.              }
+{ Find the count'th occurence of the s ThtString in the t ThtString.              }
 { If count < 0 then look from the back                                      }
 {Thanx to François PIETTE}
 
-function Posn(const s, t: string; Count: Integer): Integer;
+function Posn(const s, t: ThtString; Count: Integer): Integer;
 var
   i, h, Last: Integer;
-  u: string;
+  u: ThtString;
 begin
   u := t;
   if Count > 0 then
@@ -374,11 +377,11 @@ end;
 {Thanx to François PIETTE}
 
 procedure ParseURL(
-  const url: string;
-  var Proto, User, Pass, Host, Port, Path: string);
+  const url: ThtString;
+  var Proto, User, Pass, Host, Port, Path: ThtString);
 var
   p, q: Integer;
-  s: string;
+  s: ThtString;
 begin
   proto := '';
   User := '';
@@ -470,7 +473,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 28.11.2010 --
-procedure SplitString(var Str: string; Sep: Char; out Spall: string);
+procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
 // extracted from several locations spread all over the code.
 var
   I: Integer;
@@ -485,35 +488,35 @@ begin
     Spall := '';
 end;
 
-procedure SplitDest(var Src: string; out Dest: string); overload;
+procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
 begin
   SplitString(Src, '#', Dest);
 end;
 
-procedure SplitDest(const Src: string; out Name, Dest: string); overload;
+procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload;
 {Split an URL into filename and Destination}
 begin
   Name := Src;
   SplitString(Name, '#', Dest);
 end;
 
-procedure SplitQuery(var Src: string; out Query: string); overload;
+procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload;
 begin
   SplitString(Src, '?', Query);
 end;
 
-procedure SplitQuery(const Src: string; out Name, Query: string); overload;
+procedure SplitQuery(const Src: ThtString; out Name, Query: ThtString); overload;
 begin
   Name := Src;
   SplitString(Name, '?', Query);
 end;
 
-function DosToHTML(FName: string): string;
+function DosToHTML(FName: ThtString): ThtString;
 {convert a Dos style filename to one for HTML.  Does not add the file:///}
 var
   Colon: integer;
 
-  procedure Replace(Old, New: char);
+  procedure Replace(Old, New: ThtChar);
   var
     I: integer;
   begin
@@ -534,7 +537,7 @@ begin
   Result := FName;
 end;
 
-function DosToHtmlNoSharp(FName: string): string;
+function DosToHtmlNoSharp(FName: ThtString): ThtString;
 {convert a Dos style filename to one for HTML.  Does not add the file:///.
  use where "#" is not being used as a local position but rather is part of filename.}
 var
@@ -550,12 +553,12 @@ begin
   Result := FName;
 end;
 
-function HTMLToDos(FName: string): string;
+function HTMLToDos(FName: ThtString): ThtString;
 {convert an HTML style filename to one for Dos}
 var
   I: integer;
 
-  procedure Replace(Old, New: char);
+  procedure Replace(Old, New: ThtChar);
   var
     I: integer;
   begin
@@ -567,17 +570,28 @@ var
     end;
   end;
 
+  function CharToHexInt(Chr: ThtChar): Integer;
+  begin
+    case Chr of
+      '0'..'9': Result := Ord(Chr) - Ord('0');
+      'A'..'F': Result := Ord(Chr) - Ord('A') + 10;
+      'a'..'f': Result := Ord(Chr) - Ord('a') + 10;
+    else
+      raise EConvertError.Create('Not a valid escape character: ''' + Chr + '''');
+    end;
+  end;
+
   procedure ReplaceEscapeChars;
   var
-    S: string;
+//    S: ThtString;
     I: integer;
   begin
     I := Pos('%', FName);
     while (I > 1) and (I <= Length(FName) - 2) do
     begin
-      S := '$' + FName[I + 1] + FName[I + 2];
+//      S := '$' + FName[I + 1] + FName[I + 2];
       try
-        FName[I] := chr(StrToInt(S));
+        FName[I] := ThtChar(CharToHexInt(FName[I + 1]) * 16 + CharToHexInt(FName[I + 2])); // chr(StrToInt(S));
         Delete(FName, I + 1, 2);
       except {ignore exception}
         Exit;
