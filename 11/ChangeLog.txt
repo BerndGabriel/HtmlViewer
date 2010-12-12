@@ -1,0 +1,113 @@
+------------------------------------------------------------------------ 
+PBear THtml v9.47
+------------------------------------------------------------------------ 
+
+Version 9.47
+[Fixed]    Minor fixes for Objects copied by Move() functions,
+           re-checked unicode support
+
+Version 9.46 
+[Added]    Support for Delphi 2009
+[Fixed]    CreateHeaderFooter using CreateParented instead of create
+           in order to support background printing from invisible 
+		   controls
+[Changed]  Directory structure
+[Updated]  zLib(Ex) now using v1.2.3
+[Updated]  PngImage to 1.564
+
+Version 9.45 
+[Added]    TPrinterSetupDialog to Frame Demo program. 
+[Changed]  Allow background: none; to suppress background color.
+[Fixed]    Problem where caret could not be found in text to left of 
+           floating object.
+[Changed]  In stylesheets, accomodate comments like /*****/. 
+[Fixed]    MakePagedMetafiles to properly page. 
+
+Version 9.44
+[Added]    Added an item to the htOption and fvOption properties to 
+           prevent links from being selected when clicked. See the 
+		   helpfile.
+[Added]    NoGDIPlus compile time option.
+[Fixed]    Problem with underlining some Chinese and Japanese 
+           characters for some fonts. 
+[Changed]  Change initialization of GDIPLUS.DLL to fix problems with 
+           some DLL and ActiveX applications.
+[Fixed]    Problem with 3 or more nested <ul>s in a table when the 
+           end tags were missing. 
+
+Version 9.43
+[Fixed]    Clip region error when printing with high dpi resolution.
+[Fixed]    Bug with TabIndex attribute when used in links where 
+           a leading space had to be eliminated.
+[Fixed]    Problem stretching small (like 1 pixel) png images. 
+
+Version 9.42
+[Added]    Support for parent child operator (>) in contextual 
+           selectors.
+[Fixed]    Contextual selector syntax problem.
+[Fixed]    Removed restriction of 2000 on <pre> text length. Use 
+           MaxHScroll (normally set to 6000).
+[Fixed]    Table headers and footers which got broken in v 9.41. 
+[Fixed]    Problem with tiling GDI+ png images in table backgrounds. 
+[Fixed]    Problem where border defined with percent width would
+           become smaller than its enclosed object if viewer was
+		   shrunk. 
+
+Version 9.41
+[Added]    Limit extremely large font size entries.
+[Added]    Allow some null characters in document without aborting. 
+           Substitute "?" for some control characters.
+[Added]    A table cell may now be hotlinked using syntax like: 
+           <td href="file.htm#offset" target="sometarget">...</td>
+[Added]    The Title attribute can now also be used for the whole 
+           table cell.
+[Added]    Added Thai language support.
+[Fixed]    Problem where text file would not scroll horizontally.
+[Fixed]    <center> which didn't work if the block had a restricted 
+           width set. 
+[Fixed]    Problem with selecting text when the Text-Indent property
+           was negative.
+[Fixed]    Some fixes for Absolute and Relative blocks.
+[Fixed]    Problems where ThtmlViewer cursors conflicted with user's
+           special cursors. 
+
+Version 9.4
+[Added]    Support for alpha transparency in PNG images. 
+[Added]    Permit Page-Break properties in <br> tag.
+[Fixed]    Remove NoGIF and NoPNG compile time options.
+[Fixed]    Modify Word-wrap: break-word; so that it works like in 
+           IExplorer. 
+
+Version 9.32
+[Added]    Add Delphi 2006 to the Delphi versions supported. 
+[Added]    Add char entity, "&apos;" as #8217.
+[Fixed]    Fix clipping problem in <pre> text which showed up for 
+           wide left margins.
+[Fixed]    Fix some table colspan problems when rowspan is used.
+[Fixed]    Fix problem where Floating blocks were not correct when 
+           text-align is center or right. 
+[Fixed]    Permit Floating objects when positioning is Relative. 
+
+Version 9.31
+[Added]    Add OnObjectTag event to allow user to add support 
+           for objects. See the helpfile and FlashDemo program.
+[Added]    Use font specified by the DefaultFontName property when a 
+           font can't be found. 
+[Added]    IDControl property can now be used for hidden "controls"
+           also. See helpfile for details.
+[Added]    Add Readonly attribute support for <input> and <textarea>.
+[Added]    Add background color CSS support for form controls.
+[Added]    OpenPrint, AbortPrint, and ClosePrint methods are now 
+           available to allow printing of miscellaneous pages in one
+		   print job. 
+[Fixed]    A <li> without text following will now show the bullet.
+[Fixed]    Fix several gif and animated gif problems. 
+
+Version 9.3
+[Added]    Add printing support for <thead>, <tbody>, and <tfoot>.
+[Added]    Add support for using multiple CSS classes as in 
+           class="class1 class2". 
+[Fixed]    Fix <page> tag problem with horizontal scrollbar.
+[Fixed]    Fix width=100% on images so the width includes the border.
+
+------------------------------------------------------------------------ 

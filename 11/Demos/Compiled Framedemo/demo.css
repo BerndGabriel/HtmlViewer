@@ -1,0 +1,20 @@
+
+
+  body    {background:  white; font: 10pt Arial; margin-top: 15;}
+  .backcolor  {background-color: #a5cdeb;}
+  table, td, th   {font: 10pt Arial;}
+  :link   {color: #000060;}
+  :hover  {color: #a44;}
+  :visited {color: #7070a0;}
+  .title  {font: bold 18pt "Times New Roman"; color: #a53737; text-align: center;
+           margin-bottom: 0;}
+  .subtitle  {font: bold 8pt; color: #733737; text-align: center;
+              margin: 0;}
+  .maroon {color: maroon; font-weight: bold;}
+  .heading
+    {color: rgb(68, 85, 119); margin-left: -20px; margin-top: 25px; font: bold 12pt;
+     background-color: rgb(222,233,243);
+     padding: 5; }
+  body.indent {margin-left: 30px;}
+  code    {font-size: 1em;}
+

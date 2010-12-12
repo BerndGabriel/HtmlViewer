@@ -1,0 +1,459 @@
+<HTML>
+
+<HEAD>
+<TITLE></TITLE>
+<link rel="stylesheet" type="text/css" href="demo.css">
+
+</HEAD>
+
+<BODY class="indent">
+<H4 CLASS="heading"><A NAME="Simple2x2">Simple 2 x 2 table</A></H4>
+<TABLE border="1">
+  <TR>
+	 <TD>1</TD>
+	 <TD>2</TD>
+  </TR>
+  <TR>
+	 <TD>3</TD>
+	 <TD>4</TD>
+  </TR>
+</TABLE>
+<PRE><CODE>
+   &lt;table border="1"&gt;
+   &lt;tr&gt;
+     &lt;td&gt;1&lt;/td&gt;
+     &lt;td&gt;2&lt;/td&gt;
+   &lt;tr&gt;
+     &lt;td&gt;3&lt;/td&gt;
+     &lt;td&gt;4&lt;/td&gt;
+   &lt;/table&gt;</CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="Another2x2">Another 2 x 2 table</A></H4>
+<TABLE border="1">
+  <TR>
+	 <TD>1</TD>
+	 <TD>2</TD>
+  </TR>
+  <TR>
+	 <TD>3</TD>
+	 <TD>Cells expand<BR>
+	 to fit</TD>
+  </TR>
+</TABLE>
+<PRE><CODE>
+&lt;table border="1"&gt;
+&lt;tr&gt;
+  &lt;td&gt;1&lt;/td&gt;
+  &lt;td&gt;2&lt;/td&gt;
+&lt;tr&gt;
+  &lt;td&gt;3&lt;/td&gt;
+  &lt;td&gt;Cells expand&lt;br&gt;
+       to fit&lt;/td&gt;
+&lt;/table&gt;</CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="RowColSpan">Rowspan and Colspan attributes</A></H4>
+<TABLE border="1">
+  <TR>
+	 <TD>1</TD>
+	 <TD>2</TD>
+	 <TD>3</TD>
+  </TR>
+  <TR>
+	 <TD>4</TD>
+	 <TD ROWSPAN="2" COLSPAN="2"> Rowspan and Colspan attributes allow cells to occupy more than one row or column 
+	 </TD>
+  </TR>
+  <TR>
+	 <TD>5</TD>
+  </TR>
+</TABLE>
+<PRE><CODE>
+&lt;table border="1"&gt;
+&lt;tr&gt;
+  &lt;td&gt;1&lt;/td&gt;
+  &lt;td&gt;2&lt;/td&gt;
+  &lt;td&gt;3&lt;/td&gt;
+&lt;tr&gt;
+  &lt;td&gt;4&lt;/td&gt;
+  &lt;td rowspan=2 colspan=2&gt;
+    Rowspan and Colspan attributes allow cells to
+    occupy more than one row or column
+  &lt;/td&gt;
+&lt;tr&gt;
+  &lt;td&gt;5&lt;/td&gt;
+&lt;/table&gt;</CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="Headings">Rows and/or Columns may have headings</A></H4>
+<table width="100%">
+  <tr>
+    <td>
+      <TABLE border="1">
+        <TR>
+         <TD rowspan="2"></TD>
+         <TH COLSPAN="3">Days of Week</TH>
+        </TR>
+        <TR>
+         <TH>Monday</TH>
+         <TH>Tuesday</TH>
+         <TH>Wednesday</TH>
+        </TR>
+        <TR>
+         <TH>Week 1</TH>
+         <TD>1</TD>
+         <TD>2</TD>
+         <TD>3</TD>
+        </TR>
+        <TR>
+         <TH>Week 2</TH>
+         <TD>4</TD>
+         <TD>5</TD>
+         <TD>6</TD>
+        </TR>
+      </TABLE>
+      <PRE><CODE>
+      &lt;table border="1"&gt;
+      &lt;tr&gt;
+         &lt;td rowspan="2"&gt;&lt;/td&gt;
+         &lt;th colspan="3"&gt;Days of Week&lt;/th&gt;
+      &lt;tr&gt;
+         &lt;th&gt;Monday&lt;/th&gt;
+         &lt;th&gt;Tuesday&lt;/th&gt;
+         &lt;th&gt;Wednesday&lt;/th&gt;
+      &lt;tr&gt;
+         &lt;th&gt;Week 1&lt;/th&gt;
+         &lt;td&gt;1&lt;/td&gt;
+         &lt;td&gt;2&lt;/td&gt;
+         &lt;td&gt;3&lt;/td&gt;
+      &lt;tr&gt;
+         &lt;th&gt;Week 2&lt;/th&gt;
+         &lt;td&gt;4&lt;/td&gt;
+         &lt;td&gt;5&lt;/td&gt;
+         &lt;td&gt;6&lt;/td&gt;
+      &lt;/table&gt;
+      </CODE></PRE>
+    </td>
+    <td>
+      <TABLE border="1" style="empty-cells=show">
+        <TR>
+         <TD rowspan="2"></TD>
+         <TH COLSPAN="3">Days of Week</TH>
+        </TR>
+        <TR>
+         <TH>Monday</TH>
+         <TH>Tuesday</TH>
+         <TH>Wednesday</TH>
+        </TR>
+        <TR>
+         <TH>Week 1</TH>
+         <TD>1</TD>
+         <TD>2</TD>
+         <TD>3</TD>
+        </TR>
+        <TR>
+         <TH>Week 2</TH>
+         <TD>4</TD>
+         <TD>5</TD>
+         <TD>6</TD>
+        </TR>
+      </TABLE>
+      <PRE><CODE>
+      &lt;table border="1" <font color=red>style="empty-cells=show"</font>&gt;
+      &lt;tr&gt;
+         &lt;td rowspan="2"&gt;&lt;/td&gt;
+         &lt;th colspan="3"&gt;Days of Week&lt;/th&gt;
+      &lt;tr&gt;
+         &lt;th&gt;Monday&lt;/th&gt;
+         &lt;th&gt;Tuesday&lt;/th&gt;
+         &lt;th&gt;Wednesday&lt;/th&gt;
+      &lt;tr&gt;
+         &lt;th&gt;Week 1&lt;/th&gt;
+         &lt;td&gt;1&lt;/td&gt;
+         &lt;td&gt;2&lt;/td&gt;
+         &lt;td&gt;3&lt;/td&gt;
+      &lt;tr&gt;
+         &lt;th&gt;Week 2&lt;/th&gt;
+         &lt;td&gt;4&lt;/td&gt;
+         &lt;td&gt;5&lt;/td&gt;
+         &lt;td&gt;6&lt;/td&gt;
+      &lt;/table&gt;
+      </CODE></PRE>
+    </td>
+  </tr>
+</table>
+
+<H4 CLASS="heading"><A NAME="CellAlign">Alignment in cells can be controlled</A></H4>
+<TABLE border="1">
+  <TR>
+	 <TD></TD>
+	 <TH COLSPAN="3">Alignment Attributes, Align and VAlign</TH>
+  </TR>
+  <TR>
+	 <TH>Vertical<BR>
+	 Alignment</TH>
+	 <TD VALIGN="top">Top</TD>
+	 <TD VALIGN="middle">Middle</TD>
+	 <TD VALIGN="bottom">Bottom</TD>
+  </TR>
+  <TR>
+	 <TH>Horizontal<BR>
+	 Alignment</TH>
+	 <TD ALIGN="left">Left</TD>
+	 <TD ALIGN="center">Center</TD>
+	 <TD ALIGN="right">Right</TD>
+  </TR>
+</TABLE>
+<PRE><CODE>
+&lt;table border="1"&gt;
+&lt;tr&gt;
+   &lt;td&gt;&lt;/td&gt;
+   &lt;th colspan=3&gt;Alignment Attributes, Align and VAlign&lt;/th&gt;
+&lt;tr&gt;
+   &lt;th&gt;Vertical&lt;br&gt;Alignment&lt;/th&gt;
+   &lt;td valign=top&gt;Top&lt;/td&gt;
+   &lt;td valign=middle&gt;Middle&lt;/td&gt;
+   &lt;td valign=bottom&gt;Bottom&lt;/td&gt;
+&lt;tr&gt;
+   &lt;th&gt;Horizontal&lt;br&gt;Alignment&lt;/th&gt;
+   &lt;td align=left&gt;Left&lt;/td&gt;
+   &lt;td align=center&gt;Center&lt;/td&gt;
+   &lt;td align=right&gt;Right&lt;/td&gt;
+&lt;/table&gt; </CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="Background">Table cells can contain just about anything<BR>
+Background colors can be added</A></H4>
+<TABLE border="1">
+  <TR ALIGN="center">
+	 <TD><IMG SRC="glass.bmp" WIDTH="48" HEIGHT="54"><BR>
+	 Images</TD>
+	 <TD BGCOLOR="#ffcdcd"><A HREF="#Simple2x2">2 x 2 Table</A><BR>
+	 Hotspots</TD>
+  </TR>
+  <TR ALIGN="center">
+	 <TD>Some<BR>
+	 Text</TD>
+	 <TD><TABLE border="1" BORDERCOLOR="#37ffcd">
+		<CAPTION>Another table 
+		</CAPTION> <TR>
+		  <TD>1</TD>
+		  <TD>2</TD>
+		  <TD BGCOLOR="#D9D9F3">3</TD>
+		</TR>
+		<TR>
+		  <TD>4</TD>
+		  <TD>5</TD>
+		</TR>
+	 </TABLE>
+	 </TD>
+  </TR>
+</TABLE>
+<PRE><CODE>
+&lt;table border="1"&gt;
+&lt;tr align=center&gt;
+  &lt;td&gt;&lt;img src=&quot;glass.bmp&quot;&gt;&lt;br&gt;
+      Images&lt;/td&gt;
+  &lt;td bgcolor=&quot;#ffcdcd&quot;&gt;
+      &lt;a href=&quot;#TableContents&quot;&gt;Table Contents&lt;/a&gt;&lt;br&gt;
+      Hotspots&lt;/td&gt;
+&lt;tr align=center&gt;
+  &lt;td&gt;Some&lt;br&gt;Text&lt;/td&gt;
+  &lt;td&gt;&lt;table border bordercolor=&quot;#37ffcd&quot;&gt;
+  &lt;caption&gt;Another table&lt;/caption&gt;
+        &lt;tr&gt;
+          &lt;td&gt;1&lt;/td&gt;
+          &lt;td&gt;2&lt;/td&gt;
+          &lt;td bgcolor=&quot;#D9D9F3&quot;&gt;3&lt;/td&gt;
+        &lt;tr&gt;
+          &lt;td&gt;4&lt;/td&gt;
+          &lt;td&gt;5&lt;/td&gt;
+        &lt;/table&gt;&lt;/td&gt;
+&lt;/table&gt;</CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="CellWidth">Cell widths can be specified as a percentage of
+table width and table width as a percentage of window width</A></H4>
+<TABLE border="1" WIDTH="75%">
+  <TR>
+	 <TD WIDTH="20%">20%</TD>
+	 <TD WIDTH="50%">50%</TD>
+	 <TD WIDTH="15%">15%</TD>
+	 <TD WIDTH="15%">15%</TD>
+  </TR>
+</TABLE>
+<PRE><CODE>
+&lt;table border="1" width="75%"&gt;
+&lt;tr&gt;
+   &lt;td width=20%&gt;20%&lt;/td&gt;
+   &lt;td width=50%&gt;50%&lt;/td&gt;
+   &lt;td width=15%&gt;15%&lt;/td&gt;
+   &lt;td width=15%&gt;15%&lt;/td&gt;
+&lt;/table&gt; </CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="Centering">Tables may be centered and have a caption either on
+the top or on the bottom.</A></H4>
+<TABLE border="1" WIDTH="75%" ALIGN="center">
+  <CAPTION ALIGN="bottom"> 
+<INS><H3>Figure 1</H3>
+Illustration of Centered Table with a Width of 75% </INS> 
+</CAPTION> 
+
+
+<TR>
+  <TD WIDTH="20%">20%</TD>
+  <TD WIDTH="50%">50%</TD>
+  <TD WIDTH="15%">15%</TD>
+  <TD WIDTH="15%">15%</TD>
+</TR>
+</TABLE>
+<PRE><CODE>
+&lt;table border width=75% align=center&gt;
+&lt;caption align=bottom&gt;&lt;h3&gt;Figure 1&lt;/h3&gt;
+         Illustration of Centered Table with a Width of 75%
+&lt;/caption&gt;
+&lt;tr&gt;
+   &lt;td width=20%&gt;20%&lt;/td&gt;
+   &lt;td width=50%&gt;50%&lt;/td&gt;
+   &lt;td width=15%&gt;15%&lt;/td&gt;
+   &lt;td width=15%&gt;15%&lt;/td&gt;
+&lt;/table&gt;</CODE></PRE>
+
+<H4 CLASS="heading"><A NAME="CellSpacing">The CellSpacing attribute controls the spacing
+between table cells.</A></H4>
+<TABLE WIDTH="50%" ALIGN="center">
+  <TR VALIGN="top">
+	 <TD align="center"> <TABLE border="1" CELLSPACING="0">
+		<CAPTION>CellSpacing of 0 
+		</CAPTION> <TR>
+		  <TD>1</TD>
+		  <TD>2</TD>
+		</TR>
+		<TR>
+		  <TD>3</TD>
+		  <TD>4</TD>
+		</TR>
+	 </TABLE>
+	 </TD>
+	 <TD align="center"> <TABLE border="1" CELLSPACING="10">
+		<CAPTION>CellSpacing of 10 
+		</CAPTION> <TR>
+		  <TD>1</TD>
+		  <TD>2</TD>
+		</TR>
+		<TR>
+		  <TD>3</TD>
+		  <TD>4</TD>
+		</TR>
+	 </TABLE>
+	 </TD>
+  </TR>
+</TABLE>
+<TABLE ALIGN="center" width="50%">
+  <TR VALIGN="top">
+	 <TD> <PRE><CODE>   &lt;table border
+   CellSpacing=0&gt;
+   &lt;Caption&gt;
+   CellSpacing of 0
+   &lt;/caption&gt;
+   &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
+       &lt;td&gt;2&lt;/td&gt;
+   &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
+       &lt;td&gt;4&lt;/td&gt;
+   &lt;/table&gt;</CODE></PRE>
+
+	 </TD>
+	 <TD> <PRE><CODE>   &lt;table border
+   CellSpacing=10&gt;
+   &lt;Caption&gt;
+   CellSpacing of 10
+   &lt;/caption&gt;
+   &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
+       &lt;td&gt;2&lt;/td&gt;
+   &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
+       &lt;td&gt;4&lt;/td&gt;
+   &lt;/table&gt; </CODE></PRE>
+
+	 </TD>
+  </TR>
+</TABLE>
+
+<H4 CLASS="heading"><A NAME="CellPadding">The CellPadding attribute controls the padding
+around table cells.</A></H4>
+<TABLE WIDTH="50%" ALIGN="center">
+  <TR VALIGN="top">
+	 <TD align="center"> <TABLE border="1" CELLPADDING="0">
+		<CAPTION>CellPadding of 0 
+		</CAPTION> <TR>
+		  <TD>1</TD>
+		  <TD>2</TD>
+		</TR>
+		<TR>
+		  <TD>3</TD>
+		  <TD>4</TD>
+		</TR>
+	 </TABLE>
+	 </TD>
+	 <TD align="center"> <TABLE border="1" CELLPADDING="10">
+		<CAPTION>CellPadding of 10 
+		</CAPTION> <TR>
+		  <TD>1</TD>
+		  <TD>2</TD>
+		</TR>
+		<TR>
+		  <TD>3</TD>
+		  <TD>4</TD>
+		</TR>
+	 </TABLE>
+	 </TD>
+  </TR>
+</TABLE>
+<TABLE ALIGN="center" width="50%">
+  <TR VALIGN="top">
+	 <TD> <PRE><CODE>   &lt;table border
+   CellPadding=0&gt;
+   &lt;Caption&gt;
+   CellPadding of 0
+   &lt;/caption&gt;
+   &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
+       &lt;td&gt;2&lt;/td&gt;
+   &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
+       &lt;td&gt;4&lt;/td&gt;
+   &lt;/table&gt;</CODE></PRE>
+
+	 </TD>
+	 <TD> <PRE><CODE>   &lt;table border
+   CellPadding=10&gt;
+   &lt;Caption&gt;
+   CellPadding of 10
+   &lt;/caption&gt;
+   &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
+       &lt;td&gt;2&lt;/td&gt;
+   &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
+       &lt;td&gt;4&lt;/td&gt;
+   &lt;/table&gt; </CODE></PRE>
+
+	 </TD>
+  </TR>
+</TABLE>
+
+<p CLASS="heading"><A NAME="Borderless">Borderless tables</A></p>
+<P>Borderless tables can be very useful for formatting documents. Tables are used in several places in this
+document to place items side by side. For instance, the Contents window above is divided into four columns using a
+Table. </P>
+<P> </P>
+<TABLE ALIGN="center">
+  <TR>
+	 <TD><IMG SRC="wmelon.bmp" WIDTH="100" HEIGHT="80" ALT="wmelon.bmp" transp></TD>
+	 <TD>Watermelon<BR>
+	 with seeds</TD>
+  </TR>
+</TABLE>
+<CENTER>
+<P>Text can be placed at the side of an image.</P>
+</CENTER>
+<PRE><CODE>
+&lt;table align=center&gt;
+&lt;tr&gt;&lt;td&gt;&lt;img src=&quot;wmelon2.bmp&quot;&gt;&lt;/td&gt;
+    &lt;td&gt;Watermelon&lt;br&gt;with seeds&lt;/td&gt;
+&lt;/table&gt;
+</CODE></PRE>
+</BODY>
+</HTML>
+
