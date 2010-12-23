@@ -1,9 +1,0 @@
-LazarusResources.Add('TImageForm','FORMDATA',[
-  'TPF0'#10'TImageForm'#9'ImageForm'#4'Left'#3'O'#2#3'Top'#3#236#0#7'Caption'#6
-  +#9'ImageForm'#12'ClientHeight'#3#199#0#11'ClientWidth'#3#216#0#5'Color'#7#9
-  +'clBtnFace'#12'Font.Charset'#7#15'DEFAULT_CHARSET'#10'Font.Color'#7#12'clWin'
-  +'dowText'#11'Font.Height'#2#245#9'Font.Name'#6#13'MS Sans Serif'#10'Font.Sty'
-  +'le'#11#0#9'FormStyle'#7#11'fsStayOnTop'#14'OldCreateOrder'#9#6'OnShow'#7#8
-  +'FormShow'#13'PixelsPerInch'#2'`'#6'TImage'#6'Image1'#4
-  +'Left'#2#0#3'Top'#2#0#5'Width'#3'='#1#6'Height'#3'2'#1#8'AutoSize'#9#0#0#0
-]);

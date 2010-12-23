@@ -1,0 +1,33 @@
+1 VERSIONINFO
+FILEVERSION 10,0,0,0
+PRODUCTVERSION 10,0,0,0
+{
+ BLOCK "StringFileInfo"
+ {
+  BLOCK "040904E4"
+  {
+   VALUE "Comments", "meet us at http://code.google.com/p/thtmlviewer/\000"
+   VALUE "CompanyName", "HtmlViewer Team\000"
+   VALUE "FileDescription", "\000"
+   VALUE "FileVersion", "10.0.0.0\000"
+   VALUE "InternalName", "\000"
+   VALUE "LegalCopyright", "\000"
+   VALUE "LegalTrademarks", "\000"
+   VALUE "OriginalFilename", "\000"
+   VALUE "ProductName", "FrameViewer Demo\000"
+   VALUE "ProductVersion", "10.0.0.0\000"
+  }
+ }
+ BLOCK "VarFileInfo"
+ {
+  VALUE "Translation", 0x0409, 0x04E4
+ }
+}
+
+#define RT_MANIFEST  24
+#define CREATEPROCESS_MANIFEST_RESOURCE_ID 1
+#define ISOLATIONAWARE_MANIFEST_RESOURCE_ID 2
+#define ISOLATIONAWARE_NOSTATICIMPORT_MANIFEST_RESOURCE_ID 3
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "FrameDem.manifest"
+MAINICON ICON "FrameDem.ico"

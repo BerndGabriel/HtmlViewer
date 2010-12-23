@@ -1,0 +1,324 @@
+
+<html>
+ 
+<head>
+<title></title>
+<link REL="stylesheet" TYPE="text/css" HREF="demo.css"> 
+
+</head>
+
+<body CLASS="indent">
+<p CLASS="heading"><a NAME="What">What are the HTML Viewer Components?</a></p>
+<p>The HTML component set consists of the <b>ThtmlViewer</b>, <b>TFrameViewer</b>, and <b>TFrameBrowser</b>
+components. All three are HTML document display components:</p>
+<table WIDTH="100%" CELLSPACING="2" CELLPADDING="2" BORDER="0">
+  <tr>
+	 <th WIDTH="2%"></th>
+	 <th CLASS="maroon" VALIGN="top" ALIGN="left">ThtmlViewer</th>
+	 <td VALIGN="top">The basic component. <b>ThtmlViewer</b> displays single (non-frame) documents. It also forms
+	    the basis for the other two components.<br>
+	 <br>
+	 </td>
+  </tr>
+  <tr>
+	 <td></td>
+	 <th CLASS="maroon" VALIGN="top" ALIGN="left">TFrameViewer</th>
+	 <td VALIGN="top">Displays both Frame and single HTML documents. <b>TFrameViewer</b> is oriented more for local
+	    file system use.<br>
+	 <br>
+	 </td>
+  </tr>
+  <tr>
+	 <th></th>
+	 <th CLASS="maroon" VALIGN="top" ALIGN="left">TFrameBrowser&nbsp;&nbsp;&nbsp;</th>
+	 <td VALIGN="top">Also displays Frame and single HTML documents. However, <b>TFrameBrower</b> is oriented
+	 toward Internet style protocols and URL usage. Additional code and/or components are generally required to get
+   data from other sources than the local file system.<br>
+	 </td>
+  </tr>
+</table>
+<p>These components support most of the HTML 3.2 specifications with many additional popular HTML 4
+enhancements. Many Cascading Style Sheet properties are also supported. </p>
+<ul>
+<li>Cascading Stylesheets
+</li>
+<li>Frames
+</li>
+<li>Bitmap, GIF, JPEG, and PNG Images
+<ul>
+<li><img ALIGN="middle" ALT="Animated GIFs" HEIGHT="32" SRC="AGif2.gif" WIDTH="181"></li>
+<li>Transparent images
+</li>
+<li>Image caching
+</li>
+<li>Left and right floating images
+</li>
+<li>Image sizing attributes
+</li>
+<li>Client side image maps</li>
+</ul></li>
+<li>Large HTML files
+</li>
+<li>HTML Tables
+</li>
+<li>HTML Forms
+</li>
+<li>Font sizes, styles, and colors with HTML tags or default settings
+</li>
+<li>Background colors and images
+</li>
+<li>Formatted printing of the HTML document
+</li>
+<li>Print preview
+</li>
+<li>Text search
+</li>
+<li>Copy to clipboard
+</li>
+<li>Subscripts and superscripts</li>
+</ul>
+<p>While HTML documents are normally associated with the Internet, they are also very useful for displaying all
+kinds of textual material such as documentation, helpfiles, etc. Graphics are easily incorporated in these
+documents. </p>
+
+<p CLASS="heading"><a NAME="Files">Files Supplied</a></p>
+<pre>DEMO.HTM        This file
+*.HTM           Frame files for DEMO.HTM
+FRAMEDEM.EXE    The TFrameViewer demo program
+Various image and sound files for demo
+
+Source code for the demo programs
+   FRAMEDEM.DPR    Source for the TFrameViewer demo program
+   FRMUNIT.PAS, .DFM
+   HTMLDEMO.DPR    Source for the ThtmlViewer demo program
+   DEMOUNIT.PAS, .DFM
+   HTMLEDITOR.DPR  Source for the demo editor program
+   HTMLED1.PAS, .DFM
+   HTMLABT.PAS, .DFM
+   FONTDLG.PAS, .DFM
+   SUBMIT.PAS, .DFM
+   IMGFORM.PAS, .DFM
+
+   PREVIEWFORM.PAS, .DFM
+   PRINTSTATUSFORM.PAS, .DFM
+   GOPAGE.PAS, .DFM
+   GRID.RES
+
+Source code for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
+
+   FRAMBRWZ.PAS, .DCR
+   FRAMVIEW.PAS, .DCR
+   HTMLVIEW.PAS, .DCR
+   HTMLGLOBALS.PAS
+   HTMLSUBS.PAS
+   HTMLSBS1.PAS
+   READHTML.PAS
+   HTMLUN2.PAS
+   HTMLGIF1.PAS
+   HTMLGIF2.PAS
+   URLSUBS.PAS
+   METAFILEPRINTER.PAS
+   DITHERUNIT.PAS
+   VWPRINT.PAS
+   HTMLCOMPEDIT.PAS
+   STYLEUN.PAS
+   STYLEPARS.PAS
+   HTMLCONS.INC         File of optional compile time constants
+   FRAMEVIEWERREG.PAS
+   FRAMEVIEWER4.DPK, .RES  Delphi 4 Package source file
+   FRAMEVIEWER5.DPK, .RES  Delphi 5 Package source file
+   FRAMEVIEWER6.DPK, .RES  Delphi 6 Package source file
+   FRAMEVIEWER7.DPK, .RES  Delphi 7 Package source file
+   FRAMEVIEWER2005.DPK, .RES  Delphi 2005 Package source file
+   FRAMEVIEWER2006.DPK, .RES  Delphi 2006 Package source file
+   FRAMEVIEWER2007.DPK, .RES  Delphi 2007 Package source file
+   FRAMEVIEWER2009.DPK, .RES  Delphi 2009 Package source file
+   FRAMEVIEWER2010.DPK, .RES  Delphi 2010 Package source file
+   FRAMEVIEWER09.LPK, .PAS  Lazarus 0.9 Package source file
+   HTML32.RES           Resource file
+   HTMLVIEW.HLP         The help file
+   HTMLVIEW.CNT         Help contents file
+</pre>
+
+
+<div style="page-break-inside: avoid">
+<p CLASS="heading"><a NAME="InstallViewer">Installing The HTML Components</a></p>
+<p>If you are installing for more than one version of Delphi, use separate directories for the installations. </p>
+<p>Installation problems are almost always due to old or incorrect files being accessed. Make sure that the
+Library Path or Search Path does not point to the directory of any old HTML component files. The Library Path can
+be edited from the <b>Tools|Environment</b> Options dialog, <b>Library</b> tab. The Search Path from the
+<b>Project|Options</b> dialog, <b>Directories/Conditionals</b> tab.</p>
+</div>
+<p>Delete all DCU files generated with previous installations. </p>
+<p>The Register procedures in <code>HTMLVIEW.PAS</code>, <code>FRAMVIEW.PAS</code>, and <code>FRAMBRWZ.PAS</code>
+are set to place the components on the palette page tab named <b>Samples</b>. These can be relocated later from
+the IDE if desired. </p>
+
+<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 4, 5, 6, and 7</a> </p>
+<p> </p>
+<ol>
+<li>Choose <b>File|Open...</b> from the main menu. Browse through the dialog to find
+<code>FRAMEVIEWER4|5|6|7.DPK</code> (by default in the <code>\HtmlViewer\package</code> directory).
+<p> </p></li>
+<li>Click <b>Open</b> and in the ensuing dialog, press <b>Compile</b> and then <b>Install</b>.
+<p> </p></li>
+<li>When using the HTML components, include the <code>\HtmlViewer\package</code> directory in the searchpath. The
+searchpath can be edited by choosing <b>Project|Options|Directories|Conditionals</b> from the main menu.
+<p> </p></li>
+<li><img SRC="Import1.gif" ALIGN="top">Make sure that the Library Path string does not point to the directory of
+any old HTML component files. The Library Path string can be edited from the <b>Tools|Environment</b>Options
+dialog, <b>Library</b> tab.</li>
+</ol>
+<p> </p>
+
+<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 2005|6</a>|7|9|10</p>
+<p> </p>
+<ol>
+<li>Choose <b>File|Open...</b> from the main menu. Browse through the dialog to find
+<code>FrameViewer20xx.bdsproj</code> (by default in the <code>\HtmlViewer\package</code> directory).
+<p> </p></li>
+<li>Click <b>Project|Compile FrameViewer20xx</b> to compile
+<code>FrameViewer20xx.bpl</code>.
+<p> </p></li>
+<li>To add the components to the Tool Palette, Choose
+<b>Component|Install packages</b>. Click the <b>Add..</b>. button and select
+<code>FrameViewer20xx.bpl</code>.
+<p> </p></li>
+<li>When using the HTML components, include the <code>\HtmlViewer\package</code> directory in the searchpath. The
+searchpath can be edited by choosing <b>Project|Options|Directories/Conditionals</b> from the main menu.
+<p> </p></li>
+<li><img SRC="Import1.gif" ALIGN="top">Make sure that the Library Path string does not point to the directory of
+any old HTML component files. The Library Path string can be edited from the <b>Tools|Environment</b> Options
+dialog, <b>Library</b> tab.</li>
+</ol>
+<p> </p>
+
+<p CLASS="maroon"><a NAME="Delphi345Install">Lazarus&nbsp;0.9</a></p>
+<p> </p>
+<ol>
+<li>Choose <b>Package|Open package file...</b> from the main menu. Browse through the dialog to find
+<code>FrameViewer09.lpk</code> (by default in the <code>\HtmlViewer\package</code> directory).
+<p> </p></li>
+<li>Click <b>Compile</b> in the <b>Package FrameViewer09</b> window to compile the package.<p> </p></li>
+<li>Click <b>Install</b> in the <b>Package FrameViewer09</b> window to install the components.<p> </p></li>
+<li>When using the HTML components, include the <code>\HtmlViewer\package</code> directory in the
+<b>Other Unit Files (-Fu)</b> searchpath. The searchpath can be edited by choosing
+<b>Project|Compiler Options...</b> from the main menu.</li>
+</ol>
+
+<div style="page-break-inside: avoid">
+<p CLASS="heading"><a NAME="installHelp">Installing the Help File</a></p>
+<p>The file <code>HTMLVIEW.HLP</code> will supply context sensitive help for the HTML components. </p>
+</div>
+<p CLASS="maroon"><a NAME="Delphi3_4Help">Delphi 4, 5, and 6</a> </p>
+<p> </p>
+<ol>
+<li><code>HTMLVIEW.HLP</code> and <code>HTMLVIEW.CNT</code> files from the
+<code>BORLAND\DELPHIX\HELP</code> directory. It's no longer necessary to move the new files to this directory.
+<p>
+</p></li>
+<li>Edit the <code>DELPHI.CNT</code> file (in the <code>BORLAND\DELPHIX\HELP</code> directory. Load the file into
+an editor and add the following line at the end: <pre>   :include HTMLVIEW.CNT
+</pre>
+You'll find other similar lines already there.
+<p>
+</p></li>
+<li>For Delphi 6, add the same line to the <code>DEL6VCL.CNT</code> file also.
+</li>
+</ol>
+<p>If you later decide to remove the HTML Components, this added information to the <code>DELPHI.CNT</code> file
+will simply be ignored.
+</p>
+<p CLASS="maroon">Delphi 7 </p>
+<ol>
+<li>Edit both the <code>D7.CNT</code> and <code>D7VCL.CNT</code> files (in the <code>BORLAND\DELPHI7\HELP</code> directory. Load the files into
+an editor and add the following line at the end: <pre>   :include HTMLVIEW.CNT
+</pre>
+You'll find other similar lines already there.
+<p>
+</p>
+</li>
+</ol>
+<p CLASS="heading"><a NAME="UnInstall">UnInstalling the Components</a></p>
+<p>To uninstall the HTML components from Windows: </p>
+<ul>
+<li>From the Control Panel, select Add/Remove Programs
+</li>
+<li>In the listbox on the Install/UnInstall Tab, select HTML Components
+</li>
+<li>Press the Add/Remove button.</li>
+</ul>
+
+<div style="page-break-inside: avoid">
+<p CLASS="heading"><a NAME="Addresses">Contacts</a></p>
+<address STYLE="MARGIN-LEFT: 35px">
+World Wide Web: <a HREF="http://code.google.com/p/thtmlviewer/">http://code.google.com/p/thtmlviewer/</a> </address>
+</div>
+
+
+<p CLASS="heading"><a NAME="Acknowledgements">Acknowledgements</a></p>
+<p>The following are some of the organizations and individuals who have contributed to the
+     HTML components:<br>&nbsp;</p>
+
+<table align="center" cellspacing="2" cellpadding="2" border="0" width="75%">
+<tr>
+    <td><b>SkyLine Tools, Inc.</b></td>
+    <td>ImageLib Graphics Library</td>
+</tr>
+<tr>
+    <td><b>Radek Przybyl</b></td>
+    <td>Ideas and code for establishing Print margins</td>
+</tr>
+<tr>
+    <td><b>Theodor Kleynhans</b></td>
+    <td>Animated GIF code</td>
+</tr>
+<tr>
+    <td><b>Chris Wallace</b></td>
+    <td>Print preview ideas and code</td>
+</tr>
+<tr>
+    <td><b>Yves Urbain</b></td>
+    <td>The Connection concept for protocol support</td>
+</tr>
+<tr>
+    <td><b>Anders Melander</b></td>
+    <td>Color dithering code in DitherUnit.Pas</td>
+</tr>
+<tr>
+    <td><b>Ron Collins</b></td>
+    <td>GIF image code</td>
+</tr>
+<tr>
+    <td><b>Mike Lischke</b></td>
+    <td>Unicode routines and assistance</td>
+</tr>
+<tr>
+    <td><b>jrsoftware.org</b></td>
+    <td>Inno Installer</td>
+</tr>
+</table>
+
+<p CLASS="heading"><a NAME="Copyright">Copyright © 1995-2008 by L. David Baldwin</a>, 2008-2010 by HtmlViewer Team</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+<p>Note that the source modules, HTMLGIF1.PAS and&nbsp;DITHERUNIT.PAS are covered by separate copyright notices located in those modules.
+<br>
+&nbsp;</p>
+</body>
+</html>
