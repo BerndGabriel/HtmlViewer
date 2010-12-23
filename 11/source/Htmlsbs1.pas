@@ -81,7 +81,7 @@ type
     destructor Destroy; override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
-    procedure AddStr(const S: WideString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
+    procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
     procedure ResetToValue; override;
     procedure SetHeightWidth(Canvas: TCanvas); override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
@@ -143,7 +143,7 @@ type
 implementation
 
 uses
-  SysUtils, {$IFDEF Delphi6_Plus}Variants, {$ENDIF}Forms, StdCtrls, Math;
+  SysUtils, Variants, Forms, StdCtrls, Math;
 
 destructor TOptionObj.Destroy;
 begin
@@ -275,13 +275,14 @@ begin
     ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + (I - LB.TopIndex) * H2, LB.Items[I]);
 end;
 
-procedure TListBoxFormControlObj.AddStr(const S: WideString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
+procedure TListBoxFormControlObj.AddStr(const S: ThtString; Selected: boolean;
+  Attr: ThtStringList; CodePage: integer);
 var
   Opt: TOptionObj;
   DC: HDC;
   OldFont: THandle;
   ExtS: TSize;
-  S1, S2: WideString;
+  S1, S2: ThtString;
 begin
   S1 := S;
   if S1 = '' then
@@ -303,11 +304,11 @@ begin
   DC := GetDC(0);
   try
     OldFont := SelectObject(DC, TheFont.Handle);
-{.$ifdef UseUnicode}
+{$ifdef UseUnicode}
     GetTextExtentPoint32W(DC, PWideChar(S1), Length(S1), ExtS);
-{.$else}
-//    GetTextExtentPoint32A(DC, PChar(S1), Length(S1), ExtS);
-{.$endif}
+{$else}
+    GetTextExtentPoint32A(DC, PChar(S1), Length(S1), ExtS);
+{$endif}
     SelectObject(DC, OldFont);
   finally
     ReleaseDC(0, DC);

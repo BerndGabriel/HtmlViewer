@@ -2060,10 +2060,11 @@ end;
 
 procedure TSubFrameSetBase.HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
 var
-  DelTime, I: integer;
+  DelTime, I: Integer;
+  CodePage: Integer;
 begin
   if CompareText(HttpEq, 'content-type') = 0 then
-    TranslateCharset(Content, LocalCharset);
+    TranslateCharset(Content, LocalCharset, CodePage);
 
   with MasterSet.FrameViewer do
   begin

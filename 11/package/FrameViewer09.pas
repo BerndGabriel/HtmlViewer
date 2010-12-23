@@ -1,5 +1,5 @@
-{ Diese Datei wurde automatisch von Lazarus erzeugt. Sie darf nicht bearbeitet werden ! 
-  Dieser Quelltext dient nur dem Ã œ bersetzen und Installieren des Packages.
+{ This file was automatically created by Lazarus. do not edit ! 
+  This source is only used to compile and install the package.
  }
 
 unit FrameViewer09; 
@@ -7,7 +7,8 @@ unit FrameViewer09;
 interface
 
 uses
-  HtmlGlobals, Htmlsbs1, HTMLSubs, HTMLUn2, Htmlview, ReadHTML, StylePars, StyleUn, URLSubs, DitherUnit, FramBrwz, FrameViewerReg, FramView, GDIPL2A, HtmlGif1, HTMLGif2, LazarusPackageIntf;
+    HtmlGlobals, Htmlsbs1, HTMLSubs, HTMLUn2, Htmlview, ReadHTML, StylePars, StyleUn, URLSubs, DitherUnit, FramBrwz, FrameViewerReg, FramView, GDIPL2A, HtmlGif1, HTMLGif2, HtmlBuffer, 
+  LazarusPackageIntf;
 
 implementation
 

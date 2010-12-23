@@ -30,10 +30,9 @@ unit StyleUn;
 interface
 
 uses
-  Windows, Classes, Graphics, SysUtils, Math, Forms, Contnrs,
+  Windows, Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
   {$ifdef LCL}Interfaces, {$endif}
-  {$IFDEF Delphi6_Plus}Variants, {$ENDIF}
-  HtmlGlobals;
+  HtmlGlobals, HtmlBuffer;
 
 const
   IntNull = -12345678;
@@ -41,13 +40,8 @@ const
   AutoParagraph = -12348766;
   ParagraphSpace = 14; {default spacing between paragraphs, etc.}
   
-{$IFDEF Delphi6_Plus}
   varInt = [varInteger, varByte, varSmallInt, varShortInt, varWord, varLongWord];
   varFloat = [varSingle, varDouble, varCurrency];
-{$ELSE}
-  varInt = [varInteger];
-  varFloat = [varSingle, varDouble];
-{$ENDIF}
   varNum = varInt + varFloat;
 
   EastEurope8859_2 = 31; {for 8859-2}
@@ -173,7 +167,7 @@ type
     PropStyle: TProperties;
     FontBG: TColor;
     CharSet: TFontCharSet;
-    CodePage: integer;
+    CodePage: Integer;
     EmSize, ExSize: integer; {# pixels for Em and Ex dimensions}
     Props: array[Low(PropIndices)..High(PropIndices)] of Variant;
     Originals: array[Low(PropIndices)..High(PropIndices)] of boolean;
@@ -302,30 +296,10 @@ function AlignmentFromString(S: ThtString): AlignmentType;
 
 function FindPropIndex(const PropWord: ThtString; var PropIndex: PropIndices): boolean;
 
-{$IFNDEF Ver130}
-{$IFNDEF Delphi6_Plus}
-procedure FreeAndNil(var Obj);
-{$ENDIF}
-{$ENDIF}
-
 implementation
 
 var
   DefPointSize: double;
-
-{$IFNDEF Ver130}
-{$IFNDEF Delphi6_Plus}
-
-procedure FreeAndNil(var Obj);
-var
-  P: TObject;
-begin
-  P := TObject(Obj);
-  TObject(Obj) := nil; {clear the reference before destroying the object}
-  P.Free;
-end;
-{$ENDIF}
-{$ENDIF}
 
 {----------------AlignmentFromString}
 
@@ -605,65 +579,48 @@ begin
 end;
 
 procedure TProperties.AssignCharSet(CS: TFontCharset);
-const
-  {EastEurope8859_2 = 31; }
-  SetValues: array[1..20] of integer =
-  (ANSI_CHARSET, DEFAULT_CHARSET, SYMBOL_CHARSET, MAC_CHARSET, SHIFTJIS_CHARSET,
-    HANGEUL_CHARSET, JOHAB_CHARSET, GB2312_CHARSET, CHINESEBIG5_CHARSET,
-    GREEK_CHARSET, TURKISH_CHARSET, VIETNAMESE_CHARSET, HEBREW_CHARSET,
-    ARABIC_CHARSET, BALTIC_CHARSET, RUSSIAN_CHARSET, THAI_CHARSET,
-    EASTEUROPE_CHARSET, OEM_CHARSET, EastEurope8859_2);
- { SetValues: array[1..19] of integer =
-    (0, 1, 2, 77, 128, 129, 130, 134, 136, 161, 162, 163, 177, 178,
-     186, 204, 222, 238, 255); }
-  CodePages: array[1..20] of integer =
-  (1252, CP_ACP, 0, CP_MACCP, 932, 949, 1361, 936, 950, 1253, 1254, 1258, 1255, 1256, 1257, 1251,
-    874, 1250, CP_OEMCP, 28592); {28592 for 8859-2, east european}
 var
-  I: integer;
   Save: THandle;
   tm: TTextmetric;
   DC: HDC;
   Font: TFont;
   IX: FIIndex;
 begin
-  if CS = EastEurope8859_2 then
-  begin
-    CharSet := EASTEUROPE_CHARSET;
-    CodePage := 28592;
-    if Assigned(FIArray) then
-      for IX := LFont to HVFont do
-        FIArray.Ar[IX].iCharset := CharSet;
-    Exit;
-  end;
-{the following makes sure the CharSet is available.  It also translates
- "Default_CharSet" into the actual local character set}
-  Font := TFont.Create;
-  Font.Name := '';
-  Font.CharSet := CS;
-  DC := GetDC(0);
-  try
-    Save := SelectObject(DC, Font.Handle);
-    GetTextMetrics(DC, tm);
-    if CS <> Default_Charset then {leave default as is}
-      CharSet := tm.tmCharSet
-    else
-      CharSet := Default_CharSet;
-    if Assigned(FIArray) then
-      for IX := LFont to HVFont do
-        FIArray.Ar[IX].iCharset := CharSet;
-    SelectObject(DC, Save);
-  finally
-    ReleaseDC(0, DC);
-    Font.Free;
+  case CS of
+    EastEurope8859_2:
+      CharSet := EASTEUROPE_CHARSET;
+
+    DEFAULT_CHARSET:
+      CharSet := CS;
+  else
+    {the following makes sure the CharSet is available.  It also translates
+    "Default_CharSet" into the actual local character set}
+    Font := TFont.Create;
+    try
+      Font.Name := '';
+      Font.CharSet := CS;
+      DC := GetDC(0);
+      try
+        Save := SelectObject(DC, Font.Handle);
+        try
+          GetTextMetrics(DC, tm);
+          CS := tm.tmCharSet;
+        finally
+          SelectObject(DC, Save);
+        end;
+      finally
+        ReleaseDC(0, DC);
+      end;
+    finally
+      Font.Free;
+    end;
+    CharSet := CS;
   end;
 
-  for I := 1 to 19 do
-    if SetValues[I] = tm.tmCharSet then
-    begin
-      CodePage := CodePages[I];
-      break;
-    end;
+  if Assigned(FIArray) then
+    for IX := LFont to HVFont do
+      FIArray.Ar[IX].iCharset := CharSet;
+  CodePage := CharSetToCodePage(CS); // NOTICE: use CS it might differ from CharSet.
 end;
 
 procedure TProperties.AssignUTF8;

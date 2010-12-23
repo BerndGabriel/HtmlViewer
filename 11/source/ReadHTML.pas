@@ -76,7 +76,7 @@ unit Readhtml;
 interface
 uses
   Messages, Classes, Graphics, Controls,
-  HtmlGlobals, HtmlUn2, HtmlSubs, StyleUn;
+  HtmlGlobals, HtmlBuffer, HtmlUn2, HtmlSubs, StyleUn;
 
 type
   LoadStyleType = (lsFile, lsString, lsInclude);
@@ -90,15 +90,14 @@ procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
   ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
 function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
   FrameViewer: TFrameViewerBase): boolean;
-function TranslateCharset(const Content: ThtString; var Charset: TFontCharset): boolean;
+function TranslateCharset(const Content: ThtString; var Charset: TFontCharset; var CodePage: Integer): boolean;
 procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
 procedure PopAProp(const Tag: ThtString);
 
 implementation
 
 uses
-  Windows, SysUtils, Math, {$IFDEF Delphi6_Plus}Variants, {$ENDIF}
-  HtmlSbs1, HtmlView, StylePars, UrlSubs;
+  Windows, SysUtils, Math, Variants, HtmlSbs1, HtmlView, StylePars, UrlSubs;
 
 var
   Sy: Symb;
@@ -2044,6 +2043,7 @@ var
   var
     FaceName: ThtString;
     CharSet: TFontCharSet;
+    CodePage: Integer;
     NewColor: TColor;
     NewSize, I: integer;
     FontResults: set of (Face, Colr, Siz, CharS);
@@ -2052,6 +2052,7 @@ var
   begin
     FontResults := [];
     NewSize := 0; {get rid of warning}
+    CodePage := CP_UNKNOWN;
     for I := 0 to Attributes.Count - 1 do
       with TAttribute(Attributes[I]) do
         case Which of
@@ -2075,7 +2076,7 @@ var
                 Include(FontResults, Face);
             end;
           CharSetSy:
-            if not IsUTF8 and TranslateCharSet(Name, CharSet) then
+            if not IsUTF8 and TranslateCharSet(Name, CharSet, CodePage) then
               Include(FontResults, CharS);
         end;
     PushNewProp('font', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -2100,7 +2101,15 @@ var
       PropStack.Last.Assign(ReadFontName(FaceName), FontFamily);
     end;
     if CharS in FontResults then
-      PropStack.Last.AssignCharset(CharSet);
+      case CodePage of
+        CP_UTF8:
+        begin
+          IsUTF8 := True;
+          PropStack.Last.AssignUTF8;
+        end;
+      else
+        PropStack.Last.AssignCharset(CharSet);
+      end;
   end;
 
   procedure DoPreSy;
@@ -3255,94 +3264,36 @@ begin
 end;
 {$endif}
 
-//  The official CharSet definitions:
-//    http://www.iana.org/assignments/character-sets
-//    http://www.iana.org/assignments/ianacharset-mib
-type
-  XRec = record S: ThtString; CSet: TFontCharset; end;
-const
-  MaxX = 47;
-  EUCJP_CharSet = 30; {unused number}
-  XTable: array[1..MaxX] of XRec =
-  ((S: '1252'; CSet: ANSI_CHARSET),
-    (S: '8859-1'; CSet: ANSI_CHARSET),
-    (S: '1253'; CSet: GREEK_CHARSET),
-    (S: '8859-7'; CSet: GREEK_CHARSET),
-    (S: '1250'; CSet: EASTEUROPE_CHARSET),
-    (S: '8859-2'; CSet: EastEurope8859_2),
-    (S: '1251'; CSet: RUSSIAN_CHARSET),
-    (S: '8859-5'; CSet: RUSSIAN_CHARSET),
-    (S: 'koi'; CSet: RUSSIAN_CHARSET),
-    (S: '866'; CSet: RUSSIAN_CHARSET),
-    (S: '1254'; CSet: TURKISH_CHARSET),
-    (S: '8859-3'; CSet: TURKISH_CHARSET),
-    (S: '8859-9'; CSet: TURKISH_CHARSET),
-    (S: '1257'; CSet: BALTIC_CHARSET),
-    (S: '8859-4'; CSet: BALTIC_CHARSET),
-    (S: '932'; CSet: SHIFTJIS_CHARSET),
-    (S: '949'; CSet: HANGEUL_CHARSET),
-    (S: '936'; CSet: GB2312_CHARSET),
-    (S: '950'; CSet: CHINESEBIG5_CHARSET),
-    (S: '1255'; CSet: HEBREW_CHARSET),
-    (S: '1256'; CSet: ARABIC_CHARSET),
-    (S: '1258'; CSet: VIETNAMESE_CHARSET),
-    (S: '874'; CSet: THAI_CHARSET),
-    (S: 'ansi'; CSet: ANSI_CHARSET),
-    (S: 'default'; CSet: DEFAULT_CHARSET),
-    (S: 'symbol'; CSet: SYMBOL_CHARSET),
-    (S: 'shiftjis'; CSet: SHIFTJIS_CHARSET),
-    (S: 'shift_jis'; CSet: SHIFTJIS_CHARSET),
-    (S: 'x-sjis'; CSet: SHIFTJIS_CHARSET),
-    (S: 'hangeul'; CSet: HANGEUL_CHARSET),
-    (S: 'gb2312'; CSet: GB2312_CHARSET), {simplified Chinese}
-    (S: 'big5'; CSet: CHINESEBIG5_CHARSET), {traditional Chinese}
-    (S: 'oem'; CSet: OEM_CHARSET),
-    (S: 'johab'; CSet: JOHAB_CHARSET),
-    (S: 'hebrew'; CSet: HEBREW_CHARSET),
-    (S: 'arabic'; CSet: ARABIC_CHARSET),
-    (S: 'greek'; CSet: GREEK_CHARSET),
-    (S: 'turkish'; CSet: TURKISH_CHARSET),
-    (S: 'vietnamese'; CSet: VIETNAMESE_CHARSET),
-    (S: 'thai'; CSet: THAI_CHARSET),
-    (S: 'easteurope'; CSet: EASTEUROPE_CHARSET),
-    (S: 'russian'; CSet: RUSSIAN_CHARSET),
-    (S: 'euc-kr'; CSet: HANGEUL_CHARSET),
-    (S: '5601'; CSet: HANGEUL_CHARSET), {Korean}
-    (S: 'euc-jp'; CSet: EUCJP_CHARSET),
-    (S: '8859-15'; CSet: ANSI_CHARSET), {almost Ansi, but not quite}
-    (S: 'tis-620'; CSet: THAI_CHARSET));
-
-function TranslateCharset(const Content: ThtString; var Charset: TFontCharset): boolean;
+function TranslateCharset(const Content: ThtString; var Charset: TFontCharset; var CodePage: Integer): boolean;
 var
-  I: Integer;
+  Info: TBuffCharSetCodePageInfo;
 {$ifdef UseUnicode}
 {$else}
   N: Integer;
 {$endif}
 begin
-  Result := False;
-  for I := 1 to MaxX do
-    if Pos(XTable[I].S, Lowercase(Content)) > 0 then
-    begin
-      Charset := XTable[I].CSet;
-      Result := True;
+  Info := GetCharSetCodePageInfo(Content);
+  Result := Info <> nil;
+  if Result then
+  begin
+    Charset := Info.CharSet;
+    CodePage := Info.CodePage;
 {$ifdef UseUnicode}
 {$else}
-      if CharSet = EUCJP_CharSet then
+    if CharSet = EUCJP_CharSet then
+    begin
+      if not HaveTranslated then
       begin
-        if not HaveTranslated then
-        begin
-          N := Buff - PhtChar(DocS);
-          DocS := EUCToShiftJis(DocS); {translate to ShiftJis}
-          Buff := PhtChar(DocS) + N; {DocS probably moves}
-          BuffEnd := PhtChar(Docs) + Length(DocS);
-          HaveTranslated := True;
-        end;
-        CharSet := SHIFTJIS_CHARSET;
+        N := Buff - PhtChar(DocS);
+        DocS := EUCToShiftJis(DocS); {translate to ShiftJis}
+        Buff := PhtChar(DocS) + N; {DocS probably moves}
+        BuffEnd := PhtChar(Docs) + Length(DocS);
+        HaveTranslated := True;
       end;
-{$endif}
-      Break;
+      CharSet := SHIFTJIS_CHARSET;
     end;
+{$endif}
+  end;
 end;
 
 {----------------DoMeta}
@@ -3352,6 +3303,7 @@ var
   T: TAttribute;
   HttpEq, Name, Content: ThtString;
   CharSet: TFontCharset;
+  CodePage: Integer;
 begin
   if Attributes.Find(HttpEqSy, T) then
     HttpEq := T.Name
@@ -3367,12 +3319,13 @@ begin
     Content := '';
   if not IsUTF8 and (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
   begin
-    if TranslateCharset(Content, CharSet) then
-      PropStack.Last.AssignCharset(Charset)
-    else if Pos('utf-8', Lowercase(Content)) > 0 then
-    begin
-      PropStack.Last.AssignUTF8;
-    end;
+    if TranslateCharset(Content, CharSet, CodePage) then
+      case CodePage of
+        CP_UTF8:
+          PropStack.Last.AssignUTF8;
+      else
+        PropStack.Last.AssignCharset(Charset);
+      end;
     if CallingObject is ThtmlViewer then
     begin
       ThtmlViewer(CallingObject).Charset := PropStack.Last.Charset;
@@ -4617,60 +4570,7 @@ const
     (Name: 'euro'; Value: #8364) //  euro sign, U+20AC NEW
     );
 
-{$IFNDEF Delphi6_Plus}
-type
-  TCaseSensitiveStringList = class(ThtStringList)
-  public
-    function Find(const S: ThtString; var Index: Integer): Boolean; override;
-  end;
-
-function TCaseSensitiveStringList.Find(const S: ThtString; var Index: Integer): Boolean;
-{a case sensitive Find}
-var
-  L, H, I, C: Integer;
-begin
-  Result := False;
-  L := 0;
-  H := Count - 1;
-  while L <= H do
-  begin
-    I := (L + H) shr 1;
-    C := AnsiCompareStr(Strings[I], S);
-    if C < 0 then
-      L := I + 1
-    else
-    begin
-      H := I - 1;
-      if C = 0 then
-      begin
-        Result := True;
-        if Duplicates <> dupAccept then
-          L := I;
-      end;
-    end;
-  end;
-  Index := L;
-end;
-
 procedure SortEntities;
-var
-  I: integer;
-begin
-// Put the Entities into a sorted StringList for faster access.
-  if Entities = nil then
-  begin
-    Entities := TCaseSensitiveStringList.Create;
-    with Entities do
-    begin
-      Sorted := True;
-      for I := 0 to EntityCount - 1 do
-        Entities.AddObject(EntityDefinitions[I].Name, Pointer(EntityDefinitions[I].Value));
-    end;
-  end;
-end;
-{$ELSE}
-
-procedure SortEntities; {Delphi 6 version}
 var
   I: integer;
 begin
@@ -4687,10 +4587,8 @@ begin
     end;
   end;
 end;
-{$ENDIF}
 
 initialization
-
   LCToken := TokenObj.Create;
   PropStack := THtmlPropStack.Create;
   SortEntities;

@@ -1106,7 +1106,7 @@ var
 implementation
 
 uses
-  SysUtils, {$IFDEF Delphi6_Plus}Variants, {$ENDIF}Forms, Math,
+  SysUtils, Variants, Forms, Math,
   HtmlSbs1
   {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
 

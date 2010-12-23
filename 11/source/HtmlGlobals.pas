@@ -54,7 +54,8 @@ uses
     StdCtrls,
   {$endif UseElPack}
 {$endif UseTNT}
-  Classes, SysUtils;
+  Classes, SysUtils,
+  HtmlBuffer;
 
 type
 {$ifdef UseUnicode}
@@ -569,138 +570,15 @@ begin
 end;
 
 function LoadStringFromStreamW(Stream: TStream): WideString;
-{$ifdef UNICODE}
-{$else}
-  procedure SwapBytes(Bytes: PByte; Count: Integer);
-  var
-    I: Integer;
-    B: Byte;
-    NextByte: PByte;
-  begin
-    for I := 0 to Count div 2 do
-    begin
-      B := Bytes^;
-      NextByte := Bytes;
-      Inc(NextByte);
-      Bytes^:= NextByte^;
-      NextByte^ := B;
-      Inc(Bytes, 2);
-    end;
-  end;
-{$endif}
 var
-  ByteCount: Integer;
-  Buffer: TBytes;
-{$ifdef UNICODE}
-  PreambleSize: Integer;
-  Encoding: TEncoding;
-{$else}
-  CharCount: Integer;
-{$endif}
+  Buffer: TBuffer;
 begin
-{$ifdef UNICODE}
-  ByteCount := Stream.Size - Stream.Position;
-  if ByteCount = 0 then
-  begin
-    Result := '';
-    exit;
+  Buffer := TBuffer.Create(Stream);
+  try
+    Result := Buffer.AsString;
+  finally
+    Buffer.Free;
   end;
-  SetLength(Buffer, ByteCount);
-  Stream.Read(Buffer[0], ByteCount);
-  Encoding := nil;
-  PreambleSize := TEncoding.GetBufferEncoding(Buffer, Encoding);
-  if Encoding = TEncoding.Default then
-  begin
-    // BG, 04.12.2010: GetBufferEncoding looks for preambles only to detected
-    // encoding, but often there is no header/preamble in UTF-8 streams/files.
-    Result := TEncoding.UTF8.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
-    if Result <> '' then
-      exit;
-  end;
-  Result := Encoding.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
-{$else}
-  //BG, 07.12.2010: cannot start in the middle of a stream,
-  // if I want to recognize encoding by preamble.
-  Stream.Position := 0;
-  ByteCount := Stream.Size - Stream.Position;
-  if ByteCount = 0 then
-  begin
-    Result := '';
-    Exit;
-  end;
-  if ByteCount >= 2 then
-  begin
-    SetLength(Buffer, 3); // 3 = max length of checked preambles
-    Stream.Read(Buffer[0], 2);
-    case Buffer[0] of
-      $FF:
-      begin
-        if Buffer[1] = $FE then
-        begin
-          // this is little endian unicode
-          Dec(ByteCount, 2);
-          SetLength(Result, ByteCount);
-          Stream.Read(Result[1], ByteCount);
-          Exit;
-        end;
-      end;
-
-      $FE:
-      begin
-        if Buffer[1] = $FF then
-        begin
-          // this is big endian unicode
-          // swap the 2 bytes of one char.
-          Dec(ByteCount, 2);
-          SetLength(Result, ByteCount);
-          Stream.Read(Result[1], ByteCount);
-          SwapBytes(PByte(Result[1]), ByteCount);
-          Exit;
-        end;
-      end;
-
-      $EF:
-      begin
-        if ByteCount >= 3 then
-          if Buffer[1] = $BB then
-          begin
-            Stream.Read(Buffer[2], 1);
-            if Buffer[2] = $BF then
-            begin
-              // this is UTF-8
-              Dec(ByteCount, 3);
-              if ByteCount = 0 then
-              begin
-                Result := '';
-                Exit;
-              end;
-              SetLength(Buffer, ByteCount);
-              SetLength(Result, 2 * ByteCount); // resulting WideString will never exceed this length
-              Stream.Read(Buffer[0], ByteCount);
-              CharCount := MultiByteToWideChar(CP_UTF8, 0,
-                PAnsiChar(Buffer), ByteCount,
-                PWideChar(Result), Length(Result));
-              SetLength(Result, CharCount * sizeof(Result[1]));
-              Exit;
-            end;
-          end;
-      end;
-    end;
-  end;
-  // no preamble: this is most probably a 1-byte per character code or UTF-8 without preamble.
-  Stream.Position := 0;
-  SetLength(Buffer, ByteCount);
-  SetLength(Result, 2 * ByteCount); // resulting WideString will never exceed this length
-  Stream.Read(Buffer[0], ByteCount);
-  CharCount := MultiByteToWideChar(CP_UTF8, 0,
-    PAnsiChar(Buffer), ByteCount,
-    PWideChar(Result), Length(Result));
-  if CharCount = 0 then
-    CharCount := MultiByteToWideChar(CP_ACP, 0,
-      PAnsiChar(Buffer), ByteCount,
-      PWideChar(Result), Length(Result));
-  SetLength(Result, CharCount);
-{$endif}
 end;
 
 function LoadStringFromFileA(const Name: ThtString): AnsiString;

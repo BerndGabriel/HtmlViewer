@@ -19,7 +19,6 @@
 
   {$define ver100_plus}
   {$define ver120_plus}
-  {$define Delphi6_Plus}
 {$else}
 
 { Identify Delphi Compiler Version:
@@ -55,7 +54,6 @@
   {$ifdef CONDITIONALEXPRESSIONS} {Delphi 6 and up}
     {$define ver100_plus}
     {$define ver120_plus}
-    {$define Delphi6_Plus}
     {$ifdef ver140}
     {$else}
       {$define Delphi7_Plus}
@@ -84,47 +82,7 @@
       {$endif}
     {$endif}
   {$else}
-    {$ifdef ver80}  {Delphi 1}
-    {$else}
-      {$ifdef ver90}  {Delphi 2}
-      {$else}
-        {$ifdef ver93}  {C++Builder 1}
-          {$Define CppBuilder}
-        {$else}
-          {$define ver100_plus}
-          {$ifdef ver100} {Delphi 3}
-            {$define D3_BCB3}
-          {$else}
-            {$ifdef ver110} {C++Builder 3}
-              {$define D3_BCB3}
-              {$Define CppBuilder}
-              {$ObjExportAll On}
-            {$else}
-              {$define ver120_plus}
-              {$ifdef Ver120} {Delphi 4}
-              {$else}
-                {$ifdef ver125} {C++Builder 4}
-                  {$Define CppBuilder}
-                  {$ObjExportAll On}
-                {$else}
-                  {$ifdef Ver130} {Delphi 5, C++Builder 5}
-                    {$ifdef BCB}   {C++Builder}
-                      {$Define CppBuilder}
-                      {$ObjExportAll On}
-                    {$endif}
-                  {$endif}
-                {$endif}
-              {$endif}
-            {$endif}
-          {$endif}
-        {$endif}
-      {$endif}
-    {$endif}
-  {$endif}
-
-  {$ifndef ver100_plus}
-    {$define CopyPaletteMissing}
-    {$define TransparentStretchBltMissing}
+    {$message 'Sorry, but Delphi versions before 6 are not supported.'}
   {$endif}
 
   {$ifdef Compiler17_Plus}
@@ -164,9 +122,7 @@
     {$endif}
   {$endif}
 
-  {$ifdef Delphi6_Plus}
-    {$Warn Symbol_Platform Off}
-  {$endif}
+  {$Warn Symbol_Platform Off}
 
 {$endif}
 

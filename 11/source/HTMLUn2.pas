@@ -3208,27 +3208,13 @@ begin
   else
     Result := S;
 {$ELSE}
-{$IFDEF Delphi6_Plus}
-  if IsWin95 and (CodePage = CP_UTF8) then
-  begin
-  {Provide initial space. The resulting ThtString will never be longer than the
-   UTF-8 encoded ThtString.}
-    if Len = -1 then
-      Len := Length(S);
-    SetLength(Result, Len + 1); {add 1 for #0 terminator}
-    NewLen := UTF8ToUnicode(PWideChar(Result), Len + 1, PAnsiChar(S), Len) - 1; {subtr 1 as don't want to count null terminator}
-  end
-  else
-{$ENDIF}
-  begin
   {Provide initial space. The resulting ThtString will never be longer than the
    UTF-8 or multibyte encoded ThtString.}
-    SetLength(Result, 2 * Len);
-    NewLen := MultiByteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
-    if NewLen = 0 then
-    { Invalid code page. Try default.}
-      NewLen := MultiByteToWideChar(CP_ACP, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
-  end;
+  SetLength(Result, 2 * Len);
+  NewLen := MultiByteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
+  if (NewLen = 0) and (CodePage <> CP_ACP) then
+  { Invalid code page. Try default.}
+    NewLen := MultiByteToWideChar(CP_ACP, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
   SetLength(Result, NewLen);
 {$ENDIF}
 end;
@@ -3237,11 +3223,9 @@ function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
 var
   NewLen, Len: Integer;
 begin
-{$IFDEF Delphi6_Plus}
   if CodePage = CP_UTF8 then {UTF-8 encoded ThtString.}
     Result := UTF8Encode(W)
   else
-{$ENDIF}
   begin
     Len := Length(W);
     SetLength(Result, 3 * Len);
@@ -3278,7 +3262,7 @@ begin
 end;
 
 procedure TokenObj.AddString(S: TCharCollection; CodePage: Integer);
-// Takes the given ThtString S and converts it to Unicode using the given code page.
+// Takes the given string S and converts it to Unicode using the given code page.
 // If we are on Windows 95 then CP_UTF8 (and CP_UTF7) are not supported.
 // We compensate for this by using a Delphi function.
 // Note: There are more code pages (including CP_UTF7), which are not supported
@@ -3301,7 +3285,7 @@ begin
 {$endif}
   NewLen := Length(WS);
 
-  {Store the wide ThtString and character indices.}
+  {Store the wide string and character indices.}
   if Len = NewLen then {single byte character set or at least no multibyte conversion}
     for I := 1 to NewLen do
       AddUnicodeChar(WS[I], S.FIndices[I])

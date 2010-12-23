@@ -32,12 +32,7 @@ interface
 uses
   SysUtils, Windows, Messages, Classes, Controls, StdCtrls,
   Dialogs, ExtCtrls,
-{$IFDEF Delphi6_Plus}
   designintf, DesignEditors;
-{$ELSE}
-  dsgnintf;
-{$ENDIF}
-
 
 type
 

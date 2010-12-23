@@ -436,8 +436,12 @@ type
     procedure htProgressInit;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure LoadFromFile(const FileName: ThtString);
+{$ifdef UNICODE}
+    procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''); overload;
+{$else}
     procedure LoadFromString(const S: AnsiString; const Reference: ThtString = ''); overload;
     procedure LoadFromString(const S: WideString; const Reference: ThtString = ''); overload;
+{$endif}
     procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = '');
     procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = '');
     procedure LoadStrings(const Strings: ThtStrings; const Reference: ThtString = '');
@@ -1004,32 +1008,29 @@ end;
 
 {----------------THtmlViewer.LoadFromString}
 {$ifdef UNICODE}
-procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: ThtString);
-begin
-  LoadFromString(MultibyteToWideString(CodePage, S), Reference);
-end;
+//procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: ThtString);
+//begin
+//  LoadFromString(MultibyteToWideString(CodePage, S), Reference);
+//end;
 
-procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: ThtString);
+procedure THtmlViewer.LoadFromString(const S: ThtString; const Reference: ThtString);
 begin
   LoadString(S, Reference, HTMLType);
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 {$else}
-procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: ThtString);
+procedure THtmlViewer.LoadFromString(const S: string; const Reference: ThtString);
 begin
   LoadString(S, Reference, HTMLType);
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
-{$IFDEF Delphi6_Plus}
-
 procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: ThtString);
 begin
   LoadFromString(#$EF + #$BB + #$BF + UTF8Encode(S), Reference);
 end;
-{$ENDIF}
 {$endif}
 
 {----------------THtmlViewer.LoadString}
@@ -1843,7 +1844,6 @@ begin
 end;
 
 {----------------THtmlViewer.HTMLMouseWheel}
-{$IFDEF ver120_plus}
 
 procedure THtmlViewer.HTMLMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: Integer; MousePos: TPoint);
@@ -1870,7 +1870,6 @@ begin
     Result := True;
   end;
 end;
-{$ENDIF}
 
  {----------------THtmlViewer.XYToDisplayPos}
 
