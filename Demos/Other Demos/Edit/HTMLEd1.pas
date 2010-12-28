@@ -92,7 +92,7 @@ var
 
 implementation
 
-{$R *.DFM}
+{$R *.dfm}
 
 const
   InitText = '<html>'^m^j'<head>'^m^j'<style>'^m^j^m^j'</style>'^m^j'</head>'^m^j+
@@ -100,9 +100,11 @@ const
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-DragAcceptFiles(Handle, True);
-RichEdit.Modified := False;
-SizeRatio := 0.5;
+{$ifdef Windows}
+  DragAcceptFiles(Handle, True);
+{$endif}
+  RichEdit.Modified := False;
+  SizeRatio := 0.5;
 end;
 
 procedure TForm1.Open1Click(Sender: TObject);

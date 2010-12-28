@@ -31,7 +31,7 @@ interface
 
 uses
   Classes, Graphics, SysUtils,
-  HtmlGlobals, UrlSubs, StyleUn;
+  HtmlGlobals, URLSubs, StyleUn;
 
 
 type

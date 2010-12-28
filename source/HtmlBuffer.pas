@@ -30,7 +30,12 @@ unit HtmlBuffer;
 interface
 
 uses
-  Windows, Graphics, {$ifdef UNICODE} AnsiStrings, {$endif} Classes, SysUtils, Math;
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  Graphics, {$ifdef UNICODE} AnsiStrings, {$endif} Classes, SysUtils, Math;
 
 const
   // more char sets

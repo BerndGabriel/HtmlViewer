@@ -3,7 +3,12 @@ unit AVIUnit;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+{$ifdef LCL}
+  LclIntf, LclType, Interfaces,
+{$else}
+  Windows,
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, Htmlview, ExtCtrls, mmSystem, MPlayer, 
   htmlsubs, StdCtrls;
 

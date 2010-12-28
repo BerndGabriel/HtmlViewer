@@ -37,7 +37,7 @@ unit MetaFilePrinter;
 interface
 
 uses
-  Windows, Classes, Graphics, Printers{$ifdef LCL}, Interfaces{$endif};
+  Windows, Classes, Graphics, Printers;
 
 type
 

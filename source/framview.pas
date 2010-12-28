@@ -30,8 +30,13 @@ unit FramView;
 interface
 
 uses
-  SysUtils, Windows, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
-  UrlSubs, HtmlGlobals, Htmlsubs, Htmlview, HTMLUn2, ReadHTML;
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
+  URLSubs, HtmlGlobals, HTMLSubs, Htmlview, HTMLUn2, ReadHTML;
 
 type
   {common to TFrameViewer and TFrameBrowser}

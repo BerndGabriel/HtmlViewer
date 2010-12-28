@@ -55,24 +55,21 @@ These will be removed later.
 
 {$I htmlcons.inc}
 
-unit Htmlview;
+unit HtmlView;
 
 interface
 
 uses
-  Windows, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls,
 {$ifdef LCL}
-  Interfaces,
-  LMessages,
+  LclIntf, LclType, LMessages, types, HtmlMisc,
+{$else}
+  Windows,
 {$endif}
-  UrlSubs,
-  MetafilePrinter,
-  vwPrint,
-  HtmlGlobals,
-  HTMLUn2,
-  ReadHTML,
-  HTMLSubs,
-  StyleUn;
+  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls,
+{$ifdef Windows}
+  MetaFilePrinter, vwPrint, // Works with Delphi and FPC but only under Windows.
+{$endif}
+  URLSubs, HtmlGlobals, HTMLUn2, ReadHTML, HTMLSubs, StyleUn;
 
 const
   wm_FormSubmit = wm_User + 100;
@@ -150,6 +147,13 @@ type
   end;
 
   THtmlFileType = (HTMLType, TextType, ImgType, OtherType);
+
+{$ifdef Windows}
+{$else}
+  //From MetaFilePrinter.pas
+  TPageEvent = procedure(Sender: TObject; NumPage: Integer ;
+                         var StopPrinting : Boolean) of Object;
+{$endif}
 
   THtmlViewerStateBit = (
     vsBGFixed,
@@ -249,7 +253,9 @@ type
     MiddleY: Integer;
     NoJump: Boolean;
     sbWidth: Integer;
+{$ifdef Windows}
     vwP, OldPrinter: TvwPrinter;
+{$endif}
 // child components
     BorderPanel: TPanel;
     PaintPanel: TPaintPanel;
@@ -410,23 +416,28 @@ type
     function InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 {$ifndef FPC_TODO_PRINTING}
+{$endif}
+{$ifdef Windows}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
     function MakePagedMetaFiles(Width, Height: Integer): TList;
+    procedure Print(FromPage, ToPage: Integer);
+    procedure OpenPrint;
+    procedure AbortPrint;
+    procedure ClosePrint;
+    function PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer; virtual;
+    procedure NumPrinterPages(MFPrinter: TMetaFilePrinter; out Width, Height: Integer); overload;
 {$endif}
     function NumPrinterPages(out WidthRatio: Double): Integer; overload;
     function NumPrinterPages: Integer; overload;
     function PositionTo(Dest: ThtString): Boolean;
-    function PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer; virtual;
     function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord}
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
-    procedure AbortPrint;
     procedure AddVisitedLink(const S: ThtString);
     procedure BumpHistory(const FileName, Title: ThtString; OldPos: Integer; OldFormData: TFreeList; ft: ThtmlFileType);
     procedure CheckVisitedLinks;
     procedure Clear; virtual;
     procedure ClearHistory;
-    procedure ClosePrint;
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); override;
     procedure CopyToClipboard;
     procedure DoEnter; override;
@@ -450,9 +461,6 @@ type
     procedure LoadTextFile(const FileName: ThtString);
     procedure LoadTextFromString(const S: ThtString);
     procedure LoadTextStrings(Strings: ThtStrings);
-    procedure NumPrinterPages(MFPrinter: TMetaFilePrinter; out Width, Height: Integer); overload;
-    procedure OpenPrint;
-    procedure Print(FromPage, ToPage: Integer);
     procedure Reformat;
     procedure Reload;
     procedure Repaint; override;
@@ -605,7 +613,7 @@ implementation
 
 uses
   SysUtils, Math, Clipbrd, Forms, Printers, {$IFDEF UNICODE}AnsiStrings, {$ENDIF}
-  htmlgif2 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
+  HTMLGif2 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
 
 const
   ScrollGap = 20;
@@ -3154,7 +3162,7 @@ begin
   end;
 end;
 
-{$ifndef LCL}
+{$ifdef Windows}
 
 function THtmlViewer.MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
 var
@@ -3342,7 +3350,8 @@ begin
   end;
 end;
 
-{-$ifndef FPC_TODO_PRINTING}
+{$ifdef Windows}
+
 procedure THtmlViewer.Print(FromPage, ToPage: Integer);
 var
   ARect, CRect: TRect;
@@ -3833,6 +3842,7 @@ begin
     FreeAndNil(vwP);
   end;
 end;
+{$endif}
 
 function THtmlViewer.NumPrinterPages: Integer;
 var
@@ -3842,9 +3852,13 @@ begin
 end;
 
 function THtmlViewer.NumPrinterPages(out WidthRatio: Double): Integer;
+{$ifdef Windows}
 var
   MFPrinter: TMetaFilePrinter;
+{$endif}
 begin
+  Result := 0;
+{$ifdef Windows}
   MFPrinter := TMetaFilePrinter.Create(nil);
   FOnPageEvent := nil;
   try
@@ -3854,10 +3868,12 @@ begin
   finally
     MFPrinter.Free;
   end;
+{$endif}
 end;
 
 //BG, 01.12.2006: beg of modification
 
+{$ifdef Windows}
 procedure THtmlViewer.NumPrinterPages(MFPrinter: TMetaFilePrinter; out Width, Height: Integer);
 var
   LOnPageEvent: TPageEvent;
@@ -3872,9 +3888,10 @@ begin
     FOnPageEvent := LOnPageEvent;
   end;
 end;
+{$endif}
 //BG, 01.12.2006: end of modification
 
-
+{$ifdef Windows}
 function THtmlViewer.PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer;
 var
   ARect, CRect: TRect;
@@ -4346,6 +4363,7 @@ begin
     Result := FPage;
   end;
 end;
+{$endif}
 
 procedure THtmlViewer.BackgroundChange(Sender: TObject);
 begin
@@ -4705,12 +4723,14 @@ var
   begin
     clipboard.Open;
     try
+{$ifdef Windows}      // Must be implemented in a cross-platform way.
       //an extra "1" for the null terminator
       gMem := globalalloc(GMEM_DDESHARE + GMEM_MOVEABLE, length(source) + 1);
       lp := globallock(gMem);
       copymemory(lp, pAnsichar(source), length(source) + 1);
       globalunlock(gMem);
       setClipboarddata(format, gMem);
+{$endif}
     finally
       clipboard.Close;
     end

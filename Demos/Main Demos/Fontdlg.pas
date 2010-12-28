@@ -5,11 +5,7 @@ unit Fontdlg;
 interface
 
 uses
-  SysUtils, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, Spin, Buttons,
-{$ifdef LCL}
-  LResources,
-{$endif}
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Spin, Buttons,
   StyleUn, HTMLUn2, Htmlview;
 
 type
@@ -72,10 +68,7 @@ type
 
 implementation
 
-{$ifdef LCL}
-{$else}
 {$R *.DFM}
-{$endif}
 
 const
   CustomColor = 'Custom color';
@@ -269,8 +262,4 @@ begin
   LoadAgain;
 end;
 
-initialization
-{$ifdef LCL}
-{$I FontDlg.lrs}
-{$endif}
 end.

@@ -4,29 +4,30 @@ program FrameDem;
 {$include ..\..\source\htmlcons.inc}
 
 uses
-  Forms,
 {$ifdef LCL}
   Interfaces,
-  LResources,
 {$endif}
-  PRINTSTATUSFORM in 'PRINTSTATUSFORM.PAS' {PrnStatusForm},
-  GOPAGE in 'GOPAGE.PAS' {GoPageForm},
-  PREVIEWFORM in 'PREVIEWFORM.PAS' {PreviewForm},
-  FDemUnit in 'FDemUnit.pas' {Form1},
-  FONTDLG in 'FONTDLG.PAS' {FontForm},
-  Htmlabt in 'Htmlabt.pas' {AboutBox},
-  IMGFORM in 'IMGFORM.PAS' {ImageForm},
-  DemoSubs in 'DemoSubs.pas';
+{$ifdef Windows}
+  PreviewForm,
+{$endif}
+  Forms
+  ,PrintStatusForm
+  ,Gopage
+  ,FDemUnit
+  ,Fontdlg
+  ,Htmlabt
+  ,ImgForm
+  ,DemoSubs
+  ;
 
-{$R *.RES}
+{$R *.res}
 
 {$IFDEF WINDOWS}{$R FrameDem.rc}{$ENDIF}
 
 begin
-{$ifdef LCL}
-  {$I FrameDem.lrs}
-{$endif}
   Application.Initialize;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.
+
+

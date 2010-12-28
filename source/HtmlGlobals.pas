@@ -30,11 +30,10 @@ unit HtmlGlobals;
 interface
 
 uses
-  Windows, Graphics,
-{$ifdef FPC}
-  RtlConsts,
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc, WideStringsLcl,
 {$else}
-  Consts,
+  Windows, Consts,
 {$endif}
 {$ifdef UseTNT}
   {$message 'HtmlViewer uses TNT unicode controls.'}
@@ -54,7 +53,7 @@ uses
     StdCtrls,
   {$endif UseElPack}
 {$endif UseTNT}
-  Classes, SysUtils,
+  Graphics, Classes, SysUtils,
   HtmlBuffer;
 
 type
@@ -385,8 +384,7 @@ var
 // 2008.10.19 <-
 
   function ReturnAddr: Pointer;
-  // From classes.pas
-  asm
+  asm  // From classes.pas
     MOV		EAX,[EBP+4] // sysutils.pas says [EBP-4], but this works !
   end;
 
@@ -715,8 +713,13 @@ initialization
   SystemPalette16 := GetStockObject(DEFAULT_PALETTE);
 {$endif}
 
+{$ifdef FPC}
+  IsWin95 := False;           // Use the same always with FPC
+  IsWin32Platform := False;
+{$else}
   IsWin95 := (Win32Platform = VER_PLATFORM_WIN32_WINDOWS) and (Win32MinorVersion in [0..9]);
   IsWin32Platform := Win32Platform = VER_PLATFORM_WIN32_WINDOWS;
+{$endif FPC}
 finalization
   if ThePalette <> 0 then
     DeleteObject(ThePalette);

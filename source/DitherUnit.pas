@@ -46,7 +46,9 @@ unit DitherUnit;
 
 interface
 
-{$DEFINE PIXELFORMAT_TOO_SLOW}
+{$ifNdef LCL}
+ {$DEFINE PIXELFORMAT_TOO_SLOW}
+{$endif}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -95,10 +97,12 @@ Error: This module not used with Delphi 2
 //
 ////////////////////////////////////////////////////////////////////////////////
 uses
-  SysUtils,
+{$ifdef LCL}
+  LclIntf, LclType, //LMessages,
+{$else}
   Windows,
-  Graphics,
-  Classes;
+{$endif}
+  SysUtils, Graphics, Classes;
 
 function GetBitmap(Source: TPersistent): TBitmap; {LDB}
 
@@ -217,10 +221,15 @@ end;
 procedure Error(msg: string);
 
   function ReturnAddr: Pointer;
-  // From classes.pas
-  asm
+{$ifdef LCL}
+  begin
+    Result := nil; // ToDo: Fix it. Why is there assy?
+{$else}
+  asm  // From classes.pas
     MOV		EAX,[EBP+4] // sysutils.pas says [EBP-4] !
+{$endif}
   end;
+
 begin
   raise GIFException.Create(msg)at ReturnAddr;
 end;
@@ -608,7 +617,11 @@ begin
     Result := PByte(Cardinal(FDIBBits) + Cardinal(Row) * AlignBit(biWidth, biBitCount, 32));
   end;
 {$ELSE}
+{$ifdef LCL}
+  Result := nil;  // ToDo: Find replacement of FBitmap.ScanLine for LCL
+{$else}
   Result := FBitmap.ScanLine[Row];
+{$endif}
 {$ENDIF}
 end;
 
@@ -1135,15 +1148,15 @@ begin
   // Move on to next column
   if (FDirection = 1) then
   begin
-    inc(longInt(ErrorR), sizeof(TErrorTerm));
-    inc(longInt(ErrorG), sizeof(TErrorTerm));
-    inc(longInt(ErrorB), sizeof(TErrorTerm));
+    inc(ErrorR, sizeof(TErrorTerm));
+    inc(ErrorG, sizeof(TErrorTerm));
+    inc(ErrorB, sizeof(TErrorTerm));
   end
   else
   begin
-    dec(longInt(ErrorR), sizeof(TErrorTerm));
-    dec(longInt(ErrorG), sizeof(TErrorTerm));
-    dec(longInt(ErrorB), sizeof(TErrorTerm));
+    dec(ErrorR, sizeof(TErrorTerm));
+    dec(ErrorG, sizeof(TErrorTerm));
+    dec(ErrorB, sizeof(TErrorTerm));
   end;
 end;
 {$IFDEF R_PLUS}

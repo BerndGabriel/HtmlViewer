@@ -32,12 +32,12 @@ unit FDemUnit;
 interface
 
 uses
-  Windows, SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, MMSystem, Clipbrd, ShellAPI, FontDlg, ComCtrls, StdCtrls,
+  SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
+  ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, LResources, FPImage,
+  LclIntf, LclType, {LResources, }FPImage, HtmlMisc,
 {$else}
-  MPlayer,
+  Windows, ShellAPI,
   {$if CompilerVersion > 15}
     XpMan,
   {$ifend}
@@ -58,8 +58,11 @@ uses
   {$endif UseElPack}
   Submit,
 {$endif UseTNT}
-  HtmlGlobals, UrlSubs, StyleUn, Readhtml, HTMLsubs, HTMLun2, Htmlview, FramView,
-  DemoSubs, HTMLAbt, PreviewForm, ImgForm;
+{$ifdef Windows}
+  MPlayer, MMSystem, PreviewForm,
+{$endif}
+  HtmlGlobals, URLSubs, StyleUn, ReadHTML, HTMLSubs, HTMLUn2, Htmlview, FramView,
+  DemoSubs, Htmlabt, ImgForm;
 
 const
   MaxHistories = 6;  {size of History list}
@@ -103,8 +106,7 @@ type
     Panel3: TPanel;
     ProgressBar: TProgressBar;
     InfoPanel: TPanel;
-{$ifdef LCL}
-{$else}
+{$ifdef Windows}
     MediaPlayer: TMediaPlayer;
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
@@ -170,8 +172,10 @@ type
     Histories: array[0..MaxHistories-1] of TMenuItem;
     FoundObject: TImageObj;
     NewWindowFile: string;
+{$ifdef Windows}
     MediaCount: integer;
     ThePlayer: TOBject;
+{$endif}
     TimerCount: integer;
     OldTitle: string;
     HintWindow: THintWindow;
@@ -192,8 +196,9 @@ var
 implementation
 
 {$ifdef LCL}
+  {$R *.lfm}
 {$else}
-{$R *.DFM}
+  {$R *.dfm}
 {$endif}
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -229,7 +234,9 @@ begin
       Tag := I;
     end;
   end;
+{$ifdef Windows}
   DragAcceptFiles(Handle, True);
+{$endif}
   HintWindow := THintWindow.Create(Self);
   HintWindow.Color := $CCFFFF;
 
@@ -306,7 +313,9 @@ if (I <= 2) or (J > 0) then
   if Ext = '.WAV' then
     begin
     Handled := True;
+{$ifdef Windows}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
+{$endif}
     end
   else if Ext = '.EXE' then
     begin
@@ -327,7 +336,11 @@ J := Pos('HTTP://', UpperCase(URL));
 if (I > 0) or (J > 0) then
   begin
   {Note: ShellExecute causes problems when run from Delphi 4 IDE}
+{$ifdef Windows}
   ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
+{$else}
+  OpenDocument(StrPCopy(PC, URL));
+{$endif}
   Handled := True;
   Exit;
   end;
@@ -633,11 +646,13 @@ var
   S: string;
   Count: integer;
 begin
+{$ifdef Windows}
   Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
   SetLength(S, Count);
   DragFinish(Message.WParam);
   if Count >0 then
     FrameViewer.LoadFromFile(S);
+{$endif}
   Message.Result := 0;
 end;
 
@@ -1042,8 +1057,8 @@ begin
     Caption := 'FrameViewer Demo - <untitled document>';
 end;
 
-initialization
-{$ifdef LCL}
-{$I FDemUnit.lrs}
-{$endif}
+//initialization
+{.$ifdef LCL}
+{.$I FrameDem.lrs}
+{.$endif}
 end.

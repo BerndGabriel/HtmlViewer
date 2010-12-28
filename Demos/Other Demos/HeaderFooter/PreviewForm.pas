@@ -10,8 +10,16 @@ unit PreviewForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ExtCtrls, Buttons, MetaFilePrinter, HTMLView, PrintStatusForm;
+{$ifdef LCL}
+  LclIntf, LclType,
+{$else}
+  Windows,
+{$endif}
+{$ifdef Windows}
+  MetaFilePrinter,
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  StdCtrls, ExtCtrls, Buttons, HTMLView, PrintStatusForm;
 
 const
    crZoom = 40;
@@ -111,7 +119,7 @@ implementation
 uses
    Gopage;
 
-{$R *.DFM}
+{$R *.dfm}
 {$R GRID.RES}
 
 constructor TPreviewForm.CreateIt(AOwner: TComponent; AViewer: ThtmlViewer;

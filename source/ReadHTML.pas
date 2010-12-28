@@ -71,12 +71,18 @@ Key Routines:
       parser is responsible for calling Next after it does its thing.
 }
 
-unit Readhtml;
+unit ReadHTML;
 
 interface
+
 uses
-  Messages, Classes, Graphics, Controls,
-  HtmlGlobals, HtmlBuffer, HtmlUn2, HtmlSubs, StyleUn;
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  SysUtils, Math, Variants, Messages, Classes, Graphics, Controls,
+  HtmlGlobals, HtmlBuffer, HTMLUn2, HTMLSubs, StyleUn;
 
 type
   LoadStyleType = (lsFile, lsString, lsInclude);
@@ -97,7 +103,7 @@ procedure PopAProp(const Tag: ThtString);
 implementation
 
 uses
-  Windows, SysUtils, Math, Variants, HtmlSbs1, HtmlView, StylePars, UrlSubs;
+  Htmlsbs1, Htmlview, StylePars, URLSubs;
 
 var
   Sy: Symb;
@@ -166,7 +172,7 @@ const
 type
   EParseError = class(Exception);
 var
-  LCh, Ch: ThtChar;
+  LCh, Ch: ThtChar; // Code doesn't compile with WideChar.
   LastChar: (lcOther, lcCR, lcLF);
   Value: integer;
   LCToken: TokenObj;
@@ -577,7 +583,7 @@ end;
 function GetQuotedStr(var S: ThtString; var Value: integer; WantCrLf: boolean; Sym: Symb): boolean;
 {get a quoted ThtString but strip the quotes, check to see if it is numerical}
 var
-  Term: ThtChar;
+  Term: Char; // Was ThtChar;
   S1: ThtString;
   Code: integer;
   ValD: double;
@@ -4147,8 +4153,7 @@ function GetEntityStr(CodePage: integer): ThtString;
 {read an entity and return it as a ThtString.}
 var
   I, N: Integer;
-  Collect,
-    Entity: ThtString;
+  Collect, Entity: ThtString;
 
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
   // Adds the given value as new ThtChar to the ThtString.

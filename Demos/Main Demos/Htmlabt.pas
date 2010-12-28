@@ -23,18 +23,17 @@ Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-unit HTMLAbt;
+unit Htmlabt;
 
 {$include ..\..\source\htmlcons.inc}
 
 interface
 
 uses
-  SysUtils, Classes, Graphics, Controls,
-  Forms, Dialogs, Buttons, ExtCtrls,
 {$ifdef LCL}
-  LResources, LCLVersion,
+  LCLVersion,
 {$endif}
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Buttons, ExtCtrls,
   HtmlGlobals, Htmlview, StdCtrls, HTMLUn2;
 
 const
@@ -54,10 +53,7 @@ type
 
 implementation
 
-{$ifdef LCL}
-{$else}
-{$R *.DFM}
-{$endif}
+{$R *.dfm}
 
 function ConfigInfo: String;
 begin
@@ -174,8 +170,4 @@ begin
   Viewer.LoadFromString('<body>' + Message + '</body>');
 end;
 
-initialization
-{$ifdef LCL}
-{$I HtmlAbt.lrs}
-{$endif}
 end.

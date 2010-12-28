@@ -3,8 +3,16 @@ unit PrintStatusForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, Buttons, HTMLView, MetaFilePrinter;
+{$ifdef LCL}
+  LclIntf, LclType,
+{$else}
+  Windows,
+{$endif}
+{$ifdef Windows}
+  MetaFilePrinter,
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  StdCtrls, Buttons, HTMLView;
 
 type
   TPrnStatusForm = class(TForm)
@@ -31,7 +39,7 @@ var
 
 implementation
 
-{$R *.DFM}
+{$R *.dfm}
 
 
 procedure TPrnStatusForm.DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;

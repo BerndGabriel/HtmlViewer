@@ -59,9 +59,12 @@ var
 implementation
 
 uses
-  PreviewForm, HTMLun2;
+{$ifdef Windows}
+  PreviewForm,
+{$endif}
+  HTMLun2;
 
-{$R *.DFM}
+{$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
@@ -70,7 +73,9 @@ if Screen.Width <= 640 then
 
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 Caption := 'Header/Footer Demo';
-DragAcceptFiles(Handle, True);
+{$ifdef Windows}
+  DragAcceptFiles(Handle, True);
+{$endif}
 end;
 
 procedure TForm1.FormShow(Sender: TObject);

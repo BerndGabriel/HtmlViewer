@@ -5,10 +5,10 @@
     <Name Value="FrameViewer09"/>
     <AutoUpdate Value="Manually"/>
     <CompilerOptions>
-      <Version Value="8"/>
+      <Version Value="9"/>
       <PathDelim Value="\"/>
       <SearchPaths>
-        <OtherUnitFiles Value="..\source\"/>
+        <OtherUnitFiles Value="..\source;.;lib"/>
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -16,8 +16,22 @@
           <SyntaxMode Value="Delphi"/>
           <CStyleOperator Value="False"/>
           <CPPInline Value="False"/>
+          <UseAnsiStrings Value="False"/>
         </SyntaxOptions>
       </Parsing>
+      <CodeGeneration>
+        <Checks>
+          <RangeChecks Value="True"/>
+          <OverflowChecks Value="True"/>
+          <StackChecks Value="True"/>
+        </Checks>
+        <VerifyObjMethodCallValidity Value="True"/>
+      </CodeGeneration>
+      <Linking>
+        <Debugging>
+          <GenerateDwarf Value="True"/>
+        </Debugging>
+      </Linking>
       <Other>
         <Verbosity>
           <ShowHintsForUnusedUnitsInMainSrc Value="True"/>
@@ -28,7 +42,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="16">
+    <Files Count="15">
       <Item1>
         <Filename Value="..\source\HtmlGlobals.pas"/>
         <UnitName Value="HtmlGlobals"/>
@@ -83,17 +97,13 @@
         <UnitName Value="FramView"/>
       </Item13>
       <Item14>
-        <Filename Value="..\source\GDIPL2A.pas"/>
-        <UnitName Value="GDIPL2A"/>
-      </Item14>
-      <Item15>
         <Filename Value="..\source\htmlgif1.pas"/>
         <UnitName Value="HtmlGif1"/>
-      </Item15>
-      <Item16>
+      </Item14>
+      <Item15>
         <Filename Value="..\source\HTMLGif2.pas"/>
         <UnitName Value="HTMLGif2"/>
-      </Item16>
+      </Item15>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">

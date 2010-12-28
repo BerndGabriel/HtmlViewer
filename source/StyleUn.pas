@@ -30,8 +30,12 @@ unit StyleUn;
 interface
 
 uses
-  Windows, Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
-  {$ifdef LCL}Interfaces, {$endif}
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
   HtmlGlobals, HtmlBuffer;
 
 const

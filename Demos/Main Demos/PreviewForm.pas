@@ -12,12 +12,16 @@ unit PreviewForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ExtCtrls, Buttons, MetaFilePrinter,
 {$ifdef LCL}
-  LResources,
+  LclIntf,
 {$else}
+  Windows,
 {$endif}
+{$ifdef Windows}
+  MetaFilePrinter,
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  StdCtrls, ExtCtrls, Buttons,
   HTMLView, PrintStatusForm;
 
 const
@@ -102,7 +106,9 @@ type
     OldHint       : TNotifyEvent;
     DownX, DownY  : integer;
     Moving        : boolean;
+{$ifdef Windows}
     MFPrinter     : TMetaFilePrinter;
+{$endif}
     procedure     DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
     procedure     OnHint(Sender: TObject);
     procedure     SetCurPage(Val: integer);
@@ -121,8 +127,9 @@ uses
    Gopage;
 
 {$ifdef LCL}
+  {$R *.lfm}
 {$else}
-{$R *.DFM}
+  {$R *.dfm}
 {$endif}
 {$R GRID.RES}
 
@@ -131,25 +138,27 @@ constructor TPreviewForm.CreateIt(AOwner: TComponent; AViewer: ThtmlViewer;
 var
   StatusForm: TPrnStatusForm;
 begin
-inherited Create(AOwner);
-   ZoomBox.ItemIndex := 0;
-   UnitsBox.ItemIndex := 0;
-   Screen.Cursors[crZoom] := LoadCursor(hInstance, 'ZOOM_CURSOR');
-   Screen.Cursors[crHandDrag] := LoadCursor(hInstance, 'HAND_CURSOR');
-   ZoomCursorButClick(nil);
-Viewer := AViewer;
-MFPrinter := TMetaFilePrinter.Create(Self);
-StatusForm := TPrnStatusForm.Create(Self);
-try
-  StatusForm.DoPreview(Viewer, MFPrinter, Abort);
-finally
-  StatusForm.Free;
+  inherited Create(AOwner);
+  ZoomBox.ItemIndex := 0;
+  UnitsBox.ItemIndex := 0;
+  Screen.Cursors[crZoom] := LoadCursor(hInstance, 'ZOOM_CURSOR');
+  Screen.Cursors[crHandDrag] := LoadCursor(hInstance, 'HAND_CURSOR');
+  ZoomCursorButClick(nil);
+  Viewer := AViewer;
+{$ifdef Windows}
+  MFPrinter := TMetaFilePrinter.Create(Self);
+{$endif}
+  StatusForm := TPrnStatusForm.Create(Self);
+  try
+    StatusForm.DoPreview(Viewer, MFPrinter, Abort);
+  finally
+    StatusForm.Free;
   end;
 end;
 
 destructor TPreviewForm.Destroy;
 begin
-inherited;
+  inherited;
 end;
 
 procedure TPreviewForm.CloseButClick(Sender: TObject);
@@ -535,9 +544,4 @@ if GridBut.down then
   end;
 end;
 
-initialization
-{$ifdef LCL}
-{$include PreviewForm.lrs}
-{$else}
-{$endif}
 end.

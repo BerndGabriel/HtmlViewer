@@ -29,10 +29,14 @@ unit HTMLUn2;
 
 interface
 uses
-  Windows, SysUtils, Classes, Graphics, ClipBrd, Controls, Messages, Variants,
-  {$ifdef LCL}Interfaces, IntfGraphics, FpImage, {$endif}
+{$ifdef LCL}
+  LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  SysUtils, Classes, Graphics, ClipBrd, Controls, Messages, Variants, Types,
   {$IFNDEF NoGDIPlus}GDIPL2A, {$ENDIF}
-  UrlSubs, StyleUn, HtmlGlobals, HtmlGif2;
+  URLSubs, StyleUn, HtmlGlobals, HTMLGif2;
 
 const
   VersionNo = '10.2';
@@ -637,17 +641,81 @@ uses
   Forms, Math,
   {$ifndef FPC_TODO}jpeg, {$endif}
   {$IFDEF UNICODE} PngImage, {$ENDIF}
-  DitherUnit,
-  StylePars;
+  DitherUnit, StylePars;
 
 type
   EGDIPlus = class(Exception);
 
-{----------------StrLenW}
+{$ifdef FPC}
+
+// Pascal-ized equivalents of assembler functions.
+function StrLenW(Str: PWideChar): Cardinal;
+begin
+  Result := Length(WideString(Str));
+end;
+
+function StrPosW(Str, SubStr: PWideChar): PWideChar;
+var
+  StrPos    : PWideChar;
+  SubstrPos : PWideChar;
+begin
+  if SubStr^ = #0 then  // Make sure substring not null string
+  begin
+    Result := nil;
+    Exit;
+  end;
+  Result := Str;
+  while Result^ <> #0 do  // Until reach end of string
+  begin
+    StrPos := Result;
+    SubstrPos := SubStr;
+    while SubstrPos^ <> #0 do  // Until reach end of substring
+    begin
+      if StrPos^ <> SubstrPos^ then  // No point in continuing?
+        Break;
+      StrPos := StrPos + 1;
+      SubstrPos := SubstrPos + 1;
+    end;
+    if SubstrPos^ = #0 then  // Break because reached end of substring?
+      Exit;
+    Result := Result + 1;
+  end;
+  Result := nil;
+end;
+
+function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
+begin
+  Result := StrScanW(Str, #0);
+  if Chr = #0 then  // Null-terminating char considered part of string.
+    Exit;
+  while Result <> Str do
+  begin
+    Result := Result - 1;
+    if Result^ = Chr then
+      Exit;
+  end;
+  Result := nil;
+end;
+
+function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
+begin
+  Result := Str;
+  while Result^ <> #0 do
+  begin
+    if Result^ = Chr then
+      Exit;
+    Result := Result + 1;
+  end;
+  if Chr = #0 then
+    Exit;  // Null-terminating char considered part of string. See call
+           // searching for #0 to find end of string.
+  Result := nil;
+end;
+
+{$else}
 
 function StrLenW(Str: PWideChar): Cardinal;
-{returns number of characters in a ThtString excluding the null terminator}
-
+// returns number of characters in a ThtString excluding the null terminator
 asm
        MOV     EDX, EDI
        MOV     EDI, EAX
@@ -657,10 +725,7 @@ asm
        MOV     EAX, 0FFFFFFFEH
        SUB     EAX, ECX
        MOV     EDI, EDX
-
 end;
-
-{----------------StrPosW}
 
 function StrPosW(Str, SubStr: PWideChar): PWideChar;
 // returns a pointer to the first occurance of SubStr in Str
@@ -712,8 +777,6 @@ asm
        POP     EDI
 end;
 
-{----------------StrRScanW}
-
 function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar; assembler;
 asm
         PUSH    EDI
@@ -736,8 +799,6 @@ asm
         POP     EDI
 end;
 
-{----------------StrScanW}
-
 function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar; assembler;
 asm
         PUSH    EDI
@@ -757,6 +818,9 @@ asm
         DEC     EAX
 @@1:    POP     EDI
 end;
+
+{$endif}
+
 
 {----------------FitText}
 
@@ -937,8 +1001,8 @@ begin
   OffsetRect(Result, -Point.X, -Point.Y);
   if Printing then
   begin
-    GetViewportExtEx(Canvas.Handle, SizeV);
-    GetWindowExtEx(Canvas.Handle, SizeW);
+    GetViewportExtEx(Canvas.Handle, @SizeV);
+    GetWindowExtEx(Canvas.Handle, @SizeW);
     Result := ScaleRect(Result, SizeV.cx / SizeW.cx, SizeV.cy / SizeW.cy);
   end;
 end;
@@ -967,8 +1031,8 @@ begin
       Rgn := CreateRectRgn(Left - Point.X, Top - Point.Y, Right - Point.X, Bottom - Point.Y)
     else
     begin
-      GetViewportExtEx(Canvas.Handle, SizeV);
-      GetWindowExtEx(Canvas.Handle, SizeW);
+      GetViewportExtEx(Canvas.Handle, @SizeV);
+      GetWindowExtEx(Canvas.Handle, @SizeW);
       HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
       VF := (SizeV.cy / SizeW.cy); {Vertical adjustment factor}
       Rgn := CreateRectRgn(Round(HF * (Left - Point.X)), Round(VF * (Top - Point.Y)), Round(HF * (Right - Point.X)), Round(VF * (Bottom - Point.Y)));
@@ -1733,7 +1797,10 @@ begin
       begin
         if Cnt < 6 then
           Exit;
+{$ifdef LCL}        // ToDo: Find LCL replacement for CreatePolygonRgn(
+{$else}
         Handle := CreatePolygonRgn(Coords, Cnt div 2, Winding);
+{$endif}
       end;
   end;
   if Handle <> 0 then
@@ -2370,7 +2437,7 @@ var
     hdcImage: HDC;
   DestSize, SrcSize: TPoint;
   OldBack, OldFore: TColor;
-  BM: Windows.TBitmap;
+  BM: {$ifdef LCL} LclType.Bitmap {$else} Windows.TBitmap {$endif};
   Image: TBitmap;
 
 begin
@@ -2512,7 +2579,7 @@ end;
 
 procedure TDib.InitializeBitmapInfoHeader(Bitmap: HBITMAP);
 var
-  BM: Windows.TBitmap;
+  BM: {$ifdef LCL} LclType.Bitmap {$else} Windows.TBitmap {$endif};
   BitCount: Integer;
 
   function WidthBytes(I: Integer): Integer;
@@ -3243,7 +3310,7 @@ var
 begin
   if CodePage <> CP_UTF8 then
   begin
-    P1 := CharNextExA(CodePage, P, 0);
+    P1 := {$ifdef LCL} CharNextEx {$else} CharNextExA {$endif} (CodePage, P, 0);
     if Assigned(P1) then
       Result := P1 - P
     else
@@ -3722,8 +3789,8 @@ begin
       DC := Canvas.Handle;
     {calculate a transform for the clip region as it may be a different size than
      the mask and needs to be positioned on the canvas.}
-      GetViewportExtEx(DC, SizeV);
-      GetWindowExtEx(DC, SizeW);
+      GetViewportExtEx(DC, @SizeV);
+      GetWindowExtEx(DC, @SizeW);
       GetWindowOrgEx(DC, Origin); //BG, 29.08.2009: get origin for correct mask translation
 
       HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
@@ -4218,11 +4285,11 @@ begin
           Pn := ExtCreatePen(PS_GEOMETRIC or PenType or ps_Join_Miter, W[I], lb, 0, nil);
           OldPn := SelectObject(Canvas.Handle, Pn);
           BeginPath(Canvas.Handle);
-          Windows.movetoEx(Canvas.Handle, PM[I].x, PM[I].y, nil);
+          movetoEx(Canvas.Handle, PM[I].x, PM[I].y, nil);
           Start := I;
           InPath := True;
         end;
-        Windows.LineTo(Canvas.Handle, PM[(I + 1) mod 4].x, PM[(I + 1) mod 4].y);
+        LineTo(Canvas.Handle, PM[(I + 1) mod 4].x, PM[(I + 1) mod 4].y);
         if (I = 3) or (S[I + 1] <> S[I]) or (C[I + 1] <> C[I]) or (W[I + 1] <> W[I]) then
         begin
           if (I = 3) and (Start = 0) then
@@ -4621,21 +4688,29 @@ begin
 {$endif}
 end;
 
-{$R HTML32.Res}
-
 initialization
-
   DefBitMap := TBitmap.Create;
-  DefBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(DefaultBitmap));
   ErrorBitMap := TBitmap.Create;
-  ErrorBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmap));
   ErrorBitMapMask := TBitmap.Create;
+{$ifdef LCL}
+  {$I htmlun2.lrs}
+  DefBitMap.LoadFromLazarusResource('ErrBitmap');
+  ErrorBitMap.LoadFromLazarusResource('DefaultBitmap');
+  ErrorBitMapMask.LoadFromLazarusResource('ErrBitmapMask');
+  Screen.Cursors[HandCursor] := LoadCursorFromLazarusResource('Hand_Cursor');
+  Screen.Cursors[UpDownCursor] := LoadCursorFromLazarusResource('UPDOWNCURSOR');
+  Screen.Cursors[UpOnlyCursor] := LoadCursorFromLazarusResource('UPONLYCURSOR');
+  Screen.Cursors[DownOnlyCursor] := LoadCursorFromLazarusResource('DOWNONLYCURSOR');
+{$else}
+  {$R Html32.res}
+  DefBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(DefaultBitmap));
+  ErrorBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmap));
   ErrorBitMapMask.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmapMask));
   Screen.Cursors[HandCursor] := LoadCursor(HInstance, MakeIntResource(Hand_Cursor));
   Screen.Cursors[UpDownCursor] := LoadCursor(HInstance, 'UPDOWNCURSOR');
   Screen.Cursors[UpOnlyCursor] := LoadCursor(HInstance, 'UPONLYCURSOR');
   Screen.Cursors[DownOnlyCursor] := LoadCursor(HInstance, 'DOWNONLYCURSOR');
-
+{$endif}
   WaitStream := TMemoryStream.Create;
 
 finalization

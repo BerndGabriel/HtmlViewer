@@ -2,7 +2,7 @@
 Version 10.2
 }
 
-{$I HtmlCons.inc}
+{$I htmlcons.inc}
 
 unit HtmlGif1;
 
@@ -51,7 +51,12 @@ uses
   SysUtils, Types, Classes, QGraphics, QControls, QForms, QDialogs,
   QStdCtrls, Math;
 {$ELSE}
-  Windows, Messages, SysUtils, Classes, Graphics,
+{$ifdef LCL}
+  LclIntf, LclType, //LMessages,
+{$else}
+  Windows,
+{$endif}
+  Messages, SysUtils, Classes, Graphics,
   Controls, StdCtrls, ExtCtrls, Forms, Math;
 {$ENDIF}
 

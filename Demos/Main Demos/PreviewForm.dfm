@@ -1,62 +1,63 @@
 object PreviewForm: TPreviewForm
   Left = 361
+  Height = 511
   Top = 158
+  Width = 734
   Caption = 'Preview Form'
   ClientHeight = 511
   ClientWidth = 734
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
   Font.Name = 'Tahoma'
-  Font.Style = []
   Icon.Data = {
-    0000010001002020100000000000E80200001600000028000000200000004000
-    0000010004000000000080020000000000000000000000000000000000000000
-    0000000080000080000000808000800000008000800080800000C0C0C0008080
-    80000000FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF000000
+    FE0200000000010001002020100000000000E802000016000000280000002000
+    0000400000000100040000000000800200000000000000000000000000000000
+    000000000000000080000080000000808000800000008000800080800000C0C0
+    C000808080000000FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFF
+    FF00000000000000000000000000000000000000000000000000000000000000
     0000000000000000000000000000000000000000000000000000000000000000
     0000000000000000000000000000000000000000000000000000000000000000
+    000000000000FFFFFFFFFFFFFF000000000000000000FCCCCCCCCCCCCF000000
+    000000000000FFFFFFFFFFFFFF000000000000000000FFFFFFFFFFFFFF000000
+    000000000000FFFFFFFFFFFFFF000000000000000000FCCCCCCCCCCCCF000000
+    000000000000FFFFFFFFFFFFFF000000000000000000FFFFFFFFFFFFF0000000
+    000000000000FFFFFFFFFFFF00000000000000000000FCCCCCCCCCC00F000000
+    000000000000FFFFF0000F00FF000000000000000000FFFF0777700FFF000000
+    000000000000FFF07777770FFF000000000000000000FC0777777770CF000000
+    000000000000FF0444444440FF000000000000000000FF0444444440FF000000
+    000000000000FF0444444440FF000000000000000000FC0777777770CF000000
+    000000000000FFF07777770FFF000000000000000000FFFF077770FFFF000000
+    000000000000FFFFF0000FFFFF00000000000000000000000000000000000000
     0000000000000000000000000000000000000000000000000000000000000000
-    0000FFFFFFFFFFFFFF000000000000000000FCCCCCCCCCCCCF00000000000000
-    0000FFFFFFFFFFFFFF000000000000000000FFFFFFFFFFFFFF00000000000000
-    0000FFFFFFFFFFFFFF000000000000000000FCCCCCCCCCCCCF00000000000000
-    0000FFFFFFFFFFFFFF000000000000000000FFFFFFFFFFFFF000000000000000
-    0000FFFFFFFFFFFF00000000000000000000FCCCCCCCCCC00F00000000000000
-    0000FFFFF0000F00FF000000000000000000FFFF0777700FFF00000000000000
-    0000FFF07777770FFF000000000000000000FC0777777770CF00000000000000
-    0000FF0444444440FF000000000000000000FF0444444440FF00000000000000
-    0000FF0444444440FF000000000000000000FC0777777770CF00000000000000
-    0000FFF07777770FFF000000000000000000FFFF077770FFFF00000000000000
-    0000FFFFF0000FFFFF0000000000000000000000000000000000000000000000
     0000000000000000000000000000000000000000000000000000000000000000
-    000000000000000000000000000000000000000000000000000000000000FFFF
-    FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE0001FFFE0001FFFE0001F7FE00
-    01E7FE0001CFFE00019FFE00013FFE00007FFE0000FFFE0001FFFE0001FFFE00
+    0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE0001FFFE0001FFFE00
+    01F7FE0001E7FE0001CFFE00019FFE00013FFE00007FFE0000FFFE0001FFFE00
     01FFFE0001FFFE0001FFFE0001FFFE0001FFFE0001FFFE0001FFFE0001FFFE00
-    01FFFE0001FFFE0001FFFE0001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF}
-  OldCreateOrder = True
-  WindowState = wsMaximized
+    01FFFE0001FFFE0001FFFE0001FFFE0001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+    FFFF
+  }
   OnClose = FormClose
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  LCLVersion = '0.9.29'
+  WindowState = wsMaximized
   object ToolBarPanel: TPanel
     Left = 0
+    Height = 35
     Top = 0
     Width = 734
-    Height = 35
     Align = alTop
     BevelOuter = bvNone
+    ClientHeight = 35
+    ClientWidth = 734
     TabOrder = 0
     object GridBut: TSpeedButton
       Left = 391
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Show/Hide Grid'
+      Top = 4
+      Width = 25
       AllowAllUp = True
-      GroupIndex = 1
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -65,18 +66,20 @@ object PreviewForm: TPreviewForm
         7777777877877877877777787787787787777880880880880887777877877877
         8777777877877877877778808808808808877778778778778777777877877877
         8777788088088088088777787787787787777778778778778777788088088088
-        0887777877877877877777787787787787777777777777777777}
-      ParentShowHint = False
-      ShowHint = True
+        0887777877877877877777787787787787777777777777777777
+      }
+      GroupIndex = 1
+      NumGlyphs = 0
       OnClick = GridButClick
+      ShowHint = True
+      ParentShowHint = False
     end
     object ZoomCursorBut: TSpeedButton
       Left = 532
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Selects the Zoom Tool to zoom in or out'
-      GroupIndex = 2
+      Top = 4
+      Width = 25
       Down = True
       Glyph.Data = {
         76010000424D7601000000000000760000002800000020000000100000000100
@@ -90,19 +93,20 @@ object PreviewForm: TPreviewForm
         3333383338F3383F3333087F797F780333338F33F8FFF38F333308F99999F803
         33338F388888338F3333087F797F7803333383F338F33383333388F7F9F7F883
         333338F3383338F33333308F7F7F80333333383FF333F8333333330888880333
-        333333883FF88333333333380008333333333333888333333333}
+        333333883FF88333333333380008333333333333888333333333
+      }
+      GroupIndex = 2
       NumGlyphs = 2
-      ParentShowHint = False
-      ShowHint = True
       OnClick = ZoomCursorButClick
+      ShowHint = True
+      ParentShowHint = False
     end
     object HandCursorBut: TSpeedButton
       Left = 558
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Selects the Hand Tool to pan across the Page'
-      GroupIndex = 2
+      Top = 4
+      Width = 25
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -111,45 +115,49 @@ object PreviewForm: TPreviewForm
         33333330FFFFFFF03333330FFFFFFFFF0333330FFFFFFF0FF033330FFFFFFF00
         FF03330FFFFFFF030F03330F0F0F0F033003330F0F0F0F033333330F0F0F0F03
         3333330F0F0F0F033333330F0F0F0F03333333300F0F0F03333333330F0F0F03
-        33333333000F0F0333333333330F003333333333330003333333}
-      ParentShowHint = False
-      ShowHint = True
+        33333333000F0F0333333333330F003333333333330003333333
+      }
+      GroupIndex = 2
+      NumGlyphs = 0
       OnClick = HandCursorButClick
+      ShowHint = True
+      ParentShowHint = False
     end
     object OnePageBut: TSpeedButton
       Left = 595
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Display One page at a time'
-      GroupIndex = 3
-      Down = True
+      Top = 4
+      Width = 25
       Caption = '&1'
-      ParentShowHint = False
-      ShowHint = True
+      Down = True
+      GroupIndex = 3
+      NumGlyphs = 0
       OnClick = ScrollBox1Resize
       OnMouseUp = OnePageButMouseUp
+      ShowHint = True
+      ParentShowHint = False
     end
     object TwoPageBut: TSpeedButton
       Left = 621
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Display Two pages side by side'
-      GroupIndex = 3
+      Top = 4
+      Width = 25
       Caption = '&2'
-      ParentShowHint = False
-      ShowHint = True
+      GroupIndex = 3
+      NumGlyphs = 0
       OnClick = TwoPageButClick
+      ShowHint = True
+      ParentShowHint = False
     end
     object FitPageBut: TSpeedButton
       Left = 340
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Fit to Page'
+      Top = 4
+      Width = 25
       AllowAllUp = True
-      GroupIndex = 4
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -158,19 +166,21 @@ object PreviewForm: TPreviewForm
         00FFFF0FFFFFFFFFF0FFFF0FFFFFFFFFF0FFFF0F00000000F0FFFF0FFFFFFFFF
         F0FFFF0FFFFFFFFFF0FFFF0F00000000F0FFFF0FFFFFFFFFF0FFFF0FFFFFFFFF
         F0FFFF0F00000000F0FFFF0FFFFFFFFFF0FFFF0FFFFFFFFFF0FFFF0F00000000
-        F0FFFF0FFFFFFFFFF0FFFF0FFFFFFFFFF0FFFF000000000000FF}
-      ParentShowHint = False
-      ShowHint = True
+        F0FFFF0FFFFFFFFFF0FFFF0FFFFFFFFFF0FFFF000000000000FF
+      }
+      GroupIndex = 4
+      NumGlyphs = 0
       OnClick = FitPageButClick
+      ShowHint = True
+      ParentShowHint = False
     end
     object FitWidthBut: TSpeedButton
       Left = 365
-      Top = 4
-      Width = 25
       Height = 25
       Hint = 'Fit to Width'
+      Top = 4
+      Width = 25
       AllowAllUp = True
-      GroupIndex = 4
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -179,64 +189,65 @@ object PreviewForm: TPreviewForm
         FFFFFFFFFFFFFFFFFFFF0FF0000000000FF00FFFFFFFFFFFFFF00FFFFFFFFFFF
         FFF00FFFFFFFFFFFFFF00FF0000000000FF00FFFFFFFFFFFFFF00FFFFFFFFFFF
         FFF00FFFFFFFFFFFFFF00FF0000000000FF00FFFFFFFFFFFFFF00FFFFFFFFFFF
-        FFF00000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF}
-      ParentShowHint = False
-      ShowHint = True
+        FFF00000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+      }
+      GroupIndex = 4
+      NumGlyphs = 0
       OnClick = FitWidthButClick
+      ShowHint = True
+      ParentShowHint = False
     end
     object Bevel1: TBevel
       Left = 0
+      Height = 2
       Top = 33
       Width = 734
-      Height = 2
       Align = alBottom
       Shape = bsBottomLine
     end
     object Bevel2: TBevel
       Left = 220
+      Height = 28
       Top = 2
       Width = 2
-      Height = 28
     end
     object Bevel3: TBevel
       Left = 332
+      Height = 28
       Top = 2
       Width = 2
-      Height = 28
     end
     object Bevel4: TBevel
       Left = 520
+      Height = 28
       Top = 2
       Width = 2
-      Height = 28
     end
     object Bevel5: TBevel
       Left = 588
+      Height = 28
       Top = 2
       Width = 2
-      Height = 28
     end
     object Bevel6: TBevel
       Left = 652
+      Height = 28
       Top = 2
       Width = 2
-      Height = 28
     end
     object Bevel7: TBevel
       Left = 423
+      Height = 28
       Top = 2
       Width = 2
-      Height = 28
     end
     object PrintBut: TBitBtn
       Left = 5
-      Top = 4
-      Width = 76
       Height = 25
       Hint = 'Print the Current Document'
+      Top = 4
+      Width = 76
       Caption = '&Print...'
-      TabOrder = 0
-      OnClick = PrintButClick
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -245,18 +256,19 @@ object PreviewForm: TPreviewForm
         22222200000000000222207777777770702200000000000007020777777BBB77
         0002077777788877070200000000000007700777777777707070200000000007
         0700220FFFFFFFF070702220F00000F000022220FFFFFFFF022222220F00000F
-        022222220FFFFFFFF02222222000000000222222222222222222}
+        022222220FFFFFFFF02222222000000000222222222222222222
+      }
+      OnClick = PrintButClick
       Spacing = 8
+      TabOrder = 0
     end
     object NextPageBut: TBitBtn
       Left = 148
-      Top = 4
-      Width = 66
       Height = 25
       Hint = 'Advance to Next Page in Document'
+      Top = 4
+      Width = 66
       Caption = '&Next'
-      TabOrder = 1
-      OnClick = NextPageButClick
       Glyph.Data = {
         66010000424D6601000000000000760000002800000014000000140000000100
         040000000000F000000000000000000000001000000010000000000000000000
@@ -269,21 +281,22 @@ object PreviewForm: TPreviewForm
         330EEEEEE033333300003333330EEEEE0333333300003333330EEEE033333333
         00003333330EEE033333333300003333330EE0333333333300003333330E0333
         3333333300003333330033333333333300003333333333333333333300003333
-        33333333333333330000}
+        33333333333333330000
+      }
       Layout = blGlyphRight
       Margin = 4
+      OnClick = NextPageButClick
       Spacing = 2
+      TabOrder = 1
     end
     object PrevPageBut: TBitBtn
       Left = 82
-      Top = 4
-      Width = 65
       Height = 25
       Hint = 'Move to Previous Page in Document'
+      Top = 4
+      Width = 65
       Caption = 'Pre&v'
       Enabled = False
-      TabOrder = 2
-      OnClick = PrevPageButClick
       Glyph.Data = {
         66010000424D6601000000000000760000002800000014000000140000000100
         040000000000F000000000000000000000001000000010000000000000000000
@@ -296,20 +309,21 @@ object PreviewForm: TPreviewForm
         30EEEEEE0333333300003333330EEEEE03333333000033333330EEEE03333333
         0000333333330EEE0333333300003333333330EE03333333000033333333330E
         0333333300003333333333300333333300003333333333333333333300003333
-        33333333333333330000}
+        33333333333333330000
+      }
       Margin = 6
+      OnClick = PrevPageButClick
       Spacing = 2
+      TabOrder = 2
     end
     object CloseBut: TBitBtn
       Left = 660
-      Top = 4
-      Width = 61
       Height = 25
       Hint = 'Close the Print Preview window'
+      Top = 4
+      Width = 61
       Cancel = True
       Caption = '&Close'
-      TabOrder = 3
-      OnClick = CloseButClick
       Glyph.Data = {
         F6010000424DF601000000000000760000002800000030000000100000000100
         0400000000008001000000000000000000001000000010000000000000000000
@@ -326,18 +340,18 @@ object PreviewForm: TPreviewForm
         033333066FFFFF660333330FF00000FF0333330778888877033333066FFFFF66
         0333330FF00000FF033333077888887703333306666666660333330FFFFFFFFF
         033333077777777703333306666666660333330FFFFFFFFF0333330777777777
-        0333330000000000033333000000000003333300000000000333}
+        0333330000000000033333000000000003333300000000000333
+      }
       NumGlyphs = 3
+      OnClick = CloseButClick
+      TabOrder = 3
     end
     object ZoomBox: TComboBox
       Left = 228
+      Height = 23
       Top = 6
       Width = 97
-      Height = 21
-      Style = csDropDownList
-      ItemHeight = 13
-      TabOrder = 4
-      OnChange = ZoomBoxChange
+      ItemHeight = 0
       Items.Strings = (
         'Fit To Page'
         'Fit To Width'
@@ -350,42 +364,47 @@ object PreviewForm: TPreviewForm
         '150%'
         '200%'
         '300%'
-        '400%')
+        '400%'
+      )
+      OnChange = ZoomBoxChange
+      Style = csDropDownList
+      TabOrder = 4
     end
     object UnitsBox: TComboBox
       Left = 431
+      Height = 23
       Top = 6
       Width = 81
-      Height = 21
-      Style = csDropDownList
-      ItemHeight = 13
-      TabOrder = 5
-      OnChange = UnitsBoxChange
+      ItemHeight = 0
       Items.Strings = (
         'Inches'
-        'Centimeters')
+        'Centimeters'
+      )
+      OnChange = UnitsBoxChange
+      Style = csDropDownList
+      TabOrder = 5
     end
   end
   object StatBarPanel: TPanel
     Left = 0
+    Height = 27
     Top = 484
     Width = 734
-    Height = 27
     Align = alBottom
     BevelOuter = bvNone
-    Font.Charset = DEFAULT_CHARSET
+    ClientHeight = 27
+    ClientWidth = 734
     Font.Color = clBlack
     Font.Height = -11
     Font.Name = 'Arial'
-    Font.Style = []
     ParentFont = False
     TabOrder = 1
     object CurPageLabel: TPanel
       Left = 133
-      Top = 0
-      Width = 101
       Height = 27
       Hint = 'Displays the Current Page of the Document'
+      Top = 0
+      Width = 101
       Align = alLeft
       BevelOuter = bvLowered
       Caption = 'CurPageLabel'
@@ -393,10 +412,10 @@ object PreviewForm: TPreviewForm
     end
     object ZoomLabel: TPanel
       Left = 234
-      Top = 0
-      Width = 88
       Height = 27
       Hint = 'Displays the Current Zoom Level (100% = normal)'
+      Top = 0
+      Width = 88
       Align = alLeft
       BevelOuter = bvLowered
       Caption = 'ZoomLabel'
@@ -404,42 +423,45 @@ object PreviewForm: TPreviewForm
     end
     object Panel1: TPanel
       Left = 322
-      Top = 0
-      Width = 412
       Height = 27
       Hint = 'Displays Help for the object beneath the mouse'
+      Top = 0
+      Width = 412
       Align = alClient
       BevelOuter = bvLowered
+      ClientHeight = 27
+      ClientWidth = 412
       TabOrder = 2
       object HintLabel: TLabel
         Left = 8
-        Top = 5
-        Width = 44
         Height = 14
         Hint = 'Displays Help for the object beneath the mouse'
+        Top = 5
+        Width = 50
         Caption = 'HintLabel'
+        ParentColor = False
       end
     end
     object MoveButPanel: TPanel
       Left = 0
+      Height = 27
       Top = 0
       Width = 133
-      Height = 27
       Align = alLeft
       BevelOuter = bvNone
       Caption = 'MoveButPanel'
+      ClientHeight = 27
+      ClientWidth = 133
       TabOrder = 3
       object FirstPageSpeed: TSpeedButton
         Left = 1
-        Top = 2
-        Width = 25
         Height = 25
         Hint = 'Go to First Page in Document'
-        Font.Charset = DEFAULT_CHARSET
+        Top = 2
+        Width = 25
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
-        Font.Style = []
         Glyph.Data = {
           F6010000424DF601000000000000760000002800000030000000100000000100
           0400000000008001000000000000000000001000000010000000000000000000
@@ -456,24 +478,23 @@ object PreviewForm: TPreviewForm
           8333330EE030EEEE0333330FF030FFFF03333387783877778333330EE0330EEE
           0333330FF0330FFF03333387783387778333330EE03330EE0333330FF03330FF
           03333387783338778333330EE033330E0333330FF033330F0333338778333387
-          8333330000333330033333000033333003333388883333388333}
+          8333330000333330033333000033333003333388883333388333
+        }
         NumGlyphs = 3
+        OnClick = FirstPageSpeedClick
+        ShowHint = True
         ParentFont = False
         ParentShowHint = False
-        ShowHint = True
-        OnClick = FirstPageSpeedClick
       end
       object PrevPageSpeed: TSpeedButton
         Left = 26
-        Top = 2
-        Width = 25
         Height = 25
         Hint = 'Move to Previous Page in Document'
-        Font.Charset = DEFAULT_CHARSET
+        Top = 2
+        Width = 25
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
-        Font.Style = []
         Glyph.Data = {
           F6010000424DF601000000000000760000002800000030000000100000000100
           0400000000008001000000000000000000001000000010000000000000000000
@@ -490,24 +511,23 @@ object PreviewForm: TPreviewForm
           33333333330EEEE033333333330FFFF03333333333877778333333333330EEE0
           333333333330FFF033333333333877783333333333330EE03333333333330FF0
           333333333333877833333333333330E033333333333330F03333333333333878
-          3333333333333300333333333333330033333333333333883333}
+          3333333333333300333333333333330033333333333333883333
+        }
         NumGlyphs = 3
+        OnClick = PrevPageButClick
+        ShowHint = True
         ParentFont = False
         ParentShowHint = False
-        ShowHint = True
-        OnClick = PrevPageButClick
       end
       object NextPageSpeed: TSpeedButton
         Left = 51
-        Top = 2
-        Width = 25
         Height = 25
         Hint = 'Advance to Next Page in Document'
-        Font.Charset = DEFAULT_CHARSET
+        Top = 2
+        Width = 25
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
-        Font.Style = []
         Glyph.Data = {
           F6010000424DF601000000000000760000002800000030000000100000000100
           0400000000008001000000000000000000001000000010000000000000000000
@@ -524,24 +544,23 @@ object PreviewForm: TPreviewForm
           333333330EEEE033333333330FFFF0333333333387777833333333330EEE0333
           333333330FFF03333333333387778333333333330EE03333333333330FF03333
           3333333387783333333333330E033333333333330F0333333333333387833333
-          3333333300333333333333330033333333333333883333333333}
+          3333333300333333333333330033333333333333883333333333
+        }
         NumGlyphs = 3
+        OnClick = NextPageButClick
+        ShowHint = True
         ParentFont = False
         ParentShowHint = False
-        ShowHint = True
-        OnClick = NextPageButClick
       end
       object LastPageSpeed: TSpeedButton
         Left = 76
-        Top = 2
-        Width = 25
         Height = 25
         Hint = 'Go to Last Page in Document'
-        Font.Charset = DEFAULT_CHARSET
+        Top = 2
+        Width = 25
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
-        Font.Style = []
         Glyph.Data = {
           F6010000424DF601000000000000760000002800000030000000100000000100
           0400000000008001000000000000000000001000000010000000000000000000
@@ -558,24 +577,23 @@ object PreviewForm: TPreviewForm
           78333330EEEE030EE0333330FFFF030FF03333387777838778333330EEE0330E
           E0333330FFF0330FF03333387778338778333330EE03330EE0333330FF03330F
           F03333387783338778333330E033330EE0333330F033330FF033333878333387
-          7833333003333300003333300333330000333338833333888833}
+          7833333003333300003333300333330000333338833333888833
+        }
         NumGlyphs = 3
+        OnClick = LastPageSpeedClick
+        ShowHint = True
         ParentFont = False
         ParentShowHint = False
-        ShowHint = True
-        OnClick = LastPageSpeedClick
       end
       object PageNumSpeed: TSpeedButton
         Left = 101
-        Top = 2
-        Width = 25
         Height = 25
         Hint = 'Go to Page by Page Number'
-        Font.Charset = DEFAULT_CHARSET
+        Top = 2
+        Width = 25
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
-        Font.Style = []
         Glyph.Data = {
           76010000424D7601000000000000760000002800000020000000100000000100
           0400000000000001000000000000000000001000000010000000000000000000
@@ -588,52 +606,57 @@ object PreviewForm: TPreviewForm
           F03337F3337F337F37F330FFFF0FFF0FF03337F33373337337F330FFFFFFFFFF
           F03337F33333333FF7F330FFFFFFFF00003337F33333337777F330FFFFFFFF0F
           F03337FFFFFFFF7F373330999999990F033337777777777F733330FFFFFFFF00
-          333337FFFFFFFF77333330000000000333333777777777733333}
+          333337FFFFFFFF77333330000000000333333777777777733333
+        }
         NumGlyphs = 2
+        OnClick = PageNumSpeedClick
+        ShowHint = True
         ParentFont = False
         ParentShowHint = False
-        ShowHint = True
-        OnClick = PageNumSpeedClick
       end
     end
   end
   object ScrollBox1: TScrollBox
     Left = 0
+    Height = 449
     Top = 35
     Width = 734
-    Height = 449
-    HorzScrollBar.Tracking = True
-    VertScrollBar.Tracking = True
     Align = alClient
     BorderStyle = bsNone
+    ClientHeight = 449
+    ClientWidth = 734
     Color = clBtnFace
     ParentColor = False
     TabOrder = 2
     OnResize = ScrollBox1Resize
     object ContainPanel: TPanel
       Left = 0
+      Height = 329
       Top = 0
       Width = 489
-      Height = 329
       BevelOuter = bvNone
+      ClientHeight = 329
+      ClientWidth = 489
       Color = clBtnShadow
+      ParentColor = False
       TabOrder = 0
       object PagePanel: TPanel
         Left = 44
+        Height = 265
         Top = 32
         Width = 209
-        Height = 265
         BevelOuter = bvNone
+        ClientHeight = 265
+        ClientWidth = 209
         Color = clWindow
+        ParentColor = False
         TabOrder = 0
         object PB1: TPaintBox
           Left = 0
+          Height = 265
+          Hint = 'Page View.  With Zoom Tool, left or right click to zoom in/out.  Click && drag with Hand Tool to pan.'
           Top = 0
           Width = 209
-          Height = 265
-          Hint = 
-            'Page View.  With Zoom Tool, left or right click to zoom in/out. ' +
-            ' Click && drag with Hand Tool to pan.'
           Align = alClient
           OnMouseDown = PB1MouseDown
           OnMouseMove = PB1MouseMove
@@ -643,21 +666,22 @@ object PreviewForm: TPreviewForm
       end
       object PagePanel2: TPanel
         Left = 260
+        Height = 265
         Top = 32
         Width = 209
-        Height = 265
         BevelOuter = bvNone
+        ClientHeight = 265
+        ClientWidth = 209
         Color = clWindow
+        ParentColor = False
         TabOrder = 1
         Visible = False
         object PB2: TPaintBox
           Left = 0
+          Height = 265
+          Hint = 'Page View.  With Zoom Tool, left or right click to zoom in/out.  Click && drag with Hand Tool to pan.'
           Top = 0
           Width = 209
-          Height = 265
-          Hint = 
-            'Page View.  With Zoom Tool, left or right click to zoom in/out. ' +
-            ' Click && drag with Hand Tool to pan.'
           Align = alClient
           OnPaint = PBPaint
         end
@@ -668,7 +692,7 @@ object PreviewForm: TPreviewForm
     FromPage = 1
     MinPage = 1
     Options = [poPrintToFile, poPageNums]
-    Left = 538
-    Top = 90
+    left = 538
+    top = 90
   end
 end

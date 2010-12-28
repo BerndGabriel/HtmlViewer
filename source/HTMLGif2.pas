@@ -30,7 +30,12 @@ unit HTMLGif2;
 interface
 
 uses
-  Windows, SysUtils, Classes, Graphics, Controls, ExtCtrls, mmSystem, Math,
+{$ifdef LCL}
+  LclIntf, IntfGraphics, FpImage, LclType, HtmlMisc,
+{$else}
+  Windows, mmSystem,
+{$endif}
+  SysUtils, Classes, Graphics, Controls, ExtCtrls, Math,
   HtmlGlobals, htmlgif1;
 
 type

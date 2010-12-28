@@ -4,7 +4,7 @@
 
 { Identify FreePascal/Lazarus Compiler Version }
 
-  {$define LCL}
+  {.$define LCL}
   {$MODE Delphi}
 
   {$define FPC_TODO}
@@ -12,10 +12,11 @@
 
   {$define NoGDIPlus}
 
+  {.$define UseUnicode}
   {$define CopyPaletteMissing}
-  {$define TransparentStretchBltMissing}
-  {$define MetaFileMissing}
-  {$define UnitConstsMissing}
+  {.$define TransparentStretchBltMissing}
+  {.$define MetaFileMissing}
+  {.$define UnitConstsMissing}
 
   {$define ver100_plus}
   {$define ver120_plus}

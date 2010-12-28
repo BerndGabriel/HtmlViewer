@@ -3,12 +3,7 @@ unit Gopage;
 interface
 
 uses
-  Classes, Graphics, Forms, Controls, Buttons, StdCtrls, ExtCtrls,
-{$ifdef LCL}
-  LResources,
-{$else}
-{$endif}
-  Spin;
+  Classes, Graphics, Forms, Controls, Buttons, StdCtrls, ExtCtrls, Spin;
 
 type
   TGoPageForm = class(TForm)
@@ -30,10 +25,7 @@ var
 
 implementation
 
-{$ifdef LCL}
-{$else}
-{$R *.DFM}
-{$endif}
+{$R *.dfm}
 
 procedure TGoPageForm.PageNumEnter(Sender: TObject);
 begin
@@ -50,9 +42,4 @@ if Key = 13 then
   end;
 end;
 
-initialization
-{$ifdef LCL}
-{$include GoPage.lrs}
-{$else}
-{$endif}
 end.

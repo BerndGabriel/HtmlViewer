@@ -29,7 +29,8 @@ unit GDIPL2A;
 
 interface
 
-uses Windows, SysUtils, ActiveX, Graphics;
+uses
+  Windows, ActiveX, SysUtils, Graphics;
 
 var
   GDIPlusActive: boolean;

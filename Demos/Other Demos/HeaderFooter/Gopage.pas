@@ -25,7 +25,7 @@ var
 
 implementation
 
-{$R *.DFM}
+{$R *.dfm}
 
 procedure TGoPageForm.PageNumEnter(Sender: TObject);
 begin

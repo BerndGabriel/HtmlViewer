@@ -7,7 +7,7 @@ interface
 uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, TntStdCtrls
 {$ifdef LCL}
-  , LResources
+
 {$endif}
   ;
 
@@ -31,10 +31,7 @@ function SubmitForm: TSubmitForm;
 
 implementation
 
-{$ifdef LCL}
-{$else}
-{$R *.DFM}
-{$endif}
+{$R *.dfm}
 
 var
   VForm: TSubmitForm;
@@ -51,9 +48,4 @@ begin
 Close;
 end;
 
-{$ifdef LCL}
-initialization
-{$I Submit.lrs}
-{$else}
-{$endif}
 end.
