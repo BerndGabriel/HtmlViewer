@@ -22,11 +22,20 @@
 
 unit HTMLEd1;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, Htmlview, StdCtrls, ComCtrls, ShellAPI;
+{$IFNDEF FPC}
+  ShellAPI, Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages, FileUtil,
+{$ENDIF}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  ExtCtrls, Menus, StdCtrls, ComCtrls, Htmlview, StyleUn;
 
 type
   TForm1 = class(TForm)
@@ -51,7 +60,7 @@ type
     NewHTML: TMenuItem;
     Panel: TPanel;
     Splitter: TSplitter;
-    RichEdit: TRichEdit;
+    RichEdit: TMemo;
     Panel2: TPanel;
     Viewer: THTMLViewer;
     Panel3: TPanel;
@@ -77,13 +86,13 @@ type
     procedure FormResize(Sender: TObject);
     procedure SplitterMoved(Sender: TObject);
   private
-    { Private declarations }
     ViewerOK, RichOK: boolean;
     SizeRatio: double;
     procedure CheckFileSave;
+{$ifdef Windows}
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
+{$endif}
   public
-    { Public declarations }
     CurrentFile: String;
   end;
 
@@ -92,7 +101,11 @@ var
 
 implementation
 
-{$R *.dfm}
+{$IFNDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 const
   InitText = '<html>'^m^j'<head>'^m^j'<style>'^m^j^m^j'</style>'^m^j'</head>'^m^j+
@@ -239,7 +252,9 @@ try
       RichEdit.SelLength := Pos2-Pos;
       end;
     RichEdit.SetFocus;
+{$ifdef Windows}
     PostMessage(RichEdit.handle, em_scrollcaret, 0, 0);   {8.03}
+{$endif}
     end;
 finally
   ViewerOK := True;
@@ -287,7 +302,7 @@ if (ParamCount >= 1) then
     I := Pos('"', S);
     end;
   CurrentFile := Trim(S);
-  SetCurrentDir(ExtractFilePath(CurrentFile));
+  SetCurrentDirUTF8(ExtractFilePath(CurrentFile) { *Converted from SetCurrentDir*  });
   RichEdit.Lines.LoadFromFile(CurrentFile);
   Caption := CurrentFile;
   Viewer.LoadStrings(RichEdit.Lines, '');
@@ -342,6 +357,7 @@ except
   end;
 end;
 
+{$ifdef Windows}
 procedure TForm1.WMDropFiles(var Msg: TWMDropFiles);
 var
   CFileName: array[0..MAX_PATH] of Char;
@@ -352,7 +368,7 @@ begin
       CheckFileSave;
       RichEdit.Lines.LoadFromFile(CFileName);
       CurrentFile := CFileName;
-      SetCurrentDir(ExtractFilePath(CurrentFile));
+      SetCurrentDirUTF8(ExtractFilePath(CurrentFile) { *Converted from SetCurrentDir*  });
       Caption := CurrentFile;
       Viewer.LoadStrings(RichEdit.Lines, '');
       RichEdit.SetFocus;
@@ -365,6 +381,7 @@ begin
     DragFinish(Msg.Drop);
   end;
 end;
+{$endif}
 
 procedure TForm1.ButtonClick(Sender: TObject);
 var
@@ -394,8 +411,13 @@ I := Pos('IDEXPAND_', Uppercase(SRC));
 if I=1 then
   begin
   ID := Copy(SRC, 10, Length(SRC)-9);
-  Viewer.IDDisplay[ID+'Plus'] := not Viewer.IDDisplay[ID+'Plus'];
-  Viewer.IDDisplay[ID+'Minus'] := not Viewer.IDDisplay[ID+'Minus'];
+  if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
+    Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
+  else
+    Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
+  Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
+//  Viewer.IDDisplay[ID+'Plus'] := not Viewer.IDDisplay[ID+'Plus'];
+//  Viewer.IDDisplay[ID+'Minus'] := not Viewer.IDDisplay[ID+'Minus'];
   Viewer.Reformat;
   Handled := True;
   Exit;

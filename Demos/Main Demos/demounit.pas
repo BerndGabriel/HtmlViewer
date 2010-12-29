@@ -19,7 +19,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, Interfaces,
 {$else}
-  WinTypes, WinProcs, ShellAPI,  //Windows,
+  WinTypes, WinProcs, ShellAPI,
 {$endif}
 {$ifdef Windows}
   MMSystem, MPlayer,

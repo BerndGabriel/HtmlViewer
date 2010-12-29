@@ -97,7 +97,9 @@ type
   {$message 'Compiler uses unicode by default.'}
 {$else}
   {$message 'Compiler uses single byte chars by default.'}
-  UnicodeString = WideString;
+  {$ifndef FPC}
+    UnicodeString = WideString;
+  {$endif}
 {$endif}
 
   ThtEdit = class(
@@ -153,7 +155,6 @@ const
 {$ifdef LCL}
 const
   HWND_MESSAGE = HWND(-3);
-
 
   //ANSI_CHARSET            = 0;       // ANSI charset (Windows-1252)
   //DEFAULT_CHARSET         = 1;
@@ -211,7 +212,7 @@ const
   {$EXTERNALSYM GHND}
   GPTR = GMEM_FIXED or GMEM_ZEROINIT;
   {$EXTERNALSYM GPTR}
-
+{
 const
   HeapAllocFlags = GMEM_MOVEABLE;
 
@@ -222,6 +223,7 @@ type
     psRunning,
     psEnding
   );
+}
 {$endif}
 
 {$ifndef Compiler17_Plus}
@@ -268,7 +270,7 @@ function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
 implementation
 
 uses
-  HtmlUn2;
+  HTMLUn2;
 
 procedure CalcPalette(DC: HDC);
 {calculate a rainbow palette, one with equally spaced colors}

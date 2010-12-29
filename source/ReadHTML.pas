@@ -103,7 +103,7 @@ procedure PopAProp(const Tag: ThtString);
 implementation
 
 uses
-  Htmlsbs1, Htmlview, StylePars, URLSubs;
+  Htmlsbs1, HtmlView, StylePars, URLSubs;
 
 var
   Sy: Symb;

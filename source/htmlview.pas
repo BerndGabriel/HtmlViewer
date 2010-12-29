@@ -61,7 +61,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, LMessages, types, HtmlMisc,
+  LclIntf, LclType, LMessages, types, FPimage, HtmlMisc,
 {$else}
   Windows,
 {$endif}

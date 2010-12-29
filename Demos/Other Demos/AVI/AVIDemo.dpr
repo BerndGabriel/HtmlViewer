@@ -1,6 +1,14 @@
 program AVIDemo;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
+{$IFNDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   AVIUnit in 'AVIUnit.pas' {Form1};
 

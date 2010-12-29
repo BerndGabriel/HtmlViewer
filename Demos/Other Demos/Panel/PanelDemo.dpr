@@ -1,6 +1,14 @@
 program PanelDemo;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
+{$IFNDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   PanelUnit in 'PanelUnit.pas' {Form1};
 

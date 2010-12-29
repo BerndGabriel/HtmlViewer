@@ -4,19 +4,20 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, Interfaces,
+  LclIntf, LclType,
 {$else}
-  Windows,
+  Windows, mmSystem, MPlayer,
 {$endif}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, Htmlview, ExtCtrls, mmSystem, MPlayer, 
-  htmlsubs, StdCtrls;
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, Dialogs,
+  Htmlview, ExtCtrls, HTMLSubs;
 
 type
   TForm1 = class(TForm)
     Panel1: TPanel;
     Viewer: THTMLViewer;
+{$ifndef LCL}
     MediaPlayer: TMediaPlayer;
+{$endif}
     LoadButton: TButton;
     PlayButton: TButton;
     procedure ViewerPanelCreate(Sender: TObject; const AName, AType,
@@ -26,11 +27,10 @@ type
     procedure PlayButtonClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
-    { Private declarations }
     APanel: ThvPanel;
     Memo: TMemo;
   public
-    { Public declarations }
+
   end;
 
 var
@@ -38,7 +38,11 @@ var
 
 implementation
 
-{$R *.dfm}
+{$IFDEF LCL}
+  {$R *.lfm}
+{$ELSE}
+  {$R *.dfm}
+{$ENDIF}
 
 procedure TForm1.ViewerPanelCreate(Sender: TObject; const AName, AType,
   SRC: String; Panel: ThvPanel);
@@ -63,8 +67,11 @@ end;
 procedure TForm1.ViewerPanelDestroy(Sender: TObject; Panel: ThvPanel);
 {the OnPanelDestroy event}
 begin
-MediaPlayer.Wait := True;
-MediaPlayer.Close;   {in case it's playing}
+{$ifndef LCL}
+  MediaPlayer: TMediaPlayer;
+  MediaPlayer.Wait := True;
+  MediaPlayer.Close;   {in case it's playing}
+{$endif}
 APanel := Nil;
 end;
 
@@ -76,9 +83,10 @@ end;
 procedure TForm1.PlayButtonClick(Sender: TObject);
 begin
 Memo.Hide;
+{$ifndef LCL}
 If Assigned(APanel) then
   With MediaPlayer do
-    if FileExists('speedis.avi') then
+    if FileExistsUTF8('speedis.avi') { *Converted from FileExists*  } then
       begin
       Filename := 'speedis.avi';
       DeviceType := dtAutoSelect;
@@ -92,12 +100,15 @@ If Assigned(APanel) then
       Memo.Font.Size := 12;
       Memo.Show;
       end;
+{$endif}
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
+{$ifndef LCL}
 MediaPlayer.Wait := True;
 MediaPlayer.Close;  
+{$endif}
 CanClose := True;
 end;
 

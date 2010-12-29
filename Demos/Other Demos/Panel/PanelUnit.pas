@@ -1,11 +1,19 @@
 unit PanelUnit;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, Htmlview, StdCtrls,
-  htmlsubs;    {ThvPanel defined in htmlsubs}
+{$IFNDEF FPC}
+  Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages,
+{$ENDIF}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  ExtCtrls, Menus, StdCtrls, Htmlview, HTMLSubs;  {ThvPanel defined in htmlsubs}
 
 type
   TForm1 = class(TForm)
@@ -34,7 +42,11 @@ var
 
 implementation
 
-{$R *.dfm}
+{$IFNDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 procedure TForm1.LoadButtonClick(Sender: TObject);
 begin
@@ -115,7 +127,9 @@ end;
 
 procedure TForm1.PrintButtonClick(Sender: TObject);
 begin
+{$ifdef Windows}
 Viewer.Print(1, 1);
+{$endif}
 end;
 
 end.
