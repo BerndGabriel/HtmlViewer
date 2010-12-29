@@ -1,0 +1,65 @@
+object Form1: TForm1
+  Left = 294
+  Top = 180
+  Width = 526
+  Height = 392
+  Caption = 'Form1'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  PixelsPerInch = 96
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 518
+    Height = 41
+    Align = alTop
+    TabOrder = 0
+    object LoadButton: TButton
+      Left = 14
+      Top = 6
+      Width = 97
+      Height = 25
+      Caption = 'Load Panel.htm'
+      TabOrder = 0
+      OnClick = LoadButtonClick
+    end
+    object PrintButton: TButton
+      Left = 126
+      Top = 6
+      Width = 97
+      Height = 25
+      Caption = 'Print'
+      Enabled = False
+      TabOrder = 1
+      OnClick = PrintButtonClick
+    end
+  end
+  object Viewer: THTMLViewer
+    Left = 0
+    Top = 41
+    Width = 518
+    Height = 317
+    TabOrder = 1
+    Align = alClient
+    DefBackground = clWindow
+    BorderStyle = htFocused
+    HistoryMaxCount = 0
+    DefFontName = 'Times New Roman'
+    DefPreFontName = 'Courier New'
+    NoSelect = False
+    CharSet = DEFAULT_CHARSET
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintMarginBottom = 2
+    PrintScale = 1
+    htOptions = [htPrintTableBackground, htPrintMonochromeBlack, htShowVScroll]
+    OnPanelCreate = ViewerPanelCreate
+    OnPanelDestroy = ViewerPanelDestroy
+    OnPanelPrint = ViewerPanelPrint
+  end
+end

@@ -1,0 +1,128 @@
+object Form1: TForm1
+  Left = 372
+  Top = 267
+  ClientHeight = 413
+  ClientWidth = 623
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'System'
+  Font.Style = []
+  Menu = MainMenu
+  OnCreate = FormCreate
+  OnShow = FormShow
+  PixelsPerInch = 96
+  object Panel2: TPanel
+    Left = 0
+    Top = 0
+    Width = 623
+    Height = 33
+    Align = alTop
+    BevelOuter = bvNone
+    TabOrder = 0
+    object Edit1: TEdit
+      Left = 188
+      Top = 2
+      Width = 337
+      Height = 24
+      TabStop = False
+      ReadOnly = True
+      TabOrder = 1
+    end
+    object ReloadButton: TButton
+      Left = 8
+      Top = 2
+      Width = 59
+      Height = 24
+      Caption = '&Reload'
+      Enabled = False
+      TabOrder = 0
+      OnClick = ReloadButtonClick
+    end
+  end
+  object Panel3: TPanel
+    Left = 0
+    Top = 33
+    Width = 623
+    Height = 380
+    Align = alClient
+    BevelInner = bvLowered
+    BevelOuter = bvNone
+    Caption = 'Panel3'
+    TabOrder = 1
+    object Viewer: THTMLViewer
+      Left = 0
+      Top = 0
+      Width = 621
+      Height = 378
+      TabStop = True
+      TabOrder = 0
+      Align = alClient
+      DefBackground = clWindow
+      BorderStyle = htFocused
+      HistoryMaxCount = 6
+      DefFontName = 'Times New Roman'
+      DefPreFontName = 'Courier New'
+      DefFontColor = clWindowText
+      DefOverLinkColor = clFuchsia
+      ImageCacheCount = 6
+      NoSelect = False
+      CharSet = DEFAULT_CHARSET
+      PrintMarginLeft = 2
+      PrintMarginRight = 2
+      PrintMarginTop = 3
+      PrintMarginBottom = 3
+      PrintScale = 1
+      htOptions = [htPrintTableBackground, htPrintBackground, htPrintMonochromeBlack]
+      OnProcessing = ProcessingHandler
+      OnPrintHTMLHeader = ViewerPrintHTMLHeader
+      OnPrintHTMLFooter = ViewerPrintHTMLFooter
+    end
+  end
+  object OpenDialog: TOpenDialog
+    DefaultExt = 'htm'
+    Filter = 'html files|*.htm;*.html|all files|*.*'
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Left = 337
+    Top = 50
+  end
+  object MainMenu: TMainMenu
+    Left = 299
+    Top = 52
+    object File1: TMenuItem
+      Caption = '&File'
+      object Open: TMenuItem
+        Caption = '&Open'
+        ShortCut = 114
+        OnClick = OpenFileClick
+      end
+      object Printpreview: TMenuItem
+        Caption = 'Print pre&view'
+        Enabled = False
+        OnClick = PrintpreviewClick
+      end
+      object Print1: TMenuItem
+        Caption = '&Print...'
+        Enabled = False
+        OnClick = Print1Click
+      end
+      object N1: TMenuItem
+        Caption = '-'
+      end
+      object Exit1: TMenuItem
+        Caption = 'E&xit'
+        OnClick = Exit1Click
+      end
+    end
+  end
+  object PrintDialog: TPrintDialog
+    FromPage = 1
+    MinPage = 1
+    MaxPage = 9999
+    Options = [poPageNums]
+    ToPage = 1
+    Left = 378
+    Top = 49
+  end
+end

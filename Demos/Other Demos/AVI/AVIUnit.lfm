@@ -1,0 +1,66 @@
+object Form1: TForm1
+  Left = 192
+  Height = 477
+  Top = 116
+  Width = 638
+  Caption = 'Form1'
+  ClientHeight = 477
+  ClientWidth = 638
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  OnCloseQuery = FormCloseQuery
+  LCLVersion = '0.9.31'
+  object Panel1: TPanel
+    Left = 0
+    Height = 41
+    Top = 0
+    Width = 638
+    Align = alTop
+    ClientHeight = 41
+    ClientWidth = 638
+    TabOrder = 0
+    object LoadButton: TButton
+      Left = 14
+      Height = 25
+      Top = 6
+      Width = 113
+      Caption = 'Load AviPanel.htm'
+      OnClick = LoadButtonClick
+      TabOrder = 0
+    end
+    object PlayButton: TButton
+      Left = 150
+      Height = 25
+      Top = 6
+      Width = 75
+      Caption = 'Play'
+      Enabled = False
+      OnClick = PlayButtonClick
+      TabOrder = 1
+    end
+  end
+  object Viewer: THtmlViewer
+    Left = 0
+    Height = 436
+    Top = 41
+    Width = 638
+    TabOrder = 1
+    Align = alClient
+    BorderStyle = htFocused
+    CharSet = DEFAULT_CHARSET
+    DefBackground = clWindow
+    DefFontName = 'Times New Roman'
+    DefPreFontName = 'Courier New'
+    HistoryMaxCount = 0
+    HtOptions = [htPrintTableBackground, htPrintMonochromeBlack, htShowVScroll]
+    NoSelect = False
+    PrintMarginBottom = 2
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintScale = 1
+    OnPanelCreate = ViewerPanelCreate
+    OnPanelDestroy = ViewerPanelDestroy
+  end
+end
