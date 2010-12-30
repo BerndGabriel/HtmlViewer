@@ -61,6 +61,7 @@
       {$else}
         {$ifdef ver140}
         {$else}
+          {$define Compiler15_Plus}
           {$ifdef ver150}
           {$else}
             {$ifdef ver160}
@@ -68,6 +69,7 @@
               {$define Compiler17_Plus}
               {$ifdef ver170}
               {$else}
+                {$define Compiler18_Plus}
                 {$ifdef ver180}
                 {$else}
                   {$ifdef ver185}
@@ -167,10 +169,15 @@
         simulates the way IExplorer does it, issuing the OnChange event
         immediately when a change is made.}
 
-{.$Define UseTNT}
-        {Defining UseTNT allows the TNT Unicode controls to be used for HTML Form
-        controls in place of the Delphi TEdit, TButton, TListbox, TCombobox, and
-        TMemo controls.  See "Using Third Party Controls" below.}
+{$ifdef Compiler20_Plus}
+{$else}
+  {TNT Unicode controls are mandatory for Delphi 6-2007}
+  {$ifdef LCL}
+    {$message 'Using TNT unicode controls is recommended.'}
+  {$else}
+    {$define UseTNT}
+  {$endif}
+{$endif}
 
 {.$Define UseElpack}
         {Defining UseElpack allows the Elpack Unicode controls to be used for
@@ -220,36 +227,4 @@ should become:
       if TFormControlObj(Items[I]).TheControl is ThtEdit then
         ThtEdit(TFormControlObj(Items[I]).TheControl).Text := ........
 }
-{
-  At last decide, which kind of strings to use:
-  if "UseUnicode" is defined
-    WideChars and WideStrings are used.
-  Otherwize
-    AnsiChars and AnsiString are used.
-
-  HtmlGlobals defines types Tht* according to these settings.
-}
-{$ifdef UseTNT}
-  {$define UseUnicode}
-{$endif}
-{$ifdef UseElpack}
-  {$define UseUnicode}
-{$endif}
-{$ifdef UNICODE}
-  {$define UseUnicode}
-{$endif}
-
-{$ifdef UseUnicode}
-{$else}
-{$endif}
-
-{$ifdef UseUnicode}
-  {$ifdef UNICODE}
-  {$else}
-  {$endif}
-{$else}
-  {$ifdef UNICODE}
-  {$else}
-  {$endif}
-{$endif}
 

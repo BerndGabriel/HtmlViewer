@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,7 +30,7 @@ unit HtmlGlobals;
 interface
 
 uses
-  Windows, Graphics,
+  Windows, Graphics, Classes, Controls,
 {$ifdef FPC}
   RtlConsts,
 {$else}
@@ -38,8 +38,9 @@ uses
 {$endif}
 {$ifdef UseTNT}
   {$message 'HtmlViewer uses TNT unicode controls.'}
+  TntControls,
   TntStdCtrls,
-  {$ifdef Compiler17_Plus}
+  {$ifdef Compiler18_Plus}
     WideStrings,
   {$else}
     TntWideStrings,
@@ -52,14 +53,31 @@ uses
   {$else UseElPack}
     {$message 'HtmlViewer uses VCL standard controls.'}
     StdCtrls,
+    Buttons,
   {$endif UseElPack}
+  {$ifdef Compiler18_Plus}
+    WideStrings,
+  {$else}
+    TntWideStrings,
+    TntClasses,
+  {$endif}
 {$endif UseTNT}
-  Classes, SysUtils,
+  SysUtils,
   HtmlBuffer;
 
 type
-{$ifdef UseUnicode}
+{$ifdef UNICODE}
+  {$message 'Compiler uses unicode by default.'}
+{$else}
+  {$message 'Compiler uses single byte chars by default.'}
+  UnicodeString = WideString;
+{$endif}
+
   {$message 'HtmlViewer uses unicode.'}
+  {$ifdef Compiler18_Plus}
+  {$else}
+    TWideStringList = class(TTntStringList);
+  {$endif}
   {$ifdef UNICODE}
     ThtChar = Char;
     ThtString = string;
@@ -70,36 +88,9 @@ type
     ThtChar = WideChar;
     ThtString = WideString;
     ThtStrings = TWideStrings;
-    {$ifdef UseTNT}
-      ThtStringList = TTntStringList;
-    {$else}
-      ThtStringList = TWideStringList;
-    {$endif}
+    ThtStringList = TWideStringList;
     PhtChar = PWideChar;
   {$endif}
-{$else}
-  {$message 'HtmlViewer uses single byte chars.'}
-  {$ifdef UNICODE}
-    ThtChar = AnsiChar;
-    ThtString = AnsiString;
-    ThtStrings = TAnsiStrings;
-    ThtStringList = TAnsiStringList;
-    PhtChar = PAnsiChar;
-  {$else}
-    ThtChar = Char;
-    ThtString = string;
-    ThtStrings = TStrings;
-    ThtStringList = TStringList;
-    PhtChar = PChar;
-  {$endif}
-{$endif}
-
-{$ifdef UNICODE}
-  {$message 'Compiler uses unicode by default.'}
-{$else}
-  {$message 'Compiler uses single byte chars by default.'}
-  UnicodeString = WideString;
-{$endif}
 
   ThtEdit = class(
     {$ifdef UseTNT}TTntEdit{$else}
@@ -116,6 +107,7 @@ type
   ThtListbox = TTntListbox;
   ThtCheckBox = TTntCheckBox;
   ThtRadioButton = TTntRadioButton;
+  ThtHintWindow = TTntHintWindow;
 {$else}
   {$ifdef UseElPack}
   ThtButton = TElPopupButton;
@@ -123,14 +115,16 @@ type
   ThtCombobox = TElCombobox;
   ThtListbox = TElListbox;
   {$else}
-  ThtButton = TButton;
+  ThtButton = TBitBtn; //BG, 25.12.2010: TBitBtn uses correct charset, but TButton does not.
   ThtMemo = TMemo;
   ThtCombobox = TCombobox;
   ThtListbox = TListbox;
   {$endif}
   ThtCheckBox = TCheckBox;
   ThtRadioButton = TRadioButton;
+  ThtHintWindow = THintWindow;
 {$endif}
+//  ThtHintWindow = THintWindow;
 
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)
@@ -248,9 +242,9 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 {$endif}
 
 // UNICODE dependent loading string methods
-function LoadStringFromStreamA(Stream: TStream): AnsiString;
+//function LoadStringFromStreamA(Stream: TStream): AnsiString;
 function LoadStringFromStreamW(Stream: TStream): WideString;
-function LoadStringFromFileA(const Name: ThtString): AnsiString;
+//function LoadStringFromFileA(const Name: ThtString): AnsiString;
 function LoadStringFromFileW(const Name: ThtString): WideString;
 
 function LoadStringFromStream(Stream: TStream): ThtString; {$ifdef UseInline} inline; {$endif}
@@ -530,44 +524,44 @@ begin
 end;
 {$endif}
 
-function LoadStringFromStreamA(Stream: TStream): AnsiString;
-var
-  ByteCount: Integer;
-{$ifdef UNICODE}
-  PreambleSize: Integer;
-  Buffer: TBytes;
-  Encoding: TEncoding;
-{$endif}
-begin
-  //BG, 07.12.2010: cannot start in the middle of a stream,
-  // if I want to recognize encoding by preamble.
-  Stream.Position := 0;
-{$ifdef UNICODE}
-  ByteCount := Stream.Size - Stream.Position;
-  if ByteCount = 0 then
-  begin
-    Result := '';
-    exit;
-  end;
-  SetLength(Buffer, ByteCount);
-  Stream.Read(Buffer[0], ByteCount);
-  Encoding := nil;
-  PreambleSize := TEncoding.GetBufferEncoding(Buffer, Encoding);
-  if Encoding = TEncoding.Default then
-  begin
-    // BG, 04.12.2010: GetBufferEncoding looks for preambles only to detected
-    // encoding, but often there is no header/preamble in UTF-8 streams/files.
-    Result := TEncoding.UTF8.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
-    if Result <> '' then
-      exit;
-  end;
-  Result := Encoding.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
-{$else}
-  ByteCount := Stream.Size - Stream.Position;
-  SetString(Result, nil, ByteCount);
-  Stream.Read(Result[1], ByteCount);
-{$endif}
-end;
+//function LoadStringFromStreamA(Stream: TStream): AnsiString;
+//var
+//  ByteCount: Integer;
+//{$ifdef UNICODE}
+//  PreambleSize: Integer;
+//  Buffer: TBytes;
+//  Encoding: TEncoding;
+//{$endif}
+//begin
+//  //BG, 07.12.2010: cannot start in the middle of a stream,
+//  // if I want to recognize encoding by preamble.
+//  Stream.Position := 0;
+//{$ifdef UNICODE}
+//  ByteCount := Stream.Size - Stream.Position;
+//  if ByteCount = 0 then
+//  begin
+//    Result := '';
+//    exit;
+//  end;
+//  SetLength(Buffer, ByteCount);
+//  Stream.Read(Buffer[0], ByteCount);
+//  Encoding := nil;
+//  PreambleSize := TEncoding.GetBufferEncoding(Buffer, Encoding);
+//  if Encoding = TEncoding.Default then
+//  begin
+//    // BG, 04.12.2010: GetBufferEncoding looks for preambles only to detected
+//    // encoding, but often there is no header/preamble in UTF-8 streams/files.
+//    Result := TEncoding.UTF8.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
+//    if Result <> '' then
+//      exit;
+//  end;
+//  Result := Encoding.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
+//{$else}
+//  ByteCount := Stream.Size - Stream.Position;
+//  SetString(Result, nil, ByteCount);
+//  Stream.Read(Result[1], ByteCount);
+//{$endif}
+//end;
 
 function LoadStringFromStreamW(Stream: TStream): WideString;
 var
@@ -581,17 +575,17 @@ begin
   end;
 end;
 
-function LoadStringFromFileA(const Name: ThtString): AnsiString;
-var
-  Stream: TFileStream;
-begin
-  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
-  try
-    Result := LoadStringFromStreamA(Stream);
-  finally
-    Stream.Free;
-  end;
-end;
+//function LoadStringFromFileA(const Name: ThtString): AnsiString;
+//var
+//  Stream: TFileStream;
+//begin
+//  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+//  try
+//    Result := LoadStringFromStreamA(Stream);
+//  finally
+//    Stream.Free;
+//  end;
+//end;
 
 function LoadStringFromFileW(const Name: ThtString): WideString;
 var
@@ -607,41 +601,24 @@ end;
 
 function LoadStringFromStream(Stream: TStream): ThtString;
 begin
-{$ifdef UseUnicode}
   Result := LoadStringFromStreamW(Stream);
-{$else}
-  Result := LoadStringFromStreamA(Stream);
-{$endif}
 end;
 
 function LoadStringFromFile(const Name: ThtString): ThtString;
 begin
-{$ifdef UseUnicode}
   Result := LoadStringFromFileW(Name);
-{$else}
-  Result := LoadStringFromFileA(Name);
-{$endif}
 end;
 
 
 //-- BG ---------------------------------------------------------- 11.12.2010 --
 function htUpCase(Chr: ThtChar): ThtChar;
 begin
-{$ifdef UseUnicode}
   {$ifdef UNICODE}
     Result := UpCase(Chr);
   {$else}
     Result := Chr;
     CharUpperBuffW(@Result, 1);
   {$endif}
-{$else}
-  {$ifdef UNICODE}
-    Result := Chr;
-    CharUpperBuffA(@Result, 1);
-  {$else}
-    Result := UpCase(Chr);
-  {$endif}
-{$endif}
 end;
 
 { ThtEdit }
@@ -668,11 +645,7 @@ begin
     Options := Options or ETO_OPAQUE;
   if ((TextFlags and ETO_RTLREADING) <> 0) and
      (CanvasOrientation = coRightToLeft) then Inc(X, TextWidth(Text) + 1);
-{$ifdef UseUnicode}
   Windows.ExtTextOutW(Handle, X, Y, Options, @Rect, PWideChar(Text), Length(Text), nil);
-{$else}
-  Windows.ExtTextOutA(Handle, X, Y, Options, @Rect, PChar(Text), Length(Text), nil);
-{$endif UseUnicode}
   Changed;
 {$endif LCL}
 end;

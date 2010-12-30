@@ -8,7 +8,7 @@
       <TargetFileExt Value=".exe"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="1"/>
+      <ActiveEditorIndexAtStart Value="2"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -35,7 +35,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="57">
+    <Units Count="59">
       <Unit0>
         <Filename Value="FrameDem.dpr"/>
         <IsPartOfProject Value="True"/>
@@ -51,7 +51,7 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FDemUnit"/>
-        <CursorPos X="18" Y="17"/>
+        <CursorPos X="120" Y="10"/>
         <TopLine Value="1"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="100"/>
@@ -94,10 +94,10 @@
       <Unit6>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <UnitName Value="HtmlGlobals"/>
-        <CursorPos X="1" Y="1"/>
-        <TopLine Value="1"/>
-        <EditorIndex Value="2"/>
-        <UsageCount Value="81"/>
+        <CursorPos X="5" Y="89"/>
+        <TopLine Value="140"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="83"/>
         <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit6>
@@ -183,9 +183,11 @@
       <Unit17>
         <Filename Value="..\..\source\ReadHTML.pas"/>
         <UnitName Value="Readhtml"/>
-        <CursorPos X="1" Y="3928"/>
-        <TopLine Value="3869"/>
-        <UsageCount Value="63"/>
+        <CursorPos X="51" Y="1756"/>
+        <TopLine Value="1727"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="65"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit17>
       <Unit18>
@@ -448,44 +450,148 @@
         <TopLine Value="1"/>
         <UsageCount Value="9"/>
       </Unit56>
+      <Unit57>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <UnitName Value="Htmlsbs1"/>
+        <CursorPos X="30" Y="317"/>
+        <TopLine Value="277"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="12"/>
+        <Loaded Value="True"/>
+        <SyntaxHighlighter Value="Delphi"/>
+      </Unit57>
+      <Unit58>
+        <Filename Value="..\..\source\HtmlBuffer.pas"/>
+        <UnitName Value="HtmlBuffer"/>
+        <CursorPos X="71" Y="134"/>
+        <TopLine Value="106"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <SyntaxHighlighter Value="Delphi"/>
+      </Unit58>
     </Units>
-    <JumpHistory Count="9" HistoryIndex="8">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="FrameDem.dpr"/>
-        <Caret Line="15" Column="6" TopLine="1"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="214" Column="71" TopLine="190"/>
       </Position1>
       <Position2>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="36" Column="62" TopLine="28"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position2>
       <Position3>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="60" Column="44" TopLine="28"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="33" Column="36" TopLine="1"/>
       </Position3>
       <Position4>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="776" Column="25" TopLine="760"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="67" Column="8" TopLine="34"/>
       </Position4>
       <Position5>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="1005" Column="5" TopLine="939"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="95" Column="8" TopLine="34"/>
       </Position5>
       <Position6>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="976" Column="49" TopLine="939"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="146" Column="20" TopLine="113"/>
       </Position6>
       <Position7>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="576" Column="26" TopLine="537"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="228" Column="8" TopLine="195"/>
       </Position7>
       <Position8>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="312" Column="45" TopLine="264"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="310" Column="56" TopLine="274"/>
       </Position8>
       <Position9>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="231" Column="1" TopLine="199"/>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="416" Column="8" TopLine="383"/>
       </Position9>
+      <Position10>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="481" Column="8" TopLine="448"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="486" Column="8" TopLine="448"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="581" Column="8" TopLine="551"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="596" Column="9" TopLine="563"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="285" Column="12" TopLine="277"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="313" Column="37" TopLine="262"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\..\source\ReadHTML.pas"/>
+        <Caret Line="1760" Column="1" TopLine="1727"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="310" Column="1" TopLine="277"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\source\ReadHTML.pas"/>
+        <Caret Line="1760" Column="1" TopLine="1727"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="310" Column="1" TopLine="277"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\..\source\ReadHTML.pas"/>
+        <Caret Line="1760" Column="1" TopLine="1727"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\..\source\ReadHTML.pas"/>
+        <Caret Line="1016" Column="19" TopLine="944"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\..\source\ReadHTML.pas"/>
+        <Caret Line="1760" Column="1" TopLine="1727"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <Caret Line="310" Column="1" TopLine="277"/>
+      </Position24>
+      <Position25>
+        <Filename Value="..\..\source\ReadHTML.pas"/>
+        <Caret Line="1739" Column="5" TopLine="1727"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\..\source\HtmlBuffer.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\..\source\HtmlBuffer.pas"/>
+        <Caret Line="161" Column="74" TopLine="128"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\..\source\HtmlBuffer.pas"/>
+        <Caret Line="144" Column="62" TopLine="128"/>
+      </Position28>
+      <Position29>
+        <Filename Value="..\..\source\HtmlBuffer.pas"/>
+        <Caret Line="34" Column="14" TopLine="10"/>
+      </Position29>
+      <Position30>
+        <Filename Value="..\..\source\HtmlBuffer.pas"/>
+        <Caret Line="134" Column="71" TopLine="106"/>
+      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

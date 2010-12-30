@@ -159,15 +159,18 @@ type
     TheFont: TMyFont;
     InLink: boolean;
     DefFontname: ThtString;
+    //procedure AssignUTF8;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
-    procedure GetSingleFontInfo(var Font: ThtFontInfo);
+    procedure AssignCharSet(CS: TFontCharset);
+    procedure AssignCodePage(const CP: Integer);
     procedure CalcLinkFontInfo(Styles: TStyleList; I: integer);
+    procedure GetSingleFontInfo(var Font: ThtFontInfo);
   public
     PropTag, PropClass, PropID, PropPseudo, PropTitle: ThtString;
     PropStyle: TProperties;
     FontBG: TColor;
-    CharSet: TFontCharSet;
-    CodePage: Integer;
+    FCharSet: TFontCharSet;
+    FCodePage: Integer;
     EmSize, ExSize: integer; {# pixels for Em and Ex dimensions}
     Props: array[Low(PropIndices)..High(PropIndices)] of Variant;
     Originals: array[Low(PropIndices)..High(PropIndices)] of boolean;
@@ -181,10 +184,8 @@ type
     procedure CopyDefault(Source: TProperties);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure Assign(const Item: Variant; Index: PropIndices);
-    procedure AssignCharSet(CS: TFontCharset);
-    procedure AssignUTF8;
-    procedure Combine(Styles: TStyleList;
-      const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
+    procedure AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
+    procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
     procedure Update(Source: TProperties; Styles: TStyleList; I: integer);
     function GetFont: TMyFont;
     procedure GetFontInfo(AFI: TFontInfoArray);
@@ -218,6 +219,8 @@ type
     function IsOverflowHidden: boolean;
     //BG, 20.09.2009:
     property Display: TPropDisplay read GetDisplay;
+    property CharSet: TFontCharset read FCharSet write AssignCharSet;
+    property CodePage: Integer read FCodePage write AssignCodePage;
   end;
 
   TStyleList = class(ThtStringList)
@@ -579,6 +582,12 @@ begin
 end;
 
 procedure TProperties.AssignCharSet(CS: TFontCharset);
+begin
+  AssignCharSetAndCodePage(CS, CharSetToCodePage(CS));
+end;
+
+//-- BG ---------------------------------------------------------- 25.12.2010 --
+procedure TProperties.AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
 var
   Save: THandle;
   tm: TTextmetric;
@@ -586,48 +595,57 @@ var
   Font: TFont;
   IX: FIIndex;
 begin
-  case CS of
-    EastEurope8859_2:
-      CharSet := EASTEUROPE_CHARSET;
+  if (FCharSet <> CS) or (FCodePage <> CP) then
+  begin
+    case CS of
+      EastEurope8859_2:
+        FCharSet := EASTEUROPE_CHARSET;
 
-    DEFAULT_CHARSET:
-      CharSet := CS;
-  else
-    {the following makes sure the CharSet is available.  It also translates
-    "Default_CharSet" into the actual local character set}
-    Font := TFont.Create;
-    try
-      Font.Name := '';
-      Font.CharSet := CS;
-      DC := GetDC(0);
+      DEFAULT_CHARSET:
+        FCharSet := CS;
+    else
+      {the following makes sure the CharSet is available.  It also translates
+      "Default_CharSet" into the actual local character set}
+      Font := TFont.Create;
       try
-        Save := SelectObject(DC, Font.Handle);
+        Font.Name := '';
+        Font.CharSet := CS;
+        DC := GetDC(0);
         try
-          GetTextMetrics(DC, tm);
-          CS := tm.tmCharSet;
+          Save := SelectObject(DC, Font.Handle);
+          try
+            GetTextMetrics(DC, tm);
+            CS := tm.tmCharSet;
+          finally
+            SelectObject(DC, Save);
+          end;
         finally
-          SelectObject(DC, Save);
+          ReleaseDC(0, DC);
         end;
       finally
-        ReleaseDC(0, DC);
+        Font.Free;
       end;
-    finally
-      Font.Free;
+      FCharSet := CS;
     end;
-    CharSet := CS;
-  end;
 
-  if Assigned(FIArray) then
-    for IX := LFont to HVFont do
-      FIArray.Ar[IX].iCharset := CharSet;
-  CodePage := CharSetToCodePage(CS); // NOTICE: use CS it might differ from CharSet.
+    if Assigned(FIArray) then
+      for IX := LFont to HVFont do
+        FIArray.Ar[IX].iCharset := CharSet;
+
+    FCodePage := CP;
+  end;
 end;
 
-procedure TProperties.AssignUTF8;
-{Called by DoMeta in Readhtml.pas to make the properties using UTF-8 for conversions.}
+procedure TProperties.AssignCodePage(const CP: Integer);
 begin
-  CodePage := CP_UTF8;
-  Charset := ANSI_CHARSET;
+  case CP of
+    CP_UTF8,
+    CP_UTF16LE,
+    CP_UTF16BE:
+      AssignCharSetAndCodePage(DEFAULT_CHARSET, CP);
+  else
+    AssignCharSetAndCodePage(CodePageToCharSet(CP), CP);
+  end;
 end;
 
 {----------------TProperties.GetBackgroundPos}

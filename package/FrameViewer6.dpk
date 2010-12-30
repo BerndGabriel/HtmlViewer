@@ -28,11 +28,13 @@ package FrameViewer6;
 {$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
+{$DEFINE DEBUG}
 
 requires
   vcl,
   vcljpg,
-  designide;
+  designide,
+  TntUnicodeVcl_R60;
 
 contains
   framview in '..\source\framview.pas',

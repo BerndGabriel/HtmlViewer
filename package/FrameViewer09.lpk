@@ -28,7 +28,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="16">
+    <Files Count="17">
       <Item1>
         <Filename Value="..\source\HtmlGlobals.pas"/>
         <UnitName Value="HtmlGlobals"/>
@@ -94,6 +94,10 @@
         <Filename Value="..\source\HTMLGif2.pas"/>
         <UnitName Value="HTMLGif2"/>
       </Item16>
+      <Item17>
+        <Filename Value="..\source\HtmlBuffer.pas"/>
+        <UnitName Value="HtmlBuffer"/>
+      </Item17>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">

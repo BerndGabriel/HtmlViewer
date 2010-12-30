@@ -83,7 +83,7 @@ type
   TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: ThtString; ARect: TRect) of object;
   TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: ThtString) of object;
   TGetBitmapEvent = procedure(Sender: TObject; const SRC: ThtString; var Bitmap: TBitmap; var Color: TColor) of object;
-  TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
+  TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
   TGottenImageEvent = TGetImageEvent;
   TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList) of object;
   TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: ThtString; Panel: ThvPanel) of object;
@@ -275,8 +275,10 @@ type
     PaintBitmap: TBitmap;
     AttributeList: ThtStringList;
     FTitle: ThtString;
+    FValue: ThtString;
     function GetControl: TWinControl; virtual;
     function GetAttribute(const AttrName: ThtString): ThtString;
+    procedure setValue(const Value: ThtString);
   protected
     CodePage: Integer;
     procedure DoOnChange; virtual;
@@ -286,7 +288,6 @@ type
     Pos: Integer; {0..Len  index of control position}
     MasterList: TSectionList;
     MyForm: ThtmlForm;
-    Value: ThtString;
     FName, FID: ThtString;
     FormAlign: AlignmentType;
     HSpaceL, HSpaceR, VSpaceT, VSpaceB, BordT, BordB: Integer;
@@ -323,6 +324,7 @@ type
     property YValue: Integer read FYValue;
     property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
     property Title: ThtString read FTitle write FTitle;
+    property Value: ThtString read FValue write setValue;
   end;
 
   TImageFormControlObj = class(TFormControlObj)
@@ -1080,13 +1082,13 @@ type
   THtmlPropStack = class(TPropStack)
   public
     MasterList: TSectionList;
-    SIndex: Integer;
+    SIndex: Integer; //BG, 26.12.2010: seems, this is the current position in the original html-file.
     procedure PopAProp(const Tag: ThtString);
     procedure PopProp;
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
   end;
 
-  function htCompareText(const T1, T2: ThtString): Integer;
+  function htCompareText(const T1, T2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
 
 var
   CurrentStyle: TFontStyles; {as set by <b>, <i>, etc.}
@@ -1113,11 +1115,7 @@ uses
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
 begin
-{$ifdef UseUnicode}
   Result := WideCompareText(T1, T2);
-{$else}
-  Result := AnsiCompareText(T1, T2);
-{$endif}
 end;
 
 procedure InitializeFontSizes(Size: Integer);
@@ -2076,12 +2074,12 @@ begin
       AltWidth := ObjWidth;
       AltHeight := ObjHeight;
     end
-    else if FAltW <> '' then {Alt text and no size specified, take as much space as necessary}
+    else if FAlt <> '' then {Alt text and no size specified, take as much space as necessary}
     begin
       Canvas.Font.Name := 'Arial'; {use same font as in Draw}
       Canvas.Font.Size := 8;
       ARect := Rect(0, 0, 0, 0);
-      DrawTextW(Canvas.Handle, PWideChar(FAltW + CRLF), -1, ARect, DT_CALCRECT);
+      DrawTextW(Canvas.Handle, PWideChar(FAlt + CRLF), -1, ARect, DT_CALCRECT);
       with ARect do
       begin
         AltWidth := Right + 16 + 8 + 2;
@@ -2393,20 +2391,20 @@ begin
       case VertAlign of
         ATop, ANone:
           begin
-            if FAltW <> '' then
-              WrapTextW(Canvas, X + 24, TopY + Ofst + VSpaceT, X + AltWidth - 2, TopY + AltHeight - 1 + VSpaceT, FAltW);
+            if FAlt <> '' then
+              WrapTextW(Canvas, X + 24, TopY + Ofst + VSpaceT, X + AltWidth - 2, TopY + AltHeight - 1 + VSpaceT, FAlt);
             RaisedRect(ParentSectionList, Canvas, X, TopY + VSpaceT, X + AltWidth, TopY + AltHeight + VSpaceT, False, 1);
           end;
         AMiddle:
           begin {MiddleAlignTop is always initialized}
-            if FAltW <> '' then
-              WrapTextW(Canvas, X + 24, MiddleAlignTop + Ofst, X + AltWidth - 2, MiddleAlignTop + AltHeight - 1, FAltW);
+            if FAlt <> '' then
+              WrapTextW(Canvas, X + 24, MiddleAlignTop + Ofst, X + AltWidth - 2, MiddleAlignTop + AltHeight - 1, FAlt);
             RaisedRect(ParentSectionList, Canvas, X, MiddleAlignTop, X + AltWidth, MiddleAlignTop + AltHeight, False, 1);
           end;
         ABottom, ABaseline:
           begin
-            if FAltW <> '' then
-              WrapTextW(Canvas, X + 24, YBaseLine - AltHeight + Ofst - VSpaceB, X + AltWidth - 2, YBaseLine - VSpaceB - 1, FAltW);
+            if FAlt <> '' then
+              WrapTextW(Canvas, X + 24, YBaseLine - AltHeight + Ofst - VSpaceB, X + AltWidth - 2, YBaseLine - VSpaceB - 1, FAlt);
             RaisedRect(ParentSectionList, Canvas, X, YBaseLine - AltHeight - VSpaceB, X + AltWidth, YBaseLine - VSpaceB, False, 1);
           end;
       end;
@@ -2421,16 +2419,16 @@ begin
       Pen.Style := psInsideFrame;
       Font.Color := Pen.Color;
       try
-        if (FAltW <> '') and SubstImage then {output Alt message}
+        if (FAlt <> '') and SubstImage then {output Alt message}
         begin
           YY := DrawYY - ParentSectionList.YOff;
           case VertAlign of
             ATop, ANone:
-              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAltW);
+              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
             AMiddle:
-              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAltW);
+              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
             ABottom, ABaseline:
-              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAltW);
+              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
           end;
         end;
         case VertAlign of {draw border}
@@ -2853,7 +2851,7 @@ begin
   AMasterList.FormControlList.Add(Self);
   MyForm := CurrentForm;
   for I := 0 to L.Count - 1 do
-    with TAttribute(L[I]) do
+    with L[I] do
       case Which of
         ValueSy: Self.Value := Name;
         NameSy: Self.FName := Name;
@@ -6806,7 +6804,7 @@ var
   I: Integer;
   Pair: TBitmapItem;
   Tr: Transparency;
-  Stream: TMemoryStream;
+  Stream: TStream;
   Color: TColor;
 begin
   AMask := nil;
@@ -12345,7 +12343,8 @@ begin
             Size := 8;
             Name := 'Arial';
           end;
-          WrapTextW(ACanvas, X1 + 5, Y1 + 5, X1 + ImageWidth - 5, Y1 + ImageHeight - 5, FAltW);
+          if FAlt <> '' then
+            WrapTextW(ACanvas, X1 + 5, Y1 + 5, X1 + ImageWidth - 5, Y1 + ImageHeight - 5, FAlt);
         finally
           ACanvas.Font := SaveFont;
           SaveFont.Free;
@@ -13204,6 +13203,11 @@ begin
   end;
 end;
 
+
+procedure TFormControlObj.setValue(const Value: ThtString);
+begin
+  FValue := Value;
+end;
 
 initialization
 {$ifdef UNICODE}

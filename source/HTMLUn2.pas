@@ -147,6 +147,7 @@ type
     function GetID: ThtString;
     function GetTitle: ThtString;
     function GetStyle: TProperties;
+    function GetAttribute(Index: Integer): TAttribute;
   public
     destructor Destroy; override;
     procedure Clear; override;
@@ -156,6 +157,7 @@ type
     property TheID: ThtString read GetID;
     property TheTitle: ThtString read GetTitle;
     property TheStyle: TProperties read GetStyle;
+    property Items[Index: Integer]: TAttribute read GetAttribute; default;
   end;
 
   TBitmapItem = class(TObject)
@@ -328,7 +330,7 @@ type
     procedure Concat(T: TCharCollection);
 
     property AsString: ThtString read GetAsString;
-    property Chars: ThtString read FChars;
+    //property Chars: ThtString read FChars;
     property Indices: PIndexArray read FIndices;
     property Size: Integer read GetSize;
   end;
@@ -399,7 +401,7 @@ type
   end;
 {$ENDIF}
 
-  ImageType = (NoImage, Bmp, Gif, Gif89, Png, Jpg);
+  TImageType = (NoImage, Bmp, Gif, {Gif89,} Png, Jpg);
 
   htColorArray = packed array[0..3] of TColor;
   htBorderStyleArray = packed array[0..3] of BorderStyleType;
@@ -429,13 +431,7 @@ type
     PercentWidth: boolean; {if width is percent}
     PercentHeight: boolean; {if height is percent}
     ImageTitle: ThtString;
-{$ifdef UNICODE}
-    FAlt: AnsiString;
-    FAltW: ThtString; {the alt= attribute}
-{$else}
     FAlt: ThtString; {the alt= attribute}
-    FAltW: WideString;
-{$endif}
 
     function GetYPosition: Integer; override;
   public
@@ -449,7 +445,7 @@ type
     procedure DrawLogic(SectionList: TSectionBaseList; Canvas: TCanvas;
       FO: TFontObjBase; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     procedure ProcessProperties(Prop: TProperties);
-    property Alt: ThtString read {$ifdef UNICODE} FAltW {$else} FAlt {$endif};
+    property Alt: ThtString read FAlt;
   end;
 
   TBlockBase = class;
@@ -511,7 +507,7 @@ type
   end;
 
   TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
-  TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; var IString: ThtString) of object;
+  TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IString: ThtString) of object;
   TLinkType = procedure(Sender: TObject; const Rel, Rev, Href: ThtString) of object;
   TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: ThtString) of object;
   TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;
@@ -585,7 +581,7 @@ function CalcClipRect(Canvas: TCanvas; const Rect: TRect; Printing: boolean): TR
 procedure GetClippingRgn(Canvas: TCanvas; const ARect: TRect; Printing: boolean; var Rgn, SaveRgn: HRgn);
 
 function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-function LoadImageFromStream(Stream: TMemoryStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 // unused: function GetImageAndMaskFromFile(const Filename: ThtString; var Transparent: Transparency;
 //  var Mask: TBitmap): TgpObject;
 
@@ -626,7 +622,7 @@ procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
 procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
   S: htBorderStyleArray; BGround: TColor; Print: boolean);
 
-function MultibyteToWideString(CodePage: Integer; const S: AnsiString; Len: Integer = -1): WideString;
+//function MultibyteToWideString(CodePage: Integer; const S: AnsiString; Len: Integer = -1): WideString;
 function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
 function GetImageHeight(Image: TGpObject): Integer;
 function GetImageWidth(Image: TGpObject): Integer;
@@ -1309,16 +1305,26 @@ end;
 
 {----------------TAttributeList}
 
-destructor TAttributeList.Destroy;
-begin
-  Prop.Free;
-  inherited;
-end;
-
 procedure TAttributeList.Clear;
 begin
   inherited Clear;
   SaveID := '';
+end;
+
+function TAttributeList.CreateStringList: ThtStringList;
+var
+  I: Integer;
+begin
+  Result := ThtStringList.Create;
+  for I := 0 to Count - 1 do
+    with TAttribute(Items[I]) do
+      Result.Add(WhichName + '=' + Name);
+end;
+
+destructor TAttributeList.Destroy;
+begin
+  Prop.Free;
+  inherited;
 end;
 
 function TAttributeList.Find(Sy: Symb; var T: TAttribute): boolean;
@@ -1335,14 +1341,9 @@ begin
   Result := False;
 end;
 
-function TAttributeList.CreateStringList: ThtStringList;
-var
-  I: Integer;
+function TAttributeList.GetAttribute(Index: Integer): TAttribute;
 begin
-  Result := ThtStringList.Create;
-  for I := 0 to Count - 1 do
-    with TAttribute(Items[I]) do
-      Result.Add(WhichName + '=' + Name);
+  Result := Get(Index);
 end;
 
 function TAttributeList.GetClass: ThtString;
@@ -1762,7 +1763,7 @@ end;
 //  end;
 //end;
 
-function KindOfImage(Start: Pointer): ImageType;
+function KindOfImage(Start: Pointer): TImageType; overload;
 type
   ByteArray = array[0..10] of byte;
 var
@@ -1772,19 +1773,53 @@ var
 begin
   if PL^ = $38464947 then
   begin
-    if PB^[4] = Ord('9') then
-      Result := Gif89
-    else
+//    if PB^[4] = Ord('9') then
+//      Result := Gif89
+//    else
       Result := Gif;
   end
-  else if PW^ = $4D42 then
-    Result := Bmp
   else if PL^ = $474E5089 then
     Result := Png
-  else if PW^ = $D8FF then
-    Result := Jpg
   else
-    Result := NoImage;
+    case PW^ of
+      $4D42: Result := Bmp;
+      $D8FF: Result := Jpg;
+    else
+      Result := NoImage;
+    end;
+end;
+
+function KindOfImage(Stream: TStream): TImageType; overload;
+var
+  Pos: Int64;
+  Magic: DWord;
+  WMagic: Word absolute Magic;
+  BMagic: Byte absolute Magic;
+begin
+  Pos := Stream.Position;
+  Stream.Position := 0;
+  try
+    Stream.Read(Magic, sizeof(Magic));
+    if Magic = $38464947 then
+    begin
+//      Stream.Read(BMagic, sizeof(BMagic));
+//      if BMagic = Ord('9') then
+//        Result := Gif89
+//      else
+        Result := Gif;
+    end
+    else if Magic = $474E5089 then
+      Result := Png
+    else
+      case WMagic of
+        $4D42: Result := Bmp;
+        $D8FF: Result := Jpg;
+      else
+        Result := NoImage;
+      end;
+  finally
+    Stream.Position := Pos;
+  end;
 end;
 
 //{$A-} {record field alignment off for this routine}
@@ -2069,7 +2104,7 @@ end;
 
 {----------------GetBitmapAndMaskFromStream}
 
-function GetBitmapAndMaskFromStream(Stream: TMemoryStream;
+function GetBitmapAndMaskFromStream(Stream: TStream;
   var Transparent: Transparency; var AMask: TBitmap): TBitmap;
 var
   jpImage: TJpegImage;
@@ -2079,11 +2114,11 @@ var
 begin
   Result := nil;
   AMask := nil;
-  if not Assigned(Stream) or (Stream.Memory = nil) or (Stream.Size < 20) then
+  if not Assigned(Stream) or (Stream.Size < 20) then
     Exit;
   Stream.Position := 0;
   try
-    case KindOfImage(Stream.Memory) of
+    case KindOfImage(Stream) of
       Jpg:
       begin
         Transparent := NotTransp;
@@ -2151,24 +2186,24 @@ var
 
 {----------------GetImageAndMaskFromStream}
 
-function GetImageAndMaskFromStream(Stream: TMemoryStream;
+function GetImageAndMaskFromStream(Stream: TStream;
   var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 {$IFNDEF NoGDIPlus}
 var
   Filename: string;
   Path: PChar;
-  F: file;
+  F: TFileStream;
   I: Integer;
   {$ENDIF !NoGDIPlus}
 begin
   Result := nil;
   AMask := nil;
-  if not Assigned(Stream) or (Stream.Memory = nil) or (Stream.Size < 20) then
+  if not Assigned(Stream) or (Stream.Size < 20) then
     Exit;
   Stream.Position := 0;
 
   {$IFNDEF NoGDIPlus}
-  if GDIPlusActive and (KindOfImage(Stream.Memory) = png) then
+  if GDIPlusActive and (KindOfImage(Stream) = png) then
   begin
     try
       Path := StrAlloc(MAX_PATH);
@@ -2182,10 +2217,12 @@ begin
       Inc(Unique);
       I := Pos(#0, Filename);
       SetLength(Filename, I - 1);
-      AssignFile(F, Filename);
-      ReWrite(F, 1);
-      BlockWrite(F, Stream.Memory^, Stream.Size);
-      CloseFile(F);
+      F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
+      try
+        F.CopyFrom(Stream, Stream.Size);
+      finally
+        F.Free;
+      end;
       Result := TgpImage.Create(Filename, True); {True because it's a temporary file}
       Transparent := NotTransp;
     except
@@ -2301,7 +2338,7 @@ end;
 //end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
-function LoadImageFromStream(Stream: TMemoryStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 // extracted from TSectionList.GetTheBitmap(), TSectionList.InsertImage(), and TSectionList.ReplaceImage()
 var
   NonAnimated: boolean;
@@ -2311,7 +2348,7 @@ begin
   if (Stream <> nil) and (Stream.Size > 0) then
   begin
     NonAnimated := True;
-    if KindOfImage(Stream.Memory) in [GIF, Gif89] then
+    if KindOfImage(Stream) in [GIF{, Gif89}] then
       Result := CreateAGifFromStream(NonAnimated, Stream);
     if Result <> nil then
     begin
@@ -2341,14 +2378,13 @@ function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency
 // extracted from TSectionList.GetTheBitmap() and redesigned.
 // Now the image file is loaded once only (was: 2 to 3 times) and GetImageAndMaskFromFile() is obsolete.
 var
-  Stream: TMemoryStream;
+  Stream: TStream;
 begin {look for the image file}
   Result := nil;
   if FileExists(FName) then
   begin
-    Stream := TMemoryStream.Create;
+    Stream := TFileStream.Create(FName, fmOpenRead, fmShareDenyWrite);
     try
-      Stream.LoadFromFile(FName);
       Result := LoadImageFromStream(Stream, Transparent, AMask);
     finally
       Stream.Free;
@@ -3196,28 +3232,28 @@ begin
   StringOK := True;
 end;
 
-function MultibyteToWideString(CodePage: Integer; const S: AnsiString; Len: Integer): WideString;
-{$IFNDEF UNICODE}
-var
-  NewLen: Integer;
-{$ENDIF}
-begin
-{$IFDEF UNICODE}
-  if Len >= 0 then
-    Result := Copy(S, 1, Len)
-  else
-    Result := S;
-{$ELSE}
-  {Provide initial space. The resulting ThtString will never be longer than the
-   UTF-8 or multibyte encoded ThtString.}
-  SetLength(Result, 2 * Len);
-  NewLen := MultiByteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
-  if (NewLen = 0) and (CodePage <> CP_ACP) then
-  { Invalid code page. Try default.}
-    NewLen := MultiByteToWideChar(CP_ACP, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
-  SetLength(Result, NewLen);
-{$ENDIF}
-end;
+//function MultibyteToWideString(CodePage: Integer; const S: AnsiString; Len: Integer): WideString;
+//{$IFNDEF UNICODE}
+//var
+//  NewLen: Integer;
+//{$ENDIF}
+//begin
+//{$IFDEF UNICODE}
+//  if Len >= 0 then
+//    Result := Copy(S, 1, Len)
+//  else
+//    Result := S;
+//{$ELSE}
+//  {Provide initial space. The resulting ThtString will never be longer than the
+//   UTF-8 or multibyte encoded ThtString.}
+//  SetLength(Result, 2 * Len);
+//  NewLen := MultiByteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
+//  if (NewLen = 0) and (CodePage <> CP_ACP) then
+//  { Invalid code page. Try default.}
+//    NewLen := MultiByteToWideChar(CP_ACP, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
+//  SetLength(Result, NewLen);
+//{$ENDIF}
+//end;
 
 function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
 var
@@ -3275,14 +3311,10 @@ var
 
 begin
   Len := S.FCurrentIndex;
-{$ifdef UseUnicode}
   if Len > 0 then
     WS := Copy(S.FChars, 1, Len)
   else
     WS := S.FChars;
-{$else}
-  WS := MultibyteToWideString(CodePage, S.FChars, Len);
-{$endif}
   NewLen := Length(WS);
 
   {Store the wide string and character indices.}
@@ -4501,7 +4533,6 @@ constructor TFloatingObj.CreateCopy(T: TFloatingObj);
 begin
   inherited Create;
   FAlt := T.FAlt;
-  FAltW := T.FAltW;
   ImageWidth := T.ImageWidth;
   ImageHeight := T.ImageHeight;
   NoBorder := T.NoBorder;
@@ -4608,17 +4639,9 @@ end;
 //-- BG ---------------------------------------------------------- 30.11.2010 --
 procedure TFloatingObj.SetAlt(CodePage: Integer; const Value: ThtString);
 begin
-{$ifdef UseUnicode}
-  FAltW := Value;
-  while (Length(FAltW) > 0) and (FAltW[Length(FAltW)] in [CrChar, LfChar]) do
-    Delete(FAltW, Length(FAltW), 1);
-  FAlt := WideStringToMultibyte(CodePage, FAltW);
-{$else}
   FAlt := Value;
   while (Length(FAlt) > 0) and (FAlt[Length(FAlt)] in [CrChar, LfChar]) do
     Delete(FAlt, Length(FAlt), 1);
-  FAltW := MultibyteToWideString(CodePage, FAlt);
-{$endif}
 end;
 
 {$R HTML32.Res}

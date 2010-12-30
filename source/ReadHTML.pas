@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 *********************************************************
@@ -75,48 +75,119 @@ unit Readhtml;
 
 interface
 uses
-  Messages, Classes, Graphics, Controls,
-  HtmlGlobals, HtmlBuffer, HtmlUn2, HtmlSubs, StyleUn;
+  Messages, Classes, Graphics, Controls, Contnrs,
+  HtmlGlobals, HtmlBuffer, HtmlUn2, HtmlSubs, HtmlSbs1, StyleUn;
 
 type
   LoadStyleType = (lsFile, lsString, lsInclude);
+  SymbSet = set of Symb;
 
-procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
-  AIncludeEvent: TIncludeType;
-  ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-procedure ParseTextString(const S: ThtString; ASectionList: TList);
+  THtmlParser = class
+  private
+    LCh, Ch: ThtChar;
+    LastChar: (lcOther, lcCR, lcLF);
+    Value: Integer;
+    LCToken: TokenObj;
 
-procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
-  ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
-function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
-  FrameViewer: TFrameViewerBase): boolean;
-function TranslateCharset(const Content: ThtString; var Charset: TFontCharset; var CodePage: Integer): boolean;
-procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
-procedure PopAProp(const Tag: ThtString);
+    Doc: TBuffer;
+    DocStack: TStack;
+    CharCount: Integer;
+
+    Sy: Symb;
+    Attributes: TAttributeList;
+
+    BaseFontSize: Integer;
+    BodyBlock: TBodyBlock;
+    Section: TSection;
+    SectionList: TCellBasic;
+    CurrentURLTarget: TURLTarget;
+    TableLevel: Integer;
+    TagIndex: Integer;
+
+    InComment: Boolean;
+    InHref: Boolean;
+    InScript: Boolean; {when in a <SCRIPT>}
+    LinkSearch: Boolean;
+    ListLevel: Integer;
+
+    IncludeEvent: TIncludeType;
+    CallingObject: TViewerBase;
+    SoundEvent: TSoundType;
+    MetaEvent: TMetaType;
+    LinkEvent: TLinkType;
+
+    function GetChBasic: ThtChar;
+    procedure GetCh;
+
+    function CollectText: Boolean;
+    function DoCharSet(Content: ThtString): Boolean;
+    function DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
+    function FindAlignment: ThtString;
+    function GetAttribute(var Sym: Symb; var St, S: ThtString; var Val: Integer): Boolean;
+    function GetEntityStr(CodePage: Integer): ThtString;
+    function GetID(var S: ThtString): Boolean;
+    function GetNameValueParameter(var Name, Value: ThtString): Boolean;
+    function GetQuotedStr(var S: ThtString; var Value: Integer; WantCrLf: Boolean; Sym: Symb): Boolean;
+    function GetQuotedValue(var S: ThtString): Boolean;
+    function GetTag: Boolean;
+    function GetValue(var S: ThtString; var Value: Integer): Boolean;
+    function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
+    procedure CheckForAlign;
+    procedure DoAEnd;
+    procedure DoBase;
+    procedure DoBody(const TermSet: SymbSet);
+    procedure DoBr(const TermSet: SymbSet);
+    procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
+    procedure DoCommonSy;
+    procedure DoDivEtc(Sym: Symb; const TermSet: SymbSet);
+    procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
+    procedure DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
+    procedure DoLists(Sym: Symb; const TermSet: SymbSet);
+    procedure DoMap;
+    procedure DoMeta(Sender: TObject);
+    procedure DoP(const TermSet: SymbSet);
+    procedure DoScript(Ascript: TScriptEvent);
+    procedure DoSound;
+    procedure DoStyleLink;
+    procedure DoTable;
+    procedure DoText;
+    procedure DoTextArea(TxtArea: TTextAreaFormControlObj);
+    procedure DoTitle;
+    procedure GetEntity(T: TokenObj; CodePage: Integer);
+    procedure GetOptions(Select: TListBoxFormControlObj);
+    procedure GetSomething(var S: ThtString);
+    procedure Next;
+    procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+    procedure ParseHtml(Doc: TBuffer; ASectionList: TList; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+    procedure ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
+    procedure ParseText(Doc: TBuffer; ASectionList: TList);
+    procedure SkipWhiteSpace;
+    procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
+    procedure PopAProp(const Tag: ThtString);
+    function Peek: ThtChar;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  procedure ParseHtml(Doc: TBuffer; ASectionList: TList; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+  procedure ParseText(Doc: TBuffer; ASectionList: TList);
+
+//  procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
+//    AIncludeEvent: TIncludeType;
+//    ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+//  procedure ParseTextString(const S: ThtString; ASectionList: TList);
+
+//  procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject; ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
+//  function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString; FrameViewer: TFrameViewerBase): Boolean;
+
+  procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+  function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
 
 implementation
 
 uses
-  Windows, SysUtils, Math, Variants, HtmlSbs1, HtmlView, StylePars, UrlSubs;
-
-var
-  Sy: Symb;
-  Section: TSection;
-  SectionList: TCellBasic;
-  CurrentURLTarget: TURLTarget;
-  InHref: boolean;
-  Attributes: TAttributeList;
-  BaseFontSize: integer;
-  InScript: boolean; {when in a <SCRIPT>}
-  TagIndex: integer;
-  BodyBlock: TBodyBlock;
-  ListLevel: integer;
-  TableLevel: integer;
-  Entities: ThtStringList;
-  InComment: boolean;
-  LinkSearch: boolean;
-  IsUTF8: boolean;
-
+  Windows, SysUtils, Math, Variants, HtmlView, StylePars, UrlSubs;
 
 const
   MaxRes = 82;
@@ -163,35 +234,17 @@ const
     TFootEndSy, ObjectEndSy, DDEndSy, DTEndSy, LIEndSy,
     FieldsetEndSy, LegendEndSy);
 
-type
-  EParseError = class(Exception);
 var
-  LCh, Ch: ThtChar;
-  LastChar: (lcOther, lcCR, lcLF);
-  Value: integer;
-  LCToken: TokenObj;
-  LoadStyle: LoadStyleType;
-  Buff, BuffEnd: PhtChar;
-  DocS: ThtString;
-  HaveTranslated: boolean;
+  Entities: ThtStringList;
 
-  IBuff, IBuffEnd: PhtChar;
-  SIBuff: ThtString;
-  IncludeEvent: TIncludeType;
-  CallingObject: TViewerBase;
-  SaveLoadStyle: LoadStyleType;
-  SoundEvent: TSoundType;
-  MetaEvent: TMetaType;
-  LinkEvent: TLinkType;
-
-function PropStackIndex: integer;
+function PropStackIndex: Integer;
 begin
   Result := PropStack.Count - 1;
 end;
 
 function SymbToStr(Sy: Symb): ThtString;
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 1 to MaxRes do
     if ResSy[I] = Sy then
@@ -204,7 +257,7 @@ end;
 
 function EndSymbToStr(Sy: Symb): ThtString;
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 1 to MaxEndRes do
     if EndResSy[I] = Sy then
@@ -217,7 +270,7 @@ end;
 
 function EndSymbFromSymb(Sy: Symb): Symb;
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 1 to MaxEndRes do
     if ResSy[I] = Sy then
@@ -230,7 +283,7 @@ end;
 
 function StrToSymb(const S: ThtString): Symb;
 var
-  I: integer;
+  I: Integer;
   S1: ThtString;
 begin
   S1 := UpperCase(S);
@@ -243,61 +296,192 @@ begin
   Result := OtherSy;
 end;
 
-function GetNameValueParameter(var Name, Value: ThtString): boolean; forward;
 
-function ReadChar: ThtChar;
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
+var
+  Parser: THtmlParser;
 begin
-  case LoadStyle of
-    lsString:
-      begin
-        if Buff < BuffEnd then
-        begin
-          Result := Buff^;
-          Inc(Buff);
-          Inc(PropStack.SIndex);
-        end
-        else
-          Result := EOFChar;
-      end;
-
-    lsInclude:
-      if IBuff < IBuffEnd then
-      begin
-        Result := IBuff^;
-        Inc(IBuff);
-      end
-      else
-      begin
-        IBuff := nil; {reset for next include}
-        LoadStyle := SaveLoadStyle;
-        Result := ReadChar;
-      end;
-  else
-    Result := #0; {to prevent warning msg}
+  Parser := THtmlParser.Create;
+  try
+    Result := Parser.IsFrame(FrameViewer, Doc, FName);
+  finally
+    Parser.Free;
   end;
-  if (Cardinal(Buff) and $FFF = 0) {about every 4000 chars}
-    and not LinkSearch and Assigned(PropStack.MasterList) and (DocS <> '') then
-    THtmlViewerBase(CallingObject).htProgress(((Buff - PhtChar(DocS)) * PropStack.MasterList.ProgressStart) div (BuffEnd - PhtChar(DocS)));
+end;
+
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create;
+  try
+    Parser.ParseFrame(FrameViewer, FrameSet, Doc, FName, AMetaEvent);
+  finally
+    Parser.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+procedure ParseHtml(Doc: TBuffer; ASectionList: TList;
+  AIncludeEvent: TIncludeType;
+  ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create;
+  try
+    Parser.ParseHtml(Doc, ASectionList, AIncludeEvent, ASoundEvent, AMetaEvent, ALinkEvent);
+  finally
+    Parser.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 25.12.2010 --
+procedure ParseText(Doc: TBuffer; ASectionList: TList);
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create;
+  try
+    Parser.ParseText(Doc, ASectionList);
+  finally
+    Parser.Free;
+  end;
+end;
+
+////-- BG ---------------------------------------------------------- 25.12.2010 --
+//procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
+//  AIncludeEvent: TIncludeType;
+//  ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+//var
+//  Parser: THtmlParser;
+//begin
+//  Parser := THtmlParser.Create;
+//  try
+//    Parser.ParseHTMLString(S, ASectionList, AIncludeEvent, ASoundEvent, AMetaEvent, ALinkEvent);
+//  finally
+//    Parser.Free;
+//  end;
+//end;
+//
+////-- BG ---------------------------------------------------------- 25.12.2010 --
+//procedure ParseTextString(const S: ThtString; ASectionList: TList);
+//var
+//  Parser: THtmlParser;
+//begin
+//  Parser := THtmlParser.Create;
+//  try
+//    Parser.ParseTextString(S, ASectionList);
+//  finally
+//    Parser.Free;
+//  end;
+//end;
+//
+////-- BG ---------------------------------------------------------- 25.12.2010 --
+//procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
+//  ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
+//var
+//  Parser: THtmlParser;
+//begin
+//  Parser := THtmlParser.Create;
+//  try
+//    Parser.FrameParseString(FrameViewer, FrameSet, ALoadStyle, FName, S, AMetaEvent);
+//  finally
+//    Parser.Free;
+//  end;
+//end;
+//
+////-- BG ---------------------------------------------------------- 25.12.2010 --
+//function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
+//  FrameViewer: TFrameViewerBase): Boolean;
+//var
+//  Parser: THtmlParser;
+//begin
+//  Parser := THtmlParser.Create;
+//  try
+//    Result := Parser.IsFrameString(ALoadStyle, FName, S, FrameViewer);
+//  finally
+//    Parser.Free;
+//  end;
+//end;
+
+
+{ THtmlParser }
+
+constructor THtmlParser.Create;
+begin
+  inherited;
+  LCToken := TokenObj.Create;
+  DocStack := TStack.Create;
+end;
+
+destructor THtmlParser.Destroy;
+begin
+  DocStack.Free;
+  LCToken.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 26.12.2010 --
+function THtmlParser.Peek: ThtChar; {take a look at the next ThtChar}
+begin
+  Result := Doc.PeekChar;
+  while (Result = EofChar) and DocStack.AtLeast(1) do
+  begin
+    Doc.Free;
+    Doc := DocStack.Pop;
+    Result := Doc.PeekChar;
+  end;
 end;
 
 {----------------GetchBasic; }
 
-function GetchBasic: ThtChar; {read a character}
+function THtmlParser.GetchBasic: ThtChar; {read a character}
+
+  function ReadChar: ThtChar;
+  begin
+    Result := Doc.NextChar;
+    while (Result = EofChar) and DocStack.AtLeast(1) do
+    begin
+      Doc.Free;
+      Doc := DocStack.Pop;
+      Result := Doc.NextChar;
+    end;
+
+    if DocStack.Count = 0 then
+      // update document position only for outmost document
+      PropStack.SIndex := Doc.Position;
+
+    if not LinkSearch and Assigned(PropStack.MasterList) and (Doc.Size <> 0) then
+    begin
+      Inc(CharCount);
+      if (Result = EofChar) or (CharCount and $FFF = 0) {about every 4000 chars} then
+        THtmlViewerBase(CallingObject).htProgress((Doc.Position * PropStack.MasterList.ProgressStart) div Doc.Size);
+    end;
+  end;
+
 begin
   LCh := ReadChar;
-  case LCh of {skip a ^J after a CrChar or a CrChar after a ^J}
-    ^M: if LastChar = lcLF then
+  case LCh of {skip a LfChar after a CrChar or a CrChar after a LfChar}
+    ThtChar(^M): if LastChar = lcLF then
         LCh := ReadChar;
-    ^J: if LastChar = lcCR then
+    ThtChar(^J): if LastChar = lcCR then
         LCh := ReadChar;
   end;
   case LCh of
-    ^M: LastChar := lcCR;
-    ^J:
+    ThtChar(^I):
+      LCh := SpcChar;
+
+    ThtChar(^J):
       begin
         LastChar := lcLF;
         LCh := CrChar;
       end;
+
+    ThtChar(^M):
+      LastChar := lcCR;
   else
     begin
       LastChar := lcOther;
@@ -313,35 +497,10 @@ end;
 
 {-------------GetCh}
 
-procedure GetCh;
+procedure THtmlParser.GetCh;
 {Return next ThtChar in Lch, its uppercase value in Ch.  Ignore comments}
 var
-  Done, Comment: boolean;
-
-  function Peek: ThtChar; {take a look at the next ThtChar}
-  begin
-    case LoadStyle of
-      lsString:
-        begin
-          if Buff < BuffEnd then
-            Result := Buff^
-          else
-            Result := EOFChar;
-        end;
-
-      lsInclude:
-        if IBuff < IBuffEnd then
-          Result := IBuff^
-        else
-        begin
-          IBuff := nil;
-          LoadStyle := SaveLoadStyle;
-          Result := Peek;
-        end;
-    else
-      Result := #0; {to prevent warning msg}
-    end;
-  end;
+  Done, Comment: Boolean;
 
   procedure DoDashDash; {do the comment after a <!-- }
   begin
@@ -373,10 +532,8 @@ var
   end;
 
   procedure DoInclude;
-  {recursive suggestions by Ben Geerdes}
   var
-    S, Name, Value: ThtString;
-    Rest: ThtString;
+    S, Name, Value, Include: ThtString;
     SL: ThtStringList;
     SaveLCToken: TokenObj;
   begin
@@ -394,17 +551,12 @@ var
       while GetNameValueParameter(Name, Value) do
         SL.Add(Name + '=' + Value);
       DoDashDash;
-      Rest := IBuff;
-      SIBuff := '';
-      IncludeEvent(CallingObject, S, SL, SIBuff);
-      if Length(SIBuff) > 0 then
+      Include := '';
+      IncludeEvent(CallingObject, S, SL, Include);
+      if Length(Include) > 0 then
       begin
-        if LoadStyle <> lsInclude then
-          SaveLoadStyle := LoadStyle;
-        LoadStyle := lsInclude;
-        SIBuff := SIBuff + Rest;
-        IBuff := PhtChar(SIBuff);
-        IBuffEnd := IBuff + Length(SIBuff);
+        DocStack.Push(Doc);
+        Doc := TBuffer.Create(Include);
       end;
     finally
       LCToken.Free;
@@ -457,16 +609,13 @@ end;
 
 {-------------SkipWhiteSpace}
 
-procedure SkipWhiteSpace;
+procedure THtmlParser.SkipWhiteSpace;
 begin
   while (LCh in [SpcChar, TabChar, CrChar]) do
     GetCh;
 end;
 
-procedure GetEntity(T: TokenObj; CodePage: integer); forward;
-function GetEntityStr(CodePage: integer): ThtString; forward;
-
-function GetQuotedValue(var S: ThtString): boolean;
+function THtmlParser.GetQuotedValue(var S: ThtString): Boolean;
 {get a quoted ThtString but strip the quotes}
 var
   Term: ThtChar;
@@ -499,7 +648,7 @@ end;
 
 {----------------GetNameValueParameter}
 
-function GetNameValueParameter(var Name, Value: ThtString): boolean;
+function THtmlParser.GetNameValueParameter(var Name, Value: ThtString): Boolean;
 begin
   Result := False;
   SkipWhiteSpace;
@@ -531,10 +680,10 @@ end;
 
 {----------------GetValue}
 
-function GetValue(var S: ThtString; var Value: integer): boolean;
+function THtmlParser.GetValue(var S: ThtString; var Value: Integer): Boolean;
 {read a numeric.  Also reads a ThtString if it looks like a numeric initially}
 var
-  Code: integer;
+  Code: Integer;
   ValD: double;
 begin
   Result := Ch in [ThtChar('-'), ThtChar('+'), ThtChar('0')..ThtChar('9')];
@@ -574,12 +723,12 @@ end;
 
 {----------------GetQuotedStr}
 
-function GetQuotedStr(var S: ThtString; var Value: integer; WantCrLf: boolean; Sym: Symb): boolean;
+function THtmlParser.GetQuotedStr(var S: ThtString; var Value: Integer; WantCrLf: Boolean; Sym: Symb): Boolean;
 {get a quoted ThtString but strip the quotes, check to see if it is numerical}
 var
   Term: ThtChar;
   S1: ThtString;
-  Code: integer;
+  Code: Integer;
   ValD: double;
   SaveSy: Symb;
 begin
@@ -637,7 +786,7 @@ end;
 
 {----------------GetSomething}
 
-procedure GetSomething(var S: ThtString);
+procedure THtmlParser.GetSomething(var S: ThtString);
 begin
   while not (Ch in [SpcChar, TabChar, CrChar, GreaterChar, EofChar]) do
     if LCh = AmperChar then
@@ -651,7 +800,7 @@ end;
 
 {----------------GetID}
 
-function GetID(var S: ThtString): boolean;
+function THtmlParser.GetID(var S: ThtString): Boolean;
 
 begin
   Result := False;
@@ -667,8 +816,8 @@ end;
 
 {----------------GetAttribute}
 
-function GetAttribute(var Sym: Symb; var St: ThtString;
-  var S: ThtString; var Val: integer): boolean;
+function THtmlParser.GetAttribute(var Sym: Symb; var St: ThtString;
+  var S: ThtString; var Val: Integer): Boolean;
 
 const
   MaxAttr = 84;
@@ -705,7 +854,7 @@ const
     BGPropertiesSy, DisabledSy, TopMarginSy, LeftMarginSy, LabelSy,
     ReadonlySy);
 var
-  I: integer;
+  I: Integer;
 begin
   Sym := OtherAttribute;
   Result := False;
@@ -743,15 +892,15 @@ end;
 
 {-------------GetTag}
 
-function GetTag: boolean; {Pick up a Tag or pass a single LessChar}
+function THtmlParser.GetTag: Boolean; {Pick up a Tag or pass a single LessChar}
 var
   Done, EndTag: Boolean;
   Compare: ThtString;
   SymStr: ThtString;
   AttrStr: ThtString;
   I: Integer;
-  L: integer;
-  Save: integer;
+  L: Integer;
+  Save: Integer;
   Sym: Symb;
 begin
   if Ch <> LessChar then
@@ -828,7 +977,7 @@ begin
     GetCh;
 end;
 
-function CollectText: boolean;
+function THtmlParser.CollectText: Boolean;
 // Considers the current data as pure text and collects everything until
 // the input end or one of the reserved tokens is found.
 var
@@ -884,7 +1033,7 @@ end;
 
 {-----------Next}
 
-procedure Next;
+procedure THtmlParser.Next;
   {Get the next token}
 begin {already have fresh character loaded here}
   LCToken.Clear;
@@ -897,7 +1046,7 @@ begin {already have fresh character loaded here}
 end;
 
 { Add a TProperties to the PropStack. }
-procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
+procedure THtmlParser.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
 begin
   PropStack.PushNewProp(Tag, AClass, AnID, APseudo, ATitle, AProp);
 end;
@@ -908,11 +1057,11 @@ begin
   PropStack.PopProp;
 end;
 
-procedure PopAProp(const Tag: ThtString);
+procedure THtmlParser.PopAProp(const Tag: ThtString);
 {pop and free a TProperties from the Prop stack.  It should be on top but in
  case of a nesting error, find it anyway}
 //var
-//  I, J: integer;
+//  I, J: Integer;
 begin
 //  for I := PropStackIndex downto 1 do
 //    if PropStack[I].Proptag = Tag then
@@ -929,7 +1078,7 @@ begin
   PropStack.PopAProp(Tag);
 end;
 
-procedure DoTextArea(TxtArea: TTextAreaFormControlObj);
+procedure THtmlParser.DoTextArea(TxtArea: TTextAreaFormControlObj);
 {read and save the text for a TextArea form control}
 var
   S: ThtString;
@@ -954,7 +1103,7 @@ var
         Sy := CommandSy; {anything else}
     end;
 
-    function IsText1: boolean;
+    function IsText1: Boolean;
     begin
       while (Length(Token) < 100) and not (LCh in [CrChar, LessChar, AmperChar, EofChar]) do
       begin
@@ -1028,7 +1177,7 @@ begin
   TxtArea.ResetToValue;
 end;
 
-function FindAlignment: ThtString; {pick up Align= attribute}
+function THtmlParser.FindAlignment: ThtString; {pick up Align= attribute}
 var
   T: TAttribute;
   S: ThtString;
@@ -1044,7 +1193,7 @@ begin
   end;
 end;
 
-procedure CheckForAlign;
+procedure THtmlParser.CheckForAlign;
 var
   S: ThtString;
 begin
@@ -1053,17 +1202,11 @@ begin
     PropStack.Last.Assign(S, TextAlign);
 end;
 
-type
-  SymbSet = set of Symb;
 const
   TableTermSet = [TableEndSy, TDSy, TRSy, TREndSy, THSy, THEndSy, TDEndSy,
     CaptionSy, CaptionEndSy, ColSy, ColgroupSy];
 
-procedure DoBody(const TermSet: SymbSet); forward;
-
-procedure DoLists(Sym: Symb; const TermSet: SymbSet); forward;
-
-procedure DoAEnd; {do the </a>}
+procedure THtmlParser.DoAEnd; {do the </a>}
 begin
   if InHref then {see if we're in an href}
   begin
@@ -1076,7 +1219,7 @@ begin
     Section.HRef(AEndSy, PropStack.MasterList, CurrentUrlTarget, nil, PropStack.Last);
 end;
 
-procedure DoDivEtc(Sym: Symb; const TermSet: SymbSet);
+procedure THtmlParser.DoDivEtc(Sym: Symb; const TermSet: SymbSet);
 var
   FormBlock, DivBlock: TBlock;
   FieldsetBlock: TFieldsetBlock;
@@ -1229,8 +1372,8 @@ type
   TCellManager = class(ThtStringList)
     Table: ThtmlTable;
     constructor Create(ATable: ThtmlTable);
-    function FindColNum(Row: integer): integer;
-    procedure AddCell(Row: integer; CellObj: TCellObj);
+    function FindColNum(Row: Integer): Integer;
+    procedure AddCell(Row: Integer; CellObj: TCellObj);
   end;
 {TCellManager is used to keep track of the column where the next table cell is
  going when handling the <col> tag.  Because of colspan and rowspan attributes,
@@ -1246,7 +1389,7 @@ begin
   Table := ATable;
 end;
 
-function TCellManager.FindColNum(Row: integer): integer;
+function TCellManager.FindColNum(Row: Integer): Integer;
 {given the row of insertion, returns the column number where the next cell will
  go or -1 if out of range.  Columns beyond any <col> definitions are ignored}
 begin
@@ -1255,10 +1398,10 @@ begin
   Result := Pos('o', Strings[Row]) - 1;
 end;
 
-procedure TCellManager.AddCell(Row: integer; CellObj: TCellObj);
+procedure TCellManager.AddCell(Row: Integer; CellObj: TCellObj);
 {Adds this cell to the specified row}
 var
-  I, J, K, Span: integer;
+  I, J, K, Span: Integer;
   S1: ThtString;
 begin
 {make sure there's enough rows to handle any RowSpan for this cell}
@@ -1288,23 +1431,41 @@ begin
     end;
 end;
 
+function THtmlParser.DoCharSet(Content: ThtString): Boolean;
+var
+  Info: TBuffCharSetCodePageInfo;
+begin
+  Info := GetCharSetCodePageInfo(Content);
+  Result := Info <> nil;
+  if Result then
+  begin
+    case Info.CodePage of
+      CP_UTF8,
+      CP_UTF16LE,
+      CP_UTF16BE:
+        PropStack.Last.CodePage := Info.CodePage;
+    else
+      PropStack.Last.CharSet := Info.CharSet;
+    end;
+    Doc.CharSet := PropStack.Last.CharSet;
+    Doc.CodePage := PropStack.Last.CodePage;
+  end;
+end;
 
-{----------------DoColGroup}
-
-procedure DoColGroup(Table: ThtmlTable; ColOK: boolean);
+procedure THtmlParser.DoColGroup(Table: ThtmlTable; ColOK: Boolean);
 {reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's ConInfo list}
 var
-  I, Span: integer;
-  xWidth, cWidth: integer;
-  xAsPercent, cAsPercent: boolean;
+  I, Span: Integer;
+  xWidth, cWidth: Integer;
+  xAsPercent, cAsPercent: Boolean;
   xVAlign, cVAlign: AlignmentType;
   xAlign, cAlign: ThtString;
   Algn: AlignmentType;
 
-  procedure ReadColAttributes(var Width: integer; var AsPercent: boolean;
-    var Valign: AlignmentType; var Align: ThtString; var Span: integer);
+  procedure ReadColAttributes(var Width: Integer; var AsPercent: Boolean;
+    var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
   var
-    I: integer;
+    I: Integer;
   begin
     for I := 0 to Attributes.Count - 1 do
       with TAttribute(Attributes[I]) do
@@ -1370,31 +1531,31 @@ end;
 
 {----------------DoTable}
 
-procedure DoTable;
+procedure THtmlParser.DoTable;
 var
   Table: ThtmlTable;
   SaveSectionList, JunkSaveSectionList: TCellBasic;
   SaveStyle: TFontStyles;
-  SaveNoBreak: boolean;
-  SaveListLevel: integer;
+  SaveNoBreak: Boolean;
+  SaveListLevel: Integer;
   RowVAlign, VAlign: AlignmentType;
   Row: TCellList;
   CellObj: TCellObj;
   T: TAttribute;
-  RowStack: integer;
+  RowStack: Integer;
   NewBlock: TTableBlock;
   SetJustify: JustifyType;
   CM: TCellManager;
-  CellNum: integer;
+  CellNum: Integer;
   TdTh: ThtString;
-  ColOK: boolean;
+  ColOK: Boolean;
   CaptionBlock: TBlock;
   CombineBlock: TTableAndCaptionBlock;
-  TopCaption: boolean;
+  TopCaption: Boolean;
   RowType: TRowType;
-  HFStack: integer;
+  HFStack: Integer;
   FootList: TList;
-  I: integer;
+  I: Integer;
   TrDisplay: TPropDisplay; // Yunqa.de.
   S: PropIndices;
   V: Variant;
@@ -1731,13 +1892,13 @@ begin
   Next;
 end;
 
-procedure GetOptions(Select: TListBoxFormControlObj);
+procedure THtmlParser.GetOptions(Select: TListBoxFormControlObj);
  {get the <option>s for Select form control}
 var
-  InOption, Selected: boolean;
+  InOption, Selected: Boolean;
   WS: WideString;
-  SaveNoBreak: boolean;
-  CodePage: integer;
+  SaveNoBreak: Boolean;
+  CodePage: Integer;
   Attr: ThtStringList;
   T: TAttribute;
 begin
@@ -1782,11 +1943,11 @@ end;
 
 {----------------DoMap}
 
-procedure DoMap;
+procedure THtmlParser.DoMap;
 var
   Item: TMapItem;
   T: TAttribute;
-  ErrorCnt: integer;
+  ErrorCnt: Integer;
 begin
   Item := TMapItem.Create;
   ErrorCnt := 0;
@@ -1813,7 +1974,7 @@ begin
   Next;
 end;
 
-procedure DoScript(Ascript: TScriptEvent);
+procedure THtmlParser.DoScript(Ascript: TScriptEvent);
 var
   Text: ThtString;
 
@@ -1822,7 +1983,7 @@ var
 
     procedure GetTag1; {simplified 'Pick up a Tag' routine}
     var
-      Count: integer;
+      Count: Integer;
     begin
       Text := LessChar;
       GetCh;
@@ -1933,12 +2094,9 @@ begin
   end;
 end;
 
-procedure DoP(const TermSet: SymbSet); forward;
-procedure DoBr(const TermSet: SymbSet); forward;
-
-function DoObjectTag(var C: ThtChar; var N, IX: integer): boolean;
+function THtmlParser.DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
 var
-  WantPanel: boolean;
+  WantPanel: Boolean;
   SL, Params: ThtStringList;
   Prop: TProperties;
   PO: TPanelObj;
@@ -1948,7 +2106,7 @@ var
   procedure SavePosition;
   begin
     C := LCh;
-    N := Buff - PhtChar(DocS);
+    N := Doc.Position;
     IX := PropStack.SIndex;
   end;
 
@@ -2020,9 +2178,9 @@ end;
 
 {----------------DoCommonSy}
 
-procedure DoCommonSy;
+procedure THtmlParser.DoCommonSy;
 var
-  I: integer;
+  I: Integer;
   TxtArea: TTextAreaFormControlObj;
   FormControl: TFormControlObj;
   T: TAttribute;
@@ -2031,21 +2189,21 @@ var
   HRBlock: THRBlock;
   HorzLine: THorzLine;
   HeadingStr, Link: ThtString;
-  Done, FoundHRef: boolean;
+  Done, FoundHRef: Boolean;
   IO: TFloatingObj;
   Page: TPage;
   SaveSy: Symb;
   Prop: TProperties;
   C: ThtChar;
-  N, IX: integer;
+  N, IX: Integer;
 
-  procedure ChangeTheFont(Sy: Symb; Pre: boolean);
+  procedure ChangeTheFont(Sy: Symb; Pre: Boolean);
   var
     FaceName: ThtString;
     CharSet: TFontCharSet;
     CodePage: Integer;
     NewColor: TColor;
-    NewSize, I: integer;
+    NewSize, I: Integer;
     FontResults: set of (Face, Colr, Siz, CharS);
     DNewSize: double;
     Prop: TProperties;
@@ -2053,6 +2211,7 @@ var
     FontResults := [];
     NewSize := 0; {get rid of warning}
     CodePage := CP_UNKNOWN;
+    CharSet := DEFAULT_CHARSET;
     for I := 0 to Attributes.Count - 1 do
       with TAttribute(Attributes[I]) do
         case Which of
@@ -2076,8 +2235,12 @@ var
                 Include(FontResults, Face);
             end;
           CharSetSy:
-            if not IsUTF8 and TranslateCharSet(Name, CharSet, CodePage) then
+            if DoCharSet(Name) then
+            begin
               Include(FontResults, CharS);
+              CharSet := PropStack.Last.CharSet;
+              CodePage := PropStack.Last.CodePage;
+            end;
         end;
     PushNewProp('font', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
     Prop := TProperties(PropStack.Last);
@@ -2101,32 +2264,24 @@ var
       PropStack.Last.Assign(ReadFontName(FaceName), FontFamily);
     end;
     if CharS in FontResults then
-      case CodePage of
-        CP_UTF8:
-        begin
-          IsUTF8 := True;
-          PropStack.Last.AssignUTF8;
-        end;
-      else
-        PropStack.Last.AssignCharset(CharSet);
-      end;
+      PropStack.Last.AssignCharSetAndCodePage(CharSet, CodePage);
   end;
 
   procedure DoPreSy;
   var
     S: TokenObj;
     Tmp, Link: ThtString;
-    Done, InForm, InP: boolean;
-    I, InitialStackIndex: integer;
+    Done, InForm, InP: Boolean;
+    I, InitialStackIndex: Integer;
     PreBlock, FormBlock, PBlock: TBlock;
     SaveSy: Symb;
-    FoundHRef: boolean;
+    FoundHRef: Boolean;
     Prop: TProperties;
     C: ThtChar;
-    N, IX: integer;
-    Before, After, Intact: boolean;
+    N, IX: Integer;
+    Before, After, Intact: Boolean;
 
-    function CollectPreText: boolean;
+    function CollectPreText: Boolean;
     // Considers the current data as pure text and collects everything until
     // the input end or one of the reserved tokens is found.
     var
@@ -2393,12 +2548,12 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     C := LCh;
-                    N := Buff - PhtChar(DocS);
+                    N := Doc.Position;
                     IX := PropStack.SIndex;
                     DoObjectTag(C, N, IX);
                     LCh := C;
                     Ch := htUpCase(LCh);
-                    Buff := PhtChar(DocS) + N;
+                    Doc.Position := N;
                     PropStack.SIndex := IX;
                     if Ch = CrChar then
                       GetCh;
@@ -2827,7 +2982,7 @@ end; {DoCommon}
 
 {----------------DoP}
 
-procedure DoP(const TermSet: SymbSet);
+procedure THtmlParser.DoP(const TermSet: SymbSet);
 var
   NewBlock: TBlock;
   LastAlign, LastClass, LastID, LastTitle: ThtString;
@@ -2893,10 +3048,10 @@ end;
 
 {----------------DoBr}
 
-procedure DoBr(const TermSet: SymbSet);
+procedure THtmlParser.DoBr(const TermSet: SymbSet);
 var
   T: TAttribute;
-  Before, After, Intact: boolean;
+  Before, After, Intact: Boolean;
 begin
   if BRSy in TermSet then
     Exit;
@@ -2932,9 +3087,9 @@ begin
   Next;
 end;
 
-procedure DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: integer; Index: ThtChar; Plain: boolean; const TermSet: SymbSet);
+procedure THtmlParser.DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
 var
-  Done: boolean;
+  Done: Boolean;
   //LiBlock: TBlock;
   //LISection: TSection;
   IsInline: Boolean;
@@ -3007,11 +3162,11 @@ end;
 
 {-------------DoLists}
 
-procedure DoLists(Sym: Symb; const TermSet: SymbSet);
+procedure THtmlParser.DoLists(Sym: Symb; const TermSet: SymbSet);
 var
   T: TAttribute;
-  LineCount: integer;
-  Plain: boolean;
+  LineCount: Integer;
+  Plain: Boolean;
   Index: ThtChar;
   NewBlock: TBlock;
   EndSym: Symb;
@@ -3107,9 +3262,9 @@ end;
 
 {----------------DoBase}
 
-procedure DoBase;
+procedure THtmlParser.DoBase;
 var
-  I: integer;
+  I: Integer;
 begin
   with Attributes do
     for I := 0 to Count - 1 do
@@ -3123,9 +3278,9 @@ end;
 
 {----------------DoSound}
 
-procedure DoSound;
+procedure THtmlParser.DoSound;
 var
-  Loop: integer;
+  Loop: Integer;
   T, T1: TAttribute;
 begin
   if Assigned(SoundEvent) and Attributes.Find(SrcSy, T) then
@@ -3139,171 +3294,12 @@ begin
   Next;
 end;
 
-{$ifdef UseUnicode}
-{$else}
-
-{----------------IsIso2022JP:}
-
-function IsIso2022JP: boolean;
-{look for iso-2022-jp Japanese file}
-var
-  I, J, K, L: integer;
-begin
-  Result := False;
-  I := Pos(#$1b'$@', DocS); {look for starting sequence}
-  J := Pos(#$1b'$B', DocS);
-  I := Max(I, J); {pick a positive value}
-  if I > 0 then
-  begin {now look for ending sequence after the start}
-    K := PosX(#$1b'(J', DocS, I);
-    L := PosX(#$1b'(B', DocS, I);
-    K := Max(K, L); {pick a positive value}
-    if K > 0 then {start and end sequence found}
-      Result := True;
-  end;
-end;
-
-function EUCToShiftJis(const E: string): string;
-var
-  i, j, k, s, t: integer;
-  WhichByte: 0..2;
-begin
-  Result := '';
-  WhichByte := 0;
-  j := 0; {prevent warning}
-  for I := 1 to Length(E) do
-    if Ord(E[I]) <= $A0 then
-    begin
-      WhichByte := 0;
-      Result := Result + E[I];
-    end
-    else if WhichByte in [0, 2] then
-    begin {first byte}
-      WhichByte := 1;
-      j := ord(E[I]) and $7F; {-128}
-      if (j in [33..96]) then
-        s := (j + 1) div 2 + 112
-      else
-        s := (j + 1) div 2 + 176;
-      Result := Result + ThtChar(s);
-    end
-    else
-    begin {second byte}
-      WhichByte := 2;
-      k := ord(E[I]) and $7F; {-128}
-      if odd(j) then
-      begin
-        t := k + 31;
-        if k > 95 then
-          inc(t);
-      end
-      else
-        t := k + 126;
-      Result := Result + ThtChar(t);
-    end;
-end;
-
-function JISToShiftJis(const E: string): string;
-var
-  i, j, k, s, t, Len: integer;
-  WhichByte: 0..2;
-  C: Char;
-begin
-  Len := Length(E);
-  i := 1;
-  WhichByte := 0;
-  j := 0; {prevent warning}
-  Result := '';
-  while i <= Len do
-  begin
-    C := chr(ord(E[i]) and $7F);
-    if (C = chr($1B)) and (i <= Len - 2) then
-    begin
-      if (E[I + 1] = '(') and (E[i + 2] in ['B', 'J']) then
-      begin
-        WhichByte := 0;
-        Inc(I, 3);
-        Continue;
-      end
-      else if (E[I + 1] = '$') and (E[I + 2] in ['@', 'B']) then
-      begin
-        WhichByte := 1;
-        Inc(I, 3);
-        Continue;
-      end;
-    end;
-    case WhichByte of
-      0: Result := Result + C;
-      1:
-        begin
-          j := ord(C) and $7F; {and $7F just for safety}
-          if (j in [33..96]) then
-            s := (j + 1) div 2 + 112
-          else
-            s := (j + 1) div 2 + 176;
-          Result := Result + Char(s);
-          WhichByte := 2;
-        end;
-      2:
-        begin
-          k := ord(C) and $7F; {and $7F just for safety}
-          if odd(j) then
-          begin
-            t := k + 31;
-            if k > 95 then
-              inc(t);
-          end
-          else
-            t := k + 126;
-          Result := Result + Char(t);
-          WhichByte := 1;
-        end;
-    end;
-    Inc(i);
-  end;
-end;
-{$endif}
-
-function TranslateCharset(const Content: ThtString; var Charset: TFontCharset; var CodePage: Integer): boolean;
-var
-  Info: TBuffCharSetCodePageInfo;
-{$ifdef UseUnicode}
-{$else}
-  N: Integer;
-{$endif}
-begin
-  Info := GetCharSetCodePageInfo(Content);
-  Result := Info <> nil;
-  if Result then
-  begin
-    Charset := Info.CharSet;
-    CodePage := Info.CodePage;
-{$ifdef UseUnicode}
-{$else}
-    if CharSet = EUCJP_CharSet then
-    begin
-      if not HaveTranslated then
-      begin
-        N := Buff - PhtChar(DocS);
-        DocS := EUCToShiftJis(DocS); {translate to ShiftJis}
-        Buff := PhtChar(DocS) + N; {DocS probably moves}
-        BuffEnd := PhtChar(Docs) + Length(DocS);
-        HaveTranslated := True;
-      end;
-      CharSet := SHIFTJIS_CHARSET;
-    end;
-{$endif}
-  end;
-end;
-
 {----------------DoMeta}
 
-procedure DoMeta(Sender: TObject);
+procedure THtmlParser.DoMeta(Sender: TObject);
 var
   T: TAttribute;
   HttpEq, Name, Content: ThtString;
-  CharSet: TFontCharset;
-  CodePage: Integer;
 begin
   if Attributes.Find(HttpEqSy, T) then
     HttpEq := T.Name
@@ -3317,15 +3313,9 @@ begin
     Content := T.Name
   else
     Content := '';
-  if not IsUTF8 and (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
+  if (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
   begin
-    if TranslateCharset(Content, CharSet, CodePage) then
-      case CodePage of
-        CP_UTF8:
-          PropStack.Last.AssignUTF8;
-      else
-        PropStack.Last.AssignCharset(Charset);
-      end;
+    DoCharset(Content);
     if CallingObject is ThtmlViewer then
     begin
       ThtmlViewer(CallingObject).Charset := PropStack.Last.Charset;
@@ -3339,7 +3329,7 @@ end;
 
 {----------------DoTitle}
 
-procedure DoTitle;
+procedure THtmlParser.DoTitle;
 begin
   Title := '';
   Next;
@@ -3350,41 +3340,19 @@ begin
   end;
 end;
 
+procedure THtmlParser.DoStyleLink; {handle <link> for stylesheets}
 var
-  slS: ThtString;
-  slI: integer;
-
-function slGet: ThtChar;
-
-function Get: ThtChar;
-  begin
-    if slI <= Length(slS) then
-    begin
-      Result := slS[slI];
-      Inc(slI);
-    end
-    else
-      Result := EofChar;
-  end;
-begin
-  repeat
-    Result := Get;
-  until (Result <> ^J);
-  if Result = TabChar then
-    Result := SpcChar;
-end;
-
-procedure DoStyleLink; {handle <link> for stylesheets}
-var
-  Style: ThtString;
+  Style: TBuffer;
   C: ThtChar;
-  I: integer;
+  I: Integer;
   Url, Rel, Rev: ThtString;
-  OK: boolean;
+  OK: Boolean;
   Request: TGetStreamEvent;
+  DStream: TStream;
   RStream: TMemoryStream;
   Viewer: ThtmlViewer;
   Path: ThtString;
+  FreeDStream: Boolean;
 begin
   OK := False;
   for I := 0 to Attributes.Count - 1 do
@@ -3402,52 +3370,63 @@ begin
       end;
   if OK and (Url <> '') then
   begin
-    Style := '';
+    DStream := nil;
+    FreeDStream := True;
     try
-      Viewer := (CallingObject as ThtmlViewer);
-      Request := Viewer.OnHtStreamRequest;
-      if Assigned(Request) then
-      begin
-        RStream := nil;
-        if Assigned(Viewer.OnExpandName) then
-        begin {must be using TFrameBrowser}
-          Viewer.OnExpandName(Viewer, Url, Url);
-          Path := GetURLBase(Url);
-          Request(Viewer, Url, RStream);
-          if Assigned(RStream) then
-            Style := LoadStringFromStream(RStream);
-        end
-        else
+      try
+        Viewer := (CallingObject as ThtmlViewer);
+        Request := Viewer.OnHtStreamRequest;
+        if Assigned(Request) then
         begin
-          Path := ''; {for TFrameViewer requests, don't know path}
-          Request(Viewer, Url, RStream);
-          if Assigned(RStream) then
-            Style := LoadStringFromStream(RStream)
+          RStream := nil;
+          if Assigned(Viewer.OnExpandName) then
+          begin {must be using TFrameBrowser}
+            Viewer.OnExpandName(Viewer, Url, Url);
+            Path := GetURLBase(Url);
+            Request(Viewer, Url, RStream);
+            DStream := RStream;
+            FreeDStream := False;
+          end
           else
-          begin {try it as a file}
-            Url := Viewer.HTMLExpandFilename(Url);
-            Path := ExtractFilePath(Url);
-            if FileExists(Url) then
-              Style := LoadStringFromFile(Url);
+          begin
+            Path := ''; {for TFrameViewer requests, don't know path}
+            Request(Viewer, Url, RStream);
+            if Assigned(RStream) then
+            begin
+              DStream := RStream;
+              FreeDStream := False;
+            end
+            else
+            begin {try it as a file}
+              Url := Viewer.HTMLExpandFilename(Url);
+              Path := ExtractFilePath(Url);
+              if FileExists(Url) then
+                DStream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+            end;
+          end;
+        end
+        else {assume it's a file}
+        begin
+          Url := Viewer.HTMLExpandFilename(Url);
+          Path := ExtractFilePath(Url);
+          if FileExists(Url) then
+            DStream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+        end;
+        if DStream <> nil then
+        begin
+          Style := TBuffer.Create(DStream, Url);
+          try
+            C := SpcChar;
+            DoStyle(PropStack.MasterList.Styles, C, Style, Path, True);
+          finally
+            Style.Free;
           end;
         end;
-      end
-      else {assume it's a file}
-      begin
-        Url := Viewer.HTMLExpandFilename(Url);
-        Path := ExtractFilePath(Url);
-        Style := LoadStringFromFile(Url);
+      except
       end;
-      if Style <> '' then
-      begin
-        slS := AdjustLineBreaks(Style); {put in uniform CRLF format}
-        slI := 1;
-        C := slGet;
-        DoStyle(PropStack.MasterList.Styles, C, slGet, Path, True);
-      end;
-      slS := '';
-    except
-      slS := '';
+    finally
+      if FreeDStream then
+        DStream.Free;
     end;
   end;
   if Assigned(LinkEvent) then
@@ -3457,11 +3436,11 @@ end;
 
 {-------------DoBody}
 
-procedure DoBody(const TermSet: SymbSet);
+procedure THtmlParser.DoBody(const TermSet: SymbSet);
 var
-  I: integer;
+  I: Integer;
   Val: TColor;
-  AMarginHeight, AMarginWidth: integer;
+  AMarginHeight, AMarginWidth: Integer;
   LiBlock: TBlockLi;
   LiSection: TSection;
 begin
@@ -3576,7 +3555,7 @@ begin
 
       StyleSy:
         begin
-          DoStyle(PropStack.MasterList.Styles, LCh, GetChBasic, '', False);
+          DoStyle(PropStack.MasterList.Styles, LCh, Doc, '', False);
           Ch := htUpCase(LCh); {LCh is returned so next ThtChar is available}
           Next;
         end;
@@ -3594,7 +3573,7 @@ begin
   Next;
 end;
 
-procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
+procedure THtmlParser.DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
 var
   NewFrameSet: TObject;
 begin
@@ -3631,13 +3610,13 @@ end;
 
 {----------------ParseInit}
 
-procedure ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
-const
-  NullsAllowed = 100;
-var
-  I, Num: integer;
+procedure THtmlParser.ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
+//const
+//  NullsAllowed = 100;
+//var
+//  I, Num: Integer;
 begin
-  LoadStyle := lsString;
+  //LoadStyle := lsString;
   SectionList := TSectionList(ASectionList);
   PropStack.MasterList := TSectionList(SectionList);
   CallingObject := TSectionList(ASectionList).TheOwner;
@@ -3647,41 +3626,21 @@ begin
   PropStack[0].CopyDefault(PropStack.MasterList.Styles.DefProp);
   PropStack.SIndex := -1;
 
-  HaveTranslated := False;
-  IsUTF8 := False;
-  Num := 0;
-  I := Pos(#0, DocS);
-  while (I > 0) and (Num < NullsAllowed) do
-  begin {be somewhat forgiving if there are a few nulls}
-    DocS[I] := SpcChar;
-    I := Pos(#0, DocS);
-    Inc(Num);
-  end;
-  if I > 0 then
-    SetLength(DocS, I - 1); {file has a problem, too many Nulls}
-{$ifdef UseUnicode}
-{$else}
-{look for UTF-8 marker}
-  if (Length(DocS) > 3) and (DocS[1] = #$EF) and (DocS[2] = #$BB) and (DocS[3] = #$BF) then
-  begin
-    PropStack[0].AssignUTF8;
-    Delete(DocS, 1, 3);
-    PropStack.SIndex := 2;
-    IsUTF8 := True;
-  end
-  else
-  {look for iso-2022-jp Japanese file} if IsIso2022Jp then
-    begin
-      DocS := JISToShiftJis(DocS); {watch it, changes PhtChar(DocS) }
-      HaveTranslated := True;
-      PropStack[0].AssignCharSet(ShiftJIS_CharSet);
-    end;
-{$endif}    
+//  Num := 0;
+//  I := Pos(#0, DocS);
+//  while (I > 0) and (Num < NullsAllowed) do
+//  begin {be somewhat forgiving if there are a few nulls}
+//    DocS[I] := SpcChar;
+//    I := Pos(#0, DocS);
+//    Inc(Num);
+//  end;
+//  if I > 0 then
+//    SetLength(DocS, I - 1); {file has a problem, too many Nulls}
   if CallingObject is ThtmlViewer then
     ThtmlViewer(CallingObject).CodePage := PropStack[0].CodePage;
-  Buff := PhtChar(DocS);
-  BuffEnd := Buff + Length(DocS);
-  IBuff := nil;
+//  Buff := PhtChar(DocS);
+//  BuffEnd := Buff + Length(DocS);
+//  IBuff := nil;
 
   BodyBlock := TBodyBlock.Create(PropStack.MasterList, PropStack[0], SectionList, nil);
   SectionList.Add(BodyBlock, TagIndex);
@@ -3706,20 +3665,19 @@ begin
   LinkSearch := False;
 end;
 
-{----------------ParseHTMLString}
-
-procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
-  AIncludeEvent: TIncludeType;
-  ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+procedure THtmlParser.ParseHtml(Doc: TBuffer; ASectionList: TList;
+  AIncludeEvent: TIncludeType; ASoundEvent: TSoundType;
+  AMetaEvent: TMetaType; ALinkEvent: TLinkType);
 {$IFNDEF NoTabLink}
 const
   MaxTab = 400; {maximum number of links before tabbing of links aborted}
 var
-  TabCount, SaveSIndex: integer;
+  TabCount, SaveSIndex: Integer;
   T: TAttribute;
 {$ENDIF}
 begin
-  DocS := S;
+  Self.Doc := Doc;
   ParseInit(ASectionList, nil);
 
   try
@@ -3771,16 +3729,15 @@ begin
       SectionList.Add(Section, TagIndex);
     PropStack.Clear;
     CurrentURLTarget.Free;
-    DocS := '';
   end; {finally}
 end;
 
 {----------------DoText}
 
-procedure DoText;
+procedure THtmlParser.DoText;
 var
   S: TokenObj;
-  Done: boolean;
+  Done: Boolean;
   PreBlock: TBlock;
 
   procedure NewSection;
@@ -3829,11 +3786,9 @@ begin
   end;
 end;
 
-{----------------ParseTextString}
-
-procedure ParseTextString(const S: ThtString; ASectionList: TList);
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+procedure THtmlParser.ParseText(Doc: TBuffer; ASectionList: TList);
 begin
-  DocS := S;
   ParseInit(ASectionList, nil);
   InScript := True;
 
@@ -3852,12 +3807,16 @@ end;
 
 {-------------FrameParseString}
 
-procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
-  ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
+procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject;
+  Doc: TBuffer;
+  //ALoadStyle: LoadStyleType;
+  const FName: ThtString;
+  //const S: ThtString;
+  AMetaEvent: TMetaType);
 
   procedure Parse;
   var
-    SetExit: boolean;
+    SetExit: Boolean;
   begin
     SetExit := False;
     PropStack.Clear;
@@ -3894,15 +3853,13 @@ procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
   end;
 
 begin
+  Self.Doc := Doc;
   PropStack.MasterList := nil;
-  if (ALoadStyle <> lsFile) and (S = '') then
-    Exit;
   CallingObject := FrameViewer;
   IncludeEvent := FrameViewer.OnInclude;
   SoundEvent := FrameViewer.OnSoundRequest;
   MetaEvent := AMetaEvent;
   LinkEvent := FrameViewer.OnLink;
-  Attributes := TAttributeList.Create;
   Title := '';
   Base := '';
   BaseTarget := '';
@@ -3911,46 +3868,26 @@ begin
   InComment := False;
   ListLevel := 0;
 
+  Attributes := TAttributeList.Create;
   try
-    if ALoadStyle = lsFile then
-      DocS := LoadStringFromFile(FName)
-    else
-      DocS := S;
-    LoadStyle := lsString;
-  {look for iso-2022-jp Japanese file}
-{$ifdef UseUnicode}
-{$else}
-    if IsIso2022Jp then
-    begin
-      DocS := JISToShiftJis(DocS);
-      HaveTranslated := True;
-    end
-    else
-      HaveTranslated := False;
-{$endif}
-
-    Buff := PhtChar(DocS);
-    BuffEnd := Buff + Length(DocS);
     try
-      Parse;                                          
+      Parse;
     except {ignore error}
       on E: Exception do
         Assert(False, E.Message);
     end;
   finally
     Attributes.Free;
-    DocS := '';
   end;
 end;
 
 {----------------IsFrameString}
 
-function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
-  FrameViewer: TFrameViewerBase): boolean;
+function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
 
-  function Parse: boolean;
+  function Parse: Boolean;
   var
-    SetExit: boolean;
+    SetExit: Boolean;
   begin
     Result := False;
     PropStack.Clear;
@@ -3978,15 +3915,17 @@ function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
     PropStack.Clear;
   end;
 
+var
+  Pos: Integer;
 begin
+  if Doc = nil then
+  begin
+    Result := False;
+    exit;
+  end;
   PropStack.MasterList := nil;
-  LoadStyle := lsString;
-  Result := False;
-  if (ALoadStyle <> lsFile) and (S = '') then
-    Exit;
   CallingObject := FrameViewer;
   SoundEvent := nil;
-  Attributes := TAttributeList.Create;
   Title := '';
   Base := '';
   BaseTarget := '';
@@ -3995,27 +3934,25 @@ begin
   NoBreak := False;
   InComment := False;
 
+  Pos := Doc.Position;
+  Attributes := TAttributeList.Create;
   try
-    if ALoadStyle = lsFile then
-      Docs := LoadStringFromFile(FName)
-    else
-      DocS := S;
-    LoadStyle := lsString;
-    Buff := PhtChar(DocS);
-    BuffEnd := Buff + Length(DocS);
+    Self.Doc := Doc;
     try
       Result := Parse;
     except {ignore error}
+      on E: Exception do
+        Assert(False, E.Message);
     end;
   finally
     Attributes.Free;
-    DocS := '';
+    Doc.Position := Pos;
   end;
 end;
 
 {----------------GetEntity}
 
-procedure GetEntity(T: TokenObj; CodePage: integer);
+procedure THtmlParser.GetEntity(T: TokenObj; CodePage: Integer);
 var
   I, N: Integer;
   SaveIndex: Integer;
@@ -4025,6 +3962,8 @@ var
 
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
   // Adds the given value as new ThtChar to the buffer.
+  var
+    Buf: array[0..10] of ThtChar;
   begin
     // If the given value is less than 256 then it is considered as a character which
     // must be converted to Unicode, otherwise it is already a Unicode character.
@@ -4033,7 +3972,12 @@ var
     else if I < ord(SpcChar) then {control ThtChar}
       Buffer.Add('?', SaveIndex) {is there an error symbol to use here?}
     else if (I >= 127) and (I <= 159) and not ForceUnicode then
-      Buffer.Add(ThtChar(I), SaveIndex) {127 to 159 not valid Unicode}
+    begin
+      if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) > 0 then
+        Buffer.Add(Buf[0], SaveIndex)
+      else
+        Buffer.Add(ThtChar(I), SaveIndex); {127 to 159 not valid Unicode}
+    end
     else
     begin
       // Unicode character. Flush any pending ANSI ThtString data before storing it.
@@ -4143,7 +4087,7 @@ begin
   end;
 end;
 
-function GetEntityStr(CodePage: integer): ThtString;
+function THtmlParser.GetEntityStr(CodePage: Integer): ThtString;
 {read an entity and return it as a ThtString.}
 var
   I, N: Integer;
@@ -4153,22 +4097,21 @@ var
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
   // Adds the given value as new ThtChar to the ThtString.
   var
-    W: WideChar;
-    Buffer: array[0..10] of ThtChar;
+    Buf: array[0..10] of ThtChar;
   begin
     if I = 9 then
       Result := SpcChar
     else if I < ord(SpcChar) then {control ThtChar}
       Result := '?' {is there an error symbol to use here?}
     else if (I >= 127) and (I <= 159) and not ForceUnicode then
-      Result := Chr(I)
-    else
     begin
-    // Unicode character, Convert to this Code Page.
-      W := WideChar(I);
-      SetString(Result, Buffer, WideCharToMultiByte(CodePage, 0,
-        @W, 1, @Buffer, SizeOf(Buffer), nil, nil))
-    end;
+      {127 to 159 not valid Unicode}
+      if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) = 0 then
+        Buf[0] := ThtChar(I);
+      SetString(Result, Buf, 1);
+    end
+    else
+      Result := WideChar(I);
   end;
 
   procedure NextCh;
@@ -4572,7 +4515,7 @@ const
 
 procedure SortEntities;
 var
-  I: integer;
+  I: Integer;
 begin
 // Put the Entities into a sorted StringList for faster access.
   if Entities = nil then
@@ -4589,13 +4532,11 @@ begin
 end;
 
 initialization
-  LCToken := TokenObj.Create;
   PropStack := THtmlPropStack.Create;
   SortEntities;
 
 finalization
 
-  LCToken.Free;
   PropStack.Free;
   Entities.Free;
 end.

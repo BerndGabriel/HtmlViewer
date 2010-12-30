@@ -1,5 +1,5 @@
 {
-Version   10.2
+HtmlViewer Version 11
 Copyright (c) 2010 by B.Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -76,6 +76,7 @@ type
   TBuffer = class
   private
     FBuffer: TBuffArray;
+    FName: TBuffString;
     FPos: TBuffPointer;
     FEnd: TBuffPointer;
     FJis: TBuffJisState;
@@ -85,24 +86,30 @@ type
     function GetNextEucAsShiftJis: TBuffArray;
     function GetNextJisAsShiftJis: TBuffArray;
     function GetNextTwoAsShiftJis: TBuffArray;
-//    function Position: Integer;
-//    function Size: Integer;
+    function GetPosition: Integer;
     procedure DetectCodePage;
     procedure Read(var Buffer; Count: Integer);
     procedure Reset;
     procedure SetStream(Stream: TStream);
+    procedure SetPostion(const Value: Integer);
   protected
-    function GetNextChar: TBuffChar;
-    function GetAsString: TBuffString;
   public
-    constructor Create(Stream: TStream); overload;
-    constructor Create(Stream: TStream; CharSet: TBuffCharSet); overload;
-    constructor Create(Stream: TStream; CodePage: TBuffCodePage); overload;
-    constructor Create(Text: TBuffString); overload;
-    constructor Create(Text: AnsiString; CharSet: TBuffCharSet); overload;
+    constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
+    constructor Create(Stream: TStream; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
+    constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
+    constructor Create(Text: TBuffString; Name: TBuffString = ''); overload;
+    constructor Create(Text: AnsiString; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
     destructor Destroy; override;
-    property NextChar: TBuffChar read GetNextChar;
-    property AsString: TBuffString read GetAsString;
+    //function HasNext: Boolean;
+    procedure AssignTo(Destin: TObject);
+    function AsString: TBuffString;
+    function NextChar: TBuffChar;
+    function PeekChar: TBuffChar;
+    function Size: Integer;
+    property Name: TBuffString read FName;
+    property CharSet: TBuffCharSet read FCharSet write FCharSet;
+    property CodePage: TBuffCodePage read FCodePage write FCodePage;
+    property Position: Integer read GetPosition write SetPostion;
   end;
 
   TBuffCharSetCodePageInfo = class
@@ -119,6 +126,7 @@ type
 
 function GetCharSetCodePageInfo(Name: string): TBuffCharSetCodePageInfo;
 function CharSetToCodePage(CharSet: TBuffCharSet): TBuffCodePage;
+function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
 function AnsiPosX(const SubStr, S: AnsiString; Offset: Integer = 1): Integer;
 
 implementation
@@ -339,34 +347,113 @@ end;
 
 { TBuffer }
 
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+procedure TBuffer.AssignTo(Destin: TObject);
+var
+  DstMem: TMemoryStream absolute Destin;
+begin
+  if DstMem is TMemoryStream then
+  begin
+    DstMem.SetSize(Size);
+    System.Move(FBuffer[0], DstMem.Memory^, Size);
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 14.12.2010 --
-constructor TBuffer.Create(Stream: TStream);
+function TBuffer.AsString: TBuffString;
+var
+  I, J: Integer;
+begin
+  I := FEnd.AnsiChr - FPos.AnsiChr;
+  SetLength(Result, I);
+  if I > 0 then
+  begin
+    case FCodePage of
+      CP_ISO2022JP,
+      CP_EUCJP,
+      CP_UTF16LE,
+      CP_UTF16BE,
+      CP_UTF8:
+        begin
+          I := 1;
+          repeat
+            Result[I] := NextChar;
+            if Result[I] = #0 then
+              break;
+            Inc(I);
+          until false;
+          SetLength(Result, I);
+        end;
+
+      CP_ACP,
+      CP_OEMCP,
+      CP_MACCP:
+        begin
+          J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+          //BG, 23.12.2010: Some single byte chars may have been converted accidently as UTF-8.
+          // As a real UTF-8 source becomes significantly shorter, if number of chars shrinks
+          // less than 10 percent, do not assume it is UTF-8.
+          if (J > 0) and (I - J > I div 25) then
+          begin
+            FCodePage := CP_UTF8;
+            FCharSet := DEFAULT_CHARSET;
+          end
+          else
+            J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+          SetLength(Result, J);
+          Inc(FPos.AnsiChr, I);
+        end;
+    else
+      J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+      if J = 0 then
+      begin
+        //BG, 14.12.2010: maybe an UTF8 without preamble?
+        J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+        if J > 0 then
+        begin
+          FCodePage := CP_UTF8;
+          FCharSet := DEFAULT_CHARSET;
+        end;
+      end;
+      SetLength(Result, J);
+      Inc(FPos.AnsiChr, I);
+    end
+  end
+  else
+    Result := '';
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2010 --
+constructor TBuffer.Create(Stream: TStream; Name: TBuffString = '');
 begin
   inherited Create;
   SetStream(Stream);
+  FName := Name;
   DetectCodePage;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
-constructor TBuffer.Create(Stream: TStream; CharSet: TBuffCharSet);
+constructor TBuffer.Create(Stream: TStream; CharSet: TBuffCharSet; Name: TBuffString = '');
 begin
   inherited Create;
   SetStream(Stream);
+  FName := Name;
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
-constructor TBuffer.Create(Stream: TStream; CodePage: TBuffCodePage);
+constructor TBuffer.Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = '');
 begin
   inherited Create;
   SetStream(Stream);
+  FName := Name;
   FCodePage := CodePage;
   FCharSet := CodePageToCharSet(FCodePage);
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: TBuffString);
+constructor TBuffer.Create(Text: TBuffString; Name: TBuffString = '');
 var
   I: Integer;
 begin
@@ -374,12 +461,13 @@ begin
   SetLength(FBuffer, I);
   Move(Text[1], FBuffer[0], I);
   Reset;
+  FName := Name;
   FCodePage := CP_UTF16LE;
   FCharSet := UNKNOWN_CHARSET;
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: AnsiString; CharSet: TBuffCharSet);
+constructor TBuffer.Create(Text: AnsiString; CharSet: TBuffCharSet; Name: TBuffString = '');
 var
   I: Integer;
 begin
@@ -387,6 +475,7 @@ begin
   SetLength(FBuffer, I);
   Move(Text[1], FBuffer[0], I);
   Reset;
+  FName := Name;
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
 end;
@@ -476,138 +565,6 @@ begin
   // no preamble: this is most probably a 1-byte per character code.
   FCharSet := DEFAULT_CHARSET;
   FCodePage := CharSetToCodePage(FCharSet);
-end;
-
-//-- BG ---------------------------------------------------------- 14.12.2010 --
-function TBuffer.GetAsString: TBuffString;
-var
-  I, J: Integer;
-begin
-  I := FEnd.AnsiChr - FPos.AnsiChr;
-  SetLength(Result, I);
-  if I > 0 then
-  begin
-    case FCodePage of
-      CP_ISO2022JP,
-      CP_EUCJP,
-      CP_UTF16LE,
-      CP_UTF16BE,
-      CP_UTF8:
-        begin
-          I := 1;
-          repeat
-            Result[I] := NextChar;
-            if Result[I] = #0 then
-              break;
-            Inc(I);
-          until false;
-          SetLength(Result, I);
-        end;
-
-      CP_ACP,
-      CP_OEMCP,
-      CP_MACCP:
-        begin
-          J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-          //BG, 23.12.2010: Some single byte chars may have been converted accidently as UTF-8.
-          // As a real UTF-8 source becomes significantly shorter, if number of chars shrinks
-          // less than 10 percent, do not assume it is UTF-8.
-          if (J > 0) and (I - J > I div 10) then
-          begin
-            FCodePage := CP_UTF8;
-            FCharSet := DEFAULT_CHARSET;
-          end
-          else
-            J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-          SetLength(Result, J);
-          Inc(FPos.AnsiChr, I);
-        end;
-    else
-      J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-      if J = 0 then
-      begin
-        //BG, 14.12.2010: maybe an UTF8 without preamble?
-        J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-        if J > 0 then
-        begin
-          FCodePage := CP_UTF8;
-          FCharSet := DEFAULT_CHARSET;
-        end;
-      end;
-      SetLength(Result, J);
-      Inc(FPos.AnsiChr, I);
-    end
-  end
-  else
-    Result := '';
-end;
-
-//-- BG ---------------------------------------------------------- 14.12.2010 --
-function TBuffer.GetNextChar: TBuffChar;
-var
-  Buffer: Byte;
-  Buffer2: TBuffArray;
-  Chr: Cardinal;
-begin
-  Buffer2 := nil; // valium for the compiler
-  if FPos.AnsiChr < FEnd.AnsiChr then
-    case FCodePage of
-      CP_UTF16LE:
-        begin
-          Read(Result, 2);
-        end;
-
-      CP_UTF16BE:
-        begin
-          Read(Result, 2);
-          SwapBytes(Result);
-        end;
-
-      CP_UTF8:
-        begin
-          Read(Buffer, 1);
-          if (Buffer and $80) <> 0 then
-          begin
-            Chr := Buffer and $3F;
-            if (Buffer and $20) <> 0 then
-            begin
-              Read(Buffer, 1);
-              if (Buffer and $C0) <> $80 then
-              begin
-                Result := TBuffChar(0);
-                exit;
-              end;
-              Chr := (Chr shl 6) or (Buffer and $3F);
-            end;
-            Read(Buffer, 1);
-            if (Buffer and $C0) <> $80 then
-            begin
-              Result := TBuffChar(0);
-              exit;
-            end;
-            Result := TBuffChar((Chr shl 6) or (Buffer and $3F));
-          end
-          else
-            Result := TBuffChar(Buffer);
-        end;
-
-      CP_ISO2022JP:
-        begin
-          Buffer2 := GetNextJisAsShiftJis;
-          MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
-        end;
-
-      CP_EUCJP:
-        begin
-          Buffer2 := GetNextEucAsShiftJis;
-          MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
-        end;
-    else
-      Read(Buffer, 1);
-      MultiByteToWideChar(FCodePage, 0, @Buffer, 1, @Result, 1);
-    end
-  else
-    Result := TBuffChar(0);
 end;
 
 //------------------------------------------------------------------------------
@@ -774,11 +731,95 @@ begin
   Inc(FPos.BytePtr);
 end;
 
+//-- BG ---------------------------------------------------------- 16.12.2010 --
+function TBuffer.GetPosition: Integer;
+begin
+  Result := FPos.AnsiChr - PAnsiChar(FBuffer);
+end;
+
 ////-- BG ---------------------------------------------------------- 16.12.2010 --
-//function TBuffer.Position: Integer;
+//function TBuffer.HasNext: Boolean;
 //begin
-//  Result := FPos.AnsiChr - PAnsiChar(FBuffer);
+//  Result := FPos.AnsiChr < FEnd.AnsiChr;
 //end;
+
+//-- BG ---------------------------------------------------------- 14.12.2010 --
+function TBuffer.NextChar: TBuffChar;
+var
+  Buffer: Byte;
+  Buffer2: TBuffArray;
+  Chr: Cardinal;
+begin
+  Buffer2 := nil; // valium for the compiler
+  if FPos.AnsiChr < FEnd.AnsiChr then
+    case FCodePage of
+      CP_UTF16LE:
+        begin
+          Read(Result, 2);
+        end;
+
+      CP_UTF16BE:
+        begin
+          Read(Result, 2);
+          SwapBytes(Result);
+        end;
+
+      CP_UTF8:
+        begin
+          Read(Buffer, 1);
+          if (Buffer and $80) <> 0 then
+          begin
+            Chr := Buffer and $3F;
+            if (Buffer and $20) <> 0 then
+            begin
+              Read(Buffer, 1);
+              if (Buffer and $C0) <> $80 then
+              begin
+                Result := TBuffChar(0);
+                exit;
+              end;
+              Chr := (Chr shl 6) or (Buffer and $3F);
+            end;
+            Read(Buffer, 1);
+            if (Buffer and $C0) <> $80 then
+            begin
+              Result := TBuffChar(0);
+              exit;
+            end;
+            Result := TBuffChar((Chr shl 6) or (Buffer and $3F));
+          end
+          else
+            Result := TBuffChar(Buffer);
+        end;
+
+      CP_ISO2022JP:
+        begin
+          Buffer2 := GetNextJisAsShiftJis;
+          MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
+        end;
+
+      CP_EUCJP:
+        begin
+          Buffer2 := GetNextEucAsShiftJis;
+          MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
+        end;
+    else
+      Read(Buffer, 1);
+      MultiByteToWideChar(FCodePage, 0, @Buffer, 1, @Result, 1);
+    end
+  else
+    Result := TBuffChar(0);
+end;
+
+//-- BG ---------------------------------------------------------- 16.12.2010 --
+function TBuffer.PeekChar: TBuffChar;
+var
+  Pos: Integer;
+begin
+  Pos := Position;
+  Result := NextChar;
+  Position := Pos;
+end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
 procedure TBuffer.Read(var Buffer; Count: Integer);
@@ -800,6 +841,12 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
+procedure TBuffer.SetPostion(const Value: Integer);
+begin
+  FPos.AnsiChr := PAnsiChar(FBuffer) + Value;
+end;
+
+//-- BG ---------------------------------------------------------- 16.12.2010 --
 procedure TBuffer.SetStream(Stream: TStream);
 var
   I: Integer;
@@ -810,10 +857,10 @@ begin
   Reset;
 end;
 
-////-- BG ---------------------------------------------------------- 16.12.2010 --
-//function TBuffer.Size: Integer;
-//begin
-//  Result := Length(FBuffer);
-//end;
+//-- BG ---------------------------------------------------------- 16.12.2010 --
+function TBuffer.Size: Integer;
+begin
+  Result := Length(FBuffer);
+end;
 
 end.

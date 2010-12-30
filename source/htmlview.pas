@@ -69,6 +69,7 @@ uses
   MetafilePrinter,
   vwPrint,
   HtmlGlobals,
+  HtmlBuffer,
   HTMLUn2,
   ReadHTML,
   HTMLSubs,
@@ -100,7 +101,7 @@ type
   TImageClickEvent = procedure(Sender, Obj: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer) of object;
   TImageOverEvent = procedure(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer) of object;
   TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: ThtString) of object;
-  TParseEvent = procedure(Sender: TObject; var Source: ThtString) of object;
+  TParseEvent = procedure(Sender: TObject; var Source: TBuffer) of object;
   TFilenameExpanded = procedure(Sender: TObject; var Filename: ThtString) of object;
 
   THtmlViewerOption = (
@@ -178,7 +179,7 @@ type
     FCodePage: Integer;
     FCurrentFile: ThtString;
     FCurrentFileType: ThtmlFileType;
-    FDocumentSource: ThtString;
+    FDocument: TBuffer;
     FFontColor: TColor;
     FFontName: TFontName;
     FFontSize: Integer;
@@ -187,7 +188,7 @@ type
     FHistoryMaxCount: Integer;
     FHotSpotColor, FVisitedColor, FOverColor: TColor;
     FImageCacheCount: Integer;
-    FImageStream: TMemoryStream;
+    FImageStream: TStream;
     FLinkAttributes: ThtStringList;
     FLinkStart: TPoint;
     FLinkText: WideString;
@@ -264,6 +265,7 @@ type
     function GetBaseTarget: ThtString;
     function GetCurrentFile: ThtString;
     function GetCursor: TCursor;
+    function GetDocumentSource: ThtString;
     function GetDragDrop: TDragDropEvent;
     function GetDragOver: TDragOverEvent;
     function GetFormControlList: TList;
@@ -300,7 +302,7 @@ type
     function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: WideString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
-    procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream);
+    procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
     procedure DoLogic;
     procedure DoScrollBars;
     procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
@@ -385,6 +387,7 @@ type
     procedure HTMLPaint(Sender: TObject); virtual;
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
+    procedure LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);    
     procedure PaintWindow(DC: HDC); override;
     procedure SetCursor(Value: TCursor); {$ifdef LCL} override; {$endif LCL}
     procedure SetOnScript(Handler: TScriptEvent); override;
@@ -435,18 +438,14 @@ type
     procedure htProgressEnd;
     procedure htProgressInit;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    procedure LoadFromFile(const FileName: ThtString);
-{$ifdef UNICODE}
-    procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''); overload;
-{$else}
-    procedure LoadFromString(const S: AnsiString; const Reference: ThtString = ''); overload;
-    procedure LoadFromString(const S: WideString; const Reference: ThtString = ''); overload;
-{$endif}
     procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = '');
+    procedure LoadFromDocument(Document: TBuffer; const Reference: ThtString);
+    procedure LoadFromFile(const FileName: ThtString);
     procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = '');
-    procedure LoadStrings(const Strings: ThtStrings; const Reference: ThtString = '');
+    procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''); overload;
     procedure LoadImageFile(const FileName: ThtString);
-    procedure LoadStream(const URL: ThtString; AStream: TMemoryStream; ft: ThtmlFileType);
+    procedure LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
+    procedure LoadStrings(const Strings: ThtStrings; const Reference: ThtString = '');
     procedure LoadTextFile(const FileName: ThtString);
     procedure LoadTextFromString(const S: ThtString);
     procedure LoadTextStrings(Strings: ThtStrings);
@@ -467,7 +466,7 @@ type
     property CaretPos: Integer read FCaretPos write SetCaretPos;
     property CodePage: Integer read FCodePage write FCodePage;
     property CurrentFile: ThtString read GetCurrentFile;
-    property DocumentSource: ThtString read FDocumentSource;
+    property DocumentSource: ThtString read GetDocumentSource;
     property DocumentTitle: ThtString read GetTitle;
     property FormControlList: TList read GetFormControlList;
     property FormData: TFreeList read GetFormData write SetFormData;
@@ -794,75 +793,21 @@ end;
 
 procedure THtmlViewer.LoadFile(const FileName: ThtString; ft: ThtmlFileType);
 var
-  Dest, FName, OldFile: ThtString;
-  SBuffer: ThtString;
-  OldCursor: TCursor;
+  Dest, FName: ThtString;
+  Stream: TStream;
 begin
-  with Screen do
-  begin
-    OldCursor := Cursor;
-    Cursor := crHourGlass;
-  end;
   IOResult; {eat up any pending errors}
   SplitDest(FileName, FName, Dest);
   if FName <> '' then
     FName := ExpandFileName(FName);
-  FRefreshDelay := 0;
+  if not FileExists(FName) then
+    raise EInOutError.Create('Can''t locate file: ' + FName);
+  Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
   try
-    SetProcessing(True);
-    if not FileExists(FName) then
-      raise(EInOutError.Create('Can''t locate file: ' + FName));
-    FSectionList.ProgressStart := 75;
-    htProgressInit;
-    Include(FViewerState, vsDontDraw);
-    InitLoad;
-    CaretPos := 0;
-    Sel1 := -1;
-    try
-      OldFile := FCurrentFile;
-      FCurrentFile := FName;
-      FCurrentFileType := ft;
-      if ft in [HTMLType, TextType] then
-        FDocumentSource := LoadStringFromFile(FName)
-      else
-        FDocumentSource := '';
-
-      if Assigned(FOnParseBegin) then
-        FOnParseBegin(Self, FDocumentSource);
-        
-      if ft = HTMLType then
-      begin
-        if Assigned(FOnSoundRequest) then
-          FOnSoundRequest(Self, '', 0, True);
-        ParseHTMLString(FDocumentSource, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
-      end
-      else if ft = TextType then
-        ParseTextString(FDocumentSource, FSectionList)
-      else
-      begin
-        SBuffer := '<img src="' + FName + '">';
-        ParseHTMLString(SBuffer, FSectionList, nil, nil, nil, nil);
-      end;
-    finally
-      SetupAndLogic;
-      CheckVisitedLinks;
-      if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
-      else if FCurrentFile <> OldFile then
-      begin
-        ScrollTo(0);
-        HScrollBar.Position := 0;
-      end;
-    {else if same file leave position alone}
-      Exclude(FViewerState, vsDontDraw);
-      PaintPanel.Invalidate;
-    end;
+    LoadStream(FName, Stream, ft);
   finally
-    Screen.Cursor := OldCursor;
-    htProgressEnd;
-    SetProcessing(False);
+    Stream.Free;
   end;
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
 procedure THtmlViewer.LoadFromFile(const FileName: ThtString);
@@ -871,8 +816,6 @@ var
   OldPos: Integer;
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
-  (*Stream: TMemoryStream;  //debugging aid
-  Indent, Tree: ThtString; *)
 begin
   if vsProcessing in FViewerState then
     Exit;
@@ -885,17 +828,6 @@ begin
     OldFormData := GetFormData;
     try
       LoadFile(FileName, HTMLType);
-
-    (*Indent := '';     //debugging aid
-    Tree := '';
-    FSectionList.FormTree(Indent, Tree);
-
-    Stream := TMemoryStream.Create;
-    Stream.Size := Length(Tree);
-    Move(Tree[1], Stream.Memory^, Length(Tree));
-    Stream.SaveToFile('C:\css2\exec\Tree.txt');
-    Stream.Free; *)
-
 
       if (OldFile <> FCurrentFile) or (OldType <> FCurrentFileType) then
         BumpHistory(OldFile, OldTitle, OldPos, OldFormData, OldType)
@@ -1006,40 +938,28 @@ begin
   LoadString(S, '', TextType);
 end;
 
-{----------------THtmlViewer.LoadFromString}
-{$ifdef UNICODE}
-//procedure THtmlViewer.LoadFromString(const S: AnsiString; const Reference: ThtString);
-//begin
-//  LoadFromString(MultibyteToWideString(CodePage, S), Reference);
-//end;
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+procedure THtmlViewer.LoadFromDocument(Document: TBuffer; const Reference: ThtString);
+begin
+  LoadDocument(Document, Reference, HTMLType);
+  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
+    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
+end;
 
+{----------------THtmlViewer.LoadFromString}
 procedure THtmlViewer.LoadFromString(const S: ThtString; const Reference: ThtString);
 begin
   LoadString(S, Reference, HTMLType);
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
-{$else}
-procedure THtmlViewer.LoadFromString(const S: string; const Reference: ThtString);
-begin
-  LoadString(S, Reference, HTMLType);
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
-end;
-
-procedure THtmlViewer.LoadFromString(const S: WideString; const Reference: ThtString);
-begin
-  LoadFromString(#$EF + #$BB + #$BF + UTF8Encode(S), Reference);
-end;
-{$endif}
 
 {----------------THtmlViewer.LoadString}
 
-procedure THtmlViewer.LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
+procedure THtmlViewer.LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);
 var
   I: Integer;
   Dest, FName, OldFile: ThtString;
-
 begin
   if vsProcessing in FViewerState then
     Exit;
@@ -1066,13 +986,71 @@ begin
     Sel1 := -1;
     if Assigned(FOnSoundRequest) then
       FOnSoundRequest(Self, '', 0, True);
-    FDocumentSource := Source;
+    FreeAndNil(FDocument);
+    FDocument := Document;
     if Assigned(FOnParseBegin) then
-      FOnParseBegin(Self, FDocumentSource);
+      FOnParseBegin(Self, FDocument);
     if Ft = HTMLType then
-      ParseHTMLString(FDocumentSource, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+      ParseHtml(FDocument, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
     else
-      ParseTextString(FDocumentSource, FSectionList);
+      ParseText(FDocument, FSectionList);
+    SetupAndLogic;
+    CheckVisitedLinks;
+    if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
+    else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
+    begin
+      ScrollTo(0);
+      HScrollBar.Position := 0;
+    end;
+  {else if same file leave position alone}
+    PaintPanel.Invalidate;
+  finally
+    htProgressEnd;
+    SetProcessing(False);
+    Exclude(FViewerState, vsDontDraw);
+  end;
+end;
+
+{----------------THtmlViewer.LoadString}
+
+procedure THtmlViewer.LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
+var
+  I: Integer;
+  Dest, FName, OldFile: ThtString;
+begin
+  if vsProcessing in FViewerState then
+    Exit;
+  SetProcessing(True);
+  FRefreshDelay := 0;
+  FName := Reference;
+  I := Pos('#', FName);
+  if I > 0 then
+  begin
+    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
+    FName := Copy(FName, 1, I - 1);
+  end
+  else
+    Dest := '';
+  Include(FViewerState, vsDontDraw);
+  try
+    OldFile := FCurrentFile;
+    FCurrentFile := ExpandFileName(FName);
+    FCurrentFileType := ft;
+    FSectionList.ProgressStart := 75;
+    htProgressInit;
+    InitLoad;
+    CaretPos := 0;
+    Sel1 := -1;
+    if Assigned(FOnSoundRequest) then
+      FOnSoundRequest(Self, '', 0, True);
+    FreeAndNil(FDocument);
+    FDocument := TBuffer.Create(Source, FName);
+    if Assigned(FOnParseBegin) then
+      FOnParseBegin(Self, FDocument);
+    if Ft = HTMLType then
+      ParseHtml(FDocument, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+    else
+      ParseText(FDocument, FSectionList);
     SetupAndLogic;
     CheckVisitedLinks;
     if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
@@ -1102,21 +1080,23 @@ begin
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
-procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream);
+procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
   Stream := FImageStream;
 end;
 
 {----------------THtmlViewer.LoadStream}
 
-procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TMemoryStream; ft: ThtmlFileType);
+procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
 var
+  OldCursor: TCursor;
   SaveOnImageRequest: TGetImageEvent;
-  SBuffer: ThtString;
 begin
   if (vsProcessing in FViewerState) or not Assigned(AStream) then
     Exit;
   SetProcessing(True);
+  OldCursor := Screen.Cursor;
+  Screen.Cursor := crHourGlass;
   FRefreshDelay := 0;
   Include(FViewerState, vsDontDraw);
   try
@@ -1127,37 +1107,35 @@ begin
     Sel1 := -1;
 
     AStream.Position := 0;
+    FreeAndNil(FDocument);
     if ft in [HTMLType, TextType] then
-    begin
-      FDocumentSource := LoadStringFromStream(AStream);
-    end
+      FDocument := TBuffer.Create(AStream, URL)
     else
-      FDocumentSource := '';
+      FDocument := TBuffer.Create('<img src="' + URL + '">');
 
     if Assigned(FOnParseBegin) then
-      FOnParseBegin(Self, FDocumentSource);
+      FOnParseBegin(Self, FDocument);
 
     case ft of
       HTMLType:
       begin
         if Assigned(FOnSoundRequest) then
           FOnSoundRequest(Self, '', 0, True);
-        ParseHTMLString(FDocumentSource, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
+        ParseHtml(FDocument, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
         SetupAndLogic;
       end;
 
       TextType:
       begin
-        ParseTextString(FDocumentSource, FSectionList);
+        ParseText(FDocument, FSectionList);
         SetupAndLogic;
       end;
     else
       SaveOnImageRequest := OnImageRequest;
       SetOnImageRequest(DoImage);
       FImageStream := AStream;
-      SBuffer := '<img src="' + URL + '">';
       try
-        ParseHTMLString(SBuffer, FSectionList, nil, nil, nil, nil);
+        ParseHtml(FDocument, FSectionList, nil, nil, nil, nil);
         SetupAndLogic;
       finally
         SetOnImageRequest(SaveOnImageRequest);
@@ -1168,6 +1146,7 @@ begin
     PaintPanel.Invalidate;
     FCurrentFile := URL;
   finally
+    Screen.Cursor := OldCursor;
     htProgressEnd;
     Exclude(FViewerState, vsDontDraw);
     SetProcessing(False);
@@ -1309,7 +1288,7 @@ begin
     Wid := Width - WFactor;
     if FScrollBars in [ssBoth, ssVertical] then
     begin
-      if not (htShowVScroll in FOptions) and (Length(FDocumentSource) < 10000) then
+      if not (htShowVScroll in FOptions) {and (Length(FDocumentSource) < 10000)} then
       begin {see if there is a vertical scrollbar with full width}
         FMaxVertical := FSectionListDoLogic(Wid);
         if HasVScrollBar then {yes, there is vertical scrollbar, allow for it}
@@ -2671,6 +2650,22 @@ end;
 function THtmlViewer.GetCursor: TCursor;
 begin
   Result := inherited Cursor;
+end;
+
+//-- BG ---------------------------------------------------------- 27.12.2010 --
+function THtmlViewer.GetDocumentSource: ThtString;
+var
+  Pos: Integer;
+begin
+  if FDocument <> nil then
+  begin
+    Pos := FDocument.Position;
+    FDocument.Position := 0;
+    Result := FDocument.AsString;
+    FDocument.Position := Pos;
+  end
+  else
+    Result := '';
 end;
 
 procedure THtmlViewer.SetCursor(Value: TCursor);

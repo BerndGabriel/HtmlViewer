@@ -304,11 +304,7 @@ begin
   DC := GetDC(0);
   try
     OldFont := SelectObject(DC, TheFont.Handle);
-{$ifdef UseUnicode}
     GetTextExtentPoint32W(DC, PWideChar(S1), Length(S1), ExtS);
-{$else}
-    GetTextExtentPoint32A(DC, PChar(S1), Length(S1), ExtS);
-{$endif}
     SelectObject(DC, OldFont);
   finally
     ReleaseDC(0, DC);

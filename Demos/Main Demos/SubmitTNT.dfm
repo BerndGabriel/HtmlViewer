@@ -1,6 +1,6 @@
-object SubmitForm: TSubmitForm
-  Left = 200
-  Top = 99
+object SubmitFormTnt: TSubmitFormTnt
+  Left = 1020
+  Top = 291
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Submit Results'
@@ -46,17 +46,8 @@ object SubmitForm: TSubmitForm
     TabOrder = 3
     OnClick = Button1Click
   end
-  object ResultBox: TTntListBox
-    Left = 17
-    Top = 90
-    Width = 392
-    Height = 145
-    TabStop = False
-    ItemHeight = 16
-    TabOrder = 2
-  end
   object ActionText: TTntEdit
-    Left = 67
+    Left = 68
     Top = 14
     Width = 342
     Height = 24
@@ -65,12 +56,21 @@ object SubmitForm: TSubmitForm
     TabOrder = 0
   end
   object MethodText: TTntEdit
-    Left = 67
+    Left = 68
     Top = 41
     Width = 342
     Height = 24
     TabStop = False
     ReadOnly = True
     TabOrder = 1
+  end
+  object ResultBox: TTntListBox
+    Left = 17
+    Top = 90
+    Width = 392
+    Height = 145
+    TabStop = False
+    ItemHeight = 16
+    TabOrder = 2
   end
 end

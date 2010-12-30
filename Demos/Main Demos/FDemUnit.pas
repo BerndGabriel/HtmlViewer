@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -42,22 +42,25 @@ uses
     XpMan,
   {$ifend}
 {$endif}
-{$ifdef UNICODE}
+{$ifdef Compiler18_Plus}
   WideStrings,
+{$else}
+  TntWideStrings,
+  TntClasses,
 {$endif}
 {$ifdef UseTNT}
-  TntStdCtrls, TntClasses, SubmitTnt,
-  {$ifdef Compiler17_Plus}
-  {$else}
-    TntWideStrings,
-  {$endif}
+  TntStdCtrls,
 {$else UseTNT}
   {$ifdef UseElPack}
   ElListBox, ElCombos, ElEdits, ElPopBtn,
   {$else UseElPack}
   {$endif UseElPack}
-  Submit,
 {$endif UseTNT}
+{$ifdef UNICODE}
+  Submit,
+{$else}
+  SubmitTnt,
+{$endif}
   HtmlGlobals, UrlSubs, StyleUn, Readhtml, HTMLsubs, HTMLun2, Htmlview, FramView,
   DemoSubs, HTMLAbt, PreviewForm, ImgForm;
 
@@ -122,13 +125,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
-    procedure FrameViewerInclude(Sender: TObject; const Command: String; Params: TStrings; var S: String);
     procedure FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-{$ifdef UseTNT}
-    procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: WideString);
-{$else}
-    procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: string);
-{$endif}
     procedure FrameViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
     procedure FrameViewerRightClick(Sender: TObject; Parameters: TRightClickParameters);
     procedure FwdButtonClick(Sender: TObject);
@@ -145,7 +142,6 @@ type
     procedure SelectAll1Click(Sender: TObject);
     procedure SetPrintScaleClick(Sender: TObject);
     procedure ShowimagesClick(Sender: TObject);
-    procedure SoundRequest(Sender: TObject; const SRC: String; Loop: Integer; Terminate: Boolean);
     procedure Timer1Timer(Sender: TObject);
     procedure ViewerPrintHTMLFooter(Sender: TObject; HFViewer: THTMLViewer;
       NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
@@ -154,16 +150,22 @@ type
       NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
       var StopPrinting: Boolean);
     procedure ViewImageClick(Sender: TObject);
-{$ifdef UseTNT}
-    procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: WideString);
-    procedure HotSpotTargetClick(Sender: TObject; const Target, URL: WideString; var Handled: Boolean);
-    procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: WideString; Results: TTntStringList);
-    procedure WindowRequest(Sender: TObject; const Target, URL: WideString);
-{$else}
+{$ifdef UNICODE}
+    procedure FrameViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out S: String);
+    procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: string);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: String);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: String; var Handled: Boolean);
+    procedure SoundRequest(Sender: TObject; const SRC: String; Loop: Integer; Terminate: Boolean);
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: String);
+{$else}
+    procedure FrameViewerInclude(Sender: TObject; const Command: WideString; Params: TWideStrings; out S: WideString);
+    procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: WideString);
+    procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: WideString);
+    procedure HotSpotTargetClick(Sender: TObject; const Target, URL: WideString; var Handled: Boolean);
+    procedure SoundRequest(Sender: TObject; const SRC: WideString; Loop: Integer; Terminate: Boolean);
+    procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
+    procedure WindowRequest(Sender: TObject; const Target, URL: WideString);
 {$endif}
   private
     { Private declarations }
@@ -173,10 +175,10 @@ type
     MediaCount: integer;
     ThePlayer: TOBject;
     TimerCount: integer;
-    OldTitle: string;
-    HintWindow: THintWindow;
+    OldTitle: ThtString;
+    HintWindow: ThtHintWindow;
     HintVisible: boolean;
-    TitleViewer: ThtmlViewer;
+    TitleViewer: THtmlViewer;
 {$ifdef UseTNT}
     TntLabel: TTntLabel;
 {$endif}
@@ -230,7 +232,7 @@ begin
     end;
   end;
   DragAcceptFiles(Handle, True);
-  HintWindow := THintWindow.Create(Self);
+  HintWindow := ThtHintWindow.Create(Self);
   HintWindow.Color := $CCFFFF;
 
 {$ifdef UseTNT}
@@ -551,19 +553,15 @@ finally
  end;
 end;
 
-{$ifdef UseTNT}
-procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: TTntStringList);
-{$else}
-procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: TStringList);
-{$endif}
+procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
 begin
-with SubmitForm do
+  with SubmitForm do
   begin
-  ActionText.Text := AnAction;
-  MethodText.Text := Method;
-  ResultBox.Items := Results;
-  Results.Free;
-  Show;
+    ActionText.Text := AnAction;
+    MethodText.Text := Method;
+    ResultBox.Items.Text := Results.Text;
+    Results.Free;
+    Show;
   end;
 end;
 
@@ -604,11 +602,7 @@ begin
 FrameViewer.GoBack;
 end;
 
-{$ifdef UseTNT}
-procedure TForm1.WindowRequest(Sender: TObject; const Target, URL: WideString);
-{$else}
-procedure TForm1.WindowRequest(Sender: TObject; const Target, URL: String);
-{$endif}
+procedure TForm1.WindowRequest(Sender: TObject; const Target, URL: ThtString);
 var
   S, Dest: string;
   I: integer;
@@ -683,7 +677,7 @@ begin
 {$endif}
 end;
 
-procedure TForm1.SoundRequest(Sender: TObject; const SRC: String; Loop: Integer; Terminate: Boolean);
+procedure TForm1.SoundRequest(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: Boolean);
 begin
 {$ifdef LCL}
 {$else}
@@ -714,11 +708,7 @@ begin
 {$endif}
 end;
 
-{$ifdef UseTNT}
-procedure TForm1.FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: WideString);
-{$else}
-procedure TForm1.FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: string);
-{$endif}
+procedure TForm1.FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: ThtString);
 var
   S: ThtString;
 begin
@@ -755,8 +745,8 @@ begin
     //MessageDlg(OnClick, mtCustom, [mbOK], 0);
 end;
 
-procedure TForm1.FrameViewerInclude(Sender: TObject; const Command: String; Params: TStrings; var S: String);
-{OnInclude handler}  
+procedure TForm1.FrameViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out S: ThtString);
+{OnInclude handler}
 var
   Filename: string;
   I: integer;
@@ -794,7 +784,7 @@ var
   S, Dest: string;
   I: integer;
   Viewer: ThtmlViewer;
-  HintWindow: THintWindow;
+  HintWindow: ThtHintWindow;
   ARect: TRect;
 begin
 Viewer := Sender as ThtmlViewer;
@@ -825,7 +815,7 @@ with Parameters do
   GetCursorPos(Pt);
   if Length(CLickWord) > 0 then
     begin
-    HintWindow := THintWindow.Create(Self);   
+    HintWindow := ThtHintWindow.Create(Self);   
     try
       ARect := Rect(0,0,0,0);
       DrawTextW(HintWindow.Canvas.Handle, @ClickWord[1], Length(ClickWord), ARect, DT_CALCRECT);
@@ -914,47 +904,41 @@ const
 var
   Pt, Pt1: TPoint;
   ARect: TRect;
-  TitleStr: string;
+  TitleStr: ThtString;
 
 begin
-if not Assigned(TitleViewer) then
+  if not Assigned(TitleViewer) then
   begin
-  CloseAll;
-  Exit;
-  end;
-Inc(TimerCount);
-GetCursorPos(Pt);
-try       {in case TitleViewer becomes corrupted}
-  Pt1 := TitleViewer.ScreenToClient(Pt);
-  TitleStr := TitleViewer.TitleAttr;
-  if (TitleStr = '') or not PtInRect(TitleViewer.ClientRect, Pt1)then
-    begin
-    OldTitle := '';
     CloseAll;
     Exit;
-    end;
-  if TitleStr <> OldTitle then
+  end;
+  Inc(TimerCount);
+  GetCursorPos(Pt);
+  try       {in case TitleViewer becomes corrupted}
+    Pt1 := TitleViewer.ScreenToClient(Pt);
+    TitleStr := TitleViewer.TitleAttr;
+    if (TitleStr = '') or not PtInRect(TitleViewer.ClientRect, Pt1)then
     begin
-    TimerCount := 0;
-    OldTitle := TitleStr;
-    HintWindow.ReleaseHandle;
-    HintVisible := False;
-    Exit;
+      OldTitle := '';
+      CloseAll;
+      Exit;
+    end;
+    if TitleStr <> OldTitle then
+    begin
+      TimerCount := 0;
+      OldTitle := TitleStr;
+      HintWindow.ReleaseHandle;
+      HintVisible := False;
+      Exit;
     end;
 
-  if TimerCount > EndCount then
-    CloseAll
-  else if (TimerCount >= StartCount) and not HintVisible then
+    if TimerCount > EndCount then
+      CloseAll
+    else if (TimerCount >= StartCount) and not HintVisible then
     begin
-    {$ifdef ver90}  {Delphi 2}
-    ARect := Rect(0,0,0,0);
-    DrawText(HintWindow.Canvas.Handle, PChar(TitleStr), Length(TitleStr), ARect, DT_CALCRECT);
-    {$else}
-    ARect := HintWindow.CalcHintRect(300, TitleStr, Nil);
-    {$endif}
-    with ARect do
-      HintWindow.ActivateHint(Rect(Pt.X, Pt.Y+18, Pt.X+Right, Pt.Y+18+Bottom), TitleStr);
-    HintVisible := True;
+      ARect := HintWindow.CalcHintRect(300, TitleStr, Nil);
+      HintWindow.ActivateHint(Rect(Pt.X, Pt.Y + 18, Pt.X + ARect.Right, Pt.Y + 18 + ARect.Bottom), TitleStr);
+      HintVisible := True;
     end;
 except
   CloseAll;
