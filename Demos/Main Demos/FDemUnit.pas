@@ -953,74 +953,75 @@ end;
 procedure TForm1.FrameViewerProgress(Sender: TObject;
   Stage: TProgressStage; PercentDone: Integer);
 begin
-ProgressBar.Position := PercentDone;
-case Stage of
-  psStarting:
-    ProgressBar.Visible := True;
-  psRunning:;
-  psEnding:
-    ProgressBar.Visible := False;
+  ProgressBar.Position := PercentDone;
+  case Stage of
+    psStarting:
+      ProgressBar.Visible := True;
+    psRunning:;
+    psEnding:
+      ProgressBar.Visible := False;
   end;
-ProgressBar.Update;
+  ProgressBar.Update;
 end;
 
 procedure TForm1.SetPrintScaleClick(Sender: TObject);
 var
   S: string;
 begin
-S := FloatToStr(FrameViewer.PrintScale);
-try
-  if InputQuery('PrintScale', 'Enter desired print scale value', S) then
-    FrameViewer.PrintScale := StrToFloat(S);
-except
+  S := FloatToStr(FrameViewer.PrintScale);
+  try
+    if InputQuery('PrintScale', 'Enter desired print scale value', S) then
+      FrameViewer.PrintScale := StrToFloat(S);
+  except
   end;
 end;
 
 {HTML for print header and footer}
 const
-  HFText: string =  '<html><head><style>'+
-            'body  {font: Arial 8pt;}'+
-          '</style></head>'+
-          '<body marginwidth="0">'+
-          '<table border="0" cellspacing="2" cellpadding="1" width="100%">'+
-            '<tr>'+
-              '<td>#left</td><td align="right">#right</td>'+
-            '</tr>'+
-          '</table></body></html>';
+  HFText: ThtString =
+    '<html><head><style>'+
+    'body  {font: Arial 8pt;}'+
+    '</style></head>'+
+    '<body marginwidth="0">'+
+    '<table border="0" cellspacing="2" cellpadding="1" width="100%">'+
+    '<tr>'+
+    '<td>#left</td><td align="right">#right</td>'+
+    '</tr>'+
+    '</table></body></html>';
 
-function ReplaceStr(Const S, FromStr, ToStr: string): string;
+function ReplaceStr(Const S, FromStr, ToStr: ThtString): string;
 {replace FromStr with ToStr in string S.
  for Delphi 6, 7, AnsiReplaceStr may be used instead.}
 var
   I: integer;
 begin
-I := Pos(FromStr, S);
-if I > 0 then
+  I := Pos(FromStr, S);
+  if I > 0 then
   begin
-  Result := S;
-  Delete(Result, I, Length(FromStr));
-  Insert(ToStr, Result, I);
+    Result := S;
+    Delete(Result, I, Length(FromStr));
+    Insert(ToStr, Result, I);
   end;
 end;
 
 procedure TForm1.ViewerPrintHTMLHeader(Sender: TObject;
   HFViewer: THTMLViewer; NumPage: Integer; LastPage: boolean; var XL, XR: integer; var StopPrinting: Boolean);
 var
-  S: string;
+  S: ThtString;
 begin
-S := ReplaceStr(HFText, '#left', FrameViewer.DocumentTitle);
-S := ReplaceStr(S, '#right', FrameViewer.CurrentFile);
-HFViewer.LoadFromString(S);
+  S := ReplaceStr(HFText, '#left', FrameViewer.DocumentTitle);
+  S := ReplaceStr(S, '#right', FrameViewer.CurrentFile);
+  HFViewer.LoadFromString(S);
 end;
 
 procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject;
   HFViewer: THTMLViewer; NumPage: Integer; LastPage: boolean; var XL, XR: integer; var StopPrinting: Boolean);
 var
-  S: string;
+  S: ThtString;
 begin
-S := ReplaceStr(HFText, '#left', DateToStr(Date));
-S := ReplaceStr(S, '#right', 'Page '+IntToStr(NumPage));
-HFViewer.LoadFromString(S);
+  S := ReplaceStr(HFText, '#left', DateToStr(Date));
+  S := ReplaceStr(S, '#right', 'Page '+IntToStr(NumPage));
+  HFViewer.LoadFromString(S);
 end;
 
 procedure TForm1.UpdateCaption;

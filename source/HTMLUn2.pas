@@ -4376,6 +4376,7 @@ constructor TSectionBase.CreateCopy(AMasterList: TSectionBaseList; T: TSectionBa
 begin
   inherited Create;
   FParentSectionList := AMasterList;
+  FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed 
   SectionHeight := T.SectionHeight;
   ZIndex := T.ZIndex;
 end;

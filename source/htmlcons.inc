@@ -1,4 +1,4 @@
-{Version 10.2}
+{Version 11}
 
 {$ifdef FPC}
 

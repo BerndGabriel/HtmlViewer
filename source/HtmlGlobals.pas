@@ -32,6 +32,7 @@ interface
 uses
   Windows, Graphics, Classes, Controls,
 {$ifdef FPC}
+  Forms,
   RtlConsts,
 {$else}
   Consts,
