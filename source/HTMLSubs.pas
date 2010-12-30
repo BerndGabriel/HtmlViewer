@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -6991,7 +6991,8 @@ begin
     for I := 0 to T.Count - 1 do
       if htmlFormList.Count > I then
         ThtmlForm(htmlFormList[I]).SetFormData(ThtStringList(T[I]));
-  except end;
+  except
+  end;
 end;
 
 {----------------TSectionList.FindDocPos}

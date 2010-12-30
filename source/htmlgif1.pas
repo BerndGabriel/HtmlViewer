@@ -1,10 +1,3 @@
-{
-Version 10.2
-}
-
-{$I HtmlCons.inc}
-
-unit HtmlGif1;
 
 {***************************************************************}
 {*                     htmlgif1.pas                            *}
@@ -43,6 +36,10 @@ compression) that may be distributed for profit, make sure you understand
 the full implications and legal ramifications of using the LZW compression.
 
 ============================================================================ }
+
+{$I HtmlCons.inc}
+
+unit HtmlGif1;
 
 interface
 

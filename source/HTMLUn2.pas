@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -32,7 +32,7 @@ uses
   Windows, SysUtils, Classes, Graphics, ClipBrd, Controls, Messages, Variants,
   {$ifdef LCL}Interfaces, IntfGraphics, FpImage, {$endif}
   {$IFNDEF NoGDIPlus}GDIPL2A, {$ENDIF}
-  UrlSubs, StyleUn, HtmlGlobals, HtmlGif2;
+  UrlSubs, StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
   VersionNo = '10.2';
@@ -507,7 +507,7 @@ type
   end;
 
   TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
-  TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IString: ThtString) of object;
+  TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer) of object;
   TLinkType = procedure(Sender: TObject; const Rel, Rev, Href: ThtString) of object;
   TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: ThtString) of object;
   TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;

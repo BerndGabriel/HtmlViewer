@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -135,15 +135,6 @@ implementation
 const
   Sequence: integer = 10;
 
-function StreamToString(Stream: TStream): ThtString;
-begin
-  try
-    Result := LoadStringFromStream(Stream);
-  except
-    Result := '';
-  end;
-end;
-
 function ConvDosToHTML(const Name: ThtString): ThtString; forward;
 
 {----------------TbrFrame.CreateIt}
@@ -257,9 +248,11 @@ begin
     Inc(MasterSet.NestLevel);
     try
       try
-        //TheString := StreamToString(TheStream);
         if TheStream <> nil then
-          Doc := TBuffer.Create(TheStream)
+        begin
+          TheStream.Position := 0;
+          Doc := TBuffer.Create(TheStream);
+        end
         else
           Doc := nil;
         if (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source) then
@@ -411,7 +404,10 @@ begin
   try
     //TheString := StreamToString(TheStream);
     if TheStream <> nil then
+    begin
+      TheStream.Position := 0;
       Doc := TBuffer.Create(TheStream)
+    end
     else
       Doc := nil;
     if not SameName then
@@ -685,6 +681,7 @@ begin
   Clear;
   NestLevel := 0;
   FCurrentFile := URL;
+  Stream.Position := 0;
   Doc := TBuffer.Create(Stream, Url);
   if (StreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Url) then
   begin {it's a Frameset html file}

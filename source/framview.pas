@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -2248,7 +2248,10 @@ begin
       FOnStreamRequest(Self, Src, Stream);
       Result := Assigned(Stream);
       if Result then
+      begin
+        Stream.Position := 0;
         Doc := TBuffer.Create(Stream, Src);
+      end;
     end
     else if Assigned(FOnBufferRequest) then
     begin

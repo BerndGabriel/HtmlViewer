@@ -61,7 +61,7 @@ uses
 {$else}
   SubmitTnt,
 {$endif}
-  HtmlGlobals, UrlSubs, StyleUn, Readhtml, HTMLsubs, HTMLun2, Htmlview, FramView,
+  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, Readhtml, HTMLsubs, HTMLun2, Htmlview, FramView,
   DemoSubs, HTMLAbt, PreviewForm, ImgForm;
 
 const
@@ -159,7 +159,7 @@ type
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: String);
 {$else}
-    procedure FrameViewerInclude(Sender: TObject; const Command: WideString; Params: TWideStrings; out S: WideString);
+    procedure FrameViewerInclude(Sender: TObject; const Command: WideString; Params: TWideStrings; out IncludedDocument: TBuffer);
     procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: WideString);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: WideString);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: WideString; var Handled: Boolean);
@@ -745,32 +745,37 @@ begin
     //MessageDlg(OnClick, mtCustom, [mbOK], 0);
 end;
 
-procedure TForm1.FrameViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out S: ThtString);
+procedure TForm1.FrameViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);
 {OnInclude handler}
 var
-  Filename: string;
+  Filename: ThtString;
   I: integer;
+  Stream: TFileStream;
 begin
-if CompareText(Command, 'Date') = 0 then
-  S := DateToStr(Date) { <!--#date --> }
-else if CompareText(Command, 'Time') = 0 then
-  S := TimeToStr(Time)   { <!--#time -->  }
-else if CompareText(Command, 'Include') = 0 then
+  if CompareText(Command, 'Date') = 0 then
+    IncludedDocument := TBuffer.Create(DateToStr(Date)) { <!--#date --> }
+  else if CompareText(Command, 'Time') = 0 then
+    IncludedDocument := TBuffer.Create(TimeToStr(Time))   { <!--#time -->  }
+  else if CompareText(Command, 'Include') = 0 then
   begin   {an include file <!--#include FILE="filename" -->  }
-  if (Params.count >= 1) then
+    if (Params.count >= 1) then
     begin
-    I := Pos('file=', Lowercase(Params[0]));
-    if I > 0 then
+      I := Pos('file=', Lowercase(Params[0]));
+      if I > 0 then
       begin
-      Filename := copy(Params[0],  6, Length(Params[0])-5);
-      try
-        S := LoadStringFromFile(Filename);
-      except
+        Filename := copy(Params[0], 6, Length(Params[0])-5);
+        try
+          if FileExists(Filename) then
+          begin
+            Stream := TFileStream.Create(Filename, fmOpenRead, fmShareDenyWrite);
+            IncludedDocument := TBuffer.Create(Stream);
+          end
+        except
         end;
       end;
     end;
   end;
-Params.Free;
+  Params.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);

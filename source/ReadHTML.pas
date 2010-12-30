@@ -533,7 +533,8 @@ var
 
   procedure DoInclude;
   var
-    S, Name, Value, Include: ThtString;
+    S, Name, Value: ThtString;
+    Include: TBuffer;
     SL: ThtStringList;
     SaveLCToken: TokenObj;
   begin
@@ -551,12 +552,12 @@ var
       while GetNameValueParameter(Name, Value) do
         SL.Add(Name + '=' + Value);
       DoDashDash;
-      Include := '';
+      Include := nil;
       IncludeEvent(CallingObject, S, SL, Include);
-      if Length(Include) > 0 then
+      if Include <> nil then
       begin
         DocStack.Push(Doc);
-        Doc := TBuffer.Create(Include);
+        Doc := Include;
       end;
     finally
       LCToken.Free;
@@ -3414,6 +3415,7 @@ begin
         end;
         if DStream <> nil then
         begin
+          DStream.Position := 0;
           Style := TBuffer.Create(DStream, Url);
           try
             C := SpcChar;

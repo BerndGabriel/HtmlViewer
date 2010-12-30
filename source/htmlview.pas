@@ -1,5 +1,5 @@
 {
-Version   10.2
+Version   11
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -22,36 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 
-********************************************************************************
-
-Bernd Gabriel, 12.09.2010: reducing circular dependencies between the core units.
-
-Before reducing circular dependencies this was the old unit hierarchy:
-
-  Level 1) GDIPL2A, HtmlGif1, HtmlGlobals, UrlSubs, vwPrint
-  Level 2) DitherUnit, HtmlGif2, MetaFilePrinter
-  Level 3) HtmlSbs1, HtmlSubs, HtmlUn2, HtmlView, ReadHtml, StylePars, StyleUn
-  Level 4) FramView
-  Level 5) FramBrwz
-  Level 6) FrameViewerReg, HtmlCompEdit
-
-In Level 3 nearly all units were using each other.
-
-After reducing circular dependencies this is the new unit hierarchy:
-
-  Level 1) GDIPL2A, HtmlGif1, HtmlGlobals, UrlSubs, vwPrint
-  Level 2) DitherUnit, HtmlGif2, MetaFilePrinter, StyleUn
-  Level 3) StylePars
-  Level 4) HtmlUn2
-  Level 5) HtmlSbs1, HtmlSubs
-  Level 6) HtmlView, ReadHtml
-  Level 7) FramView
-  Level 8) FramBrwz
-  Level 9) FrameViewerReg, HtmlCompEdit
-  
-Only two mutually usages remain: HtmlSbs1/HtmlSubs and HtmlView/ReadHtml.
-These will be removed later.
-}
+********************************************************************************}
 
 {$I htmlcons.inc}
 
@@ -1071,13 +1042,8 @@ end;
 {----------------THtmlViewer.LoadFromStream}
 
 procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString);
-var
-  S: ThtString;
 begin
-  S := LoadStringFromStream(AStream);
-  LoadString(S, Reference, HTMLType);
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
+  LoadStream(Reference, AStream, HTMLType);
 end;
 
 procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
@@ -5267,12 +5233,7 @@ end;
 procedure THtmlViewer.SetFormData(T: TFreeList);
 begin
   if Assigned(SectionList) and Assigned(T) then
-    with SectionList do
-    begin
-      ObjectClick := nil;
-      SetFormControlData(T);
-      ObjectClick := OnObjectClick;
-    end;
+    SectionList.SetFormControlData(T);
 end;
 
 procedure THtmlViewer.ReplaceImage(const NameID: ThtString; NewImage: TStream);

@@ -23,7 +23,7 @@ Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-{$I htmlcons.inc}
+{.$I htmlcons.inc}
 
 unit HtmlBuffer;
 
@@ -100,7 +100,6 @@ type
     constructor Create(Text: TBuffString; Name: TBuffString = ''); overload;
     constructor Create(Text: AnsiString; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
     destructor Destroy; override;
-    //function HasNext: Boolean;
     procedure AssignTo(Destin: TObject);
     function AsString: TBuffString;
     function NextChar: TBuffChar;
@@ -130,9 +129,6 @@ function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
 function AnsiPosX(const SubStr, S: AnsiString; Offset: Integer = 1): Integer;
 
 implementation
-
-uses
-  HtmlGlobals;
 
 type
   TBuffCharSetCodePageInfoList = class(TStringList)
@@ -736,12 +732,6 @@ function TBuffer.GetPosition: Integer;
 begin
   Result := FPos.AnsiChr - PAnsiChar(FBuffer);
 end;
-
-////-- BG ---------------------------------------------------------- 16.12.2010 --
-//function TBuffer.HasNext: Boolean;
-//begin
-//  Result := FPos.AnsiChr < FEnd.AnsiChr;
-//end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
 function TBuffer.NextChar: TBuffChar;

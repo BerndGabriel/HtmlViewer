@@ -1,6 +1,6 @@
 {
 Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Copyright (c) 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -62,8 +62,7 @@ uses
     TntClasses,
   {$endif}
 {$endif UseTNT}
-  SysUtils,
-  HtmlBuffer;
+  SysUtils;
 
 type
 {$ifdef UNICODE}
@@ -243,12 +242,12 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 
 // UNICODE dependent loading string methods
 //function LoadStringFromStreamA(Stream: TStream): AnsiString;
-function LoadStringFromStreamW(Stream: TStream): WideString;
+//function LoadStringFromStreamW(Stream: TStream): WideString;
 //function LoadStringFromFileA(const Name: ThtString): AnsiString;
-function LoadStringFromFileW(const Name: ThtString): WideString;
+//function LoadStringFromFileW(const Name: ThtString): WideString;
 
-function LoadStringFromStream(Stream: TStream): ThtString; {$ifdef UseInline} inline; {$endif}
-function LoadStringFromFile(const Name: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+//function LoadStringFromStream(Stream: TStream): ThtString; {$ifdef UseInline} inline; {$endif}
+//function LoadStringFromFile(const Name: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 
 
 function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
@@ -562,19 +561,19 @@ end;
 //  Stream.Read(Result[1], ByteCount);
 //{$endif}
 //end;
-
-function LoadStringFromStreamW(Stream: TStream): WideString;
-var
-  Buffer: TBuffer;
-begin
-  Buffer := TBuffer.Create(Stream);
-  try
-    Result := Buffer.AsString;
-  finally
-    Buffer.Free;
-  end;
-end;
-
+//
+//function LoadStringFromStreamW(Stream: TStream): WideString;
+//var
+//  Buffer: TBuffer;
+//begin
+//  Buffer := TBuffer.Create(Stream);
+//  try
+//    Result := Buffer.AsString;
+//  finally
+//    Buffer.Free;
+//  end;
+//end;
+//
 //function LoadStringFromFileA(const Name: ThtString): AnsiString;
 //var
 //  Stream: TFileStream;
@@ -586,28 +585,28 @@ end;
 //    Stream.Free;
 //  end;
 //end;
-
-function LoadStringFromFileW(const Name: ThtString): WideString;
-var
-  Stream: TFileStream;
-begin
-  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
-  try
-    Result := LoadStringFromStreamW(Stream);
-  finally
-    Stream.Free;
-  end;
-end;
-
-function LoadStringFromStream(Stream: TStream): ThtString;
-begin
-  Result := LoadStringFromStreamW(Stream);
-end;
-
-function LoadStringFromFile(const Name: ThtString): ThtString;
-begin
-  Result := LoadStringFromFileW(Name);
-end;
+//
+//function LoadStringFromFileW(const Name: ThtString): WideString;
+//var
+//  Stream: TFileStream;
+//begin
+//  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+//  try
+//    Result := LoadStringFromStreamW(Stream);
+//  finally
+//    Stream.Free;
+//  end;
+//end;
+//
+//function LoadStringFromStream(Stream: TStream): ThtString;
+//begin
+//  Result := LoadStringFromStreamW(Stream);
+//end;
+//
+//function LoadStringFromFile(const Name: ThtString): ThtString;
+//begin
+//  Result := LoadStringFromFileW(Name);
+//end;
 
 
 //-- BG ---------------------------------------------------------- 11.12.2010 --

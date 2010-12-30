@@ -51,7 +51,7 @@ Conditionals=DEBUG
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams="D:\Downloads\Software (Developer)\HtmlViewer-TestCases\issue-47\0\3\1251.html"
+RunParams=
 HostApplication=
 Launcher=
 UseLauncher=0
