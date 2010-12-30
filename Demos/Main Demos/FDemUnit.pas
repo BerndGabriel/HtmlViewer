@@ -151,7 +151,7 @@ type
       var StopPrinting: Boolean);
     procedure ViewImageClick(Sender: TObject);
 {$ifdef UNICODE}
-    procedure FrameViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out S: String);
+    procedure FrameViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out IncludedDocument: TBuffer);
     procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: string);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: String);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: String; var Handled: Boolean);
