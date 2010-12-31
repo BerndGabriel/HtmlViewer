@@ -8,7 +8,7 @@
       <Version Value="8"/>
       <PathDelim Value="\"/>
       <SearchPaths>
-        <OtherUnitFiles Value="..\source\"/>
+        <OtherUnitFiles Value="..\source\;L:\src\TntUnicodeControls\Delphi\lazarus09\lib\i386-win32\"/>
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -110,7 +110,8 @@
       </Item2>
     </RequiredPkgs>
     <UsageOptions>
-      <UnitPath Value="$(PkgOutDir)\"/>
+      <LibraryPath Value="L:\src\TntUnicodeControls\Delphi\lazarus09\lib\i386-win32\"/>
+      <UnitPath Value="$(PkgOutDir)\;L:\src\TntUnicodeControls\Delphi\lazarus09\lib\i386-win32\"/>
     </UsageOptions>
     <PublishOptions>
       <Version Value="2"/>

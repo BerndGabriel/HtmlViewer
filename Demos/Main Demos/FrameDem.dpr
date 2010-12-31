@@ -40,6 +40,9 @@ uses
 {$ifdef LCL}
   Interfaces,
   LResources,
+  Submit in 'Submit.pas' {SubmitForm},
+{$else}
+  SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
 {$endif}
   PRINTSTATUSFORM in 'PRINTSTATUSFORM.PAS' {PrnStatusForm},
   GOPAGE in 'GOPAGE.PAS' {GoPageForm},
@@ -48,8 +51,7 @@ uses
   FONTDLG in 'Fontdlg.pas' {FontForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   IMGFORM in 'IMGFORM.PAS' {ImageForm},
-  DemoSubs in 'DemoSubs.pas',
-  SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt};
+  DemoSubs in 'DemoSubs.pas';
 
 {$R *.RES}
 

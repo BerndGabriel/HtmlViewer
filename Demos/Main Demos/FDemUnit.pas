@@ -50,17 +50,14 @@ uses
 {$endif}
 {$ifdef UseTNT}
   TntStdCtrls,
+  SubmitTnt,
 {$else UseTNT}
   {$ifdef UseElPack}
   ElListBox, ElCombos, ElEdits, ElPopBtn,
   {$else UseElPack}
   {$endif UseElPack}
-{$endif UseTNT}
-{$ifdef UNICODE}
   Submit,
-{$else}
-  SubmitTnt,
-{$endif}
+{$endif UseTNT}
   HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, Readhtml, HTMLsubs, HTMLun2, Htmlview, FramView,
   DemoSubs, HTMLAbt, PreviewForm, ImgForm;
 

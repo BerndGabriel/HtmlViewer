@@ -5,7 +5,7 @@
 { Identify FreePascal/Lazarus Compiler Version }
 
   {$define LCL}
-  {$MODE Delphi}
+  {$mode Delphi}
 
   {$define FPC_TODO}
   {$define FPC_TODO_PRINTING}
@@ -173,7 +173,6 @@
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}
   {$ifdef LCL}
-    {$message 'Using TNT unicode controls is recommended.'}
   {$else}
     {$define UseTNT}
   {$endif}

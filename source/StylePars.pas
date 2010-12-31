@@ -767,7 +767,7 @@ begin
   repeat
     Prop := '';
     SkipWhiteSpace;
-    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar] do
+    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), ThtChar('-')] do
     begin
       Prop := Prop + LCh;
       GetCh;

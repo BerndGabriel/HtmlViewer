@@ -624,12 +624,12 @@ var
 begin
   Result := False;
   Term := Ch;
-  if (Term <> '"') and (Term <> '''') then
+  if (Term <> ThtChar('"')) and (Term <> ThtChar('''')) then
     Exit;
   Result := True;
   SaveSy := Sy;
   GetCh;
-  while not (Ch in [Term, EofChar]) do
+  while (LCh <> Term) and (LCh <> EofChar) do
   begin
     if LCh = AmperChar then
       S := S + GetEntityStr(CP_ACP)
@@ -740,7 +740,7 @@ begin
   Result := True;
   SaveSy := Sy;
   GetCh;
-  while not (Ch in [Term, EofChar]) do
+  while (LCh <> Term) and (LCh <> EofChar) do
   begin
     if LCh <> CrChar then
     begin

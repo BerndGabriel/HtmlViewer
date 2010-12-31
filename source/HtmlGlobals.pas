@@ -133,17 +133,17 @@ type
   end;
 
 const
-  SpcChar:      ThtChar = ' ';
-  DotChar:      ThtChar = '.';
-  TabChar:      ThtChar = #9;
-  EofChar:      ThtChar = #0;
-  CrChar:       ThtChar = #13;
-  LfChar:       ThtChar = #10;
-  LessChar:     ThtChar = '<';
-  MinusChar:    ThtChar = '-';
-  GreaterChar:  ThtChar = '>';
-  PercentChar:  ThtChar = '%';
-  AmperChar:    ThtChar = '&';
+  EofChar     = ThtChar(#0);
+  TabChar     = ThtChar(#9);
+  LfChar      = ThtChar(#10);
+  CrChar      = ThtChar(#13);
+  SpcChar     = ThtChar(' ');
+  DotChar     = ThtChar('.');
+  LessChar    = ThtChar('<');
+  MinusChar   = ThtChar('-');
+  GreaterChar = ThtChar('>');
+  PercentChar = ThtChar('%');
+  AmperChar   = ThtChar('&');
 
 {$ifdef LCL}
 const
