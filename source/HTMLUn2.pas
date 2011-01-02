@@ -491,7 +491,7 @@ type
     function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; virtual;
     procedure AddSectionsToList; virtual;
     procedure CopyToClipboard; virtual;
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); virtual;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure SetParent(List: TSectionBaseList);
     property Display: TPropDisplay read FDisplay write FDisplay;
     property MyBlock: TBlockBase read FMyBlock write FMyBlock;
@@ -999,8 +999,8 @@ begin
   OffsetRect(Result, -Point.X, -Point.Y);
   if Printing then
   begin
-    GetViewportExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeV);
-    GetWindowExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeW);
+    GetViewportExtEx(Canvas.Handle, SizeV);
+    GetWindowExtEx(Canvas.Handle, SizeW);
     Result := ScaleRect(Result, SizeV.cx / SizeW.cx, SizeV.cy / SizeW.cy);
   end;
 end;
@@ -1029,8 +1029,8 @@ begin
       Rgn := CreateRectRgn(Left - Point.X, Top - Point.Y, Right - Point.X, Bottom - Point.Y)
     else
     begin
-      GetViewportExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeV);
-      GetWindowExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeW);
+      GetViewportExtEx(Canvas.Handle, SizeV);
+      GetWindowExtEx(Canvas.Handle, SizeW);
       HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
       VF := (SizeV.cy / SizeW.cy); {Vertical adjustment factor}
       Rgn := CreateRectRgn(Round(HF * (Left - Point.X)), Round(VF * (Top - Point.Y)), Round(HF * (Right - Point.X)), Round(VF * (Bottom - Point.Y)));
@@ -3823,8 +3823,8 @@ begin
       DC := Canvas.Handle;
     {calculate a transform for the clip region as it may be a different size than
      the mask and needs to be positioned on the canvas.}
-      GetViewportExtEx(DC, {$ifdef FPC}@{$endif}SizeV);
-      GetWindowExtEx(DC, {$ifdef FPC}@{$endif}SizeW);
+      GetViewportExtEx(DC, SizeV);
+      GetWindowExtEx(DC, SizeW);
       GetWindowOrgEx(DC, Origin); //BG, 29.08.2009: get origin for correct mask translation
 
       HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
@@ -4540,9 +4540,10 @@ begin
   FParentSectionList := List;
 end;
 
-procedure TSectionBase.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TSectionBase.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
-  Min := 0; Max := 0;
+  Min := 0;
+  Max := 0;
 end;
 
 procedure TSectionBase.AddSectionsToList;

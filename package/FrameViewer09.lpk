@@ -44,73 +44,73 @@
     </CompilerOptions>
     <Files Count="17">
       <Item1>
-        <Filename Value="..\source\HtmlGlobals.pas"/>
-        <UnitName Value="HtmlGlobals"/>
-      </Item1>
-      <Item2>
-        <Filename Value="..\source\Htmlsbs1.pas"/>
-        <UnitName Value="Htmlsbs1"/>
-      </Item2>
-      <Item3>
-        <Filename Value="..\source\HTMLSubs.pas"/>
-        <UnitName Value="HTMLSubs"/>
-      </Item3>
-      <Item4>
-        <Filename Value="..\source\HTMLUn2.pas"/>
-        <UnitName Value="HTMLUn2"/>
-      </Item4>
-      <Item5>
-        <Filename Value="..\source\htmlview.pas"/>
-        <UnitName Value="HtmlView"/>
-      </Item5>
-      <Item6>
-        <Filename Value="..\source\ReadHTML.pas"/>
-        <UnitName Value="Readhtml"/>
-      </Item6>
-      <Item7>
-        <Filename Value="..\source\StylePars.pas"/>
-        <UnitName Value="StylePars"/>
-      </Item7>
-      <Item8>
-        <Filename Value="..\source\StyleUn.pas"/>
-        <UnitName Value="StyleUn"/>
-      </Item8>
-      <Item9>
-        <Filename Value="..\source\URLSubs.pas"/>
-        <UnitName Value="URLSubs"/>
-      </Item9>
-      <Item10>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
-      </Item10>
-      <Item11>
+      </Item1>
+      <Item2>
         <Filename Value="..\source\FramBrwz.pas"/>
         <UnitName Value="FramBrwz"/>
-      </Item11>
-      <Item12>
+      </Item2>
+      <Item3>
         <Filename Value="..\source\FrameViewerReg.pas"/>
         <HasRegisterProc Value="True"/>
         <UnitName Value="FrameViewerReg"/>
-      </Item12>
-      <Item13>
+      </Item3>
+      <Item4>
         <Filename Value="..\source\framview.pas"/>
         <UnitName Value="FramView"/>
-      </Item13>
-      <Item14>
-        <Filename Value="..\source\htmlgif1.pas"/>
-        <UnitName Value="HtmlGif1"/>
-      </Item14>
-      <Item15>
-        <Filename Value="..\source\HTMLGif2.pas"/>
-        <UnitName Value="HTMLGif2"/>
-      </Item15>
-      <Item16>
+      </Item4>
+      <Item5>
         <Filename Value="..\source\HtmlBuffer.pas"/>
         <UnitName Value="HtmlBuffer"/>
-      </Item16>
-      <Item17>
+      </Item5>
+      <Item6>
+        <Filename Value="..\source\htmlgif1.pas"/>
+        <UnitName Value="HtmlGif1"/>
+      </Item6>
+      <Item7>
+        <Filename Value="..\source\HTMLGif2.pas"/>
+        <UnitName Value="HTMLGif2"/>
+      </Item7>
+      <Item8>
+        <Filename Value="..\source\HtmlGlobals.pas"/>
+        <UnitName Value="HtmlGlobals"/>
+      </Item8>
+      <Item9>
         <Filename Value="..\source\htmlmisc.pas"/>
         <UnitName Value="HtmlMisc"/>
+      </Item9>
+      <Item10>
+        <Filename Value="..\source\Htmlsbs1.pas"/>
+        <UnitName Value="Htmlsbs1"/>
+      </Item10>
+      <Item11>
+        <Filename Value="..\source\HTMLSubs.pas"/>
+        <UnitName Value="HTMLSubs"/>
+      </Item11>
+      <Item12>
+        <Filename Value="..\source\HTMLUn2.pas"/>
+        <UnitName Value="HTMLUn2"/>
+      </Item12>
+      <Item13>
+        <Filename Value="..\source\htmlview.pas"/>
+        <UnitName Value="HtmlView"/>
+      </Item13>
+      <Item14>
+        <Filename Value="..\source\ReadHTML.pas"/>
+        <UnitName Value="Readhtml"/>
+      </Item14>
+      <Item15>
+        <Filename Value="..\source\StylePars.pas"/>
+        <UnitName Value="StylePars"/>
+      </Item15>
+      <Item16>
+        <Filename Value="..\source\StyleUn.pas"/>
+        <UnitName Value="StyleUn"/>
+      </Item16>
+      <Item17>
+        <Filename Value="..\source\URLSubs.pas"/>
+        <UnitName Value="URLSubs"/>
       </Item17>
     </Files>
     <Type Value="RunAndDesignTime"/>

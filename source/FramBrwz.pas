@@ -776,9 +776,6 @@ var
   OldPos: LongInt;
   Tmp: TObject;
   SameName: boolean;
-{$IFDEF Windows}
-  Dummy: integer;
-{$ENDIF}
   Stream: TMemoryStream;
   StreamType: ThtmlFileType;
   I: integer;
@@ -787,9 +784,6 @@ begin
     if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
       raise(Exception.Create('No OnGetPostRequest or OnGetPostRequestEx event defined'));
   BeginProcessing;
-{$IFDEF windows}
-  Dummy :=
-{$ENDIF}
   IOResult; {remove any pending file errors}
   S := URL;
   try

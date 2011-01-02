@@ -3821,7 +3821,6 @@ var
   MFPrinter: TMetaFilePrinter;
 {$endif}
 begin
-  Result := 0;
 {$ifdef Windows}
   MFPrinter := TMetaFilePrinter.Create(nil);
   FOnPageEvent := nil;
@@ -3832,6 +3831,8 @@ begin
   finally
     MFPrinter.Free;
   end;
+{$else}
+  Result := 0;
 {$endif}
 end;
 

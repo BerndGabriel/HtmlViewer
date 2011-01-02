@@ -7,7 +7,7 @@ unit FrameViewer09;
 interface
 
 uses
-    HtmlGlobals, Htmlsbs1, HTMLSubs, HTMLUn2, HtmlView, ReadHTML, StylePars, StyleUn, URLSubs, DitherUnit, FramBrwz, FrameViewerReg, FramView, HtmlGif1, HTMLGif2, HtmlBuffer, HtmlMisc, 
+    DitherUnit, FramBrwz, FrameViewerReg, FramView, HtmlBuffer, HtmlGif1, HTMLGif2, HtmlGlobals, HtmlMisc, Htmlsbs1, HTMLSubs, HTMLUn2, HtmlView, ReadHTML, StylePars, StyleUn, URLSubs, 
   LazarusPackageIntf;
 
 implementation

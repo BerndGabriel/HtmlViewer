@@ -518,7 +518,7 @@ type
     procedure CopyToClipboard; override;
     procedure Finish;
     procedure HRef(Sy: Symb; List: TSectionList; AnURL: TUrlTarget; Attributes: TAttributeList; Prop: TProperties);
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     procedure ProcessText(TagIndex: Integer); virtual;
   end;
 
@@ -594,7 +594,7 @@ type
     procedure DrawSort;
     procedure DrawTheList(Canvas: TCanvas; ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
     procedure FormTree(const Indent: ThtString; var Tree: ThtString);
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   end;
 
   ListTypeType = (None, Ordered, Unordered, Definition, liAlone);
@@ -623,7 +623,7 @@ type
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth: Integer; var Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; override;
     function FindWidth1(Canvas: TCanvas; AWidth, ExtMarg: Integer): Integer;
     procedure AddSectionsToList; override;
@@ -643,7 +643,7 @@ type
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
     procedure CancelUsage;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; override;
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     property CaptionBlock: TBlock read FCaptionBlock write SetCaptionBlock;
   end;
@@ -789,7 +789,7 @@ type
     destructor Destroy; override;
     procedure DoColumns(Width: Integer; AsPercent: boolean;
       VAlign: AlignmentType; const Align: ThtString);
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     procedure AddDummyCells;
     procedure GetMinMaxAbs(Canvas: TCanvas; var TotalMinWidth,
       TotalMaxWidth: Integer);
@@ -1081,7 +1081,7 @@ type
     procedure ProcessText(TagIndex: Integer); override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth: Integer; var Curs: Integer): Integer; override;
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   end;
 
   THtmlPropStack = class(TPropStack)
@@ -4171,7 +4171,7 @@ begin
   inherited;
 end;
 
-procedure TBlock.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   MinCell, MaxCell: Integer;
   LeftSide, RightSide, AutoCount: Integer;
@@ -5470,7 +5470,7 @@ end;
 
 {----------------TTableAndCaptionBlock.MinMaxWidth}
 
-procedure TTableAndCaptionBlock.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TTableAndCaptionBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   Mx, Mn, MxTable, MnTable: Integer;
 begin
@@ -5648,7 +5648,7 @@ end;
 
 {----------------TTableBlock.MinMaxWidth}
 
-procedure TTableBlock.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TTableBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   TmpWidth: Integer;
 begin
@@ -7517,8 +7517,8 @@ begin
           Rgn := CreateRectRgn(BL - Point.X, BT - Point.Y, X + Wd - Point.X, YO + Ht - Point.Y)
       else
       begin
-        GetViewportExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeV);
-        GetWindowExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeW);
+        GetViewportExtEx(Canvas.Handle, SizeV);
+        GetWindowExtEx(Canvas.Handle, SizeW);
         HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
         VF := (SizeV.cy / SizeW.cy); {Vertical adjustment factor}
         if IsWin95 then
@@ -8374,7 +8374,7 @@ end;
 
 {----------------THtmlTable.MinMaxWidth}
 
-procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   AddDummyCells; {in case it hasn't been done}
   if UseAbsolute and (tblWidthAttr = 0) then
@@ -10330,7 +10330,7 @@ end;
 
 {----------------TSection.MinMaxWidth}
 
-procedure TSection.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TSection.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 {Min is the width the section would occupy when wrapped as tightly as possible.
  Max, the width if no wrapping were used.}
 var
@@ -12827,7 +12827,7 @@ begin
   Finish;
 end;
 
-procedure TPreformated.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TPreformated.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   if BreakWord then
   begin
