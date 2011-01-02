@@ -1,6 +1,14 @@
 program FlashDemo;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
+{$IFNDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   FlashUnit in 'FlashUnit.pas' {Form1};
 

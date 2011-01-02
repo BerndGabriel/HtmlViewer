@@ -71,12 +71,23 @@ Key Routines:
       parser is responsible for calling Next after it does its thing.
 }
 
-unit Readhtml;
+unit ReadHTML;
 
 interface
+
 uses
-  Messages, Classes, Graphics, Controls, Contnrs,
-  HtmlGlobals, HtmlBuffer, HtmlUn2, HtmlSubs, HtmlSbs1, StyleUn;
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  SysUtils, Math, Variants, Messages, Classes, Graphics, Controls, Contnrs,
+  HtmlGlobals,
+  HtmlBuffer,
+  HTMLUn2,
+  HTMLSubs,
+  HtmlSbs1,
+  StyleUn;
 
 type
   LoadStyleType = (lsFile, lsString, lsInclude);
@@ -187,7 +198,7 @@ type
 implementation
 
 uses
-  Windows, SysUtils, Math, Variants, HtmlView, StylePars, UrlSubs;
+  HtmlView, StylePars, UrlSubs;
 
 const
   MaxRes = 82;
@@ -4093,8 +4104,7 @@ function THtmlParser.GetEntityStr(CodePage: Integer): ThtString;
 {read an entity and return it as a ThtString.}
 var
   I, N: Integer;
-  Collect,
-    Entity: ThtString;
+  Collect, Entity: ThtString;
 
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
   // Adds the given value as new ThtChar to the ThtString.

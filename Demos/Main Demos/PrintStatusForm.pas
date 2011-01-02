@@ -1,15 +1,20 @@
 unit PrintStatusForm;
 
+{$include ..\..\source\htmlcons.inc}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, Buttons,
 {$ifdef LCL}
-  LResources,
+  LclIntf, LclType,
 {$else}
+  Windows,
 {$endif}
-  HTMLView, MetaFilePrinter;
+{$ifdef Windows}
+  MetaFilePrinter,
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Buttons,
+  HTMLView;
 
 type
   TPrnStatusForm = class(TForm)
@@ -17,18 +22,20 @@ type
     CancelButton: TBitBtn;
     procedure CancelButtonClick(Sender: TObject);
   private
-    { Private declarations }
     Viewer: ThtmlViewer;
     Canceled: boolean;
+{$ifdef Windows}
     MFPrinter: TMetaFilePrinter;
+{$endif}
     FromPage, ToPage: integer;
     procedure PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
   public
-    { Public declarations }
+{$ifdef Windows}
   procedure DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
   procedure DoPrint(AViewer: ThtmlViewer; FromPg, ToPg: integer;
               var Abort: boolean);
+{$endif}
   end;
 
 var
@@ -37,10 +44,12 @@ var
 implementation
 
 {$ifdef LCL}
+  {$R *.lfm}
 {$else}
-{$R *.DFM}
+  {$R *.dfm}
 {$endif}
 
+{$ifdef Windows}
 procedure TPrnStatusForm.DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
 begin
@@ -81,6 +90,7 @@ finally
   Viewer.OnPageEvent := Nil;      
   end;
 end;
+{$endif}
 
 procedure TPrnStatusForm.PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
 begin   
@@ -99,9 +109,4 @@ begin
 Canceled := True;
 end;
 
-initialization
-{$ifdef LCL}
-{$include PrintStatusForm.lrs}
-{$else}
-{$endif}
 end.

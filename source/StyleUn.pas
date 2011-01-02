@@ -30,8 +30,12 @@ unit StyleUn;
 interface
 
 uses
-  Windows, Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
-  {$ifdef LCL}Interfaces, {$endif}
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
   HtmlGlobals, HtmlBuffer;
 
 const
@@ -109,7 +113,7 @@ type
     procedure Assign(Source: TPersistent); override;
     procedure AssignToCanvas(Canvas: TCanvas);
     destructor Destroy; override;
-    constructor Create;
+    constructor Create; {$ifdef LCL} override; {$endif}
   end;
 
   PropIndices = (
@@ -178,7 +182,7 @@ type
     ID: integer;
 
     constructor Create; overload; // for use in style list only
-    constructor Create(PropStack: TPropStack); overload; // for use in property stack
+    constructor Create(APropStack: TPropStack); overload; // for use in property stack
     destructor Destroy; override;
     procedure Copy(Source: TProperties);
     procedure CopyDefault(Source: TProperties);
@@ -426,10 +430,10 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
-constructor TProperties.Create(PropStack: TPropStack);
+constructor TProperties.Create(APropStack: TPropStack);
 begin
   Create;
-  self.PropStack := PropStack;
+  self.PropStack := APropStack;
 end;
 
 destructor TProperties.Destroy;

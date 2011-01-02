@@ -4,7 +4,7 @@ object Form1: TForm1
   Top = 333
   Width = 494
   Caption = 'Frame Demo'
-  ClientHeight = 272
+  ClientHeight = 270
   ClientWidth = 494
   Font.Height = -13
   Font.Name = 'System'
@@ -13,10 +13,10 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '0.9.28.2'
+  LCLVersion = '0.9.31'
   object FrameViewer: TFrameViewer
     Left = 0
-    Height = 218
+    Height = 216
     Top = 27
     Width = 494
     CharSet = DEFAULT_CHARSET
@@ -107,7 +107,7 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 0
     Height = 27
-    Top = 245
+    Top = 243
     Width = 494
     Align = alBottom
     Alignment = taLeftJustify

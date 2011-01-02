@@ -48,7 +48,12 @@ uses
   SysUtils, Types, Classes, QGraphics, QControls, QForms, QDialogs,
   QStdCtrls, Math;
 {$ELSE}
-  Windows, Messages, SysUtils, Classes, Graphics,
+{$ifdef LCL}
+  LclIntf, LclType, //LMessages,
+{$else}
+  Windows,
+{$endif}
+  Messages, SysUtils, Classes, Graphics,
   Controls, StdCtrls, ExtCtrls, Forms, Math;
 {$ENDIF}
 

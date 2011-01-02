@@ -51,17 +51,22 @@ Each Section is also responsible for drawing itself (its Draw method).  The
 whole document is drawn with the TSectionList.Draw method.
 }
 
-unit Htmlsubs;
+unit HTMLSubs;
 
 {-$define DO_BLOCK_INLINE}
 {$ifdef DO_BLOCK_INLINE}
 {$endif}
 
 interface
+
 uses
-  Windows, Messages, Classes, Graphics, Controls, ExtCtrls,
-{$ifdef LCL}Interfaces, {$endif}
-  HtmlGlobals, HtmlUn2, StyleUn, HtmlGif2;
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc, types,
+{$else}
+  Windows,
+{$endif}
+  Messages, Classes, Graphics, Controls, ExtCtrls, SysUtils, Variants, Forms, Math,
+  HtmlGlobals, HTMLUn2, StyleUn, HTMLGif2;
 
 type
 
@@ -1100,7 +1105,7 @@ var
 
 var
   PropStack: THtmlPropStack;
-  Title: UnicodeString;
+  Title: ThtString;
   Base: ThtString;
   BaseTarget: ThtString;
   NoBreak: boolean; {set when in <NoBr>}
@@ -1108,9 +1113,7 @@ var
 implementation
 
 uses
-  SysUtils, Variants, Forms, Math,
-  HtmlSbs1
-  {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
+  Htmlsbs1 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
@@ -3204,7 +3207,7 @@ begin
     else
       FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, Color);
     SetTextAlign(Canvas.handle, TA_Left);
-    SetBkMode(Canvas.Handle, Windows.Transparent);
+    SetBkMode(Canvas.Handle, {$ifdef FPC}Lcltype.{$endif}Transparent);
     Canvas.Brush.Style := bsClear;
     ARect := Rect(X1 + Addon, Y1, X1 + Width - (Addon div 2), Y1 + Height);
     ThtCanvas(Canvas).htTextRect(ARect, ARect.Left, Y1 + (Height - H2) div 2 - 1, Text);
@@ -7514,8 +7517,8 @@ begin
           Rgn := CreateRectRgn(BL - Point.X, BT - Point.Y, X + Wd - Point.X, YO + Ht - Point.Y)
       else
       begin
-        GetViewportExtEx(Canvas.Handle, SizeV);
-        GetWindowExtEx(Canvas.Handle, SizeW);
+        GetViewportExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeV);
+        GetWindowExtEx(Canvas.Handle, {$ifdef FPC}@{$endif}SizeW);
         HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
         VF := (SizeV.cy / SizeW.cy); {Vertical adjustment factor}
         if IsWin95 then

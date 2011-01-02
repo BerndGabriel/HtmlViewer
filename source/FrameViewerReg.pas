@@ -28,6 +28,10 @@ unit FrameViewerReg;
 interface
 
 uses
+{$ifdef LCL}
+  LResources,
+{$else}
+{$endif}
   Classes, HTMLView, FramView, FramBrwz;
 
 procedure Register;
@@ -39,4 +43,10 @@ begin
   RegisterComponents('HtmlViewer/FrameViewer', [THTMLViewer, TFrameViewer, TFrameBrowser]);
 end;
 
+{$ifdef LCL}
+initialization
+{.$I htmlcomp.lrs}
+{$endif}
+
 end.
+

@@ -17,13 +17,20 @@ This will create a unit named ShockwaveFlashObjects_TLB.pas.
 
 unit FlashUnit;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, Htmlview, StdCtrls,
-  ShockwaveFlashObjects_TLB,
-  htmlsubs;    {ThvPanel defined in htmlsubs}
+{$IFNDEF FPC}
+  ShockwaveFlashObjects_TLB, Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages,
+{$ENDIF}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  ExtCtrls, Menus, StdCtrls, Htmlview, HTMLSubs;  {ThvPanel defined in htmlsubs}
 
 type
   TForm1 = class(TForm)
@@ -44,9 +51,9 @@ type
     procedure OpenFileClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
   private
-    { Private declarations }
+
   public
-    { Public declarations }
+
   end;
 
 var
@@ -54,11 +61,17 @@ var
 
 implementation
 
-{$R *.dfm}
+{$IFNDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 procedure TForm1.PrintClick(Sender: TObject);
 begin
+{$ifdef Windows}
 Viewer.Print(1, 1);
+{$endif}
 end;
 
 procedure TForm1.ViewerObjectTag(Sender: TObject; Panel: ThvPanel;
@@ -72,7 +85,7 @@ if CompareText(Attributes.Values['classid'],
        'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000') = 0 then
   try
     Movie := Viewer.HTMLExpandFileName(Params.Values['movie']);
-    if FileExists(Movie) then
+    if FileExistsUTF8(Movie) { *Converted from FileExists*  } then
       begin
       Flash := TShockwaveFlash.Create(Panel);
       {set Height and Width before loading Movie}

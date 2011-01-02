@@ -85,12 +85,3 @@ OriginalFilename=
 ProductName=FrameViewer Demo
 ProductVersion=10.0.0.0
 Comments=meet us at http://code.google.com/p/thtmlviewer/
-[HistoryLists\hlUnitOutputDirectory]
-Count=1
-Item0=L:\bin\dcu
-[HistoryLists\hlBPLOutput]
-Count=1
-Item0=L:\bin\bpl
-[HistoryLists\hlDCPOutput]
-Count=1
-Item0=L:\bin\dcp

@@ -30,7 +30,12 @@ unit FramBrwz;
 interface
 
 uses
-  SysUtils, Windows, Classes, Messages, Controls, ExtCtrls,
+{$ifdef LCL}
+  LclIntf, LclType, LMessages, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  SysUtils, Classes, Messages, Controls, ExtCtrls,
   HtmlGlobals, HtmlBuffer, HtmlSubs, HtmlView, Htmlun2, ReadHTML, UrlSubs, FramView;
 
 type
@@ -144,7 +149,7 @@ function TbrFrame.ExpandSourceName(Base, Path: ThtString; S: ThtString): ThtStri
 begin
   S := ConvDosToHTML(S);
   if Pos(':/', S) <> 0 then
-    URLBase := UrlSubs.GetURLBase(S) {get new base}
+    URLBase := URLSubs.GetURLBase(S) {get new base}
   else if Base <> '' then
   begin
     S := CombineURL(Base, S);
@@ -244,7 +249,7 @@ begin
       if NewURL <> '' then
         Source := NewURL;
     end;
-    URLBase := UrlSubs.GetURLBase(Source);
+    URLBase := URLSubs.GetURLBase(Source);
     Inc(MasterSet.NestLevel);
     try
       try
@@ -383,7 +388,7 @@ begin
   if S = '' then
     S := OldName
   else
-    URLBase := UrlSubs.GetURLBase(S); {get new base}
+    URLBase := URLSubs.GetURLBase(S); {get new base}
   HS := S;
   SameName := CompareText(S, OldName) = 0;
 {if SameName, will not have to reload anything unless Reload set}
@@ -396,7 +401,7 @@ begin
     if S1 <> '' then
     begin
       S := S1;
-      URLBase := UrlSubs.GetURLBase(S);
+      URLBase := URLSubs.GetURLBase(S);
     end;
     Source := S;
   end;
@@ -815,7 +820,7 @@ begin
           S := S1;
 
         if Pos(':', S) <> 0 then
-          CurbrFrameSet.URLBase := UrlSubs.GetURLBase(S)
+          CurbrFrameSet.URLBase := URLSubs.GetURLBase(S)
         else
         begin
           CurbrFrameSet.URLBase := OldFrameSet.URLBase;
@@ -870,7 +875,7 @@ begin
       begin
         S := S1;
         if Pos(':', S) <> 0 then
-          CurbrFrameSet.URLBase := UrlSubs.GetURLBase(S);
+          CurbrFrameSet.URLBase := URLSubs.GetURLBase(S);
       end;
 
       (CurbrFrameSet as TbrFrameSet).LoadFromBrzFile(Stream, StreamType, S, Dest);

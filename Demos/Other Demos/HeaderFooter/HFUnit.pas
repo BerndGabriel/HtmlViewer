@@ -11,11 +11,20 @@
 
 unit HFUnit;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, ExtCtrls, Menus, Htmlview, StdCtrls, ShellAPI;
+{$IFNDEF FPC}
+  ShellAPI, WinProcs, WinTypes,
+{$ELSE}
+{$ENDIF}
+  Printers, PrintersDlgs,
+  SysUtils, Messages, Classes, Graphics, Controls,
+  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Htmlview, URLSubs;
                                         
 type
   TForm1 = class(TForm)
@@ -47,10 +56,9 @@ type
       NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
       var StopPrinting: Boolean);
   private
-    { Private declarations }
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
   public
-    { Public declarations }
+
   end;
 
 var
@@ -59,9 +67,16 @@ var
 implementation
 
 uses
-  PreviewForm, HTMLun2;
+{$ifdef Windows}
+  PreviewForm,
+{$endif}
+  HTMLUn2;
 
-{$R *.DFM}
+{$IFNDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
@@ -70,7 +85,9 @@ if Screen.Width <= 640 then
 
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 Caption := 'Header/Footer Demo';
-DragAcceptFiles(Handle, True);
+{$ifdef Windows}
+  DragAcceptFiles(Handle, True);
+{$endif}
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -126,12 +143,14 @@ end;
 
 procedure TForm1.Print1Click(Sender: TObject);
 begin
+{$ifdef Windows}
 with PrintDialog do
   if Execute then
     if PrintRange = prAllPages then
       viewer.Print(1, 9999)
     else
       Viewer.Print(FromPage, ToPage);
+{$endif}
 end;
 
 procedure TForm1.ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
@@ -153,11 +172,14 @@ else
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
+{$ifdef Windows}
 var
   S: string[200];
   Ext: string;
   Count: integer;
+{$endif}
 begin
+{$ifdef Windows}
 Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
 Length(S) := Count;
 DragFinish(Message.WParam);
@@ -167,14 +189,18 @@ if Count >0 then
   if (Ext = '.htm') or (Ext = '.html') then
     Viewer.LoadFromFile(S);
   end;
+{$endif}
 Message.Result := 0;
 end;
 
 procedure TForm1.PrintpreviewClick(Sender: TObject);
+{$ifdef Windows}
 var
   pf: TPreviewForm;
   Abort: boolean;
+{$endif}
 begin
+{$ifdef Windows}
 pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
 try
   if not Abort then
@@ -182,6 +208,7 @@ try
 finally
   pf.Free;
   end;
+{$endif}
 end;
 
 function ReplaceStr(Const S, FromStr, ToStr: string): string;

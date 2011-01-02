@@ -5,17 +5,19 @@
 { Identify FreePascal/Lazarus Compiler Version }
 
   {$define LCL}
-  {$mode Delphi}
+  {$mode delphi}
+  {$H+}
 
   {$define FPC_TODO}
   {$define FPC_TODO_PRINTING}
 
   {$define NoGDIPlus}
 
+  {.$define UseUnicode}
   {$define CopyPaletteMissing}
-  {$define TransparentStretchBltMissing}
+  {.$define TransparentStretchBltMissing}
   {$define MetaFileMissing}
-  {$define UnitConstsMissing}
+  {.$define UnitConstsMissing}
 
   {$define ver100_plus}
   {$define ver120_plus}
@@ -51,6 +53,7 @@
 }
 
   {$define VCL}
+  {$define Windows}
   {$ifdef CONDITIONALEXPRESSIONS} {Delphi 6 and up}
     {$define ver100_plus}
     {$define ver120_plus}
@@ -178,10 +181,6 @@
   {$endif}
 {$endif}
 
-{.$Define UseElpack}
-        {Defining UseElpack allows the Elpack Unicode controls to be used for
-        HTML Form controls in place of the Delphi TEdit, TButton, TListbox,
-        TCombobox, and TMemo controls.  See "Using Third Party Controls" below.}
 {
 Using Third Party Unicode Controls
 

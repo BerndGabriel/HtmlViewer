@@ -16,11 +16,20 @@
 
 unit BmpDemoUnit;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, ShellAPI, Htmlview;
+{$IFNDEF FPC}
+  ShellAPI, Windows,
+{$ELSE}
+  LCLIntf, LCLType, LMessages, types,
+{$ENDIF}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Dialogs, ExtCtrls, StdCtrls, Htmlview;
 
 type
   TForm1 = class(TForm)
@@ -56,7 +65,11 @@ var
 
 implementation
 
-{$R *.dfm}
+{$IFNDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
@@ -72,7 +85,9 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
-DragAcceptFiles(Handle, True);  {allow files to be draged in}
+{$ifdef Windows}
+  DragAcceptFiles(Handle, True);
+{$endif}
 BitmapList := TList.Create;     {a list of Bitmaps}
 end;
 
@@ -101,6 +116,7 @@ var
   Ext: string;
   Count: integer;
 begin
+{$ifdef Windows}
 Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
 Length(S) := Count;
 DragFinish(Message.WParam);
@@ -110,6 +126,7 @@ if Count >0 then
   if (Ext = '.htm') or (Ext = '.html') then
     Viewer.LoadFromFile(S);
   end;
+{$endif}
 Message.Result := 0;
 end;
 

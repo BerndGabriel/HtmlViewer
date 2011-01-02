@@ -30,7 +30,12 @@ unit FramView;
 interface
 
 uses
-  SysUtils, Windows, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
   UrlSubs, HtmlGlobals, HtmlBuffer, Htmlsubs, Htmlview, HTMLUn2, ReadHTML;
 
 type
@@ -244,7 +249,7 @@ type
     function FindEx(const S: WideString; MatchCase, Reverse: boolean): boolean;
     function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TMemoryStream): boolean;
     function ViewerFromTarget(const Target: ThtString): THtmlViewer;
-{$ifndef FPC_TODO_PRINTING}
+{$ifdef Windows}
     function NumPrinterPages(var WidthRatio: double): integer; overload;
     function NumPrinterPages: integer; overload;
     procedure Print(FromPage, ToPage: integer);
@@ -4557,7 +4562,7 @@ begin
     FOnProcessing(Self, False);
 end;
 
-{$ifndef FPC_TODO_PRINTING}
+{$ifdef Windows}
 
 {----------------TFVBase.Print}
 

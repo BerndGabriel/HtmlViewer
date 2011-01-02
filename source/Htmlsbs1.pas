@@ -30,8 +30,13 @@ unit Htmlsbs1;
 interface
 
 uses
-  Windows, Classes, Graphics{$ifdef LCL}, Interfaces{$endif}, Controls,
-  HtmlGlobals, HtmlUn2, HtmlSubs, StyleUn;
+{$ifdef LCL}
+  LclIntf, LclType, Types, HtmlMisc, LclProc,
+{$else}
+  Windows,
+{$endif}
+  Classes, Graphics, Controls,
+  HtmlGlobals, HTMLUn2, HTMLSubs, StyleUn;
 
 type
 

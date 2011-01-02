@@ -33,17 +33,9 @@ are covered by separate copyright notices located in those modules.
 program FrameDem;
 {A program to demonstrate the TFrameViewer component}
 
-{$include ..\..\source\htmlcons.inc}
-
 uses
   Forms,
-{$ifdef LCL}
-  Interfaces,
-  LResources,
-  Submit in 'Submit.pas' {SubmitForm},
-{$else}
   SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
-{$endif}
   PRINTSTATUSFORM in 'PRINTSTATUSFORM.PAS' {PrnStatusForm},
   GOPAGE in 'GOPAGE.PAS' {GoPageForm},
   PREVIEWFORM in 'PREVIEWFORM.PAS' {PreviewForm},
@@ -53,17 +45,12 @@ uses
   IMGFORM in 'IMGFORM.PAS' {ImageForm},
   DemoSubs in 'DemoSubs.pas';
 
-{$R *.RES}
-
-{$IFDEF WINDOWS}
-{$R FrameDem.rc}
-{$ENDIF}
+{$R *.res}
 
 begin
-{$ifdef LCL}
-  {$I FrameDem.lrs}
-{$endif}
   Application.Initialize;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.
+
+

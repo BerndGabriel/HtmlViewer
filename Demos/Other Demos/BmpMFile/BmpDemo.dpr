@@ -1,6 +1,14 @@
 program BmpDemo;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
+{$IFNDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   BmpDemoUnit in 'BmpDemoUnit.pas' {Form1};
 

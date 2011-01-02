@@ -1,0 +1,60 @@
+object GoPageForm: TGoPageForm
+  Left = 1150
+  Height = 116
+  Top = 247
+  Width = 231
+  ActiveControl = PageNum
+  BorderStyle = bsDialog
+  Caption = 'Go to Page Number'
+  ClientHeight = 116
+  ClientWidth = 231
+  Font.Color = clBlack
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = [fsBold]
+  Position = poScreenCenter
+  LCLVersion = '0.9.28.2'
+  object Bevel1: TBevel
+    Left = 11
+    Height = 57
+    Top = 8
+    Width = 209
+    Shape = bsFrame
+  end
+  object OKBtn: TBitBtn
+    Left = 35
+    Height = 27
+    Top = 76
+    Width = 77
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Kind = bkOK
+    ParentFont = False
+    TabOrder = 1
+  end
+  object CancelBtn: TBitBtn
+    Left = 119
+    Height = 27
+    Top = 76
+    Width = 77
+    Font.Color = clBlack
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Kind = bkCancel
+    ParentFont = False
+    TabOrder = 2
+  end
+  object PageNum: TSpinEdit
+    Left = 87
+    Height = 21
+    Top = 27
+    Width = 57
+    MaxValue = 1
+    MinValue = 1
+    OnEnter = PageNumEnter
+    OnKeyDown = PageNumKeyDown
+    TabOrder = 0
+    Value = 1
+  end
+end

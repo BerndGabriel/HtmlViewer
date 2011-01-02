@@ -30,53 +30,53 @@ unit HtmlGlobals;
 interface
 
 uses
-  Windows, Graphics, Classes, Controls,
-{$ifdef FPC}
-  Forms,
-  RtlConsts,
+  Classes, SysUtils, Graphics, Controls,
+{$ifdef LCL}
+  LclIntf, LclType,
+  StdCtrls, Buttons, Forms,
+  HtmlMisc,
+  WideStringsLcl,
 {$else}
-  Consts,
-{$endif}
-{$ifdef UseTNT}
-  {$message 'HtmlViewer uses TNT unicode controls.'}
-  TntControls,
-  TntStdCtrls,
-  {$ifdef Compiler18_Plus}
-    WideStrings,
-  {$else}
-    TntWideStrings,
-  {$endif}
-  TntClasses,
-{$else UseTNT}
-  {$ifdef UseElPack}
-    {$message 'HtmlViewer uses ElPack unicode controls.'}
-    ElListBox, ElCombos, ElEdits, ElPopBtn,
-  {$else UseElPack}
+  Windows, Consts,
+  {$ifdef UseTNT}
+    {$message 'HtmlViewer uses TNT unicode controls.'}
+    TntControls,
+    TntStdCtrls,
+    {$ifdef Compiler18_Plus}
+      WideStrings,
+    {$else}
+      TntWideStrings,
+    {$endif}
+    TntClasses,
+  {$else UseTNT}
     {$message 'HtmlViewer uses VCL standard controls.'}
     StdCtrls,
     Buttons,
-  {$endif UseElPack}
-  {$ifdef Compiler18_Plus}
-    WideStrings,
-  {$else}
-    TntWideStrings,
-    TntClasses,
-  {$endif}
-{$endif UseTNT}
-  SysUtils;
+    {$ifdef Compiler18_Plus}
+      WideStrings,
+    {$else}
+      TntWideStrings,
+      TntClasses,
+    {$endif}
+  {$endif UseTNT}
+{$endif}
+  HtmlBuffer;
 
 type
-{$ifdef UNICODE}
-  {$message 'Compiler uses unicode by default.'}
-{$else}
-  {$message 'Compiler uses single byte chars by default.'}
-  UnicodeString = WideString;
-{$endif}
+  {$ifdef UNICODE}
+    {$message 'Compiler uses unicode by default.'}
+  {$else}
+    {$message 'Compiler uses single byte chars by default.'}
+  {$endif}
 
   {$message 'HtmlViewer uses unicode.'}
-  {$ifdef Compiler18_Plus}
+
+  {$ifdef FPC}
   {$else}
-    TWideStringList = class(TTntStringList);
+    {$ifdef Compiler18_Plus}
+    {$else}
+      TWideStringList = class(TTntStringList);
+    {$endif}
   {$endif}
   {$ifdef UNICODE}
     ThtChar = Char;
@@ -92,10 +92,7 @@ type
     PhtChar = PWideChar;
   {$endif}
 
-  ThtEdit = class(
-    {$ifdef UseTNT}TTntEdit{$else}
-    {$ifdef UseElPack}TElEdit{$else}
-    TEdit{$endif}{$endif})
+  ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
   end;
@@ -109,17 +106,10 @@ type
   ThtRadioButton = TTntRadioButton;
   ThtHintWindow = TTntHintWindow;
 {$else}
-  {$ifdef UseElPack}
-  ThtButton = TElPopupButton;
-  ThtMemo = TElMemo;
-  ThtCombobox = TElCombobox;
-  ThtListbox = TElListbox;
-  {$else}
   ThtButton = TBitBtn; //BG, 25.12.2010: TBitBtn uses correct charset, but TButton does not.
   ThtMemo = TMemo;
   ThtCombobox = TCombobox;
   ThtListbox = TListbox;
-  {$endif}
   ThtCheckBox = TCheckBox;
   ThtRadioButton = TRadioButton;
   ThtHintWindow = THintWindow;
@@ -148,7 +138,6 @@ const
 {$ifdef LCL}
 const
   HWND_MESSAGE = HWND(-3);
-
 
   //ANSI_CHARSET            = 0;       // ANSI charset (Windows-1252)
   //DEFAULT_CHARSET         = 1;
@@ -206,7 +195,7 @@ const
   {$EXTERNALSYM GHND}
   GPTR = GMEM_FIXED or GMEM_ZEROINIT;
   {$EXTERNALSYM GPTR}
-
+{
 const
   HeapAllocFlags = GMEM_MOVEABLE;
 
@@ -217,6 +206,7 @@ type
     psRunning,
     psEnding
   );
+}
 {$endif}
 
 {$ifndef Compiler17_Plus}
@@ -263,7 +253,7 @@ function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
 implementation
 
 uses
-  HtmlUn2;
+  HTMLUn2;
 
 procedure CalcPalette(DC: HDC);
 {calculate a rainbow palette, one with equally spaced colors}
@@ -379,8 +369,7 @@ var
 // 2008.10.19 <-
 
   function ReturnAddr: Pointer;
-  // From classes.pas
-  asm
+  asm  // From classes.pas
     MOV		EAX,[EBP+4] // sysutils.pas says [EBP-4], but this works !
   end;
 
@@ -688,8 +677,13 @@ initialization
   SystemPalette16 := GetStockObject(DEFAULT_PALETTE);
 {$endif}
 
+{$ifdef FPC}
+  IsWin95 := False;           // Use the same always with FPC
+  IsWin32Platform := False;
+{$else}
   IsWin95 := (Win32Platform = VER_PLATFORM_WIN32_WINDOWS) and (Win32MinorVersion in [0..9]);
   IsWin32Platform := Win32Platform = VER_PLATFORM_WIN32_WINDOWS;
+{$endif FPC}
 finalization
   if ThePalette <> 0 then
     DeleteObject(ThePalette);

@@ -1,0 +1,145 @@
+object Form1: TForm1
+  Left = 187
+  Top = 57
+  Width = 879
+  Height = 470
+  Caption = 'Form1'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  PixelsPerInch = 96
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 871
+    Height = 41
+    Align = alTop
+    TabOrder = 0
+    object Button1: TButton
+      Left = 46
+      Top = 6
+      Width = 113
+      Height = 25
+      Caption = 'Load File'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'System'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 0
+      OnClick = Button1Click
+    end
+    object MakeButton: TButton
+      Left = 166
+      Top = 6
+      Width = 113
+      Height = 25
+      Caption = 'Make Bitmaps'
+      Enabled = False
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'System'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 1
+      OnClick = MakeButtonClick
+    end
+    object PrevButton: TButton
+      Left = 518
+      Top = 6
+      Width = 113
+      Height = 25
+      Caption = 'Previous'
+      Enabled = False
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'System'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 2
+      OnClick = PrevButtonClick
+    end
+    object NextButton: TButton
+      Left = 638
+      Top = 6
+      Width = 113
+      Height = 25
+      Caption = 'Next'
+      Enabled = False
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'System'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 3
+      OnClick = NextButtonClick
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Top = 41
+    Width = 432
+    Height = 395
+    Align = alClient
+    BevelInner = bvLowered
+    BevelOuter = bvNone
+    BevelWidth = 2
+    Caption = 'Panel2'
+    TabOrder = 1
+    object Viewer: THTMLViewer
+      Left = 0
+      Top = 0
+      Width = 428
+      Height = 391
+      TabOrder = 0
+      Align = alClient
+      DefBackground = clWindow
+      BorderStyle = htFocused
+      HistoryMaxCount = 0
+      DefFontName = 'Times New Roman'
+      DefPreFontName = 'Courier New'
+      NoSelect = False
+      CharSet = DEFAULT_CHARSET
+      PrintMarginLeft = 2
+      PrintMarginRight = 2
+      PrintMarginTop = 2
+      PrintMarginBottom = 2
+      PrintScale = 1
+    end
+  end
+  object ScrollBox: TScrollBox
+    Left = 432
+    Top = 41
+    Width = 439
+    Height = 395
+    VertScrollBar.Visible = False
+    Align = alRight
+    AutoScroll = False
+    Color = clWindow
+    ParentColor = False
+    TabOrder = 2
+    object PaintBox: TPaintBox
+      Left = 0
+      Top = 0
+      Width = 100
+      Height = 100
+      OnPaint = PaintBoxPaint
+    end
+  end
+  object OpenDialog: TOpenDialog
+    DefaultExt = 'htm'
+    Filter = 'html files|*.htm;*.html|all files|*.*'
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Left = 329
+    Top = 66
+  end
+end

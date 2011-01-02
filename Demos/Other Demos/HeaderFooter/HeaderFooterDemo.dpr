@@ -1,11 +1,20 @@
 program HeaderFooterDemo;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {A program to demonstrate the ThtmlViewer component}
 
 uses
+{$IFNDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   HFUnit in 'HFUnit.pas' {Form1};
 
-{$R *.RES}
+{$R *.res}
 
 begin
   Application.Initialize;

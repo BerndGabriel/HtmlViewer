@@ -1,0 +1,70 @@
+object Form1: TForm1
+  Left = 294
+  Top = 180
+  Width = 429
+  Height = 320
+  Caption = 'Form1'
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  Menu = MainMenu
+  PixelsPerInch = 96
+  object Viewer: THTMLViewer
+    Left = 0
+    Top = 0
+    Width = 421
+    Height = 266
+    TabOrder = 0
+    Align = alClient
+    DefBackground = clWindow
+    BorderStyle = htFocused
+    HistoryMaxCount = 0
+    DefFontName = 'Times New Roman'
+    DefPreFontName = 'Courier New'
+    NoSelect = False
+    CharSet = DEFAULT_CHARSET
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintMarginBottom = 2
+    PrintScale = 1
+    htOptions = [htPrintTableBackground, htPrintMonochromeBlack, htShowVScroll]
+    OnPanelDestroy = ViewerPanelDestroy
+    OnPanelPrint = ViewerPanelPrint
+    OnObjectTag = ViewerObjectTag
+  end
+  object MainMenu: TMainMenu
+    Left = 291
+    Top = 52
+    object File1: TMenuItem
+      Caption = '&File'
+      object Open: TMenuItem
+        Caption = '&Open'
+        ShortCut = 114
+        OnClick = OpenFileClick
+      end
+      object Print1: TMenuItem
+        Caption = '&Print...'
+        Enabled = False
+        OnClick = PrintClick
+      end
+      object N1: TMenuItem
+        Caption = '-'
+      end
+      object Exit1: TMenuItem
+        Caption = 'E&xit'
+        OnClick = Exit1Click
+      end
+    end
+  end
+  object OpenDialog: TOpenDialog
+    DefaultExt = 'htm'
+    Filter = 'html files|*.htm;*.html|all files|*.*'
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Left = 337
+    Top = 66
+  end
+end

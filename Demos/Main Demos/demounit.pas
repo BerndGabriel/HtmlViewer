@@ -16,10 +16,18 @@ unit demounit;
 interface
 
 uses
-  SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Clipbrd, ShellAPI, MMSystem, MPlayer, ComCtrls,
+{$ifdef LCL}
+  LclIntf, LclType, Interfaces,
+{$else}
+  WinTypes, WinProcs, ShellAPI,
+{$endif}
+{$ifdef Windows}
+  MMSystem, MPlayer,
+{$endif}
+  SysUtils, Messages, Classes, Graphics, Controls,
+  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Clipbrd, ComCtrls,
   {$ifdef UseXpMan} XpMan, {$endif} Gauges,
-  ReadHtml, Htmlview, HTMLsubs, UrlSubs, HTMLUn2, StyleUn, HtmlAbt, HtmlGlobals;
+  ReadHTML, Htmlview, HTMLSubs, URLSubs, HTMLUn2, StyleUn, Htmlabt, HtmlGlobals;
 
 const
   MaxHistories = 6;  {size of History list}
@@ -146,9 +154,16 @@ var
 implementation
 
 uses
-  PreviewForm, Submit, ImgForm, FontDlg;
+{$ifdef Windows}
+  PreviewForm,
+{$endif}
+  Submit, ImgForm, FontDlg;
 
-{$R *.DFM}
+{$ifdef LCL}
+  {$R *.lfm}
+{$else}
+  {$R *.dfm}
+{$endif}
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
@@ -164,7 +179,7 @@ Caption := 'HTML Demo, Version '+HTMLAbt.Version;
 ShowImages.Checked := Viewer.ViewImages;
 Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
-for I := 0 to MaxHistories-1 do
+  for I := 0 to MaxHistories-1 do
   begin      {create the MenuItems for the history list}
   Histories[I] := TMenuItem.Create(HistoryMenuItem);
   HistoryMenuItem.Insert(I, Histories[I]);
@@ -175,9 +190,11 @@ for I := 0 to MaxHistories-1 do
     Tag := I;
     end;
   end;
-DragAcceptFiles(Handle, True);
-HintWindow := THintWindow.Create(Self);
-HintWindow.Color := $C0FFFF;
+{$ifdef Windows}
+  DragAcceptFiles(Handle, True);
+{$endif}
+  HintWindow := THintWindow.Create(Self);
+  HintWindow.Color := $C0FFFF;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -283,7 +300,9 @@ if (I <= 2) or (J > 0) then
   if Ext = '.WAV' then
     begin
     Handled := True;
+{$ifdef Windows}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
+{$endif}
     end
   else if Ext = '.EXE' then
     begin
