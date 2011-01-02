@@ -120,7 +120,6 @@ type
     procedure FindDialogFind(Sender: TObject);
     procedure FontsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FrameViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
@@ -163,6 +162,7 @@ type
     procedure SoundRequest(Sender: TObject; const SRC: WideString; Loop: Integer; Terminate: Boolean);
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: WideString);
+    procedure FormDestroy(Sender: TObject);
 {$endif}
   private
     { Private declarations }
@@ -775,11 +775,6 @@ begin
   Params.Free;
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
-begin
-  HintWindow.Free;
-end;
-
 procedure TForm1.FrameViewerRightClick(Sender: TObject; Parameters: TRightClickParameters);
 var
   Pt: TPoint;
@@ -936,7 +931,7 @@ begin
 
     if TimerCount > EndCount then
       CloseAll
-    else if (TimerCount >= StartCount) and not HintVisible then
+    else if (TimerCount >= StartCount) and not HintVisible and (HintWindow <> nil) then
     begin
       ARect := HintWindow.CalcHintRect(300, TitleStr, Nil);
       HintWindow.ActivateHint(Rect(Pt.X, Pt.Y + 18, Pt.X + ARect.Right, Pt.Y + 18 + ARect.Bottom), TitleStr);
@@ -1027,6 +1022,11 @@ begin
     Caption := 'FrameViewer Demo - ' + FrameViewer.DocumentTitle
   else
     Caption := 'FrameViewer Demo - <untitled document>';
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  CloseAll;          
 end;
 
 initialization
