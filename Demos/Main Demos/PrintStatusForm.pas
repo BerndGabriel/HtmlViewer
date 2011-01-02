@@ -56,7 +56,7 @@ begin
   Viewer := AViewer;
   MFPrinter := AMFPrinter;
 {$ifdef FPC}
-  Viewer.OnPageEvent := @PageEvent;
+  Viewer.OnPageEvent := PageEvent;
 {$else}
   Viewer.OnPageEvent := PageEvent;
 {$endif}
@@ -77,7 +77,7 @@ Viewer := AViewer;
 FromPage := FromPg;
 ToPage := ToPg;
 {$ifdef FPC}
-  Viewer.OnPageEvent := @PageEvent;
+  Viewer.OnPageEvent := PageEvent;
 {$else}
   Viewer.OnPageEvent := PageEvent;
 {$endif}

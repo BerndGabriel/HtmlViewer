@@ -68,7 +68,11 @@ type
 
 implementation
 
-{$R *.DFM}
+{$ifdef LCL}
+  {$R *.lfm}
+{$else}
+  {$R *.dfm}
+{$endif}
 
 const
   CustomColor = 'Custom color';

@@ -13,7 +13,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf,
+  LclIntf, HtmlMisc,
 {$else}
   Windows,
 {$endif}

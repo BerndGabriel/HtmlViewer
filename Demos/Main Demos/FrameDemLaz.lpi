@@ -1,0 +1,327 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <MainUnit Value="0"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <VersionInfo>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <BuildModes Count="1" Active="Default">
+      <Item1 Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="2">
+      <Item1>
+        <PackageName Value="FrameViewer09"/>
+        <MinVersion Valid="True"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
+    </RequiredPackages>
+    <Units Count="12">
+      <Unit0>
+        <Filename Value="FrameDemLaz.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="FrameDemLaz"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="32" Y="18"/>
+        <UsageCount Value="23"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="Unit1.pas"/>
+        <ComponentName Value="Form1"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Unit1"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="45" Y="26"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="Htmlabt.pas"/>
+        <ComponentName Value="AboutBox"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Htmlabt"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="21"/>
+        <CursorPos X="1" Y="63"/>
+        <UsageCount Value="10"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="Fontdlg.pas"/>
+        <ComponentName Value="FontForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Fontdlg"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="10"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="FDemUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FDemUnit"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="4"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="356"/>
+        <CursorPos X="1" Y="374"/>
+        <UsageCount Value="22"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="FDemUnit.lfm"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="63" Y="10"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="LFM"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="..\..\package\FrameViewer09.pas"/>
+        <UnitName Value="FrameViewer09"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="36" Y="15"/>
+        <UsageCount Value="10"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <UnitName Value="HtmlMisc"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="447"/>
+        <CursorPos X="67" Y="453"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="..\..\source\HTMLUn2.pas"/>
+        <UnitName Value="HTMLUn2"/>
+        <EditorIndex Value="2"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="3793"/>
+        <CursorPos X="26" Y="3827"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="C:\FPC\2.4.2\source\rtl\win\wininc\redef.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="578"/>
+        <CursorPos X="10" Y="611"/>
+        <UsageCount Value="10"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\..\source\HTMLSubs.pas"/>
+        <UnitName Value="HTMLSubs"/>
+        <EditorIndex Value="3"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="7487"/>
+        <CursorPos X="39" Y="7521"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="..\..\source\framview.pas"/>
+        <UnitName Value="FramView"/>
+        <EditorIndex Value="5"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="2999"/>
+        <CursorPos X="1" Y="3032"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit11>
+    </Units>
+    <JumpHistory Count="30" HistoryIndex="29">
+      <Position1>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="38" Column="45" TopLine="1"/>
+      </Position1>
+      <Position2>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="426" Column="28" TopLine="394"/>
+      </Position2>
+      <Position3>
+        <Filename Value="..\..\source\HTMLUn2.pas"/>
+        <Caret Line="835" Column="46" TopLine="821"/>
+      </Position3>
+      <Position4>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="426" Column="28" TopLine="394"/>
+      </Position4>
+      <Position5>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="39" Column="11" TopLine="1"/>
+      </Position5>
+      <Position6>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="433" Column="9" TopLine="396"/>
+      </Position6>
+      <Position7>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="21" Column="58" TopLine="1"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\..\source\HTMLUn2.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="1158" Column="1" TopLine="1093"/>
+      </Position9>
+      <Position10>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\..\source\HTMLUn2.pas"/>
+        <Caret Line="1002" Column="37" TopLine="969"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\..\source\HTMLUn2.pas"/>
+        <Caret Line="1003" Column="35" TopLine="970"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\..\source\HTMLUn2.pas"/>
+        <Caret Line="1033" Column="37" TopLine="999"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\..\source\HTMLSubs.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\..\source\htmlmisc.pas"/>
+        <Caret Line="460" Column="52" TopLine="437"/>
+      </Position15>
+      <Position16>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="746" Column="59" TopLine="727"/>
+      </Position16>
+      <Position17>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="170" Column="40" TopLine="128"/>
+      </Position17>
+      <Position18>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="359" Column="75" TopLine="359"/>
+      </Position18>
+      <Position19>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="364" Column="1" TopLine="356"/>
+      </Position19>
+      <Position20>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="366" Column="1" TopLine="356"/>
+      </Position20>
+      <Position21>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="369" Column="1" TopLine="356"/>
+      </Position21>
+      <Position22>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="374" Column="18" TopLine="356"/>
+      </Position22>
+      <Position23>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="376" Column="1" TopLine="356"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\..\source\framview.pas"/>
+        <Caret Line="3032" Column="1" TopLine="2999"/>
+      </Position24>
+      <Position25>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="364" Column="1" TopLine="356"/>
+      </Position25>
+      <Position26>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="365" Column="1" TopLine="356"/>
+      </Position26>
+      <Position27>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="374" Column="1" TopLine="356"/>
+      </Position27>
+      <Position28>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="364" Column="30" TopLine="356"/>
+      </Position28>
+      <Position29>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="366" Column="1" TopLine="356"/>
+      </Position29>
+      <Position30>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="369" Column="1" TopLine="356"/>
+      </Position30>
+    </JumpHistory>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FrameDemLaz"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="..\..\source"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Linking>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+    <Other>
+      <CompilerMessages>
+        <UseMsgFile Value="True"/>
+      </CompilerMessages>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

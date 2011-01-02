@@ -1,101 +1,104 @@
 object FontForm: TFontForm
   Left = 916
+  Height = 455
   Top = 190
   Width = 496
-  Height = 455
   BorderIcons = [biSystemMenu]
   Caption = 'Edit Default Font and Colors'
+  ClientHeight = 455
+  ClientWidth = 496
   Color = clBtnFace
   Constraints.MinHeight = 455
   Constraints.MinWidth = 355
-  Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
   Font.Name = 'MS Sans Serif'
-  Font.Style = []
-  OldCreateOrder = True
-  Position = poMainFormCenter
-  ShowHint = True
   OnCreate = FormCreate
   OnShow = FormShow
-  DesignSize = (
-    488
-    421)
-  PixelsPerInch = 96
-  TextHeight = 16
+  Position = poMainFormCenter
+  ShowHint = True
+  LCLVersion = '0.9.31'
   object FontColorLabel: TLabel
     Left = 8
-    Top = 332
-    Width = 61
-    Height = 16
+    Height = 17
+    Top = 331
+    Width = 62
     Anchors = [akLeft, akBottom]
     Caption = '&Font Color'
+    ParentColor = False
   end
   object LinkColorLabel: TLabel
     Left = 8
-    Top = 364
-    Width = 59
-    Height = 16
+    Height = 17
+    Top = 363
+    Width = 60
     Anchors = [akLeft, akBottom]
     Caption = '&Link Color'
+    ParentColor = False
   end
   object FontSizeLabel: TLabel
     Left = 8
-    Top = 303
-    Width = 55
-    Height = 16
+    Height = 17
+    Top = 302
+    Width = 56
     Anchors = [akLeft, akBottom]
     Caption = 'Font &Size'
     FocusControl = FontSizeEdit
+    ParentColor = False
   end
   object FontNameLabel: TLabel
     Left = 8
-    Top = 275
-    Width = 66
-    Height = 16
+    Height = 17
+    Top = 274
+    Width = 67
     Anchors = [akLeft, akBottom]
     Caption = 'Font &Name'
+    ParentColor = False
   end
   object BackgroundColorLabel: TLabel
     Left = 8
-    Top = 394
-    Width = 73
-    Height = 16
+    Height = 17
+    Top = 393
+    Width = 74
     Anchors = [akLeft, akBottom]
     Caption = '&Background'
+    ParentColor = False
   end
   object FontColorButton: TSpeedButton
     Left = 235
+    Height = 22
     Top = 328
     Width = 23
-    Height = 22
     Anchors = [akLeft, akBottom]
     Caption = '...'
+    NumGlyphs = 0
     OnClick = FontColorButtonClick
   end
   object LinkColorButton: TSpeedButton
     Left = 235
+    Height = 22
     Top = 360
     Width = 23
-    Height = 22
     Anchors = [akLeft, akBottom]
     Caption = '...'
+    NumGlyphs = 0
     OnClick = LinkColorButtonClick
   end
   object BackgroundColorButton: TSpeedButton
     Left = 235
+    Height = 22
     Top = 392
     Width = 23
-    Height = 22
     Anchors = [akLeft, akBottom]
     Caption = '...'
+    NumGlyphs = 0
     OnClick = BackgroundColorButtonClick
   end
   object OKButton: TButton
     Left = 405
+    Height = 25
     Top = 360
     Width = 75
-    Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'O&K'
     Default = True
@@ -104,9 +107,9 @@ object FontForm: TFontForm
   end
   object Cancel: TButton
     Left = 405
+    Height = 25
     Top = 392
     Width = 75
-    Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'Cancel'
     ModalResult = 2
@@ -114,106 +117,126 @@ object FontForm: TFontForm
   end
   object ResetButton: TButton
     Left = 405
+    Height = 25
     Top = 328
     Width = 75
-    Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Reset'
-    TabOrder = 2
     OnClick = ResetButtonClick
+    TabOrder = 2
   end
   object FontSizeEdit: TSpinEdit
     Left = 88
-    Top = 299
+    Height = 24
+    Top = 301
     Width = 65
-    Height = 26
     Anchors = [akLeft, akBottom]
     MaxValue = 24
     MinValue = 6
+    OnChange = AnythingChanged
     TabOrder = 0
     Value = 12
-    OnChange = AnythingChanged
   end
-  object FontViewer: THTMLViewer
+  object FontViewer: THtmlViewer
     Left = 8
+    Height = 256
     Top = 8
     Width = 471
-    Height = 256
-    ViewImages = False
     TabOrder = 4
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Anchors = [akTop, akLeft, akRight, akBottom]
     BorderStyle = htSingle
-    HistoryMaxCount = 0
+    CharSet = DEFAULT_CHARSET
     DefFontName = 'Times New Roman'
     DefPreFontName = 'Courier New'
+    HistoryMaxCount = 0
+    HtOptions = []
     NoSelect = True
-    ScrollBars = ssVertical
-    CharSet = DEFAULT_CHARSET
+    PrintMarginBottom = 2
     PrintMarginLeft = 2
     PrintMarginRight = 2
     PrintMarginTop = 2
-    PrintMarginBottom = 2
     PrintScale = 1
-    htOptions = []
+    ScrollBars = ssVertical
+    ViewImages = False
   end
   object FontNameComboBox: TComboBox
     Left = 88
+    Height = 24
     Top = 272
     Width = 392
-    Height = 24
-    Style = csDropDownList
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 16
-    TabOrder = 5
     OnClick = AnythingChanged
+    Style = csDropDownList
+    TabOrder = 5
   end
   object FontColorComboBox: TComboBox
     Left = 88
+    Height = 24
     Top = 328
     Width = 145
-    Height = 24
-    Style = csDropDownList
     Anchors = [akLeft, akBottom]
     ItemHeight = 16
-    TabOrder = 6
     OnChange = AnythingChanged
+    Style = csDropDownList
+    TabOrder = 6
   end
   object LinkColorComboBox: TComboBox
     Left = 88
+    Height = 24
     Top = 360
     Width = 145
-    Height = 24
-    Style = csDropDownList
     Anchors = [akLeft, akBottom]
     ItemHeight = 16
-    TabOrder = 7
     OnChange = AnythingChanged
+    Style = csDropDownList
+    TabOrder = 7
   end
   object BackgroundColorComboBox: TComboBox
     Left = 88
+    Height = 24
     Top = 392
     Width = 145
-    Height = 24
-    Style = csDropDownList
     Anchors = [akLeft, akBottom]
     ItemHeight = 16
-    TabOrder = 8
     OnChange = AnythingChanged
+    Style = csDropDownList
+    TabOrder = 8
   end
   object ColorDialog: TColorDialog
-    Ctl3D = True
-    Left = 136
-    Top = 176
+    Color = clBlack
+    CustomColors.Strings = (
+      'ColorA=000000'
+      'ColorB=000080'
+      'ColorC=008000'
+      'ColorD=008080'
+      'ColorE=800000'
+      'ColorF=800080'
+      'ColorG=808000'
+      'ColorH=808080'
+      'ColorI=C0C0C0'
+      'ColorJ=0000FF'
+      'ColorK=00FF00'
+      'ColorL=00FFFF'
+      'ColorM=FF0000'
+      'ColorN=FF00FF'
+      'ColorO=FFFF00'
+      'ColorP=FFFFFF'
+      'ColorQ=C0DCC0'
+      'ColorR=F0CAA6'
+      'ColorS=F0FBFF'
+      'ColorT=A4A0A0'
+    )
+    left = 136
+    top = 176
   end
   object FontDialog: TFontDialog
-    Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
     Font.Name = 'MS Sans Serif'
-    Font.Style = []
     MinFontSize = 0
     MaxFontSize = 0
-    Left = 176
-    Top = 176
+    left = 176
+    top = 176
   end
 end

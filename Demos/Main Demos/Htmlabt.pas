@@ -55,7 +55,11 @@ type
 
 implementation
 
-{$R *.dfm}
+{$ifdef LCL}
+  {$R *.lfm}
+{$else}
+  {$R *.dfm}
+{$endif}
 
 function ConfigInfo: String;
 begin

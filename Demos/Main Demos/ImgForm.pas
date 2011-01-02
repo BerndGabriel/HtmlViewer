@@ -19,7 +19,11 @@ type
 
 implementation
 
-{$R *.dfm}
+{$ifdef LCL}
+  {$R *.lfm}
+{$else}
+  {$R *.dfm}
+{$endif}
 
 procedure TImageForm.setBitmap(const Value: TBitmap);
 var

@@ -15,7 +15,6 @@ object Form1: TForm1
   Position = poDesktopCenter
   ShowHint = True
   OnCreate = FormCreate
-  OnDestroy = FormDestroy
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 16

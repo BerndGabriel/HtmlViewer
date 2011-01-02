@@ -1,6 +1,6 @@
 {
-Version   10.2
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11
+Copyright (c) 2010-2011 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -22,51 +22,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
+program FrameDemLaz;
 
-unit DemoSubs;
-
-{$include ..\..\source\htmlcons.inc}
-
-interface
+{$mode objfpc}{$H+}
 
 uses
-{$ifdef LCL}
-  LclIntf, LclType,
-{$else}
-  Windows,
-{$endif}
-  SysUtils;
+  Interfaces,
+  Forms,
+  FDemUnit
+  { you can add units after this };
 
-procedure StartProcess(CommandLine: string; ShowWindow: Word);
+{$R *.res}
 
-implementation
-
-procedure StartProcess(CommandLine: string; ShowWindow: Word);
-var
-  PC: array[0..255] of {$ifdef Compiler20_Plus} WideChar {$else} AnsiChar {$endif};
-{$ifdef Compiler20_Plus}
-  si: _STARTUPINFO;
-  pi: _PROCESS_INFORMATION;
-{$endif}
 begin
-  StrPCopy(PC, CommandLine);
-{$ifdef Compiler20_Plus}
-  si.cb := SizeOf(si);
-  si.lpReserved := nil;
-  si.lpDesktop := nil;
-  si.lpTitle := nil;
-  si.dwFlags := STARTF_USESHOWWINDOW;
-  si.wShowWindow := ShowWindow;
-  CreateProcess(nil, PC, nil, nil, False, 0, nil, nil, si, pi);
-  CloseHandle(pi.hProcess);
-  CloseHandle(pi.hThread);
-{$else}
-{$ifdef LCL}
-  //TODO BG, 02.01.2011
-{$else}
-  WinExec(PC, ShowWindow);
-{$endif}
-{$endif}
-end;
-
+  Application.Initialize;
+  Application.CreateForm(TForm1, Form1);
+  Application.Run;
 end.
+

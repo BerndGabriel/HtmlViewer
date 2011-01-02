@@ -27,7 +27,11 @@ function SubmitForm: TSubmitForm;
 
 implementation
 
-{$R *.DFM}
+{$ifdef LCL}
+  {$R *.lfm}
+{$else}
+  {$R *.dfm}
+{$endif}
 
 var
   VForm: TSubmitForm;

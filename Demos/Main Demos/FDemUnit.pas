@@ -35,32 +35,28 @@ uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, {LResources, }FPImage, HtmlMisc,
+  LclIntf, LclType, FPImage, HtmlMisc, WideStringsLcl,
 {$else}
   Windows, ShellAPI,
   {$if CompilerVersion > 15}
     XpMan,
   {$ifend}
-{$endif}
-{$ifdef Compiler18_Plus}
-  WideStrings,
-{$else}
-  TntWideStrings,
-  TntClasses,
+  {$ifdef Compiler18_Plus}
+    WideStrings,
+  {$else}
+    TntWideStrings,
+    TntClasses,
+  {$endif}
+  {$ifdef Windows}
+    MPlayer, MMSystem, PreviewForm,
+  {$endif}
 {$endif}
 {$ifdef UseTNT}
   TntStdCtrls,
   SubmitTnt,
 {$else UseTNT}
-  {$ifdef UseElPack}
-  ElListBox, ElCombos, ElEdits, ElPopBtn,
-  {$else UseElPack}
-  {$endif UseElPack}
-  Submit, MPlayer, HTMLUn2, FramView,
+  Submit,
 {$endif UseTNT}
-{$ifdef Windows}
-  MPlayer, MMSystem, PreviewForm,
-{$endif}
   HtmlGlobals,
   HtmlBuffer,
   URLSubs,
@@ -116,7 +112,8 @@ type
     Panel3: TPanel;
     ProgressBar: TProgressBar;
     InfoPanel: TPanel;
-{$ifdef Windows}
+{$ifdef FPC}
+{$else}
     MediaPlayer: TMediaPlayer;
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
@@ -132,7 +129,6 @@ type
     procedure FindDialogFind(Sender: TObject);
     procedure FontsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FrameViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
@@ -181,7 +177,8 @@ type
     Histories: array[0..MaxHistories-1] of TMenuItem;
     FoundObject: TImageObj;
     NewWindowFile: string;
-{$ifdef Windows}
+{$ifdef LCL}
+{$else}
     MediaCount: integer;
     ThePlayer: TOBject;
 {$endif}
@@ -243,7 +240,8 @@ begin
       Tag := I;
     end;
   end;
-{$ifdef Windows}
+{$ifdef LCL}
+{$else}
   DragAcceptFiles(Handle, True);
 {$endif}
   HintWindow := ThtHintWindow.Create(Self);
@@ -322,7 +320,8 @@ if (I <= 2) or (J > 0) then
   if Ext = '.WAV' then
     begin
     Handled := True;
-{$ifdef Windows}
+{$ifdef LCL}
+{$else}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
 {$endif}
     end
@@ -345,10 +344,10 @@ J := Pos('HTTP://', UpperCase(URL));
 if (I > 0) or (J > 0) then
   begin
   {Note: ShellExecute causes problems when run from Delphi 4 IDE}
-{$ifdef Windows}
-  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
-{$else}
+{$ifdef LCL}
   OpenDocument(StrPCopy(PC, URL));
+{$else}
+  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
 {$endif}
   Handled := True;
   Exit;
@@ -647,7 +646,8 @@ var
   S: string;
   Count: integer;
 begin
-{$ifdef Windows}
+{$ifdef LCL}
+{$else}
   Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
   SetLength(S, Count);
   DragFinish(Message.WParam);
@@ -798,11 +798,6 @@ begin
     end;
   end;
   Params.Free;
-end;
-
-procedure TForm1.FormDestroy(Sender: TObject);
-begin
-  HintWindow.Free;
 end;
 
 procedure TForm1.FrameViewerRightClick(Sender: TObject; Parameters: TRightClickParameters);
@@ -961,7 +956,7 @@ begin
 
     if TimerCount > EndCount then
       CloseAll
-    else if (TimerCount >= StartCount) and not HintVisible then
+    else if (TimerCount >= StartCount) and not HintVisible and (HintWindow <> nil) then
     begin
       ARect := HintWindow.CalcHintRect(300, TitleStr, Nil);
       HintWindow.ActivateHint(Rect(Pt.X, Pt.Y + 18, Pt.X + ARect.Right, Pt.Y + 18 + ARect.Bottom), TitleStr);
@@ -1054,8 +1049,4 @@ begin
     Caption := 'FrameViewer Demo - <untitled document>';
 end;
 
-//initialization
-{.$ifdef LCL}
-{.$I FrameDem.lrs}
-{.$endif}
 end.

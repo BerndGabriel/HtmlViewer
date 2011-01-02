@@ -1,7 +1,7 @@
 object ImageForm: TImageForm
-  Left = 591
+  Left = 535
   Height = 306
-  Top = 236
+  Top = 246
   Width = 317
   AutoSize = True
   Caption = 'ImageForm'

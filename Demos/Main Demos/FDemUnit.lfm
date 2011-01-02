@@ -1,10 +1,10 @@
 object Form1: TForm1
-  Left = 209
+  Left = 383
   Height = 292
-  Top = 333
+  Top = 425
   Width = 494
   Caption = 'Frame Demo'
-  ClientHeight = 270
+  ClientHeight = 272
   ClientWidth = 494
   Font.Height = -13
   Font.Name = 'System'
@@ -16,7 +16,7 @@ object Form1: TForm1
   LCLVersion = '0.9.31'
   object FrameViewer: TFrameViewer
     Left = 0
-    Height = 216
+    Height = 218
     Top = 27
     Width = 494
     CharSet = DEFAULT_CHARSET
@@ -107,7 +107,7 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 0
     Height = 27
-    Top = 243
+    Top = 245
     Width = 494
     Align = alBottom
     Alignment = taLeftJustify
@@ -137,7 +137,7 @@ object Form1: TForm1
     end
   end
   object MainMenu1: TMainMenu
-    left = 360
+    left = 328
     top = 72
     object File1: TMenuItem
       Caption = '&File'
@@ -218,18 +218,18 @@ object Form1: TForm1
     DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    left = 320
+    left = 272
     top = 72
   end
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    left = 400
+    left = 384
     top = 72
   end
   object PopupMenu: TPopupMenu
-    left = 360
-    top = 105
+    left = 440
+    top = 72
     object ViewImage: TMenuItem
       Caption = '&View Image'
       OnClick = ViewImageClick
@@ -250,7 +250,7 @@ object Form1: TForm1
     Enabled = False
     Interval = 200
     OnTimer = Timer1Timer
-    left = 272
+    left = 216
     top = 72
   end
 end
