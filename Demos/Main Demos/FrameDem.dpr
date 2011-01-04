@@ -6,11 +6,10 @@ program FrameDem;
 uses
 {$ifdef LCL}
   Interfaces,
-{$endif}
-{$ifdef Windows}
+{$else}
   PreviewForm,
 {$endif}
-  Forms
+  Forms, printer4lazarus
   ,PrintStatusForm
   ,Gopage
   ,FDemUnit
@@ -22,12 +21,11 @@ uses
 
 {$R *.res}
 
-{$IFDEF WINDOWS}{$R FrameDem.rc}{$ENDIF}
+{$ifdef MsWindows}{$R FrameDem.rc}{$endif}
 
 begin
   Application.Initialize;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.
-
 

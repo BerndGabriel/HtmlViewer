@@ -13,11 +13,11 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf,
+  LclIntf, LclType,
 {$else}
   Windows,
 {$endif}
-{$ifdef Windows}
+{$ifndef NoMetafile}
   MetaFilePrinter,
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
@@ -106,10 +106,10 @@ type
     OldHint       : TNotifyEvent;
     DownX, DownY  : integer;
     Moving        : boolean;
-{$ifdef Windows}
+{$ifndef NoMetafile}
     MFPrinter     : TMetaFilePrinter;
-{$endif}
     procedure     DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
+{$endif}
     procedure     OnHint(Sender: TObject);
     procedure     SetCurPage(Val: integer);
     procedure     CheckEnable;
@@ -141,16 +141,23 @@ begin
   inherited Create(AOwner);
   ZoomBox.ItemIndex := 0;
   UnitsBox.ItemIndex := 0;
+{$ifdef LCL}
+  Screen.Cursors[crZoom] := LoadCursorFromLazarusResource('ZOOM_CURSOR');
+  Screen.Cursors[crHandDrag] := LoadCursorFromLazarusResource('HAND_CURSOR');
+{$else}
   Screen.Cursors[crZoom] := LoadCursor(hInstance, 'ZOOM_CURSOR');
   Screen.Cursors[crHandDrag] := LoadCursor(hInstance, 'HAND_CURSOR');
+{$endif}
   ZoomCursorButClick(nil);
   Viewer := AViewer;
-{$ifdef Windows}
+{$ifndef NoMetafile}
   MFPrinter := TMetaFilePrinter.Create(Self);
 {$endif}
   StatusForm := TPrnStatusForm.Create(Self);
   try
+{$ifndef NoMetafile}
     StatusForm.DoPreview(Viewer, MFPrinter, Abort);
+{$endif}
   finally
     StatusForm.Free;
   end;
@@ -171,7 +178,9 @@ procedure TPreviewForm.FormClose(Sender: TObject;
 begin
    Action := caFree;
    Application.OnHint := OldHint;
+{$ifndef NoMetafile}
    MFPrinter.Free;
+{$endif}
 end;
 
 procedure TPreviewForm.ScrollBox1Resize(Sender: TObject);
@@ -216,7 +225,7 @@ begin
 
    if ZoomBox.ItemIndex<>0 then OnePageBut.Down := True;
 
-   PagePanel.Height := TRUNC(PixelsPerInch * z * MFPrinter.PaperHeight / MFPrinter.PixelsPerInchY); 
+   PagePanel.Height := TRUNC(PixelsPerInch * z * MFPrinter.PaperHeight / MFPrinter.PixelsPerInchY);
    PagePanel.Width  := TRUNC(PixelsPerInch * z * MFPrinter.PaperWidth  / MFPrinter.PixelsPerInchX);
 
    PagePanel2.Visible := TwoPageBut.Down;
@@ -272,10 +281,12 @@ begin
    ZoomLabel.Caption := Format('%1.0n', [z * 100]) + '%';
 end;
 
+{$ifndef NoMetafile}
 procedure TPreviewForm.DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
 begin
    PB.Canvas.Draw(0, 0, mf);
 end;
+{$endif}
 
 procedure TPreviewForm.PBPaint(Sender: TObject);
 var

@@ -4,7 +4,6 @@
 
 { Identify FreePascal/Lazarus Compiler Version }
 
-  {.$define LCL}
   {$MODE Delphi}
 
   {$define FPC_TODO}

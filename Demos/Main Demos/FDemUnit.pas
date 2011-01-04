@@ -37,7 +37,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, {LResources, }FPImage, HtmlMisc,
 {$else}
-  Windows, ShellAPI,
+  Windows, ShellAPI, PreviewForm,
   {$if CompilerVersion > 15}
     XpMan,
   {$ifend}
@@ -58,8 +58,8 @@ uses
   {$endif UseElPack}
   Submit,
 {$endif UseTNT}
-{$ifdef Windows}
-  MPlayer, MMSystem, PreviewForm,
+{$ifdef MsWindows}
+  MPlayer, MMSystem,
 {$endif}
   HtmlGlobals, URLSubs, StyleUn, ReadHTML, HTMLSubs, HTMLUn2, Htmlview, FramView,
   DemoSubs, Htmlabt, ImgForm;
@@ -106,8 +106,10 @@ type
     Panel3: TPanel;
     ProgressBar: TProgressBar;
     InfoPanel: TPanel;
-{$ifdef Windows}
+{$ifdef MsWindows}
     MediaPlayer: TMediaPlayer;
+{$endif}
+{$ifndef LCL}
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
 {$endif}
@@ -172,7 +174,7 @@ type
     Histories: array[0..MaxHistories-1] of TMenuItem;
     FoundObject: TImageObj;
     NewWindowFile: string;
-{$ifdef Windows}
+{$ifdef MsWindows}
     MediaCount: integer;
     ThePlayer: TOBject;
 {$endif}
@@ -234,7 +236,7 @@ begin
       Tag := I;
     end;
   end;
-{$ifdef Windows}
+{$ifndef LCL}
   DragAcceptFiles(Handle, True);
 {$endif}
   HintWindow := THintWindow.Create(Self);
@@ -313,7 +315,7 @@ if (I <= 2) or (J > 0) then
   if Ext = '.WAV' then
     begin
     Handled := True;
-{$ifdef Windows}
+{$ifdef MsWindows}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
 {$endif}
     end
@@ -336,10 +338,10 @@ J := Pos('HTTP://', UpperCase(URL));
 if (I > 0) or (J > 0) then
   begin
   {Note: ShellExecute causes problems when run from Delphi 4 IDE}
-{$ifdef Windows}
-  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
-{$else}
+{$ifdef LCL}
   OpenDocument(StrPCopy(PC, URL));
+{$else}
+  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
 {$endif}
   Handled := True;
   Exit;
@@ -646,7 +648,7 @@ var
   S: string;
   Count: integer;
 begin
-{$ifdef Windows}
+{$ifndef LCL}
   Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
   SetLength(S, Count);
   DragFinish(Message.WParam);
@@ -676,8 +678,7 @@ end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
 begin
-{$ifdef LCL}
-{$else}
+{$ifdef MsWindows}
   try
     With MediaPlayer do
       if NotifyValue = nvSuccessful then
@@ -700,8 +701,7 @@ end;
 
 procedure TForm1.SoundRequest(Sender: TObject; const SRC: String; Loop: Integer; Terminate: Boolean);
 begin
-{$ifdef LCL}
-{$else}
+{$ifdef MsWindows}
   try
     with MediaPlayer do
       if Terminate then
@@ -1057,8 +1057,10 @@ begin
     Caption := 'FrameViewer Demo - <untitled document>';
 end;
 
-//initialization
-{.$ifdef LCL}
-{.$I FrameDem.lrs}
-{.$endif}
+initialization
+{$ifdef LCL}
+{$I FrameDem.lrs}
+{$endif}
+
 end.
+

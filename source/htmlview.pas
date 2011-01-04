@@ -66,8 +66,8 @@ uses
   Windows,
 {$endif}
   Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls,
-{$ifdef Windows}
-  MetaFilePrinter, vwPrint, // Works with Delphi and FPC but only under Windows.
+{$ifndef NoMetafile}
+  MetaFilePrinter, vwPrint,
 {$endif}
   URLSubs, HtmlGlobals, HTMLUn2, ReadHTML, HTMLSubs, StyleUn;
 
@@ -148,8 +148,7 @@ type
 
   THtmlFileType = (HTMLType, TextType, ImgType, OtherType);
 
-{$ifdef Windows}
-{$else}
+{$ifdef NoMetafile}
   //From MetaFilePrinter.pas
   TPageEvent = procedure(Sender: TObject; NumPage: Integer ;
                          var StopPrinting : Boolean) of Object;
@@ -253,7 +252,7 @@ type
     MiddleY: Integer;
     NoJump: Boolean;
     sbWidth: Integer;
-{$ifdef Windows}
+{$ifndef NoMetafile}
     vwP, OldPrinter: TvwPrinter;
 {$endif}
 // child components
@@ -415,9 +414,7 @@ type
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
-{$ifndef FPC_TODO_PRINTING}
-{$endif}
-{$ifdef Windows}
+{$ifndef NoMetafile}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
     function MakePagedMetaFiles(Width, Height: Integer): TList;
     procedure Print(FromPage, ToPage: Integer);
@@ -3162,7 +3159,7 @@ begin
   end;
 end;
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 
 function THtmlViewer.MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
 var
@@ -3350,7 +3347,7 @@ begin
   end;
 end;
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 
 procedure THtmlViewer.Print(FromPage, ToPage: Integer);
 var
@@ -3852,13 +3849,13 @@ begin
 end;
 
 function THtmlViewer.NumPrinterPages(out WidthRatio: Double): Integer;
-{$ifdef Windows}
+{$ifndef NoMetafile}
 var
   MFPrinter: TMetaFilePrinter;
 {$endif}
 begin
   Result := 0;
-{$ifdef Windows}
+{$ifndef NoMetafile}
   MFPrinter := TMetaFilePrinter.Create(nil);
   FOnPageEvent := nil;
   try
@@ -3873,7 +3870,7 @@ end;
 
 //BG, 01.12.2006: beg of modification
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 procedure THtmlViewer.NumPrinterPages(MFPrinter: TMetaFilePrinter; out Width, Height: Integer);
 var
   LOnPageEvent: TPageEvent;
@@ -3888,10 +3885,8 @@ begin
     FOnPageEvent := LOnPageEvent;
   end;
 end;
-{$endif}
 //BG, 01.12.2006: end of modification
 
-{$ifdef Windows}
 function THtmlViewer.PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer;
 var
   ARect, CRect: TRect;
@@ -4723,7 +4718,7 @@ var
   begin
     clipboard.Open;
     try
-{$ifdef Windows}      // Must be implemented in a cross-platform way.
+{$ifndef LCL}      // Must be implemented in a cross-platform way.
       //an extra "1" for the null terminator
       gMem := globalalloc(GMEM_DDESHARE + GMEM_MOVEABLE, length(source) + 1);
       lp := globallock(gMem);

@@ -1,5 +1,9 @@
 unit PrintStatusForm;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 interface
 
 uses
@@ -7,12 +11,10 @@ uses
   LclIntf, LclType,
 {$else}
   Windows,
-{$endif}
-{$ifdef Windows}
   MetaFilePrinter,
 {$endif}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Buttons,
-  HTMLView;
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Buttons,
+  HtmlView;
 
 type
   TPrnStatusForm = class(TForm)
@@ -22,18 +24,18 @@ type
   private
     Viewer: ThtmlViewer;
     Canceled: boolean;
-{$ifdef Windows}
+{$ifndef LCL}
     MFPrinter: TMetaFilePrinter;
 {$endif}
     FromPage, ToPage: integer;
     procedure PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
   public
-{$ifdef Windows}
+{$ifndef LCL}
   procedure DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
+{$endif}
   procedure DoPrint(AViewer: ThtmlViewer; FromPg, ToPg: integer;
               var Abort: boolean);
-{$endif}
   end;
 
 var
@@ -43,17 +45,13 @@ implementation
 
 {$R *.dfm}
 
-{$ifdef Windows}
+{$ifndef LCL}
 procedure TPrnStatusForm.DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
 begin
   Viewer := AViewer;
   MFPrinter := AMFPrinter;
-{$ifdef FPC}
-  Viewer.OnPageEvent := @PageEvent;
-{$else}
   Viewer.OnPageEvent := PageEvent;
-{$endif}
   try
     Show;
     Viewer.PrintPreview(MFPrinter);
@@ -63,28 +61,26 @@ begin
     Viewer.OnPageEvent := Nil;
   end;
 end;
+{$endif}
 
 procedure TPrnStatusForm.DoPrint(AViewer: ThtmlViewer; FromPg, ToPg: integer;
               var Abort: boolean);
 begin
-Viewer := AViewer;
-FromPage := FromPg;
-ToPage := ToPg;
-{$ifdef FPC}
-  Viewer.OnPageEvent := @PageEvent;
-{$else}
+  Viewer := AViewer;
+  FromPage := FromPg;
+  ToPage := ToPg;
   Viewer.OnPageEvent := PageEvent;
-{$endif}
 try
   Show;
-  Viewer.Print(FromPage, ToPage);          
+{$ifndef LCL}
+  Viewer.Print(FromPage, ToPage);
+{$endif}
   Hide;
   Abort := Canceled;
 finally
   Viewer.OnPageEvent := Nil;      
   end;
 end;
-{$endif}
 
 procedure TPrnStatusForm.PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
 begin   

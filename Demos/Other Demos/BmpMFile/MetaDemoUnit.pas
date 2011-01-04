@@ -72,7 +72,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
-{$ifdef Windows}
+{$ifdef MsWindows}
   DragAcceptFiles(Handle, True);
 {$endif}
 MetaList := TList.Create;     {a list of MetaFiles}

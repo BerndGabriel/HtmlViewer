@@ -14,8 +14,6 @@ uses
   LclIntf, LclType,
 {$else}
   Windows,
-{$endif}
-{$ifdef Windows}
   MetaFilePrinter,
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
@@ -101,8 +99,11 @@ type
     OldHint       : TNotifyEvent;
     DownX, DownY  : integer;
     Moving        : boolean;
+{$ifdef LCL}
+{$else}
     MFPrinter     : TMetaFilePrinter;
     procedure     DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
+{$endif}
     procedure     OnHint(Sender: TObject);
     procedure     SetCurPage(Val: integer);
     procedure     CheckEnable;
@@ -127,19 +128,21 @@ constructor TPreviewForm.CreateIt(AOwner: TComponent; AViewer: ThtmlViewer;
 var
   StatusForm: TPrnStatusForm;
 begin
-inherited Create(AOwner);
-   ZoomBox.ItemIndex := 0;
-   UnitsBox.ItemIndex := 0;
-   Screen.Cursors[crZoom] := LoadCursor(hInstance, 'ZOOM_CURSOR');
-   Screen.Cursors[crHandDrag] := LoadCursor(hInstance, 'HAND_CURSOR');
-   ZoomCursorButClick(nil);
-Viewer := AViewer;
-MFPrinter := TMetaFilePrinter.Create(Self);
-StatusForm := TPrnStatusForm.Create(Self);
-try
-  StatusForm.DoPreview(Viewer, MFPrinter, Abort);
-finally
-  StatusForm.Free;
+  inherited Create(AOwner);
+  ZoomBox.ItemIndex := 0;
+  UnitsBox.ItemIndex := 0;
+  Screen.Cursors[crZoom] := LoadCursor(hInstance, 'ZOOM_CURSOR');
+  Screen.Cursors[crHandDrag] := LoadCursor(hInstance, 'HAND_CURSOR');
+  ZoomCursorButClick(nil);
+  Viewer := AViewer;
+{$ifndef NoMetafile}
+  MFPrinter := TMetaFilePrinter.Create(Self);
+{$endif}
+  StatusForm := TPrnStatusForm.Create(Self);
+  try
+    StatusForm.DoPreview(Viewer, MFPrinter, Abort);
+  finally
+    StatusForm.Free;
   end;
 end;
 
@@ -259,10 +262,12 @@ begin
    ZoomLabel.Caption := Format('%1.0n', [z * 100]) + '%';
 end;
 
+{$ifndef NoMetafile}
 procedure TPreviewForm.DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
 begin
    PB.Canvas.Draw(0, 0, mf);
 end;
+{$endif}
 
 procedure TPreviewForm.PBPaint(Sender: TObject);
 var

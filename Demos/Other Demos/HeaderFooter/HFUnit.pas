@@ -67,7 +67,7 @@ var
 implementation
 
 uses
-{$ifdef Windows}
+{$ifdef MsWindows}
   PreviewForm,
 {$endif}
   HTMLUn2;
@@ -85,7 +85,7 @@ if Screen.Width <= 640 then
 
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 Caption := 'Header/Footer Demo';
-{$ifdef Windows}
+{$ifdef MsWindows}
   DragAcceptFiles(Handle, True);
 {$endif}
 end;
@@ -143,7 +143,7 @@ end;
 
 procedure TForm1.Print1Click(Sender: TObject);
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
 with PrintDialog do
   if Execute then
     if PrintRange = prAllPages then
@@ -172,14 +172,14 @@ else
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
-{$ifdef Windows}
+{$ifdef MsWindows}
 var
   S: string[200];
   Ext: string;
   Count: integer;
 {$endif}
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
 Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
 Length(S) := Count;
 DragFinish(Message.WParam);
@@ -194,13 +194,13 @@ Message.Result := 0;
 end;
 
 procedure TForm1.PrintpreviewClick(Sender: TObject);
-{$ifdef Windows}
+{$ifdef MsWindows}
 var
   pf: TPreviewForm;
   Abort: boolean;
 {$endif}
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
 pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
 try
   if not Abort then

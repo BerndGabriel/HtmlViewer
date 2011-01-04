@@ -69,7 +69,7 @@ implementation
 
 procedure TForm1.PrintClick(Sender: TObject);
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
 Viewer.Print(1, 1);
 {$endif}
 end;

@@ -45,7 +45,7 @@ end;
 
 {$ifdef LCL}
 initialization
-{.$I htmlcomp.lrs}
+{$I htmlcomp.lrs}
 {$endif}
 
 end.

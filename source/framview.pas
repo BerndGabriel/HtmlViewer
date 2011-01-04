@@ -2667,14 +2667,14 @@ var
   OldFrameSet: TFrameSet;
   OldPos: integer;
   Tmp: TObject;
-{$IFDEF Windows}
+{$ifdef MsWindows}
   Dummy: integer;
-{$ENDIF}
+{$endif}
 begin
   BeginProcessing;
-{$IFDEF windows}
+{$ifdef MsWindows}
   Dummy :=
-{$ENDIF}
+{$endif}
   IOResult; {remove any pending file errors}
   SendMessage(Handle, wm_SetRedraw, 0, 0);
   try
@@ -4645,14 +4645,14 @@ var
   OldPos: integer;
   Tmp: TObject;
   SameName: boolean;
-{$IFDEF Windows}
+{$ifdef MsWindows}
   Dummy: integer;
-{$ENDIF}
+{$endif}
 begin
   BeginProcessing;
-{$IFDEF windows}
+{$ifdef MsWindows}
   Dummy :=
-{$ENDIF}
+{$endif}
   IOResult; {remove any pending file errors}
   try
     OldFile := CurFrameSet.FCurrentFile;

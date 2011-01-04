@@ -81,8 +81,8 @@ type
     procedure Clear; virtual; abstract;
     procedure Delete(Index: integer); virtual; abstract;
     procedure EndUpdate;
-    function Equals(Obj: TObject): boolean; override; overload;
-    function Equals(TheStrings: TWideStrings): boolean; overload;
+//    function Equals(Obj: TObject): boolean; overload;
+    function Equals(TheStrings: TWideStrings): boolean; // overload;
     procedure Exchange(Index1, Index2: integer); virtual;
     function GetEnumerator: TWideStringsEnumerator;
 //    function GetText: PWideChar; virtual;
@@ -756,7 +756,7 @@ begin
   if FUpdateCount = 0 then
     SetUpdateState(False);
 end;
-
+{
 function TWideStrings.Equals(Obj: TObject): boolean;
 begin
   if Obj is TWideStrings then
@@ -764,7 +764,7 @@ begin
   else
     Result := inherited Equals(Obj);
 end;
-
+}
 function TWideStrings.Equals(TheStrings: TWideStrings): boolean;
 var
   Runner, Nr: longint;

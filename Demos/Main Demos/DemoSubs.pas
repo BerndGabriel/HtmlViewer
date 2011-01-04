@@ -61,7 +61,9 @@ begin
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
 {$else}
-{$ifdef Windows}
+{$ifdef LCL}
+  OpenDocument(PC);
+{$else}
   WinExec(PC, ShowWindow);
 {$endif}
 {$endif}

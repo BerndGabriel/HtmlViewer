@@ -7,8 +7,6 @@ uses
   LclIntf, LclType,
 {$else}
   Windows,
-{$endif}
-{$ifdef Windows}
   MetaFilePrinter,
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
@@ -23,15 +21,20 @@ type
     { Private declarations }
     Viewer: ThtmlViewer;
     Canceled: boolean;
+{$ifdef LCL}
+{$else}
     MFPrinter: TMetaFilePrinter;
+{$endif}
     FromPage, ToPage: integer;
     procedure PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
   public
-    { Public declarations }
+{$ifdef LCL}
+{$else}
   procedure DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
   procedure DoPrint(AViewer: ThtmlViewer; FromPg, ToPg: integer;
               var Abort: boolean);
+{$endif}
   end;
 
 var
@@ -42,6 +45,8 @@ implementation
 {$R *.dfm}
 
 
+{$ifdef LCL}
+{$else}
 procedure TPrnStatusForm.DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
 begin
@@ -74,6 +79,7 @@ finally
   Viewer.OnPageEvent := Nil;      
   end;
 end;
+{$endif}
 
 procedure TPrnStatusForm.PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
 begin   
