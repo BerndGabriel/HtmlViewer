@@ -1148,15 +1148,15 @@ begin
   // Move on to next column
   if (FDirection = 1) then
   begin
-    inc(ErrorR, sizeof(TErrorTerm));
-    inc(ErrorG, sizeof(TErrorTerm));
-    inc(ErrorB, sizeof(TErrorTerm));
+    inc(ErrorR);
+    inc(ErrorG);
+    inc(ErrorB);
   end
   else
   begin
-    dec(ErrorR, sizeof(TErrorTerm));
-    dec(ErrorG, sizeof(TErrorTerm));
-    dec(ErrorB, sizeof(TErrorTerm));
+    dec(ErrorR);
+    dec(ErrorG);
+    dec(ErrorB);
   end;
 end;
 {$IFDEF R_PLUS}
