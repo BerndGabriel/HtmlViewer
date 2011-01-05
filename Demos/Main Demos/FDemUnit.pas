@@ -1057,10 +1057,5 @@ begin
     Caption := 'FrameViewer Demo - <untitled document>';
 end;
 
-initialization
-{$ifdef LCL}
-{$I FrameDem.lrs}
-{$endif}
-
 end.
 
