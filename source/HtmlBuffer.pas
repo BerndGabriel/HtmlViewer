@@ -30,8 +30,16 @@ unit HtmlBuffer;
 interface
 
 uses
-  Windows, Graphics, {$ifdef UNICODE} AnsiStrings, {$endif} Classes, SysUtils,
-  Math, HtmlGlobals;
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+{$endif}
+  Graphics,
+{$ifdef UNICODE}
+  AnsiStrings,
+{$endif}
+  Classes, SysUtils, Math;
 
 const
   // more char sets
@@ -84,12 +92,13 @@ type
 
     FCharSet: TBuffCharSet;
     FCodePage: TBuffCodePage;
-    function GetNextEucAsShiftJis: TBuffArray;
+    FInitalCodePage: TBuffCodePage;
+    function GetNext: Word; {$ifdef UseInline} inline; {$endif}
+    function GetNextEucAsShiftJis: TBuffArray; {$ifdef UseInline} inline; {$endif}
     function GetNextJisAsShiftJis: TBuffArray;
-    function GetNextTwoAsShiftJis: TBuffArray;
+    function GetAsShiftJis(j, k: Word): TBuffArray; {$ifdef UseInline} inline; {$endif}
     function GetPosition: Integer;
     procedure DetectCodePage;
-    procedure Read(var Buffer; Count: Integer);
     procedure Reset;
     procedure SetStream(Stream: TStream);
     procedure SetPostion(const Value: Integer);
@@ -137,6 +146,7 @@ type
     function GetInfo(Index: Integer): TBuffCharSetCodePageInfo;
   public
     constructor Create;
+    destructor Destroy; override;
     procedure AddInfo(Info: TBuffCharSetCodePageInfo);
     function IndexOf(const S: String): Integer; override;
     property Infos[Index: Integer]: TBuffCharSetCodePageInfo read GetInfo; default;
@@ -206,8 +216,8 @@ begin
   raise EConversionError.CreateFmt('Don''t know equivalent char set for code page %d.', [CodePage]);
 end;
 
-//-- BG ---------------------------------------------------------- 14.12.2010 --
-procedure SwapBytes(var Chr: TBuffChar);
+//-- BG ---------------------------------------------------------- 08.01.2011 --
+procedure SwapBytes(var Chr: Word);
 var
   Bytes: array[0..1] of Byte absolute Chr;
   B: Byte;
@@ -267,58 +277,81 @@ constructor TBuffCharSetCodePageInfoList.Create;
 //    http://www.iana.org/assignments/ianacharset-mib
 begin
   inherited Create;
-  AddInfo(TBuffCharSetCodePageInfo.Create('1250', EASTEUROPE_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1251', RUSSIAN_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1252', ANSI_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1253', GREEK_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1254', TURKISH_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1255', HEBREW_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1256', ARABIC_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1257', BALTIC_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('1258', VIETNAMESE_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('5601', HANGEUL_CHARSET, CP_UNKNOWN)); {Korean}
-  AddInfo(TBuffCharSetCodePageInfo.Create('866', RUSSIAN_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('874', THAI_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-1', ANSI_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-2', EASTEUROPE2_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-3', TURKISH_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-4', BALTIC_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-5', RUSSIAN_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-7', GREEK_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-9', TURKISH_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('8859-15', ANSI_CHARSET, CP_UNKNOWN)); {almost Ansi, but not quite}
-  AddInfo(TBuffCharSetCodePageInfo.Create('932', SHIFTJIS_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('936', GB2312_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('949', HANGEUL_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('950', CHINESEBIG5_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('ansi', ANSI_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('arabic', ARABIC_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('big5', CHINESEBIG5_CHARSET, CP_UNKNOWN)); {traditional Chinese}
-  AddInfo(TBuffCharSetCodePageInfo.Create('default', DEFAULT_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('easteurope', EASTEUROPE_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('euc-jp', EUCJP_CHARSET, 932));
-  AddInfo(TBuffCharSetCodePageInfo.Create('euc-kr', HANGEUL_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('gb2312', GB2312_CHARSET, CP_UNKNOWN)); {simplified Chinese}
-  AddInfo(TBuffCharSetCodePageInfo.Create('greek', GREEK_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('hangeul', HANGEUL_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('hebrew', HEBREW_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('johab', JOHAB_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('koi', RUSSIAN_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('oem', OEM_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('russian', RUSSIAN_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('shift_jis', SHIFTJIS_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('shiftjis', SHIFTJIS_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('symbol', SYMBOL_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('thai', THAI_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('tis-620', THAI_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('turkish', TURKISH_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('utf-16be', DEFAULT_CHARSET, CP_UTF16BE)); //http://tools.ietf.org/html/rfc2781
-  AddInfo(TBuffCharSetCodePageInfo.Create('utf-16le', DEFAULT_CHARSET, CP_UTF16LE)); //http://tools.ietf.org/html/rfc2781
-  AddInfo(TBuffCharSetCodePageInfo.Create('utf-8', DEFAULT_CHARSET, CP_UTF8));
-  AddInfo(TBuffCharSetCodePageInfo.Create('vietnamese', VIETNAMESE_CHARSET, CP_UNKNOWN));
-  AddInfo(TBuffCharSetCodePageInfo.Create('x-sjis', SHIFTJIS_CHARSET, CP_UNKNOWN));
-  CaseSensitive := False;
-  Sort;
+  BeginUpdate;
+  try
+    AddInfo(TBuffCharSetCodePageInfo.Create('1250', EASTEUROPE_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1251', RUSSIAN_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1252', ANSI_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1253', GREEK_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1254', TURKISH_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1255', HEBREW_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1256', ARABIC_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1257', BALTIC_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('1258', VIETNAMESE_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('5601', HANGEUL_CHARSET, CP_UNKNOWN)); {Korean}
+    AddInfo(TBuffCharSetCodePageInfo.Create('866', RUSSIAN_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('874', THAI_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-1', ANSI_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-2', EASTEUROPE2_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-3', TURKISH_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-4', BALTIC_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-5', RUSSIAN_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-7', GREEK_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-9', TURKISH_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('8859-15', ANSI_CHARSET, CP_UNKNOWN)); {almost Ansi, but not quite}
+    AddInfo(TBuffCharSetCodePageInfo.Create('932', SHIFTJIS_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('936', GB2312_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('949', HANGEUL_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('950', CHINESEBIG5_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('ansi', ANSI_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('arabic', ARABIC_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('big5', CHINESEBIG5_CHARSET, CP_UNKNOWN)); {traditional Chinese}
+    AddInfo(TBuffCharSetCodePageInfo.Create('default', DEFAULT_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('easteurope', EASTEUROPE_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('euc-jp', EUCJP_CHARSET, 932));
+    AddInfo(TBuffCharSetCodePageInfo.Create('euc-kr', HANGEUL_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('gb2312', GB2312_CHARSET, CP_UNKNOWN)); {simplified Chinese}
+    AddInfo(TBuffCharSetCodePageInfo.Create('greek', GREEK_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('hangeul', HANGEUL_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('hebrew', HEBREW_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('johab', JOHAB_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('koi', RUSSIAN_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('oem', OEM_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('russian', RUSSIAN_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('shift_jis', SHIFTJIS_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('shiftjis', SHIFTJIS_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('symbol', SYMBOL_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('thai', THAI_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('tis-620', THAI_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('turkish', TURKISH_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('utf-16be', DEFAULT_CHARSET, CP_UTF16BE)); //http://tools.ietf.org/html/rfc2781
+    AddInfo(TBuffCharSetCodePageInfo.Create('utf-16le', DEFAULT_CHARSET, CP_UTF16LE)); //http://tools.ietf.org/html/rfc2781
+    AddInfo(TBuffCharSetCodePageInfo.Create('utf-8', DEFAULT_CHARSET, CP_UTF8));
+    AddInfo(TBuffCharSetCodePageInfo.Create('vietnamese', VIETNAMESE_CHARSET, CP_UNKNOWN));
+    AddInfo(TBuffCharSetCodePageInfo.Create('x-sjis', SHIFTJIS_CHARSET, CP_UNKNOWN));
+    CaseSensitive := False;
+    Sort;
+  finally
+    EndUpdate;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 08.01.2011 --
+destructor TBuffCharSetCodePageInfoList.Destroy;
+var
+  I: Integer;
+begin
+  //BG, 08.01.2011: Issue 48: Memory leaks in HTMLBuffer.pas
+  //  free the objects. Unlike Guilleaumes idea to set TStringList.OwnsObjects to True, we
+  //  must free the objects on our own, as OwnsObjects is a property added in Delphi 2009.
+  BeginUpdate;
+  try
+    for I := Count - 1 downto 0 do
+      Objects[I].Free;
+  finally
+    EndUpdate;
+  end;
+  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
@@ -437,6 +470,7 @@ begin
   FName := Name;
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
+  FInitalCodePage := FCodePage;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
@@ -446,6 +480,7 @@ begin
   SetStream(Stream);
   FName := Name;
   FCodePage := CodePage;
+  FInitalCodePage := FCodePage;
   FCharSet := CodePageToCharSet(FCodePage);
 end;
 
@@ -460,6 +495,7 @@ begin
   Reset;
   FName := Name;
   FCodePage := CP_UTF16LE;
+  FInitalCodePage := FCodePage;
   FCharSet := UNKNOWN_CHARSET;
 end;
 
@@ -475,6 +511,7 @@ begin
   FName := Name;
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
+  FInitalCodePage := FCodePage;
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
@@ -522,6 +559,7 @@ begin
         begin
           // this is little endian unicode
           FCodePage := CP_UTF16LE;
+          FInitalCodePage := FCodePage;
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
           Exit;
@@ -532,6 +570,7 @@ begin
           // this is big endian unicode
           // swap the 2 bytes of one char.
           FCodePage := CP_UTF16BE;
+          FInitalCodePage := FCodePage;
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
           Exit;
@@ -545,6 +584,7 @@ begin
           begin
             // this is UTF-8
             FCodePage := CP_UTF8;
+            FInitalCodePage := FCodePage;
             FCharSet := DEFAULT_CHARSET;
             Inc(FPos.BytePtr);
             Exit;
@@ -557,28 +597,63 @@ begin
   begin
     FCharSet := SHIFTJIS_CHARSET;
     FCodePage := CP_ISO2022JP;
+    FInitalCodePage := FCodePage;
     exit;
   end;
   // no preamble: this is most probably a 1-byte per character code.
   FCharSet := DEFAULT_CHARSET;
   FCodePage := CharSetToCodePage(FCharSet);
+  FInitalCodePage := FCodePage;
+end;
+
+//-- BG ---------------------------------------------------------- 08.01.2011 --
+function TBuffer.GetNext: Word;
+begin
+  // Issue 50: THTMLViewer.LoadStrings does not seem to work
+  // Creating the buffer from wide-/unicodestring may contain incorrectly
+  // converted characters of a single byte codepage though. After changing the
+  // codepage to the correct single byte codepage, the first or second character
+  // read is a #0 (namely the high byte of the previous WideChar).
+  //
+  // And #0 represents the end of the buffer.
+  //
+  // Thus always use the initial codepage for reading the appropriate number
+  // of bytes of a character in the correct byte order from buffer.
+  if FPos.AnsiChr < FEnd.AnsiChr then
+    case FInitalCodePage of
+      CP_UTF16LE:
+        begin
+          Result := FPos.WordPtr^;
+          Inc(FPos.BytePtr, sizeof(Word));
+        end;
+
+      CP_UTF16BE:
+        begin
+          Result := FPos.WordPtr^;
+          Inc(FPos.BytePtr, sizeof(Word));
+          SwapBytes(Result);
+        end;
+    else
+      Result := FPos.BytePtr^;
+      Inc(FPos.BytePtr, sizeof(Byte));
+    end
+  else
+    Result := 0;
 end;
 
 //------------------------------------------------------------------------------
 function TBuffer.GetNextEucAsShiftJis: TBuffArray;
+var
+  Chr: Word;
 begin
-  if FPos.AnsiChr < FEnd.AnsiChr then
+  Chr := GetNext;
+  if Chr <= $A0 then
   begin
-    if FPos.BytePtr^ <= $A0 then
-    begin
-      SetLength(Result, 1);
-      Result[0] := FPos.BytePtr^;
-      Inc(FPos.BytePtr);
-      exit;
-    end;
-
-    Result := GetNextTwoAsShiftJis;
-  end;
+    SetLength(Result, 1);
+    Result[0] := Chr;
+  end
+  else
+    Result := GetAsShiftJis(Chr, GetNext);
 end;
 
 //------------------------------------------------------------------------------
@@ -618,60 +693,53 @@ function TBuffer.GetNextJisAsShiftJis: TBuffArray;
 }
 const
   ESC = 27;
+var
+  Pos: Integer;
+  Chr: Word;
 begin
   while FPos.AnsiChr < FEnd.AnsiChr do
   begin
-    case FPos.BytePtr^ of
+    Chr := GetNext;
+    case Chr of
       ESC:
         if FEnd.AnsiChr - FPos.AnsiChr > 2 then
         begin
-          Inc(FPos.BytePtr);
-          case FPos.BytePtr^ of
-
+          Pos := Position;
+          case GetNext of
             Ord('('):
-              begin
-                Inc(FPos.BytePtr);
-                case FPos.BytePtr^ of
-                  Ord('B'):
-                    begin
-                      FJis := bjsAscii;
-                      Inc(FPos.BytePtr);
-                      continue;
-                    end;
+              case GetNext of
+                Ord('B'):
+                  begin
+                    FJis := bjsAscii;
+                    continue;
+                  end;
 
-                  Ord('J'):
-                    begin
-                      FJis := bjsX0201_1976;
-                      Inc(FPos.BytePtr);
-                      continue;
-                    end;
-                end;
-                Dec(FPos.BytePtr);
+                Ord('J'):
+                  begin
+                    FJis := bjsX0201_1976;
+                    continue;
+                  end;
               end;
 
             Ord('$'):
-              begin
-                Inc(FPos.BytePtr);
-                case FPos.BytePtr^ of
-                  Ord('@'):
-                    begin
-                      FJis := bjsX0208_1978;
-                      Inc(FPos.BytePtr);
-                      continue;
-                    end;
+              case GetNext of
+                Ord('@'):
+                  begin
+                    FJis := bjsX0208_1978;
+                    Inc(FPos.BytePtr);
+                    continue;
+                  end;
 
-                  Ord('B'):
-                    begin
-                      FJis := bjsX0208_1983;
-                      Inc(FPos.BytePtr);
-                      continue;
-                    end;
-                end;
-                Dec(FPos.BytePtr);
+                Ord('B'):
+                  begin
+                    FJis := bjsX0208_1983;
+                    Inc(FPos.BytePtr);
+                    continue;
+                  end;
               end;
 
           end;
-          Dec(FPos.BytePtr);
+          Position := Pos;
         end;
     end;
 
@@ -681,41 +749,42 @@ begin
       bjsX0201_1976:
         begin
           SetLength(Result, 1);
-          Result[0] := FPos.BytePtr^;
-          Inc(FPos.BytePtr);
-          exit;
+          Result[0] := Chr;
         end;
 
       {two byte codes / 94 character sets}
       bjsX0208_1978,
       bjsX0208_1983:
-        begin
-          Result := GetNextTwoAsShiftJis;
-          exit;
-        end;
+        Result := GetAsShiftJis(Chr, GetNext);
     end;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function TBuffer.GetNextTwoAsShiftJis: TBuffArray;
+function TBuffer.GetAsShiftJis(j, k: Word): TBuffArray;
 // core method to convert a 2 byte EUC-JP resp. X0208 code to ShiftJIS
 var
-  j, k, s, t: Word;
+  s, t: Word;
 begin
+  if (j = 0) or (k = 0) then
+  begin
+    SetLength(Result, 1);
+    Result[0] := 0;
+    exit;
+  end;
+  
   SetLength(Result, 2);
 
   {first byte}
-  j := FPos.BytePtr^ and $7F; {and $7F just for safety}
+  //j := FPos.BytePtr^ and $7F; {and $7F just for safety}
   if (j in [33..96]) then
     s := (j + 1) div 2 + 112
   else
     s := (j + 1) div 2 + 176;
   Result[0] := s;
-  Inc(FPos.BytePtr);
 
   {second byte}
-  k := FPos.BytePtr^ and $7F; {and $7F just for safety}
+  //k := FPos.BytePtr^ and $7F; {and $7F just for safety}
   if odd(j) then
   begin
     t := k + 31;
@@ -725,7 +794,6 @@ begin
   else
     t := k + 126;
   Result[1] := t;
-  Inc(FPos.BytePtr);
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
@@ -737,69 +805,70 @@ end;
 //-- BG ---------------------------------------------------------- 14.12.2010 --
 function TBuffer.NextChar: TBuffChar;
 var
-  Buffer: Byte;
+  Buffer: Word;
   Buffer2: TBuffArray;
   Chr: Cardinal;
 begin
   Buffer2 := nil; // valium for the compiler
-  if FPos.AnsiChr < FEnd.AnsiChr then
-    case FCodePage of
-      CP_UTF16LE:
-        begin
-          Read(Result, 2);
-        end;
+  case FCodePage of
+    CP_UTF16LE:
+      Result := TBuffChar(GetNext);
 
-      CP_UTF16BE:
-        begin
-          Read(Result, 2);
-          SwapBytes(Result);
-        end;
+    CP_UTF16BE:
+      Result := TBuffChar(GetNext);
 
-      CP_UTF8:
+    CP_UTF8:
+      begin
+        Buffer := GetNext;
+        if (Buffer and $80) <> 0 then
         begin
-          Read(Buffer, 1);
-          if (Buffer and $80) <> 0 then
+          Chr := Buffer and $3F;
+          if (Buffer and $20) <> 0 then
           begin
-            Chr := Buffer and $3F;
-            if (Buffer and $20) <> 0 then
-            begin
-              Read(Buffer, 1);
-              if (Buffer and $C0) <> $80 then
-              begin
-                Result := TBuffChar(0);
-                exit;
-              end;
-              Chr := (Chr shl 6) or (Buffer and $3F);
-            end;
-            Read(Buffer, 1);
+            Buffer := GetNext;
             if (Buffer and $C0) <> $80 then
             begin
               Result := TBuffChar(0);
               exit;
             end;
-            Result := TBuffChar((Chr shl 6) or (Buffer and $3F));
-          end
-          else
-            Result := TBuffChar(Buffer);
-        end;
+            Chr := (Chr shl 6) or (Buffer and $3F);
+          end;
+          Buffer := GetNext;
+          if (Buffer and $C0) <> $80 then
+          begin
+            Result := TBuffChar(0);
+            exit;
+          end;
+          Result := TBuffChar((Chr shl 6) or (Buffer and $3F));
+        end
+        else
+          Result := TBuffChar(Buffer);
+      end;
 
-      CP_ISO2022JP:
-        begin
-          Buffer2 := GetNextJisAsShiftJis;
-          MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
-        end;
+    CP_ISO2022JP:
+      if FPos.AnsiChr < FEnd.AnsiChr then
+      begin
+        Buffer2 := GetNextJisAsShiftJis;
+        MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
+      end
+      else
+        Result := TBuffChar(0);
 
-      CP_EUCJP:
-        begin
-          Buffer2 := GetNextEucAsShiftJis;
-          MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
-        end;
-    else
-      Read(Buffer, 1);
-      MultiByteToWideChar(FCodePage, 0, @Buffer, 1, @Result, 1);
-    end
+    CP_EUCJP:
+      if FPos.AnsiChr < FEnd.AnsiChr then
+      begin
+        Buffer2 := GetNextEucAsShiftJis;
+        MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
+      end
+      else
+        Result := TBuffChar(0);
   else
-    Result := TBuffChar(0);
+    Buffer := GetNext;
+    if Buffer <> 0 then
+      MultiByteToWideChar(FCodePage, 0, @Buffer, 1, @Result, 1)
+    else
+      Result := TBuffChar(0);
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
@@ -810,18 +879,6 @@ begin
   Pos := Position;
   Result := NextChar;
   Position := Pos;
-end;
-
-//-- BG ---------------------------------------------------------- 16.12.2010 --
-procedure TBuffer.Read(var Buffer; Count: Integer);
-begin
-  case Count of
-    1: PByte(@Buffer)^ := FPos.BytePtr^;
-    2: PWord(@Buffer)^ := FPos.WordPtr^;
-  else
-    Move(FPos.AnsiChr^, Buffer, Count);
-  end;
-  Inc(FPos.BytePtr, Count);
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
@@ -854,4 +911,10 @@ begin
   Result := Length(FBuffer);
 end;
 
+// GDG
+initialization
+finalization
+  FreeAndNil(VCharSetCodePageByName);
 end.
+
+

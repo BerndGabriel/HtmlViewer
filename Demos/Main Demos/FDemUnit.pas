@@ -120,6 +120,7 @@ type
     procedure FindDialogFind(Sender: TObject);
     procedure FontsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FrameViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
@@ -162,7 +163,6 @@ type
     procedure SoundRequest(Sender: TObject; const SRC: WideString; Loop: Integer; Terminate: Boolean);
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: WideString);
-    procedure FormDestroy(Sender: TObject);
 {$endif}
   private
     { Private declarations }

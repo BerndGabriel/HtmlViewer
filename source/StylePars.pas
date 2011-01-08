@@ -30,6 +30,9 @@ unit StylePars;
 interface
 
 uses
+{$ifdef VCL}
+  Windows,  // needed to expand inline function htUpCase 
+{$endif}
   Classes, Graphics, SysUtils,
   HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn;
 

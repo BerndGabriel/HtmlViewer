@@ -142,7 +142,7 @@
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
 
-{$Define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
+{.$Define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
         removing the '.'.  For documents with hundreds of links, tabbing may not
         be desirable and also may cause delays in loading.  Even when NoTabLink
         is not defined, there is another constant, MaxTab, which eliminates
