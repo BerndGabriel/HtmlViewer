@@ -721,6 +721,9 @@ end;
 
 destructor THtmlViewer.Destroy;
 begin
+{$ifndef FPC_TODO_PRINTING}
+  AbortPrint;
+{$endif}
   Exclude(FViewerState, vsMiddleScrollOn);
   if vsLocalBitmapList in FViewerState then
   begin
@@ -734,9 +737,7 @@ begin
   Visited.Free;
   HTMLTimer.Free;
   FLinkAttributes.Free;
-{$ifndef FPC_TODO_PRINTING}
-  AbortPrint;
-{$endif}
+  FDocument.Free;
   inherited Destroy;
 end;
 
