@@ -731,6 +731,9 @@ end;
 
 destructor THtmlViewer.Destroy;
 begin
+{$ifndef NoMetaFile}
+  AbortPrint;
+{$endif}
   Exclude(FViewerState, vsMiddleScrollOn);
   if vsLocalBitmapList in FViewerState then
   begin
@@ -744,9 +747,7 @@ begin
   Visited.Free;
   HTMLTimer.Free;
   FLinkAttributes.Free;
-{$ifndef NoMetaFile}
-  AbortPrint;
-{$endif}
+  FDocument.Free;
   inherited Destroy;
 end;
 
