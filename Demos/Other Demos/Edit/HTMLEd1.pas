@@ -89,7 +89,7 @@ type
     ViewerOK, RichOK: boolean;
     SizeRatio: double;
     procedure CheckFileSave;
-{$ifdef Windows}
+{$ifdef MsWindows}
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
 {$endif}
   public
@@ -113,7 +113,7 @@ const
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
   DragAcceptFiles(Handle, True);
 {$endif}
   RichEdit.Modified := False;
@@ -252,7 +252,7 @@ try
       RichEdit.SelLength := Pos2-Pos;
       end;
     RichEdit.SetFocus;
-{$ifdef Windows}
+{$ifdef MsWindows}
     PostMessage(RichEdit.handle, em_scrollcaret, 0, 0);   {8.03}
 {$endif}
     end;
@@ -357,7 +357,7 @@ except
   end;
 end;
 
-{$ifdef Windows}
+{$ifdef MsWindows}
 procedure TForm1.WMDropFiles(var Msg: TWMDropFiles);
 var
   CFileName: array[0..MAX_PATH] of Char;

@@ -85,7 +85,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
-{$ifdef Windows}
+{$ifdef MsWindows}
   DragAcceptFiles(Handle, True);
 {$endif}
 BitmapList := TList.Create;     {a list of Bitmaps}
@@ -116,7 +116,7 @@ var
   Ext: string;
   Count: integer;
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
 Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
 Length(S) := Count;
 DragFinish(Message.WParam);

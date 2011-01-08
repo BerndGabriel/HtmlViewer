@@ -1,7 +1,7 @@
 object PreviewForm: TPreviewForm
-  Left = 361
+  Left = 218
   Height = 511
-  Top = 158
+  Top = 177
   Width = 734
   Caption = 'Preview Form'
   ClientHeight = 511
@@ -37,7 +37,7 @@ object PreviewForm: TPreviewForm
   }
   OnClose = FormClose
   OnShow = FormShow
-  LCLVersion = '0.9.28.2'
+  LCLVersion = '0.9.31'
   WindowState = wsMaximized
   object ToolBarPanel: TPanel
     Left = 0
@@ -56,7 +56,6 @@ object PreviewForm: TPreviewForm
       Top = 4
       Width = 25
       AllowAllUp = True
-      Color = clBtnFace
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -79,7 +78,6 @@ object PreviewForm: TPreviewForm
       Hint = 'Selects the Zoom Tool to zoom in or out'
       Top = 4
       Width = 25
-      Color = clBtnFace
       Down = True
       Glyph.Data = {
         76010000424D7601000000000000760000002800000020000000100000000100
@@ -107,7 +105,6 @@ object PreviewForm: TPreviewForm
       Hint = 'Selects the Hand Tool to pan across the Page'
       Top = 4
       Width = 25
-      Color = clBtnFace
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -131,7 +128,6 @@ object PreviewForm: TPreviewForm
       Top = 4
       Width = 25
       Caption = '&1'
-      Color = clBtnFace
       Down = True
       GroupIndex = 3
       NumGlyphs = 0
@@ -147,7 +143,6 @@ object PreviewForm: TPreviewForm
       Top = 4
       Width = 25
       Caption = '&2'
-      Color = clBtnFace
       GroupIndex = 3
       NumGlyphs = 0
       OnClick = TwoPageButClick
@@ -161,7 +156,6 @@ object PreviewForm: TPreviewForm
       Top = 4
       Width = 25
       AllowAllUp = True
-      Color = clBtnFace
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -185,7 +179,6 @@ object PreviewForm: TPreviewForm
       Top = 4
       Width = 25
       AllowAllUp = True
-      Color = clBtnFace
       Glyph.Data = {
         F6000000424DF600000000000000760000002800000010000000100000000100
         0400000000008000000000000000000000001000000010000000000000000000
@@ -464,7 +457,6 @@ object PreviewForm: TPreviewForm
         Hint = 'Go to First Page in Document'
         Top = 2
         Width = 25
-        Color = clBtnFace
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
@@ -498,7 +490,6 @@ object PreviewForm: TPreviewForm
         Hint = 'Move to Previous Page in Document'
         Top = 2
         Width = 25
-        Color = clBtnFace
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
@@ -532,7 +523,6 @@ object PreviewForm: TPreviewForm
         Hint = 'Advance to Next Page in Document'
         Top = 2
         Width = 25
-        Color = clBtnFace
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
@@ -566,7 +556,6 @@ object PreviewForm: TPreviewForm
         Hint = 'Go to Last Page in Document'
         Top = 2
         Width = 25
-        Color = clBtnFace
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'
@@ -600,7 +589,6 @@ object PreviewForm: TPreviewForm
         Hint = 'Go to Page by Page Number'
         Top = 2
         Width = 25
-        Color = clBtnFace
         Font.Color = clBlack
         Font.Height = -13
         Font.Name = 'Times New Roman'

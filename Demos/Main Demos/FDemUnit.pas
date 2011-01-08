@@ -47,10 +47,14 @@ uses
     TntWideStrings,
     TntClasses,
   {$endif}
-  {$ifdef Windows}
-    MPlayer, MMSystem, PreviewForm,
-  {$endif}
 {$endif}
+{$ifndef MultiMediaMissing}
+  MPlayer, MMSystem,
+{$endif}
+{$ifndef MetaFileMissing}
+  MetaFilePrinter,
+{$endif}
+  PreviewForm,
 {$ifdef UseTNT}
   TntStdCtrls,
   SubmitTnt,
@@ -112,9 +116,12 @@ type
     Panel3: TPanel;
     ProgressBar: TProgressBar;
     InfoPanel: TPanel;
-{$ifdef FPC}
-{$else}
+{$ifdef MsWindows}
+  {$ifndef LCL}
     MediaPlayer: TMediaPlayer;
+  {$endif}
+{$endif}
+{$ifndef LCL}
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
 {$endif}
@@ -177,8 +184,7 @@ type
     Histories: array[0..MaxHistories-1] of TMenuItem;
     FoundObject: TImageObj;
     NewWindowFile: string;
-{$ifdef LCL}
-{$else}
+{$ifdef MsWindows}
     MediaCount: integer;
     ThePlayer: TOBject;
 {$endif}
@@ -320,8 +326,7 @@ if (I <= 2) or (J > 0) then
   if Ext = '.WAV' then
     begin
     Handled := True;
-{$ifdef LCL}
-{$else}
+{$ifndef MultiMediaMissing}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
 {$endif}
     end
@@ -404,9 +409,9 @@ var
   I: integer;
 begin
 {$ifdef LCL}
-  Print1.Visible := False;
+//  Print1.Visible := False;
   PrinterSetup.Visible := False;
-  PrintPreview1.Visible := False;
+//  PrintPreview1.Visible := False;
 {$endif}
 if (ParamCount >= 1) then
   begin            {Parameter is file to load}
@@ -677,8 +682,7 @@ end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
 begin
-{$ifdef LCL}
-{$else}
+{$ifndef MultiMediaMissing}
   try
     With MediaPlayer do
       if NotifyValue = nvSuccessful then
@@ -701,8 +705,7 @@ end;
 
 procedure TForm1.SoundRequest(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: Boolean);
 begin
-{$ifdef LCL}
-{$else}
+{$ifndef MultiMediaMissing}
   try
     with MediaPlayer do
       if Terminate then
@@ -868,10 +871,6 @@ begin
 end;
 
 procedure TForm1.PrintPreview1Click(Sender: TObject);
-{$ifdef LCL}
-begin
-end;
-{$else}
 var
   pf: TPreviewForm;
   Viewer: ThtmlViewer;
@@ -889,7 +888,6 @@ begin
     end;
   end;
 end;
-{$endif}
 
 procedure TForm1.FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 var
@@ -1050,3 +1048,4 @@ begin
 end;
 
 end.
+

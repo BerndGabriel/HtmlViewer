@@ -38,10 +38,13 @@ uses
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
+{$ifdef METAFILEMISSING}
+  MetaFilePrinter,
+{$endif}
   UrlSubs, StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
-  VersionNo = '10.2';
+  VersionNo = '11';
   MaxHScroll = 6000; {max horizontal display in pixels}
   HandCursor = 10101;
   OldThickIBeamCursor = 2;

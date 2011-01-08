@@ -11,22 +11,26 @@
 {$endif}
 
 unit demounit;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {A program to demonstrate the ThtmlViewer component}
 
 interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, Interfaces,
+  LclIntf, LclType, FPimage, HtmlMisc,
 {$else}
   WinTypes, WinProcs, ShellAPI,
 {$endif}
-{$ifdef Windows}
-  MMSystem, MPlayer,
+{$ifdef MsWindows}
+  MPlayer, XpMan, MMSystem,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Clipbrd, ComCtrls,
-  {$ifdef UseXpMan} XpMan, {$endif} Gauges,
   ReadHTML, Htmlview, HTMLSubs, URLSubs, HTMLUn2, StyleUn, Htmlabt, HtmlGlobals;
 
 const
@@ -49,7 +53,6 @@ type
     FwdButton: TButton;
     HistoryMenuItem: TMenuItem;
     Exit1: TMenuItem;
-    PrintDialog: TPrintDialog;
     About1: TMenuItem;
     Edit2: TMenuItem;
     Find1: TMenuItem;
@@ -60,7 +63,6 @@ type
     SelectAllItem: TMenuItem;
     OpenTextFile: TMenuItem;
     OpenImageFile: TMenuItem;
-    MediaPlayer: TMediaPlayer;
     PopupMenu: TPopupMenu;
     CopyImageToClipboard: TMenuItem;
     Viewimage: TMenuItem;
@@ -71,9 +73,15 @@ type
     Printpreview: TMenuItem;
     Timer1: TTimer;
     ProgressBar: TProgressBar;
-    PrinterSetupDialog: TPrinterSetupDialog;
     PrinterSetup1: TMenuItem;
     RepaintButton: TButton;
+{$ifdef MsWindows}
+    MediaPlayer: TMediaPlayer;
+{$endif}
+{$ifndef LCL}
+    PrintDialog: TPrintDialog;
+    PrinterSetupDialog: TPrinterSetupDialog;
+{$endif}
     procedure OpenFileClick(Sender: TObject);
     procedure HotSpotChange(Sender: TObject; const URL: string);
     procedure HotSpotClick(Sender: TObject; const URL: string;
@@ -154,10 +162,10 @@ var
 implementation
 
 uses
-{$ifdef Windows}
+{$ifndef LCL}
   PreviewForm,
 {$endif}
-  Submit, ImgForm, FontDlg;
+  SUBMIT, ImgForm, Fontdlg;
 
 {$ifdef LCL}
   {$R *.lfm}
@@ -190,7 +198,7 @@ Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
     Tag := I;
     end;
   end;
-{$ifdef Windows}
+{$ifndef LCL}
   DragAcceptFiles(Handle, True);
 {$endif}
   HintWindow := THintWindow.Create(Self);
@@ -256,6 +264,9 @@ const
   snd_Async = $0001;  { play asynchronously }
 var
   PC: array[0..255] of char;
+{$ifdef LCL}
+  PC2: array[0..255] of char;
+{$endif}
   S, Params: string[255];
   Ext: string[5];
   ID: string;
@@ -300,35 +311,46 @@ if (I <= 2) or (J > 0) then
   if Ext = '.WAV' then
     begin
     Handled := True;
-{$ifdef Windows}
+{$ifndef LCL}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
 {$endif}
     end
   else if Ext = '.EXE' then
     begin
     Handled := True;
+{$ifdef LCL}
+    OpenDocument(s);
+{$else}
     WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
+{$endif}
     end
   else if (Ext = '.MID') or (Ext = '.AVI')  then
     begin
     Handled := True;
-    WinExec(StrPCopy(PC, 'MPlayer.exe /play /close '+S), sw_Show);
+{$ifdef LCL}
+    OpenDocument(s);
+{$else}
+    WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
+{$endif}
     end;
   {else ignore other extensions}
   Edit1.Text := URL;
   Exit;
   end;
 
-I := Pos('MAILTO:', UpperCase(URL));
-J := Pos('HTTP:', UpperCase(URL));
-if (I > 0) or (J > 0) then
+  I := Pos('MAILTO:', UpperCase(URL));
+  J := Pos('HTTP:', UpperCase(URL));
+  if (I > 0) or (J > 0) then
   begin
-  ShellExecute(0, nil, pchar(URL), nil, nil, SW_SHOWNORMAL);
-  Handled := True;
-  Exit;
+{$ifdef LCL}
+    OpenDocument(URL);
+{$else}
+    ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
+{$endif}
+    Handled := True;
+    Exit;
   end;
-
-Edit1.Text := URL;   {other protocall}
+  Edit1.Text := URL;   {other protocall}
 end;
 
 procedure TForm1.ShowImagesClick(Sender: TObject);
@@ -439,17 +461,21 @@ end;
 
 procedure TForm1.Print1Click(Sender: TObject);
 begin
+{$ifndef LCL}
 with PrintDialog do
   if Execute then
     if PrintRange = prAllPages then
       viewer.Print(1, 9999)
     else
       Viewer.Print(FromPage, ToPage);
+{$endif}
 end;
 
 procedure TForm1.PrinterSetup1Click(Sender: TObject);
 begin
-PrinterSetupDialog.Execute;
+{$ifndef LCL}
+  PrinterSetupDialog.Execute;
+{$endif}
 end;
 
 procedure TForm1.About1Click(Sender: TObject);
@@ -579,6 +605,7 @@ var
   Ext: string;
   Count: integer;
 begin
+{$ifndef LCL}
 Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
 Length(S) := Count;
 DragFinish(Message.WParam);
@@ -593,11 +620,13 @@ if Count >0 then
         or (Ext = '.jpeg') or (Ext = '.png') then
     Viewer.LoadImageFile(S);
   end;
+{$endif}
 Message.Result := 0;
 end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
 begin
+{$ifdef MsWindows}
 try
   With MediaPlayer do
     if NotifyValue = nvSuccessful then
@@ -612,11 +641,13 @@ try
       end;
 except
   end;
+{$endif}
 end;
 
 procedure TForm1.SoundRequest(Sender: TObject; const SRC: String;
   Loop: Integer; Terminate: Boolean);
 begin
+{$ifdef MsWindows}
 try
   with MediaPlayer do
     if Terminate then
@@ -632,6 +663,7 @@ try
       end;
 except
   end;
+{$endif}
 end;
 
 procedure TForm1.ViewimageClick(Sender: TObject);
@@ -769,7 +801,11 @@ procedure TForm1.OpenInNewWindowClick(Sender: TObject);
 var
   PC: array[0..255] of char;
 begin
-WinExec(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
+{$ifdef LCL}
+  OpenDocument(ParamStr(0));
+{$else}
+  WinExec(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
+{$endif}
 end;
 
 procedure TForm1.MetaTimerTimer(Sender: TObject);
@@ -795,10 +831,13 @@ if FileExists(NextFile) then
 end;
 
 procedure TForm1.PrintpreviewClick(Sender: TObject);
+{$ifndef LCL}
 var
   pf: TPreviewForm;
   Abort: boolean;
+{$endif}
 begin
+{$ifndef LCL}
 pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
 try
   if not Abort then
@@ -806,6 +845,7 @@ try
 finally
   pf.Free;
   end;
+{$endif}
 end;
 
 procedure TForm1.ViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);

@@ -249,7 +249,7 @@ type
     function FindEx(const S: WideString; MatchCase, Reverse: boolean): boolean;
     function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TMemoryStream): boolean;
     function ViewerFromTarget(const Target: ThtString): THtmlViewer;
-{$ifdef Windows}
+{$ifndef NoMetafile}
     function NumPrinterPages(var WidthRatio: double): integer; overload;
     function NumPrinterPages: integer; overload;
     procedure Print(FromPage, ToPage: integer);
@@ -4558,7 +4558,7 @@ begin
     FOnProcessing(Self, False);
 end;
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 
 {----------------TFVBase.Print}
 

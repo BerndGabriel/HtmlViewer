@@ -17,6 +17,7 @@
   {$define CopyPaletteMissing}
   {.$define TransparentStretchBltMissing}
   {$define MetaFileMissing}
+  {$define MultiMediaMissing}
   {.$define UnitConstsMissing}
 
   {$define ver100_plus}
@@ -138,14 +139,14 @@
         undesirable, define "NoGDIPlus" by removing the '.'.
         Defining NoGDIPlus will remove support for PNG images entirely.}
 
-{$Define NoMetaFile} {Metafiles may be displayed by undefining this constant.
+{.$Define NoMetaFile} {Metafiles may be displayed by undefining this constant.
         NoMetaFile is defined by default to emphasize the fact that Metafile
         display and some printing operations are currently incompatible in Win98.
         For applications where printing is unimportant or Win98/95/ME need not
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
 
-{$Define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
+{.$Define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
         removing the '.'.  For documents with hundreds of links, tabbing may not
         be desirable and also may cause delays in loading.  Even when NoTabLink
         is not defined, there is another constant, MaxTab, which eliminates

@@ -1113,7 +1113,11 @@ var
 implementation
 
 uses
-  Htmlsbs1 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
+{$IFNDEF NoGDIPlus}
+  GDIPL2A,
+{$ENDIF}
+  Htmlsbs1,
+  HtmlView;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;

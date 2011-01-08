@@ -37,8 +37,8 @@ uses
   Windows,
 {$endif}
   Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls,
-{$ifdef Windows}
-  MetaFilePrinter, vwPrint, // Works with Delphi and FPC but only under Windows.
+{$ifndef NoMetafile}
+  MetaFilePrinter, vwPrint,
 {$endif}
   URLSubs,
   HtmlGlobals,
@@ -125,8 +125,7 @@ type
 
   THtmlFileType = (HTMLType, TextType, ImgType, OtherType);
 
-{$ifdef Windows}
-{$else}
+{$ifdef NoMetafile}
   //From MetaFilePrinter.pas
   TPageEvent = procedure(Sender: TObject; NumPage: Integer ;
                          var StopPrinting : Boolean) of Object;
@@ -230,7 +229,7 @@ type
     MiddleY: Integer;
     NoJump: Boolean;
     sbWidth: Integer;
-{$ifdef Windows}
+{$ifndef NoMetafile}
     vwP, OldPrinter: TvwPrinter;
 {$endif}
 // child components
@@ -394,7 +393,7 @@ type
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
-{$ifdef Windows}
+{$ifndef NoMetafile}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
     function MakePagedMetaFiles(Width, Height: Integer): TList;
     procedure Print(FromPage, ToPage: Integer);
@@ -745,7 +744,7 @@ begin
   Visited.Free;
   HTMLTimer.Free;
   FLinkAttributes.Free;
-{$ifdef Windows}
+{$ifndef NoMetaFile}
   AbortPrint;
 {$endif}
   inherited Destroy;
@@ -3126,7 +3125,7 @@ begin
   end;
 end;
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 
 function THtmlViewer.MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
 var
@@ -3314,7 +3313,7 @@ begin
   end;
 end;
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 
 procedure THtmlViewer.Print(FromPage, ToPage: Integer);
 var
@@ -3816,12 +3815,13 @@ begin
 end;
 
 function THtmlViewer.NumPrinterPages(out WidthRatio: Double): Integer;
-{$ifdef Windows}
+{$ifndef NoMetafile}
 var
   MFPrinter: TMetaFilePrinter;
 {$endif}
 begin
-{$ifdef Windows}
+  Result := 0;
+{$ifndef NoMetafile}
   MFPrinter := TMetaFilePrinter.Create(nil);
   FOnPageEvent := nil;
   try
@@ -3831,14 +3831,12 @@ begin
   finally
     MFPrinter.Free;
   end;
-{$else}
-  Result := 0;
 {$endif}
 end;
 
 //BG, 01.12.2006: beg of modification
 
-{$ifdef Windows}
+{$ifndef NoMetafile}
 procedure THtmlViewer.NumPrinterPages(MFPrinter: TMetaFilePrinter; out Width, Height: Integer);
 var
   LOnPageEvent: TPageEvent;
@@ -3853,10 +3851,8 @@ begin
     FOnPageEvent := LOnPageEvent;
   end;
 end;
-{$endif}
 //BG, 01.12.2006: end of modification
 
-{$ifdef Windows}
 function THtmlViewer.PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer;
 var
   ARect, CRect: TRect;

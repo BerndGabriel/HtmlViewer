@@ -1,9 +1,9 @@
 object PreviewForm: TPreviewForm
   Left = 361
   Top = 158
+  Width = 742
+  Height = 545
   Caption = 'Preview Form'
-  ClientHeight = 511
-  ClientWidth = 734
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

@@ -28,7 +28,7 @@ program FrameDemLaz;
 
 uses
   Interfaces,
-  Forms,
+  Forms, printer4lazarus,
   FDemUnit
   { you can add units after this };
 

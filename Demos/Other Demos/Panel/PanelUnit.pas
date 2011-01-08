@@ -127,7 +127,7 @@ end;
 
 procedure TForm1.PrintButtonClick(Sender: TObject);
 begin
-{$ifdef Windows}
+{$ifdef MsWindows}
 Viewer.Print(1, 1);
 {$endif}
 end;

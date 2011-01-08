@@ -10,11 +10,9 @@ uses
 {$else}
   Windows,
 {$endif}
-{$ifdef Windows}
   MetaFilePrinter,
-{$endif}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Buttons,
-  HTMLView;
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Buttons,
+  HtmlView;
 
 type
   TPrnStatusForm = class(TForm)
@@ -24,18 +22,14 @@ type
   private
     Viewer: ThtmlViewer;
     Canceled: boolean;
-{$ifdef Windows}
     MFPrinter: TMetaFilePrinter;
-{$endif}
     FromPage, ToPage: integer;
     procedure PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
   public
-{$ifdef Windows}
   procedure DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
   procedure DoPrint(AViewer: ThtmlViewer; FromPg, ToPg: integer;
               var Abort: boolean);
-{$endif}
   end;
 
 var
@@ -49,17 +43,13 @@ implementation
   {$R *.dfm}
 {$endif}
 
-{$ifdef Windows}
+
 procedure TPrnStatusForm.DoPreview(AViewer: ThtmlViewer; AMFPrinter: TMetaFilePrinter;
               var Abort: boolean);
 begin
   Viewer := AViewer;
   MFPrinter := AMFPrinter;
-{$ifdef FPC}
   Viewer.OnPageEvent := PageEvent;
-{$else}
-  Viewer.OnPageEvent := PageEvent;
-{$endif}
   try
     Show;
     Viewer.PrintPreview(MFPrinter);
@@ -70,27 +60,23 @@ begin
   end;
 end;
 
+
 procedure TPrnStatusForm.DoPrint(AViewer: ThtmlViewer; FromPg, ToPg: integer;
               var Abort: boolean);
 begin
-Viewer := AViewer;
-FromPage := FromPg;
-ToPage := ToPg;
-{$ifdef FPC}
+  Viewer := AViewer;
+  FromPage := FromPg;
+  ToPage := ToPg;
   Viewer.OnPageEvent := PageEvent;
-{$else}
-  Viewer.OnPageEvent := PageEvent;
-{$endif}
 try
   Show;
-  Viewer.Print(FromPage, ToPage);          
+  Viewer.Print(FromPage, ToPage);
   Hide;
   Abort := Canceled;
 finally
   Viewer.OnPageEvent := Nil;      
   end;
 end;
-{$endif}
 
 procedure TPrnStatusForm.PageEvent(Sender: TObject; PageNum: integer; var Stop: boolean);
 begin   

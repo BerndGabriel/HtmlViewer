@@ -3686,7 +3686,7 @@ procedure THtmlParser.ParseHtml(Doc: TBuffer; ASectionList: TList;
 const
   MaxTab = 400; {maximum number of links before tabbing of links aborted}
 var
-  TabCount, SaveSIndex: Integer;
+  TabCount, SaveSIndex, SavePosition: Integer;
   T: TAttribute;
 {$ENDIF}
 begin
@@ -3696,6 +3696,7 @@ begin
   try
 {$IFNDEF NoTabLink}
     SaveSIndex := PropStack.SIndex;
+    SavePosition := Doc.Position;
     LinkSearch := True;
     SoundEvent := nil;
     MetaEvent := nil;
@@ -3719,7 +3720,7 @@ begin
     end;
   {reset a few things}
     PropStack.SIndex := SaveSIndex;
-    Buff := PhtChar(DocS);
+    Doc.Position := SavePosition;
 {$ENDIF}
 
     LinkSearch := False;

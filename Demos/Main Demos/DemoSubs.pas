@@ -62,7 +62,7 @@ begin
   CloseHandle(pi.hThread);
 {$else}
 {$ifdef LCL}
-  //TODO BG, 02.01.2011
+  OpenDocument(PC);
 {$else}
   WinExec(PC, ShowWindow);
 {$endif}
