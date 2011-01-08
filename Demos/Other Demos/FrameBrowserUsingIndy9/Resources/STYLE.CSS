@@ -1,0 +1,15 @@
+
+
+  body    {background:  white; font: 10pt Arial;}
+  td, th  {font: 10pt Arial;}
+  .backcolor  {background-color: #a5cdff;}
+  :link   {color: blue;} /*{color: #3737eb;}*/
+  :hover  {color: blue;}
+  :visited {color: blue;}
+  code    {font-size: 1em;}
+  .heading  {font: bold 12pt "Arial" ;  color: #ff6600;
+             border-bottom: solid 1px #0000c0; width: 10; }
+  .Mainhead {background-color: #ffd780;/*rgb(240, 192, 48);*/ color: blue;
+             font: bold 20pt "Arial"; text-align: center; padding: 10px; Margin: 20;}
+  .dorange  {color: #9d3700;}
+

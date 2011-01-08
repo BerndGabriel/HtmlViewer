@@ -1,0 +1,18 @@
+// usage: "c:\program files\borland\Delphi4\bin\BRCC32" -fofbHelp32.res  fbHelp.rc
+// usage: C:\D\DELPHI\BIN\BRCC -fofbHelp16.res  fbHelp.rc
+
+
+XLeft1   HTML    "Xleft1.htm"
+page1    HTML    "page1.htm"
+page3    HTML    "page3.htm"
+page0    HTML    "page0.htm"
+page4    HTML    "page4.htm"
+page5    HTML    "page5.htm"
+page6    HTML    "page6.htm"
+page7    HTML    "page7.htm"
+style    HTML    "style.css"
+builtwindy  GIF  "BuiltWindy.gif"
+tabbot   GIF     "tabbot.gif"
+tabtop   GIF     "tabtop.gif"
+starcross AVI "starcross.avi"
+

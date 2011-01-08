@@ -136,6 +136,7 @@ type
     procedure FindDialogFind(Sender: TObject);
     procedure FontsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FrameViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
@@ -1034,6 +1035,11 @@ begin
     Caption := 'FrameViewer Demo - ' + FrameViewer.DocumentTitle
   else
     Caption := 'FrameViewer Demo - <untitled document>';
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  CloseAll;
 end;
 
 end.

@@ -1116,8 +1116,10 @@ uses
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
-  Htmlsbs1,
-  HtmlView;
+{$IFNDEF NoTabLink}
+  HtmlView,
+{$endif}
+  HtmlSbs1;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
