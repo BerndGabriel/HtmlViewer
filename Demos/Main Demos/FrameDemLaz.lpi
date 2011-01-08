@@ -271,10 +271,11 @@
       <Unit25>
         <Filename Value="..\..\source\MetaFilePrinter.pas"/>
         <UnitName Value="MetaFilePrinter"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="11"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="421"/>
-        <CursorPos X="1" Y="454"/>
+        <TopLine Value="68"/>
+        <CursorPos X="1" Y="100"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit25>
@@ -323,11 +324,10 @@
       <Unit31>
         <Filename Value="..\..\source\vwPrint.pas"/>
         <UnitName Value="vwPrint"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="190"/>
-        <CursorPos X="64" Y="239"/>
+        <CursorPos X="53" Y="232"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit31>
@@ -344,7 +344,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="47"/>
         <CursorPos X="1" Y="80"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit33>
       <Unit34>
