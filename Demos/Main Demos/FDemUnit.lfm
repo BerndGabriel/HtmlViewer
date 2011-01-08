@@ -252,4 +252,12 @@ object Form1: TForm1
     left = 216
     top = 72
   end
+  object PrinterSetupDialog: TPrinterSetupDialog
+    left = 171
+    top = 144
+  end
+  object PrintDialog: TPrintDialog
+    left = 278
+    top = 144
+  end
 end

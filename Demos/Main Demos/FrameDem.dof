@@ -96,10 +96,7 @@ Count=1
 Item0=$(DELPHI)\Lib\Debug
 [HistoryLists\hlUnitOutputDirectory]
 Count=1
-Item0=L:\bin\dcu
-[HistoryLists\hlBPLOutput]
+Item0=lib\delphi6
+[HistoryLists\hlOutputDirectorry]
 Count=1
-Item0=L:\bin\bpl
-[HistoryLists\hlDCPOutput]
-Count=1
-Item0=L:\bin\dcp
+Item0=bin\delphi6

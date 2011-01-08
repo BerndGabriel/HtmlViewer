@@ -41,7 +41,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="36">
+    <Units Count="37">
       <Unit0>
         <Filename Value="FrameDemLaz.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -49,7 +49,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="32" Y="18"/>
-        <UsageCount Value="38"/>
+        <UsageCount Value="39"/>
       </Unit0>
       <Unit1>
         <Filename Value="Unit1.pas"/>
@@ -90,19 +90,22 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FDemUnit"/>
-        <EditorIndex Value="4"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="22"/>
-        <CursorPos X="16" Y="57"/>
-        <UsageCount Value="37"/>
+        <TopLine Value="379"/>
+        <CursorPos X="1" Y="411"/>
+        <UsageCount Value="38"/>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="FDemUnit.lfm"/>
+        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="63" Y="10"/>
-        <UsageCount Value="9"/>
+        <TopLine Value="118"/>
+        <CursorPos X="57" Y="148"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="LFM"/>
       </Unit5>
       <Unit6>
@@ -170,7 +173,7 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="PreviewForm"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="8"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="32" Y="19"/>
@@ -203,7 +206,7 @@
       </Unit16>
       <Unit17>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\control.inc"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="7"/>
         <WindowIndex Value="0"/>
         <TopLine Value="3156"/>
         <CursorPos X="1" Y="3189"/>
@@ -229,7 +232,7 @@
       <Unit20>
         <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
         <UnitName Value="Graphics"/>
-        <EditorIndex Value="10"/>
+        <EditorIndex Value="12"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1026"/>
         <CursorPos X="15" Y="1059"/>
@@ -261,7 +264,7 @@
       <Unit24>
         <Filename Value="D:\source\pascal\lazarus\lcl\printers.pas"/>
         <UnitName Value="Printers"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="6"/>
         <CursorPos X="3" Y="39"/>
@@ -271,8 +274,7 @@
       <Unit25>
         <Filename Value="..\..\source\MetaFilePrinter.pas"/>
         <UnitName Value="MetaFilePrinter"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="11"/>
+        <EditorIndex Value="13"/>
         <WindowIndex Value="0"/>
         <TopLine Value="68"/>
         <CursorPos X="1" Y="100"/>
@@ -297,7 +299,7 @@
       <Unit28>
         <Filename Value="..\..\source\htmlview.pas"/>
         <UnitName Value="HtmlView"/>
-        <EditorIndex Value="8"/>
+        <EditorIndex Value="10"/>
         <WindowIndex Value="0"/>
         <TopLine Value="3439"/>
         <CursorPos X="1" Y="3490"/>
@@ -314,7 +316,7 @@
       </Unit29>
       <Unit30>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="9"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1535"/>
         <CursorPos X="3" Y="1544"/>
@@ -324,7 +326,7 @@
       <Unit31>
         <Filename Value="..\..\source\vwPrint.pas"/>
         <UnitName Value="vwPrint"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="190"/>
         <CursorPos X="53" Y="232"/>
@@ -340,7 +342,7 @@
       </Unit32>
       <Unit33>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\controlcanvas.inc"/>
-        <EditorIndex Value="9"/>
+        <EditorIndex Value="11"/>
         <WindowIndex Value="0"/>
         <TopLine Value="47"/>
         <CursorPos X="1" Y="80"/>
@@ -361,127 +363,137 @@
         <CursorPos X="3" Y="770"/>
         <UsageCount Value="10"/>
       </Unit35>
+      <Unit36>
+        <Filename Value="..\..\source\HtmlGlobals.pas"/>
+        <UnitName Value="HtmlGlobals"/>
+        <EditorIndex Value="2"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="46"/>
+        <CursorPos X="58" Y="86"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit36>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="1150" Column="38" TopLine="1117"/>
-      </Position1>
-      <Position2>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="454" Column="1" TopLine="396"/>
-      </Position2>
-      <Position3>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1491" Column="1" TopLine="1459"/>
-      </Position3>
-      <Position4>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1494" Column="1" TopLine="1459"/>
-      </Position4>
-      <Position5>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1500" Column="1" TopLine="1459"/>
-      </Position5>
-      <Position6>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1501" Column="1" TopLine="1459"/>
-      </Position6>
-      <Position7>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1503" Column="1" TopLine="1459"/>
-      </Position7>
-      <Position8>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1504" Column="1" TopLine="1459"/>
-      </Position8>
-      <Position9>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1507" Column="1" TopLine="1459"/>
-      </Position9>
-      <Position10>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="456" Column="1" TopLine="398"/>
-      </Position10>
-      <Position11>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="459" Column="1" TopLine="401"/>
-      </Position11>
-      <Position12>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="415" Column="1" TopLine="401"/>
-      </Position12>
-      <Position13>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="599" Column="1" TopLine="566"/>
-      </Position13>
-      <Position14>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1572" Column="1" TopLine="1539"/>
-      </Position14>
-      <Position15>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1570" Column="1" TopLine="1539"/>
-      </Position15>
-      <Position16>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\controlcanvas.inc"/>
-        <Caret Line="80" Column="1" TopLine="47"/>
-      </Position16>
-      <Position17>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1570" Column="33" TopLine="1539"/>
-      </Position17>
-      <Position18>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="454" Column="1" TopLine="421"/>
-      </Position18>
-      <Position19>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <Caret Line="1572" Column="1" TopLine="1539"/>
-      </Position19>
-      <Position20>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="71" Column="40" TopLine="24"/>
-      </Position20>
-      <Position21>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="339" Column="45" TopLine="291"/>
-      </Position21>
-      <Position22>
-        <Filename Value="..\..\source\MetaFilePrinter.pas"/>
-        <Caret Line="454" Column="1" TopLine="421"/>
-      </Position22>
-      <Position23>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="316" Column="1" TopLine="291"/>
-      </Position23>
-      <Position24>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="127" Column="1" TopLine="94"/>
-      </Position24>
-      <Position25>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="128" Column="1" TopLine="94"/>
-      </Position25>
-      <Position26>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="221" Column="29" TopLine="190"/>
-      </Position26>
-      <Position27>
-        <Filename Value="D:\source\pascal\lazarus\lcl\printers.pas"/>
-        <Caret Line="37" Column="16" TopLine="18"/>
-      </Position27>
-      <Position28>
         <Filename Value="D:\source\pascal\lazarus\lcl\printers.pas"/>
         <Caret Line="267" Column="58" TopLine="228"/>
-      </Position28>
-      <Position29>
+      </Position1>
+      <Position2>
         <Filename Value="D:\source\pascal\lazarus\lcl\printers.pas"/>
         <Caret Line="241" Column="42" TopLine="208"/>
-      </Position29>
-      <Position30>
+      </Position2>
+      <Position3>
         <Filename Value="..\..\source\vwPrint.pas"/>
         <Caret Line="207" Column="38" TopLine="190"/>
+      </Position3>
+      <Position4>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="124" Column="16" TopLine="100"/>
+      </Position4>
+      <Position5>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="127" Column="16" TopLine="102"/>
+      </Position5>
+      <Position6>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="126" Column="30" TopLine="118"/>
+      </Position6>
+      <Position7>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="541" Column="1" TopLine="512"/>
+      </Position7>
+      <Position8>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="127" Column="44" TopLine="79"/>
+      </Position8>
+      <Position9>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="896" Column="60" TopLine="868"/>
+      </Position9>
+      <Position10>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position10>
+      <Position11>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="440" Column="32" TopLine="382"/>
+      </Position11>
+      <Position12>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="593" Column="29" TopLine="553"/>
+      </Position12>
+      <Position13>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="594" Column="30" TopLine="553"/>
+      </Position13>
+      <Position14>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="595" Column="32" TopLine="553"/>
+      </Position14>
+      <Position15>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="596" Column="26" TopLine="553"/>
+      </Position15>
+      <Position16>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="597" Column="33" TopLine="553"/>
+      </Position16>
+      <Position17>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="598" Column="25" TopLine="553"/>
+      </Position17>
+      <Position18>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="599" Column="30" TopLine="553"/>
+      </Position18>
+      <Position19>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="600" Column="25" TopLine="553"/>
+      </Position19>
+      <Position20>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="835" Column="40" TopLine="798"/>
+      </Position20>
+      <Position21>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="904" Column="58" TopLine="871"/>
+      </Position21>
+      <Position22>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="110" Column="11" TopLine="85"/>
+      </Position22>
+      <Position23>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="864" Column="32" TopLine="853"/>
+      </Position23>
+      <Position24>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="42" Column="31" TopLine="1"/>
+      </Position24>
+      <Position25>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="887" Column="29" TopLine="856"/>
+      </Position25>
+      <Position26>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="1045" Column="1" TopLine="980"/>
+      </Position26>
+      <Position27>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="211" Column="11" TopLine="166"/>
+      </Position27>
+      <Position28>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position28>
+      <Position29>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="110" Column="17" TopLine="52"/>
+      </Position29>
+      <Position30>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="127" Column="17" TopLine="69"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>

@@ -35,7 +35,7 @@ uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, FPImage, HtmlMisc, WideStringsLcl,
+  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
 {$else}
   Windows, ShellAPI,
   {$if CompilerVersion > 15}
@@ -79,6 +79,8 @@ const
 
 type
 
+  { TForm1 }
+
   TForm1 = class(TForm)
     About1: TMenuItem;
     BackButton: TButton;
@@ -121,10 +123,8 @@ type
     MediaPlayer: TMediaPlayer;
   {$endif}
 {$endif}
-{$ifndef LCL}
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
-{$endif}
     procedure About1Click(Sender: TObject);
     procedure BackButtonClick(Sender: TObject);
     procedure Copy1Click(Sender: TObject);
@@ -408,11 +408,6 @@ var
   S: string;
   I: integer;
 begin
-{$ifdef LCL}
-//  Print1.Visible := False;
-  PrinterSetup.Visible := False;
-//  PrintPreview1.Visible := False;
-{$endif}
 if (ParamCount >= 1) then
   begin            {Parameter is file to load}
   S := CmdLine;
@@ -532,15 +527,12 @@ end;
 
 procedure TForm1.Print1Click(Sender: TObject);
 begin
-{$ifdef LCL}
-{$else}
   with PrintDialog do
     if Execute then
       if PrintRange = prAllPages then
         FrameViewer.Print(1, 9999)
       else
         FrameViewer.Print(FromPage, ToPage);
-{$endif}
 end;
 
 procedure TForm1.File1Click(Sender: TObject);
@@ -864,10 +856,7 @@ end;
 
 procedure TForm1.PrinterSetupClick(Sender: TObject);
 begin
-{$ifdef LCL}
-{$else}
   PrinterSetupDialog.Execute;
-{$endif}
 end;
 
 procedure TForm1.PrintPreview1Click(Sender: TObject);
