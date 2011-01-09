@@ -109,7 +109,6 @@ type
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
     constructor Create(Text: TBuffString; Name: TBuffString = ''); overload;
     constructor Create(Text: AnsiString; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
-    destructor Destroy; override;
     procedure AssignTo(Destin: TObject);
     function AsString: TBuffString;
     function NextChar: TBuffChar;
@@ -512,12 +511,6 @@ begin
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
   FInitalCodePage := FCodePage;
-end;
-
-//-- BG ---------------------------------------------------------- 16.12.2010 --
-destructor TBuffer.Destroy;
-begin
-  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
