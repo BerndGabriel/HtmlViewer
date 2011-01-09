@@ -255,36 +255,40 @@ begin
         end
         else
           Doc := nil;
-        if (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source) then
-        begin
-          FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
-          FrameSet.Align := alClient;
-          FrameSet.Visible := False;
-          InsertControl(FrameSet);
-          FrameSet.SendToBack;
-          FrameSet.Visible := True;
-          ParseFrame(MasterSet.FrameViewer, FrameSet, Doc, Source, FrameSet.HandleMeta);
-          Self.BevelOuter := bvNone;
-          frBumpHistory1(Source, 0);
-          with FrameSet do
+        try
+          if (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source) then
           begin
-            for I := 0 to List.Count - 1 do
+            FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
+            FrameSet.Align := alClient;
+            FrameSet.Visible := False;
+            InsertControl(FrameSet);
+            FrameSet.SendToBack;
+            FrameSet.Visible := True;
+            ParseFrame(MasterSet.FrameViewer, FrameSet, Doc, Source, FrameSet.HandleMeta);
+            Self.BevelOuter := bvNone;
+            frBumpHistory1(Source, 0);
+            with FrameSet do
             begin
-              Item := TFrameBaseOpener(List.Items[I]);
-              Item.LoadFiles;
+              for I := 0 to List.Count - 1 do
+              begin
+                Item := TFrameBaseOpener(List.Items[I]);
+                Item.LoadFiles;
+              end;
+              CheckNoresize(Lower, Upper);
+              if FRefreshDelay > 0 then
+                SetRefreshTimer;
             end;
-            CheckNoresize(Lower, Upper);
-            if FRefreshDelay > 0 then
-              SetRefreshTimer;
+          end
+          else
+          begin
+            CreateViewer;
+            Viewer.Base := MasterSet.FBase;
+            Viewer.LoadStream(Source, TheStream, TheStreamType);
+            Viewer.PositionTo(Destination);
+            frBumpHistory1(Source, Viewer.Position);
           end;
-        end
-        else
-        begin
-          CreateViewer;
-          Viewer.Base := MasterSet.FBase;
-          Viewer.LoadStream(Source, TheStream, TheStreamType);
-          Viewer.PositionTo(Destination);
-          frBumpHistory1(Source, Viewer.Position);
+        finally
+          Doc.Free;
         end;
       except
         if not Assigned(Viewer) then
@@ -683,29 +687,33 @@ begin
   FCurrentFile := URL;
   Stream.Position := 0;
   Doc := TBuffer.Create(Stream, Url);
-  if (StreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Url) then
-  begin {it's a Frameset html file}
-    ParseFrame(FrameViewer, Self, Doc, Url, HandleMeta);
-    for I := 0 to List.Count - 1 do
-      TFrameBaseOpener(List.Items[I]).LoadFiles;
-    CalcSizes(Self);
-    CheckNoresize(Lower, Upper);
-    if FRefreshDelay > 0 then
-      SetRefreshTimer;
-  end
-  else
-  begin {it's a non frame file}
-    Frame := TbrFrame(AddFrame(nil, ''));
-    Frame.Source := URL;
-    Frame.TheStream := Stream;
-    Frame.TheStreamType := StreamType;
-    Frame.Destination := Dest;
-    EndFrameSet;
-    CalcSizes(Self);
-    Frame.LoadFiles;
-    FTitle := HtmlSubs.Title;
-    FBase := HtmlSubs.Base;
-    FBaseTarget := HtmlSubs.BaseTarget;
+  try
+    if (StreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Url) then
+    begin {it's a Frameset html file}
+      ParseFrame(FrameViewer, Self, Doc, Url, HandleMeta);
+      for I := 0 to List.Count - 1 do
+        TFrameBaseOpener(List.Items[I]).LoadFiles;
+      CalcSizes(Self);
+      CheckNoresize(Lower, Upper);
+      if FRefreshDelay > 0 then
+        SetRefreshTimer;
+    end
+    else
+    begin {it's a non frame file}
+      Frame := TbrFrame(AddFrame(nil, ''));
+      Frame.Source := URL;
+      Frame.TheStream := Stream;
+      Frame.TheStreamType := StreamType;
+      Frame.Destination := Dest;
+      EndFrameSet;
+      CalcSizes(Self);
+      Frame.LoadFiles;
+      FTitle := HtmlSubs.Title;
+      FBase := HtmlSubs.Base;
+      FBaseTarget := HtmlSubs.BaseTarget;
+    end;
+  finally
+    Doc.Free;
   end;
 end;
 
