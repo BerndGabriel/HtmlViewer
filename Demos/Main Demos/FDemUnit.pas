@@ -729,29 +729,25 @@ end;
 procedure TForm1.FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: ThtString);
 var
   S: ThtString;
+  CB: TCheckBoxFormControlObj absolute Obj;
+  RB: TRadioButtonFormControlObj absolute Obj;
 begin
   if OnClick = 'display' then
   begin
-    if Obj is TFormControlObj then
-      with TFormControlObj(Obj) do
-      begin
-        if TheControl is TCheckBox then
-          with TCheckBox(TheControl) do
-          begin
-            S := Value + ' is ';
-            if Checked then
-              S := S + 'checked'
-            else
-              S := S + 'unchecked';
-            MessageDlg(S, mtCustom, [mbOK], 0);
-          end
-        else if TheControl is TRadioButton then
-          with TRadioButton(TheControl) do
-          begin
-            S := Value + ' is checked';
-            MessageDlg(S, mtCustom, [mbOK], 0);
-          end;
-      end;
+    if Obj is TCheckBoxFormControlObj then
+    begin
+      S := CB.Value + ' is ';
+      if CB.Checked then
+        S := S + 'checked'
+      else
+        S := S + 'unchecked';
+      MessageDlg(S, mtCustom, [mbOK], 0);
+    end
+    else if Obj is TRadioButtonFormControlObj then
+    begin
+      S := RB.Value + ' is checked';
+      MessageDlg(S, mtCustom, [mbOK], 0);
+    end;
   end
   else if OnClick <> '' then
     with TAboutBox.CreateIt(Self, OnClick) do

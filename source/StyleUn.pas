@@ -124,7 +124,7 @@ type
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
-    Width, Height, TopPos, BottomPos, RightPos, LeftPos, Visibility,
+    piWidth, piHeight, TopPos, BottomPos, RightPos, LeftPos, Visibility,
     LineHeight, BackgroundImage, BackgroundPosition,
     BackgroundRepeat, BackgroundAttachment, VerticalAlign, Position, ZIndex,
     ListStyleType, ListStyleImage, Float, Clear, TextIndent,
@@ -489,7 +489,7 @@ begin
     else
       case I of
         MarginTop..BorderLeftStyle,
-        Width, Height,
+        piWidth, piHeight,
         TopPos..LeftPos:
           Props[I] := IntNull;
         BackgroundColor, BackgroundImage, BackgroundPosition,
@@ -1121,7 +1121,7 @@ begin
   for I := Low(VM) to High(VM) do
   begin
     case I of
-      Height, TopPos:
+      piHeight, TopPos:
         Base := BaseHeight
     else
       Base := BaseWidth;
@@ -1160,7 +1160,7 @@ begin
             end;
           end;
         end;
-      Height:
+      piHeight:
         begin
           if VarIsStr(VM[I]) then
           begin
@@ -1230,7 +1230,7 @@ begin
           else
             M[I] := 0;
         end;
-      Width:
+      piWidth:
         begin
           if VarIsStr(VM[I]) then
             M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
@@ -1309,7 +1309,7 @@ var
 begin
   for I := Low(VM) to High(VM) do
     case I of
-      Height, Width:
+      piHeight, piWidth:
         begin
           if VarIsStr(VM[I]) then
             M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto) {Auto will be Auto}
@@ -2082,7 +2082,7 @@ begin
         Props[Index] := clBlack
       else
         Props[Index] := clNone;
-    MarginTop..BorderLeftWidth, Width..LeftPos:
+    MarginTop..BorderLeftWidth, piWidth..LeftPos:
       Props[Index] := PropValue;
     FontSize:
       Props[FontSize] := PropValue;

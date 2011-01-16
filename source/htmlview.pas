@@ -249,7 +249,7 @@ type
     function GetDocumentSource: ThtString;
     function GetDragDrop: TDragDropEvent;
     function GetDragOver: TDragOverEvent;
-    function GetFormControlList: TList;
+    function GetFormControlList: TFormControlObjList;
     function GetFormData: TFreeList;
     function GetHScrollBarRange: Integer;
     function GetHScrollPos: Integer;
@@ -449,7 +449,7 @@ type
     property CurrentFile: ThtString read GetCurrentFile;
     property DocumentSource: ThtString read GetDocumentSource;
     property DocumentTitle: ThtString read GetTitle;
-    property FormControlList: TList read GetFormControlList;
+    property FormControlList: TFormControlObjList read GetFormControlList;
     property FormData: TFreeList read GetFormData write SetFormData;
     property History: ThtStrings read FHistory;
     property HistoryIndex: Integer read FHistoryIndex write SetHistoryIndex;
@@ -1577,15 +1577,16 @@ procedure THtmlViewer.ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y
 var
   Dummy: TUrlTarget;
   DummyFC: TIDObject {TImageFormControlObj};
+  FormControlObj: TFormControlObj absolute Sender;
 begin
   if Sender is TFormControlObj then
-    with TFormControlObj(Sender), TheControl do
+    //with TFormControlObj(Sender) do
     begin
-      FTitleAttr := Title;
+      FTitleAttr := FormControlObj.Title;
       if FTitleAttr = '' then
       begin
         Dummy := nil;
-        GetURL(X + Left, Y + Top, Dummy, DummyFC, FTitleAttr);
+        GetURL(X + FormControlObj.Left, Y + FormControlObj.Top, Dummy, DummyFC, FTitleAttr);
         if Assigned(Dummy) then
           Dummy.Free;
       end;
@@ -2561,7 +2562,7 @@ begin
   FCharset := Value;
 end;
 
-function THtmlViewer.GetFormControlList: TList;
+function THtmlViewer.GetFormControlList: TFormControlObjList;
 begin
   Result := FSectionList.FormControlList;
 end;
@@ -5200,9 +5201,7 @@ var
   I: Integer;
 begin
   for I := 0 to FormControlList.count - 1 do
-    with TFormControlObj(FormControlList.Items[I]) do
-      if Assigned(TheControl) then
-        TheControl.Hide;
+    FormControlList[I].Hide;
   BorderPanel.BorderStyle := bsNone;
   inherited Repaint;
 end;
@@ -5292,14 +5291,10 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if (Obj is TFormControlObj) then
-      begin
-        if (Obj is THiddenFormControlObj) then
-          Result := Obj
-        else
-          Result := TFormControlObj(Obj).TheControl;
-      end
-      else if (Obj is TImageObj) then
+      if Obj is TFormControlObj then
+        //BG, 15.01.2011: always return Obj rather than the actual WinControl.
+        Result := Obj
+      else if Obj is TImageObj then
         Result := Obj;
     end;
 end;
@@ -5314,7 +5309,7 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if (Obj is TBlock) then
+      if Obj is TBlock then
         Result := TBlock(Obj).Display;
     end;
 end;
@@ -5328,11 +5323,12 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if (Obj is TBlock) and (TBlock(Obj).Display <> Value) then
-      begin
-        FSectionList.HideControls;
-        TBlock(Obj).Display := Value;
-      end;
+      if Obj is TBlock then
+        if TBlock(Obj).Display <> Value then
+        begin
+          FSectionList.HideControls;
+          TBlock(Obj).Display := Value;
+        end;
     end;
 end;
 

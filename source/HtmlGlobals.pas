@@ -100,8 +100,8 @@ type
 {$ifdef UseTNT}
   ThtButton = TTntButton;
   ThtMemo = TTntMemo;
-  ThtCombobox = TTntCombobox;
-  ThtListbox = TTntListbox;
+  ThtCombobox = TTntComboBox;
+  ThtListbox = TTntListBox;
   ThtCheckBox = TTntCheckBox;
   ThtRadioButton = TTntRadioButton;
   ThtHintWindow = TTntHintWindow;

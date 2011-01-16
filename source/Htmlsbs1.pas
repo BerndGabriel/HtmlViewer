@@ -61,63 +61,76 @@ type
     destructor Destroy; override;
   end;
 
-  TListBoxFormControlObj = class(TFormControlObj)
+  //BG, 16.01.2011:
+  TOptionsFormControlObj = class(TFormControlObj)
+  private
+    FOptions: ThtOptionStringList;
+    FFont: TFont;
+    LBSize, Longest: integer;
+  public
+    constructor Create(AMasterList: TSectionList; Position: Integer; L: TAttributeList);
+    destructor Destroy; override;
+    procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
+    property TheOptions: ThtOptionStringList read FOptions;
+    property TheFont: TFont read FFont write FFont;
+    {TheOptions is the original Options list for reseting.  It does not reflect
+     the current selected state.  The Strings part is the Items in the list/combobox.
+     The Options part is TOptionObj defined above}
+  end;
+
+  TListBoxFormControlObj = class(TOptionsFormControlObj)
   {Select with "Multiple" or Size > 1}
   private
-    LBSize, Longest: integer;
-    TheFont: TFont;
-  private
+    FControl: ThtListbox;
     EnterItems: integer;
     EnterSelected: array[0..50] of boolean;
 {$IFDEF OpOnChange}
     procedure OptionalOnChange(Sender: TObject);
 {$ENDIF}
   protected
+    function GetControl: TWinControl; override;
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    TheOptions: ThtOptionStringList;
-    {TheOptions is the original Options list for reseting.  It does not reflect
-     the current selected state.  The Strings part is the Items in the list/combobox.
-     The Options part is TOptionObj defined above}
-
-    constructor Create(AMasterList: TSectionList; Position: integer;
-      L: TAttributeList; Prop: TProperties);
+    constructor Create(AMasterList: TSectionList; Position: integer; L: TAttributeList; Prop: TProperties);
     destructor Destroy; override;
-    procedure ProcessProperties(Prop: TProperties); override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
-    procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
-    procedure ResetToValue; override;
-    procedure SetHeightWidth(Canvas: TCanvas); override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
+    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
+    procedure ProcessProperties(Prop: TProperties); override;
+    procedure ResetToValue; override;
     procedure SetData(Index: integer; const V: ThtString); override;
+    procedure SetHeightWidth(Canvas: TCanvas); override;
   end;
 
-  TComboFormControlObj = class(TListBoxFormControlObj)
+  TComboFormControlObj = class(TOptionsFormControlObj)
   {Select with single selection and Size = 1}
   private
+    FControl: ThtCombobox;
     EnterIndex: integer;
 {$IFDEF OpOnChange}
     procedure OptionalOnChange(Sender: TObject);
 {$ENDIF}
   protected
+    function GetControl: TWinControl; override;
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(AMasterList: TSectionList; Position: integer;
-      L: TAttributeList; Prop: TProperties);
-    procedure ProcessProperties(Prop: TProperties); override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
-    procedure ResetToValue; override;
-    procedure SetHeightWidth(ACanvas: TCanvas); override;
+    constructor Create(AMasterList: TSectionList; Position: integer; L: TAttributeList; Prop: TProperties);
+    destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
+    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
+    procedure ProcessProperties(Prop: TProperties); override;
+    procedure ResetToValue; override;
     procedure SetData(Index: integer; const V: ThtString); override;
+    procedure SetHeightWidth(ACanvas: TCanvas); override;
   end;
 
   TTextAreaFormControlObj = class(TFormControlObj)
   private
+    FControl: ThtMemo;
     EnterContents: ThtString;
   protected
+    function GetControl: TWinControl; override;
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
@@ -134,15 +147,6 @@ type
     procedure SetHeightWidth(Canvas: TCanvas); override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure SetData(Index: integer; const V: ThtString); override;
-  end;
-
-  TFormControlList = class(TList) {a list of TFormControlObj's} {not TFreeList}
-  public
-    function FindControl(Posn: integer): TFormControlObj;
-    function GetHeightAt(Posn: integer; var FormAlign: AlignmentType): Integer;
-    function GetWidthAt(Posn: integer; var HSpcL, HSpcR: integer): integer;
-    function GetControlCountAt(Posn: integer): integer;
-    procedure Decrement(N: integer);
   end;
 
 implementation
@@ -207,16 +211,10 @@ var
 begin
   inherited Create(AMasterList, Position, L);
   CodePage := Prop.CodePage;
-  TheOptions := ThtOptionStringList.Create;
   Multiple := L.Find(MultipleSy, T);
-  if L.Find(SizeSy, T) then
-    LBSize := T.Value
-  else
-    LBSize := -1;
-  Longest := 3; {the minimum size}
   PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
   FControl := ThtListbox.Create(PntPanel);
-  with ThtListbox(FControl) do
+  with FControl do
   begin
     Left := -4000; {so will be invisible until placed}
     Parent := PntPanel;
@@ -243,6 +241,7 @@ end;
 destructor TListBoxFormControlObj.Destroy;
 begin
   TheOptions.Free;
+  FControl.Free;
   inherited Destroy;
 end;
 
@@ -278,43 +277,6 @@ begin
   ARect := Rect(X1 + Addon, Y1 + Addon, X1 + LB.Width - 2 * Addon, Y1 + LB.Height - 2 * Addon);
   for I := LB.TopIndex to Min(LB.Items.Count - 1, LB.TopIndex + LBSize - 1) do
     ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + (I - LB.TopIndex) * H2, LB.Items[I]);
-end;
-
-procedure TListBoxFormControlObj.AddStr(const S: ThtString; Selected: boolean;
-  Attr: ThtStringList; CodePage: integer);
-var
-  Opt: TOptionObj;
-  DC: HDC;
-  OldFont: THandle;
-  ExtS: TSize;
-  S1, S2: ThtString;
-begin
-  S1 := S;
-  if S1 = '' then
-    S1 := ' ';
-  Opt := TOptionObj.Create;
-  if Assigned(Attr) then
-    S2 := Attr.Values['Value']
-  else
-    S2 := '';
-  if S2 <> '' then
-    Opt.Value := S2
-  else
-    Opt.Value := S1;
-
-  Opt.Selected := Selected;
-  Opt.Attributes := Attr;
-  TheOptions.AddObject(S1, Opt);
-
-  DC := GetDC(0);
-  try
-    OldFont := SelectObject(DC, TheFont.Handle);
-    GetTextExtentPoint32W(DC, PWideChar(S1), Length(S1), ExtS);
-    SelectObject(DC, OldFont);
-  finally
-    ReleaseDC(0, DC);
-  end;
-  Longest := Max(Longest, ExtS.cx);
 end;
 
 procedure TListBoxFormControlObj.ResetToValue;
@@ -364,6 +326,12 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 16.01.2011 --
+function TListBoxFormControlObj.GetControl: TWinControl;
+begin
+  Result := FControl;
+end;
+
 function TListBoxFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
 begin
   with (FControl as ThtListbox) do
@@ -373,7 +341,7 @@ begin
     begin
       S := '';
       if MultiSelect and Selected[Index] or not MultiSelect and (ItemIndex = Index) then
-        S := Self.FName + '=' + TheOptions.Value[Index];
+        S := Self.Name + '=' + TheOptions.Value[Index];
     end;
   end;
 end;
@@ -430,29 +398,25 @@ end;
 procedure TListBoxFormControlObj.SetData(Index: integer; const V: ThtString);
 var
   I: integer;
-  LB: ThtListbox;
 begin
-  LB := FControl as ThtListbox;
   if Index = 0 then
-    LB.ItemIndex := 0;
+    FControl.ItemIndex := 0;
   for I := 0 to TheOptions.Count - 1 do
   begin
     if Index = 0 then
     begin
-      with LB do
-        if MultiSelect then
-          Selected[I] := False;
+      if FControl.MultiSelect then
+        FControl.Selected[I] := False;
     end;
     if htCompareText(V, TheOptions.Value[I]) = 0 then
     begin
-      with LB do
-        if MultiSelect then
-          Selected[I] := True
-        else
-          ItemIndex := I;
+      if FControl.MultiSelect then
+        FControl.Selected[I] := True
+      else
+        FControl.ItemIndex := I;
     end;
   end;
-  LB.TopIndex := 0;
+  FControl.TopIndex := 0;
 end;
 
 {----------------TComboFormControlObj.Create}
@@ -463,13 +427,11 @@ var
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: TMyFont;
 begin
-  inherited Create(AMasterList, Position, L, Prop);
+  inherited Create(AMasterList, Position, L);
   CodePage := Prop.CodePage;
   PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
-  PntPanel.RemoveControl(FControl);
-  FControl.Free; {don't want the inherited one}
   FControl := ThtCombobox.Create(PntPanel);
-  with ThtCombobox(FControl) do
+  with FControl do
   begin
     Left := -4000; {so will be invisible until placed}
     Tmp := Prop.GetFont;
@@ -551,13 +513,19 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 16.01.2011 --
+function TComboFormControlObj.GetControl: TWinControl;
+begin
+  Result := FControl;
+end;
+
 function TComboFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
 begin
   Result := Index = 0;
   if Result then
     with (FControl as ThtCombobox) do
       if (ItemIndex >= 0) and (ItemIndex <= Items.Count) then
-        S := Self.FName + '=' + TheOptions.Value[ItemIndex];
+        S := Self.Name + '=' + TheOptions.Value[ItemIndex];
 end;
 
 procedure TComboFormControlObj.SetData(Index: integer; const V: ThtString);
@@ -591,6 +559,13 @@ begin
   end;
 end;
 {$ENDIF}
+
+//-- BG ---------------------------------------------------------- 16.01.2011 --
+destructor TComboFormControlObj.Destroy;
+begin
+  FControl.Free;
+  inherited;
+end;
 
 procedure TComboFormControlObj.DoOnChange;
 begin
@@ -637,7 +612,7 @@ begin
 
   PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
   FControl := ThtMemo.Create(PntPanel);
-  with ThtMemo(FControl) do
+  with FControl do
   begin
     Left := -4000; {so will be invisible until placed}
     if (Prop.GetBorderStyle <> bssNone) then
@@ -675,7 +650,7 @@ var
   H2, I, Addon: integer;
   ARect: TRect;
 begin
-  with ThtMemo(FControl) do
+  with FControl do
   begin
     if BorderStyle <> bsNone then
     begin
@@ -728,12 +703,18 @@ end;
 
 procedure TTextAreaFormControlObj.ResetToValue;
 begin
-  with (FControl as ThtMemo) do
+  with FControl do
   begin
     Text := TheText;
     SelStart := 0;
     SelLength := 0;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 16.01.2011 --
+function TTextAreaFormControlObj.GetControl: TWinControl;
+begin
+  Result := FControl;
 end;
 
 function TTextAreaFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
@@ -743,116 +724,94 @@ begin
   Result := Index = 0;
   if Result then
   begin
-    S := FName + '=';
+    S := Name + '=';
     if Wrap in [wrOff, wrSoft] then
-      S := S + (FControl as ThtMemo).Text
+      S := S + FControl.Text
     else
-      with (FControl as ThtMemo) do
-        for I := 0 to Lines.Count - 1 do
-        begin
-          S := S + Lines[I];
-          if (I < Lines.Count - 1) then
-            S := S + CRLF;
-        end;
+      for I := 0 to FControl.Lines.Count - 1 do
+      begin
+        S := S + FControl.Lines[I];
+        if I < FControl.Lines.Count - 1 then
+          S := S + CRLF;
+      end;
   end;
 end;
 
 procedure TTextAreaFormControlObj.SetData(Index: integer; const V: ThtString);
 begin
-  (FControl as ThtMemo).Text := V;
+  FControl.Text := V;
 end;
 
 procedure TTextAreaFormControlObj.SaveContents;
 {Save the current value to see if it has changed when focus is lost}
 begin
-  EnterContents := ThtMemo(FControl).Text;
+  EnterContents := FControl.Text;
 end;
 
 procedure TTextAreaFormControlObj.DoOnChange;
 begin
-  if ThtMemo(FControl).Text <> EnterContents then
+  if FControl.Text <> EnterContents then
     if Assigned(MasterList.ObjectChange) then
       MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
 end;
 
-function TFormControlList.FindControl(Posn: integer): TFormControlObj;
-{find the control at a given character position}
-var
-  I: integer;
-begin
-  for I := 0 to Count - 1 do
-    if TFormControlObj(Items[I]).Pos = Posn then
-    begin
-      Result := Items[I];
-      Exit;
-    end;
-  Result := nil;
-end;
+{ TOptionsFormControlObj }
 
-function TFormControlList.GetHeightAt(Posn: integer;
-  var FormAlign: AlignmentType): Integer;
+procedure TOptionsFormControlObj.AddStr(const S: ThtString; Selected: boolean;
+  Attr: ThtStringList; CodePage: integer);
 var
-  Ctrl: TFormControlObj;
+  Opt: TOptionObj;
+  DC: HDC;
+  OldFont: THandle;
+  ExtS: TSize;
+  S1, S2: ThtString;
 begin
-  Ctrl := FindControl(Posn);
-  if Assigned(Ctrl) then
-  begin
-    Result := Ctrl.FControl.Height;
-    FormAlign := Ctrl.FormAlign;
-  end
+  S1 := S;
+  if S1 = '' then
+    S1 := ' ';
+  Opt := TOptionObj.Create;
+  if Assigned(Attr) then
+    S2 := Attr.Values['Value']
   else
-    Result := -1;
-end;
-
-function TFormControlList.GetWidthAt(Posn: integer; var HSpcL, HSpcR: integer): integer;
-var
-  Ctrl: TFormControlObj;
-begin
-  Ctrl := FindControl(Posn);
-  if Assigned(Ctrl) then
-  begin
-    Result := Ctrl.FControl.Width;
-    HSpcL := Ctrl.HSpaceL;
-    HSpcR := Ctrl.HSpaceR;
-  end
+    S2 := '';
+  if S2 <> '' then
+    Opt.Value := S2
   else
-    Result := -1;
-end;
+    Opt.Value := S1;
 
-function TFormControlList.GetControlCountAt(Posn: integer): integer;
-{Return count of chars before the next form control.  0 if at the control,
- 9999 if no controls after Posn}
-var
-  I, Pos: integer;
-begin
-  if Count = 0 then
-  begin
-    Result := 9999;
-    Exit;
+  Opt.Selected := Selected;
+  Opt.Attributes := Attr;
+  TheOptions.AddObject(S1, Opt);
+
+  DC := GetDC(0);
+  try
+    OldFont := SelectObject(DC, TheFont.Handle);
+    GetTextExtentPoint32W(DC, PWideChar(S1), Length(S1), ExtS);
+    SelectObject(DC, OldFont);
+  finally
+    ReleaseDC(0, DC);
   end;
-  I := 0;
-  while I < count do
-  begin
-    Pos := TFormControlObj(Items[I]).Pos;
-    if Pos >= Posn then
-      break;
-    Inc(I);
-  end;
-  if I = Count then
-    Result := 9999
-  else
-    Result := TFormControlObj(Items[I]).Pos - Posn;
+  Longest := Max(Longest, ExtS.cx);
 end;
 
-procedure TFormControlList.Decrement(N: integer);
-{called when a character is removed to change the Position figure}
+constructor TOptionsFormControlObj.Create(AMasterList: TSectionList; Position: Integer;
+  L: TAttributeList);
 var
-  I: integer;
+  T: TAttribute;
 begin
-  for I := 0 to Count - 1 do
-    with TFormControlObj(Items[I]) do
-      if Pos > N then
-        Dec(Pos);
+  inherited;
+  FOptions := ThtOptionStringList.Create;
+  if L.Find(SizeSy, T) then
+    LBSize := T.Value
+  else
+    LBSize := -1;
+  Longest := 3; {the minimum size}
+end;
+
+destructor TOptionsFormControlObj.Destroy;
+begin
+  FOptions.Free;
+  inherited;
 end;
 
 end.

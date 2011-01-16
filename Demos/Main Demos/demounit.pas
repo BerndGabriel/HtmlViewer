@@ -12,26 +12,65 @@
 
 unit demounit;
 
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
+{$include ..\..\source\htmlcons.inc}
 
 {A program to demonstrate the ThtmlViewer component}
 
 interface
 
 uses
+//{$ifdef LCL}
+//  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
+//{$else}
+//  WinTypes, WinProcs, ShellAPI,
+//{$endif}
+//{$ifdef MsWindows}
+//  MPlayer, XpMan, MMSystem,
+//{$endif}
+//  SysUtils, Messages, Classes, Graphics, Controls,
+//  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Clipbrd, ComCtrls,
+//  ReadHTML, Htmlview, HTMLSubs, URLSubs, HTMLUn2, StyleUn, Htmlabt, HtmlGlobals;
+  SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
+  ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, FPimage, HtmlMisc,
+  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
 {$else}
-  WinTypes, WinProcs, ShellAPI,
+  Windows, ShellAPI,
+  {$if CompilerVersion > 15}
+    XpMan,
+  {$ifend}
+  {$ifdef Compiler18_Plus}
+    WideStrings,
+  {$else}
+    TntWideStrings,
+    TntClasses,
+  {$endif}
 {$endif}
-{$ifdef MsWindows}
-  MPlayer, XpMan, MMSystem,
+{$ifndef MultiMediaMissing}
+  MPlayer, MMSystem,
 {$endif}
-  SysUtils, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Clipbrd, ComCtrls,
-  ReadHTML, Htmlview, HTMLSubs, URLSubs, HTMLUn2, StyleUn, Htmlabt, HtmlGlobals;
+{$ifndef MetaFileMissing}
+  MetaFilePrinter,
+{$endif}
+  PreviewForm,
+{$ifdef UseTNT}
+  TntStdCtrls,
+  SubmitTnt,
+{$else UseTNT}
+  Submit,
+{$endif UseTNT}
+  HtmlGlobals,
+  HtmlBuffer,
+  URLSubs,
+  StyleUn,
+  ReadHTML,
+  HTMLSubs,
+  HTMLUn2,
+  Htmlview,
+  FramView,
+  DemoSubs,
+  Htmlabt,
+  ImgForm;
 
 const
   MaxHistories = 6;  {size of History list}
@@ -82,61 +121,64 @@ type
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
 {$endif}
-    procedure OpenFileClick(Sender: TObject);
-    procedure HotSpotChange(Sender: TObject; const URL: string);
-    procedure HotSpotClick(Sender: TObject; const URL: string;
-              var Handled: boolean);
-    procedure ShowImagesClick(Sender: TObject);
-    procedure ReloadButtonClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
-    procedure FwdBackClick(Sender: TObject);
-    procedure HistoryClick(Sender: TObject);
-    procedure HistoryChange(Sender: TObject);
-    procedure Exit1Click(Sender: TObject);
-    procedure FontColorsClick(Sender: TObject);
-    procedure Print1Click(Sender: TObject);
     procedure About1Click(Sender: TObject);
-    procedure FormShow(Sender: TObject);
-    procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: String;
-      Results: TStringList);
-    procedure Find1Click(Sender: TObject);
-    procedure FindDialogFind(Sender: TObject);
-    procedure ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
+    procedure CopyImageToClipboardClick(Sender: TObject);
     procedure CopyItemClick(Sender: TObject);
     procedure Edit2Click(Sender: TObject);
-    procedure SelectAllItemClick(Sender: TObject);
-    procedure OpenTextFileClick(Sender: TObject);
-    procedure OpenImageFileClick(Sender: TObject);
-    procedure MediaPlayerNotify(Sender: TObject);
-    procedure SoundRequest(Sender: TObject; const SRC: String;
-      Loop: Integer; Terminate: Boolean);
-    procedure CopyImageToClipboardClick(Sender: TObject);
-    procedure ObjectClick(Sender, Obj: TObject; const OnClick: String);
-    procedure ViewimageClick(Sender: TObject);
+    procedure Exit1Click(Sender: TObject);
+    procedure Find1Click(Sender: TObject);
+    procedure FindDialogFind(Sender: TObject);
+    procedure FontColorsClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure ViewerInclude(Sender: TObject; const Command: String;
-      Params: TStrings; var S: string);
-    procedure RightClick(Sender: TObject;
-      Parameters: TRightClickParameters);
-    procedure OpenInNewWindowClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FwdBackClick(Sender: TObject);
+    procedure HistoryChange(Sender: TObject);
+    procedure HistoryClick(Sender: TObject);
+    procedure MediaPlayerNotify(Sender: TObject);
     procedure MetaTimerTimer(Sender: TObject);
-    procedure MetaRefreshEvent(Sender: TObject; Delay: Integer;
-      const URL: String);
+    procedure OpenFileClick(Sender: TObject);
+    procedure OpenImageFileClick(Sender: TObject);
+    procedure OpenInNewWindowClick(Sender: TObject);
+    procedure OpenTextFileClick(Sender: TObject);
+    procedure Print1Click(Sender: TObject);
+    procedure PrinterSetup1Click(Sender: TObject);
     procedure PrintpreviewClick(Sender: TObject);
-    procedure ViewerMouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
+    procedure ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
+    procedure ReloadButtonClick(Sender: TObject);
+    procedure RepaintButtonClick(Sender: TObject);
+    procedure RightClick(Sender: TObject; Parameters: TRightClickParameters);
+    procedure SelectAllItemClick(Sender: TObject);
+    procedure ShowImagesClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
-    procedure ViewerProgress(Sender: TObject; Stage: TProgressStage;
-      PercentDone: Integer);
+    procedure ViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure ViewerPrintHTMLFooter(Sender: TObject; HFViewer: THTMLViewer;
       NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
       var StopPrinting: Boolean);
     procedure ViewerPrintHTMLHeader(Sender: TObject; HFViewer: THTMLViewer;
       NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
       var StopPrinting: Boolean);
-    procedure PrinterSetup1Click(Sender: TObject);
+    procedure ViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
+    procedure ViewimageClick(Sender: TObject);
+{$ifdef UNICODE}
+    procedure HotSpotChange(Sender: TObject; const URL: string);
+    procedure HotSpotClick(Sender: TObject; const URL: string; var Handled: boolean);
+    procedure MetaRefreshEvent(Sender: TObject; Delay: Integer; const URL: String);
+    procedure ObjectClick(Sender, Obj: TObject; const OnClick: String);
+    procedure SoundRequest(Sender: TObject; const SRC: String; Loop: Integer; Terminate: Boolean);
+    procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: String; Results: TStringList);
+    procedure ViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out IncludedDocument: TBuffer);
     procedure ViewerScript(Sender: TObject; const Name, ContentType, Src, Script: string);
-    procedure RepaintButtonClick(Sender: TObject);
+{$else}
+    procedure HotSpotChange(Sender: TObject; const URL: WideString);
+    procedure HotSpotClick(Sender: TObject; const URL: WideString; var Handled: boolean);
+    procedure MetaRefreshEvent(Sender: TObject; Delay: Integer; const URL: WideString);
+    procedure ObjectClick(Sender, Obj: TObject; const OnClick: WideString);
+    procedure SoundRequest(Sender: TObject; const SRC: WideString; Loop: Integer; Terminate: Boolean);
+    procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
+    procedure ViewerInclude(Sender: TObject; const Command: WideString; Params: TWideStrings; out IncludedDocument: TBuffer);
+    procedure ViewerScript(Sender: TObject; const Name, ContentType, Src, Script: WideString);
+{$endif}
   private
     { Private declarations }
     Histories: array[0..MaxHistories-1] of TMenuItem;
@@ -160,12 +202,6 @@ var
   Form1: TForm1;
 
 implementation
-
-uses
-{$ifndef LCL}
-  PreviewForm,
-{$endif}
-  SUBMIT, ImgForm, Fontdlg;
 
 {$ifdef LCL}
   {$R *.lfm}
@@ -239,7 +275,7 @@ if OpenDialog.Execute then
   end;
 end;
 
-procedure TForm1.HotSpotChange(Sender: TObject; const URL: string);
+procedure TForm1.HotSpotChange(Sender: TObject; const URL: ThtString);
 {mouse moved over or away from a hot spot.  Change the status line}
 var
   Caption: string;
@@ -252,8 +288,7 @@ if Viewer.TitleAttr <> '' then
 Panel1.Caption := Caption;
 end;
 
-procedure TForm1.HotSpotClick(Sender: TObject; const URL: string;
-          var Handled: boolean);
+procedure TForm1.HotSpotClick(Sender: TObject; const URL: ThtString; var Handled: boolean);
 {This routine handles what happens when a hot spot is clicked.  The assumption
  is made that DOS filenames are being used. .EXE, .WAV, .MID, and .AVI files are
  handled here, but other file types could be easily added.
@@ -489,16 +524,15 @@ begin
 end;
 
 
-procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: String;
-  Results: TStringList);
+procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
 begin
-with SubmitForm do
+  with SubmitForm do
   begin
-  ActionText.Text := AnAction;
-  MethodText.Text := Method;
-  ResultBox.Items := Results;
-  Results.Free;
-  Show;
+    ActionText.Text := AnAction;
+    MethodText.Text := Method;
+    ResultBox.Items.Text := Results.Text;
+    Results.Free;
+    Show;
   end;
 end;
 
@@ -644,8 +678,7 @@ except
 {$endif}
 end;
 
-procedure TForm1.SoundRequest(Sender: TObject; const SRC: String;
-  Loop: Integer; Terminate: Boolean);
+procedure TForm1.SoundRequest(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: Boolean);
 begin
 {$ifdef MsWindows}
 try
@@ -684,68 +717,76 @@ begin
 Clipboard.Assign(FoundObject.Bitmap);
 end;
 
-procedure TForm1.ObjectClick(Sender, Obj: TObject; const OnClick: String);
+procedure TForm1.ObjectClick(Sender, Obj: TObject; const OnClick: ThtString);
 var
-  S: string;
+  S: String;
+  CB: TCheckBoxFormControlObj absolute Obj;
+  RB: TRadioButtonFormControlObj absolute Obj;
 begin
-if OnClick = 'display' then
+  if OnClick = 'display' then
   begin
-  if Obj is TFormControlObj then
-    with TFormControlObj(Obj) do
-      begin
-      if TheControl is TCheckBox then
-        with TCheckBox(TheControl) do
-          begin
-          S := Value + ' is ';
-          if Checked then S := S + 'checked'
-            else S := S + 'unchecked';
-          MessageDlg(S, mtCustom, [mbOK], 0);
-          end
-      else if TheControl is TRadioButton then
-        with TRadioButton(TheControl) do
-          begin
-          S := Value + ' is checked';
-          MessageDlg(S, mtCustom, [mbOK], 0);
-          end;
-      end;
+    if Obj is TCheckBoxFormControlObj then
+    begin
+      S := CB.Value + ' is ';
+      if CB.Checked then
+        S := S + 'checked'
+      else
+        S := S + 'unchecked';
+      MessageDlg(S, mtCustom, [mbOK], 0);
+    end
+    else if Obj is TRadioButtonFormControlObj then
+    begin
+      S := RB.Value + ' is checked';
+      MessageDlg(S, mtCustom, [mbOK], 0);
+    end;
   end
-else if OnClick <> '' then
-      MessageDlg(OnClick, mtCustom, [mbOK], 0);
+  else if OnClick <> '' then
+    with TAboutBox.CreateIt(Self, OnClick) do
+      try
+        ShowModal;
+      finally
+        Free;
+      end;
+    //MessageDlg(OnClick, mtCustom, [mbOK], 0);
 end;
 
 
-procedure TForm1.ViewerInclude(Sender: TObject; const Command: String;
-  Params: TStrings; var S: string);
-{OnInclude handler}  
+procedure TForm1.ViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);
+{OnInclude handler}
 var
-  Filename: string;
+  Filename: ThtString;
   I: integer;
+  Stream: TFileStream;
 begin
-if CompareText(Command, 'Date') = 0 then
-  S := DateToStr(Date) { <!--#date --> }
-else if CompareText(Command, 'Time') = 0 then
-  S := TimeToStr(Time)   { <!--#time -->  }
-else if CompareText(Command, 'Include') = 0 then
+  if CompareText(Command, 'Date') = 0 then
+    IncludedDocument := TBuffer.Create(DateToStr(Date)) { <!--#date --> }
+  else if CompareText(Command, 'Time') = 0 then
+    IncludedDocument := TBuffer.Create(TimeToStr(Time))   { <!--#time -->  }
+  else if CompareText(Command, 'Include') = 0 then
   begin   {an include file <!--#include FILE="filename" -->  }
-  if (Params.count >= 1) then
+    if (Params.count >= 1) then
     begin
-    I := Pos('file=', Lowercase(Params[0]));
-    if I > 0 then
+      I := Pos('file=', Lowercase(Params[0]));
+      if I > 0 then
       begin
-      Filename := copy(Params[0],  6, Length(Params[0])-5);
-      try
-        S := LoadStringFromFile(Filename);
-      except
+        Filename := copy(Params[0], 6, Length(Params[0])-5);
+        try
+          if FileExists(Filename) then
+          begin
+            Stream := TFileStream.Create(Filename, fmOpenRead, fmShareDenyWrite);
+            IncludedDocument := TBuffer.Create(Stream);
+          end
+        except
         end;
       end;
     end;
   end;
-Params.Free;
+  Params.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-HintWindow.Free;
+  HintWindow.Free;
 end;
 
 procedure TForm1.RightClick(Sender: TObject; Parameters: TRightClickParameters);
@@ -753,7 +794,7 @@ var
   Pt: TPoint;
   S, Dest: string;
   I: integer;
-  HintWindow: THintWindow;  
+  HintWindow: ThtHintWindow;
   ARect: TRect;
 begin
 with Parameters do
@@ -782,7 +823,7 @@ with Parameters do
   GetCursorPos(Pt);
   if Length(CLickWord) > 0 then
     begin
-    HintWindow := THintWindow.Create(Self);   
+    HintWindow := ThtHintWindow.Create(Self);
     try
       ARect := Rect(0,0,0,0);
       DrawTextW(HintWindow.Canvas.Handle, @ClickWord[1], Length(ClickWord), ARect, DT_CALCRECT);
@@ -818,8 +859,7 @@ if Viewer.CurrentFile = PresentFile then  {don't load if current file has change
   end;
 end;
 
-procedure TForm1.MetaRefreshEvent(Sender: TObject; Delay: Integer;
-  const URL: String);
+procedure TForm1.MetaRefreshEvent(Sender: TObject; Delay: Integer; const URL: ThtString);
 begin
 NextFile := Viewer.HTMLExpandFilename(URL);  
 if FileExists(NextFile) then
@@ -932,7 +972,7 @@ case Stage of
 ProgressBar.Update;
 end;
 
-procedure TForm1.ViewerScript(Sender: TObject; const Name, ContentType, Src, Script: string);
+procedure TForm1.ViewerScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 begin
   NLS := Name + '::' + ContentType + '::' + Src + '::'#10#13 + Script;
 end;

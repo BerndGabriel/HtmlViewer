@@ -165,7 +165,7 @@ type
     procedure DoTextArea(TxtArea: TTextAreaFormControlObj);
     procedure DoTitle;
     procedure GetEntity(T: TokenObj; CodePage: Integer);
-    procedure GetOptions(Select: TListBoxFormControlObj);
+    procedure GetOptions(Select: TOptionsFormControlObj);
     procedure GetSomething(var S: ThtString);
     procedure Next;
     procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
@@ -1904,7 +1904,7 @@ begin
   Next;
 end;
 
-procedure THtmlParser.GetOptions(Select: TListBoxFormControlObj);
+procedure THtmlParser.GetOptions(Select: TOptionsFormControlObj);
  {get the <option>s for Select form control}
 var
   InOption, Selected: Boolean;
@@ -2588,7 +2588,7 @@ var
                       Attributes, SectionList, TagIndex, PropStack.Last);
                     FormControl.ProcessProperties(PropStack.Last);
                     if Sy = SelectSy then
-                      GetOptions(FormControl as TListBoxFormControlObj);
+                      GetOptions(FormControl as TOptionsFormControlObj);
                     PopAProp(SymbToStr(SaveSy));
                     S.Clear; ;
                   end;
@@ -2721,7 +2721,7 @@ begin
         FormControl := Section.AddFormControl(Sy, PropStack.MasterList, Attributes,
           SectionList, TagIndex, PropStack.Last);
         if Sy = SelectSy then
-          GetOptions(FormControl as TListBoxFormControlObj);
+          GetOptions(FormControl as TOptionsFormControlObj);
         FormControl.ProcessProperties(PropStack.Last);
         PopAProp(SymbToStr(SaveSy));
         Next;

@@ -4670,33 +4670,33 @@ begin
     Inc(VSpaceB, MargArray[BorderBottomWidth]);
   end;
 
-  if MargArray[Width] <> IntNull then
+  if MargArray[piWidth] <> IntNull then
   begin
     PercentWidth := False;
-    if MargArray[Width] = Auto then
+    if MargArray[piWidth] = Auto then
       SpecWidth := -1
-    else if (VarIsStr(MargArrayO[Width]))
-      and (System.Pos('%', MargArrayO[Width]) > 0) then
+    else if (VarIsStr(MargArrayO[piWidth]))
+      and (System.Pos('%', MargArrayO[piWidth]) > 0) then
     begin
       PercentWidth := True;
-      SpecWidth := MulDiv(MargArray[Width], 100, DummyHtWd);
+      SpecWidth := MulDiv(MargArray[piWidth], 100, DummyHtWd);
     end
     else
-      SpecWidth := MargArray[Width];
+      SpecWidth := MargArray[piWidth];
   end;
-  if MargArray[Height] <> IntNull then
+  if MargArray[piHeight] <> IntNull then
   begin
     PercentHeight := False;
-    if MargArray[Height] = Auto then
+    if MargArray[piHeight] = Auto then
       SpecHeight := -1
-    else if (VarIsStr(MargArrayO[Height]))
-      and (System.Pos('%', MargArrayO[Height]) > 0) then
+    else if (VarIsStr(MargArrayO[piHeight]))
+      and (System.Pos('%', MargArrayO[piHeight]) > 0) then
     begin
       PercentHeight := True;
-      SpecHeight := MulDiv(MargArray[Height], 100, DummyHtWd);
+      SpecHeight := MulDiv(MargArray[piHeight], 100, DummyHtWd);
     end
     else
-      SpecHeight := MargArray[Height];
+      SpecHeight := MargArray[piHeight];
   end;
 
   if Prop.GetVertAlign(Align) then

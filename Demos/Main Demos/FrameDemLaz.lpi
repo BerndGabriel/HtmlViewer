@@ -7,7 +7,6 @@
       <MainUnit Value="0"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
-      <Icon Value="0"/>
       <ActiveWindowIndexAtStart Value="0"/>
     </General>
     <i18n>
@@ -41,7 +40,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="37">
+    <Units Count="42">
       <Unit0>
         <Filename Value="FrameDemLaz.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -90,23 +89,19 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FDemUnit"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="653"/>
-        <CursorPos X="1" Y="675"/>
+        <TopLine Value="567"/>
+        <CursorPos X="1" Y="579"/>
         <UsageCount Value="38"/>
         <Loaded Value="True"/>
-        <LoadedDesigner Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="FDemUnit.lfm"/>
-        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="265"/>
+        <TopLine Value="198"/>
         <CursorPos X="57" Y="148"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="LFM"/>
       </Unit5>
       <Unit6>
@@ -146,27 +141,29 @@
       <Unit10>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <UnitName Value="HTMLSubs"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="13166"/>
-        <CursorPos X="26" Y="13178"/>
+        <TopLine Value="293"/>
+        <CursorPos X="14" Y="326"/>
         <UsageCount Value="18"/>
+        <Loaded Value="True"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\..\source\framview.pas"/>
         <UnitName Value="FramView"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="2999"/>
-        <CursorPos X="1" Y="3032"/>
+        <TopLine Value="46"/>
+        <CursorPos X="40" Y="112"/>
         <UsageCount Value="18"/>
+        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\source\htmlcons.inc"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="18" Y="12"/>
         <UsageCount Value="17"/>
-        <Loaded Value="True"/>
       </Unit12>
       <Unit13>
         <Filename Value="PreviewForm.pas"/>
@@ -174,12 +171,10 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="PreviewForm"/>
-        <EditorIndex Value="8"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="32" Y="19"/>
         <UsageCount Value="12"/>
-        <Loaded Value="True"/>
       </Unit13>
       <Unit14>
         <Filename Value="PrintStatusForm.pas"/>
@@ -207,10 +202,10 @@
       </Unit16>
       <Unit17>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\control.inc"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="3156"/>
-        <CursorPos X="1" Y="3189"/>
+        <TopLine Value="4136"/>
+        <CursorPos X="9" Y="4171"/>
         <UsageCount Value="12"/>
         <Loaded Value="True"/>
       </Unit17>
@@ -233,12 +228,10 @@
       <Unit20>
         <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
         <UnitName Value="Graphics"/>
-        <EditorIndex Value="12"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1026"/>
         <CursorPos X="15" Y="1059"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit20>
       <Unit21>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\graphic.inc"/>
@@ -265,22 +258,18 @@
       <Unit24>
         <Filename Value="D:\source\pascal\lazarus\lcl\printers.pas"/>
         <UnitName Value="Printers"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="6"/>
         <CursorPos X="3" Y="39"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit24>
       <Unit25>
         <Filename Value="..\..\source\MetaFilePrinter.pas"/>
         <UnitName Value="MetaFilePrinter"/>
-        <EditorIndex Value="13"/>
         <WindowIndex Value="0"/>
         <TopLine Value="68"/>
         <CursorPos X="1" Y="100"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit25>
       <Unit26>
         <Filename Value="C:\FPC\2.4.2\source\rtl\win\printer.pp"/>
@@ -300,12 +289,10 @@
       <Unit28>
         <Filename Value="..\..\source\htmlview.pas"/>
         <UnitName Value="HtmlView"/>
-        <EditorIndex Value="10"/>
         <WindowIndex Value="0"/>
         <TopLine Value="3439"/>
         <CursorPos X="1" Y="3490"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit28>
       <Unit29>
         <Filename Value="PreviewForm.lfm"/>
@@ -317,22 +304,18 @@
       </Unit29>
       <Unit30>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
-        <EditorIndex Value="9"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1535"/>
         <CursorPos X="3" Y="1544"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit30>
       <Unit31>
         <Filename Value="..\..\source\vwPrint.pas"/>
         <UnitName Value="vwPrint"/>
-        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="190"/>
         <CursorPos X="53" Y="232"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit31>
       <Unit32>
         <Filename Value="C:\FPC\2.4.2\source\rtl\win\wininc\func.inc"/>
@@ -343,12 +326,10 @@
       </Unit32>
       <Unit33>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\controlcanvas.inc"/>
-        <EditorIndex Value="11"/>
         <WindowIndex Value="0"/>
         <TopLine Value="47"/>
         <CursorPos X="1" Y="80"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit33>
       <Unit34>
         <Filename Value="C:\FPC\2.4.2\source\rtl\objpas\classes\classesh.inc"/>
@@ -367,135 +348,174 @@
       <Unit36>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <UnitName Value="HtmlGlobals"/>
-        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="46"/>
         <CursorPos X="58" Y="86"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit36>
+      <Unit37>
+        <Filename Value="..\..\..\HtmlViewer.Juha\source\htmlcons.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="163"/>
+        <CursorPos X="30" Y="207"/>
+        <UsageCount Value="10"/>
+      </Unit37>
+      <Unit38>
+        <Filename Value="..\..\source\Htmlsbs1.pas"/>
+        <UnitName Value="Htmlsbs1"/>
+        <EditorIndex Value="7"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="392"/>
+        <CursorPos X="50" Y="425"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit38>
+      <Unit39>
+        <Filename Value="D:\source\pascal\lazarus\lcl\include\winapih.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="91"/>
+        <CursorPos X="10" Y="124"/>
+        <UsageCount Value="10"/>
+      </Unit39>
+      <Unit40>
+        <Filename Value="SUBMIT.PAS"/>
+        <UnitName Value="SUBMIT"/>
+        <EditorIndex Value="5"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="10" Y="26"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit40>
+      <Unit41>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <UnitName Value="WideStringsLcl"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="4"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1158"/>
+        <CursorPos X="16" Y="1217"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit41>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="29" HistoryIndex="28">
       <Position1>
-        <Filename Value="D:\source\pascal\lazarus\lcl\printers.pas"/>
-        <Caret Line="241" Column="42" TopLine="208"/>
+        <Filename Value="D:\source\pascal\lazarus\lcl\include\control.inc"/>
+        <Caret Line="4169" Column="1" TopLine="4136"/>
       </Position1>
       <Position2>
-        <Filename Value="..\..\source\vwPrint.pas"/>
-        <Caret Line="207" Column="38" TopLine="190"/>
+        <Filename Value="D:\source\pascal\lazarus\lcl\include\control.inc"/>
+        <Caret Line="4171" Column="9" TopLine="4136"/>
       </Position2>
       <Position3>
         <Filename Value="FDemUnit.pas"/>
-        <Caret Line="124" Column="16" TopLine="100"/>
+        <Caret Line="575" Column="14" TopLine="567"/>
       </Position3>
       <Position4>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="127" Column="16" TopLine="102"/>
+        <Filename Value="SUBMIT.PAS"/>
+        <Caret Line="26" Column="10" TopLine="1"/>
       </Position4>
       <Position5>
         <Filename Value="FDemUnit.pas"/>
-        <Caret Line="126" Column="30" TopLine="118"/>
+        <Caret Line="579" Column="1" TopLine="567"/>
       </Position5>
       <Position6>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="541" Column="1" TopLine="512"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="586" Column="1" TopLine="553"/>
       </Position6>
       <Position7>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="127" Column="44" TopLine="79"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="587" Column="1" TopLine="553"/>
       </Position7>
       <Position8>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="896" Column="60" TopLine="868"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="589" Column="1" TopLine="553"/>
       </Position8>
       <Position9>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="591" Column="1" TopLine="553"/>
       </Position9>
       <Position10>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="440" Column="32" TopLine="382"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="594" Column="1" TopLine="553"/>
       </Position10>
       <Position11>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="593" Column="29" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="595" Column="1" TopLine="553"/>
       </Position11>
       <Position12>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="594" Column="30" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="596" Column="1" TopLine="553"/>
       </Position12>
       <Position13>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="595" Column="32" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="597" Column="1" TopLine="553"/>
       </Position13>
       <Position14>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="596" Column="26" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="598" Column="1" TopLine="553"/>
       </Position14>
       <Position15>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="597" Column="33" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="599" Column="1" TopLine="553"/>
       </Position15>
       <Position16>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="598" Column="25" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="600" Column="1" TopLine="553"/>
       </Position16>
       <Position17>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="599" Column="30" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="602" Column="1" TopLine="553"/>
       </Position17>
       <Position18>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="600" Column="25" TopLine="553"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="603" Column="1" TopLine="553"/>
       </Position18>
       <Position19>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="835" Column="40" TopLine="798"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="604" Column="1" TopLine="553"/>
       </Position19>
       <Position20>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="904" Column="58" TopLine="871"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="605" Column="18" TopLine="577"/>
       </Position20>
       <Position21>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="110" Column="11" TopLine="85"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="658" Column="48" TopLine="608"/>
       </Position21>
       <Position22>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="864" Column="32" TopLine="853"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="905" Column="28" TopLine="852"/>
       </Position22>
       <Position23>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="42" Column="31" TopLine="1"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="1018" Column="43" TopLine="970"/>
       </Position23>
       <Position24>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="887" Column="29" TopLine="856"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="694" Column="36" TopLine="644"/>
       </Position24>
       <Position25>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="1045" Column="1" TopLine="980"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="905" Column="28" TopLine="870"/>
       </Position25>
       <Position26>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="211" Column="11" TopLine="166"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="1017" Column="16" TopLine="979"/>
       </Position26>
       <Position27>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="1032" Column="16" TopLine="1000"/>
       </Position27>
       <Position28>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="110" Column="17" TopLine="52"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="1125" Column="18" TopLine="1066"/>
       </Position28>
       <Position29>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="127" Column="17" TopLine="69"/>
+        <Filename Value="..\..\source\widestringslcl.pas"/>
+        <Caret Line="1141" Column="18" TopLine="1082"/>
       </Position29>
-      <Position30>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="411" Column="1" TopLine="379"/>
-      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -524,7 +544,7 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="4">
+    <BreakPoints Count="5">
       <Item1>
         <Source Value="D:\source\pascal\lazarus\lcl\lresources.pp"/>
         <Line Value="1463"/>
@@ -541,6 +561,10 @@
         <Source Value="..\..\source\vwPrint.pas"/>
         <Line Value="134"/>
       </Item4>
+      <Item5>
+        <Source Value="FDemUnit.pas"/>
+        <Line Value="575"/>
+      </Item5>
     </BreakPoints>
     <Exceptions Count="3">
       <Item1>
