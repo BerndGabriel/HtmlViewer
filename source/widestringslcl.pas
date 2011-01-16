@@ -602,7 +602,7 @@ begin
     S := Strings[I];
     L := Length(S);
     if L <> 0 then
-      System.Move(Pointer(S)^, P^, L);
+      System.Move(Pointer(S)^, P^, L * sizeof(WideChar));
     P := P + L;
     for L := 1 to NLS do
     begin
@@ -655,7 +655,7 @@ begin
     Inc(PS);
   end;
   SetLength(S, P - IP);
-  System.Move(Value[IP], Pointer(S)^, P - IP);
+  System.Move(Value[IP], Pointer(S)^, (P - IP) * sizeof(WideChar));
   if (P <= L) and (Value[P] = #13) then
     Inc(P);
   if (P <= L) and (Value[P] = #10) then
