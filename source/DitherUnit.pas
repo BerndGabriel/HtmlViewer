@@ -243,8 +243,8 @@ begin
   Result := Result shr 3;
 end;
 
-type
-  TPixelFormats = set of TPixelFormat;
+//type
+//  TPixelFormats = set of TPixelFormat;
 
 // --------------------------
 // InitializeBitmapInfoHeader
@@ -803,11 +803,11 @@ type
     property Colors: integer read FColors;
   end;
 
-  PRGBQuadArray = ^TRGBQuadArray; // From Delphi 3 graphics.pas
+  //PRGBQuadArray = ^TRGBQuadArray; // From Delphi 3 graphics.pas
   TRGBQuadArray = array[Byte] of TRGBQuad; // From Delphi 3 graphics.pas
 
-  BGRArray = array[0..0] of TRGBTriple;
-  PBGRArray = ^BGRArray;
+  //BGRArray = array[0..0] of TRGBTriple;
+  //PBGRArray = ^BGRArray;
 
   PalArray = array[byte] of TPaletteEntry;
   PPalArray = ^PalArray;
@@ -1663,8 +1663,8 @@ begin
         begin
           SrcScanline := DIBSource.ScanLine[Row];
           DstScanline := DIBResult.ScanLine[Row];
-          Src := pointer(longInt(SrcScanLine) + Ditherer.Column * sizeof(TRGBTriple));
-          Dst := pointer(longInt(DstScanLine) + Ditherer.Column);
+          Src := PtrAdd(SrcScanLine, Ditherer.Column * sizeof(TRGBTriple));
+          Dst := PtrAdd(DstScanLine, Ditherer.Column);
 
           while (Ditherer.Column < Ditherer.Width) and (Ditherer.Column >= 0) do
           begin

@@ -2980,7 +2980,7 @@ end;
 constructor TFormControlObj.CreateCopy(T: TFormControlObj);
 begin
   inherited Create;
-  System.Move(T.Pos, Pos, DWord(@ShowIt) - DWord(@Pos));
+  System.Move(T.Pos, Pos, PtrSub(@ShowIt, @Pos));
   FId := T.FID;
   FName := T.FName;
 end;
@@ -4508,7 +4508,7 @@ var
 begin
   inherited CreateCopy(AMasterList, T);
   TT := T as TBlock;
-  System.Move(TT.MargArray, MargArray, DWord(@Converted) - DWord(@MargArray) + Sizeof(Converted));
+  System.Move(TT.MargArray, MargArray, PtrSub(@Converted, @MargArray) + Sizeof(Converted));
   MyCell := TBlockCell.CreateCopy(AMasterList, TT.MyCell);
   MyCell.Owner := Self;
   DrawList := TList.Create;
@@ -6003,7 +6003,7 @@ var
 begin
   inherited;
   TT := T as TTableBlock;
-  System.Move(TT.WidthAttr, WidthAttr, DWord(@Justify) - DWord(@WidthAttr) + Sizeof(Justify));
+  System.Move(TT.WidthAttr, WidthAttr, PtrSub(@Justify, @WidthAttr) + Sizeof(Justify));
   Item := MyCell.Items[0];
   Table := Item as THtmlTable;
 end;
@@ -6606,7 +6606,7 @@ begin
   // this Move() copied 24 fields including a ThtString, not only ShowImages.
   // re-introduce Move() after moving ThtString out of the moved area between ShowImages and Background.
   //ShowImages := T.ShowImages;
-  System.Move(T.ShowImages, ShowImages, DWord(@Background) - DWord(@ShowImages) + Sizeof(Integer));
+  System.Move(T.ShowImages, ShowImages, PtrSub(@Background, @ShowImages) + Sizeof(Integer));
   PreFontName := T.PreFontName;
   htmlFormList := TFreeList.Create; {no copy of list made}
   AGifList := TList.Create;
@@ -7589,7 +7589,7 @@ constructor TCellObj.CreateCopy(AMasterList: TSectionBaseList; T: TCellObj);
 begin
   inherited create;
   Cell := TCellObjCell.CreateCopy(AMasterList, T.Cell);
-  Move(T.ColSpan, ColSpan, DWord(@Cell) - DWord(@ColSpan));
+  Move(T.ColSpan, ColSpan, PtrSub(@Cell, @ColSpan));
 
   if Cell.MasterList.PrintTableBackground then
   begin
@@ -8209,7 +8209,7 @@ begin
   for I := 0 to HtmlTable.Rows.Count - 1 do
     Rows.Add(TCellList.CreateCopy(ParentSectionList, TCellList(HtmlTable.Rows.Items[I])));
 
-  Move(HtmlTable.ListsProcessed, ListsProcessed, DWord(@EndList) - DWord(@ListsProcessed));
+  Move(HtmlTable.ListsProcessed, ListsProcessed, PtrSub(@EndList, @ListsProcessed));
 
   SetLength(Widths, NumCols);
   SetLength(MaxWidths, NumCols);
@@ -11417,9 +11417,7 @@ var
     ARect: TRect;
     Inverted, ImageAtStart, NewCP: boolean;
     Color: TColor;
-    CP1: TPoint;
     CPx, CPy, CP1x: Integer;
-    //SaveColor: TColor;
     BR: BorderRec;
     LR: LineRec;
     Start: PWideChar;
@@ -13086,7 +13084,7 @@ end;
 constructor THorzLine.CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase);
 begin
   inherited Create(AMasterList, T.Display);
-  System.Move((T as THorzline).VSize, VSize, DWord(@BkGnd) - DWord(@VSize) + Sizeof(BkGnd));
+  System.Move((T as THorzline).VSize, VSize, PtrSub(@BkGnd, @VSize) + Sizeof(BkGnd));
 end;
 
 procedure THorzLine.CopyToClipboard;

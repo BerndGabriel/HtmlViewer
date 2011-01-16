@@ -580,11 +580,13 @@ begin
   MetaFile := TMetaFile.Create;
   FMFList.Add(MetaFile);
 
-  {$IFNDEF NoGDIPlus}
+{$IFNDEF NoGDIPlus}
+{$ifndef LCL}
   if GDIPlusActive then                                  
     NewCanvas := TMetaFileCanvas.Create(MetaFile, Printer.Handle)
   else
-    {$ENDIF NoGDIPlus}
+{$endif LCL}
+{$ENDIF NoGDIPlus}
     NewCanvas := TMetaFileCanvas.Create(MetaFile, 0);
    { fill the page with "whiteness" }
   NewCanvas.Brush.Color := clWhite;

@@ -114,7 +114,6 @@ type
   ThtRadioButton = TRadioButton;
   ThtHintWindow = THintWindow;
 {$endif}
-//  ThtHintWindow = THintWindow;
 
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)
@@ -250,10 +249,31 @@ function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
 //  SScanLine		= 'Scan line index out of range';
 //{$endif}
 
+function PtrSub(P1, P2: Pointer): Integer; {$ifdef UseInline} inline; {$endif}
+function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inline; {$endif}
+
 implementation
 
 uses
   HTMLUn2;
+
+function PtrSub(P1, P2: Pointer): Integer;
+begin
+{$ifdef FPC}
+  Result := P1 - P2;
+{$else}
+  Result := Integer(P1) - Integer(P2);
+{$endif}
+end;
+
+function PtrAdd(P1: Pointer; Offset: Integer): Pointer;
+begin
+{$ifdef FPC}
+  Result := P1 + Offset;
+{$else}
+  Result := Pointer(Integer(P1) + Offset);
+{$endif}
+end;
 
 procedure CalcPalette(DC: HDC);
 {calculate a rainbow palette, one with equally spaced colors}
@@ -621,8 +641,11 @@ end;
 { ThtCanvas }
 
 procedure ThtCanvas.htTextRect(const Rect: TRect; X, Y: Integer; const Text: ThtString);
+{$ifdef LCL}
+{$else}
 var
   Options: Longint;
+{$endif LCL}
 begin
 {$ifdef LCL}
   inherited TextRect(Rect, X, Y, Text);

@@ -1836,10 +1836,10 @@ end;
 //end;
 
 function KindOfImage(Start: Pointer): TImageType; overload;
-type
-  ByteArray = array[0..10] of byte;
+//type
+//  ByteArray = array[0..10] of byte;
 var
-  PB: ^ByteArray absolute Start;
+//  PB: ^ByteArray absolute Start;
   PW: ^Word absolute Start;
   PL: ^DWord absolute Start;
 begin
@@ -1866,7 +1866,7 @@ var
   Pos: Int64;
   Magic: DWord;
   WMagic: Word absolute Magic;
-  BMagic: Byte absolute Magic;
+//  BMagic: Byte absolute Magic;
 begin
   Pos := Stream.Position;
   Stream.Position := 0;
@@ -2253,8 +2253,10 @@ begin
   end;
 end;
 
+{$IFNDEF NoGDIPlus}
 var
   Unique: Integer = 183902;
+{$ENDIF !NoGDIPlus}
 
 {----------------GetImageAndMaskFromStream}
 
@@ -3033,21 +3035,6 @@ begin
   finally
     FreeMem(LP, Sizeof(TLogPalette) + 256 * Sizeof(TPaletteEntry));
   end;
-end;
-
-const
-  DefaultBitmap = 1002;
-  ErrBitmap = 1001;
-  ErrBitmapMask = 1005;
-  Hand_Cursor = 1003;
-  ThickIBeam_Cursor = 1006;
-
-procedure ThisExit; far;
-begin
-  DefBitMap.Free;
-  ErrorBitMap.Free;
-  ErrorBitMapMask.Free;
-  WaitStream.Free;
 end;
 
 {----------------TIDNameList}
@@ -4718,6 +4705,16 @@ begin
     Delete(FAlt, Length(FAlt), 1);
 end;
 
+{$ifdef LCL}
+{$else}
+const
+  DefaultBitmap = 1002;
+  ErrBitmap = 1001;
+  ErrBitmapMask = 1005;
+  Hand_Cursor = 1003;
+  ThickIBeam_Cursor = 1006;
+{$endif}
+
 initialization
   DefBitMap := TBitmap.Create;
   ErrorBitMap := TBitmap.Create;
@@ -4744,6 +4741,9 @@ initialization
   WaitStream := TMemoryStream.Create;
 
 finalization
-  ThisExit;
+  DefBitMap.Free;
+  ErrorBitMap.Free;
+  ErrorBitMapMask.Free;
+  WaitStream.Free;
 end.
 
