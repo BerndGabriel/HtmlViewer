@@ -648,7 +648,7 @@ var
 {$endif LCL}
 begin
 {$ifdef LCL}
-  inherited TextRect(Rect, X, Y, Text);
+  inherited TextRect(Rect, X, Y, Utf8Encode(Text));
 {$else}
   Changing;
   RequiredState([csHandleValid, csFontValid, csBrushValid]);

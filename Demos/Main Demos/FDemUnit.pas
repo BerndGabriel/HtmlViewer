@@ -911,7 +911,6 @@ var
   Pt, Pt1: TPoint;
   ARect: TRect;
   TitleStr: ThtString;
-
 begin
   if not Assigned(TitleViewer) then
   begin
@@ -942,8 +941,8 @@ begin
       CloseAll
     else if (TimerCount >= StartCount) and not HintVisible and (HintWindow <> nil) then
     begin
-      ARect := HintWindow.CalcHintRect(300, TitleStr, Nil);
-      HintWindow.ActivateHint(Rect(Pt.X, Pt.Y + 18, Pt.X + ARect.Right, Pt.Y + 18 + ARect.Bottom), TitleStr);
+      ARect := HintWindow.CalcHintRect(300, {$ifdef LCL}Utf8Encode{$endif}(TitleStr), Nil);
+      HintWindow.ActivateHint(Rect(Pt.X, Pt.Y + 18, Pt.X + ARect.Right, Pt.Y + 18 + ARect.Bottom), {$ifdef LCL}Utf8Encode{$endif}(TitleStr));
       HintVisible := True;
     end;
 except
@@ -1028,7 +1027,11 @@ end;
 procedure TForm1.UpdateCaption;
 begin
   if FrameViewer.DocumentTitle <> '' then
+{$ifdef LCL}
+    Caption := 'FrameViewer Demo - ' + UTF8Encode(FrameViewer.DocumentTitle)
+{$else}
     Caption := 'FrameViewer Demo - ' + FrameViewer.DocumentTitle
+{$endif}
   else
     Caption := 'FrameViewer Demo - <untitled document>';
 end;

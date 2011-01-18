@@ -125,10 +125,15 @@ type
     procedure SetHeightWidth(ACanvas: TCanvas); override;
   end;
 
+  { TTextAreaFormControlObj }
+
   TTextAreaFormControlObj = class(TFormControlObj)
   private
     FControl: ThtMemo;
     EnterContents: ThtString;
+    function GetLine(Index: Integer): ThtString;
+    function GetText: ThtString;
+    procedure SetText(const AValue: ThtString);
   protected
     function GetControl: TWinControl; override;
     procedure DoOnChange; override;
@@ -137,16 +142,17 @@ type
     Wrap: (wrOff, wrSoft, wrHard);
     Rows, Cols: integer;
     TheText: ThtString;
-    constructor Create(AMasterList: TSectionList; Position: integer;
-      L: TAttributeList; Prop: TProperties);
+    constructor Create(AMasterList: TSectionList; Position: integer; L: TAttributeList; Prop: TProperties);
     destructor Destroy; override;
+    function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
     procedure AddStr(const S: ThtString);
     procedure ResetToValue; override;
     procedure SetHeightWidth(Canvas: TCanvas); override;
-    function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure SetData(Index: integer; const V: ThtString); override;
+    property Lines[Index: Integer]: ThtString read GetLine;
+    property Text: ThtString read GetText write SetText;
   end;
 
 implementation
@@ -249,34 +255,35 @@ procedure TListboxFormControlObj.ProcessProperties(Prop: TProperties);
 begin
   inherited;
   if BkColor <> clNone then
-    TListbox(FControl).Color := BkColor;
+    FControl.Color := BkColor;
 end;
 
 procedure TListBoxFormControlObj.Draw(Canvas: TCanvas; X1, Y1: integer);
 var
   H2, I, Addon: integer;
-  LB: ThtListbox;
   ARect: TRect;
 begin
-  LB := FControl as ThtListbox; {watch it, TListBox has a canvas too}
-  if LB.BorderStyle <> bsNone then
+  ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
+  if FControl.BorderStyle <> bsNone then
   begin
-    FormControlRect(Canvas, X1, Y1, X1 + LB.Width, Y1 + LB.Height, False, MasterList.PrintMonoBlack, False, TListbox(FControl).Color);
+    FormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
     Addon := 4;
   end
   else
   begin
-    FillRectWhite(Canvas, X1, Y1, X1 + LB.Width, Y1 + LB.Height, TListbox(FControl).Color);
+    FillRectWhite(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, FControl.Color);
     Addon := 2;
   end;
 
   Canvas.Brush.Style := bsClear;
-  Canvas.Font := LB.Font;
+  Canvas.Font := FControl.Font;
   H2 := Abs(Canvas.Font.Height);
-  SetTextAlign(Canvas.handle, TA_Left + TA_Top);
-  ARect := Rect(X1 + Addon, Y1 + Addon, X1 + LB.Width - 2 * Addon, Y1 + LB.Height - 2 * Addon);
-  for I := LB.TopIndex to Min(LB.Items.Count - 1, LB.TopIndex + LBSize - 1) do
-    ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + (I - LB.TopIndex) * H2, LB.Items[I]);
+  SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
+  InflateRect(ARect, -Addon, -Addon);
+  for I := FControl.TopIndex to Min(FControl.Items.Count - 1, FControl.TopIndex + LBSize - 1) do
+    ThtCanvas(Canvas).htTextRect(
+      ARect, ARect.Left, ARect.Top + (I - FControl.TopIndex) * H2,
+      {$ifdef LCL}Utf8Decode{$endif}(FControl.Items[I]));
 end;
 
 procedure TListBoxFormControlObj.ResetToValue;
@@ -284,12 +291,12 @@ var
   I: Integer;
   Tmp: boolean;
 begin
-  with (FControl as ThtListbox) do
+  with FControl do
   begin
     Items.Clear;
     for I := 0 to TheOptions.Count - 1 do
     begin
-      Items.Add(TheOptions[I]);
+      Items.Add({$ifdef LCL}Utf8Encode{$endif}(TheOptions[I]));
       Tmp := TheOptions.Selected[I];
       if MultiSelect then
         Selected[I] := Tmp
@@ -304,7 +311,7 @@ end;
 
 procedure TListBoxFormControlObj.SetHeightWidth(Canvas: TCanvas);
 begin
-  with ThtListbox(FControl) do
+  with FControl do
   begin
     Canvas.Font := Font;
     if LBSize = -1 then
@@ -334,7 +341,7 @@ end;
 
 function TListBoxFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
 begin
-  with (FControl as ThtListbox) do
+  with FControl do
   begin
     Result := (Index < Items.Count);
     if Result then
@@ -351,7 +358,7 @@ procedure TListBoxFormControlObj.SaveContents;
 var
   I: integer;
 begin
-  with ThtListbox(FControl) do
+  with FControl do
   begin
     EnterItems := Items.Count;
     for I := 0 to Min(Items.Count - 1, 50) do
@@ -365,7 +372,7 @@ var
   Changed: boolean;
 begin
   Changed := False;
-  with ThtListbox(FControl) do
+  with FControl do
   begin
     if Items.Count <> EnterItems then
       Changed := True
@@ -459,12 +466,12 @@ procedure TComboFormControlObj.ResetToValue;
 var
   I: Integer;
 begin
-  with (FControl as ThtCombobox) do
+  with FControl do
   begin
     Items.Clear;
     for I := 0 to TheOptions.Count - 1 do
     begin
-      Items.Add(TheOptions[I]);
+      Items.Add({$ifdef LCL}Utf8Encode{$endif}(TheOptions[I]));
       if TheOptions.Selected[I] then
         ItemIndex := I;
     end;
@@ -477,26 +484,27 @@ procedure TComboFormControlObj.ProcessProperties(Prop: TProperties);
 begin
   inherited;
   if BkColor <> clNone then
-    TCombobox(FControl).Color := BkColor;
+    FControl.Color := BkColor;
 end;
 
 procedure TComboFormControlObj.Draw(Canvas: TCanvas; X1, Y1: integer);
 var
-  CB: ThtCombobox;
   ARect: TRect;
 begin
-  CB := FControl as ThtCombobox; {watch it, TComboBox has a canvas too}
-  FormControlRect(Canvas, X1, Y1, X1 + CB.Width, Y1 + CB.Height, False, MasterList.PrintMonoBlack, False, TCombobox(FControl).Color);
+  ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
+  FormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
   Canvas.Brush.Style := bsClear;
-  Canvas.Font := CB.Font;
-  SetTextAlign(Canvas.handle, TA_Left + TA_Top);
-  ARect := Rect(X1 + 4, Y1 + 4, X1 + CB.Width - 8, Y1 + CB.Height - 3);
-  ThtCanvas(Canvas).htTextRect(ARect, X1 + 4, Y1 + 4, CB.Items[CB.ItemIndex]);
+  Canvas.Font := FControl.Font;
+  SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
+  InflateRect(ARect, -4, -4);
+  Inc(ARect.Bottom, 5);
+  ThtCanvas(Canvas).htTextRect(ARect, ARect.Left, ARect.Top,
+    {$ifdef LCL}Utf8Decode{$endif}(FControl.Items[FControl.ItemIndex]));
 end;
 
 procedure TComboFormControlObj.SetHeightWidth(ACanvas: TCanvas);
 begin
-  with ThtCombobox(FControl) do
+  with FControl do
   begin
     if FHeight >= 10 then
       Height := FHeight;
@@ -523,35 +531,33 @@ function TComboFormControlObj.GetSubmission(Index: integer; var S: ThtString): b
 begin
   Result := Index = 0;
   if Result then
-    with (FControl as ThtCombobox) do
+    with FControl do
       if (ItemIndex >= 0) and (ItemIndex <= Items.Count) then
         S := Self.Name + '=' + TheOptions.Value[ItemIndex];
 end;
 
 procedure TComboFormControlObj.SetData(Index: integer; const V: ThtString);
 var
-  CB: ThtCombobox;
   I: integer;
 begin
-  CB := FControl as ThtCombobox;
   for I := 0 to TheOptions.Count - 1 do
   begin
     if htCompareText(V, TheOptions.Value[I]) = 0 then
-      CB.ItemIndex := I;
+      FControl.ItemIndex := I;
   end;
 end;
 
 procedure TComboFormControlObj.SaveContents;
 {Save the current value to see if it has changed when focus is lost}
 begin
-  EnterIndex := ThtCombobox(FControl).ItemIndex;
+  EnterIndex := FControl.ItemIndex;
 end;
 
 {$IFDEF OpOnChange}
 
 procedure TComboFormControlObj.OptionalOnChange(Sender: TObject);
 begin
-  if ThtCombobox(FControl).ItemIndex <> EnterIndex then
+  if FControl.ItemIndex <> EnterIndex then
   begin
     SaveContents;
     if Assigned(MasterList.ObjectChange) then
@@ -570,7 +576,7 @@ end;
 procedure TComboFormControlObj.DoOnChange;
 begin
 {$IFNDEF OpOnChange}
-  if ThtCombobox(FControl).ItemIndex <> EnterIndex then
+  if FControl.ItemIndex <> EnterIndex then
     if Assigned(MasterList.ObjectChange) then
       MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
 {$ENDIF}
@@ -642,7 +648,7 @@ procedure TTextAreaFormControlObj.ProcessProperties(Prop: TProperties);
 begin
   inherited;
   if BkColor <> clNone then
-    TMemo(FControl).Color := BkColor;
+    FControl.Color := BkColor;
 end;
 
 procedure TTextAreaFormControlObj.Draw(Canvas: TCanvas; X1, Y1: integer);
@@ -654,12 +660,12 @@ begin
   begin
     if BorderStyle <> bsNone then
     begin
-      FormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, TMemo(FControl).Color);
+      FormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, FControl.Color);
       Addon := 4;
     end
     else
     begin
-      FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, TMemo(FControl).Color);
+      FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, FControl.Color);
       Addon := 2;
     end;
     Canvas.Brush.Style := bsClear;
@@ -674,7 +680,7 @@ end;
 
 procedure TTextAreaFormControlObj.SetHeightWidth(Canvas: TCanvas);
 begin
-  with ThtMemo(FControl) do
+  with FControl do
   begin
     Canvas.Font := Font;
     if FHeight >= 10 then
@@ -705,10 +711,25 @@ procedure TTextAreaFormControlObj.ResetToValue;
 begin
   with FControl do
   begin
-    Text := TheText;
     SelStart := 0;
     SelLength := 0;
   end;
+  Text := TheText;
+end;
+
+function TTextAreaFormControlObj.GetLine(Index: Integer): ThtString;
+begin
+  Result := {$ifdef LCL}Utf8Decode{$endif}(FControl.Lines[Index]);
+end;
+
+function TTextAreaFormControlObj.GetText: ThtString;
+begin
+  Result := {$ifdef LCL}Utf8Decode{$endif}(FControl.Text);
+end;
+
+procedure TTextAreaFormControlObj.SetText(const AValue: ThtString);
+begin
+  FControl.Text := {$ifdef LCL}Utf8Encode{$endif}(AValue);
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
@@ -726,11 +747,11 @@ begin
   begin
     S := Name + '=';
     if Wrap in [wrOff, wrSoft] then
-      S := S + FControl.Text
+      S := S + Text
     else
       for I := 0 to FControl.Lines.Count - 1 do
       begin
-        S := S + FControl.Lines[I];
+        S := S + Lines[I];
         if I < FControl.Lines.Count - 1 then
           S := S + CRLF;
       end;
@@ -739,18 +760,18 @@ end;
 
 procedure TTextAreaFormControlObj.SetData(Index: integer; const V: ThtString);
 begin
-  FControl.Text := V;
+  Text := V;
 end;
 
 procedure TTextAreaFormControlObj.SaveContents;
 {Save the current value to see if it has changed when focus is lost}
 begin
-  EnterContents := FControl.Text;
+  EnterContents := Text;
 end;
 
 procedure TTextAreaFormControlObj.DoOnChange;
 begin
-  if FControl.Text <> EnterContents then
+  if Text <> EnterContents then
     if Assigned(MasterList.ObjectChange) then
       MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
 end;

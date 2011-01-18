@@ -92,13 +92,13 @@ type
 
   TPaintPanel = class(TCustomPanel)
   private
-    FOnPaint: TNotifyEvent;
+    //FOnPaint: TNotifyEvent;
     FViewer: THtmlViewer;
-    Canvas2: TCanvas;
+    //Canvas2: TCanvas;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_EraseBkgnd;
     procedure WMLButtonDblClk(var Message: TWMMouse); message WM_LButtonDblClk;
     procedure DoBackground(ACanvas: TCanvas);
-    property OnPaint: TNotifyEvent read FOnPaint write FOnPaint;
+    //property OnPaint: TNotifyEvent read FOnPaint write FOnPaint;
   public
     constructor CreateIt(AOwner: TComponent; Viewer: THtmlViewer);
     procedure Paint; override;
@@ -365,7 +365,7 @@ type
     procedure HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
-    procedure HTMLPaint(Sender: TObject); virtual;
+    procedure HTMLPaint(Canvas: TCanvas; const ARect: TRect);
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
     procedure LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);    
@@ -670,7 +670,7 @@ begin
 {$ifndef LCL}
   PaintPanel.Ctl3D := False;
 {$endif}
-  PaintPanel.OnPaint := HTMLPaint;
+  //PaintPanel.OnPaint := HTMLPaint;
   PaintPanel.OnMouseDown := HTMLMouseDown;
   PaintPanel.OnMouseMove := HTMLMouseMove;
   PaintPanel.OnMouseUp := HTMLMouseUp;
@@ -1287,14 +1287,12 @@ begin
   end;
 end;
 
-procedure THtmlViewer.HTMLPaint(Sender: TObject);
-var
-  ARect: TRect;
+procedure THtmlViewer.HTMLPaint(Canvas: TCanvas; const ARect: TRect);
 begin
   if vsDontDraw in FViewerState then
     exit;
-  ARect := Rect(0, 1, PaintPanel.Width, PaintPanel.Height);
-  FSectionList.Draw(PaintPanel.Canvas2, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
+  //ARect := Rect(0, 1, PaintPanel.Width, PaintPanel.Height);
+  FSectionList.Draw(Canvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
 end;
 
 procedure THtmlViewer.WMSize(var Message: TWMSize);
@@ -5392,48 +5390,49 @@ var
   ABitmap: HBitmap;
   ARect: TRect;
   OldPal: HPalette;
+  Canvas2: TCanvas;
 begin
-  if (vsDontDraw in FViewer.FViewerState) or (Canvas2 <> nil) then
+  if (vsDontDraw in FViewer.FViewerState) {or (Canvas2 <> nil)} then
     Exit;
   FViewer.DrawBorder;
   OldPal := 0;
   Canvas.Font := Font;
   Canvas.Brush.Color := Color;
   ARect := Canvas.ClipRect;
+//  DoBackground(Canvas);
+//  FViewer.HTMLPaint(Canvas, ARect);
+
+  MemDC := 0;
+  ABitmap := 0;
   Canvas2 := TCanvas.Create; {paint on a memory DC}
   try
     MemDC := CreateCompatibleDC(Canvas.Handle);
-    ABitmap := 0;
-    try
-      with ARect do
-      begin
-        ABitmap := CreateCompatibleBitmap(Canvas.Handle, Right - Left, Bottom - Top);
-        if (ABitmap = 0) and (Right - Left + Bottom - Top <> 0) then
-          raise EOutOfResources.Create('Out of Resources');
-        try
-          SelectObject(MemDC, ABitmap);
-          SetWindowOrgEx(memDC, Left, Top, nil);
-          Canvas2.Handle := MemDC;
-          DoBackground(Canvas2);
-          if Assigned(FOnPaint) then
-            FOnPaint(Self);
-          OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
-          RealizePalette(Canvas.Handle);
-          BitBlt(Canvas.Handle, Left, Top, Right - Left, Bottom - Top,
-            MemDC, Left, Top, SrcCopy);
-        finally
-          if OldPal <> 0 then
-            SelectPalette(MemDC, OldPal, False);
-          Canvas2.Handle := 0;
-        end;
+    with ARect do
+    begin
+      ABitmap := CreateCompatibleBitmap(Canvas.Handle, Right - Left, Bottom - Top);
+      if (ABitmap = 0) and (Right - Left + Bottom - Top <> 0) then
+        raise EOutOfResources.Create('Out of Resources');
+      try
+        SelectObject(MemDC, ABitmap);
+        SetWindowOrgEx(memDC, Left, Top, nil);
+        Canvas2.Handle := MemDC;
+        DoBackground(Canvas2);
+        FViewer.HTMLPaint(Canvas2, ARect);
+        OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
+        RealizePalette(Canvas.Handle);
+        BitBlt(Canvas.Handle, Left, Top, Right - Left, Bottom - Top, MemDC, Left, Top, SrcCopy);
+      finally
+        if OldPal <> 0 then
+          SelectPalette(MemDC, OldPal, False);
+        Canvas2.Handle := 0;
       end;
-    finally
-      DeleteDC(MemDC);
-      DeleteObject(ABitmap);
     end;
   finally
-    FreeAndNil(Canvas2);
+    Canvas2.Destroy;
+    DeleteDC(MemDC);
+    DeleteObject(ABitmap);
   end;
+
 end;
 
 procedure TPaintPanel.DoBackground(ACanvas: TCanvas);

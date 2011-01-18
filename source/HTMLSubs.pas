@@ -3444,7 +3444,7 @@ procedure TEditFormControlObj.ProcessProperties(Prop: TProperties);
 begin
   inherited;
   if BkColor <> clNone then
-    ThtEdit(FControl).Color := BkColor;
+    FControl.Color := BkColor;
 end;
 
 procedure TEditFormControlObj.ResetToValue;
@@ -3457,11 +3457,11 @@ var
   H2, Addon: Integer;
   ARect: TRect;
 begin
-  if ThtEdit(FControl).BorderStyle <> bsNone then
+  if FControl.BorderStyle <> bsNone then
     Addon := 4 {normal 3D border}
   else
     Addon := 2; {inline border, 3D Border removed}
-  with ThtEdit(FControl) do
+  with FControl do
   begin
     Canvas.Font := Font;
     H2 := Abs(Font.Height);
@@ -3493,7 +3493,7 @@ end;
 //-- BG ---------------------------------------------------------- 15.01.2011 --
 function TEditFormControlObj.getText: ThtString;
 begin
-  Result := FControl.Text;
+  Result := {$ifdef LCL}UTF8Decode{$endif}(FControl.Text);
 end;
 
 procedure TEditFormControlObj.SetData(Index: Integer; const V: ThtString);
@@ -3503,7 +3503,7 @@ end;
 
 procedure TEditFormControlObj.SetHeightWidth(Canvas: TCanvas);
 begin
-  with ThtEdit(FControl) do
+  with FControl do
   begin
     Canvas.Font := Font;
     if not PercentWidth then
@@ -3523,7 +3523,7 @@ end;
 //-- BG ---------------------------------------------------------- 15.01.2011 --
 procedure TEditFormControlObj.setText(const Value: ThtString);
 begin
-  FControl.Text := Value;
+  FControl.Text := {$ifdef LCL}Utf8Encode{$endif}(Value);
 end;
 
 procedure TEditFormControlObj.SaveContents;
@@ -3594,7 +3594,7 @@ begin
     if Which = Browse then
       Caption := 'Browse...'
     else
-      Caption := Value;
+      Caption := {$ifdef LCL}Utf8Encode{$endif}(Value);
     OnEnter := EnterEvent;
     OnExit := ExitEvent;
     OnMouseMove := HandleMouseMove;
@@ -3602,7 +3602,7 @@ begin
   end;
   FControl.Parent := PntPanel;
 {$IFDEF UseElPack}
-  ThtButton(FControl).Color := clBtnFace;
+  FControl.Color := clBtnFace;
 {$ENDIF}
 end;
 
@@ -3619,7 +3619,7 @@ var
   H2: Integer;
   MonoBlack: boolean;
 begin
-  with ThtButton(FControl) do
+  with FControl do
   begin
     MonoBlack := MasterList.PrintMonoBlack and (GetDeviceCaps(Canvas.Handle, BITSPIXEL) = 1) and
       (GetDeviceCaps(Canvas.Handle, PLANES) = 1);
@@ -3682,7 +3682,7 @@ end;
 
 procedure TButtonFormControlObj.SetHeightWidth(Canvas: TCanvas);
 begin
-  with ThtButton(FControl) do
+  with FControl do
   begin
     Canvas.Font := Font;
     if FHeight >= Canvas.TextHeight('A') then
@@ -3730,14 +3730,14 @@ end;
 
 procedure TCheckBoxFormControlObj.ResetToValue;
 begin
-  ThtCheckBox(FControl).Checked := IsChecked;
+  FControl.Checked := IsChecked;
 end;
 
 procedure TCheckBoxFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
 var
   x, y: Integer;
 begin
-  with ThtCheckBox(FControl) do
+  with FControl do
   begin
     FormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, Disabled, clWhite);
     if Checked then
@@ -3766,14 +3766,14 @@ end;
 
 function TCheckBoxFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
 begin
-  Result := (Index = 0) and ThtCheckBox(FControl).Checked;
+  Result := (Index = 0) and FControl.Checked;
   if Result then
     S := FName + '=' + Value;
 end;
 
 procedure TCheckBoxFormControlObj.SetDataInit;
 begin
-  ThtCheckBox(FControl).Checked := False; {not checked unless later data says so}
+  FControl.Checked := False; {not checked unless later data says so}
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
@@ -3785,13 +3785,13 @@ end;
 procedure TCheckBoxFormControlObj.SetData(Index: Integer; const V: ThtString);
 begin
   if htCompareText(V, Value) = 0 then
-    ThtCheckBox(FControl).Checked := True;
+    FControl.Checked := True;
 end;
 
 procedure TCheckBoxFormControlObj.SaveContents;
 {Save the current value to see if it has changed when focus is lost}
 begin
-  WasChecked := ThtCheckBox(FControl).Checked;
+  WasChecked := FControl.Checked;
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
@@ -3804,7 +3804,7 @@ end;
 
 procedure TCheckBoxFormControlObj.DoOnChange;
 begin
-  if ThtCheckBox(FControl).Checked <> WasChecked then
+  if FControl.Checked <> WasChecked then
     if Assigned(MasterList.ObjectChange) then
       MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
 end;
