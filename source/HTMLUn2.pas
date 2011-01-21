@@ -321,6 +321,7 @@ type
   IndexArray = array[1..TokenLeng] of Integer;
   PIndexArray = ^IndexArray;
   ChrArray = array[1..TokenLeng] of WideChar;
+  PChrArray = ^ChrArray;
 
   {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
    characters along with their original indices.}
@@ -348,20 +349,24 @@ type
   private
     St: WideString;
     StringOK: boolean;
+    FCapacity: Integer;
+    FCount: Integer;
     function GetString: WideString;
+    procedure SetCapacity(NewCapacity: Integer);
   public
-    C: ^ChrArray;
-    I: ^IndexArray;
-    MaxIndex, Leng: Integer;
+    C: PChrArray;
+    I: PIndexArray;
     constructor Create;
     destructor Destroy; override;
     procedure AddUnicodeChar(Ch: WideChar; Ind: Integer);
-    procedure AddString(S: TCharCollection; CodePage: Integer);
+    procedure AddString(S: TCharCollection);
     procedure Concat(T: TokenObj);
     procedure Clear;
     procedure Remove(N: Integer);
     procedure Replace(N: Integer; Ch: WideChar);
 
+    property Capacity: Integer read FCapacity write SetCapacity;
+    property Count: Integer read FCount;
     property S: WideString read GetString;
   end;
 
@@ -3249,15 +3254,16 @@ begin
   Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
   FCurrentIndex := K;
 end;
-{----------------TokenObj.Create}
+
+{ TokenObj }
 
 constructor TokenObj.Create;
 begin
   inherited;
   GetMem(C, TokenLeng * Sizeof(WideChar));
   GetMem(I, TokenLeng * Sizeof(Integer));
-  MaxIndex := TokenLeng;
-  Leng := 0;
+  FCapacity := TokenLeng;
+  FCount := 0;
   St := '';
   StringOK := True;
 end;
@@ -3272,47 +3278,20 @@ end;
 procedure TokenObj.AddUnicodeChar(Ch: WideChar; Ind: Integer);
 {Ch must be Unicode in this method}
 begin
-  if Leng >= MaxIndex then
-  begin
-    ReallocMem(C, (MaxIndex + 50) * Sizeof(WideChar));
-    ReallocMem(I, (MaxIndex + 50) * Sizeof(Integer));
-    Inc(MaxIndex, 50);
-  end;
-  Inc(Leng);
-  C^[Leng] := Ch;
-  I^[Leng] := Ind;
+  if Count >= Capacity then
+    SetCapacity(Capacity + 50);
+  Inc(FCount);
+  C^[Count] := Ch;
+  I^[Count] := Ind;
   StringOK := False;
 end;
 
 procedure TokenObj.Clear;
 begin
-  Leng := 0;
+  FCount := 0;
   St := '';
   StringOK := True;
 end;
-
-//function MultibyteToWideString(CodePage: Integer; const S: AnsiString; Len: Integer): WideString;
-//{$IFNDEF UNICODE}
-//var
-//  NewLen: Integer;
-//{$ENDIF}
-//begin
-//{$IFDEF UNICODE}
-//  if Len >= 0 then
-//    Result := Copy(S, 1, Len)
-//  else
-//    Result := S;
-//{$ELSE}
-//  {Provide initial space. The resulting ThtString will never be longer than the
-//   UTF-8 or multibyte encoded ThtString.}
-//  SetLength(Result, 2 * Len);
-//  NewLen := MultiByteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
-//  if (NewLen = 0) and (CodePage <> CP_ACP) then
-//  { Invalid code page. Try default.}
-//    NewLen := MultiByteToWideChar(CP_ACP, 0, PAnsiChar(S), Len, PWideChar(Result), Len);
-//  SetLength(Result, NewLen);
-//{$ENDIF}
-//end;
 
 function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
 var
@@ -3356,78 +3335,47 @@ begin
     end;
 end;
 
-procedure TokenObj.AddString(S: TCharCollection; CodePage: Integer);
-// Takes the given string S and converts it to Unicode using the given code page.
-// If we are on Windows 95 then CP_UTF8 (and CP_UTF7) are not supported.
-// We compensate for this by using a Delphi function.
-// Note: There are more code pages (including CP_UTF7), which are not supported
-// on all platforms. These are rather esoteric and therefore not considered here.
-
+procedure TokenObj.AddString(S: TCharCollection);
 var
-  WS: WideString;
-  I, J, N,
-    Len, NewLen: Integer;
-
+  K: Integer;
 begin
-  Len := S.FCurrentIndex;
-  if Len > 0 then
-    WS := Copy(S.FChars, 1, Len)
-  else
-    WS := S.FChars;
-  NewLen := Length(WS);
-
-  {Store the wide string and character indices.}
-  if Len = NewLen then {single byte character set or at least no multibyte conversion}
-    for I := 1 to NewLen do
-      AddUnicodeChar(WS[I], S.FIndices[I])
-  else
-  begin {multibyte character set}
-    J := 1;
-    for I := 1 to NewLen do
-    begin
-      AddUnicodeChar(WS[I], S.FIndices[J]);
-      {find index for start of next character}
-      N := ByteNum(CodePage, @S.FChars[J]);
-      if N > 0 then
-        J := J + N
-      else
-        Break;
-    end;
-  end;
+  K := Count + S.FCurrentIndex;
+  if K >= Capacity then
+    SetCapacity(K + 50);
+  Move(S.FChars[1], C^[Count + 1], S.FCurrentIndex * Sizeof(WideChar));
+  Move(S.FIndices[1], I^[Count + 1], S.FCurrentIndex * Sizeof(Integer));
+  FCount := K;
+  StringOK := False;
 end;
 
 procedure TokenObj.Concat(T: TokenObj);
 var
   K: Integer;
 begin
-  K := Leng + T.Leng;
-  if K > MaxIndex then
-  begin
-    ReallocMem(C, (K + 50) * Sizeof(WideChar));
-    ReallocMem(I, (K + 50) * Sizeof(Integer));
-    MaxIndex := K + 50;
-  end;
-  Move(T.C^, C^[Leng + 1], T.Leng * Sizeof(WideChar));
-  Move(T.I^, I^[Leng + 1], T.Leng * Sizeof(Integer));
-  Leng := K;
+  K := Count + T.Count;
+  if K >= Capacity then
+    SetCapacity(K + 50);
+  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
+  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
+  FCount := K;
   StringOK := False;
 end;
 
 procedure TokenObj.Remove(N: Integer);
 begin {remove a single character}
-  if N <= Leng then
+  if N <= Count then
   begin
-    Move(C^[N + 1], C^[N], (Leng - N) * Sizeof(WideChar));
-    Move(I^[N + 1], I^[N], (Leng - N) * Sizeof(Integer));
+    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
+    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
     if StringOK then
       Delete(St, N, 1);
-    Dec(Leng);
+    Dec(FCount);
   end;
 end;
 
 procedure TokenObj.Replace(N: Integer; Ch: WideChar);
 begin {replace a single character}
-  if N <= Leng then
+  if N <= Count then
   begin
     C^[N] := Ch;
     if StringOK then
@@ -3435,12 +3383,29 @@ begin {replace a single character}
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 20.01.2011 --
+procedure TokenObj.SetCapacity(NewCapacity: Integer);
+begin
+  if NewCapacity <> FCapacity then
+  begin
+    ReallocMem(C, NewCapacity * Sizeof(WideChar));
+    ReallocMem(I, NewCapacity * Sizeof(Integer));
+    FCapacity := NewCapacity;
+    if NewCapacity < Count then
+    begin
+      FCount := NewCapacity;
+      if StringOK then
+        St := Copy(St, 1, Count);
+    end;
+  end;
+end;
+
 function TokenObj.GetString: WideString;
 begin
   if not StringOK then
   begin
-    SetLength(St, Leng);
-    Move(C^, St[1], SizeOf(WideChar) * Leng);
+    SetLength(St, Count);
+    Move(C^, St[1], SizeOf(WideChar) * Count);
     StringOK := True;
   end;
   Result := St;
@@ -3597,7 +3562,7 @@ begin
       { scan each bitmap row - the orientation doesn't matter (Bottom-up or not) }
       ScanLinePtr := bmp.ScanLine[0];
       if bmp.Height > 1 then
-        ScanLineInc := Integer(bmp.ScanLine[1]) - Integer(ScanLinePtr)
+        ScanLineInc := PtrSub(bmp.ScanLine[1], ScanLinePtr)
       else
         ScanLineInc := 0;
       for y := 0 to bmp.Height - 1 do
@@ -3659,7 +3624,7 @@ begin
           end;
           Inc(x);
         end; // scan every sample byte of the image
-        Inc(Integer(ScanLinePtr), ScanLineInc);
+        PtrInc(ScanLinePtr, ScanLineInc);
       end;
       { need to call ExCreateRegion one more time because we could have left    }
       { a RgnData with less than 2000 rects, so it wasn't yet created/combined  }

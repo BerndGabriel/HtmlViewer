@@ -329,7 +329,7 @@ type
     procedure FreeImage;
 
     procedure LoadFromStream(Source: TStream);
-    function GetStripBitmap(var Mask: TBitmap): TBitmap; {LDB}
+    function GetStripBitmap(out Mask: TBitmap): TBitmap; {LDB}
 
     property Signature: AnsiString read GetSignature;
     property ScreenDescriptor: PGifScreenDescriptor read GetScreenDescriptor;
@@ -1928,7 +1928,7 @@ end;
 
 {----------------TGif.GetStripBitmap}
 
-function TGif.GetStripBitmap(var Mask: TBitmap): TBitmap; {LDB}
+function TGif.GetStripBitmap(out Mask: TBitmap): TBitmap; {LDB}
 {This is a single bitmap containing all the frames.  A mask is also provided
  if the GIF is transparent.  Each Frame is set up so that it can be transparently
  blted to a background.}

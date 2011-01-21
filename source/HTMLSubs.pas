@@ -10031,12 +10031,13 @@ var
   St, StU: WideString;
   Small: boolean;
 begin
-  if T.Leng = 0 then
+  if T.Count = 0 then
     Exit;
   { Yunqa.de: Simple hack to support <span style="display:none"> }
-  if PropStack.Last.Display = pdNone then Exit;
+  if PropStack.Last.Display = pdNone then
+    Exit;
 
-  L := Len + T.Leng;
+  L := Len + T.Count;
   if BuffSize < L + 3 then
     Allocate(L + 500); {L+3 to permit additions later}
   case PropStack.Last.GetTextTransform of
@@ -10047,12 +10048,12 @@ begin
   else
     St := T.S;
   end;
-  Move(T.I[1], XP^[Len], T.Leng * Sizeof(Integer));
+  Move(T.I[1], XP^[Len], T.Count * Sizeof(Integer));
   if NoBreak or (Self is TPreformated) then
     C := 'n'
   else
     C := 'y';
-  for I := 1 to T.Leng do
+  for I := 1 to T.Count do
     Brk := Brk + C;
 
   if PropStack.Last.GetFontVariant = 'small-caps' then

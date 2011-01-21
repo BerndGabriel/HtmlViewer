@@ -31,13 +31,16 @@ interface
 
 uses
   Classes, SysUtils, Graphics, Controls,
+{$ifdef MSWINDOWS}
+  Windows,
+{$endif}
 {$ifdef LCL}
   LclIntf, LclType,
   StdCtrls, Buttons, Forms,
   HtmlMisc,
   WideStringsLcl,
 {$else}
-  Windows, Consts,
+  Consts,
   {$ifdef UseTNT}
     {$message 'HtmlViewer uses TNT unicode controls.'}
     TntControls,
@@ -251,27 +254,40 @@ function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
 
 function PtrSub(P1, P2: Pointer): Integer; {$ifdef UseInline} inline; {$endif}
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inline; {$endif}
+procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
 implementation
 
 uses
   HTMLUn2;
 
+//-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
 begin
 {$ifdef FPC}
   Result := P1 - P2;
 {$else}
-  Result := Integer(P1) - Integer(P2);
+  Result := PAnsiChar(P1) - PAnsiChar(P2);
 {$endif}
 end;
 
+//-- BG ------------------------------------------------------------------------
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer;
 begin
 {$ifdef FPC}
   Result := P1 + Offset;
 {$else}
-  Result := Pointer(Integer(P1) + Offset);
+  Result := PAnsiChar(P1) + Offset;
+{$endif}
+end;
+
+//-- BG ------------------------------------------------------------------------
+procedure PtrInc(var P1; Offset: Integer);
+begin
+{$ifdef FPC}
+  Inc(PAnsiChar(P1), Offset);
+{$else}
+  Inc(PAnsiChar(P1), Offset);
 {$endif}
 end;
 
@@ -365,6 +381,8 @@ end;
 {$endif}
 
 {$ifdef TransparentStretchBltMissing}
+
+{$ifdef D3_IMPL}
 (*
 **  GDI Error handling
 **  Adapted from graphics.pas
@@ -531,7 +549,95 @@ begin
     DeleteDC(MemDC);
   end;
 end;
+{$else D3_IMPL}
+const
+  SOutOfResources = 'Out of system resources';
+var
+  SystemPalette16: HPalette; // 16 color palette that maps to the system palette
+
+procedure OutOfResources;
+begin
+  raise EOutOfResources.Create(SOutOfResources);
+end;
+
+procedure GDIError;
+var
+  ErrorCode: Integer;
+  Buf: array [Byte] of Char;
+begin
+  ErrorCode := GetLastError;
+  if (ErrorCode <> 0) and (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nil,
+    ErrorCode, LOCALE_USER_DEFAULT, Buf, sizeof(Buf), nil) <> 0) then
+    raise EOutOfResources.Create(Buf)
+  else
+    OutOfResources;
+end;
+
+function GDICheck(Value: Integer): Integer;
+begin
+  if Value = 0 then GDIError;
+  Result := Value;
+end;
+
+function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
+  SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; MaskDC: HDC; MaskX,
+  MaskY: Integer): Boolean;
+const
+  ROP_DstCopy = $00AA0029;
+var
+  MemDC: HDC;
+  MemBmp: HBITMAP;
+  Save: THandle;
+  crText, crBack: TColorRef;
+  SavePal: HPALETTE;
+begin
+  Result := True;
+  if (Win32Platform = VER_PLATFORM_WIN32_NT) and (SrcW = DstW) and (SrcH = DstH) then
+  begin
+    MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, 1, 1));
+    MemBmp := SelectObject(MaskDC, MemBmp);
+    try
+      MaskBlt(DstDC, DstX, DstY, DstW, DstH, SrcDC, SrcX, SrcY, MemBmp, MaskX,
+        MaskY, MakeRop4(ROP_DstCopy, SrcCopy));
+    finally
+      MemBmp := SelectObject(MaskDC, MemBmp);
+      DeleteObject(MemBmp);
+    end;
+    Exit;
+  end;
+  SavePal := 0;
+  MemDC := GDICheck(CreateCompatibleDC(0));
+  try
+    MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, SrcW, SrcH));
+    Save := SelectObject(MemDC, MemBmp);
+    SavePal := SelectPalette(SrcDC, SystemPalette16, False);
+    SelectPalette(SrcDC, SavePal, False);
+    if SavePal <> 0 then
+      SavePal := SelectPalette(MemDC, SavePal, True)
+    else
+      SavePal := SelectPalette(MemDC, SystemPalette16, True);
+    RealizePalette(MemDC);
+
+    StretchBlt(MemDC, 0, 0, SrcW, SrcH, MaskDC, MaskX, MaskY, SrcW, SrcH, SrcCopy);
+    StretchBlt(MemDC, 0, 0, SrcW, SrcH, SrcDC, SrcX, SrcY, SrcW, SrcH, SrcErase);
+    crText := SetTextColor(DstDC, $0);
+    crBack := SetBkColor(DstDC, $FFFFFF);
+    StretchBlt(DstDC, DstX, DstY, DstW, DstH, MaskDC, MaskX, MaskY, SrcW, SrcH, SrcAnd);
+    StretchBlt(DstDC, DstX, DstY, DstW, DstH, MemDC, 0, 0, SrcW, SrcH, SrcInvert);
+    SetTextColor(DstDC, crText);
+    SetBkColor(DstDC, crBack);
+
+    if Save <> 0 then SelectObject(MemDC, Save);
+    DeleteObject(MemBmp);
+  finally
+    if SavePal <> 0 then SelectPalette(MemDC, SavePal, False);
+    DeleteDC(MemDC);
+  end;
+end;
+
 {$endif}
+{$endif TransparentStretchBltMissing}
+
 
 //function LoadStringFromStreamA(Stream: TStream): AnsiString;
 //var

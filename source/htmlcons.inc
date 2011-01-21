@@ -15,7 +15,7 @@
 
   {.$define UseUnicode}
   {$define CopyPaletteMissing}
-  {.$define TransparentStretchBltMissing}
+  {$define TransparentStretchBltMissing}
   {$define MetaFileMissing}
   {$define MultiMediaMissing}
   {.$define UnitConstsMissing}
@@ -76,6 +76,7 @@
                 {$define Compiler18_Plus}
                 {$ifdef ver180}
                 {$else}
+                  {$define Compiler19_Plus}
                   {$ifdef ver185}
                   {$else}
                     {$define Compiler20_Plus}
