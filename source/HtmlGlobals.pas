@@ -233,16 +233,6 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   MaskY: Integer): Boolean;
 {$endif}
 
-// UNICODE dependent loading string methods
-//function LoadStringFromStreamA(Stream: TStream): AnsiString;
-//function LoadStringFromStreamW(Stream: TStream): WideString;
-//function LoadStringFromFileA(const Name: ThtString): AnsiString;
-//function LoadStringFromFileW(const Name: ThtString): WideString;
-
-//function LoadStringFromStream(Stream: TStream): ThtString; {$ifdef UseInline} inline; {$endif}
-//function LoadStringFromFile(const Name: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-
-
 function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
 
 //{$ifdef UnitConstsMissing}
@@ -381,175 +371,6 @@ end;
 {$endif}
 
 {$ifdef TransparentStretchBltMissing}
-
-{$ifdef D3_IMPL}
-(*
-**  GDI Error handling
-**  Adapted from graphics.pas
-*)
-{$IFOPT R+}
-  {$DEFINE R_PLUS}
-  {$RANGECHECKS OFF}
-{$endif}
-{$ifdef D3_BCB3}
-function GDICheck(Value: Integer): Integer;
-{$else}
-function GDICheck(Value: Cardinal): Cardinal;
-{$endif}
-var
-  ErrorCode		: integer;
-// 2008.10.19 ->
-{$ifdef VER20_PLUS}
-  Buf			: array [byte] of WideChar;
-{$else}
-  Buf			: array [byte] of AnsiChar;
-{$endif}
-// 2008.10.19 <-
-
-  function ReturnAddr: Pointer;
-  asm  // From classes.pas
-    MOV		EAX,[EBP+4] // sysutils.pas says [EBP-4], but this works !
-  end;
-
-begin
-  if (Value = 0) then
-  begin
-    ErrorCode := GetLastError;
-    if (ErrorCode <> 0) and (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nil,
-      ErrorCode, LOCALE_USER_DEFAULT, Buf, sizeof(Buf), nil) <> 0) then
-      raise EOutOfResources.Create(Buf) at ReturnAddr
-    else
-      raise EOutOfResources.Create(SOutOfResources) at ReturnAddr;
-  end;
-  Result := Value;
-end;
-{$ifdef R_PLUS}
-  {$RANGECHECKS ON}
-  {$UNDEF R_PLUS}
-{$endif}
-
-var
-  // From Delphi 3 graphics.pas
-  SystemPalette16: HPalette; // 16 color palette that maps to the system palette
-
-// Copied from D3 graphics.pas
-// Fixed by Brian Lowe of Acro Technology Inc. 30Jan98
-function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
-  SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; MaskDC: HDC; MaskX,
-  MaskY: Integer): Boolean;
-const
-  ROP_DstCopy		= $00AA0029;
-var
-  MemDC			,
-  OrMaskDC		: HDC;
-  MemBmp		,
-  OrMaskBmp		: HBITMAP;
-  Save			,
-  OrMaskSave		: THandle;
-  crText, crBack	: TColorRef;
-  SavePal		: HPALETTE;
-
-begin
-  Result := True;
-  if (Win32Platform = VER_PLATFORM_WIN32_NT) and (SrcW = DstW) and (SrcH = DstH) then
-  begin
-    MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, 1, 1));
-    MemBmp := SelectObject(MaskDC, MemBmp);
-    try
-      MaskBlt(DstDC, DstX, DstY, DstW, DstH, SrcDC, SrcX, SrcY, MemBmp, MaskX,
-        MaskY, MakeRop4(ROP_DstCopy, SrcCopy));
-    finally
-      MemBmp := SelectObject(MaskDC, MemBmp);
-      DeleteObject(MemBmp);
-    end;
-    Exit;
-  end;
-
-  SavePal := 0;
-  MemDC := GDICheck(CreateCompatibleDC(DstDC));
-  try
-    { Color bitmap for combining OR mask with source bitmap }
-    MemBmp := GDICheck(CreateCompatibleBitmap(DstDC, SrcW, SrcH));
-    try
-      Save := SelectObject(MemDC, MemBmp);
-      try
-        { This bitmap needs the size of the source but DC of the dest }
-        OrMaskDC := GDICheck(CreateCompatibleDC(DstDC));
-        try
-          { Need a monochrome bitmap for OR mask!! }
-          OrMaskBmp := GDICheck(CreateBitmap(SrcW, SrcH, 1, 1, nil));
-          try
-            OrMaskSave := SelectObject(OrMaskDC, OrMaskBmp);
-            try
-
-              // OrMask := 1
-              // Original: BitBlt(OrMaskDC, SrcX, SrcY, SrcW, SrcH, OrMaskDC, SrcX, SrcY, WHITENESS);
-              // Replacement, but not needed: PatBlt(OrMaskDC, SrcX, SrcY, SrcW, SrcH, WHITENESS);
-              // OrMask := OrMask XOR Mask
-              // Not needed: BitBlt(OrMaskDC, SrcX, SrcY, SrcW, SrcH, MaskDC, SrcX, SrcY, SrcInvert);
-              // OrMask := NOT Mask
-              BitBlt(OrMaskDC, SrcX, SrcY, SrcW, SrcH, MaskDC, SrcX, SrcY, NotSrcCopy);
-
-              // Retrieve source palette (with dummy select)
-              SavePal := SelectPalette(SrcDC, SystemPalette16, False);
-              // Restore source palette
-              SelectPalette(SrcDC, SavePal, False);
-              // Select source palette into memory buffer
-              if SavePal <> 0 then
-                SavePal := SelectPalette(MemDC, SavePal, True)
-              else
-                SavePal := SelectPalette(MemDC, SystemPalette16, True);
-              RealizePalette(MemDC);
-
-              // Mem := OrMask
-              BitBlt(MemDC, SrcX, SrcY, SrcW, SrcH, OrMaskDC, SrcX, SrcY, SrcCopy);
-              // Mem := Mem AND Src
-{$IFNDEF GIF_TESTMASK} // Define GIF_TESTMASK if you want to know what it does...
-              BitBlt(MemDC, SrcX, SrcY, SrcW, SrcH, SrcDC, SrcX, SrcY, SrcAnd);
-{$else}
-              StretchBlt(DstDC, DstX, DstY, DstW DIV 2, DstH, MemDC, SrcX, SrcY, SrcW, SrcH, SrcCopy);
-              StretchBlt(DstDC, DstX+DstW DIV 2, DstY, DstW DIV 2, DstH, SrcDC, SrcX, SrcY, SrcW, SrcH, SrcCopy);
-              exit;
-{$endif}
-            finally
-              if (OrMaskSave <> 0) then
-                SelectObject(OrMaskDC, OrMaskSave);
-            end;
-          finally
-            DeleteObject(OrMaskBmp);
-          end;
-        finally
-          DeleteDC(OrMaskDC);
-        end;
-
-        crText := SetTextColor(DstDC, $00000000);
-        crBack := SetBkColor(DstDC, $00FFFFFF);
-
-        { All color rendering is done at 1X (no stretching),
-          then final 2 masks are stretched to dest DC }
-        // Neat trick!
-        // Dst := Dst AND Mask
-        StretchBlt(DstDC, DstX, DstY, DstW, DstH, MaskDC, SrcX, SrcY, SrcW, SrcH, SrcAnd);
-        // Dst := Dst OR Mem
-        StretchBlt(DstDC, DstX, DstY, DstW, DstH, MemDC, SrcX, SrcY, SrcW, SrcH, SrcPaint);
-
-        SetTextColor(DstDC, crText);
-        SetTextColor(DstDC, crBack);
-
-      finally
-        if (Save <> 0) then
-          SelectObject(MemDC, Save);
-      end;
-    finally
-      DeleteObject(MemBmp);
-    end;
-  finally
-    if (SavePal <> 0) then
-      SelectPalette(MemDC, SavePal, False);
-    DeleteDC(MemDC);
-  end;
-end;
-{$else D3_IMPL}
 const
   SOutOfResources = 'Out of system resources';
 var
@@ -597,8 +418,11 @@ begin
     MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, 1, 1));
     MemBmp := SelectObject(MaskDC, MemBmp);
     try
-      MaskBlt(DstDC, DstX, DstY, DstW, DstH, SrcDC, SrcX, SrcY, MemBmp, MaskX,
-        MaskY, MakeRop4(ROP_DstCopy, SrcCopy));
+      MaskBlt(
+        DstDC, DstX, DstY, DstW, DstH,
+        SrcDC, SrcX, SrcY,
+        MemBmp, MaskX, MaskY,
+        MakeRop4(ROP_DstCopy, SrcCopy));
     finally
       MemBmp := SelectObject(MaskDC, MemBmp);
       DeleteObject(MemBmp);
@@ -635,94 +459,7 @@ begin
   end;
 end;
 
-{$endif}
 {$endif TransparentStretchBltMissing}
-
-
-//function LoadStringFromStreamA(Stream: TStream): AnsiString;
-//var
-//  ByteCount: Integer;
-//{$ifdef UNICODE}
-//  PreambleSize: Integer;
-//  Buffer: TBytes;
-//  Encoding: TEncoding;
-//{$endif}
-//begin
-//  //BG, 07.12.2010: cannot start in the middle of a stream,
-//  // if I want to recognize encoding by preamble.
-//  Stream.Position := 0;
-//{$ifdef UNICODE}
-//  ByteCount := Stream.Size - Stream.Position;
-//  if ByteCount = 0 then
-//  begin
-//    Result := '';
-//    exit;
-//  end;
-//  SetLength(Buffer, ByteCount);
-//  Stream.Read(Buffer[0], ByteCount);
-//  Encoding := nil;
-//  PreambleSize := TEncoding.GetBufferEncoding(Buffer, Encoding);
-//  if Encoding = TEncoding.Default then
-//  begin
-//    // BG, 04.12.2010: GetBufferEncoding looks for preambles only to detected
-//    // encoding, but often there is no header/preamble in UTF-8 streams/files.
-//    Result := TEncoding.UTF8.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
-//    if Result <> '' then
-//      exit;
-//  end;
-//  Result := Encoding.GetString(Buffer, PreambleSize, Length(Buffer) - PreambleSize);
-//{$else}
-//  ByteCount := Stream.Size - Stream.Position;
-//  SetString(Result, nil, ByteCount);
-//  Stream.Read(Result[1], ByteCount);
-//{$endif}
-//end;
-//
-//function LoadStringFromStreamW(Stream: TStream): WideString;
-//var
-//  Buffer: TBuffer;
-//begin
-//  Buffer := TBuffer.Create(Stream);
-//  try
-//    Result := Buffer.AsString;
-//  finally
-//    Buffer.Free;
-//  end;
-//end;
-//
-//function LoadStringFromFileA(const Name: ThtString): AnsiString;
-//var
-//  Stream: TFileStream;
-//begin
-//  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
-//  try
-//    Result := LoadStringFromStreamA(Stream);
-//  finally
-//    Stream.Free;
-//  end;
-//end;
-//
-//function LoadStringFromFileW(const Name: ThtString): WideString;
-//var
-//  Stream: TFileStream;
-//begin
-//  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
-//  try
-//    Result := LoadStringFromStreamW(Stream);
-//  finally
-//    Stream.Free;
-//  end;
-//end;
-//
-//function LoadStringFromStream(Stream: TStream): ThtString;
-//begin
-//  Result := LoadStringFromStreamW(Stream);
-//end;
-//
-//function LoadStringFromFile(const Name: ThtString): ThtString;
-//begin
-//  Result := LoadStringFromFileW(Name);
-//end;
 
 
 //-- BG ---------------------------------------------------------- 11.12.2010 --

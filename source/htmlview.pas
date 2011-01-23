@@ -92,13 +92,9 @@ type
 
   TPaintPanel = class(TCustomPanel)
   private
-    //FOnPaint: TNotifyEvent;
     FViewer: THtmlViewer;
-    //Canvas2: TCanvas;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_EraseBkgnd;
     procedure WMLButtonDblClk(var Message: TWMMouse); message WM_LButtonDblClk;
-    procedure DoBackground(ACanvas: TCanvas);
-    //property OnPaint: TNotifyEvent read FOnPaint write FOnPaint;
   public
     constructor CreateIt(AOwner: TComponent; Viewer: THtmlViewer);
     procedure Paint; override;
@@ -365,7 +361,7 @@ type
     procedure HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
-    procedure HTMLPaint(Canvas: TCanvas; const ARect: TRect);
+    procedure HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
     procedure LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);    
@@ -1285,14 +1281,6 @@ begin
   finally
     Exclude(FViewerState, vsDontDraw);
   end;
-end;
-
-procedure THtmlViewer.HTMLPaint(Canvas: TCanvas; const ARect: TRect);
-begin
-  if vsDontDraw in FViewerState then
-    exit;
-  //ARect := Rect(0, 1, PaintPanel.Width, PaintPanel.Height);
-  FSectionList.Draw(Canvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
 end;
 
 procedure THtmlViewer.WMSize(var Message: TWMSize);
@@ -3102,6 +3090,77 @@ begin
   finally
     CopyList.Free;
   end;
+end;
+
+procedure THtmlViewer.HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
+var
+  Image: TGpObject;
+  Mask, NewBitmap, NewMask: TBitmap;
+  PRec: PtPositionRec;
+  BW, BH, X, Y, X2, Y2, IW, IH, XOff, YOff: Integer;
+  AniGif: TGifImage;
+
+begin
+
+  if FSectionList.Printing then
+    Exit; {no background}
+
+  Image := FSectionList.BackgroundBitmap;
+  if FSectionList.ShowImages and Assigned(Image) then
+  begin
+    Mask := FSectionList.BackgroundMask;
+    BW := GetImageWidth(Image);
+    BH := GetImageHeight(Image);
+    PRec := FSectionList.BackgroundPRec;
+    SetViewerStateBit(vsBGFixed, PRec[1].Fixed);
+    if vsBGFixed in FViewerState then
+    begin {fixed background}
+      XOff := 0;
+      YOff := 0;
+      IW := PaintPanel.ClientRect.Right;
+      IH := PaintPanel.ClientRect.Bottom;
+    end
+    else
+    begin {scrolling background}
+      XOff := HScrollbar.Position;
+      YOff := FSectionList.YOff;
+      IW := HScrollbar.Max;
+      IH := Max(MaxVertical, PaintPanel.ClientRect.Bottom);
+    end;
+
+  {Calculate where the tiled background images go}
+    CalcBackgroundLocationAndTiling(PRec, ARect, XOff, YOff, IW, IH, BW, BH, X, Y, X2, Y2);
+
+    if (BW = 1) or (BH = 1) then
+    begin {this is for people who try to tile 1 pixel images}
+      NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y); // as TBitmap;
+      try
+        if Assigned(Mask) then
+          NewMask := TBitmap(EnlargeImage(Mask, X2 - X, Y2 - Y))
+        else
+          NewMask := nil;
+        try
+          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewBitmap, NewMask, nil, NewBitmap.Width, NewBitmap.Height, ACanvas.Brush.Color);
+        finally
+          NewMask.Free;
+        end;
+      finally
+        NewBitmap.Free;
+      end;
+    end
+    else {normal situation}
+    begin
+      AniGif := FSectionList.BackgroundAniGif;
+      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, AniGif, BW, BH, ACanvas.Brush.Color);
+    end;
+  end
+  else
+  begin {no background image, show color only}
+    Exclude(FViewerState, vsBGFixed);
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, ACanvas.Brush.Color);
+  end;
+
+  FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
 end;
 
 function THtmlViewer.MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
@@ -5387,125 +5446,54 @@ end;
 procedure TPaintPanel.Paint;
 var
   MemDC: HDC;
-  ABitmap: HBitmap;
-  ARect: TRect;
+  Bm: HBitmap;
+  Rect: TRect;
   OldPal: HPalette;
   Canvas2: TCanvas;
+  X, Y, W, H: Integer;
 begin
   if (vsDontDraw in FViewer.FViewerState) {or (Canvas2 <> nil)} then
     Exit;
-  FViewer.DrawBorder;
-  OldPal := 0;
   Canvas.Font := Font;
   Canvas.Brush.Color := Color;
-  ARect := Canvas.ClipRect;
-//  DoBackground(Canvas);
-//  FViewer.HTMLPaint(Canvas, ARect);
+  Canvas.Brush.Style := bsSolid;
 
+  FViewer.DrawBorder;
+  FViewer.HTMLPaint(Canvas, Canvas.ClipRect);
+(*
+  OldPal := 0;
   MemDC := 0;
-  ABitmap := 0;
+  Bm := 0;
   Canvas2 := TCanvas.Create; {paint on a memory DC}
   try
+    Rect := Canvas.ClipRect;
+    X := Rect.Left;
+    Y := Rect.Top;
+    W := Rect.Right - Rect.Left;
+    H := Rect.Bottom - Rect.Top;
     MemDC := CreateCompatibleDC(Canvas.Handle);
-    with ARect do
-    begin
-      ABitmap := CreateCompatibleBitmap(Canvas.Handle, Right - Left, Bottom - Top);
-      if (ABitmap = 0) and (Right - Left + Bottom - Top <> 0) then
-        raise EOutOfResources.Create('Out of Resources');
-      try
-        SelectObject(MemDC, ABitmap);
-        SetWindowOrgEx(memDC, Left, Top, nil);
-        Canvas2.Handle := MemDC;
-        DoBackground(Canvas2);
-        FViewer.HTMLPaint(Canvas2, ARect);
-        OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
-        RealizePalette(Canvas.Handle);
-        BitBlt(Canvas.Handle, Left, Top, Right - Left, Bottom - Top, MemDC, Left, Top, SrcCopy);
-      finally
-        if OldPal <> 0 then
-          SelectPalette(MemDC, OldPal, False);
-        Canvas2.Handle := 0;
-      end;
+    Bm := CreateCompatibleBitmap(Canvas.Handle, W, H);
+    if (Bm = 0) and (W <> 0) and (H <> 0) then
+      raise EOutOfResources.Create('Out of Resources');
+    try
+      SelectObject(MemDC, Bm);
+      SetWindowOrgEx(MemDC, X, Y, nil);
+      Canvas2.Handle := MemDC;
+      FViewer.HTMLPaint(Canvas2, Rect);
+      OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
+      RealizePalette(Canvas.Handle);
+      BitBlt(Canvas.Handle, X, Y, W, H, MemDC, X, Y, SrcCopy);
+    finally
+      if OldPal <> 0 then
+        SelectPalette(MemDC, OldPal, False);
+      Canvas2.Handle := 0;
     end;
   finally
     Canvas2.Destroy;
     DeleteDC(MemDC);
-    DeleteObject(ABitmap);
+    DeleteObject(Bm);
   end;
-
-end;
-
-procedure TPaintPanel.DoBackground(ACanvas: TCanvas);
-var
-  ARect: TRect;
-  Image: TGpObject;
-  Mask, NewBitmap, NewMask: TBitmap;
-  PRec: PtPositionRec;
-  BW, BH, X, Y, X2, Y2, IW, IH, XOff, YOff: Integer;
-  AniGif: TGifImage;
-
-begin
-  with FViewer do
-  begin
-    if FSectionList.Printing then
-      Exit; {no background}
-
-    ARect := Canvas.ClipRect;
-    Image := FSectionList.BackgroundBitmap;
-    if FSectionList.ShowImages and Assigned(Image) then
-    begin
-      Mask := FSectionList.BackgroundMask;
-      BW := GetImageWidth(Image);
-      BH := GetImageHeight(Image);
-      PRec := FSectionList.BackgroundPRec;
-      SetViewerStateBit(vsBGFixed, PRec[1].Fixed);
-      if vsBGFixed in FViewerState then
-      begin {fixed background}
-        XOff := 0;
-        YOff := 0;
-        IW := Self.ClientRect.Right;
-        IH := Self.ClientRect.Bottom;
-      end
-      else
-      begin {scrolling background}
-        XOff := HScrollbar.Position;
-        YOff := FSectionList.YOff;
-        IW := HScrollbar.Max;
-        IH := Max(MaxVertical, Self.ClientRect.Bottom);
-      end;
-
-    {Calculate where the tiled background images go}
-      CalcBackgroundLocationAndTiling(PRec, ARect, XOff, YOff, IW, IH, BW, BH, X, Y, X2, Y2);
-
-      if (BW = 1) or (BH = 1) then
-      begin {this is for people who try to tile 1 pixel images}
-        NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y); // as TBitmap;
-        try
-          if Assigned(Mask) then
-            NewMask := TBitmap(EnlargeImage(Mask, X2 - X, Y2 - Y))
-          else
-            NewMask := nil;
-          try
-            DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewBitmap, NewMask, nil, NewBitmap.Width, NewBitmap.Height, Self.Color);
-          finally
-            NewMask.Free;
-          end;
-        finally
-          NewBitmap.Free;
-        end;
-      end
-      else {normal situation}
-      begin
-        AniGif := FSectionList.BackgroundAniGif;
-        DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, AniGif, BW, BH, Self.Color);
-      end;
-    end
-    else
-    begin {no background image, show color only}
-      Exclude(FViewerState, vsBGFixed);
-      DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, Self.Color);
-    end;
-  end;
+*)
 end;
 
 procedure TPaintPanel.WMEraseBkgnd(var Message: TWMEraseBkgnd);

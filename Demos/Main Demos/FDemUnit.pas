@@ -781,7 +781,7 @@ begin
         try
           if FileExists(Filename) then
           begin
-            Stream := TFileStream.Create(Filename, fmOpenRead, fmShareDenyWrite);
+            Stream := TFileStream.Create(Filename, fmOpenRead or fmShareDenyWrite);
             IncludedDocument := TBuffer.Create(Stream);
           end
         except

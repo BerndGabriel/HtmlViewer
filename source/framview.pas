@@ -922,7 +922,7 @@ begin
           EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
           if FileExists(Ev.NewName) then
           begin
-            Stream := TFileStream.Create(EV.NewName, fmOpenRead, fmShareDenyWrite);
+            Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
             try
               EV.Doc := TBuffer.Create(Stream, EV.NewName);
             finally
@@ -1139,7 +1139,7 @@ begin
       EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
       if FileExists(Ev.NewName) then
       begin
-        Stream := TFileStream.Create(EV.NewName, fmOpenRead, fmShareDenyWrite);
+        Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
         try
           EV.Doc := TBuffer.Create(Stream, EV.NewName);
         finally

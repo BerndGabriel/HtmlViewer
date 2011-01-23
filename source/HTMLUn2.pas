@@ -2462,7 +2462,7 @@ begin {look for the image file}
   Result := nil;
   if FileExists(FName) then
   begin
-    Stream := TFileStream.Create(FName, fmOpenRead, fmShareDenyWrite);
+    Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
     try
       Result := LoadImageFromStream(Stream, Transparent, AMask);
     finally

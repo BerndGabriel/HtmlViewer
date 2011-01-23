@@ -49,7 +49,7 @@ uses
   QStdCtrls, Math;
 {$ELSE}
 {$ifdef LCL}
-  LclIntf, LclType, //LMessages,
+  LclIntf, LclType, IntfGraphics, //LMessages,
 {$else}
   Windows,
 {$endif}
@@ -1927,17 +1927,55 @@ begin
 end;
 
 {----------------TGif.GetStripBitmap}
-
-function TGif.GetStripBitmap(out Mask: TBitmap): TBitmap; {LDB}
-{This is a single bitmap containing all the frames.  A mask is also provided
- if the GIF is transparent.  Each Frame is set up so that it can be transparently
- blted to a background.}
 type
   LayoutType = packed record
     BFH: TBitmapFileHeader;
     BIH: TBitmapInfoHeader;
   end;
   PLayoutType = ^LayoutType;
+
+{$ifdef LCL}
+function CreateMask(Bitmap: TBitmap; AColor: TColor): TBitmap;
+var
+  IntfImage: TLazIntfImage;
+  x, y, stopx, stopy: Integer;
+  ImgHandle, MskHandle: HBitmap;
+  TransColor: TColor;
+begin
+  // this convertion copied from TRasterImage.CreateMask() and modified:
+  IntfImage := TLazIntfImage.Create(0,0,[]);
+  try
+    MskHandle := CreateBitmap(Bitmap.Width, Bitmap.Height, 1, 1, nil);
+    IntfImage.LoadFromBitmap(Bitmap.BitmapHandle, MskHandle);
+    DeleteObject(MskHandle);
+
+    stopx := IntfImage.Width - 1;
+    stopy := IntfImage.Height - 1;
+
+    if AColor <> clDefault then
+      TransColor := ColorToRGB(AColor)
+    else
+      TransColor := FPColorToTColor(IntfImage.Colors[0, stopy]);
+
+    for y := 0 to stopy do
+      for x := 0 to stopx do
+        IntfImage.Masked[x,y] := FPColorToTColor(IntfImage.Colors[x,y]) = TransColor;
+
+    IntfImage.CreateBitmaps(ImgHandle, MskHandle);
+    DeleteObject(ImgHandle);
+    Result := TBitmap.Create;
+    Result.Handle := MskHandle;
+  finally
+    IntfImage.Free;
+    Bitmap.Free;
+  end;
+end;
+{$endif}
+
+function TGif.GetStripBitmap(out Mask: TBitmap): TBitmap; {LDB}
+{This is a single bitmap containing all the frames.  A mask is also provided
+ if the GIF is transparent.  Each Frame is set up so that it can be transparently
+ blted to a background.}
 var
   id: PGifImageDescriptor;
   ct: PGifColorTable;
@@ -2115,7 +2153,12 @@ begin
       Mask := TBitmap.Create;
       Mask.HandleType := bmDIB;
       Mask.LoadFromStream(MStream);
+{$ifdef LCL}
+      // setting to monochrome not yet implemented
+      Mask := CreateMask(Mask, clWhite);
+{$else}
       Mask.Monochrome := True; {crunch mask into a monochrome TBitmap}
+{$endif}
     end;
     Stream.Free;
     MStream.Free;

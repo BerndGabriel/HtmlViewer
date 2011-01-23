@@ -327,11 +327,9 @@ var
   SRect: TRect;
   ALeft: integer;
 begin
-  FStretchedRect := Rect(X, Y, X + Wid, Y + Ht);
-
-  SetStretchBltMode(Canvas.Handle, ColorOnColor);
   if (FVisible) and (FNumFrames > 0) then
   begin
+    FStretchedRect := Rect(X, Y, X + Wid, Y + Ht);
     with Frames[FCurrentFrame] do
     begin
       ALeft := (FCurrentFrame - 1) * Width;
@@ -340,6 +338,7 @@ begin
 
     Canvas.CopyMode := cmSrcCopy;
   {draw the correct portion of the strip}
+    SetStretchBltMode(Canvas.Handle, ColorOnColor);
     Strip.StretchDraw(Canvas, FStretchedRect, SRect);
   end;
 end;

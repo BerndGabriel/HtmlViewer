@@ -49,6 +49,8 @@ uses
 type
   TButtonStyle = (bsAutoDetect, bsWin31, bsNew);
 
+{$IFDEF MSWINDOWS}
+{$ELSE}
   TWMMouse = TLMMouse;
   TWMKeyDown = TLMKeyDown;
   TWMNCHitTest = TLMNCHitTest;
@@ -130,6 +132,7 @@ type
 
   PINT = ^Integer;
   PUINT = ^UINT;
+{$ENDIF}
 
 {$IFDEF MSWINDOWS}
   tagXFORM = XFORM;
@@ -137,7 +140,7 @@ type
 
   TGCPResultsW = GCP_RESULTS;
 
-  OSVERSIONINFO = _OSVERSIONINFO;
+//  OSVERSIONINFO = _OSVERSIONINFO;
 
 {$ELSE}
   tagXFORM = packed record
@@ -263,6 +266,8 @@ type
   end;
 {$ENDIF}
 
+{$IFDEF MSWINDOWS}
+{$ELSE}
   PDevMode = PDeviceMode;
 
   TWMDropFiles = packed record
@@ -271,6 +276,7 @@ type
     Unused: Longint;
     Result: Longint;
   end;
+{$ENDIF}
 
   TCMGotFocus = TWMNoParams;
   TCMExit = TWMNoParams;
@@ -439,7 +445,9 @@ type
   PWCHAR = PWideChar;
   PXForm = ^TXForm;
 
-{$IFNDEF MSWINDOWS}
+{$IFDEF MSWINDOWS}
+  TRgnDataHeader = Windows.TRGNDATAHEADER;
+{$ELSE}
   _RGNDATAHEADER = packed record
     dwSize: DWORD;
     iType: DWORD;
@@ -447,17 +455,21 @@ type
     nRgnSize: DWORD;
     rcBound: TRect;
   end;
-{$ENDIF}
   TRgnDataHeader = _RGNDATAHEADER;
-{$IFNDEF MSWINDOWS}
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}
+  PRgnData = Windows.PRGNDATA;
+  TRgnData = Windows.TRGNDATA;
+{$ELSE}
   RGNDATA = record
     rdh: TRgnDataHeader;
     Buffer: array[0..0] of CHAR;
     Reserved: array[0..2] of CHAR;
   end;
-{$ENDIF}
   PRgnData = ^TRgnData;
   TRgnData = RGNDATA;
+{$ENDIF}
 
 {$IFDEF MSWINDOWS}
   TLogBrush = Windows.LOGBRUSH;

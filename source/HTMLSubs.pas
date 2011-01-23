@@ -60,12 +60,13 @@ unit HTMLSubs;
 interface
 
 uses
-{$ifdef LCL}
-  LclIntf, LclType, HtmlMisc, types,
-{$else}
+{$ifdef VCL}
   Windows,
 {$endif}
-  Messages, Classes, Graphics, Controls, ExtCtrls, SysUtils, Variants, Forms, Math, Contnrs,
+  Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs,
+{$ifdef LCL}
+  LclIntf, LclType, HtmlMisc, types,
+{$endif}
   HtmlGlobals, HTMLUn2, StyleUn, HTMLGif2;
 
 type
@@ -193,8 +194,11 @@ type
 
   HoverType = (hvOff, hvOverUp, hvOverDown);
 
+  { TImageObj }
+
   TImageObj = class(TFloatingObj) {inline image info}
   private
+    FImage: TgpObject; {bitmap possibly converted from GIF, Jpeg, etc or animated GIF}
     FBitmap: TBitmap;
     FHover: HoverType;
     FHoverImage: boolean;
@@ -202,10 +206,10 @@ type
     Positioning: PositionType;
     function GetBitmap: TBitmap;
     procedure SetHover(Value: HoverType);
+    procedure setImage(const AValue: TgpObject);
   public
     ObjHeight, ObjWidth: Integer; {width as drawn}
     Source: ThtString; {the src= attribute}
-    Image: TgpObject; {bitmap possibly converted from GIF, Jpeg, etc or animated GIF}
     OrigImage: TgpObject; {same as above unless swapped}
     Mask: TBitmap; {Image's mask if needed for transparency}
     ParentSectionList: TSectionList;
@@ -229,6 +233,7 @@ type
 
     property Bitmap: TBitmap read GetBitmap;
     property Hover: HoverType read FHover write SetHover;
+    property Image: TgpObject read FImage write setImage;
     procedure ReplaceImage(NewImage: TStream);
   end;
 
@@ -236,16 +241,12 @@ type
   public
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TImageObjList);
     function FindImage(Posn: Integer): TFloatingObj;
-    function GetHeightAt(Posn: Integer; var AAlign: AlignmentType;
-      var FlObj: TFloatingObj): Integer;
-    function GetWidthAt(Posn: Integer; var AAlign: AlignmentType;
-      var HSpcL, HSpcR: Integer; var FlObj: TFloatingObj): Integer;
+    function GetHeightAt(Posn: Integer; var AAlign: AlignmentType; var FlObj: TFloatingObj): Integer;
     function GetImageCountAt(Posn: Integer): Integer;
+    function GetWidthAt(Posn: Integer; var AAlign: AlignmentType; var HSpcL, HSpcR: Integer; var FlObj: TFloatingObj): Integer;
     function PtInImage(X: Integer; Y: Integer; var IX, IY, Posn: Integer;
-      var AMap, UMap: boolean; var MapItem: TMapItem;
-      var ImageObj: TImageObj): boolean;
-    function PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-      var IX, IY: Integer): boolean;
+      var AMap, UMap: boolean; var MapItem: TMapItem; var ImageObj: TImageObj): boolean;
+    function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
     procedure Decrement(N: Integer);
   end;
 
@@ -891,11 +892,9 @@ type
       VAlign: AlignmentType; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     procedure AddDummyCells;
-    procedure GetMinMaxAbs(Canvas: TCanvas; var TotalMinWidth,
-      TotalMaxWidth: Integer);
+    procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
     procedure GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer; Specified: boolean);
-    procedure GetWidths(Canvas: TCanvas; var TotalMinWidth, TotalMaxWidth: Integer;
-      TheWidth: Integer);
+    procedure GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer; TheWidth: Integer);
     procedure TableSpecifiedAndWillFit(TheWidth: Integer);
     procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
@@ -945,7 +944,7 @@ type
     procedure CopyToClipboard;
     function DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: Integer;
       var ScrollWidth: Integer; var Curs: Integer): Integer; virtual;
-    procedure MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); virtual;
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X: Integer;
       Y, XRef, YRef: Integer): Integer; virtual;
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
@@ -1848,28 +1847,26 @@ begin
   Result := nil;
   if Image = ErrorBitmap then
     Exit;
-  if (Image is TGifImage) then
+  if Image is TGifImage then
     Result := TGifImage(Image).Bitmap
   else if (Image is TBitmap) {$IFNDEF NoGDIPlus}or (Image is TGpBitmap){$ENDIF} then
   begin
-    if Assigned(FBitmap) then
-      Result := FBitmap
-    else
+    if FBitmap = nil then
     begin
-      if (Image is TBitmap) then
+      if Image is TBitmap then
       begin
         FBitmap := TBitmap.Create;
         FBitmap.Assign(TBitmap(Image));
         if ColorBits = 8 then
           FBitmap.Palette := CopyPalette(ThePalette);
       end
-      {$IFNDEF NoGDIPlus}
+{$IFNDEF NoGDIPlus}
       else {it's a TGpBitmap}
         FBitmap := TGpBitmap(Image).GetTBitmap
-        {$ENDIF NoGDIPlus}
+{$ENDIF NoGDIPlus}
         ;
-      Result := FBitmap;
     end;
+    Result := FBitmap;
   end
 {$IFNDEF NoMetafile}
   else if (Image is ThtMetaFile) then
@@ -1905,6 +1902,12 @@ begin
       FHover := Value;
       ParentSectionList.PPanel.Invalidate;
     end;
+end;
+
+procedure TImageObj.setImage(const AValue: TgpObject);
+begin
+  if FImage = AValue then exit;
+  FImage := AValue;
 end;
 
 {----------------TImageObj.ReplaceImage}
@@ -2204,12 +2207,12 @@ end;
 
 {----------------TImageObj.DoDraw}
 
-procedure TImageObj.DoDraw(Canvas: TCanvas; XX: Integer; Y: Integer;
-  ddImage: TgpObject; ddMask: TBitmap);
+procedure TImageObj.DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: TgpObject; ddMask: TBitmap);
 {Y relative to top of display here}
 var
   DC: HDC;
-  Img: TBitmap;
+  Img: TBitmap absolute ddImage;
+  Gif: TGifImage absolute ddImage;
   W, H: Integer;
   PrintTransparent: boolean;
 begin
@@ -2229,26 +2232,22 @@ begin
   end;
   {$ENDIF !NoGDIPlus}
 
-  if (ddImage is TGifImage) and not ParentSectionList.IsCopy then
-    with TGifImage(ddImage) do
-    begin
-      ShowIt := True;
-      Visible := True;
-      Draw(Canvas, XX, Y, ObjWidth, ObjHeight);
-      Exit;
-    end;
   try
     if not ParentSectionList.IsCopy then
     begin
-      if ((Transparent <> NotTransp) or (ddImage = ErrorBitmap)) and Assigned(ddMask) then
+      if ddImage is TGifImage then
+      begin
+        Gif.ShowIt := True;
+        Gif.Visible := True;
+        Gif.Draw(Canvas, XX, Y, ObjWidth, ObjHeight);
+      end
+      else if ((Transparent <> NotTransp) or (ddImage = ErrorBitmap)) and Assigned(ddMask) then
         if ddImage = ErrorBitmap then
-          FinishTransparentBitmap(DC, TBitmap(ddImage), Mask, XX, Y,
-            TBitmap(ddImage).Width, TBitmap(ddImage).Height)
+          FinishTransparentBitmap(DC, Img, Mask, XX, Y, Img.Width, Img.Height)
         else
-          FinishTransparentBitmap(DC, TBitmap(ddImage), Mask, XX, Y, ObjWidth, ObjHeight)
+          FinishTransparentBitmap(DC, Img, Mask, XX, Y, ObjWidth, ObjHeight)
       else
       begin
-        Img := TBitmap(ddImage);
         if (ddImage = DefBitMap) or (ddImage = ErrorBitmap) then
           BitBlt(DC, XX, Y, Img.Width, Img.Height, Img.Canvas.Handle, 0, 0, SRCCOPY)
         else if ddImage is TBitmap then
@@ -2265,15 +2264,14 @@ begin
     else
     begin {printing}
       if ddImage is TGifImage then
-        with TGifImage(ddImage) do
-        begin
-          ddMask := Mask;
-          if Assigned(ddMask) then
-            Transparent := TrGif;
-          ddImage := MaskedBitmap;
-          TBitmap(ddImage).Palette := CopyPalette(ThePalette);
-          TBitmap(ddImage).HandleType := bmDIB;
-        end;
+      begin
+        ddMask := Gif.Mask;
+        if Assigned(ddMask) then
+          Transparent := TrGif;
+        Img := Gif.MaskedBitmap;
+        Img.Palette := CopyPalette(ThePalette);
+        Img.HandleType := bmDIB;
+      end;
       if (ddImage = DefBitMap) or (ddImage = ErrorBitmap) then
       begin
         W := TBitmap(ddImage).Width;
@@ -2447,6 +2445,8 @@ begin
     Font.Size := 8;
     Font.Name := 'Arial'; {make this a property?}
     Font.Style := Font.Style - [fsBold];
+  end;
+  begin
     if SubstImage then
       Ofst := 4
     else
@@ -2472,12 +2472,12 @@ begin
     end;
 
     if not SubstImage or (AltHeight >= 16 + 8) and (AltWidth >= 16 + 8) then
-      DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage, TmpMask);
+      Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage, TmpMask);
     Inc(DrawYY, ParentSectionList.YOff);
     SetTextAlign(Canvas.Handle, TA_Top);
     if SubstImage and (BorderSize = 0) then
     begin
-      Font.Color := FO.TheFont.Color;
+      Canvas.Font.Color := FO.TheFont.Color;
     {calc the offset from the image's base to the alt= text baseline}
       case VertAlign of
         ATop, ANone:
@@ -2501,6 +2501,7 @@ begin
       end;
     end;
     if (BorderSize > 0) then
+    with Canvas do
     begin
       SaveColor := Pen.Color;
       SaveWidth := Pen.Width;
@@ -2510,8 +2511,9 @@ begin
       Pen.Style := psInsideFrame;
       Font.Color := Pen.Color;
       try
-        if (FAlt <> '') and SubstImage then {output Alt message}
+        if (FAlt <> '') and SubstImage then
         begin
+          {output Alt message}
           YY := DrawYY - ParentSectionList.YOff;
           case VertAlign of
             ATop, ANone:
@@ -2522,10 +2524,16 @@ begin
               WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
           end;
         end;
-        case VertAlign of {draw border}
-          {ALeft, ARight,} ATop, ANone: Rectangle(X, TopY + VSpaceT, X + ImageWidth, TopY + VSpaceT + ImageHeight);
-          AMiddle: Rectangle(X, MiddleAlignTop, X + ImageWidth, MiddleAlignTop + ImageHeight);
-          ABottom, ABaseline: Rectangle(X, YBaseLine - ImageHeight - VSpaceB, X + ImageWidth, YBaseLine - VSpaceB);
+
+        {draw border}
+        case VertAlign of
+
+          {ALeft, ARight,} ATop, ANone:
+            Rectangle(X, TopY + VSpaceT, X + ImageWidth, TopY + VSpaceT + ImageHeight);
+          AMiddle:
+            Rectangle(X, MiddleAlignTop, X + ImageWidth, MiddleAlignTop + ImageHeight);
+          ABottom, ABaseline:
+            Rectangle(X, YBaseLine - ImageHeight - VSpaceB, X + ImageWidth, YBaseLine - VSpaceB);
         end;
       finally
         Pen.Color := SaveColor;
@@ -2536,6 +2544,7 @@ begin
     if (Assigned(MyFormControl) and MyFormControl.Active or FO.Active) or
       ParentSectionList.IsCopy and Assigned(ParentSectionList.LinkDrawnEvent)
       and (FO.UrlTarget.Url <> '') then
+    with Canvas do
     begin
       SaveColor := SetTextColor(Handle, clBlack);
       Brush.Color := clWhite;
@@ -4316,7 +4325,7 @@ end;
 
 {----------------TCellBasic.MinMaxWidth}
 
-procedure TCellBasic.MinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TCellBasic.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 {Find the Width the cell would take if no wordwrap, Max, and the width if wrapped
  at largest word, Min}
 var
@@ -8411,7 +8420,7 @@ end;
 
 {----------------THtmlTable.GetMinMaxAbs}
 
-procedure THtmlTable.GetMinMaxAbs(Canvas: TCanvas; var TotalMinWidth,
+procedure THtmlTable.GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth,
   TotalMaxWidth: Integer);
 var
   I, J, Min, Max, N, Span, Addon, D: Integer;
@@ -8567,7 +8576,7 @@ end;
 
 {----------------THtmlTable.GetWidths}
 
-procedure THtmlTable.GetWidths(Canvas: TCanvas; var TotalMinWidth, TotalMaxWidth: Integer;
+procedure THtmlTable.GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer;
   TheWidth: Integer);
 var
   I, J, Min, Max, N, Span, Addon, Distributable, TotalPC, Accum,
