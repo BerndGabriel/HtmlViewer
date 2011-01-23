@@ -26,7 +26,6 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="pengbrew-pyramids.html"/>
       </local>
     </RunParams>
     <RequiredPackages Count="3">
@@ -49,7 +48,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="43" Y="37"/>
-        <UsageCount Value="121"/>
+        <UsageCount Value="122"/>
       </Unit0>
       <Unit1>
         <Filename Value="Unit1.pas"/>
@@ -93,7 +92,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="751"/>
         <CursorPos X="65" Y="784"/>
-        <UsageCount Value="120"/>
+        <UsageCount Value="121"/>
       </Unit4>
       <Unit5>
         <Filename Value="FDemUnit.lfm"/>
@@ -115,12 +114,10 @@
       <Unit7>
         <Filename Value="..\..\source\htmlmisc.pas"/>
         <UnitName Value="HtmlMisc"/>
-        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1104"/>
         <CursorPos X="62" Y="1160"/>
         <UsageCount Value="16"/>
-        <Loaded Value="True"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\source\HTMLUn2.pas"/>
@@ -128,7 +125,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="2432"/>
         <CursorPos X="54" Y="2465"/>
-        <UsageCount Value="53"/>
+        <UsageCount Value="52"/>
       </Unit8>
       <Unit9>
         <Filename Value="C:\FPC\2.4.2\source\rtl\win\wininc\redef.inc"/>
@@ -151,7 +148,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="2350"/>
         <CursorPos X="60" Y="2383"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="21"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\source\htmlcons.inc"/>
@@ -221,12 +218,10 @@
       <Unit20>
         <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
         <UnitName Value="Graphics"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1362"/>
         <CursorPos X="15" Y="1395"/>
-        <UsageCount Value="13"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="12"/>
       </Unit20>
       <Unit21>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\graphic.inc"/>
@@ -284,14 +279,17 @@
       <Unit28>
         <Filename Value="..\..\source\htmlview.pas"/>
         <UnitName Value="HtmlView"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="750"/>
-        <CursorPos X="53" Y="783"/>
+        <TopLine Value="5446"/>
+        <CursorPos X="19" Y="5494"/>
         <UsageCount Value="43"/>
         <Bookmarks Count="2">
           <Item0 X="1" Y="3162" ID="8"/>
-          <Item1 X="10" Y="5462" ID="9"/>
+          <Item1 X="1" Y="5459" ID="9"/>
         </Bookmarks>
+        <Loaded Value="True"/>
       </Unit28>
       <Unit29>
         <Filename Value="PreviewForm.lfm"/>
@@ -306,7 +304,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1436"/>
         <CursorPos X="1" Y="1471"/>
-        <UsageCount Value="38"/>
+        <UsageCount Value="37"/>
       </Unit30>
       <Unit31>
         <Filename Value="..\..\source\vwPrint.pas"/>
@@ -347,13 +345,10 @@
       <Unit36>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <UnitName Value="HtmlGlobals"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="491"/>
         <CursorPos X="52" Y="437"/>
         <UsageCount Value="18"/>
-        <Loaded Value="True"/>
       </Unit36>
       <Unit37>
         <Filename Value="..\..\..\HtmlViewer.Juha\source\htmlcons.inc"/>
@@ -409,8 +404,8 @@
         <UnitName Value="HtmlGif1"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1917"/>
-        <CursorPos X="17" Y="1970"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
         <UsageCount Value="13"/>
         <Loaded Value="True"/>
       </Unit43>
@@ -435,7 +430,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="3390"/>
         <CursorPos X="62" Y="3432"/>
-        <UsageCount Value="39"/>
+        <UsageCount Value="38"/>
       </Unit46>
       <Unit47>
         <Filename Value="D:\source\pascal\lazarus\lcl\lcltype.pp"/>
@@ -448,10 +443,12 @@
       <Unit48>
         <Filename Value="..\..\source\GDIPL2A.pas"/>
         <UnitName Value="GDIPL2A"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="17"/>
-        <CursorPos X="14" Y="50"/>
+        <TopLine Value="99"/>
+        <CursorPos X="18" Y="137"/>
         <UsageCount Value="38"/>
+        <Loaded Value="True"/>
       </Unit48>
       <Unit49>
         <Filename Value="..\..\source\FramBrwz.pas"/>
@@ -463,26 +460,24 @@
       </Unit49>
       <Unit50>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\rasterimage.inc"/>
-        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="652"/>
         <CursorPos X="13" Y="656"/>
         <UsageCount Value="34"/>
-        <Loaded Value="True"/>
       </Unit50>
       <Unit51>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\winapi.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="848"/>
         <CursorPos X="1" Y="882"/>
-        <UsageCount Value="38"/>
+        <UsageCount Value="37"/>
       </Unit51>
       <Unit52>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\customcontrol.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="72"/>
         <CursorPos X="1" Y="134"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="10"/>
       </Unit52>
       <Unit53>
         <Filename Value="D:\source\pascal\lazarus\lcl\controls.pp"/>
@@ -512,7 +507,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="161"/>
         <CursorPos X="21" Y="194"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="9"/>
       </Unit56>
       <Unit57>
         <Filename Value="C:\FPC\2.4.2\source\rtl\inc\objpas.inc"/>
@@ -586,7 +581,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="2913"/>
         <CursorPos X="1" Y="2948"/>
-        <UsageCount Value="37"/>
+        <UsageCount Value="36"/>
       </Unit66>
       <Unit67>
         <Filename Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32winapih.inc"/>
@@ -678,14 +673,14 @@
         <WindowIndex Value="0"/>
         <TopLine Value="84"/>
         <CursorPos X="1" Y="121"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="10"/>
       </Unit78>
       <Unit79>
         <Filename Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32callback.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="180"/>
         <CursorPos X="1" Y="213"/>
-        <UsageCount Value="11"/>
+        <UsageCount Value="10"/>
       </Unit79>
       <Unit80>
         <Filename Value="bin\i386-win32\demo.htm"/>
@@ -705,12 +700,10 @@
       </Unit81>
       <Unit82>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\custombitmap.inc"/>
-        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="402"/>
         <CursorPos X="3" Y="404"/>
         <UsageCount Value="12"/>
-        <Loaded Value="True"/>
       </Unit82>
       <Unit83>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\sharedimage.inc"/>
@@ -757,127 +750,115 @@
         <UsageCount Value="10"/>
       </Unit88>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="27" HistoryIndex="26">
       <Position1>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="2006" Column="9" TopLine="1974"/>
+        <Caret Line="2007" Column="20" TopLine="1974"/>
       </Position1>
       <Position2>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="2007" Column="20" TopLine="1974"/>
+        <Caret Line="2028" Column="16" TopLine="2010"/>
       </Position2>
       <Position3>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="2028" Column="16" TopLine="2010"/>
+        <Caret Line="2116" Column="19" TopLine="2076"/>
       </Position3>
       <Position4>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="2116" Column="19" TopLine="2076"/>
+        <Caret Line="2115" Column="19" TopLine="2076"/>
       </Position4>
       <Position5>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="2115" Column="19" TopLine="2076"/>
+        <Caret Line="1944" Column="59" TopLine="1930"/>
       </Position5>
       <Position6>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1944" Column="59" TopLine="1930"/>
+        <Caret Line="1939" Column="4" TopLine="1906"/>
       </Position6>
       <Position7>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1939" Column="4" TopLine="1906"/>
+        <Caret Line="1940" Column="27" TopLine="1907"/>
       </Position7>
       <Position8>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1940" Column="27" TopLine="1907"/>
+        <Caret Line="52" Column="35" TopLine="19"/>
       </Position8>
       <Position9>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="52" Column="35" TopLine="19"/>
+        <Caret Line="1949" Column="25" TopLine="1928"/>
       </Position9>
       <Position10>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1949" Column="25" TopLine="1928"/>
+        <Caret Line="1966" Column="1" TopLine="1926"/>
       </Position10>
       <Position11>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1966" Column="1" TopLine="1926"/>
+        <Caret Line="1948" Column="12" TopLine="1916"/>
       </Position11>
       <Position12>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1948" Column="12" TopLine="1916"/>
+        <Caret Line="1967" Column="17" TopLine="1928"/>
       </Position12>
       <Position13>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1967" Column="17" TopLine="1928"/>
+        <Caret Line="1967" Column="16" TopLine="1928"/>
       </Position13>
       <Position14>
-        <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="1325" Column="64" TopLine="1292"/>
+        <Filename Value="..\..\source\htmlgif1.pas"/>
+        <Caret Line="1967" Column="11" TopLine="1934"/>
       </Position14>
       <Position15>
         <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1967" Column="16" TopLine="1928"/>
+        <Caret Line="2157" Column="22" TopLine="2124"/>
       </Position15>
       <Position16>
-        <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="1411" Column="62" TopLine="1378"/>
-      </Position16>
-      <Position17>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\custombitmap.inc"/>
-        <Caret Line="240" Column="24" TopLine="238"/>
-      </Position17>
-      <Position18>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\rasterimage.inc"/>
-        <Caret Line="656" Column="13" TopLine="652"/>
-      </Position18>
-      <Position19>
-        <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
-        <Caret Line="1363" Column="33" TopLine="1337"/>
-      </Position19>
-      <Position20>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\custombitmap.inc"/>
-        <Caret Line="240" Column="24" TopLine="238"/>
-      </Position20>
-      <Position21>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\custombitmap.inc"/>
-        <Caret Line="443" Column="14" TopLine="411"/>
-      </Position21>
-      <Position22>
-        <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="1967" Column="11" TopLine="1934"/>
-      </Position22>
-      <Position23>
-        <Filename Value="..\..\source\htmlgif1.pas"/>
-        <Caret Line="2157" Column="22" TopLine="2124"/>
-      </Position23>
-      <Position24>
         <Filename Value="..\..\source\htmlgif1.pas"/>
         <Caret Line="1970" Column="17" TopLine="1917"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\..\source\htmlgif1.pas"/>
+        <Caret Line="2054" Column="44" TopLine="2001"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="50" Column="14" TopLine="17"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="389" Column="14" TopLine="356"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="149" Column="21" TopLine="116"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="389" Column="15" TopLine="330"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="149" Column="58" TopLine="116"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="98" Column="1" TopLine="59"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="115" Column="5" TopLine="82"/>
       </Position24>
       <Position25>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="601" Column="1" TopLine="583"/>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="121" Column="3" TopLine="88"/>
       </Position25>
       <Position26>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="606" Column="1" TopLine="583"/>
+        <Filename Value="..\..\source\GDIPL2A.pas"/>
+        <Caret Line="99" Column="11" TopLine="81"/>
       </Position26>
       <Position27>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="472" Column="1" TopLine="427"/>
+        <Filename Value="..\..\source\htmlview.pas"/>
+        <Caret Line="777" Column="29" TopLine="750"/>
       </Position27>
-      <Position28>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="43" Column="1" TopLine="13"/>
-      </Position28>
-      <Position29>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="400" Column="28" TopLine="367"/>
-      </Position29>
-      <Position30>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="377" Column="4" TopLine="364"/>
-      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

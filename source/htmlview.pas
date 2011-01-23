@@ -5454,17 +5454,23 @@ var
 begin
   if (vsDontDraw in FViewer.FViewerState) {or (Canvas2 <> nil)} then
     Exit;
+
+{$ifdef LCL}
+//BG, 23.01.2011: paint on panel canvas as Lazarus does the double buffering for us.
+//  Additionally this fixes a mysterious bug, that mixes up the frames of frameviewer,
+//  if some images have to be shown
+//  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
   Canvas.Brush.Color := Color;
   Canvas.Brush.Style := bsSolid;
-
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);
-(*
+{$else}
+//BG, 23.01.2011: paint on a memory canvas: less flickering.
   OldPal := 0;
   MemDC := 0;
   Bm := 0;
-  Canvas2 := TCanvas.Create; {paint on a memory DC}
+  Canvas2 := TCanvas.Create;
   try
     Rect := Canvas.ClipRect;
     X := Rect.Left;
@@ -5478,7 +5484,11 @@ begin
     try
       SelectObject(MemDC, Bm);
       SetWindowOrgEx(MemDC, X, Y, nil);
+      Canvas2.Font := Font;
       Canvas2.Handle := MemDC;
+      Canvas2.Brush.Color := Color;
+      Canvas2.Brush.Style := bsSolid;
+      FViewer.DrawBorder;
       FViewer.HTMLPaint(Canvas2, Rect);
       OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
       RealizePalette(Canvas.Handle);
@@ -5493,7 +5503,7 @@ begin
     DeleteDC(MemDC);
     DeleteObject(Bm);
   end;
-*)
+{$endif}
 end;
 
 procedure TPaintPanel.WMEraseBkgnd(var Message: TWMEraseBkgnd);
