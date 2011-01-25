@@ -5210,7 +5210,8 @@ begin
         Indent := IMgr.GetNextLeftXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
 
       ARight:
-        Indent := Min(AWidth, IMgr.RightSide(YClear)) - RightWidths - NewWidth;
+        //BG, 25.01.2011: Issue 54: HTMLViewer PrintPreview Failure: don't indent < 0! 
+        Indent := Max(0, Min(AWidth, IMgr.RightSide(YClear)) - RightWidths - NewWidth);
     else
       Indent := LeftWidths;
     end;
