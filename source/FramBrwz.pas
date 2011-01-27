@@ -137,9 +137,6 @@ type
 
 implementation
 
-const
-  Sequence: integer = 10;
-
 function ConvDosToHTML(const Name: ThtString): ThtString; forward;
 
 {----------------TbrFrame.CreateIt}

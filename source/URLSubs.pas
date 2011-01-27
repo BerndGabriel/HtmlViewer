@@ -35,7 +35,7 @@ uses
  * URL processing methods
  **************************************************************************************************}
 
-procedure ParseURL(const url: ThtString; var Proto, User, Pass, Host, Port, Path: ThtString);
+procedure ParseURL(const url: ThtString; out Proto, User, Pass, Host, Port, Path: ThtString);
 {François PIETTE's URL parsing procedure}
 
 procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
@@ -378,7 +378,7 @@ end;
 
 procedure ParseURL(
   const url: ThtString;
-  var Proto, User, Pass, Host, Port, Path: ThtString);
+  out Proto, User, Pass, Host, Port, Path: ThtString);
 var
   p, q: Integer;
   s: ThtString;

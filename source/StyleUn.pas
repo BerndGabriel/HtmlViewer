@@ -280,7 +280,7 @@ function VarIsAuto(const Value: Variant): Boolean;
 function VMargToMarg(const Value: Variant; Relative: boolean; Base, EmSize, ExSize, Default: Integer): Integer;
 
 procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: integer;
-  BorderStyle: BorderStyleType; BorderWidth: Integer; var AutoCount: integer; var M: TMarginArray);
+  BorderStyle: BorderStyleType; BorderWidth: Integer; out AutoCount: integer; var M: TMarginArray);
 
 procedure ConvVertMargins(const VM: TVMarginArray;
   BaseHeight, EmSize, ExSize: Integer;
@@ -1111,7 +1111,7 @@ end;
 {----------------ConvMargArray}
 
 procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
-  BorderStyle: BorderStyleType; BorderWidth: Integer; var AutoCount: integer; var M: TMarginArray);
+  BorderStyle: BorderStyleType; BorderWidth: Integer; out AutoCount: integer; var M: TMarginArray);
 {This routine does not do MarginTop and MarginBottom as they are done by ConvVertMargins}
 var
   I: PropIndices;
@@ -2782,10 +2782,11 @@ begin
 end;
 
 //BG, 14.07.2010:
-function decodeSize(const Str: ThtString; var V: extended; var U: ThtString): boolean;
+function decodeSize(const Str: ThtString; out V: extended; out U: ThtString): boolean;
 var
   I, J, L: Integer;
 begin
+  U := '';
   Val(Str, V, I);
   Result := I <> 1;
   if Result then
@@ -2800,9 +2801,7 @@ begin
     begin
       Val(Copy(Str, 1, I - 1), V, J);
       U := Trim(Copy(Str, I, L - I + 1)); // text after number, maybe a unit
-    end
-    else
-      U := '';
+    end;
   end;
 end;
 

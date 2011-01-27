@@ -627,13 +627,13 @@ type
   private
     function getParentSectionList: TSectionList;
   protected
-    procedure ConvMargArray(BaseWidth, BaseHeight: Integer; var AutoCount: Integer); virtual;
+    procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
     procedure DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect); virtual;
     function getBorderWidth: Integer; virtual;
 //    function getDisplay: TPropDisplay; virtual;
     property BorderWidth: Integer read getBorderWidth;
     property ParentSectionList: TSectionList read getParentSectionList;
-    procedure ContentMinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); virtual;
+    procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
   public
     MargArray: TMarginArray;
     MyCell: TBlockCell;
@@ -794,9 +794,9 @@ type
   private
     FLegend: TBlockCell;
   protected
-    procedure ConvMargArray(BaseWidth: Integer; BaseHeight: Integer; var AutoCount: Integer); override;
+    procedure ConvMargArray(BaseWidth: Integer; BaseHeight: Integer; out AutoCount: Integer); override;
     procedure DrawBlockBorder(Canvas: TCanvas; ORect: TRect; IRect: TRect); override;
-    procedure ContentMinMaxWidth(Canvas: TCanvas; var Min, Max: Integer); override;
+    procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   public
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic; Attributes: TAttributeList);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
@@ -988,7 +988,7 @@ type
     TextWidth: Integer;
 
     function DoLogicX(Canvas: TCanvas; X, Y: Integer; XRef, YRef, Width, AHeight, BlHt: Integer;
-      var ScrollWidth: Integer; var Curs: Integer): Integer;
+      out ScrollWidth: Integer; var Curs: Integer): Integer;
   end;
 
   TSectionList = class(TCell) {a list of all the sections--holds document}
@@ -4498,13 +4498,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 09.10.2010 --
-procedure TBlock.ContentMinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TBlock.ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   MyCell.MinMaxWidth(Canvas, Min, Max);
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
-procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; var AutoCount: Integer);
+procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 begin
   StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderStyle, BorderWidth, AutoCount, MargArray);
 end;
@@ -12831,7 +12831,7 @@ end;
 { TBlockCell }
 
 function TBlockCell.DoLogicX(Canvas: TCanvas; X, Y, XRef, YRef, Width, AHeight, BlHt: Integer;
-  var ScrollWidth, Curs: Integer): Integer;
+  out ScrollWidth: Integer; var Curs: Integer): Integer;
 {Do the entire layout of the this cell.  Return the total pixel height}
 var
   I, Sw, TheCount: Integer;
@@ -13423,7 +13423,7 @@ end;
 { TFieldsetBlock }
 
 //-- BG ---------------------------------------------------------- 09.10.2010 --
-procedure TFieldsetBlock.ContentMinMaxWidth(Canvas: TCanvas; var Min, Max: Integer);
+procedure TFieldsetBlock.ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   LegendMin, LegendMax: Integer;
   ContentMin, ContentMax: Integer;
@@ -13435,7 +13435,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
-procedure TFieldsetBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; var AutoCount: Integer);
+procedure TFieldsetBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 var
   PaddTop, Delta: Integer;
 begin

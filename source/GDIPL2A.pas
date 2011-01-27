@@ -89,30 +89,30 @@ const
 
 type
   EGDIPlus = class(Exception);
-  TRectF = record
-    X: Single;
-    Y: Single;
-    Width: Single;
-    Height: Single;
-  end;
+  //TRectF = record
+  //  X: Single;
+  //  Y: Single;
+  //  Width: Single;
+  //  Height: Single;
+  //end;
 
-  ImageCodecInfo = packed record
-    Clsid: TGUID;
-    FormatID: TGUID;
-    CodecName: PWCHAR;
-    DllName: PWCHAR;
-    FormatDescription: PWCHAR;
-    FilenameExtension: PWCHAR;
-    MimeType: PWCHAR;
-    Flags: DWORD;
-    Version: DWORD;
-    SigCount: DWORD;
-    SigSize: DWORD;
-    SigPattern: PBYTE;
-    SigMask: PBYTE;
-  end;
-  TImageCodecInfo = ImageCodecInfo;
-  PImageCodecInfo = ^TImageCodecInfo;
+  //ImageCodecInfo = packed record
+  //  Clsid: TGUID;
+  //  FormatID: TGUID;
+  //  CodecName: PWCHAR;
+  //  DllName: PWCHAR;
+  //  FormatDescription: PWCHAR;
+  //  FilenameExtension: PWCHAR;
+  //  MimeType: PWCHAR;
+  //  Flags: DWORD;
+  //  Version: DWORD;
+  //  SigCount: DWORD;
+  //  SigSize: DWORD;
+  //  SigPattern: PBYTE;
+  //  SigMask: PBYTE;
+  //end;
+  //TImageCodecInfo = ImageCodecInfo;
+  //PImageCodecInfo = ^TImageCodecInfo;
 
 var
 {$IFNDEF NoGDIPlus}
@@ -146,7 +146,7 @@ var
     order: integer): integer; stdcall;
   GdipCreateBitmapFromGraphics: function(width, height: Integer;
     Graphics: integer; out Bitmap: integer): integer; stdcall;
-  GdipBitmapGetPixel: function(bitmap, x, y: Integer; var color: DWord): integer; stdcall;
+  GdipBitmapGetPixel: function(bitmap, x, y: Integer; out color: DWord): integer; stdcall;
   GdipDrawImageRectRectI: function(graphics, image,
     dstx, dsty, dstwidth, dstheight, srcx, srcy, srcwidth, srcheight,
     srcUnit, imageAttributes: integer;

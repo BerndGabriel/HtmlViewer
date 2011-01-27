@@ -2665,7 +2665,7 @@ end;
 {----------------CalcBackgroundLocationAndTiling}
 
 procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
-  XOff, YOff, IW, IH, BW, BH: Integer; var X, Y, X2, Y2: Integer);
+  XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
 
 {PRec has the CSS information on the background image, it's starting location and
  whether it is tiled in x, y, neither, or both.
@@ -5432,86 +5432,34 @@ begin
     FOnProgress(Self, psEnding, 100);
 end;
 
-{----------------TPaintPanel.CreateIt}
+{ TPaintPanel }
 
 constructor TPaintPanel.CreateIt(AOwner: TComponent; Viewer: THtmlViewer);
-
 begin
   inherited Create(AOwner);
   FViewer := Viewer;
+  DoubleBuffered := True;
 end;
 
-{----------------TPaintPanel.Paint}
 
 procedure TPaintPanel.Paint;
-var
-  MemDC: HDC;
-  Bm: HBitmap;
-  Rect: TRect;
-  OldPal: HPalette;
-  Canvas2: TCanvas;
-  X, Y, W, H: Integer;
 begin
-  if (vsDontDraw in FViewer.FViewerState) {or (Canvas2 <> nil)} then
+  if vsDontDraw in FViewer.FViewerState then
     Exit;
 
-{$ifdef LCL}
-//BG, 23.01.2011: paint on panel canvas as Lazarus does the double buffering for us.
-//  Additionally this fixes a mysterious bug, that mixes up the frames of frameviewer,
-//  if some images have to be shown
-//  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
   Canvas.Brush.Color := Color;
   Canvas.Brush.Style := bsSolid;
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);
-{$else}
-//BG, 23.01.2011: paint on a memory canvas: less flickering.
-  OldPal := 0;
-  MemDC := 0;
-  Bm := 0;
-  Canvas2 := TCanvas.Create;
-  try
-    Rect := Canvas.ClipRect;
-    X := Rect.Left;
-    Y := Rect.Top;
-    W := Rect.Right - Rect.Left;
-    H := Rect.Bottom - Rect.Top;
-    MemDC := CreateCompatibleDC(Canvas.Handle);
-    Bm := CreateCompatibleBitmap(Canvas.Handle, W, H);
-    if (Bm = 0) and (W <> 0) and (H <> 0) then
-      raise EOutOfResources.Create('Out of Resources');
-    try
-      SelectObject(MemDC, Bm);
-      SetWindowOrgEx(MemDC, X, Y, nil);
-      Canvas2.Font := Font;
-      Canvas2.Handle := MemDC;
-      Canvas2.Brush.Color := Color;
-      Canvas2.Brush.Style := bsSolid;
-      FViewer.DrawBorder;
-      FViewer.HTMLPaint(Canvas2, Rect);
-      OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
-      RealizePalette(Canvas.Handle);
-      BitBlt(Canvas.Handle, X, Y, W, H, MemDC, X, Y, SrcCopy);
-    finally
-      if OldPal <> 0 then
-        SelectPalette(MemDC, OldPal, False);
-      Canvas2.Handle := 0;
-    end;
-  finally
-    Canvas2.Destroy;
-    DeleteDC(MemDC);
-    DeleteObject(Bm);
-  end;
-{$endif}
 end;
+
 
 procedure TPaintPanel.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 begin
   Message.Result := 1; {it's erased}
 end;
 
-{----------------TPaintPanel.WMLButtonDblClk}
 
 procedure TPaintPanel.WMLButtonDblClk(var Message: TWMMouse);
 begin
@@ -5519,7 +5467,7 @@ begin
     THtmlViewer(FViewer).HTMLMouseDblClk(Message);
 end;
 
-{----------------T32ScrollBar.SetParams}
+{ T32ScrollBar }
 
 procedure T32ScrollBar.SetParams(APosition, APage, AMin, AMax: Integer);
 var

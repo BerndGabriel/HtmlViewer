@@ -631,7 +631,7 @@ begin
   // Empty.
 end;
 
-function GetNextLine(const Value: WideString; var S: WideString; var P: integer): boolean;
+function GetNextLine(const Value: WideString; out S: WideString; var P: integer): boolean;
 var
   PS: PWideChar;
   IP, L: integer;

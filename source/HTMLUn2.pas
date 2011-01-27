@@ -1822,49 +1822,6 @@ begin
   end;
 end;
 
-//function KindOfImageFile(FName: ThtString): ImageType;
-//var
-//  Mem: TMemoryStream;
-//begin
-//  Result := NoImage;
-//  if FileExists(FName) then
-//  begin
-//    Mem := TMemoryStream.Create;
-//    try
-//      Mem.LoadFromFile(FName);
-//      if Mem.Size >= 10 then
-//        Result := KindOfImage(Mem.Memory);
-//    finally
-//      Mem.Free;
-//    end;
-//  end;
-//end;
-
-function KindOfImage(Start: Pointer): TImageType; overload;
-//type
-//  ByteArray = array[0..10] of byte;
-var
-//  PB: ^ByteArray absolute Start;
-  PW: ^Word absolute Start;
-  PL: ^DWord absolute Start;
-begin
-  if PL^ = $38464947 then
-  begin
-//    if PB^[4] = Ord('9') then
-//      Result := Gif89
-//    else
-      Result := Gif;
-  end
-  else if PL^ = $474E5089 then
-    Result := Png
-  else
-    case PW^ of
-      $4D42: Result := Bmp;
-      $D8FF: Result := Jpg;
-    else
-      Result := NoImage;
-    end;
-end;
 
 function KindOfImage(Stream: TStream): TImageType; overload;
 var
@@ -1899,203 +1856,6 @@ begin
   end;
 end;
 
-//{$A-} {record field alignment off for this routine}
-//
-//function IsTransparent(Stream: TStream; var Color: TColor): boolean;
-//{Makes some simplifying assumptions that seem to be generally true for single
-// images.}
-//type
-//  RGB = record
-//    Red, Green, Blue: byte;
-//  end;
-//
-//  GifHeader = record
-//    GIF: array[0..2] of Ansichar;
-//    Version: array[0..2] of Ansichar;
-//    ScreenWidth, ScreenHeight: Word;
-//    Field: Byte;
-//    BackGroundColorIndex: byte;
-//    AspectRatio: byte;
-//  end;
-//  ColorArray = array[0..255] of RGB;
-//
-//var
-//  Header: ^GifHeader;
-//  X: Integer;
-//  Colors: ^ColorArray;
-//  Buff: array[0..Sizeof(GifHeader) + Sizeof(ColorArray) + 8] of byte;
-//  P: PByte;
-//  OldPosition: Integer;
-//
-//begin
-//  Result := False;
-//  Fillchar(Buff, Sizeof(Buff), 0); {in case read comes short}
-//  OldPosition := Stream.Position;
-//  Stream.Position := 0;
-//  Stream.Read(Buff, Sizeof(Buff));
-//  Stream.Position := OldPosition;
-//
-//  Header := @Buff;
-//  if KindOfImage(Header) <> Gif89 then
-//    Exit;
-//  Colors := @Buff[Sizeof(GifHeader)];
-//  with Header^ do
-//  begin
-//    X := 1 shl ((Field and 7) + 1) - 1; {X is last item in color table}
-//    if X = 0 then
-//      Exit; {no main color table}
-//  end;
-//  P := PByte(PtrInt(Colors) + (X + 1) * Sizeof(RGB));
-//  if (P^ <> $21) or (PByte(PtrInt(P) + 1)^ <> $F9) then
-//    Exit; {extension block not found}
-//  if (ord(PByteArray(P)[3]) and 1 <> 1) then
-//    Exit; {no transparent color specified}
-//
-//  with Colors^[Ord(PByteArray(P)[6])] do
-//    Color := Integer(Blue) shl 16 or Integer(Green) shl 8 or Integer(Red);
-//  Result := True;
-//end;
-//
-//{$A+}
-//
-//
-//{$A-} {record field alignment off for this routine}
-//
-//
-//function IsTransparentPng(Stream: TStream; var Color: TColor): boolean;
-//type
-//  RGB = record
-//    Red, Green, Blue: byte;
-//  end;
-//
-//  PngHeader = record
-//    width: Integer;
-//    height: Integer;
-//    bitDepth: byte;
-//    colorType: byte;
-//    compression: byte;
-//    filter: byte;
-//    interlace: byte;
-//  end;
-//var
-//  Header: PngHeader;
-//  CRC: Integer;
-//  OldPosition: Integer;
-//  pngPalette: array[0..255] of RGB;
-//  dataSize: Integer;
-//  chunkType: array[0..4] of AnsiChar;
-//  chunkTypeStr: ThtString;
-//  done: Boolean;
-//  Ar: array[0..10] of byte;
-//  Alpha: array[0..255] of byte;
-//  I: Integer;
-//
-//  function IntSwap(data: Integer): Integer;
-//  var
-//    byte0: Integer;
-//    byte1: Integer;
-//    byte2: Integer;
-//    byte3: Integer;
-//  begin
-//    byte0 := data and $FF;
-//    byte1 := (data shr 8) and $FF;
-//    byte2 := (data shr 16) and $FF;
-//    byte3 := (data shr 24) and $FF;
-//
-//    result := (byte0 shl 24) or (byte1 shl 16) or (byte2 shl 8) or byte3;
-//  end;
-//
-//begin
-//  result := false;
-//  OldPosition := Stream.Position;
-//
-//  try
-//    Stream.Position := 0;
-//    Stream.Read(Ar, 8);
-//
-//    if KindOfImage(@Ar) <> Png then
-//    begin
-//      Stream.Position := OldPosition;
-//      Exit;
-//    end;
-//
-//    Stream.Position := 8; {past the PNG Signature}
-//    done := False;
-//
-//{Read Chunks}
-//    repeat
-//      Stream.Read(dataSize, 4);
-//      dataSize := IntSwap(dataSize);
-//      Stream.Read(chunkType, 4);
-//      chunkType[4] := #0; {make sure ThtString is NULL terminated}
-//      chunkTypeStr := StrPas(chunkType);
-//      if chunkTypeStr = 'IHDR' then
-//      begin
-//        Stream.Read(Header, DataSize);
-//        Header.width := IntSwap(Header.width);
-//        Header.height := IntSwap(Header.height);
-//        Stream.Read(CRC, 4); {read it in case we need to read more}
-//        if (Header.colorType < 2) or (Header.colorType > 3) then
-//          done := True; {only type 2 and 3 use tRNS}
-//      end
-//      else if chunkTypeStr = 'PLTE' then
-//      begin
-//        Stream.Read(pngPalette, DataSize);
-//        Stream.Read(CRC, 4); {read it in case we need to read more}
-//      end
-//      else if chunkTypeStr = 'tRNS' then
-//      begin
-//        if Header.colorType = 3 then
-//        begin
-//          {there can be DataSize transparent or partial transparent colors.  We only accept one fully transparent color}
-//          Stream.Read(Alpha, DataSize);
-//          for I := 0 to DataSize - 1 do
-//            if Alpha[I] = 0 then {0 means full transparency}
-//            begin
-//              with pngPalette[I] do
-//                Color := Integer(Blue) shl 16 or Integer(Green) shl 8 or Integer(Red);
-//              Result := True;
-//              break;
-//            end;
-//        end
-//        else {has to have been 2}
-//        begin
-//            {for now I am ignoring this since I can't make one}
-//        end;
-//        done := true; {got everything we need at this point}
-//      end
-//      else if chunkTypeStr = 'IDAT' then
-//        done := True {if this chunk is hit there is no tRNS}
-//      else
-//        Stream.Position := Stream.Position + dataSize + 4; {additional 4 for the CRC}
-//      if Stream.Position >= Stream.Size then
-//        Done := True;
-//    until done = True;
-//  except
-//  end;
-//
-//  Stream.Position := OldPosition;
-//end;
-//
-//{$A+}
-//
-//function TransparentGIF(const FName: ThtString; var Color: TColor): boolean;
-//{Looks at a GIF image file to see if it's a transparent GIF.}
-//{Needed for OnBitmapRequest Event handler}
-//var
-//  Stream: TFileStream;
-//begin
-//  Result := False;
-//  try
-//    Stream := TFileStream.Create(FName, fmShareDenyWrite or FmOpenRead);
-//    try
-//      Result := IsTransparent(Stream, Color);
-//    finally
-//      Stream.Free;
-//    end;
-//  except
-//  end;
-//end;
 
 function ConvertImage(Bitmap: TBitmap): TBitmap;
 {convert bitmap into a form for BitBlt later}
@@ -2258,22 +2018,20 @@ begin
   end;
 end;
 
+{----------------GetImageAndMaskFromStream}
 {$IFNDEF NoGDIPlus}
 var
-  Unique: Integer = 183902;
+  TempPathInited: Boolean;
+  TempPath: array [0..Max_Path] of char;
 {$ENDIF !NoGDIPlus}
-
-{----------------GetImageAndMaskFromStream}
 
 function GetImageAndMaskFromStream(Stream: TStream;
   var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 {$IFNDEF NoGDIPlus}
 var
   Filename: string;
-  Path: PChar;
   F: TFileStream;
-  I: Integer;
-  {$ENDIF !NoGDIPlus}
+{$ENDIF !NoGDIPlus}
 begin
   Result := nil;
   AMask := nil;
@@ -2285,17 +2043,14 @@ begin
   if GDIPlusActive and (KindOfImage(Stream) = png) then
   begin
     try
-      Path := StrAlloc(MAX_PATH);
-      try
-        GetTempPath(Max_Path, Path);
-        SetLength(Filename, Max_Path+1);
-        GetTempFilename(Path, 'png', Unique, PChar(Filename));
-      finally
-        StrDispose(Path);
+      if not TempPathInited then
+      begin
+        GetTempPath(Max_Path, TempPath);
+        TempPathInited := True;
       end;
-      Inc(Unique);
-      I := Pos(#0, Filename);
-      SetLength(Filename, I - 1);
+      SetLength(Filename, Max_Path+1);
+      GetTempFilename(TempPath, 'png', 0, PChar(Filename));
+      SetLength(Filename, Pos(#0, Filename) - 1);
       F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
       try
         F.CopyFrom(Stream, Stream.Size);

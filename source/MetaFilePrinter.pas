@@ -55,7 +55,6 @@ type
     procedure DeleteImage;
     function GetAuthor: String;
     function GetDescription: String;
-    function GetEmpty: Boolean; override;
     function GetHandle: HENHMETAFILE;
     function GetMMHeight: Integer;
     function GetMMWidth: Integer;
@@ -63,9 +62,10 @@ type
     procedure SetMMHeight(Value: Integer);
     procedure SetMMWidth(Value: Integer);
   protected
-    procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
+    function GetEmpty: Boolean; override;
     function GetHeight: Integer; override;
     function GetWidth: Integer; override;
+    procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
     procedure SetHeight(Value: Integer); override;
     procedure SetWidth(Value: Integer); override;
   public
