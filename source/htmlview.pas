@@ -1858,8 +1858,14 @@ var
 
   function AlphaNum(Ch: WideChar): Boolean;
   begin
-    Result := (Ch in [WideChar('a')..WideChar('z'), WideChar('A')..WideChar('Z'), WideChar('0')..WideChar('9')])
-    or (Ch >= #192);
+    case Ch of
+      WideChar('a')..WideChar('z'),
+      WideChar('A')..WideChar('Z'),
+      WideChar('0')..WideChar('9'):
+        Result := True;
+    else
+      Result := Ch >= #192;
+    end;
   end;
 
   function GetCh(Pos: Integer): WideChar;
@@ -4726,40 +4732,65 @@ end;
 
 procedure THtmlViewer.CopyToClipboard;
 const
-  StartFrag = '<!--StartFragment-->';
-  EndFrag = '<!--EndFragment-->';
-  DocType = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
+  // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
+  StartFrag: ThtString = '<!--StartFragment-->';
+  EndFrag: ThtString = '<!--EndFragment-->';
+  DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
 var
   Leng: Integer;
   StSrc, EnSrc: Integer;
-  HTML: AnsiString;
-  format: UINT;
+  HTML: ThtString;
+  CF_HTML: UINT;
 
-  procedure copyFormatToClipBoard(const source: Ansistring; format: UINT);
+  procedure copyFormatToClipBoard(const Source: ThtString);
   // Put SOURCE on the clipboard, using FORMAT as the clipboard format
-  // Based on http://www.lorriman.com/programming/cf_html.html
-  var
-    gMem: HGLOBAL;
-    lp: pAnsichar;
-  begin
-    clipboard.Open;
-    try
 {$ifdef LCL}
-      clipboard.addFormat(format, pAnsichar(source)^, length(source) + 1);
-{$else}
-      // Must be implemented in a cross-platform way.
-      //an extra "1" for the null terminator
-      gMem := globalalloc(GMEM_DDESHARE + GMEM_MOVEABLE, length(source) + 1);
-      lp := globallock(gMem);
-      Move(lp^, pAnsichar(source)^, length(source) + 1);
-      //copymemory(lp, pAnsichar(source), length(source) + 1);
-      globalunlock(gMem);
-      setClipboarddata(format, gMem);
-{$endif}
-    finally
-      clipboard.Close;
-    end
+  var
+    Utf8: UTF8String;
+  begin
+    Clipboard.Clear;
+    Clipboard.AddFormat(CF_UNICODETEXT, PWideChar(Source)[0], Length(Source) * sizeof(WIDECHAR));
+    Utf8 := UTF8Encode(Source);
+    Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
   end;
+{$else}
+  var
+    Len: Integer;
+    Mem: HGLOBAL;
+    Buf: PAnsiChar;
+    Wuf: PWideChar;
+    L: Integer;
+  begin
+    Clipboard.Clear;
+    Len := Length(Source);
+    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len * 4 + 1);
+    try
+      Buf := GlobalLock(Mem);
+      try
+        L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
+        Buf[L] := #0;
+        Clipboard.SetAsHandle(CF_HTML, Mem);
+      finally
+        GlobalUnlock(Mem);
+      end;
+    except
+      GlobalFree(Mem);
+    end;
+    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(PhtChar));
+    try
+      Wuf := GlobalLock(Mem);
+      try
+        Move(Source[1], Wuf^, Len * SizeOf(PhtChar));
+        Wuf[Len] := #0;
+        Clipboard.SetAsHandle(CF_UNICODETEXT, Mem);
+      finally
+        GlobalUnlock(Mem);
+      end;
+    except
+      GlobalFree(Mem);
+    end;
+  end;
+{$endif}
 
   function GetHeader(const HTML: ThtString): ThtString;
   const
@@ -4802,38 +4833,29 @@ var
       URLString + #13#10;
   end;
 
-  function Truncate(const S: ThtString): ThtString;
-  var
-    I: Integer;
-  begin
-    I := Pos(EndFrag, S);
-    Result := S;
-    if I > 0 then
-      Result := Copy(Result, 1, I + Length(EndFrag) - 1);
-  end;
-
   procedure RemoveTag(const Tag: ThtString);
   {remove all the tags that look like "<tag .....>" }
   var
-    I: Integer;
-    L: Ansistring;
-    C: Ansichar;
+    I, J: Integer;
+    LTML: ThtString;
+    C: ThtChar;
   begin
-    L := Lowercase(HTML);
-    I := Pos(Tag, L);
-    while (I > 0) do
-    begin
-      Delete(HTML, I, Length(Tag));
+    C := #0; // valium for Delphi 2009
+    LTML := htLowerCase(HTML);
+    repeat
+      I := Pos(Tag, LTML);
+      if I = 0 then
+        break;
+      J := I - 1 + Length(Tag);
       repeat
-        if I <= Length(HTML) then
-          C := HTML[I]
-        else
-          C := #0;
-        Delete(HTML, I, 1);
-      until C in ['>', #0];
-      L := Lowercase(HTML);
-      I := Pos(Tag, L);
-    end;
+        Inc(J);
+        if J = Length(LTML) then
+          break;
+        C := LTML[J];
+      until (C = GreaterChar) or (C = EofChar);
+      Delete(HTML, I, J - I + 1);
+      Delete(LTML, I, J - I + 1);
+    until False;
   end;
 
   procedure MessUp(const S: ThtString);
@@ -4841,33 +4863,14 @@ var
     I: Integer;
     L: ThtString;
   begin
-    L := Lowercase(HTML);
+    L := htLowerCase(HTML);
     I := Pos(S, L);
     while (I > 0) do
     begin
       Delete(HTML, I, 1);
-      L := Lowercase(HTML);
+      L := htLowerCase(HTML);
       I := Pos(S, L);
     end;
-  end;
-
-  function ConvertToUTF8(const S: Ansistring): Ansistring;
-  var
-    Len, Len1: Integer;
-    WS: WideString;
-  begin
-    if CodePage = CP_UTF8 then
-    begin
-      Result := S;
-      Exit;
-    end;
-    Len := Length(S);
-    SetString(WS, nil, Len); // Yunqa.de: SetString() is faster than SetLength().
-    Len := MultibyteToWideChar(CodePage, 0, PAnsiChar(S), Len, PWideChar(WS), Len);
-    Len1 := 4 * Len;
-    SetString(Result, nil, Len1); // Yunqa.de: SetString() is faster than SetLength().
-    Len1 := WideCharToMultibyte(CP_UTF8, 0, PWideChar(WS), Len, PAnsiChar(Result), Len1, nil, nil);
-    SetLength(Result, Len1);
   end;
 
   procedure InsertDefaultFontInfo;
@@ -4890,9 +4893,9 @@ var
     Insert(S, HTML, I);
   end;
 
-  procedure BackupToContent;
+  function BackupToContent: ThtString;
   var
-    C: AnsiChar;
+    C: ThtChar;
     I: Integer;
 
     procedure GetC; {reads characters backwards}
@@ -4911,18 +4914,18 @@ var
     repeat
       repeat {skip past white space}
         GetC;
-      until C in [#0, '!'..#255];
+      until (C > ' ') or (C = EofChar);
       if C = '>' then
         repeat {read thru a tag}
           repeat
             GetC;
-          until C in [#0, '<'];
+          until (C = LessChar) or (C = EofChar);
           GetC;
         until C <> '>';
-    until C in [#0, '!'..#255]; {until found some content}
-    if C = #0 then
+    until (C > ' ') or (C = EofChar); {until found some content}
+    if C = EofChar then
       Dec(I);
-    HTML := Copy(HTML, 1, I); {truncate the tags}
+    Result := Copy(HTML, 1, I); {truncate the tags}
   end;
 
 begin
@@ -4948,7 +4951,7 @@ begin
 {Truncate beyond EnSrc}
   HTML := Copy(HTML, 1, EnSrc - 1);
 {Also remove any tags on the end}
-  BackupToContent;
+  HTML := BackupToContent;
 {insert the StartFrag ThtString}
   Insert(StartFrag, HTML, StSrc);
 {Remove all Meta tags, in particular the ones that specify language, but others
@@ -4960,17 +4963,13 @@ begin
   MessUp('page-break-');
 {Add in default font information which wouldn't be in the HTML}
   InsertDefaultFontInfo;
-{Convert character set to UTF-8}
-  HTML := ConvertToUTF8(HTML);
-{Add Doctype tag at start}
-  HTML := DocType + HTML;
-{Append the EndFrag ThtString}
-  HTML := HTML + EndFrag;
+{Add Doctype tag at start and append the EndFrag ThtString}
+  HTML := DocType + HTML + EndFrag;
 {Add the header to start}
   HTML := GetHeader(HTML) + HTML;
 
-  format := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-  CopyFormatToClipBoard(HTML, format);
+  CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
+  CopyFormatToClipBoard(HTML);
 end;
 
 function THtmlViewer.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;

@@ -751,7 +751,7 @@ begin
     while (LCh = ' ') or (LCh = '-') or (LCh = '>') do
       GetCh;
   until (LCh = EOFChar) or ((LCh = '<') and not FromLink);
-  C := htUpCase(LCh);
+  C := LCh;
   Self.Styles := nil;
   Self.Doc := nil;
 end;

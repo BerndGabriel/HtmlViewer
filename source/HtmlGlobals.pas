@@ -137,6 +137,7 @@ const
   PercentChar = ThtChar('%');
   AmperChar   = ThtChar('&');
 
+
 {$ifdef LCL}
 const
   HWND_MESSAGE = HWND(-3);
@@ -233,7 +234,9 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   MaskY: Integer): Boolean;
 {$endif}
 
-function htUpCase(Chr: ThtChar): ThtChar; {$ifdef UseInline} inline; {$endif}
+
+function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -462,14 +465,26 @@ end;
 {$endif TransparentStretchBltMissing}
 
 
-//-- BG ---------------------------------------------------------- 11.12.2010 --
-function htUpCase(Chr: ThtChar): ThtChar;
+//-- BG ---------------------------------------------------------- 28.01.2011 --
+function htUpperCase(Str: ThtString): ThtString;
 begin
   {$ifdef UNICODE}
-    Result := UpCase(Chr);
+    Result := UpperCase(Str);
   {$else}
-    Result := Chr;
-    CharUpperBuffW(@Result, 1);
+    Result := Str;
+    CharUpperBuffW(@Result[1], Length(Result));
+  {$endif}
+end;
+
+
+//-- BG ---------------------------------------------------------- 28.01.2011 --
+function htLowerCase(Str: ThtString): ThtString;
+begin
+  {$ifdef UNICODE}
+    Result := LowerCase(Str);
+  {$else}
+    Result := Str;
+    CharLowerBuffW(@Result[1], Length(Result));
   {$endif}
 end;
 

@@ -95,7 +95,7 @@ type
 
   THtmlParser = class
   private
-    LCh, Ch: ThtChar;
+    LCh: ThtChar;
     LastChar: (lcOther, lcCR, lcLF);
     Value: Integer;
     LCToken: TokenObj;
@@ -127,16 +127,13 @@ type
     MetaEvent: TMetaType;
     LinkEvent: TLinkType;
 
-    function GetChBasic: ThtChar;
     procedure GetCh;
 
     function CollectText: Boolean;
     function DoCharSet(Content: ThtString): Boolean;
     function DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
     function FindAlignment: ThtString;
-    function GetAttribute(var Sym: Symb; var St, S: ThtString; var Val: Integer): Boolean;
     function GetEntityStr(CodePage: Integer): ThtString;
-    function GetID(var S: ThtString): Boolean;
     function GetNameValueParameter(var Name, Value: ThtString): Boolean;
     function GetQuotedStr(var S: ThtString; var Value: Integer; WantCrLf: Boolean; Sym: Symb): Boolean;
     function GetQuotedValue(var S: ThtString): Boolean;
@@ -166,15 +163,14 @@ type
     procedure DoTitle;
     procedure GetEntity(T: TokenObj; CodePage: Integer);
     procedure GetOptions(Select: TOptionsFormControlObj);
-    procedure GetSomething(var S: ThtString);
-    procedure Next;
+    procedure Next; {$ifdef UseInline} inline; {$endif}
     procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
     procedure ParseHtml(Doc: TBuffer; ASectionList: TList; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
     procedure ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
     procedure ParseText(Doc: TBuffer; ASectionList: TList);
-    procedure SkipWhiteSpace;
-    procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
-    procedure PopAProp(const Tag: ThtString);
+    procedure SkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
+    procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
+    procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
   public
     constructor Create;
@@ -184,14 +180,6 @@ type
   procedure ParseHtml(Doc: TBuffer; ASectionList: TList; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
   procedure ParseText(Doc: TBuffer; ASectionList: TList);
 
-//  procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
-//    AIncludeEvent: TIncludeType;
-//    ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-//  procedure ParseTextString(const S: ThtString; ASectionList: TList);
-
-//  procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject; ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
-//  function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString; FrameViewer: TFrameViewerBase): Boolean;
-
   procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
   function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
 
@@ -200,51 +188,6 @@ implementation
 uses
   HtmlView, StylePars, UrlSubs;
 
-const
-  MaxRes = 82;
-  MaxEndRes = 62;
-  ResWords: array[1..MaxRes] of ThtString = (
-    'HTML', 'TITLE', 'BODY', 'HEAD', 'B', 'I', 'H', 'EM', 'STRONG', 'U',
-    'CITE', 'VAR', 'TT', 'CODE', 'KBD', 'SAMP', 'OL', 'UL', 'DIR', 'MENU',
-    'DL', 'A', 'ADDRESS', 'BLOCKQUOTE', 'PRE', 'CENTER', 'TABLE', 'TD', 'TH', 'CAPTION',
-    'FORM', 'TEXTAREA', 'SELECT', 'OPTION', 'FONT', 'SUB', 'SUP', 'BIG', 'SMALL', 'P',
-    'MAP', 'FRAMESET', 'NOFRAMES', 'SCRIPT', 'DIV', 'S', 'STRIKE', 'TR', 'NOBR', 'STYLE',
-    'SPAN', 'COLGROUP', 'LABEL', 'THEAD', 'TBODY', 'TFOOT', 'OBJECT', 'DD', 'DT', 'LI',
-    'FIELDSET', 'LEGEND',
-
-    'BR', 'HR', 'IMG', 'BASE', 'BUTTON', 'INPUT', 'SELECTED', 'BASEFONT',
-    'AREA', 'FRAME', 'PAGE', 'BGSOUND', 'WRAP', 'META', 'PANEL', 'WBR', 'LINK', 'COL',
-    'PARAM', 'READONLY');
-
-  ResSy: array[1..MaxRes] of Symb = (
-    htmlSy, TitleSy, BodySy, HeadSy, BSy, ISy, HeadingSy, EmSy, StrongSy, USy,
-    CiteSy, VarSy, TTSy, CodeSy, KbdSy, SampSy, OLSy, ULSy, DirSy, MenuSy,
-    DLSy, ASy, AddressSy, BlockQuoteSy, PreSy, CenterSy, TableSy, TDsy, THSy, CaptionSy,
-    FormSy, TextAreaSy, SelectSy, OptionSy, FontSy, SubSy, SupSy, BigSy, SmallSy, PSy,
-    MapSy, FrameSetSy, NoFramesSy, ScriptSy, DivSy, SSy, StrikeSy, TRSy, NoBrSy, StyleSy,
-    SpanSy, ColGroupSy, LabelSy, THeadSy, TBodySy, TFootSy, ObjectSy, DDSy, DTSy, LISy,
-    FieldsetSy, LegendSy,
-
-    BRSy, HRSy, ImageSy, BaseSy, ButtonSy, InputSy, SelectedSy, BaseFontSy,
-    AreaSy, FrameSy, PageSy, BgSoundSy, WrapSy, MetaSy, PanelSy, WbrSy, LinkSy, ColSy,
-    ParamSy, ReadonlySy);
-
-  {keep these in order with those above}
-  EndResSy: array[1..MaxEndRes] of Symb = (
-    HtmlEndSy, TitleEndSy, BodyEndSy, HeadEndSy, BEndSy,
-    IEndSy, HeadingEndSy, EmEndSy, StrongEndSy, UEndSy,
-    CiteEndSy, VarEndSy, TTEndSy, CodeEndSy, KbdEndSy,
-    SampEndSy, OLEndSy, ULEndSy, DirEndSy, MenuEndSy,
-    DLEndSy, AEndSy, AddressEndSy, BlockQuoteEndSy, PreEndSy,
-    CenterEndSy, TableEndSy, TDEndSy, THEndSy, CaptionEndSy,
-    FormEndSy, TextAreaEndSy, SelectEndSy, OptionEndSy, FontEndSy,
-    SubEndSy, SupEndSy, BigEndSy, SmallEndSy, PEndSy,
-    MapEndSy, FrameSetEndSy, NoFramesEndSy, ScriptEndSy, DivEndSy,
-    SEndSy, StrikeEndSy, TREndSy, NoBrEndSy, StyleEndSy,
-    SpanEndSy, ColGroupEndSy, LabelEndSy, THeadEndSy, TBodyEndSy,
-    TFootEndSy, ObjectEndSy, DDEndSy, DTEndSy, LIEndSy,
-    FieldsetEndSy, LegendEndSy);
-
 type
   PEntity = ^TEntity;
   TEntity = record
@@ -252,66 +195,50 @@ type
     Value: Integer;
   end;
 
+  PSymbol = ^TSymbolRec;
+  TSymbolRec = record
+    Name: ThtString;
+    Value: Symb;
+  end;
+
+  PResWord = ^TResWord;
+  TResWord = record
+    Name: ThtString;
+    Symbol: Symb;
+    EndSym: Symb; // CommandSy == no end symbol
+  end;
+
 var
   Entities: ThtStringList;
+  ReservedWords: ThtStringList;
+  ReservedWordsIndex: array [Symb] of Integer;
+  AttributeNames: ThtStringList;
+  SymbolNames: array [Symb] of ThtString;
 
 function PropStackIndex: Integer;
 begin
   Result := PropStack.Count - 1;
 end;
 
-function SymbToStr(Sy: Symb): ThtString;
-var
-  I: Integer;
+function SymbToStr(Sy: Symb): ThtString; {$ifdef UseInline} inline; {$endif}
 begin
-  for I := 1 to MaxRes do
-    if ResSy[I] = Sy then
-    begin
-      Result := Lowercase(ResWords[I]);
-      Exit;
-    end;
-  Result := '';
+  Result := SymbolNames[Sy];
 end;
 
-function EndSymbToStr(Sy: Symb): ThtString;
-var
-  I: Integer;
+function EndSymbToStr(Sy: Symb): ThtString; {$ifdef UseInline} inline; {$endif}
 begin
-  for I := 1 to MaxEndRes do
-    if EndResSy[I] = Sy then
-    begin
-      Result := Lowercase(ResWords[I]);
-      Exit;
-    end;
-  Result := '';
+  Result := SymbolNames[Sy];
 end;
 
-function EndSymbFromSymb(Sy: Symb): Symb;
+function EndSymbFromSymb(Sy: Symb): Symb; {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
-  for I := 1 to MaxEndRes do
-    if ResSy[I] = Sy then
-    begin
-      Result := EndResSy[I];
-      Exit;
-    end;
-  Result := HtmlSy; {won't match}
-end;
-
-function StrToSymb(const S: ThtString): Symb;
-var
-  I: Integer;
-  S1: ThtString;
-begin
-  S1 := UpperCase(S);
-  for I := 1 to MaxRes do
-    if ResWords[I] = S1 then
-    begin
-      Result := ResSy[I];
-      Exit;
-    end;
-  Result := OtherSy;
+  I := ReservedWordsIndex[Sy];
+  if I >= 0 then
+    Result := PResWord(ReservedWords.Objects[I]).EndSym
+  else
+    Result := CommandSy; // no match
 end;
 
 
@@ -454,87 +381,85 @@ begin
   end;
 end;
 
-{----------------GetchBasic; }
-
-function THtmlParser.GetchBasic: ThtChar; {read a character}
-
-  function ReadChar: ThtChar;
-  begin
-    Result := Doc.NextChar;
-    while (Result = EofChar) and DocStack.AtLeast(1) do
-    begin
-      Doc.Free;
-      Doc := DocStack.Pop;
-      Result := Doc.NextChar;
-    end;
-
-    if DocStack.Count = 0 then
-      // update document position only for outmost document
-      PropStack.SIndex := Doc.Position;
-
-    if not LinkSearch and Assigned(PropStack.MasterList) and (Doc.Size <> 0) then
-    begin
-      Inc(CharCount);
-      if (Result = EofChar) or (CharCount and $FFF = 0) {about every 4000 chars} then
-        THtmlViewerBase(CallingObject).htProgress((Doc.Position * PropStack.MasterList.ProgressStart) div Doc.Size);
-    end;
-  end;
-
-begin
-  LCh := ReadChar;
-  case LCh of {skip a LfChar after a CrChar or a CrChar after a LfChar}
-    ThtChar(^M): if LastChar = lcLF then
-        LCh := ReadChar;
-    ThtChar(^J): if LastChar = lcCR then
-        LCh := ReadChar;
-  end;
-  case LCh of
-    ThtChar(^I):
-      LCh := SpcChar;
-
-    ThtChar(^J):
-      begin
-        LastChar := lcLF;
-        LCh := CrChar;
-      end;
-
-    ThtChar(^M):
-      LastChar := lcCR;
-  else
-    begin
-      LastChar := lcOther;
-      if LCh = TabChar then
-        LCh := SpcChar;
-    end;
-  end;
-  Ch := htUpCase(LCh);
-  if (LCh = EofChar) and InComment then
-    raise EParseError.Create('Open Comment at End of HTML File');
-  Result := LCh
-end;
-
 {-------------GetCh}
 
 procedure THtmlParser.GetCh;
 {Return next ThtChar in Lch, its uppercase value in Ch.  Ignore comments}
+
+  procedure GetChBasic; {read a character}
+
+    function ReadChar: ThtChar;
+    begin
+      Result := Doc.NextChar;
+      while (Result = EofChar) and DocStack.AtLeast(1) do
+      begin
+        Doc.Free;
+        Doc := DocStack.Pop;
+        Result := Doc.NextChar;
+      end;
+
+      if DocStack.Count = 0 then
+        // update document position only for outmost document
+        PropStack.SIndex := Doc.Position;
+
+      if not LinkSearch and (PropStack.MasterList <> nil) then
+      begin
+        Inc(CharCount);
+        if (Result = EofChar) or (CharCount and $FFF = 0) {about every 4000 chars} then
+          if Doc.Size > 0 then
+            THtmlViewerBase(CallingObject).htProgress((Doc.Position * PropStack.MasterList.ProgressStart) div Doc.Size);
+      end;
+    end;
+
+  begin
+    LCh := ReadChar;
+    case LCh of {skip a LfChar after a CrChar or a CrChar after a LfChar}
+      ThtChar(^M): if LastChar = lcLF then
+          LCh := ReadChar;
+      ThtChar(^J): if LastChar = lcCR then
+          LCh := ReadChar;
+    end;
+    case LCh of
+      ThtChar(^I):
+        LCh := SpcChar;
+
+      ThtChar(^J):
+        begin
+          LastChar := lcLF;
+          LCh := CrChar;
+        end;
+
+      ThtChar(^M):
+        LastChar := lcCR;
+    else
+      begin
+        LastChar := lcOther;
+        if LCh = TabChar then
+          LCh := SpcChar;
+      end;
+    end;
+    if (LCh = EofChar) and InComment then
+      raise EParseError.Create('Open Comment at End of HTML File');
+  end;
+
 var
   Done, Comment: Boolean;
 
   procedure DoDashDash; {do the comment after a <!-- }
   begin
     repeat
-      while Ch <> '-' do
+      while LCh <> '-' do
         GetChBasic; {get first '-'}
       GetChBasic;
-      if Ch = '-' then {second '-'}
+      if LCh = '-' then {second '-'}
       begin
-        while Ch = '-' do
+        while LCh = '-' do
           GetChBasic; {any number of '-'}
-        while (Ch = SpcChar) or (Ch = CrChar) do
+        while (LCh = SpcChar) or (LCh = CrChar) do
           GetChBasic; {eat white space}
-        if Ch = '!' then
+        if LCh = '!' then
           GetChBasic; {accept --!> also}
-        Done := Ch = GreaterChar;
+        Done := LCh = GreaterChar;
       end
       else
         Done := False;
@@ -544,7 +469,7 @@ var
 
   procedure ReadToGT; {read to the next GreaterChar }
   begin
-    while Ch <> GreaterChar do
+    while LCh <> GreaterChar do
       GetChBasic;
     InComment := False;
   end;
@@ -561,7 +486,7 @@ var
     LCToken := TokenObj.Create;
     try
       GetChBasic;
-      while Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('_'), ThtChar('0')..ThtChar('9')] do
+      while LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('_'), ThtChar('0')..ThtChar('9')] do
       begin
         S := S + LCh;
         GetChBasic;
@@ -588,39 +513,42 @@ begin {Getch}
    {comments may be either '<! stuff >' or '<!-- stuff -->'  }
     Comment := False;
     GetchBasic;
-    if (Ch = LessChar) and not InScript then
+    if (LCh = LessChar) and not InScript then
     begin
-      if Peek = '!' then
-      begin
-        GetChBasic;
-        Comment := True;
-        InComment := True;
-        GetChBasic;
-        if Ch = '-' then
+      case Peek of
+        '!':
         begin
           GetChBasic;
-          if Ch = '-' then
+          Comment := True;
+          InComment := True;
+          GetChBasic;
+          if LCh = '-' then
           begin
             GetChBasic;
-            if Assigned(IncludeEvent) and (Ch = '#') then
-              DoInclude
+            if LCh = '-' then
+            begin
+              GetChBasic;
+              if Assigned(IncludeEvent) and (LCh = '#') then
+                DoInclude
+              else
+                DoDashDash; {a <!-- comment}
+            end
             else
-              DoDashDash; {a <!-- comment}
+              ReadToGT;
           end
           else
             ReadToGT;
-        end
-        else
-          ReadToGT;
-      end
-      else if Peek = '%' then { <%....%> regarded as comment }
-      begin
-        Comment := True;
-        GetChBasic;
-        repeat
+        end;
+
+        '%': { <%....%> regarded as comment }
+        begin
           GetChBasic;
-        until (Ch = '%') and (Peek = GreaterChar) or (Ch = EOFChar);
-        GetChBasic;
+          Comment := True;
+          repeat
+            GetChBasic;
+          until (LCh = '%') and (Peek = GreaterChar) or (LCh = EOFChar);
+          GetChBasic;
+        end;
       end;
     end;
   until not Comment;
@@ -641,7 +569,7 @@ var
   SaveSy: Symb;
 begin
   Result := False;
-  Term := Ch;
+  Term := LCh;
   if (Term <> ThtChar('"')) and (Term <> ThtChar('''')) then
     Exit;
   Result := True;
@@ -660,7 +588,7 @@ begin
       GetCh;
     end;
   end;
-  if Ch = Term then
+  if LCh = Term then
     GetCh; {pass termination ThtChar}
   Sy := SaveSy;
 end;
@@ -672,9 +600,9 @@ begin
   Result := False;
   SkipWhiteSpace;
   Name := '';
-  if not (Ch in [ThtChar('A')..ThtChar('Z')]) then
+  if not (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z')]) then
     Exit;
-  while Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('_'), ThtChar('0')..ThtChar('9')] do
+  while LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('_'), ThtChar('0')..ThtChar('9')] do
   begin
     Name := Name + LCh;
     GetCh;
@@ -683,14 +611,14 @@ begin
   SkipWhiteSpace;
   Value := '';
   Result := True; {at least have an ID}
-  if Ch <> '=' then
+  if LCh <> '=' then
     Exit;
   GetCh;
 
   SkipWhiteSpace;
   if not GetQuotedValue(Value) then
   {in case quotes left off ThtString}
-    while not (Ch in [SpcChar, TabChar, CrChar, MinusChar, GreaterChar, EofChar]) do {need to exclude '-' to find '-->'}
+    while not (LCh in [SpcChar, TabChar, CrChar, MinusChar, GreaterChar, EofChar]) do {need to exclude '-' to find '-->'}
     begin
       Value := Value + LCh;
       GetCh;
@@ -705,18 +633,18 @@ var
   Code: Integer;
   ValD: double;
 begin
-  Result := Ch in [ThtChar('-'), ThtChar('+'), ThtChar('0')..ThtChar('9')];
+  Result := LCh in [ThtChar('-'), ThtChar('+'), ThtChar('0')..ThtChar('9')];
   if not Result then
     Exit;
   Value := 0;
-  if Ch in [ThtChar('-'), ThtChar('+')] then
+  if LCh in [ThtChar('-'), ThtChar('+')] then
   begin
-    S := Ch;
+    S := LCh;
     GetCh;
   end
   else
     S := '';
-  while not (Ch in [SpcChar, TabChar, CrChar, GreaterChar, PercentChar, EofChar]) do
+  while not (LCh in [SpcChar, TabChar, CrChar, GreaterChar, PercentChar, EofChar]) do
     if LCh = AmperChar then
       S := S + GetEntityStr(PropStack.Last.CodePage)
     else
@@ -752,7 +680,7 @@ var
   SaveSy: Symb;
 begin
   Result := False;
-  Term := Ch;
+  Term := LCh;
   if (Term <> '"') and (Term <> '''') then
     Exit;
   Result := True;
@@ -774,19 +702,21 @@ begin
       end
       else
       begin
-        S := S + LCh;
+        // this is faster than: S := S + LCh;
+        SetLength(S, Length(S) + 1);
+        S[Length(S)] := LCh;
         GetCh;
       end;
     end
     else if WantCrLf then
     begin
-      S := S + CrChar + ^J;
+      S := S + ^M^J;
       GetCh;
     end
     else
       GetCh;
   end;
-  if Ch = Term then
+  if LCh = Term then
     GetCh; {pass termination ThtChar}
   S1 := Trim(S);
   if Pos('%', S1) = Length(S1) then
@@ -803,117 +733,69 @@ begin
   Sy := SaveSy;
 end;
 
-{----------------GetSomething}
-
-procedure THtmlParser.GetSomething(var S: ThtString);
-begin
-  while not (Ch in [SpcChar, TabChar, CrChar, GreaterChar, EofChar]) do
-    if LCh = AmperChar then
-      S := S + GetEntityStr(PropStack.Last.CodePage)
-    else
-    begin
-      S := S + LCh;
-      GetCh;
-    end;
-end;
-
-{----------------GetID}
-
-function THtmlParser.GetID(var S: ThtString): Boolean;
-
-begin
-  Result := False;
-  if not (Ch in [ThtChar('A')..ThtChar('Z')]) then
-    Exit;
-  while Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('-'), ThtChar('0')..ThtChar('9')] do
-  begin
-    S := S + Ch;
-    GetCh;
-  end;
-  Result := True;
-end;
-
-{----------------GetAttribute}
-
-function THtmlParser.GetAttribute(var Sym: Symb; var St: ThtString;
-  var S: ThtString; var Val: Integer): Boolean;
-
-const
-  MaxAttr = 84;
-  Attrib: array[1..MaxAttr] of ThtString =
-  ('HREF', 'NAME', 'SRC', 'ALT', 'ALIGN', 'TEXT', 'BGCOLOR', 'LINK',
-    'BACKGROUND', 'COLSPAN', 'ROWSPAN', 'BORDER', 'CELLPADDING',
-    'CELLSPACING', 'VALIGN', 'WIDTH', 'START', 'VALUE', 'TYPE',
-    'CHECKBOX', 'RADIO', 'METHOD', 'ACTION', 'CHECKED', 'SIZE',
-    'MAXLENGTH', 'COLS', 'ROWS', 'MULTIPLE', 'VALUE', 'SELECTED',
-    'FACE', 'COLOR', 'TRANSP', 'CLEAR', 'ISMAP', 'BORDERCOLOR',
-    'USEMAP', 'SHAPE', 'COORDS', 'NOHREF', 'HEIGHT', 'PLAIN', 'TARGET',
-    'NORESIZE', 'SCROLLING', 'HSPACE', 'LANGUAGE', 'FRAMEBORDER',
-    'MARGINWIDTH', 'MARGINHEIGHT', 'LOOP', 'ONCLICK', 'WRAP', 'NOSHADE',
-    'HTTP-EQUIV', 'CONTENT', 'ENCTYPE', 'VLINK', 'OLINK', 'ACTIVE',
-    'VSPACE', 'CLASS', 'ID', 'STYLE', 'REL', 'REV', 'NOWRAP',
-    'BORDERCOLORLIGHT', 'BORDERCOLORDARK', 'CHARSET', 'RATIO',
-    'TITLE', 'ONFOCUS', 'ONBLUR', 'ONCHANGE', 'SPAN', 'TABINDEX',
-    'BGPROPERTIES', 'DISABLED', 'TOPMARGIN', 'LEFTMARGIN', 'LABEL',
-    'READONLY');
-  AttribSym: array[1..MaxAttr] of Symb =
-  (HrefSy, NameSy, SrcSy, AltSy, AlignSy, TextSy, BGColorSy, LinkSy,
-    BackgroundSy, ColSpanSy, RowSpanSy, BorderSy, CellPaddingSy,
-    CellSpacingSy, VAlignSy, WidthSy, StartSy, ValueSy, TypeSy,
-    CheckBoxSy, RadioSy, MethodSy, ActionSy, CheckedSy, SizeSy,
-    MaxLengthSy, ColsSy, RowsSy, MultipleSy, ValueSy, SelectedSy,
-    FaceSy, ColorSy, TranspSy, ClearSy, IsMapSy, BorderColorSy,
-    UseMapSy, ShapeSy, CoordsSy, NoHrefSy, HeightSy, PlainSy, TargetSy,
-    NoResizeSy, ScrollingSy, HSpaceSy, LanguageSy, FrameBorderSy,
-    MarginWidthSy, MarginHeightSy, LoopSy, OnClickSy, WrapSy, NoShadeSy,
-    HttpEqSy, ContentSy, EncTypeSy, VLinkSy, OLinkSy, ActiveSy,
-    VSpaceSy, ClassSy, IDSy, StyleSy, RelSy, RevSy, NoWrapSy,
-    BorderColorLightSy, BorderColorDarkSy, CharSetSy, RatioSy,
-    TitleSy, OnFocusSy, OnBlurSy, OnChangeSy, SpanSy, TabIndexSy,
-    BGPropertiesSy, DisabledSy, TopMarginSy, LeftMarginSy, LabelSy,
-    ReadonlySy);
-var
-  I: Integer;
-begin
-  Sym := OtherAttribute;
-  Result := False;
-  SkipWhiteSpace;
-  St := '';
-  if GetID(St) then
-  begin
-    for I := 1 to MaxAttr do
-      if St = Attrib[I] then
-      begin
-        Sym := AttribSym[I];
-        Break;
-      end;
-  end
-  else
-    Exit; {no ID}
-  SkipWhiteSpace;
-  S := '';
-  if Sym = BorderSy then
-    Val := 1
-  else
-    Val := 0;
-  Result := True; {at least have an ID}
-  if Ch <> '=' then
-    Exit;
-  GetCh;
-
-  SkipWhiteSpace;
-  if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
-    if not GetValue(S, Val) then
-      GetSomething(S); {in case quotes left off ThtString}
-  if (Sym = IDSy) and (S <> '') and Assigned(PropStack.MasterList) and not LinkSearch then
-    PropStack.MasterList.IDNameList.AddChPosObject(S, PropStack.SIndex);
-end;
-
 {-------------GetTag}
 
 function THtmlParser.GetTag: Boolean; {Pick up a Tag or pass a single LessChar}
+
+  function GetAttribute(out Sym: Symb; out St: ThtString; out S: ThtString; out Val: Integer): Boolean;
+
+    function GetID(out S: ThtString): Boolean;
+    begin
+      S := '';
+      while LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('-'), ThtChar('0')..ThtChar('9')] do
+      begin
+        SetLength(S, Length(S) + 1);
+        S[Length(S)] := LCh;
+        GetCh;
+      end;
+      Result := Length(S) > 0;
+      if Result then
+        S := htUpperCase(S);
+    end;
+
+  var
+    I: Integer;
+  begin
+    Sym := OtherAttribute;
+    Result := False;
+    SkipWhiteSpace;
+    St := '';
+    if GetID(St) then
+    begin
+      if AttributeNames.Find(St, I) then
+        Sym := PSymbol(AttributeNames.Objects[I]).Value;
+    end
+    else
+      Exit; {no ID}
+    SkipWhiteSpace;
+    S := '';
+    if Sym = BorderSy then
+      Val := 1
+    else
+      Val := 0;
+    Result := True; {at least have an ID}
+    if LCh <> '=' then
+      Exit;
+    GetCh;
+
+    SkipWhiteSpace;
+    if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
+      if not GetValue(S, Val) then
+        while not (LCh in [SpcChar, TabChar, CrChar, GreaterChar, EofChar]) do
+          if LCh = AmperChar then
+            S := S + GetEntityStr(PropStack.Last.CodePage)
+          else
+          begin
+            SetLength(S, Length(S) + 1);
+            S[Length(S)] := LCh;
+            GetCh;
+          end;
+    if (Sym = IDSy) and (S <> '') and Assigned(PropStack.MasterList) and not LinkSearch then
+      PropStack.MasterList.IDNameList.AddChPosObject(S, PropStack.SIndex);
+  end;
+
 var
-  Done, EndTag: Boolean;
+  EndTag: Boolean;
   Compare: ThtString;
   SymStr: ThtString;
   AttrStr: ThtString;
@@ -922,27 +804,26 @@ var
   Save: Integer;
   Sym: Symb;
 begin
-  if Ch <> LessChar then
+  if LCh <> LessChar then
   begin
     Result := False;
     Exit;
-  end
-  else
-    Result := True;
+  end;
+  Result := True;
   Save := PropStack.SIndex;
   TagIndex := PropStack.SIndex;
-  Compare := '';
   GetCh;
-  if Ch = '/' then
-  begin
-    EndTag := True;
-    GetCh;
-  end
-  else
-  case Ch of
-    'A'..'Z', '?':
-      EndTag := False;
+  case LCh of
+    '/':
+    begin
+      EndTag := True;
+      GetCh;
+    end;
 
+    'a'..'z', 'A'..'Z', '?':
+    begin
+      EndTag := False;
+    end;
   else
     {an odd LessChar}
     Sy := TextSy;
@@ -950,39 +831,58 @@ begin
     Exit;
   end;
   Sy := CommandSy;
-  Done := False;
-  while not Done do
-    case Ch of
-      'A'..'Z', '0'..'9', '/', '_':
-        begin
-          if (Ch = '/') and (Length(Compare) > 0) then {allow xhtml's <br/>, etc }
-            Done := True
-          else if Length(Compare) < 255 then
-          begin
-//              Inc(Compare[0]);
-//              Compare[Length(Compare)] := Ch;
-            Compare := Compare + Ch;
-          end;
-          GetCh;
-          Done := Done or (Ch in [ThtChar('1')..ThtChar('6')]) and (Compare = 'H');
-        end;
+  Compare := '';
+  while True do
+    case LCh of
+      '/':
+      begin
+        if Length(Compare) > 0 then {allow xhtml's <br/>, etc }
+          break;
+        // faster than: Compare := Compare + LCh;
+        SetLength(Compare, Length(Compare) + 1);
+        Compare[Length(Compare)] := LCh;
+        GetCh;
+      end;
+
+      'a'..'z', 'A'..'Z', '_':
+      begin
+        // faster than: Compare := Compare + LCh;
+        SetLength(Compare, Length(Compare) + 1);
+        Compare[Length(Compare)] := LCh;
+        GetCh;
+      end;
+
+      '0'..'9':
+      begin
+        if (Compare = 'H') or (Compare = 'h') then
+          break;
+        // faster than: Compare := Compare + LCh;
+        SetLength(Compare, Length(Compare) + 1);
+        Compare[Length(Compare)] := LCh;
+        GetCh;
+      end;
     else
-      Done := True;
+      break;
     end;
-  for I := 1 to MaxRes do
-    if Compare = ResWords[I] then
-    begin
+
+  if Length(Compare) > 0 then
+  begin
+    if ReservedWords.Find(htUpperCase(Compare), I) then
       if not EndTag then
-        Sy := ResSy[I]
-      else if I <= MaxEndRes then
-        Sy := EndResSy[I]; {else Sy  := CommandSy}
-      Break;
-    end;
+        Sy := PResWord(ReservedWords.Objects[I]).Symbol
+      else
+      begin
+        Sy := PResWord(ReservedWords.Objects[I]).EndSym;
+        if Sy = HtmlSy then
+          Sy := CommandSy;
+      end;
+  end;
+
   SkipWhiteSpace;
   Value := 0;
-  if ((Sy = HeadingSy) or (Sy = HeadingEndSy)) and (Ch in [ThtChar('1')..ThtChar('6')]) then
+  if ((Sy = HeadingSy) or (Sy = HeadingEndSy)) and (LCh in [ThtChar('1')..ThtChar('6')]) then
   begin
-    Value := ord(Ch) - ord('0');
+    Value := ord(LCh) - ord('0');
     GetCh;
   end;
 
@@ -990,7 +890,7 @@ begin
   while GetAttribute(Sym, SymStr, AttrStr, L) do
     Attributes.Add(TAttribute.Create(Sym, L, SymStr, AttrStr, PropStack.Last.Codepage));
 
-  while (Ch <> GreaterChar) and (Ch <> EofChar) do
+  while (LCh <> GreaterChar) and (LCh <> EofChar) do
     GetCh;
   if not (Sy in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
     GetCh;
@@ -1006,47 +906,49 @@ var
 begin
   Sy := TextSy;
   CodePage := PropStack.Last.CodePage;
-  Buffer := TCharCollection.Create;
-  try
-    Result := not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar]);
-    while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar]) do
-    begin
-      while LCh = AmperChar do
-        GetEntity(LCToken, CodePage);
-
-      // Get any normal text.
+  Result := not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar]);
+  if Result then
+  begin
+    Buffer := TCharCollection.Create;
+    try
       repeat
-        SaveIndex := PropStack.SIndex;
-        // Collect all leading white spaces.
-        if LCh in [SpcChar, CrChar, LfChar, TabChar] then
-        begin
-          if not LinkSearch then
-            Buffer.Add(SpcChar, SaveIndex);
-          // Skip other white spaces.
-          repeat
-            GetCh;
-          until not (LCh in [SpcChar, CrChar, LfChar, TabChar]);
-        end;
-        // Collect any non-white space characters which are not special.
-        while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar, SpcChar, CrChar, LfChar, TabChar]) do
-        begin
-          if not LinkSearch then
-            Buffer.Add(LCh, PropStack.SIndex);
-          GetCh;
-        end;
-      until (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar]);
-      if Buffer.Size > 0 then
-      begin
-        LCToken.AddString(Buffer);
-        Buffer.Clear;
-      end;
-    end;
+        while LCh = AmperChar do
+          GetEntity(LCToken, CodePage);
 
-    // Flush any pending ANSI ThtString data.
-    if Buffer.Size > 0 then
-      LCToken.AddString(Buffer);
-  finally
-    Buffer.Free;
+        // Get any normal text.
+        repeat
+          SaveIndex := PropStack.SIndex;
+          // Collect all leading white spaces.
+          if LCh in [SpcChar, CrChar, LfChar, TabChar] then
+          begin
+            if not LinkSearch then
+              Buffer.Add(SpcChar, SaveIndex);
+            // Skip other white spaces.
+            repeat
+              GetCh;
+            until not (LCh in [SpcChar, CrChar, LfChar, TabChar]);
+          end;
+          // Collect any non-white space characters which are not special.
+          while not (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar, SpcChar, CrChar, LfChar, TabChar]) do
+          begin
+            if not LinkSearch then
+              Buffer.Add(LCh, PropStack.SIndex);
+            GetCh;
+          end;
+        until (LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar, AmperChar]);
+        if Buffer.Size > 0 then
+        begin
+          LCToken.AddString(Buffer);
+          Buffer.Clear;
+        end;
+      until LCh in [ThtChar(#1)..ThtChar(#8), EOFChar, LessChar];
+
+      // Flush any pending ANSI ThtString data.
+      if Buffer.Size > 0 then
+        LCToken.AddString(Buffer);
+    finally
+      Buffer.Free;
+    end;
   end;
 end;
 
@@ -1077,23 +979,7 @@ begin
 end;
 
 procedure THtmlParser.PopAProp(const Tag: ThtString);
-{pop and free a TProperties from the Prop stack.  It should be on top but in
- case of a nesting error, find it anyway}
-//var
-//  I, J: Integer;
 begin
-//  for I := PropStackIndex downto 1 do
-//    if PropStack[I].Proptag = Tag then
-//    begin
-//      if PropStack[I].GetBorderStyle <> bssNone then
-//      {this would be the end of an inline border}
-//        PropStack.MasterList.ProcessInlines(PropStack.SIndex, PropStack[I], False);
-//      PropStack.Delete(I);
-//      if I > 1 then {update any stack items which follow the deleted one}
-//        for J := I to PropStackIndex do
-//          PropStack[J].Update(PropStack[J - 1], PropStack.MasterList.Styles, J);
-//      Break;
-//    end;
   PropStack.PopAProp(Tag);
 end;
 
@@ -2006,13 +1892,13 @@ var
     begin
       Text := LessChar;
       GetCh;
-      if not (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('/')]) then
+      if not (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('/')]) then
       begin
         Sy := TextSy;
         Exit;
       end;
       Sy := CommandSy; {catch all}
-      while (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('/')]) do
+      while (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('/')]) do
       begin
         Text := Text + LCh;
         GetCh;
@@ -2391,7 +2277,7 @@ var
         CurrentUrlTarget, SectionList, True);
       Done := False;
       while not Done do
-        case Ch of
+        case LCh of
           '<':
             begin
               Next;
@@ -2411,7 +2297,7 @@ var
                     PopAProp('br');
                     Section := TPreFormated.Create(PropStack.MasterList, nil, PropStack.Last,
                       CurrentUrlTarget, SectionList, False);
-                    if Ch = CrChar then
+                    if LCh = CrChar then
                       GetCh;
                   end;
                 PSy:
@@ -2429,7 +2315,7 @@ var
                       Section.CheckFree;
                       Section.Free;
                     end;
-                    if Ch = CrChar then
+                    if LCh = CrChar then
                       GetCh;
                     PushNewProp('p', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
                     PBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
@@ -2571,10 +2457,9 @@ var
                     IX := PropStack.SIndex;
                     DoObjectTag(C, N, IX);
                     LCh := C;
-                    Ch := htUpCase(LCh);
                     Doc.Position := N;
                     PropStack.SIndex := IX;
-                    if Ch = CrChar then
+                    if LCh = CrChar then
                       GetCh;
                   end;
                 PageSy:
@@ -3197,6 +3082,8 @@ begin
   LineCount := 1;
   Index := '1';
   EndSym := EndSymbFromSymb(Sym);
+  if EndSym = CommandSy then
+    EndSym := HtmlSy;
   Plain := False;
   if (Sym = OLSy) then
   begin
@@ -3576,7 +3463,6 @@ begin
       StyleSy:
         begin
           DoStyle(PropStack.MasterList.Styles, LCh, Doc, '', False);
-          Ch := htUpCase(LCh); {LCh is returned so next ThtChar is available}
           Next;
         end;
 
@@ -3631,12 +3517,7 @@ end;
 {----------------ParseInit}
 
 procedure THtmlParser.ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
-//const
-//  NullsAllowed = 100;
-//var
-//  I, Num: Integer;
 begin
-  //LoadStyle := lsString;
   SectionList := TSectionList(ASectionList);
   PropStack.MasterList := TSectionList(SectionList);
   CallingObject := TSectionList(ASectionList).TheOwner;
@@ -3646,21 +3527,8 @@ begin
   PropStack[0].CopyDefault(PropStack.MasterList.Styles.DefProp);
   PropStack.SIndex := -1;
 
-//  Num := 0;
-//  I := Pos(#0, DocS);
-//  while (I > 0) and (Num < NullsAllowed) do
-//  begin {be somewhat forgiving if there are a few nulls}
-//    DocS[I] := SpcChar;
-//    I := Pos(#0, DocS);
-//    Inc(Num);
-//  end;
-//  if I > 0 then
-//    SetLength(DocS, I - 1); {file has a problem, too many Nulls}
   if CallingObject is ThtmlViewer then
     ThtmlViewer(CallingObject).CodePage := PropStack[0].CodePage;
-//  Buff := PhtChar(DocS);
-//  BuffEnd := Buff + Length(DocS);
-//  IBuff := nil;
 
   BodyBlock := TBodyBlock.Create(PropStack.MasterList, PropStack[0], SectionList, nil);
   SectionList.Add(BodyBlock, TagIndex);
@@ -3782,7 +3650,7 @@ begin
       CurrentUrlTarget, SectionList, False);
     Done := False;
     while not Done do
-      case Ch of
+      case LCh of
         ^M:
           begin NewSection; GetCh; end;
         #0: Done := True;
@@ -4020,28 +3888,43 @@ begin
       SaveIndex := PropStack.SIndex;
       GetCh;
       case LCh of
-        '#': // Numeric value.
+        AmperChar: // Numeric value.
           begin
             GetCh;
-            if Ch = 'X' then
+            if LCh in [ThtChar('x'), ThtChar('X')] then
             begin
-            // Hex digits given.
+              // Hex digits given.
               X := LCh; {either 'x' or 'X', save in case of error}
               GetCh;
-              if Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] then
-              begin
-                I := 0;
-                while Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] do
-                begin
-                  if Ch in [ThtChar('0')..ThtChar('9')] then
-                    I := 16 * I + (Ord(Ch) - Ord('0'))
-                  else
-                    I := 16 * I + (Ord(Ch) - Ord('A') + 10);
-                  GetCh;
+              N := 0;
+              I := 0;
+              while True do
+                case LCh of
+                  '0'..'9':
+                  begin
+                    Inc(N);
+                    I := 16 * I + (Ord(LCh) - Ord('0'));
+                  end;
+
+                  'A'..'Z':
+                  begin
+                    Inc(N);
+                    I := 16 * I + (Ord(LCh) - Ord('A') + 10);
+                  end;
+
+                  'a'..'z':
+                  begin
+                    Inc(N);
+                    I := 16 * I + (Ord(LCh) - Ord('a') + 10);
+                  end;
+                else
+                  break;
                 end;
+              if N > 0 then
+              begin
                 AddNumericChar(I, False);
-              // Skip the trailing semicolon.
-                if Ch = ';' then
+                // Skip the trailing semicolon.
+                if LCh = ';' then
                   GetCh;
               end
               else
@@ -4052,22 +3935,30 @@ begin
             end
             else
             begin
-            // Decimal digits given.
-              if Ch in [ThtChar('0')..ThtChar('9')] then
-              begin
-                I := 0;
-                while Ch in [ThtChar('0')..ThtChar('9')] do
-                begin
-                  I := 10 * I + (Ord(Ch) - Ord('0'));
-                  GetCh;
+              // Decimal digits given.
+              N := 0;
+              I := 0;
+              while True do
+                case LCh of
+                  '0'..'9':
+                  begin
+                    Inc(N);
+                    I := 16 * I + (Ord(LCh) - Ord('0'));
+                  end;
+                else
+                  break;
                 end;
+              if N > 0 then
+              begin
                 AddNumericChar(I, False);
-              // Skip the trailing semicolon.
-                if Ch = ';' then
+                // Skip the trailing semicolon.
+                if LCh = ';' then
                   GetCh;
               end
               else
+              begin
                 Buffer.Add(AmperChar, SaveIndex);
+              end;
             end;
           end;
       else
@@ -4076,7 +3967,7 @@ begin
         try
           N := 0;
           // Pick up the entity name.
-          while (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
+          while (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
           begin
             Entity.Add(LCh, PropStack.SIndex);
             GetCh;
@@ -4088,7 +3979,7 @@ begin
           begin
             AddNumericChar(PEntity(Entities.Objects[I]).Value, True);
             // Advance current pointer to first character after the semicolon.
-            if Ch = ';' then
+            if LCh = ';' then
               GetCh;
           end
           else
@@ -4153,44 +4044,65 @@ begin
       '#': // Numeric value.
         begin
           NextCh;
-          if Ch = 'X' then
+          if LCh in [ThtChar('x'), ThtChar('X')] then
           begin
-          // Hex digits given.
+            // Hex digits given.
             NextCh;
-            if Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] then
-            begin
-              I := 0;
-              while Ch in [ThtChar('A')..ThtChar('F'), ThtChar('0')..ThtChar('9')] do
-              begin
-                if Ch in [ThtChar('0')..ThtChar('9')] then
-                  I := 16 * I + (Ord(Ch) - Ord('0'))
-                else
-                  I := 16 * I + (Ord(Ch) - Ord('A') + 10);
-                GetCh;
+            N := 0;
+            I := 0;
+            while True do
+              case LCh of
+                '0'..'9':
+                begin
+                  Inc(N);
+                  I := 16 * I + (Ord(LCh) - Ord('0'));
+                end;
+
+                'A'..'Z':
+                begin
+                  Inc(N);
+                  I := 16 * I + (Ord(LCh) - Ord('A') + 10);
+                end;
+
+                'a'..'z':
+                begin
+                  Inc(N);
+                  I := 16 * I + (Ord(LCh) - Ord('a') + 10);
+                end;
+              else
+                break;
               end;
+            if N > 0 then
+            begin
               AddNumericChar(I, False);
-            // Skip the trailing semicolon.
-              if Ch = ';' then
-                NextCh;
+              // Skip the trailing semicolon.
+              if LCh = ';' then
+                GetCh;
             end
             else
               Result := Collect;
           end
           else
           begin
-          // Decimal digits given.
-            if Ch in [ThtChar('0')..ThtChar('9')] then
-            begin
-              I := 0;
-              while Ch in [ThtChar('0')..ThtChar('9')] do
-              begin
-                I := 10 * I + (Ord(Ch) - Ord('0'));
-                NextCh;
+            // Decimal digits given.
+            N := 0;
+            I := 0;
+            while True do
+              case LCh of
+                '0'..'9':
+                begin
+                  Inc(N);
+                  I := 16 * I + (Ord(LCh) - Ord('0'));
+                end;
+              else
+                break;
               end;
+            if N > 0 then
+            begin
               AddNumericChar(I, False);
-            // Skip the trailing semicolon.
-              if Ch = ';' then
-                NextCh;
+              // Skip the trailing semicolon.
+              if LCh = ';' then
+                GetCh;
             end
             else
               Result := Collect;
@@ -4201,7 +4113,7 @@ begin
       Entity := '';
       N := 0;
       // Pick up the entity name.
-      while (Ch in [ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
+      while (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
       begin
         Entity := Entity + LCh;
         NextCh;
@@ -4213,7 +4125,7 @@ begin
       if Entities.Find(Entity, I) then
       begin
         Value := PEntity(Entities.Objects[I]).Value;
-        if Ch = ';' then
+        if LCh = ';' then
         begin
           AddNumericChar(Value, True);
           // Advance current pointer to first character after the semicolon.
@@ -4231,9 +4143,8 @@ end;
 // Taken from http://www.w3.org/TR/REC-html40/sgml/entities.html.
 
 const
-  EntityCount = 253;
   // Note: the entities will be sorted into a ThtStringList to make binary search possible.
-  EntityDefinitions: array[0..EntityCount - 1] of TEntity = (
+  EntityDefinitions: array[1..253] of TEntity = (
     // ISO 8859-1 characters
     (Name: 'nbsp'; Value: 160), // no-break space = non-breaking space, U+00A0 ISOnum
     (Name: 'iexcl'; Value: 161), // inverted exclamation mark, U+00A1 ISOnum
@@ -4534,7 +4445,7 @@ const
     (Name: 'euro'; Value: 8364) //  euro sign, U+20AC NEW
     );
 
-procedure SortEntities;
+procedure InitEntities;
 var
   I: Integer;
 begin
@@ -4543,18 +4454,254 @@ begin
   begin
     Entities := ThtStringList.Create;
     Entities.CaseSensitive := True;
-    for I := 0 to EntityCount - 1 do
+    for I := low(EntityDefinitions) to high(EntityDefinitions) do
       Entities.AddObject(EntityDefinitions[I].Name, @EntityDefinitions[I]);
     Entities.Sort;
   end;
 end;
 
+
+const
+  ResWordDefinitions: array[1..82] of TResWord = (
+    (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
+    (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
+    (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
+    (Name: 'HEAD';        Symbol: HeadSy;       EndSym: HeadEndSy),
+    (Name: 'B';           Symbol: BSy;          EndSym: BEndSy),
+    (Name: 'I';           Symbol: ISy;          EndSym: IEndSy),
+    (Name: 'H';           Symbol: HeadingSy;    EndSym: HeadingEndSy),
+    (Name: 'EM';          Symbol: EmSy;         EndSym: EmEndSy),
+    (Name: 'STRONG';      Symbol: StrongSy;     EndSym: StrongEndSy),
+    (Name: 'U';           Symbol: USy;          EndSym: UEndSy),
+    (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
+    (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
+    (Name: 'TT';          Symbol: TTSy;         EndSym: TTEndSy),
+    (Name: 'CODE';        Symbol: CodeSy;       EndSym: CodeEndSy),
+    (Name: 'KBD';         Symbol: KbdSy;        EndSym: KbdEndSy),
+    (Name: 'SAMP';        Symbol: SampSy;       EndSym: SampEndSy),
+    (Name: 'OL';          Symbol: OLSy;         EndSym: OLEndSy),
+    (Name: 'UL';          Symbol: ULSy;         EndSym: ULEndSy),
+    (Name: 'DIR';         Symbol: DirSy;        EndSym: DirEndSy),
+    (Name: 'MENU';        Symbol: MenuSy;       EndSym: MenuEndSy),
+    (Name: 'DL';          Symbol: DLSy;         EndSym: DLEndSy),
+    (Name: 'A';           Symbol: ASy;          EndSym: AEndSy),
+    (Name: 'ADDRESS';     Symbol: AddressSy;    EndSym: AddressEndSy),
+    (Name: 'BLOCKQUOTE';  Symbol: BlockQuoteSy; EndSym: BlockQuoteEndSy),
+    (Name: 'PRE';         Symbol: PreSy;        EndSym: PreEndSy),
+    (Name: 'CENTER';      Symbol: CenterSy;     EndSym: CenterEndSy),
+    (Name: 'TABLE';       Symbol: TableSy;      EndSym: TableEndSy),
+    (Name: 'TD';          Symbol: TDsy;         EndSym: TDEndSy),
+    (Name: 'TH';          Symbol: THSy;         EndSym: THEndSy),
+    (Name: 'CAPTION';     Symbol: CaptionSy;    EndSym: CaptionEndSy),
+    (Name: 'FORM';        Symbol: FormSy;       EndSym: FormEndSy),
+    (Name: 'TEXTAREA';    Symbol: TextAreaSy;   EndSym: TextAreaEndSy),
+    (Name: 'SELECT';      Symbol: SelectSy;     EndSym: SelectEndSy),
+    (Name: 'OPTION';      Symbol: OptionSy;     EndSym: OptionEndSy),
+    (Name: 'FONT';        Symbol: FontSy;       EndSym: FontEndSy),
+    (Name: 'SUB';         Symbol: SubSy;        EndSym: SubEndSy),
+    (Name: 'SUP';         Symbol: SupSy;        EndSym: SupEndSy),
+    (Name: 'BIG';         Symbol: BigSy;        EndSym: BigEndSy),
+    (Name: 'SMALL';       Symbol: SmallSy;      EndSym: SmallEndSy),
+    (Name: 'P';           Symbol: PSy;          EndSym: PEndSy),
+    (Name: 'MAP';         Symbol: MapSy;        EndSym: MapEndSy),
+    (Name: 'FRAMESET';    Symbol: FrameSetSy;   EndSym: FrameSetEndSy),
+    (Name: 'NOFRAMES';    Symbol: NoFramesSy;   EndSym: NoFramesEndSy),
+    (Name: 'SCRIPT';      Symbol: ScriptSy;     EndSym: ScriptEndSy),
+    (Name: 'DIV';         Symbol: DivSy;        EndSym: DivEndSy),
+    (Name: 'S';           Symbol: SSy;          EndSym: SEndSy),
+    (Name: 'STRIKE';      Symbol: StrikeSy;     EndSym: StrikeEndSy),
+    (Name: 'TR';          Symbol: TRSy;         EndSym: TREndSy),
+    (Name: 'NOBR';        Symbol: NoBrSy;       EndSym: NoBrEndSy),
+    (Name: 'STYLE';       Symbol: StyleSy;      EndSym: StyleEndSy),
+    (Name: 'SPAN';        Symbol: SpanSy;       EndSym: SpanEndSy),
+    (Name: 'COLGROUP';    Symbol: ColGroupSy;   EndSym: ColGroupEndSy),
+    (Name: 'LABEL';       Symbol: LabelSy;      EndSym: LabelEndSy),
+    (Name: 'THEAD';       Symbol: THeadSy;      EndSym: THeadEndSy),
+    (Name: 'TBODY';       Symbol: TBodySy;      EndSym: TBodyEndSy),
+    (Name: 'TFOOT';       Symbol: TFootSy;      EndSym: TFootEndSy),
+    (Name: 'OBJECT';      Symbol: ObjectSy;     EndSym: ObjectEndSy),
+    (Name: 'DD';          Symbol: DDSy;         EndSym: DDEndSy),
+    (Name: 'DT';          Symbol: DTSy;         EndSym: DTEndSy),
+    (Name: 'LI';          Symbol: LISy;         EndSym: LIEndSy),
+    (Name: 'FIELDSET';    Symbol: FieldsetSy;   EndSym: FieldsetEndSy),
+    (Name: 'LEGEND';      Symbol: LegendSy;     EndSym: LegendEndSy),
+    (Name: 'BR';          Symbol: BRSy;         EndSym: CommandSy),
+    (Name: 'HR';          Symbol: HRSy;         EndSym: CommandSy),
+    (Name: 'IMG';         Symbol: ImageSy;      EndSym: CommandSy),
+    (Name: 'BASE';        Symbol: BaseSy;       EndSym: CommandSy),
+    (Name: 'BUTTON';      Symbol: ButtonSy;     EndSym: CommandSy),
+    (Name: 'INPUT';       Symbol: InputSy;      EndSym: CommandSy),
+    (Name: 'SELECTED';    Symbol: SelectedSy;   EndSym: CommandSy),
+    (Name: 'BASEFONT';    Symbol: BaseFontSy;   EndSym: CommandSy),
+    (Name: 'AREA';        Symbol: AreaSy;       EndSym: CommandSy),
+    (Name: 'FRAME';       Symbol: FrameSy;      EndSym: CommandSy),
+    (Name: 'PAGE';        Symbol: PageSy;       EndSym: CommandSy),
+    (Name: 'BGSOUND';     Symbol: BgSoundSy;    EndSym: CommandSy),
+    (Name: 'WRAP';        Symbol: WrapSy;       EndSym: CommandSy),
+    (Name: 'META';        Symbol: MetaSy;       EndSym: CommandSy),
+    (Name: 'PANEL';       Symbol: PanelSy;      EndSym: CommandSy),
+    (Name: 'WBR';         Symbol: WbrSy;        EndSym: CommandSy),
+    (Name: 'LINK';        Symbol: LinkSy;       EndSym: CommandSy),
+    (Name: 'COL';         Symbol: ColSy;        EndSym: CommandSy),
+    (Name: 'PARAM';       Symbol: ParamSy;      EndSym: CommandSy),
+    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy)
+    );
+
+procedure SetSymbolName(Sy: Symb; Name: ThtString);
+begin
+  Name := htLowerCase(Name);
+  if SymbolNames[Sy] <> '' then
+    assert(SymbolNames[Sy] = Name, 'Different names for same symbol!');
+  SymbolNames[Sy] := Name;
+end;
+
+procedure InitReservedWords;
+var
+  I: Integer;
+  P: PResWord;
+  S: Symb;
+begin
+  // Put the Attributes into a sorted StringList for faster access.
+  if ReservedWords = nil then
+  begin
+    ReservedWords := ThtStringList.Create;
+    ReservedWords.CaseSensitive := True;
+    for I := low(ResWordDefinitions) to high(ResWordDefinitions) do
+      ReservedWords.AddObject(ResWordDefinitions[I].Name, @ResWordDefinitions[I]);
+    ReservedWords.Sort;
+
+    // initialize ReservedWordsIndex and SymbolNames
+    for S := low(Symb) to high(Symb) do
+      ReservedWordsIndex[S] := -1;
+    for I := 0 to ReservedWords.Count - 1 do
+    begin
+      P := PResWord(ReservedWords.Objects[I]);
+      ReservedWordsIndex[P.Symbol] := I;
+      SetSymbolName(P.Symbol, P.Name);
+      if P.EndSym <> CommandSy then
+      begin
+        ReservedWordsIndex[P.EndSym] := I;
+        SetSymbolName(P.EndSym, P.Name);
+      end;
+    end;
+  end;
+end;
+
+const
+  AttribDefinitions: array[1..84] of TSymbolRec = (
+    (Name: 'HREF';              Value: HrefSy),
+    (Name: 'NAME';              Value: NameSy),
+    (Name: 'SRC';               Value: SrcSy),
+    (Name: 'ALT';               Value: AltSy),
+    (Name: 'ALIGN';             Value: AlignSy),
+    (Name: 'TEXT';              Value: TextSy),
+    (Name: 'BGCOLOR';           Value: BGColorSy),
+    (Name: 'LINK';              Value: LinkSy),
+    (Name: 'BACKGROUND';        Value: BackgroundSy),
+    (Name: 'COLSPAN';           Value: ColSpanSy),
+    (Name: 'ROWSPAN';           Value: RowSpanSy),
+    (Name: 'BORDER';            Value: BorderSy),
+    (Name: 'CELLPADDING';       Value: CellPaddingSy),
+    (Name: 'CELLSPACING';       Value: CellSpacingSy),
+    (Name: 'VALIGN';            Value: VAlignSy),
+    (Name: 'WIDTH';             Value: WidthSy),
+    (Name: 'START';             Value: StartSy),
+    (Name: 'VALUE';             Value: ValueSy),
+    (Name: 'TYPE';              Value: TypeSy),
+    (Name: 'CHECKBOX';          Value: CheckBoxSy),
+    (Name: 'RADIO';             Value: RadioSy),
+    (Name: 'METHOD';            Value: MethodSy),
+    (Name: 'ACTION';            Value: ActionSy),
+    (Name: 'CHECKED';           Value: CheckedSy),
+    (Name: 'SIZE';              Value: SizeSy),
+    (Name: 'MAXLENGTH';         Value: MaxLengthSy),
+    (Name: 'COLS';              Value: ColsSy),
+    (Name: 'ROWS';              Value: RowsSy),
+    (Name: 'MULTIPLE';          Value: MultipleSy),
+    (Name: 'VALUE';             Value: ValueSy),
+    (Name: 'SELECTED';          Value: SelectedSy),
+    (Name: 'FACE';              Value: FaceSy),
+    (Name: 'COLOR';             Value: ColorSy),
+    (Name: 'TRANSP';            Value: TranspSy),
+    (Name: 'CLEAR';             Value: ClearSy),
+    (Name: 'ISMAP';             Value: IsMapSy),
+    (Name: 'BORDERCOLOR';       Value: BorderColorSy),
+    (Name: 'USEMAP';            Value: UseMapSy),
+    (Name: 'SHAPE';             Value: ShapeSy),
+    (Name: 'COORDS';            Value: CoordsSy),
+    (Name: 'NOHREF';            Value: NoHrefSy),
+    (Name: 'HEIGHT';            Value: HeightSy),
+    (Name: 'PLAIN';             Value: PlainSy),
+    (Name: 'TARGET';            Value: TargetSy),
+    (Name: 'NORESIZE';          Value: NoResizeSy),
+    (Name: 'SCROLLING';         Value: ScrollingSy),
+    (Name: 'HSPACE';            Value: HSpaceSy),
+    (Name: 'LANGUAGE';          Value: LanguageSy),
+    (Name: 'FRAMEBORDER';       Value: FrameBorderSy),
+    (Name: 'MARGINWIDTH';       Value: MarginWidthSy),
+    (Name: 'MARGINHEIGHT';      Value: MarginHeightSy),
+    (Name: 'LOOP';              Value: LoopSy),
+    (Name: 'ONCLICK';           Value: OnClickSy),
+    (Name: 'WRAP';              Value: WrapSy),
+    (Name: 'NOSHADE';           Value: NoShadeSy),
+    (Name: 'HTTP-EQUIV';        Value: HttpEqSy),
+    (Name: 'CONTENT';           Value: ContentSy),
+    (Name: 'ENCTYPE';           Value: EncTypeSy),
+    (Name: 'VLINK';             Value: VLinkSy),
+    (Name: 'OLINK';             Value: OLinkSy),
+    (Name: 'ACTIVE';            Value: ActiveSy),
+    (Name: 'VSPACE';            Value: VSpaceSy),
+    (Name: 'CLASS';             Value: ClassSy),
+    (Name: 'ID';                Value: IDSy),
+    (Name: 'STYLE';             Value: StyleSy),
+    (Name: 'REL';               Value: RelSy),
+    (Name: 'REV';               Value: RevSy),
+    (Name: 'NOWRAP';            Value: NoWrapSy),
+    (Name: 'BORDERCOLORLIGHT';  Value: BorderColorLightSy),
+    (Name: 'BORDERCOLORDARK';   Value: BorderColorDarkSy),
+    (Name: 'CHARSET';           Value: CharSetSy),
+    (Name: 'RATIO';             Value: RatioSy),
+    (Name: 'TITLE';             Value: TitleSy),
+    (Name: 'ONFOCUS';           Value: OnFocusSy),
+    (Name: 'ONBLUR';            Value: OnBlurSy),
+    (Name: 'ONCHANGE';          Value: OnChangeSy),
+    (Name: 'SPAN';              Value: SpanSy),
+    (Name: 'TABINDEX';          Value: TabIndexSy),
+    (Name: 'BGPROPERTIES';      Value: BGPropertiesSy),
+    (Name: 'DISABLED';          Value: DisabledSy),
+    (Name: 'TOPMARGIN';         Value: TopMarginSy),
+    (Name: 'LEFTMARGIN';        Value: LeftMarginSy),
+    (Name: 'LABEL';             Value: LabelSy),
+    (Name: 'READONLY';          Value: ReadonlySy));
+
+procedure InitAttributes;
+var
+  I: Integer;
+  P: PSymbol;
+begin
+  // Put the Attributes into a sorted StringList for faster access.
+  if AttributeNames = nil then
+  begin
+    AttributeNames := ThtStringList.Create;
+    AttributeNames.CaseSensitive := True;
+    for I := low(AttribDefinitions) to high(AttribDefinitions) do
+    begin
+      P := @AttribDefinitions[I];
+      AttributeNames.AddObject(P.Name, Pointer(P));
+      SetSymbolName(P.Value, P.Name);
+    end;
+    AttributeNames.Sort;
+  end;
+end;
+
 initialization
   PropStack := THtmlPropStack.Create;
-  SortEntities;
-
+  InitEntities;
+  InitAttributes;
+  InitReservedWords;
 finalization
-
   PropStack.Free;
   Entities.Free;
+  AttributeNames.Free;
+  ReservedWords.Free;
 end.

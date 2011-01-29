@@ -79,7 +79,8 @@ type
     bjsX0208_1983   // ESC $ B
   );
 
-  TBuffArray = array of byte;
+  TBuffArray = array of Byte;
+  TBuffArray4 = array [0..3] of Byte;
 
   // BG, 17.12.2010: helps converting any kind of stream to WideChars.
   TBuffer = class
@@ -94,14 +95,14 @@ type
     FCodePage: TBuffCodePage;
     FInitalCodePage: TBuffCodePage;
     function GetNext: Word; {$ifdef UseInline} inline; {$endif}
-    function GetNextEucAsShiftJis: TBuffArray; {$ifdef UseInline} inline; {$endif}
-    function GetNextJisAsShiftJis: TBuffArray;
-    function GetAsShiftJis(j, k: Word): TBuffArray; {$ifdef UseInline} inline; {$endif}
-    function GetPosition: Integer;
+    function GetNextEucAsShiftJis(var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetNextJisAsShiftJis(var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetAsShiftJis(j, k: Word; var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetPosition: Integer; {$ifdef UseInline} inline; {$endif}
     procedure DetectCodePage;
     procedure Reset;
-    procedure SetStream(Stream: TStream);
-    procedure SetPostion(const Value: Integer);
+    procedure SetStream(Stream: TStream); {$ifdef UseInline} inline; {$endif}
+    procedure SetPostion(const Value: Integer); {$ifdef UseInline} inline; {$endif}
   protected
   public
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
@@ -112,7 +113,7 @@ type
     procedure AssignTo(Destin: TObject);
     function AsString: TBuffString;
     function NextChar: TBuffChar;
-    function PeekChar: TBuffChar;
+    function PeekChar: TBuffChar;  {$ifdef UseInline} inline; {$endif}
     function Size: Integer;
     property Name: TBuffString read FName;
     property CharSet: TBuffCharSet read FCharSet write FCharSet;
@@ -490,7 +491,8 @@ var
 begin
   I := Length(Text) * sizeof(TBuffChar);
   SetLength(FBuffer, I);
-  Move(Text[1], FBuffer[0], I);
+  if I > 0 then
+    Move(Text[1], FBuffer[0], I);
   Reset;
   FName := Name;
   FCodePage := CP_UTF16LE;
@@ -635,22 +637,22 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function TBuffer.GetNextEucAsShiftJis: TBuffArray;
+function TBuffer.GetNextEucAsShiftJis(var Buffer: TBuffArray4): Integer;
 var
   Chr: Word;
 begin
   Chr := GetNext;
   if Chr <= $A0 then
   begin
-    SetLength(Result, 1);
-    Result[0] := Chr;
+    Buffer[0] := Chr;
+    Result := 1;
   end
   else
-    Result := GetAsShiftJis(Chr, GetNext);
+    Result := GetAsShiftJis(Chr, GetNext, Buffer);
 end;
 
 //------------------------------------------------------------------------------
-function TBuffer.GetNextJisAsShiftJis: TBuffArray;
+function TBuffer.GetNextJisAsShiftJis(var Buffer: TBuffArray4): Integer;
 {
   The following table gives the escape sequences and the character sets
   used in "ISO-2022-JP" messages. The reg# is the registration number
@@ -690,6 +692,7 @@ var
   Pos: Integer;
   Chr: Word;
 begin
+  Result := 0;
   while FPos.AnsiChr < FEnd.AnsiChr do
   begin
     Chr := GetNext;
@@ -741,32 +744,32 @@ begin
       bjsAscii,
       bjsX0201_1976:
         begin
-          SetLength(Result, 1);
-          Result[0] := Chr;
+          Buffer[0] := Chr;
+          Result := 1;
         end;
 
       {two byte codes / 94 character sets}
       bjsX0208_1978,
       bjsX0208_1983:
-        Result := GetAsShiftJis(Chr, GetNext);
+        Result := GetAsShiftJis(Chr, GetNext, Buffer);
     end;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function TBuffer.GetAsShiftJis(j, k: Word): TBuffArray;
+function TBuffer.GetAsShiftJis(j, k: Word; var Buffer: TBuffArray4): Integer;
 // core method to convert a 2 byte EUC-JP resp. X0208 code to ShiftJIS
 var
   s, t: Word;
 begin
   if (j = 0) or (k = 0) then
   begin
-    SetLength(Result, 1);
-    Result[0] := 0;
+    Buffer[0] := 0;
+    Result := 1;
     exit;
   end;
   
-  SetLength(Result, 2);
+  Result := 2;
 
   {first byte}
   //j := FPos.BytePtr^ and $7F; {and $7F just for safety}
@@ -774,7 +777,7 @@ begin
     s := (j + 1) div 2 + 112
   else
     s := (j + 1) div 2 + 176;
-  Result[0] := s;
+  Buffer[0] := s;
 
   {second byte}
   //k := FPos.BytePtr^ and $7F; {and $7F just for safety}
@@ -786,7 +789,7 @@ begin
   end
   else
     t := k + 126;
-  Result[1] := t;
+  Buffer[1] := t;
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
@@ -799,10 +802,11 @@ end;
 function TBuffer.NextChar: TBuffChar;
 var
   Buffer: Word;
-  Buffer2: TBuffArray;
   Chr: Cardinal;
+  Buffer2: TBuffArray4;
+  Len: Integer;
 begin
-  Buffer2 := nil; // valium for the compiler
+  //Buffer2 := nil; // valium for the compiler
   case FCodePage of
     CP_UTF16LE:
       Result := TBuffChar(GetNext);
@@ -841,8 +845,8 @@ begin
     CP_ISO2022JP:
       if FPos.AnsiChr < FEnd.AnsiChr then
       begin
-        Buffer2 := GetNextJisAsShiftJis;
-        MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
+        Len := GetNextJisAsShiftJis(Buffer2);
+        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
       end
       else
         Result := TBuffChar(0);
@@ -850,15 +854,15 @@ begin
     CP_EUCJP:
       if FPos.AnsiChr < FEnd.AnsiChr then
       begin
-        Buffer2 := GetNextEucAsShiftJis;
-        MultiByteToWideChar(FCodePage, 0, @Buffer2[0], Length(Buffer2), @Result, 1);
+        Len := GetNextEucAsShiftJis(Buffer2);
+        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
       end
       else
         Result := TBuffChar(0);
   else
     Buffer := GetNext;
     if Buffer <> 0 then
-      MultiByteToWideChar(FCodePage, 0, @Buffer, 1, @Result, 1)
+      MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer), 1, @Result, 1)
     else
       Result := TBuffChar(0);
   end;
