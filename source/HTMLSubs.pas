@@ -8583,7 +8583,8 @@ var
   I, J, Min, Max, N, Span, Addon, Distributable, TotalPC, Accum,
     ExcessMin, ExcessMax, NonPC, PCWidth, NewTotalPC: Integer;
   More: boolean;
-
+  Cells: TCellList;
+  CellObj: TCellObj;
 begin
 {Find the max and min widths of each column}
   for I := 0 to NumCols - 1 do
@@ -8599,11 +8600,15 @@ begin
   begin
     More := False;
     for J := 0 to Rows.Count - 1 do
-      with TCellList(Rows[J]) do
+    begin
+      Cells := Rows[J];
+      for I := 0 to Cells.Count - 1 do
       begin
-        for I := 0 to Count - 1 do
-          if Assigned(Items[I]) then
-            with TCellObj(Items[I]) do
+        CellObj := Cells[I];
+        if CellObj <> nil then
+          with CellObj do
+          begin
+            if ColSpan = Span then
             begin
               PCWidth := 0;
               if WidthAttr > 0 then
@@ -8611,107 +8616,108 @@ begin
                   PCWidth := WidthAttr
                 else if TheWidth > 0 then
                   PCWidth := Math.Min(1000, MulDiv(WidthAttr, 1000, TheWidth));
-              More := More or (ColSpan > Span); {set if need another iteration}
-              if ColSpan = Span then
+
+              Cell.MinMaxWidth(Canvas, Min, Max);
+              Addon := CellSpacing + HzSpace;
+              Inc(Min, Addon);
+              Inc(Max, Addon);
+              if Span = 1 then
               begin
-                Cell.MinMaxWidth(Canvas, Min, Max);
-                Addon := CellSpacing + HzSpace;
-                Inc(Min, Addon);
-                Inc(Max, Addon);
-                if Span = 1 then
+                MaxWidths[I] := Math.Max(MaxWidths[I], Max);
+                MinWidths[I] := Math.Max(MinWidths[I], Min);
+                Percents[I] := Math.Max(Percents[I], PCWidth); {collect percents}
+              end
+              else
+              begin
+                TotalMaxWidth := 0; TotalMinWidth := 0;
+                TotalPC := 0; NonPC := 0;
+                for N := I to I + ColSpan - 1 do
+                begin {Total up the pertinant column widths}
+                  Inc(TotalMaxWidth, MaxWidths[N]);
+                  Inc(TotalMinWidth, MinWidths[N]);
+                  if Percents[N] > 0 then
+                    Inc(TotalPC, Percents[N]) {total percents}
+                  else
+                    Inc(NonPC); {count of cell with no percent}
+                end;
+                if Colspan = NumCols then
                 begin
-                  MaxWidths[I] := Math.Max(MaxWidths[I], Max);
-                  MinWidths[I] := Math.Max(MinWidths[I], Min);
-                  Percents[I] := Math.Max(Percents[I], PCWidth); {collect percents}
+                  TotalMinWidth := Math.Max(TotalMinWidth, TheWidth);
+                  TotalMaxWidth := Math.Max(TotalMaxWidth, TheWidth);
+                end;
+                ExcessMin := Min - TotalMinWidth;
+                ExcessMax := Max - TotalMaxWidth;
+                if (PCWidth > 0) or (TotalPC > 0) then
+                begin {manipulate for percentages}
+                  if NonPC > 0 then
+                  {find the extra percentages to divvy up}
+                    Distributable := Math.Max(0, (PCWidth - TotalPC) div NonPC)
+                  else
+                    Distributable := 0;
+                  if (NonPC = 0) and (PCWidth > TotalPC + 1) then
+                  begin
+                    for N := I to I + ColSpan - 1 do {stretch percentages to fit}
+                      Percents[N] := MulDiv(Percents[N], PCWidth, TotalPC);
+                  end
+                  else if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
+                    for N := I to I + ColSpan - 1 do
+                      if Percents[N] = 0 then
+                        Percents[N] := Distributable;
+                  NewTotalPC := Math.Max(TotalPC, PCWidth);
+                  if ExcessMin > 0 then
+                  begin
+                    if (NonPC > 0) and (TotalMaxWidth > 0) then {split excess over all cells}
+                    begin
+                    {proportion the distribution so cells with large MaxWidth get more}
+                      for N := I to I + ColSpan - 1 do
+                        Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], TotalMaxWidth));
+                    end
+                    else
+                      for N := I to I + ColSpan - 1 do
+                        Inc(MinWidths[N], (MulDiv(ExcessMin, Percents[N], NewTotalPC)));
+                  end;
+                  if ExcessMax > 0 then
+                    for N := I to I + ColSpan - 1 do
+                      Inc(MaxWidths[N], (MulDiv(ExcessMax, Percents[N], NewTotalPC)));
                 end
                 else
-                begin
-                  TotalMaxWidth := 0; TotalMinWidth := 0;
-                  TotalPC := 0; NonPC := 0;
-                  for N := I to I + ColSpan - 1 do
-                  begin {Total up the pertinant column widths}
-                    Inc(TotalMaxWidth, MaxWidths[N]);
-                    Inc(TotalMinWidth, MinWidths[N]);
-                    if Percents[N] > 0 then
-                      Inc(TotalPC, Percents[N]) {total percents}
-                    else
-                      Inc(NonPC); {count of cell with no percent}
-                  end;
-                  if Colspan = NumCols then
+                begin {no width dimensions entered}
+                  if ExcessMin > 0 then
                   begin
-                    TotalMinWidth := Math.Max(TotalMinWidth, TheWidth);
-                    TotalMaxWidth := Math.Max(TotalMaxWidth, TheWidth);
+                    Accum := 0;
+                    for N := I to I + ColSpan - 1 do
+                    begin
+                      if TotalMinWidth = 0 then
+                        MinWidths[N] := Min div ColSpan
+                      else {split up the widths in proportion to widths already there}
+                        MinWidths[N] := MulDiv(Min, MinWidths[N], TotalMinWidth);
+                      Inc(Accum, MinWidths[N]);
+                    end;
+                    if Accum < Min then {might be a roundoff pixel or two left over}
+                      Inc(MinWidths[I], Min - Accum);
                   end;
-                  ExcessMin := Min - TotalMinWidth;
-                  ExcessMax := Max - TotalMaxWidth;
-                  if (PCWidth > 0) or (TotalPC > 0) then
-                  begin {manipulate for percentages}
-                    if NonPC > 0 then
-                    {find the extra percentages to divvy up}
-                      Distributable := Math.Max(0, (PCWidth - TotalPC) div NonPC)
-                    else
-                      Distributable := 0;
-                    if (NonPC = 0) and (PCWidth > TotalPC + 1) then
+                  if ExcessMax > 0 then
+                  begin
+                    Accum := 0;
+                    for N := I to I + ColSpan - 1 do
                     begin
-                      for N := I to I + ColSpan - 1 do {stretch percentages to fit}
-                        Percents[N] := MulDiv(Percents[N], PCWidth, TotalPC);
-                    end
-                    else if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
-                      for N := I to I + ColSpan - 1 do
-                        if Percents[N] = 0 then
-                          Percents[N] := Distributable;
-                    NewTotalPC := Math.Max(TotalPC, PCWidth);
-                    if ExcessMin > 0 then
-                    begin
-                      if (NonPC > 0) and (TotalMaxWidth > 0) then {split excess over all cells}
-                      begin
-                      {proportion the distribution so cells with large MaxWidth get more}
-                        for N := I to I + ColSpan - 1 do
-                          Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], TotalMaxWidth));
-                      end
-                      else
-                        for N := I to I + ColSpan - 1 do
-                          Inc(MinWidths[N], (MulDiv(ExcessMin, Percents[N], NewTotalPC)));
+                      if TotalMaxWidth = 0 then
+                        MaxWidths[N] := Max div ColSpan
+                      else {split up the widths in proportion to widths already there}
+                        MaxWidths[N] := MulDiv(Max, MaxWidths[N], TotalMaxWidth);
+                      Inc(Accum, MaxWidths[N]);
                     end;
-                    if ExcessMax > 0 then
-                      for N := I to I + ColSpan - 1 do
-                        Inc(MaxWidths[N], (MulDiv(ExcessMax, Percents[N], NewTotalPC)));
-                  end
-                  else
-                  begin {no width dimensions entered}
-                    if ExcessMin > 0 then
-                    begin
-                      Accum := 0;
-                      for N := I to I + ColSpan - 1 do
-                      begin
-                        if TotalMinWidth = 0 then
-                          MinWidths[N] := Min div ColSpan
-                        else {split up the widths in proportion to widths already there}
-                          MinWidths[N] := MulDiv(Min, MinWidths[N], TotalMinWidth);
-                        Inc(Accum, MinWidths[N]);
-                      end;
-                      if Accum < Min then {might be a roundoff pixel or two left over}
-                        Inc(MinWidths[I], Min - Accum);
-                    end;
-                    if ExcessMax > 0 then
-                    begin
-                      Accum := 0;
-                      for N := I to I + ColSpan - 1 do
-                      begin
-                        if TotalMaxWidth = 0 then
-                          MaxWidths[N] := Max div ColSpan
-                        else {split up the widths in proportion to widths already there}
-                          MaxWidths[N] := MulDiv(Max, MaxWidths[N], TotalMaxWidth);
-                        Inc(Accum, MaxWidths[N]);
-                      end;
-                      if Accum < Max then {might be a roundoff pixel or two left over}
-                        Inc(MaxWidths[I], Max - Accum);
-                    end;
+                    if Accum < Max then {might be a roundoff pixel or two left over}
+                      Inc(MaxWidths[I], Max - Accum);
                   end;
                 end;
               end;
-            end;
+            end
+            else if ColSpan > Span then
+              More := True {set if need another iteration}
+          end;
       end;
+    end;
     Inc(Span);
   end;
 

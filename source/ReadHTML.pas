@@ -97,7 +97,7 @@ type
   private
     LCh: ThtChar;
     LastChar: (lcOther, lcCR, lcLF);
-    Value: Integer;
+    HeadingLevel: Integer;
     LCToken: TokenObj;
 
     Doc: TBuffer;
@@ -879,10 +879,10 @@ begin
   end;
 
   SkipWhiteSpace;
-  Value := 0;
+  HeadingLevel := 0;
   if ((Sy = HeadingSy) or (Sy = HeadingEndSy)) and (LCh in [ThtChar('1')..ThtChar('6')]) then
   begin
-    Value := ord(LCh) - ord('0');
+    HeadingLevel := ord(LCh) - ord('0');
     GetCh;
   end;
 
@@ -2786,10 +2786,10 @@ begin
         Next;
       end;
     HeadingSy:
-      if (Value in [1..6]) then
+      if (HeadingLevel in [1..6]) then
       begin
         SectionList.Add(Section, TagIndex);
-        HeadingStr := 'h' + IntToStr(Value);
+        HeadingStr := 'h' + IntToStr(HeadingLevel);
         PushNewProp(HeadingStr, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         CheckForAlign;
         SkipWhiteSpace;
@@ -3888,91 +3888,73 @@ begin
       SaveIndex := PropStack.SIndex;
       GetCh;
       case LCh of
-        AmperChar: // Numeric value.
-          begin
-            GetCh;
-            if LCh in [ThtChar('x'), ThtChar('X')] then
+        '#': // Numeric value.
+        begin
+          GetCh;
+          N := 0;
+          I := 0;
+          case LCh of
+            'x', 'X':
             begin
               // Hex digits given.
               X := LCh; {either 'x' or 'X', save in case of error}
               GetCh;
-              N := 0;
-              I := 0;
-              while True do
+              repeat
                 case LCh of
-                  '0'..'9':
-                  begin
-                    Inc(N);
-                    I := 16 * I + (Ord(LCh) - Ord('0'));
-                  end;
-
-                  'A'..'Z':
-                  begin
-                    Inc(N);
-                    I := 16 * I + (Ord(LCh) - Ord('A') + 10);
-                  end;
-
-                  'a'..'z':
-                  begin
-                    Inc(N);
-                    I := 16 * I + (Ord(LCh) - Ord('a') + 10);
-                  end;
+                  '0'..'9': I := 16 * I + (Ord(LCh) - Ord('0'));
+                  'A'..'Z': I := 16 * I + (Ord(LCh) - Ord('A') + 10);
+                  'a'..'z': I := 16 * I + (Ord(LCh) - Ord('a') + 10);
                 else
                   break;
                 end;
-              if N > 0 then
-              begin
-                AddNumericChar(I, False);
-                // Skip the trailing semicolon.
-                if LCh = ';' then
-                  GetCh;
-              end
-              else
-              begin
-                Buffer.Add(AmperChar, SaveIndex);
-                Buffer.Add(X, SaveIndex + 1);
-              end;
+                Inc(N);
+                GetCh;
+              until False;
             end
-            else
-            begin
-              // Decimal digits given.
-              N := 0;
-              I := 0;
-              while True do
-                case LCh of
-                  '0'..'9':
-                  begin
-                    Inc(N);
-                    I := 16 * I + (Ord(LCh) - Ord('0'));
-                  end;
-                else
-                  break;
-                end;
-              if N > 0 then
-              begin
-                AddNumericChar(I, False);
-                // Skip the trailing semicolon.
-                if LCh = ';' then
-                  GetCh;
-              end
+          else
+            // Decimal digits given.
+            X := #0;
+            repeat
+              case LCh of
+                '0'..'9': I := 10 * I + (Ord(LCh) - Ord('0'));
               else
-              begin
-                Buffer.Add(AmperChar, SaveIndex);
+                break;
               end;
-            end;
+              Inc(N);
+              GetCh;
+            until False;
           end;
+          if N > 0 then
+          begin
+            AddNumericChar(I, False);
+            // Skip the trailing semicolon.
+            if LCh = ';' then
+              GetCh;
+          end
+          else
+          begin
+            Buffer.Add(AmperChar, SaveIndex);
+            if X <> #0 then
+              Buffer.Add(X, SaveIndex + 1);
+          end;
+        end
       else
         // Must be a predefined (named) entity.
         Entity := TCharCollection.Create;
         try
-          N := 0;
           // Pick up the entity name.
-          while (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
-          begin
-            Entity.Add(LCh, PropStack.SIndex);
-            GetCh;
+          N := 0;
+          repeat
+            case LCh of
+              'a'..'z',
+              'A'..'Z',
+              '0'..'9': Entity.Add(LCh, PropStack.SIndex);
+            else
+              break;
+            end;
             Inc(N);
-          end;
+            GetCh;
+          until N > 10;
           // Now convert entity ThtString into a character value. If there is no
           // entity with that name simply add all characters as they are.
           if Entities.Find(Entity.AsString, I) then
@@ -4001,9 +3983,6 @@ end;
 
 function THtmlParser.GetEntityStr(CodePage: Integer): ThtString;
 {read an entity and return it as a ThtString.}
-var
-  I, N: Integer;
-  Collect, Entity: ThtString;
 
   procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
   // Adds the given value as new ThtChar to the ThtString.
@@ -4025,14 +4004,19 @@ var
       Result := WideChar(I);
   end;
 
+var
+  Collect: ThtString;
+
   procedure NextCh;
   begin
-    Collect := Collect + LCh;
+    SetLength(Collect, Length(Collect) + 1);
+    Collect[Length(Collect)] := LCh;
     GetCh;
   end;
 
 var
-  Value: Integer;
+  I, N: Integer;
+  Entity: ThtString;
 begin
   if LCh = AmperChar then
   begin
@@ -4042,97 +4026,83 @@ begin
     NextCh;
     case LCh of
       '#': // Numeric value.
-        begin
-          NextCh;
-          if LCh in [ThtChar('x'), ThtChar('X')] then
+      begin
+        NextCh;
+        N := 0;
+        I := 0;
+        case LCh of
+          'x', 'X':
           begin
             // Hex digits given.
             NextCh;
-            N := 0;
-            I := 0;
-            while True do
+            repeat
               case LCh of
-                '0'..'9':
-                begin
-                  Inc(N);
-                  I := 16 * I + (Ord(LCh) - Ord('0'));
-                end;
-
-                'A'..'Z':
-                begin
-                  Inc(N);
-                  I := 16 * I + (Ord(LCh) - Ord('A') + 10);
-                end;
-
-                'a'..'z':
-                begin
-                  Inc(N);
-                  I := 16 * I + (Ord(LCh) - Ord('a') + 10);
-                end;
+                '0'..'9': I := 16 * I + (Ord(LCh) - Ord('0'));
+                'A'..'Z': I := 16 * I + (Ord(LCh) - Ord('A') + 10);
+                'a'..'z': I := 16 * I + (Ord(LCh) - Ord('a') + 10);
               else
                 break;
               end;
-            if N > 0 then
-            begin
-              AddNumericChar(I, False);
-              // Skip the trailing semicolon.
-              if LCh = ';' then
-                GetCh;
-            end
-            else
-              Result := Collect;
-          end
-          else
-          begin
-            // Decimal digits given.
-            N := 0;
-            I := 0;
-            while True do
-              case LCh of
-                '0'..'9':
-                begin
-                  Inc(N);
-                  I := 16 * I + (Ord(LCh) - Ord('0'));
-                end;
-              else
-                break;
-              end;
-            if N > 0 then
-            begin
-              AddNumericChar(I, False);
-              // Skip the trailing semicolon.
-              if LCh = ';' then
-                GetCh;
-            end
-            else
-              Result := Collect;
+              Inc(N);
+              NextCh;
+            until False;
           end;
+        else
+          // Decimal digits given.
+          repeat
+            case LCh of
+              '0'..'9': I := 10 * I + (Ord(LCh) - Ord('0'));
+            else
+              break;
+            end;
+            Inc(N);
+            NextCh;
+          until False;
         end;
+        if N > 0 then
+        begin
+          AddNumericChar(I, False);
+          // Skip the trailing semicolon.
+          if LCh = ';' then
+            GetCh;
+        end
+        else
+          Result := Collect;
+      end;
     else
       // Must be a predefined (named) entity.
       Entity := '';
       N := 0;
       // Pick up the entity name.
-      while (LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('0')..ThtChar('9')]) and (N <= 10) do
-      begin
-        Entity := Entity + LCh;
-        NextCh;
+      repeat
+        case LCh of
+          'a'..'z',
+          'A'..'Z',
+          '0'..'9':
+          begin
+            SetLength(Entity, Length(Entity) + 1);
+            Entity[Length(Entity)] := LCh;
+          end;
+        else
+          break;
+        end;
         Inc(N);
-      end;
+        NextCh;
+      until N > 10;
 
       // Now convert entity ThtString into a character value. If there is no
       // entity with that name simply add all characters as they are.
       if Entities.Find(Entity, I) then
       begin
-        Value := PEntity(Entities.Objects[I]).Value;
+        I := PEntity(Entities.Objects[I]).Value;
         if LCh = ';' then
         begin
-          AddNumericChar(Value, True);
+          AddNumericChar(I, True);
           // Advance current pointer to first character after the semicolon.
           NextCh;
         end
-        else if Value <= 255 then
-          AddNumericChar(Value, True);
+        else if I <= 255 then
+          AddNumericChar(I, True);
       end
       else
         Result := Collect;
