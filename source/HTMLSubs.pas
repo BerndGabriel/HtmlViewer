@@ -8582,9 +8582,10 @@ procedure THtmlTable.GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth
 var
   I, J, Min, Max, N, Span, Addon, Distributable, TotalPC, Accum,
     ExcessMin, ExcessMax, NonPC, PCWidth, NewTotalPC: Integer;
-  More: boolean;
   Cells: TCellList;
   CellObj: TCellObj;
+  MaxSpans: array of Integer;
+  MaxSpan: Integer;
 begin
 {Find the max and min widths of each column}
   for I := 0 to NumCols - 1 do
@@ -8593,27 +8594,37 @@ begin
     MinWidths[I] := 0;
     Percents[I] := 0;
   end;
+
   SetLength(Heights, 0);
   Span := 1;
-  More := True;
-  while More do
-  begin
-    More := False;
+
+  //BG, 29.01.2011: data for loop termination and to speed up looping through
+  //  very large tables with large spans.
+  //  A table with 77 rows and 265 columns and a MaxSpan of 265 in 2 rows
+  //  was processed in 3 seconds before the tuning and 80ms afterwards.
+  MaxSpan := 1;
+  SetLength(MaxSpans, Rows.Count);
+  for J := 0 to Rows.Count - 1 do
+    MaxSpans[J] := 1;
+  repeat
     for J := 0 to Rows.Count - 1 do
     begin
+      //BG, 29.01.2011: tuning: process rows only, if there is at least 1 cell to process left.
+      if Span > MaxSpans[J] then
+        continue;
       Cells := Rows[J];
-      for I := 0 to Cells.Count - 1 do
+      //BG, 29.01.2011: tuning: process up to cells only, if there is at least 1 cell to process left.
+      for I := 0 to Cells.Count - Span do
       begin
         CellObj := Cells[I];
         if CellObj <> nil then
-          with CellObj do
-          begin
-            if ColSpan = Span then
+          if CellObj.ColSpan = Span then
+            with CellObj do
             begin
               PCWidth := 0;
-              if WidthAttr > 0 then
-                if AsPercent then
-                  PCWidth := WidthAttr
+              if CellObj.WidthAttr > 0 then
+                if CellObj.AsPercent then
+                  PCWidth := CellObj.WidthAttr
                 else if TheWidth > 0 then
                   PCWidth := Math.Min(1000, MulDiv(WidthAttr, 1000, TheWidth));
 
@@ -8713,15 +8724,31 @@ begin
                 end;
               end;
             end
-            else if ColSpan > Span then
-              More := True {set if need another iteration}
-          end;
+          else
+            //BG, 29.01.2011: at this point: CellObj.ColSpan <> Span
+            if Span = 1 then
+            begin
+              //BG, 29.01.2011: at this point: in the first loop with a CellObj.ColSpan > 1.
+
+              // Reduce too large ColSpans, or the column loop tuning will not process all cells.
+              if CellObj.ColSpan > NumCols - I then
+                CellObj.ColSpan := NumCols - I;
+
+              // Collect data for termination and tuning.
+              if MaxSpans[J] < CellObj.ColSpan then
+              begin
+                MaxSpans[J] := CellObj.ColSpan; // data for tuning
+                if MaxSpan < MaxSpans[J] then
+                  MaxSpan := MaxSpans[J]; // data for termination
+              end;
+            end;
       end;
     end;
     Inc(Span);
-  end;
+  until Span > MaxSpan;
 
-  TotalMaxWidth := 0; TotalMinWidth := 0;
+  TotalMaxWidth := 0;
+  TotalMinWidth := 0;
   for I := 0 to NumCols - 1 do
   begin
     Inc(TotalMaxWidth, MaxWidths[I]);
