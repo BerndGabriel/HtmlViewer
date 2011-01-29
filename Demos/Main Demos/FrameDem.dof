@@ -20,7 +20,7 @@ P=1
 Q=0
 R=0
 S=0
-T=0
+T=1
 U=0
 V=1
 W=0
@@ -63,8 +63,8 @@ RootDir=
 [Version Info]
 IncludeVerInfo=1
 AutoIncBuild=0
-MajorVer=10
-MinorVer=2
+MajorVer=11
+MinorVer=0
 Release=0
 Build=0
 Debug=0
@@ -77,13 +77,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=HtmlViewer Team
 FileDescription=
-FileVersion=10.2.0.0
+FileVersion=11.0.0.0
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=FrameViewer Demo
-ProductVersion=10.0.0.0
+ProductVersion=11.0.0.0
 Comments=meet us at http://code.google.com/p/thtmlviewer/
 [HistoryLists\hlConditionals]
 Count=1
@@ -95,8 +95,15 @@ Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 Count=1
 Item0=$(DELPHI)\Lib\Debug
 [HistoryLists\hlUnitOutputDirectory]
-Count=1
+Count=2
 Item0=lib\delphi6
+Item1=L:\bin\dcu
 [HistoryLists\hlOutputDirectorry]
 Count=1
 Item0=bin\delphi6
+[HistoryLists\hlBPLOutput]
+Count=1
+Item0=L:\bin\bpl
+[HistoryLists\hlDCPOutput]
+Count=1
+Item0=L:\bin\dcp

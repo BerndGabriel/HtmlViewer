@@ -17,8 +17,6 @@ uses
 
 {$R *.RES}
 
-{$IFDEF WINDOWS}{$R FrameDem.rc}{$ENDIF}
-
 begin
 {$ifdef LCL}
   {$I FrameDem.lrs}

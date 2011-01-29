@@ -40,7 +40,7 @@ uses
   ImgList, ComCtrls, ToolWin, IdIntercept,
   IdHTTP, IdComponent, IdIOHandler, IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
   IdTCPConnection, IdTCPClient, IdAuthentication,
-  {$if CompilerVersion > 15}
+  {$if CompilerVersion >= 15}
     XpMan,
   {$ifend}
   idLogfile,
@@ -263,8 +263,15 @@ implementation
 
 uses HTMLAbt, ProxyDlg, AuthUnit;
 
-{$R *.DFM}
 {$R fbHelp32.res}
+{$ifdef LCL}
+  {$R *.lfm}
+{$else}
+  {$R *.dfm}
+  {$if CompilerVersion < 15}
+    {$R manifest.res}
+  {$ifend}
+{$endif}
 
 {----------------THTTPForm.FormCreate}
 procedure THTTPForm.FormCreate(Sender: TObject);

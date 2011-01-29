@@ -38,7 +38,7 @@ uses
   LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
 {$else}
   Windows, ShellAPI,
-  {$if CompilerVersion > 15}
+  {$if CompilerVersion >= 15}
     XpMan,
   {$ifend}
   {$ifdef Compiler18_Plus}
@@ -212,6 +212,9 @@ implementation
   {$R *.lfm}
 {$else}
   {$R *.dfm}
+  {$if CompilerVersion < 15}
+    {$R manifest.res}
+  {$ifend}
 {$endif}
 
 procedure TForm1.FormCreate(Sender: TObject);
