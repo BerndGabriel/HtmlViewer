@@ -364,6 +364,7 @@ end;
 
 destructor THtmlParser.Destroy;
 begin
+  Doc.Free;
   DocStack.Free;
   LCToken.Free;
   inherited;
@@ -3523,7 +3524,7 @@ begin
   CallingObject := TSectionList(ASectionList).TheOwner;
   IncludeEvent := AIncludeEvent;
   PropStack.Clear;
-  PropStack.Add(TProperties.Create);
+  PropStack.Add(TProperties.Create(PropStack));
   PropStack[0].CopyDefault(PropStack.MasterList.Styles.DefProp);
   PropStack.SIndex := -1;
 
@@ -3709,7 +3710,7 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   begin
     SetExit := False;
     PropStack.Clear;
-    PropStack.Add(TProperties.Create);
+    PropStack.Add(TProperties.Create(PropStack));
     GetCh; {get the reading started}
     Next;
     repeat
@@ -3780,7 +3781,7 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const 
   begin
     Result := False;
     PropStack.Clear;
-    PropStack.Add(TProperties.Create);
+    PropStack.Add(TProperties.Create(PropStack));
     SetExit := False;
     GetCh; {get the reading started}
     Next;

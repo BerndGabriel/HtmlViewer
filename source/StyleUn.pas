@@ -107,9 +107,15 @@ type
   TMyFont = class(TFont)
   public
     bgColor: TColor;
-    tmHeight, tmDescent, tmExternalLeading, tmAveCharWidth,
-      tmMaxCharWidth, tmCharset: integer;
-    CharExtra: integer;
+    tmHeight: Integer;
+    tmDescent: Integer;
+    tmExternalLeading: Integer;
+    tmAveCharWidth: Integer;
+    tmMaxCharWidth: Integer;
+    tmCharset: Integer;
+    CharExtra: Integer;
+    EmSize: Integer;
+    ExSize: Integer;
     procedure Assign(Source: TPersistent); override;
     procedure AssignToCanvas(Canvas: TCanvas);
     destructor Destroy; override;
@@ -163,7 +169,6 @@ type
     TheFont: TMyFont;
     InLink: boolean;
     DefFontname: ThtString;
-    //procedure AssignUTF8;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
     procedure AssignCharSet(CS: TFontCharset);
     procedure AssignCodePage(const CP: Integer);
@@ -175,7 +180,7 @@ type
     FontBG: TColor;
     FCharSet: TFontCharSet;
     FCodePage: Integer;
-    EmSize, ExSize: integer; {# pixels for Em and Ex dimensions}
+    FEmSize, FExSize: integer; {# pixels for Em and Ex dimensions}
     Props: array[Low(PropIndices)..High(PropIndices)] of Variant;
     Originals: array[Low(PropIndices)..High(PropIndices)] of boolean;
     FIArray: TFontInfoArray;
@@ -225,6 +230,8 @@ type
     property Display: TPropDisplay read GetDisplay;
     property CharSet: TFontCharset read FCharSet write AssignCharSet;
     property CodePage: Integer read FCodePage write AssignCodePage;
+    property EmSize: integer read FEmSize;
+    property ExSize: integer read FExSize;
   end;
 
   TStyleList = class(ThtStringList)
@@ -250,9 +257,9 @@ type
 
   TPropStack = class(TObjectList)
   private
-    function GetProp(Index: Integer): TProperties;
+    function GetProp(Index: Integer): TProperties; {$ifdef UseInline} inline; {$endif}
   public
-    function Last: TProperties;
+    function Last: TProperties; {$ifdef UseInline} inline; {$endif}
     property Items[Index: integer]: TProperties read GetProp; default;
   end;
 
@@ -274,8 +281,8 @@ const
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells');
 
 //BG, 05.10.2010: added:
-function VarIsIntNull(const Value: Variant): Boolean;
-function VarIsAuto(const Value: Variant): Boolean;
+function VarIsIntNull(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
+function VarIsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
 
 function VMargToMarg(const Value: Variant; Relative: boolean; Base, EmSize, ExSize, Default: Integer): Integer;
 
@@ -305,8 +312,21 @@ function FindPropIndex(const PropWord: ThtString; var PropIndex: PropIndices): b
 
 implementation
 
+type
+  TMyFontCache = class
+  private
+    FFontsByName: ThtStringList;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Add(Font: TMyFont);
+    function Find(FontInfo: ThtFontInfo): TMyFont;
+  end;
+
 var
   DefPointSize: double;
+  CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
+  AllMyFonts: TMyFontCache;
 
 {----------------AlignmentFromString}
 
@@ -391,6 +411,8 @@ begin
     tmMaxCharWidth := TMyFont(Source).tmMaxCharWidth;
     tmCharset := TMyFont(Source).tmCharset;
     CharExtra := TMyFont(Source).CharExtra;
+    EmSize := TMyFont(Source).EmSize;
+    ExSize := TMyFont(Source).ExSize;
   end;
   inherited Assign(Source);
 end;
@@ -406,9 +428,10 @@ begin
   inherited;
 end;
 
-constructor TmyFont.Create;
+constructor TMyFont.Create;
 begin
   inherited;
+  Charset := DEFAULT_CHARSET;
 end;
 
 var
@@ -514,8 +537,8 @@ begin
     FIArray.Assign(Source.FIArray);
   end;
 
-  EmSize := Source.EmSize; {actually this is calculated later }
-  ExSize := EmSize div 2; {apparently correlates with what browsers are doing}
+  FEmSize := Source.FEmSize; {actually this is calculated later }
+  FExSize := Source.FExSize; {apparently correlates with what browsers are doing}
 end;
 
 {----------------TProperties.Update}
@@ -590,46 +613,58 @@ begin
   AssignCharSetAndCodePage(CS, CharSetToCodePage(CS));
 end;
 
-//-- BG ---------------------------------------------------------- 25.12.2010 --
-procedure TProperties.AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
+//-- BG ---------------------------------------------------------- 30.01.2011 --
+function TranslateCharset(CS: TFontCharset): TFontCharset;
+// extracted from TProperties.AssignCharSetAndCodePage()
 var
   Save: THandle;
   tm: TTextmetric;
   DC: HDC;
   Font: TFont;
+begin
+  if not CharsetPerCharset[CS].Inited then
+  begin
+    {the following makes sure the CharSet is available}
+    CharsetPerCharset[CS].Inited := True;
+    CharsetPerCharset[CS].Charset := CS;
+    Font := TFont.Create;
+    try
+      Font.Name := '';
+      Font.CharSet := CS;
+      DC := GetDC(0);
+      try
+        Save := SelectObject(DC, Font.Handle);
+        try
+          GetTextMetrics(DC, tm);
+          CharsetPerCharset[CS].Charset := tm.tmCharSet;
+        finally
+          SelectObject(DC, Save);
+        end;
+      finally
+        ReleaseDC(0, DC);
+      end;
+    finally
+      Font.Free;
+    end;
+  end;
+  Result := CharsetPerCharset[CS].Charset;
+end;
+
+//-- BG ---------------------------------------------------------- 25.12.2010 --
+procedure TProperties.AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
+var
   IX: FIIndex;
 begin
   if (FCharSet <> CS) or (FCodePage <> CP) then
   begin
     case CS of
       EastEurope8859_2:
-        FCharSet := EASTEUROPE_CHARSET;
+        FCharSet := TranslateCharset(EASTEUROPE_CHARSET);
 
       DEFAULT_CHARSET:
         FCharSet := CS;
     else
-      {the following makes sure the CharSet is available.  It also translates
-      "Default_CharSet" into the actual local character set}
-      Font := TFont.Create;
-      try
-        Font.Name := '';
-        Font.CharSet := CS;
-        DC := GetDC(0);
-        try
-          Save := SelectObject(DC, Font.Handle);
-          try
-            GetTextMetrics(DC, tm);
-            CS := tm.tmCharSet;
-          finally
-            SelectObject(DC, Save);
-          end;
-        finally
-          ReleaseDC(0, DC);
-        end;
-      finally
-        Font.Free;
-      end;
-      FCharSet := CS;
+      FCharSet := TranslateCharset(CS);
     end;
 
     if Assigned(FIArray) then
@@ -1803,64 +1838,72 @@ var
   tm: TTextmetric;
   DC: HDC;
   V: Variant;
+  SameFont: TMyFont;
 begin {call only if all things valid}
-  if not Assigned(TheFont) then
+  if TheFont = nil then
   begin
     Font := ThtFontInfo.Create;
     try
       GetSingleFontInfo(Font);
-      TheFont := TMyFont.Create;
-      with TheFont, Font do
+      SameFont := AllMyFonts.Find(Font);
+      if SameFont = nil then
       begin
-        Name := iName;
-        Height := -Round(iSize * Screen.PixelsPerInch / 72);
-        Style := iStyle;
-        bgColor := ibgColor;
-        Color := iColor;
-        Charset := iCharSet;
-        V := iCharExtra;
+        SameFont := TMyFont.Create;
+        SameFont.Name := Font.iName;
+        SameFont.Height := -Round(Font.iSize * Screen.PixelsPerInch / 72);
+        SameFont.Style := Font.iStyle;
+        SameFont.Charset := Font.iCharSet;
+        AllMyFonts.Add(SameFont);
+
+        // If this is a Symbol charset, then keep it that way.
+        // To check the font's real charset, use Default_Charset
+        SaveCharSet := SameFont.CharSet;
+        SameFont.CharSet := Default_Charset;
+        DC := GetDC(0);
+        try
+          Save := SelectObject(DC, SameFont.Handle);
+          try
+            GetTextMetrics(DC, tm);
+          finally
+            SelectObject(DC, Save);
+          end;
+          if tm.tmCharset = Symbol_Charset then
+            SameFont.Charset := Symbol_CharSet
+          else
+            SameFont.Charset := SaveCharSet;
+          {now get the info on the finalized font}
+          if SameFont.Charset <> Default_Charset then {else already have the textmetrics}
+          begin
+            Save := SelectObject(DC, SameFont.Handle);
+            try
+              GetTextMetrics(DC, tm);
+            finally
+              SelectObject(DC, Save);
+            end;
+          end;
+        finally
+          ReleaseDC(0, DC);
+        end;
+        {calculate EmSize with current font rather than inherited}
+        SameFont.EmSize := tm.tmHeight - tm.tmInternalLeading;
+        SameFont.ExSize := EmSize div 2; {apparently correlates with what browsers are doing}
+        SameFont.tmHeight := tm.tmHeight;
+        SameFont.tmDescent := tm.tmDescent;
+        SameFont.tmExternalLeading := tm.tmExternalLeading;
+        SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
+        SameFont.tmAveCharWidth := tm.tmAveCharWidth;
+        SameFont.tmCharset := tm.tmCharset;
       end;
+      TheFont := TMyFont.Create;
+      TheFont.Assign(SameFont);
+      TheFont.bgColor := Font.ibgColor;
+      TheFont.Color := Font.iColor;
+      V := Font.iCharExtra;
     finally
       Font.Free;
     end;
-  {if this is a Symbol charset, then keep it that way.  To check the font's real
-   charset, use Default_Charset}
-    SaveCharSet := TheFont.CharSet;
-    TheFont.CharSet := Default_Charset;
-    DC := GetDC(0);
-    try
-      Save := SelectObject(DC, TheFont.Handle);
-      try
-        GetTextMetrics(DC, tm);
-      finally
-        SelectObject(DC, Save);
-      end;
-      if tm.tmCharset = Symbol_Charset then
-        TheFont.Charset := Symbol_CharSet
-      else
-        TheFont.Charset := SaveCharSet;
-    {now get the info on the finalized font}
-      if TheFont.Charset <> Default_Charset then {else already have the textmetrics}
-      begin
-        Save := SelectObject(DC, TheFont.Handle);
-        try
-          GetTextMetrics(DC, tm);
-        finally
-          SelectObject(DC, Save);
-        end;
-      end;
-    finally
-      ReleaseDC(0, DC);
-    end;
-  {calculate EmSize with current font rather than inherited}
-    EmSize := tm.tmHeight - tm.tmInternalLeading;
-    ExSize := EmSize div 2; {apparently correlates with what browsers are doing}
-    TheFont.tmHeight := tm.tmHeight;
-    TheFont.tmDescent := tm.tmDescent;
-    TheFont.tmExternalLeading := tm.tmExternalLeading;
-    TheFont.tmMaxCharWidth := tm.tmMaxCharWidth;
-    TheFont.tmAveCharWidth := tm.tmAveCharWidth;
-    TheFont.tmCharset := tm.tmCharset;
+    FEmSize := TheFont.EmSize;
+    FExSize := TheFont.ExSize;
     if VarType(V) in VarInt then
       TheFont.CharExtra := V
     else if VarIsStr(V) then
@@ -1930,80 +1973,32 @@ end;
 {----------------TProperties.GetSingleFontInfo}
 
 procedure TProperties.GetSingleFontInfo(var Font: ThtFontInfo);
-const
-  AMax = 5;
 var
-  S, S1: ThtString;
-  Done: boolean;
   Wt: integer;
   Style: TFontStyles;
-
-  function NextFontName: ThtString;
-  const
-    Generic1: array[1..AMax] of ThtString = ('serif', 'monospace', 'sans-serif', 'cursive', 'Helvetica');
-    Generic2: array[1..AMax] of ThtString = ('Times New Roman', 'Courier New', 'Arial', 'Lucida Handwriting', 'Arial');
-  var
-    I: integer;
-  begin
-    I := Pos(',', S); {read up to the comma}
-    if I > 0 then
-    begin
-      Result := Trim(System.Copy(S, 1, I - 1));
-      Delete(S, 1, I);
-    end
-    else
-    begin {last item}
-      Result := Trim(S);
-      S := '';
-    end;
-    for I := 1 to AMax do
-      if CompareText(Result, Generic1[I]) = 0 then
-      begin
-        Result := Generic2[I];
-        break;
-      end;
-    if (Result <> '') and (Result[Length(Result)] in [ThtChar('"'), ThtChar('''')]) then
-      SetLength(Result, Length(Result) - 1);
-    if (Result <> '') and (Result[1] in [ThtChar('"'),ThtChar('''')]) then
-      Delete(Result, 1, 1);
-  end;
-
 begin {call only if all things valid}
   Font.ibgColor := FontBG;
   Font.iColor := Props[Color];
   Style := [];
   if Pos('bold', Props[FontWeight]) > 0 then
-    Style := [fsBold]
+    Include(Style, fsBold)
   else
   begin
     Wt := StrToIntDef(Props[FontWeight], 0);
     if Wt >= 600 then
-      Style := [fsBold];
+      Include(Style, fsBold);
   end;
   if (Props[FontStyle] = 'italic') or (Props[FontStyle] = 'oblique') then
-    Style := Style + [fsItalic];
+    Include(Style, fsItalic);
   if Props[TextDecoration] = 'underline' then
-    Style := Style + [fsUnderline]
+    Include(Style, fsUnderline)
   else if Props[TextDecoration] = 'line-through' then
-    Style := Style + [fsStrikeOut];
+    Include(Style, fsStrikeOut);
   Font.iStyle := Style;
   Font.iSize := Props[FontSize];
   Font.iCharset := CharSet;
   Font.iCharExtra := Props[LetterSpacing];
-
-  Done := False;
-  S := Props[FontFamily];
-  S1 := NextFontName;
-  while (S1 <> '') and not Done do
-  begin
-    Done := Screen.Fonts.IndexOf(S1) >= 0;
-    if Done then
-    begin
-      Font.iName := S1;
-    end
-    else
-      S1 := NextFontName;
-  end;
+  Font.iName := ReadFontName(Props[FontFamily]);
   if Font.iName = '' then
     Font.iName := DefFontname;
 end;
@@ -2505,12 +2500,12 @@ end;
 
 function TPropStack.GetProp(Index: integer): TProperties;
 begin
-  Result := TProperties(inherited Items[Index]);
+  Result := Get(Index); //TProperties(inherited Items[Index]);
 end;
 
 function TPropStack.Last: TProperties;
 begin
-  Result := Items[Count - 1];
+  Result := Get(Count - 1);
 end;
 
 
@@ -2976,7 +2971,77 @@ begin
     Result := Default;
 end;
 
+{ TMyFontCache }
+
+type
+  ThtStringListOpener = class(ThtStringList)
+  end;
+
+//-- BG ---------------------------------------------------------- 30.01.2011 --
+procedure TMyFontCache.Add(Font: TMyFont);
+var
+  I: Integer;
+begin
+  if not FFontsByName.Find(htLowerCase(Font.Name), I) then
+    ThtStringListOpener(FFontsByName).InsertItem(I, Font.Name, TObjectList.Create(True));
+  TObjectList(FFontsByName.Objects[I]).Add(Font);
+end;
+
+//-- BG ---------------------------------------------------------- 30.01.2011 --
+constructor TMyFontCache.Create;
+begin
+  inherited;
+  FFontsByName := ThtStringList.Create;
+  FFontsByName.Sorted := True;
+end;
+
+//-- BG ---------------------------------------------------------- 30.01.2011 --
+destructor TMyFontCache.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to FFontsByName.Count - 1 do
+    FFontsByName.Objects[I].Free;
+  FFontsByName.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 30.01.2011 --
+function TMyFontCache.Find(FontInfo: ThtFontInfo): TMyFont;
+
+  function SameFonts(F1: TMyFont; F2: ThtFontInfo): Boolean;
+  begin
+    if F2 <> nil then
+      if F1.Height = -Round(F2.iSize * Screen.PixelsPerInch / 72) then
+        if F1.Style = F2.iStyle then
+          if F1.Charset = F2.iCharset then
+          begin
+            Result := True;
+            exit;
+          end;
+    Result := False;
+  end;
+
+var
+  I: Integer;
+  Fonts: TObjectList;
+begin
+  if FFontsByName.Find(htLowerCase(FontInfo.iName), I) then
+  begin
+    Fonts := TObjectList(FFontsByName.Objects[I]);
+    for I := 0 to Fonts.Count - 1 do
+    begin
+      Result := TMyFont(Fonts[I]);
+      if SameFonts(Result, FontInfo) then
+        exit;
+    end;
+  end;
+  Result := nil;
+end;
+
 initialization
+  AllMyFonts := TMyFontCache.Create;
 finalization
-  freeAndNil(ColorStrings);
+  FreeAndNil(AllMyFonts);
+  FreeAndNil(ColorStrings);
 end.
