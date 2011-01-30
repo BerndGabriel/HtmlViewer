@@ -4,20 +4,20 @@ HtmlViewer 10.2 and 11
 
 What are the HtmlViewer Components?
 
-The HtmlViewer component set consists of the ThtmlViewer, TFrameViewer,
+The HtmlViewer component set consists of the THtmlViewer, TFrameViewer,
 and TFrameBrowser components. All three are HTML document display components:
 
-ThtmlViewer
+THtmlViewer
 - The basic component.
-- ThtmlViewer displays single (non-frame) documents.
+- THtmlViewer displays single (non-frame) documents.
 - It also forms the basis for the other two components.
 
 TFrameViewer (deprecated)
-- Displays both Frame and single HTML documents.
+- Displays both frame and single HTML documents.
 - TFrameViewer is oriented more for local file system use.
 
-TFrameBrowser   
-- Also displays Frame and single HTML documents.
+TFrameBrowser
+- Also displays frame and single HTML documents.
 - TFrameBrower is oriented for use with local file systems and toward Internet
   style protocols and URL usage.
 - Additional code and/or components are generally required to get data from
@@ -30,18 +30,18 @@ Many Cascading Style Sheet properties are also supported.
 Some features:
 
 - Cascading Stylesheets
-- Frames
+- Large HTML files
+- HTML Frames
+- HTML Forms
+- HTML Tables
 - Bitmap, GIF, JPEG, and PNG Images
 - Transparent images
 - Image caching
 - Left and right floating images
 - Image sizing attributes
 - Client side image maps
-- Large HTML files
-- HTML Tables
-- HTML Forms
-- Font sizes, styles, and colors with HTML tags or default settings
 - Background colors and images
+- Font sizes, styles, and colors with HTML tags or default settings
 - Formatted printing of the HTML document
 - Print preview
 - Text search
@@ -56,18 +56,16 @@ For a detailed list and demonstration of features start FrameDem.exe.
 
 --------------------------------------------------------------------------------
 
-Which HtmlViewer should I use?
+Which HtmlViewer version should I use?
 
 HtmlViewer 10.2
-- is a mixed AnsiString/WideString version suitable for projects
+- is a mixed AnsiString/WideString version suitable for projects 
   with a single codepage/charset.
-- is available for Lazarus.
 
 HtmlViewer 11
 - is a full WideString version suitable for projects
   with several codepages/charsets.
 - with Delphi 6..2007 requires the TntUnicodeControls.
-- Lazarus support is under construction.
 
 --------------------------------------------------------------------------------
 
