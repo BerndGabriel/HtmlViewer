@@ -364,7 +364,6 @@ end;
 
 destructor THtmlParser.Destroy;
 begin
-  Doc.Free;
   DocStack.Free;
   LCToken.Free;
   inherited;
