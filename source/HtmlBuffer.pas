@@ -489,6 +489,7 @@ constructor TBuffer.Create(Text: TBuffString; Name: TBuffString = '');
 var
   I: Integer;
 begin
+  inherited Create;
   I := Length(Text) * sizeof(TBuffChar);
   SetLength(FBuffer, I);
   if I > 0 then
@@ -505,6 +506,7 @@ constructor TBuffer.Create(Text: AnsiString; CharSet: TBuffCharSet; Name: TBuffS
 var
   I: Integer;
 begin
+  inherited Create;
   I := Length(Text);
   SetLength(FBuffer, I);
   Move(Text[1], FBuffer[0], I);
