@@ -556,11 +556,12 @@ type
   THtmlViewerBase = class(TViewerBase)
   public
     TablePartRec: TTablePartRec;
-    procedure htProgress(Percent: Integer); virtual; abstract;
-    procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
-    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
     function ShowFocusRect: Boolean; virtual; abstract;
+    procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
+    procedure htProgress(Percent: Integer); virtual; abstract;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure Parsed(const Title, Base, BaseTarget: ThtString); virtual; abstract;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -570,7 +571,6 @@ type
     function CreateSubFrameSet(FrameSet: TObject): TObject; virtual; abstract;
     procedure AddFrame(FrameSet: TObject; Attr: TAttributeList; const FName: ThtString); virtual; abstract;
     procedure DoAttributes(FrameSet: TObject; Attr: TAttributeList); virtual; abstract;
-    procedure EndFrameSet(FrameSet: TObject); virtual; abstract;
   end;
 
 var

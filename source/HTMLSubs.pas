@@ -1204,9 +1204,9 @@ var
 
 var
   PropStack: THtmlPropStack;
-  Title: ThtString;
-  Base: ThtString;
-  BaseTarget: ThtString;
+  //Title: ThtString;
+  //Base: ThtString;
+  //BaseTarget: ThtString;
   NoBreak: boolean; {set when in <NoBr>}
 
 implementation

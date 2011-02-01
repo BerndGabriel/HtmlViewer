@@ -334,7 +334,6 @@ type
     procedure SetSelLength(Value: Integer);
     procedure SetSelStart(Value: Integer);
     procedure SetServerRoot(Value: ThtString);
-    procedure SetupAndLogic;
     procedure SetViewerStateBit(Index: THtmlViewerStateBit; Value: Boolean);
     procedure SetViewImages(Value: Boolean);
     procedure SetVisitedColor(Value: TColor);
@@ -429,6 +428,7 @@ type
     procedure LoadTextFile(const FileName: ThtString);
     procedure LoadTextFromString(const S: ThtString);
     procedure LoadTextStrings(Strings: ThtStrings);
+    procedure Parsed(const Title, Base, BaseTarget: ThtString); override;
     procedure Reformat;
     procedure Reload;
     procedure Repaint; override;
@@ -747,23 +747,21 @@ begin
   inherited Destroy;
 end;
 
-procedure THtmlViewer.SetupAndLogic;
+procedure THtmlViewer.Parsed(const Title, Base, BaseTarget: ThtString);
 begin
-  FTitle := HtmlSubs.Title;
-  if HtmlSubs.Base <> '' then
-    FBase := HtmlSubs.Base
+  FTitle := Title;
+  if Base <> '' then
+    FBase := Base
   else
     FBase := FBaseEx;
-  FBaseTarget := HtmlSubs.BaseTarget;
+  FBaseTarget := BaseTarget;
   if Assigned(FOnParseEnd) then
     FOnParseEnd(Self);
   try
     Include(FViewerState, vsDontDraw);
-  {Load the background bitmap if any and if ViewImages set}
+    {Load the background bitmap if any and if ViewImages set}
     FSectionList.GetBackgroundBitmap;
-
     DoLogic;
-
   finally
     Exclude(FViewerState, vsDontDraw);
   end;
@@ -969,10 +967,9 @@ begin
     if Assigned(FOnParseBegin) then
       FOnParseBegin(Self, FDocument);
     if Ft = HTMLType then
-      ParseHtml(FDocument, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+      ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
     else
-      ParseText(FDocument, FSectionList);
-    SetupAndLogic;
+      ParseText(Self, FDocument);
     CheckVisitedLinks;
     if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
     else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
@@ -1026,10 +1023,9 @@ begin
     if Assigned(FOnParseBegin) then
       FOnParseBegin(Self, FDocument);
     if Ft = HTMLType then
-      ParseHtml(FDocument, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+      ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
     else
-      ParseText(FDocument, FSectionList);
-    SetupAndLogic;
+      ParseText(Self, FDocument);
     CheckVisitedLinks;
     if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
     else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
@@ -1094,22 +1090,19 @@ begin
       begin
         if Assigned(FOnSoundRequest) then
           FOnSoundRequest(Self, '', 0, True);
-        ParseHtml(FDocument, FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
-        SetupAndLogic;
+        ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
       end;
 
       TextType:
       begin
-        ParseText(FDocument, FSectionList);
-        SetupAndLogic;
+        ParseText(Self, FDocument);
       end;
     else
       SaveOnImageRequest := OnImageRequest;
       SetOnImageRequest(DoImage);
       FImageStream := AStream;
       try
-        ParseHtml(FDocument, FSectionList, nil, nil, nil, nil);
-        SetupAndLogic;
+        ParseHtml(Self, FDocument, nil, nil, nil, nil);
       finally
         SetOnImageRequest(SaveOnImageRequest);
       end;
@@ -4096,8 +4089,8 @@ begin
       try
         with MFPrinter do
         begin
-          if DocumentTitle <> '' then
-            Title := DocumentTitle;
+          //if DocumentTitle <> '' then
+            //TODO -oBG, 31.01.2011: this was HtmlSubs.Title, but was it actually intended?  Title := DocumentTitle;
 
           BeginDoc;
           DC := Canvas.Handle;

@@ -259,7 +259,6 @@ type
     procedure ClearHistory;
     procedure CopyToClipboard;
     procedure DoAttributes(FrameSet: TObject; Attr: TAttributeList); override;
-    procedure EndFrameSet(FrameSet: TObject); override;
     procedure GoBack;
     procedure GoFwd;
     procedure LoadFromFile(const Name: ThtString); virtual; abstract;
@@ -444,6 +443,7 @@ type
   protected
     FBase: ThtString;
     FBaseTarget: ThtString;
+    FTitle: ThtString;
     OuterBorder: integer;
     BorderSize: integer;
     FRefreshURL: ThtString;
@@ -485,14 +485,16 @@ type
     constructor CreateIt(AOwner: TComponent; Master: TFrameSetBase); virtual;
     destructor Destroy; override;
     function AddFrame(Attr: TAttributeList; const FName: ThtString): TViewerFrameBase;
-    procedure EndFrameSet; virtual;
+    procedure Parsed(const Title, Base, BaseTarget: ThtString); virtual;
     procedure DoAttributes(L: TAttributeList);
     procedure LoadFiles(); override;
     procedure ReLoadFiles(APosition: integer); override;
     procedure UnloadFiles; override;
     procedure InitializeDimensions(X, Y, Wid, Ht: integer); override;
     procedure CalcSizes(Sender: TObject);
+    property Base: ThtString read FBase;
     property BaseTarget: ThtString read FBaseTarget;
+    property Title: ThtString read FTitle;
   end;
 
   TFrameSetBase = class(TSubFrameSetBase) {only one of these showing, others may be held as History}
@@ -502,7 +504,6 @@ type
     FFrameViewer: TFvBase;
     FrameNames: TStringList; {list of Window names and their TFrames}
     Frames: TList; {list of all the Frames contained herein}
-    FTitle: ThtString;
     HotSet: TFrameBase; {owner of line we're moving}
     NestLevel: integer;
     OldWidth, OldHeight: integer;
@@ -518,7 +519,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    procedure EndFrameSet; override;
+    procedure Parsed(const Title, Base, BaseTarget: ThtString); override;
     procedure Clear; override;
     procedure CalcSizes(Sender: TObject);
     procedure LoadFromString(const Source, Name, Dest: ThtString);
@@ -676,7 +677,7 @@ begin
           SrcSy:
             begin
               SplitDest(Trim(Name), S, Destination);
-              Source := ExpandSourceName(HtmlSubs.Base, Path, S);
+              Source := ExpandSourceName(MasterSet.Base, Path, S);
               OrigSource := Source;
             end;
           NameSy: WinName := Name;
@@ -1716,9 +1717,9 @@ begin
   Unloaded := True;
 end;
 
-{----------------TSubFrameSetBase.EndFrameSet}
+{----------------TSubFrameSetBase.Parsed}
 
-procedure TSubFrameSetBase.EndFrameSet;
+procedure TSubFrameSetBase.Parsed(const Title, Base, BaseTarget: ThtString);
 {called by the parser when </FrameSet> is encountered}
 var
   I: integer;
@@ -1734,11 +1735,12 @@ begin
   else
     while DimCount > List.Count do {or add Frames if more Dims than Count}
       AddFrame(nil, '');
-  if HtmlSubs.Base <> '' then
-    FBase := HtmlSubs.Base
+  FTitle := Title;
+  if Base <> '' then
+    FBase := Base
   else
     FBase := MasterSet.FrameViewer.FBaseEx;
-  FBaseTarget := HtmlSubs.BaseTarget;
+  FBaseTarget := BaseTarget;
 end;
 
 {----------------TSubFrameSetBase.InitializeDimensions}
@@ -2059,7 +2061,7 @@ begin
   Frame := AddFrame(nil, '');
   Frame.Source := FName;
   Frame.Destination := Dest;
-  EndFrameSet;
+  Parsed('', '', '');
   Frame.LoadFiles();
   if Assigned(Frame.FrameSet) then
     with Frame.FrameSet do
@@ -2281,12 +2283,11 @@ begin
     end;
 end;
 
-{----------------TFrameSetBase.EndFrameSet}
+{----------------TFrameSetBase.Parsed}
 
-procedure TFrameSetBase.EndFrameSet;
+procedure TFrameSetBase.Parsed(const Title, Base, BaseTarget: ThtString);
 begin
-  FTitle := HtmlSubs.Title;
-  inherited EndFrameSet;
+  inherited;
   with ClientRect do
     InitializeDimensions(Left, Top, Right - Left, Bottom - Top);
 end;
@@ -2417,11 +2418,11 @@ begin
       EventPointer := nil;
     end;
     Frame.Destination := Dest;
-    EndFrameSet;
+    Parsed('', '', '');
     CalcSizes(Self);
     Frame.Loadfiles(EventPointer);
-    FTitle := HtmlSubs.Title;
-    FBaseTarget := HtmlSubs.BaseTarget;
+    FTitle := Frame.Viewer.DocumentTitle;
+    FBaseTarget := Frame.Viewer.BaseTarget;
   end;
 end;
 
@@ -2471,11 +2472,11 @@ begin
       PEV := nil;
     end;
     Frame.Destination := Dest;
-    EndFrameSet;
+    Parsed('', '', '');
     CalcSizes(Self);
     Frame.Loadfiles(PEV);
-    FTitle := HtmlSubs.Title;
-    FBaseTarget := HtmlSubs.BaseTarget;
+    FTitle := Frame.Viewer.DocumentTitle;
+    FBaseTarget := Frame.Viewer.BaseTarget;
   end;
 end;
 
@@ -3693,11 +3694,6 @@ procedure TFrameViewer.DoFormSubmitEvent(Sender: TObject; const Action, Target, 
 begin
   if Assigned(FOnFormSubmit) then
     FOnFormSubmit(Sender, Action, Target, EncType, Method, Results);
-end;
-
-procedure TFVBase.EndFrameSet(FrameSet: TObject);
-begin
-  (FrameSet as TSubFrameSetBase).EndFrameSet;
 end;
 
 {----------------TFVBase.AddVisitedLink}

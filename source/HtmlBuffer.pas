@@ -115,6 +115,7 @@ type
     function NextChar: TBuffChar;
     function PeekChar: TBuffChar;  {$ifdef UseInline} inline; {$endif}
     function Size: Integer;
+    function GetString(FromIndex, UntilIndex: Integer): TBuffString;
     property Name: TBuffString read FName;
     property CharSet: TBuffCharSet read FCharSet write FCharSet;
     property CodePage: TBuffCodePage read FCodePage write FCodePage;
@@ -798,6 +799,30 @@ end;
 function TBuffer.GetPosition: Integer;
 begin
   Result := FPos.AnsiChr - PAnsiChar(FBuffer);
+end;
+
+//-- BG ---------------------------------------------------------- 31.01.2011 --
+function TBuffer.GetString(FromIndex, UntilIndex: Integer): TBuffString;
+var
+  OldPos, I: Integer;
+begin
+  SetLength(Result, UntilIndex - FromIndex);
+  if Length(Result) > 0 then
+  begin
+    OldPos := Position;
+    try
+      I := 0;
+      Position := FromIndex;
+      while Position < UntilIndex do
+      begin
+        Inc(I);
+        Result[I] := NextChar;
+      end;
+      SetLength(Result, I);
+    finally
+      Position := OldPos;
+    end;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --

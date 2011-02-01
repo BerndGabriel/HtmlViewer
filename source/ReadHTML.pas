@@ -95,6 +95,11 @@ type
 
   THtmlParser = class
   private
+    TitleStart: Integer;
+    TitleEnd: Integer;
+    Base: ThtString;
+    BaseTarget: ThtString;
+
     LCh: ThtChar;
     LastChar: (lcOther, lcCR, lcLF);
     HeadingLevel: Integer;
@@ -172,21 +177,23 @@ type
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
+    function getTitle: ThtString;
   public
     constructor Create;
     destructor Destroy; override;
+    property Title: ThtString read getTitle;
   end;
 
-  procedure ParseHtml(Doc: TBuffer; ASectionList: TList; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-  procedure ParseText(Doc: TBuffer; ASectionList: TList);
+  procedure ParseHtml(Viewer: THtmlViewerBase; Doc: TBuffer; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+  procedure ParseText(Viewer: THtmlViewerBase; Doc: TBuffer);
 
-  procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+  procedure ParseFrame(Viewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
   function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
 
 implementation
 
 uses
-  HtmlView, StylePars, UrlSubs;
+  HtmlView, FramView, StylePars, UrlSubs;
 
 type
   PEntity = ^TEntity;
@@ -256,20 +263,20 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+procedure ParseFrame(Viewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
 var
   Parser: THtmlParser;
 begin
   Parser := THtmlParser.Create;
   try
-    Parser.ParseFrame(FrameViewer, FrameSet, Doc, FName, AMetaEvent);
+    Parser.ParseFrame(Viewer, FrameSet, Doc, FName, AMetaEvent);
   finally
     Parser.Free;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure ParseHtml(Doc: TBuffer; ASectionList: TList;
+procedure ParseHtml(Viewer: THtmlViewerBase; Doc: TBuffer;
   AIncludeEvent: TIncludeType;
   ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
 var
@@ -277,80 +284,26 @@ var
 begin
   Parser := THtmlParser.Create;
   try
-    Parser.ParseHtml(Doc, ASectionList, AIncludeEvent, ASoundEvent, AMetaEvent, ALinkEvent);
+    Parser.ParseHtml(Doc, THtmlViewer(Viewer).SectionList, AIncludeEvent, ASoundEvent, AMetaEvent, ALinkEvent);
+    Viewer.Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
   finally
     Parser.Free;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 25.12.2010 --
-procedure ParseText(Doc: TBuffer; ASectionList: TList);
+procedure ParseText(Viewer: THtmlViewerBase; Doc: TBuffer);
 var
   Parser: THtmlParser;
 begin
   Parser := THtmlParser.Create;
   try
-    Parser.ParseText(Doc, ASectionList);
+    Parser.ParseText(Doc, THtmlViewer(Viewer).SectionList);
+    Viewer.Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
   finally
     Parser.Free;
   end;
 end;
-
-////-- BG ---------------------------------------------------------- 25.12.2010 --
-//procedure ParseHTMLString(const S: ThtString; ASectionList: TList;
-//  AIncludeEvent: TIncludeType;
-//  ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-//var
-//  Parser: THtmlParser;
-//begin
-//  Parser := THtmlParser.Create;
-//  try
-//    Parser.ParseHTMLString(S, ASectionList, AIncludeEvent, ASoundEvent, AMetaEvent, ALinkEvent);
-//  finally
-//    Parser.Free;
-//  end;
-//end;
-//
-////-- BG ---------------------------------------------------------- 25.12.2010 --
-//procedure ParseTextString(const S: ThtString; ASectionList: TList);
-//var
-//  Parser: THtmlParser;
-//begin
-//  Parser := THtmlParser.Create;
-//  try
-//    Parser.ParseTextString(S, ASectionList);
-//  finally
-//    Parser.Free;
-//  end;
-//end;
-//
-////-- BG ---------------------------------------------------------- 25.12.2010 --
-//procedure FrameParseString(FrameViewer: TFrameViewerBase; FrameSet: TObject;
-//  ALoadStyle: LoadStyleType; const FName, S: ThtString; AMetaEvent: TMetaType);
-//var
-//  Parser: THtmlParser;
-//begin
-//  Parser := THtmlParser.Create;
-//  try
-//    Parser.FrameParseString(FrameViewer, FrameSet, ALoadStyle, FName, S, AMetaEvent);
-//  finally
-//    Parser.Free;
-//  end;
-//end;
-//
-////-- BG ---------------------------------------------------------- 25.12.2010 --
-//function IsFrameString(ALoadStyle: LoadStyleType; const FName, S: ThtString;
-//  FrameViewer: TFrameViewerBase): Boolean;
-//var
-//  Parser: THtmlParser;
-//begin
-//  Parser := THtmlParser.Create;
-//  try
-//    Result := Parser.IsFrameString(ALoadStyle, FName, S, FrameViewer);
-//  finally
-//    Parser.Free;
-//  end;
-//end;
 
 
 { THtmlParser }
@@ -390,17 +343,18 @@ procedure THtmlParser.GetCh;
 
     function ReadChar: ThtChar;
     begin
-      Result := Doc.NextChar;
-      while (Result = EofChar) and DocStack.AtLeast(1) do
-      begin
-        Doc.Free;
-        Doc := DocStack.Pop;
+      repeat
+        if DocStack.Count = 0 then
+          // update document position only for outmost document
+          PropStack.SIndex := Doc.Position;
         Result := Doc.NextChar;
-      end;
-
-      if DocStack.Count = 0 then
-        // update document position only for outmost document
-        PropStack.SIndex := Doc.Position;
+        if (Result = EofChar) and DocStack.AtLeast(1) then
+        begin
+          Doc.Free;
+          Doc := DocStack.Pop;
+          continue;
+        end;
+      until True;
 
       if not LinkSearch and (PropStack.MasterList <> nil) then
       begin
@@ -894,6 +848,15 @@ begin
     GetCh;
   if not (Sy in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
     GetCh;
+end;
+
+//-- BG ---------------------------------------------------------- 31.01.2011 --
+function THtmlParser.getTitle: ThtString;
+begin
+  if TitleEnd > TitleStart then
+    Result := Doc.GetString(TitleStart, TitleEnd)
+  else
+    Result := '';
 end;
 
 function THtmlParser.CollectText: Boolean;
@@ -3237,11 +3200,12 @@ end;
 
 procedure THtmlParser.DoTitle;
 begin
-  Title := '';
+  TitleStart := PropStack.SIndex;
+  TitleEnd := TitleStart;
   Next;
   while Sy = TextSy do
   begin
-    Title := Title + LCToken.S;
+    TitleEnd := PropStack.SIndex;
     Next;
   end;
 end;
@@ -3511,7 +3475,7 @@ begin
     end;
     Next;
   end;
-  FrameViewer.EndFrameSet(FrameSet);
+  TSubFrameSetBase(FrameSet).Parsed(Title, Base, BaseTarget);
 end;
 
 {----------------ParseInit}
@@ -3538,7 +3502,6 @@ begin
   InHref := False;
   BaseFontSize := 3;
 
-  Title := '';
   Base := '';
   BaseTarget := '';
   CurrentStyle := [];
@@ -3749,7 +3712,7 @@ begin
   SoundEvent := FrameViewer.OnSoundRequest;
   MetaEvent := AMetaEvent;
   LinkEvent := FrameViewer.OnLink;
-  Title := '';
+
   Base := '';
   BaseTarget := '';
   InScript := False;
@@ -3815,7 +3778,7 @@ begin
   PropStack.MasterList := nil;
   CallingObject := FrameViewer;
   SoundEvent := nil;
-  Title := '';
+
   Base := '';
   BaseTarget := '';
   Result := False;
