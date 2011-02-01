@@ -56,6 +56,7 @@ uses
 {$endif}
   PreviewForm,
 {$ifdef UseTNT}
+  TntForms,
   TntStdCtrls,
   SubmitTnt,
 {$else UseTNT}
@@ -81,7 +82,11 @@ type
 
   { TForm1 }
 
+{$ifdef UseTNT}
+  TForm1 = class(TTntForm)
+{$else}
   TForm1 = class(TForm)
+{$endif}
     About1: TMenuItem;
     BackButton: TButton;
     Copy1: TMenuItem;
