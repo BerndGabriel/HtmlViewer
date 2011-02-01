@@ -352,9 +352,10 @@ procedure THtmlParser.GetCh;
         begin
           Doc.Free;
           Doc := DocStack.Pop;
-          continue;
-        end;
-      until True;
+        end
+        else
+          break;
+      until false;
 
       if not LinkSearch and (PropStack.MasterList <> nil) then
       begin
