@@ -707,12 +707,12 @@ begin
       Frame.TheStream := Stream;
       Frame.TheStreamType := StreamType;
       Frame.Destination := Dest;
-      EndFrameSet;
+      Parsed('', '', '');
       CalcSizes(Self);
       Frame.LoadFiles;
-      FTitle := HtmlSubs.Title;
-      FBase := HtmlSubs.Base;
-      FBaseTarget := HtmlSubs.BaseTarget;
+      FTitle := Frame.Viewer.DocumentTitle;
+      FBase := Frame.Viewer.Base;
+      FBaseTarget := Frame.Viewer.BaseTarget;
     end;
   finally
     Doc.Free;
