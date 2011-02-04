@@ -208,6 +208,7 @@ type
     FPrintMarginLeft: Double;
     FPrintMarginRight: Double;
     FPrintMarginTop: Double;
+    FPrintMaxHPages: Integer;
     FPrintScale: Double;
     FRefreshDelay: Integer;
     FRefreshURL: ThtString;
@@ -510,6 +511,7 @@ type
     property PrintMarginLeft: Double read FPrintMarginLeft write FPrintMarginLeft;
     property PrintMarginRight: Double read FPrintMarginRight write FPrintMarginRight;
     property PrintMarginTop: Double read FPrintMarginTop write FPrintMarginTop;
+    property PrintMaxHPages: Integer read FPrintMaxHPages write FPrintMaxHPages default 2;
     property PrintScale: Double read FPrintScale write SetPrintScale;
     property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
     property ServerRoot: ThtString read FServerRoot write SetServerRoot;
@@ -640,6 +642,7 @@ begin
   FPrintMarginRight := 2.0;
   FPrintMarginTop := 2.0;
   FPrintMarginBottom := 2.0;
+  FPrintMaxHPages := 2;
   FPrintScale := 1.0;
   FCharset := DEFAULT_CHARSET;
   FMarginHeight := 5;
@@ -4210,6 +4213,8 @@ begin
 //BG, 01.12.2006: beg of modification
           //BG, 05.03.2006
           HPages := ceil(ScrollWidth / W);
+          if HPages > PrintMaxHPages then
+            HPages := PrintMaxHPages;
           XOrigin := 0;
 //BG, 01.12.2006: end of modification
           while not Done do
