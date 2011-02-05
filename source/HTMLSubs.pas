@@ -643,7 +643,7 @@ type
     ClearAttr: ClearAttrType;
     IsListBlock: boolean;
     PRec: PtPositionRec;
-    Positioning: PositionType; {posStatic, posAbsolute, posRelative}
+    Positioning: PositionType; 
     Visibility: VisibilityType;
     BottomAuto: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
@@ -5575,6 +5575,9 @@ begin
           NeedDoImageStuff := False;
         end;
 
+        if ParentSectionList.NoOutput then
+          exit;
+
         ImgOK := not NeedDoImageStuff and Assigned(BGImage) and (BGImage.Bitmap <> DefBitmap)
           and ParentSectionList.ShowImages;
 
@@ -5693,8 +5696,7 @@ begin
       MargArray[BackgroundColor], ParentSectionList.Printing)
 end;
 
-procedure TBlock.DrawTheList(Canvas: TCanvas; ARect: TRect; ClipWidth, X,
-  XRef, YRef: Integer);
+procedure TBlock.DrawTheList(Canvas: TCanvas; ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
 {draw the list sorted by Z order.}
 var
   I: Integer;
@@ -5710,9 +5712,8 @@ begin
     end
   else
     MyCell.IMgr.ClipWidth := ClipWidth;
-  with DrawList do
-    for I := 0 to Count - 1 do
-      TSectionBase(Items[I]).Draw1(Canvas, ARect, MyCell.IMgr, X, XRef, YRef);
+  for I := 0 to DrawList.Count - 1 do
+    TSectionBase(DrawList[I]).Draw1(Canvas, ARect, MyCell.IMgr, X, XRef, YRef);
 end;
 
 procedure TBlock.FormTree(const Indent: ThtString; var Tree: ThtString);

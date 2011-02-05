@@ -1573,8 +1573,12 @@ var
   I: Integer;
 begin
   for I := 0 to Size - 1 do
-    if not (P[I] in [FmCtl, ImgPan]) then {ImgPan and FmCtl used to mark images, form controls}
+    case P[I] of
+      {ImgPan and FmCtl used to mark images, form controls}
+      FmCtl, ImgPan:;
+    else
       Inc(Leng);
+    end;
 end;
 
 procedure SelTextCount.AddTextCR(P: PWideChar; Size: Integer);
@@ -1604,12 +1608,16 @@ var
 begin
   SizeM1 := BufferLeng - 1;
   for I := 0 to Size - 1 do
-    if not (P[I] in [FmCtl, ImgPan, BrkCh]) then {ImgPan and FmCtl used to mark images, form controls}
+    case P[I] of
+      {ImgPan and FmCtl used to mark images, form controls}
+      FmCtl, ImgPan, BrkCh:;
+    else
       if Leng < SizeM1 then
       begin
         Buffer[Leng] := P[I];
         Inc(Leng);
       end;
+    end;
 end;
 
 function SelTextBuf.Terminate: Integer;
@@ -4421,8 +4429,13 @@ end;
 procedure TFloatingObj.SetAlt(CodePage: Integer; const Value: ThtString);
 begin
   FAlt := Value;
-  while (Length(FAlt) > 0) and (FAlt[Length(FAlt)] in [CrChar, LfChar]) do
-    Delete(FAlt, Length(FAlt), 1);
+  while Length(FAlt) > 0 do
+    case FAlt[Length(FAlt)] of
+      CrChar, LfChar:
+        Delete(FAlt, Length(FAlt), 1);
+    else
+      break;
+    end;
 end;
 
 {$ifdef LCL}
