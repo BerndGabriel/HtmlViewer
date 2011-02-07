@@ -547,16 +547,16 @@ type
       Index: Integer;
   end;
 
-  TSectionSubsBase = class(TSectionBase)
+  TBlockBase = class(TSectionBase)
   private
-    function getMyBlock: TBlock;
+    FMyBlock: TBlock;
     function getParentSectionList: TSectionList;
+    property MyBlock: TBlock read FMyBlock;
   public
-    property MyBlock: TBlock read getMyBlock;
     property ParentSectionList: TSectionList read getParentSectionList;
   end;
 
-  TSection = class(TSectionSubsBase)
+  TSection = class(TBlockBase)
   {TSection holds <p>, <li>, many other things, and the base for lists}
   private
     SectionNumber: Integer;
@@ -598,7 +598,7 @@ type
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth: Integer; var Curs: Integer): Integer; override;
     function FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWideChar; Max: Integer): Integer;
-    function FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; Max: Integer; X, Y: Integer; IMgr: TIndentManager; var ImgHt: Integer; NxImages: TList): Integer;
+    function FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars: Integer; X, Y: Integer; IMgr: TIndentManager; var ImgY, ImgHt: Integer; var DoneFlObjPos: PWideChar; NxImages: TList): Integer;
     function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer; var XR: Integer; var YR: Integer; var CaretHt: Integer; var Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
@@ -624,15 +624,11 @@ type
   end;
 
   TBlock = class(TBlockBase)
-  private
-    function getParentSectionList: TSectionList;
   protected
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
     procedure DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect); virtual;
     function getBorderWidth: Integer; virtual;
-//    function getDisplay: TPropDisplay; virtual;
     property BorderWidth: Integer read getBorderWidth;
-    property ParentSectionList: TSectionList read getParentSectionList;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
   public
     MargArray: TMarginArray;
@@ -647,7 +643,6 @@ type
     Visibility: VisibilityType;
     BottomAuto: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
-    //DisplayNone: Boolean;
     HideOverflow: boolean;
     Justify: JustifyType;
     Converted: boolean;
@@ -850,7 +845,7 @@ type
 
   IntArray = array of Integer;
 
-  THtmlTable = class(TSectionSubsBase)
+  THtmlTable = class(TBlockBase)
   private
     TablePartRec: TTablePartRec;
     HeaderHeight, HeaderRowCount, FootHeight, FootStartRow, FootOffset: Integer;
@@ -963,8 +958,9 @@ type
   end;
 
   TCell = class(TCellBasic)
+  private
     DrawYY: Integer;
-
+  public
     constructor Create(Master: TSectionBaseList);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellBasic);
     destructor Destroy; override;
@@ -975,15 +971,18 @@ type
   end;
 
   TCellObjCell = class(TCell)
+  private
     MyRect: TRect;
     Title: ThtString;
     Url, Target: ThtString;
+  public
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellObjCell);
     function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
       var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
   end;
 
   TBlockCell = class(TCellBasic)
+  private
     CellHeight: Integer;
     TextWidth: Integer;
 
@@ -1153,12 +1152,12 @@ type
       var Curs: Integer);
   end;
 
-  TPage = class(TSectionSubsBase)
+  TPage = class(TBlockBase)
   public
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
   end;
 
-  THorzLine = class(TSectionSubsBase) {a horizontal line, <hr>}
+  THorzLine = class(TBlockBase) {a horizontal line, <hr>}
     VSize: Integer;
     Color: TColor;
     Align: JustifyType;
@@ -1688,7 +1687,7 @@ begin
   ParentSectionList := MasterList as TSectionList;
   Pos := Position;
   VertAlign := ABottom; {default}
-  HorzAlign := ANone; {default}
+  Floating := ANone; {default}
   NewSpace := -1;
   SpecHeight := -1;
   SpecWidth := -1;
@@ -1726,12 +1725,12 @@ begin
             else if S = 'LEFT' then
             begin
               VertAlign := ANone;
-              HorzAlign := ALeft;
+              Floating := ALeft;
             end
             else if S = 'RIGHT' then
             begin
               VertAlign := ANone;
-              HorzAlign := ARight;
+              Floating := ARight;
             end;
           end;
 
@@ -1786,7 +1785,7 @@ begin
 
   if NewSpace >= 0 then
     HSpaceL := NewSpace
-  else if HorzAlign in [ALeft, ARight] then
+  else if Floating in [ALeft, ARight] then
     HSpaceL := ImageSpace {default}
   else
     HSpaceL := 0;
@@ -1799,7 +1798,7 @@ begin
   inherited Create;
   ParentSectionList := MasterList as TSectionList;
   VertAlign := ABottom; {default}
-  HorzAlign := ANone; {default}
+  Floating := ANone; {default}
   Source := AnURL;
   NoBorder := True;
   BorderSize := 0;
@@ -1992,7 +1991,7 @@ var
 begin
   Result := False;
   Reformat := False;
-  if (Image = DefBitmap) then
+  if Image = DefBitmap then
   begin
     Result := True;
     if Error then
@@ -2446,16 +2445,18 @@ begin
     Font.Name := 'Arial'; {make this a property?}
     Font.Style := Font.Style - [fsBold];
   end;
-  begin
-    if SubstImage then
-      Ofst := 4
-    else
-      Ofst := 0;
-    if VertAlign = AMiddle then
-      MiddleAlignTop := YBaseLine + FO.Descent - (FO.tmHeight div 2) - ((ImageHeight - VSpaceT + VSpaceB) div 2)
-    else
-      MiddleAlignTop := 0; {not used}
 
+  if SubstImage then
+    Ofst := 4
+  else
+    Ofst := 0;
+  if VertAlign = AMiddle then
+    MiddleAlignTop := YBaseLine + FO.Descent - (FO.tmHeight div 2) - ((ImageHeight - VSpaceT + VSpaceB) div 2)
+  else
+    MiddleAlignTop := 0; {not used}
+
+  if Floating = ANone then
+  begin
     DrawXX := X;
     case VertAlign of
       ATop, ANone:
@@ -2470,37 +2471,44 @@ begin
       Inc(DrawXX, BorderSize);
       Inc(DrawYY, BorderSize);
     end;
+  end
+  else
+  begin
+    DrawXX := X;
+    DrawYY := TopY;
+  end;
 
-    if not SubstImage or (AltHeight >= 16 + 8) and (AltWidth >= 16 + 8) then
-      Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage, TmpMask);
-    Inc(DrawYY, ParentSectionList.YOff);
-    SetTextAlign(Canvas.Handle, TA_Top);
-    if SubstImage and (BorderSize = 0) then
-    begin
-      Canvas.Font.Color := FO.TheFont.Color;
-    {calc the offset from the image's base to the alt= text baseline}
-      case VertAlign of
-        ATop, ANone:
-          begin
-            if FAlt <> '' then
-              WrapTextW(Canvas, X + 24, TopY + Ofst + VSpaceT, X + AltWidth - 2, TopY + AltHeight - 1 + VSpaceT, FAlt);
-            RaisedRect(ParentSectionList, Canvas, X, TopY + VSpaceT, X + AltWidth, TopY + AltHeight + VSpaceT, False, 1);
-          end;
-        AMiddle:
-          begin {MiddleAlignTop is always initialized}
-            if FAlt <> '' then
-              WrapTextW(Canvas, X + 24, MiddleAlignTop + Ofst, X + AltWidth - 2, MiddleAlignTop + AltHeight - 1, FAlt);
-            RaisedRect(ParentSectionList, Canvas, X, MiddleAlignTop, X + AltWidth, MiddleAlignTop + AltHeight, False, 1);
-          end;
-        ABottom, ABaseline:
-          begin
-            if FAlt <> '' then
-              WrapTextW(Canvas, X + 24, YBaseLine - AltHeight + Ofst - VSpaceB, X + AltWidth - 2, YBaseLine - VSpaceB - 1, FAlt);
-            RaisedRect(ParentSectionList, Canvas, X, YBaseLine - AltHeight - VSpaceB, X + AltWidth, YBaseLine - VSpaceB, False, 1);
-          end;
-      end;
+  if not SubstImage or (AltHeight >= 16 + 8) and (AltWidth >= 16 + 8) then
+    Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage, TmpMask);
+  Inc(DrawYY, ParentSectionList.YOff);
+  SetTextAlign(Canvas.Handle, TA_Top);
+  if SubstImage and (BorderSize = 0) then
+  begin
+    Canvas.Font.Color := FO.TheFont.Color;
+  {calc the offset from the image's base to the alt= text baseline}
+    case VertAlign of
+      ATop, ANone:
+        begin
+          if FAlt <> '' then
+            WrapTextW(Canvas, X + 24, TopY + Ofst + VSpaceT, X + AltWidth - 2, TopY + AltHeight - 1 + VSpaceT, FAlt);
+          RaisedRect(ParentSectionList, Canvas, X, TopY + VSpaceT, X + AltWidth, TopY + AltHeight + VSpaceT, False, 1);
+        end;
+      AMiddle:
+        begin {MiddleAlignTop is always initialized}
+          if FAlt <> '' then
+            WrapTextW(Canvas, X + 24, MiddleAlignTop + Ofst, X + AltWidth - 2, MiddleAlignTop + AltHeight - 1, FAlt);
+          RaisedRect(ParentSectionList, Canvas, X, MiddleAlignTop, X + AltWidth, MiddleAlignTop + AltHeight, False, 1);
+        end;
+      ABottom, ABaseline:
+        begin
+          if FAlt <> '' then
+            WrapTextW(Canvas, X + 24, YBaseLine - AltHeight + Ofst - VSpaceB, X + AltWidth - 2, YBaseLine - VSpaceB - 1, FAlt);
+          RaisedRect(ParentSectionList, Canvas, X, YBaseLine - AltHeight - VSpaceB, X + AltWidth, YBaseLine - VSpaceB, False, 1);
+        end;
     end;
-    if (BorderSize > 0) then
+  end;
+
+  if BorderSize > 0 then
     with Canvas do
     begin
       SaveColor := Pen.Color;
@@ -2541,9 +2549,11 @@ begin
         Pen.Style := SaveStyle;
       end;
     end;
-    if (Assigned(MyFormControl) and MyFormControl.Active or FO.Active) or
-      ParentSectionList.IsCopy and Assigned(ParentSectionList.LinkDrawnEvent)
-      and (FO.UrlTarget.Url <> '') then
+
+  if (Assigned(MyFormControl) and MyFormControl.Active or FO.Active) or
+    ParentSectionList.IsCopy and Assigned(ParentSectionList.LinkDrawnEvent)
+    and (FO.UrlTarget.Url <> '')
+  then
     with Canvas do
     begin
       SaveColor := SetTextColor(Handle, clBlack);
@@ -2566,7 +2576,6 @@ begin
           FO.UrlTarget.Url, FO.UrlTarget.Target, ARect);
       SetTextColor(handle, SaveColor);
     end;
-  end;
 end;
 
 {----------------TImageObjList.CreateCopy}
@@ -2608,7 +2617,7 @@ begin
   if Assigned(FLObj) then
   begin
     Result := FLObj.ImageHeight + FLObj.VSpaceT + FLObj.VSpaceB;
-    AAlign := FLObj.VertAlign;
+    AAlign := FLObj.VertAlign
   end
   else
     Result := -1;
@@ -2621,7 +2630,7 @@ begin
   if Assigned(FLObj) then
   begin
     Result := FLObj.ImageWidth;
-    AAlign := FLObj.HorzAlign;
+    AAlign := FLObj.Floating;
     HSpcL := FLObj.HSpaceL;
     HSpcR := FLObj.HSpaceR;
   end
@@ -4719,10 +4728,10 @@ end;
 //  Result := pdBlock;
 //end;
 
-function TBlock.getParentSectionList: TSectionList;
-begin
-  Result := TSectionList(inherited ParentSectionList);
-end;
+//function TBlock.getParentSectionList: TSectionList;
+//begin
+//  Result := TSectionList(inherited ParentSectionList);
+//end;
 
 function TBlock.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean;
 begin
@@ -5104,15 +5113,15 @@ var
   BlockHeight: Integer;
   IB, Xin: Integer;
 
-  function GetClearSpace(CA: ClearAttrType): Integer;
+  function GetClearSpace(ClearAttr: ClearAttrType): Integer;
   var
     CL, CR: Integer;
   begin
     Result := 0;
-    if (CA <> clrNone) then
+    if (ClearAttr <> clrNone) then
     begin {may need to move down past floating image}
       IMgr.GetClearY(CL, CR);
-      case CA of
+      case ClearAttr of
         clLeft: Result := Max(0, CL - Y - 1);
         clRight: Result := Max(0, CR - Y - 1);
         clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
@@ -5207,11 +5216,17 @@ begin
     YClear := Y + ClearAddon;
     case FloatLR of
       ALeft:
+      begin
+        YClear := Y;
         Indent := IMgr.GetNextLeftXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
+      end;
 
       ARight:
-        //BG, 25.01.2011: Issue 54: HTMLViewer PrintPreview Failure: don't indent < 0! 
+      begin
+        //BG, 25.01.2011: Issue 54: HTMLViewer PrintPreview Failure: don't indent < 0!
         Indent := Max(0, Min(AWidth, IMgr.RightSide(YClear)) - RightWidths - NewWidth);
+        //Indent := IMgr.GetNextRightXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
+      end;
     else
       Indent := LeftWidths;
     end;
@@ -5295,19 +5310,18 @@ begin
     SectionHeight := Result;
     IMgr.FreeLeftIndentRec(LIndex);
     IMgr.FreeRightIndentRec(RIndex);
-    if (FloatLR in [ALeft, ARight]) or (Positioning = posAbsolute) then
+    if (FloatLR in [ALeft, ARight]) or (Positioning in [posAbsolute, posFixed]) then
     begin
       case Positioning of
-        posAbsolute:
+        posAbsolute,
+        posFixed:
           DrawHeight := 0
       else
         DrawHeight := SectionHeight;
-      end;
-      case FloatLR of
-        ALeft:
-          IMgr.UpdateBlock(DrawTop, X + NewWidth + RightWidths, DrawBot - DrawTop, FloatLR);
-        ARight:
-          IMgr.UpdateBlock(DrawTop, TotalWidth, DrawBot - DrawTop, FloatLR);
+        case FloatLR of
+          ALeft:  IMgr.UpdateLeft(DrawTop, DrawBot, X + NewWidth + RightWidths);
+          ARight: IMgr.UpdateRight(DrawTop, DrawBot, TotalWidth);
+        end;
       end;
       SectionHeight := 0;
       Result := 0;
@@ -5354,7 +5368,7 @@ begin
   for I := 0 to MyCell.Count - 1 do
   begin
     SB := MyCell.Items[I];
-    SB.MyBlock := Self;
+    (SB as TBlockBase).FMyBlock := Self;
     SBZIndex := SB.ZIndex;
     if SBZIndex < 0 then
     begin
@@ -10185,7 +10199,7 @@ begin
 
 {After floating images at start, delete an annoying space}
   for I := Length(BuffS) - 1 downto 1 do
-    if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).HorzAlign in [ALeft, ARight])
+    if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).Floating in [ALeft, ARight])
       and (BuffS[I + 1] = ' ') then
       Remove(I + 1);
 
@@ -10472,6 +10486,9 @@ end;
 function TSection.FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWideChar; Max: Integer): Integer;
 {Given a width, find the count of chars (<= Max) which will fit allowing for
  font changes.  Line wrapping will be done later}
+//BG, 06.02.2011: Why are there 2 methods and why can't GetURL and FindCursor use the formatting results of DrawLogic?
+//  TSection.FindCountThatFits1() is used in TSection.DrawLogic().
+//  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
 var
   Cnt, XX, I, J, J1, J2, J3, OHang, Tmp: Integer;
   Picture: boolean;
@@ -10549,16 +10566,18 @@ end;
 
 {----------------TSection.FindCountThatFits1}
 
-function TSection.FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; Max: Integer; X, Y: Integer; IMgr: TIndentManager;
-  var ImgHt: Integer; NxImages: TList): Integer;
+function TSection.FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars: Integer; X, Y: Integer;
+  IMgr: TIndentManager; var ImgY, ImgHt: Integer; var DoneFlObjPos: PWideChar; NxImages: TList): Integer;
 {Given a width, find the count of chars (<= Max) which will fit allowing for
  font changes.  Line wrapping will be done later}
+//BG, 06.02.2011: Why are there 2 methods and why can't GetURL and FindCursor use the formatting results of DrawLogic?
+//  TSection.FindCountThatFits1() is used in TSection.DrawLogic().
+//  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
 var
-  Cnt, XX, I, J, J1, J2, J3, X1, X2,
-    OHang, ImgWidth, Width: Integer;
+  Cnt, XX, I, J, J1, J2, J3, X1, X2, W, OHang, ImgWidth, Width: Integer;
   Picture: boolean;
   Align: AlignmentType;
-  ImageAtStart: boolean;
+//  ImageAtStart: boolean;
   FlObj: TFloatingObj;
   HSpcL, HSpcR: Integer;
   BrChr, TheStart: PWideChar;
@@ -10566,18 +10585,18 @@ var
   SaveX: Integer;
   FoundBreak: boolean;
   HyphenWidth: Integer;
-
+  FloatingImageCount: Integer;
 begin
   LastFont := nil;
   TheStart := Start;
-  ImageAtStart := True;
+//  ImageAtStart := True;
   ImgHt := 0;
 
   BrChr := StrScanW(TheStart, BrkCh); {see if a break ThtChar}
-  if Assigned(BrChr) and (BrChr - TheStart < Max) then
+  if Assigned(BrChr) and (BrChr - TheStart < MaxChars) then
   begin
-    Max := BrChr - TheStart;
-    if Max = 0 then
+    MaxChars := BrChr - TheStart;
+    if MaxChars = 0 then
     begin
       Result := 1;
       Exit; {single character fits}
@@ -10587,7 +10606,6 @@ begin
   else
     FoundBreak := False;
 
-  Cnt := 0;
   X1 := IMgr.LeftIndent(Y);
   if Start = Buff then
     Inc(X1, FirstLineIndent);
@@ -10596,14 +10614,16 @@ begin
 
   if (Start = Buff) and (Images.Count = 0) and (FormControls.Count = 0) then
     if Fonts.GetFontCountAt(0, Len) = Len then
-      if Max * TFontObj(Fonts[0]).tmMaxCharWidth <= Width then {try a shortcut}
+      if MaxChars * TFontObj(Fonts[0]).tmMaxCharWidth <= Width then {try a shortcut}
       begin {it will all fit}
-        Result := Max;
+        Result := MaxChars;
         if FoundBreak then
           Inc(Result);
         Exit;
       end;
 
+  FloatingImageCount := -1;
+  Cnt := 0;
   XX := 0;
   while True do
   begin
@@ -10613,7 +10633,7 @@ begin
       Font.AssignToCanvas(Canvas);
       LastFont := Font;
     end;
-    J1 := Min(Fonts.GetFontCountAt(Start - Buff, Len), Max - Cnt);
+    J1 := Min(Fonts.GetFontCountAt(Start - Buff, Len), MaxChars - Cnt);
     J2 := Images.GetImageCountAt(Start - Buff);
     J3 := FormControls.GetControlCountAt(Start - Buff);
     if J2 = 0 then
@@ -10623,39 +10643,39 @@ begin
       ImgWidth := Images.GetWidthAt(Start - Buff, Align, HSpcL, HSpcR, FlObj);
       if Align in [ALeft, ARight] then
       begin
-        FlObj.DrawYY := Y; {approx y position}
-        if ImageAtStart then
+        if Start > DoneFlObjPos then
         begin
-          Inc(XX, ImgWidth + FlObj.HSpaceL + FlObj.HSpaceR);
-          if XX <= Width then {it fits}
-          begin
-            IMgr.Update(Y, FlObj);
-            ImgHt := Math.Max(ImgHt, FlObj.ImageHeight + FlObj.VSpaceT + FlObj.VSpaceB);
-          end
-          else if Cnt > 0 then
-            Break {One or more do fit, this one doesn't}
-          else
-          begin {first image doesn't fit}
-//BG, 24.01.2010: only moving down looks very strange. 
-//            if IMgr.GetNextWiderY(Y) > Y then
-//              Break; {wider area below, it might fit there}
-          {Can't move it down, might as well put it here}
-            IMgr.Update(Y, FlObj);
-            ImgHt := Math.Max(ImgHt, FlObj.ImageHeight + FlObj.VSpaceT + FlObj.VSpaceB);
-            Cnt := 1;
-            Break;
+          FlObj.FloatingPosY := Max(Y, ImgY);
+          W := ImgWidth; // + FlObj.HSpaceL + FlObj.HSpaceR;
+          case Align of
+            ALeft:  FlObj.FloatingPosX := IMgr.AlignLeft(FlObj.FloatingPosY, W);
+            ARight: FlObj.FloatingPosX := IMgr.AlignRight(FlObj.FloatingPosY, W);
           end;
-        end
-        else
-          NxImages.Add(FlObj); {save it for the next line}
+          IMgr.UpdateImage(FlObj.FloatingPosY, FlObj);
+          ImgY := FlObj.FloatingPosY;
+          ImgHt := Max(ImgHt, FlObj.ImageHeight {+ FlObj.VSpaceT + FlObj.VSpaceB});
+          X1 := IMgr.LeftIndent(Y);
+          X2 := IMgr.RightSide(Y);
+          Width := X2 - X1;
+
+          DoneFlObjPos := Start;
+          Inc(FloatingImageCount);
+          if Cnt >= FloatingImageCount then
+          begin
+            Start := TheStart;
+            Cnt := 0;
+            XX := 0;
+            continue;
+          end;
+        end;
       end
       else
       begin
         Inc(XX, ImgWidth + HSpcL + HSpcR);
-        ImageAtStart := False;
+//        ImageAtStart := False;
+        if XX > Width then
+          break;
       end;
-      if XX > Width then
-        break;
     end
     else if J3 = 0 then
     begin
@@ -10663,7 +10683,7 @@ begin
       XX := XX + HSpcL + HSpcR;
       I := 1; J := 1;
       Picture := True;
-      ImageAtStart := False;
+//      ImageAtStart := False;
       if XX > Width then
         break;
     end
@@ -10680,9 +10700,10 @@ begin
           Dec(I);
       end;
     end;
-    if Cnt + I >= Max then
+
+    if Cnt + I >= MaxChars then
     begin
-      Cnt := Max;
+      Cnt := MaxChars;
       Break;
     end
     else
@@ -10693,13 +10714,13 @@ begin
       if I < J then
         Break;
       XX := XX + SaveX;
-      ImageAtStart := False;
+//      ImageAtStart := False;
     end;
 
     Inc(Start, I);
   end;
   Result := Cnt;
-  if FoundBreak and (Cnt = Max) then
+  if FoundBreak and (Cnt = MaxChars) then
     Inc(Result);
 end;
 
@@ -10759,16 +10780,17 @@ begin
     begin
       DrawLogic(Self.ParentSectionList, Canvas, Fonts.GetFontObjAt(Pos, Indx), 0, 0);
       if not PercentWidth then
-        if HorzAlign in [ALeft, ARight] then
+        if Floating in [ALeft, ARight] then
         begin
           Max := Max + ImageWidth + HSpaceL + HSpaceR;
           Brk[Pos + 1] := 'y'; {allow break after floating image}
+          Min := Math.Max(Min, ImageWidth);
         end
         else
           Min := Math.Max(Min, ImageWidth);
     end;
   end;
-  FloatMin := Max;
+  FloatMin := Min;
 
   for I := 0 to FormControls.Count - 1 do {get Min for form controls}
   begin
@@ -11039,23 +11061,26 @@ var
       if Cnt < NN then
       begin
         H := Images.GetHeightAt(PStart - Buff + Cnt, Align, FlObj);
-        FlObj.DrawYY := Y; {approx y dimension}
-        if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
-          TImageObj(FLObj).MyFormControl.FYValue := Y;
-        case Align of
-          ATop: SA := Max(SA, H - DHt);
-          AMiddle:
-            begin
-              if DHt = 0 then
+        if FlObj.Floating = ANone then
+        begin
+          FlObj.DrawYY := Y; {approx y dimension}
+          if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
+            TImageObj(FLObj).MyFormControl.FYValue := Y;
+          case Align of
+            ATop: SA := Max(SA, H - DHt);
+            AMiddle:
               begin
-                DHt := Fonts.GetFontObjAt(PStart - Buff, Index).GetHeight(Desc);
-                LR.Descent := Desc;
+                if DHt = 0 then
+                begin
+                  DHt := Fonts.GetFontObjAt(PStart - Buff, Index).GetHeight(Desc);
+                  LR.Descent := Desc;
+                end;
+                Tmp := (H - DHt) div 2;
+                SA := Max(SA, Tmp);
+                SB := Max(SB, (H - DHt - Tmp));
               end;
-              Tmp := (H - DHt) div 2;
-              SA := Max(SA, Tmp);
-              SB := Max(SB, (H - DHt - Tmp));
-            end;
-          ABottom, ABaseline: SB := Max(SB, H - (DHt - LR.Descent));
+            ABottom, ABaseline: SB := Max(SB, H - (DHt - LR.Descent));
+          end;
         end;
       end;
       Inc(Cnt); {to skip by the image}
@@ -11141,7 +11166,7 @@ var
     LR.LineImgHt := Max(Tmp, ImgHt);
     for I := 0 to NxImages.Count - 1 do
     begin
-      IMgr.Update(Y, TFloatingObj(NxImages[I])); {update Image manager and Image}
+      IMgr.UpdateImage(Y, TFloatingObj(NxImages[I])); {update Image manager and Image}
     {include images in Line height}
       with TFloatingObj(NxImages[I]) do
         Tmp1 := ImageHeight + VSpaceT + VSpaceB;
@@ -11159,6 +11184,9 @@ var
   Obj: TFloatingObj;
   TopY, HtRef: Integer;
   Ctrl: TFormControlObj;
+  //BG, 06.02.2011: floating objects:
+  PDoneFlObj: PWideChar;
+  YDoneFlObj: Integer;
 begin {TSection.DrawLogic}
   YDraw := Y;
   AccumImgBot := 0;
@@ -11205,165 +11233,170 @@ begin {TSection.DrawLogic}
       Ctrl.Width := Max(10, Min(MulDiv(Ctrl.FWidth, Width, 100), Width - Ctrl.HSpaceL - Ctrl.HSpaceR));
     MaxWidth := Max(MaxWidth, Ctrl.Width);
   end;
+
   NxImages := TList.Create;
-  while not Finished do
-  begin
-    MaxChars := Last - PStart + 1;
-    if MaxChars <= 0 then
-      Break;
-    LR := LineRec.Create(ParentSectionList); {a new line}
-    if Lines.Count = 0 then
-    begin {may need to move down past floating image}
-      Tmp := GetClearSpace(ClearAttr);
+  try
+    YDoneFlObj := Y;
+    PDoneFlObj := PStart - 1;
+    while not Finished do
+    begin
+      MaxChars := Last - PStart + 1;
+      if MaxChars <= 0 then
+        Break;
+      LR := LineRec.Create(ParentSectionList); {a new line}
+      if Lines.Count = 0 then
+      begin {may need to move down past floating image}
+        Tmp := GetClearSpace(ClearAttr);
+        if Tmp > 0 then
+        begin
+          LR.LineHt := Tmp;
+          Inc(SectionHeight, Tmp);
+          LR.Ln := 0;
+          LR.Start := PStart;
+          Inc(Y, Tmp);
+          Lines.Add(LR);
+          LR := LineRec.Create(ParentSectionList);
+        end;
+      end;
+
+      ImgHt := 0;
+      NN := 0;
+      if (Self is TPreformated) and not BreakWord then
+        N := MaxChars
+      else
+      begin
+        NN := FindCountThatFits1(Canvas, PStart, MaxChars, X, Y, IMgr, YDoneFlObj, ImgHt, PDoneFlObj, NxImages);
+        N := Max(NN, 1); {N = at least 1}
+      end;
+
+      AccumImgBot := Max(AccumImgBot, Y + ImgHt);
+      if NN = 0 then {if nothing fits, see if we can move down}
+        Tmp := IMgr.GetNextWiderY(Y) - Y
+      else
+        Tmp := 0;
       if Tmp > 0 then
       begin
-        LR.LineHt := Tmp;
-        Inc(SectionHeight, Tmp);
-        LR.Ln := 0;
-        LR.Start := PStart;
-        Inc(Y, Tmp);
-        Lines.Add(LR);
-        LR := LineRec.Create(ParentSectionList);
-      end;
-    end;
-
-    ImgHt := 0;
-    NN := 0;
-    if (Self is TPreformated) and not BreakWord then
-      N := MaxChars
-    else
-    begin
-      NN := FindCountThatFits1(Canvas, PStart, MaxChars, X, Y, IMgr, ImgHt, NxImages);
-      N := Max(NN, 1); {N = at least 1}
-    end;
-
-    AccumImgBot := Max(AccumImgBot, Y + ImgHt);
-    if NN = 0 then {if nothing fits, see if we can move down}
-      Tmp := IMgr.GetNextWiderY(Y) - Y
-    else
-      Tmp := 0;
-    if Tmp > 0 then
-    begin
-      //BG, 24.01.2010: do not move down images or trailing spaces.
-      P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
-      or (P^ = BrkCh) then
-      begin {move past spaces so as not to print any on next line}
-        while (N < MaxChars) and ((P + 1)^ = ' ') do
-        begin
-          Inc(P);
-          Inc(N);
-        end;
-        Finished := N >= MaxChars;
-        LineComplete(N);
-      end
-      else
-      begin {move down where it's wider}
-        LR.LineHt := Tmp;
-        Inc(SectionHeight, Tmp);
-        LR.Ln := 0;
-        LR.Start := PStart;
-        Inc(Y, Tmp);
-        Lines.Add(LR);
-      end
-    end {else can't move down or don't have to}
-    else if N = MaxChars then
-    begin {Do the remainder}
-      Finished := True;
-      LineComplete(N);
-    end
-    else
-    begin
-      P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
-      or (P^ = BrkCh) then
-      begin {move past spaces so as not to print any on next line}
-        while (N < MaxChars) and ((P + 1)^ = ' ') do
-        begin
-          Inc(P);
-          Inc(N);
-        end;
-        Finished := N >= MaxChars;
-        LineComplete(N);
-      end
-      else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
-      begin
-        repeat
-          Inc(N); {pass the space}
-          Inc(p);
-        until (N >= MaxChars) or ((P + 1)^ <> ' ');
-        Finished := N >= MaxChars;
-        LineComplete(N);
-      end
-      else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
-      begin
-        Finished := False;
-        LineComplete(N);
-      end
-      else
-      begin {non space, wrap it by backing off to previous space or image}
-        while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
-          or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
-          or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
-          Dec(P);
-        if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
-        begin {no space found, forget the wrap, write the whole word and any
-               spaces found after it}
-          if BreakWord then
-            LineComplete(N)
-          else
+        //BG, 24.01.2010: do not move down images or trailing spaces.
+        P := PStart + N - 1; {the last ThtChar that fits}
+        if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+        begin {move past spaces so as not to print any on next line}
+          while (N < MaxChars) and ((P + 1)^ = ' ') do
           begin
-            P := PStart + N - 1;
-
-            while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
-            and not (Brk[P - Buff + 1] in ['a', 's'])
-              and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
-            or (Brk[P - Buff + 2] = 'n') do
-            begin
-              Inc(P);
-            end;
-            while (P <> Last) and ((P + 1)^ = ' ') do
-            begin
-              Inc(P);
-            end;
-            if (P <> Last) and ((P + 1)^ = BrkCh) then
-              Inc(P);
-          {Line is too long, add spacer line to where it's clear}
-            Tmp := IMgr.GetNextWiderY(Y) - Y;
-            if Tmp > 0 then
-            begin
-              LR.LineHt := Tmp;
-              Inc(SectionHeight, Tmp);
-              LR.Ln := 0;
-              LR.Start := PStart;
-              Inc(Y, Tmp);
-              Lines.Add(LR);
-            end
-            else
-            begin {line is too long but do it anyway}
-              MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
-              Finished := P = Last;
-              LineComplete(P - PStart + 1);
-            end;
-          end
+            Inc(P);
+            Inc(N);
+          end;
+          Finished := N >= MaxChars;
+          LineComplete(N);
         end
         else
-        begin {found space}
-          while (P + 1)^ = ' ' do
+        begin {move down where it's wider}
+          LR.LineHt := Tmp;
+          Inc(SectionHeight, Tmp);
+          LR.Ln := 0;
+          LR.Start := PStart;
+          Inc(Y, Tmp);
+          Lines.Add(LR);
+        end
+      end {else can't move down or don't have to}
+      else if N = MaxChars then
+      begin {Do the remainder}
+        Finished := True;
+        LineComplete(N);
+      end
+      else
+      begin
+        P := PStart + N - 1; {the last ThtChar that fits}
+        if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
+        or (P^ = BrkCh) then
+        begin {move past spaces so as not to print any on next line}
+          while (N < MaxChars) and ((P + 1)^ = ' ') do
           begin
-            if P = Last then
-            begin
-              Inc(P);
-              Dec(P);
-            end;
             Inc(P);
+            Inc(N);
           end;
-          LineComplete(P - PStart + 1);
+          Finished := N >= MaxChars;
+          LineComplete(N);
+        end
+        else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
+        begin
+          repeat
+            Inc(N); {pass the space}
+            Inc(p);
+          until (N >= MaxChars) or ((P + 1)^ <> ' ');
+          Finished := N >= MaxChars;
+          LineComplete(N);
+        end
+        else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
+        begin
+          Finished := False;
+          LineComplete(N);
+        end
+        else
+        begin {non space, wrap it by backing off to previous space or image}
+          while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
+            or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
+            or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
+            Dec(P);
+          if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
+          begin {no space found, forget the wrap, write the whole word and any
+                 spaces found after it}
+            if BreakWord then
+              LineComplete(N)
+            else
+            begin
+              P := PStart + N - 1;
+
+              while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
+              and not (Brk[P - Buff + 1] in ['a', 's'])
+                and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
+              or (Brk[P - Buff + 2] = 'n') do
+              begin
+                Inc(P);
+              end;
+              while (P <> Last) and ((P + 1)^ = ' ') do
+              begin
+                Inc(P);
+              end;
+              if (P <> Last) and ((P + 1)^ = BrkCh) then
+                Inc(P);
+            {Line is too long, add spacer line to where it's clear}
+              Tmp := IMgr.GetNextWiderY(Y) - Y;
+              if Tmp > 0 then
+              begin
+                LR.LineHt := Tmp;
+                Inc(SectionHeight, Tmp);
+                LR.Ln := 0;
+                LR.Start := PStart;
+                Inc(Y, Tmp);
+                Lines.Add(LR);
+              end
+              else
+              begin {line is too long but do it anyway}
+                MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
+                Finished := P = Last;
+                LineComplete(P - PStart + 1);
+              end;
+            end
+          end
+          else
+          begin {found space}
+            while (P + 1)^ = ' ' do
+            begin
+              if P = Last then
+              begin
+                Inc(P);
+                Dec(P);
+              end;
+              Inc(P);
+            end;
+            LineComplete(P - PStart + 1);
+          end;
         end;
       end;
     end;
+  finally
+    NxImages.Free;
   end;
-  NxImages.Free;
   Curs := StartCurs + Len;
 
   if Assigned(ParentSectionList.FirstLineHtPtr) and (Lines.Count > 0) then {used for List items}
@@ -11552,17 +11585,13 @@ var
         Obj := Images.FindImage(Start - Buff);
         if Obj is TImageObj then
         begin
-          if Obj.HorzAlign in [ALeft, ARight] then
+          if Obj.Floating in [ALeft, ARight] then
           begin
-            if ImageAtStart then
-            begin
-              ParentSectionList.DrawList.AddImage(TImageObj(Obj), Canvas, IMgr.LfEdge + Obj.Indent,
-                Y - LR.LineHt - LR.SpaceBefore, Y - Descent, FO);
-            end
-            else
-            begin {if not at start, draw on next line}
-              ParentSectionList.DrawList.AddImage(TImageObj(Obj), Canvas, IMgr.LfEdge + Obj.Indent, Y, Y - Descent, FO);
-            end;
+            ParentSectionList.DrawList.AddImage(
+              TImageObj(Obj), Canvas,
+                IMgr.LfEdge + Obj.FloatingPosX,
+                Obj.FloatingPosY, Y - Descent, FO);
+
           {if a boundary is on a floating image, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := LR.BorderList.Count - 1 downto 0 do
@@ -11636,7 +11665,7 @@ var
           with TPanelObj(Obj) do
           begin
             ShowIt := True;
-            if (Obj.HorzAlign in [ALeft, ARight]) then
+            if (Obj.Floating in [ALeft, ARight]) then
             begin
               LeftT := IMgr.LfEdge + Obj.Indent;
               if ImageAtStart then
@@ -12511,6 +12540,8 @@ begin
   inherited Create;
   fMasterList := AMasterList;
   Pos := Position;
+  VertAlign := ABottom; {default}
+  Floating := ANone;
   PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
   Panel := ThvPanel.Create(PntPanel);
   Panel.Left := -4000;
@@ -12530,74 +12561,75 @@ begin
     ParentCtl3D := False;
 {$endif}
     ParentFont := False;
-    VertAlign := ABottom; {default}
-    HorzAlign := ANone;
-    NewSpace := -1;
-    for I := 0 to L.Count - 1 do
-      with TAttribute(L[I]) do
-        case Which of
-          HeightSy:
-            if System.Pos('%', Name) = 0 then
-            begin
-              SpecHeight := Max(1, Value); {spec ht of 0 becomes 1}
-              Height := SpecHeight; {so panels ht will be set for OnPanelCreate}
-            end
-            else if (Value > 0) and (Value <= 100) then
-            begin
-              SpecHeight := Value;
-              PercentHeight := True;
+  end;
+  NewSpace := -1;
+  for I := 0 to L.Count - 1 do
+    with TAttribute(L[I]) do
+      case Which of
+        HeightSy:
+          if System.Pos('%', Name) = 0 then
+          begin
+            SpecHeight := Max(1, Value); {spec ht of 0 becomes 1}
+            Panel.Height := SpecHeight; {so panels ht will be set for OnPanelCreate}
+          end
+          else if (Value > 0) and (Value <= 100) then
+          begin
+            SpecHeight := Value;
+            PercentHeight := True;
+          end;
+        WidthSy:
+          if System.Pos('%', Name) = 0 then
+          begin
+            SpecWidth := Value;
+            Panel.Width := Value;
+          end
+          else
+          begin
+            Value := Max(1, Min(Value, 100));
+            SpecWidth := Value;
+            PercentWidth := True;
+          end;
+        HSpaceSy: NewSpace := Min(40, Abs(Value));
+        VSpaceSy: VSpaceT := Min(40, Abs(Value));
+        SrcSy: Source := Name;
+        NameSy:
+          begin
+            AName := Name;
+            try
+              Panel.Name := Name;
+            except {duplicate name will be ignored}
             end;
-          WidthSy:
-            if System.Pos('%', Name) = 0 then
-            begin
-              SpecWidth := Value;
-              Width := Value;
-            end
-            else
-            begin
-              Value := Max(1, Min(Value, 100));
-              SpecWidth := Value;
-              PercentWidth := True;
-            end;
-          HSpaceSy: NewSpace := Min(40, Abs(Value));
-          VSpaceSy: VSpaceT := Min(40, Abs(Value));
-          SrcSy: Source := Name;
-          NameSy:
-            begin
-              AName := Name;
-              try
-                Panel.Name := Name;
-              except {duplicate name will be ignored}
-              end;
-            end;
-          AlignSy:
-            begin
-              S := UpperCase(Name);
-              if S = 'TOP' then
-                VertAlign := ATop
-              else if (S = 'MIDDLE') or (S = 'ABSMIDDLE') then
-                VertAlign := AMiddle
-              else if S = 'LEFT' then
-                HorzAlign := ALeft
-              else if S = 'RIGHT' then
-                HorzAlign := ARight;
-            end;
-          AltSy:
-            begin
-              SetAlt(CodePage, Name);
-              ImageTitle := Alt; {use Alt as default Title}
-            end;
-          TypeSy: AType := Name;
-        end;
-    if NewSpace >= 0 then
-      HSpaceL := NewSpace
-    else if HorzAlign in [ALeft, ARight] then
-      HSpaceL := ImageSpace {default}
-    else
-      HSpaceL := 0;
+          end;
+        AlignSy:
+          begin
+            S := UpperCase(Name);
+            if S = 'TOP' then
+              VertAlign := ATop
+            else if (S = 'MIDDLE') or (S = 'ABSMIDDLE') then
+              VertAlign := AMiddle
+            else if S = 'LEFT' then
+              Floating := ALeft
+            else if S = 'RIGHT' then
+              Floating := ARight;
+          end;
+        AltSy:
+          begin
+            SetAlt(CodePage, Name);
+            ImageTitle := Alt; {use Alt as default Title}
+          end;
+        TypeSy: AType := Name;
+      end;
+  if NewSpace >= 0 then
+    HSpaceL := NewSpace
+  else if Floating in [ALeft, ARight] then
+    HSpaceL := ImageSpace {default}
+  else
+    HSpaceL := 0;
 
-    HSpaceR := HSpaceL;
-    VSpaceB := VSpaceT;
+  HSpaceR := HSpaceL;
+  VSpaceB := VSpaceT;
+  with ThvPanel(Panel) do
+  begin
     Caption := '';
     if not ObjectTag and Assigned(AMasterList.PanelCreateEvent) then
       AMasterList.PanelCreateEvent(AMasterList.TheOwner, AName, AType,
@@ -13277,16 +13309,16 @@ begin
   end;
 end;
 
-{ TSectionSubsBase }
+{ TBlockBase }
+
+////-- BG ---------------------------------------------------------- 12.09.2010 --
+//function TBlockBase.getMyBlock: TBlock;
+//begin
+//  Result := TBlock(inherited MyBlock);
+//end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
-function TSectionSubsBase.getMyBlock: TBlock;
-begin
-  Result := TBlock(inherited MyBlock);
-end;
-
-//-- BG ---------------------------------------------------------- 12.09.2010 --
-function TSectionSubsBase.getParentSectionList: TSectionList;
+function TBlockBase.getParentSectionList: TSectionList;
 begin
   Result := TSectionList(inherited ParentSectionList);
 end;

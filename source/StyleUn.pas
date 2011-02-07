@@ -68,7 +68,7 @@ type
   ListBulletType = (lbBlank, lbCircle, lbDecimal, lbDisc, lbLowerAlpha, lbLowerRoman,
     lbNone, lbSquare, lbUpperAlpha, lbUpperRoman);
   ClearAttrType = (clrNone, clLeft, clRight, clAll);
-  PositionType = (posStatic, posAbsolute, posRelative);
+  PositionType = (posStatic, posRelative, posAbsolute, posFixed);
   VisibilityType = (viInherit, viHidden, viVisible);
   TextTransformType = (txNone, txUpper, txLower, txCaps);
   PositionRec = record
@@ -826,7 +826,7 @@ begin
   begin
     Result := True;
     S := Props[Float];
-    if (S = 'left') then
+    if S = 'left' then
       Align := ALeft
     else if S = 'right' then
       Align := ARight
@@ -914,6 +914,8 @@ begin
   begin
     if Props[Position] = 'absolute' then
       Result := posAbsolute
+    else if Props[Position] = 'fixed' then
+      Result := posFixed
     else if Props[Position] = 'relative' then
       Result := posRelative;
   end;

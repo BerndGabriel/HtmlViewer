@@ -282,8 +282,8 @@ type
   IndentRec = class(TObject)
     X: Integer; {indent for this record}
     YT, YB: Integer; {top and bottom Y values for this record}
-    ID: TObject; {level inicator for this record, 0 for not applicable}
-    Float: boolean; {set if Floating block boundary}
+    ID: TObject; {level indicator for this record, 0 for not applicable}
+    //Float: boolean; {set if Floating block boundary}
   end;
 
   TIndentManager = class(TObject)
@@ -291,10 +291,13 @@ type
     Width, ClipWidth: Integer;
     L, R: TFreeList; {holds info (IndentRec's) on left and right indents}
     CurrentID: TObject; {the current level (a TBlock pointer)}
-    LfEdge, RtEdge: Integer; {current extreme edges}
-  public
+    LfEdge, RtEdge: Integer;
     constructor Create;
     destructor Destroy; override;
+    function AddLeft(YT, YB, W: Integer): IndentRec;
+    function AddRight(YT, YB, W: Integer): IndentRec;
+    function AlignLeft(var Y: Integer; W: Integer): Integer;
+    function AlignRight(var Y: Integer; W: Integer): Integer;
     function GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
     function GetNextWiderY(Y: Integer): Integer;
     function ImageBottom: Integer;
@@ -307,9 +310,9 @@ type
     procedure FreeRightIndentRec(I: Integer);
     procedure GetClearY(var CL, CR: Integer);
     procedure Reset(Lf, Rt: Integer);
-    procedure Update(Y: Integer; Img: TFloatingObj);
-    procedure UpdateBlock(Y: Integer; IW: Integer; IH: Integer; Justify: AlignmentType);
-    procedure UpdateTable(Y: Integer; IW: Integer; IH: Integer; Justify: JustifyType);
+    procedure UpdateImage(Y: Integer; Img: TFloatingObj);
+    procedure UpdateLeft(YT, YB, IW: Integer);
+    procedure UpdateRight(YT, YB, IW: Integer);
   end;
 
   AllocRec = class(TObject)
@@ -434,10 +437,8 @@ type
     Pos: Integer; {0..Len  index of image position}
     ImageHeight, {does not include VSpace}
     ImageWidth: Integer;
-//BG, 17.01.2010: separate vertical and horizontal alignment:
-//    ObjAlign: AlignmentType;
+    Floating: AlignmentType;
     VertAlign: AlignmentType;
-    HorzAlign: AlignmentType;
     Indent: Integer;
     HSpaceL, HSpaceR, VSpaceT, VSpaceB: Integer; {horizontal, vertical extra space}
     SpecWidth: Integer; {as specified by <img or panel> tag}
@@ -450,6 +451,8 @@ type
     function GetYPosition: Integer; override;
   public
     ImageKnown: boolean; {know size of image}
+    FloatingPosX: Integer;
+    FloatingPosY: Integer;
     DrawYY: Integer;
     DrawXX: Integer;
     NoBorder: boolean; {set if don't want blue border}
@@ -462,12 +465,9 @@ type
     property Alt: ThtString read FAlt;
   end;
 
-  TBlockBase = class;
-
   TSectionBase = class(TIDObject) {abstract base for document sections}
   private
     FDisplay: TPropDisplay;
-    FMyBlock: TBlockBase;
     FParentSectionList: TSectionBaseList; {what list it's in}
   protected
     function GetYPosition: Integer; override;
@@ -502,11 +502,7 @@ type
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure SetParent(List: TSectionBaseList);
     property Display: TPropDisplay read FDisplay write FDisplay;
-    property MyBlock: TBlockBase read FMyBlock write FMyBlock;
     property ParentSectionList: TSectionBaseList read FParentSectionList;
-  end;
-
-  TBlockBase = class(TSectionBase)
   end;
 
   TSectionBaseList = class(TFreeList)
@@ -2493,6 +2489,26 @@ begin
   inherited Destroy;
 end;
 
+//-- BG ---------------------------------------------------------- 05.02.2011 --
+function TIndentManager.AddLeft(YT, YB, W: Integer): IndentRec;
+begin
+  Result := IndentRec.Create;
+  Result.YT := YT;
+  Result.YB := YB;
+  Result.X := LeftIndent(YT) + W;
+  L.Add(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 05.02.2011 --
+function TIndentManager.AddRight(YT, YB, W: Integer): IndentRec;
+begin
+  Result := IndentRec.Create;
+  Result.YT := YT;
+  Result.YB := YB;
+  Result.X := RightSide(YT) - W;
+  R.Add(Result);
+end;
+
 procedure TIndentManager.Clear;
 begin
   R.Clear;
@@ -2509,104 +2525,61 @@ begin
   CurrentID := nil;
 end;
 
-procedure TIndentManager.Update(Y: Integer; Img: TFloatingObj);
+procedure TIndentManager.UpdateImage(Y: Integer; Img: TFloatingObj);
 {Given a new floating image, update the edge information.  Fills  Img.Indent,
  the distance from the left edge to the upper left corner of the image}
 var
   IH, IW: Integer;
   IR: IndentRec;
-  LIndent: Integer;
 begin
   if Assigned(Img) then
   begin
-    IW := Img.ImageWidth + Img.HSpaceL + Img.HSpaceR;
-    IH := Img.ImageHeight + Img.VSpaceT + Img.VSpaceB;
-    if (Img.HorzAlign = ALeft) then
-    begin
-      IR := IndentRec.Create;
-      with IR do
+    IW := Img.ImageWidth; // + Img.HSpaceL + Img.HSpaceR;
+    IH := Img.ImageHeight; // + Img.VSpaceT + Img.VSpaceB;
+    case Img.Floating of
+      ALeft:
       begin
-        LIndent := LeftIndent(Y);
-        Img.Indent := LIndent - LfEdge + Img.HSpaceL;
-        X := LIndent - LfEdge + IW;
-        YT := Y;
-        YB := Y + IH;
-        L.Add(IR);
+        IR := AddLeft(Y, Y + IH, IW);
+        Img.Indent := IR.X - IW + Img.HSpaceL;
       end;
-    end
-    else if (Img.HorzAlign = ARight) then
-    begin
-      IR := IndentRec.Create;
-      with IR do
+
+      ARight:
       begin
-        X := RightSide(Y) - IW;
-        Img.Indent := X + Img.HSpaceL;
-        YT := Y;
-        YB := Y + IH;
-        R.Add(IR);
+        IR := AddRight(Y, Y + IH, IW);
+        Img.Indent := IR.X + Img.HSpaceL;
       end;
     end;
   end;
 end;
 
-procedure TIndentManager.UpdateBlock(Y: Integer; IW: Integer; IH: Integer;
-  Justify: AlignmentType);
-{For a floating block, update the edge information. }
+//-- BG ---------------------------------------------------------- 07.02.2011 --
+procedure TIndentManager.UpdateLeft(YT, YB, IW: Integer);
+{For a floating block, update the edge information.
+ This is not quite the same as AddLeft used for images, but why?
+ Is there an inconsistency in the environmental code?}
 var
   IR: IndentRec;
 begin
   IR := IndentRec.Create;
-  if (Justify = ALeft) then
-  begin
-    with IR do
-    begin
-      X := -LfEdge + IW;
-      YT := Y;
-      YB := Y + IH;
-      Float := True; //ID := CurrentID;
-      L.Add(IR);
-    end;
-  end
-  else if (Justify = ARight) then
-  begin
-    with IR do
-    begin
-      X := RightSide(Y) - IW;
-      YT := Y;
-      YB := Y + IH;
-      Float := True; //ID := CurrentID;
-      R.Add(IR);
-    end;
-  end;
+  IR.YT := YT;
+  IR.YB := YB;
+  IR.X := -LfEdge + IW;
+  L.Add(IR);
 end;
 
-procedure TIndentManager.UpdateTable(Y: Integer; IW: Integer; IH: Integer;
-  Justify: JustifyType);
-{Given a floating table, update the edge information. }
+//-- BG ---------------------------------------------------------- 07.02.2011 --
+procedure TIndentManager.UpdateRight(YT, YB, IW: Integer);
+{Given a floating block, update the edge information.
+ This is the same as AddRight used for images.
+ But why is this the same and UpdateLeft/AddLeft differ?}
 var
   IR: IndentRec;
 begin
   IR := IndentRec.Create;
-  if (Justify = Left) then
-  begin
-    with IR do
-    begin
-      X := -LfEdge + IW;
-      YT := Y;
-      YB := Y + IH;
-      L.Add(IR);
-    end;
-  end
-  else if (Justify = Right) then
-  begin
-    with IR do
-    begin
-      X := RightSide(Y) - IW;
-      YT := Y;
-      YB := Y + IH;
-      R.Add(IR);
-    end;
-  end;
+  IR.YT := YT;
+  IR.YB := YB;
+  IR.X := RightSide(YT) - IW;
+  R.Add(IR);
 end;
 
 const
@@ -2699,6 +2672,7 @@ begin
     dec(X, Auto);
     inc(MaxWidth, 2 * Auto);
   end;
+
   Index := L.Count - 1;
   if Index >= MinIndex then
   begin
@@ -2709,10 +2683,152 @@ begin
   end
   else
     Result := Max(X, LeftIndent(Y));
+
   if Result + ThisWidth > MaxWidth + X then
   begin
     Result := X;
     GetClearY(Y, DummyCR);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.02.2011 --
+function TIndentManager.AlignLeft(var Y: Integer; W: Integer): Integer;
+var
+  I, CL, CR, LX, RX, XL, XR: Integer;
+begin
+  Result := LeftIndent(Y);
+  if Result > RightSide(Y) - W then
+  begin
+    CL := Y;
+    XL := Result; // valium for the compiler
+    for I := 0 to L.Count - 1 do
+      with IndentRec(L.Items[I]) do
+        if not Assigned(ID) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+        begin
+          if X = LeftIndent(YB - 1) then
+          begin
+            // This is the right most left indentation
+            LX := LeftIndent(YB);
+            RX := RightSide(YB) - W;
+            if RX >= LX then
+            begin
+              CL := YB;
+              XL := LX;
+            end;
+          end;
+        end;
+
+    CR := Y;
+    XR := Result; // valium for the compiler
+    for I := 0 to R.Count - 1 do
+      with IndentRec(R.Items[I]) do
+        if not Assigned(ID) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+        begin
+          if X = RightSide(YB - 1) then
+          begin
+            LX := LeftIndent(YB);
+            RX := RightSide(YB) - W;
+            if RX >= LX then
+            begin
+              CR := YB;
+              XR := LX;
+            end;
+          end;
+        end;
+
+    if CL = Y then
+    begin
+      if CR <> Y then
+      begin
+        Y := CR;
+        Result := XR;
+      end
+    end
+    else if CR = Y then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else if CL < CR then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else
+    begin
+      Y := CR;
+      Result := XR;
+    end;
+  end;
+end;
+
+function TIndentManager.AlignRight(var Y: Integer; W: Integer): Integer;
+var
+  I, CL, CR, LX, RX, XL, XR: Integer;
+begin
+  Result := RightSide(Y) - W;
+  if Result < LeftIndent(Y) then
+  begin
+    CL := Y;
+    XL := Result; // valium for the compiler
+    for I := 0 to L.Count - 1 do
+      with IndentRec(L.Items[I]) do
+        if not Assigned(ID) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+        begin
+          if X = LeftIndent(YB - 1) then
+          begin
+            // This is the right most left indentation
+            LX := LeftIndent(YB);
+            RX := RightSide(YB) - W;
+            if RX >= LX then
+            begin
+              CL := YB;
+              XL := RX;
+            end;
+          end;
+        end;
+
+    CR := Y;
+    XR := Result; // valium for the compiler
+    for I := 0 to R.Count - 1 do
+      with IndentRec(R.Items[I]) do
+        if not Assigned(ID) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+        begin
+          if X = RightSide(YB - 1) then
+          begin
+            LX := LeftIndent(YB);
+            RX := RightSide(YB) - W;
+            if RX >= LX then
+            begin
+              CR := YB;
+              XR := X - W;
+            end;
+          end;
+        end;
+
+    if CL = Y then
+    begin
+      if CR <> Y then
+      begin
+        Y := CR;
+        Result := XR;
+      end
+    end
+    else if CR = Y then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else if CL < CR then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else
+    begin
+      Y := CR;
+      Result := XR;
+    end;
   end;
 end;
 
@@ -4328,7 +4444,7 @@ begin
   BorderSize := T.BorderSize;
   Indent := T.Indent;
   VertAlign := T.VertAlign;
-  HorzAlign := T.HorzAlign;
+  Floating := T.Floating;
   HSpaceL := T.HSpaceL;
   HSpaceR := T.HSpaceR;
   VSpaceT := T.VSpaceT;
@@ -4359,7 +4475,8 @@ begin
       HSpaceR := ImageSpace;
       HSpaceL := ImageSpace;
     end;
-    HorzAlign := Align;
+    Floating := Align;
+    VertAlign := ANone;
   end;
   if ImageTitle = '' then {a Title attribute will have higher priority than inherited}
     ImageTitle := Prop.PropTitle;
@@ -4417,7 +4534,7 @@ begin
   if Prop.GetVertAlign(Align) then
     VertAlign := Align;
   if Prop.GetFloat(Align) and (Align <> ANone) then
-    HorzAlign := Align;
+    Floating := Align;
   if Prop.BorderStyleNotBlank then
   begin
     NoBorder := True; {will have inline border instead}
