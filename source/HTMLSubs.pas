@@ -551,8 +551,8 @@ type
   private
     FMyBlock: TBlock;
     function getParentSectionList: TSectionList;
-    property MyBlock: TBlock read FMyBlock;
   public
+    property MyBlock: TBlock read FMyBlock; //BG, 07.02.2011: public for reading document structure (see issue 24).
     property ParentSectionList: TSectionList read getParentSectionList;
   end;
 
@@ -5249,6 +5249,7 @@ begin
       BlockHeight := AHeight
     else
       BlockHeight := BlHt;
+
     case Positioning of
       posRelative:
       begin
