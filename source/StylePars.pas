@@ -820,7 +820,7 @@ var
   function FormatContextualSelector(S: ThtString; Sort: boolean): ThtString;
   {Takes a contextual selector and reverses the order.  Ex: 'div p em' will
    change to 'em Np div'.   N is a number added.  The first digit of N is
-   the number of extra selector items.  The remainder of the number is a sequnce
+   the number of extra selector items.  The remainder of the number is a sequence
    number which serves to sort entries by time parsed.}
   var
     I, Cnt: integer;
@@ -880,20 +880,27 @@ var
       Result := DoSort(S);
   end;
 
+var
+  Ignore: Boolean;
 begin
   repeat
-    if LCh = ',' then
-      GetCh;
     SkipWhiteSpace;
     S := '';
     Sort := False;
+    Ignore := False;
     Cnt := 0;
-    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'),
-      SpcChar, DotChar, ThtChar(':'), ThtChar('#'), MinusChar, ThtChar('_'), ThtChar('*'), GreaterChar] do
-    begin
+    repeat
       case LCh of
-        '.', ':', '#': {2 or more of these in an item will require a sort to put
-                       in standard form}
+        'A'..'Z',
+        'a'..'z',
+        '0'..'9',
+        '_', '-', '>': ;
+
+        '+': Ignore := True; // ignore these otherwize e1 is selected // e1 + e2 --> selects e2, if it follows directly e1
+        // '>': ; // e1 > e2 --> selects e2, if it is 1 level below e1 (e2 is child of e1)
+        // '*': ; // e1 * e2 --> selects e2, if it is at least 2 levels below e1 (e2 is at least grandchild of e1)
+
+        '.', ':', '#': {2 or more of these in an item will require a sort to put in standard form}
           begin
             Inc(Cnt);
             if Cnt = 2 then
@@ -901,14 +908,22 @@ begin
           end;
         ' ': Cnt := 0;
         '*': LCh := ' ';
+      else
+        break;
       end;
-      S := S + LCh;
+      SetLength(S, Length(S) + 1);
+      S[Length(S)] := LCh;
       GetCh;
+    until false;
+    if not Ignore then
+    begin
+      S := FormatContextualSelector(Lowercase(Trim(S)), Sort);
+      Selectors.Add(S);
     end;
-    S := Trim(Lowercase(S));
-    S := FormatContextualSelector(S, Sort);
-    Selectors.Add(S);
-  until LCh <> ',';
+    if LCh <> ',' then
+      break;
+    GetCh;
+  until False;
   while not ((LCh = '{') or (LCh = '<') or (LCh = EofChar)) do
     GetCh;
 end;

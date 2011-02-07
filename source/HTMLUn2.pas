@@ -2677,9 +2677,14 @@ begin
   if Index >= MinIndex then
   begin
     Indent := IndentRec(L[Index]);
-    // set y to previous used y == y of current line
-    Y := Max(Y, Indent.YT);
-    Result := Max(X, Indent.X);
+    if Y < Indent.YB then
+    begin
+      // set y to previous used y == y of current line
+      Y := Max(Y, Indent.YT);
+      Result := Max(X, Indent.X);
+    end
+    else
+      Result := X;
   end
   else
     Result := Max(X, LeftIndent(Y));
