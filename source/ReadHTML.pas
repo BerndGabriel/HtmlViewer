@@ -3235,9 +3235,20 @@ begin
             if CompareText(Rel, 'stylesheet') = 0 then
               OK := True;
           end;
-        RevSy: Rev := Name;
+
+        RevSy:
+          Rev := Name;
+
         HRefSy:
           Url := Name;
+
+        MediaSy:
+          //BG, 12.02.2011: currently we cannot distinguish media, therefore process 'screen' only.
+          if (Pos('screen', Name) = 0) and (Pos('all', Name) = 0) then
+          begin
+            OK := False;
+            break;
+          end;
       end;
   if OK and (Url <> '') then
   begin
@@ -4522,7 +4533,7 @@ begin
 end;
 
 const
-  AttribDefinitions: array[1..84] of TSymbolRec = (
+  AttribDefinitions: array[1..85] of TSymbolRec = (
     (Name: 'HREF';              Value: HrefSy),
     (Name: 'NAME';              Value: NameSy),
     (Name: 'SRC';               Value: SrcSy),
@@ -4606,7 +4617,8 @@ const
     (Name: 'TOPMARGIN';         Value: TopMarginSy),
     (Name: 'LEFTMARGIN';        Value: LeftMarginSy),
     (Name: 'LABEL';             Value: LabelSy),
-    (Name: 'READONLY';          Value: ReadonlySy));
+    (Name: 'READONLY';          Value: ReadonlySy),
+    (Name: 'MEDIA';             Value: MediaSy));
 
 procedure InitAttributes;
 var
