@@ -639,7 +639,7 @@ type
     ClearAttr: ClearAttrType;
     IsListBlock: boolean;
     PRec: PtPositionRec;
-    Positioning: PositionType; 
+    Positioning: PositionType;
     Visibility: VisibilityType;
     BottomAuto: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
@@ -663,6 +663,7 @@ type
     ClientContentBot: Integer;
     BlockTitle: ThtString;
     MyRect: TRect;
+    MyIMgr: TIndentManager;
     RefIMgr: TIndentManager;
 
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic; Attributes: TAttributeList);
@@ -688,7 +689,7 @@ type
     procedure CopyToClipboard; override;
     procedure DrawBlock(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
     procedure DrawSort;
-    procedure DrawTheList(Canvas: TCanvas; ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
+    procedure DrawTheList(Canvas: TCanvas; const ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
     procedure FormTree(const Indent: ThtString; var Tree: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   end;
@@ -4409,12 +4410,15 @@ begin
     ZIndex := 10 * Prop.GetZIndex;
     if (Positioning = posAbsolute) and (ZIndex = 0) then
       ZIndex := 1; {abs on top unless otherwise specified}
-    if Positioning = posAbsolute then
-      MyCell.IMgr := TIndentManager.Create;
+  end;
+  if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
+  begin
+    MyIMgr := TIndentManager.Create;
+    MyCell.IMgr := MyIMgr;
   end;
   if (FloatLR in [ALeft, ARight]) and (ZIndex = 0) then
     ZIndex := 1;
-  TagClass := Prop.PropTag + '.' + Prop.PropClass;
+  TagClass := Prop.PropTag + '.' + Prop.PropClass + '#' + Prop.PropID;
   if not (Self is TTableBlock) and not (Self is TTableAndCaptionBlock) then
     CollapseMargins;
   if Assigned(Attributes) and (Attributes.TheID <> '') then
@@ -4534,7 +4538,7 @@ begin
   if Assigned(TT.BGImage) and (AMasterlist as TSectionList).PrintTableBackground then
     BGImage := TImageObj.CreateCopy(AMasterList, TT.BGImage);
   MargArrayO := TT.MargArrayO;
-  if Positioning = posAbsolute then
+  if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     MyCell.IMgr := TIndentManager.Create;
 end;
 
@@ -4544,8 +4548,11 @@ begin
   TiledImage.Free;
   TiledMask.Free;
   FullBG.Free;
-  if Positioning = posAbsolute then
-    FreeAndNil(MyCell.IMgr);
+  if MyIMgr <> nil then
+  begin
+    MyCell.IMgr := nil;
+    FreeAndNil(MyIMgr);
+  end;
   FreeAndNil(MyCell);
   DrawList.Free;
   inherited;
@@ -5118,7 +5125,7 @@ var
     CL, CR: Integer;
   begin
     Result := 0;
-    if (ClearAttr <> clrNone) then
+    if ClearAttr <> clrNone then
     begin {may need to move down past floating image}
       IMgr.GetClearY(CL, CR);
       case ClearAttr of
@@ -5162,7 +5169,13 @@ begin
     MaxWidth := AWidth;
 
     ConvMargArray(AWidth, AHeight, AutoCount);
+    NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
+    LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
+    RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+    MiscWidths  := LeftWidths + RightWidths;
+    TotalWidth  := MiscWidths + NewWidth;
 
+    Indent := LeftWidths;
     TopP := MargArray[TopPos];
     LeftP := MargArray[LeftPos];
     case Positioning of
@@ -5180,9 +5193,7 @@ begin
           TopP := 0;
         if (LeftP = Auto) then
           if (MargArray[RightPos] <> Auto) and (AutoCount = 0) then
-            LeftP := AWidth - MargArray[RightPos] - MargArray[piWidth]
-              - MargArray[MarginLeft] - MargArray[PaddingLeft] - MargArray[BorderLeftWidth]
-              - MargArray[MarginRight] - MargArray[PaddingRight] - MargArray[BorderRightWidth]
+            LeftP := AWidth - MargArray[RightPos] - MargArray[piWidth] - LeftWidths - RightWidths
           else
             LeftP := 0;
         X := LeftP;
@@ -5190,58 +5201,60 @@ begin
       end;
     end;
 
-    NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
+    X := X + Indent;
+    YClear := Y + ClearAddon;
+    if not (Positioning in [posAbsolute, PosFixed]) then
+      case FloatLR of
+        ALeft:
+        begin
+          YClear := Y;
+          //Indent := IMgr.GetNextLeftXY(YClear, X, NewWidth, AWidth, 0) {+ LeftWidths} - X;
+          Indent := IMgr.AlignLeft(YClear, NewWidth);
+          X := Indent;
+        end;
 
-    case Positioning of
-      posAbsolute:
-      begin
-        RefIMgr := IMgr;
-        IMgr := MyCell.IMgr;
-        IMgr.Clear;
-        IMgr.Reset(0, NewWidth);
-        IMgr.Width := NewWidth;
-      end
+        ARight:
+        begin
+          YClear := Y;
+          //BG, 25.01.2011: Issue 54: HTMLViewer PrintPreview Failure: don't indent < 0!
+          //Indent := Max(0, Min(AWidth, IMgr.RightSide(YClear)) {- RightWidths} - NewWidth);
+          //Indent := IMgr.GetNextRightXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
+          Indent := IMgr.AlignRight(YClear, NewWidth);
+          X := Indent;
+        end;
+      end;
+
+    if MargArray[MarginTop] >= 0 then
+      DrawTop := YClear
     else
+      DrawTop := YClear + MargArray[MarginTop]; {Border top}
+
+    ContentTop := YClear + MargArray[MarginTop] + MargArray[PaddingTop] + MargArray[BorderTopWidth];
+    ContentLeft := X;
+
+    if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
+    begin
+      RefIMgr := IMgr;
+      if MyCell.IMgr = nil then
+      begin
+        MyIMgr := TIndentManager.Create;
+        MyCell.IMgr := MyIMgr;
+      end;
+      IMgr := MyCell.IMgr;
+      IMgr.Clear;
+      IMgr.Reset(0, NewWidth);
+      IMgr.Width := NewWidth;
+    end
+    else
+    begin
       MyCell.IMgr := IMgr;
     end;
 
     SaveID := IMgr.CurrentID;
     IMgr.CurrentID := Self;
 
-    LeftWidths := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
-    RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
-    MiscWidths := LeftWidths + RightWidths;
-    TotalWidth := MiscWidths + NewWidth;
-
-    YClear := Y + ClearAddon;
-    case FloatLR of
-      ALeft:
-      begin
-        YClear := Y;
-        Indent := IMgr.GetNextLeftXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
-      end;
-
-      ARight:
-      begin
-        //BG, 25.01.2011: Issue 54: HTMLViewer PrintPreview Failure: don't indent < 0!
-        Indent := Max(0, Min(AWidth, IMgr.RightSide(YClear)) - RightWidths - NewWidth);
-        //Indent := IMgr.GetNextRightXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
-      end;
-    else
-      Indent := LeftWidths;
-    end;
-    if MargArray[MarginTop] > 0 then
-      DrawTop := YClear
-    else
-      DrawTop := YClear + MargArray[MarginTop]; {Border top}
-
-    X := X + Indent;
-    ContentTop := YClear + MargArray[MarginTop] + MargArray[PaddingTop] + MargArray[BorderTopWidth];
-
     LIndex := IMgr.SetLeftIndent(X, ContentTop);
     RIndex := IMgr.SetRightIndent(X + NewWidth, ContentTop);
-
-    ContentLeft := X;
 
     if MargArray[piHeight] > 0 then
       BlockHeight := MargArray[piHeight]
@@ -5311,17 +5324,17 @@ begin
     SectionHeight := Result;
     IMgr.FreeLeftIndentRec(LIndex);
     IMgr.FreeRightIndentRec(RIndex);
-    if (FloatLR in [ALeft, ARight]) or (Positioning in [posAbsolute, posFixed]) then
+    if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     begin
       case Positioning of
         posAbsolute,
         posFixed:
           DrawHeight := 0
       else
-        DrawHeight := SectionHeight;
+        DrawHeight := 0; //SectionHeight;
         case FloatLR of
-          ALeft:  IMgr.UpdateLeft(DrawTop, DrawBot, X + NewWidth + RightWidths);
-          ARight: IMgr.UpdateRight(DrawTop, DrawBot, TotalWidth);
+          ALeft:  RefIMgr.UpdateLeft(DrawTop, DrawBot, X + NewWidth + RightWidths);
+          ARight: RefIMgr.UpdateRight(DrawTop, DrawBot, TotalWidth);
         end;
       end;
       SectionHeight := 0;
@@ -5401,90 +5414,94 @@ begin
     pdInline: Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 {$endif}
   else
-    Y := YDraw;
-    YO := Y - ParentSectionList.YOff;
-    Result := Y + SectionHeight;
+    case Visibility of
+      viHidden:
+        Result := 0;
+    else
+      Y := YDraw;
+      YO := Y - ParentSectionList.YOff;
+      Result := Y + SectionHeight;
 
-    if ParentSectionList.SkipDraw then
-    begin
-      ParentSectionList.SkipDraw := False;
-      Exit;
-    end;
+      if ParentSectionList.SkipDraw then
+      begin
+        ParentSectionList.SkipDraw := False;
+        Exit;
+      end;
 
-    with ParentSectionList do
-      if Printing and (Positioning <> posAbsolute) then
-        if BreakBefore and not FirstPageItem then
-        begin
-          if ARect.Top + YOff < YDraw + MargArray[MarginTop] then {page-break-before}
+      //with ParentSectionList do
+        if ParentSectionList.Printing and (Positioning <> posAbsolute) then
+          if BreakBefore and not ParentSectionList.FirstPageItem then
           begin
-            if YDraw + MargArray[MarginTop] < PageBottom then
-              PageBottom := YDraw + MargArray[MarginTop];
-            SkipDraw := True; {prevents next block from drawing a line}
-            Exit;
-          end;
-        end
-        else if KeepIntact then
-        begin
-        {if we're printing and block won't fit on this page and block will fit on
-         next page, then don't do block now}
-          if (YO > ARect.Top) and (Y + DrawHeight > PageBottom) and
-            (DrawHeight - MargArray[MarginTop] < ARect.Bottom - ARect.Top) then
-          begin
-            if Y + MargArray[MarginTop] < PageBottom then
-              PageBottom := Y + MargArray[MarginTop];
-            Exit;
-          end;
-        end
-        else if BreakAfter then
-        begin
-          if ARect.Top + YOff < Result then {page-break-after}
-            if Result < PageBottom then
-              PageBottom := Result;
-        end
-        else if Self is TTableBlock and not TTableBlock(Self).Table.HeadOrFoot then {ordinary tables}
-        {if we're printing and
-         we're 2/3 down page and table won't fit on this page and table will fit on
-         next page, then don't do table now}
-        begin
-          if (YO > ARect.Top + ((ARect.Bottom - ARect.Top) * 2) div 3) and
-            (Y + DrawHeight > PageBottom) and
-            (DrawHeight < ARect.Bottom - ARect.Top) then
-          begin
-            if Y + MargArray[MarginTop] < PageBottom then
-              PageBottom := Y + MargArray[MarginTop];
-            Exit;
-          end;
-        end
-        else if Self is TTableBlock then {try to avoid just a header and footer at page break}
-          with TTableBlock(Self).Table do
-            if HeadOrFoot and (ParentSectionList.TableNestLevel = 0)
-              and ((ParentSectionList.PrintingTable = nil) or
-              (ParentSectionList.PrintingTable = TTableBlock(Self).Table)) then
+            if ARect.Top + ParentSectionList.YOff < YDraw + MargArray[MarginTop] then {page-break-before}
             begin
-              Spacing := CellSpacing div 2;
-              HeightNeeded := HeaderHeight + FootHeight +
-                TCellList(Rows.Items[HeaderRowCount]).RowHeight;
-              if (YO > ARect.Top) and (Y + HeightNeeded > ParentSectionList.PageBottom) and
-                (HeightNeeded < ARect.Bottom - ARect.Top) then
-              begin {will go on next page}
-                if Y + Spacing < ParentSectionList.PageBottom then
-                begin
-                  ParentSectionList.PageShortened := True;
-                  ParentSectionList.PageBottom := Y + Spacing;
-                end;
-                Exit;
-              end;
+              if YDraw + MargArray[MarginTop] < ParentSectionList.PageBottom then
+                ParentSectionList.PageBottom := YDraw + MargArray[MarginTop];
+              ParentSectionList.SkipDraw := True; {prevents next block from drawing a line}
+              Exit;
             end;
+          end
+          else if KeepIntact then
+          begin
+          {if we're printing and block won't fit on this page and block will fit on
+           next page, then don't do block now}
+            if (YO > ARect.Top) and (Y + DrawHeight > ParentSectionList.PageBottom) and
+              (DrawHeight - MargArray[MarginTop] < ARect.Bottom - ARect.Top) then
+            begin
+              if Y + MargArray[MarginTop] < ParentSectionList.PageBottom then
+                ParentSectionList.PageBottom := Y + MargArray[MarginTop];
+              Exit;
+            end;
+          end
+          else if BreakAfter then
+          begin
+            if ARect.Top + ParentSectionList.YOff < Result then {page-break-after}
+              if Result < ParentSectionList.PageBottom then
+                ParentSectionList.PageBottom := Result;
+          end
+          else if Self is TTableBlock and not TTableBlock(Self).Table.HeadOrFoot then {ordinary tables}
+          {if we're printing and
+           we're 2/3 down page and table won't fit on this page and table will fit on
+           next page, then don't do table now}
+          begin
+            if (YO > ARect.Top + ((ARect.Bottom - ARect.Top) * 2) div 3) and
+              (Y + DrawHeight > ParentSectionList.PageBottom) and
+              (DrawHeight < ARect.Bottom - ARect.Top) then
+            begin
+              if Y + MargArray[MarginTop] < ParentSectionList.PageBottom then
+                ParentSectionList.PageBottom := Y + MargArray[MarginTop];
+              Exit;
+            end;
+          end
+          else if Self is TTableBlock then {try to avoid just a header and footer at page break}
+            with TTableBlock(Self).Table do
+              if HeadOrFoot and (ParentSectionList.TableNestLevel = 0)
+                and ((ParentSectionList.PrintingTable = nil) or
+                (ParentSectionList.PrintingTable = TTableBlock(Self).Table)) then
+              begin
+                Spacing := CellSpacing div 2;
+                HeightNeeded := HeaderHeight + FootHeight +
+                  TCellList(Rows.Items[HeaderRowCount]).RowHeight;
+                if (YO > ARect.Top) and (Y + HeightNeeded > ParentSectionList.PageBottom) and
+                  (HeightNeeded < ARect.Bottom - ARect.Top) then
+                begin {will go on next page}
+                  if Y + Spacing < ParentSectionList.PageBottom then
+                  begin
+                    ParentSectionList.PageShortened := True;
+                    ParentSectionList.PageBottom := Y + Spacing;
+                  end;
+                  Exit;
+                end;
+              end;
 
-    if Visibility <> viHidden then
-      if Positioning = posRelative then {for debugging}
-        DrawBlock(Canvas, ARect, IMgr, X + LeftP, Y + TopP, XRef, YRef)
-      else if Positioning = posAbsolute then
-        DrawBlock(Canvas, ARect, IMgr, XRef + LeftP, YRef + TopP, XRef, YRef)
-      else if FloatLR in [ALeft, ARight] then
-        DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef)
-      else
-        DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef);
+        if Positioning = posRelative then {for debugging}
+          DrawBlock(Canvas, ARect, IMgr, X + LeftP, Y + TopP, XRef, YRef)
+        else if Positioning = posAbsolute then
+          DrawBlock(Canvas, ARect, IMgr, XRef + LeftP, YRef + TopP, XRef, YRef)
+        else if FloatLR in [ALeft, ARight] then
+          DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef)
+        else
+          DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef);
+    end;
   end;
 end;
 
@@ -5492,14 +5509,6 @@ end;
 
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
-var
-  YOffset: Integer;
-  XR, YB, BL, BT, BR, BB, PL, PT, PR, PB, RefX, TmpHt: Integer;
-  SaveID: TObject;
-  ImgOK, HasBackgroundColor: boolean;
-  IT, IH, FT: Integer;
-  Rgn, SaveRgn, SaveRgn1: HRgn;
-  OpenRgn: Boolean;
 
   procedure InitFullBg(W, H: Integer);
   begin
@@ -5518,34 +5527,48 @@ var
   end;
 
 var
+  YOffset: Integer;
+  XR, YB, BL, BT, BR, BB, PL, PT, PR, PB, RefX, RefY, TmpHt: Integer;
+  SaveID: TObject;
+  ImgOK, HasBackgroundColor: boolean;
+  IT, IH, FT: Integer;
+  Rgn, SaveRgn, SaveRgn1: HRgn;
+  OpenRgn: Boolean;
   XOffset: Integer;
 begin
   YOffset := ParentSectionList.YOff;
   XOffset := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
 
   case FLoatLR of
-    ALeft, ARight: RefX := X + Indent - XOffset;
+    ALeft, ARight:
+    begin
+      //RefX := X + Indent + XOffset;
+      RefX := IMgr.LfEdge + MargArray[MarginLeft] + ContentLeft;
+      X := RefX;
+      XR := RefX + NewWidth + MargArray[MarginRight];
+      RefY := DrawTop;
+      YB := DrawBot + MargArray[MarginBottom];
+    end;
   else
-    RefX := X;
+    RefX := X + MargArray[MarginLeft];
+    X := X + Indent;
+    XR := RefX + XOffset + NewWidth + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
+    RefY := Y + ClearAddon + MargArray[MarginTop];
+    case Positioning of
+      posRelative:
+        YB := ContentBot + TopP;
+    else
+      YB := ContentBot;
+    end;
   end;
 
-  X := X + Indent;
-
-  XR := RefX + XOffset + NewWidth + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
-  if Positioning = posRelative then
-    YB := ContentBot - YOffset + TopP
-  else if FLoatLR in [ALeft, ARight] then
-    YB := DrawBot + MargArray[MarginBottom] - YOffset
-  else
-    YB := ContentBot - YOffset;
-
-  BL := RefX + MargArray[MarginLeft]; {Border left and right}
+  BL := RefX; {Border left and right}
   BR := XR - MargArray[MarginRight];
   PL := BL + MargArray[BorderLeftWidth]; {Padding left and right}
   PR := BR - MargArray[BorderRightWidth];
 
-  BT := Y + ClearAddon + MargArray[MarginTop] - YOffset; {Border Top and Bottom}
-  BB := YB - MargArray[MarginBottom];
+  BT := RefY - YOffset; {Border Top and Bottom}
+  BB := YB - MargArray[MarginBottom] - YOffset;
   PT := BT + MargArray[BorderTopWidth]; {Padding Top and Bottom}
   PB := BB - MargArray[BorderBottomWidth];
 
@@ -5666,19 +5689,22 @@ begin
     end;
 
     if HideOverflow then
-      GetClippingRgn(Canvas, Rect(PL + MargArray[PaddingLeft], PT + MargArray[PaddingTop],
-        PR - MargArray[PaddingRight], PB - MargArray[PaddingBottom]),
-        ParentSectionList.Printing, Rgn, SaveRgn);
+      if FloatLR = ANone then
+        GetClippingRgn(Canvas, Rect(PL + MargArray[PaddingLeft], PT + MargArray[PaddingTop],
+          PR - MargArray[PaddingRight], PB - MargArray[PaddingBottom]),
+          ParentSectionList.Printing, Rgn, SaveRgn)
+      else
+        GetClippingRgn(Canvas, Rect(PL, PT, PR, PB), ParentSectionList.Printing, Rgn, SaveRgn);
 
     SaveID := IMgr.CurrentID;
     Imgr.CurrentID := Self;
     if Positioning = posRelative then
       DrawTheList(Canvas, ARect, NewWidth, X,
-        RefX + MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
+        RefX + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
         Y + MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop])
     else if Positioning = posAbsolute then
       DrawTheList(Canvas, ARect, NewWidth, X,
-        RefX + MargArray[MarginLeft] + MargArray[BorderLeftWidth],
+        RefX + MargArray[BorderLeftWidth],
         Y + MargArray[MarginTop] + MargArray[BorderTopWidth])
     else
       DrawTheList(Canvas, ARect, NewWidth, X, XRef, YRef);
@@ -5711,13 +5737,13 @@ begin
       MargArray[BackgroundColor], ParentSectionList.Printing)
 end;
 
-procedure TBlock.DrawTheList(Canvas: TCanvas; ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
+procedure TBlock.DrawTheList(Canvas: TCanvas; const ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
 {draw the list sorted by Z order.}
 var
   I: Integer;
   SaveID: TObject;
 begin
-  if Positioning = posAbsolute then
+  if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     with MyCell do
     begin
       SaveID := IMgr.CurrentID;

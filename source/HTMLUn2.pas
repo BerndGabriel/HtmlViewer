@@ -2699,11 +2699,14 @@ end;
 //-- BG ---------------------------------------------------------- 06.02.2011 --
 function TIndentManager.AlignLeft(var Y: Integer; W: Integer): Integer;
 var
-  I, CL, CR, LX, RX, XL, XR: Integer;
+  I, CL, CR, LX, RX, XL, XR, YY: Integer;
 begin
   Result := LeftIndent(Y);
-  if Result > RightSide(Y) - W then
+  if Result + W > RightSide(Y) then
   begin
+    // too wide, must find a wider place below:
+    YY := Y;
+
     CL := Y;
     XL := Result; // valium for the compiler
     for I := 0 to L.Count - 1 do
@@ -2715,6 +2718,8 @@ begin
             // This is the right most left indentation
             LX := LeftIndent(YB);
             RX := RightSide(YB) - W;
+            if YY < YB then
+              YY := YB;
             if RX >= LX then
             begin
               CL := YB;
@@ -2733,6 +2738,8 @@ begin
           begin
             LX := LeftIndent(YB);
             RX := RightSide(YB) - W;
+            if YY < YB then
+              YY := YB;
             if RX >= LX then
             begin
               CR := YB;
@@ -2743,7 +2750,13 @@ begin
 
     if CL = Y then
     begin
-      if CR <> Y then
+      if CR = Y then
+      begin
+        // no better place found, just append at the end.
+        Y := YY;
+        Result := LfEdge;
+      end
+      else
       begin
         Y := CR;
         Result := XR;
@@ -2769,11 +2782,14 @@ end;
 
 function TIndentManager.AlignRight(var Y: Integer; W: Integer): Integer;
 var
-  I, CL, CR, LX, RX, XL, XR: Integer;
+  I, CL, CR, LX, RX, XL, XR, YY: Integer;
 begin
   Result := RightSide(Y) - W;
   if Result < LeftIndent(Y) then
   begin
+    // too wide, must find a wider place below:
+    YY := Y;
+
     CL := Y;
     XL := Result; // valium for the compiler
     for I := 0 to L.Count - 1 do
@@ -2785,6 +2801,8 @@ begin
             // This is the right most left indentation
             LX := LeftIndent(YB);
             RX := RightSide(YB) - W;
+            if YY < YB then
+              YY := YB;
             if RX >= LX then
             begin
               CL := YB;
@@ -2803,6 +2821,8 @@ begin
           begin
             LX := LeftIndent(YB);
             RX := RightSide(YB) - W;
+            if YY < YB then
+              YY := YB;
             if RX >= LX then
             begin
               CR := YB;
@@ -2813,7 +2833,13 @@ begin
 
     if CL = Y then
     begin
-      if CR <> Y then
+      if CR = Y then
+      begin
+        // no better place found, just append at the end.
+        Y := YY;
+        Result := LfEdge;
+      end
+      else
       begin
         Y := CR;
         Result := XR;
