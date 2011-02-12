@@ -89,10 +89,14 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FDemUnit"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="751"/>
-        <CursorPos X="65" Y="784"/>
+        <TopLine Value="225"/>
+        <CursorPos X="1" Y="233"/>
         <UsageCount Value="129"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="FDemUnit.lfm"/>
@@ -123,8 +127,8 @@
         <Filename Value="..\..\source\HTMLUn2.pas"/>
         <UnitName Value="HTMLUn2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="3051"/>
-        <CursorPos X="19" Y="3056"/>
+        <TopLine Value="985"/>
+        <CursorPos X="1" Y="1042"/>
         <UsageCount Value="55"/>
       </Unit8>
       <Unit9>
@@ -138,19 +142,17 @@
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <UnitName Value="HTMLSubs"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="6814"/>
-        <CursorPos X="1" Y="6851"/>
+        <TopLine Value="1814"/>
+        <CursorPos X="11" Y="1829"/>
         <UsageCount Value="59"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\..\source\framview.pas"/>
         <UnitName Value="FramView"/>
-        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="4681"/>
         <CursorPos X="33" Y="4706"/>
         <UsageCount Value="24"/>
-        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\source\htmlcons.inc"/>
@@ -281,17 +283,14 @@
       <Unit28>
         <Filename Value="..\..\source\htmlview.pas"/>
         <UnitName Value="HtmlView"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="4725"/>
-        <CursorPos X="1" Y="4749"/>
+        <CursorPos X="43" Y="4766"/>
         <UsageCount Value="44"/>
         <Bookmarks Count="2">
           <Item0 X="1" Y="3162" ID="8"/>
           <Item1 X="1" Y="5463" ID="9"/>
         </Bookmarks>
-        <Loaded Value="True"/>
       </Unit28>
       <Unit29>
         <Filename Value="PreviewForm.lfm"/>
@@ -347,12 +346,10 @@
       <Unit36>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <UnitName Value="HtmlGlobals"/>
-        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="95"/>
         <CursorPos X="3" Y="139"/>
         <UsageCount Value="22"/>
-        <Loaded Value="True"/>
       </Unit36>
       <Unit37>
         <Filename Value="..\..\..\HtmlViewer.Juha\source\htmlcons.inc"/>
@@ -403,12 +400,10 @@
       <Unit43>
         <Filename Value="..\..\source\htmlgif1.pas"/>
         <UnitName Value="HtmlGif1"/>
-        <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
         <UsageCount Value="17"/>
-        <Loaded Value="True"/>
       </Unit43>
       <Unit44>
         <Filename Value="C:\FPC\2.4.2\source\rtl\inc\systemh.inc"/>
@@ -444,12 +439,10 @@
       <Unit48>
         <Filename Value="..\..\source\GDIPL2A.pas"/>
         <UnitName Value="GDIPL2A"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="99"/>
         <CursorPos X="18" Y="137"/>
         <UsageCount Value="42"/>
-        <Loaded Value="True"/>
       </Unit48>
       <Unit49>
         <Filename Value="..\..\source\FramBrwz.pas"/>
@@ -656,12 +649,10 @@
       </Unit75>
       <Unit76>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\lclintf.inc"/>
-        <EditorIndex Value="7"/>
         <WindowIndex Value="0"/>
         <TopLine Value="59"/>
         <CursorPos X="1" Y="94"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit76>
       <Unit77>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\wincontrol.inc"/>
@@ -763,21 +754,17 @@
       <Unit90>
         <Filename Value="D:\source\pascal\lazarus\lcl\clipbrd.pp"/>
         <UnitName Value="Clipbrd"/>
-        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
         <TopLine Value="163"/>
         <CursorPos X="15" Y="184"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit90>
       <Unit91>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
         <TopLine Value="113"/>
         <CursorPos X="1" Y="146"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit91>
       <Unit92>
         <Filename Value="C:\FPC\2.4.2\source\rtl\inc\wstringh.inc"/>
@@ -787,127 +774,23 @@
         <UsageCount Value="10"/>
       </Unit92>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="4" HistoryIndex="3">
       <Position1>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="237" Column="1" TopLine="204"/>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="784" Column="65" TopLine="751"/>
       </Position1>
       <Position2>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="238" Column="1" TopLine="204"/>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="280" Column="3" TopLine="280"/>
       </Position2>
       <Position3>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="137" Column="1" TopLine="104"/>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="633" Column="94" TopLine="614"/>
       </Position3>
       <Position4>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="138" Column="1" TopLine="104"/>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="954" Column="38" TopLine="888"/>
       </Position4>
-      <Position5>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="139" Column="1" TopLine="104"/>
-      </Position5>
-      <Position6>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="140" Column="1" TopLine="104"/>
-      </Position6>
-      <Position7>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="141" Column="1" TopLine="104"/>
-      </Position7>
-      <Position8>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="142" Column="1" TopLine="104"/>
-      </Position8>
-      <Position9>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="144" Column="1" TopLine="104"/>
-      </Position9>
-      <Position10>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="242" Column="1" TopLine="209"/>
-      </Position10>
-      <Position11>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="244" Column="1" TopLine="209"/>
-      </Position11>
-      <Position12>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="245" Column="1" TopLine="209"/>
-      </Position12>
-      <Position13>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="246" Column="1" TopLine="209"/>
-      </Position13>
-      <Position14>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="247" Column="1" TopLine="209"/>
-      </Position14>
-      <Position15>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="248" Column="1" TopLine="209"/>
-      </Position15>
-      <Position16>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="210" Column="1" TopLine="202"/>
-      </Position16>
-      <Position17>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="211" Column="1" TopLine="202"/>
-      </Position17>
-      <Position18>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="212" Column="1" TopLine="202"/>
-      </Position18>
-      <Position19>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="213" Column="1" TopLine="202"/>
-      </Position19>
-      <Position20>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="215" Column="1" TopLine="202"/>
-      </Position20>
-      <Position21>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="242" Column="3" TopLine="240"/>
-      </Position21>
-      <Position22>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\lclintf.inc"/>
-        <Caret Line="92" Column="1" TopLine="59"/>
-      </Position22>
-      <Position23>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\lclintf.inc"/>
-        <Caret Line="94" Column="1" TopLine="59"/>
-      </Position23>
-      <Position24>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="220" Column="1" TopLine="187"/>
-      </Position24>
-      <Position25>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="221" Column="1" TopLine="187"/>
-      </Position25>
-      <Position26>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="223" Column="1" TopLine="187"/>
-      </Position26>
-      <Position27>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="225" Column="1" TopLine="187"/>
-      </Position27>
-      <Position28>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="249" Column="1" TopLine="190"/>
-      </Position28>
-      <Position29>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="253" Column="1" TopLine="194"/>
-      </Position29>
-      <Position30>
-        <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
-        <Caret Line="146" Column="1" TopLine="113"/>
-      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -937,7 +820,7 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="17">
+    <BreakPoints Count="13">
       <Item1>
         <Source Value="D:\source\pascal\lazarus\lcl\lresources.pp"/>
         <Line Value="1463"/>
@@ -979,33 +862,17 @@
         <Line Value="2505"/>
       </Item10>
       <Item11>
-        <Source Value="..\..\source\HTMLUn2.pas"/>
-        <Line Value="1011"/>
-      </Item11>
-      <Item12>
-        <Source Value="..\..\source\HTMLUn2.pas"/>
-        <Line Value="1041"/>
-      </Item12>
-      <Item13>
-        <Source Value="..\..\source\HTMLUn2.pas"/>
-        <Line Value="3782"/>
-      </Item13>
-      <Item14>
-        <Source Value="..\..\source\HTMLSubs.pas"/>
-        <Line Value="1847"/>
-      </Item14>
-      <Item15>
         <Source Value="..\..\source\HTMLGif2.pas"/>
         <Line Value="526"/>
-      </Item15>
-      <Item16>
+      </Item11>
+      <Item12>
         <Source Value="..\..\source\htmlview.pas"/>
         <Line Value="4935"/>
-      </Item16>
-      <Item17>
+      </Item12>
+      <Item13>
         <Source Value="..\..\source\htmlview.pas"/>
         <Line Value="4745"/>
-      </Item17>
+      </Item13>
     </BreakPoints>
     <Exceptions Count="3">
       <Item1>

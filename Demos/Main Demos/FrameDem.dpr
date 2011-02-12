@@ -40,7 +40,7 @@ uses
   GOPAGE in 'GOPAGE.PAS' {GoPageForm},
   PREVIEWFORM in 'PREVIEWFORM.PAS' {PreviewForm},
   FDemUnit in 'FDemUnit.pas' {Form1},
-  FONTDLG in 'Fontdlg.pas' {FontForm},
+  Fontdlg in 'Fontdlg.pas' {FontForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   IMGFORM in 'IMGFORM.PAS' {ImageForm},
   DemoSubs in 'DemoSubs.pas';

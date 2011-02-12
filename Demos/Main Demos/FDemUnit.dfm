@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 1260
-  Top = 269
-  Width = 510
-  Height = 344
+  Left = 448
+  Top = 205
+  Width = 1195
+  Height = 894
   Caption = 'Frame Demo'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -22,8 +22,8 @@ object Form1: TForm1
   object FrameViewer: TFrameViewer
     Left = 0
     Top = 27
-    Width = 502
-    Height = 236
+    Width = 1187
+    Height = 786
     CharSet = DEFAULT_CHARSET
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
@@ -59,14 +59,14 @@ object Form1: TForm1
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 502
+    Width = 1187
     Height = 27
     Align = alTop
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 1
     DesignSize = (
-      502
+      1187
       27)
     object ReloadButton: TButton
       Left = 2
@@ -104,7 +104,7 @@ object Form1: TForm1
     object Edit2: TEdit
       Left = 197
       Top = 2
-      Width = 303
+      Width = 988
       Height = 24
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 3
@@ -121,8 +121,8 @@ object Form1: TForm1
   end
   object Panel3: TPanel
     Left = 0
-    Top = 263
-    Width = 502
+    Top = 813
+    Width = 1187
     Height = 27
     Align = alBottom
     Alignment = taLeftJustify
@@ -130,7 +130,7 @@ object Form1: TForm1
     BorderWidth = 2
     TabOrder = 3
     object ProgressBar: TProgressBar
-      Left = 350
+      Left = 1035
       Top = 2
       Width = 150
       Height = 23
@@ -143,7 +143,7 @@ object Form1: TForm1
     object InfoPanel: TPanel
       Left = 2
       Top = 2
-      Width = 348
+      Width = 1033
       Height = 23
       Align = alClient
       Alignment = taLeftJustify

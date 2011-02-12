@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ProjectGuid>{e8f2416f-36f0-4431-9dac-a546113c084a}</ProjectGuid>
     <MainSource>FrameDem.dpr</MainSource>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
     <DCC_DependencyCheckOutputName>bin\Delphi2007\FrameDem.exe</DCC_DependencyCheckOutputName>
@@ -58,6 +58,8 @@
     <DelphiCompile Include="FrameDem.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
+    <DCCReference Include="..\..\..\..\FastMM\FastMM4.pas" />
+    <DCCReference Include="..\..\..\..\FastMM\FastMM4Messages.pas" />
     <DCCReference Include="..\..\source\SubmitTnt.pas">
       <Form>SubmitFormTnt</Form>
     </DCCReference>

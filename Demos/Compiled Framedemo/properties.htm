@@ -1,9 +1,9 @@
-<HTML>
+<html>
 
-<HEAD>
-<TITLE></TITLE>
-<LINK REL="stylesheet" TYPE="text/css" HREF="demo.css">
-<STYLE TYPE="text/css">
+<head>
+<title></title>
+<link REL="stylesheet" TYPE="text/css" HREF="demo.css">
+<style TYPE="text/css">
   body      {margin-top: 15;}
   body, td, th   {font-size: 10pt; font-family: Arial;}
   .larger   {font-size: larger; background-color: a0b8c8;}
@@ -12,380 +12,379 @@
   td.note   {background-color: lightBlue;}
   .head		{font: bold 18pt; color: #a53737;}
   .red     {color: red; font-weight: bold;}
-</STYLE>
+</style>
 
-</HEAD>
+</head>
 
-<BODY bgcolor="white">
-<DIV ALIGN="center">
-  <P CLASS="title">
+<body bgcolor="white">
+<div ALIGN="center">
+  <p CLASS="title">
     HTML Components
     <div STYLE="color: #733737; margin-top: 0;"><b>Cascading Style Sheet Support</b></div>
     <div CLASS="subtitle" STYLE="color: 373737">Version 10 additions shown in <SPAN CLASS="red">red</SPAN></div>
   </p>
-</DIV>
-<P></P>
-<TABLE WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="CENTER">
-  <TR>
-	 <TH COLSPAN="3" CLASS="larger">Pseudo-Classes</TH>
-  </TR>
-  <TR>
-	 <TH WIDTH="31%">Pseudo-Class</TH>
-	 <TH WIDTH="31%">Supported</TH>
-	 <TH WIDTH="31%">Unsupported</TH>
-	 <TH WIDTH="50" STYLE="background-color: transparent;"></TH>
-  </TR>
-  <TR>
+</div>
+<p></p>
+<table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
+  <tr>
+	 <th COLSPAN="3" CLASS="larger">Pseudo-Classes</th>
+  </tr>
+  <tr>
+	 <th WIDTH="31%">Pseudo-Class</th>
+	 <th WIDTH="31%">Supported</th>
+	 <th WIDTH="31%">Unsupported</th>
+	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+  </tr>
+  <tr>
 	 <TD> &nbsp;:link</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>&nbsp;:visited</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>&nbsp;:active</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-  <TR>
-	 <TD>&nbsp;:hover</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>&nbsp;:first-letter</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-  <TR>
-	 <TD>&nbsp;:first-line</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-</TABLE>
-<P></P>
-<TABLE WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="CENTER">
-  <TR>
-	 <TH COLSPAN="3" CLASS="larger">CSS1 Properties </TH>
-  </TR>
-  <TR>
-	 <TH WIDTH="31%">Property</TH>
-	 <TH WIDTH="31%">Supported</TH>
-	 <TH WIDTH="31%">Unsupported</TH>
-	 <TH WIDTH="50" STYLE="background-color: transparent;"></TH>
-  </TR>
-  <TR>
-	 <TD>Background (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> (see specific properties) 
-	 </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Background-attachment</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">fixed, scroll</TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Background-color</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Background-image</TD>
-	 <TD>most block tags</TD>
-	 <TD>inline tags</TD>
-  </TR>
-  <TR>
-	 <TD>Background-position</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Background-repeat</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Border (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> (see specific properties) 
-	 </TD>
-	 <TD>&nbsp;</TD>
-	 <TD CLASS="note" WIDTH="50"><A HREF="#note1">Note 1</A></TD>
-  </TR>
-  <TR>
-	 <TD>Border-style (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> 
-	 </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Border-top..left (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> (see specific properties) 
-	 </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Border-top..left-color</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Border-top..left-style</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Border-top..left-width</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Border-color (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Clear</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Color</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Display</TD>
-	 <TD>none, <span class="red">inline (&lt;li&gt; only)</span></TD>
-	 <TD>block, inline (all other tags), list-item</TD>
-  </TR>
-  <TR>
-	 <TD>Float</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Font (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> (see specific properties) 
-	 </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Font-family</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Font-size</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Font-style</TD>
-	 <TD>normal, italic</TD>
-	 <TD>oblique</TD>
-  </TR>
-  <TR>
-	 <TD>Font-variant</TD>
-	 <TD>normal, small-caps</TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Font-weight</TD>
-	 <TD>normal, bold, 100..900</TD>
-	 <TD>bolder, lighter</TD>
-  </TR>
-  <TR>
-	 <TD>Height</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> most cases </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Letter-spacing</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>&nbsp;:visited</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>&nbsp;:active</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+  <tr>
+	 <td>&nbsp;:hover</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>&nbsp;:first-letter</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+  <tr>
+	 <td>&nbsp;:first-line</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+</table>
+<p></p>
+<table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
+  <tr>
+	 <th COLSPAN="3" CLASS="larger">CSS1 Properties </th>
+  </tr>
+  <tr>
+	 <th WIDTH="31%">Property</th>
+	 <th WIDTH="31%">Supported</th>
+	 <th WIDTH="31%">Unsupported</th>
+	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+  </tr>
+  <tr>
+	 <td>Background (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
+	 </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Background-attachment</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">fixed, scroll</td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Background-color</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Background-image</td>
+	 <td>most block tags</td>
+	 <td>inline tags</td>
+  </tr>
+  <tr>
+	 <td>Background-position</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Background-repeat</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Border (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
+	 </td>
+	 <td>&nbsp;</td>
+	 <td CLASS="note" WIDTH="50"><a HREF="#note1">Note 1</a></td>
+  </tr>
+  <tr>
+	 <td>Border-style (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> 
+	 </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Border-top..left (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
+	 </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Border-top..left-color</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Border-top..left-style</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Border-top..left-width</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Border-color (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Clear</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Color</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Display</td>
+	 <td>none, <span class="red">inline (&lt;li&gt; only)</span></td>
+	 <td>block, inline (all other tags), list-item</td>
+  </tr>
+  <tr>
+	 <td>Float</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Font (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
+	 </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Font-family</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Font-size</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Font-style</td>
+	 <td>normal, italic</td>
+	 <td>oblique</td>
+  </tr>
+  <tr>
+	 <td>Font-variant</td>
+	 <td>normal, small-caps</td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Font-weight</td>
+	 <td>normal, bold, 100..900</td>
+	 <td>bolder, lighter</td>
+  </tr>
+  <tr>
+	 <td>Height</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> most cases </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Letter-spacing</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
 
-  <TR>
-	 <TD>Line-height</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>List-style (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> (see specific properties) 
-	 </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>List-style-image</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>List-style-position</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-  <TR>
-	 <TD>List-style-type</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Margin (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> (see specific properties) 
-	 </TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Margin-top..left</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;table cells</TD>
-  </TR>
-  <TR>
-	 <TD>Padding (shorthand)</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Padding-top..left</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Text-align</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Text-decortation</TD>
-	 <TD>none, line-through, underline</TD>
-	 <TD>overline, blink</TD>
-  </TR>
-  <TR>
-	 <TD>Text-indent</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Text-transform</TD>
-	 <TD>uppercase, lowercase, none</TD>
-	 <TD>capitalize</TD>
-  </TR>
-  <TR>
-	 <TD>Vertical-align</TD>
-	 <TD>top, text-top, middle, baseline, bottom, sub, super</TD>
-	 <TD>text-bottom&nbsp;</TD>
-	 <TD CLASS="note" WIDTH="50"><A HREF="#note2">Note 2</A></TD>
-  </TR>
-  <TR>
-	 <TD>White-space</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-  <TR>
-	 <TD>Width</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Word-spacing</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-</TABLE>
-<P></P>
-<TABLE WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="CENTER">
-  <TR>
-	 <TH COLSPAN="3" CLASS="larger">CSS2 Properties</TH>
-  </TR>
-  <TR>
-	 <TH WIDTH="31%">Property</TH>
-	 <TH WIDTH="31%">Supported</TH>
-	 <TH WIDTH="31%">Unsupported</TH>
-	 <TH WIDTH="50" STYLE="background-color: transparent;"></TH>
-  </TR>
-  <TR>
-	 <TD>Clip</TD>
-	 <TD>&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-  </TR>
-  <TR class="red">
-	 <TD>Empty-cells</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Left</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Overflow</TD>
-	 <TD>hidden</TD>
-	 <TD>scroll</TD>
-  </TR>
-  <TR>
-	 <TD>Page-break-before/after</TD>
-	 <TD>always, auto&nbsp;</TD>
-	 <TD>left, right</TD>
-  </TR>
-  <TR>
-	 <TD>Page-break-inside</TD>
-	 <TD>avoid, auto&nbsp;</TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Position&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> block tags</TD>
-	 <TD>&nbsp;inline tags</TD>
-	 <TD CLASS="note"><A HREF="#note3">Note 3</A></TD>
-  </TR>
-  <TR>
-	 <TD>Top&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-  <TR>
-	 <TD>Visibility&nbsp;</TD>
-	 <TD>hidden, visible. Block tags only</TD>
-	 <TD>inherit</TD>
-  </TR>
-  <TR>
-	 <TD>Word-Wrap&nbsp;</TD>
-	 <TD>break-word</TD>
-	 <TD></TD>
-  </TR>
-  <TR>
-	 <TD>Z-index&nbsp;</TD>
-	 <TD><IMG SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></TD>
-	 <TD>&nbsp;</TD>
-  </TR>
-</TABLE>
-<P></P>
-<TABLE WIDTH="90%" BORDER="0" ALIGN="CENTER">
-  <TR>
-	 <TH ALIGN="CENTER" CLASS="larger" COLSPAN="2" WIDTH="93%">NOTES</TH>
-	 <TH WIDTH="50" STYLE="background-color: transparent;"></TH>
-  </TR>
-  <TR>
-	 <TD WIDTH="15%" ALIGN="CENTER"><A NAME="note1">1</A></TD>
-	 <TD>Limited support for inline borders.</TD>
-  </TR>
-  <TR>
-	 <TD ALIGN="CENTER"><A NAME="note2">2</A></TD>
-	 <TD>Vertical-Align supported for images and form controls only.</TD>
-  </TR>
-  <TR>
-	 <TD ALIGN="CENTER"><A NAME="note3">3</A></TD>
-	 <TD>Position is supported for block tags only.</TD>
-  </TR>
-</TABLE>
-<P>&nbsp;</P>
-</BODY>
-</HTML>
-
+  <tr>
+	 <td>Line-height</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>List-style (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
+	 </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>List-style-image</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>List-style-position</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+  <tr>
+	 <td>List-style-type</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Margin (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
+	 </td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Margin-top..left</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;table cells</td>
+  </tr>
+  <tr>
+	 <td>Padding (shorthand)</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Padding-top..left</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Text-align</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Text-decortation</td>
+	 <td>none, line-through, underline</td>
+	 <td>overline, blink</td>
+  </tr>
+  <tr>
+	 <td>Text-indent</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Text-transform</td>
+	 <td>uppercase, lowercase, none</td>
+	 <td>capitalize</td>
+  </tr>
+  <tr>
+	 <td>Vertical-align</td>
+	 <td>top, text-top, middle, baseline, bottom, sub, super</td>
+	 <td>text-bottom&nbsp;</td>
+	 <td CLASS="note" WIDTH="50"><a HREF="#note2">Note 2</a></td>
+  </tr>
+  <tr>
+	 <td>White-space</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+  <tr>
+	 <td>Width</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Word-spacing</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+</table>
+<p></p>
+<table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
+  <tr>
+	 <th COLSPAN="3" CLASS="larger">CSS2 Properties</th>
+  </tr>
+  <tr>
+	 <th WIDTH="31%">Property</th>
+	 <th WIDTH="31%">Supported</th>
+	 <th WIDTH="31%">Unsupported</th>
+	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+  </tr>
+  <tr>
+	 <td>Clip</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+  </tr>
+  <tr class="red">
+	 <td>Empty-cells</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Left</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Overflow</td>
+	 <td>hidden</td>
+	 <td>scroll</td>
+  </tr>
+  <tr>
+	 <td>Page-break-before/after</td>
+	 <td>always, auto&nbsp;</td>
+	 <td>left, right</td>
+  </tr>
+  <tr>
+	 <td>Page-break-inside</td>
+	 <td>avoid, auto&nbsp;</td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Position&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> block tags</td>
+	 <td>&nbsp;inline tags</td>
+	 <td CLASS="note"><a HREF="#note3">Note 3</a></td>
+  </tr>
+  <tr>
+	 <td>Top&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr>
+	 <td>Visibility&nbsp;</td>
+	 <td>hidden, visible. Block tags only</td>
+	 <td>inherit</td>
+  </tr>
+  <tr>
+	 <td>Word-Wrap&nbsp;</td>
+	 <td>break-word</td>
+	 <td></td>
+  </tr>
+  <tr>
+	 <td>Z-index&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
+</table>
+<p></p>
+<table WIDTH="90%" BORDER="0" ALIGN="center">
+  <tr>
+	 <th ALIGN="middle" CLASS="larger" COLSPAN="2" WIDTH="93%">NOTES</th>
+	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+  </tr>
+  <tr>
+	 <td WIDTH="15%" ALIGN="center"><a NAME="note1">1</a></td>
+	 <td>Limited support for inline borders.</td>
+  </tr>
+  <tr>
+	 <td ALIGN="center"><a NAME="note2">2</a></td>
+	 <td>Vertical-Align supported for images and form controls only.</td>
+  </tr>
+  <tr>
+	 <td ALIGN="center"><a NAME="note3">3</a></td>
+	 <td>Position is supported for block tags only.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+</body>
+</html>
