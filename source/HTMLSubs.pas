@@ -5543,7 +5543,7 @@ begin
     ALeft, ARight:
     begin
       //RefX := X + Indent + XOffset;
-      RefX := IMgr.LfEdge + MargArray[MarginLeft] + ContentLeft;
+      RefX := IMgr.LfEdge + max(0, MargArray[MarginLeft]) + ContentLeft;
       X := RefX;
       XR := RefX + NewWidth + MargArray[MarginRight];
       RefY := DrawTop;
