@@ -583,13 +583,11 @@ var
 
   procedure ReplaceEscapeChars;
   var
-//    S: ThtString;
     I: integer;
   begin
     I := Pos('%', FName);
-    while (I > 1) and (I <= Length(FName) - 2) do
+    while (I >= 1) and (I <= Length(FName) - 2) do
     begin
-//      S := '$' + FName[I + 1] + FName[I + 2];
       try
         FName[I] := ThtChar(CharToHexInt(FName[I + 1]) * 16 + CharToHexInt(FName[I + 2])); // chr(StrToInt(S));
         Delete(FName, I + 1, 2);

@@ -88,17 +88,19 @@ FRAMEDEM.EXE    The TFrameViewer demo program
 Various image and sound files for demo
 
 Source code for the demo programs
-   FRAMEDEM.DPR    Source for the TFrameViewer demo program
-   FRMUNIT.PAS, .DFM
+   FRAMEDEM.DPR    Source for the TFrameViewer demo program for Delphi 6..2007
+   FRAMEDEMW.DPR   Source for the TFrameViewer demo program for Delphi 2009..
+   FRAMEDEMLAZ.DPR Source for the TFrameViewer demo program for Lazarus 0.9..
+   FDEMUNIT.PAS, .DFM, .LFM
    HTMLDEMO.DPR    Source for the ThtmlViewer demo program
-   DEMOUNIT.PAS, .DFM
+   DEMOUNIT.PAS, .DFM, .LFM
    HTMLEDITOR.DPR  Source for the demo editor program
    HTMLED1.PAS, .DFM
    HTMLABT.PAS, .DFM
    FONTDLG.PAS, .DFM
-   SUBMIT.PAS, .DFM
+   SUBMIT.PAS, .DFM, .LFM
+   SUBMITTNT.PAS, .DFM
    IMGFORM.PAS, .DFM
-
    PREVIEWFORM.PAS, .DFM
    PRINTSTATUSFORM.PAS, .DFM
    GOPAGE.PAS, .DFM
@@ -110,12 +112,15 @@ Source code for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
    FRAMVIEW.PAS, .DCR
    HTMLVIEW.PAS, .DCR
    HTMLGLOBALS.PAS
+   HTMLMISC.PAS
+   HTMLBUFFER.PAS
    HTMLSUBS.PAS
    HTMLSBS1.PAS
    READHTML.PAS
    HTMLUN2.PAS
    HTMLGIF1.PAS
    HTMLGIF2.PAS
+   GDIPL2A.PAS
    URLSUBS.PAS
    METAFILEPRINTER.PAS
    DITHERUNIT.PAS
@@ -123,10 +128,10 @@ Source code for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
    HTMLCOMPEDIT.PAS
    STYLEUN.PAS
    STYLEPARS.PAS
+   WIDESTRINGSLCL.PAS
+   COMPILERS.INC
    HTMLCONS.INC         File of optional compile time constants
    FRAMEVIEWERREG.PAS
-   FRAMEVIEWER4.DPK, .RES  Delphi 4 Package source file
-   FRAMEVIEWER5.DPK, .RES  Delphi 5 Package source file
    FRAMEVIEWER6.DPK, .RES  Delphi 6 Package source file
    FRAMEVIEWER7.DPK, .RES  Delphi 7 Package source file
    FRAMEVIEWER2005.DPK, .RES  Delphi 2005 Package source file
@@ -297,9 +302,17 @@ World Wide Web: <a HREF="http://code.google.com/p/thtmlviewer/">http://code.goog
     <td><b>jrsoftware.org</b></td>
     <td>Inno Installer</td>
 </tr>
+<tr>
+    <td><b>Phil Hess</b></td>
+    <td>Lazarus port support</td>
+</tr>
+<tr>
+    <td><b>Juha Manninen</b></td>
+    <td>Lazarus port support</td>
+</tr>
 </table>
 
-<p CLASS="heading"><a NAME="Copyright">Copyright © 1995-2008 by L. David Baldwin</a>, 2008-2010 by HtmlViewer Team</p>
+<p CLASS="heading"><a NAME="Copyright">Copyright © 1995-2008 by L. David Baldwin</a>, 2008-2010 by HtmlViewer Team, 2011 by Bernd Gabriel</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
