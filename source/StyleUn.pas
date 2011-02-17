@@ -368,12 +368,51 @@ begin
   Result := False;
 end;
 
+//-- BG ---------------------------------------------------------- 17.02.2011 --
+function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
+begin
+  while I <= L do
+  begin
+    case S[I] of
+      ' ',
+      #10,
+      #12,
+      #13:;
+    else
+      break;
+    end;
+    Inc(I);
+  end;
+  Result := I;
+end;
+
+//-- BG ---------------------------------------------------------- 17.02.2011 --
+function FindChar(const S: ThtString; C: ThtChar; I, L: Integer): Integer;
+begin
+  while (I <= L) and (S[I] <> C) do
+    Inc(I);
+  Result := I;
+end;
+
 {----------------ReadURL}
 
 function ReadURL(Item: Variant): ThtString;
+{
+  If Item is a string try to find and parse:
+
+    url( ["<url>"|'<url>'|<url>] )
+
+  and if successful return the <url>.
+
+  ReadURL tolerates
+  - any substring before url
+  - any substring after the (optionally quoted) <url>
+  - nested '(' ')' pairs even in the unquoted <url>
+}
 var
-  I, J, L, N: Integer;
   S: ThtString;
+  I, J, L, N: Integer;
+  Q: ThtChar;
 begin
   Result := '';
   if VarIsStr(Item) then
@@ -382,56 +421,58 @@ begin
     I := Pos('url(', S);
     if I > 0 then
     begin
-      N := 0;
-      Inc(I, 3);
-      J := I;
       L := Length(S);
-      while J < L do
-      begin
-        Inc(J);
-        case S[J] of
-          '(':
-            Inc(N);
 
-          '"':
-            while J < L do
-            begin
-              Inc(J);
-              case S[J] of
-                '"': break;
-              end;
-            end;
+      // optional white spaces
+      I := SkipWhiteSpace(S, I + 4, L);
 
-          '''':
-            while J < L do
-            begin
-              Inc(J);
-              case S[J] of
-                '''': break;
-              end;
-            end;
-
-          ')':
+      // optional quote char
+      Q := #0;
+      if I < L then
+        case S[I] of
+          '''', '"':
           begin
-            if N = 0 then
-              break;
-            Dec(N);
+            Q := S[I];
+            Inc(I);
           end;
         end;
+
+      // read url
+      if Q <> #0 then
+        // up to quote char
+        J := FindChar(S, Q, I, L)
+      else
+      begin
+        // unquoted: up to whitespace or ')'
+        // beyond CSS: tolerate nested '(' ')' pairs as part of the name.
+        N := 0;
+        J := I;
+        while J <= L do
+        begin
+          case S[J] of
+            ' ',
+            #10,
+            #12,
+            #13:
+              if N = 0 then
+                break;
+
+            '(':
+              Inc(N);
+
+            ')':
+            begin
+              if N = 0 then
+                break;
+              Dec(N);
+            end;
+          end;
+          Inc(J);
+        end;
       end;
-      Inc(I);
       Result := Copy(S, I, J - I);
-//      S := System.Copy(S, 5, Length(S));
-//      I := Pos(')', S);
-//      if I > 0 then
-//        S := System.Copy(S, 1, I - 1);
-//      if Length(S) > 2 then
-//        if (S[1] = '''') or (S[1] = '"') then //in ['''', '"'] then
-//        begin
-//          Delete(S, Length(S), 1);
-//          Delete(S, 1, 1);
-//        end;
-//      Result := S;
+
+      // ignore the rest: optional whitespaces and ')'
     end;
   end;
 end;
