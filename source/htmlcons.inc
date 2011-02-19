@@ -174,6 +174,13 @@
         simulates the way IExplorer does it, issuing the OnChange event
         immediately when a change is made.}
 
+{.$Define OwnPaintPanelDoubleBuffering}
+        {Issue 57: Delphi 7? or Russian? Locale? + XP-Manifest produce misplaced
+        button captions, which I (BG) cannot reproduce with D6, D2007 or D2009.
+        But SchwarzK...@yandex.ru reports, that this issue appears only since r118.
+        This switch reactivates the manual double buffering in TPaintPanel.Paint(), which
+        was removed with r118}
+
 {$ifdef Compiler20_Plus}
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}

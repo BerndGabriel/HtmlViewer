@@ -5462,20 +5462,77 @@ constructor TPaintPanel.CreateIt(AOwner: TComponent; Viewer: THtmlViewer);
 begin
   inherited Create(AOwner);
   FViewer := Viewer;
+{$ifdef OwnPaintPanelDoubleBuffering}
+{$else}
   DoubleBuffered := True;
+{$endif}
 end;
 
 
 procedure TPaintPanel.Paint;
+{$ifdef OwnPaintPanelDoubleBuffering}
+var
+  MemDC: HDC;
+  Bm: HBitmap;
+  Rect: TRect;
+  OldPal: HPalette;
+  Canvas2: TCanvas;
+  X, Y, W, H: Integer;
+{$else}
+{$endif}
 begin
   if vsDontDraw in FViewer.FViewerState then
     Exit;
 
+{$ifdef OwnPaintPanelDoubleBuffering}
+  //BG, 19.02.2011: Issue 57: bypass problems with component's double buffering and XP theme.
+  OldPal := 0;
+  MemDC := 0;
+  Bm := 0;
+  Canvas2 := TCanvas.Create;
+  try
+    Rect := Canvas.ClipRect;
+    X := Rect.Left;
+    Y := Rect.Top;
+    W := Rect.Right - Rect.Left;
+    H := Rect.Bottom - Rect.Top;
+    MemDC := CreateCompatibleDC(Canvas.Handle);
+    Bm := CreateCompatibleBitmap(Canvas.Handle, W, H);
+    if (Bm = 0) and (W <> 0) and (H <> 0) then
+      raise EOutOfResources.Create('Out of Resources');
+    try
+      SelectObject(MemDC, Bm);
+      SetWindowOrgEx(MemDC, X, Y, nil);
+      Canvas2.Font := Font;
+      Canvas2.Handle := MemDC;
+      Canvas2.Brush.Color := Color;
+      Canvas2.Brush.Style := bsSolid;
+      FViewer.DrawBorder;
+      FViewer.HTMLPaint(Canvas2, Rect);
+      OldPal := SelectPalette(Canvas.Handle, ThePalette, False);
+      RealizePalette(Canvas.Handle);
+      BitBlt(Canvas.Handle, X, Y, W, H, MemDC, X, Y, SrcCopy);
+    finally
+      if OldPal <> 0 then
+        SelectPalette(MemDC, OldPal, False);
+      Canvas2.Handle := 0;
+    end;
+  finally
+    Canvas2.Destroy;
+    DeleteDC(MemDC);
+    DeleteObject(Bm);
+  end;
+{$else}
+//BG, 23.01.2011: paint on panel canvas as Lazarus does the double buffering for us.
+//  Additionally this fixes a mysterious bug (Lazarus only), that mixes up the frames
+//  of frameviewer, if some images have to be shown
+//  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
   Canvas.Brush.Color := Color;
   Canvas.Brush.Style := bsSolid;
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);
+{$endif}
 end;
 
 
