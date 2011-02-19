@@ -11520,7 +11520,7 @@ var
     Obj: TFloatingObj;
     FO: TFontObj;
     ARect: TRect;
-    Inverted, ImageAtStart, NewCP: boolean;
+    Inverted, NewCP: boolean;
     Color: TColor;
     CPx, CPy, CP1x: Integer;
     BR: BorderRec;
@@ -11573,7 +11573,6 @@ var
     Descent := LR.Descent;
 
     NewCP := True;
-    ImageAtStart := True;
     CPx := X + LR.LineIndent;
     CP1x := CPx;
     LR.DrawY := Y - LR.LineHt;
@@ -11684,7 +11683,6 @@ var
               end;
             CPx := CPx + Obj.ImageWidth + Obj.HSpaceL + Obj.HSpaceR;
             NewCP := True;
-            ImageAtStart := False;
           end;
         end
         else
@@ -11740,7 +11738,6 @@ var
                 end;
               Inc(CPx, ImageWidth + Obj.HSpaceL + Obj.HSpaceR);
               NewCP := True;
-              ImageAtStart := False;
             end;
             if ParentSectionList.IsCopy then
               TPanelObj(Obj).Draw(Canvas, LeftT, TopP)
@@ -11842,7 +11839,6 @@ var
             Inc(CPx, Width + Ctrl.HSpaceL + Ctrl.HSpaceR);
             NewCP := True;
           end;
-        ImageAtStart := False;
       end
       else
       begin
@@ -11999,7 +11995,6 @@ var
           Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
         end;
 
-        ImageAtStart := False;
       end;
       Dec(Cnt, I);
       Inc(Start, I);
