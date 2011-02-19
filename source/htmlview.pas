@@ -100,24 +100,24 @@ type
     procedure Paint; override;
   end;
 
-  T32ScrollBar = class(TScrollBar) {a 32 bit scrollbar}
-  private
-    FPosition: Integer;
-    FMin, FMax, FPage: Integer;
-    procedure SetPosition(Value: Integer);
-    procedure SetMin(Value: Integer);
-    procedure SetMax(Value: Integer);
-{$ifdef LCL}
-    procedure CNVScroll(var Message: TLMVScroll); message LM_VSCROLL;
-{$else}
-    procedure CNVScroll(var Message: TWMVScroll); message CN_VSCROLL;
-{$endif}
-  public
-    property Position: Integer read FPosition write SetPosition;
-    property Min: Integer read FMin write SetMin;
-    property Max: Integer read FMax write SetMax;
-    procedure SetParams(APosition, APage, AMin, AMax: Integer);
-  end;
+//  T32ScrollBar = class(TScrollBar) {a 32 bit scrollbar}
+//  private
+//    FPosition: Integer;
+//    FMin, FMax, FPage: Integer;
+//    procedure SetPosition(Value: Integer);
+//    procedure SetMin(Value: Integer);
+//    procedure SetMax(Value: Integer);
+//{$ifdef LCL}
+//    procedure CNVScroll(var Message: TLMVScroll); message LM_VSCROLL;
+//{$else}
+//    procedure CNVScroll(var Message: TWMVScroll); message CN_VSCROLL;
+//{$endif}
+//  public
+//    property Position: Integer read FPosition write SetPosition;
+//    property Min: Integer read FMin write SetMin;
+//    property Max: Integer read FMax write SetMax;
+//    procedure SetParams(APosition, APage, AMin, AMax: Integer);
+//  end;
 
   THtmlFileType = (HTMLType, TextType, ImgType, OtherType);
 
@@ -292,8 +292,9 @@ type
     procedure HTMLTimerTimer(Sender: TObject);
     procedure InitLoad;
     procedure Layout;
-    procedure Scroll(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
+    procedure ScrollHorz(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
     procedure ScrollTo(Y: Integer);
+    procedure ScrollVert(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
     procedure SetActiveColor(Value: TColor);
     procedure SetBase(Value: ThtString);
     procedure SetBorderStyle(Value: THTMLBorderStyle);
@@ -372,7 +373,7 @@ type
     FrameOwner: TObject;
     HScrollBar: TScrollBar;
     Visited: ThtStringList; {visited URLs}
-    VScrollBar: T32ScrollBar;
+    VScrollBar: TScrollBar;
 
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -674,9 +675,10 @@ begin
   PaintPanel.OnMouseMove := HTMLMouseMove;
   PaintPanel.OnMouseUp := HTMLMouseUp;
 
-  VScrollBar := T32ScrollBar.Create(Self);
+  VScrollBar := TScrollBar.Create(Self);
   VScrollBar.Kind := sbVertical;
   VScrollBar.SmallChange := 16;
+  VScrollBar.OnScroll := ScrollVert;
   VScrollBar.Visible := False;
   VScrollBar.TabStop := False;
   sbWidth := VScrollBar.Width;
@@ -685,7 +687,7 @@ begin
   HScrollBar := TScrollBar.Create(Self);
   HScrollBar.Kind := sbHorizontal;
   HScrollBar.SmallChange := 15;
-  HScrollBar.OnScroll := Scroll;
+  HScrollBar.OnScroll := ScrollHorz;
   HScrollBar.Visible := False;
   HScrollBar.TabStop := False;
   HScrollBar.Parent := Self;
@@ -1127,10 +1129,26 @@ end;
 {----------------THtmlViewer.DoScrollBars}
 
 procedure THtmlViewer.DoScrollBars;
+
+  procedure SetPageSizeAndMax(SB: TScrollBar; PageSize, Max: Integer);
+  begin
+    //BG, 19.02.2011: you can set neither a pagesize > max nor a max < pagesize
+    // thus set in different order for growing and shrinking:
+    if PageSize < SB.Max then
+    begin
+      SB.PageSize := PageSize;
+      SB.Max := Max;
+    end
+    else
+    begin
+      SB.Max := Max;
+      SB.PageSize := PageSize;
+    end;
+  end;
+
 var
   VBar, VBar1, HBar: Boolean;
   Wid, HWidth, WFactor, WFactor2, VHeight: Integer;
-  ScrollInfo: TScrollInfo;
 begin
   ScrollWidth := Min(ScrollWidth, MaxHScroll);
   if (FBorderStyle = htNone) and not (csDesigning in ComponentState) then
@@ -1186,11 +1204,15 @@ begin
     VHeight := Height - WFactor2;
   end;
   HWidth := Max(ScrollWidth, Wid - WFactor2);
+
   HScrollBar.Visible := HBar;
-  HScrollBar.LargeChange := Max(1, Wid - 20);
-  HScrollBar.SetBounds(WFactor, Height - sbWidth - WFactor, Wid - WFactor, sbWidth);
-  VScrollBar.SetBounds(Width - sbWidth - WFactor, WFactor, sbWidth, VHeight);
-  VScrollBar.LargeChange := PaintPanel.Height - VScrollBar.SmallChange;
+  if HScrollBar.Visible then
+  begin
+    HScrollBar.LargeChange := Max(1, Wid - 20);
+    HScrollBar.SetBounds(WFactor, Height - sbWidth - WFactor, Wid - WFactor, sbWidth);
+    SetPageSizeAndMax(HScrollBar, Wid, Max(Wid, HWidth));
+  end;
+
   if htShowVScroll in FOptions then
   begin
     VScrollBar.Visible := (FScrollBars in [ssBoth, ssVertical]);
@@ -1198,20 +1220,11 @@ begin
   end
   else
     VScrollBar.Visible := VBar;
-
-  HScrollBar.Max := Max(0, HWidth);
-
-  // BG, 24.10.2010: method may be called in Create() before handles can be created, thus skip these handle related parts:
-  if VScrollBar.HandleAllocated then
+  if VScrollBar.Visible then
   begin
-    VScrollBar.SetParams(VScrollBar.Position, PaintPanel.Height + 1, 0, FMaxVertical);
-  end;
-  if HScrollBar.HandleAllocated then
-  begin
-    ScrollInfo.cbSize := SizeOf(ScrollInfo);
-    ScrollInfo.fMask := SIF_PAGE;
-    ScrollInfo.nPage := Wid;
-    SetScrollInfo(HScrollBar.Handle, SB_CTL, ScrollInfo, TRUE);
+    VScrollBar.LargeChange := PaintPanel.Height - VScrollBar.SmallChange;
+    VScrollBar.SetBounds(Width - sbWidth - WFactor, WFactor, sbWidth, VHeight);
+    SetPageSizeAndMax(VScrollBar, PaintPanel.Height + 1, Max(PaintPanel.Height + 1, FMaxVertical));
   end;
 end;
 
@@ -1296,8 +1309,7 @@ begin
     Position := Math.Min(Position, Max - PaintPanel.Width);
 end;
 
-procedure THtmlViewer.Scroll(Sender: TObject; ScrollCode: TScrollCode;
-  var ScrollPos: Integer);
+procedure THtmlViewer.ScrollHorz(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
 {only the horizontal scrollbar comes here}
 begin
   ScrollPos := Min(ScrollPos, HScrollBar.Max - PaintPanel.Width);
@@ -1311,6 +1323,23 @@ begin
   VScrollBar.Position := Y;
   FSectionList.SetYOffset(Y);
   Invalidate;
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2011 --
+// thanks to Alex at grundis.de
+procedure THtmlViewer.ScrollVert(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
+var
+  TheChange: Integer;
+begin
+  FSectionList.SetYOffset(ScrollPos);
+  if vsBGFixed in FViewerState then
+    PaintPanel.Invalidate
+  else
+  begin {scroll background}
+    TheChange := VScrollBar.Position - ScrollPos;
+    ScrollWindow(PaintPanel.Handle, 0, TheChange, nil, nil);
+    PaintPanel.Update;
+  end;
 end;
 
 procedure THtmlViewer.Layout;
@@ -4709,9 +4738,7 @@ begin
   FBaseEx := '';
   FBaseTarget := '';
   FTitle := '';
-  VScrollBar.Max := 0;
   VScrollBar.Visible := False;
-  VScrollBar.Height := PaintPanel.Height;
   HScrollBar.Visible := False;
   CaretPos := 0;
   Sel1 := -1;
@@ -5464,107 +5491,107 @@ begin
     THtmlViewer(FViewer).HTMLMouseDblClk(Message);
 end;
 
-{ T32ScrollBar }
-
-procedure T32ScrollBar.SetParams(APosition, APage, AMin, AMax: Integer);
-var
-  ScrollInfo: TScrollInfo;
-begin
-  if (APosition <> FPosition) or (APage <> FPage) or (AMin <> FMin)
-    or (AMax <> FMax) then
-    with ScrollInfo do
-    begin
-      cbSize := SizeOf(ScrollInfo);
-      fMask := SIF_ALL;
-      if htShowVScroll in (Owner as THtmlViewer).FOptions then
-        fMask := fMask or SIF_DISABLENOSCROLL;
-      nPos := APosition;
-      nPage := APage;
-      nMin := AMin;
-      nMax := AMax;
-      SetScrollInfo(Handle, SB_CTL, ScrollInfo, True);
-      FPosition := APosition;
-      FPage := APage;
-      FMin := AMin;
-      FMax := AMax;
-    end;
-end;
-
-procedure T32ScrollBar.SetPosition(Value: Integer);
-var
-  SavePos: Integer;
-begin
-  SavePos := FPosition;
-  SetParams(Value, FPage, FMin, FMax);
-  if FPosition <> SavePos then
-    Change;
-end;
-
-procedure T32ScrollBar.SetMin(Value: Integer);
-begin
-  SetParams(FPosition, FPage, Value, FMax);
-end;
-
-procedure T32ScrollBar.SetMax(Value: Integer);
-begin
-  SetParams(FPosition, FPage, FMin, Value);
-end;
-
-{$ifdef LCL}
-procedure T32ScrollBar.CNVScroll(var Message: TLMVScroll);
-{$else}
-procedure T32ScrollBar.CNVScroll(var Message: TWMVScroll);
-{$endif}
-var
-  SPos: Integer;
-  ScrollInfo: TScrollInfo;
-  OrigPos: Integer;
-  TheChange: Integer;
-begin
-  with THtmlViewer(Parent) do
-  begin
-    ScrollInfo.cbSize := SizeOf(ScrollInfo);
-    ScrollInfo.fMask := SIF_ALL;
-    GetScrollInfo(Self.Handle, SB_CTL, ScrollInfo);
-    if TScrollCode(Message.ScrollCode) = scTrack then
-    begin
-      OrigPos := ScrollInfo.nPos;
-      SPos := ScrollInfo.nTrackPos;
-    end
-    else
-    begin
-      SPos := ScrollInfo.nPos;
-      OrigPos := SPos;
-      case TScrollCode(Message.ScrollCode) of
-        scLineUp:
-          Dec(SPos, SmallChange);
-        scLineDown:
-          Inc(SPos, SmallChange);
-        scPageUp:
-          Dec(SPos, LargeChange);
-        scPageDown:
-          Inc(SPos, LargeChange);
-        scTop:
-          SPos := 0;
-        scBottom:
-          SPos := (FMaxVertical - PaintPanel.Height);
-      end;
-    end;
-    SPos := Math.Max(0, Math.Min(SPos, (FMaxVertical - PaintPanel.Height)));
-
-    Self.SetPosition(SPos);
-
-    FSectionList.SetYOffset(SPos);
-    if vsBGFixed in FViewerState then
-      PaintPanel.Invalidate
-    else
-    begin {scroll background}
-      TheChange := OrigPos - SPos;
-      ScrollWindow(PaintPanel.Handle, 0, TheChange, nil, nil);
-      PaintPanel.Update;
-    end;
-  end;
-end;
+//{ T32ScrollBar }
+//
+//procedure T32ScrollBar.SetParams(APosition, APage, AMin, AMax: Integer);
+//var
+//  ScrollInfo: TScrollInfo;
+//begin
+//  if (APosition <> FPosition) or (APage <> FPage) or (AMin <> FMin)
+//    or (AMax <> FMax) then
+//    with ScrollInfo do
+//    begin
+//      cbSize := SizeOf(ScrollInfo);
+//      fMask := SIF_ALL;
+//      if htShowVScroll in (Owner as THtmlViewer).FOptions then
+//        fMask := fMask or SIF_DISABLENOSCROLL;
+//      nPos := APosition;
+//      nPage := APage;
+//      nMin := AMin;
+//      nMax := AMax;
+//      SetScrollInfo(Handle, SB_CTL, ScrollInfo, True);
+//      FPosition := APosition;
+//      FPage := APage;
+//      FMin := AMin;
+//      FMax := AMax;
+//    end;
+//end;
+//
+//procedure T32ScrollBar.SetPosition(Value: Integer);
+//var
+//  SavePos: Integer;
+//begin
+//  SavePos := FPosition;
+//  SetParams(Value, FPage, FMin, FMax);
+//  if FPosition <> SavePos then
+//    Change;
+//end;
+//
+//procedure T32ScrollBar.SetMin(Value: Integer);
+//begin
+//  SetParams(FPosition, FPage, Value, FMax);
+//end;
+//
+//procedure T32ScrollBar.SetMax(Value: Integer);
+//begin
+//  SetParams(FPosition, FPage, FMin, Value);
+//end;
+//
+//{$ifdef LCL}
+//procedure T32ScrollBar.CNVScroll(var Message: TLMVScroll);
+//{$else}
+//procedure T32ScrollBar.CNVScroll(var Message: TWMVScroll);
+//{$endif}
+//var
+//  SPos: Integer;
+//  ScrollInfo: TScrollInfo;
+//  OrigPos: Integer;
+//  TheChange: Integer;
+//begin
+//  with THtmlViewer(Parent) do
+//  begin
+//    ScrollInfo.cbSize := SizeOf(ScrollInfo);
+//    ScrollInfo.fMask := SIF_ALL;
+//    GetScrollInfo(Self.Handle, SB_CTL, ScrollInfo);
+//    if TScrollCode(Message.ScrollCode) = scTrack then
+//    begin
+//      OrigPos := ScrollInfo.nPos;
+//      SPos := ScrollInfo.nTrackPos;
+//    end
+//    else
+//    begin
+//      SPos := ScrollInfo.nPos;
+//      OrigPos := SPos;
+//      case TScrollCode(Message.ScrollCode) of
+//        scLineUp:
+//          Dec(SPos, SmallChange);
+//        scLineDown:
+//          Inc(SPos, SmallChange);
+//        scPageUp:
+//          Dec(SPos, LargeChange);
+//        scPageDown:
+//          Inc(SPos, LargeChange);
+//        scTop:
+//          SPos := 0;
+//        scBottom:
+//          SPos := (FMaxVertical - PaintPanel.Height);
+//      end;
+//    end;
+//    SPos := Math.Max(0, Math.Min(SPos, (FMaxVertical - PaintPanel.Height)));
+//
+//    Self.SetPosition(SPos);
+//
+//    FSectionList.SetYOffset(SPos);
+//    if vsBGFixed in FViewerState then
+//      PaintPanel.Invalidate
+//    else
+//    begin {scroll background}
+//      TheChange := OrigPos - SPos;
+//      ScrollWindow(PaintPanel.Handle, 0, TheChange, nil, nil);
+//      PaintPanel.Update;
+//    end;
+//  end;
+//end;
 
 { PositionObj }
 
