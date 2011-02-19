@@ -626,7 +626,7 @@ type
   TBlock = class(TBlockBase)
   protected
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
-    procedure DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect); virtual;
+    procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); virtual;
     function getBorderWidth: Integer; virtual;
     property BorderWidth: Integer read getBorderWidth;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
@@ -701,7 +701,7 @@ type
   TTableBlock = class(TBlock)
   protected
     function getBorderWidth: Integer; override;
-    procedure DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect); override;
+    procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); override;
   public
     Table: THtmlTable;
     WidthAttr: Integer;
@@ -791,7 +791,6 @@ type
     FLegend: TBlockCell;
   protected
     procedure ConvMargArray(BaseWidth: Integer; BaseHeight: Integer; out AutoCount: Integer); override;
-    procedure DrawBlockBorder(Canvas: TCanvas; ORect: TRect; IRect: TRect); override;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   public
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic; Attributes: TAttributeList);
@@ -5528,16 +5527,15 @@ procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
 
 var
   YOffset: Integer;
-  XR, YB, BL, BT, BR, BB, PL, PT, PR, PB, RefX, RefY, TmpHt: Integer;
+  XR, YB, RefX, RefY, TmpHt: Integer;
   SaveID: TObject;
   ImgOK, HasBackgroundColor: boolean;
-  IT, IH, FT: Integer;
+  IT, IH, FT, IW: Integer;
   Rgn, SaveRgn, SaveRgn1: HRgn;
   OpenRgn: Boolean;
-  XOffset: Integer;
+  PdRect: TRect;
 begin
   YOffset := ParentSectionList.YOff;
-  XOffset := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
 
   case FLoatLR of
     ALeft, ARight:
@@ -5545,36 +5543,35 @@ begin
       //RefX := X + Indent + XOffset;
       RefX := IMgr.LfEdge + max(0, MargArray[MarginLeft]) + ContentLeft;
       X := RefX;
-      XR := RefX + NewWidth + MargArray[MarginRight];
+      XR := X + NewWidth;
       RefY := DrawTop;
-      YB := DrawBot + MargArray[MarginBottom];
+      YB := ContentBot;
     end;
   else
     RefX := X + MargArray[MarginLeft];
     X := X + Indent;
-    XR := RefX + XOffset + NewWidth + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
+    XR := X + NewWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
     RefY := Y + ClearAddon + MargArray[MarginTop];
+    YB := ContentBot - MargArray[MarginBottom];
     case Positioning of
       posRelative:
-        YB := ContentBot + TopP;
-    else
-      YB := ContentBot;
+        Inc(YB, TopP);
     end;
   end;
 
-  BL := RefX; {Border left and right}
-  BR := XR - MargArray[MarginRight];
-  PL := BL + MargArray[BorderLeftWidth]; {Padding left and right}
-  PR := BR - MargArray[BorderRightWidth];
+  // MyRect is the outmost rectangle of this block incl. border and padding in screen coordinates
+  MyRect := Rect(RefX, RefY - YOffset, XR, YB - YOffset);
 
-  BT := RefY - YOffset; {Border Top and Bottom}
-  BB := YB - MargArray[MarginBottom] - YOffset;
-  PT := BT + MargArray[BorderTopWidth]; {Padding Top and Bottom}
-  PB := BB - MargArray[BorderBottomWidth];
+  // PdRect is the border rectangle of this block incl. padding in screen coordinates
+  PdRect.Left   := MyRect.Left   + MargArray[BorderLeftWidth];
+  PdRect.Top    := MyRect.Top    + MargArray[BorderTopWidth];
+  PdRect.Right  := MyRect.Right  - MargArray[BorderRightWidth];
+  PdRect.Bottom := MyRect.Bottom - MargArray[BorderBottomWidth];
 
-  IT := Max(0, Arect.Top - 2 - PT);
-  FT := Max(PT, ARect.Top - 2); {top of area drawn, screen coordinates}
-  IH := Min(PB - FT, Arect.Bottom - FT); {height of area actually drawn}
+  IT := Max(0, ARect.Top - 2 - PdRect.Top);
+  FT := Max(PdRect.Top, ARect.Top - 2); {top of area drawn, screen coordinates}
+  IH := Min(PdRect.Bottom, ARect.Bottom) - FT; {height of area actually drawn}
+  IW := PdRect.Right - PdRect.Left;
 
   SaveRgn1 := 0;
   OpenRgn := (Positioning <> PosStatic) and (ParentSectionList.TableNestLevel > 0);
@@ -5585,8 +5582,7 @@ begin
     SelectClipRgn(Canvas.Handle, 0);
   end;
   try
-    MyRect := Rect(BL, BT, BR, BB);
-    if (BT <= ARect.Bottom) and (BB >= ARect.Top) then
+    if (MyRect.Top <= ARect.Bottom) and (MyRect.Bottom >= ARect.Top) then
     begin
       HasBackgroundColor := MargArray[BackgroundColor] <> clNone;
       try
@@ -5626,13 +5622,13 @@ begin
           Canvas.Brush.Style := bsSolid;
           if ParentSectionList.IsCopy and ImgOK then
           begin
-            InitFullBG(PR - PL, IH);
+            InitFullBG(IW, IH);
             FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
-            FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
+            FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
           end
           else
-            Canvas.FillRect(Rect(PL, FT, PR, FT + IH));
+            Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
         end;
 
         if ImgOK then
@@ -5640,21 +5636,21 @@ begin
           if not ParentSectionList.IsCopy then
             {$IFNDEF NoGDIPlus}
             if TiledImage is TgpBitmap then
-            //DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PL, PT)
-              DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PL, FT, 0, IT, PR - PL, IH)
-            //BitBlt(Canvas.Handle, PL, FT, PR-PL, IH, TiledImage.Canvas.Handle, 0, IT, SrcCopy)
+            //DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, PT)
+              DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, FT, 0, IT, IW, IH)
+            //BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right-PdRect.Left, IH, TiledImage.Canvas.Handle, 0, IT, SrcCopy)
             else
             {$ENDIF !NoGDIPlus}
             if NoMask then
-              BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
+              BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
             else
             begin
-              InitFullBG(PR - PL, IH);
-              BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
-              BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
-              BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
-              BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
-              BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, FullBG.Canvas.Handle, 0, 0, SRCCOPY);
+              InitFullBG(PdRect.Right - PdRect.Left, IH);
+              BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, Canvas.Handle, PdRect.Left, FT, SrcCopy);
+              BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
+              BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
+              BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
+              BitBlt(Canvas.Handle, PdRect.Left, FT, IW, IH, FullBG.Canvas.Handle, 0, 0, SRCCOPY);
             end
           else
           {$IFNDEF NoGDIPlus}
@@ -5663,25 +5659,25 @@ begin
             if HasBackgroundColor then
             begin
               DrawGpImage(FullBg.Canvas.Handle, TgpImage(TiledImage), 0, 0);
-              PrintBitmap(Canvas, PL, FT, PR - PL, IH, FullBG);
+              PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
             end
             else
-              PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PL, PT,
+              PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, PdRect.Top,
                 ParentSectionList.ScaleX, ParentSectionList.ScaleY);
           end
           else
           {$ENDIF !NoGDIPlus}
           if NoMask then {printing}
-            PrintBitmap(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage))
+            PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
           else if HasBackgroundColor then
           begin
-            BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
-            PrintBitmap(Canvas, PL, FT, PR - PL, IH, FullBG);
+            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
+            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
+            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
+            PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
           end
           else
-            PrintTransparentBitmap3(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage), TiledMask, IT, IH)
+            PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
         end;
 
       except
@@ -5690,11 +5686,11 @@ begin
 
     if HideOverflow then
       if FloatLR = ANone then
-        GetClippingRgn(Canvas, Rect(PL + MargArray[PaddingLeft], PT + MargArray[PaddingTop],
-          PR - MargArray[PaddingRight], PB - MargArray[PaddingBottom]),
+        GetClippingRgn(Canvas, Rect(PdRect.Left + MargArray[PaddingLeft], PdRect.Top + MargArray[PaddingTop],
+          PdRect.Right - MargArray[PaddingRight], PdRect.Bottom - MargArray[PaddingBottom]),
           ParentSectionList.Printing, Rgn, SaveRgn)
       else
-        GetClippingRgn(Canvas, Rect(PL, PT, PR, PB), ParentSectionList.Printing, Rgn, SaveRgn);
+        GetClippingRgn(Canvas, Rect(PdRect.Left, PdRect.Top, PdRect.Right, PdRect.Bottom), ParentSectionList.Printing, Rgn, SaveRgn);
 
     SaveID := IMgr.CurrentID;
     Imgr.CurrentID := Self;
@@ -5717,8 +5713,7 @@ begin
       if SaveRgn <> 0 then
         DeleteObject(SaveRgn);
     end;
-    if (BL <> PL) or (BT <> PT) or (BR <> PR) or (BB <> PB) then
-      DrawBlockBorder(Canvas, Rect(BL, BT, BR, BB), Rect(PL, PT, PR, PB));
+    DrawBlockBorder(Canvas, MyRect, PdRect);
   finally
     if OpenRgn then
     begin
@@ -5728,13 +5723,14 @@ begin
   end;
 end;
 
-procedure TBlock.DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect);
+procedure TBlock.DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect);
 begin
   if BorderStyle <> bssNone then
-    DrawBorder(Canvas, ORect, IRect,
-      htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
-      htStyles(BorderStyleType(MargArray[BorderLeftStyle]), BorderStyleType(MargArray[BorderTopStyle]), BorderStyleType(MargArray[BorderRightStyle]), BorderStyleType(MargArray[BorderBottomStyle])),
-      MargArray[BackgroundColor], ParentSectionList.Printing)
+    if (ORect.Left <> IRect.Left) or (ORect.Top <> IRect.Top) or (ORect.Right <> IRect.Right) or (ORect.Bottom <> IRect.Bottom) then
+      DrawBorder(Canvas, ORect, IRect,
+        htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
+        htStyles(BorderStyleType(MargArray[BorderLeftStyle]), BorderStyleType(MargArray[BorderTopStyle]), BorderStyleType(MargArray[BorderRightStyle]), BorderStyleType(MargArray[BorderBottomStyle])),
+        MargArray[BackgroundColor], ParentSectionList.Printing)
 end;
 
 procedure TBlock.DrawTheList(Canvas: TCanvas; const ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
@@ -6140,7 +6136,7 @@ end;
 function TTableBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer;
 var
   LeftSide, RightSide: Integer;
-  Min, Max, Allow: Integer;
+  Min, Max, M: Integer;
 begin
   if not HasCaption then
   begin
@@ -6200,21 +6196,22 @@ begin
   else
   begin
     Table.MinMaxWidth(Canvas, Min, Max);
-    Allow := AWidth - LeftSide - RightSide;
-    if Max <= Allow then
+    Result := AWidth - LeftSide - RightSide;
+    if Result > Max then
       Result := Max
-    else if Min >= Allow then
-      Result := Min
-    else
-      Result := Allow;
+    else if Result < Min then
+      Result := Min;
   end;
   MargArray[piWidth] := Result;
 
-  if (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) and
-    (Result + LeftSide + RightSide < AWidth) then
+  if (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) and (Result + LeftSide + RightSide < AWidth) then
     case Justify of
       Centered:
-        MargArray[MarginLeft] := (AWidth - (Result + LeftSide + RightSide)) div 2;
+      begin
+        M := AWidth - LeftSide - Result - RightSide;
+        MargArray[MarginLeft]  := M div 2;
+        MargArray[MarginRight] := M - MargArray[MarginLeft];
+      end;
       Right:
         MargArray[MarginLeft] := AWidth - (Result + LeftSide + RightSide);
     end;
@@ -6243,7 +6240,7 @@ begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 end;
 
-procedure TTableBlock.DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect);
+procedure TTableBlock.DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect);
 var
   Light, Dark: TColor;
   C: PropIndices;
@@ -13594,12 +13591,6 @@ begin
     ExcludeClipRect(Canvas.Handle, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
     Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
   end;
-end;
-
-//-- BG ---------------------------------------------------------- 05.10.2010 --
-procedure TFieldsetBlock.DrawBlockBorder(Canvas: TCanvas; ORect, IRect: TRect);
-begin
-  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
