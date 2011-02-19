@@ -11694,12 +11694,9 @@ var
             ShowIt := True;
             if (Obj.Floating in [ALeft, ARight]) then
             begin
-              LeftT := IMgr.LfEdge + Obj.Indent;
-              if ImageAtStart then
-                TopP := Y - LR.LineHt - LR.SpaceBefore - YOffset + VSpaceT
-              else
-                TopP := Y - YOffset + VSpaceT;
-            {check for border.  For floating panel, remove it}
+              LeftT := IMgr.LfEdge + Obj.FloatingPosX;
+              TopP := Obj.FloatingPosY;
+              {check for border.  For floating panel, remove it}
               if LR.FirstDraw and Assigned(LR.BorderList) then
                 for K := LR.BorderList.Count - 1 downto 0 do
                 begin
