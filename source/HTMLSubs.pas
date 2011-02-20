@@ -1097,7 +1097,7 @@ type
     procedure CopyToClipboardA(Leng: Integer);
     procedure GetBackgroundBitmap;
     procedure HideControls;
-    procedure InsertImage(const Src: ThtString; Stream: TMemoryStream; var Reformat: boolean);
+    procedure InsertImage(const Src: ThtString; Stream: TStream; var Reformat: boolean);
     procedure LButtonDown(Down: boolean);
     procedure ProcessInlines(SIndex: Integer; Prop: TProperties; Start: boolean);
     procedure SetBackground(ABackground: TColor);
@@ -7122,8 +7122,7 @@ end;
 
 {----------------TSectionList.InsertImage}
 
-procedure TSectionList.InsertImage(const Src: ThtString; Stream: TMemoryStream;
-  var Reformat: boolean);
+procedure TSectionList.InsertImage(const Src: ThtString; Stream: TStream; var Reformat: boolean);
 var
   UName: ThtString;
   I, J: Integer;

@@ -90,6 +90,15 @@ type
   THTMLViewPrinted = TNotifyEvent;
   THTMLViewPrinting = procedure(Sender: TObject; var StopPrinting: Boolean) of object;
 
+  ThtScrollInfo = record
+    BWidth: Integer;   // single border width of paintpanel
+    BWidth2: Integer;  // double border width of paintpanel
+    HWidth: Integer;   // width of paintpanel
+    VHeight: Integer;  // height of paintpanel
+    HBar: Boolean;     // show horizontal scrollbar
+    VBar: Boolean;     // show vertical scrollbar
+  end;
+
   TPaintPanel = class(TCustomPanel)
   private
     FViewer: THtmlViewer;
@@ -99,25 +108,6 @@ type
     constructor CreateIt(AOwner: TComponent; Viewer: THtmlViewer);
     procedure Paint; override;
   end;
-
-//  T32ScrollBar = class(TScrollBar) {a 32 bit scrollbar}
-//  private
-//    FPosition: Integer;
-//    FMin, FMax, FPage: Integer;
-//    procedure SetPosition(Value: Integer);
-//    procedure SetMin(Value: Integer);
-//    procedure SetMax(Value: Integer);
-//{$ifdef LCL}
-//    procedure CNVScroll(var Message: TLMVScroll); message LM_VSCROLL;
-//{$else}
-//    procedure CNVScroll(var Message: TWMVScroll); message CN_VSCROLL;
-//{$endif}
-//  public
-//    property Position: Integer read FPosition write SetPosition;
-//    property Min: Integer read FMin write SetMin;
-//    property Max: Integer read FMax write SetMax;
-//    procedure SetParams(APosition, APage, AMin, AMax: Integer);
-//  end;
 
   THtmlFileType = (HTMLType, TextType, ImgType, OtherType);
 
@@ -347,6 +337,7 @@ type
     procedure WMMouseScroll(var Message: TMessage); message WM_MouseScroll;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure WMUrlAction(var Message: TMessage); message WM_UrlAction;
+    function GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
   protected
     ScrollWidth: Integer;
 
@@ -388,7 +379,7 @@ type
     function GetTextByIndices(AStart, ALast: Integer): WideString;
     function GetURL(X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
-    function InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
+    function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 {$ifndef NoMetafile}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
@@ -1126,6 +1117,57 @@ begin
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
+//-- BG ---------------------------------------------------------- 20.02.2011 --
+function THtmlViewer.GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
+begin
+  with Result do
+  begin
+    if (FBorderStyle = htNone) and not (csDesigning in ComponentState) then
+    begin
+      BWidth2 := 0;
+      BWidth  := 0;
+    end
+    else
+    begin
+      BWidth2 := BorderPanel.Width - BorderPanel.ClientWidth;
+      BWidth  := BWidth2 div 2;
+    end;
+    HWidth  := Width  - BWidth2;
+    VHeight := Height - BWidth2;
+
+    case FScrollBars of
+      ssVertical:
+      begin
+        VBar := (htShowVScroll in htOptions) or (DocHeight > VHeight);
+        if VBar then
+          Dec(HWidth, sbWidth);
+        HBar := False;
+      end;
+
+      ssHorizontal:
+      begin
+        VBar := False;
+        HBar := DocWidth > HWidth;
+        if HBar then
+          Dec(VHeight, sbWidth);
+      end;
+
+      ssBoth:
+      begin
+        VBar := (htShowVScroll in htOptions) or (DocHeight > VHeight) or ((DocHeight > VHeight - sbWidth) and (DocWidth > HWidth - sbWidth));
+        if VBar then
+          Dec(HWidth, sbWidth);
+        HBar := DocWidth > HWidth;
+        if HBar then
+          Dec(VHeight, sbWidth);
+      end;
+    else
+      HBar := False;
+      VBar := False;
+    end;
+  end;
+end;
+
 {----------------THtmlViewer.DoScrollBars}
 
 procedure THtmlViewer.DoScrollBars;
@@ -1147,144 +1189,143 @@ procedure THtmlViewer.DoScrollBars;
   end;
 
 var
-  VBar, VBar1, HBar: Boolean;
-  Wid, HWidth, WFactor, WFactor2, VHeight: Integer;
+  ScrollInfo: ThtScrollInfo;
 begin
   ScrollWidth := Min(ScrollWidth, MaxHScroll);
-  if (FBorderStyle = htNone) and not (csDesigning in ComponentState) then
+  ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
+  with ScrollInfo do
   begin
-    WFactor2 := 0;
     BorderPanel.Visible := False;
-  end
-  else
-  begin
-    WFactor2 := BorderPanel.Width - BorderPanel.ClientWidth;
-    BorderPanel.Visible := False;
-    BorderPanel.Visible := True;
-  end;
-  WFactor := WFactor2 div 2;
-  PaintPanel.Top := WFactor;
-  PaintPanel.Left := WFactor;
+    if BWidth > 0 then
+      BorderPanel.Visible := True;
 
-  VBar := False;
-  VBar1 := False;
-  if (not (htShowVScroll in htOptions) and (FMaxVertical <= Height - WFactor2) and (ScrollWidth <= Width - WFactor2))
-    or (FScrollBars = ssNone) then
-  {there are no scrollbars}
-    HBar := False
-  else if FScrollBars in [ssBoth, ssVertical] then
-  begin {assume a vertical scrollbar}
-    VBar1 := (FMaxVertical >= Height - WFactor2) or
-      ((FScrollBars in [ssBoth, ssHorizontal]) and
-      (FMaxVertical >= Height - WFactor2 - sbWidth) and
-      (ScrollWidth > Width - sbWidth - WFactor2));
-    HBar := (FScrollBars in [ssBoth, ssHorizontal]) and
-      ((ScrollWidth > Width - WFactor2) or
-      ((VBar1 or (htShowVScroll in FOptions)) and
-      (ScrollWidth > Width - sbWidth - WFactor2)));
-    VBar := Vbar1 or (htShowVScroll in htOptions);
-  end
-  else
-    {there is no vertical scrollbar}
-    HBar := (FScrollBars = ssHorizontal) and (ScrollWidth > Width - WFactor2);
+    PaintPanel.Left := BWidth;
+    PaintPanel.Top := BWidth;
+    PaintPanel.Width := HWidth;
+    PaintPanel.Height := VHeight;
 
-  if VBar or ((htShowVScroll in FOptions) and (FScrollBars in [ssBoth, ssVertical])) then
-    Wid := Width - sbWidth
-  else
-    Wid := Width;
-  PaintPanel.Width := Wid - WFactor2;
-  if HBar then
-  begin
-    PaintPanel.Height := Height - WFactor2 - sbWidth;
-    VHeight := Height - sbWidth - WFactor2;
-  end
-  else
-  begin
-    PaintPanel.Height := Height - WFactor2;
-    VHeight := Height - WFactor2;
-  end;
-  HWidth := Max(ScrollWidth, Wid - WFactor2);
+    HScrollBar.Visible := HBar;
+    if HBar then
+    begin
+      HScrollBar.SetBounds(PaintPanel.Left, PaintPanel.Top + PaintPanel.Height, PaintPanel.Width, sbWidth);
+      HScrollBar.LargeChange := Max(16, HWidth - HScrollBar.SmallChange);
+      HScrollBar.Enabled := HWidth < ScrollWidth;
+      if HScrollBar.Enabled then
+        SetPageSizeAndMax(HScrollBar, HWidth, ScrollWidth);
+    end;
 
-  HScrollBar.Visible := HBar;
-  if HScrollBar.Visible then
-  begin
-    HScrollBar.LargeChange := Max(1, Wid - 20);
-    HScrollBar.SetBounds(WFactor, Height - sbWidth - WFactor, Wid - WFactor, sbWidth);
-    SetPageSizeAndMax(HScrollBar, Wid, Max(Wid, HWidth));
-  end;
-
-  if htShowVScroll in FOptions then
-  begin
-    VScrollBar.Visible := (FScrollBars in [ssBoth, ssVertical]);
-    VScrollBar.Enabled := VBar1;
-  end
-  else
     VScrollBar.Visible := VBar;
-  if VScrollBar.Visible then
-  begin
-    VScrollBar.LargeChange := PaintPanel.Height - VScrollBar.SmallChange;
-    VScrollBar.SetBounds(Width - sbWidth - WFactor, WFactor, sbWidth, VHeight);
-    SetPageSizeAndMax(VScrollBar, PaintPanel.Height + 1, Max(PaintPanel.Height + 1, FMaxVertical));
+    if VBar then
+    begin
+      VScrollBar.SetBounds(PaintPanel.Left + PaintPanel.Width, PaintPanel.Top, sbWidth, PaintPanel.Height);
+      VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
+      VScrollBar.Enabled := VHeight < FMaxVertical;
+      if VScrollBar.Enabled then
+        SetPageSizeAndMax(VScrollBar, VHeight, FMaxVertical);
+    end;
   end;
 end;
 
 {----------------THtmlViewer.DoLogic}
 
-procedure THtmlViewer.DoLogic;
+//BG, 20.02.2011: collecting some statistics to find the fastest way to try DoLogic:
+// If I show a lot of large documents, trying with scrollbar first is faster as the first try
+// will be already the last one, but lots of small documents might prefer checking without
+// scrollbar first.
 var
-  Wid, WFactor: Integer;
+  VScrollBalance: Integer;
+  LogicDonePos: array [0..3] of integer;
+  LogicDoneNeg: array [0..3] of integer;
 
-  function HasVScrollbar: Boolean;
-  begin
-    Result := (FMaxVertical > Height - WFactor) or
-      ((FScrollBars in [ssBoth, ssHorizontal]) and
-      (FMaxVertical >= Height - WFactor - sbWidth) and
-      (ScrollWidth > Width - sbWidth - WFactor));
-  end;
+procedure THtmlViewer.DoLogic;
 
-  function HasVScrollbar1: Boolean;
-  begin
-    Result := (FMaxVertical > Height - WFactor) or
-      ((FScrollBars in [ssBoth, ssHorizontal]) and
-      (FMaxVertical >= Height - WFactor - sbWidth) and
-      (ScrollWidth > Width - WFactor));
-  end;
-
-  function FSectionListDoLogic(Width: Integer): Integer;
+  procedure SectionListDoLogic(Width, Height: Integer);
   var
     Curs: Integer;
   begin
     Curs := 0;
     ScrollWidth := 0;
-    Result := FSectionList.DoLogic(PaintPanel.Canvas, 0,
-      Width, ClientHeight - WFactor, 0, ScrollWidth, Curs);
+    FMaxVertical := FSectionList.DoLogic(PaintPanel.Canvas, 0, Width, Height, 0, ScrollWidth, Curs);
   end;
+
+var
+  SI, SI2, SI3: ThtScrollInfo;
 begin
   HandleNeeded;
   Include(FViewerState, vsDontDraw);
   try
-    if FBorderStyle = htNone then
-      WFactor := 0
-    else
-      WFactor := BorderPanel.Width - BorderPanel.ClientWidth;
-    Wid := Width - WFactor;
-    if FScrollBars in [ssBoth, ssVertical] then
-    begin
-      if not (htShowVScroll in FOptions) {and (Length(FDocumentSource) < 10000)} then
-      begin {see if there is a vertical scrollbar with full width}
-        FMaxVertical := FSectionListDoLogic(Wid);
-        if HasVScrollBar then {yes, there is vertical scrollbar, allow for it}
+    SI := GetScrollInfo(0, 0);
+    case FScrollBars of
+      ssBoth,
+      ssVertical:
+      begin
+        // if lots of long documents are shown, it is most likely that a first DoLogic()
+        // with scrollbar will find the necessity of a vertical scrollbar again:
+        if VScrollBalance >= 0 then
         begin
-          FMaxVertical := FSectionListDoLogic(Wid - sbWidth);
-          if not HasVScrollBar1 then
-            FMaxVertical := FSectionListDoLogic(Wid);
+          Inc(LogicDonePos[0]);
+          SectionListDoLogic(SI.HWidth - sbWidth, SI.VHeight);
+          if not (htShowVScroll in FOptions) and (FMaxVertical > 0) then
+          begin
+            Inc(LogicDonePos[1]);
+            SI2 := GetScrollInfo(ScrollWidth, FMaxVertical);
+            SI.VBar := SI2.VBar;
+            if not SI2.VBar or (FMaxVertical <= 2 * SI.VHeight) then
+            begin
+              // scrollbar is not needed or maybe becomes obsolete on a wider panel:
+              // Try whether it is not needed on a wider paint panel:
+              Inc(LogicDonePos[2]);
+              SectionListDoLogic(SI.HWidth, SI.VHeight);
+              SI3 := GetScrollInfo(ScrollWidth, FMaxVertical);
+              SI.VBar := SI3.VBar;
+              if SI.VBar then
+              begin
+                // vertical scrollbar still needed:
+                Inc(LogicDonePos[3]);
+                SectionListDoLogic(SI.HWidth - sbWidth, SI.VHeight);
+              end;
+            end;
+          end;
+        end
+        else
+        begin
+          Inc(LogicDoneNeg[0]);
+          if htShowVScroll in FOptions then
+            // has a vertical scrollbar at all
+            SectionListDoLogic(SI.HWidth - sbWidth, SI.VHeight)
+          else
+          begin
+            // see if there is a vertical scrollbar with full width
+            Inc(LogicDoneNeg[1]);
+            SectionListDoLogic(SI.HWidth, SI.VHeight);
+            SI2 := GetScrollInfo(ScrollWidth, FMaxVertical);
+            SI.VBar := SI2.VBar;
+            if SI.VBar then
+            begin
+              // yes, there is vertical scrollbar, allow for it
+              Inc(LogicDoneNeg[2]);
+              SectionListDoLogic(SI.HWidth - sbWidth, SI.VHeight);
+              SI3 := GetScrollInfo(ScrollWidth, FMaxVertical);
+              SI.VBar := SI3.VBar;
+              if not SI.VBar then
+              begin
+                Inc(LogicDoneNeg[3]);
+                SectionListDoLogic(SI.HWidth, SI.VHeight);
+              end;
+            end;
+          end;
         end;
-      end
-      else {assume a vertical scrollbar}
-        FMaxVertical := FSectionListDoLogic(Wid - sbWidth);
-    end
-    else {there is no vertical scrollbar}
-      FMaxVertical := FSectionListDoLogic(Wid);
+        if (FMaxVertical > 0) and not (htShowVScroll in FOptions) then
+          if SI.VBar then
+            Inc(VScrollBalance)
+          else
+            Dec(VScrollBalance);
+      end;
+
+    else
+      {there is no vertical scrollbar}
+      SectionListDoLogic(SI.HWidth, SI.VHeight);
+    end;
 
     DoScrollbars;
   finally
@@ -2150,7 +2191,7 @@ end;
 
 {----------------THtmlViewer.InsertImage}
 
-function THtmlViewer.InsertImage(const Src: ThtString; Stream: TMemoryStream): Boolean;
+function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
 var
   OldPos: Integer;
   ReFormat: Boolean;
@@ -5547,108 +5588,6 @@ begin
   if Message.Keys and MK_LButton <> 0 then
     THtmlViewer(FViewer).HTMLMouseDblClk(Message);
 end;
-
-//{ T32ScrollBar }
-//
-//procedure T32ScrollBar.SetParams(APosition, APage, AMin, AMax: Integer);
-//var
-//  ScrollInfo: TScrollInfo;
-//begin
-//  if (APosition <> FPosition) or (APage <> FPage) or (AMin <> FMin)
-//    or (AMax <> FMax) then
-//    with ScrollInfo do
-//    begin
-//      cbSize := SizeOf(ScrollInfo);
-//      fMask := SIF_ALL;
-//      if htShowVScroll in (Owner as THtmlViewer).FOptions then
-//        fMask := fMask or SIF_DISABLENOSCROLL;
-//      nPos := APosition;
-//      nPage := APage;
-//      nMin := AMin;
-//      nMax := AMax;
-//      SetScrollInfo(Handle, SB_CTL, ScrollInfo, True);
-//      FPosition := APosition;
-//      FPage := APage;
-//      FMin := AMin;
-//      FMax := AMax;
-//    end;
-//end;
-//
-//procedure T32ScrollBar.SetPosition(Value: Integer);
-//var
-//  SavePos: Integer;
-//begin
-//  SavePos := FPosition;
-//  SetParams(Value, FPage, FMin, FMax);
-//  if FPosition <> SavePos then
-//    Change;
-//end;
-//
-//procedure T32ScrollBar.SetMin(Value: Integer);
-//begin
-//  SetParams(FPosition, FPage, Value, FMax);
-//end;
-//
-//procedure T32ScrollBar.SetMax(Value: Integer);
-//begin
-//  SetParams(FPosition, FPage, FMin, Value);
-//end;
-//
-//{$ifdef LCL}
-//procedure T32ScrollBar.CNVScroll(var Message: TLMVScroll);
-//{$else}
-//procedure T32ScrollBar.CNVScroll(var Message: TWMVScroll);
-//{$endif}
-//var
-//  SPos: Integer;
-//  ScrollInfo: TScrollInfo;
-//  OrigPos: Integer;
-//  TheChange: Integer;
-//begin
-//  with THtmlViewer(Parent) do
-//  begin
-//    ScrollInfo.cbSize := SizeOf(ScrollInfo);
-//    ScrollInfo.fMask := SIF_ALL;
-//    GetScrollInfo(Self.Handle, SB_CTL, ScrollInfo);
-//    if TScrollCode(Message.ScrollCode) = scTrack then
-//    begin
-//      OrigPos := ScrollInfo.nPos;
-//      SPos := ScrollInfo.nTrackPos;
-//    end
-//    else
-//    begin
-//      SPos := ScrollInfo.nPos;
-//      OrigPos := SPos;
-//      case TScrollCode(Message.ScrollCode) of
-//        scLineUp:
-//          Dec(SPos, SmallChange);
-//        scLineDown:
-//          Inc(SPos, SmallChange);
-//        scPageUp:
-//          Dec(SPos, LargeChange);
-//        scPageDown:
-//          Inc(SPos, LargeChange);
-//        scTop:
-//          SPos := 0;
-//        scBottom:
-//          SPos := (FMaxVertical - PaintPanel.Height);
-//      end;
-//    end;
-//    SPos := Math.Max(0, Math.Min(SPos, (FMaxVertical - PaintPanel.Height)));
-//
-//    Self.SetPosition(SPos);
-//
-//    FSectionList.SetYOffset(SPos);
-//    if vsBGFixed in FViewerState then
-//      PaintPanel.Invalidate
-//    else
-//    begin {scroll background}
-//      TheChange := OrigPos - SPos;
-//      ScrollWindow(PaintPanel.Handle, 0, TheChange, nil, nil);
-//      PaintPanel.Update;
-//    end;
-//  end;
-//end;
 
 { PositionObj }
 

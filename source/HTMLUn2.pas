@@ -605,6 +605,7 @@ function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBit
 //function GetImageAndMaskFromStream(Stream: TMemoryStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 // unused: function KindOfImageFile(FName: ThtString): ImageType;
 //function KindOfImage(Start: Pointer): ImageType;
+function KindOfImage(Stream: TStream): TImageType;
 procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);
 procedure FormControlRect(Canvas: TCanvas; X1: Integer;
   Y1: Integer; X2: Integer; Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor);
@@ -1827,7 +1828,7 @@ begin
 end;
 
 
-function KindOfImage(Stream: TStream): TImageType; overload;
+function KindOfImage(Stream: TStream): TImageType;
 var
   Pos: Int64;
   Magic: DWord;
@@ -2023,6 +2024,7 @@ begin
 end;
 
 {----------------GetImageAndMaskFromStream}
+
 {$IFNDEF NoGDIPlus}
 var
   TempPathInited: Boolean;
@@ -2105,75 +2107,6 @@ begin
     Result := nil;
   end;
 end;
-
-//function GetImageFromFile(const Filename: ThtString): TBitmap;
-//{used only externally in OnBitmapRequest handler}
-//var
-//  IT: ImageType;
-//  Mask: TBitmap;
-//  Transparent: Transparency;
-//  Stream: TMemoryStream;
-//  GpObj: TGpObject;
-//
-//  function GetGif: TBitmap;
-//  var
-//    TmpGif: TGifImage;
-//    NonAnimated: boolean;
-//  begin
-//    Result := nil;
-//    TmpGif := CreateAGifFromStream(NonAnimated, Stream);
-//    if Assigned(TmpGif) then
-//    begin
-//      Result := TBitmap.Create;
-//      try
-//        Result.Assign(TmpGif.Bitmap);
-//      except
-//        Result.Free;
-//        Result := nil;
-//      end;
-//      TmpGif.Free;
-//    end
-//  end;
-//
-//begin
-//  Result := nil;
-//  try
-//    Stream := TMemoryStream.Create;
-//    try
-//      Stream.LoadFromFile(Filename);
-//      IT := KindOfImage(Stream.Memory);
-//      if IT in [Gif, Gif89] then
-//        Result := GetGif
-//      else
-//      begin
-//        GpObj := GetImageAndMaskFromStream(Stream, Transparent, Mask);
-//        Mask.Free;
-//        if GpObj is TBitmap then
-//          Result := TBitmap(GpObj)
-//{$IFNDEF NoMetafile}
-//        else if GpObj is ThtMetafile then
-//        begin
-//          Result := TBitmap.Create;
-//          Result.Assign(ThtMetafile(GpObj).WhiteBGBitmap);
-//          GpObj.Free;
-//        end
-//{$ENDIF}
-//        {$IFNDEF NoGDIPlus}
-//        else if GpObj is TGpImage then
-//        begin
-//          Result := TBitmap.Create;
-//          Result.Assign(TGpImage(GpObj).GetTBitmap);
-//          GpObj.Free;
-//        end;
-//        {$ENDIF !NoGDIPlus}
-//      end;
-//    finally
-//      Stream.Free;
-//    end;
-//  except
-//    Result := nil;
-//  end;
-//end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
 function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
