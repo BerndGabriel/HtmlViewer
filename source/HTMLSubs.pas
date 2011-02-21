@@ -11689,7 +11689,7 @@ var
             if (Obj.Floating in [ALeft, ARight]) then
             begin
               LeftT := IMgr.LfEdge + Obj.FloatingPosX;
-              TopP := Obj.FloatingPosY;
+              TopP := Obj.FloatingPosY - YOffset;
               {check for border.  For floating panel, remove it}
               if LR.FirstDraw and Assigned(LR.BorderList) then
                 for K := LR.BorderList.Count - 1 downto 0 do
