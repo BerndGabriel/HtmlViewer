@@ -2490,8 +2490,8 @@ begin
       ATop, ANone:
         begin
           if FAlt <> '' then
-            WrapTextW(Canvas, X + 24, TopY + Ofst + VSpaceT, X + AltWidth - 2, TopY + AltHeight - 1 + VSpaceT, FAlt);
-          RaisedRect(ParentSectionList, Canvas, X, TopY + VSpaceT, X + AltWidth, TopY + AltHeight + VSpaceT, False, 1);
+            WrapTextW(Canvas, X + 24, TopY + Ofst, X + AltWidth - 2, TopY + AltHeight - 1, FAlt);
+          RaisedRect(ParentSectionList, Canvas, X, TopY, X + AltWidth, TopY + AltHeight, False, 1);
         end;
       AMiddle:
         begin {MiddleAlignTop is always initialized}
@@ -10669,14 +10669,14 @@ begin
         if Start > DoneFlObjPos then
         begin
           FlObj.FloatingPosY := Max(Y, ImgY);
-          W := ImgWidth; // + FlObj.HSpaceL + FlObj.HSpaceR;
+          W := ImgWidth + FlObj.HSpaceL + FlObj.HSpaceR;
           case Align of
             ALeft:  FlObj.FloatingPosX := IMgr.AlignLeft(FlObj.FloatingPosY, W);
             ARight: FlObj.FloatingPosX := IMgr.AlignRight(FlObj.FloatingPosY, W);
           end;
           IMgr.UpdateImage(FlObj.FloatingPosY, FlObj);
           ImgY := FlObj.FloatingPosY;
-          ImgHt := Max(ImgHt, FlObj.ImageHeight {+ FlObj.VSpaceT + FlObj.VSpaceB});
+          ImgHt := Max(ImgHt, FlObj.ImageHeight + FlObj.VSpaceT + FlObj.VSpaceB);
           X1 := IMgr.LeftIndent(Y);
           X2 := IMgr.RightSide(Y);
           Width := X2 - X1;
@@ -11610,9 +11610,9 @@ var
           if Obj.Floating in [ALeft, ARight] then
           begin
             ParentSectionList.DrawList.AddImage(
-              TImageObj(Obj), Canvas,
-                IMgr.LfEdge + Obj.FloatingPosX,
-                Obj.FloatingPosY, Y - Descent, FO);
+              TImageObj(Obj), Canvas, Obj.Indent,
+                //IMgr.LfEdge + Obj.FloatingPosX + Obj.HSpaceL,
+                Obj.FloatingPosY + Obj.VSpaceT, Y {- Descent}, FO);
 
           {if a boundary is on a floating image, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -11688,8 +11688,8 @@ var
             ShowIt := True;
             if (Obj.Floating in [ALeft, ARight]) then
             begin
-              LeftT := IMgr.LfEdge + Obj.FloatingPosX;
-              TopP := Obj.FloatingPosY - YOffset;
+              LeftT := IMgr.LfEdge + Obj.FloatingPosX + Obj.HSpaceL;
+              TopP := Obj.FloatingPosY + Obj.VSpaceT - YOffset;
               {check for border.  For floating panel, remove it}
               if LR.FirstDraw and Assigned(LR.BorderList) then
                 for K := LR.BorderList.Count - 1 downto 0 do

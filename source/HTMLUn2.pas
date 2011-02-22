@@ -2467,8 +2467,8 @@ var
 begin
   if Assigned(Img) then
   begin
-    IW := Img.ImageWidth; // + Img.HSpaceL + Img.HSpaceR;
-    IH := Img.ImageHeight; // + Img.VSpaceT + Img.VSpaceB;
+    IW := Img.ImageWidth  + Img.HSpaceL + Img.HSpaceR;
+    IH := Img.ImageHeight + Img.VSpaceT + Img.VSpaceB;
     case Img.Floating of
       ALeft:
       begin
@@ -4458,14 +4458,6 @@ begin
   if MargArray[MarginBottom] <> IntNull then
     VSpaceB := MargArray[MarginBottom];
 
-  if Prop.GetBorderStyle <> bssNone then
-  begin
-    Inc(HSpaceL, MargArray[BorderLeftWidth]);
-    Inc(HSpaceR, MargArray[BorderRightWidth]);
-    Inc(VSpaceT, MargArray[BorderTopWidth]);
-    Inc(VSpaceB, MargArray[BorderBottomWidth]);
-  end;
-
   if MargArray[piWidth] <> IntNull then
   begin
     PercentWidth := False;
@@ -4499,10 +4491,18 @@ begin
     VertAlign := Align;
   if Prop.GetFloat(Align) and (Align <> ANone) then
     Floating := Align;
+
   if Prop.BorderStyleNotBlank then
   begin
     NoBorder := True; {will have inline border instead}
     BorderSize := 0;
+  end
+  else if Prop.GetBorderStyle <> bssNone then
+  begin
+    Inc(HSpaceL, MargArray[BorderLeftWidth]);
+    Inc(HSpaceR, MargArray[BorderRightWidth]);
+    Inc(VSpaceT, MargArray[BorderTopWidth]);
+    Inc(VSpaceB, MargArray[BorderBottomWidth]);
   end;
 end;
 
