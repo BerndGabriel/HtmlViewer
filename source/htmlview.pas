@@ -1154,12 +1154,19 @@ begin
 
       ssBoth:
       begin
-        VBar := (htShowVScroll in htOptions) or (DocHeight > VHeight) or ((DocHeight > VHeight - sbWidth) and (DocWidth > HWidth - sbWidth));
+        VBar := (htShowVScroll in htOptions) or (DocHeight > VHeight);
         if VBar then
           Dec(HWidth, sbWidth);
         HBar := DocWidth > HWidth;
         if HBar then
+        begin
           Dec(VHeight, sbWidth);
+          if not VBar and (DocHeight > VHeight) then
+          begin
+            VBar := True;
+            Dec(HWidth, sbWidth);
+          end;
+        end;
       end;
     else
       HBar := False;
