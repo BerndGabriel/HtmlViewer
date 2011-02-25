@@ -180,6 +180,9 @@
         But SchwarzK...@yandex.ru reports, that this issue appears only since r118.
         This switch reactivates the manual double buffering in TPaintPanel.Paint(), which
         was removed with r118}
+{$Define HalfToneStretching}
+        {This makes use of a better stretching methode provided by Windows: HALFTONE.
+        So resized graphics (especially smaller ones) look MUCH better}
 
 {$ifdef Compiler20_Plus}
 {$else}

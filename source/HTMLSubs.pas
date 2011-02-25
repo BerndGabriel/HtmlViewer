@@ -2251,7 +2251,12 @@ begin
           BitBlt(DC, XX, Y, Img.Width, Img.Height, Img.Canvas.Handle, 0, 0, SRCCOPY)
         else if ddImage is TBitmap then
         begin
-          SetStretchBltMode(DC, ColorOnColor);
+{$IFDEF HalfToneStretching}
+          SetStretchBltMode(DC, HALFTONE);
+{$ELSE}
+          SetStretchBltMode(DC, COLORONCOLOR);
+{$ENDIF}
+          SetBrushOrgEx(DC, 0, 0, nil);
           StretchBlt(DC, XX, Y, ObjWidth, ObjHeight, Img.Canvas.Handle, 0, 0, Img.Width, Img.Height, SRCCOPY);
         end
 {$IFNDEF NoMetafile}

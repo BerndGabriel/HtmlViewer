@@ -2240,7 +2240,11 @@ begin
       BitBlt(hdcImage, 0, 0, SrcSize.x, SrcSize.y, hdcInvMask, 0, 0, SRCAND);
 
     { XOR the bitmap with the background on the destination DC}
-      SetStretchBltMode(ahDC, ColorOnColor);
+{$IFDEF HalfToneStretching}
+      SetStretchBltMode(ahDC, HALFTONE);
+{$ELSE}
+      SetStretchBltMode(ahDC, COLORONCOLOR);
+{$ENDIF}
       StretchBlt(ahDC, XStart, YStart, W, H, hdcImage, 0, 0, Image.Width, Image.Height, SRCPAINT);
 
       SetBkColor(ahDC, OldBack);
