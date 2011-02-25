@@ -925,7 +925,10 @@ var
 begin
   I := Stream.Size - Stream.Position;
   SetLength(FBuffer, I);
-  Stream.Read(FBuffer[0], I);
+  //BG, 25.02.2011: Issue 74: Range check error when creating a buffer for the empty stream
+  //  Do not read from empty/exhausted stream:
+  if I > 0 then
+    Stream.Read(FBuffer[0], I);
   Reset;
 end;
 
