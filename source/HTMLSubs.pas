@@ -10805,7 +10805,7 @@ begin
         begin
           Max := Max + ImageWidth + HSpaceL + HSpaceR;
           Brk[Pos + 1] := 'y'; {allow break after floating image}
-          Min := Math.Max(Min, ImageWidth);
+          Min := Math.Max(Min, ImageWidth + HSpaceL + HSpaceR);
         end
         else
           Min := Math.Max(Min, ImageWidth);
@@ -10822,7 +10822,7 @@ begin
           Min := Math.Max(Min, Width + HSpaceL + HSpaceR);
   end;
 
-  Max := 0;
+  //Max := 0;
   P := Buff;
   P1 := StrScanW(P, BrkCh); {look for break ThtChar}
   while Assigned(P1) do
@@ -10832,7 +10832,7 @@ begin
     P1 := StrScanW(P, BrkCh);
   end;
   P1 := StrScanW(P, #0); {look for the end}
-  Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, True)) + FloatMin;
+  Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, True)); // + FloatMin;
 
   P := Buff;
   if not BreakWord then
