@@ -57,9 +57,6 @@ const
   FmCtl = WideChar(#2);
   ImgPan = WideChar(#4);
   BrkCh = WideChar(#8);
-//BG, 11.09.2010: moved to this unit to reduce circular dependencies:
-  ImageSpace = 3; {extra space for left, right images}
-  ListIndent = 35;
 
 {$IFNDEF DOTNET}
 {$IFNDEF FPC}
@@ -280,36 +277,45 @@ type
   end;
 
   IndentRec = class(TObject)
-    X: Integer; {indent for this record}
-    YT, YB: Integer; {top and bottom Y values for this record}
-    ID: TObject; {level indicator for this record, 0 for not applicable}
-    //Float: boolean; {set if Floating block boundary}
+    X: Integer;   // left or right indentation relative to LfEdge.
+    YT: Integer;  // top Y inclusive coordinate for this record relative to document top.
+    YB: Integer;  // bottom Y exclusive coordinate for this record relative to document top.
+    ID: TObject;  // block level indicator for this record, 0 for not applicable
   end;
 
   TIndentManager = class(TObject)
+  private
+    function LeftEdge(Y: Integer): Integer;
+    function RightEdge(Y: Integer): Integer;
   public
-    Width, ClipWidth: Integer;
-    L, R: TFreeList; {holds info (IndentRec's) on left and right indents}
-    CurrentID: TObject; {the current level (a TBlock pointer)}
-    LfEdge, RtEdge: Integer;
+    LfEdge: Integer;    // left edge of the block content area.
+                        // TCell.DoLogic calculates with LfEdge = 0.
+                        // TCell.Draw then may shift the block by setting LfEdge to X.
+    Width: Integer;     // width of the block content area.
+    ClipWidth: Integer; // clip width ???
+    L: TFreeList;       // list of left side indentations of type IndentRec.
+    R: TFreeList;       // list of right side indentations of type IndentRec.
+    CurrentID: TObject; // the current block level (a TBlock pointer)
+  public
     constructor Create;
     destructor Destroy; override;
     function AddLeft(YT, YB, W: Integer): IndentRec;
     function AddRight(YT, YB, W: Integer): IndentRec;
     function AlignLeft(var Y: Integer; W: Integer): Integer;
     function AlignRight(var Y: Integer; W: Integer): Integer;
-    function GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
+//    function GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
     function GetNextWiderY(Y: Integer): Integer;
     function ImageBottom: Integer;
     function LeftIndent(Y: Integer): Integer;
     function RightSide(Y: Integer): Integer;
     function SetLeftIndent(XLeft, Y: Integer): Integer;
     function SetRightIndent(XRight, Y: Integer): Integer;
-    procedure Clear;
+//    procedure Clear;
     procedure FreeLeftIndentRec(I: Integer);
     procedure FreeRightIndentRec(I: Integer);
     procedure GetClearY(var CL, CR: Integer);
-    procedure Reset(Lf, Rt: Integer);
+    procedure Init(Lf, Wd: Integer);
+    procedure Reset(Lf: Integer);
     procedure UpdateImage(Y: Integer; Img: TFloatingObj);
     procedure UpdateLeft(YT, YB, IW: Integer);
     procedure UpdateRight(YT, YB, IW: Integer);
@@ -2406,7 +2412,7 @@ begin
   end;
 end;
 
-{----------------TIndentManager.Create}
+{ TIndentManager }
 
 constructor TIndentManager.Create;
 begin
@@ -2428,7 +2434,7 @@ begin
   Result := IndentRec.Create;
   Result.YT := YT;
   Result.YB := YB;
-  Result.X := LeftIndent(YT) + W;
+  Result.X := LeftEdge(YT) + W;
   L.Add(Result);
 end;
 
@@ -2438,23 +2444,32 @@ begin
   Result := IndentRec.Create;
   Result.YT := YT;
   Result.YB := YB;
-  Result.X := RightSide(YT) - W;
+  Result.X := RightEdge(YT) - W;
   R.Add(Result);
 end;
 
-procedure TIndentManager.Clear;
+//procedure TIndentManager.Clear;
+//begin
+//  R.Clear;
+//  L.Clear;
+//  CurrentID := nil;
+//end;
+
+{----------------TIndentManager.Reset}
+
+//-- BG ---------------------------------------------------------- 23.02.2011 --
+procedure TIndentManager.Init(Lf, Wd: Integer);
 begin
+  LfEdge := Lf;
+  Width  := Wd;
   R.Clear;
   L.Clear;
   CurrentID := nil;
 end;
 
-{----------------TIndentManager.Reset}
-
-procedure TIndentManager.Reset(Lf, Rt: Integer);
+procedure TIndentManager.Reset(Lf: Integer);
 begin
   LfEdge := Lf;
-  RtEdge := Rt;
   CurrentID := nil;
 end;
 
@@ -2467,8 +2482,8 @@ var
 begin
   if Assigned(Img) then
   begin
-    IW := Img.ImageWidth  + Img.HSpaceL + Img.HSpaceR;
-    IH := Img.ImageHeight + Img.VSpaceT + Img.VSpaceB;
+    IW := Img.HSpaceL + Img.ImageWidth  + Img.HSpaceR;
+    IH := Img.VSpaceT + Img.ImageHeight + Img.VSpaceB;
     case Img.Floating of
       ALeft:
       begin
@@ -2496,7 +2511,7 @@ begin
   IR := IndentRec.Create;
   IR.YT := YT;
   IR.YB := YB;
-  IR.X := -LfEdge + IW;
+  IR.X := LeftEdge(YT) + IW;
   L.Add(IR);
 end;
 
@@ -2511,66 +2526,82 @@ begin
   IR := IndentRec.Create;
   IR.YT := YT;
   IR.YB := YB;
-  IR.X := RightSide(YT) - IW;
+  IR.X := RightEdge(YT) - IW;
   R.Add(IR);
 end;
 
 const
   BigY = 9999999;
 
-function TIndentManager.LeftIndent(Y: Integer): Integer;
-var
-  I: Integer;
-begin
-  Result := -99999;
-  for I := 0 to L.Count - 1 do
-    with IndentRec(L.Items[I]) do
-    begin
-      if (Y >= YT) and (Y < YB) and (Result < X) then
-        if not Assigned(ID) or (ID = CurrentID) then
-          Result := X;
-    end;
-  if Result = -99999 then
-    Result := LfEdge
-  else
-    Inc(Result, LfEdge);
-end;
-
-function TIndentManager.RightSide(Y: Integer): Integer;
-{returns the current right side dimension as measured from the left, a positive
- number}
+//-- BG ---------------------------------------------------------- 23.02.2011 --
+function TIndentManager.LeftEdge(Y: Integer): Integer;
+// Returns the right most left indentation at Y relative to LfEdge.
+// If there are no left indentations at Y, returns 0.
 var
   I: Integer;
   IR: IndentRec;
 begin
-  Result := 99999;
+  Result := -MaxInt;
+  for I := 0 to L.Count - 1 do
+  begin
+    IR := L.Items[I];
+    if (Y >= IR.YT) and (Y < IR.YB) and (Result < IR.X) then
+      if (IR.ID = nil) or (IR.ID = CurrentID) then
+        Result := IR.X;
+  end;
+  if Result = -MaxInt then
+    Result := 0;
+end;
+
+//-- BG ---------------------------------------------------------- 23.02.2011 --
+function TIndentManager.LeftIndent(Y: Integer): Integer;
+// Returns the right most left indentation at Y relative to block.
+// If there are no left indentations at Y, returns LfEdge.
+begin
+  Result := LeftEdge(Y) + LfEdge;
+end;
+
+//-- BG ---------------------------------------------------------- 23.02.2011 --
+function TIndentManager.RightEdge(Y: Integer): Integer;
+// Returns the left most right indentation at Y relative LfEdge.
+// If there are no indentations at Y, returns Width.
+var
+  I: Integer;
+  IR: IndentRec;
+begin
+  Result := MaxInt;
   for I := 0 to R.Count - 1 do
   begin
-    IR := IndentRec(R.Items[I]);
-    with IR do
-      if (Y >= YT) and (Y < YB) and (Result > X) then
-        if not Assigned(ID) or (ID = CurrentID) then
-          Result := X;
+    IR := R.Items[I];
+    if (Y >= IR.YT) and (Y < IR.YB) and (Result > IR.X) then
+      if (IR.ID = nil) or (IR.ID = CurrentID) then
+        Result := IR.X;
   end;
-  if Result = 99999 then
-    Result := RtEdge
-  else
-    Inc(Result, LfEdge);
+  if Result = MaxInt then
+    Result := Width;
+end;
+
+//-- BG ---------------------------------------------------------- 23.02.2011 --
+function TIndentManager.RightSide(Y: Integer): Integer;
+// Returns the left most right indentation at Y relative to block.
+// If there are no indentations at Y, returns Width + LfEdge.
+begin
+  Result := RightEdge(Y) + LfEdge;
 end;
 
 function TIndentManager.ImageBottom: Integer;
-{finds the bottom of the last floating image}
+// Returns the bottom of the last floating image.
 var
   I: Integer;
 begin
   Result := 0;
   for I := 0 to L.Count - 1 do
     with IndentRec(L.Items[I]) do
-      if not Assigned(ID) and (YB > Result) then
+      if (ID = nil) and (YB > Result) then
         Result := YB;
   for I := 0 to R.Count - 1 do
     with IndentRec(R.Items[I]) do
-      if not Assigned(ID) and (YB > Result) then
+      if (ID = nil) and (YB > Result) then
         Result := YB;
 end;
 
@@ -2582,75 +2613,82 @@ begin
   CL := -1;
   for I := 0 to L.Count - 1 do
     with IndentRec(L.Items[I]) do
-      if not Assigned(ID) and (YB > CL) then
+      if (ID = nil) and (YB > CL) then
         CL := YB;
   CR := -1;
   for I := 0 to R.Count - 1 do
     with IndentRec(R.Items[I]) do
-      if not Assigned(ID) and (YB > CR) then
+      if (ID = nil) and (YB > CR) then
         CR := YB;
   Inc(CL);
   Inc(CR);
 end;
 
-//-- BG ---------------------------------------------------------- 08.06.2008 --
-function TIndentManager.GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
-var
-  Index: Integer;
-  Indent: IndentRec;
-  DummyCR: Integer;
-begin
-  if X < 0 then
-  begin
-    dec(X, Auto);
-    inc(MaxWidth, 2 * Auto);
-  end;
-
-  Index := L.Count - 1;
-  if Index >= MinIndex then
-  begin
-    Indent := IndentRec(L[Index]);
-    if Y < Indent.YB then
-    begin
-      // set y to previous used y == y of current line
-      Y := Max(Y, Indent.YT);
-      Result := Max(X, Indent.X);
-    end
-    else
-      Result := X;
-  end
-  else
-    Result := Max(X, LeftIndent(Y));
-
-  if Result + ThisWidth > MaxWidth + X then
-  begin
-    Result := X;
-    GetClearY(Y, DummyCR);
-  end;
-end;
+////-- BG ---------------------------------------------------------- 08.06.2008 --
+//function TIndentManager.GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
+//var
+//  Index: Integer;
+//  Indent: IndentRec;
+//  DummyCR: Integer;
+//begin
+//  if X < 0 then
+//  begin
+//    dec(X, Auto);
+//    inc(MaxWidth, 2 * Auto);
+//  end;
+//
+//  Index := L.Count - 1;
+//  if Index >= MinIndex then
+//  begin
+//    Indent := IndentRec(L[Index]);
+//    if Y < Indent.YB then
+//    begin
+//      // set y to previous used y == y of current line
+//      Y := Max(Y, Indent.YT);
+//      Result := Max(X, Indent.X);
+//    end
+//    else
+//      Result := X;
+//  end
+//  else
+//    Result := Max(X, LeftIndent(Y));
+//
+//  if Result + ThisWidth > MaxWidth + X then
+//  begin
+//    Result := X;
+//    GetClearY(Y, DummyCR);
+//  end;
+//end;
 
 //-- BG ---------------------------------------------------------- 06.02.2011 --
 function TIndentManager.AlignLeft(var Y: Integer; W: Integer): Integer;
 var
-  I, CL, CR, LX, RX, XL, XR, YY: Integer;
+  I, CL, CR, LX, RX, XL, XR, YY, MinX: Integer;
 begin
-  Result := LeftIndent(Y);
-  if Result + W > RightSide(Y) then
+  Result := LeftEdge(Y);
+  if Result + W > RightEdge(Y) then
   begin
     // too wide, must find a wider place below:
     YY := Y;
+    MinX := 0;
 
     CL := Y;
     XL := Result; // valium for the compiler
-    for I := 0 to L.Count - 1 do
+    for I := L.Count - 1 downto 0 do
       with IndentRec(L.Items[I]) do
-        if not Assigned(ID) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+      begin
+        if ID = CurrentID then
         begin
-          if X = LeftIndent(YB - 1) then
+          MinX := X;
+          break;
+        end;
+        if (ID = nil) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+        begin
+          if X = LeftEdge(YB - 1) then
           begin
             // This is the right most left indentation
-            LX := LeftIndent(YB);
-            RX := RightSide(YB) - W;
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
             if YY < YB then
               YY := YB;
             if RX >= LX then
@@ -2660,17 +2698,22 @@ begin
             end;
           end;
         end;
+      end;
 
     CR := Y;
     XR := Result; // valium for the compiler
-    for I := 0 to R.Count - 1 do
+    for I := R.Count - 1 downto 0 do
       with IndentRec(R.Items[I]) do
-        if not Assigned(ID) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+      begin
+        if ID = CurrentID then
+          break;
+        if (ID = nil) and (YB > Y) and ((YB < CR) or (CR = Y)) then
         begin
-          if X = RightSide(YB - 1) then
+          if X = RightEdge(YB - 1) then
           begin
-            LX := LeftIndent(YB);
-            RX := RightSide(YB) - W;
+            // This is the left most right indentation
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
             if YY < YB then
               YY := YB;
             if RX >= LX then
@@ -2680,6 +2723,7 @@ begin
             end;
           end;
         end;
+      end;
 
     if CL = Y then
     begin
@@ -2687,7 +2731,7 @@ begin
       begin
         // no better place found, just append at the end.
         Y := YY;
-        Result := LfEdge;
+        Result := MinX;
       end
       else
       begin
@@ -2711,29 +2755,34 @@ begin
       Result := XR;
     end;
   end;
+  Inc(Result, LfEdge);
 end;
 
 function TIndentManager.AlignRight(var Y: Integer; W: Integer): Integer;
 var
-  I, CL, CR, LX, RX, XL, XR, YY: Integer;
+  I, CL, CR, LX, RX, XL, XR, YY, MaxX: Integer;
 begin
-  Result := RightSide(Y) - W;
-  if Result < LeftIndent(Y) then
+  Result := RightEdge(Y) - W;
+  if Result < LeftEdge(Y) then
   begin
     // too wide, must find a wider place below:
     YY := Y;
+    MaxX := Width - W;
 
     CL := Y;
     XL := Result; // valium for the compiler
-    for I := 0 to L.Count - 1 do
+    for I := L.Count - 1 downto 0 do
       with IndentRec(L.Items[I]) do
-        if not Assigned(ID) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+      begin
+        if ID = CurrentID then
+          break;
+        if (ID = nil) and (YB > Y) and ((YB < CL) or (CL = Y)) then
         begin
-          if X = LeftIndent(YB - 1) then
+          if X = LeftEdge(YB - 1) then
           begin
             // This is the right most left indentation
-            LX := LeftIndent(YB);
-            RX := RightSide(YB) - W;
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
             if YY < YB then
               YY := YB;
             if RX >= LX then
@@ -2743,26 +2792,35 @@ begin
             end;
           end;
         end;
+      end;
 
     CR := Y;
     XR := Result; // valium for the compiler
-    for I := 0 to R.Count - 1 do
+    for I := R.Count - 1 downto 0 do
       with IndentRec(R.Items[I]) do
-        if not Assigned(ID) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+      begin
+        if ID = CurrentID then
         begin
-          if X = RightSide(YB - 1) then
+          MaxX := X - W;
+          break;
+        end;
+        if (ID = nil) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+        begin
+          if X = RightEdge(YB - 1) then
           begin
-            LX := LeftIndent(YB);
-            RX := RightSide(YB) - W;
+            // This is the left most right indentation
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
             if YY < YB then
               YY := YB;
             if RX >= LX then
             begin
               CR := YB;
-              XR := X - W;
+              XR := RX;
             end;
           end;
         end;
+      end;
 
     if CL = Y then
     begin
@@ -2770,7 +2828,7 @@ begin
       begin
         // no better place found, just append at the end.
         Y := YY;
-        Result := LfEdge;
+        Result := MaxX;
       end
       else
       begin
@@ -2794,6 +2852,7 @@ begin
       Result := XR;
     end;
   end;
+  Inc(Result, LfEdge);
 end;
 
 function TIndentManager.GetNextWiderY(Y: Integer): Integer;

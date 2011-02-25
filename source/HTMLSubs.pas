@@ -525,7 +525,7 @@ type
       LineImgHt, {top to bottom including any floating image}
       Ln, {# chars in line}
       Descent,
-      LineIndent: Integer;
+      LineIndent: Integer; // relative to section's left edge
     DrawXX, DrawWidth: Integer;
     DrawY: Integer;
     Spaces, Extra: Integer;
@@ -5143,6 +5143,8 @@ var
       Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
   end;
 
+var
+  LIndent, RIndent: Integer;
 begin
   case Display of
     pdNone:
@@ -5200,30 +5202,26 @@ begin
       end;
     end;
 
-    X := X + Indent;
     YClear := Y + ClearAddon;
     if not (Positioning in [posAbsolute, PosFixed]) then
       case FloatLR of
         ALeft:
         begin
           YClear := Y;
-          //Indent := IMgr.GetNextLeftXY(YClear, X, NewWidth, AWidth, 0) {+ LeftWidths} - X;
-          Indent := IMgr.AlignLeft(YClear, NewWidth);
-          X := Indent;
+          LIndent := IMgr.AlignLeft(YClear, TotalWidth);
+          Indent := LIndent + LeftWidths - X;
         end;
 
         ARight:
         begin
           YClear := Y;
-          //BG, 25.01.2011: Issue 54: HTMLViewer PrintPreview Failure: don't indent < 0!
-          //Indent := Max(0, Min(AWidth, IMgr.RightSide(YClear)) {- RightWidths} - NewWidth);
-          //Indent := IMgr.GetNextRightXY(YClear, X, NewWidth, AWidth, 0) + LeftWidths - X;
-          Indent := IMgr.AlignRight(YClear, NewWidth);
-          X := Indent;
+          RIndent := IMgr.AlignRight(YClear, TotalWidth);
+          Indent := RIndent + LeftWidths - X;
         end;
       end;
+    Inc(X, Indent);
 
-    if MargArray[MarginTop] >= 0 then
+    if MargArray[MarginTop] <= 0 then
       DrawTop := YClear
     else
       DrawTop := YClear + MargArray[MarginTop]; {Border top}
@@ -5240,9 +5238,7 @@ begin
         MyCell.IMgr := MyIMgr;
       end;
       IMgr := MyCell.IMgr;
-      IMgr.Clear;
-      IMgr.Reset(0, NewWidth);
-      IMgr.Width := NewWidth;
+      IMgr.Init(0, NewWidth);
     end
     else
     begin
@@ -5252,8 +5248,8 @@ begin
     SaveID := IMgr.CurrentID;
     IMgr.CurrentID := Self;
 
-    LIndex := IMgr.SetLeftIndent(X, ContentTop);
-    RIndex := IMgr.SetRightIndent(X + NewWidth, ContentTop);
+    LIndex := IMgr.SetLeftIndent(X, YClear);
+    RIndex := IMgr.SetRightIndent(X + NewWidth, YClear);
 
     if MargArray[piHeight] > 0 then
       BlockHeight := MargArray[piHeight]
@@ -5297,11 +5293,11 @@ begin
         XRef,
         YRef,
         NewWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
-      MaxWidth := ScrollWidth + RightWidths + Indent;
+      MaxWidth := Indent + ScrollWidth + RightWidths;
       ClientContentBot := GetClientContentBot(MyCell.tcContentBot);
     end;
     Len := Curs - StartCurs;
-    ContentBot :=  ClientContentBot +                    MargArray[PaddingBottom] + MargArray[BorderBottomWidth] + MargArray[MarginBottom];
+    ContentBot :=  ClientContentBot + MargArray[PaddingBottom] + MargArray[BorderBottomWidth] + MargArray[MarginBottom];
     DrawBot := Max(ClientContentBot, MyCell.tcDrawBot) + MargArray[PaddingBottom] + MargArray[BorderBottomWidth];
 
     Result := ContentBot - Y;
@@ -5332,8 +5328,8 @@ begin
       else
         DrawHeight := 0; //SectionHeight;
         case FloatLR of
-          ALeft:  RefIMgr.UpdateLeft(DrawTop, DrawBot, X + NewWidth + RightWidths);
-          ARight: RefIMgr.UpdateRight(DrawTop, DrawBot, TotalWidth);
+          ALeft:  RefIMgr.UpdateLeft(YClear, ContentBot, TotalWidth);
+          ARight: RefIMgr.UpdateRight(YClear, ContentBot, TotalWidth);
         end;
       end;
       SectionHeight := 0;
@@ -5540,12 +5536,12 @@ begin
   case FLoatLR of
     ALeft, ARight:
     begin
-      //RefX := X + Indent + XOffset;
-      RefX := IMgr.LfEdge + max(0, MargArray[MarginLeft]) + ContentLeft;
-      X := RefX;
-      XR := X + NewWidth;
+      //X := IMgr.LfEdge + Indent;
+      X := X + Indent;
+      RefX := X - MargArray[PaddingLeft] - MargArray[BorderLeftWidth];
+      XR := X + NewWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth];
       RefY := DrawTop;
-      YB := ContentBot;
+      YB := ContentBot - MargArray[MarginBottom];
     end;
   else
     RefX := X + MargArray[MarginLeft];
@@ -5559,7 +5555,7 @@ begin
     end;
   end;
 
-  // MyRect is the outmost rectangle of this block incl. border and padding in screen coordinates
+  // MyRect is the outmost rectangle of this block incl. border and padding but without margins in screen coordinates.
   MyRect := Rect(RefX, RefY - YOffset, XR, YB - YOffset);
 
   // PdRect is the border rectangle of this block incl. padding in screen coordinates
@@ -5743,7 +5739,7 @@ begin
     with MyCell do
     begin
       SaveID := IMgr.CurrentID;
-      IMgr.Reset(RefIMgr.LfEdge, RefIMgr.LfEdge + IMgr.Width);
+      IMgr.Reset(X{RefIMgr.LfEdge});
       IMgr.ClipWidth := ClipWidth;
       IMgr.CurrentID := SaveID;
     end
@@ -6353,6 +6349,12 @@ begin
   Tmp := Prop.GetListStyleType;
   if Tmp <> lbBlank then
     FListStyleType := Tmp;
+
+  if FListStyleType <> lbNone then
+    if (VarType(MargArrayO[MarginLeft]) in varInt) and
+      ((MargArrayO[MarginLeft] = IntNull) or (MargArrayO[MarginLeft] = 0)) then
+      MargArrayO[MarginLeft] := ListIndent;
+
   ListFont := TMyFont.Create;
   TmpFont := Prop.GetFont;
   ListFont.Assign(TmpFont);
@@ -6551,11 +6553,9 @@ begin
   StartCurs := Curs;
   StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderStyle, BorderWidth, AutoCount, MargArray);
 
-  NewWidth := IMgr.Width - (MargArray[MarginLeft] + MargArray[PaddingLeft] +
-    MargArray[BorderLeftWidth] + MargArray[MarginRight] +
-    MargArray[PaddingRight] + MargArray[BorderRightWidth]);
-
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
+  NewWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
+
   DrawTop := MargArray[MarginTop];
 
   MyCell.IMgr := IMgr;
@@ -6573,10 +6573,8 @@ begin
   Len := Curs - StartCurs;
 
   ClientContentBot := Max(ContentTop, MyCell.tcContentBot);
-  ContentBot := ClientContentBot + MargArray[PaddingBottom] +
-    MargArray[BorderBottomWidth] + MargArray[MarginBottom];
-  DrawBot := Max(ClientContentBot, MyCell.tcDrawBot) + MargArray[PaddingBottom]
-    + MargArray[BorderBottomWidth];
+  ContentBot := ClientContentBot + MargArray[PaddingBottom] + MargArray[BorderBottomWidth] + MargArray[MarginBottom];
+  DrawBot := Max(ClientContentBot, MyCell.tcDrawBot) + MargArray[PaddingBottom] + MargArray[BorderBottomWidth];
 
   MyCell.tcDrawTop := 0;
   MyCell.tcContentBot := 999000;
@@ -12844,9 +12842,7 @@ var
   LIndex, RIndex: Integer;
   SaveID: TObject;
 begin
-  IMgr.Clear;
-  IMgr.Reset(0, Width);
-  IMgr.Width := Width;
+  IMgr.Init(0, Width);
   SaveID := IMgr.CurrentID;
   IMgr.CurrentID := Self;
 
@@ -12870,7 +12866,7 @@ function TCell.Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X: Integer;
 {draw the document or cell.  Note: individual sections not in ARect don't bother
  drawing}
 begin
-  IMgr.Reset(X, X + IMgr.Width);
+  IMgr.Reset(X);
   IMgr.ClipWidth := ClipWidth;
   DrawYY := Y; {This is overridden in TCellObj.Draw}
   Result := inherited Draw(Canvas, ARect, ClipWidth, X, Y, XRef, YRef);

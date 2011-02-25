@@ -43,6 +43,8 @@ const
   Auto = -12348765;
   AutoParagraph = -12348766;
   ParagraphSpace = 14; {default spacing between paragraphs, etc.}
+  ImageSpace = 3; {extra space for left, right images}
+  ListIndent = 40;
   
   varInt = [varInteger, varByte, varSmallInt, varShortInt, varWord, varLongWord];
   varFloat = [varSingle, varDouble, varCurrency];
@@ -2404,7 +2406,7 @@ begin
     Properties := TProperties.Create;
     with Properties do
     begin
-      Props[PaddingLeft] := 35;
+      //Props[PaddingLeft] := ListIndent;
       Props[MarginTop] := 0;
       Props[MarginBottom] := 0;
       case J of
