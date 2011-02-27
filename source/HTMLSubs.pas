@@ -5214,9 +5214,6 @@ begin
         begin
           YClear := Y;
           LIndent := IMgr.AlignLeft(YClear, TotalWidth);
-          {Indent := LIndent + LeftWidths;
-          if Positioning = posStatic then
-            Dec(Indent, X);}
           Indent := LIndent + LeftWidths - X;
         end;
 
@@ -5224,9 +5221,6 @@ begin
         begin
           YClear := Y;
           RIndent := IMgr.AlignRight(YClear, TotalWidth);
-          {Indent := RIndent + LeftWidths;
-          if Positioning = posStatic then
-            Dec(Indent, X);}
           Indent := RIndent + LeftWidths - X;
         end;
       end;

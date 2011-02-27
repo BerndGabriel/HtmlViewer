@@ -2544,17 +2544,21 @@ function TIndentManager.LeftEdge(Y: Integer): Integer;
 var
   I: Integer;
   IR: IndentRec;
+  MinX: Integer;
 begin
   Result := -MaxInt;
+  MinX := 0;
   for I := 0 to L.Count - 1 do
   begin
     IR := L.Items[I];
     if (Y >= IR.YT) and (Y < IR.YB) and (Result < IR.X) then
       if (IR.ID = nil) or (IR.ID = CurrentID) then
         Result := IR.X;
+    if IR.ID = CurrentID then
+      MinX := IR.X;
   end;
   if Result = -MaxInt then
-    Result := 0;
+    Result := MinX;
 end;
 
 //-- BG ---------------------------------------------------------- 23.02.2011 --
