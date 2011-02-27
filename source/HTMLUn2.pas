@@ -2677,7 +2677,7 @@ begin
   if Result + W + SpW > RightEdge(Y) then
   begin
     // too wide, must find a wider place below:
-    if (SpH > 0) and (Result + W >= RightEdge(Y + SpH)) then
+    if (SpH > 0) and (Result + W <= RightEdge(Y + SpH)) then
     begin
       // fits into area below space Sp
       Inc(Y, SpH);
