@@ -4849,11 +4849,11 @@ var
     except
       GlobalFree(Mem);
     end;
-    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(PhtChar));
+    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
     try
       Wuf := GlobalLock(Mem);
       try
-        Move(Source[1], Wuf^, Len * SizeOf(PhtChar));
+        Move(Source[1], Wuf^, Len * SizeOf(ThtChar));
         Wuf[Len] := #0;
         Clipboard.SetAsHandle(CF_UNICODETEXT, Mem);
       finally
