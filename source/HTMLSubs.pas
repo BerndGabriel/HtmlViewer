@@ -10530,12 +10530,12 @@ function TSection.FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWid
 //  TSection.FindCountThatFits1() is used in TSection.DrawLogic().
 //  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
 var
-  Cnt, XX, I, J, J1, J2, J3, OHang, Tmp: Integer;
+  Cnt, XX, YY, I, J, J1, J2, J3, OHang, Tmp: Integer;
   Picture: boolean;
   Align: AlignmentType;
   HSpcL, HSpcR: Integer;
   FLObj: TFloatingObj;
-  Extent: Integer;
+  Extent: TSize;
 const
   OldStart: PWideChar = nil;
   OldResult: Integer = 0;
@@ -10551,6 +10551,7 @@ begin
   OldWidth := Width;
   Cnt := 0;
   XX := 0;
+  YY := 0;
   while True do
   begin
     Fonts.GetFontAt(Start - Buff, OHang).AssignToCanvas(Canvas);
@@ -10595,7 +10596,8 @@ begin
     begin
       if (I < J) or (I = 0) then
         Break;
-      XX := XX + Extent;
+      XX := XX + Extent.cx;
+      YY := Math.Max(YY, Extent.cy);
     end;
 
     Inc(Start, I);
@@ -10614,15 +10616,14 @@ function TSection.FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars
 //  TSection.FindCountThatFits1() is used in TSection.DrawLogic().
 //  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
 var
-  Cnt, XX, I, J, J1, J2, J3, X1, X2, W, OHang, ImgWidth, Width: Integer;
+  Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, W, OHang, ImgWidth, Width: Integer;
   Picture: boolean;
   Align: AlignmentType;
-//  ImageAtStart: boolean;
   FlObj: TFloatingObj;
   HSpcL, HSpcR: Integer;
   BrChr, TheStart: PWideChar;
   Font, LastFont: TMyFont;
-  SaveX: Integer;
+  Save: TSize;
   FoundBreak: boolean;
   HyphenWidth: Integer;
   FloatingImageCount: Integer;
@@ -10632,7 +10633,7 @@ begin
 //  ImageAtStart := True;
   ImgHt := 0;
 
-  BrChr := StrScanW(TheStart, BrkCh); {see if a break ThtChar}
+  BrChr := StrScanW(TheStart, BrkCh); {see if a break char}
   if Assigned(BrChr) and (BrChr - TheStart < MaxChars) then
   begin
     MaxChars := BrChr - TheStart;
@@ -10665,6 +10666,7 @@ begin
   FloatingImageCount := -1;
   Cnt := 0;
   XX := 0;
+  YY := 0;
   while True do
   begin
     Font := Fonts.GetFontAt(Start - Buff, OHang);
@@ -10688,8 +10690,8 @@ begin
           FlObj.FloatingPosY := Max(Y, ImgY);
           W := ImgWidth + FlObj.HSpaceL + FlObj.HSpaceR;
           case Align of
-            ALeft:  FlObj.FloatingPosX := IMgr.AlignLeft(FlObj.FloatingPosY, W);
-            ARight: FlObj.FloatingPosX := IMgr.AlignRight(FlObj.FloatingPosY, W);
+            ALeft:  FlObj.FloatingPosX := IMgr.AlignLeft(FlObj.FloatingPosY, W, XX, YY);
+            ARight: FlObj.FloatingPosX := IMgr.AlignRight(FlObj.FloatingPosY, W, XX, YY);
           end;
           IMgr.UpdateImage(FlObj.FloatingPosY, FlObj);
           ImgY := FlObj.FloatingPosY;
@@ -10712,7 +10714,6 @@ begin
       else
       begin
         Inc(XX, ImgWidth + HSpcL + HSpcR);
-//        ImageAtStart := False;
         if XX > Width then
           break;
       end;
@@ -10723,7 +10724,6 @@ begin
       XX := XX + HSpcL + HSpcR;
       I := 1; J := 1;
       Picture := True;
-//      ImageAtStart := False;
       if XX > Width then
         break;
     end
@@ -10732,11 +10732,11 @@ begin
       Picture := False;
       J := Min(J1, J2);
       J := Min(J, J3);
-      I := FitText(Canvas.Handle, Start, J, Width - XX, SaveX);
+      I := FitText(Canvas.Handle, Start, J, Width - XX, Save);
       if (I > 0) and (Brk[TheStart - Buff + Cnt + I] = 's') then
       begin {a hyphen could go here}
         HyphenWidth := Canvas.TextWidth('-');
-        if XX + SaveX + HyphenWidth > Width then
+        if XX + Save.cx + HyphenWidth > Width then
           Dec(I);
       end;
     end;
@@ -10753,8 +10753,8 @@ begin
     begin
       if I < J then
         Break;
-      XX := XX + SaveX;
-//      ImageAtStart := False;
+      XX := XX + Save.cx;
+      YY := Math.Max(YY, Save.cy);
     end;
 
     Inc(Start, I);
