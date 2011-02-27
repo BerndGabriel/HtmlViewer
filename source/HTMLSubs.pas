@@ -5214,6 +5214,9 @@ begin
         begin
           YClear := Y;
           LIndent := IMgr.AlignLeft(YClear, TotalWidth);
+          {Indent := LIndent + LeftWidths;
+          if Positioning = posStatic then
+            Dec(Indent, X);}
           Indent := LIndent + LeftWidths - X;
         end;
 
@@ -5221,6 +5224,9 @@ begin
         begin
           YClear := Y;
           RIndent := IMgr.AlignRight(YClear, TotalWidth);
+          {Indent := RIndent + LeftWidths;
+          if Positioning = posStatic then
+            Dec(Indent, X);}
           Indent := RIndent + LeftWidths - X;
         end;
       end;
@@ -6312,6 +6318,10 @@ var
   TmpFont: TMyFont;
 begin
   inherited Create(Master, Prop, AnOwnerCell, Attributes);
+
+  Tmp := Prop.GetListStyleType;
+  if Tmp <> lbBlank then
+    FListStyleType := Tmp;
   case Sy of
 
     UlSy, DirSy, MenuSy:
@@ -6320,45 +6330,55 @@ begin
         if APlain then
           FListStyleType := lbNone
         else
-          case ListLevel mod 3 of
-            1: FListStyleType := lbDisc;
-            2: FListStyleType := lbCircle;
-            0: FListStyleType := lbSquare;
-          end;
+          if Tmp = lbBlank then
+            case ListLevel mod 3 of
+              1: FListStyleType := lbDisc;
+              2: FListStyleType := lbCircle;
+              0: FListStyleType := lbSquare;
+            end;
       end;
 
     OLSy:
       begin
         FListType := Ordered;
-        case AIndexType of
-          'a': FListStyleType := lbLowerAlpha;
-          'A': FListStyleType := lbUpperAlpha;
-          'i': FListStyleType := lbLowerRoman;
-          'I': FListStyleType := lbUpperRoman;
-        else
-          FListStyleType := lbDecimal;
-        end;
+        if Tmp = lbBlank then
+          case AIndexType of
+            'a': FListStyleType := lbLowerAlpha;
+            'A': FListStyleType := lbUpperAlpha;
+            'i': FListStyleType := lbLowerRoman;
+            'I': FListStyleType := lbUpperRoman;
+          else
+            FListStyleType := lbDecimal;
+          end;
       end;
 
     DLSy:
       FListType := Definition;
   else
     FListType := liAlone;
-    FListStyleType := lbDisc;
+    if Tmp = lbBlank then
+      FListStyleType := lbDisc;
     if (VarType(MargArrayO[MarginLeft]) in varInt) and
       ((MargArrayO[MarginLeft] = IntNull) or (MargArrayO[MarginLeft] = 0)) then
       MargArrayO[MarginLeft] := 16;
   end;
+
+  if (VarType(MargArrayO[PaddingLeft]) in varInt) and (MargArrayO[PaddingLeft] = IntNull) then
+    case Sy of
+
+      OLSy, ULSy, DirSy, MenuSy:
+        if FListStyleType = lbNone then
+          MargArrayO[PaddingLeft] := 0
+        else
+          MargArrayO[PaddingLeft] := ListIndent;
+
+      DLSy:
+        MargArrayO[PaddingLeft] := 0;
+    else
+      MargArrayO[PaddingLeft] := ListIndent;
+    end;
+
   FListNumb := AListNumb;
-
-  Tmp := Prop.GetListStyleType;
-  if Tmp <> lbBlank then
-    FListStyleType := Tmp;
-
-  if FListStyleType <> lbNone then
-    if (VarType(MargArrayO[MarginLeft]) in varInt) and
-      ((MargArrayO[MarginLeft] = IntNull) or (MargArrayO[MarginLeft] = 0)) then
-      MargArrayO[MarginLeft] := ListIndent;
 
   ListFont := TMyFont.Create;
   TmpFont := Prop.GetFont;
@@ -11613,7 +11633,8 @@ var
           if Obj.Floating in [ALeft, ARight] then
           begin
             ParentSectionList.DrawList.AddImage(
-              TImageObj(Obj), Canvas, Obj.Indent,
+              TImageObj(Obj), Canvas,
+                {IMgr.LfEdge +} Obj.Indent,
                 //IMgr.LfEdge + Obj.FloatingPosX + Obj.HSpaceL,
                 Obj.FloatingPosY + Obj.VSpaceT, Y {- Descent}, FO);
 

@@ -2313,143 +2313,122 @@ begin
   DefPointSize := PointSize;
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    DefFontname := FontName;
-    Props[FontFamily] := FontName;
-    Props[FontSize] := PointSize;
-    Props[FontStyle] := 'none';
-    Props[FontWeight] := 'normal';
-    Props[TextAlign] := 'left';
-    Props[TextDecoration] := 'none';
-    Props[TextTransform] := txNone;
-    Props[WordWrap] := 'normal';
-    Props[FontVariant] := 'normal';
-    Props[Color] := AColor;
-    Props[MarginTop] := MarginHeight;
-    Props[MarginBottom] := MarginHeight;
-    Props[MarginLeft] := MarginWidth;
-    Props[MarginRight] := MarginWidth;
-    Props[Visibility] := viVisible;
-    Props[LetterSpacing] := 0;
-    CharSet := ACharSet;
-  end;
+  Properties.DefFontname := FontName;
+  Properties.Props[FontFamily] := FontName;
+  Properties.Props[FontSize] := PointSize;
+  Properties.Props[FontStyle] := 'none';
+  Properties.Props[FontWeight] := 'normal';
+  Properties.Props[TextAlign] := 'left';
+  Properties.Props[TextDecoration] := 'none';
+  Properties.Props[TextTransform] := txNone;
+  Properties.Props[WordWrap] := 'normal';
+  Properties.Props[FontVariant] := 'normal';
+  Properties.Props[Color] := AColor;
+  Properties.Props[MarginTop] := MarginHeight;
+  Properties.Props[MarginBottom] := MarginHeight;
+  Properties.Props[MarginLeft] := MarginWidth;
+  Properties.Props[MarginRight] := MarginWidth;
+  Properties.Props[Visibility] := viVisible;
+  Properties.Props[LetterSpacing] := 0;
+  Properties.CharSet := ACharSet;
   AddObject('default', Properties);
   DefProp := Properties;
 
 {$IFDEF Quirk}
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontSize] := PointSize * 1.0;
-    Props[FontStyle] := 'none';
-    Props[FontWeight] := 'normal';
-    Props[Color] := AColor;
-  end;
+  Properties.Props[FontSize] := PointSize * 1.0;
+  Properties.Props[FontStyle] := 'none';
+  Properties.Props[FontWeight] := 'normal';
+  Properties.Props[Color] := AColor;
   AddObject('td', Properties);
   Properties := AddDuplicate('th', Properties);
   Properties.Props[FontWeight] := 'bold';
 {$ENDIF}
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[Color] := AHotSpot or PalRelative;
-    if LinkUnderline then
-      Props[TextDecoration] := 'underline'
-    else
-      Props[TextDecoration] := 'none';
-  end;
+  Properties.Props[Color] := AHotSpot or PalRelative;
+  if LinkUnderline then
+    Properties.Props[TextDecoration] := 'underline'
+  else
+    Properties.Props[TextDecoration] := 'none';
   AddObject('::link', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-    Props[Color] := AVisitedColor or PalRelative;
+  Properties.Props[Color] := AVisitedColor or PalRelative;
   AddObject('::visited', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-    Props[Color] := AActiveColor or PalRelative;
+  Properties.Props[Color] := AActiveColor or PalRelative;
   AddObject('::hover', Properties);
 
   Properties := TProperties.Create;
   AddObject('null', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontFamily] := PreFontName;
-    Props[FontSize] := PointSize * 10.0 / 12.0;
-    Props[FontStyle] := 'none';
-    Props[FontWeight] := 'normal';
-    Props[TextDecoration] := 'none';
-  end;
+  Properties.Props[FontFamily] := PreFontName;
+  Properties.Props[FontSize] := PointSize * 10.0 / 12.0;
+  Properties.Props[FontStyle] := 'none';
+  Properties.Props[FontWeight] := 'normal';
+  Properties.Props[TextDecoration] := 'none';
   AddObject('pre', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[MarginTop] := AutoParagraph;
-    Props[MarginBottom] := AutoParagraph;
-  end;
+  Properties.Props[MarginTop] := AutoParagraph;
+  Properties.Props[MarginBottom] := AutoParagraph;
   AddObject('p', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[MarginTop] := 0;
-  end;
+  Properties.Props[MarginTop] := 0;
   AddObject('p 11pre', Properties);
 
   for J := Low(ListTypes) to High(ListTypes) do
   begin
     Properties := TProperties.Create;
-    with Properties do
-    begin
-      //Props[PaddingLeft] := ListIndent;
-      Props[MarginTop] := 0;
-      Props[MarginBottom] := 0;
-      case J of
-        ol, ul, menu, dir:
-          begin
-            Props[ListStyleType] := 'blank';
-            Props[MarginTop] := AutoParagraph;
-            Props[MarginBottom] := AutoParagraph;
-          end;
-        dl:
-          begin
-            Props[MarginLeft] := 0;
-            Props[PaddingLeft] := 0;
-            Props[ListStyleType] := 'none';
-          end;
-        blockquote:
-          begin
-            Props[MarginTop] := AutoParagraph;
-            Props[MarginBottom] := ParagraphSpace;
-          end;
+    case J of
+      ol, ul, menu, dir:
+      begin
+        Properties.Props[ListStyleType] := 'blank';
+        Properties.Props[MarginTop] := AutoParagraph;
+        Properties.Props[MarginBottom] := AutoParagraph;
+        Properties.Props[PaddingLeft] := IntNull;
+      end;
 
-        dd: ;
+      dl:
+      begin
+        Properties.Props[ListStyleType] := 'none';
+        Properties.Props[MarginLeft] := 0;
+        Properties.Props[MarginTop] := 0;
+        Properties.Props[MarginBottom] := 0;
+        Properties.Props[PaddingLeft] := 0;
+      end;
+
+      blockquote:
+      begin
+        Properties.Props[MarginTop] := AutoParagraph;
+        Properties.Props[MarginBottom] := ParagraphSpace;
+        Properties.Props[PaddingLeft] := ListIndent;
+      end;
+
+      dd:
+      begin
+        Properties.Props[MarginTop] := 0;
+        Properties.Props[MarginBottom] := 0;
+        Properties.Props[PaddingLeft] := ListIndent;
       end;
     end;
     AddObject(ListStr[J], Properties);
   end;
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontFamily] := PrefontName;
-    Props[FontSize] := '0.83em'; {10.0 / 12.0;}
-  end;
+  Properties.Props[FontFamily] := PrefontName;
+  Properties.Props[FontSize] := '0.83em'; {10.0 / 12.0;}
   AddObject('code', Properties);
   AddDuplicate('tt', Properties);
   AddDuplicate('kbd', Properties);
   AddDuplicate('samp', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontWeight] := 'bold';
-  end;
+  Properties.Props[FontWeight] := 'bold';
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
 {$IFNDEF Quirk}
@@ -2457,47 +2436,29 @@ begin
 {$ENDIF}
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontSize] := '0.83em';
-    Props[VerticalAlign] := 'super';
-  end;
+  Properties.Props[FontSize] := '0.83em';
+  Properties.Props[VerticalAlign] := 'super';
   AddObject('sup', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontSize] := '0.83em';
-    Props[VerticalAlign] := 'sub';
-  end;
+  Properties.Props[FontSize] := '0.83em';
+  Properties.Props[VerticalAlign] := 'sub';
   AddObject('sub', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontSize] := '1.17em';
-  end;
+  Properties.Props[FontSize] := '1.17em';
   AddObject('big', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontSize] := '0.83em';
-  end;
+  Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[TextAlign] := 'none';
-  end;
+  Properties.Props[TextAlign] := 'none';
   AddObject('table', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontStyle] := 'italic';
-  end;
+  Properties.Props[FontStyle] := 'italic';
   AddObject('i', Properties);
   AddDuplicate('em', Properties);
   AddDuplicate('cite', Properties);
@@ -2506,39 +2467,27 @@ begin
   AddDuplicate('address', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[TextDecoration] := 'underline';
-  end;
+  Properties.Props[TextDecoration] := 'underline';
   AddObject('u', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[TextDecoration] := 'line-through';
-  end;
+  Properties.Props[TextDecoration] := 'line-through';
   AddObject('s', Properties);
   AddDuplicate('strike', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[TextAlign] := 'center';
-  end;
+  Properties.Props[TextAlign] := 'center';
   AddObject('center', Properties);
   AddDuplicate('caption', Properties);
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[FontFamily] := 'Arial Unicode MS, Arial';
-    Props[FontSize] := '10pt';
-    Props[FontStyle] := 'none';
-    Props[FontWeight] := 'normal';
-    Props[TextAlign] := 'left';
-    Props[TextDecoration] := 'none';
-    Props[Color] := AColor;
-  end;
+  Properties.Props[FontFamily] := 'Arial Unicode MS, Arial';
+  Properties.Props[FontSize] := '10pt';
+  Properties.Props[FontStyle] := 'none';
+  Properties.Props[FontWeight] := 'normal';
+  Properties.Props[TextAlign] := 'left';
+  Properties.Props[TextDecoration] := 'none';
+  Properties.Props[Color] := AColor;
   AddObject('input', Properties);
   AddDuplicate('select', Properties);
 
@@ -2549,33 +2498,27 @@ begin
     Properties.Props[FontFamily] := PreFontName;
 
   Properties := TProperties.Create;
-  with Properties do
-  begin
-    Props[MarginLeft] := 0;
-    Props[MarginRight] := 0;
-    Props[MarginTop] := 10;
-    Props[MarginBottom] := 10;
-  end;
+  Properties.Props[MarginLeft] := 0;
+  Properties.Props[MarginRight] := 0;
+  Properties.Props[MarginTop] := 10;
+  Properties.Props[MarginBottom] := 10;
   AddObject('hr', Properties);
 
   for HIndex := 1 to 6 do
   begin
     Properties := TProperties.Create;
     F := PointSize / 12.0;
-    with Properties do
-    begin
-      case HIndex of
-        1: Props[FontSize] := 24.0 * F;
-        2: Props[FontSize] := 18.0 * F;
-        3: Props[FontSize] := 14.0 * F;
-        4: Props[FontSize] := 12.0 * F;
-        5: Props[FontSize] := 10.0 * F;
-        6: Props[FontSize] := 8.0 * F;
-      end;
-      Props[MarginTop] := 19;
-      Props[MarginBottom] := Props[MarginTop];
-      Props[FontWeight] := 'bold';
+    case HIndex of
+      1: Properties.Props[FontSize] := 24.0 * F;
+      2: Properties.Props[FontSize] := 18.0 * F;
+      3: Properties.Props[FontSize] := 14.0 * F;
+      4: Properties.Props[FontSize] := 12.0 * F;
+      5: Properties.Props[FontSize] := 10.0 * F;
+      6: Properties.Props[FontSize] := 8.0 * F;
     end;
+    Properties.Props[MarginTop] := 19;
+    Properties.Props[MarginBottom] := Properties.Props[MarginTop];
+    Properties.Props[FontWeight] := 'bold';
     AddObject('h' + IntToStr(HIndex), Properties);
   end;
 end;
