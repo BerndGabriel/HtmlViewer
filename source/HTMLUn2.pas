@@ -2573,6 +2573,7 @@ function TIndentManager.RightEdge(Y: Integer): Integer;
 var
   I: Integer;
   IR: IndentRec;
+  MinX: Integer;
 begin
   Result := MaxInt;
   for I := 0 to R.Count - 1 do
@@ -2583,7 +2584,20 @@ begin
         Result := IR.X;
   end;
   if Result = MaxInt then
-    Result := Width;
+  begin
+    //BG, 01.03.2011: Issue 77: Error of the elements
+    MinX := 0;
+    for I := L.Count - 1 downto 0 do
+    begin
+      IR := L.Items[I];
+      if IR.ID = CurrentID then
+      begin
+        MinX := IR.X;
+        break;
+      end;
+    end;
+    Result := Width + MinX;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 23.02.2011 --
