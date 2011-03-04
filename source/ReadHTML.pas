@@ -746,7 +746,7 @@ function THtmlParser.GetTag: Boolean; {Pick up a Tag or pass a single LessChar}
             GetCh;
           end;
     if (Sym = IDSy) and (S <> '') and Assigned(PropStack.MasterList) and not LinkSearch then
-      PropStack.MasterList.IDNameList.AddChPosObject(S, PropStack.SIndex);
+      PropStack.MasterList.AddChPosObjectToIDNameList(S, PropStack.SIndex);
   end;
 
 var
@@ -2382,7 +2382,7 @@ var
                  {Author may have added '#' by mistake}
                       if (Length(Tmp) > 0) and (Tmp[1] = '#') then
                         Delete(Tmp, 1, 1);
-                      PropStack.MasterList.IDNameList.AddChPosObject(Tmp, PropStack.SIndex);
+                      PropStack.MasterList.AddChPosObjectToIDNameList(Tmp, PropStack.SIndex);
                       Section.AnchorName := True;
                     end;
                     if FoundHRef then
@@ -2737,7 +2737,7 @@ begin
       {Author may have added '#' by mistake}
           if (Length(Tmp) > 0) and (Tmp[1] = '#') then
             Delete(Tmp, 1, 1);
-          PropStack.MasterList.IDNameList.AddChPosObject(Tmp, PropStack.SIndex);
+          PropStack.MasterList.AddChPosObjectToIDNameList(Tmp, PropStack.SIndex);
           Section.AnchorName := True;
         end;
         if FoundHRef then

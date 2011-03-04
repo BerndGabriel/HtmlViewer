@@ -66,34 +66,54 @@ uses
   HtmlBuffer;
 
 type
-  {$ifdef UNICODE}
-    {$message 'Compiler uses unicode by default.'}
-  {$else}
-    {$message 'Compiler uses single byte chars by default.'}
-  {$endif}
 
-  {$message 'HtmlViewer uses unicode.'}
+{$IFNDEF DOTNET}
+  {$IFNDEF FPC}
+     //needed so that in FreePascal, we can use pointers of different sizes
+    {$IFDEF WIN32}
+      PtrInt = LongInt;
+      PtrUInt = LongWord;
+    {$ENDIF}
+    {$IFDEF WIN64}
+      PtrInt = Int64;
+      PtrUInt = Int64;
+    {$ENDIF}
+    //NOTE:  The code below asumes a 32bit Linux architecture (such as target i386-linux)
+    {$IFDEF KYLIX}
+      PtrInt = LongInt;
+      PtrUInt = LongWord;
+    {$ENDIF}
+  {$ENDIF}
+{$ENDIF}
 
-  {$ifdef FPC}
+{$ifdef UNICODE}
+  {$message 'Compiler uses unicode by default.'}
+{$else}
+  {$message 'Compiler uses single byte chars by default.'}
+{$endif}
+
+{$message 'HtmlViewer uses unicode.'}
+
+{$ifdef FPC}
+{$else}
+  {$ifdef Compiler18_Plus}
   {$else}
-    {$ifdef Compiler18_Plus}
-    {$else}
-      TWideStringList = class(TTntStringList);
-    {$endif}
+    TWideStringList = class(TTntStringList);
   {$endif}
-  {$ifdef UNICODE}
-    ThtChar = Char;
-    ThtString = string;
-    ThtStrings = TStrings;
-    ThtStringList = TStringList;
-    PhtChar = PChar;
-  {$else}
-    ThtChar = WideChar;
-    ThtString = WideString;
-    ThtStrings = TWideStrings;
-    ThtStringList = TWideStringList;
-    PhtChar = PWideChar;
-  {$endif}
+{$endif}
+{$ifdef UNICODE}
+  ThtChar = Char;
+  ThtString = string;
+  ThtStrings = TStrings;
+  ThtStringList = TStringList;
+  PhtChar = PChar;
+{$else}
+  ThtChar = WideChar;
+  ThtString = WideString;
+  ThtStrings = TWideStrings;
+  ThtStringList = TWideStringList;
+  PhtChar = PWideChar;
+{$endif}
 
   ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected

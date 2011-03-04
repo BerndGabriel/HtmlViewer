@@ -327,6 +327,8 @@ type
     constructor CreateCopy(T: TFormControlObj);
     destructor Destroy; override;
     function GetSubmission(Index: Integer; var S: ThtString): boolean; virtual;
+    function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
+    function TotalWidth: Integer; {$ifdef UseInline} inline; {$endif}
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); virtual;
     procedure EnterEvent(Sender: TObject); {these two would be better private}
     procedure ExitEvent(Sender: TObject);
@@ -596,9 +598,9 @@ type
     function CreatePanel(L: TAttributeList; ACell: TCellBasic): TPanelObj;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth: Integer; var Curs: Integer): Integer; override;
+    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+      var MaxWidth: Integer; var Curs: Integer): Integer; override;
     function FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWideChar; Max: Integer): Integer;
-    function FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars: Integer; X, Y: Integer; IMgr: TIndentManager; var ImgY, ImgHt: Integer; var DoneFlObjPos: PWideChar; NxImages: TList): Integer;
     function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer; var XR: Integer; var YR: Integer; var CaretHt: Integer; var Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
@@ -796,15 +798,15 @@ type
     constructor Create(Master: TSectionList; Prop: TProperties; AnOwnerCell: TCellBasic; Attributes: TAttributeList);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
     destructor Destroy; override;
-    function DrawLogic(Canvas: TCanvas; X: Integer; Y: Integer; XRef: Integer; YRef: Integer;
-      AWidth: Integer; AHeight: Integer; BlHt: Integer; IMgr: TIndentManager; var MaxWidth: Integer;
-      var Curs: Integer): Integer; override;
+    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+      var MaxWidth: Integer; var Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X: Integer;
       XRef: Integer; YRef: Integer): Integer; override;
     property Legend: TBlockCell read FLegend;
   end;
 
   TCellObj = class;
+  IntArray = array of Integer;
 
   TCellList = class(TFreeList)
   {a list of TCellObj's to form a table row}
@@ -824,14 +826,11 @@ type
     constructor Create(Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellList);
     procedure InitializeRow;
-    function DrawLogic1(Canvas: TCanvas; const Widths: array of Integer; Span,
-      CellSpacing, AHeight, Rows: Integer; var Desired: Integer; var Spec, More: boolean): Integer;
-    procedure DrawLogic2(Canvas: TCanvas; Y: Integer;
-      CellSpacing: Integer; var Curs: Integer);
-    function Draw(Canvas: TCanvas; MasterList: TSectionList; const ARect: TRect;
-      const Widths: array of Integer; X: Integer; Y, YOffset: Integer;
-      CellSpacing: Integer; Border: boolean; Light, Dark: TColor;
-      MyRow: Integer): Integer;
+    function DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span, CellSpacing, AHeight, Rows: Integer;
+      var Desired: Integer; var Spec, More: boolean): Integer;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+    function Draw(Canvas: TCanvas; MasterList: TSectionList; const ARect: TRect; const Widths: IntArray;
+      X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
     procedure Add(CellObj: TCellObj);
     property Items[Index: Integer]: TCellObj read getCellObj;
   end;
@@ -843,8 +842,6 @@ type
     colVAlign: AlignmentType;
   end;
 
-  IntArray = array of Integer;
-
   THtmlTable = class(TBlockBase)
   private
     TablePartRec: TTablePartRec;
@@ -855,36 +852,38 @@ type
     procedure DrawTableP(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
     procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
   public
-    Rows: TFreeList; {a list of TCellLists}
+    Rows: TFreeList;        {a list of TCellLists}
     ListsProcessed: Boolean;
-    Indent: Integer; {table indent}
-    BorderWidth: Integer; {width of border}
-    Float: Boolean; {if floating}
-    NumCols, {Number columns in table}
-      TableWidth, {width of table}
-      tblWidthAttr: Integer; {Width attribute as entered}
-    UseAbsolute: boolean; {width entries are considered absolute}
-    TableHeight: Integer; {height of table itself, not incl caption}
-    CellPadding, CellSpacing: Integer;
+    Indent: Integer;        {table indent}
+    BorderWidth: Integer;   {width of border}
+    Float: Boolean;         {if floating}
+    NumCols: Integer;       {Number columns in table}
+    TableWidth: Integer;    {width of table}
+    tblWidthAttr: Integer;  {Width attribute as entered}
+    UseAbsolute: boolean;   {width entries are considered absolute}
+    TableHeight: Integer;   {height of table itself, not incl caption}
+    CellPadding: Integer;
+    CellSpacing: Integer;
     HSpace, VSpace: Integer; {horizontal, vertical extra space}
-    BorderColor: TColor; //BG, 13.06.2010: added for Issue 5: Table border versus stylesheets
-    BorderColorLight, BorderColorDark: TColor;
-    EndList: boolean; {marker for copy}
+    BorderColor: TColor;      //BG, 13.06.2010: added for Issue 5: Table border versus stylesheets
+    BorderColorLight: TColor;
+    BorderColorDark: TColor;
+    EndList: boolean;        {marker for copy}
     DrawX: Integer;
     DrawY: Integer;
     BkGnd: boolean;
     BkColor: TColor;
     ColInfo: TFreeList;
-    Widths, {holds column widths}
-      MaxWidths, MinWidths, Heights,
-      Percents: IntArray; {percent widths of columns}
+    Percents: IntArray;     {percent widths of columns}
+    Widths: IntArray;       {holds column widths}
+    MaxWidths: IntArray;
+    MinWidths: IntArray;
+    Heights: IntArray;
 
-    constructor Create(Master: TSectionList; Attr: TAttributeList;
-      Prop: TProperties);
+    constructor Create(Master: TSectionList; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TSectionBase); override;
     destructor Destroy; override;
-    procedure DoColumns(Width: Integer; AsPercent: boolean;
-      VAlign: AlignmentType; const Align: ThtString);
+    procedure DoColumns(Width: Integer; AsPercent: boolean; VAlign: AlignmentType; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     procedure AddDummyCells;
     procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
@@ -893,18 +892,14 @@ type
     procedure TableSpecifiedAndWillFit(TheWidth: Integer);
     procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth: Integer; var Curs: Integer): Integer; override;
+      var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    function GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
+    function GetURL(Canvas: TCanvas; X, Y: Integer;
       var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
       var ATitle: ThtString): guResultType; override;
-    function PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-      var IX, IY: Integer): boolean; override;
-    function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
-      var XR: Integer; var YR: Integer; var CaretHt: Integer;
-      var Intext: boolean): Integer; override;
-    function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer;
-      var Y: Integer): boolean; override;
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
+    function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
+    function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
     function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
     function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
@@ -934,27 +929,31 @@ type
 
     constructor Create(Master: TSectionBaseList);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellBasic);
-    procedure Add(Item: TSectionBase; TagIndex: Integer);
     function CheckLastBottomMargin: boolean;
-    procedure CopyToClipboard;
-    function DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: Integer;
-      var ScrollWidth: Integer; var Curs: Integer): Integer; virtual;
-    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
-    function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X: Integer;
-      Y, XRef, YRef: Integer): Integer; virtual;
-    function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
-      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
-    function PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-      var IX, IY: Integer): boolean;
-    function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
-      var XR: Integer; var YR: Integer; var Ht: Integer;
-      var Intext: boolean): Integer;
+    function DoLogic(Canvas: TCanvas; Y, Width, AHeight, BlHt: Integer; var ScrollWidth, Curs: Integer): Integer; virtual;
+    function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X, Y, XRef, YRef: Integer): Integer; virtual;
+    function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer; var XR, YR, Ht: Integer; var Intext: boolean): Integer;
+    function FindSourcePos(DocPos: Integer): Integer;
     function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
     function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
-    function FindSourcePos(DocPos: Integer): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget;
+      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
+    procedure Add(Item: TSectionBase; TagIndex: Integer);
     procedure AddSectionsToList;
+    procedure CopyToClipboard;
     procedure FormTree(const Indent: ThtString; var Tree: ThtString);
+    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
+  end;
+
+  TBlockCell = class(TCellBasic)
+  private
+    CellHeight: Integer;
+    TextWidth: Integer;
+
+    function DoLogicX(Canvas: TCanvas; X, Y, XRef, YRef, Width, AHeight, BlHt: Integer;
+      out ScrollWidth: Integer; var Curs: Integer): Integer;
   end;
 
   TCell = class(TCellBasic)
@@ -964,10 +963,8 @@ type
     constructor Create(Master: TSectionBaseList);
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellBasic);
     destructor Destroy; override;
-    function DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: Integer;
-      var ScrollWidth: Integer; var Curs: Integer): Integer; override;
-    function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X: Integer;
-      Y, XRef, YRef: Integer): Integer; override;
+    function DoLogic(Canvas: TCanvas; Y, Width, AHeight, BlHt: Integer; var ScrollWidth, Curs: Integer): Integer; override;
+    function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X, Y, XRef, YRef: Integer): Integer; override;
   end;
 
   TCellObjCell = class(TCell)
@@ -977,18 +974,13 @@ type
     Url, Target: ThtString;
   public
     constructor CreateCopy(AMasterList: TSectionBaseList; T: TCellObjCell);
-    function GetURL(Canvas: TCanvas; X: Integer; Y: Integer; var UrlTarg: TUrlTarget;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget;
       var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
   end;
 
-  TBlockCell = class(TCellBasic)
-  private
-    CellHeight: Integer;
-    TextWidth: Integer;
-
-    function DoLogicX(Canvas: TCanvas; X, Y: Integer; XRef, YRef, Width, AHeight, BlHt: Integer;
-      out ScrollWidth: Integer; var Curs: Integer): Integer;
-  end;
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
 
   TSectionList = class(TCell) {a list of all the sections--holds document}
   private
@@ -1054,7 +1046,7 @@ type
     Styles: THtmlStyleList; {the stylesheet}
     DrawList: TDrawList;
     FirstLineHtPtr: PInteger;
-    IDNameList: TIDNameList;
+    IDNameList: TIDObjectList;
     PositionList: TList;
     BitmapList: TStringBitmapList;
     SectionCount: Integer;
@@ -1077,6 +1069,7 @@ type
     constructor Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
     constructor CreateCopy(T: TSectionList);
     destructor Destroy; override;
+    function AddChPosObjectToIDNameList(const S: ThtString; Pos: Integer): Integer; {$ifdef UseInline} inline; {$endif}
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean; override;
     function DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: Integer;
       var ScrollWidth: Integer; var Curs: Integer): Integer; override;
@@ -4303,7 +4296,7 @@ end;
 
 {----------------TCellBasic.DoLogic}
 
-function TCellBasic.DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: Integer;
+function TCellBasic.DoLogic(Canvas: TCanvas; Y, Width, AHeight, BlHt: Integer;
   var ScrollWidth: Integer; var Curs: Integer): Integer;
 {Do the entire layout of the cell or document.  Return the total document
  pixel height}
@@ -5232,7 +5225,6 @@ begin
       DrawTop := YClear + MargArray[MarginTop]; {Border top}
 
     ContentTop := YClear + MargArray[MarginTop] + MargArray[PaddingTop] + MargArray[BorderTopWidth];
-    ContentLeft := X;
 
     if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     begin
@@ -5333,8 +5325,8 @@ begin
       else
         DrawHeight := 0; //SectionHeight;
         case FloatLR of
-          ALeft:  RefIMgr.UpdateLeft(YClear, ContentBot, TotalWidth);
-          ARight: RefIMgr.UpdateRight(YClear, ContentBot, TotalWidth);
+          ALeft:  RefIMgr.AddLeft(YClear, ContentBot, TotalWidth);
+          ARight: RefIMgr.AddRight(YClear, ContentBot, TotalWidth);
         end;
       end;
       SectionHeight := 0;
@@ -6585,7 +6577,6 @@ begin
   RIndex := IMgr.SetRightIndent(X + NewWidth, Y);
 
   ContentTop := Y + MargArray[MarginTop] + MargArray[PaddingTop] + MargArray[BorderTopWidth];
-  ContentLeft := X;
   MyCell.DoLogicX(Canvas, X, ContentTop, 0, 0, NewWidth,
     AHeight - MargArray[MarginTop] - MargArray[MarginBottom], BlHt, ScrollWidth, Curs);
 
@@ -6631,12 +6622,19 @@ end;
 
 {----------------TSectionList}
 
+//-- BG ---------------------------------------------------------- 04.03.2011 --
+// moving from TIDObjectList to TSectionList removed field OwnerList from TIDObjectList
+function TSectionList.AddChPosObjectToIDNameList(const S: ThtString; Pos: Integer): Integer;
+begin
+  Result := IDNameList.AddObject(S, TChPosObj.Create(Self, Pos));
+end;
+
 constructor TSectionList.Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
 begin
   inherited Create(Self);
   TheOwner := Owner;
   PPanel := APaintPanel;
-  IDNameList := TIDNameList.Create(Self);
+  IDNameList := TIDObjectList.Create; //(Self);
   htmlFormList := TFreeList.Create;
   AGifList := TList.Create;
   MapList := TFreeList.Create;
@@ -7432,7 +7430,7 @@ procedure TSectionList.ProcessInlines(SIndex: Integer; Prop: TProperties; Start:
 {called when an inline property is found to specify a border}
 var
   I, EmSize, ExSize: Integer;
-  IR: InlineRec;
+  Result: InlineRec;
   MargArrayO: TVMarginArray;
   Dummy1: Integer;
 begin
@@ -7440,9 +7438,9 @@ begin
   begin
     if Start then
     begin {this is for border start}
-      IR := InlineRec.Create;
-      InlineList.Add(IR);
-      with IR do
+      Result := InlineRec.Create;
+      InlineList.Add(Result);
+      with Result do
       begin
         StartBDoc := SIndex; {Source index for border start}
         IDB := Prop.ID; {property ID}
@@ -7456,10 +7454,10 @@ begin
     else {this call has end information}
       for I := Count - 1 downto 0 do {the record we want is probably the last one}
       begin
-        IR := InlineRec(Items[I]);
-        if Prop.ID = IR.IDB then {check the ID to make sure}
+        Result := InlineRec(Items[I]);
+        if Prop.ID = Result.IDB then {check the ID to make sure}
         begin
-          IR.EndBDoc := SIndex; {the source position of the border end}
+          Result.EndBDoc := SIndex; {the source position of the border end}
           Break;
         end;
       end;
@@ -8050,7 +8048,7 @@ end;
 
 {----------------TCellList.DrawLogic1}
 
-function TCellList.DrawLogic1(Canvas: TCanvas; const Widths: array of Integer; Span,
+function TCellList.DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span,
   CellSpacing, AHeight, Rows: Integer; var Desired: Integer; var Spec, More: boolean): Integer;
 {Find vertical size of each cell, Row height of this row.  But final Y position
  is not known at this time.
@@ -8133,10 +8131,8 @@ end;
 
 {----------------TCellList.Draw}
 
-function TCellList.Draw(Canvas: TCanvas; MasterList: TSectionList; const ARect: TRect;
-  const Widths: array of Integer; X: Integer; Y, YOffset: Integer;
-  CellSpacing: Integer; Border: boolean; Light, Dark: TColor;
-  MyRow: Integer): Integer;
+function TCellList.Draw(Canvas: TCanvas; MasterList: TSectionList; const ARect: TRect; const Widths: IntArray;
+  X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
 var
   I, Spacing: Integer;
   YO: Integer;
@@ -9249,7 +9245,7 @@ end;
 {----------------THtmlTable.DrawLogic}
 
 function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-  var MaxWidth: Integer; var Curs: Integer): Integer;
+  var MaxWidth, Curs: Integer): Integer;
 var
   I, J, K,
     TotalMaxWidth, TotalMinWidth: Integer;
@@ -9399,33 +9395,33 @@ end;
 
 {----------------THtmlTable.Draw}
 
-function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect;
-  IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
+function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
   YO, YOffset, Y: Integer;
 begin
   Inc(ParentSectionList.TableNestLevel);
-  Y := YDraw;
-  Result := Y + SectionHeight;
-  if Float then
-    Y := Y + VSpace;
-  YOffset := ParentSectionList.YOff;
-  YO := Y - YOffset;
+  try
+    Y := YDraw;
+    Result := Y + SectionHeight;
+    if Float then
+      Y := Y + VSpace;
+    YOffset := ParentSectionList.YOff;
+    YO := Y - YOffset;
 
-  if (YO + DrawHeight >= ARect.Top) and (YO < ARect.Bottom)
-    or ParentSectionList.Printing then
-    if ParentSectionList.Printing and (ParentSectionList.TableNestLevel = 1)
-      and HeadOrFoot
-      and (Y < ParentSectionList.PageBottom)
-      and ((ParentSectionList.PrintingTable = nil) or
-      (ParentSectionList.PrintingTable = Self)) then
-      DrawTableP(Canvas, ARect, IMgr, X, Y)
-    else
-      DrawTable(Canvas, ARect, IMgr, X, Y);
-  Dec(ParentSectionList.TableNestLevel);
+    if (YO + DrawHeight >= ARect.Top) and (YO < ARect.Bottom) or ParentSectionList.Printing then
+      if ParentSectionList.Printing and (ParentSectionList.TableNestLevel = 1)
+        and HeadOrFoot and (Y < ParentSectionList.PageBottom)
+        and ((ParentSectionList.PrintingTable = nil) or (ParentSectionList.PrintingTable = Self))
+      then
+        DrawTableP(Canvas, ARect, IMgr, X, Y)
+      else
+        DrawTable(Canvas, ARect, IMgr, X, Y);
+  finally
+    Dec(ParentSectionList.TableNestLevel);
+  end;
 end;
 
-procedure THtmlTable.DrawTable(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X: Integer; Y: Integer);
+procedure THtmlTable.DrawTable(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
 var
   I, XX: Integer;
   YY, YOffset: Integer;
@@ -9441,7 +9437,7 @@ begin
       BorderColorDark, I);
 end;
 
-procedure THtmlTable.DrawTableP(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X: Integer; Y: Integer);
+procedure THtmlTable.DrawTableP(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
 {Printing table with thead and/or tfoot}
 var
   I, XX, TopBorder, BottomBorder: Integer;
@@ -9462,8 +9458,8 @@ begin
   end
   else
   begin
-    TopBorder := TBlock(MyBlock).MargArray[BorderTopWidth];
-    BottomBorder := TBlock(MyBlock).MargArray[BorderBottomWidth];
+    TopBorder := MyBlock.MargArray[BorderTopWidth];
+    BottomBorder := MyBlock.MargArray[BorderBottomWidth];
   end;
 
   case TablePartRec.TablePart of
@@ -10606,164 +10602,6 @@ begin
   OldResult := Result;
 end;
 
-{----------------TSection.FindCountThatFits1}
-
-function TSection.FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars: Integer; X, Y: Integer;
-  IMgr: TIndentManager; var ImgY, ImgHt: Integer; var DoneFlObjPos: PWideChar; NxImages: TList): Integer;
-{Given a width, find the count of chars (<= Max) which will fit allowing for
- font changes.  Line wrapping will be done later}
-//BG, 06.02.2011: Why are there 2 methods and why can't GetURL and FindCursor use the formatting results of DrawLogic?
-//  TSection.FindCountThatFits1() is used in TSection.DrawLogic().
-//  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
-var
-  Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, W, OHang, ImgWidth, Width: Integer;
-  Picture: boolean;
-  Align: AlignmentType;
-  FlObj: TFloatingObj;
-  HSpcL, HSpcR: Integer;
-  BrChr, TheStart: PWideChar;
-  Font, LastFont: TMyFont;
-  Save: TSize;
-  FoundBreak: boolean;
-  HyphenWidth: Integer;
-  FloatingImageCount: Integer;
-begin
-  LastFont := nil;
-  TheStart := Start;
-//  ImageAtStart := True;
-  ImgHt := 0;
-
-  BrChr := StrScanW(TheStart, BrkCh); {see if a break char}
-  if Assigned(BrChr) and (BrChr - TheStart < MaxChars) then
-  begin
-    MaxChars := BrChr - TheStart;
-    if MaxChars = 0 then
-    begin
-      Result := 1;
-      Exit; {single character fits}
-    end;
-    FoundBreak := True;
-  end
-  else
-    FoundBreak := False;
-
-  X1 := IMgr.LeftIndent(Y);
-  if Start = Buff then
-    Inc(X1, FirstLineIndent);
-  X2 := IMgr.RightSide(Y);
-  Width := X2 - X1;
-
-  if (Start = Buff) and (Images.Count = 0) and (FormControls.Count = 0) then
-    if Fonts.GetFontCountAt(0, Len) = Len then
-      if MaxChars * TFontObj(Fonts[0]).tmMaxCharWidth <= Width then {try a shortcut}
-      begin {it will all fit}
-        Result := MaxChars;
-        if FoundBreak then
-          Inc(Result);
-        Exit;
-      end;
-
-  FloatingImageCount := -1;
-  Cnt := 0;
-  XX := 0;
-  YY := 0;
-  while True do
-  begin
-    Font := Fonts.GetFontAt(Start - Buff, OHang);
-    if Font <> LastFont then {may not have to load font}
-    begin
-      Font.AssignToCanvas(Canvas);
-      LastFont := Font;
-    end;
-    J1 := Min(Fonts.GetFontCountAt(Start - Buff, Len), MaxChars - Cnt);
-    J2 := Images.GetImageCountAt(Start - Buff);
-    J3 := FormControls.GetControlCountAt(Start - Buff);
-    if J2 = 0 then
-    begin {next is an image}
-      I := 1; J := 1;
-      Picture := True;
-      ImgWidth := Images.GetWidthAt(Start - Buff, Align, HSpcL, HSpcR, FlObj);
-      if Align in [ALeft, ARight] then
-      begin
-        if Start > DoneFlObjPos then
-        begin
-          FlObj.FloatingPosY := Max(Y, ImgY);
-          W := ImgWidth + FlObj.HSpaceL + FlObj.HSpaceR;
-          case Align of
-            ALeft:  FlObj.FloatingPosX := IMgr.AlignLeft(FlObj.FloatingPosY, W, XX, YY);
-            ARight: FlObj.FloatingPosX := IMgr.AlignRight(FlObj.FloatingPosY, W, XX, YY);
-          end;
-          IMgr.UpdateImage(FlObj.FloatingPosY, FlObj);
-          ImgY := FlObj.FloatingPosY;
-          ImgHt := Max(ImgHt, FlObj.ImageHeight + FlObj.VSpaceT + FlObj.VSpaceB);
-          X1 := IMgr.LeftIndent(Y);
-          X2 := IMgr.RightSide(Y);
-          Width := X2 - X1;
-
-          DoneFlObjPos := Start;
-          Inc(FloatingImageCount);
-          if Cnt >= FloatingImageCount then
-          begin
-            Start := TheStart;
-            Cnt := 0;
-            XX := 0;
-            continue;
-          end;
-        end;
-      end
-      else
-      begin
-        Inc(XX, ImgWidth + HSpcL + HSpcR);
-        if XX > Width then
-          break;
-      end;
-    end
-    else if J3 = 0 then
-    begin
-      XX := XX + FormControls.GetWidthAt(Start - Buff, HSpcL, HSpcR);
-      XX := XX + HSpcL + HSpcR;
-      I := 1; J := 1;
-      Picture := True;
-      if XX > Width then
-        break;
-    end
-    else
-    begin
-      Picture := False;
-      J := Min(J1, J2);
-      J := Min(J, J3);
-      I := FitText(Canvas.Handle, Start, J, Width - XX, Save);
-      if (I > 0) and (Brk[TheStart - Buff + Cnt + I] = 's') then
-      begin {a hyphen could go here}
-        HyphenWidth := Canvas.TextWidth('-');
-        if XX + Save.cx + HyphenWidth > Width then
-          Dec(I);
-      end;
-    end;
-
-    if Cnt + I >= MaxChars then
-    begin
-      Cnt := MaxChars;
-      Break;
-    end
-    else
-      Inc(Cnt, I);
-
-    if not Picture then {it's a text block}
-    begin
-      if I < J then
-        Break;
-      XX := XX + Save.cx;
-      YY := Math.Max(YY, Save.cy);
-    end;
-
-    Inc(Start, I);
-  end;
-  Result := Cnt;
-  if FoundBreak and (Cnt = MaxChars) then
-    Inc(Result);
-end;
-
 function WrapChar(C: WideChar): Boolean;
 begin
   Result := Ord(C) >= $3000;
@@ -11009,12 +10847,177 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
   var MaxWidth: Integer; var Curs: Integer): Integer;
 {returns height of the section}
 
+  function FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars, X, Y: Integer;
+    IMgr: TIndentManager; var ImgY, ImgHt: Integer; var DoneFlObjPos: PWideChar): Integer;
+  {Given a width, find the count of chars (<= Max) which will fit allowing for font changes.
+    Line wrapping will be done later}
+  //BG, 06.02.2011: Why are there 2 methods and why can't GetURL and FindCursor use the formatting results of DrawLogic?
+  //  FindCountThatFits1() is part of TSection.DrawLogic() and fills IMgr with the embedded floating images.
+  //  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
+  var
+    Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, W, H, ImgX, OHang, Width: Integer;
+    Picture: boolean;
+    FlObj: TFloatingObj;
+    FcObj: TFormControlObj;
+    BrChr, TheStart: PWideChar;
+    Font, LastFont: TMyFont;
+    Save: TSize;
+    FoundBreak: boolean;
+    HyphenWidth: Integer;
+    FloatingImageCount: Integer;
+  begin
+    LastFont := nil;
+    TheStart := Start;
+    ImgHt := 0;
+
+    BrChr := StrScanW(TheStart, BrkCh); {see if a break char}
+    if Assigned(BrChr) and (BrChr - TheStart < MaxChars) then
+    begin
+      MaxChars := BrChr - TheStart;
+      if MaxChars = 0 then
+      begin
+        Result := 1;
+        Exit; {single character fits}
+      end;
+      FoundBreak := True;
+    end
+    else
+      FoundBreak := False;
+
+    X1 := IMgr.LeftIndent(Y);
+    if Start = Buff then
+      Inc(X1, FirstLineIndent);
+    X2 := IMgr.RightSide(Y);
+    Width := X2 - X1;
+
+    if (Start = Buff) and (Images.Count = 0) and (FormControls.Count = 0) then
+      if Fonts.GetFontCountAt(0, Len) = Len then
+        if MaxChars * TFontObj(Fonts[0]).tmMaxCharWidth <= Width then {try a shortcut}
+        begin {it will all fit}
+          Result := MaxChars;
+          if FoundBreak then
+            Inc(Result);
+          Exit;
+        end;
+
+    FloatingImageCount := -1;
+    Cnt := 0;
+    XX := 0;
+    YY := 0;
+    while True do
+    begin
+      Font := Fonts.GetFontAt(Start - Buff, OHang);
+      if Font <> LastFont then {may not have to load font}
+      begin
+        Font.AssignToCanvas(Canvas);
+        LastFont := Font;
+      end;
+      J1 := Min(Fonts.GetFontCountAt(Start - Buff, Len), MaxChars - Cnt);
+      J2 := Images.GetImageCountAt(Start - Buff);
+      J3 := FormControls.GetControlCountAt(Start - Buff);
+      if J2 = 0 then
+      begin {next is an image}
+        I := 1;
+        J := 1;
+        Picture := True;
+        FlObj := Images.FindImage(Start - Buff);
+        if FlObj.Floating in [ALeft, ARight] then
+        begin
+          if Start > DoneFlObjPos then
+          begin
+            ImgY := Max(Y, ImgY);
+            W := FlObj.TotalWidth;
+            H := FlObj.TotalHeight;
+            case FlObj.Floating of
+              ALeft:
+              begin
+                IMgr.AlignLeft(ImgY, W, XX, YY);
+                FlObj.Indent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
+              end;
+
+              ARight:
+              begin
+                IMgr.AlignRight(ImgY, W, XX, YY);
+                FlObj.Indent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
+              end;
+            end;
+            FlObj.DrawYY := ImgY + FlObj.VSpaceT;
+            ImgHt := Max(ImgHt, H);
+            DoneFlObjPos := Start;
+
+            // go on with the line:
+            X1 := IMgr.LeftIndent(Y);
+            X2 := IMgr.RightSide(Y);
+            Width := X2 - X1;
+            Inc(FloatingImageCount);
+            if Cnt >= FloatingImageCount then
+            begin
+              Start := TheStart;
+              Cnt := 0;
+              XX := 0;
+              continue;
+            end;
+          end;
+        end
+        else
+        begin
+          Inc(XX, FlObj.TotalWidth);
+          if XX > Width then
+            break;
+        end;
+      end
+      else if J3 = 0 then
+      begin
+        FcObj := FormControls.FindControl(Start - Buff);
+        Inc(XX, FcObj.TotalWidth);
+        I := 1;
+        J := 1;
+        Picture := True;
+        if XX > Width then
+          break;
+      end
+      else
+      begin
+        Picture := False;
+        J := Min(J1, J2);
+        J := Min(J, J3);
+        I := FitText(Canvas.Handle, Start, J, Width - XX, Save);
+        if (I > 0) and (Brk[TheStart - Buff + Cnt + I] = 's') then
+        begin {a hyphen could go here}
+          HyphenWidth := Canvas.TextWidth('-');
+          if XX + Save.cx + HyphenWidth > Width then
+            Dec(I);
+        end;
+      end;
+
+      if Cnt + I >= MaxChars then
+      begin
+        Cnt := MaxChars;
+        Break;
+      end
+      else
+        Inc(Cnt, I);
+
+      if not Picture then {it's a text block}
+      begin
+        if I < J then
+          Break;
+        XX := XX + Save.cx;
+        YY := Math.Max(YY, Save.cy);
+      end;
+
+      Inc(Start, I);
+    end;
+    Result := Cnt;
+    if FoundBreak and (Cnt = MaxChars) then
+      Inc(Result);
+  end;
+
 var
   PStart, Last: PWideChar;
   ImgHt: Integer;
   Finished: boolean;
   LR: LineRec;
-  NxImages: TList;
   AccumImgBot: Integer;
 
   function GetClearSpace(ClearAttr: ClearAttrType): Integer;
@@ -11204,16 +11207,6 @@ var
     Tmp := DHt + SA + SB;
     Inc(Y, Tmp);
     LR.LineImgHt := Max(Tmp, ImgHt);
-    for I := 0 to NxImages.Count - 1 do
-    begin
-      IMgr.UpdateImage(Y, TFloatingObj(NxImages[I])); {update Image manager and Image}
-    {include images in Line height}
-      with TFloatingObj(NxImages[I]) do
-        Tmp1 := ImageHeight + VSpaceT + VSpaceB;
-      LR.LineImgHt := Max(LR.LineImgHt, Tmp + Tmp1);
-      AccumImgBot := Max(AccumImgBot, Y + Tmp1);
-    end;
-    NxImages.Clear;
   end;
 
 var
@@ -11274,168 +11267,163 @@ begin {TSection.DrawLogic}
     MaxWidth := Max(MaxWidth, Ctrl.Width);
   end;
 
-  NxImages := TList.Create;
-  try
-    YDoneFlObj := Y;
-    PDoneFlObj := PStart - 1;
-    while not Finished do
-    begin
-      MaxChars := Last - PStart + 1;
-      if MaxChars <= 0 then
-        Break;
-      LR := LineRec.Create(ParentSectionList); {a new line}
-      if Lines.Count = 0 then
-      begin {may need to move down past floating image}
-        Tmp := GetClearSpace(ClearAttr);
-        if Tmp > 0 then
-        begin
-          LR.LineHt := Tmp;
-          Inc(SectionHeight, Tmp);
-          LR.Ln := 0;
-          LR.Start := PStart;
-          Inc(Y, Tmp);
-          Lines.Add(LR);
-          LR := LineRec.Create(ParentSectionList);
-        end;
-      end;
-
-      ImgHt := 0;
-      NN := 0;
-      if (Self is TPreformated) and not BreakWord then
-        N := MaxChars
-      else
-      begin
-        NN := FindCountThatFits1(Canvas, PStart, MaxChars, X, Y, IMgr, YDoneFlObj, ImgHt, PDoneFlObj, NxImages);
-        N := Max(NN, 1); {N = at least 1}
-      end;
-
-      AccumImgBot := Max(AccumImgBot, Y + ImgHt);
-      if NN = 0 then {if nothing fits, see if we can move down}
-        Tmp := IMgr.GetNextWiderY(Y) - Y
-      else
-        Tmp := 0;
+  YDoneFlObj := Y;
+  PDoneFlObj := PStart - 1;
+  while not Finished do
+  begin
+    MaxChars := Last - PStart + 1;
+    if MaxChars <= 0 then
+      Break;
+    LR := LineRec.Create(ParentSectionList); {a new line}
+    if Lines.Count = 0 then
+    begin {may need to move down past floating image}
+      Tmp := GetClearSpace(ClearAttr);
       if Tmp > 0 then
       begin
-        //BG, 24.01.2010: do not move down images or trailing spaces.
-        P := PStart + N - 1; {the last ThtChar that fits}
-        if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
-        begin {move past spaces so as not to print any on next line}
-          while (N < MaxChars) and ((P + 1)^ = ' ') do
-          begin
-            Inc(P);
-            Inc(N);
-          end;
-          Finished := N >= MaxChars;
-          LineComplete(N);
-        end
-        else
-        begin {move down where it's wider}
-          LR.LineHt := Tmp;
-          Inc(SectionHeight, Tmp);
-          LR.Ln := 0;
-          LR.Start := PStart;
-          Inc(Y, Tmp);
-          Lines.Add(LR);
-        end
-      end {else can't move down or don't have to}
-      else if N = MaxChars then
-      begin {Do the remainder}
-        Finished := True;
+        LR.LineHt := Tmp;
+        Inc(SectionHeight, Tmp);
+        LR.Ln := 0;
+        LR.Start := PStart;
+        Inc(Y, Tmp);
+        Lines.Add(LR);
+        LR := LineRec.Create(ParentSectionList);
+      end;
+    end;
+
+    ImgHt := 0;
+    NN := 0;
+    if (Self is TPreformated) and not BreakWord then
+      N := MaxChars
+    else
+    begin
+      NN := FindCountThatFits1(Canvas, PStart, MaxChars, X, Y, IMgr, YDoneFlObj, ImgHt, PDoneFlObj);
+      N := Max(NN, 1); {N = at least 1}
+    end;
+
+    AccumImgBot := Max(AccumImgBot, Y + ImgHt);
+    if NN = 0 then {if nothing fits, see if we can move down}
+      Tmp := IMgr.GetNextWiderY(Y) - Y
+    else
+      Tmp := 0;
+    if Tmp > 0 then
+    begin
+      //BG, 24.01.2010: do not move down images or trailing spaces.
+      P := PStart + N - 1; {the last ThtChar that fits}
+      if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+      begin {move past spaces so as not to print any on next line}
+        while (N < MaxChars) and ((P + 1)^ = ' ') do
+        begin
+          Inc(P);
+          Inc(N);
+        end;
+        Finished := N >= MaxChars;
         LineComplete(N);
       end
       else
+      begin {move down where it's wider}
+        LR.LineHt := Tmp;
+        Inc(SectionHeight, Tmp);
+        LR.Ln := 0;
+        LR.Start := PStart;
+        Inc(Y, Tmp);
+        Lines.Add(LR);
+      end
+    end {else can't move down or don't have to}
+    else if N = MaxChars then
+    begin {Do the remainder}
+      Finished := True;
+      LineComplete(N);
+    end
+    else
+    begin
+      P := PStart + N - 1; {the last ThtChar that fits}
+      if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
+      or (P^ = BrkCh) then
+      begin {move past spaces so as not to print any on next line}
+        while (N < MaxChars) and ((P + 1)^ = ' ') do
+        begin
+          Inc(P);
+          Inc(N);
+        end;
+        Finished := N >= MaxChars;
+        LineComplete(N);
+      end
+      else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
       begin
-        P := PStart + N - 1; {the last ThtChar that fits}
-        if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
-        or (P^ = BrkCh) then
-        begin {move past spaces so as not to print any on next line}
-          while (N < MaxChars) and ((P + 1)^ = ' ') do
-          begin
-            Inc(P);
-            Inc(N);
-          end;
-          Finished := N >= MaxChars;
-          LineComplete(N);
-        end
-        else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
-        begin
-          repeat
-            Inc(N); {pass the space}
-            Inc(p);
-          until (N >= MaxChars) or ((P + 1)^ <> ' ');
-          Finished := N >= MaxChars;
-          LineComplete(N);
-        end
-        else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
-        begin
-          Finished := False;
-          LineComplete(N);
-        end
-        else
-        begin {non space, wrap it by backing off to previous space or image}
-          while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
-            or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
-            or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
-            Dec(P);
-          if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
-          begin {no space found, forget the wrap, write the whole word and any
-                 spaces found after it}
-            if BreakWord then
-              LineComplete(N)
-            else
-            begin
-              P := PStart + N - 1;
-
-              while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
-              and not (Brk[P - Buff + 1] in ['a', 's'])
-                and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
-              or (Brk[P - Buff + 2] = 'n') do
-              begin
-                Inc(P);
-              end;
-              while (P <> Last) and ((P + 1)^ = ' ') do
-              begin
-                Inc(P);
-              end;
-              if (P <> Last) and ((P + 1)^ = BrkCh) then
-                Inc(P);
-            {Line is too long, add spacer line to where it's clear}
-              Tmp := IMgr.GetNextWiderY(Y) - Y;
-              if Tmp > 0 then
-              begin
-                LR.LineHt := Tmp;
-                Inc(SectionHeight, Tmp);
-                LR.Ln := 0;
-                LR.Start := PStart;
-                Inc(Y, Tmp);
-                Lines.Add(LR);
-              end
-              else
-              begin {line is too long but do it anyway}
-                MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
-                Finished := P = Last;
-                LineComplete(P - PStart + 1);
-              end;
-            end
-          end
+        repeat
+          Inc(N); {pass the space}
+          Inc(p);
+        until (N >= MaxChars) or ((P + 1)^ <> ' ');
+        Finished := N >= MaxChars;
+        LineComplete(N);
+      end
+      else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
+      begin
+        Finished := False;
+        LineComplete(N);
+      end
+      else
+      begin {non space, wrap it by backing off to previous space or image}
+        while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
+          or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
+          or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
+          Dec(P);
+        if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
+        begin {no space found, forget the wrap, write the whole word and any
+               spaces found after it}
+          if BreakWord then
+            LineComplete(N)
           else
-          begin {found space}
-            while (P + 1)^ = ' ' do
+          begin
+            P := PStart + N - 1;
+
+            while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
+            and not (Brk[P - Buff + 1] in ['a', 's'])
+              and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
+            or (Brk[P - Buff + 2] = 'n') do
             begin
-              if P = Last then
-              begin
-                Inc(P);
-                Dec(P);
-              end;
               Inc(P);
             end;
-            LineComplete(P - PStart + 1);
+            while (P <> Last) and ((P + 1)^ = ' ') do
+            begin
+              Inc(P);
+            end;
+            if (P <> Last) and ((P + 1)^ = BrkCh) then
+              Inc(P);
+          {Line is too long, add spacer line to where it's clear}
+            Tmp := IMgr.GetNextWiderY(Y) - Y;
+            if Tmp > 0 then
+            begin
+              LR.LineHt := Tmp;
+              Inc(SectionHeight, Tmp);
+              LR.Ln := 0;
+              LR.Start := PStart;
+              Inc(Y, Tmp);
+              Lines.Add(LR);
+            end
+            else
+            begin {line is too long but do it anyway}
+              MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
+              Finished := P = Last;
+              LineComplete(P - PStart + 1);
+            end;
+          end
+        end
+        else
+        begin {found space}
+          while (P + 1)^ = ' ' do
+          begin
+            if P = Last then
+            begin
+              Inc(P);
+              Dec(P);
+            end;
+            Inc(P);
           end;
+          LineComplete(P - PStart + 1);
         end;
       end;
     end;
-  finally
-    NxImages.Free;
   end;
   Curs := StartCurs + Len;
 
@@ -11626,11 +11614,15 @@ var
         begin
           if Obj.Floating in [ALeft, ARight] then
           begin
-            ParentSectionList.DrawList.AddImage(
-              TImageObj(Obj), Canvas,
-                {IMgr.LfEdge +} Obj.Indent,
-                //IMgr.LfEdge + Obj.FloatingPosX + Obj.HSpaceL,
-                Obj.FloatingPosY + Obj.VSpaceT, Y {- Descent}, FO);
+            //BG, 02.03.2011: ParentSectionList is the Document, thus we must
+            //  feed it with document coordinates: X,Y is in document coordinates,
+            //  but might not be the coordinates of the upper left corner of the
+            //  containing block, the origin of the Obj's coordinates. If each block
+            //  had its own IMgr and nested blocks had nested IMgrs with coordinates
+            //  relative to the containing block, the document coordinates of an inner
+            //  block were the sum of all LfEdges of the containing blocks.
+            ParentSectionList.DrawList.AddImage(TImageObj(Obj), Canvas,
+              {IMgr.LfEdge +} Obj.Indent, Obj.DrawYY, Y - Descent, FO);
 
           {if a boundary is on a floating image, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -11704,10 +11696,10 @@ var
           with TPanelObj(Obj) do
           begin
             ShowIt := True;
-            if (Obj.Floating in [ALeft, ARight]) then
+            if Obj.Floating in [ALeft, ARight] then
             begin
-              LeftT := IMgr.LfEdge + Obj.FloatingPosX + Obj.HSpaceL;
-              TopP := Obj.FloatingPosY + Obj.VSpaceT - YOffset;
+              LeftT := IMgr.LfEdge + Obj.Indent;
+              TopP := Obj.DrawYY - YOffset;
               {check for border.  For floating panel, remove it}
               if LR.FirstDraw and Assigned(LR.BorderList) then
                 for K := LR.BorderList.Count - 1 downto 0 do
@@ -12855,8 +12847,7 @@ end;
 
 function TCell.DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: Integer;
   var ScrollWidth: Integer; var Curs: Integer): Integer;
-{Do the entire layout of the cell or document.  Return the total document
- pixel height}
+{Do the entire layout of the cell or document. Return the total document pixel height}
 var
   IB: Integer;
   LIndex, RIndex: Integer;
@@ -12881,10 +12872,8 @@ end;
 
 {----------------TCell.Draw}
 
-function TCell.Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X: Integer;
-  Y, XRef, YRef: Integer): Integer;
-{draw the document or cell.  Note: individual sections not in ARect don't bother
- drawing}
+function TCell.Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X, Y, XRef, YRef: Integer): Integer;
+{draw the document or cell.  Note: individual sections not in ARect don't bother drawing}
 begin
   IMgr.Reset(X);
   IMgr.ClipWidth := ClipWidth;
@@ -12902,9 +12891,8 @@ end;
 
 {----------------TCellObjCell.GetUrl}
 
-function TCellObjCell.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+function TCellObjCell.GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget;
+  var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType;
 {Y is absolute}
 begin
   Result := inherited GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
@@ -12983,16 +12971,16 @@ type
 procedure TDrawList.AddImage(Obj: TImageObj; Canvas: TCanvas; X, TopY, YBaseline: Integer;
   FO: TFontObj);
 var
-  IR: TImageRec;
+  Result: TImageRec;
 begin
-  IR := TImageRec.Create;
-  IR.AObj := Obj;
-  IR.ACanvas := Canvas;
-  IR.AX := X;
-  IR.AY := TopY;
-  IR.AYBaseline := YBaseline;
-  IR.AFO := FO;
-  Add(IR);
+  Result := TImageRec.Create;
+  Result.AObj := Obj;
+  Result.ACanvas := Canvas;
+  Result.AX := X;
+  Result.AY := TopY;
+  Result.AYBaseline := YBaseline;
+  Result.AFO := FO;
+  Add(Result);
 end;
 
 procedure TDrawList.DrawImages;
@@ -13342,12 +13330,6 @@ end;
 
 { TBlockBase }
 
-////-- BG ---------------------------------------------------------- 12.09.2010 --
-//function TBlockBase.getMyBlock: TBlock;
-//begin
-//  Result := TBlock(inherited MyBlock);
-//end;
-
 //-- BG ---------------------------------------------------------- 12.09.2010 --
 function TBlockBase.getParentSectionList: TSectionList;
 begin
@@ -13673,6 +13655,18 @@ end;
 procedure TFormControlObj.Show;
 begin
   TheControl.Show;
+end;
+
+//-- BG ---------------------------------------------------------- 03.03.2011 --
+function TFormControlObj.TotalHeight: Integer;
+begin
+  Result := VSpaceT + Height + VSpaceB;
+end;
+
+//-- BG ---------------------------------------------------------- 03.03.2011 --
+function TFormControlObj.TotalWidth: Integer;
+begin
+  Result := HSpaceL + Width + HSpaceR;
 end;
 
 { TFormControlObjList }

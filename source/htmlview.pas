@@ -240,7 +240,7 @@ type
     function GetFormData: TFreeList;
     function GetHScrollBarRange: Integer;
     function GetHScrollPos: Integer;
-    function GetIDControl(const ID: ThtString): TObject;
+    function GetIDControl(const ID: ThtString): TIDObject;
     function GetIDDisplay(const ID: ThtString): TPropDisplay;
     function GetLinkList: TList;
     function GetNameList: ThtStringList;
@@ -444,7 +444,7 @@ type
     property HistoryIndex: Integer read FHistoryIndex write SetHistoryIndex;
     property HScrollBarPosition: Integer read GetHScrollPos write SetHScrollPos;
     property HScrollBarRange: Integer read GetHScrollBarRange;
-    property IDControl[const ID: ThtString]: TObject read GetIDControl;
+    property IDControl[const ID: ThtString]: TIDObject read GetIDControl;
     property IDDisplay[const ID: ThtString]: TPropDisplay read GetIDDisplay write SetIDDisplay;
     property LinkAttributes: ThtStringList read FLinkAttributes;
     property LinkList: TList read GetLinkList;
@@ -5410,10 +5410,10 @@ begin
     end;
 end;
 
-function THtmlViewer.GetIDControl(const ID: ThtString): TObject;
+function THtmlViewer.GetIDControl(const ID: ThtString): TIDObject;
 var
   I: Integer;
-  Obj: TObject;
+  Obj: TIDObject;
 begin
   Result := nil;
   with FSectionList.IDNameList do
@@ -5431,7 +5431,7 @@ end;
 function THtmlViewer.GetIDDisplay(const ID: ThtString): TPropDisplay;
 var
   I: Integer;
-  Obj: TObject;
+  Obj: TIDObject;
 begin
   Result := pdUnassigned;
   with FSectionList.IDNameList do
@@ -5446,7 +5446,7 @@ end;
 procedure THtmlViewer.SetIDDisplay(const ID: ThtString; Value: TPropDisplay);
 var
   I: Integer;
-  Obj: TObject;
+  Obj: TIDObject;
 begin
   with FSectionList.IDNameList do
     if Find(ID, I) then

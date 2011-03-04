@@ -58,36 +58,7 @@ const
   ImgPan = WideChar(#4);
   BrkCh = WideChar(#8);
 
-{$IFNDEF DOTNET}
-{$IFNDEF FPC}
 type
-    //needed so that in FreePascal, we can use pointers of different sizes
-{$IFDEF WIN32}
-  PtrInt = LongInt;
-  PtrUInt = LongWord;
-{$ENDIF}
-{$IFDEF WIN64}
-  PtrInt = Int64;
-  PtrUInt = Int64;
-{$ENDIF}
-//NOTE:  The code below asumes a 32bit Linux architecture (such as target i386-linux)
-{$IFDEF KYLIX}
-  PtrInt = LongInt;
-  PtrUInt = LongWord;
-{$ENDIF}
-{$ENDIF}
-{$ENDIF}
-
-type
-  TgpObject = TObject;
-  TSectionBaseList = class;
-  TFloatingObj = class;
-
-  { Like TList but frees it's items. Use only descendents of TObject! }
-  TFreeList = class(TList)
-  protected
-    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
-  end;
 
   //BG, 09.09.2009: renamed TGif and TPng to TrGif and TrPng
   //  TGif interfered with same named class.
@@ -133,6 +104,19 @@ type
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
     ReadonlySy, EolSy, MediaSy);
 
+//------------------------------------------------------------------------------
+
+  { Like TList but frees it's items. Use only descendents of TObject! }
+  //BG, 03.03.2011: what about TObjectList?
+  TFreeList = class(TList)
+  protected
+    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  end;
+
+//------------------------------------------------------------------------------
+// tag attributes
+//------------------------------------------------------------------------------
+
   TAttribute = class(TObject) {holds a tag attribute}
   public
     Which: Symb; {symbol of attribute such as HrefSy}
@@ -141,8 +125,7 @@ type
     Percent: boolean; {if value is in percent}
     Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
-    constructor Create(ASym: Symb; AValue: Integer;
-      const NameStr, ValueStr: ThtString; ACodePage: Integer);
+    constructor Create(ASym: Symb; AValue: Integer; const NameStr, ValueStr: ThtString; ACodePage: Integer);
   end;
 
   TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
@@ -153,11 +136,11 @@ type
     function GetID: ThtString;
     function GetTitle: ThtString;
     function GetStyle: TProperties;
-    function GetAttribute(Index: Integer): TAttribute;
+    function GetAttribute(Index: Integer): TAttribute; {$ifdef UseInline} inline; {$endif}
   public
     destructor Destroy; override;
     procedure Clear; override;
-    function Find(Sy: Symb; var T: TAttribute): boolean;
+    function Find(Sy: Symb; var T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
@@ -165,6 +148,12 @@ type
     property TheStyle: TProperties read GetStyle;
     property Items[Index: Integer]: TAttribute read GetAttribute; default;
   end;
+
+//------------------------------------------------------------------------------
+// image cache
+//------------------------------------------------------------------------------
+
+  TgpObject = TObject;
 
   TBitmapItem = class(TObject)
   public
@@ -178,7 +167,7 @@ type
   end;
 
   TStringBitmapList = class(ThtStringList)
-      {a list of bitmap filenames and TBitmapItems}
+  {a list of bitmap filenames and TBitmapItems}
   public
     MaxCache: Integer;
     constructor Create;
@@ -189,9 +178,13 @@ type
     procedure IncUsage(const S: ThtString);
     procedure BumpAndCheck;
     procedure PurgeCache;
-    function GetImage(I: Integer): TgpObject;
+    function GetImage(I: Integer): TgpObject; {$ifdef UseInline} inline; {$endif}
     procedure SetCacheCount(N: Integer);
   end;
+
+//------------------------------------------------------------------------------
+// copy to clipboard support
+//------------------------------------------------------------------------------
 
   SelTextCount = class(TObject)
   private
@@ -200,7 +193,7 @@ type
     Leng: Integer;
   public
     procedure AddText(P: PWideChar; Size: Integer); virtual;
-    procedure AddTextCR(P: PWideChar; Size: Integer);
+    procedure AddTextCR(P: PWideChar; Size: Integer); {$ifdef UseInline} inline; {$endif}
     function Terminate: Integer; virtual;
   end;
 
@@ -220,18 +213,20 @@ type
     function Terminate: Integer; override;
   end;
 
-  TutText = class {holds start and end point of URL text}
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
+
+  {holds start and end point of URL text}
+  TutText = record //BG, 03.03.2011: changed to record. no need to use a class
     Start: Integer;
     Last: Integer;
   end;
 
   TUrlTarget = class(TObject)
-  private
-    function GetStart: Integer;
-    function GetLast: Integer;
   public
-    URL,
-      Target: ThtString;
+    URL: ThtString;
+    Target: ThtString;
     ID: Integer;
     Attr: ThtString;
     utText: TutText;
@@ -241,9 +236,9 @@ type
     destructor Destroy; override;
     procedure Assign(const AnUrl, ATarget: ThtString; L: TAttributeList; AStart: Integer);
     procedure Clear;
-    procedure SetLast(List: TList; ALast: Integer);
-    property Start: Integer read GetStart;
-    property Last: Integer read GetLast;
+    procedure SetLast(List: TList {of TFontObjBase}; ALast: Integer);
+    property Start: Integer read utText.Start;
+    property Last: Integer read utText.Last;
   end;
 
   TMapItem = class(TObject) {holds a client map info}
@@ -256,6 +251,10 @@ type
     function GetURL(X, Y: Integer; var URLTarg: TURLTarget; var ATitle: ThtString): boolean;
     procedure AddArea(Attrib: TAttributeList);
   end;
+
+//------------------------------------------------------------------------------
+// device independent bitmap wrapper
+//------------------------------------------------------------------------------
 
   TDib = class(TObject)
   private
@@ -272,9 +271,12 @@ type
     constructor CreateDIB(DC: HDC; Bitmap: TBitmap);
     destructor Destroy; override;
     function CreateDIBmp: hBitmap;
-    procedure DrawDIB(DC: HDC; X: Integer; Y: Integer; W, H: Integer;
-      ROP: DWord);
+    procedure DrawDIB(DC: HDC; X, Y, W, H: Integer; ROP: DWord);
   end;
+
+//------------------------------------------------------------------------------
+// indentation manager
+//------------------------------------------------------------------------------
 
   IndentRec = class(TObject)
     X: Integer;   // left or right indentation relative to LfEdge.
@@ -299,33 +301,27 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+//    function AddImage(Y: Integer; Img: TFloatingObj): IndentRec;
     function AddLeft(YT, YB, W: Integer): IndentRec;
     function AddRight(YT, YB, W: Integer): IndentRec;
     function AlignLeft(var Y: Integer; W: Integer; SpW: Integer = 0; SpH: Integer = 0): Integer;
     function AlignRight(var Y: Integer; W: Integer; SpW: Integer = 0; SpH: Integer = 0): Integer;
-//    function GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
     function GetNextWiderY(Y: Integer): Integer;
     function ImageBottom: Integer;
     function LeftIndent(Y: Integer): Integer;
     function RightSide(Y: Integer): Integer;
     function SetLeftIndent(XLeft, Y: Integer): Integer;
     function SetRightIndent(XRight, Y: Integer): Integer;
-//    procedure Clear;
     procedure FreeLeftIndentRec(I: Integer);
     procedure FreeRightIndentRec(I: Integer);
     procedure GetClearY(var CL, CR: Integer);
     procedure Init(Lf, Wd: Integer);
     procedure Reset(Lf: Integer);
-    procedure UpdateImage(Y: Integer; Img: TFloatingObj);
-    procedure UpdateLeft(YT, YB, IW: Integer);
-    procedure UpdateRight(YT, YB, IW: Integer);
   end;
 
-  AllocRec = class(TObject)
-    Ptr: Pointer;
-    ASize: Integer;
-    AHandle: THandle;
-  end;
+//------------------------------------------------------------------------------
+// parser
+//------------------------------------------------------------------------------
 
   IndexArray = array[1..TokenLeng] of Integer;
   PIndexArray = ^IndexArray;
@@ -349,7 +345,6 @@ type
     procedure Concat(T: TCharCollection);
 
     property AsString: ThtString read GetAsString;
-    //property Chars: ThtString read FChars;
     property Indices: PIndexArray read FIndices;
     property Size: Integer read GetSize;
   end;
@@ -379,33 +374,9 @@ type
     property S: WideString read GetString;
   end;
 
-  TIDObject = class(TObject)
-  protected
-    function GetYPosition: Integer; virtual; abstract;
-  public
-    property YPosition: Integer read GetYPosition;
-  end;
-
-  TChPosObj = class(TIDObject)
-  private
-    FChPos: Integer;
-    FList: TSectionBaseList;
-  protected
-    function GetYPosition: Integer; override;
-    property ChPos: Integer read FChPos;
-    property List: TSectionBaseList read FList;
-  end;
-
-  TIDNameList = class(ThtStringList)
-  private
-    OwnerList: TSectionBaseList;
-  public
-    constructor Create(List: TSectionBaseList);
-    destructor Destroy; override;
-    procedure Clear; override;
-    function AddObject(const S: ThtString; AObject: TObject): Integer; override;
-    procedure AddChPosObject(const S: ThtString; Pos: Integer);
-  end;
+//------------------------------------------------------------------------------
+//
+//------------------------------------------------------------------------------
 
 {$IFNDEF NoMetafile}
   ThtMetaFile = class(TMetaFile)
@@ -423,6 +394,47 @@ type
     property WhiteBGBitmap: TBitmap read GetWhiteBGBitmap;
   end;
 {$ENDIF}
+
+//------------------------------------------------------------------------------
+// TIDObject is base class for all tag objects.
+//------------------------------------------------------------------------------
+// If they have an ID, the parser puts them into the HtmlViewer's IDNameList,
+// a TIDObjectList, where they can be obtained from by ID.
+// Their Y coordinates can be retrieved and HtmlViewer can scroll to them.
+//------------------------------------------------------------------------------
+
+  TIDObject = class(TObject)
+  protected
+    function GetYPosition: Integer; virtual; abstract;
+  public
+    property YPosition: Integer read GetYPosition;
+  end;
+
+  //BG, 04.03.2011: TIDNameList renamed to TIDObjectList and used TObject changed to TIDObject.
+  TIDObjectList = class(ThtStringList)
+  private
+    function GetObject(Index: Integer): TIDObject;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function AddObject(const S: ThtString; AObject: TIDObject): Integer; reintroduce;
+    procedure Clear; override;
+    property Objects[Index: Integer]: TIDObject read GetObject; default;
+  end;
+
+  TSectionBaseList = class;
+
+  TChPosObj = class(TIDObject)
+  private
+    FChPos: Integer;
+    FOwner: TSectionBaseList;
+  protected
+    function GetYPosition: Integer; override;
+  public
+    constructor Create(Owner: TSectionBaseList; Pos: Integer);
+    property ChPos: Integer read FChPos;
+    property List: TSectionBaseList read FOwner;
+  end;
 
   TImageType = (NoImage, Bmp, Gif, {Gif89,} Png, Jpg);
 
@@ -457,13 +469,13 @@ type
     function GetYPosition: Integer; override;
   public
     ImageKnown: boolean; {know size of image}
-    FloatingPosX: Integer;
-    FloatingPosY: Integer;
     DrawYY: Integer;
     DrawXX: Integer;
     NoBorder: boolean; {set if don't want blue border}
     BorderSize: Integer;
     constructor CreateCopy(T: TFloatingObj);
+    function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
+    function TotalWidth: Integer; {$ifdef UseInline} inline; {$endif}
     procedure SetAlt(CodePage: Integer; const Value: ThtString);
     procedure DrawLogic(SectionList: TSectionBaseList; Canvas: TCanvas;
       FO: TFontObjBase; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
@@ -471,20 +483,27 @@ type
     property Alt: ThtString read FAlt;
   end;
 
-  TSectionBase = class(TIDObject) {abstract base for document sections}
+  TSectionBase = class(TIDObject) {abstract base for all document sections}
   private
     FDisplay: TPropDisplay;
     FParentSectionList: TSectionBaseList; {what list it's in}
   protected
     function GetYPosition: Integer; override;
   public
-    SectionHeight: Integer; {pixel height of section}
-    DrawHeight: Integer; {floating image may overhang}
-    StartCurs: Integer;
-    Len: Integer;
+    // source buffer reference
+    StartCurs: Integer;     // where the section starts in the source buffer.
+    Len: Integer;           // number of bytes in source buffer the section represents.
+    // Z coordinates are calculated in Create()
     ZIndex: Integer;
-    ContentTop, ContentBot, ContentLeft: Integer;
-    DrawTop, DrawBot, YDraw: Integer;
+    // Y coordinates calculated in DrawLogic() are still valid in Draw1()
+    YDraw: Integer;         // where the section starts.
+    DrawTop: Integer;       // where the border starts.  In case of a block this is YDraw + MarginTop
+    ContentTop: Integer;    // where the content starts. In case of a block this is YDraw + MarginTop + PaddingTop + BorderTopWidth
+    ContentBot: Integer;    // where the section ends.   In case of a block this is Block.ClientContentBot + PaddingBottom + BorderBottomWidth + MarginBottom
+    DrawBot: Integer;       // where the border ends.    In case of a block this is Max(Block.ClientContentBot, MyCell.tcDrawBot) + PaddingBottom + BorderBottomWidth
+    SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
+    DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
+    // X coordinates calulated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
 
     constructor Create(AMasterList: TSectionBaseList; ADisplay: TPropDisplay); overload;
     constructor Create(AMasterList: TSectionBaseList; AProp: TProperties); overload;
@@ -528,6 +547,10 @@ type
   TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: ThtString) of object;
   TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;
   TSoundType = procedure(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: boolean) of object;
+
+//------------------------------------------------------------------------------
+// TViewerBase is base class for both THtmlViewer and TFrameViewer
+//------------------------------------------------------------------------------
 
   TViewerBase = class(TWinControl)
   private
@@ -574,6 +597,8 @@ type
     procedure AddFrame(FrameSet: TObject; Attr: TAttributeList; const FName: ThtString); virtual; abstract;
     procedure DoAttributes(FrameSet: TObject; Attr: TAttributeList); virtual; abstract;
   end;
+
+//------------------------------------------------------------------------------
 
 var
   DefBitMap, ErrorBitMap, ErrorBitmapMask: TBitMap;
@@ -1093,37 +1118,6 @@ begin
   SetTextAlign(Canvas.Handle, TAlign);
 end;
 
-function Allocate(Size: Integer): AllocRec;
-begin
-  Result := AllocRec.Create;
-  with Result do
-  begin
-    ASize := Size;
-    if Size < $FF00 then
-      GetMem(Ptr, Size)
-    else
-    begin
-      AHandle := GlobalAlloc(HeapAllocFlags, Size);
-      if AHandle = 0 then
-        ABort;
-      Ptr := GlobalLock(AHandle);
-    end;
-  end;
-end;
-
-procedure DeAllocate(AR: AllocRec);
-begin
-  with AR do
-    if ASize < $FF00 then
-      Freemem(Ptr, ASize)
-    else
-    begin
-      GlobalUnlock(AHandle);
-      GlobalFree(AHandle);
-    end;
-  AR.Free;
-end;
-
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
 var
   ExtS: TSize;
@@ -1490,14 +1484,14 @@ end;
 constructor TUrlTarget.Create;
 begin
   inherited Create;
-  utText := TutText.Create;
+  //utText := TutText.Create;
   utText.Start := -1;
   utText.Last := -1;
 end;
 
 destructor TUrlTarget.Destroy;
 begin
-  FreeAndNil(utText);
+  //FreeAndNil(utText);
   inherited Destroy;
 end;
 
@@ -1543,15 +1537,15 @@ begin
   utText.Last := -1;
 end;
 
-function TUrlTarget.GetStart: Integer;
-begin
-  Result := utText.Start
-end;
-
-function TUrlTarget.GetLast: Integer;
-begin
-  Result := utText.Last
-end;
+//function TUrlTarget.GetStart: Integer;
+//begin
+//  Result := utText.Start
+//end;
+//
+//function TUrlTarget.GetLast: Integer;
+//begin
+//  Result := utText.Last
+//end;
 
 procedure TUrlTarget.SetLast(List: TList; ALast: Integer);
 var
@@ -2383,8 +2377,7 @@ begin
   end;
 end;
 
-procedure TDib.DrawDIB(DC: HDC; X: Integer; Y: Integer; W, H: Integer;
-  ROP: DWord);
+procedure TDib.DrawDIB(DC: HDC; X, Y, W, H: Integer; ROP: DWord);
 var
   bmInfo: PBitmapInfo;
 begin
@@ -2429,8 +2422,37 @@ begin
   inherited Destroy;
 end;
 
+////------------------------------------------------------------------------------
+//function TIndentManager.AddImage(Y: Integer; Img: TFloatingObj): IndentRec;
+//{Given a new floating image, update the edge information.  Fills  Img.Indent,
+// the distance from the left edge to the upper left corner of the image}
+//var
+//  IH, IW: Integer;
+//begin
+//  Result := nil;
+//  if Assigned(Img) then
+//  begin
+//    IW := Img.HSpaceL + Img.ImageWidth  + Img.HSpaceR;
+//    IH := Img.VSpaceT + Img.ImageHeight + Img.VSpaceB;
+//    case Img.Floating of
+//      ALeft:
+//      begin
+//        Result := AddLeft(Y, Y + IH, IW);
+//        Img.Indent := Result.X - IW + Img.HSpaceL;
+//      end;
+//
+//      ARight:
+//      begin
+//        Result := AddRight(Y, Y + IH, IW);
+//        Img.Indent := Result.X + Img.HSpaceL;
+//      end;
+//    end;
+//  end;
+//end;
+
 //-- BG ---------------------------------------------------------- 05.02.2011 --
 function TIndentManager.AddLeft(YT, YB, W: Integer): IndentRec;
+// For a floating block, update the left edge information.
 begin
   Result := IndentRec.Create;
   Result.YT := YT;
@@ -2441,6 +2463,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 05.02.2011 --
 function TIndentManager.AddRight(YT, YB, W: Integer): IndentRec;
+// For a floating block, update the right edge information.
 begin
   Result := IndentRec.Create;
   Result.YT := YT;
@@ -2448,13 +2471,6 @@ begin
   Result.X := RightEdge(YT) - W;
   R.Add(Result);
 end;
-
-//procedure TIndentManager.Clear;
-//begin
-//  R.Clear;
-//  L.Clear;
-//  CurrentID := nil;
-//end;
 
 {----------------TIndentManager.Reset}
 
@@ -2472,63 +2488,6 @@ procedure TIndentManager.Reset(Lf: Integer);
 begin
   LfEdge := Lf;
   CurrentID := nil;
-end;
-
-procedure TIndentManager.UpdateImage(Y: Integer; Img: TFloatingObj);
-{Given a new floating image, update the edge information.  Fills  Img.Indent,
- the distance from the left edge to the upper left corner of the image}
-var
-  IH, IW: Integer;
-  IR: IndentRec;
-begin
-  if Assigned(Img) then
-  begin
-    IW := Img.HSpaceL + Img.ImageWidth  + Img.HSpaceR;
-    IH := Img.VSpaceT + Img.ImageHeight + Img.VSpaceB;
-    case Img.Floating of
-      ALeft:
-      begin
-        IR := AddLeft(Y, Y + IH, IW);
-        Img.Indent := IR.X - IW + Img.HSpaceL;
-      end;
-
-      ARight:
-      begin
-        IR := AddRight(Y, Y + IH, IW);
-        Img.Indent := IR.X + Img.HSpaceL;
-      end;
-    end;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 07.02.2011 --
-procedure TIndentManager.UpdateLeft(YT, YB, IW: Integer);
-{For a floating block, update the edge information.
- This is not quite the same as AddLeft used for images, but why?
- Is there an inconsistency in the environmental code?}
-var
-  IR: IndentRec;
-begin
-  IR := IndentRec.Create;
-  IR.YT := YT;
-  IR.YB := YB;
-  IR.X := LeftEdge(YT) + IW;
-  L.Add(IR);
-end;
-
-//-- BG ---------------------------------------------------------- 07.02.2011 --
-procedure TIndentManager.UpdateRight(YT, YB, IW: Integer);
-{Given a floating block, update the edge information.
- This is the same as AddRight used for images.
- But why is this the same and UpdateLeft/AddLeft differ?}
-var
-  IR: IndentRec;
-begin
-  IR := IndentRec.Create;
-  IR.YT := YT;
-  IR.YB := YB;
-  IR.X := RightEdge(YT) - IW;
-  R.Add(IR);
 end;
 
 const
@@ -2983,73 +2942,6 @@ begin
   end;
 end;
 
-{----------------TIDNameList}
-
-constructor TIDNameList.Create(List: TSectionBaseList);
-begin
-  inherited Create;
-  Sorted := True;
-  OwnerList := List;
-end;
-
-destructor TIDNameList.Destroy;
-begin
-  Clear;
-  inherited
-end;
-
-procedure TIDNameList.Clear;
-var
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do
-  try
-    if Objects[I] is TChPosObj then
-      Objects[I].Free;
-  except
-  end;
-  inherited Clear;
-end;
-
-function TIDNameList.AddObject(const S: ThtString; AObject: TObject): Integer;
-var
-  I: Integer;
-begin
-  if Find(S, I) then
-  begin
-    try
-      if Objects[I] is TChPosObj then
-        Objects[I].Free;
-    except
-    end;
-    Delete(I);
-  end;
-  Result := inherited AddObject(S, AObject);
-end;
-
-procedure TIDNameList.AddChPosObject(const S: ThtString; Pos: Integer);
-var
-  ChPosObj: TChPosObj;
-begin
-  ChPosObj := TChPosObj.Create;
-  ChPosObj.FList := OwnerList;
-  ChPosObj.FChPos := Pos;
-  AddObject(S, ChPosObj);
-end;
-
-{----------------TChPosObj.GetYPosition:}
-
-function TChPosObj.GetYPosition: Integer;
-var
-  Pos, X, Y: Integer;
-begin
-  Pos := List.FindDocPos(ChPos, False);
-  if List.CursorToXY(nil, Pos, X, Y) then
-    Result := Y
-  else
-    Result := 0;
-end;
-
 {$IFNDEF NoMetafile}
 
 procedure ThtMetaFile.Construct;
@@ -3352,6 +3244,56 @@ begin
   Result := St;
 end;
 
+{----------------TIDObjectList}
+
+function TIDObjectList.AddObject(const S: ThtString; AObject: TIDObject): Integer;
+var
+  I: Integer;
+begin
+  if Find(S, I) then
+  begin
+    try
+      if Objects[I] is TChPosObj then
+        Objects[I].Free;
+    except
+    end;
+    Delete(I);
+  end;
+  Result := inherited AddObject(S, AObject);
+end;
+
+procedure TIDObjectList.Clear;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+  try
+    if Objects[I] is TChPosObj then
+      Objects[I].Free;
+  except
+  end;
+  inherited Clear;
+end;
+
+constructor TIDObjectList.Create; //(List: TSectionList);
+begin
+  inherited Create;
+  Sorted := True;
+//  OwnerList := List;
+end;
+
+destructor TIDObjectList.Destroy;
+begin
+  Clear;
+  inherited
+end;
+
+//-- BG ---------------------------------------------------------- 04.03.2011 --
+function TIDObjectList.GetObject(Index: Integer): TIDObject;
+begin
+  Result := TIDObject(inherited GetObject(Index));
+end;
+
 {----------------BitmapToRegion}
 
 function BitmapToRegion(ABmp: TBitmap; XForm: PXForm; TransparentColor: TColor): HRGN;
@@ -3620,9 +3562,47 @@ end;
 
 {----------------PrintBitmap}
 
+type
+  AllocRec = class(TObject)
+    Ptr: Pointer;
+    ASize: Integer;
+    AHandle: THandle;
+  end;
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}
+
+  function Allocate(Size: Integer): AllocRec;
+  begin
+    Result := AllocRec.Create;
+    with Result do
+    begin
+      ASize := Size;
+      if Size < $FF00 then
+        GetMem(Ptr, Size)
+      else
+      begin
+        AHandle := GlobalAlloc(HeapAllocFlags, Size);
+        if AHandle = 0 then
+          ABort;
+        Ptr := GlobalLock(AHandle);
+      end;
+    end;
+  end;
+
+  procedure DeAllocate(AR: AllocRec);
+  begin
+    with AR do
+      if ASize < $FF00 then
+        Freemem(Ptr, ASize)
+      else
+      begin
+        GlobalUnlock(AHandle);
+        GlobalFree(AHandle);
+      end;
+    AR.Free;
+  end;
+
 {$ifdef LCL}
 {$else}
 var
@@ -4359,6 +4339,12 @@ end;
 
 function TSectionBase.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth: Integer; var Curs: Integer): Integer;
+// Computes all coordinates of the section.
+//
+// Normal sections, absolutely positioned blocks and floating blocks start at given (X,Y) relative to document origin.
+// Table cells start at given (X,Y) coordinates relative to the outmost containing block.
+//
+// Returns the nominal height of the section (without overhanging floating blocks)
 begin
   StartCurs := Curs;
   Result := SectionHeight;
@@ -4371,31 +4357,25 @@ begin
   DrawBot := Y + DrawHeight;
 end;
 
-function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect;
-  IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
-var
-  Y: Integer;
+function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
+// returns the pixel row, where the section ends.
 begin
-  Y := YDraw;
-  Result := Y + SectionHeight;
+  Result := YDraw + SectionHeight;
 end;
 
-function TSectionBase.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
+function TSectionBase.GetURL(Canvas: TCanvas; X, Y: Integer;
   var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
   var ATitle: ThtString): guResultType;
 begin
   Result := [];
 end;
 
-function TSectionBase.PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-  var IX, IY: Integer): boolean;
+function TSectionBase.PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
 begin
   Result := False;
 end;
 
-function TSectionBase.FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
-  var XR: Integer; var YR: Integer; var CaretHt: Integer;
-  var Intext: boolean): Integer;
+function TSectionBase.FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer;
 begin
   Result := -1;
 end;
@@ -4420,8 +4400,7 @@ begin
   Result := -1;
 end;
 
-function TSectionBase.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer;
-  var Y: Integer): boolean;
+function TSectionBase.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean;
 begin
   Result := False;
 end;
@@ -4492,6 +4471,27 @@ end;
 procedure TSectionBaseList.AddSectionsToPositionList(Sections: TSectionBase);
 begin
   // overridden by TSectionList.
+end;
+
+{ TChPosObj }
+
+//-- BG ---------------------------------------------------------- 04.03.2011 --
+constructor TChPosObj.Create(Owner: TSectionBaseList; Pos: Integer);
+begin
+  inherited Create;
+  FChPos := Pos;
+  FOwner := Owner;
+end;
+
+function TChPosObj.GetYPosition: Integer;
+var
+  Pos, X, Y: Integer;
+begin
+  Pos := List.FindDocPos(ChPos, False);
+  if List.CursorToXY(nil, Pos, X, Y) then
+    Result := Y
+  else
+    Result := 0;
 end;
 
 { TFloatingObj }
@@ -4615,6 +4615,18 @@ begin
     else
       break;
     end;
+end;
+
+//-- BG ---------------------------------------------------------- 02.03.2011 --
+function TFloatingObj.TotalHeight: Integer;
+begin
+  Result := VSpaceT + ImageHeight + VSpaceB;
+end;
+
+//-- BG ---------------------------------------------------------- 02.03.2011 --
+function TFloatingObj.TotalWidth: Integer;
+begin
+  Result := HSpaceL + ImageWidth + HSpaceR;
 end;
 
 {$ifdef LCL}
