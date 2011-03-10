@@ -204,7 +204,7 @@ type
     FRefreshURL: ThtString;
     FScaleX, FScaleY: single;
     FScrollBars: TScrollStyle;
-    FSectionList: TSectionList;
+    FSectionList: ThtDocument;
     FServerRoot: ThtString;
     FTarget: ThtString;
     FTitle: ThtString;
@@ -458,7 +458,7 @@ type
     property Palette: HPalette read GetOurPalette write SetOurPalette;
     property Position: Integer read GetPosition write SetPosition;
     //property Processing: Boolean index vsProcessing read GetViewerStateBit;
-    property SectionList: TSectionList read FSectionList;
+    property SectionList: ThtDocument read FSectionList;
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read FCaretPos write SetSelStart;
     property SelText: WideString read GetSelText;
@@ -685,7 +685,7 @@ begin
 
   FScrollBars := ssBoth;
 
-  FSectionList := TSectionList.Create(Self, PaintPanel);
+  FSectionList := ThtDocument.Create(Self, PaintPanel);
   FSectionList.ControlEnterEvent := FormControlEnterEvent;
   FSectionList.OnBackgroundChange := BackgroundChange;
   FSectionList.ShowImages := True;
@@ -1601,7 +1601,7 @@ begin
           CaretPos := Sel1;
         end;
       end;
-      LButtonDown(True); {signal to TSectionList}
+      LButtonDown(True); {signal to ThtDocument}
     end;
   end;
 end;
@@ -2725,13 +2725,13 @@ end;
 function THtmlViewer.FullDisplaySize(FormatWidth: Integer): TSize;
 var
   Curs: Integer;
-  CopyList: TSectionList;
+  CopyList: ThtDocument;
 begin
   Result.cx := 0; {error return}
   Result.cy := 0;
   if FormatWidth > 0 then
   begin
-    CopyList := TSectionList.CreateCopy(FSectionList);
+    CopyList := ThtDocument.CreateCopy(FSectionList);
     try
       Curs := 0;
       Result.cy := CopyList.DoLogic(PaintPanel.Canvas, 0, FormatWidth, 300, 0, Result.cx, Curs);
@@ -3153,12 +3153,12 @@ type
 // extracted from MakeBitmap() and MakeMetaFile()
 procedure THtmlViewer.Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
 var
-  CopyList: TSectionList;
+  CopyList: ThtDocument;
   Dummy: Integer;
   Curs: Integer;
   DocHeight: Integer;
 begin
-  CopyList := TSectionList.CreateCopy(FSectionList);
+  CopyList := ThtDocument.CreateCopy(FSectionList);
   try
     Curs := 0;
     DocHeight := CopyList.DoLogic(Canvas, 0, FormatWidth, Height, 300, Dummy, Curs);
@@ -3294,7 +3294,7 @@ end;
 function THtmlViewer.MakePagedMetaFiles(Width, Height: Integer): TList;
 var
   ARect, CRect: TRect;
-  CopyList: TSectionList;
+  CopyList: ThtDocument;
   HTop, OldTop, Dummy, Curs, I: Integer;
   Done: Boolean;
   VPixels: Integer;
@@ -3317,7 +3317,7 @@ begin
   TablePartRec := nil;
   if (vsProcessing in FViewerState) or (SectionList.Count = 0) then
     Exit;
-  CopyList := TSectionList.CreateCopy(SectionList);
+  CopyList := ThtDocument.CreateCopy(SectionList);
   try
     CopyList.NoOutput := False;
     CopyList.Printing := True;
@@ -3456,7 +3456,7 @@ end;
 procedure THtmlViewer.Print(FromPage, ToPage: Integer);
 var
   ARect, CRect: TRect;
-  PrintList: TSectionList;
+  PrintList: ThtDocument;
   P1 {=XDpi}, P2 {=WDpi}, P3 {=YDpi}, W, H, HTop, OldTop, Dummy: Integer;
   Curs: Integer;
   Done: Boolean;
@@ -3538,7 +3538,7 @@ var
   procedure DoHTMLHeaderFooter(Footer: Boolean; Event: ThtmlPagePrinted; HFViewer: THtmlViewer);
   var
     YOrigin, YOff, Ht: Integer;
-    HFCopyList: TSectionList;
+    HFCopyList: ThtDocument;
     BRect: TRect;
     DocHeight, XL, XR: Integer;
   begin
@@ -3548,7 +3548,7 @@ var
       XL := MLeft;
       XR := MLeft + W;
       Event(Self, HFViewer, FPage, PrintList.PageBottom > VPixels, XL, XR, Done); {call event handler}
-      HFCopyList := TSectionList.CreateCopy(HFViewer.SectionList);
+      HFCopyList := ThtDocument.CreateCopy(HFViewer.SectionList);
       try
         HFCopyList.Printing := True;
         HFCopyList.ScaleX := fScaleX;
@@ -3595,7 +3595,7 @@ begin
   FPage := 0;
   if (vsProcessing in FViewerState) or (FSectionList.Count = 0) then
     Exit;
-  PrintList := TSectionList.CreateCopy(FSectionList);
+  PrintList := ThtDocument.CreateCopy(FSectionList);
   PrintList.SetYOffset(0);
   SavePrintMarginTop := FPrintMarginTop;
   try
@@ -3995,7 +3995,7 @@ end;
 function THtmlViewer.PrintPreview(MFPrinter: TMetaFilePrinter; NoOutput: Boolean = False): Integer;
 var
   ARect, CRect: TRect;
-  PrintList: TSectionList;
+  PrintList: ThtDocument;
   P1, P2, P3: Integer; // XDpi, WDpi, YDpi
   W, H: Integer;
   HTop: Integer;
@@ -4098,7 +4098,7 @@ var
   procedure DoHTMLHeaderFooter(Footer: Boolean; Event: ThtmlPagePrinted; HFViewer: THtmlViewer);
   var
     YOrigin, YOff, Ht: Integer;
-    HFCopyList: TSectionList;
+    HFCopyList: ThtDocument;
     BRect: TRect;
     DocHeight, XL, XR: Integer;
   begin
@@ -4108,7 +4108,7 @@ var
       XL := MLeft;
       XR := MLeft + W;
       Event(Self, HFViewer, FPage, PrintList.PageBottom > VPixels, XL, XR, Done); {call event handler}
-      HFCopyList := TSectionList.CreateCopy(HFViewer.SectionList);
+      HFCopyList := ThtDocument.CreateCopy(HFViewer.SectionList);
       try
         HFCopyList.Printing := True;
         HFCopyList.NoOutput := NoOutput;
@@ -4151,7 +4151,7 @@ begin
   Result := 0;
   if (vsProcessing in FViewerState) or (SectionList.Count = 0) then
     Exit;
-  PrintList := TSectionList.CreateCopy(SectionList);
+  PrintList := ThtDocument.CreateCopy(SectionList);
   PrintList.SetYOffset(0);
   SavePrintMarginTop := FPrintMarginTop;
   try
@@ -4469,7 +4469,7 @@ end;
 
 procedure THtmlViewer.BackgroundChange(Sender: TObject);
 begin
-  PaintPanel.Color := (Sender as TSectionList).Background or PalRelative;
+  PaintPanel.Color := (Sender as ThtDocument).Background or PalRelative;
 end;
 
 //-- BG ---------------------------------------------------------- 20.11.2010 --

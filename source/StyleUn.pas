@@ -239,22 +239,25 @@ type
   TStyleList = class(ThtStringList)
   private
     SeqNo: integer;
+  protected
+    procedure setLinksActive(Value: Boolean); virtual; abstract;
+    property LinksActive: Boolean write setLinksActive;
   public
     DefProp: TProperties;
     constructor Create;
     destructor Destroy; override;
-    procedure Clear; override;
-    function GetSeqNo: ThtString;
-    procedure Initialize(const FontName, PreFontName: ThtString;
-      PointSize: integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
-      LinkUnderline: boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: integer);
-    procedure AddModifyProp(const Selector, Prop, Value: ThtString); virtual; abstract;
-    function AddObject(const S: ThtString; AObject: TObject): Integer; override;
     function AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
-    procedure ModifyLinkColor(Psuedo: ThtString; AColor: TColor);
+    function AddObject(const S: ThtString; AObject: TObject): Integer; override;
+    function GetSeqNo: ThtString;
+    procedure Clear; override;
+    procedure AddModifyProp(const Selector, Prop, Value: ThtString);
 {$IFDEF Quirk}
     procedure FixupTableColor(BodyProp: TProperties);
 {$ENDIF}
+    procedure Initialize(const FontName, PreFontName: ThtString;
+      PointSize: integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
+      LinkUnderline: boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: integer);
+    procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
   end;
 
   TPropStack = class(TObjectList)
@@ -2272,6 +2275,117 @@ begin
 end;
 {$ENDIF}
 
+procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
+{strings are all lowercase here}
+var
+  I: Integer;
+  PropIndex: PropIndices;
+  Propty: TProperties;
+  NewColor: TColor;
+  NewProp: boolean;
+begin
+  if FindPropIndex(Prop, PropIndex) then
+  begin
+    if not Find(Selector, I) then
+    begin
+      NewProp := True;
+      Propty := TProperties.Create(); {newly created property}
+    end
+    else
+    begin
+      Propty := TProperties(Objects[I]); {modify existing property}
+      NewProp := False;
+    end;
+    case PropIndex of
+      Color:
+        if ColorFromString(Value, False, NewColor) then
+        begin
+          if Selector = ':link' then
+          begin {changed the defaults to be the same as link}
+            ModifyLinkColor('hover', NewColor);
+            ModifyLinkColor('visited', NewColor);
+          end
+          else if Selector = ':visited' then
+            ModifyLinkColor('hover', NewColor);
+          Propty.Props[PropIndex] := NewColor;
+        end;
+      BorderColor:
+        if ColorFromString(Value, False, NewColor) then
+        begin
+          Propty.Props[BorderColor] := NewColor;
+          Propty.Props[BorderLeftColor] := NewColor;
+          Propty.Props[BorderTopColor] := NewColor;
+          Propty.Props[BorderRightColor] := NewColor;
+          Propty.Props[BorderBottomColor] := NewColor;
+        end;
+      BorderTopColor..BorderLeftColor:
+        if ColorFromString(Value, False, NewColor) then
+          Propty.Props[PropIndex] := NewColor;
+      BackgroundColor:
+        if ColorFromString(Value, False, NewColor) then
+          Propty.Props[PropIndex] := NewColor
+        else
+          Propty.Props[PropIndex] := clNone;
+      Visibility:
+        begin
+          if Value = 'visible' then
+            Propty.Props[Visibility] := viVisible
+          else if Value = 'hidden' then
+            Propty.Props[Visibility] := viHidden;
+        end;
+      TextTransform:
+        begin
+          if Value = 'uppercase' then
+            Propty.Props[TextTransform] := txUpper
+          else if Value = 'lowercase' then
+            Propty.Props[TextTransform] := txLower
+          else
+            Propty.Props[TextTransform] := txNone;
+        end;
+      WordWrap:
+        if Value = 'break-word' then
+          Propty.Props[WordWrap] := Value
+        else
+          Propty.Props[WordWrap] := 'normal';
+      FontVariant:
+        if Value = 'small-caps' then
+          Propty.Props[FontVariant] := Value
+        else if Value = 'normal' then
+          Propty.Props[FontVariant] := 'normal';
+      BorderTopStyle..BorderLeftStyle:
+        begin
+          if Value <> 'none' then
+            Propty.Props[BorderStyle] := Value;
+          Propty.Props[PropIndex] := Value;
+        end;
+      BorderStyle:
+        begin
+          Propty.Props[BorderStyle] := Value;
+          Propty.Props[BorderTopStyle] := Value;
+          Propty.Props[BorderRightStyle] := Value;
+          Propty.Props[BorderBottomStyle] := Value;
+          Propty.Props[BorderLeftStyle] := Value;
+        end;
+      LineHeight:
+        Propty.Props[PropIndex] := Value;
+    else
+      Propty.Props[PropIndex] := Value;
+    end;
+    if NewProp then
+      AddObject(Selector, Propty); {it's a newly created property}
+    if Pos(':hover', Selector) > 0 then
+      LinksActive := True;
+    if Selector = 'a' then
+    begin
+      AddModifyProp('::link', Prop, Value); {also applies to ::link}
+    end;
+{$IFDEF Quirk}
+    if (Selector = 'body') and (PropIndex = Color) then
+      FixupTableColor(Propty);
+{$ENDIF}
+  end;
+end;
+
 function TStyleList.AddObject(const S: ThtString; AObject: TObject): Integer;
 begin
   Result := inherited AddObject(S, AObject);
@@ -2285,11 +2399,11 @@ begin
   AddObject(Tag, Result);
 end;
 
-procedure TStyleList.ModifyLinkColor(Psuedo: ThtString; AColor: TColor);
+procedure TStyleList.ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
 var
   I: integer;
 begin
-  if Find('::' + Psuedo, I) then {the defaults}
+  if Find('::' + Pseudo, I) then {the defaults}
     with TProperties(Objects[I]) do
       Props[Color] := AColor;
 end;

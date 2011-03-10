@@ -68,7 +68,7 @@ type
     FFont: TFont;
     LBSize, Longest: integer;
   public
-    constructor Create(AMasterList: TSectionList; Position: Integer; L: TAttributeList);
+    constructor Create(AMasterList: ThtDocument; Position: Integer; L: TAttributeList);
     destructor Destroy; override;
     procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
     property TheOptions: ThtOptionStringList read FOptions;
@@ -92,7 +92,7 @@ type
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(AMasterList: TSectionList; Position: integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(AMasterList: ThtDocument; Position: integer; L: TAttributeList; Prop: TProperties);
     destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -115,7 +115,7 @@ type
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(AMasterList: TSectionList; Position: integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(AMasterList: ThtDocument; Position: integer; L: TAttributeList; Prop: TProperties);
     destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -142,7 +142,7 @@ type
     Wrap: (wrOff, wrSoft, wrHard);
     Rows, Cols: integer;
     TheText: ThtString;
-    constructor Create(AMasterList: TSectionList; Position: integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(AMasterList: ThtDocument; Position: integer; L: TAttributeList; Prop: TProperties);
     destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
@@ -207,7 +207,7 @@ end;
 
 {----------------TListBoxFormControlObj.Create}
 
-constructor TListBoxFormControlObj.Create(AMasterList: TSectionList;
+constructor TListBoxFormControlObj.Create(AMasterList: ThtDocument;
   Position: integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
@@ -266,7 +266,7 @@ begin
   ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
   if FControl.BorderStyle <> bsNone then
   begin
-    FormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
+    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
     Addon := 4;
   end
   else
@@ -428,7 +428,7 @@ end;
 
 {----------------TComboFormControlObj.Create}
 
-constructor TComboFormControlObj.Create(AMasterList: TSectionList;
+constructor TComboFormControlObj.Create(AMasterList: ThtDocument;
   Position: integer; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
@@ -492,7 +492,7 @@ var
   ARect: TRect;
 begin
   ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
-  FormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
+  DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
   Canvas.Brush.Style := bsClear;
   Canvas.Font := FControl.Font;
   SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
@@ -584,7 +584,7 @@ end;
 
 {----------------TTextAreaFormControlObj.Create}
 
-constructor TTextAreaFormControlObj.Create(AMasterList: TSectionList;
+constructor TTextAreaFormControlObj.Create(AMasterList: ThtDocument;
   Position: integer; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
@@ -660,7 +660,7 @@ begin
   begin
     if BorderStyle <> bsNone then
     begin
-      FormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, FControl.Color);
+      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, FControl.Color);
       Addon := 4;
     end
     else
@@ -815,7 +815,7 @@ begin
   Longest := Max(Longest, ExtS.cx);
 end;
 
-constructor TOptionsFormControlObj.Create(AMasterList: TSectionList; Position: Integer;
+constructor TOptionsFormControlObj.Create(AMasterList: ThtDocument; Position: Integer;
   L: TAttributeList);
 var
   T: TAttribute;

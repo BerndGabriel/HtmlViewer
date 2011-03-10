@@ -88,6 +88,8 @@ function DosToHtmlNoSharp(FName: ThtString): ThtString;
 function HTMLToDos(FName: ThtString): ThtString;
 {convert an HTML style filename to one for Dos}
 
+function HTMLServerToDos(FName, Root: ThtString): ThtString;
+{convert an HTML style filename to one for Dos. Prefix with Root, if name starts with a single backslash}
 
 {***************************************************************************************************
  * DOS processing methods
@@ -622,6 +624,21 @@ begin
     Replace('/', '\');
   end;
   Result := FName;
+end;
+
+function HTMLServerToDos(FName, Root: ThtString): ThtString;
+{Add Prefix Root only if first character is '\' but not '\\'}
+begin
+  Result := Trim(HTMLToDos(FName));
+  if (Result <> '') and (Root <> '') then
+  begin
+    if Pos('\\', Result) = 1 then
+      Exit;
+    if Pos(':', Result) = 2 then
+      Exit;
+    if Result[1] = '\' then
+      Result := Root + Result;
+  end;
 end;
 
 end.

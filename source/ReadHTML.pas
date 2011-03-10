@@ -170,9 +170,9 @@ type
     procedure GetOptions(Select: TOptionsFormControlObj);
     procedure Next; {$ifdef UseInline} inline; {$endif}
     procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
-    procedure ParseHtml(Doc: TBuffer; ASectionList: TList; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-    procedure ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
-    procedure ParseText(Doc: TBuffer; ASectionList: TList);
+    procedure ParseHtml(Doc: TBuffer; ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+    procedure ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
+    procedure ParseText(Doc: TBuffer; ASectionList: ThtDocument);
     procedure SkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
@@ -1105,8 +1105,7 @@ begin
         SectionList.Add(DivBlock, TagIndex);
         SectionList := DivBlock.MyCell;
 
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
-          CurrentUrlTarget, SectionList, True);
+        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
         Next;
         DoBody([DivEndSy] + TermSet);
         SectionList.Add(Section, TagIndex);
@@ -1118,12 +1117,11 @@ begin
         end;
         SectionList := DivBlock.OwnerCell;
 
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
-          CurrentUrlTarget, SectionList, True);
+        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
         if Sy = DivEndSy then
           Next;
       end;
-      
+
     FieldsetSy:
       begin
         SectionList.Add(Section, TagIndex);
@@ -1134,8 +1132,7 @@ begin
         SectionList.Add(FieldsetBlock, TagIndex);
         SectionList := FieldsetBlock.MyCell;
 
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
-          CurrentUrlTarget, SectionList, True);
+        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
         Next;
         DoBody([FieldsetEndSy] + TermSet);
         SectionList.Add(Section, TagIndex);
@@ -1147,8 +1144,7 @@ begin
         end;
         SectionList := FieldsetBlock.OwnerCell;
 
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
-          CurrentUrlTarget, SectionList, True);
+        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
         if Sy = FieldsetEndSy then
           Next;
       end;
@@ -3492,11 +3488,12 @@ end;
 
 {----------------ParseInit}
 
-procedure THtmlParser.ParseInit(ASectionList: TList; AIncludeEvent: TIncludeType);
+procedure THtmlParser.ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
 begin
-  SectionList := TSectionList(ASectionList);
-  PropStack.MasterList := TSectionList(SectionList);
-  CallingObject := TSectionList(ASectionList).TheOwner;
+  SectionList := ASectionList;
+  
+  PropStack.MasterList := ASectionList;
+  CallingObject := ASectionList.TheOwner;
   IncludeEvent := AIncludeEvent;
   PropStack.Clear;
   PropStack.Add(TProperties.Create(PropStack));
@@ -3529,7 +3526,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure THtmlParser.ParseHtml(Doc: TBuffer; ASectionList: TList;
+procedure THtmlParser.ParseHtml(Doc: TBuffer; ASectionList: ThtDocument;
   AIncludeEvent: TIncludeType; ASoundEvent: TSoundType;
   AMetaEvent: TMetaType; ALinkEvent: TLinkType);
 {$IFNDEF NoTabLink}
@@ -3565,7 +3562,7 @@ begin
         end;
         Next;
       end;
-      TSectionList(ASectionList).StopTab := TabCount > MaxTab;
+      ASectionList.StopTab := TabCount > MaxTab;
     except
     end;
   {reset a few things}
@@ -3651,7 +3648,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure THtmlParser.ParseText(Doc: TBuffer; ASectionList: TList);
+procedure THtmlParser.ParseText(Doc: TBuffer; ASectionList: ThtDocument);
 begin
   ParseInit(ASectionList, nil);
   InScript := True;
