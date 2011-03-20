@@ -224,7 +224,7 @@ begin
   begin
     Left := -4000; {so will be invisible until placed}
     Parent := PntPanel;
-    if (Prop.GetBorderStyle <> bssNone) then
+    if Prop.HasBorderStyle then
       BorderStyle := bsNone;
     Tmp := Prop.GetFont;
     Font.Assign(Tmp);
@@ -621,7 +621,7 @@ begin
   with FControl do
   begin
     Left := -4000; {so will be invisible until placed}
-    if (Prop.GetBorderStyle <> bssNone) then
+    if Prop.HasBorderStyle then
       BorderStyle := bsNone;
     Tmp := Prop.GetFont;
     Font.Assign(Tmp);

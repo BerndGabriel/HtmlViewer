@@ -1,0 +1,9 @@
+p {
+  background-color: rgb(255,255, 128);
+}
+
+p + p {
+  background-color: rgb(128,255,255);
+}
+
+

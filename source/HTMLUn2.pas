@@ -501,7 +501,6 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    procedure Parsed(const Title, Base, BaseTarget: ThtString); virtual; abstract;
   end;
 
   TFrameViewerBase = class(TViewerBase)

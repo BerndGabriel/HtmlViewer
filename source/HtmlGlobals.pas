@@ -1,6 +1,7 @@
 {
 Version   11
 Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -114,6 +115,8 @@ type
   ThtStringList = TWideStringList;
   PhtChar = PWideChar;
 {$endif}
+  ThtStringArray = array of ThtString;
+  ThtBooleanArray = array of Boolean;
 
   ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected
@@ -148,6 +151,7 @@ const
   EofChar     = ThtChar(#0);
   TabChar     = ThtChar(#9);
   LfChar      = ThtChar(#10);
+  FfChar      = ThtChar(#12);
   CrChar      = ThtChar(#13);
   SpcChar     = ThtChar(' ');
   DotChar     = ThtChar('.');

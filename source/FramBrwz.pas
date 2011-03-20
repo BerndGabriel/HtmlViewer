@@ -258,7 +258,7 @@ begin
         else
           Doc := nil;
         try
-          if (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source) then
+          if (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc) then
           begin
             FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
             FrameSet.Align := alClient;
@@ -266,7 +266,7 @@ begin
             InsertControl(FrameSet);
             FrameSet.SendToBack;
             FrameSet.Visible := True;
-            ParseFrame(MasterSet.FrameViewer, FrameSet, Doc, Source, FrameSet.HandleMeta);
+            MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
             Self.BevelOuter := bvNone;
             frBumpHistory1(Source, 0);
             with FrameSet do
@@ -417,7 +417,7 @@ begin
     else
       Doc := nil;
     if not SameName then
-      FrameFile := (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source)
+      FrameFile := (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc)
     else
       FrameFile := not Assigned(Viewer);
     if SameName and not Reload then
@@ -499,7 +499,7 @@ begin
         InsertControl(FrameSet);
         FrameSet.SendToBack; {to prevent blink}
         FrameSet.Visible := True;
-        ParseFrame(MasterSet.FrameViewer, FrameSet, Doc, Source, FrameSet.HandleMeta);
+        MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
         MasterSet.FrameViewer.AddVisitedLink(URL);
         Self.BevelOuter := bvNone;
         with FrameSet do
@@ -690,9 +690,9 @@ begin
   Stream.Position := 0;
   Doc := TBuffer.Create(Stream, Url);
   try
-    if (StreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Url) then
+    if (StreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc) then
     begin {it's a Frameset html file}
-      ParseFrame(FrameViewer, Self, Doc, Url, HandleMeta);
+      MasterSet.FrameViewer.ParseFrame(Self, Doc, Url, HandleMeta);
       for I := 0 to List.Count - 1 do
         TFrameBaseOpener(List.Items[I]).LoadFiles;
       CalcSizes(Self);

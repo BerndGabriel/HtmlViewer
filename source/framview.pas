@@ -255,6 +255,9 @@ type
     function NumPrinterPages: integer; overload;
     procedure Print(FromPage, ToPage: integer);
 {$endif}
+    function IsFrame(Doc: TBuffer): Boolean;
+    procedure ParseFrame(FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+    //
     procedure AddFrame(FrameSet: TObject; Attr: TAttributeList; const FName: ThtString); override;
     procedure Clear;
     procedure ClearHistory;
@@ -937,7 +940,7 @@ begin
     end;
     Inc(MasterSet.NestLevel);
     try
-      if not Image and not Tex and IsFrame(MasterSet.FrameViewer, EV.Doc, EV.NewName) then
+      if not Image and not Tex and MasterSet.FrameViewer.IsFrame(EV.Doc) then
       begin
         FFrameSet := GetSubFrameSetClass.CreateIt(Self, MasterSet);
         FrameSet.Align := alClient;
@@ -945,7 +948,7 @@ begin
         InsertControl(FrameSet);
         FrameSet.SendToBack;
         FrameSet.Visible := True;
-        ParseFrame(MasterSet.FrameViewer, FrameSet, EV.Doc, EV.NewName, FrameSet.HandleMeta);
+        MasterSet.FrameViewer.ParseFrame(FrameSet, EV.Doc, EV.NewName, FrameSet.HandleMeta);
         Self.BevelOuter := bvNone;
         frBumpHistory1(Source, 0);
         with FrameSet do
@@ -1154,7 +1157,7 @@ begin
     if not SameName then
       try
         FrameFile := not Img and not Tex and
-          IsFrame(MasterSet.FrameViewer, EV.Doc, EV.NewName);
+          MasterSet.FrameViewer.IsFrame(EV.Doc);
       except
         raise(EfvLoadError.Create('Can''t load: ' + EV.NewName));
       end
@@ -1257,7 +1260,7 @@ begin
         InsertControl(FrameSet);
         FrameSet.SendToBack; {to prevent blink}
         FrameSet.Visible := True;
-        ParseFrame(MasterSet.FrameViewer, FrameSet, EV.Doc, EV.NewName, FrameSet.HandleMeta);
+        MasterSet.FrameViewer.ParseFrame(FrameSet, EV.Doc, EV.NewName, FrameSet.HandleMeta);
         MasterSet.FrameViewer.AddVisitedLink(EV.NewName);
         Self.BevelOuter := bvNone;
         with FrameSet do
@@ -2396,9 +2399,9 @@ begin
     FCurrentFile := FName;
   end;
   FRefreshDelay := 0;
-  if not Img and not Tex and IsFrame(MasterSet.FrameViewer, EV.Doc, EV.NewName) then
+  if not Img and not Tex and MasterSet.FrameViewer.IsFrame(EV.Doc) then
   begin {it's a Frameset html file}
-    ParseFrame(MasterSet.FrameViewer, Self, EV.Doc, EV.NewName, HandleMeta);
+    MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
     for I := 0 to List.Count - 1 do
       TFrameBase(List[I]).LoadFiles;
     CalcSizes(Self);
@@ -2447,9 +2450,9 @@ begin
     EV.NewName := 'source://' + Source;
   FCurrentFile := EV.NewName;
   FRefreshDelay := 0;
-  if IsFrame(MasterSet.FrameViewer, EV.Doc, EV.NewName) then
+  if MasterSet.FrameViewer.IsFrame(EV.Doc) then
   begin {it's a Frameset html file}
-    ParseFrame(MasterSet.FrameViewer, Self, EV.Doc, EV.NewName, HandleMeta);
+    MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
     for I := 0 to List.Count - 1 do
     begin
       Item := TFrameBase(List.Items[I]);
@@ -4494,6 +4497,19 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 13.03.2011 --
+function TFVBase.IsFrame(Doc: TBuffer): Boolean;
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create(Doc);
+  try
+    Result := Parser.IsFrame(Self);
+  finally
+    Parser.Free;
+  end;
+end;
+
 procedure TFVBase.SetFocus;
 var
   AViewer: THtmlViewer;
@@ -4559,6 +4575,19 @@ begin
 end;
 
 {$ifndef NoMetafile}
+
+//-- BG ---------------------------------------------------------- 13.03.2011 --
+procedure TFVBase.ParseFrame(FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create(Doc);
+  try
+    Parser.ParseFrame(Self, FrameSet, FName, AMetaEvent);
+  finally
+    Parser.Free;
+  end;
+end;
 
 {----------------TFVBase.Print}
 

@@ -82,6 +82,10 @@ uses
   Windows,
 {$endif}
   SysUtils, Math, Variants, Messages, Classes, Graphics, Controls, Contnrs,
+//BG, 19.03.2011:
+  HtmlStyles,
+  StyleParser,
+//
   HtmlGlobals,
   HtmlBuffer,
   HTMLUn2,
@@ -97,8 +101,8 @@ type
   private
     TitleStart: Integer;
     TitleEnd: Integer;
-    Base: ThtString;
-    BaseTarget: ThtString;
+    FBase: ThtString;
+    FBaseTarget: ThtString;
 
     LCh: ThtChar;
     LastChar: (lcOther, lcCR, lcLF);
@@ -132,6 +136,9 @@ type
     MetaEvent: TMetaType;
     LinkEvent: TLinkType;
 
+    //BG, 19.03.2011:
+    FRulesets: TRulesetList;
+
     procedure GetCh;
 
     function CollectText: Boolean;
@@ -144,7 +151,6 @@ type
     function GetQuotedValue(var S: ThtString): Boolean;
     function GetTag: Boolean;
     function GetValue(var S: ThtString; var Value: Integer): Boolean;
-    function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
     procedure CheckForAlign;
     procedure DoAEnd;
     procedure DoBase;
@@ -169,26 +175,23 @@ type
     procedure GetEntity(T: TokenObj; CodePage: Integer);
     procedure GetOptions(Select: TOptionsFormControlObj);
     procedure Next; {$ifdef UseInline} inline; {$endif}
-    procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
-    procedure ParseHtml(Doc: TBuffer; ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-    procedure ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
-    procedure ParseText(Doc: TBuffer; ASectionList: ThtDocument);
+    procedure ParseInit(ASectionList: ThtDocument);
     procedure SkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
     function getTitle: ThtString;
   public
-    constructor Create;
+    constructor Create(Doc: TBuffer);
     destructor Destroy; override;
+    function IsFrame(FrameViewer: TFrameViewerBase): Boolean;
+    procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString; AMetaEvent: TMetaType);
+    procedure ParseHtml(ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+    procedure ParseText(ASectionList: ThtDocument);
+    property Base: ThtString read FBase;
+    property BaseTarget: ThtString read FBaseTarget;
     property Title: ThtString read getTitle;
   end;
-
-  procedure ParseHtml(Viewer: THtmlViewerBase; Doc: TBuffer; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-  procedure ParseText(Viewer: THtmlViewerBase; Doc: TBuffer);
-
-  procedure ParseFrame(Viewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
-  function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
 
 implementation
 
@@ -248,75 +251,21 @@ begin
     Result := CommandSy; // no match
 end;
 
-
-//-- BG ---------------------------------------------------------- 27.12.2010 --
-function IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
-var
-  Parser: THtmlParser;
-begin
-  Parser := THtmlParser.Create;
-  try
-    Result := Parser.IsFrame(FrameViewer, Doc, FName);
-  finally
-    Parser.Free;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure ParseFrame(Viewer: TFrameViewerBase; FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
-var
-  Parser: THtmlParser;
-begin
-  Parser := THtmlParser.Create;
-  try
-    Parser.ParseFrame(Viewer, FrameSet, Doc, FName, AMetaEvent);
-  finally
-    Parser.Free;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure ParseHtml(Viewer: THtmlViewerBase; Doc: TBuffer;
-  AIncludeEvent: TIncludeType;
-  ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
-var
-  Parser: THtmlParser;
-begin
-  Parser := THtmlParser.Create;
-  try
-    Parser.ParseHtml(Doc, THtmlViewer(Viewer).SectionList, AIncludeEvent, ASoundEvent, AMetaEvent, ALinkEvent);
-    Viewer.Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
-  finally
-    Parser.Free;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 25.12.2010 --
-procedure ParseText(Viewer: THtmlViewerBase; Doc: TBuffer);
-var
-  Parser: THtmlParser;
-begin
-  Parser := THtmlParser.Create;
-  try
-    Parser.ParseText(Doc, THtmlViewer(Viewer).SectionList);
-    Viewer.Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
-  finally
-    Parser.Free;
-  end;
-end;
-
-
 { THtmlParser }
 
-constructor THtmlParser.Create;
+constructor THtmlParser.Create(Doc: TBuffer);
 begin
-  inherited;
+  inherited Create;
   LCToken := TokenObj.Create;
   DocStack := TStack.Create;
+  FRulesets := TRulesetList.Create;
+  Self.Doc := Doc;
 end;
 
 destructor THtmlParser.Destroy;
 begin
+  FRulesets.ToString;
+  FRulesets.Free;
   DocStack.Free;
   LCToken.Free;
   inherited;
@@ -337,7 +286,7 @@ end;
 {-------------GetCh}
 
 procedure THtmlParser.GetCh;
-{Return next ThtChar in Lch, its uppercase value in Ch.  Ignore comments}
+{Return next ThtChar in LCh.  Ignore comments}
 
   procedure GetChBasic; {read a character}
 
@@ -1329,6 +1278,20 @@ var
 
   procedure ReadColAttributes(var Width: Integer; var AsPercent: Boolean;
     var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
+
+    function AlignmentFromString(S: ThtString): AlignmentType;
+    begin
+      S := LowerCase(S);
+      for Result := low(AlignmentType) to high(AlignmentType) do
+        if S = CAlignmentType[Result] then
+          exit;
+
+      if (S = 'absmiddle') or (S = 'center') then
+        Result := AMiddle
+      else
+        Result := ANone;
+    end;
+
   var
     I: Integer;
   begin
@@ -1424,7 +1387,7 @@ var
   TrDisplay: TPropDisplay; // Yunqa.de.
   S: PropIndices;
   V: Variant;
-  CellBorderStyle: BorderStyleType;
+//  CellBorderStyle: BorderStyleType;
 
   function GetVAlign(Default: AlignmentType): AlignmentType;
   var
@@ -1580,18 +1543,20 @@ begin
                 PropStack.Last.Assign('left', TextAlign); {td}
             if (Attributes.TheStyle = nil) and (Table.BorderWidth > 0) then
             begin
-              if NewBlock.BorderStyle = bssOutset then
-                CellBorderStyle := bssInset
-              else if NewBlock.BorderStyle = bssInset then
-                CellBorderStyle := bssOutset
-              else
-                CellBorderStyle := NewBlock.BorderStyle;
+//TODO -oBG, 12.03.2011: cell border default
+//              if NewBlock.BorderStyle = bssOutset then
+//                CellBorderStyle := bssInset
+//              else if NewBlock.BorderStyle = bssInset then
+//                CellBorderStyle := bssOutset
+//              else
+//                CellBorderStyle := NewBlock.BorderStyle;
 
               for S := BorderTopStyle to BorderLeftStyle do
               begin
                 V := PropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  PropStack.Last.Props[S] := CellBorderStyle;
+//TODO -oBG, 12.03.2011: cell border default
+//                if (VarType(V) in varInt) and (V = IntNull) then
+//                  PropStack.Last.Props[S] := CellBorderStyle;
               end;
               for S := BorderTopWidth to BorderLeftWidth do
               begin
@@ -2020,7 +1985,7 @@ begin
       end;
       if WantPanel then
       begin
-        if Prop.GetBorderStyle <> bssNone then {start of inline border}
+        if Prop.HasBorderStyle then {start of inline border}
           PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
         Section.AddPanel1(PO, TagIndex);
         PopAProp('object');
@@ -2110,7 +2075,7 @@ var
     PushNewProp('font', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
     Prop := TProperties(PropStack.Last);
     Prop.SetFontBG;
-    if Prop.GetBorderStyle <> bssNone then {start of inline border}
+    if Prop.HasBorderStyle then {start of inline border}
       PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
     if Colr in FontResults then
     begin
@@ -2313,7 +2278,7 @@ var
                           PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
                           Prop := TProperties(PropStack.Last);
                           Prop.SetFontBG;
-                          if Prop.GetBorderStyle <> bssNone then {start of inline border}
+                          if Prop.HasBorderStyle then {start of inline border}
                             PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                         end;
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
@@ -2368,7 +2333,7 @@ var
                       Attributes.TheTitle, Attributes.TheStyle);
                     Prop := TProperties(PropStack.Last);
                     Prop.SetFontBG;
-                    if Prop.GetBorderStyle <> bssNone then {start of inline border}
+                    if Prop.HasBorderStyle then {start of inline border}
                       PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                     Section.ChangeFont(PropStack.Last);
 
@@ -2545,7 +2510,7 @@ begin
             CurrentUrlTarget, SectionList, True);
         PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         Prop := PropStack.Last;
-        if Prop.GetBorderStyle <> bssNone then {start of inline border}
+        if Prop.HasBorderStyle then {start of inline border}
           PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
         if Sy = ImageSy then
           IO := Section.AddImage(Attributes, SectionList, TagIndex)
@@ -2627,7 +2592,7 @@ begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
               Prop := TProperties(PropStack.Last);
               Prop.SetFontBG;
-              if Prop.GetBorderStyle <> bssNone then {start of inline border}
+              if Prop.HasBorderStyle then {start of inline border}
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
           BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy:
@@ -2653,7 +2618,7 @@ begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
               Prop := TProperties(PropStack.Last);
               Prop.SetFontBG;
-              if Prop.GetBorderStyle <> bssNone then
+              if Prop.HasBorderStyle then
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
         end;
@@ -2671,7 +2636,7 @@ begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
               Prop := TProperties(PropStack.Last);
               Prop.SetFontBG;
-              if Prop.GetBorderStyle <> bssNone then
+              if Prop.HasBorderStyle then
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
           CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
@@ -2719,7 +2684,7 @@ begin
         PushNewProp('a', Attributes.TheClass, Attributes.TheID, Link, Attributes.TheTitle, Attributes.TheStyle);
         Prop := TProperties(PropStack.Last);
         Prop.SetFontBG;
-        if Prop.GetBorderStyle <> bssNone then {start of inline border}
+        if Prop.HasBorderStyle then {start of inline border}
           PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
         if not Assigned(Section) then
           Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
@@ -3136,9 +3101,9 @@ begin
     for I := 0 to Count - 1 do
       with TAttribute(Attributes[I]) do
         if Which = HrefSy then
-          Base := Name
+          FBase := Name
         else if Which = TargetSy then
-          BaseTarget := Name;
+          FBaseTarget := Name;
   Next;
 end;
 
@@ -3292,6 +3257,20 @@ begin
         end;
         if DStream <> nil then
         begin
+          //BG, 19.03.2011:
+          DStream.Position := 0;
+          Style := TBuffer.Create(DStream, Url);
+          try
+            with StyleParser.THtmlStyleParser.Create(poAuthor, Style, Path) do
+              try
+                ParseStyleSheet(FRulesets);
+              finally
+                Free;
+              end;
+          finally
+            Style.Free;
+          end;
+
           DStream.Position := 0;
           Style := TBuffer.Create(DStream, Url);
           try
@@ -3322,6 +3301,7 @@ var
   AMarginHeight, AMarginWidth: Integer;
   LiBlock: TBlockLi;
   LiSection: TSection;
+  Ch: ThtChar;
 begin
   LiBlock := nil;
   LiSection := nil;
@@ -3434,6 +3414,20 @@ begin
 
       StyleSy:
         begin
+          //BG, 19.03.2011:
+          I := Doc.Position;
+          if LCh = '>' then
+            GetCh;
+          Ch := LCh;
+          with StyleParser.THtmlStyleParser.Create(poAuthor, Doc, '') do
+            try
+              ParseStyleTag(LCh, FRulesets);
+            finally
+              Free;
+            end;
+          Doc.Position := I;
+          LCh := Ch;
+
           DoStyle(PropStack.MasterList.Styles, LCh, Doc, '', False);
           Next;
         end;
@@ -3488,13 +3482,12 @@ end;
 
 {----------------ParseInit}
 
-procedure THtmlParser.ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
+procedure THtmlParser.ParseInit(ASectionList: ThtDocument);
 begin
   SectionList := ASectionList;
-  
+
   PropStack.MasterList := ASectionList;
   CallingObject := ASectionList.TheOwner;
-  IncludeEvent := AIncludeEvent;
   PropStack.Clear;
   PropStack.Add(TProperties.Create(PropStack));
   PropStack[0].CopyDefault(PropStack.MasterList.Styles.DefProp);
@@ -3511,8 +3504,8 @@ begin
   InHref := False;
   BaseFontSize := 3;
 
-  Base := '';
-  BaseTarget := '';
+  FBase := '';
+  FBaseTarget := '';
   CurrentStyle := [];
   CurrentForm := nil;
   Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, nil, SectionList, True);
@@ -3526,7 +3519,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure THtmlParser.ParseHtml(Doc: TBuffer; ASectionList: ThtDocument;
+procedure THtmlParser.ParseHtml(ASectionList: ThtDocument;
   AIncludeEvent: TIncludeType; ASoundEvent: TSoundType;
   AMetaEvent: TMetaType; ALinkEvent: TLinkType);
 {$IFNDEF NoTabLink}
@@ -3537,8 +3530,8 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
-  Self.Doc := Doc;
-  ParseInit(ASectionList, nil);
+  ParseInit(ASectionList);
+  IncludeEvent := AIncludeEvent;
 
   try
 {$IFNDEF NoTabLink}
@@ -3574,7 +3567,6 @@ begin
     SoundEvent := ASoundEvent;
     MetaEvent := AMetaEvent;
     LinkEvent := ALinkEvent;
-    IncludeEvent := AIncludeEvent;
     try
       GetCh; {get the reading started}
       Next;
@@ -3648,9 +3640,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure THtmlParser.ParseText(Doc: TBuffer; ASectionList: ThtDocument);
+procedure THtmlParser.ParseText(ASectionList: ThtDocument);
 begin
-  ParseInit(ASectionList, nil);
+  ParseInit(ASectionList);
   InScript := True;
 
   try
@@ -3669,11 +3661,7 @@ end;
 {-------------FrameParseString}
 
 procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject;
-  Doc: TBuffer;
-  //ALoadStyle: LoadStyleType;
-  const FName: ThtString;
-  //const S: ThtString;
-  AMetaEvent: TMetaType);
+  const FName: ThtString; AMetaEvent: TMetaType);
 
   procedure Parse;
   var
@@ -3714,7 +3702,6 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   end;
 
 begin
-  Self.Doc := Doc;
   PropStack.MasterList := nil;
   CallingObject := FrameViewer;
   IncludeEvent := FrameViewer.OnInclude;
@@ -3722,8 +3709,8 @@ begin
   MetaEvent := AMetaEvent;
   LinkEvent := FrameViewer.OnLink;
 
-  Base := '';
-  BaseTarget := '';
+  FBase := '';
+  FBaseTarget := '';
   InScript := False;
   NoBreak := False;
   InComment := False;
@@ -3744,7 +3731,7 @@ end;
 
 {----------------IsFrameString}
 
-function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const FName: ThtString): Boolean;
+function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
 
   function Parse: Boolean;
   var
@@ -3779,17 +3766,12 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase; Doc: TBuffer; const 
 var
   Pos: Integer;
 begin
-  if Doc = nil then
-  begin
-    Result := False;
-    exit;
-  end;
   PropStack.MasterList := nil;
   CallingObject := FrameViewer;
   SoundEvent := nil;
 
-  Base := '';
-  BaseTarget := '';
+  FBase := '';
+  FBaseTarget := '';
   Result := False;
   InScript := False;
   NoBreak := False;
@@ -3798,7 +3780,6 @@ begin
   Pos := Doc.Position;
   Attributes := TAttributeList.Create;
   try
-    Self.Doc := Doc;
     try
       Result := Parse;
     except {ignore error}

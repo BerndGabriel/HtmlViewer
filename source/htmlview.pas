@@ -113,8 +113,7 @@ type
 
 {$ifdef NoMetafile}
   //From MetaFilePrinter.pas
-  TPageEvent = procedure(Sender: TObject; NumPage: Integer ;
-                         var StopPrinting : Boolean) of Object;
+  TPageEvent = procedure(Sender: TObject; NumPage: Integer; var StopPrinting : Boolean) of Object;
 {$endif}
 
   THtmlViewerStateBit = (
@@ -282,6 +281,9 @@ type
     procedure HTMLTimerTimer(Sender: TObject);
     procedure InitLoad;
     procedure Layout;
+    procedure Parsed(const Title, Base, BaseTarget: ThtString); 
+    procedure ParseHtml;
+    procedure ParseText;
     procedure ScrollHorz(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
     procedure ScrollTo(Y: Integer);
     procedure ScrollVert(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
@@ -421,7 +423,6 @@ type
     procedure LoadTextFile(const FileName: ThtString);
     procedure LoadTextFromString(const S: ThtString);
     procedure LoadTextStrings(Strings: ThtStrings);
-    procedure Parsed(const Title, Base, BaseTarget: ThtString); override;
     procedure Reformat;
     procedure Reload;
     procedure Repaint; override;
@@ -763,6 +764,34 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 13.03.2011 --
+procedure THtmlViewer.ParseHtml;
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create(FDocument);
+  try
+    Parser.ParseHtml(FSectionList, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
+    Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
+  finally
+    Parser.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 13.03.2011 --
+procedure THtmlViewer.ParseText;
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create(FDocument);
+  try
+    Parser.ParseText(FSectionList);
+    Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
+  finally
+    Parser.Free;
+  end;
+end;
+
 procedure THtmlViewer.LoadFile(const FileName: ThtString; ft: ThtmlFileType);
 var
   Dest, FName: ThtString;
@@ -963,9 +992,9 @@ begin
     if Assigned(FOnParseBegin) then
       FOnParseBegin(Self, FDocument);
     if Ft = HTMLType then
-      ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+      ParseHtml
     else
-      ParseText(Self, FDocument);
+      ParseText;
     CheckVisitedLinks;
     if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
     else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
@@ -1019,9 +1048,9 @@ begin
     if Assigned(FOnParseBegin) then
       FOnParseBegin(Self, FDocument);
     if Ft = HTMLType then
-      ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+      ParseHtml
     else
-      ParseText(Self, FDocument);
+      ParseText;
     CheckVisitedLinks;
     if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
     else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
@@ -1086,21 +1115,21 @@ begin
       begin
         if Assigned(FOnSoundRequest) then
           FOnSoundRequest(Self, '', 0, True);
-        ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
+        ParseHtml;
       end;
 
       TextType:
       begin
-        ParseText(Self, FDocument);
+        ParseText;
       end;
     else
       SaveOnImageRequest := OnImageRequest;
-      SetOnImageRequest(DoImage);
+      OnImageRequest := DoImage;
       FImageStream := AStream;
       try
-        ParseHtml(Self, FDocument, nil, nil, nil, nil);
+        ParseHtml;
       finally
-        SetOnImageRequest(SaveOnImageRequest);
+        OnImageRequest := SaveOnImageRequest;
       end;
     end;
     ScrollTo(0);

@@ -560,6 +560,7 @@ begin
           FInitalCodePage := FCodePage;
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
+          // TODO: if followed by $0000, this is UTF-32-LE
           Exit;
         end;
 
@@ -571,6 +572,7 @@ begin
           FInitalCodePage := FCodePage;
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
+          // TODO: if followed by $0000, this is UTF-32-3412
           Exit;
         end;
 
@@ -589,6 +591,13 @@ begin
           end;
           Dec(FPos.WordPtr);
         end;
+
+      //TODO:
+      {
+      $0000:
+        if followed by $FFFE, this is UTF-32-BE
+        if followed by $FEFF, this is UTF-32-2143
+      }
     end;
   end;
   if IsIso2022JP then

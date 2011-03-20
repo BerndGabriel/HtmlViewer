@@ -1,0 +1,25 @@
+@charset "utf-8";
+@import url(imported.css);
+@import "screen.css" screen;
+@import url(not-existing.css);
+
+body {
+  background-color: blue;
+}
+
+@media tv, projection, screen {
+  body {
+    background-color: transparent;
+  }
+}
+
+@media tv, projection {
+  body {
+    background-color: yellow;
+  }
+}
+
+@import "not-allowed.css";
+
+
+

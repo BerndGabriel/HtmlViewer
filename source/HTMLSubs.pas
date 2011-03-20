@@ -246,7 +246,7 @@ type
     constructor CreateCopy(ASection: TSection; T: TFontObj);
     destructor Destroy; override;
     procedure ReplaceFont(F: TMyFont);
-    procedure ConvertFont(FI: ThtFontInfo);
+    procedure ConvertFont(const FI: ThtFontInfo);
     procedure FontChanged;
     function GetOverhang: Integer;
     function GetHeight(var Desc: Integer): Integer;
@@ -552,7 +552,7 @@ type
     // BEGIN: this area is copied by move() in CreateCopy() - NO string types allowed!
     MargArray: TMarginArray;
     EmSize, ExSize, FGColor: Integer;
-    BorderStyle: BorderStyleType;
+    HasBorderStyle: Boolean;
     FloatLR: AlignmentType; {ALeft or ARight if floating}
     ClearAttr: ClearAttrType;
     IsListBlock: boolean;
@@ -977,7 +977,7 @@ type
     PadTop, PadRight, PadBottom, PadLeft: Integer;
     BrdTop, BrdRight, BrdBottom, BrdLeft: Integer;
     HzSpace, VrSpace: Integer;
-    BorderStyle: BorderStyleType;
+    HasBorderStyle: Boolean;
     ShowEmptyCells: Boolean;
     // END: this area is copied by move() in CreateCopy()
     Cell: TCellObjCell;
@@ -1583,18 +1583,10 @@ begin
   FontChanged;
 end;
 
-procedure TFontObj.ConvertFont(FI: ThtFontInfo);
+procedure TFontObj.ConvertFont(const FI: ThtFontInfo);
 begin
-  with TheFont, FI do
-  begin
-    Name := iName;
-    Height := -Round(iSize * Screen.PixelsPerInch / 72);
-    Style := iStyle;
-    bgColor := ibgColor;
-    Color := iColor;
-    CharSet := ICharSet;
-    FontChanged;
-  end;
+  TheFont.Assign(FI);
+  FontChanged;
 end;
 
 constructor TFontObj.CreateCopy(ASection: TSection; T: TFontObj);
@@ -3211,7 +3203,7 @@ begin
     VSpaceT := MargArray[MarginTop];
   if MargArray[MarginBottom] <> IntNull then
     VSpaceB := MargArray[MarginBottom];
-  if Prop.GetBorderStyle <> bssNone then
+  if Prop.HasBorderStyle then
   begin
     Inc(HSpaceL, MargArray[BorderLeftWidth]);
     Inc(HSpaceR, MargArray[BorderRightWidth]);
@@ -3589,7 +3581,7 @@ begin
   begin
     Left := -4000; {so will be invisible until placed}
     Width := 120;
-    if (Prop.GetBorderStyle <> bssNone) then
+    if Prop.HasBorderStyle then
       BorderStyle := bsNone;
     Parent := PntPanel;
     Tmp := Prop.GetFont;
@@ -4540,7 +4532,7 @@ begin
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
     FloatLR := ANone;
-  BorderStyle := Prop.GetBorderStyle;
+  HasBorderStyle := Prop.HasBorderStyle;
   FGColor := Prop.Props[Color];
   EmSize := Prop.EmSize;
   ExSize := Prop.ExSize;
@@ -4672,7 +4664,7 @@ end;
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 begin
-  StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderStyle, BorderWidth, AutoCount, MargArray);
+  StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
 end;
 
 {----------------TBlock.CreateCopy}
@@ -5862,7 +5854,7 @@ end;
 
 procedure TBlock.DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect);
 begin
-  if BorderStyle <> bssNone then
+  if HasBorderStyle then
     if (ORect.Left <> IRect.Left) or (ORect.Top <> IRect.Top) or (ORect.Right <> IRect.Right) or (ORect.Bottom <> IRect.Bottom) then
       DrawBorder(Canvas, ORect, IRect,
         htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
@@ -5988,7 +5980,7 @@ function TTableAndCaptionBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoC
 var
   Mx, Mn, FWidth: Integer;
 begin
-  BorderStyle := bssNone; {has no border}
+  HasBorderStyle := False; //bssNone; {has no border}
   MargArray[BorderLeftWidth] := 0;
   MargArray[BorderTopWidth] := 0;
   MargArray[BorderRightWidth] := 0;
@@ -6118,7 +6110,7 @@ begin
       end;
       Inc(S);
     end;
-    BorderStyle := bssOutset;
+    HasBorderStyle := True; //bssOutset;
   end;
 
   BorderColor := Table.BorderColor;
@@ -6153,7 +6145,7 @@ begin
 
 {need to see if width is defined in style}
   Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
-  StyleUn.ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, BorderStyle, BorderWidth, AutoCount, MargArray);
+  StyleUn.ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
   if MargArray[piWidth] > 0 then
   begin
     if Percent then
@@ -6705,7 +6697,7 @@ var
 begin
   YDraw := Y;
   StartCurs := Curs;
-  StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderStyle, BorderWidth, AutoCount, MargArray);
+  StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
 
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
   NewWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
@@ -7578,7 +7570,7 @@ begin
         Prop.GetVMarginArray(MargArrayO);
         EmSize := Prop.EmSize;
         ExSize := Prop.ExSize;
-        ConvMargArray(MargArrayO, 200, 200, EmSize, ExSize, bssNone, 0{4}, Dummy1, MargArray);
+        ConvMargArray(MargArrayO, 200, 200, EmSize, ExSize, 0{4}, Dummy1, MargArray);
       end;
     end
     else {this call has end information}
@@ -7656,7 +7648,7 @@ var
   Percent: boolean;
   Algn: AlignmentType;
   J: PropIndices;
-  Border: Boolean;
+//  Border: Boolean;
 begin
   inherited Create;
   Cell := TCellObjCell.Create(Master);
@@ -7706,7 +7698,7 @@ begin
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
     Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
-    ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, bssNone, 0, AutoCount, MargArray);
+    ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, 0, AutoCount, MargArray);
     if MargArray[piWidth] > 0 then
       if Percent then
       begin
@@ -7743,31 +7735,31 @@ begin
     PadBottom := MargArray[PaddingBottom];
     PadLeft := MargArray[PaddingLeft];
 
-    Border := True;
+    HasBorderStyle := False;
     if BorderStyleType(MargArray[BorderTopStyle]) <> bssNone then
     begin
-      Border := False;
+      HasBorderStyle := True;
       BrdTop := MargArray[BorderTopWidth];
     end;
     if BorderStyleType(MargArray[BorderRightStyle]) <> bssNone then
     begin
-      Border := False;
+      HasBorderStyle := True;
       BrdRight := MargArray[BorderRightWidth];
     end;
     if BorderStyleType(MargArray[BorderBottomStyle]) <> bssNone then
     begin
-      Border := False;
+      HasBorderStyle := True;
       BrdBottom := MargArray[BorderBottomWidth];
     end;
     if BorderStyleType(MargArray[BorderLeftStyle]) <> bssNone then
     begin
-      Border := False;
+      HasBorderStyle := True;
       BrdLeft := MargArray[BorderLeftWidth];
     end;
-    if Border then
-      BorderStyle := Prop.GetBorderStyle
-    else
-      BorderStyle := bssNone;
+//    if Border then
+//      BorderStyle := Prop.GetBorderStyle
+//    else
+//      BorderStyle := bssNone;
 
     for J := BorderTopColor to BorderLeftColor do
       if MargArray[J] = clNone then
@@ -7820,7 +7812,7 @@ begin
     PadBottom := TablePadding;
   if PadLeft < 0 then
     PadLeft := TablePadding;
-  if Border and (BorderStyle = bssNone) then
+  if Border and not HasBorderStyle then // (BorderStyle = bssNone) then
   begin
     BrdLeft := Max(1, BrdLeft);
     BrdRight := Max(1, BrdRight);
@@ -7967,7 +7959,7 @@ begin
       begin
         {slip under border to fill gap when printing}
         BRect := Rect(PL, FT, PR, FT + IH);
-        if BorderStyle = bssNone then
+        if not HasBorderStyle then // BorderStyle = bssNone then
         begin
           if MargArray[BorderLeftWidth] > 0 then
             Dec(BRect.Left);
@@ -8362,7 +8354,7 @@ begin
       case Which of
         BorderSy:
           //BG, 15.10.2010: issue 5: set border width only, if style does not set any border width:
-          if not Prop.HasBorder then
+          if not Prop.HasBorderWidth then
             if Name = '' then
               BorderWidth := 1
             else
@@ -10641,7 +10633,7 @@ begin
     FormControls.Add(FCO);
     AddChar(FmCtl, Index); {marker for FormControl}
   end;
-  if Prop.GetBorderStyle <> bssNone then {start of inline border}
+  if Prop.HasBorderStyle then {start of inline border}
     Document.ProcessInlines(Index, Prop, True);
   Result := FCO;
 end;
@@ -11167,7 +11159,7 @@ var
 
   procedure LineComplete(NN: Integer);
   var
-    I, J, DHt, Desc, Tmp, TmpRt, Cnt, Index, H, SB, SA, Tmp1: Integer;
+    I, J, DHt, Desc, Tmp, TmpRt, Cnt, Index, H, SB, SA: Integer;
     FO: TFontObj;
     Align: AlignmentType;
     FormAlign: AlignmentType;
@@ -13486,7 +13478,7 @@ begin
   for I := Count - 1 downto 1 do
     if Items[I].Proptag = Tag then
     begin
-      if Items[I].GetBorderStyle <> bssNone then
+      if Items[I].HasBorderStyle then
       {this would be the end of an inline border}
         MasterList.ProcessInlines(SIndex, Items[I], False);
       Delete(I);
@@ -13548,10 +13540,10 @@ var
   Index: PropIndices;
 begin
   inherited;
-  BorderStyle := bssSolid;
+  HasBorderStyle := True;
   for Index := BorderTopStyle to BorderLeftStyle do
     if VarIsIntNull(MargArrayO[Index]) or VarIsEmpty(MargArrayO[Index]) then
-      MargArrayO[Index] := BorderStyle;
+      MargArrayO[Index] := bssSolid;
   for Index := BorderTopColor to BorderLeftColor do
     if VarIsIntNull(MargArrayO[Index]) or VarIsEmpty(MargArrayO[Index]) then
       MargArrayO[Index] := RGB(165, 172, 178);
@@ -13623,7 +13615,7 @@ begin
     end;
 
   else
-    StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderStyle, self.BorderWidth, AutoCount, MargArray);
+    StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, self.BorderWidth, AutoCount, MargArray);
     BorderWidth.Left := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
     BorderWidth.Right := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
     BorderWidth.Top  := MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop];
@@ -13895,7 +13887,7 @@ begin
     NoBorder := True; {will have inline border instead}
     BorderSize := 0;
   end
-  else if Prop.GetBorderStyle <> bssNone then
+  else if Prop.HasBorderStyle then
   begin
     Inc(HSpaceL, MargArray[BorderLeftWidth]);
     Inc(HSpaceR, MargArray[BorderRightWidth]);
@@ -13942,7 +13934,7 @@ end;
 //-- BG ---------------------------------------------------------- 20.09.2009 --
 constructor TSectionBase.Create(AMasterList: ThtDocument; AProp: TProperties);
 begin
-  create(AMasterList, AProp.Display);
+  Create(AMasterList, AProp.Display);
 end;
 
 constructor TSectionBase.CreateCopy(AMasterList: ThtDocument; T: TSectionBase);
