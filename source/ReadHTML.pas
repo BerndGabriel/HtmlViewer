@@ -259,6 +259,7 @@ begin
   LCToken := TokenObj.Create;
   DocStack := TStack.Create;
   FRulesets := TRulesetList.Create;
+  StyleParser.THtmlStyleParser.ParseCssDefaults(FRulesets);
   Self.Doc := Doc;
 end;
 

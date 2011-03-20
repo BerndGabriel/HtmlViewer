@@ -800,7 +800,6 @@ var
 
     procedure DoMedia;
     var
-      Identifier: ThtString;
       Media: TMediaTypes;
       Depth: Integer;
     begin

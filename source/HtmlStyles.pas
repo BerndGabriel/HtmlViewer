@@ -30,7 +30,7 @@ unit HtmlStyles;
 interface
 
 uses
-  Classes, Contnrs, Variants,
+  Windows, Classes, Contnrs, Variants,
   //
   HtmlGlobals,
   StyleUn;
@@ -116,7 +116,7 @@ type
   TAttributeMatchOperator = (
     amoSet,        // [name] : matches, if attr is set and has any value.
     amoEquals,     // [name=value] : matches, if attr equals value.
-    amoContains,   // [name~=value] : matches, if attr is a white space separated list of values and value is of these values.
+    amoContains,   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
     amoStartsWith  // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
   );
 
@@ -136,8 +136,12 @@ type
   private
     function GetItem(Index: Integer): TAttributeMatch;
   public
+    function Same(List: TAttributeMatchList): Boolean; overload; {$ifdef UseInline} inline; {$endif}
+    procedure Sort; overload; {$ifdef UseInline} inline; {$endif}
     property Items[Index: Integer]: TAttributeMatch read GetItem; default;
   end;
+
+function CompareAttributeMatches(P1, P2: Pointer): Integer;
 
 type
   TPseudo = (
@@ -205,15 +209,19 @@ type
     FIds: ThtStringArray;
     FPseudos: TPseudos;
     FAttributeMatches: TAttributeMatchList;
+    FSorted: Boolean;
+    function AttributeMatchesCount: Integer; {$ifdef UseInline} inline; {$endif}
+    procedure Sort; {$ifdef UseInline} inline; {$endif}
   public
     destructor Destroy; override;
-    function Matches(const ATag, AId: ThtString; const AClasses: ThtStringArray; const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean; virtual;
+    function MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray; const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean; virtual;
+    function Same(Selector: TSelector): Boolean; virtual;
     function ToString: ThtString; virtual;
-    procedure AddAttributeMatch(AAttributeMatch: TAttributeMatch);
-    procedure AddClass(AClass: ThtString);
-    procedure AddId(AId: ThtString);
-    procedure AddPseudo(APseudo: TPseudo);
-    procedure AddTag(ATag: ThtString);
+    procedure AddAttributeMatch(AAttributeMatch: TAttributeMatch); {$ifdef UseInline} inline; {$endif}
+    procedure AddClass(AClass: ThtString); {$ifdef UseInline} inline; {$endif}
+    procedure AddId(AId: ThtString); {$ifdef UseInline} inline; {$endif}
+    procedure AddPseudo(APseudo: TPseudo); {$ifdef UseInline} inline; {$endif}
+    procedure AddTag(ATag: ThtString); {$ifdef UseInline} inline; {$endif}
   end;
 
   // a compound selector
@@ -224,8 +232,8 @@ type
   public
     constructor Create(LeftHand: TSelector; Combinator: TCombinator);
     destructor Destroy; override;
+    function MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray; const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean; override;
     function ToString: ThtString; override;
-    function Matches(const ATag, AId: ThtString; const AClasses: ThtStringArray; const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean; override;
   end;
 
   TSelectorList = class(TObjectList)
@@ -313,8 +321,16 @@ type
     property Items[Index: Integer]: TRuleset read GetItem; default;
   end;
 
+function GetCssDefaults: TStream;
 
 implementation
+
+{$R css_defaults.res}
+
+function GetCssDefaults: TStream;
+begin
+  Result := TResourceStream.Create(hInstance, 'CSS_DEFAULTS', RT_RCDATA);
+end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
@@ -439,6 +455,43 @@ begin
   Result := Get(Index);
 end;
 
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function CompareAttributeMatches(P1, P2: Pointer): Integer;
+var
+  A1: TAttributeMatch absolute P1;
+  A2: TAttributeMatch absolute P2;
+begin
+  Result := htCompareString(A1.Name, A2.Name);
+  if Result <> 0 then
+    exit;
+  Result := Ord(A1.Oper) - Ord(A2.Oper);
+  if Result <> 0 then
+    exit;
+  Result := htCompareString(A1.Value, A2.Value);
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function TAttributeMatchList.Same(List: TAttributeMatchList): Boolean;
+var
+  I, N: Integer;
+begin
+  N := Count;
+  Result := N = List.Count;
+  if Result then
+    for I := 0 To N - 1 do
+      if CompareAttributeMatches(Self[I], List[I]) <> 0 then
+      begin
+        Result := False;
+        break;
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+procedure TAttributeMatchList.Sort;
+begin
+  inherited Sort(CompareAttributeMatches);
+end;
+
 { TSelector }
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
@@ -485,6 +538,15 @@ begin
   FTags[Index] := ATag;
 end;
 
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function TSelector.AttributeMatchesCount: Integer;
+begin
+  if FAttributeMatches <> nil then
+    Result := FAttributeMatches.Count
+  else
+    Result := 0;
+end;
+
 //-- BG ---------------------------------------------------------- 14.03.2011 --
 destructor TSelector.Destroy;
 begin
@@ -493,7 +555,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-function TSelector.Matches(const ATag, AId: ThtString; const AClasses: ThtStringArray;
+function TSelector.MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray;
   const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean;
 // all values of the selector must match the given params
 var
@@ -502,20 +564,21 @@ var
   Match: TAttributeMatch;
 begin
   Result := False;
-  for Index := low(FIds) to high(FIds) do
-    if FIds[Index] <> AId then
-      exit;
-
-  for Index := low(FClasses) to high(FClasses) do
-    if FTags[Index] <> ATag then
-      exit;
-
-  for Index := low(FTags) to high(FTags) do
-    if FTags[Index] <> ATag then
-      exit;
 
   if FPseudos <> [] then
     if not (FPseudos >= APseudos) then
+      exit;
+
+  for Index := Low(FTags) to High(FTags) do
+    if FTags[Index] <> ATag then
+      exit;
+
+  for Index := Low(FIds) to High(FIds) do
+    if FIds[Index] <> AId then
+      exit;
+
+  for Index := Low(FClasses) to High(FClasses) do
+    if IndexOfString(AClasses, FClasses[Index]) < 0 then
       exit;
 
   if FAttributeMatches <> nil then
@@ -528,18 +591,57 @@ begin
       Attribute := AAttributes.Objects[J];
 //TODO -oBG, 14.03.2011: compare attribute:       
       case Match.Oper of
-        amoSet: ;
+        amoSet:        // [name] : matches, if attr is set and has any value.
+          ;
 
-        amoEquals:;
+        amoEquals:     // [name=value] : matches, if attr equals value.
+//          if htCompareString(Match.Value, Attribute.AsString) <> 0 then
+//            break
+          ;
 
-        amoContains:;
+        amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
+//          if htInString(Match.Value, Attribute.AsString) = 0 then
+//            break
+          ;
 
-        amoStartsWith:;
-
+        amoStartsWith: // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
+//          if htCompareString(Match.Value, Copy(Attribute.AsString, 1, Length(Match.Value))) <> 0 then
+//            break
+          ;
       end;
     end;
 
   Result := True;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function TSelector.Same(Selector: TSelector): Boolean;
+begin
+  Sort;
+  Selector.Sort;
+  Result := False;
+  if Length(FTags) = Length(Selector.FTags) then
+    if Length(FClasses) = Length(Selector.FClasses) then
+      if Length(FIds) = Length(Selector.FIds) then
+        if AttributeMatchesCount = Selector.AttributeMatchesCount then
+          if FPseudos = Selector.FPseudos then
+            if SameStringArray(FTags, Selector.FTags) then
+              if SameStringArray(FClasses, Selector.FClasses) then
+                Result := FAttributeMatches.Same(Selector.FAttributeMatches);
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+procedure TSelector.Sort;
+begin
+  if not FSorted then
+  begin
+    SortStringArray(FTags);
+    SortStringArray(FClasses);
+    SortStringArray(FIds);
+    if FAttributeMatches <> nil then
+      FAttributeMatches.Sort;
+    FSorted := True;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
@@ -582,12 +684,12 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-function TCombinedSelector.Matches(const ATag, AId: ThtString; const AClasses: ThtStringArray;
+function TCombinedSelector.MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray;
   const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean;
 // all values of the selector must match the given params and the relation to the left hand selector.
 begin
 //TODO -oBG, 14.03.2011: add document tree param and evaluate relation to left hand selector.
-  Result := inherited Matches(ATag, AId, AClasses, APseudos, AAttributes);
+  Result := inherited MatchesTag(ATag, AId, AClasses, APseudos, AAttributes);
   if Result then
     case FCombinator of
       scDescendant:;

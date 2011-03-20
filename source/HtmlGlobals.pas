@@ -261,6 +261,10 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
+function SameStringArray(const A1, A2: ThtStringArray): Boolean;
+function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
+procedure SortStringArray(A: ThtStringArray);
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -510,6 +514,77 @@ begin
     Result := Str;
     CharLowerBuffW(@Result[1], Length(Result));
   {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function htCompareString(S1, S2: ThtString): Integer;
+begin
+  {$ifdef UNICODE}
+    Result := CompareStr(S1, S2);
+  {$else}
+    Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2));
+  {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
+begin
+  Result := Length(A) - 1;
+  while (Result >= 0) and (htCompareString(A[Result], S) <> 0) do
+    Dec(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function SameStringArray(const A1, A2: ThtStringArray): Boolean;
+var
+  I, N: Integer;
+begin
+  N := Length(A1);
+  Result := N = Length(A2);
+  if Result then
+    for I := 0 To N - 1 do
+      if htCompareString(A1[I], A2[I]) <> 0 then
+      begin
+        Result := False;
+        break;
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+procedure SortStringArray(A: ThtStringArray);
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J: Integer;
+    P, T: ThtString;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := A[(L + R) shr 1];
+      repeat
+        while htCompareString(A[I], P) < 0 do
+          Inc(I);
+        while htCompareString(A[J], P) > 0 do
+          Dec(J);
+        if I <= J then
+        begin
+          T := A[I];
+          A[I] := A[J];
+          A[J] := T;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then
+        QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+
+begin
+  if length(A) > 1 then
+    QuickSort(Low(A), High(A));
 end;
 
 { ThtEdit }

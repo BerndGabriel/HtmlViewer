@@ -93,6 +93,7 @@ type
     procedure setMediaTypes(const Value: TMediaTypes);
     procedure setSupportedMediaTypes(const Value: TMediaTypes);
   public
+    class procedure ParseCssDefaults(Rulesets: TRulesetList); overload;
     constructor Create(Origin: TPropertyOrigin; Doc: TBuffer; const LinkPath: ThtString = '');
 
     // ParseProperties() parses any tag's style attribute. If starts with quote, then must end with same quote.
@@ -111,9 +112,22 @@ type
     property OnGetDocument: TGetDocumentEvent read FOnGetDocument write FOnGetDocument;
   end;
 
-
 implementation
 
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function GetCssDefaults: TBuffer; overload;
+var
+  Stream: TStream;
+begin
+  Stream := HtmlStyles.GetCssDefaults;
+  try
+    Result := TBuffer.Create(Stream, 'css-defaults');
+  finally
+    Stream.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
 function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
 begin
   if mtAll in MediaTypes then
@@ -268,6 +282,7 @@ begin
   else
     checkPosition(LIdentPos);
 end;
+
 //-- BG ---------------------------------------------------------- 13.03.2011 --
 function THtmlStyleParser.GetString(out Str: ThtString): Boolean;
 // Must start and end with single or double quote.
@@ -552,6 +567,24 @@ begin
       DoImport
     else if AtRule = 'charset' then
       DoCharset;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+class procedure THtmlStyleParser.ParseCssDefaults(Rulesets: TRulesetList);
+var
+  CssDefaults: TBuffer;
+begin
+  CssDefaults := GetCssDefaults;
+  try
+    with THtmlStyleParser.Create(poDefault, CssDefaults) do
+      try
+        ParseStyleSheet(Rulesets);
+      finally
+        Free;
+      end;
+  finally
+    CssDefaults.Free;
   end;
 end;
 
@@ -1200,8 +1233,8 @@ end;
 procedure THtmlStyleParser.ParseStyleTag(var LCh: ThtChar; Rulesets: TRulesetList);
 begin
   Self.LCh := LCh;
-  FCanCharset := True;
-  FCanImport := True;
+  FCanCharset := False;
+  FCanImport := False;
   SkipWhiteSpace;
   ParseSheet(Rulesets);
   LCh := Self.LCh;

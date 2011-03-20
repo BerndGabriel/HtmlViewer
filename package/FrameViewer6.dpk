@@ -56,6 +56,8 @@ contains
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  StyleParser in '..\source\StyleParser.pas',
+  HtmlStyles in '..\source\HtmlStyles.pas';
 
 end.

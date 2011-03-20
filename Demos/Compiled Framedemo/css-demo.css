@@ -2,6 +2,9 @@
 @import url(imported.css);
 @import "screen.css" screen;
 @import url(not-existing.css);
+    @import url("örl(\"ürl\")") screen , tv , uuu;
+    @import "örl(\"ärl\")" tv , uuu;
+    @import "all";
 
 body {
   background-color: blue;
