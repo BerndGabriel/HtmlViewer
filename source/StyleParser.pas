@@ -30,8 +30,8 @@ unit StyleParser;
 interface
 
 uses
-  Graphics, Classes, SysUtils,
-
+  Graphics, Classes, SysUtils, Variants,
+  //
   UrlSubs,
   StyleUn,
   HtmlBuffer,
@@ -795,14 +795,19 @@ function THtmlStyleParser.ParseProperties(Properties: TPropertyList): Boolean;
   end;
 
 var
-  Values: ThtStringArray;
   Precedence: TPropertyPrecedence;
 
-  procedure ProcessProperty(Prop: PropIndices; const Value: Variant); overload;
+  procedure ProcessProperty(Prop: PropIndices; const Value: Variant);
   begin
     if FMediaTypes * FSupportedMediaTypes <> [] then
-      Properties.Add(TProperty.Create(Prop, Precedence, Value));
+      if VarIsStr(Value) and (Value = 'inherit') then
+        Properties.Add(TProperty.Create(Prop, Precedence, Inherit))
+      else
+        Properties.Add(TProperty.Create(Prop, Precedence, Value));
   end;
+
+var
+  Values: ThtStringArray;
 
   procedure DoBackground;
   { do the Background shorthand property specifier }
@@ -1110,6 +1115,28 @@ function THtmlStyleParser.ParseSelectors(Selectors: TSelectorList): Boolean;
               Selector.AddClass(Name)
             else
               exit;
+          end;
+
+          '[':
+          begin
+            GetCh;
+            //TODO -oBG, 21.03.2011: get attribute match
+            repeat
+              case LCh of
+                ']':
+                begin
+                  GetCh;
+                  Result := True;
+                  break;
+                end;
+
+                EofChar, '{':
+                begin
+                  Result := False;
+                  break;
+                end;
+              end;
+            until False;
           end;
 
         else

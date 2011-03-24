@@ -126,6 +126,8 @@ type
     Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
     constructor Create(ASym: Symb; AValue: Integer; const NameStr, ValueStr: ThtString; ACodePage: Integer);
+    property AsString: ThtString read Name; 
+    property AsInteger: Integer read Value; 
   end;
 
   TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
@@ -406,11 +408,13 @@ type
 {$ENDIF}
 
 //------------------------------------------------------------------------------
-// TIDObject is base class for all tag objects.
+// TIDObject is base class for all objects the HtmlViewer can scroll to.
 //------------------------------------------------------------------------------
 // If they have an ID, the parser puts them into the HtmlViewer's IDNameList,
 // a TIDObjectList, where they can be obtained from by ID.
 // Their Y coordinates can be retrieved and HtmlViewer can scroll to them.
+//
+// Most decendents are objects representing an HTML tag, except TChPosObj.
 //------------------------------------------------------------------------------
 
   TIDObject = class(TObject)
@@ -1300,7 +1304,7 @@ var
   I: Integer;
 begin
   for I := 0 to Count - 1 do
-    if Items[I].which = Sy then
+    if Items[I].Which = Sy then
     begin
       Result := True;
       T := Items[I];

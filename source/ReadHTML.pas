@@ -193,6 +193,9 @@ type
     property Title: ThtString read getTitle;
   end;
 
+function TryStrToReservedWord(const Str: ThtString; out Sy: Symb): Boolean;
+function SymbToAttributeName(Sy: Symb): ThtString;
+
 implementation
 
 uses
@@ -223,6 +226,7 @@ var
   ReservedWords: ThtStringList;
   ReservedWordsIndex: array [Symb] of Integer;
   AttributeNames: ThtStringList;
+  AttributeNamesIndex: array [Symb] of Integer;
   SymbolNames: array [Symb] of ThtString;
 
 function PropStackIndex: Integer;
@@ -251,6 +255,29 @@ begin
     Result := CommandSy; // no match
 end;
 
+function TryStrToReservedWord(const Str: ThtString; out Sy: Symb): Boolean;
+var
+  I: Integer;
+begin
+  Result := ReservedWords.Find(Str, I);
+  if Result then
+    Sy := PResWord(ReservedWords.Objects[I]).Symbol
+  else
+    Sy := OtherSy;
+end;
+
+function SymbToAttributeName(Sy: Symb): ThtString;
+var
+  I: Integer;
+begin
+  I := AttributeNamesIndex[Sy];
+  if I >= 0 then
+    Result := PSymbol(AttributeNames.Objects[I]).Name
+  else
+    Result := ''; // no match
+end;
+
+
 { THtmlParser }
 
 constructor THtmlParser.Create(Doc: TBuffer);
@@ -265,7 +292,7 @@ end;
 
 destructor THtmlParser.Destroy;
 begin
-  FRulesets.ToString;
+  FRulesets.ToString; // for debugging only: it writes the resulting rulesets to file c:\temp\rulesets.css
   FRulesets.Free;
   DocStack.Free;
   LCToken.Free;
@@ -4603,6 +4630,7 @@ procedure InitAttributes;
 var
   I: Integer;
   P: PSymbol;
+  S: TSymbol;
 begin
   // Put the Attributes into a sorted StringList for faster access.
   if AttributeNames = nil then
@@ -4616,6 +4644,16 @@ begin
       SetSymbolName(P.Value, P.Name);
     end;
     AttributeNames.Sort;
+
+    // initialize AttributeNamesIndex and SymbolNames
+    for S := low(Symb) to high(Symb) do
+      AttributeNamesIndex[S] := -1;
+    for I := 0 to AttributeNames.Count - 1 do
+    begin
+      P := PSymbol(AttributeNames.Objects[I]);
+      AttributeNamesIndex[P.Value] := I;
+      SetSymbolName(P.Value, P.Name);
+    end;
   end;
 end;
 

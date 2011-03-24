@@ -33,6 +33,7 @@ uses
   Windows, Classes, Contnrs, Variants,
   //
   HtmlGlobals,
+  HtmlUn2,
   StyleUn;
 
 //------------------------------------------------------------------------------
@@ -80,6 +81,13 @@ const
     (ppdefault, ppAgent, ppUserImportant, ppStyleImportant, ppAuthorImportant)
   );
 
+// custom variant types range from $110 (272) to $7FF (2047)
+const
+  varInherit = $123; // a value of this variant type indicates, that this value is to be inherited from parent object.
+
+function Inherit: Variant; {$ifdef UseInline} inline; {$endif}
+function VarIsInherit(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
+
 type
   TProperty = class
   private
@@ -120,6 +128,15 @@ type
     amoStartsWith  // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
   );
 
+const
+  CAttributeMatchOperator: array [TAttributeMatchOperator] of string = (
+    '',     // [name] : matches, if attr is set and has any value.
+    '=',    // [name=value] : matches, if attr equals value.
+    '~=',   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
+    '|='    // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
+  );
+
+type
   TAttributeMatch = class
   private
     FName: ThtString;
@@ -127,6 +144,7 @@ type
     FValue: ThtString;
   public
     constructor Create(const Name: ThtString; Oper: TAttributeMatchOperator; const Value: ThtString);
+    function ToString: ThtString;
     property Name: ThtString read FName;
     property Oper: TAttributeMatchOperator read FOper;
     property Value: ThtString read FValue;
@@ -137,6 +155,7 @@ type
     function GetItem(Index: Integer): TAttributeMatch;
   public
     function Same(List: TAttributeMatchList): Boolean; overload; {$ifdef UseInline} inline; {$endif}
+    function ToString: ThtString;
     procedure Sort; overload; {$ifdef UseInline} inline; {$endif}
     property Items[Index: Integer]: TAttributeMatch read GetItem; default;
   end;
@@ -145,8 +164,9 @@ function CompareAttributeMatches(P1, P2: Pointer): Integer;
 
 type
   TPseudo = (
-    // pseudo classes
     pcNone,
+
+    // pseudo classes
     pcLink,
     pcVisited,
     pcActive,
@@ -162,6 +182,8 @@ type
     peAfter
   );
   TPseudos = set of TPseudo;
+  TPseudoClass = pcLink..pcFirstChild;
+  TPseudoElement = peFirstLine..peAfter;
 
 const
   CPseudo: array[TPseudo] of ThtString = (
@@ -181,9 +203,29 @@ const
     'before',
     'after');
 
+  PseudoClasses = [
+    pcLink,
+    pcVisited,
+    pcActive,
+    pcHover,
+    pcFocus,
+    pcFirstChild
+    //TODO: pcLanguage,  requires additional data
+  ];
+
+  PseudoElements = [
+    peFirstLine,
+    peFirstLetter,
+    peBefore,
+    peAfter
+  ];
+
 function TryStrToPseudo(const Str: ThtString; out Pseudo: TPseudo): Boolean;
 
 type
+  TSymbol = Symb;
+  TSymbols = array of TSymbol;
+
   TCombinator = (
     scNone,       // F      : matches any F
     scDescendant, // E F    : matches F, if it is descendant of E
@@ -191,15 +233,9 @@ type
     scFollower    // E + F  : matches F, if it immediately follows sibling E
   );
 
-  // http://www.w3.org/TR/2010/WD-CSS2-20101207/cascade.html#specificity
-  TSelectorSpecificityItem = (
-    ssFromStyleAttr,  // 1, if from tags's style attribute
-    ssNumberOfIDs,    // number of ID attributes in the selector
-    ssNumberOfNonIDs, // number of other attributes and pseudo-classes in the selector
-    ssNumberOfElems,  // number of element names and pseudo-elements in the selector
-    ssSequence        // sequential number of creation (imported rules are considered to be before any own rule).
+  TSelectorState = set of (
+    ssSorted
   );
-  TSelectorSpecificity = array [TSelectorSpecificityItem] of Integer;
 
   // a simple selector
   TSelector = class
@@ -209,19 +245,30 @@ type
     FIds: ThtStringArray;
     FPseudos: TPseudos;
     FAttributeMatches: TAttributeMatchList;
-    FSorted: Boolean;
-    function AttributeMatchesCount: Integer; {$ifdef UseInline} inline; {$endif}
+    FIsFromStyleAttr: Boolean;
+    FSelectorState: TSelectorState;
+    FNumberOfElements: Integer;
+    FNumberOfNonIds: Integer;
+    function NumberOfIDs: Integer; {$ifdef UseInline} inline; {$endif}
     procedure Sort; {$ifdef UseInline} inline; {$endif}
+    property NumberOfElements: Integer read FNumberOfElements;
+    property NumberOfNonIDs: Integer read FNumberOfNonIds;
   public
     destructor Destroy; override;
-    function MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray; const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean; virtual;
+    function AttributeMatchesCount: Integer; {$ifdef UseInline} inline; {$endif}
     function Same(Selector: TSelector): Boolean; virtual;
     function ToString: ThtString; virtual;
+    function CompareSpecificity(ASelector: TSelector): Integer;
     procedure AddAttributeMatch(AAttributeMatch: TAttributeMatch); {$ifdef UseInline} inline; {$endif}
     procedure AddClass(AClass: ThtString); {$ifdef UseInline} inline; {$endif}
     procedure AddId(AId: ThtString); {$ifdef UseInline} inline; {$endif}
     procedure AddPseudo(APseudo: TPseudo); {$ifdef UseInline} inline; {$endif}
-    procedure AddTag(ATag: ThtString); {$ifdef UseInline} inline; {$endif}
+    procedure AddTag(ATag: ThtString);
+    property Tags: ThtStringArray read FTags;
+    property Classes: ThtStringArray read FClasses;
+    property Ids: ThtStringArray read FIds;
+    property Pseudos: TPseudos read FPseudos;
+    property AttributeMatches: TAttributeMatchList read FAttributeMatches;
   end;
 
   // a compound selector
@@ -232,8 +279,9 @@ type
   public
     constructor Create(LeftHand: TSelector; Combinator: TCombinator);
     destructor Destroy; override;
-    function MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray; const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean; override;
     function ToString: ThtString; override;
+    property Combinator: TCombinator read FCombinator;
+    property LeftHand: TSelector read FLeftHand;
   end;
 
   TSelectorList = class(TObjectList)
@@ -321,12 +369,61 @@ type
     property Items[Index: Integer]: TRuleset read GetItem; default;
   end;
 
+//------------------------------------------------------------------------------
+// resulting properties
+//------------------------------------------------------------------------------
+// A temporary collection of properties while computing the effective values.
+//------------------------------------------------------------------------------
+
+  TResultingProperty = class
+  // references data only, does not own it.
+  private
+    FProperty: TProperty;
+    FSelector: TSelector;
+  public
+    function Compare(const AProperty: TProperty; const ASelector: TSelector): Integer; {$ifdef UseInline} inline; {$endif}
+    procedure Update(const AProperty: TProperty; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
+  end;
+
+  TResultingProperties = array [PropIndices] of TResultingProperty;
+
+  // How to compute the resulting properties:
+  // 1) Fill map with properties from style attribute (highest prio) using UpdateFromStyleAttribute(),
+  // 2) Walk through ruleset list in reverse order. If a selector of the ruleset matches,
+  //    then call UpdateFromProperties() with the ruleset's properties and if the combination has a
+  //    higher cascading order, this becomes the new resulting value.
+  // 3) Fill up missing properties with other tag attributes (like color, width, height, ...).
+  //    Actually you must not put these properties to the TResultingPropertyMap. Just collect these
+  //    data in your tag class and overwrite the values with the existing ones in TResultingPropertyMap.
+  //
+  // Using reverse order minimizes comparing and update effort.
+  TResultingPropertyMap = class
+  private
+    FStyle: TSelector; // the selector for updating from style attributes
+    FProps: TResultingProperties; // the resulting properties
+    procedure Update(const AProperty: TProperty; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
+  public
+    destructor Destroy; override;
+    function Get(Index: PropIndices): TResultingProperty; {$ifdef UseInline} inline; {$endif}
+    procedure UpdateFromStyleAttribute(const Properties: TPropertyList); {$ifdef UseInline} inline; {$endif}
+    procedure UpdateFromProperties(const Properties: TPropertyList; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
+    property ResultingProperties[Index: PropIndices]: TResultingProperty read Get; default;
+  end;
+
+//------------------------------------------------------------------------------
+// 
+//------------------------------------------------------------------------------
+
 function GetCssDefaults: TStream;
 
 implementation
 
+uses
+  ReadHtml; //TODO -oBG, 23.03.2011: move SymbToAttributeName() to a unit in a lower hierarchy level!
+
 {$R css_defaults.res}
 
+//-- BG ---------------------------------------------------------- 20.03.2011 --
 function GetCssDefaults: TStream;
 begin
   Result := TResourceStream.Create(hInstance, 'CSS_DEFAULTS', RT_RCDATA);
@@ -378,6 +475,21 @@ begin
     end;
   Result := False;
 end;
+
+//-- BG ---------------------------------------------------------- 21.03.2011 --
+function Inherit: Variant;
+// returns a variant of type varInherit
+begin
+  TVarData(Result).VType := varInherit;
+end;
+
+//-- BG ---------------------------------------------------------- 21.03.2011 --
+function VarIsInherit(const Value: Variant): Boolean;
+// returns true, if Value is of type varInherit
+begin
+  Result := VarType(Value) = varInherit;
+end;
+
 
 { TProperty }
 
@@ -447,6 +559,16 @@ begin
   inherited Create;
 end;
 
+//-- BG ---------------------------------------------------------- 21.03.2011 --
+function TAttributeMatch.ToString: ThtString;
+begin
+  case Oper of
+    amoSet: Result := '[' + Name + ']';
+  else
+    Result := '[' + Name + CAttributeMatchOperator[Oper] + Value + ']';
+  end;
+end;
+
 { TAttributeMatchList }
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
@@ -492,6 +614,16 @@ begin
   inherited Sort(CompareAttributeMatches);
 end;
 
+//-- BG ---------------------------------------------------------- 21.03.2011 --
+function TAttributeMatchList.ToString: ThtString;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 0 to Count - 1 do
+    Result := Result + Self[I].ToString; 
+end;
+
 { TSelector }
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
@@ -500,6 +632,7 @@ begin
   if FAttributeMatches = nil then
     FAttributeMatches := TAttributeMatchList.Create(True);
   FAttributeMatches.Add(AAttributeMatch);
+  Inc(FNumberOfNonIds);
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
@@ -510,6 +643,7 @@ begin
   Index := Length(FClasses);
   SetLength(FClasses, Index + 1);
   FClasses[Index] := AClass;
+  Inc(FNumberOfNonIds);
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
@@ -520,12 +654,20 @@ begin
   Index := Length(FIds);
   SetLength(FIds, Index + 1);
   FIds[Index] := AId;
+  Inc(FNumberOfElements);
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
 procedure TSelector.AddPseudo(APseudo: TPseudo);
 begin
+  if APseudo in FPseudos then
+    exit;
+
   Include(FPseudos, APseudo);
+  if APseudo in PseudoElements then
+    Inc(FNumberOfElements)
+  else //if APseudo in PseudoClasses then
+    Inc(FNumberOfNonIds);
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
@@ -536,6 +678,7 @@ begin
   Index := Length(FTags);
   SetLength(FTags, Index + 1);
   FTags[Index] := ATag;
+  Inc(FNumberOfElements);
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
@@ -547,6 +690,25 @@ begin
     Result := 0;
 end;
 
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+function TSelector.CompareSpecificity(ASelector: TSelector): Integer;
+// http://www.w3.org/TR/2010/WD-CSS2-20101207/cascade.html#specificity
+begin
+  Result := Ord(FIsFromStyleAttr) - Ord(ASelector.FIsFromStyleAttr);
+  if Result <> 0 then
+    exit;
+
+  Result := NumberOfIDs - ASelector.NumberOfIDs;
+  if Result <> 0 then
+    exit;
+
+  Result := NumberOfNonIDs - ASelector.NumberOfNonIDs;
+  if Result <> 0 then
+    exit;
+
+  Result := NumberOfElements - ASelector.NumberOfElements;
+end;
+
 //-- BG ---------------------------------------------------------- 14.03.2011 --
 destructor TSelector.Destroy;
 begin
@@ -554,64 +716,10 @@ begin
   inherited;
 end;
 
-//-- BG ---------------------------------------------------------- 14.03.2011 --
-function TSelector.MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray;
-  const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean;
-// all values of the selector must match the given params
-var
-  Index, J: Integer;
-  Attribute: TObject;
-  Match: TAttributeMatch;
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+function TSelector.NumberOfIDs: Integer;
 begin
-  Result := False;
-
-  if FPseudos <> [] then
-    if not (FPseudos >= APseudos) then
-      exit;
-
-  for Index := Low(FTags) to High(FTags) do
-    if FTags[Index] <> ATag then
-      exit;
-
-  for Index := Low(FIds) to High(FIds) do
-    if FIds[Index] <> AId then
-      exit;
-
-  for Index := Low(FClasses) to High(FClasses) do
-    if IndexOfString(AClasses, FClasses[Index]) < 0 then
-      exit;
-
-  if FAttributeMatches <> nil then
-    for Index := 0 to FAttributeMatches.Count - 1 do
-    begin
-      Match := FAttributeMatches[Index];
-      J := AAttributes.IndexOf(Match.Name);
-      if J < 0 then
-        exit;
-      Attribute := AAttributes.Objects[J];
-//TODO -oBG, 14.03.2011: compare attribute:       
-      case Match.Oper of
-        amoSet:        // [name] : matches, if attr is set and has any value.
-          ;
-
-        amoEquals:     // [name=value] : matches, if attr equals value.
-//          if htCompareString(Match.Value, Attribute.AsString) <> 0 then
-//            break
-          ;
-
-        amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
-//          if htInString(Match.Value, Attribute.AsString) = 0 then
-//            break
-          ;
-
-        amoStartsWith: // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
-//          if htCompareString(Match.Value, Copy(Attribute.AsString, 1, Length(Match.Value))) <> 0 then
-//            break
-          ;
-      end;
-    end;
-
-  Result := True;
+  Result := Length(FIds);
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
@@ -625,22 +733,22 @@ begin
       if Length(FIds) = Length(Selector.FIds) then
         if AttributeMatchesCount = Selector.AttributeMatchesCount then
           if FPseudos = Selector.FPseudos then
-            if SameStringArray(FTags, Selector.FTags) then
-              if SameStringArray(FClasses, Selector.FClasses) then
+            if SameStringArray(FClasses, Selector.FClasses) then
+              if SameStringArray(FTags, Selector.FTags) then
                 Result := FAttributeMatches.Same(Selector.FAttributeMatches);
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 procedure TSelector.Sort;
 begin
-  if not FSorted then
+  if not (ssSorted in FSelectorState) then
   begin
     SortStringArray(FTags);
     SortStringArray(FClasses);
     SortStringArray(FIds);
     if FAttributeMatches <> nil then
       FAttributeMatches.Sort;
-    FSorted := True;
+    Include(FSelectorState, ssSorted);
   end;
 end;
 
@@ -664,6 +772,12 @@ begin
   for P := Low(TPseudo) to High(TPseudo) do
     if P in FPseudos then
       Result := Result + ':' + CPseudo[P];
+
+  if Result = '' then
+    Result := '*';
+
+  if FAttributeMatches <> nil then
+    Result := Result + FAttributeMatches.ToString;
 end;
 
 { TCombinedSelector }
@@ -681,24 +795,6 @@ destructor TCombinedSelector.Destroy;
 begin
   FLeftHand.Free;
   inherited;
-end;
-
-//-- BG ---------------------------------------------------------- 14.03.2011 --
-function TCombinedSelector.MatchesTag(const ATag, AId: ThtString; const AClasses: ThtStringArray;
-  const APseudos: TPseudos; const AAttributes: TAttributeList): Boolean;
-// all values of the selector must match the given params and the relation to the left hand selector.
-begin
-//TODO -oBG, 14.03.2011: add document tree param and evaluate relation to left hand selector.
-  Result := inherited MatchesTag(ATag, AId, AClasses, APseudos, AAttributes);
-  if Result then
-    case FCombinator of
-      scDescendant:;
-
-      scChild:;
-
-      scFollower:;
-
-    end;
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
@@ -851,6 +947,74 @@ begin
   finally
     Strings.Free;
   end;
+end;
+
+{ TResultingProperty }
+
+function TResultingProperty.Compare(const AProperty: TProperty; const ASelector: TSelector): Integer;
+begin
+  Result := Ord(FProperty.Precedence) - Ord(AProperty.Precedence);
+  if Result <> 0 then
+    exit;
+
+  Result := FSelector.CompareSpecificity(ASelector);
+end;
+
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+procedure TResultingProperty.Update(const AProperty: TProperty; const ASelector: TSelector);
+begin
+  FProperty := AProperty;
+  FSelector := ASelector;
+end;
+
+{ TResultingPropertyMap }
+
+destructor TResultingPropertyMap.Destroy;
+var
+  I: PropIndices;
+begin
+  FStyle.Free;
+  for I := Low(I) to High(I) do
+    FProps[I].Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+function TResultingPropertyMap.Get(Index: PropIndices): TResultingProperty;
+begin
+  Result := FProps[Index];
+end;
+
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+procedure TResultingPropertyMap.Update(const AProperty: TProperty; const ASelector: TSelector);
+begin
+  if FProps[AProperty.Index] = nil then
+  begin
+    FProps[AProperty.Index] := TResultingProperty.Create;
+    FProps[AProperty.Index].Update(AProperty, ASelector);
+  end
+  else if FProps[AProperty.Index].Compare(AProperty, ASelector) < 0 then
+    FProps[AProperty.Index].Update(AProperty, ASelector);
+end;
+
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+procedure TResultingPropertyMap.UpdateFromProperties(const Properties: TPropertyList; const ASelector: TSelector);
+var
+  I: Integer;
+begin
+  for I := 0 to Properties.Count - 1 do
+    Update(Properties[I], ASelector);
+end;
+
+//-- BG ---------------------------------------------------------- 22.03.2011 --
+procedure TResultingPropertyMap.UpdateFromStyleAttribute(const Properties: TPropertyList);
+begin
+  if FStyle = nil then
+  begin
+    FStyle := TSelector.Create;
+    FStyle.FIsFromStyleAttr := True;
+  end;
+  UpdateFromProperties(Properties, FStyle);
 end;
 
 end.

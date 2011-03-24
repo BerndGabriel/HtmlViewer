@@ -1,6 +1,8 @@
 {
 Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -66,7 +68,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
-  HtmlGlobals, HTMLUn2, StyleUn, HTMLGif2;
+  HtmlGlobals, HTMLUn2, StyleUn, HTMLGif2, HtmlTree;
 
 type
 
@@ -82,12 +84,13 @@ type
   ThtDocument = class;
   TBlock = class;
 
-  TSectionBase = class(TIDObject)
+  TSectionBase = class(THtmlNode)
   private
     FDocument: ThtDocument; // the document it belongs to
     FOwner: TBlock;         // the parental block it is placed in
     FDisplay: TPropDisplay; // how it is displayed
   protected
+    function GetParent: THtmlNode; override;
     function GetYPosition: Integer; override;
     procedure SetDocument(List: ThtDocument);
   public
@@ -281,7 +284,12 @@ type
 // Base class for TImageObj and TPanelObj
 //------------------------------------------------------------------------------
 
-  TFloatingObj = class(TIDObject)
+  TFloatingObj = class(THtmlNode)
+  private
+    FDocument: ThtDocument;
+    FParent: THtmlNode;
+  protected
+    function GetParent: THtmlNode; override;
   public
     Pos: Integer; {0..Len  index of image position}
     ImageHeight, {does not include VSpace}
@@ -304,13 +312,15 @@ type
     DrawXX: Integer;
     NoBorder: boolean; {set if don't want blue border}
     BorderSize: Integer;
-    constructor CreateCopy(T: TFloatingObj);
+    constructor Create(MasterList: ThtDocument; Parent: THtmlNode);
+    constructor CreateCopy(MasterList: ThtDocument; Parent: THtmlNode; T: TFloatingObj);
     function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
     function TotalWidth: Integer; {$ifdef UseInline} inline; {$endif}
     procedure SetAlt(CodePage: Integer; const Value: ThtString);
     procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     procedure ProcessProperties(Prop: TProperties);
     property Alt: ThtString read FAlt;
+    property Document: ThtDocument read FDocument;
   end;
 
 
@@ -327,7 +337,6 @@ type
 
   TPanelObj = class(TFloatingObj)
   private
-    FMasterList: ThtDocument;
     SetWidth, SetHeight: Integer;
     IsCopy: boolean;
   public
@@ -365,12 +374,11 @@ type
     Source: ThtString; {the src= attribute}
     OrigImage: TgpObject; {same as above unless swapped}
     Mask: TBitmap; {Image's mask if needed for transparency}
-    Document: ThtDocument;
     Transparent: Transparency; {None, Lower Left Corner, or Transp GIF}
     IsMap, UseMap: boolean;
     MapName: ThtString;
     MyFormControl: TImageFormControlObj; {if an <INPUT type=image}
-    MyCell: TCellBasic;
+    //unused: MyCell: TCellBasic;
     Swapped: boolean; {image has been replaced}
     Missing: boolean; {waiting for image to be downloaded}
 
@@ -634,8 +642,10 @@ type
     procedure ControlKeyPress(Sender: TObject; var Key: Char);
   end;
 
-  TFormControlObj = class(TIDObject)
+  TFormControlObj = class(THtmlNode)
   private
+    FDocument: ThtDocument;
+    FParent: THtmlNode; //TODO -oBG, 24.03.2011: set FParent
     FYValue: Integer;
     Active: boolean;
     PaintBitmap: TBitmap;
@@ -651,6 +661,7 @@ type
     function GetControl: TWinControl; virtual; abstract;
     function GetHeight: Integer; virtual;
     function GetLeft: Integer; virtual;
+    function GetParent: THtmlNode; override;
     function GetTabOrder: Integer; virtual;
     function GetTabStop: Boolean; virtual;
     function GetTop: Integer; virtual;
@@ -667,7 +678,6 @@ type
     procedure SetWidth(Value: Integer); virtual;
   public
     Pos: Integer; {0..Len  index of control position}
-    MasterList: ThtDocument;
     MyForm: ThtmlForm;
     FormAlign: AlignmentType;
     HSpaceL, HSpaceR, VSpaceT, VSpaceB, BordT, BordB: Integer;
@@ -715,6 +725,7 @@ type
     property Value: ThtString read FValue write SetValue;
     property Width: Integer read GetWidth write SetWidth;
     property YValue: Integer read FYValue;
+    property MasterList: ThtDocument read FDocument;
   end;
 
   //BG, 15.01.2011:
@@ -1154,7 +1165,12 @@ type
 //------------------------------------------------------------------------------
 // TChPosObj, a pseudo object for ID attributes.
 //------------------------------------------------------------------------------
+// It is a general purpose ID marker, that finds its position by byte
+// position in the document buffer. This object is deprecated.
+// The corresponding tag object has to be added to the IDNameList instead.
+//------------------------------------------------------------------------------
 
+  // deprecated 
   TChPosObj = class(TIDObject)
   private
     FDocument: ThtDocument;
@@ -1839,8 +1855,7 @@ var
   NewSpace: Integer;
   T: TAttribute;
 begin
-  inherited Create;
-  Document := MasterList;
+  inherited Create(MasterList, nil); //TODO -oBG, 24.03.2011: add parent
   Pos := Position;
   VertAlign := ABottom; {default}
   Floating := ANone; {default}
@@ -1951,8 +1966,7 @@ end;
 
 constructor TImageObj.SimpleCreate(MasterList: ThtDocument; const AnURL: ThtString);
 begin
-  inherited Create;
-  Document := MasterList;
+  inherited Create(MasterList, nil); //TODO -oBG, 24.03.2011: add parent
   VertAlign := ABottom; {default}
   Floating := ANone; {default}
   Source := AnURL;
@@ -1964,8 +1978,7 @@ end;
 
 constructor TImageObj.CreateCopy(AMasterList: ThtDocument; T: TImageObj);
 begin
-  inherited CreateCopy(T);
-  Document := AMasterList;
+  inherited CreateCopy(AMasterList, nil, T); //TODO -oBG, 24.03.2011: add parent
   ImageKnown := T.ImageKnown;
   ObjHeight := T.ObjHeight;
   ObjWidth := T.ObjWidth;
@@ -2080,7 +2093,7 @@ begin
     TmpImage := LoadImageFromStream(TMemoryStream(NewImage), Transparent, AMask)
   else
   begin
-    // TODO BG, 30.11.2010: do we need this intermediate stream?
+    // TODO -oBG, 30.11.2010: do we need this intermediate stream?
     Stream := TMemoryStream.Create;
     try
       Stream.LoadFromStream(NewImage);
@@ -3108,7 +3121,7 @@ var
 begin
   inherited Create;
   Pos := Position;
-  MasterList := AMasterList;
+  FDocument := AMasterList;
   if not Assigned(CurrentForm) then {maybe someone forgot the <form> tag}
     CurrentForm := ThtmlForm.Create(AMasterList, nil);
   AMasterList.FormControlList.Add(Self);
@@ -3301,6 +3314,12 @@ end;
 function TFormControlObj.GetLeft: Integer;
 begin
   Result := TheControl.Left;
+end;
+
+//-- BG ---------------------------------------------------------- 24.03.2011 --
+function TFormControlObj.GetParent: THtmlNode;
+begin
+  Result := FParent;
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
@@ -8340,7 +8359,7 @@ constructor THtmlTable.Create(Master: ThtDocument; Attr: TAttributeList;
 var
   I: Integer;
 begin
-  //BG, 08.06.2010: TODO:  Issue 5: Table border versus stylesheets:
+  //TODO -oBG, 08.06.2010: Issue 5: Table border versus stylesheets:
   //  Added: BorderColor
   inherited Create(Master, Prop);
   Rows := TFreeList.Create;
@@ -10523,7 +10542,7 @@ end;
 function TSection.AddImage(L: TAttributeList; ACell: TCellBasic; Index: Integer): TImageObj;
 begin
   Result := TImageObj.Create(Document, Len, L);
-  Result.MyCell := ACell;
+  //Result.MyCell := ACell;
   Images.Add(Result);
   AddChar(ImgPan, Index); {marker for image}
 end;
@@ -12682,8 +12701,7 @@ var
   NewSpace: Integer;
   S, Source, AName, AType: ThtString;
 begin
-  inherited Create;
-  fMasterList := AMasterList;
+  inherited Create(AMasterList, nil); //TODO -oBG, 24.03.2011: add parent
   Pos := Position;
   VertAlign := ABottom; {default}
   Floating := ANone;
@@ -12786,8 +12804,7 @@ end;
 
 constructor TPanelObj.CreateCopy(AMasterList: ThtDocument; T: TPanelObj);
 begin
-  assert(AMasterList is ThtDocument);
-  inherited CreateCopy(T);
+  inherited CreateCopy(AMasterList, nil, T); //TODO -oBG, 24.03.2011: add parent
   Panel := ThvPanel.Create(nil);
   with T.Panel do
     Panel.SetBounds(Left, Top, Width, Height);
@@ -12801,15 +12818,15 @@ begin
   SetHeight := T.SetHeight;
   SetWidth := T.SetWidth;
   OPanel := T.Panel; {save these for printing}
-  OSender := T.fMasterList.TheOwner;
-  PanelPrintEvent := T.fMasterList.PanelPrintEvent;
+  OSender := T.Document.TheOwner;
+  PanelPrintEvent := T.Document.PanelPrintEvent;
   IsCopy := True;
 end;
 
 destructor TPanelObj.Destroy;
 begin
-  if Assigned(fMasterList) and Assigned(fMasterList.PanelDestroyEvent) then
-    fMasterList.PanelDestroyEvent(fMasterList.TheOwner, Panel);
+  if Assigned(Document) and Assigned(Document.PanelDestroyEvent) then
+    Document.PanelDestroyEvent(Document.TheOwner, Panel);
   Panel.Free;
   inherited Destroy;
 end;
@@ -13788,9 +13805,19 @@ end;
 
 { TFloatingObj }
 
-constructor TFloatingObj.CreateCopy(T: TFloatingObj);
+//-- BG ---------------------------------------------------------- 24.03.2011 --
+constructor TFloatingObj.Create(MasterList: ThtDocument; Parent: THtmlNode);
 begin
   inherited Create;
+  FDocument := MasterList;
+  FParent := Parent;
+end;
+
+constructor TFloatingObj.CreateCopy(MasterList: ThtDocument; Parent: THtmlNode; T: TFloatingObj);
+begin
+  inherited Create;
+  FDocument := MasterList;
+  FParent := Parent;
   FAlt := T.FAlt;
   ImageWidth := T.ImageWidth;
   ImageHeight := T.ImageHeight;
@@ -13804,6 +13831,12 @@ begin
   VSpaceT := T.VSpaceT;
   VSpaceB := T.VSpaceB;
   Pos := T.Pos;
+end;
+
+//-- BG ---------------------------------------------------------- 24.03.2011 --
+function TFloatingObj.GetParent: THtmlNode;
+begin
+  Result := FParent;
 end;
 
 function TFloatingObj.GetYPosition: Integer;
@@ -14028,6 +14061,12 @@ end;
 function TSectionBase.GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
 begin
   Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 24.03.2011 --
+function TSectionBase.GetParent: THtmlNode;
+begin
+  Result := FOwner;
 end;
 
 procedure TSectionBase.SetDocument(List: ThtDocument);

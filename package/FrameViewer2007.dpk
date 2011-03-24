@@ -58,6 +58,7 @@ contains
   HTMLSubs in '..\source\HTMLSubs.pas',
   HtmlBuffer in '..\source\HtmlBuffer.pas',
   HtmlStyles in '..\source\HtmlStyles.pas',
-  StyleParser in '..\source\StyleParser.pas';
+  StyleParser in '..\source\StyleParser.pas',
+  HtmlTree in '..\source\HtmlTree.pas';
 
 end.
