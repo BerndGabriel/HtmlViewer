@@ -1,5 +1,5 @@
 {
-Version   11
+Version   12
 Copyright (c) 2011 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,75 +30,196 @@ unit HtmlTree;
 interface
 
 uses
+{$ifdef MSWINDOWS}
+  Windows,
+{$endif}
+  Contnrs,
+  //
   HtmlGlobals,
   HtmlStyles,
-  HtmlUn2;
+  HtmlSymbols;
 
 //------------------------------------------------------------------------------
-// THtmlNode is base class for all objects in the HTML document tree.
+// THtmlAttribute is class for all attributes of all HTML elements
 //------------------------------------------------------------------------------
 
 type
-  THtmlNode = class(TIDObject)
+  THtmlAttribute = class
+  public
+    FSymbol: THtmlAttributeSymbol;
+    FName: ThtString;
+    FValue: ThtString;
+    constructor Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
+    property Symbol: THtmlAttributeSymbol read FSymbol;
+    property AsString: ThtString read FValue;
+  end;
+
+  THtmlAttributeList = class(TObjectList) {a list of tag attributes,(TAttributes)}
   private
-    FTag: TSymbol;
+    function GetAttribute(Index: Integer): THtmlAttribute; {$ifdef UseInline} inline; {$endif}
+  public
+    function Find(Name: ThtString; out Attribute: THtmlAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
+    function Find(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
+    property Items[Index: Integer]: THtmlAttribute read GetAttribute; default;
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlElement is base class for all elements in the HTML document tree.
+//------------------------------------------------------------------------------
+
+type
+  THtmlElement = class
+  private
+    FParent: THtmlElement;
+    FChildren: TObjectList;
+    FSymbol: THtmlElementSymbol;
+    FAttributes: THtmlAttributeList;
+
     FIds: ThtStringArray;
     FClasses: ThtStringArray;
   protected
-    function FindAttribute(NameSy: Symb; out Attribute: TAttribute): Boolean; overload; virtual;
-    function FindAttribute(Name: ThtString; out Attribute: TAttribute): Boolean; overload; virtual;
-    function GetChild(Index: Integer): THtmlNode; virtual;
-    function GetParent: THtmlNode; virtual; abstract;
+    function FindAttribute(Name: ThtString; out Attribute: THtmlAttribute): Boolean; overload; virtual;
+    function FindAttribute(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean; overload; virtual;
+    function GetChild(Index: Integer): THtmlElement;
     function GetPseudos: TPseudos; virtual;
+    procedure AddChild(Child: THtmlElement);
+    procedure ExtractChild(Child: THtmlElement);
+    procedure SetParent(Parent: THtmlElement);
   public
-    //constructor Create(Parent: THtmlNode; Tag: TSymbol; Attributes: TAttributeList; Properties: TR );
-    function IndexOf(Child: THtmlNode): Integer; virtual;
+    constructor Create(Parent: THtmlElement; Symbol: THtmlElementSymbol; Attributes: THtmlAttributeList);
+    destructor Destroy; override;
+    function IndexOf(Child: THtmlElement): Integer; virtual;
     function IsMatching(Selector: TSelector): Boolean;
-    property Parent: THtmlNode read GetParent;
-    property Children[Index: Integer]: THtmlNode read GetChild; default;
+    property Children[Index: Integer]: THtmlElement read GetChild; default;
+    property Parent: THtmlElement read FParent;
   end;
 
 implementation
 
-uses
-  ReadHtml; //TODO -oBG, 23.03.2011: move SymbToAttributeName() to a unit in a lower hierarchy level!
+{ THtmlAttribute }
 
-{ THtmlNode }
-
-//-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlNode.FindAttribute(NameSy: Symb; out Attribute: TAttribute): Boolean;
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+constructor THtmlAttribute.Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
 begin
-  Result := False;
+  inherited Create;
+  FSymbol := Symbol;
+  FName := Name;
+  FValue := Value;
+end;
+
+{ THtmlAttributeList }
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+function THtmlAttributeList.Find(Name: ThtString; out Attribute: THtmlAttribute): Boolean;
+var
+  Symbol: THtmlAttributeSymbol;
+begin
+  if TryStrToAttributeSymbol(Name, Symbol) then
+    Result := Find(Symbol, Attribute)
+  else
+  begin
+    Attribute := nil;
+    Result := False;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+function THtmlAttributeList.Find(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+  begin
+    Attribute := GetAttribute(I);
+    Result := Attribute.Symbol = Symbol;
+    if Result then
+      exit;
+  end;
   Attribute := nil;
+  Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+function THtmlAttributeList.GetAttribute(Index: Integer): THtmlAttribute;
+begin
+  Result := Get(Index);
+end;
+
+{ THtmlElement }
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+procedure THtmlElement.AddChild(Child: THtmlElement);
+begin
+  FChildren.Add(Child);
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+constructor THtmlElement.Create(Parent: THtmlElement; Symbol: THtmlElementSymbol; Attributes: THtmlAttributeList);
+begin
+  inherited Create;
+  FSymbol := Symbol;
+  FAttributes := Attributes;
+  SetParent(Parent);
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+destructor THtmlElement.Destroy;
+begin
+  FChildren.Free;
+  FAttributes.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+procedure THtmlElement.ExtractChild(Child: THtmlElement);
+begin
+  FChildren.Extract(Child);
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlNode.FindAttribute(Name: ThtString; out Attribute: TAttribute): Boolean;
+function THtmlElement.FindAttribute(Name: ThtString; out Attribute: THtmlAttribute): Boolean;
 begin
-  Result := False;
-  Attribute := nil;
+  if FAttributes <> nil then
+    Result := FAttributes.Find(Name, Attribute)
+  else
+  begin
+    Attribute := nil;
+    Result := False;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 23.03.2011 --
+function THtmlElement.FindAttribute(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean;
+begin
+  if FAttributes <> nil then
+    Result := FAttributes.Find(Symbol, Attribute)
+  else
+  begin
+    Attribute := nil;
+    Result := False;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
-function THtmlNode.GetChild(Index: Integer): THtmlNode;
+function THtmlElement.GetChild(Index: Integer): THtmlElement;
 begin
-  Result := nil;
+  Result := THtmlElement(FChildren[Index]);
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlNode.GetPseudos: TPseudos;
+function THtmlElement.GetPseudos: TPseudos;
 begin
   Result := [];
 end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
-function THtmlNode.IndexOf(Child: THtmlNode): Integer;
+function THtmlElement.IndexOf(Child: THtmlElement): Integer;
 begin
-  Result := -1;
+  Result := FChildren.IndexOf(Child);
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlNode.IsMatching(Selector: TSelector): Boolean;
+function THtmlElement.IsMatching(Selector: TSelector): Boolean;
 
   function IsMatchingSimple: Boolean;
 
@@ -117,9 +238,9 @@ function THtmlNode.IsMatching(Selector: TSelector): Boolean;
 
   var
     Index: Integer;
-    Attribute: TAttribute;
+    Attribute: THtmlAttribute;
     Match: TAttributeMatch;
-    S: TSymbol;
+    S: THtmlElementSymbol;
   begin
     Result := False;
 
@@ -132,8 +253,8 @@ function THtmlNode.IsMatching(Selector: TSelector): Boolean;
 
     // a loop about tags? there is one or none tag in the selector.
     for Index := Low(Selector.Tags) to High(Selector.Tags) do
-      if TryStrToReservedWord(Selector.Tags[Index], S) then
-        if S <> FTag then
+      if TryStrToElementSymbol(Selector.Tags[Index], S) then
+        if S <> FSymbol then
           exit;
 
     // a loop about ids? CSS 2.1 allows more than 1 ID, but most browsers do not support them.
@@ -170,7 +291,7 @@ function THtmlNode.IsMatching(Selector: TSelector): Boolean;
 
   function IsChild(Selector: TSelector): Boolean;
   var
-    P: THtmlNode;
+    P: THtmlElement;
   begin
     P := Parent;
     Result := (P <> nil) and P.IsMatching(Selector);
@@ -178,7 +299,7 @@ function THtmlNode.IsMatching(Selector: TSelector): Boolean;
 
   function IsDescendant(Selector: TSelector): Boolean;
   var
-    Node: THtmlNode;
+    Node: THtmlElement;
   begin
     Result := False;
     Node := Parent;
@@ -193,7 +314,7 @@ function THtmlNode.IsMatching(Selector: TSelector): Boolean;
 
   function IsFollower(Selector: TSelector): Boolean;
   var
-    P: THtmlNode;
+    P: THtmlElement;
     I: Integer;
   begin
     P := Parent;
@@ -215,6 +336,19 @@ begin
         scDescendant: Result := IsDescendant(TCombinedSelector(Selector).LeftHand);
         scFollower:   Result := IsFollower(TCombinedSelector(Selector).LeftHand);
       end;
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+procedure THtmlElement.SetParent(Parent: THtmlElement);
+begin
+  if FParent <> Parent then
+  begin
+    if FParent <> nil then
+      FParent.ExtractChild(Self);
+    FParent := Parent;
+    if FParent <> nil then
+      FParent.AddChild(Self);
+  end;
 end;
 
 end.

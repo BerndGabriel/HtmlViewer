@@ -1,5 +1,5 @@
 {
-Version   11
+HtmlViewer Version 12
 Copyright (c) 2011 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -33,9 +33,10 @@ uses
   Graphics, Classes, SysUtils, Variants,
   //
   UrlSubs,
-  StyleUn,
+  Parser,
   HtmlBuffer,
   HtmlGlobals,
+  HtmlSymbols,
   HtmlStyles;
 
 type
@@ -779,16 +780,6 @@ end;
 //-- BG ---------------------------------------------------------- 15.03.2011 --
 function THtmlStyleParser.ParseProperties(Properties: TPropertyList): Boolean;
 
-  function GetPropertyIndex(const Name: ThtString; var Index: TPropertyIndex): Boolean;
-  var
-    I: Integer;
-  begin
-    I := SortedProperties.IndexOf(Name);
-    Result := I >= 0;
-    if Result then
-      Index := TPropertyIndex(SortedProperties.Objects[I]);
-  end;
-
   function GetPrecedence(Important: Boolean; Origin: TPropertyOrigin): TPropertyPrecedence; {$ifdef UseInline} inline; {$endif}
   begin
     Result := CPropertyPrecedenceOfOrigin[Important, Origin];
@@ -797,7 +788,7 @@ function THtmlStyleParser.ParseProperties(Properties: TPropertyList): Boolean;
 var
   Precedence: TPropertyPrecedence;
 
-  procedure ProcessProperty(Prop: PropIndices; const Value: Variant);
+  procedure ProcessProperty(Prop: TStylePropertySymbol; const Value: Variant);
   begin
     if FMediaTypes * FSupportedMediaTypes <> [] then
       if VarIsStr(Value) and (Value = 'inherit') then
@@ -833,7 +824,7 @@ var
       // color
       else if Values[I] = 'transparent' then
         ProcessProperty(BackgroundColor, Values[I])
-      else if ColorFromString(Values[I], True, Color) then
+      else if TryStrToColor(Values[I], True, Color) then
         ProcessProperty(BackgroundColor, Color)
       // repeat
       else if Pos('repeat', Values[I]) > 0 then
@@ -860,16 +851,16 @@ var
     end;
   end;
 
-  procedure DoBorder(WidthProp, StyleProp, ColorProp: PropIndices);
+  procedure DoBorder(WidthProp, StyleProp, ColorProp: TStylePropertySymbol);
   { do the Border, Border-Top/Right/Bottom/Left shorthand properties.}
   var
     I: Integer;
     Color: TColor;
-    Style: BorderStyleType;
+    Style: TBorderStyle;
   begin
     for I := 0 to Length(Values) - 1 do
     begin
-      if ColorFromString(Values[I], True, Color) then
+      if TryStrToColor(Values[I], True, Color) then
         ProcessProperty(ColorProp, Color)
       else if TryStrToBorderStyle(Values[I], Style) then
         ProcessProperty(StyleProp, Style)
@@ -960,7 +951,7 @@ var
     end;
   end;
 
-  procedure DoMarginItems(Prop: PropIndices);
+  procedure DoMarginItems(Prop: TStylePropertySymbol);
   { Do the Margin, Border, Padding shorthand property specifiers}
   const
     Index: array[1..4,0..3] of Integer = (
@@ -975,13 +966,13 @@ var
     N := Length(Values);
     if (N > 0) and (N <= 4) then
       for I := 0 to 3 do
-        ProcessProperty(PropIndices(Ord(Prop) + I), Values[Index[N, I]]);
+        ProcessProperty(TStylePropertySymbol(Ord(Prop) + I), Values[Index[N, I]]);
   end;
 
 var
   Term: ThtChar;
   Name: ThtString;
-  Index: TPropertyIndex;
+  Index: TPropertySymbol;
   Important: Boolean;
 begin
   case LCh of
@@ -1007,7 +998,7 @@ begin
       exit;
     end;
     if ParseDeclaration(Name, Values, Important) then
-      if GetPropertyIndex(Name, Index) then
+      if TryStrToPropertySymbol(Name, Index) then
       begin
         Precedence := GetPrecedence(Important, FOrigin);
         case Index of

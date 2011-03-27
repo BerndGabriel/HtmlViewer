@@ -1,5 +1,5 @@
 {
-Version   11
+HtmlViewer Version 12
 Copyright (c) 2011 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -33,8 +33,7 @@ uses
   Windows, Classes, Contnrs, Variants,
   //
   HtmlGlobals,
-  HtmlUn2,
-  StyleUn;
+  HtmlSymbols;
 
 //------------------------------------------------------------------------------
 // style properties
@@ -91,15 +90,15 @@ function VarIsInherit(const Value: Variant): Boolean; {$ifdef UseInline} inline;
 type
   TProperty = class
   private
-    FIndex: PropIndices;
+    FSymbol: TStylePropertySymbol;
     FPrecedence: TPropertyPrecedence;
     FSpecifiedValue: Variant;
     FCalculatedValue: Variant;
   public
-    constructor Create(Index: PropIndices; Precedence: TPropertyPrecedence; SpecifiedValue: Variant); overload;
-    constructor Create(Index: PropIndices; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant); overload;
+    constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant); overload;
+    constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant); overload;
     function ToString: ThtString;
-    property Index: PropIndices read FIndex;
+    property Symbol: TStylePropertySymbol read FSymbol;
     property Precedence: TPropertyPrecedence read FPrecedence;
     property SpecifiedValue: Variant read FSpecifiedValue;
     property CalculatedValue: Variant read FCalculatedValue write FCalculatedValue;
@@ -223,8 +222,6 @@ const
 function TryStrToPseudo(const Str: ThtString; out Pseudo: TPseudo): Boolean;
 
 type
-  TSymbol = Symb;
-  TSymbols = array of TSymbol;
 
   TCombinator = (
     scNone,       // F      : matches any F
@@ -385,7 +382,7 @@ type
     procedure Update(const AProperty: TProperty; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
   end;
 
-  TResultingProperties = array [PropIndices] of TResultingProperty;
+  TResultingProperties = array [TStylePropertySymbol] of TResultingProperty;
 
   // How to compute the resulting properties:
   // 1) Fill map with properties from style attribute (highest prio) using UpdateFromStyleAttribute(),
@@ -404,10 +401,10 @@ type
     procedure Update(const AProperty: TProperty; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
   public
     destructor Destroy; override;
-    function Get(Index: PropIndices): TResultingProperty; {$ifdef UseInline} inline; {$endif}
+    function Get(Index: TStylePropertySymbol): TResultingProperty; {$ifdef UseInline} inline; {$endif}
     procedure UpdateFromStyleAttribute(const Properties: TPropertyList); {$ifdef UseInline} inline; {$endif}
     procedure UpdateFromProperties(const Properties: TPropertyList; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
-    property ResultingProperties[Index: PropIndices]: TResultingProperty read Get; default;
+    property ResultingProperties[Index: TStylePropertySymbol]: TResultingProperty read Get; default;
   end;
 
 //------------------------------------------------------------------------------
@@ -417,9 +414,6 @@ type
 function GetCssDefaults: TStream;
 
 implementation
-
-uses
-  ReadHtml; //TODO -oBG, 23.03.2011: move SymbToAttributeName() to a unit in a lower hierarchy level!
 
 {$R css_defaults.res}
 
@@ -494,20 +488,20 @@ end;
 { TProperty }
 
 //-- BG ---------------------------------------------------------- 13.03.2011 --
-constructor TProperty.Create(Index: PropIndices; Precedence: TPropertyPrecedence; SpecifiedValue: Variant);
+constructor TProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant);
 begin
   inherited Create;
-  FIndex := Index;
+  FSymbol := Symbol;
   FPrecedence := Precedence;
   FSpecifiedValue := SpecifiedValue;
   FCalculatedValue := Null;
 end;
 
 //-- BG ---------------------------------------------------------- 13.03.2011 --
-constructor TProperty.Create(Index: PropIndices; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant);
+constructor TProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant);
 begin
   inherited Create;
-  FIndex := Index;
+  FSymbol := Symbol;
   FPrecedence := Precedence;
   FSpecifiedValue := SpecifiedValue;
   FCalculatedValue := CalculatedValue;
@@ -525,7 +519,7 @@ function TProperty.ToString: ThtString;
   end;
 
 begin
-  Result := PropWords[FIndex] + ': ' + VariantToStr(SpecifiedValue) +
+  Result := PropertySymbolToStr(FSymbol) + ': ' + VariantToStr(SpecifiedValue) +
     ' /* ' + CPropertyPrecedence[FPrecedence] + ', ' + VariantToStr(CalculatedValue) + ' */';
 end;
 
@@ -971,7 +965,7 @@ end;
 
 destructor TResultingPropertyMap.Destroy;
 var
-  I: PropIndices;
+  I: TStylePropertySymbol;
 begin
   FStyle.Free;
   for I := Low(I) to High(I) do
@@ -980,7 +974,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-function TResultingPropertyMap.Get(Index: PropIndices): TResultingProperty;
+function TResultingPropertyMap.Get(Index: TStylePropertySymbol): TResultingProperty;
 begin
   Result := FProps[Index];
 end;
@@ -988,13 +982,13 @@ end;
 //-- BG ---------------------------------------------------------- 22.03.2011 --
 procedure TResultingPropertyMap.Update(const AProperty: TProperty; const ASelector: TSelector);
 begin
-  if FProps[AProperty.Index] = nil then
+  if FProps[AProperty.Symbol] = nil then
   begin
-    FProps[AProperty.Index] := TResultingProperty.Create;
-    FProps[AProperty.Index].Update(AProperty, ASelector);
+    FProps[AProperty.Symbol] := TResultingProperty.Create;
+    FProps[AProperty.Symbol].Update(AProperty, ASelector);
   end
-  else if FProps[AProperty.Index].Compare(AProperty, ASelector) < 0 then
-    FProps[AProperty.Index].Update(AProperty, ASelector);
+  else if FProps[AProperty.Symbol].Compare(AProperty, ASelector) < 0 then
+    FProps[AProperty.Symbol].Update(AProperty, ASelector);
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --

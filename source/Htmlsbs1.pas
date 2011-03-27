@@ -68,7 +68,7 @@ type
     FFont: TFont;
     LBSize, Longest: integer;
   public
-    constructor Create(AMasterList: ThtDocument; Position: Integer; L: TAttributeList);
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
     property TheOptions: ThtOptionStringList read FOptions;
@@ -92,7 +92,7 @@ type
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(AMasterList: ThtDocument; Position: integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -115,7 +115,7 @@ type
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(AMasterList: ThtDocument; Position: integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -142,7 +142,7 @@ type
     Wrap: (wrOff, wrSoft, wrHard);
     Rows, Cols: integer;
     TheText: ThtString;
-    constructor Create(AMasterList: ThtDocument; Position: integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; var S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
@@ -207,18 +207,17 @@ end;
 
 {----------------TListBoxFormControlObj.Create}
 
-constructor TListBoxFormControlObj.Create(AMasterList: ThtDocument;
-  Position: integer; L: TAttributeList; Prop: TProperties);
+constructor TListBoxFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
   Multiple: boolean;
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: TMyFont;
 begin
-  inherited Create(AMasterList, Position, L);
+  inherited;
   CodePage := Prop.CodePage;
   Multiple := L.Find(MultipleSy, T);
-  PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
+  PntPanel := Document.PPanel;
   FControl := ThtListbox.Create(PntPanel);
   with FControl do
   begin
@@ -266,7 +265,7 @@ begin
   ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
   if FControl.BorderStyle <> bsNone then
   begin
-    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
+    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, Document.PrintMonoBlack, False, FControl.Color);
     Addon := 4;
   end
   else
@@ -385,8 +384,8 @@ begin
         end;
   end;
   if Changed then
-    if Assigned(MasterList.ObjectChange) then
-      MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
+    if Assigned(Document.ObjectChange) then
+      Document.ObjectChange(Document.TheOwner, Self, OnChangeMessage);
 end;
 
 {$IFDEF OpOnChange}
@@ -428,15 +427,14 @@ end;
 
 {----------------TComboFormControlObj.Create}
 
-constructor TComboFormControlObj.Create(AMasterList: ThtDocument;
-  Position: integer; L: TAttributeList; Prop: TProperties);
+constructor TComboFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); 
 var
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: TMyFont;
 begin
-  inherited Create(AMasterList, Position, L);
+  inherited;
   CodePage := Prop.CodePage;
-  PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
+  PntPanel := Document.PPanel;
   FControl := ThtCombobox.Create(PntPanel);
   with FControl do
   begin
@@ -492,7 +490,7 @@ var
   ARect: TRect;
 begin
   ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
-  DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
+  DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, Document.PrintMonoBlack, False, FControl.Color);
   Canvas.Brush.Style := bsClear;
   Canvas.Font := FControl.Font;
   SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
@@ -560,8 +558,8 @@ begin
   if FControl.ItemIndex <> EnterIndex then
   begin
     SaveContents;
-    if Assigned(MasterList.ObjectChange) then
-      MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
+    if Assigned(Document.ObjectChange) then
+      Document.ObjectChange(Document.TheOwner, Self, OnChangeMessage);
   end;
 end;
 {$ENDIF}
@@ -577,22 +575,21 @@ procedure TComboFormControlObj.DoOnChange;
 begin
 {$IFNDEF OpOnChange}
   if FControl.ItemIndex <> EnterIndex then
-    if Assigned(MasterList.ObjectChange) then
-      MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
+    if Assigned(Document.ObjectChange) then
+      Document.ObjectChange(Document.TheOwner, Self, OnChangeMessage);
 {$ENDIF}
 end;
 
 {----------------TTextAreaFormControlObj.Create}
 
-constructor TTextAreaFormControlObj.Create(AMasterList: ThtDocument;
-  Position: integer; L: TAttributeList; Prop: TProperties);
+constructor TTextAreaFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
   I: integer;
   SB: TScrollStyle;
   Tmp: TMyFont;
 begin
-  inherited Create(AMasterList, Position, L);
+  inherited;
   CodePage := Prop.CodePage;
   Rows := 5;
   Cols := 30;
@@ -600,7 +597,7 @@ begin
   SB := StdCtrls.ssVertical;
 
   for I := 0 to L.Count - 1 do
-    with TAttribute(L[I]) do
+    with L[I] do
       case Which of
         RowsSy: Rows := Value;
         ColsSy: Cols := Value;
@@ -616,7 +613,7 @@ begin
           end;
       end;
 
-  PntPanel := {TPaintPanel(}AMasterList.PPanel{)};
+  PntPanel := Document.PPanel;
   FControl := ThtMemo.Create(PntPanel);
   with FControl do
   begin
@@ -660,7 +657,7 @@ begin
   begin
     if BorderStyle <> bsNone then
     begin
-      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, FControl.Color);
+      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, FControl.Color);
       Addon := 4;
     end
     else
@@ -772,8 +769,8 @@ end;
 procedure TTextAreaFormControlObj.DoOnChange;
 begin
   if Text <> EnterContents then
-    if Assigned(MasterList.ObjectChange) then
-      MasterList.ObjectChange(MasterList.TheOwner, Self, OnChangeMessage);
+    if Assigned(Document.ObjectChange) then
+      Document.ObjectChange(Document.TheOwner, Self, OnChangeMessage);
 end;
 
 { TOptionsFormControlObj }
@@ -815,8 +812,7 @@ begin
   Longest := Max(Longest, ExtS.cx);
 end;
 
-constructor TOptionsFormControlObj.Create(AMasterList: ThtDocument; Position: Integer;
-  L: TAttributeList);
+constructor TOptionsFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
 begin

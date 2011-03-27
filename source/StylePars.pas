@@ -36,6 +36,8 @@ uses
   Windows,  // needed to expand inline function htUpCase
 {$endif}
   Classes, Graphics, SysUtils,
+  //
+  Parser,
   HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, HtmlStyles;
 
 
@@ -449,7 +451,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     end;
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
-      if ColorFromString(S[I], NeedPound, Dummy) then
+      if TryStrToColor(S[I], NeedPound, Dummy) then
       begin
         ProcessProperty('background-color', S[I]);
         S[I] := '';
@@ -512,13 +514,13 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
   begin
     ExtractParn(Value, S, Count);
     for I := 0 to Count - 1 do
-      if ColorFromString(S[I], NeedPound, Dummy) then
+      if TryStrToColor(S[I], NeedPound, Dummy) then
         ProcessProperty(Prop + '-color', S[I]);
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
-      if ColorFromString(S[I], NeedPound, Dummy) then
+      if TryStrToColor(S[I], NeedPound, Dummy) then
         ProcessProperty(Prop + '-color', S[I])
       else if FindStyle(S[I]) then
         ProcessProperty(Prop + '-style', S[I]) {Border-Style will change all four sides}

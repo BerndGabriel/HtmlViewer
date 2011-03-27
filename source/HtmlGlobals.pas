@@ -1,5 +1,5 @@
 {
-Version   11
+HtmlViewer Version 12
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011 by Bernd Gabriel
 
@@ -115,8 +115,9 @@ type
   ThtStringList = TWideStringList;
   PhtChar = PWideChar;
 {$endif}
+  ThtCharArray = array of ThtChar;
   ThtStringArray = array of ThtString;
-  ThtBooleanArray = array of Boolean;
+  ThtIntegerArray = array of Integer;
 
   ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected
@@ -160,6 +161,8 @@ const
   GreaterChar = ThtChar('>');
   PercentChar = ThtChar('%');
   AmperChar   = ThtChar('&');
+
+  CrLf = CrChar + LfChar;
 
 
 {$ifdef LCL}
@@ -259,12 +262,18 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 {$endif}
 
 
+procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
+procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
+procedure htSetString(Str: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
 function SameStringArray(const A1, A2: ThtStringArray): Boolean;
 function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
 procedure SortStringArray(A: ThtStringArray);
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -279,8 +288,8 @@ procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
 implementation
 
-uses
-  HTMLUn2;
+//uses
+//  HTMLUn2;
 
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
@@ -492,38 +501,72 @@ end;
 
 {$endif TransparentStretchBltMissing}
 
-
-//-- BG ---------------------------------------------------------- 28.01.2011 --
-function htUpperCase(Str: ThtString): ThtString;
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+procedure htAppendChr(var Dest: ThtString; C: ThtChar);
 begin
-  {$ifdef UNICODE}
-    Result := UpperCase(Str);
-  {$else}
-    Result := Str;
-    CharUpperBuffW(@Result[1], Length(Result));
-  {$endif}
+  SetLength(Dest, Length(Dest) + 1);
+  Dest[Length(Dest)] := C;
 end;
 
-
-//-- BG ---------------------------------------------------------- 28.01.2011 --
-function htLowerCase(Str: ThtString): ThtString;
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+procedure htAppendStr(var Dest: ThtString; const S: ThtString);
+var
+  L, N: Integer;
 begin
-  {$ifdef UNICODE}
-    Result := LowerCase(Str);
-  {$else}
-    Result := Str;
-    CharLowerBuffW(@Result[1], Length(Result));
-  {$endif}
+{$ifdef UNICODE}
+  AppendStr(Dest, S);
+{$else}
+  L := Length(S);
+  if L > 0 then
+  begin
+    N := Length(Dest);
+    SetLength(Dest, N + L);
+    Move(S[1], Dest[N + 1], L * sizeof(ThtChar));
+  end;
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 function htCompareString(S1, S2: ThtString): Integer;
 begin
-  {$ifdef UNICODE}
-    Result := CompareStr(S1, S2);
-  {$else}
-    Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2));
-  {$endif}
+{$ifdef UNICODE}
+  Result := CompareStr(S1, S2);
+{$else}
+  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2));
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 28.01.2011 --
+function htLowerCase(Str: ThtString): ThtString;
+begin
+{$ifdef UNICODE}
+  Result := LowerCase(Str);
+{$else}
+  Result := Str;
+  CharLowerBuffW(@Result[1], Length(Result));
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+procedure htSetString(Str: ThtString; Chr: PhtChar; Len: Integer);
+begin
+{$ifdef UNICODE}
+  SetString(Str, Chr, Len);
+{$else}
+  SetLength(Str, Len);
+  Move(Chr^, Str[1], Len * sizeof(ThtChar));
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 28.01.2011 --
+function htUpperCase(Str: ThtString): ThtString;
+begin
+{$ifdef UNICODE}
+  Result := UpperCase(Str);
+{$else}
+  Result := Str;
+  CharUpperBuffW(@Result[1], Length(Result));
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
@@ -585,6 +628,25 @@ procedure SortStringArray(A: ThtStringArray);
 begin
   if length(A) > 1 then
     QuickSort(Low(A), High(A));
+end;
+
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
+  end;
 end;
 
 { ThtEdit }

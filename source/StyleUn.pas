@@ -38,7 +38,7 @@ uses
   Windows,
 {$endif}
   Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
-  HtmlGlobals, HtmlBuffer;
+  Parser, HtmlGlobals, HtmlBuffer;
 
 type
   TPropertyIndex = (
@@ -340,7 +340,6 @@ const
   varNum = varInt + varFloat;
 
   EastEurope8859_2 = 31; {for 8859-2}
-  CrLf = #$D#$A;
 
 //BG, 05.10.2010: added:
 function VarIsIntNull(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -356,9 +355,6 @@ procedure ConvVertMargins(const VM: TVMarginArray; BaseHeight, EmSize, ExSize: I
 function SortedProperties: ThtStringList;
 
 function SortedColors: ThtStringList;
-function ColorFromString(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
-
-function ReadURL(Item: Variant): ThtString;
 
 function ReadFontName(S: ThtString): ThtString;
 
@@ -437,115 +433,6 @@ begin
   Result := False;
 end;
 
-
-//-- BG ---------------------------------------------------------- 17.02.2011 --
-function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
-begin
-  while I <= L do
-  begin
-    case S[I] of
-      ' ',
-      #10,
-      #12,
-      #13:;
-    else
-      break;
-    end;
-    Inc(I);
-  end;
-  Result := I;
-end;
-
-//-- BG ---------------------------------------------------------- 17.02.2011 --
-function FindChar(const S: ThtString; C: ThtChar; I, L: Integer): Integer;
-begin
-  while (I <= L) and (S[I] <> C) do
-    Inc(I);
-  Result := I;
-end;
-
-{----------------ReadURL}
-
-function ReadURL(Item: Variant): ThtString;
-{
-  If Item is a string try to find and parse:
-
-    url( ["<url>"|'<url>'|<url>] )
-
-  and if successful return the <url>.
-
-  ReadURL tolerates
-  - any substring before url
-  - any substring after the (optionally quoted) <url>
-  - nested '(' ')' pairs even in the unquoted <url>
-}
-var
-  S: ThtString;
-  I, J, L, N: Integer;
-  Q: ThtChar;
-begin
-  Result := '';
-  if VarIsStr(Item) then
-  begin
-    S := Item;
-    I := Pos('url(', S);
-    if I > 0 then
-    begin
-      L := Length(S);
-
-      // optional white spaces
-      I := SkipWhiteSpace(S, I + 4, L);
-
-      // optional quote char
-      Q := #0;
-      if I < L then
-        case S[I] of
-          '''', '"':
-          begin
-            Q := S[I];
-            Inc(I);
-          end;
-        end;
-
-      // read url
-      if Q <> #0 then
-        // up to quote char
-        J := FindChar(S, Q, I, L)
-      else
-      begin
-        // unquoted: up to whitespace or ')'
-        // beyond CSS: tolerate nested '(' ')' pairs as part of the name.
-        N := 0;
-        J := I;
-        while J <= L do
-        begin
-          case S[J] of
-            ' ',
-            #10,
-            #12,
-            #13:
-              if N = 0 then
-                break;
-
-            '(':
-              Inc(N);
-
-            ')':
-            begin
-              if N = 0 then
-                break;
-              Dec(N);
-            end;
-          end;
-          Inc(J);
-        end;
-      end;
-      Result := Copy(S, I, J - I);
-
-      // ignore the rest: optional whitespaces and ')'
-    end;
-  end;
-end;
 
 {----------------TMyFont.Assign}
 
@@ -2259,10 +2146,10 @@ begin
 //        Props[BorderBottomColor] := NewColor;
 //      end;
     BorderTopColor..BorderLeftColor:
-      if ColorFromString(PropValue, False, NewColor) then
+      if TryStrToColor(PropValue, False, NewColor) then
         Props[Index] := NewColor;
     Color, BackgroundColor:
-      if ColorFromString(PropValue, False, NewColor) then
+      if TryStrToColor(PropValue, False, NewColor) then
         Props[Index] := NewColor
       else if Index = Color then
         Props[Index] := clBlack
@@ -2402,7 +2289,7 @@ begin
     end;
     case PropIndex of
       Color:
-        if ColorFromString(Value, False, NewColor) then
+        if TryStrToColor(Value, False, NewColor) then
         begin
           if Selector = ':link' then
           begin {changed the defaults to be the same as link}
@@ -2423,10 +2310,10 @@ begin
 //          Propty.Props[BorderBottomColor] := NewColor;
 //        end;
       BorderTopColor..BorderLeftColor:
-        if ColorFromString(Value, False, NewColor) then
+        if TryStrToColor(Value, False, NewColor) then
           Propty.Props[PropIndex] := NewColor;
       BackgroundColor:
-        if ColorFromString(Value, False, NewColor) then
+        if TryStrToColor(Value, False, NewColor) then
           Propty.Props[PropIndex] := NewColor
         else
           Propty.Props[PropIndex] := clNone;
@@ -2845,132 +2732,6 @@ begin
     ColorStrings.Sort;
   end;
   Result := ColorStrings;
-end;
-
-function ColorFromString(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
-{Translate StyleSheet color ThtString to Color.  If NeedPound is true, a '#' sign
- is required to preceed a hexidecimal value.}
-const
-  LastS: ThtString = '?&%@';
-  LastColor: TColor = 0;
-
-var
-  I, Rd, Bl: Integer;
-  S1: ThtString;
-
-  function FindRGBColor(S: ThtString): Boolean;
-  type
-    Colors = (red, green, blue);
-  var
-    A: array[red..blue] of ThtString;
-    C: array[red..blue] of Integer;
-    I, J: Integer;
-    K: Colors;
-  begin
-    I := Pos('(', S);
-    J := Pos(')', S);
-    if (I > 0) and (J > 0) then
-    begin
-      S := copy(S, 1, J - 1);
-      S := Trim(Copy(S, I + 1, 255));
-      for K := Red to Green do
-      begin
-        I := Pos(',', S);
-        A[K] := Trim(copy(S, 1, I - 1));
-        S := Trim(Copy(S, I + 1, 255));
-      end;
-      A[Blue] := S;
-      for K := Red to Blue do
-      begin
-        I := Pos('%', A[K]);
-        if I > 0 then
-        begin
-          Delete(A[K], I, 1);
-          try
-            C[K] := Round(StrToFloat(A[K]) * 2.55);
-          except
-            C[K] := 0;
-          end;
-        end
-        else
-          C[K] := StrToIntDef(A[K], 0);
-        C[K] := Max(0, Min(255, C[K]));
-      end;
-      Color := (C[Blue] shl 16) or (C[Green] shl 8) or C[Red];
-      Result := True;
-    end
-    else
-      Result := False;
-  end;
-
-//BG, 26.08.2009: exceptions are very slow
-var
-  Int, Idx: Integer;
-//BG, 26.08.2009
-begin
-  if S = '' then
-  begin
-    Result := False;
-    Exit;
-  end;
-  S := Lowercase(Trim(S));
-  if S = LastS then
-  begin {inquiries often come in pairs, this saves some recomputing}
-    Color := LastColor;
-    Result := True;
-    Exit;
-  end;
-  I := Pos('rgb', S);
-  if (I = 0) and (S[1] <> '#') then
-  begin
-    if SortedColors.Find(S, Idx) then
-    begin
-      Color := TColor(SortedColors.Objects[Idx]);
-      Result := True;
-      LastS := S;
-      LastColor := Color;
-      Exit;
-    end;
-  end;
-  S1 := S;
-  if (I > 0) then
-    Result := FindRGBColor(Copy(S, I + 3, 255))
-  else
-  begin
-//    try
-      I := Pos('#', S);
-      if I > 0 then
-        while I > 0 do {sometimes multiple ##}
-        begin
-          Delete(S, 1, I);
-          I := Pos('#', S);
-        end
-      else if NeedPound then
-      begin
-        Result := False;
-        Exit;
-      end;
-      S := Trim(S);
-      if Length(S) <= 3 then
-        for I := Length(S) downto 1 do
-          Insert(S[I], S, I); {Double each character}
-      Result := TryStrToInt('$' + S, Int);
-      if Result then
-      begin
-      {ok, but bytes are backwards!}
-        Rd := Int and $FF;
-        Bl := Int and $FF0000;
-        Color := (Int and $00FF00) + (Rd shl 16) + (Bl shr 16) or PalRelative;
-      end;
-//    except
-//      Result := False;
-//    end;
-  end;
-  if Result then
-  begin
-    LastS := S1;
-    LastColor := Color;
-  end;
 end;
 
 { ThtFontInfo }

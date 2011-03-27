@@ -142,7 +142,8 @@ type
   public
     destructor Destroy; override;
     procedure Clear; override;
-    function Find(Sy: Symb; var T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
+    function Find(Sy: Symb; var T: TAttribute): boolean; overload; {$ifdef UseInline} inline; {$endif}
+    function Find(SyName: ThtString; var T: TAttribute): boolean; overload; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
@@ -536,8 +537,6 @@ function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inlin
 function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
 function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
 function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
 
@@ -911,25 +910,6 @@ end;
 function WideSameStr1(const S1, S2: WideString): boolean;
 begin
   Result := S1 = S2;
-end;
-
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
-var
-  S1: ThtString;
-  I: Integer;
-begin
-  if Offset <= 1 then
-    Result := Pos(SubStr, S)
-  else
-  begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := Pos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
@@ -1313,6 +1293,20 @@ begin
   Result := False;
 end;
 
+function TAttributeList.Find(SyName: ThtString; var T: TAttribute): boolean;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+    if Items[I].WhichName = SyName then
+    begin
+      Result := True;
+      T := Items[I];
+      Exit;
+    end;
+  Result := False;
+end;
+
 function TAttributeList.GetAttribute(Index: Integer): TAttribute;
 begin
   Result := Get(Index);
@@ -1653,7 +1647,7 @@ begin
   Cnt := 0;
   Handle := 0;
   for I := 0 to Attrib.Count - 1 do
-    with TAttribute(Attrib[I]) do
+    with Attrib[I] do
       case Which of
         HRefSy: HRef := Name;
         TargetSy: Target := Name;

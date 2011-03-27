@@ -1,6 +1,6 @@
 {
-HtmlViewer Version 11
-Copyright (c) 2010 by B.Gabriel
+HtmlViewer Version 12
+Copyright (c) 2010-2011 by B.Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -29,17 +29,23 @@ unit HtmlBuffer;
 
 interface
 
+{Important: Be sure to list LclType after SysUtils and Classes
+   in order to use LclType's THandle declaration (32 or 64 bits)
+   rather than THandle in SysUtils and Classes (=System.THandle,
+   which apparently is always 32 bits).}
 uses
 {$ifdef LCL}
+  Classes, SysUtils,
   LclIntf, LclType, HtmlMisc,
 {$else}
   Windows,
+  Classes, SysUtils,
 {$endif}
   Graphics,
 {$ifdef UNICODE}
   AnsiStrings,
 {$endif}
-  Classes, SysUtils, Math;
+  Math;
 
 const
   // more char sets

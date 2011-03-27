@@ -677,7 +677,7 @@ begin
   ParentColor := True;
   if Assigned(L) then
     for I := 0 to L.Count - 1 do
-      with TAttribute(L[I]) do
+      with L[I] do
         case Which of
           SrcSy:
             begin
