@@ -1,0 +1,57 @@
+package BegaHtmlViewer2007;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'Theme Manager design time package'}
+{$IMPLICITBUILD ON}
+{$DEFINE DebugIt}
+
+requires
+  rtl,
+  vcl,
+  vcljpg,
+  TntUnicodeVclD11,
+  vclactnband,
+  vclx,
+  dsnap,
+  dbrtl,
+  vcldb,
+  designide,
+  xmlrtl;
+
+contains
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  HtmlGlobals in '..\source\HtmlGlobals.pas',
+  URLSubs in '..\source\URLSubs.pas',
+  HtmlSymbols in '..\source\HtmlSymbols.pas',
+  Parser in '..\source\Parser.pas',
+  HtmlStyles in '..\source\HtmlStyles.pas',
+  HtmlTree in '..\source\HtmlTree.pas',
+  StyleParser in '..\source\StyleParser.pas',
+  HtmlDocument in '..\source\HtmlDocument.pas',
+  HtmlParser in '..\source\HtmlParser.pas';
+
+{
+  HtmlParser in '..\source\HtmlParser.pas';
+}
+end.
