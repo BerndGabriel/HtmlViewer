@@ -33,9 +33,10 @@ uses
 {$ifdef MSWINDOWS}
   Windows,
 {$endif}
-  Contnrs,
+  Contnrs, SysUtils,
   //
   HtmlGlobals,
+  HtmlBuffer,
   HtmlStyles,
   HtmlSymbols;
 
@@ -50,6 +51,8 @@ type
     FName: ThtString;
     FValue: ThtString;
     constructor Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
+    function Clone: THtmlAttribute;
+    procedure Assign(Source: THtmlAttribute); virtual;
     property Symbol: THtmlAttributeSymbol read FSymbol;
     property AsString: ThtString read FValue;
   end;
@@ -73,11 +76,13 @@ type
     FParent: THtmlElement;
     FChildren: TObjectList;
     FSymbol: THtmlElementSymbol;
-    FAttributes: THtmlAttributeList;
     FDocPos: Integer;
 
+    FAttributes: THtmlAttributeList;
     FIds: ThtStringArray;
     FClasses: ThtStringArray;
+    FAttributeProperties: TPropertyList; // properties set by formatting attributes other than style
+    FStyleProperties: TPropertyList;     // properties set by style attribute
     function GetChildCount: Integer;
   protected
     function FindAttribute(Name: ThtString; out Attribute: THtmlAttribute): Boolean; overload; virtual;
@@ -86,9 +91,15 @@ type
     function GetPseudos: TPseudos; virtual;
     procedure AddChild(Child: THtmlElement);
     procedure ExtractChild(Child: THtmlElement);
+    procedure SetAttribute(Attribute: THtmlAttribute); virtual;
     procedure SetParent(Parent: THtmlElement);
   public
-    constructor Create(Parent: THtmlElement; Symbol: THtmlElementSymbol; Attributes: THtmlAttributeList; DocPos: Integer);
+    constructor Create(
+      Parent: THtmlElement;
+      Symbol: THtmlElementSymbol;
+      Attributes: THtmlAttributeList;
+      StyleProperties: TPropertyList;
+      DocPos: Integer);
     destructor Destroy; override;
     function IndexOf(Child: THtmlElement): Integer; virtual;
     function IsMatching(Selector: TSelector): Boolean;
@@ -97,6 +108,10 @@ type
     property Count: Integer read GetChildCount;
     property DocPos: Integer read FDocPos;
     property Symbol: THtmlElementSymbol read FSymbol;
+    property Classes: ThtStringArray read FClasses;
+    property Ids: ThtStringArray read FIds;
+    property AttributeProperties: TPropertyList read FAttributeProperties;
+    property StyleProperties: TPropertyList read FStyleProperties;
   end;
 
   THtmlElementClass = class of THtmlElement;
@@ -123,7 +138,68 @@ function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSym
 function TryStrToElementSymbol(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
 function TryStrToElementEndSym(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
 
+function Explode(const Str: ThtString; Sep: ThtChar): ThtStringArray;
+function Implode(const Str: ThtStringArray; Sep: ThtChar): ThtString;
+
 implementation
+
+//-- BG ---------------------------------------------------------- 30.03.2011 --
+function Explode(const Str: ThtString; Sep: ThtChar): ThtStringArray;
+// split Str into pieces separated by one or more Seps
+var
+  I, J, L, N: Integer;
+begin
+  L := 0;
+  SetLength(Result, L);
+  I := 1;
+  J := 1;
+  N := Length(Str);
+  while J <= N do
+  begin
+    if Str[J] <> Sep then
+    begin
+      if Str[I] = Sep then
+        I := J;
+    end
+    else
+    begin
+      if Str[I] <> Sep then
+      begin
+        Inc(L);
+        SetLength(Result, L);
+        Result[L - 1] := Copy(Str, I, J - I);
+        I := J;
+      end;
+    end;
+    Inc(J);
+  end;
+  if Str[I] <> Sep then
+  begin
+    Inc(L);
+    SetLength(Result, L);
+    Result[L - 1] := Copy(Str, I, J - I);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 30.03.2011 --
+function Implode(const Str: ThtStringArray; Sep: ThtChar): ThtString;
+var
+  I, L, N: Integer;
+begin
+  N := Length(Str); // 1 Sep after each string
+  for I := Low(Str) to High(Str) do
+    Inc(N, Length(Str[I]));
+  SetLength(Result, N);
+  N := 1;
+  for I := Low(Str) to High(Str) do
+  begin
+    L := Length(Str[I]);
+    Move(Str[I][1], Result[N], L * SizeOf(ThtChar));
+    Inc(N, L);
+    Result[N] := Sep;
+    Inc(N);
+  end;
+end;
 
 //------------------------------------------------------------------------------
 // html elements
@@ -519,6 +595,21 @@ end;
 { THtmlAttribute }
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
+procedure THtmlAttribute.Assign(Source: THtmlAttribute);
+begin
+  FSymbol := Source.FSymbol;
+  FName := Source.FName;
+  FValue := Source.FValue;
+end;
+
+//-- BG ---------------------------------------------------------- 30.03.2011 --
+function THtmlAttribute.Clone: THtmlAttribute;
+begin
+  Result := THtmlAttribute(ClassType.Create);
+  Result.Assign(Self);
+end;
+
+//-- BG ---------------------------------------------------------- 30.03.2011 --
 constructor THtmlAttribute.Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
 begin
   inherited Create;
@@ -576,13 +667,26 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
-constructor THtmlElement.Create(Parent: THtmlElement; Symbol: THtmlElementSymbol; Attributes: THtmlAttributeList; DocPos: Integer);
+constructor THtmlElement.Create(
+  Parent: THtmlElement;
+  Symbol: THtmlElementSymbol;
+  Attributes: THtmlAttributeList;
+  StyleProperties: TPropertyList;
+  DocPos: Integer);
+var
+  I: Integer;
 begin
   inherited Create;
   FSymbol := Symbol;
-  FAttributes := Attributes;
   FDocPos := DocPos;
+  FStyleProperties := StyleProperties;
   SetParent(Parent);
+  if Attributes <> nil then
+  begin
+    FAttributes := THtmlAttributeList.Create;
+    for I := 0 to Attributes.Count - 1 do
+      SetAttribute(Attributes[I]);
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
@@ -590,6 +694,8 @@ destructor THtmlElement.Destroy;
 begin
   FChildren.Free;
   FAttributes.Free;
+  FStyleProperties.Free;
+  FAttributeProperties.Free;
   inherited;
 end;
 
@@ -772,6 +878,16 @@ begin
         scDescendant: Result := IsDescendant(TCombinedSelector(Selector).LeftHand);
         scFollower:   Result := IsFollower(TCombinedSelector(Selector).LeftHand);
       end;
+end;
+
+//-- BG ---------------------------------------------------------- 30.03.2011 --
+procedure THtmlElement.SetAttribute(Attribute: THtmlAttribute);
+begin
+  FAttributes.Add(Attribute.Clone);
+  case Attribute.Symbol of
+    ClassSy:      FClasses := Explode(Attribute.AsString, ' ');
+    IDSy:         FIds     := Explode(Attribute.AsString, ' ');
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --

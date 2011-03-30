@@ -142,6 +142,8 @@ type
     procedure GetChBasic;
     procedure First; {$ifdef UseInline} inline; {$endif}
     procedure Next;
+    function GetStyleProperties(Attributes: THtmlAttributeList): TPropertyList; overload;
+    function GetStyleProperties(Str: ThtString): TPropertyList; overload;
     property CodePage: Integer read GetCodePage;
   public
     constructor Create(Doc: TBuffer; const Base: ThtString = '');
@@ -559,6 +561,35 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 29.03.2011 --
+procedure THtmlParser.GetChildren(Parent: THtmlElement; const ParentEd: THtmlElementDescription);
+// Parses the document tree with LCToken being the root.
+// On return it is already added to Parent, if Parent is not nil,
+// as setting the Parent adds a node to its Parent's list of Children.
+var
+  Ed: THtmlElementDescription;
+  Element: THtmlElement;
+begin
+  repeat
+    Ed := LCToken.Ed;
+    if (LCToken.Symbol = Ed.Symbol) and (Ed.Clasz <> nil) then
+    begin
+      // this is an element's start tag
+      //TODO -1 -oBG, 31.03.2011: create required style properties param. 
+      Element := Ed.Clasz.Create(Parent, Ed.Symbol, LCToken.Attributes, GetStyleProperties(LCToken.Attributes), LCToken.DocPos);
+      Next;
+      if LCToken.Symbol in Ed.Content then
+        GetChildren(Element, Ed);
+      if LCToken.Symbol = Ed.EndSym then
+        Next;
+      if LCToken.Symbol = ParentEd.EndSym then
+        break;
+    end
+    else
+      break;
+  until False;
+end;
+
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure THtmlParser.GetChSkipWhiteSpace;
 begin
@@ -732,32 +763,36 @@ begin
   ;
 end;
 
-//-- BG ---------------------------------------------------------- 29.03.2011 --
-procedure THtmlParser.GetChildren(Parent: THtmlElement; const ParentEd: THtmlElementDescription);
-// Parses the document tree with LCToken being the root.
-// On return it is already added to Parent, if Parent is not nil,
-// as setting the Parent adds a node to its Parent's list of Children.
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+function THtmlParser.GetStyleProperties(Attributes: THtmlAttributeList): TPropertyList;
 var
-  Ed: THtmlElementDescription;
-  Element: THtmlElement;
+  I: Integer;
 begin
-  repeat
-    Ed := LCToken.Ed;
-    if (LCToken.Symbol = Ed.Symbol) and (Ed.Clasz <> nil) then
-    begin
-      // this is an element's start tag
-      Element := Ed.Clasz.Create(Parent, Ed.Symbol, LCToken.Attributes, LCToken.DocPos);
-      Next;
-      if LCToken.Symbol in Ed.Content then
-        GetChildren(Element, Ed);
-      if LCToken.Symbol = Ed.EndSym then
-        Next;
-      if LCToken.Symbol = ParentEd.EndSym then
-        break;
-    end
-    else
-      break;
-  until False;
+  Result := nil;
+  for I := 0 to Attributes.Count - 1 do
+    if Attributes[I].Symbol = StyleAttrSy then
+      Result := GetStyleProperties(Attributes[I].AsString);
+end;
+
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+function THtmlParser.GetStyleProperties(Str: ThtString): TPropertyList;
+var
+  Doc: TBuffer;
+  Ch: ThtChar;
+begin
+  Doc := TBuffer.Create(Str);
+  try
+    Result := TPropertyList.Create;
+    with THtmlStyleParser.Create(poStyle, Doc, FBase) do
+      try
+        Ch := ' ';
+        ParseStyleProperties(Ch, Result);
+      finally
+        Free;
+      end;
+  finally
+    Doc.Free;
+  end;
 end;
 
 //------------------------------------------------------------------------------
@@ -942,6 +977,9 @@ procedure THtmlParser.Next;
         LCToken.Attributes.Add(Attribute);
     end;
 
+    //TODO -2 -oBG, 30.03.2011: skipping any white space is too much.
+    // A single space must represent all spaces and tabs, but ignore line feeds outside
+    // preformatted text
     while (LCh <> GreaterChar) and (LCh <> EofChar) do
       GetChSkipWhiteSpace;
     if not (LCToken.Symbol in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
@@ -1070,7 +1108,7 @@ begin
           BodySy,
           FrameSetSy:
           begin
-            Document.Tree := LCToken.Ed.Clasz.Create(nil, LCToken.Symbol, LCToken.Attributes, LCToken.DocPos);
+            Document.Tree := LCToken.Ed.Clasz.Create(nil, LCToken.Symbol, LCToken.Attributes, GetStyleProperties(LCToken.Attributes), LCToken.DocPos);
             Next;
             ParseTree(LCToken.Ed);
             break;
@@ -1082,14 +1120,14 @@ begin
             Ed := ElementSymbolToElementDescription(BodySy);
             if LCToken.Symbol in Ed.Content then
             begin
-              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, LCToken.DocPos);
+              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, nil, LCToken.DocPos);
               ParseTree(Ed);
               break;
             end;
             Ed := ElementSymbolToElementDescription(FrameSetSy);
             if LCToken.Symbol in Ed.Content then
             begin
-              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, LCToken.DocPos);
+              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, nil, LCToken.DocPos);
               ParseTree(Ed);
               break;
             end;

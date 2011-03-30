@@ -118,7 +118,9 @@ type
 
 type
 
-  TAttributeList = class(ThtStringList);
+//  TAttributeList = class(ThtStringList)
+//  public
+//  end;
 
   TAttributeMatchOperator = (
     amoSet,        // [name] : matches, if attr is set and has any value.
@@ -390,8 +392,6 @@ type
   //    then call UpdateFromProperties() with the ruleset's properties and if the combination has a
   //    higher cascading order, this becomes the new resulting value.
   // 3) Fill up missing properties with other tag attributes (like color, width, height, ...).
-  //    Actually you must not put these properties to the TResultingPropertyMap. Just collect these
-  //    data in your tag class and overwrite the values with the existing ones in TResultingPropertyMap.
   //
   // Using reverse order minimizes comparing and update effort.
   TResultingPropertyMap = class
@@ -402,7 +402,7 @@ type
   public
     destructor Destroy; override;
     function Get(Index: TStylePropertySymbol): TResultingProperty; {$ifdef UseInline} inline; {$endif}
-    procedure UpdateFromStyleAttribute(const Properties: TPropertyList); {$ifdef UseInline} inline; {$endif}
+    procedure UpdateFromAttributes(const Properties: TPropertyList; IsFromStyleAttr: Boolean); {$ifdef UseInline} inline; {$endif}
     procedure UpdateFromProperties(const Properties: TPropertyList; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
     property ResultingProperties[Index: TStylePropertySymbol]: TResultingProperty read Get; default;
   end;
@@ -536,12 +536,14 @@ function TPropertyList.ToString: ThtString;
 var
   I: Integer;
 begin
-  if Count > 0 then
-  begin
-    Result := CrLf + TabChar + Self[0].ToString;
-    for I := 1 to Count - 1 do
-      Result := Result + ';' + CrLf + TabChar + Self[I].ToString;
-  end;
+  Result := '';
+  if Self <> nil then
+    if Count > 0 then
+    begin
+      Result := CrLf + TabChar + Self[0].ToString;
+      for I := 1 to Count - 1 do
+        Result := Result + ';' + CrLf + TabChar + Self[I].ToString;
+    end;
 end;
 
 { TAttributeMatch }
@@ -1001,13 +1003,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-procedure TResultingPropertyMap.UpdateFromStyleAttribute(const Properties: TPropertyList);
+procedure TResultingPropertyMap.UpdateFromAttributes(const Properties: TPropertyList; IsFromStyleAttr: Boolean);
 begin
   if FStyle = nil then
-  begin
     FStyle := TSelector.Create;
-    FStyle.FIsFromStyleAttr := True;
-  end;
+  FStyle.FIsFromStyleAttr := IsFromStyleAttr;
   UpdateFromProperties(Properties, FStyle);
 end;
 
