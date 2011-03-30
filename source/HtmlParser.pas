@@ -30,7 +30,7 @@ unit HtmlParser;
 interface
 
 uses
-  Classes, Contnrs, SysUtils,
+  Classes, Contnrs, SysUtils, TypInfo,
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc,
 {$else}
@@ -89,45 +89,58 @@ type
   THtmlToken = class(TCharBuffer)
   private
     FSymbol: THtmlElementSymbol;
+    FEd: THtmlElementDescription;
     FAttributes: THtmlAttributeList;
+    procedure SetSymbol(const Value: THtmlElementSymbol);
+    property Ed: THtmlElementDescription read FEd;
   public
     procedure Init(DocPos: Integer); override;
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-    property Symbol: THtmlElementSymbol read FSymbol write FSymbol;
+    property Symbol: THtmlElementSymbol read FSymbol write SetSymbol;
     property Attributes: THtmlAttributeList read FAttributes;
   end;
 
-  THtmlParserState = set of (hpsInComment, hpsInScript, hpsInStyle);
+  THtmlParserState = set of (hpsInComment, hpsInHtml, hpsInHead, hpsInBody, hpsInFrameSet, hpsInScript, hpsInStyle);
 
   THtmlParser = class
   private
-    FState: THtmlParserState;
-    FDocStack: TStack;
+    // input
     FDoc: TBuffer;
     FBase: ThtString;
-    FProgress: Integer;
 
+    // state
+    FState: THtmlParserState;
+    FDocStack: TStack;
+    FProgress: Integer;
     LCh: ThtChar;
     FDocPos: Integer; // byte position of LCh in document
     LCToken: THtmlToken;
 
+    // events
     FOnInclude: TIncludeEvent;
     FOnProgress: TProgressEvent;
 
-    // debug stuff
+    // output
+    FDocument: THtmlDocument;
+
+{$ifdef DebugIt}
+    // debug
     LIdentPos: Integer;
     procedure checkPosition(var Pos: Integer);
+{$endif}
 
     function GetCodePage: Integer;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
+    procedure GetChildren(Parent: THtmlElement; const ParentEd: THtmlElementDescription);
     procedure GetCh;
     procedure GetChSkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
     procedure PopDoc;
     procedure PushDoc(NewDoc: TBuffer);
     procedure SkipWhiteSpace;
     procedure GetChBasic;
+    procedure First; {$ifdef UseInline} inline; {$endif}
     procedure Next;
     property CodePage: Integer read GetCodePage;
   public
@@ -212,7 +225,7 @@ function TCharBuffer.GetString: ThtString;
 begin
   if cbsDirty in FState then
   begin
-    htSetString(FString, @FBuffer[1], FCount);
+    htSetString(FString, @FBuffer[0], FCount);
     Exclude(FState, cbsDirty);
   end;
   Result := FString;
@@ -251,7 +264,7 @@ end;
 procedure THtmlToken.AfterConstruction;
 begin
   inherited;
-  FAttributes.Create;
+  FAttributes := THtmlAttributeList.Create;
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
@@ -261,15 +274,30 @@ begin
   FAttributes.Free;
 end;
 
+//-- BG ---------------------------------------------------------- 28.03.2011 --
 procedure THtmlToken.Init(DocPos: Integer);
 begin
   inherited;
-  FSymbol := UnknownSy;
+  FEd := UnknownEd;
   FAttributes.Clear;
+end;
+
+//-- BG ---------------------------------------------------------- 29.03.2011 --
+procedure THtmlToken.SetSymbol(const Value: THtmlElementSymbol);
+begin
+  FSymbol := Value;
+  FEd := ElementSymbolToElementDescription(Value);
+  if Fed.Symbol = UnknownSy then
+  begin
+    assert(False, 'Element symbol "' + GetEnumName(TypeInfo(THtmlElementSymbol), Ord(Value)) + '" without description!');
+    FEd.Symbol := Value;
+    FEd.Name := GetEnumName(TypeInfo(THtmlElementSymbol), Ord(Value));
+  end
 end;
 
 { THtmlParser }
 
+{$ifdef DebugIt}
 //-- BG ---------------------------------------------------------- 19.03.2011 --
 procedure THtmlParser.checkPosition(var Pos: Integer);
   procedure stopHere();
@@ -280,6 +308,7 @@ begin
     stopHere();
   Pos := FDoc.Position;
 end;
+{$endif}
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 constructor THtmlParser.Create(Doc: TBuffer; const Base: ThtString);
@@ -297,6 +326,14 @@ begin
   LCToken.Free;
   FDocStack.Free;
   inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 28.03.2011 --
+procedure THtmlParser.First;
+begin
+  FState := [];
+  GetCh;
+  Next;
 end;
 
 //------------------------------------------------------------------------------
@@ -688,8 +725,39 @@ begin
 
   if Result then
     Result := Length(Identifier) > 0
+{$ifdef DebugIt}
   else
-    checkPosition(LIdentPos);
+    checkPosition(LIdentPos)
+{$endif}
+  ;
+end;
+
+//-- BG ---------------------------------------------------------- 29.03.2011 --
+procedure THtmlParser.GetChildren(Parent: THtmlElement; const ParentEd: THtmlElementDescription);
+// Parses the document tree with LCToken being the root.
+// On return it is already added to Parent, if Parent is not nil,
+// as setting the Parent adds a node to its Parent's list of Children.
+var
+  Ed: THtmlElementDescription;
+  Element: THtmlElement;
+begin
+  repeat
+    Ed := LCToken.Ed;
+    if (LCToken.Symbol = Ed.Symbol) and (Ed.Clasz <> nil) then
+    begin
+      // this is an element's start tag
+      Element := Ed.Clasz.Create(Parent, Ed.Symbol, LCToken.Attributes, LCToken.DocPos);
+      Next;
+      if LCToken.Symbol in Ed.Content then
+        GetChildren(Element, Ed);
+      if LCToken.Symbol = Ed.EndSym then
+        Next;
+      if LCToken.Symbol = ParentEd.EndSym then
+        break;
+    end
+    else
+      break;
+  until False;
 end;
 
 //------------------------------------------------------------------------------
@@ -781,10 +849,11 @@ procedure THtmlParser.Next;
       Symbol: THtmlAttributeSymbol;
       Value: ThtString;
     begin
+      SkipWhiteSpace;
       Result := GetIdentifier(Name);
       if Result then
       begin
-        TryStrToAttributeSymbol(Name, Symbol);
+        TryStrToAttributeSymbol(htUpperCase(Name), Symbol);
         SkipWhiteSpace;
         if LCh = '=' then
         begin
@@ -816,13 +885,14 @@ procedure THtmlParser.Next;
         end
         else
           Value := Name;
-        Attribute.Create(Symbol, Name, Value);
+        Attribute := THtmlAttribute.Create(Symbol, Name, Value);
       end;
     end;
 
   var
     EndTag: Boolean;
     Attribute: THtmlAttribute;
+    Symbol: THtmlElementSymbol;
   begin
     GetCh; // skip '<'
     EndTag := LCh = '/';
@@ -863,19 +933,19 @@ procedure THtmlParser.Next;
 
     if LCToken.Count > 0 then
     begin
-      if not EndTag then
-        TryStrToElementSymbol(htUpperCase(LCToken.S), LCToken.FSymbol)
+      if EndTag then
+        TryStrToElementEndSym(htUpperCase(LCToken.S), Symbol)
       else
-        TryStrToElementEndSymbol(htUpperCase(LCToken.S), LCToken.FSymbol);
-
+        TryStrToElementSymbol(htUpperCase(LCToken.S), Symbol);
+      LCToken.Symbol := Symbol;
       while GetAttribute(Attribute) do
         LCToken.Attributes.Add(Attribute);
     end;
 
     while (LCh <> GreaterChar) and (LCh <> EofChar) do
-      GetCh;
+      GetChSkipWhiteSpace;
     if not (LCToken.Symbol in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
-      GetCh;
+      GetChSkipWhiteSpace;
   end;
 
   procedure CollectText;
@@ -932,15 +1002,108 @@ end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
-begin
-  try
-    GetCh; //get the reading started
-    Next;
-    while LCToken.Symbol <> EofSy do
+
+  procedure ParseTree(const Ed: THtmlElementDescription);
+  begin
+    GetChildren(Document.Tree, Ed);
+    if LCToken.Symbol = Ed.EndSym then
       Next;
-  except
-    on E: Exception do
-      Assert(False, E.Message);
+    if LCToken.Symbol = HtmlEndSy then
+      Next;
+  end;
+
+var
+  Ed: THtmlElementDescription;
+begin
+  FDocument := Document;
+  try
+    try
+      First;
+      repeat
+        case LCToken.Symbol of
+          HtmlSy:
+          begin
+            //TODO -5 -oBG, 28.03.2011: process the attributes of element 'html'
+            Include(FState, hpsInHtml);
+            Next;
+          end;
+
+          HeadSy:
+          begin
+            Include(FState, hpsInHead);
+            Ed := LCToken.Ed;
+            //TODO -5 -oBG, 29.03.2011: process the attributes of element 'head'
+            Next;
+            repeat
+              if LCToken.Symbol in Ed.Content then
+              begin
+                //TODO -1 -oBG, 29.03.2011: process the content of element 'head'
+              end
+              else if LCToken.Symbol in [Ed.EndSym, EofSy] then
+              begin
+                Next;
+                break;
+              end;
+              Next;
+            until False;
+          end;
+
+          HeadEndSy:
+          begin
+            Exclude(FState, hpsInHead);
+            Next;
+          end;
+
+          HtmlEndSy:
+          begin
+            Exclude(FState, hpsInHtml);
+            Next;
+            break;
+          end;
+
+          EofSy:
+            break;
+
+          UnknownSy:
+            Next;
+
+          BodySy,
+          FrameSetSy:
+          begin
+            Document.Tree := LCToken.Ed.Clasz.Create(nil, LCToken.Symbol, LCToken.Attributes, LCToken.DocPos);
+            Next;
+            ParseTree(LCToken.Ed);
+            break;
+          end;
+
+        else
+          if (LCToken.Symbol <> TextSy) or (Length(Trim(LCToken.S)) > 0) then
+          begin
+            Ed := ElementSymbolToElementDescription(BodySy);
+            if LCToken.Symbol in Ed.Content then
+            begin
+              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, LCToken.DocPos);
+              ParseTree(Ed);
+              break;
+            end;
+            Ed := ElementSymbolToElementDescription(FrameSetSy);
+            if LCToken.Symbol in Ed.Content then
+            begin
+              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, LCToken.DocPos);
+              ParseTree(Ed);
+              break;
+            end;
+          end;
+          //BG, 30.03.2011: skip this token.
+          Next;
+        end;
+      until False;
+    except
+      on E: Exception do
+        Assert(False, E.Message);
+    end;
+  finally
+    FDocument := nil;
   end;
 end;
 

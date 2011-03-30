@@ -111,21 +111,21 @@
     {$H+}  {LongStrings On}
   {$endif}
 
-  {$ifndef DebugIt}
-    {$W-}  {Stack frames off}
-    {$Q-}  {overflow checking off}
-    {$S-}  {stack checking off}
-    {$C-}  {Assertions off}
-    {$ifdef Win32}
-      {$O+}  {optimization on}
-    {$endif}
-  {$else}
+  {$ifdef DebugIt}
     {$W+}  {Stack frames on}
     {$Q+}  {overflow checking on}
     {$S+}  {stack checking on}
     {$C+}  {Assertions on}
     {$ifdef Win32}
       {$O-}  {optimization off}
+    {$endif}
+  {$else}
+    {$W-}  {Stack frames off}
+    {$Q-}  {overflow checking off}
+    {$S-}  {stack checking off}
+    {$C-}  {Assertions off}
+    {$ifdef Win32}
+      {$O+}  {optimization on}
     {$endif}
   {$endif}
 

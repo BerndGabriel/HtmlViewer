@@ -207,7 +207,7 @@ var
 
 //BG, 26.08.2009: exceptions are very slow
 var
-  Int, Idx: Integer;
+  Int: Integer;
 //BG, 26.08.2009
 begin
   if S = '' then

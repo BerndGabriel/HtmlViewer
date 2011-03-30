@@ -97,6 +97,8 @@ type
     IFrameSy,     IFrameEndSy,    // since12
     ImageSy,
     InputSy,
+    InsSy,        InsEndSy,       // since12
+    IsIndexSy,                    // since12
     KbdSy,        KbdEndSy,
     LabelSy,      LabelEndSy,
     LegendSy,     LegendEndSy,
@@ -117,6 +119,7 @@ type
     PanelSy,                      // extension
     ParamSy,
     PreSy,        PreEndSy,
+    QSy,          QEndSy,         // since12
     ReadonlySy,                   // extension
     SSy,          SEndSy,
     SampSy,       SampEndSy,
@@ -145,6 +148,8 @@ type
     VarSy,        VarEndSy,
     WbrSy,                        // extension
     WrapSy);                      // extension
+
+  THtmlElementSymbols = set of THtmlElementSymbol;
 
   THtmlAttributeSymbol = (
     UnknownAttrSy,
@@ -279,16 +284,10 @@ const
   CBorderStyle: array[TBorderStyle] of ThtString = (
     'none', 'solid', 'inset', 'outset', 'groove', 'ridge', 'dashed', 'dotted', 'double');
 
-
 function TryNameToColor(const Name: ThtString; out Color: TColor): Boolean;
-function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
-function TryStrToElementSymbol(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
-function TryStrToElementEndSymbol(const Str: ThtString; out EndSy: THtmlElementSymbol): Boolean;
 function TryStrToEntity(const Str: ThtString; out Entity: Integer): Boolean;
 function TryStrToPropertySymbol(const Str: ThtString; out Sy: TPropertySymbol): Boolean;
-function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
-function ElementSymbolToStr(Sy: THtmlElementSymbol): ThtString;
 function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
 
 implementation
@@ -636,330 +635,6 @@ begin
   Result := Entities.Find(Str, I);
   if Result then
     Entity := PEntity(Entities.Objects[I]).Value;
-end;
-
-//------------------------------------------------------------------------------
-// html elements
-//------------------------------------------------------------------------------
-
-type
-  PElementDescription = ^TElementDescription;
-  TElementDescription = record
-    Name: ThtString;
-    Symbol: THtmlElementSymbol;
-    EndSym: THtmlElementSymbol; // NoEndSy == no end symbol
-  end;
-
-const
-  CElementDescriptions: array[1..96] of TElementDescription = (
-    (Name: 'A';           Symbol: ASy;          EndSym: AEndSy),
-    (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrEndSy),     // since12
-    (Name: 'ACRONYM';     Symbol: AcronymSy;    EndSym: AcronymEndSy),  // since12
-    (Name: 'ADDRESS';     Symbol: AddressSy;    EndSym: AddressEndSy),
-    (Name: 'APPLET';      Symbol: AppletSy;     EndSym: AppletEndSy),   // since12
-    (Name: 'AREA';        Symbol: AreaSy;       EndSym: NoEndSy),
-    (Name: 'B';           Symbol: BSy;          EndSym: BEndSy),
-    (Name: 'BASE';        Symbol: BaseSy;       EndSym: NoEndSy),
-    (Name: 'BASEFONT';    Symbol: BaseFontSy;   EndSym: NoEndSy),
-    (Name: 'BGSOUND';     Symbol: BgSoundSy;    EndSym: NoEndSy),       // extension
-    (Name: 'BDO';         Symbol: BdoSy;        EndSym: BdoEndSy),      // since12
-    (Name: 'BIG';         Symbol: BigSy;        EndSym: BigEndSy),
-    (Name: 'BLOCKQUOTE';  Symbol: BlockQuoteSy; EndSym: BlockQuoteEndSy),
-    (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
-    (Name: 'BR';          Symbol: BRSy;         EndSym: NoEndSy),
-    (Name: 'BUTTON';      Symbol: ButtonSy;     EndSym: NoEndSy),
-    (Name: 'CAPTION';     Symbol: CaptionSy;    EndSym: CaptionEndSy),
-    (Name: 'CENTER';      Symbol: CenterSy;     EndSym: CenterEndSy),
-    (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
-    (Name: 'CODE';        Symbol: CodeSy;       EndSym: CodeEndSy),
-    (Name: 'COL';         Symbol: ColSy;        EndSym: NoEndSy),
-    (Name: 'COLGROUP';    Symbol: ColGroupSy;   EndSym: ColGroupEndSy),
-    (Name: 'DD';          Symbol: DDSy;         EndSym: DDEndSy),
-    (Name: 'DEL';         Symbol: DelSy;        EndSym: DelEndSy),      // since12
-    (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),      // since12
-    (Name: 'DIR';         Symbol: DirSy;        EndSym: DirEndSy),
-    (Name: 'DIV';         Symbol: DivSy;        EndSym: DivEndSy),
-    (Name: 'DL';          Symbol: DLSy;         EndSym: DLEndSy),
-    (Name: 'DT';          Symbol: DTSy;         EndSym: DTEndSy),
-    (Name: 'EM';          Symbol: EmSy;         EndSym: EmEndSy),
-    (Name: 'FIELDSET';    Symbol: FieldsetSy;   EndSym: FieldsetEndSy),
-    (Name: 'FONT';        Symbol: FontSy;       EndSym: FontEndSy),
-    (Name: 'FORM';        Symbol: FormSy;       EndSym: FormEndSy),
-    (Name: 'FRAME';       Symbol: FrameSy;      EndSym: NoEndSy),
-    (Name: 'FRAMESET';    Symbol: FrameSetSy;   EndSym: FrameSetEndSy),
-    (Name: 'H1';          Symbol: H1Sy;         EndSym: H1EndSy),
-    (Name: 'H2';          Symbol: H2Sy;         EndSym: H2EndSy),
-    (Name: 'H3';          Symbol: H3Sy;         EndSym: H3EndSy),
-    (Name: 'H4';          Symbol: H4Sy;         EndSym: H4EndSy),
-    (Name: 'H5';          Symbol: H5Sy;         EndSym: H5EndSy),
-    (Name: 'H6';          Symbol: H6Sy;         EndSym: H6EndSy),
-    (Name: 'HEAD';        Symbol: HeadSy;       EndSym: HeadEndSy),
-    (Name: 'HR';          Symbol: HRSy;         EndSym: NoEndSy),
-    (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
-    (Name: 'I';           Symbol: ISy;          EndSym: IEndSy),
-    (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy),     // since12
-    (Name: 'IMG';         Symbol: ImageSy;      EndSym: NoEndSy),
-    (Name: 'INPUT';       Symbol: InputSy;      EndSym: NoEndSy),
-    (Name: 'KBD';         Symbol: KbdSy;        EndSym: KbdEndSy),
-    (Name: 'LABEL';       Symbol: LabelSy;      EndSym: LabelEndSy),
-    (Name: 'LEGEND';      Symbol: LegendSy;     EndSym: LegendEndSy),
-    (Name: 'LI';          Symbol: LISy;         EndSym: LIEndSy),
-    (Name: 'LINK';        Symbol: LinkSy;       EndSym: NoEndSy),
-    (Name: 'MAP';         Symbol: MapSy;        EndSym: MapEndSy),
-    (Name: 'MENU';        Symbol: MenuSy;       EndSym: MenuEndSy),
-    (Name: 'META';        Symbol: MetaSy;       EndSym: NoEndSy),
-    (Name: 'NOBR';        Symbol: NoBrSy;       EndSym: NoBrEndSy),       // extension
-    (Name: 'NOFRAMES';    Symbol: NoFramesSy;   EndSym: NoFramesEndSy),
-    (Name: 'NOSCRIPT';    Symbol: NoScriptSy;   EndSym: NoScriptEndSy), // since12
-    (Name: 'OBJECT';      Symbol: ObjectSy;     EndSym: ObjectEndSy),
-    (Name: 'OL';          Symbol: OLSy;         EndSym: OLEndSy),
-    (Name: 'OPTGROUP';    Symbol: OptGroupSy;   EndSym: OptGroupEndSy), // since12
-    (Name: 'OPTION';      Symbol: OptionSy;     EndSym: OptionEndSy),
-    (Name: 'P';           Symbol: PSy;          EndSym: PEndSy),
-    (Name: 'PAGE';        Symbol: PageSy;       EndSym: NoEndSy),       // extension
-    (Name: 'PANEL';       Symbol: PanelSy;      EndSym: NoEndSy),       // extension
-    (Name: 'PARAM';       Symbol: ParamSy;      EndSym: NoEndSy),
-    (Name: 'PRE';         Symbol: PreSy;        EndSym: PreEndSy),
-    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: NoEndSy),       // extension
-    (Name: 'S';           Symbol: SSy;          EndSym: SEndSy),
-    (Name: 'SAMP';        Symbol: SampSy;       EndSym: SampEndSy),
-    (Name: 'SCRIPT';      Symbol: ScriptSy;     EndSym: ScriptEndSy),
-    (Name: 'SELECT';      Symbol: SelectSy;     EndSym: SelectEndSy),
-    (Name: 'SELECTED';    Symbol: SelectedSy;   EndSym: NoEndSy),       // extension
-    (Name: 'SMALL';       Symbol: SmallSy;      EndSym: SmallEndSy),
-    (Name: 'SPAN';        Symbol: SpanSy;       EndSym: SpanEndSy),
-    (Name: 'STRIKE';      Symbol: StrikeSy;     EndSym: StrikeEndSy),
-    (Name: 'STRONG';      Symbol: StrongSy;     EndSym: StrongEndSy),
-    (Name: 'STYLE';       Symbol: StyleSy;      EndSym: StyleEndSy),
-    (Name: 'SUB';         Symbol: SubSy;        EndSym: SubEndSy),
-    (Name: 'SUP';         Symbol: SupSy;        EndSym: SupEndSy),
-    (Name: 'TABLE';       Symbol: TableSy;      EndSym: TableEndSy),
-    (Name: 'TBODY';       Symbol: TBodySy;      EndSym: TBodyEndSy),
-    (Name: 'TD';          Symbol: TDSy;         EndSym: TDEndSy),
-    (Name: 'TEXTAREA';    Symbol: TextAreaSy;   EndSym: TextAreaEndSy),
-    (Name: 'TFOOT';       Symbol: TFootSy;      EndSym: TFootEndSy),
-    (Name: 'TH';          Symbol: THSy;         EndSym: THEndSy),
-    (Name: 'THEAD';       Symbol: THeadSy;      EndSym: THeadEndSy),
-    (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
-    (Name: 'TR';          Symbol: TRSy;         EndSym: TREndSy),
-    (Name: 'TT';          Symbol: TTSy;         EndSym: TTEndSy),
-    (Name: 'U';           Symbol: USy;          EndSym: UEndSy),
-    (Name: 'UL';          Symbol: ULSy;         EndSym: ULEndSy),
-    (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
-    (Name: 'WBR';         Symbol: WbrSy;        EndSym: NoEndSy),     // extension
-    (Name: 'WRAP';        Symbol: WrapSy;       EndSym: NoEndSy)      // extension
-    );
-var
-  ElementDescriptions: ThtStringList;
-  ElementDescriptionsIndex: array [THtmlElementSymbol] of Integer;
-
-//-- BG ---------------------------------------------------------- 26.03.2011 --
-procedure InitElementDescriptions;
-var
-  I: Integer;
-  P: PElementDescription;
-  S: THtmlElementSymbol;
-begin
-  // Put the element descriptions into a sorted StringList for faster access.
-  if ElementDescriptions = nil then
-  begin
-    ElementDescriptions := ThtStringList.Create;
-    ElementDescriptions.CaseSensitive := True;
-    for I := low(CElementDescriptions) to high(CElementDescriptions) do
-      ElementDescriptions.AddObject(CElementDescriptions[I].Name, @CElementDescriptions[I]);
-    ElementDescriptions.Sort;
-
-    // initialize ElementDescriptionsIndex and SymbolNames
-    for S := low(S) to high(S) do
-      ElementDescriptionsIndex[S] := -1;
-    for I := 0 to ElementDescriptions.Count - 1 do
-    begin
-      P := PElementDescription(ElementDescriptions.Objects[I]);
-      ElementDescriptionsIndex[P.Symbol] := I;
-      if P.EndSym <> NoEndSy then
-        ElementDescriptionsIndex[P.EndSym] := I;
-    end;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 26.03.2011 --
-function TryStrToElementSymbol(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
-var
-  I: Integer;
-begin
-  Result := ElementDescriptions.Find(Str, I);
-  if Result then
-    Sy := PElementDescription(ElementDescriptions.Objects[I]).Symbol
-  else
-    Sy := UnknownSy;
-end;
-
-//-- BG ---------------------------------------------------------- 26.03.2011 --
-function TryStrToElementEndSymbol(const Str: ThtString; out EndSy: THtmlElementSymbol): Boolean;
-var
-  I: Integer;
-begin
-  Result := ElementDescriptions.Find(Str, I);
-  if Result then
-    EndSy := PElementDescription(ElementDescriptions.Objects[I]).EndSym
-  else
-    EndSy := UnknownSy;
-end;
-
-//-- BG ---------------------------------------------------------- 27.03.2011 --
-function ElementSymbolToStr(Sy: THtmlElementSymbol): ThtString;
-begin
-  Result := PElementDescription(ElementDescriptions.Objects[ElementDescriptionsIndex[Sy]]).Name;
-end;
-
-//------------------------------------------------------------------------------
-// html attributes
-//------------------------------------------------------------------------------
-
-type
-  PAttributeDescription = ^TAttributeDescription;
-  TAttributeDescription = record
-    Name: ThtString;
-    Symbol: THtmlAttributeSymbol;
-  end;
-
-const
-  CAttributeDescriptions: array[1..84] of TAttributeDescription = (
-    (Name: 'ACTION';            Symbol: ActionSy),
-    (Name: 'ACTIVE';            Symbol: ActiveSy),
-    (Name: 'ALIGN';             Symbol: AlignSy),
-    (Name: 'ALT';               Symbol: AltSy),
-    (Name: 'BACKGROUND';        Symbol: BackgroundSy),
-    (Name: 'BGCOLOR';           Symbol: BGColorSy),
-    (Name: 'BGPROPERTIES';      Symbol: BGPropertiesSy),
-    (Name: 'BORDER';            Symbol: BorderSy),
-    (Name: 'BORDERCOLOR';       Symbol: BorderColorSy),
-    (Name: 'BORDERCOLORDARK';   Symbol: BorderColorDarkSy),
-    (Name: 'BORDERCOLORLIGHT';  Symbol: BorderColorLightSy),
-    (Name: 'CELLPADDING';       Symbol: CellPaddingSy),
-    (Name: 'CELLSPACING';       Symbol: CellSpacingSy),
-    (Name: 'CHARSET';           Symbol: CharSetSy),
-    (Name: 'CHECKBOX';          Symbol: CheckBoxSy),
-    (Name: 'CHECKED';           Symbol: CheckedSy),
-    (Name: 'CLASS';             Symbol: ClassSy),
-    (Name: 'CLEAR';             Symbol: ClearSy),
-    (Name: 'COLOR';             Symbol: ColorSy),
-    (Name: 'COLS';              Symbol: ColsSy),
-    (Name: 'COLSPAN';           Symbol: ColSpanSy),
-    (Name: 'CONTENT';           Symbol: ContentSy),
-    (Name: 'COORDS';            Symbol: CoordsSy),
-    (Name: 'DISABLED';          Symbol: DisabledSy),
-    (Name: 'ENCTYPE';           Symbol: EncTypeSy),
-    (Name: 'FACE';              Symbol: FaceSy),
-    (Name: 'FRAMEBORDER';       Symbol: FrameBorderSy),
-    (Name: 'HEIGHT';            Symbol: HeightSy),
-    (Name: 'HREF';              Symbol: HrefSy),
-    (Name: 'HSPACE';            Symbol: HSpaceSy),
-    (Name: 'HTTP-EQUIV';        Symbol: HttpEqSy),
-    (Name: 'ID';                Symbol: IDSy),
-    (Name: 'ISMAP';             Symbol: IsMapSy),
-    (Name: 'LABEL';             Symbol: LabelAttrSy),
-    (Name: 'LANGUAGE';          Symbol: LanguageSy),
-    (Name: 'LEFTMARGIN';        Symbol: LeftMarginSy),
-    (Name: 'LINK';              Symbol: LinkAttrSy),
-    (Name: 'LOOP';              Symbol: LoopSy),
-    (Name: 'MARGINHEIGHT';      Symbol: MarginHeightSy),
-    (Name: 'MARGINWIDTH';       Symbol: MarginWidthSy),
-    (Name: 'MAXLENGTH';         Symbol: MaxLengthSy),
-    (Name: 'MEDIA';             Symbol: MediaSy),
-    (Name: 'METHOD';            Symbol: MethodSy),
-    (Name: 'MULTIPLE';          Symbol: MultipleSy),
-    (Name: 'NAME';              Symbol: NameSy),
-    (Name: 'NOHREF';            Symbol: NoHrefSy),
-    (Name: 'NORESIZE';          Symbol: NoResizeSy),
-    (Name: 'NOSHADE';           Symbol: NoShadeSy),
-    (Name: 'NOWRAP';            Symbol: NoWrapSy),
-    (Name: 'OLINK';             Symbol: OLinkSy),
-    (Name: 'ONBLUR';            Symbol: OnBlurSy),
-    (Name: 'ONCHANGE';          Symbol: OnChangeSy),
-    (Name: 'ONCLICK';           Symbol: OnClickSy),
-    (Name: 'ONFOCUS';           Symbol: OnFocusSy),
-    (Name: 'PLAIN';             Symbol: PlainSy),
-    (Name: 'RADIO';             Symbol: RadioSy),
-    (Name: 'RATIO';             Symbol: RatioSy),
-    (Name: 'READONLY';          Symbol: ReadonlyAttrSy),
-    (Name: 'REL';               Symbol: RelSy),
-    (Name: 'REV';               Symbol: RevSy),
-    (Name: 'ROWS';              Symbol: RowsSy),
-    (Name: 'ROWSPAN';           Symbol: RowSpanSy),
-    (Name: 'SCROLLING';         Symbol: ScrollingSy),
-    (Name: 'SELECTED';          Symbol: SelectedAttrSy),
-    (Name: 'SHAPE';             Symbol: ShapeSy),
-    (Name: 'SIZE';              Symbol: SizeSy),
-    (Name: 'SPAN';              Symbol: SpanAttrSy),
-    (Name: 'SRC';               Symbol: SrcSy),
-    (Name: 'START';             Symbol: StartSy),
-    (Name: 'STYLE';             Symbol: StyleAttrSy),
-    (Name: 'TABINDEX';          Symbol: TabIndexSy),
-    (Name: 'TARGET';            Symbol: TargetSy),
-    (Name: 'TEXT';              Symbol: TextAttrSy),
-    (Name: 'TITLE';             Symbol: TitleAttrSy),
-    (Name: 'TOPMARGIN';         Symbol: TopMarginSy),
-    (Name: 'TRANSP';            Symbol: TranspSy),
-    (Name: 'TYPE';              Symbol: TypeSy),
-    (Name: 'USEMAP';            Symbol: UseMapSy),
-    (Name: 'VALIGN';            Symbol: VAlignSy),
-    (Name: 'VALUE';             Symbol: ValueSy),
-    (Name: 'VLINK';             Symbol: VLinkSy),
-    (Name: 'VSPACE';            Symbol: VSpaceSy),
-    (Name: 'WIDTH';             Symbol: WidthSy),
-    (Name: 'WRAP';              Symbol: WrapAttrSy)
-  );
-
-var
-  AttributeDescriptions: ThtStringList;
-  AttributeDescriptionsIndex: array [THtmlAttributeSymbol] of Integer;
-
-procedure InitAttributes;
-var
-  I: Integer;
-  P: PAttributeDescription;
-  S: THtmlAttributeSymbol;
-begin
-  // Put the Attributes into a sorted StringList for faster access.
-  if AttributeDescriptions = nil then
-  begin
-    AttributeDescriptions := ThtStringList.Create;
-    AttributeDescriptions.CaseSensitive := True;
-    for I := low(CAttributeDescriptions) to high(CAttributeDescriptions) do
-    begin
-      P := @CAttributeDescriptions[I];
-      AttributeDescriptions.AddObject(P.Name, Pointer(P));
-    end;
-    AttributeDescriptions.Sort;
-
-    // initialize AttributeDescriptionsIndex and SymbolNames
-    for S := low(S) to high(S) do
-      AttributeDescriptionsIndex[S] := -1;
-    for I := 0 to AttributeDescriptions.Count - 1 do
-    begin
-      P := PAttributeDescription(AttributeDescriptions.Objects[I]);
-      AttributeDescriptionsIndex[P.Symbol] := I;
-    end;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 26.03.2011 --
-function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
-var
-  I: Integer;
-begin
-  Result := AttributeDescriptions.Find(Str, I);
-  if Result then
-    Sy := PAttributeDescription(AttributeDescriptions.Objects[I]).Symbol
-  else
-    Sy := UnknownAttrSy;
-end;
-
-//-- BG ---------------------------------------------------------- 27.03.2011 --
-function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
-begin
-  Result := PAttributeDescription(AttributeDescriptions.Objects[AttributeDescriptionsIndex[Sy]]).Name;
 end;
 
 //------------------------------------------------------------------------------
@@ -1348,15 +1023,11 @@ begin
 end;
 
 initialization
-  InitAttributes;
   InitColors;
-  InitElementDescriptions;
   InitEntities;
   InitProperties;
 finalization
-  AttributeDescriptions.Free;
   ColorDescriptions.Free;
-  ElementDescriptions.Free;
   Entities.Free;
   PropertyDescriptions.Free;
 end.

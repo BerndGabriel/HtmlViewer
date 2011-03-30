@@ -38,9 +38,11 @@ type
   private
     FTitle: ThtString;
     FTree: THtmlElement;
+    procedure setTree(const Value: THtmlElement);
   public
     destructor Destroy; override;
     property Title: ThtString read FTitle write FTitle;
+    property Tree: THtmlElement read FTree write setTree;
   end;
 
 implementation
@@ -52,6 +54,16 @@ destructor THtmlDocument.Destroy;
 begin
   FTree.Free;
   inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 29.03.2011 --
+procedure THtmlDocument.setTree(const Value: THtmlElement);
+begin
+  if FTree <> Value then
+  begin
+    FTree.Free;
+    FTree := Value;
+  end;
 end;
 
 end.

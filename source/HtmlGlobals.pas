@@ -264,7 +264,7 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
-procedure htSetString(Str: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
+procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
@@ -548,13 +548,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
-procedure htSetString(Str: ThtString; Chr: PhtChar; Len: Integer);
+procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer);
 begin
 {$ifdef UNICODE}
-  SetString(Str, Chr, Len);
+  SetString(Dest, Chr, Len);
 {$else}
-  SetLength(Str, Len);
-  Move(Chr^, Str[1], Len * sizeof(ThtChar));
+  SetLength(Dest, Len);
+  Move(Chr^, Dest[1], Len * sizeof(ThtChar));
 {$endif}
 end;
 
