@@ -54,7 +54,7 @@ type
     function Clone: THtmlAttribute;
     procedure Assign(Source: THtmlAttribute); virtual;
     property Symbol: THtmlAttributeSymbol read FSymbol;
-    property AsString: ThtString read FValue;
+    property Value: ThtString read FValue;
   end;
 
   THtmlAttributeList = class(TObjectList) {a list of tag attributes,(TAttributes)}
@@ -78,32 +78,29 @@ type
     FSymbol: THtmlElementSymbol;
     FDocPos: Integer;
 
-    FAttributes: THtmlAttributeList;
     FIds: ThtStringArray;
     FClasses: ThtStringArray;
     FAttributeProperties: TPropertyList; // properties set by formatting attributes other than style
     FStyleProperties: TPropertyList;     // properties set by style attribute
     function GetChildCount: Integer;
+    procedure SetStyleProperties(const Value: TPropertyList);
   protected
-    function FindAttribute(Name: ThtString; out Attribute: THtmlAttribute): Boolean; overload; virtual;
-    function FindAttribute(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean; overload; virtual;
     function GetChild(Index: Integer): THtmlElement;
     function GetPseudos: TPseudos; virtual;
     procedure AddChild(Child: THtmlElement);
     procedure ExtractChild(Child: THtmlElement);
-    procedure SetAttribute(Attribute: THtmlAttribute); virtual;
     procedure SetParent(Parent: THtmlElement);
   public
     constructor Create(
       Parent: THtmlElement;
       Symbol: THtmlElementSymbol;
-      Attributes: THtmlAttributeList;
-      StyleProperties: TPropertyList;
       DocPos: Integer);
     destructor Destroy; override;
     function IndexOf(Child: THtmlElement): Integer; virtual;
     function IsMatching(Selector: TSelector): Boolean;
-    property Parent: THtmlElement read FParent;
+    function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
+    procedure SetAttribute(Attribute: THtmlAttributeSymbol; const Value: ThtString); virtual;
+    property Parent: THtmlElement read FParent write SetParent;
     property Children[Index: Integer]: THtmlElement read GetChild; default;
     property Count: Integer read GetChildCount;
     property DocPos: Integer read FDocPos;
@@ -111,7 +108,7 @@ type
     property Classes: ThtStringArray read FClasses;
     property Ids: ThtStringArray read FIds;
     property AttributeProperties: TPropertyList read FAttributeProperties;
-    property StyleProperties: TPropertyList read FStyleProperties;
+    property StyleProperties: TPropertyList read FStyleProperties write SetStyleProperties;
   end;
 
   THtmlElementClass = class of THtmlElement;
@@ -130,11 +127,8 @@ const
   TextEd:    THtmlElementDescription = (Name: 'text';     Symbol: TextSy;    Content: []; EndSym: NoEndSy; Clasz: THtmlElement);
   EofEd:     THtmlElementDescription = (Name: 'eof';      Symbol: EofSy;     Content: []; EndSym: NoEndSy);
 
-function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
 function ElementSymbolToElementDescription(Sy: THtmlElementSymbol): THtmlElementDescription;
 function ElementSymbolToStr(Sy: THtmlElementSymbol): ThtString;
-function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
-//function TryStrToElementDescription(const Str: ThtString; out Ed: THtmlElementDescription): Boolean;
 function TryStrToElementSymbol(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
 function TryStrToElementEndSym(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
 
@@ -220,7 +214,7 @@ const
   PhraseElements = [EmSy, StrongSy, DfnSy, CodeSy, SampSy, KbdSy, VarSy, CiteSy, AbbrSy, AcronymSy];
 
   SpecialElements = [ASy, ImageSy, AppletSy, ObjectSy, FontSy, BaseFontSy, BRSy, ScriptSy, MapSy,
-    QSy, SubSy, SupSy, SpanSy, BdoSy, IFrameSy];
+    QSy, SubSy, SupSy, SpanSy, BdoSy, IFrameSy, NoBrSy];
 
   FormControlElements = [InputSy, SelectSy, TextAreaSy, LabelSy, ButtonSy];
 
@@ -301,7 +295,7 @@ const
     (Name: 'MAP';         Symbol: MapSy;        Content: BlockElements;  EndSym: MapEndSy),
     (Name: 'MENU';        Symbol: MenuSy;       Content: [LiSy];  EndSym: MenuEndSy),
     (Name: 'META';        Symbol: MetaSy;       EndSym: NoEndSy),
-    (Name: 'NOBR';        Symbol: NoBrSy;       EndSym: NoBrEndSy),       // extension
+    (Name: 'NOBR';        Symbol: NoBrSy;       Content: InlineElements;  EndSym: NoBrEndSy),       // extension
     (Name: 'NOFRAMES';    Symbol: NoFramesSy;   Content: FlowElements;  EndSym: NoFramesEndSy),
     (Name: 'NOSCRIPT';    Symbol: NoScriptSy;   Content: FlowElements;  EndSym: NoScriptEndSy), // since12
     (Name: 'OBJECT';      Symbol: ObjectSy;     Content: FlowElements + [ParamSy];  EndSym: ObjectEndSy),
@@ -379,21 +373,6 @@ begin
   end;
 end;
 
-////-- BG ---------------------------------------------------------- 29.03.2011 --
-//function TryStrToElementDescription(const Str: ThtString; out Ed: THtmlElementDescription): Boolean;
-//var
-//  I: Integer;
-//begin
-//  Result := ElementDescriptions.Find(Str, I);
-//  if Result then
-//    Ed := PHtmlElementDescription(ElementDescriptions.Objects[I])^
-//  else
-//  begin
-//    Ed := UnknownEd;
-//    Ed.Name := Str;
-//  end;
-//end;
-
 //-- BG ---------------------------------------------------------- 30.03.2011 --
 function TryStrToElementEndSym(const Str: ThtString; out Sy: THtmlElementSymbol): Boolean;
 var
@@ -439,158 +418,6 @@ begin
   else
     Result := '';
 end;
-
-//------------------------------------------------------------------------------
-// html attributes
-//------------------------------------------------------------------------------
-
-type
-  PAttributeDescription = ^TAttributeDescription;
-  TAttributeDescription = record
-    Name: ThtString;
-    Symbol: THtmlAttributeSymbol;
-  end;
-
-const
-  CAttributeDescriptions: array[1..84] of TAttributeDescription = (
-    (Name: 'ACTION';            Symbol: ActionSy),
-    (Name: 'ACTIVE';            Symbol: ActiveSy),
-    (Name: 'ALIGN';             Symbol: AlignSy),
-    (Name: 'ALT';               Symbol: AltSy),
-    (Name: 'BACKGROUND';        Symbol: BackgroundSy),
-    (Name: 'BGCOLOR';           Symbol: BGColorSy),
-    (Name: 'BGPROPERTIES';      Symbol: BGPropertiesSy),
-    (Name: 'BORDER';            Symbol: BorderSy),
-    (Name: 'BORDERCOLOR';       Symbol: BorderColorSy),
-    (Name: 'BORDERCOLORDARK';   Symbol: BorderColorDarkSy),
-    (Name: 'BORDERCOLORLIGHT';  Symbol: BorderColorLightSy),
-    (Name: 'CELLPADDING';       Symbol: CellPaddingSy),
-    (Name: 'CELLSPACING';       Symbol: CellSpacingSy),
-    (Name: 'CHARSET';           Symbol: CharSetSy),
-    (Name: 'CHECKBOX';          Symbol: CheckBoxSy),
-    (Name: 'CHECKED';           Symbol: CheckedSy),
-    (Name: 'CLASS';             Symbol: ClassSy),
-    (Name: 'CLEAR';             Symbol: ClearSy),
-    (Name: 'COLOR';             Symbol: ColorSy),
-    (Name: 'COLS';              Symbol: ColsSy),
-    (Name: 'COLSPAN';           Symbol: ColSpanSy),
-    (Name: 'CONTENT';           Symbol: ContentSy),
-    (Name: 'COORDS';            Symbol: CoordsSy),
-    (Name: 'DISABLED';          Symbol: DisabledSy),
-    (Name: 'ENCTYPE';           Symbol: EncTypeSy),
-    (Name: 'FACE';              Symbol: FaceSy),
-    (Name: 'FRAMEBORDER';       Symbol: FrameBorderSy),
-    (Name: 'HEIGHT';            Symbol: HeightSy),
-    (Name: 'HREF';              Symbol: HrefSy),
-    (Name: 'HSPACE';            Symbol: HSpaceSy),
-    (Name: 'HTTP-EQUIV';        Symbol: HttpEqSy),
-    (Name: 'ID';                Symbol: IDSy),
-    (Name: 'ISMAP';             Symbol: IsMapSy),
-    (Name: 'LABEL';             Symbol: LabelAttrSy),
-    (Name: 'LANGUAGE';          Symbol: LanguageSy),
-    (Name: 'LEFTMARGIN';        Symbol: LeftMarginSy),
-    (Name: 'LINK';              Symbol: LinkAttrSy),
-    (Name: 'LOOP';              Symbol: LoopSy),
-    (Name: 'MARGINHEIGHT';      Symbol: MarginHeightSy),
-    (Name: 'MARGINWIDTH';       Symbol: MarginWidthSy),
-    (Name: 'MAXLENGTH';         Symbol: MaxLengthSy),
-    (Name: 'MEDIA';             Symbol: MediaSy),
-    (Name: 'METHOD';            Symbol: MethodSy),
-    (Name: 'MULTIPLE';          Symbol: MultipleSy),
-    (Name: 'NAME';              Symbol: NameSy),
-    (Name: 'NOHREF';            Symbol: NoHrefSy),
-    (Name: 'NORESIZE';          Symbol: NoResizeSy),
-    (Name: 'NOSHADE';           Symbol: NoShadeSy),
-    (Name: 'NOWRAP';            Symbol: NoWrapSy),
-    (Name: 'OLINK';             Symbol: OLinkSy),
-    (Name: 'ONBLUR';            Symbol: OnBlurSy),
-    (Name: 'ONCHANGE';          Symbol: OnChangeSy),
-    (Name: 'ONCLICK';           Symbol: OnClickSy),
-    (Name: 'ONFOCUS';           Symbol: OnFocusSy),
-    (Name: 'PLAIN';             Symbol: PlainSy),
-    (Name: 'RADIO';             Symbol: RadioSy),
-    (Name: 'RATIO';             Symbol: RatioSy),
-    (Name: 'READONLY';          Symbol: ReadonlyAttrSy),
-    (Name: 'REL';               Symbol: RelSy),
-    (Name: 'REV';               Symbol: RevSy),
-    (Name: 'ROWS';              Symbol: RowsSy),
-    (Name: 'ROWSPAN';           Symbol: RowSpanSy),
-    (Name: 'SCROLLING';         Symbol: ScrollingSy),
-    (Name: 'SELECTED';          Symbol: SelectedAttrSy),
-    (Name: 'SHAPE';             Symbol: ShapeSy),
-    (Name: 'SIZE';              Symbol: SizeSy),
-    (Name: 'SPAN';              Symbol: SpanAttrSy),
-    (Name: 'SRC';               Symbol: SrcSy),
-    (Name: 'START';             Symbol: StartSy),
-    (Name: 'STYLE';             Symbol: StyleAttrSy),
-    (Name: 'TABINDEX';          Symbol: TabIndexSy),
-    (Name: 'TARGET';            Symbol: TargetSy),
-    (Name: 'TEXT';              Symbol: TextAttrSy),
-    (Name: 'TITLE';             Symbol: TitleAttrSy),
-    (Name: 'TOPMARGIN';         Symbol: TopMarginSy),
-    (Name: 'TRANSP';            Symbol: TranspSy),
-    (Name: 'TYPE';              Symbol: TypeSy),
-    (Name: 'USEMAP';            Symbol: UseMapSy),
-    (Name: 'VALIGN';            Symbol: VAlignSy),
-    (Name: 'VALUE';             Symbol: ValueSy),
-    (Name: 'VLINK';             Symbol: VLinkSy),
-    (Name: 'VSPACE';            Symbol: VSpaceSy),
-    (Name: 'WIDTH';             Symbol: WidthSy),
-    (Name: 'WRAP';              Symbol: WrapAttrSy)
-  );
-
-var
-  AttributeDescriptions: ThtStringList;
-  AttributeDescriptionsIndex: array [THtmlAttributeSymbol] of Integer;
-
-procedure InitAttributes;
-var
-  I: Integer;
-  P: PAttributeDescription;
-  S: THtmlAttributeSymbol;
-begin
-  // Put the Attributes into a sorted StringList for faster access.
-  if AttributeDescriptions = nil then
-  begin
-    AttributeDescriptions := ThtStringList.Create;
-    AttributeDescriptions.CaseSensitive := True;
-    for I := low(CAttributeDescriptions) to high(CAttributeDescriptions) do
-    begin
-      P := @CAttributeDescriptions[I];
-      AttributeDescriptions.AddObject(P.Name, Pointer(P));
-    end;
-    AttributeDescriptions.Sort;
-
-    // initialize AttributeDescriptionsIndex and SymbolNames
-    for S := low(S) to high(S) do
-      AttributeDescriptionsIndex[S] := -1;
-    for I := 0 to AttributeDescriptions.Count - 1 do
-    begin
-      P := PAttributeDescription(AttributeDescriptions.Objects[I]);
-      AttributeDescriptionsIndex[P.Symbol] := I;
-    end;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 26.03.2011 --
-function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
-var
-  I: Integer;
-begin
-  Result := AttributeDescriptions.Find(Str, I);
-  if Result then
-    Sy := PAttributeDescription(AttributeDescriptions.Objects[I]).Symbol
-  else
-    Sy := UnknownAttrSy;
-end;
-
-//-- BG ---------------------------------------------------------- 27.03.2011 --
-function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
-begin
-  Result := PAttributeDescription(AttributeDescriptions.Objects[AttributeDescriptionsIndex[Sy]]).Name;
-end;
-
-
 
 { THtmlAttribute }
 
@@ -670,8 +497,6 @@ end;
 constructor THtmlElement.Create(
   Parent: THtmlElement;
   Symbol: THtmlElementSymbol;
-  Attributes: THtmlAttributeList;
-  StyleProperties: TPropertyList;
   DocPos: Integer);
 var
   I: Integer;
@@ -679,21 +504,13 @@ begin
   inherited Create;
   FSymbol := Symbol;
   FDocPos := DocPos;
-  FStyleProperties := StyleProperties;
   SetParent(Parent);
-  if Attributes <> nil then
-  begin
-    FAttributes := THtmlAttributeList.Create;
-    for I := 0 to Attributes.Count - 1 do
-      SetAttribute(Attributes[I]);
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 destructor THtmlElement.Destroy;
 begin
   FChildren.Free;
-  FAttributes.Free;
   FStyleProperties.Free;
   FAttributeProperties.Free;
   inherited;
@@ -707,26 +524,15 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlElement.FindAttribute(Name: ThtString; out Attribute: THtmlAttribute): Boolean;
+function THtmlElement.FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean;
 begin
-  if FAttributes <> nil then
-    Result := FAttributes.Find(Name, Attribute)
+  Result := True;
+  case Attribute of
+    ClassSy:  Value := Implode(FClasses, ' ');
+    IDSy:     Value := Implode(FIds, ' ');
   else
-  begin
-    Attribute := nil;
-    Result := False;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlElement.FindAttribute(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean;
-begin
-  if FAttributes <> nil then
-    Result := FAttributes.Find(Symbol, Attribute)
-  else
-  begin
-    Attribute := nil;
-    Result := False;
+    SetLength(Value, 0);
+    Result := False; // inherited FindAttribute(Symbol);
   end;
 end;
 
@@ -780,7 +586,7 @@ function THtmlElement.IsMatching(Selector: TSelector): Boolean;
 
   var
     Index: Integer;
-    Attribute: THtmlAttribute;
+    Attribute: ThtString;
     Match: TAttributeMatch;
     S: THtmlElementSymbol;
   begin
@@ -809,21 +615,21 @@ function THtmlElement.IsMatching(Selector: TSelector): Boolean;
     for Index := 0 to Selector.AttributeMatchesCount - 1 do
     begin
       Match := Selector.AttributeMatches[Index];
-      if not FindAttribute(Match.Name, Attribute) then
+      if not FindAttribute(Match.Attribute, Attribute) then
         exit;
       case Match.Oper of
         //no more checks here. Attribute it set! amoSet: ;       // [name] : matches, if attr is set and has any value.
 
         amoEquals:     // [name=value] : matches, if attr equals value.
-          if htCompareString(Match.Value, Attribute.AsString) <> 0 then
+          if htCompareString(Match.Value, Attribute) <> 0 then
             break;
 
         amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
-          if PosX(Match.Value + ' ', Attribute.AsString + ' ', 1) = 0 then
+          if PosX(Match.Value + ' ', Attribute + ' ', 1) = 0 then
             break;
 
         amoStartsWith: // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
-          if PosX(Match.Value + '-', Attribute.AsString + '-', 1) <> 1 then
+          if PosX(Match.Value + '-', Attribute + '-', 1) <> 1 then
             break;
         end;
       end;
@@ -881,12 +687,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --
-procedure THtmlElement.SetAttribute(Attribute: THtmlAttribute);
+procedure THtmlElement.SetAttribute(Attribute: THtmlAttributeSymbol; const Value: ThtString);
 begin
-  FAttributes.Add(Attribute.Clone);
-  case Attribute.Symbol of
-    ClassSy:      FClasses := Explode(Attribute.AsString, ' ');
-    IDSy:         FIds     := Explode(Attribute.AsString, ' ');
+  case Attribute of
+    ClassSy:      FClasses := Explode(Value, ' ');
+    IDSy:         FIds     := Explode(Value, ' ');
   end;
 end;
 
@@ -903,11 +708,18 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+procedure THtmlElement.SetStyleProperties(const Value: TPropertyList);
+begin
+  if FStyleProperties <> Value then
+  begin
+    FStyleProperties.Free;
+    FStyleProperties := Value;
+  end;
+end;
 
 initialization
-  InitAttributes;
   InitElementDescriptions;
 finalization
-  AttributeDescriptions.Free;
   ElementDescriptions.Free;
 end.

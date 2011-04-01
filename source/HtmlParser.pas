@@ -25,6 +25,8 @@ are covered by separate copyright notices located in those modules.
 
 {$I htmlcons.inc}
 
+{$undef UseInline}
+
 unit HtmlParser;
 
 interface
@@ -94,14 +96,17 @@ type
     procedure SetSymbol(const Value: THtmlElementSymbol);
     property Ed: THtmlElementDescription read FEd;
   public
-    procedure Init(DocPos: Integer); override;
+    function CreateElement(Parent: THtmlElement): THtmlElement;
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
-    property Symbol: THtmlElementSymbol read FSymbol write SetSymbol;
+    procedure Init(DocPos: Integer); override;
+    procedure StrToElement;
+    procedure StrToEndSym;
     property Attributes: THtmlAttributeList read FAttributes;
+    property Symbol: THtmlElementSymbol read FSymbol write SetSymbol;
   end;
 
-  THtmlParserState = set of (hpsInComment, hpsInHtml, hpsInHead, hpsInBody, hpsInFrameSet, hpsInScript, hpsInStyle);
+  THtmlParserState = set of (hpsInComment, hpsInScript, hpsInStyle);
 
   THtmlParser = class
   private
@@ -130,10 +135,13 @@ type
     procedure checkPosition(var Pos: Integer);
 {$endif}
 
+    function CreateElement(Parent: THtmlElement): THtmlElement;
+    function CreateRootElement(const Ed: THtmlElementDescription): THtmlElement;
     function GetCodePage: Integer;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
-    procedure GetChildren(Parent: THtmlElement; const ParentEd: THtmlElementDescription);
+    procedure AssignAttributes(Element: THtmlElement; Attributes: THtmlAttributeList);
+    procedure GetChildren(Parent: THtmlElement);
     procedure GetCh;
     procedure GetChSkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
     procedure PopDoc;
@@ -142,7 +150,6 @@ type
     procedure GetChBasic;
     procedure First; {$ifdef UseInline} inline; {$endif}
     procedure Next;
-    function GetStyleProperties(Attributes: THtmlAttributeList): TPropertyList; overload;
     function GetStyleProperties(Str: ThtString): TPropertyList; overload;
     property CodePage: Integer read GetCodePage;
   public
@@ -205,6 +212,8 @@ procedure TCharBuffer.Add(S: TCharBuffer);
 var
   K: Integer;
 begin
+  if Count = 0 then
+    FDocPos := S.DocPos;
   K := Count + S.Count;
   if K >= Capacity then
     SetCapacity(K + 50);
@@ -262,24 +271,31 @@ end;
 
 { THtmlToken }
 
-//-- BG ---------------------------------------------------------- 27.03.2011 --
+//-- BG ---------------------------------------------------------- 28.03.2011 --
 procedure THtmlToken.AfterConstruction;
 begin
   inherited;
   FAttributes := THtmlAttributeList.Create;
 end;
 
-//-- BG ---------------------------------------------------------- 27.03.2011 --
+//-- BG ---------------------------------------------------------- 28.03.2011 --
 procedure THtmlToken.BeforeDestruction;
 begin
-  inherited;
   FAttributes.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+function THtmlToken.CreateElement(Parent: THtmlElement): THtmlElement;
+begin
+  Result := FEd.Clasz.Create(Parent, FSymbol, FDocPos);
 end;
 
 //-- BG ---------------------------------------------------------- 28.03.2011 --
 procedure THtmlToken.Init(DocPos: Integer);
 begin
   inherited;
+  FSymbol := UnknownSy;
   FEd := UnknownEd;
   FAttributes.Clear;
 end;
@@ -297,9 +313,41 @@ begin
   end
 end;
 
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+procedure THtmlToken.StrToElement;
+begin
+  if TryStrToElementSymbol(htUpperCase(S), FSymbol) then
+    FEd := ElementSymbolToElementDescription(FSymbol);
+end;
+
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+procedure THtmlToken.StrToEndSym;
+begin
+  if TryStrToElementEndSym(htUpperCase(S), FSymbol) then
+    FEd := ElementSymbolToElementDescription(FSymbol);
+end;
+
 { THtmlParser }
 
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+procedure THtmlParser.AssignAttributes(Element: THtmlElement; Attributes: THtmlAttributeList);
+var
+  I: Integer;
+  Attr: THtmlAttribute;
+begin
+  for I := 0 To Attributes.Count - 1 do
+  begin
+    Attr := Attributes[I];
+    case Attr.Symbol of
+      StyleAttrSy: Element.StyleProperties := GetStyleProperties(Attr.Value);
+    else
+      Element.SetAttribute(Attr.Symbol, Attr.Value);
+    end;
+  end;
+end;
+
 {$ifdef DebugIt}
+
 //-- BG ---------------------------------------------------------- 19.03.2011 --
 procedure THtmlParser.checkPosition(var Pos: Integer);
   procedure stopHere();
@@ -320,6 +368,19 @@ begin
   LCToken := THtmlToken.Create;
   FDoc := Doc;
   FBase := Base;
+end;
+
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+function THtmlParser.CreateElement(Parent: THtmlElement): THtmlElement;
+begin
+  Result := LCToken.CreateElement(Parent);
+  AssignAttributes(Result, LCToken.Attributes);
+end;
+
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+function THtmlParser.CreateRootElement(const Ed: THtmlElementDescription): THtmlElement;
+begin
+  Result := Ed.Clasz.Create(nil, Ed.Symbol, LCToken.DocPos);
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
@@ -562,31 +623,93 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.03.2011 --
-procedure THtmlParser.GetChildren(Parent: THtmlElement; const ParentEd: THtmlElementDescription);
-// Parses the document tree with LCToken being the root.
-// On return it is already added to Parent, if Parent is not nil,
-// as setting the Parent adds a node to its Parent's list of Children.
+procedure THtmlParser.GetChildren(Parent: THtmlElement);
+// Parses the document tree below parent.
+
+  function IsAncestorContent(Symbol: THtmlElementSymbol; Element: THtmlElement): Boolean;
+  begin
+    while Element <> nil do
+    begin
+      if Symbol in ElementSymbolToElementDescription(Element.Symbol).Content then
+      begin
+        Result := True;
+        exit;
+      end;
+      Element := Element.Parent;
+    end;
+    Result := False;
+  end;
+
+  function IsAncestorSymbol(Symbol: THtmlElementSymbol; Element: THtmlElement): Boolean;
+  begin
+    while Element <> nil do
+    begin
+      if Symbol = Element.Symbol then
+      begin
+        Result := True;
+        exit;
+      end;
+      Element := Element.Parent;
+    end;
+    Result := False;
+  end;
+
 var
-  Ed: THtmlElementDescription;
+  ParentEd: THtmlElementDescription;
   Element: THtmlElement;
 begin
+  ParentEd := ElementSymbolToElementDescription(Parent.Symbol);
   repeat
-    Ed := LCToken.Ed;
-    if (LCToken.Symbol = Ed.Symbol) and (Ed.Clasz <> nil) then
+    if LCToken.Symbol in ParentEd.Content then
     begin
-      // this is an element's start tag
-      //TODO -1 -oBG, 31.03.2011: create required style properties param. 
-      Element := Ed.Clasz.Create(Parent, Ed.Symbol, LCToken.Attributes, GetStyleProperties(LCToken.Attributes), LCToken.DocPos);
-      Next;
-      if LCToken.Symbol in Ed.Content then
-        GetChildren(Element, Ed);
-      if LCToken.Symbol = Ed.EndSym then
-        Next;
-      if LCToken.Symbol = ParentEd.EndSym then
-        break;
+      // this is expected content
+      if LCToken.Ed.Clasz <> nil then
+      begin
+        // this is a child node's start tag
+        Element := CreateElement(Parent);
+        if LCToken.Ed.EndSym <> NoEndSy then
+        begin
+          // this element has an end tag and thus may have children as well
+          Next;
+          GetChildren(Element);
+        end
+        else
+          Next;
+      end
+      else
+        // start tag without node
+        case LCToken.Symbol of
+          ScriptSy:
+            Next;
+        else
+          // unprocessed tag
+          Next;
+        end;
     end
-    else
+    else if LCToken.Symbol = ParentEd.EndSym then
+    begin
+      // this is parent's end tag.
+      Next;
       break;
+    end
+    else if LCToken.Symbol = LCToken.Ed.EndSym then
+    begin
+      // this is any end tag
+      if IsAncestorSymbol(LCToken.Ed.Symbol, Parent) then
+        // this is an anchestor's end tag
+        break;
+      Next;
+    end
+    else if LCToken.Symbol = EofSy then
+      break
+    else
+      // this is an unexpected start tag.
+      if IsAncestorContent(LCToken.Ed.Symbol, Parent.Parent) then
+        // this is an anchestor's content
+        break
+      else
+        // this is completely unexpected, ignore it.
+        Next;
   until False;
 end;
 
@@ -764,17 +887,6 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
-function THtmlParser.GetStyleProperties(Attributes: THtmlAttributeList): TPropertyList;
-var
-  I: Integer;
-begin
-  Result := nil;
-  for I := 0 to Attributes.Count - 1 do
-    if Attributes[I].Symbol = StyleAttrSy then
-      Result := GetStyleProperties(Attributes[I].AsString);
-end;
-
-//-- BG ---------------------------------------------------------- 31.03.2011 --
 function THtmlParser.GetStyleProperties(Str: ThtString): TPropertyList;
 var
   Doc: TBuffer;
@@ -927,7 +1039,6 @@ procedure THtmlParser.Next;
   var
     EndTag: Boolean;
     Attribute: THtmlAttribute;
-    Symbol: THtmlElementSymbol;
   begin
     GetCh; // skip '<'
     EndTag := LCh = '/';
@@ -969,10 +1080,10 @@ procedure THtmlParser.Next;
     if LCToken.Count > 0 then
     begin
       if EndTag then
-        TryStrToElementEndSym(htUpperCase(LCToken.S), Symbol)
+        LCToken.StrToEndSym
       else
-        TryStrToElementSymbol(htUpperCase(LCToken.S), Symbol);
-      LCToken.Symbol := Symbol;
+        LCToken.StrToElement;
+
       while GetAttribute(Attribute) do
         LCToken.Attributes.Add(Attribute);
     end;
@@ -1041,13 +1152,13 @@ end;
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
 
-  procedure ParseTree(const Ed: THtmlElementDescription);
+  procedure ParseTree;
   begin
-    GetChildren(Document.Tree, Ed);
-    if LCToken.Symbol = Ed.EndSym then
-      Next;
-    if LCToken.Symbol = HtmlEndSy then
-      Next;
+    GetChildren(Document.Tree);
+//    if LCToken.Symbol = Ed.EndSym then
+//      Next;
+//    if LCToken.Symbol = HtmlEndSy then
+//      Next;
   end;
 
 var
@@ -1062,39 +1173,61 @@ begin
           HtmlSy:
           begin
             //TODO -5 -oBG, 28.03.2011: process the attributes of element 'html'
-            Include(FState, hpsInHtml);
             Next;
           end;
 
           HeadSy:
           begin
-            Include(FState, hpsInHead);
             Ed := LCToken.Ed;
             //TODO -5 -oBG, 29.03.2011: process the attributes of element 'head'
             Next;
             repeat
-              if LCToken.Symbol in Ed.Content then
-              begin
-                //TODO -1 -oBG, 29.03.2011: process the content of element 'head'
-              end
-              else if LCToken.Symbol in [Ed.EndSym, EofSy] then
-              begin
+              case LCToken.Symbol of
+                BaseSy:
+                  Next;
+
+                IsIndexSy:
+                  Next;
+
+                LinkSy:
+                  Next;
+
+                MetaSy:
+                  Next;
+
+                ObjectSy:
+                  Next;
+
+                ScriptSy:
+                  Next;
+
+                StyleSy:
+                  Next;
+
+                TitleSy:
+                  Next;
+
+                HeadEndSy:
+                begin
+                  Next;
+                  break;
+                end;
+
+                EofSy:
+                  break;
+              else
                 Next;
-                break;
               end;
-              Next;
             until False;
           end;
 
           HeadEndSy:
           begin
-            Exclude(FState, hpsInHead);
             Next;
           end;
 
           HtmlEndSy:
           begin
-            Exclude(FState, hpsInHtml);
             Next;
             break;
           end;
@@ -1108,9 +1241,9 @@ begin
           BodySy,
           FrameSetSy:
           begin
-            Document.Tree := LCToken.Ed.Clasz.Create(nil, LCToken.Symbol, LCToken.Attributes, GetStyleProperties(LCToken.Attributes), LCToken.DocPos);
+            Document.Tree := CreateElement(nil);
             Next;
-            ParseTree(LCToken.Ed);
+            ParseTree;
             break;
           end;
 
@@ -1120,15 +1253,15 @@ begin
             Ed := ElementSymbolToElementDescription(BodySy);
             if LCToken.Symbol in Ed.Content then
             begin
-              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, nil, LCToken.DocPos);
-              ParseTree(Ed);
+              Document.Tree := CreateRootElement(Ed);
+              ParseTree;
               break;
             end;
             Ed := ElementSymbolToElementDescription(FrameSetSy);
             if LCToken.Symbol in Ed.Content then
             begin
-              Document.Tree := Ed.Clasz.Create(nil, Ed.Symbol, nil, nil, LCToken.DocPos);
-              ParseTree(Ed);
+              Document.Tree := CreateRootElement(Ed);
+              ParseTree;
               break;
             end;
           end;

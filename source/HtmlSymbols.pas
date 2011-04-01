@@ -284,11 +284,15 @@ const
   CBorderStyle: array[TBorderStyle] of ThtString = (
     'none', 'solid', 'inset', 'outset', 'groove', 'ridge', 'dashed', 'dotted', 'double');
 
+
+function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
+function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
+
 function TryNameToColor(const Name: ThtString; out Color: TColor): Boolean;
+function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
 function TryStrToEntity(const Str: ThtString; out Entity: Integer): Boolean;
 function TryStrToPropertySymbol(const Str: ThtString; out Sy: TPropertySymbol): Boolean;
-function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
 
 implementation
 
@@ -1004,6 +1008,156 @@ begin
 end;
 
 //------------------------------------------------------------------------------
+// html attributes
+//------------------------------------------------------------------------------
+
+type
+  PAttributeDescription = ^TAttributeDescription;
+  TAttributeDescription = record
+    Name: ThtString;
+    Symbol: THtmlAttributeSymbol;
+  end;
+
+const
+  CAttributeDescriptions: array[1..84] of TAttributeDescription = (
+    (Name: 'ACTION';            Symbol: ActionSy),
+    (Name: 'ACTIVE';            Symbol: ActiveSy),
+    (Name: 'ALIGN';             Symbol: AlignSy),
+    (Name: 'ALT';               Symbol: AltSy),
+    (Name: 'BACKGROUND';        Symbol: BackgroundSy),
+    (Name: 'BGCOLOR';           Symbol: BGColorSy),
+    (Name: 'BGPROPERTIES';      Symbol: BGPropertiesSy),
+    (Name: 'BORDER';            Symbol: BorderSy),
+    (Name: 'BORDERCOLOR';       Symbol: BorderColorSy),
+    (Name: 'BORDERCOLORDARK';   Symbol: BorderColorDarkSy),
+    (Name: 'BORDERCOLORLIGHT';  Symbol: BorderColorLightSy),
+    (Name: 'CELLPADDING';       Symbol: CellPaddingSy),
+    (Name: 'CELLSPACING';       Symbol: CellSpacingSy),
+    (Name: 'CHARSET';           Symbol: CharSetSy),
+    (Name: 'CHECKBOX';          Symbol: CheckBoxSy),
+    (Name: 'CHECKED';           Symbol: CheckedSy),
+    (Name: 'CLASS';             Symbol: ClassSy),
+    (Name: 'CLEAR';             Symbol: ClearSy),
+    (Name: 'COLOR';             Symbol: ColorSy),
+    (Name: 'COLS';              Symbol: ColsSy),
+    (Name: 'COLSPAN';           Symbol: ColSpanSy),
+    (Name: 'CONTENT';           Symbol: ContentSy),
+    (Name: 'COORDS';            Symbol: CoordsSy),
+    (Name: 'DISABLED';          Symbol: DisabledSy),
+    (Name: 'ENCTYPE';           Symbol: EncTypeSy),
+    (Name: 'FACE';              Symbol: FaceSy),
+    (Name: 'FRAMEBORDER';       Symbol: FrameBorderSy),
+    (Name: 'HEIGHT';            Symbol: HeightSy),
+    (Name: 'HREF';              Symbol: HrefSy),
+    (Name: 'HSPACE';            Symbol: HSpaceSy),
+    (Name: 'HTTP-EQUIV';        Symbol: HttpEqSy),
+    (Name: 'ID';                Symbol: IDSy),
+    (Name: 'ISMAP';             Symbol: IsMapSy),
+    (Name: 'LABEL';             Symbol: LabelAttrSy),
+    (Name: 'LANGUAGE';          Symbol: LanguageSy),
+    (Name: 'LEFTMARGIN';        Symbol: LeftMarginSy),
+    (Name: 'LINK';              Symbol: LinkAttrSy),
+    (Name: 'LOOP';              Symbol: LoopSy),
+    (Name: 'MARGINHEIGHT';      Symbol: MarginHeightSy),
+    (Name: 'MARGINWIDTH';       Symbol: MarginWidthSy),
+    (Name: 'MAXLENGTH';         Symbol: MaxLengthSy),
+    (Name: 'MEDIA';             Symbol: MediaSy),
+    (Name: 'METHOD';            Symbol: MethodSy),
+    (Name: 'MULTIPLE';          Symbol: MultipleSy),
+    (Name: 'NAME';              Symbol: NameSy),
+    (Name: 'NOHREF';            Symbol: NoHrefSy),
+    (Name: 'NORESIZE';          Symbol: NoResizeSy),
+    (Name: 'NOSHADE';           Symbol: NoShadeSy),
+    (Name: 'NOWRAP';            Symbol: NoWrapSy),
+    (Name: 'OLINK';             Symbol: OLinkSy),
+    (Name: 'ONBLUR';            Symbol: OnBlurSy),
+    (Name: 'ONCHANGE';          Symbol: OnChangeSy),
+    (Name: 'ONCLICK';           Symbol: OnClickSy),
+    (Name: 'ONFOCUS';           Symbol: OnFocusSy),
+    (Name: 'PLAIN';             Symbol: PlainSy),
+    (Name: 'RADIO';             Symbol: RadioSy),
+    (Name: 'RATIO';             Symbol: RatioSy),
+    (Name: 'READONLY';          Symbol: ReadonlyAttrSy),
+    (Name: 'REL';               Symbol: RelSy),
+    (Name: 'REV';               Symbol: RevSy),
+    (Name: 'ROWS';              Symbol: RowsSy),
+    (Name: 'ROWSPAN';           Symbol: RowSpanSy),
+    (Name: 'SCROLLING';         Symbol: ScrollingSy),
+    (Name: 'SELECTED';          Symbol: SelectedAttrSy),
+    (Name: 'SHAPE';             Symbol: ShapeSy),
+    (Name: 'SIZE';              Symbol: SizeSy),
+    (Name: 'SPAN';              Symbol: SpanAttrSy),
+    (Name: 'SRC';               Symbol: SrcSy),
+    (Name: 'START';             Symbol: StartSy),
+    (Name: 'STYLE';             Symbol: StyleAttrSy),
+    (Name: 'TABINDEX';          Symbol: TabIndexSy),
+    (Name: 'TARGET';            Symbol: TargetSy),
+    (Name: 'TEXT';              Symbol: TextAttrSy),
+    (Name: 'TITLE';             Symbol: TitleAttrSy),
+    (Name: 'TOPMARGIN';         Symbol: TopMarginSy),
+    (Name: 'TRANSP';            Symbol: TranspSy),
+    (Name: 'TYPE';              Symbol: TypeSy),
+    (Name: 'USEMAP';            Symbol: UseMapSy),
+    (Name: 'VALIGN';            Symbol: VAlignSy),
+    (Name: 'VALUE';             Symbol: ValueSy),
+    (Name: 'VLINK';             Symbol: VLinkSy),
+    (Name: 'VSPACE';            Symbol: VSpaceSy),
+    (Name: 'WIDTH';             Symbol: WidthSy),
+    (Name: 'WRAP';              Symbol: WrapAttrSy)
+  );
+
+var
+  AttributeDescriptions: ThtStringList;
+  AttributeDescriptionsIndex: array [THtmlAttributeSymbol] of Integer;
+
+procedure InitAttributes;
+var
+  I: Integer;
+  P: PAttributeDescription;
+  S: THtmlAttributeSymbol;
+begin
+  // Put the Attributes into a sorted StringList for faster access.
+  if AttributeDescriptions = nil then
+  begin
+    AttributeDescriptions := ThtStringList.Create;
+    AttributeDescriptions.CaseSensitive := True;
+    for I := low(CAttributeDescriptions) to high(CAttributeDescriptions) do
+    begin
+      P := @CAttributeDescriptions[I];
+      AttributeDescriptions.AddObject(P.Name, Pointer(P));
+    end;
+    AttributeDescriptions.Sort;
+
+    // initialize AttributeDescriptionsIndex and SymbolNames
+    for S := low(S) to high(S) do
+      AttributeDescriptionsIndex[S] := -1;
+    for I := 0 to AttributeDescriptions.Count - 1 do
+    begin
+      P := PAttributeDescription(AttributeDescriptions.Objects[I]);
+      AttributeDescriptionsIndex[P.Symbol] := I;
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 26.03.2011 --
+function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
+var
+  I: Integer;
+begin
+  Result := AttributeDescriptions.Find(Str, I);
+  if Result then
+    Sy := PAttributeDescription(AttributeDescriptions.Objects[I]).Symbol
+  else
+    Sy := UnknownAttrSy;
+end;
+
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
+begin
+  Result := PAttributeDescription(AttributeDescriptions.Objects[AttributeDescriptionsIndex[Sy]]).Name;
+end;
+
+//------------------------------------------------------------------------------
 // misc
 //------------------------------------------------------------------------------
 
@@ -1023,10 +1177,12 @@ begin
 end;
 
 initialization
+  InitAttributes;
   InitColors;
   InitEntities;
   InitProperties;
 finalization
+  AttributeDescriptions.Free;
   ColorDescriptions.Free;
   Entities.Free;
   PropertyDescriptions.Free;

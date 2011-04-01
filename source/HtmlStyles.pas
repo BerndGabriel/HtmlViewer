@@ -140,13 +140,13 @@ const
 type
   TAttributeMatch = class
   private
-    FName: ThtString;
+    FAttr: THtmlAttributeSymbol;
     FOper: TAttributeMatchOperator;
     FValue: ThtString;
   public
-    constructor Create(const Name: ThtString; Oper: TAttributeMatchOperator; const Value: ThtString);
+    constructor Create(Attribute: THtmlAttributeSymbol; Oper: TAttributeMatchOperator; const Value: ThtString);
     function ToString: ThtString;
-    property Name: ThtString read FName;
+    property Attribute: THtmlAttributeSymbol read FAttr;
     property Oper: TAttributeMatchOperator read FOper;
     property Value: ThtString read FValue;
   end;
@@ -549,15 +549,20 @@ end;
 { TAttributeMatch }
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-constructor TAttributeMatch.Create(const Name: ThtString; Oper: TAttributeMatchOperator;
-  const Value: ThtString);
+constructor TAttributeMatch.Create(Attribute: THtmlAttributeSymbol; Oper: TAttributeMatchOperator; const Value: ThtString);
 begin
   inherited Create;
+  FAttr := Attribute;
+  FOper := Oper;
+  FValue := Value;
 end;
 
 //-- BG ---------------------------------------------------------- 21.03.2011 --
 function TAttributeMatch.ToString: ThtString;
+var
+  Name: ThtString;
 begin
+  Name := AttributeSymbolToStr(Attribute);
   case Oper of
     amoSet: Result := '[' + Name + ']';
   else
@@ -579,7 +584,7 @@ var
   A1: TAttributeMatch absolute P1;
   A2: TAttributeMatch absolute P2;
 begin
-  Result := htCompareString(A1.Name, A2.Name);
+  Result := Ord(A1.Attribute) - Ord(A2.Attribute);
   if Result <> 0 then
     exit;
   Result := Ord(A1.Oper) - Ord(A2.Oper);
