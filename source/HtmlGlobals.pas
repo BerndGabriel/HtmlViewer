@@ -513,9 +513,6 @@ procedure htAppendStr(var Dest: ThtString; const S: ThtString);
 var
   L, N: Integer;
 begin
-{$ifdef UNICODE}
-  AppendStr(Dest, S);
-{$else}
   L := Length(S);
   if L > 0 then
   begin
@@ -523,7 +520,6 @@ begin
     SetLength(Dest, N + L);
     Move(S[1], Dest[N + 1], L * sizeof(ThtChar));
   end;
-{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --

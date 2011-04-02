@@ -151,96 +151,160 @@ type
 
   THtmlElementSymbols = set of THtmlElementSymbol;
 
-  THtmlAttributeSymbol = (
-    UnknownAttrSy,
 
-    ActionSy,
-    ActiveSy,
-    AlignSy,
-    AltSy,
-    BackgroundSy,
-    BGColorSy,
-    BGPropertiesSy,
-    BorderColorDarkSy,
-    BorderColorLightSy,
-    BorderColorSy,
-    BorderSy,
-    CellPaddingSy,
-    CellSpacingSy,
-    CharSetSy,
-    CheckBoxSy,
-    CheckedSy,
-    ClassSy,
-    ClearSy,
-    ColorSy,
-    ColSpanSy,
-    ColsSy,
-    CommandSy,
-    ContentSy,
-    CoordsSy,
-    DisabledSy,
-    EncTypeSy,
-    FaceSy,
-    FrameBorderSy,
-    HeightSy,
-    HRefSy,
-    HSpaceSy,
-    HttpEqSy,
-    IDSy,
-    IsMapSy,
-    LabelAttrSy,
-    LanguageSy,
-    LeftMarginSy,
-    liAloneSy,
-    LinkAttrSy,
-    LoopSy,
-    MarginHeightSy,
-    MarginWidthSy,
-    MaxLengthSy,
-    MediaSy,
-    MethodSy,
-    MultipleSy,
-    NameSy,
-    NoHrefSy,
-    NoResizeSy,
-    NoShadeSy,
-    NoWrapSy,
-    OLinkSy,
-    OnBlurSy,
-    OnChangeSy,
-    OnClickSy,
-    OnFocusSy,
-    PlainSy,
-    RadioSy,
-    RatioSy,
-    ReadonlyAttrSy,
-    RelSy,
-    RevSy,
-    RowSpanSy,
-    RowsSy,
-    ScrollingSy,
-    SelectedAttrSy,
-    ShapeSy,
-    SizeSy,
-    SpanAttrSy,
-    SrcSy,
-    StartSy,
-    StyleAttrSy,
-    TabIndexSy,
-    TargetSy,
-    TextAttrSy,
-    TitleAttrSy,
-    TopMarginSy,
-    TranspSy,
-    TypeSy,
-    UseMapSy,
-    VAlignSy,
-    ValueSy,
-    VLinkSy,
-    VSpaceSy,
-    WidthSy,
-    WrapAttrSy
+
+
+  THtmlAttributeSymbol = (
+    UnknownAttr,
+
+    AbbrAttr,
+    AccectCharsetAttr,
+    AcceptAttr,
+    AccessKeyAttr,
+    ActionAttr,
+    ActiveAttr,
+    AlignAttr,
+    AltAttr,
+    ArchiveAttr, // extension
+    AxisAttr,
+    BGPropertiesAttr, // extension
+    BorderColorDarkAttr,  // extension
+    BorderColorLightAttr, // extension
+    BorderColorAttr, // extension
+    BorderAttr,
+    CharAttr,
+    CharOffAttr,
+    CharSetAttr,
+    CheckBoxAttr, // extension
+    CheckedAttr,
+    CiteAttr,
+    ClassIdAttr,
+    CodeAttr,
+    CodeBaseAttr,
+    CodeTypeAttr,
+    ColsAttr,
+    ColSpanAttr,
+    CompactAttr,
+    CommandAttr, // extension
+    ContentAttr,
+    CoordsAttr,
+    DataAttr,
+    DateTimeAttr,
+    DeclareAttr,
+    DeferAttr,
+    DirAttr,
+    DisabledAttr,
+    EncTypeAttr,
+    ForAttr,
+    FrameAttr,
+    FrameBorderAttr,
+    HeadersAttr,
+    HRefAttr,
+    HRegLangAttr,
+    HttpEquivAttr,
+    IsMapAttr,
+    LabelAttr,
+    LangAttr,
+    LanguageAttr,
+    LeftMarginAttr,
+    liAloneAttr, // extension
+    LongDescAttr,
+    LoopAttr, // extension
+    MaxLengthAttr,
+    MediaAttr,
+    MethodAttr,
+    MultipleAttr,
+    NameAttr,
+    NoHRefAttr,
+    NoResizeAttr,
+    NoShadeAttr,
+    NoWrapAttr,
+    ObjectAttr,
+    PlainAttr, // extension
+    ProfileAttr,
+    PromptAttr,
+    RadioAttr, // extension
+    RatioAttr, // extension
+    ReadOnlyAttr,
+    RelAttr,
+    RevAttr,
+    RowsAttr,
+    RowSpanAttr,
+    RulesAttr,
+    SchemeAttr,
+    ScopeAttr,
+    ScrollingAttr,
+    SelectedAttr,
+    ShapeAttr,
+    SpanAttr,
+    SrcAttr,
+    StandByAttr,
+    StartAttr,
+    SummaryAttr,
+    TabIndexAttr,
+    TargetAttr,
+    TextAttr,
+    TitleAttr,
+    TopMarginAttr, // extension
+    TranspAttr, // extension
+    TypeAttr,
+    UseMapAttr,
+    ValueAttr,
+    ValueTypeAttr,
+    VersionAttr,
+    WrapAttr, // extension
+
+    ClassAttr,
+    IDAttr,
+
+    // events
+    OnBlurAttr,
+    OnChangeAttr,
+    OnClickAttr,
+    OnDblClickAttr,
+    OnFocusAttr,
+    OnKeyDownAttr,
+    OnKeyPressAttr,
+    OnKeyUpAttr,
+    OnLoadAttr,
+    OnMouseDownAttr,
+    OnMouseMoveAttr,
+    OnMouseOutAttr,
+    OnMouseOverAttr,
+    OnMouseUpAttr,
+    OnResetAttr,
+    OnSelectAttr,
+    OnSubmitAttr,
+    OnUnloadAttr,
+
+    // convert to corresponding style property/ies
+    BackgroundAttr,
+    BGColorAttr,
+    CellPaddingAttr,
+    CellSpacingAttr,
+    ClearAttr,
+    ColorAttr,
+    FaceAttr,
+    HeightAttr,
+    HSpaceAttr,
+    MarginHeightAttr,
+    MarginWidthAttr,
+    SizeAttr,
+    StyleAttr,
+    VAlignAttr,
+    VSpaceAttr,
+    WidthAttr,
+
+    // link pseudo colors
+    ALinkAttr,
+    LinkAttr,
+    OLinkAttr, // extension
+    VLinkAttr
   );
+
+//  THtmlEventAttributeSymbol = OnBlurAttr..OnUnloadAttr;
+//  THtmlStyleAttributeSymbol = BackgroundAttr..WidthAttr;
+//  THtmlLinkColorAttributeSymbol = ALinkAttr..VLinkAttr;
 
   TPropertySymbol = (
     UnknownPropSy,
@@ -279,20 +343,77 @@ type
 
 type
   TBorderStyle = (
-    bssNone, bssSolid, bssInset, bssOutset, bssGroove, bssRidge, bssDashed, bssDotted, bssDouble);
+    bssNone,
+    bssSolid,
+    bssInset,
+    bssOutset,
+    bssGroove,
+    bssRidge,
+    bssDashed,
+    bssDotted,
+    bssDouble);
 const
   CBorderStyle: array[TBorderStyle] of ThtString = (
-    'none', 'solid', 'inset', 'outset', 'groove', 'ridge', 'dashed', 'dotted', 'double');
+    'none',
+    'solid',
+    'inset',
+    'outset',
+    'groove',
+    'ridge',
+    'dashed',
+    'dotted',
+    'double');
 
+type
+  TPropDisplay = (
+    pdUnassigned,
+    pdInline,
+    pdBlock,
+    pdListItem,
+    pdRunIn,
+    pdInlineBlock,
+    pdTable,
+    pdInlineTable,
+    pdTableRowGroup,
+    pdTableHeaderGroup,
+    pdTableFooterGroup,
+    pdTableRow,
+    pdTableColumnGroup,
+    pdTableColumn,
+    pdTableCell,
+    pdTableCaption,
+    pdNone);
+
+const
+  CPropDisplay: array [TPropDisplay] of ThtString = (
+    '',
+    'inline',
+    'block',
+    'list-item',
+    'run-in',
+    'inline-block',
+    'table',
+    'inline-table',
+    'table-row-group',
+    'table-header-group',
+    'table-footer-group',
+    'table-row',
+    'table-column-group',
+    'table-column',
+    'table-cell',
+    'table-caption',
+    'none');
 
 function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
+function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
+
 function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
+function TryStrToPropertySymbol(const Str: ThtString; out Sy: TPropertySymbol): Boolean;
 
 function TryNameToColor(const Name: ThtString; out Color: TColor): Boolean;
-function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
+function TryStrToDisplay(const Str: ThtString; out Display: TPropDisplay): Boolean;
 function TryStrToEntity(const Str: ThtString; out Entity: Integer): Boolean;
-function TryStrToPropertySymbol(const Str: ThtString; out Sy: TPropertySymbol): Boolean;
 
 implementation
 
@@ -1015,95 +1136,110 @@ type
   PAttributeDescription = ^TAttributeDescription;
   TAttributeDescription = record
     Name: ThtString;
-    Symbol: THtmlAttributeSymbol;
+    Attr: THtmlAttributeSymbol;
   end;
 
 const
-  CAttributeDescriptions: array[1..84] of TAttributeDescription = (
-    (Name: 'ACTION';            Symbol: ActionSy),
-    (Name: 'ACTIVE';            Symbol: ActiveSy),
-    (Name: 'ALIGN';             Symbol: AlignSy),
-    (Name: 'ALT';               Symbol: AltSy),
-    (Name: 'BACKGROUND';        Symbol: BackgroundSy),
-    (Name: 'BGCOLOR';           Symbol: BGColorSy),
-    (Name: 'BGPROPERTIES';      Symbol: BGPropertiesSy),
-    (Name: 'BORDER';            Symbol: BorderSy),
-    (Name: 'BORDERCOLOR';       Symbol: BorderColorSy),
-    (Name: 'BORDERCOLORDARK';   Symbol: BorderColorDarkSy),
-    (Name: 'BORDERCOLORLIGHT';  Symbol: BorderColorLightSy),
-    (Name: 'CELLPADDING';       Symbol: CellPaddingSy),
-    (Name: 'CELLSPACING';       Symbol: CellSpacingSy),
-    (Name: 'CHARSET';           Symbol: CharSetSy),
-    (Name: 'CHECKBOX';          Symbol: CheckBoxSy),
-    (Name: 'CHECKED';           Symbol: CheckedSy),
-    (Name: 'CLASS';             Symbol: ClassSy),
-    (Name: 'CLEAR';             Symbol: ClearSy),
-    (Name: 'COLOR';             Symbol: ColorSy),
-    (Name: 'COLS';              Symbol: ColsSy),
-    (Name: 'COLSPAN';           Symbol: ColSpanSy),
-    (Name: 'CONTENT';           Symbol: ContentSy),
-    (Name: 'COORDS';            Symbol: CoordsSy),
-    (Name: 'DISABLED';          Symbol: DisabledSy),
-    (Name: 'ENCTYPE';           Symbol: EncTypeSy),
-    (Name: 'FACE';              Symbol: FaceSy),
-    (Name: 'FRAMEBORDER';       Symbol: FrameBorderSy),
-    (Name: 'HEIGHT';            Symbol: HeightSy),
-    (Name: 'HREF';              Symbol: HrefSy),
-    (Name: 'HSPACE';            Symbol: HSpaceSy),
-    (Name: 'HTTP-EQUIV';        Symbol: HttpEqSy),
-    (Name: 'ID';                Symbol: IDSy),
-    (Name: 'ISMAP';             Symbol: IsMapSy),
-    (Name: 'LABEL';             Symbol: LabelAttrSy),
-    (Name: 'LANGUAGE';          Symbol: LanguageSy),
-    (Name: 'LEFTMARGIN';        Symbol: LeftMarginSy),
-    (Name: 'LINK';              Symbol: LinkAttrSy),
-    (Name: 'LOOP';              Symbol: LoopSy),
-    (Name: 'MARGINHEIGHT';      Symbol: MarginHeightSy),
-    (Name: 'MARGINWIDTH';       Symbol: MarginWidthSy),
-    (Name: 'MAXLENGTH';         Symbol: MaxLengthSy),
-    (Name: 'MEDIA';             Symbol: MediaSy),
-    (Name: 'METHOD';            Symbol: MethodSy),
-    (Name: 'MULTIPLE';          Symbol: MultipleSy),
-    (Name: 'NAME';              Symbol: NameSy),
-    (Name: 'NOHREF';            Symbol: NoHrefSy),
-    (Name: 'NORESIZE';          Symbol: NoResizeSy),
-    (Name: 'NOSHADE';           Symbol: NoShadeSy),
-    (Name: 'NOWRAP';            Symbol: NoWrapSy),
-    (Name: 'OLINK';             Symbol: OLinkSy),
-    (Name: 'ONBLUR';            Symbol: OnBlurSy),
-    (Name: 'ONCHANGE';          Symbol: OnChangeSy),
-    (Name: 'ONCLICK';           Symbol: OnClickSy),
-    (Name: 'ONFOCUS';           Symbol: OnFocusSy),
-    (Name: 'PLAIN';             Symbol: PlainSy),
-    (Name: 'RADIO';             Symbol: RadioSy),
-    (Name: 'RATIO';             Symbol: RatioSy),
-    (Name: 'READONLY';          Symbol: ReadonlyAttrSy),
-    (Name: 'REL';               Symbol: RelSy),
-    (Name: 'REV';               Symbol: RevSy),
-    (Name: 'ROWS';              Symbol: RowsSy),
-    (Name: 'ROWSPAN';           Symbol: RowSpanSy),
-    (Name: 'SCROLLING';         Symbol: ScrollingSy),
-    (Name: 'SELECTED';          Symbol: SelectedAttrSy),
-    (Name: 'SHAPE';             Symbol: ShapeSy),
-    (Name: 'SIZE';              Symbol: SizeSy),
-    (Name: 'SPAN';              Symbol: SpanAttrSy),
-    (Name: 'SRC';               Symbol: SrcSy),
-    (Name: 'START';             Symbol: StartSy),
-    (Name: 'STYLE';             Symbol: StyleAttrSy),
-    (Name: 'TABINDEX';          Symbol: TabIndexSy),
-    (Name: 'TARGET';            Symbol: TargetSy),
-    (Name: 'TEXT';              Symbol: TextAttrSy),
-    (Name: 'TITLE';             Symbol: TitleAttrSy),
-    (Name: 'TOPMARGIN';         Symbol: TopMarginSy),
-    (Name: 'TRANSP';            Symbol: TranspSy),
-    (Name: 'TYPE';              Symbol: TypeSy),
-    (Name: 'USEMAP';            Symbol: UseMapSy),
-    (Name: 'VALIGN';            Symbol: VAlignSy),
-    (Name: 'VALUE';             Symbol: ValueSy),
-    (Name: 'VLINK';             Symbol: VLinkSy),
-    (Name: 'VSPACE';            Symbol: VSpaceSy),
-    (Name: 'WIDTH';             Symbol: WidthSy),
-    (Name: 'WRAP';              Symbol: WrapAttrSy)
+  CAttributeDescriptions: array[1..99] of TAttributeDescription = (
+    (Name: 'ACTION';            Attr: ActionAttr),
+    (Name: 'ACTIVE';            Attr: ActiveAttr),
+    (Name: 'ALIGN';             Attr: AlignAttr),
+    (Name: 'ALT';               Attr: AltAttr),
+    (Name: 'BACKGROUND';        Attr: BackgroundAttr),
+    (Name: 'BGCOLOR';           Attr: BGColorAttr),
+    (Name: 'BGPROPERTIES';      Attr: BGPropertiesAttr),
+    (Name: 'BORDER';            Attr: BorderAttr),
+    (Name: 'BORDERCOLOR';       Attr: BorderColorAttr),
+    (Name: 'BORDERCOLORDARK';   Attr: BorderColorDarkAttr),
+    (Name: 'BORDERCOLORLIGHT';  Attr: BorderColorLightAttr),
+    (Name: 'CELLPADDING';       Attr: CellPaddingAttr),
+    (Name: 'CELLSPACING';       Attr: CellSpacingAttr),
+    (Name: 'CHARSET';           Attr: CharSetAttr),
+    (Name: 'CHECKBOX';          Attr: CheckBoxAttr),
+    (Name: 'CHECKED';           Attr: CheckedAttr),
+    (Name: 'CLASS';             Attr: ClassAttr),
+    (Name: 'CLEAR';             Attr: ClearAttr),
+    (Name: 'COLOR';             Attr: ColorAttr),
+    (Name: 'COLS';              Attr: ColsAttr),
+    (Name: 'COLSPAN';           Attr: ColSpanAttr),
+    (Name: 'CONTENT';           Attr: ContentAttr),
+    (Name: 'COORDS';            Attr: CoordsAttr),
+    (Name: 'DISABLED';          Attr: DisabledAttr),
+    (Name: 'ENCTYPE';           Attr: EncTypeAttr),
+    (Name: 'FACE';              Attr: FaceAttr),
+    (Name: 'FRAMEBORDER';       Attr: FrameBorderAttr),
+    (Name: 'HEIGHT';            Attr: HeightAttr),
+    (Name: 'HREF';              Attr: HrefAttr),
+    (Name: 'HSPACE';            Attr: HSpaceAttr),
+    (Name: 'HTTP-EQUIV';        Attr: HttpEquivAttr),
+    (Name: 'ID';                Attr: IDAttr),
+    (Name: 'ISMAP';             Attr: IsMapAttr),
+    (Name: 'LABEL';             Attr: LabelAttr),
+    (Name: 'LANGUAGE';          Attr: LanguageAttr),
+    (Name: 'LEFTMARGIN';        Attr: LeftMarginAttr),
+    (Name: 'LINK';              Attr: LinkAttr),
+    (Name: 'LOOP';              Attr: LoopAttr),
+    (Name: 'MARGINHEIGHT';      Attr: MarginHeightAttr),
+    (Name: 'MARGINWIDTH';       Attr: MarginWidthAttr),
+    (Name: 'MAXLENGTH';         Attr: MaxLengthAttr),
+    (Name: 'MEDIA';             Attr: MediaAttr),
+    (Name: 'METHOD';            Attr: MethodAttr),
+    (Name: 'MULTIPLE';          Attr: MultipleAttr),
+    (Name: 'NAME';              Attr: NameAttr),
+    (Name: 'NOHREF';            Attr: NoHrefAttr),
+    (Name: 'NORESIZE';          Attr: NoResizeAttr),
+    (Name: 'NOSHADE';           Attr: NoShadeAttr),
+    (Name: 'NOWRAP';            Attr: NoWrapAttr),
+    (Name: 'OLINK';             Attr: OLinkAttr),
+    (Name: 'ONBLUR';            Attr: OnBlurAttr),
+    (Name: 'ONCHANGE';          Attr: OnChangeAttr),
+    (Name: 'ONCLICK';           Attr: OnClickAttr),
+    (Name: 'ONFOCUS';           Attr: OnFocusAttr),
+    (Name: 'ONDBLCLICK';        Attr: OnDblClickAttr),
+    (Name: 'ONFOCUS';           Attr: OnFocusAttr),
+    (Name: 'ONKEYDOWN';         Attr: OnKeyDownAttr),
+    (Name: 'ONKEYPRESS';        Attr: OnKeyPressAttr),
+    (Name: 'ONKEYUP';           Attr: OnKeyUpAttr),
+    (Name: 'ONLOAD';            Attr: OnLoadAttr),
+    (Name: 'ONMOUSEDOWN';       Attr: OnMouseDownAttr),
+    (Name: 'ONMOUSEMOVE';       Attr: OnMouseMoveAttr),
+    (Name: 'ONMOUSEOUT';        Attr: OnMouseOutAttr),
+    (Name: 'ONMOUSEOVER';       Attr: OnMouseOverAttr),
+    (Name: 'ONMOUSEUP';         Attr: OnMouseUpAttr),
+    (Name: 'ONCHANGE';          Attr: OnResetAttr),
+    (Name: 'ONCLICK';           Attr: OnSelectAttr),
+    (Name: 'ONFOCUS';           Attr: OnSubmitAttr),
+    (Name: 'ONDBLCLICK';        Attr: OnUnloadAttr),
+    (Name: 'PLAIN';             Attr: PlainAttr),
+    (Name: 'RADIO';             Attr: RadioAttr),
+    (Name: 'RATIO';             Attr: RatioAttr),
+    (Name: 'READONLY';          Attr: ReadonlyAttr),
+    (Name: 'REL';               Attr: RelAttr),
+    (Name: 'REV';               Attr: RevAttr),
+    (Name: 'ROWS';              Attr: RowsAttr),
+    (Name: 'ROWSPAN';           Attr: RowSpanAttr),
+    (Name: 'SCROLLING';         Attr: ScrollingAttr),
+    (Name: 'SELECTED';          Attr: SelectedAttr),
+    (Name: 'SHAPE';             Attr: ShapeAttr),
+    (Name: 'SIZE';              Attr: SizeAttr),
+    (Name: 'SPAN';              Attr: SpanAttr),
+    (Name: 'SRC';               Attr: SrcAttr),
+    (Name: 'START';             Attr: StartAttr),
+    (Name: 'STYLE';             Attr: StyleAttr),
+    (Name: 'TABINDEX';          Attr: TabIndexAttr),
+    (Name: 'TARGET';            Attr: TargetAttr),
+    (Name: 'TEXT';              Attr: TextAttr),
+    (Name: 'TITLE';             Attr: TitleAttr),
+    (Name: 'TOPMARGIN';         Attr: TopMarginAttr),
+    (Name: 'TRANSP';            Attr: TranspAttr),
+    (Name: 'TYPE';              Attr: TypeAttr),
+    (Name: 'USEMAP';            Attr: UseMapAttr),
+    (Name: 'VALIGN';            Attr: VAlignAttr),
+    (Name: 'VALUE';             Attr: ValueAttr),
+    (Name: 'VLINK';             Attr: VLinkAttr),
+    (Name: 'VSPACE';            Attr: VSpaceAttr),
+    (Name: 'WIDTH';             Attr: WidthAttr),
+    (Name: 'WRAP';              Attr: WrapAttr)
   );
 
 var
@@ -1134,7 +1270,7 @@ begin
     for I := 0 to AttributeDescriptions.Count - 1 do
     begin
       P := PAttributeDescription(AttributeDescriptions.Objects[I]);
-      AttributeDescriptionsIndex[P.Symbol] := I;
+      AttributeDescriptionsIndex[P.Attr] := I;
     end;
   end;
 end;
@@ -1146,9 +1282,9 @@ var
 begin
   Result := AttributeDescriptions.Find(Str, I);
   if Result then
-    Sy := PAttributeDescription(AttributeDescriptions.Objects[I]).Symbol
+    Sy := PAttributeDescription(AttributeDescriptions.Objects[I]).Attr
   else
-    Sy := UnknownAttrSy;
+    Sy := UnknownAttr;
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
@@ -1171,6 +1307,21 @@ begin
     begin
       Result := True;
       BorderStyle := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 16.03.2011 --
+function TryStrToDisplay(const Str: ThtString; out Display: TPropDisplay): Boolean;
+var
+  I: TPropDisplay;
+begin
+  for I := low(I) to high(I) do
+    if CPropDisplay[I] = Str then
+    begin
+      Result := True;
+      Display := I;
       exit;
     end;
   Result := False;

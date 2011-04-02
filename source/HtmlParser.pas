@@ -85,7 +85,7 @@ type
     property Capacity: Integer read FCapacity write SetCapacity;
     property Count: Integer read FCount;
     property DocPos: Integer read FDocPos;
-    property S: WideString read GetString;
+    property S: ThtString read GetString;
   end;
 
   THtmlToken = class(TCharBuffer)
@@ -339,7 +339,7 @@ begin
   begin
     Attr := Attributes[I];
     case Attr.Symbol of
-      StyleAttrSy: Element.StyleProperties := GetStyleProperties(Attr.Value);
+      StyleAttr: Element.StyleProperties := GetStyleProperties(Attr.Value);
     else
       Element.SetAttribute(Attr.Symbol, Attr.Value);
     end;
@@ -501,11 +501,19 @@ procedure THtmlParser.GetCh;
           '"', '''': GetQuotedString(Value);
         else
           {in case quotes left off ThtString}
-          while not (LCh in [SpcChar, TabChar, CrChar, MinusChar, GreaterChar, EofChar]) do {need to exclude '-' to find '-->'}
-          begin
+          repeat
+            case LCh of
+              SpcChar,
+              TabChar,
+              CrChar,
+              MinusChar, {need to exclude '-' to find '-->'}
+              GreaterChar,
+              EofChar:
+                break;
+            end;
             Value := Value + LCh;
             GetCh;
-          end;
+          until False;
         end;
       end;
     end;
@@ -1007,7 +1015,7 @@ procedure THtmlParser.Next;
           GetChSkipWhiteSpace;
           case LCh of
             '"', '''':
-              GetQuotedString(Value, Symbol in [TitleAttrSy, AltSy], Symbol);
+              GetQuotedString(Value, Symbol in [TitleAttr, AltAttr], Symbol);
 
             '-', '+', '0'..'9':
               GetValue(Value);

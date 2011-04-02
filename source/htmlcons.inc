@@ -185,6 +185,7 @@
         So resized graphics (especially smaller ones) look MUCH better}
 
 {$ifdef Compiler20_Plus}
+  {$define UseToStringOverride}
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}
   {$ifdef LCL}

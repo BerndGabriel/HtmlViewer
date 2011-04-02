@@ -30,7 +30,7 @@ unit HtmlStyles;
 interface
 
 uses
-  Windows, Classes, Contnrs, Variants,
+  Windows, Classes, Contnrs, Variants, SysUtils,
   //
   HtmlGlobals,
   HtmlSymbols;
@@ -97,7 +97,7 @@ type
   public
     constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant); overload;
     constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant); overload;
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     property Symbol: TStylePropertySymbol read FSymbol;
     property Precedence: TPropertyPrecedence read FPrecedence;
     property SpecifiedValue: Variant read FSpecifiedValue;
@@ -108,7 +108,7 @@ type
   private
     function GetItem(Index: Integer): TProperty;
   public
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     property Items[Index: Integer]: TProperty read GetItem; default;
   end;
 
@@ -117,10 +117,6 @@ type
 //------------------------------------------------------------------------------
 
 type
-
-//  TAttributeList = class(ThtStringList)
-//  public
-//  end;
 
   TAttributeMatchOperator = (
     amoSet,        // [name] : matches, if attr is set and has any value.
@@ -145,7 +141,7 @@ type
     FValue: ThtString;
   public
     constructor Create(Attribute: THtmlAttributeSymbol; Oper: TAttributeMatchOperator; const Value: ThtString);
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     property Attribute: THtmlAttributeSymbol read FAttr;
     property Oper: TAttributeMatchOperator read FOper;
     property Value: ThtString read FValue;
@@ -156,7 +152,7 @@ type
     function GetItem(Index: Integer): TAttributeMatch;
   public
     function Same(List: TAttributeMatchList): Boolean; overload; {$ifdef UseInline} inline; {$endif}
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     procedure Sort; overload; {$ifdef UseInline} inline; {$endif}
     property Items[Index: Integer]: TAttributeMatch read GetItem; default;
   end;
@@ -256,7 +252,7 @@ type
     destructor Destroy; override;
     function AttributeMatchesCount: Integer; {$ifdef UseInline} inline; {$endif}
     function Same(Selector: TSelector): Boolean; virtual;
-    function ToString: ThtString; virtual;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$else} virtual; {$endif}
     function CompareSpecificity(ASelector: TSelector): Integer;
     procedure AddAttributeMatch(AAttributeMatch: TAttributeMatch); {$ifdef UseInline} inline; {$endif}
     procedure AddClass(AClass: ThtString); {$ifdef UseInline} inline; {$endif}
@@ -287,7 +283,7 @@ type
   private
     function GetItem(Index: Integer): TSelector;
   public
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     property Items[Index: Integer]: TSelector read GetItem; default;
   end;
 
@@ -354,7 +350,7 @@ type
   public
     constructor Create(MediaTypes: TMediaTypes);
     destructor Destroy; override;
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     property Properties: TPropertyList read FProperties;
     property Selectors: TSelectorList read FSelectors;
   end;
@@ -363,7 +359,7 @@ type
   private
     function GetItem(Index: Integer): TRuleset;
   public
-    function ToString: ThtString;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     procedure InsertList(Index: Integer; Rulesets: TRulesetList);
     property Items[Index: Integer]: TRuleset read GetItem; default;
   end;

@@ -75,13 +75,14 @@ type
   private
     FParent: THtmlElement;
     FChildren: TObjectList;
-    FSymbol: THtmlElementSymbol;
     FDocPos: Integer;
-
+    //
+    FSymbol: THtmlElementSymbol;
     FIds: ThtStringArray;
     FClasses: ThtStringArray;
     FAttributeProperties: TPropertyList; // properties set by formatting attributes other than style
     FStyleProperties: TPropertyList;     // properties set by style attribute
+    //
     function GetChildCount: Integer;
     procedure SetStyleProperties(const Value: TPropertyList);
   protected
@@ -96,19 +97,19 @@ type
       Symbol: THtmlElementSymbol;
       DocPos: Integer);
     destructor Destroy; override;
+    function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
     function IndexOf(Child: THtmlElement): Integer; virtual;
     function IsMatching(Selector: TSelector): Boolean;
-    function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
     procedure SetAttribute(Attribute: THtmlAttributeSymbol; const Value: ThtString); virtual;
-    property Parent: THtmlElement read FParent write SetParent;
+    property AttributeProperties: TPropertyList read FAttributeProperties;
     property Children[Index: Integer]: THtmlElement read GetChild; default;
+    property Classes: ThtStringArray read FClasses;
     property Count: Integer read GetChildCount;
     property DocPos: Integer read FDocPos;
-    property Symbol: THtmlElementSymbol read FSymbol;
-    property Classes: ThtStringArray read FClasses;
     property Ids: ThtStringArray read FIds;
-    property AttributeProperties: TPropertyList read FAttributeProperties;
+    property Parent: THtmlElement read FParent write SetParent;
     property StyleProperties: TPropertyList read FStyleProperties write SetStyleProperties;
+    property Symbol: THtmlElementSymbol read FSymbol;
   end;
 
   THtmlElementClass = class of THtmlElement;
@@ -498,8 +499,6 @@ constructor THtmlElement.Create(
   Parent: THtmlElement;
   Symbol: THtmlElementSymbol;
   DocPos: Integer);
-var
-  I: Integer;
 begin
   inherited Create;
   FSymbol := Symbol;
@@ -509,8 +508,17 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 destructor THtmlElement.Destroy;
+var
+  Children: TObjectList;
 begin
-  FChildren.Free;
+  Parent := nil;
+  
+  // set FChildren to nil before destroying to avoid excessive child
+  // extractions when my children set their Parent (that's me!) to nil.
+  Children := FChildren;
+  FChildren := nil;
+  Children.Free;
+
   FStyleProperties.Free;
   FAttributeProperties.Free;
   inherited;
@@ -528,8 +536,8 @@ function THtmlElement.FindAttribute(Attribute: THtmlAttributeSymbol; out Value: 
 begin
   Result := True;
   case Attribute of
-    ClassSy:  Value := Implode(FClasses, ' ');
-    IDSy:     Value := Implode(FIds, ' ');
+    ClassAttr:  Value := Implode(FClasses, ' ');
+    IDAttr:     Value := Implode(FIds, ' ');
   else
     SetLength(Value, 0);
     Result := False; // inherited FindAttribute(Symbol);
@@ -690,8 +698,8 @@ end;
 procedure THtmlElement.SetAttribute(Attribute: THtmlAttributeSymbol; const Value: ThtString);
 begin
   case Attribute of
-    ClassSy:      FClasses := Explode(Value, ' ');
-    IDSy:         FIds     := Explode(Value, ' ');
+    ClassAttr:      FClasses := Explode(Value, ' ');
+    IDAttr:         FIds     := Explode(Value, ' ');
   end;
 end;
 
