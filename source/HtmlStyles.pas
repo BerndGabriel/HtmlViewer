@@ -56,18 +56,21 @@ type
     ppInherited,        // inherited from parent object
     ppAgent,            // default property by user agent
     ppUserNormal,       // normal user property preference
+    ppHtmlAttribute,    // by html attribute
     ppStyleNormal,      // normal author resp. document property by style attribute
     ppAuthorNormal,     // normal author resp. document property
     ppAuthorImportant,  // important author propery
     ppStyleImportant,   // important author resp. document property by style attribute
     ppUserImportant     // important user property preference
   );
+
 const
   CPropertyPrecedence: array [TPropertyPrecedence] of ThtString = (
     'Default',          // default value of object type
     'Inherited',        // inherited from parent object
     'Agent',            // default property by user agent
     'User Normal',      // normal user property preference
+    'Html Attribute',   // by html attribute
     'Style Normal',     // normal author resp. document property by style attribute
     'Author Normal',    // normal author resp. document property
     'Author Important', // important author propery
@@ -75,6 +78,7 @@ const
     'User Important'    // important user property preference
   );
 
+  //
   CPropertyPrecedenceOfOrigin: array [Boolean, TPropertyOrigin] of TPropertyPrecedence = (
     (ppdefault, ppAgent, ppUserNormal, ppStyleNormal, ppAuthorNormal),
     (ppdefault, ppAgent, ppUserImportant, ppStyleImportant, ppAuthorImportant)
@@ -625,11 +629,11 @@ begin
   Prop := First;
   if Prop <> nil then
   begin
-    Result := CrLf + TabChar + Prop.ToString;
+    Result := CrLfTab + Prop.ToString;
     Prop := Prop.Next;
     while Prop <> nil do
     begin
-      Result := Result + ';' + CrLf + TabChar + Prop.ToString;
+      Result := Result + ';' + CrLfTab + Prop.ToString;
       Prop := Prop.Next;
     end;
   end;

@@ -22,6 +22,11 @@
 
   {$define ver100_plus}
   {$define ver120_plus}
+
+  // compiler features
+  {$define UseInline}
+  {.$define UseEnhancedRecord}
+  {.$define UseToStringOverride}
 {$else}
 
 { Identify Delphi Compiler Version:
@@ -101,6 +106,11 @@
   {$ifdef Compiler18_Plus}
     {$define UseEnhancedRecord}
   {$endif}
+
+  {$ifdef Compiler20_Plus}
+    {$define UseToStringOverride}
+  {$endif}
+
 
   { Set Delphi Compiler Switches }
 
@@ -192,7 +202,6 @@
         So resized graphics (especially smaller ones) look MUCH better}
 
 {$ifdef Compiler20_Plus}
-  {$define UseToStringOverride}
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}
   {$ifdef LCL}

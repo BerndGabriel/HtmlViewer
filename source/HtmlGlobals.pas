@@ -161,9 +161,8 @@ const
   GreaterChar = ThtChar('>');
   PercentChar = ThtChar('%');
   AmperChar   = ThtChar('&');
-
-  CrLf = CrChar + LfChar;
-
+  CrLf        = ThtString(#13#10);
+  CrLfTab     = ThtString(#13#10#9);
 
 {$ifdef LCL}
 const

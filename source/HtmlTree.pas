@@ -51,10 +51,9 @@ type
     FPrev: THtmlAttribute;
     FNext: THtmlAttribute;
     FSymbol: THtmlAttributeSymbol;
-    FName: ThtString;
     FValue: ThtString;
   public
-    constructor Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
+    constructor Create(Symbol: THtmlAttributeSymbol; const Value: ThtString);
     function Clone: THtmlAttribute;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$else} virtual; {$endif}
     procedure Assign(Source: THtmlAttribute); virtual;
@@ -109,26 +108,26 @@ type
 
   THtmlElement = class
   private
-    FParent: THtmlElement;
-    FPrev: THtmlElement;
-    FNext: THtmlElement;
-    FChildren: THtmlElementList;
-    FDocPos: Integer;
-    FSymbol: THtmlElementSymbol;
-    FIds: ThtStringArray;
-    FClasses: ThtStringArray;
-    FAttributeProperties: TStylePropertyList; // properties set by formatting attributes other than style
-    FStyleProperties: TStylePropertyList;     // properties set by style attribute
-    FOtherAttributes: THtmlAttributeList;
+    FParent: THtmlElement;                    // parent element or nil if this is the root element.
+    FPrev: THtmlElement;                      // previous sibling in parent's content.
+    FNext: THtmlElement;                      // next sibling in parent's content.
+    FChildren: THtmlElementList;              // the content.
+    FDocPos: Integer;                         // position of starting '<' in source document.
+    FSymbol: THtmlElementSymbol;              // kind of element.
+    FIds: ThtStringArray;                     // list of IDds given by the ID (and some elements NAME) attribute.
+    FClasses: ThtStringArray;                 // list of classes given by the CLASS attribute.
+    FStyleProperties: TStylePropertyList;     // properties set by STYLE attribute.
+    FAttributeProperties: TStylePropertyList; // properties set by formatting attributes other than STYLE.
+    FOtherAttributes: THtmlAttributeList;     // all attributes but ID, CLASS, STYLE.
     //
-    procedure ParseStyleProperties(Str: ThtString);
-    procedure SetStyleProperties(const Value: TStylePropertyList);
-    procedure SetAttributes(const Source: THtmlAttributeList);
+    function GetAttribute(Symbol: THtmlAttributeSymbol): ThtString;
 {$ifdef UseEnhancedRecord}
 {$else}
     function GetFirstChild: THtmlElement;
     function GetLastChild: THtmlElement;
-{$endif}    
+{$endif}
+    procedure ParseStyleProperties(Str: ThtString);
+    procedure SetStyleProperties(const Value: TStylePropertyList);
   protected
     function GetPseudos: TPseudos; virtual;
     procedure AddChild(Child: THtmlElement);
@@ -146,7 +145,7 @@ type
     procedure BeforeDestruction; override;
     function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
     function IsMatching(Selector: TStyleSelector): Boolean;
-    procedure SetAttribute(Attribute: THtmlAttribute); virtual;
+    procedure SetAttribute(AttrSymbol: THtmlAttributeSymbol; const Value: ThtString); virtual;
 {$ifdef UseEnhancedRecord}
     property FirstChild: THtmlElement read FChildren.FFirst;
     property LastChild: THtmlElement read FChildren.FLast;
@@ -154,7 +153,7 @@ type
     property FirstChild: THtmlElement read GetFirstChild;
     property LastChild: THtmlElement read GetLastChild;
 {$endif}
-    property Attributes: THtmlAttributeList write SetAttributes;
+    property Attributes[Symbol: THtmlAttributeSymbol]: ThtString read GetAttribute write SetAttribute;
     property AttributeProperties: TStylePropertyList read FAttributeProperties;
     property OtherAttributes: THtmlAttributeList read FOtherAttributes;
     property Classes: ThtStringArray read FClasses;
@@ -174,13 +173,13 @@ type
     Symbol: THtmlElementSymbol;
     Content: THtmlElementSymbols; // allowed content
     EndSym: THtmlElementSymbol;   // NoEndSy == no end symbol
-    Clasz: THtmlElementClass;
+    IsNode: Boolean;
   end;
 
 const
   // virtual elements use lowercase names for visual effects.
   UnknownEd: THtmlElementDescription = (Name: 'unknown';  Symbol: UnknownSy; Content: []; EndSym: NoEndSy);
-  TextEd:    THtmlElementDescription = (Name: 'text';     Symbol: TextSy;    Content: []; EndSym: NoEndSy; Clasz: THtmlElement);
+  TextEd:    THtmlElementDescription = (Name: 'text';     Symbol: TextSy;    Content: []; EndSym: NoEndSy; IsNode: True);
   EofEd:     THtmlElementDescription = (Name: 'eof';      Symbol: EofSy;     Content: []; EndSym: NoEndSy);
 
 function ElementSymbolToElementDescription(Sy: THtmlElementSymbol): THtmlElementDescription;
@@ -422,8 +421,7 @@ begin
     ElementDescriptions.CaseSensitive := True;
     for I := low(CElementDescriptions) to high(CElementDescriptions) do
     begin
-      if CElementDescriptions[I].Clasz = nil then
-        CElementDescriptions[I].Clasz := THtmlElement;
+      CElementDescriptions[I].IsNode := True;
       ElementDescriptions.AddObject(CElementDescriptions[I].Name, @CElementDescriptions[I]);
       SetIndex(CElementDescriptions[I]);
     end;
@@ -483,7 +481,6 @@ end;
 procedure THtmlAttribute.Assign(Source: THtmlAttribute);
 begin
   FSymbol := Source.FSymbol;
-  FName := Source.FName;
   FValue := Source.FValue;
 end;
 
@@ -495,18 +492,17 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --
-constructor THtmlAttribute.Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
+constructor THtmlAttribute.Create(Symbol: THtmlAttributeSymbol; const Value: ThtString);
 begin
   inherited Create;
   FSymbol := Symbol;
-  FName := Name;
   FValue := Value;
 end;
 
 //-- BG ---------------------------------------------------------- 03.04.2011 --
 function THtmlAttribute.ToString: ThtString;
 begin
-  Result := FName + '="' + FValue + '"';
+  Result := AttributeSymbolToStr(Symbol) + '="' + Value + '"';
 end;
 
 { THtmlAttributeList }
@@ -642,12 +638,17 @@ begin
   Attribute := First;
   if Attribute <> nil then
   begin
-    Result := Attribute.ToString;
-    Attribute := Attribute.Next;
-    while Attribute <> nil do
-    begin
-      Result := Result + ' ' + Attribute.ToString;
+    try
+      Result := Attribute.ToString;
       Attribute := Attribute.Next;
+      while Attribute <> nil do
+      begin
+        Result := Result + ' ' + Attribute.ToString;
+        Attribute := Attribute.Next;
+      end;
+    except
+      on E: Exception do
+        Result := E.Message;
     end;
   end;
 end;
@@ -735,6 +736,12 @@ begin
     SetLength(Value, 0);
     Result := False; // inherited FindAttribute(Symbol);
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+function THtmlElement.GetAttribute(Symbol: THtmlAttributeSymbol): ThtString;
+begin
+
 end;
 
 {$ifdef UseEnhancedRecord}
@@ -895,27 +902,38 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --
-procedure THtmlElement.SetAttribute(Attribute: THtmlAttribute);
-begin
-  case Attribute.Symbol of
-    ClassAttr:      FClasses := Explode(Attribute.Value, ' ');
-    IDAttr:         FIds     := Explode(Attribute.Value, ' ');
-    StyleAttr:      ParseStyleProperties(Attribute.Value);
-  else
-    FOtherAttributes.Add(Attribute.Clone);
-  end;
-end;
+procedure THtmlElement.SetAttribute(AttrSymbol: THtmlAttributeSymbol; const Value: ThtString);
 
-//-- BG ---------------------------------------------------------- 03.04.2011 --
-procedure THtmlElement.SetAttributes(const Source: THtmlAttributeList);
-var
-  Attribute: THtmlAttribute;
-begin
-  Attribute := Source.First;
-  while Attribute <> nil do
+  procedure AddProperty(PropSymbol: TStylePropertySymbol);
   begin
-    SetAttribute(Attribute);
-    Attribute := Attribute.Next;
+    AttributeProperties.Add(TStyleProperty.Create(PropSymbol, ppHtmlAttribute, Value));
+  end;
+
+  procedure AddAttribute;
+  begin
+    FOtherAttributes.Add(THtmlAttribute.Create(AttrSymbol, Value));
+  end;
+
+begin
+  //TODO -2 -oBG, 03.04.2011: translate html attributes to style properties
+  case AttrSymbol of
+    ClassAttr:      FClasses := Explode(Value, ' ');
+    IDAttr:         FIds     := Explode(Value, ' ');
+    StyleAttr:      ParseStyleProperties(Value);
+    //
+    HeightAttr:     AddProperty(psHeight);
+    WidthAttr:      AddProperty(psWidth);
+    //
+    AlignAttr:      AddProperty(TextAlign);
+    SizeAttr:
+      case Symbol of
+        HRSy:       AddProperty(psHeight);
+        BaseFontSy: AddProperty(FontSize);
+      else
+        AddAttribute;
+      end;
+  else
+    AddAttribute;
   end;
 end;
 

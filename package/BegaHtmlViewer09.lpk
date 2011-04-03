@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="3">
+    <PathDelim Value="\"/>
+    <Name Value="BegaHtmlViewer09"/>
+    <CompilerOptions>
+      <Version Value="10"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="L:\src\shareware\HtmlViewer\source\"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)\"/>
+      </SearchPaths>
+      <Other>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="10">
+      <Item1>
+        <Filename Value="..\source\URLSubs.pas"/>
+        <UnitName Value="URLSubs"/>
+      </Item1>
+      <Item2>
+        <Filename Value="..\source\HtmlBuffer.pas"/>
+        <UnitName Value="HtmlBuffer"/>
+      </Item2>
+      <Item3>
+        <Filename Value="..\source\HtmlDocument.pas"/>
+        <UnitName Value="HtmlDocument"/>
+      </Item3>
+      <Item4>
+        <Filename Value="..\source\HtmlGlobals.pas"/>
+        <UnitName Value="HtmlGlobals"/>
+      </Item4>
+      <Item5>
+        <Filename Value="..\source\HtmlParser.pas"/>
+        <UnitName Value="HtmlParser"/>
+      </Item5>
+      <Item6>
+        <Filename Value="..\source\HtmlStyles.pas"/>
+        <UnitName Value="HtmlStyles"/>
+      </Item6>
+      <Item7>
+        <Filename Value="..\source\HtmlSymbols.pas"/>
+        <UnitName Value="HtmlSymbols"/>
+      </Item7>
+      <Item8>
+        <Filename Value="..\source\Parser.pas"/>
+        <UnitName Value="Parser"/>
+      </Item8>
+      <Item9>
+        <Filename Value="..\source\StyleParser.pas"/>
+        <UnitName Value="StyleParser"/>
+      </Item9>
+      <Item10>
+        <Filename Value="..\source\htmlmisc.pas"/>
+        <UnitName Value="HtmlMisc"/>
+      </Item10>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="2">
+      <Item1>
+        <PackageName Value="LCL"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="FCL"/>
+        <MinVersion Major="1" Release="1" Valid="True"/>
+      </Item2>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

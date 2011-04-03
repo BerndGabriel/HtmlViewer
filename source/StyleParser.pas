@@ -264,7 +264,7 @@ begin
     end;
   end;
 
-  // loop through all allowed charaters:
+  // loop through all allowed characters:
   while Result do
   begin
     case LCh of

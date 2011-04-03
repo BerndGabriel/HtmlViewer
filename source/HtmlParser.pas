@@ -292,9 +292,16 @@ end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
 function THtmlToken.CreateElement(Parent: THtmlElement): THtmlElement;
+var
+  Attribute: THtmlAttribute;
 begin
-  Result := FEd.Clasz.Create(Parent, FSymbol, FDocPos);
-  Result.Attributes := Attributes;
+  Result := THtmlElement.Create(Parent, FSymbol, FDocPos);
+  Attribute := Attributes.First;
+  while Attribute <> nil do
+  begin
+    Result.Attributes[Attribute.Symbol] := Attribute.Value;
+    Attribute := Attribute.Next;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 28.03.2011 --
@@ -362,7 +369,7 @@ end;
 //-- BG ---------------------------------------------------------- 31.03.2011 --
 function THtmlParser.CreateRootElement(const Ed: THtmlElementDescription): THtmlElement;
 begin
-  Result := Ed.Clasz.Create(nil, Ed.Symbol, LCToken.DocPos);
+  Result := THtmlElement.Create(nil, Ed.Symbol, LCToken.DocPos);
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
@@ -653,7 +660,7 @@ begin
     if LCToken.Symbol in ParentEd.Content then
     begin
       // this is expected content
-      if LCToken.Ed.Clasz <> nil then
+      if LCToken.Ed.IsNode then
       begin
         // this is a child node's start tag
         Element := LCToken.CreateElement(Parent);
@@ -1001,7 +1008,9 @@ procedure THtmlParser.Next;
         end
         else
           Value := Name;
-        Attribute := THtmlAttribute.Create(Symbol, Name, Value);
+        if Symbol = UnknownAttr then
+          Value := Value + ' <!--name=' + Name + '-->';
+        Attribute := THtmlAttribute.Create(Symbol, Value);
       end;
     end;
 

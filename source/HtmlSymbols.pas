@@ -1140,7 +1140,9 @@ type
   end;
 
 const
-  CAttributeDescriptions: array[1..99] of TAttributeDescription = (
+  UnknownAd: TAttributeDescription = (Name: 'unknown'; Attr: UnknownAttr);
+
+  CAttributeDescriptions: array[1..100] of TAttributeDescription = (
     (Name: 'ACTION';            Attr: ActionAttr),
     (Name: 'ACTIVE';            Attr: ActiveAttr),
     (Name: 'ALIGN';             Attr: AlignAttr),
@@ -1167,6 +1169,7 @@ const
     (Name: 'DISABLED';          Attr: DisabledAttr),
     (Name: 'ENCTYPE';           Attr: EncTypeAttr),
     (Name: 'FACE';              Attr: FaceAttr),
+    (Name: 'FOR';               Attr: ForAttr),
     (Name: 'FRAMEBORDER';       Attr: FrameBorderAttr),
     (Name: 'HEIGHT';            Attr: HeightAttr),
     (Name: 'HREF';              Attr: HrefAttr),
@@ -1244,34 +1247,27 @@ const
 
 var
   AttributeDescriptions: ThtStringList;
-  AttributeDescriptionsIndex: array [THtmlAttributeSymbol] of Integer;
+  AttributeDescriptionsIndex: array [THtmlAttributeSymbol] of PAttributeDescription;
 
 procedure InitAttributes;
 var
   I: Integer;
   P: PAttributeDescription;
-  S: THtmlAttributeSymbol;
 begin
   // Put the Attributes into a sorted StringList for faster access.
   if AttributeDescriptions = nil then
   begin
+    AttributeDescriptionsIndex[UnknownAd.Attr] := @UnknownAd;
+
     AttributeDescriptions := ThtStringList.Create;
     AttributeDescriptions.CaseSensitive := True;
     for I := low(CAttributeDescriptions) to high(CAttributeDescriptions) do
     begin
       P := @CAttributeDescriptions[I];
       AttributeDescriptions.AddObject(P.Name, Pointer(P));
+      AttributeDescriptionsIndex[P.Attr] := P;
     end;
     AttributeDescriptions.Sort;
-
-    // initialize AttributeDescriptionsIndex and SymbolNames
-    for S := low(S) to high(S) do
-      AttributeDescriptionsIndex[S] := -1;
-    for I := 0 to AttributeDescriptions.Count - 1 do
-    begin
-      P := PAttributeDescription(AttributeDescriptions.Objects[I]);
-      AttributeDescriptionsIndex[P.Attr] := I;
-    end;
   end;
 end;
 
@@ -1290,7 +1286,7 @@ end;
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
 begin
-  Result := PAttributeDescription(AttributeDescriptions.Objects[AttributeDescriptionsIndex[Sy]]).Name;
+  Result := PAttributeDescription(AttributeDescriptionsIndex[Sy]).Name;
 end;
 
 //------------------------------------------------------------------------------
