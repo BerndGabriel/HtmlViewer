@@ -7,7 +7,7 @@ What is HtmlViewer 12?
 HtmlViewer 12 will be a re-implementation of the HtmlViewer 11.
 
 Some new features:
-- supports Delphi 2006+ and Lazarus 0.9.31+
+- supports Delphi 6+ and Lazarus 0.9.31+
 - supports most CSS 2.1 features incl. MEDIA and DISPLAY
 - supports most HTML 4.01 features incl. IFRAME, NOSCRIPT
 - HTML document tree separated from visual component

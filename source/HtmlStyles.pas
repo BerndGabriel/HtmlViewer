@@ -108,7 +108,8 @@ type
     property Prev: TStyleProperty read FPrev;
   end;
 
-  TStylePropertyList = record
+
+  TStylePropertyList = {$ifdef UseEnhancedRecord} record {$else} class {$endif}
   private
     FFirst: TStyleProperty;
     FLast: TStyleProperty;
@@ -118,6 +119,7 @@ type
     procedure Init;
     procedure Add(Prop: TStyleProperty);
     procedure Assign(const List: TStylePropertyList);
+    procedure Clear;
     procedure Remove(Prop: TStyleProperty);
     property First: TStyleProperty read FFirst;
     property Last: TStyleProperty read FLast;
@@ -294,7 +296,7 @@ type
     property LeftHand: TStyleSelector read FLeftHand;
   end;
 
-  TStyleSelectorList = record
+  TStyleSelectorList = {$ifdef UseEnhancedRecord} record {$else} class {$endif}
   private
     FFirst: TStyleSelector;
     FLast: TStyleSelector;
@@ -304,6 +306,7 @@ type
     procedure Init;
     procedure Add(Sele: TStyleSelector);
     procedure Assign(const List: TStyleSelectorList);
+    procedure Clear;
     procedure Remove(Prop: TStyleSelector);
     property First: TStyleSelector read FFirst;
     property Last: TStyleSelector read FLast;
@@ -578,6 +581,20 @@ procedure TStylePropertyList.Assign(const List: TStylePropertyList);
 begin
   FFirst := List.FFirst;
   FLast := List.FLast;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure TStylePropertyList.Clear;
+var
+  Link: TStyleProperty;
+begin
+  FLast := nil;
+  while First <> nil do
+  begin
+    Link := First;
+    FFirst := Link.Next;
+    Link.Free;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 02.04.2011 --
@@ -914,6 +931,20 @@ procedure TStyleSelectorList.Assign(const List: TStyleSelectorList);
 begin
   FFirst := List.FFirst;
   FLast := List.FLast;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure TStyleSelectorList.Clear;
+var
+  Link: TStyleSelector;
+begin
+  FLast := nil;
+  while First <> nil do
+  begin
+    Link := First;
+    FFirst := Link.Next;
+    Link.Free;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 02.04.2011 --

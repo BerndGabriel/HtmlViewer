@@ -96,6 +96,11 @@ type
     procedure SetSymbol(const Value: THtmlElementSymbol);
     property Ed: THtmlElementDescription read FEd;
   public
+{$ifdef UseEnhancedRecord}
+{$else}
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
+{$endif}
     function CreateElement(Parent: THtmlElement): THtmlElement;
     procedure Init(DocPos: Integer); override;
     procedure StrToElement;
@@ -133,12 +138,10 @@ type
     procedure checkPosition(var Pos: Integer);
 {$endif}
 
-    function CreateElement(Parent: THtmlElement): THtmlElement;
     function CreateRootElement(const Ed: THtmlElementDescription): THtmlElement;
     function GetCodePage: Integer;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
-    procedure AssignAttributes(Element: THtmlElement; const Attributes: THtmlAttributeList);
     procedure GetChildren(Parent: THtmlElement);
     procedure GetCh;
     procedure GetChSkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
@@ -148,7 +151,6 @@ type
     procedure GetChBasic;
     procedure First; {$ifdef UseInline} inline; {$endif}
     procedure Next;
-    function GetStyleProperties(Str: ThtString): TStylePropertyList; overload;
     property CodePage: Integer read GetCodePage;
   public
     constructor Create(Doc: TBuffer; const Base: ThtString = '');
@@ -269,10 +271,30 @@ end;
 
 { THtmlToken }
 
+{$ifdef UseEnhancedRecord}
+{$else}
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlToken.AfterConstruction;
+begin
+  inherited;
+  FAttributes := THtmlAttributeList.Create;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlToken.BeforeDestruction;
+begin
+  FAttributes.Free;
+  inherited;
+end;
+
+{$endif}
+
 //-- BG ---------------------------------------------------------- 31.03.2011 --
 function THtmlToken.CreateElement(Parent: THtmlElement): THtmlElement;
 begin
   Result := FEd.Clasz.Create(Parent, FSymbol, FDocPos);
+  Result.Attributes := Attributes;
 end;
 
 //-- BG ---------------------------------------------------------- 28.03.2011 --
@@ -313,24 +335,6 @@ end;
 
 { THtmlParser }
 
-//-- BG ---------------------------------------------------------- 31.03.2011 --
-procedure THtmlParser.AssignAttributes(Element: THtmlElement; const Attributes: THtmlAttributeList);
-var
-  Attr: THtmlAttribute;
-begin
-  Attr := Attributes.First;
-  while Attr <> nil do
-  begin
-    case Attr.Symbol of
-      StyleAttr:
-        Element.StyleProperties := GetStyleProperties(Attr.Value);
-    else
-      Element.SetAttribute(Attr);
-    end;
-    Attr := Attr.Next;
-  end;
-end;
-
 {$ifdef DebugIt}
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
@@ -353,13 +357,6 @@ begin
   LCToken := THtmlToken.Create;
   FDoc := Doc;
   FBase := Base;
-end;
-
-//-- BG ---------------------------------------------------------- 31.03.2011 --
-function THtmlParser.CreateElement(Parent: THtmlElement): THtmlElement;
-begin
-  Result := LCToken.CreateElement(Parent);
-  AssignAttributes(Result, LCToken.Attributes);
 end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
@@ -659,7 +656,7 @@ begin
       if LCToken.Ed.Clasz <> nil then
       begin
         // this is a child node's start tag
-        Element := CreateElement(Parent);
+        Element := LCToken.CreateElement(Parent);
         if LCToken.Ed.EndSym <> NoEndSy then
         begin
           // this element has an end tag and thus may have children as well
@@ -877,27 +874,6 @@ begin
     checkPosition(LIdentPos)
 {$endif}
   ;
-end;
-
-//-- BG ---------------------------------------------------------- 31.03.2011 --
-function THtmlParser.GetStyleProperties(Str: ThtString): TStylePropertyList;
-var
-  Doc: TBuffer;
-  Ch: ThtChar;
-begin
-  Result.Init;
-  Doc := TBuffer.Create(Str);
-  try
-    with THtmlStyleParser.Create(poStyle, Doc, FBase) do
-      try
-        Ch := ' ';
-        ParseStyleProperties(Ch, Result);
-      finally
-        Free;
-      end;
-  finally
-    Doc.Free;
-  end;
 end;
 
 //------------------------------------------------------------------------------
@@ -1234,7 +1210,7 @@ begin
           BodySy,
           FrameSetSy:
           begin
-            Document.Tree := CreateElement(nil);
+            Document.Tree := LCToken.CreateElement(nil);
             Next;
             ParseTree;
             break;

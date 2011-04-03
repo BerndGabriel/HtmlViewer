@@ -92,16 +92,22 @@
     {$message 'Sorry, but Delphi versions before 6 are not supported.'}
   {$endif}
 
+  { Compiler Features }
+
   {$ifdef Compiler17_Plus}
     {$define UseInline}
+  {$endif}
+
+  {$ifdef Compiler18_Plus}
+    {$define UseEnhancedRecord}
   {$endif}
 
   { Set Delphi Compiler Switches }
 
   {$ifdef ver150}  {Delphi 7}
-  {$WARN Unsafe_Type off}
-  {$WARN Unsafe_Code off}
-  {$WARN Unsafe_Cast off}
+    {$WARN Unsafe_Type off}
+    {$WARN Unsafe_Code off}
+    {$WARN Unsafe_Cast off}
   {$endif}
 
   {$A+,B-,F-,G+,I+,P+,T-,V+,X+,R-}
@@ -132,6 +138,7 @@
   {$Warn Symbol_Platform Off}
 
 {$endif}
+
 
 { Define Aspects Of HtmlViewer }
 

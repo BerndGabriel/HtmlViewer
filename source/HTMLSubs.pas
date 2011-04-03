@@ -69,7 +69,7 @@ uses
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
   HtmlGlobals,
-  HtmlStyles,
+//  HtmlStyles,
   Parser,
   HTMLUn2,
   StyleUn,
@@ -92,9 +92,9 @@ type
     FDocument: ThtDocument; // the document it belongs to
     FOwnerBlock: TBlock;    // the parental block it is placed in
     FOwnerCell: TCellBasic; // the parent's child list it is placed in
-    FTag: TSymbol;
-    FIds: ThtStringArray;
-    FClasses: ThtStringArray;
+    //FTag: TSymbol;
+    //FIds: ThtStringArray;
+    //FClasses: ThtStringArray;
     FAttributes: TAttributeList;
     FProperties: TProperties;
   protected
@@ -102,13 +102,13 @@ type
     function FindAttribute(Name: ThtString; out Attribute: TAttribute): Boolean; overload; virtual;
     function GetChild(Index: Integer): THtmlNode; virtual;
     function GetParent: TBlock; virtual;
-    function GetPseudos: TPseudos; virtual;
+//    function GetPseudos: TPseudos; virtual;
   public
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Node: THtmlNode);
     //constructor Create(Parent: THtmlNode; Tag: TSymbol; Attributes: TAttributeList; const Properties: TResultingProperties);
     function IndexOf(Child: THtmlNode): Integer; virtual;
-    function IsMatching(Selector: TSelector): Boolean;
+    //function IsMatching(Selector: TSelector): Boolean;
     property Parent: TBlock read GetParent;
     property Children[Index: Integer]: THtmlNode read GetChild; default;
     property OwnerBlock: TBlock read FOwnerBlock; //BG, 07.02.2011: public for reading document structure (see issue 24). Renamed from MyBlock to Owner to clarify the relation.
@@ -1498,10 +1498,10 @@ begin
   Result := FOwnerBlock;
 end;
 
-function THtmlNode.GetPseudos: TPseudos;
-begin
-  Result := []; //TODO -oBG, 24.03.2011
-end;
+//function THtmlNode.GetPseudos: TPseudos;
+//begin
+//  Result := []; //TODO -oBG, 24.03.2011
+//end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 function THtmlNode.IndexOf(Child: THtmlNode): Integer;
@@ -1509,125 +1509,126 @@ begin
   Result := -1; //TODO -oBG, 24.03.2011
 end;
 
-//-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlNode.IsMatching(Selector: TSelector): Boolean;
+////-- BG ---------------------------------------------------------- 23.03.2011 --
+//function THtmlNode.IsMatching(Selector: TSelector): Boolean;
+//
+//  function IsMatchingSimple: Boolean;
+//
+//    function IncludesStringArray(S, F: ThtStringArray): Boolean;
+//    var
+//      I: Integer;
+//    begin
+//      Result := Length(S) <= Length(F);
+//      if not Result then
+//        exit;
+//      for I := Low(S) to High(S) do
+//        if IndexOfString(F, S[I]) < 0 then
+//          exit;
+//      Result := True;
+//    end;
+//
+//  var
+//    Index: Integer;
+//    Attribute: TAttribute;
+//    Match: TAttributeMatch;
+//    S: TSymbol;
+//  begin
+//    Result := False;
+//
+//    // http://www.w3.org/TR/2010/WD-CSS2-20101207/selector.html
+//    // If all conditions in the selector are true for a certain element, the selector matches the element.
+//
+//    if Selector.Pseudos <> [] then
+//      if not (Selector.Pseudos >= GetPseudos) then
+//        exit;
+//
+//    // a loop about tags? there is one or none tag in the selector.
+//    for Index := Low(Selector.Tags) to High(Selector.Tags) do
+//      if TryStrToReservedWord(Selector.Tags[Index], S) then
+//        if S <> FTag then
+//          exit;
+//
+//    // a loop about ids? CSS 2.1 allows more than 1 ID, but most browsers do not support them.
+//    if not IncludesStringArray(Selector.Ids, FIds) then
+//      exit;
+//
+//    if not IncludesStringArray(Selector.Classes, FClasses) then
+//      exit;
+//
+//    for Index := 0 to Selector.AttributeMatchesCount - 1 do
+//    begin
+//      Match := Selector.AttributeMatches[Index];
+//      if not FindAttribute(Match.Name, Attribute) then
+//        exit;
+//      case Match.Oper of
+//        //no more checks here. Attribute it set! amoSet: ;       // [name] : matches, if attr is set and has any value.
+//
+//        amoEquals:     // [name=value] : matches, if attr equals value.
+//          if htCompareString(Match.Value, Attribute.AsString) <> 0 then
+//            break;
+//
+//        amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
+//          if PosX(Match.Value + ' ', Attribute.AsString + ' ', 1) = 0 then
+//            break;
+//
+//        amoStartsWith: // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
+//          if PosX(Match.Value + '-', Attribute.AsString + '-', 1) <> 1 then
+//            break;
+//        end;
+//      end;
+//
+//    Result := True;
+//  end;
+//
+//  function IsChild(Selector: TSelector): Boolean;
+//  var
+//    P: THtmlNode;
+//  begin
+//    P := Parent;
+//    Result := (P <> nil) and P.IsMatching(Selector);
+//  end;
+//
+//  function IsDescendant(Selector: TSelector): Boolean;
+//  var
+//    Node: THtmlNode;
+//  begin
+//    Result := False;
+//    Node := Parent;
+//    while Node <> nil do
+//    begin
+//      Result := Node.IsMatching(Selector);
+//      if Result then
+//        break;
+//      Node := Node.Parent;
+//    end;
+//  end;
+//
+//  function IsFollower(Selector: TSelector): Boolean;
+//  var
+//    P: THtmlNode;
+//    I: Integer;
+//  begin
+//    P := Parent;
+//    Result := P <> nil;
+//    if Result then
+//    begin
+//      I := P.IndexOf(Self);
+//      if I > 0 then
+//        Result := P[I - 1].IsMatching(Selector);
+//    end;
+//  end;
+//
+//begin
+//  Result := IsMatchingSimple;
+//  if Result then
+//    if Selector is TCombinedSelector then
+//      case TCombinedSelector(Selector).Combinator of
+//        scChild:      Result := IsChild(TCombinedSelector(Selector).LeftHand);
+//        scDescendant: Result := IsDescendant(TCombinedSelector(Selector).LeftHand);
+//        scFollower:   Result := IsFollower(TCombinedSelector(Selector).LeftHand);
+//      end;
+//end;
 
-  function IsMatchingSimple: Boolean;
-
-    function IncludesStringArray(S, F: ThtStringArray): Boolean;
-    var
-      I: Integer;
-    begin
-      Result := Length(S) <= Length(F);
-      if not Result then
-        exit;
-      for I := Low(S) to High(S) do
-        if IndexOfString(F, S[I]) < 0 then
-          exit;
-      Result := True;
-    end;
-
-  var
-    Index: Integer;
-    Attribute: TAttribute;
-    Match: TAttributeMatch;
-    S: TSymbol;
-  begin
-    Result := False;
-
-    // http://www.w3.org/TR/2010/WD-CSS2-20101207/selector.html
-    // If all conditions in the selector are true for a certain element, the selector matches the element.
-
-    if Selector.Pseudos <> [] then
-      if not (Selector.Pseudos >= GetPseudos) then
-        exit;
-
-    // a loop about tags? there is one or none tag in the selector.
-    for Index := Low(Selector.Tags) to High(Selector.Tags) do
-      if TryStrToReservedWord(Selector.Tags[Index], S) then
-        if S <> FTag then
-          exit;
-
-    // a loop about ids? CSS 2.1 allows more than 1 ID, but most browsers do not support them.
-    if not IncludesStringArray(Selector.Ids, FIds) then
-      exit;
-
-    if not IncludesStringArray(Selector.Classes, FClasses) then
-      exit;
-
-    for Index := 0 to Selector.AttributeMatchesCount - 1 do
-    begin
-      Match := Selector.AttributeMatches[Index];
-      if not FindAttribute(Match.Name, Attribute) then
-        exit;
-      case Match.Oper of
-        //no more checks here. Attribute it set! amoSet: ;       // [name] : matches, if attr is set and has any value.
-
-        amoEquals:     // [name=value] : matches, if attr equals value.
-          if htCompareString(Match.Value, Attribute.AsString) <> 0 then
-            break;
-
-        amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
-          if PosX(Match.Value + ' ', Attribute.AsString + ' ', 1) = 0 then
-            break;
-
-        amoStartsWith: // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
-          if PosX(Match.Value + '-', Attribute.AsString + '-', 1) <> 1 then
-            break;
-        end;
-      end;
-
-    Result := True;
-  end;
-
-  function IsChild(Selector: TSelector): Boolean;
-  var
-    P: THtmlNode;
-  begin
-    P := Parent;
-    Result := (P <> nil) and P.IsMatching(Selector);
-  end;
-
-  function IsDescendant(Selector: TSelector): Boolean;
-  var
-    Node: THtmlNode;
-  begin
-    Result := False;
-    Node := Parent;
-    while Node <> nil do
-    begin
-      Result := Node.IsMatching(Selector);
-      if Result then
-        break;
-      Node := Node.Parent;
-    end;
-  end;
-
-  function IsFollower(Selector: TSelector): Boolean;
-  var
-    P: THtmlNode;
-    I: Integer;
-  begin
-    P := Parent;
-    Result := P <> nil;
-    if Result then
-    begin
-      I := P.IndexOf(Self);
-      if I > 0 then
-        Result := P[I - 1].IsMatching(Selector);
-    end;
-  end;
-
-begin
-  Result := IsMatchingSimple;
-  if Result then
-    if Selector is TCombinedSelector then
-      case TCombinedSelector(Selector).Combinator of
-        scChild:      Result := IsChild(TCombinedSelector(Selector).LeftHand);
-        scDescendant: Result := IsDescendant(TCombinedSelector(Selector).LeftHand);
-        scFollower:   Result := IsFollower(TCombinedSelector(Selector).LeftHand);
-      end;
-end;
 
 { TFontObj }
 

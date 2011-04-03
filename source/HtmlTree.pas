@@ -38,7 +38,8 @@ uses
   HtmlGlobals,
   HtmlBuffer,
   HtmlStyles,
-  HtmlSymbols;
+  HtmlSymbols,
+  StyleParser;
 
 //------------------------------------------------------------------------------
 // THtmlAttribute is class for all attributes of all HTML elements
@@ -55,6 +56,7 @@ type
   public
     constructor Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
     function Clone: THtmlAttribute;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$else} virtual; {$endif}
     procedure Assign(Source: THtmlAttribute); virtual;
     property Symbol: THtmlAttributeSymbol read FSymbol;
     property Value: ThtString read FValue;
@@ -62,7 +64,7 @@ type
     property Prev: THtmlAttribute read FPrev;
   end;
 
-  THtmlAttributeList = record {a list of tag attributes,(TAttributes)}
+  THtmlAttributeList = {$ifdef UseEnhancedRecord} record {$else} class {$endif}
   private
     FFirst: THtmlAttribute;
     FLast: THtmlAttribute;
@@ -70,11 +72,12 @@ type
     function Find(Name: ThtString; out Attribute: THtmlAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function Find(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function IsEmpty: Boolean;
-    procedure Add(Attr: THtmlAttribute);
+    function ToString: ThtString;
+    procedure Add(Attribute: THtmlAttribute);
     procedure Assign(const List: THtmlAttributeList);
     procedure Init;
     procedure Clear;
-    procedure Remove(Attr: THtmlAttribute);
+    procedure Remove(Attribute: THtmlAttribute);
     property First: THtmlAttribute read FFirst;
     property Last: THtmlAttribute read FLast;
   end;
@@ -88,10 +91,28 @@ type
 //------------------------------------------------------------------------------
 
 type
+  THtmlElement = class;
+
+  THtmlElementList = {$ifdef UseEnhancedRecord} record {$else} class {$endif}
+  private
+    FFirst: THtmlElement;
+    FLast: THtmlElement;
+  public
+    function IsEmpty: Boolean;
+    procedure Add(Element: THtmlElement);
+    procedure Init;
+    procedure Clear;
+    procedure Remove(Element: THtmlElement);
+    property First: THtmlElement read FFirst;
+    property Last: THtmlElement read FLast;
+  end;
+
   THtmlElement = class
   private
     FParent: THtmlElement;
-    FChildren: TObjectList;
+    FPrev: THtmlElement;
+    FNext: THtmlElement;
+    FChildren: THtmlElementList;
     FDocPos: Integer;
     FSymbol: THtmlElementSymbol;
     FIds: ThtStringArray;
@@ -100,10 +121,15 @@ type
     FStyleProperties: TStylePropertyList;     // properties set by style attribute
     FOtherAttributes: THtmlAttributeList;
     //
-    function GetChildCount: Integer;
+    procedure ParseStyleProperties(Str: ThtString);
     procedure SetStyleProperties(const Value: TStylePropertyList);
+    procedure SetAttributes(const Source: THtmlAttributeList);
+{$ifdef UseEnhancedRecord}
+{$else}
+    function GetFirstChild: THtmlElement;
+    function GetLastChild: THtmlElement;
+{$endif}    
   protected
-    function GetChild(Index: Integer): THtmlElement;
     function GetPseudos: TPseudos; virtual;
     procedure AddChild(Child: THtmlElement);
     procedure ExtractChild(Child: THtmlElement);
@@ -113,20 +139,32 @@ type
       Parent: THtmlElement;
       Symbol: THtmlElementSymbol;
       DocPos: Integer);
-    destructor Destroy; override;
+{$ifdef UseEnhancedRecord}
+{$else}
+    procedure AfterConstruction; override;
+{$endif}
+    procedure BeforeDestruction; override;
     function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
-    function IndexOf(Child: THtmlElement): Integer; virtual;
     function IsMatching(Selector: TStyleSelector): Boolean;
     procedure SetAttribute(Attribute: THtmlAttribute); virtual;
+{$ifdef UseEnhancedRecord}
+    property FirstChild: THtmlElement read FChildren.FFirst;
+    property LastChild: THtmlElement read FChildren.FLast;
+{$else}
+    property FirstChild: THtmlElement read GetFirstChild;
+    property LastChild: THtmlElement read GetLastChild;
+{$endif}
+    property Attributes: THtmlAttributeList write SetAttributes;
     property AttributeProperties: TStylePropertyList read FAttributeProperties;
-    property Children[Index: Integer]: THtmlElement read GetChild; default;
+    property OtherAttributes: THtmlAttributeList read FOtherAttributes;
     property Classes: ThtStringArray read FClasses;
-    property Count: Integer read GetChildCount;
     property DocPos: Integer read FDocPos;
     property Ids: ThtStringArray read FIds;
     property Parent: THtmlElement read FParent write SetParent;
     property StyleProperties: TStylePropertyList read FStyleProperties write SetStyleProperties;
     property Symbol: THtmlElementSymbol read FSymbol;
+    property Next: THtmlElement read FNext;
+    property Prev: THtmlElement read FPrev;
   end;
 
   THtmlElementClass = class of THtmlElement;
@@ -355,9 +393,11 @@ const
     (Name: 'WBR';         Symbol: WbrSy;        EndSym: NoEndSy),     // extension
     (Name: 'WRAP';        Symbol: WrapSy;       EndSym: NoEndSy)      // extension
     );
+
 var
   ElementDescriptions: ThtStringList;
   ElementDescriptionsIndex: array [THtmlElementSymbol] of PHtmlElementDescription;
+
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 procedure InitElementDescriptions;
@@ -463,21 +503,27 @@ begin
   FValue := Value;
 end;
 
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+function THtmlAttribute.ToString: ThtString;
+begin
+  Result := FName + '="' + FValue + '"';
+end;
+
 { THtmlAttributeList }
 
 //-- BG ---------------------------------------------------------- 02.04.2011 --
-procedure THtmlAttributeList.Add(Attr: THtmlAttribute);
+procedure THtmlAttributeList.Add(Attribute: THtmlAttribute);
 var
   Prev: THtmlAttribute;
   Next: THtmlAttribute;
 begin
-  assert(Attr.Next = nil, 'Don''t add chained links twice. Attr.Next is not nil.');
-  assert(Attr.Prev = nil, 'Don''t add chained links twice. Attr.Prev is not nil.');
+  assert(Attribute.Next = nil, 'Don''t add chained links twice. Attribute.Next is not nil.');
+  assert(Attribute.Prev = nil, 'Don''t add chained links twice. Attribute.Prev is not nil.');
 
   // find neighbors
   Prev := nil;
   Next := First;
-  while (Next <> nil) and (Next.Symbol < Attr.Symbol) do
+  while (Next <> nil) and (Next.Symbol < Attribute.Symbol) do
   begin
     Prev := Next;
     Next := Prev.Next;
@@ -485,17 +531,17 @@ begin
 
   // link to prev
   if Prev = nil then
-    FFirst := Attr
+    FFirst := Attribute
   else
-    Prev.FNext := Attr;
-  Attr.FPrev := Prev;
+    Prev.FNext := Attribute;
+  Attribute.FPrev := Prev;
 
   // link to next
   if Next = nil then
-    FLast := Attr
+    FLast := Attribute
   else
-    Next.FPrev := Attr;
-  Attr.FNext := Next;
+    Next.FPrev := Attribute;
+  Attribute.FNext := Next;
 end;
 
 //-- BG ---------------------------------------------------------- 02.04.2011 --
@@ -508,14 +554,14 @@ end;
 //-- BG ---------------------------------------------------------- 02.04.2011 --
 procedure THtmlAttributeList.Clear;
 var
-  Attr: THtmlAttribute;
+  Attribute: THtmlAttribute;
 begin
   FLast := nil;
   while First <> nil do
   begin
-    Attr := First;
-    FFirst := Attr.Next;
-    Attr.Free;
+    Attribute := First;
+    FFirst := Attribute.Next;
+    Attribute.Free;
   end;
 end;
 
@@ -556,34 +602,53 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 02.04.2011 --
-procedure THtmlAttributeList.Remove(Attr: THtmlAttribute);
+procedure THtmlAttributeList.Remove(Attribute: THtmlAttribute);
 var
   Prev: THtmlAttribute;
   Next: THtmlAttribute;
 begin
-  Prev := Attr.Prev;
-  Next := Attr.Next;
+  Prev := Attribute.Prev;
+  Next := Attribute.Next;
 
   if Prev = nil then
   begin
-    if First = Attr then
+    if First = Attribute then
       FFirst := Next;
   end
   else
   begin
     Prev.FNext := Next;
-    Attr.FPrev := nil;
+    Attribute.FPrev := nil;
   end;
 
   if Next = nil then
   begin
-    if Last = Attr then
+    if Last = Attribute then
       FLast := Prev;
   end
   else
   begin
     Next.FPrev := Prev;
-    Attr.FNext := nil;
+    Attribute.FNext := nil;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+function THtmlAttributeList.ToString: ThtString;
+var
+  Attribute: THtmlAttribute;
+begin
+  Result := '';
+  Attribute := First;
+  if Attribute <> nil then
+  begin
+    Result := Attribute.ToString;
+    Attribute := Attribute.Next;
+    while Attribute <> nil do
+    begin
+      Result := Result + ' ' + Attribute.ToString;
+      Attribute := Attribute.Next;
+    end;
   end;
 end;
 
@@ -592,9 +657,49 @@ end;
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 procedure THtmlElement.AddChild(Child: THtmlElement);
 begin
+{$ifdef UseEnhancedRecord}
+{$else}
   if FChildren = nil then
-    FChildren := TObjectList.Create;
+    FChildren := THtmlElementList.Create;
+{$endif}
   FChildren.Add(Child);
+end;
+
+{$ifdef UseEnhancedRecord}
+{$else}
+
+procedure THtmlElement.AfterConstruction;
+begin
+  inherited;
+  FChildren := THtmlElementList.Create;
+  FAttributeProperties := TStylePropertyList.Create;
+  FStyleProperties := TStylePropertyList.Create;
+  FOtherAttributes := THtmlAttributeList.Create;
+end;
+
+{$endif}
+
+procedure THtmlElement.BeforeDestruction;
+var
+  Children: THtmlElementList;
+begin
+  Parent := nil;
+
+  // set FChildren to nil before destroying to avoid excessive child
+  // extractions when my children set their Parent (that's me!) to nil.
+  Children := FChildren;
+{$ifdef UseEnhancedRecord}
+  FChildren.Init;
+  Children.Clear;
+{$else}
+  FChildren := nil;
+  Children.Free;
+
+  FAttributeProperties.Free;
+  FStyleProperties.Free;
+  FOtherAttributes.Free;
+{$endif}
+  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
@@ -610,26 +715,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
-destructor THtmlElement.Destroy;
-var
-  Children: TObjectList;
-begin
-  Parent := nil;
-  
-  // set FChildren to nil before destroying to avoid excessive child
-  // extractions when my children set their Parent (that's me!) to nil.
-  Children := FChildren;
-  FChildren := nil;
-  Children.Free;
-
-  inherited;
-end;
-
-//-- BG ---------------------------------------------------------- 26.03.2011 --
 procedure THtmlElement.ExtractChild(Child: THtmlElement);
 begin
+{$ifdef UseEnhancedRecord}
+{$else}
   if FChildren <> nil then
-    FChildren.Extract(Child);
+{$endif}
+  FChildren.Remove(Child);
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
@@ -645,20 +737,28 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 24.03.2011 --
-function THtmlElement.GetChild(Index: Integer): THtmlElement;
-begin
-  Result := THtmlElement(FChildren[Index]);
-end;
+{$ifdef UseEnhancedRecord}
+{$else}
 
-//-- BG ---------------------------------------------------------- 30.03.2011 --
-function THtmlElement.GetChildCount: Integer;
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+function THtmlElement.GetFirstChild: THtmlElement;
 begin
   if FChildren <> nil then
-    Result := FChildren.Count
+    Result := FChildren.First
   else
-    Result := 0;
+    Result := nil;
 end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+function THtmlElement.GetLastChild: THtmlElement;
+begin
+  if FChildren <> nil then
+    Result := FChildren.Last
+  else
+    Result := nil;
+end;
+
+{$endif}
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
 function THtmlElement.GetPseudos: TPseudos;
@@ -666,13 +766,25 @@ begin
   Result := [];
 end;
 
-//-- BG ---------------------------------------------------------- 24.03.2011 --
-function THtmlElement.IndexOf(Child: THtmlElement): Integer;
+//-- BG ---------------------------------------------------------- 31.03.2011 --
+procedure THtmlElement.ParseStyleProperties(Str: ThtString);
+var
+  Doc: TBuffer;
+  Ch: ThtChar;
 begin
-  if FChildren <> nil then
-    Result := FChildren.IndexOf(Child)
-  else
-    Result := -1;
+  FStyleProperties.Clear;
+  Doc := TBuffer.Create(Str);
+  try
+    with THtmlStyleParser.Create(poStyle, Doc) do
+      try
+        Ch := ' ';
+        ParseStyleProperties(Ch, FStyleProperties);
+      finally
+        Free;
+      end;
+  finally
+    Doc.Free;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
@@ -727,17 +839,17 @@ function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
       if not FindAttribute(Match.Attribute, Attribute) then
         exit;
       case Match.Oper of
-        //no more checks here. Attribute it set! amoSet: ;       // [name] : matches, if attr is set and has any value.
+        //no more checks here. Attribute it set! amoSet: ;       // [name] : matches, if Attribute is set and has any value.
 
-        amoEquals:     // [name=value] : matches, if attr equals value.
+        amoEquals:     // [name=value] : matches, if Attribute equals value.
           if htCompareString(Match.Value, Attribute) <> 0 then
             break;
 
-        amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
+        amoContains:   // [name~=value] : matches, if Attribute is a white space separated list of values and value is one of these values.
           if PosX(Match.Value + ' ', Attribute + ' ', 1) = 0 then
             break;
 
-        amoStartsWith: // [name|=value] : matches, if attr equals value or starts with value immediately followed by a hyphen.
+        amoStartsWith: // [name|=value] : matches, if Attribute equals value or starts with value immediately followed by a hyphen.
           if PosX(Match.Value + '-', Attribute + '-', 1) <> 1 then
             break;
         end;
@@ -747,11 +859,8 @@ function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
   end;
 
   function IsChild(Selector: TStyleSelector): Boolean;
-  var
-    P: THtmlElement;
   begin
-    P := Parent;
-    Result := (P <> nil) and P.IsMatching(Selector);
+    Result := (Parent <> nil) and Parent.IsMatching(Selector);
   end;
 
   function IsDescendant(Selector: TStyleSelector): Boolean;
@@ -770,18 +879,8 @@ function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
   end;
 
   function IsFollower(Selector: TStyleSelector): Boolean;
-  var
-    P: THtmlElement;
-    I: Integer;
   begin
-    P := Parent;
-    Result := P <> nil;
-    if Result then
-    begin
-      I := P.IndexOf(Self);
-      if I > 0 then
-        Result := P[I - 1].IsMatching(Selector);
-    end;
+    Result := (Prev <> nil) and Prev.IsMatching(Selector);
   end;
 
 begin
@@ -801,8 +900,22 @@ begin
   case Attribute.Symbol of
     ClassAttr:      FClasses := Explode(Attribute.Value, ' ');
     IDAttr:         FIds     := Explode(Attribute.Value, ' ');
+    StyleAttr:      ParseStyleProperties(Attribute.Value);
   else
     FOtherAttributes.Add(Attribute.Clone);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlElement.SetAttributes(const Source: THtmlAttributeList);
+var
+  Attribute: THtmlAttribute;
+begin
+  Attribute := Source.First;
+  while Attribute <> nil do
+  begin
+    SetAttribute(Attribute);
+    Attribute := Attribute.Next;
   end;
 end;
 
@@ -823,6 +936,90 @@ end;
 procedure THtmlElement.SetStyleProperties(const Value: TStylePropertyList);
 begin
   FStyleProperties.Assign(Value);
+end;
+
+{ THtmlElementList }
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlElementList.Add(Element: THtmlElement);
+// append element
+var
+  Prev: THtmlElement;
+begin
+  assert(Element.Next = nil, 'Don''t add chained links twice. Element.Next is not nil.');
+  assert(Element.Prev = nil, 'Don''t add chained links twice. Element.Prev is not nil.');
+
+  Prev := Last;
+
+  // link to prev
+  if Prev = nil then
+    FFirst := Element
+  else
+    Prev.FNext := Element;
+  Element.FPrev := Prev;
+
+  // link to next
+  FLast := Element;
+  Element.FNext := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlElementList.Clear;
+var
+  Element: THtmlElement;
+begin
+  FLast := nil;
+  while First <> nil do
+  begin
+    Element := First;
+    FFirst := Element.Next;
+    Element.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlElementList.Init;
+begin
+  FFirst := nil;
+  FLast := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+function THtmlElementList.IsEmpty: Boolean;
+begin
+  Result := FFirst = nil;
+end;
+
+//-- BG ---------------------------------------------------------- 03.04.2011 --
+procedure THtmlElementList.Remove(Element: THtmlElement);
+var
+  Prev: THtmlElement;
+  Next: THtmlElement;
+begin
+  Prev := Element.Prev;
+  Next := Element.Next;
+
+  if Prev = nil then
+  begin
+    if First = Element then
+      FFirst := Next;
+  end
+  else
+  begin
+    Prev.FNext := Next;
+    Element.FPrev := nil;
+  end;
+
+  if Next = nil then
+  begin
+    if Last = Element then
+      FLast := Prev;
+  end
+  else
+  begin
+    Next.FPrev := Prev;
+    Element.FNext := nil;
+  end;
 end;
 
 initialization

@@ -1,6 +1,7 @@
 package BegaHtmlViewer2007;
 
 {$R *.res}
+{$R 'FramBrwz.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -50,8 +51,5 @@ contains
   StyleParser in '..\source\StyleParser.pas',
   HtmlDocument in '..\source\HtmlDocument.pas',
   HtmlParser in '..\source\HtmlParser.pas';
-
-{
-  HtmlParser in '..\source\HtmlParser.pas';
-}
+  
 end.
