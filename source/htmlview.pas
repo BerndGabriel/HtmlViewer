@@ -113,8 +113,7 @@ type
 
 {$ifdef NoMetafile}
   //From MetaFilePrinter.pas
-  TPageEvent = procedure(Sender: TObject; NumPage: Integer ;
-                         var StopPrinting : Boolean) of Object;
+  TPageEvent = procedure(Sender: TObject; NumPage: Integer; var StopPrinting: Boolean) of object;
 {$endif}
 
   THtmlViewerStateBit = (
@@ -772,6 +771,7 @@ begin
   SplitDest(FileName, FName, Dest);
   if FName <> '' then
     FName := ExpandFileName(FName);
+  FCurrentFile := FName; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
   if not FileExists(FName) then
     raise EInOutError.Create('Can''t locate file: ' + FName);
   Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
