@@ -88,8 +88,10 @@ function Inherit: Variant; {$ifdef UseInline} inline; {$endif}
 function VarIsInherit(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
 
 type
-  TProperty = class
+  TStyleProperty = class
   private
+    FPrev: TStyleProperty;
+    FNext: TStyleProperty;
     FSymbol: TStylePropertySymbol;
     FPrecedence: TPropertyPrecedence;
     FSpecifiedValue: Variant;
@@ -102,14 +104,23 @@ type
     property Precedence: TPropertyPrecedence read FPrecedence;
     property SpecifiedValue: Variant read FSpecifiedValue;
     property CalculatedValue: Variant read FCalculatedValue write FCalculatedValue;
+    property Next: TStyleProperty read FNext;
+    property Prev: TStyleProperty read FPrev;
   end;
 
-  TPropertyList = class(TObjectList)
+  TStylePropertyList = record
   private
-    function GetItem(Index: Integer): TProperty;
+    FFirst: TStyleProperty;
+    FLast: TStyleProperty;
   public
+    function IsEmpty: Boolean;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
-    property Items[Index: Integer]: TProperty read GetItem; default;
+    procedure Init;
+    procedure Add(Prop: TStyleProperty);
+    procedure Assign(const List: TStylePropertyList);
+    procedure Remove(Prop: TStyleProperty);
+    property First: TStyleProperty read FFirst;
+    property Last: TStyleProperty read FLast;
   end;
 
 //------------------------------------------------------------------------------
@@ -221,27 +232,29 @@ function TryStrToPseudo(const Str: ThtString; out Pseudo: TPseudo): Boolean;
 
 type
 
-  TCombinator = (
+  TStyleCombinator = (
     scNone,       // F      : matches any F
     scDescendant, // E F    : matches F, if it is descendant of E
     scChild,      // E > F  : matches F, if it is child of E
     scFollower    // E + F  : matches F, if it immediately follows sibling E
   );
 
-  TSelectorState = set of (
+  TStyleSelectorState = set of (
     ssSorted
   );
 
   // a simple selector
-  TSelector = class
+  TStyleSelector = class
   private
+    FPrev: TStyleSelector;
+    FNext: TStyleSelector;
     FTags: ThtStringArray;
     FClasses: ThtStringArray;
     FIds: ThtStringArray;
     FPseudos: TPseudos;
     FAttributeMatches: TAttributeMatchList;
     FIsFromStyleAttr: Boolean;
-    FSelectorState: TSelectorState;
+    FSelectorState: TStyleSelectorState;
     FNumberOfElements: Integer;
     FNumberOfNonIds: Integer;
     function NumberOfIDs: Integer; {$ifdef UseInline} inline; {$endif}
@@ -251,9 +264,9 @@ type
   public
     destructor Destroy; override;
     function AttributeMatchesCount: Integer; {$ifdef UseInline} inline; {$endif}
-    function Same(Selector: TSelector): Boolean; virtual;
+    function Same(Selector: TStyleSelector): Boolean; virtual;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$else} virtual; {$endif}
-    function CompareSpecificity(ASelector: TSelector): Integer;
+    function CompareSpecificity(ASelector: TStyleSelector): Integer;
     procedure AddAttributeMatch(AAttributeMatch: TAttributeMatch); {$ifdef UseInline} inline; {$endif}
     procedure AddClass(AClass: ThtString); {$ifdef UseInline} inline; {$endif}
     procedure AddId(AId: ThtString); {$ifdef UseInline} inline; {$endif}
@@ -264,27 +277,36 @@ type
     property Ids: ThtStringArray read FIds;
     property Pseudos: TPseudos read FPseudos;
     property AttributeMatches: TAttributeMatchList read FAttributeMatches;
+    property Next: TStyleSelector read FNext;
+    property Prev: TStyleSelector read FPrev;
   end;
 
   // a compound selector
-  TCombinedSelector = class(TSelector)
+  TCombinedSelector = class(TStyleSelector)
   private
-    FLeftHand: TSelector;
-    FCombinator: TCombinator;
+    FLeftHand: TStyleSelector;
+    FCombinator: TStyleCombinator;
   public
-    constructor Create(LeftHand: TSelector; Combinator: TCombinator);
+    constructor Create(LeftHand: TStyleSelector; Combinator: TStyleCombinator);
     destructor Destroy; override;
     function ToString: ThtString; override;
-    property Combinator: TCombinator read FCombinator;
-    property LeftHand: TSelector read FLeftHand;
+    property Combinator: TStyleCombinator read FCombinator;
+    property LeftHand: TStyleSelector read FLeftHand;
   end;
 
-  TSelectorList = class(TObjectList)
+  TStyleSelectorList = record
   private
-    function GetItem(Index: Integer): TSelector;
+    FFirst: TStyleSelector;
+    FLast: TStyleSelector;
   public
+    function IsEmpty: Boolean;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
-    property Items[Index: Integer]: TSelector read GetItem; default;
+    procedure Init;
+    procedure Add(Sele: TStyleSelector);
+    procedure Assign(const List: TStyleSelectorList);
+    procedure Remove(Prop: TStyleSelector);
+    property First: TStyleSelector read FFirst;
+    property Last: TStyleSelector read FLast;
   end;
 
 //------------------------------------------------------------------------------
@@ -344,15 +366,12 @@ type
 
   TRuleset = class
   private
-    FProperties: TPropertyList;
-    FSelectors: TSelectorList;
     FMediaTypes: TMediaTypes;
   public
+    Properties: TStylePropertyList;
+    Selectors: TStyleSelectorList;
     constructor Create(MediaTypes: TMediaTypes);
-    destructor Destroy; override;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
-    property Properties: TPropertyList read FProperties;
-    property Selectors: TSelectorList read FSelectors;
   end;
 
   TRulesetList = class(TObjectList)
@@ -373,11 +392,11 @@ type
   TResultingProperty = class
   // references data only, does not own it.
   private
-    FProperty: TProperty;
-    FSelector: TSelector;
+    FProperty: TStyleProperty;
+    FSelector: TStyleSelector;
   public
-    function Compare(const AProperty: TProperty; const ASelector: TSelector): Integer; {$ifdef UseInline} inline; {$endif}
-    procedure Update(const AProperty: TProperty; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
+    function Compare(const AProperty: TStyleProperty; const ASelector: TStyleSelector): Integer; {$ifdef UseInline} inline; {$endif}
+    procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
   end;
 
   TResultingProperties = array [TStylePropertySymbol] of TResultingProperty;
@@ -392,14 +411,14 @@ type
   // Using reverse order minimizes comparing and update effort.
   TResultingPropertyMap = class
   private
-    FStyle: TSelector; // the selector for updating from style attributes
+    FStyle: TStyleSelector; // the selector for updating from style attributes
     FProps: TResultingProperties; // the resulting properties
-    procedure Update(const AProperty: TProperty; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
+    procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
   public
     destructor Destroy; override;
     function Get(Index: TStylePropertySymbol): TResultingProperty; {$ifdef UseInline} inline; {$endif}
-    procedure UpdateFromAttributes(const Properties: TPropertyList; IsFromStyleAttr: Boolean); {$ifdef UseInline} inline; {$endif}
-    procedure UpdateFromProperties(const Properties: TPropertyList; const ASelector: TSelector); {$ifdef UseInline} inline; {$endif}
+    procedure UpdateFromAttributes(const Properties: TStylePropertyList; IsFromStyleAttr: Boolean); {$ifdef UseInline} inline; {$endif}
+    procedure UpdateFromProperties(const Properties: TStylePropertyList; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
     property ResultingProperties[Index: TStylePropertySymbol]: TResultingProperty read Get; default;
   end;
 
@@ -481,10 +500,10 @@ begin
 end;
 
 
-{ TProperty }
+{ TStyleProperty }
 
 //-- BG ---------------------------------------------------------- 13.03.2011 --
-constructor TProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant);
+constructor TStyleProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant);
 begin
   inherited Create;
   FSymbol := Symbol;
@@ -494,7 +513,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 13.03.2011 --
-constructor TProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant);
+constructor TStyleProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant);
 begin
   inherited Create;
   FSymbol := Symbol;
@@ -504,7 +523,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
-function TProperty.ToString: ThtString;
+function TStyleProperty.ToString: ThtString;
 
   function VariantToStr(Value: Variant): ThtString;
   begin
@@ -519,27 +538,84 @@ begin
     ' /* ' + CPropertyPrecedence[FPrecedence] + ', ' + VariantToStr(CalculatedValue) + ' */';
 end;
 
-{ TPropertyList }
+{ TStylePropertyList }
 
-//-- BG ---------------------------------------------------------- 13.03.2011 --
-function TPropertyList.GetItem(Index: Integer): TProperty;
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStylePropertyList.Add(Prop: TStyleProperty);
+var
+  Prev: TStyleProperty;
+  Next: TStyleProperty;
 begin
-  Result := Get(Index);
+  assert(Prop.Next = nil, 'Don''t add chained links twice. Prop.Next is not nil.');
+  assert(Prop.Prev = nil, 'Don''t add chained links twice. Prop.Prev is not nil.');
+
+  // find neighbors
+  Prev := nil;
+  Next := First;
+  while (Next <> nil) and (Next.Symbol < Prop.Symbol) do
+  begin
+    Prev := Next;
+    Next := Prev.Next;
+  end;
+
+  // link to prev
+  if Prev = nil then
+    FFirst := Prop
+  else
+    Prev.FNext := Prop;
+  Prop.FPrev := Prev;
+
+  // link to next
+  if Next = nil then
+    FLast := Prop
+  else
+    Next.FPrev := Prop;
+  Prop.FNext := Next;
 end;
 
-//-- BG ---------------------------------------------------------- 19.03.2011 --
-function TPropertyList.ToString: ThtString;
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStylePropertyList.Assign(const List: TStylePropertyList);
+begin
+  FFirst := List.FFirst;
+  FLast := List.FLast;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStylePropertyList.Init;
+begin
+  FFirst := nil;
+  FLast := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+function TStylePropertyList.IsEmpty: Boolean;
+begin
+  Result := First = nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStylePropertyList.Remove(Prop: TStyleProperty);
+begin
+//TODO -1 -oBG, 02.04.2011
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+function TStylePropertyList.ToString: ThtString;
 var
-  I: Integer;
+  Prop: TStyleProperty;
 begin
   Result := '';
-  if Self <> nil then
-    if Count > 0 then
+  Prop := First;
+  if Prop <> nil then
+  begin
+    Result := CrLf + TabChar + Prop.ToString;
+    Prop := Prop.Next;
+    while Prop <> nil do
     begin
-      Result := CrLf + TabChar + Self[0].ToString;
-      for I := 1 to Count - 1 do
-        Result := Result + ';' + CrLf + TabChar + Self[I].ToString;
+      Result := Result + ';' + CrLf + TabChar + Prop.ToString;
+      Prop := Prop.Next;
     end;
+  end;
 end;
 
 { TAttributeMatch }
@@ -621,10 +697,10 @@ begin
     Result := Result + Self[I].ToString; 
 end;
 
-{ TSelector }
+{ TStyleSelector }
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-procedure TSelector.AddAttributeMatch(AAttributeMatch: TAttributeMatch);
+procedure TStyleSelector.AddAttributeMatch(AAttributeMatch: TAttributeMatch);
 begin
   if FAttributeMatches = nil then
     FAttributeMatches := TAttributeMatchList.Create(True);
@@ -633,7 +709,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-procedure TSelector.AddClass(AClass: ThtString);
+procedure TStyleSelector.AddClass(AClass: ThtString);
 var
   Index: Integer;
 begin
@@ -644,7 +720,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-procedure TSelector.AddId(AId: ThtString);
+procedure TStyleSelector.AddId(AId: ThtString);
 var
   Index: Integer;
 begin
@@ -655,7 +731,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-procedure TSelector.AddPseudo(APseudo: TPseudo);
+procedure TStyleSelector.AddPseudo(APseudo: TPseudo);
 begin
   if APseudo in FPseudos then
     exit;
@@ -668,7 +744,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-procedure TSelector.AddTag(ATag: ThtString);
+procedure TStyleSelector.AddTag(ATag: ThtString);
 var
   Index: Integer;
 begin
@@ -679,7 +755,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-function TSelector.AttributeMatchesCount: Integer;
+function TStyleSelector.AttributeMatchesCount: Integer;
 begin
   if FAttributeMatches <> nil then
     Result := FAttributeMatches.Count
@@ -688,7 +764,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-function TSelector.CompareSpecificity(ASelector: TSelector): Integer;
+function TStyleSelector.CompareSpecificity(ASelector: TStyleSelector): Integer;
 // http://www.w3.org/TR/2010/WD-CSS2-20101207/cascade.html#specificity
 begin
   Result := Ord(FIsFromStyleAttr) - Ord(ASelector.FIsFromStyleAttr);
@@ -707,20 +783,20 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
-destructor TSelector.Destroy;
+destructor TStyleSelector.Destroy;
 begin
   FAttributeMatches.Free;
   inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-function TSelector.NumberOfIDs: Integer;
+function TStyleSelector.NumberOfIDs: Integer;
 begin
   Result := Length(FIds);
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-function TSelector.Same(Selector: TSelector): Boolean;
+function TStyleSelector.Same(Selector: TStyleSelector): Boolean;
 begin
   Sort;
   Selector.Sort;
@@ -736,7 +812,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-procedure TSelector.Sort;
+procedure TStyleSelector.Sort;
 begin
   if not (ssSorted in FSelectorState) then
   begin
@@ -750,7 +826,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
-function TSelector.ToString: ThtString;
+function TStyleSelector.ToString: ThtString;
 var
   I: Integer;
   P: TPseudo;
@@ -780,7 +856,7 @@ end;
 { TCombinedSelector }
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
-constructor TCombinedSelector.Create(LeftHand: TSelector; Combinator: TCombinator);
+constructor TCombinedSelector.Create(LeftHand: TStyleSelector; Combinator: TStyleCombinator);
 begin
   inherited Create;
   FLeftHand := LeftHand;
@@ -809,24 +885,72 @@ begin
   Result := FLeftHand.ToString + CmbStr + inherited ToString;
 end;
 
-{ TSelectorList }
+{ TStyleSelectorList }
 
-//-- BG ---------------------------------------------------------- 15.03.2011 --
-function TSelectorList.GetItem(Index: Integer): TSelector;
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStyleSelectorList.Add(Sele: TStyleSelector);
+var
+  Prev: TStyleSelector;
 begin
-  Result := Get(Index);
+  assert(Sele.Next = nil, 'Don''t add chained links twice. Sele.Next is not nil.');
+  assert(Sele.Prev = nil, 'Don''t add chained links twice. Sele.Prev is not nil.');
+
+  Prev := Last;
+
+  // link to prev
+  if Prev = nil then
+    FFirst := Sele
+  else
+    Prev.FNext := Sele;
+  Sele.FPrev := Prev;
+
+  // link to next
+  FLast := Sele;
+  Sele.FNext := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStyleSelectorList.Assign(const List: TStyleSelectorList);
+begin
+  FFirst := List.FFirst;
+  FLast := List.FLast;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStyleSelectorList.Init;
+begin
+  FFirst := nil;
+  FLast := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+function TStyleSelectorList.IsEmpty: Boolean;
+begin
+  Result := First = nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure TStyleSelectorList.Remove(Prop: TStyleSelector);
+begin
+//TODO -1 -oBG, 02.04.2011
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
-function TSelectorList.ToString: ThtString;
+function TStyleSelectorList.ToString: ThtString;
 var
-  I: Integer;
+  Sele: TStyleSelector;
 begin
-  if Count > 0 then
+  Result := '';
+  Sele := First;
+  if Sele <> nil then
   begin
-    Result := Self[0].ToString;
-    for I := 1 to Count - 1 do
-      Result := Result + ', ' + Self[I].ToString;
+    Result := Sele.ToString;
+    Sele := Sele.Next;
+    while Sele <> nil do
+    begin
+      Result := Result + ', ' + Sele.ToString;
+      Sele := Sele.Next;
+    end;
   end;
 end;
 
@@ -836,17 +960,7 @@ end;
 constructor TRuleset.Create(MediaTypes: TMediaTypes);
 begin
   inherited Create;
-  FProperties := TPropertyList.Create;
-  FSelectors := TSelectorList.Create;
   FMediaTypes := MediaTypes
-end;
-
-//-- BG ---------------------------------------------------------- 15.03.2011 --
-destructor TRuleset.Destroy;
-begin
-  FProperties.Free;
-  FSelectors.Free;
-  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
@@ -854,7 +968,8 @@ function TRuleset.ToString: ThtString;
 var
   Strings: ThtStringList;
   Indent: ThtString;
-  I: Integer;
+  Sele: TStyleSelector;
+  Prop: TStyleProperty;
 begin
   Strings := ThtStringList.Create;
   Indent := '';
@@ -866,26 +981,26 @@ begin
     if Strings.Count > 0 then
       Indent := TabChar;
 
-    if Selectors.Count > 0 then
+    if Selectors.First <> nil then
     begin
-      I := 0;
-      while I < Selectors.Count - 1 do
+      Sele := Selectors.First;
+      while Sele.Next <> nil do
       begin
-        Strings.Add(Indent + Selectors[I].ToString + ',');
-        Inc(I);
+        Strings.Add(Indent + Sele.ToString + ',');
+        Sele := Sele.Next;
       end;
-      Strings.Add(Indent + Selectors[I].ToString + ' {');
+      Strings.Add(Indent + Sele.ToString + ' {');
 
-      if Properties.Count > 0 then
+      if Properties.First <> nil then
       begin
         Indent := Indent + TabChar;
-        I := 0;
-        while I < Properties.Count - 1 do
+        Prop := Properties.First;
+        while Prop.Next <> nil do
         begin
-          Strings.Add(Indent + Properties[I].ToString + ';');
-          Inc(I);
+          Strings.Add(Indent + Prop.ToString + ';');
+          Prop := Prop.Next;
         end;
-        Strings.Add(Indent + Properties[I].ToString);
+        Strings.Add(Indent + Prop.ToString);
         SetLength(Indent, Length(Indent) - 1);
       end;
       Strings.Add(Indent + '}');
@@ -948,7 +1063,7 @@ end;
 
 { TResultingProperty }
 
-function TResultingProperty.Compare(const AProperty: TProperty; const ASelector: TSelector): Integer;
+function TResultingProperty.Compare(const AProperty: TStyleProperty; const ASelector: TStyleSelector): Integer;
 begin
   Result := Ord(FProperty.Precedence) - Ord(AProperty.Precedence);
   if Result <> 0 then
@@ -958,7 +1073,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-procedure TResultingProperty.Update(const AProperty: TProperty; const ASelector: TSelector);
+procedure TResultingProperty.Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector);
 begin
   FProperty := AProperty;
   FSelector := ASelector;
@@ -983,7 +1098,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-procedure TResultingPropertyMap.Update(const AProperty: TProperty; const ASelector: TSelector);
+procedure TResultingPropertyMap.Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector);
 begin
   if FProps[AProperty.Symbol] = nil then
   begin
@@ -995,19 +1110,23 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-procedure TResultingPropertyMap.UpdateFromProperties(const Properties: TPropertyList; const ASelector: TSelector);
+procedure TResultingPropertyMap.UpdateFromProperties(const Properties: TStylePropertyList; const ASelector: TStyleSelector);
 var
-  I: Integer;
+  Prop: TStyleProperty;
 begin
-  for I := 0 to Properties.Count - 1 do
-    Update(Properties[I], ASelector);
+  Prop := Properties.First;
+  while Prop <> nil do
+  begin
+    Update(Prop, ASelector);
+    Prop := Prop.Next;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
-procedure TResultingPropertyMap.UpdateFromAttributes(const Properties: TPropertyList; IsFromStyleAttr: Boolean);
+procedure TResultingPropertyMap.UpdateFromAttributes(const Properties: TStylePropertyList; IsFromStyleAttr: Boolean);
 begin
   if FStyle = nil then
-    FStyle := TSelector.Create;
+    FStyle := TStyleSelector.Create;
   FStyle.FIsFromStyleAttr := IsFromStyleAttr;
   UpdateFromProperties(Properties, FStyle);
 end;

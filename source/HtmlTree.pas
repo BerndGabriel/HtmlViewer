@@ -46,28 +46,45 @@ uses
 
 type
   THtmlAttribute = class
-  public
+  private
+    FPrev: THtmlAttribute;
+    FNext: THtmlAttribute;
     FSymbol: THtmlAttributeSymbol;
     FName: ThtString;
     FValue: ThtString;
+  public
     constructor Create(Symbol: THtmlAttributeSymbol; const Name, Value: ThtString);
     function Clone: THtmlAttribute;
     procedure Assign(Source: THtmlAttribute); virtual;
     property Symbol: THtmlAttributeSymbol read FSymbol;
     property Value: ThtString read FValue;
+    property Next: THtmlAttribute read FNext;
+    property Prev: THtmlAttribute read FPrev;
   end;
 
-  THtmlAttributeList = class(TObjectList) {a list of tag attributes,(TAttributes)}
+  THtmlAttributeList = record {a list of tag attributes,(TAttributes)}
   private
-    function GetAttribute(Index: Integer): THtmlAttribute; {$ifdef UseInline} inline; {$endif}
+    FFirst: THtmlAttribute;
+    FLast: THtmlAttribute;
   public
     function Find(Name: ThtString; out Attribute: THtmlAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function Find(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
-    property Items[Index: Integer]: THtmlAttribute read GetAttribute; default;
+    function IsEmpty: Boolean;
+    procedure Add(Attr: THtmlAttribute);
+    procedure Assign(const List: THtmlAttributeList);
+    procedure Init;
+    procedure Clear;
+    procedure Remove(Attr: THtmlAttribute);
+    property First: THtmlAttribute read FFirst;
+    property Last: THtmlAttribute read FLast;
   end;
 
 //------------------------------------------------------------------------------
 // THtmlElement is base class for all elements in the HTML document tree.
+//------------------------------------------------------------------------------
+// It holds the defined values. With these values and the document's CSS
+// rulesets media dependent visualizers can create the visual component data,
+// a printout or maybe some day an audio representation.
 //------------------------------------------------------------------------------
 
 type
@@ -76,15 +93,15 @@ type
     FParent: THtmlElement;
     FChildren: TObjectList;
     FDocPos: Integer;
-    //
     FSymbol: THtmlElementSymbol;
     FIds: ThtStringArray;
     FClasses: ThtStringArray;
-    FAttributeProperties: TPropertyList; // properties set by formatting attributes other than style
-    FStyleProperties: TPropertyList;     // properties set by style attribute
+    FAttributeProperties: TStylePropertyList; // properties set by formatting attributes other than style
+    FStyleProperties: TStylePropertyList;     // properties set by style attribute
+    FOtherAttributes: THtmlAttributeList;
     //
     function GetChildCount: Integer;
-    procedure SetStyleProperties(const Value: TPropertyList);
+    procedure SetStyleProperties(const Value: TStylePropertyList);
   protected
     function GetChild(Index: Integer): THtmlElement;
     function GetPseudos: TPseudos; virtual;
@@ -99,16 +116,16 @@ type
     destructor Destroy; override;
     function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
     function IndexOf(Child: THtmlElement): Integer; virtual;
-    function IsMatching(Selector: TSelector): Boolean;
-    procedure SetAttribute(Attribute: THtmlAttributeSymbol; const Value: ThtString); virtual;
-    property AttributeProperties: TPropertyList read FAttributeProperties;
+    function IsMatching(Selector: TStyleSelector): Boolean;
+    procedure SetAttribute(Attribute: THtmlAttribute); virtual;
+    property AttributeProperties: TStylePropertyList read FAttributeProperties;
     property Children[Index: Integer]: THtmlElement read GetChild; default;
     property Classes: ThtStringArray read FClasses;
     property Count: Integer read GetChildCount;
     property DocPos: Integer read FDocPos;
     property Ids: ThtStringArray read FIds;
     property Parent: THtmlElement read FParent write SetParent;
-    property StyleProperties: TPropertyList read FStyleProperties write SetStyleProperties;
+    property StyleProperties: TStylePropertyList read FStyleProperties write SetStyleProperties;
     property Symbol: THtmlElementSymbol read FSymbol;
   end;
 
@@ -448,6 +465,60 @@ end;
 
 { THtmlAttributeList }
 
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure THtmlAttributeList.Add(Attr: THtmlAttribute);
+var
+  Prev: THtmlAttribute;
+  Next: THtmlAttribute;
+begin
+  assert(Attr.Next = nil, 'Don''t add chained links twice. Attr.Next is not nil.');
+  assert(Attr.Prev = nil, 'Don''t add chained links twice. Attr.Prev is not nil.');
+
+  // find neighbors
+  Prev := nil;
+  Next := First;
+  while (Next <> nil) and (Next.Symbol < Attr.Symbol) do
+  begin
+    Prev := Next;
+    Next := Prev.Next;
+  end;
+
+  // link to prev
+  if Prev = nil then
+    FFirst := Attr
+  else
+    Prev.FNext := Attr;
+  Attr.FPrev := Prev;
+
+  // link to next
+  if Next = nil then
+    FLast := Attr
+  else
+    Next.FPrev := Attr;
+  Attr.FNext := Next;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure THtmlAttributeList.Assign(const List: THtmlAttributeList);
+begin
+  FFirst := List.FFirst;
+  FLast := List.FLast;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure THtmlAttributeList.Clear;
+var
+  Attr: THtmlAttribute;
+begin
+  FLast := nil;
+  while First <> nil do
+  begin
+    Attr := First;
+    FFirst := Attr.Next;
+    Attr.Free;
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 function THtmlAttributeList.Find(Name: ThtString; out Attribute: THtmlAttribute): Boolean;
 var
@@ -464,24 +535,56 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 function THtmlAttributeList.Find(Symbol: THtmlAttributeSymbol; out Attribute: THtmlAttribute): Boolean;
-var
-  I: Integer;
 begin
-  for I := 0 to Count - 1 do
-  begin
-    Attribute := GetAttribute(I);
-    Result := Attribute.Symbol = Symbol;
-    if Result then
-      exit;
-  end;
-  Attribute := nil;
-  Result := False;
+  Attribute := First;
+  while (Attribute <> nil) and (Attribute.Symbol < Symbol) do
+    Attribute := Attribute.Next;
+  Result := Attribute.Symbol = Symbol;
 end;
 
-//-- BG ---------------------------------------------------------- 26.03.2011 --
-function THtmlAttributeList.GetAttribute(Index: Integer): THtmlAttribute;
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure THtmlAttributeList.Init;
 begin
-  Result := Get(Index);
+  FFirst := nil;
+  FLast := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+function THtmlAttributeList.IsEmpty: Boolean;
+begin
+  Result := First = nil;
+end;
+
+//-- BG ---------------------------------------------------------- 02.04.2011 --
+procedure THtmlAttributeList.Remove(Attr: THtmlAttribute);
+var
+  Prev: THtmlAttribute;
+  Next: THtmlAttribute;
+begin
+  Prev := Attr.Prev;
+  Next := Attr.Next;
+
+  if Prev = nil then
+  begin
+    if First = Attr then
+      FFirst := Next;
+  end
+  else
+  begin
+    Prev.FNext := Next;
+    Attr.FPrev := nil;
+  end;
+
+  if Next = nil then
+  begin
+    if Last = Attr then
+      FLast := Prev;
+  end
+  else
+  begin
+    Next.FPrev := Prev;
+    Attr.FNext := nil;
+  end;
 end;
 
 { THtmlElement }
@@ -519,8 +622,6 @@ begin
   FChildren := nil;
   Children.Free;
 
-  FStyleProperties.Free;
-  FAttributeProperties.Free;
   inherited;
 end;
 
@@ -575,7 +676,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlElement.IsMatching(Selector: TSelector): Boolean;
+function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
 
   function IsMatchingSimple: Boolean;
 
@@ -645,7 +746,7 @@ function THtmlElement.IsMatching(Selector: TSelector): Boolean;
     Result := True;
   end;
 
-  function IsChild(Selector: TSelector): Boolean;
+  function IsChild(Selector: TStyleSelector): Boolean;
   var
     P: THtmlElement;
   begin
@@ -653,7 +754,7 @@ function THtmlElement.IsMatching(Selector: TSelector): Boolean;
     Result := (P <> nil) and P.IsMatching(Selector);
   end;
 
-  function IsDescendant(Selector: TSelector): Boolean;
+  function IsDescendant(Selector: TStyleSelector): Boolean;
   var
     Node: THtmlElement;
   begin
@@ -668,7 +769,7 @@ function THtmlElement.IsMatching(Selector: TSelector): Boolean;
     end;
   end;
 
-  function IsFollower(Selector: TSelector): Boolean;
+  function IsFollower(Selector: TStyleSelector): Boolean;
   var
     P: THtmlElement;
     I: Integer;
@@ -695,11 +796,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --
-procedure THtmlElement.SetAttribute(Attribute: THtmlAttributeSymbol; const Value: ThtString);
+procedure THtmlElement.SetAttribute(Attribute: THtmlAttribute);
 begin
-  case Attribute of
-    ClassAttr:      FClasses := Explode(Value, ' ');
-    IDAttr:         FIds     := Explode(Value, ' ');
+  case Attribute.Symbol of
+    ClassAttr:      FClasses := Explode(Attribute.Value, ' ');
+    IDAttr:         FIds     := Explode(Attribute.Value, ' ');
+  else
+    FOtherAttributes.Add(Attribute.Clone);
   end;
 end;
 
@@ -717,13 +820,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
-procedure THtmlElement.SetStyleProperties(const Value: TPropertyList);
+procedure THtmlElement.SetStyleProperties(const Value: TStylePropertyList);
 begin
-  if FStyleProperties <> Value then
-  begin
-    FStyleProperties.Free;
-    FStyleProperties := Value;
-  end;
+  FStyleProperties.Assign(Value);
 end;
 
 initialization

@@ -86,9 +86,9 @@ type
     // syntax parsing methods. They skip trailing white spaces.
     function ParseDeclaration(out Name: ThtString; out Terms: ThtStringArray; out Important: Boolean): Boolean;
     function ParseExpression(out Terms: ThtStringArray): Boolean;
-    function ParseProperties(Properties: TPropertyList): Boolean;
+    function ParseProperties(var Properties: TStylePropertyList): Boolean;
     function ParseRuleset(out Ruleset: TRuleset): Boolean;
-    function ParseSelectors(Selectors: TSelectorList): Boolean;
+    function ParseSelectors(var Selectors: TStyleSelectorList): Boolean;
     procedure ParseAtRule(Rulesets: TRulesetList);
     procedure ParseSheet(Rulesets: TRulesetList);
     procedure setMediaTypes(const Value: TMediaTypes);
@@ -98,7 +98,7 @@ type
     constructor Create(Origin: TPropertyOrigin; Doc: TBuffer; const LinkPath: ThtString = '');
 
     // ParseProperties() parses any tag's style attribute. If starts with quote, then must end with same quote.
-    function ParseStyleProperties(var LCh: ThtChar; Properties: TPropertyList): Boolean;
+    function ParseStyleProperties(var LCh: ThtChar; out Properties: TStylePropertyList): Boolean;
 
     // ParseStyleSheet() parses an entire style sheet document:
     procedure ParseStyleSheet(Rulesets: TRulesetList);
@@ -778,7 +778,7 @@ end;
 
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
-function THtmlStyleParser.ParseProperties(Properties: TPropertyList): Boolean;
+function THtmlStyleParser.ParseProperties(var Properties: TStylePropertyList): Boolean;
 
   function GetPrecedence(Important: Boolean; Origin: TPropertyOrigin): TPropertyPrecedence; {$ifdef UseInline} inline; {$endif}
   begin
@@ -792,9 +792,9 @@ var
   begin
     if FMediaTypes * FSupportedMediaTypes <> [] then
       if VarIsStr(Value) and (Value = 'inherit') then
-        Properties.Add(TProperty.Create(Prop, Precedence, Inherit))
+        Properties.Add(TStyleProperty.Create(Prop, Precedence, Inherit))
       else
-        Properties.Add(TProperty.Create(Prop, Precedence, Value));
+        Properties.Add(TStyleProperty.Create(Prop, Precedence, Value));
   end;
 
 var
@@ -1041,7 +1041,7 @@ begin
   if Result then
     Result := ParseProperties(Ruleset.Properties);
 
-  if (Ruleset.Selectors.Count = 0) or (Ruleset.Properties.Count = 0) then
+  if Ruleset.Selectors.IsEmpty or Ruleset.Properties.IsEmpty then
   begin
     Result := False;
     FreeAndNil(Ruleset);
@@ -1049,11 +1049,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
-function THtmlStyleParser.ParseSelectors(Selectors: TSelectorList): Boolean;
+function THtmlStyleParser.ParseSelectors(var Selectors: TStyleSelectorList): Boolean;
 
-  function GetSelector(out Selector: TSelector): Boolean;
+  function GetSelector(out Selector: TStyleSelector): Boolean;
 
-    function GetSimpleSelector(Selector: TSelector): Boolean;
+    function GetSimpleSelector(Selector: TStyleSelector): Boolean;
 
       function GetElementName(out Name: ThtString): Boolean;
       begin
@@ -1137,9 +1137,9 @@ function THtmlStyleParser.ParseSelectors(Selectors: TSelectorList): Boolean;
     end;
 
   var
-    Combinator: TCombinator;
+    Combinator: TStyleCombinator;
   begin
-    Selector := TSelector.Create;
+    Selector := TStyleSelector.Create;
     repeat
       checkPosition(LSelectorPos);
       Result := GetSimpleSelector(Selector);
@@ -1175,7 +1175,7 @@ function THtmlStyleParser.ParseSelectors(Selectors: TSelectorList): Boolean;
   end;
 
 var
-  Selector: TSelector;
+  Selector: TStyleSelector;
 begin
   repeat
     if GetSelector(Selector) then
@@ -1228,8 +1228,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.03.2011 --
-function THtmlStyleParser.ParseStyleProperties(var LCh: ThtChar; Properties: TPropertyList): Boolean;
+function THtmlStyleParser.ParseStyleProperties(var LCh: ThtChar; out Properties: TStylePropertyList): Boolean;
 begin
+  Properties.Init;
   FCanCharset := False;
   FCanImport := False;
   Self.LCh := LCh;

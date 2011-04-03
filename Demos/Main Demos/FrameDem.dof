@@ -51,7 +51,7 @@ Conditionals=DEBUG
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=
+RunParams=c:\temp\css.html
 HostApplication=
 Launcher=
 UseLauncher=0
@@ -85,25 +85,3 @@ OriginalFilename=
 ProductName=FrameViewer Demo
 ProductVersion=11.0.0.0
 Comments=meet us at http://code.google.com/p/thtmlviewer/
-[HistoryLists\hlConditionals]
-Count=1
-Item0=DEBUG
-[HistoryLists\hlUnitAliases]
-Count=1
-Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
-[HistoryLists\hlSearchPath]
-Count=1
-Item0=$(DELPHI)\Lib\Debug
-[HistoryLists\hlUnitOutputDirectory]
-Count=2
-Item0=lib\delphi6
-Item1=L:\bin\dcu
-[HistoryLists\hlOutputDirectorry]
-Count=1
-Item0=bin\delphi6
-[HistoryLists\hlBPLOutput]
-Count=1
-Item0=L:\bin\bpl
-[HistoryLists\hlDCPOutput]
-Count=1
-Item0=L:\bin\dcp

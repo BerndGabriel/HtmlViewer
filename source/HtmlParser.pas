@@ -97,8 +97,6 @@ type
     property Ed: THtmlElementDescription read FEd;
   public
     function CreateElement(Parent: THtmlElement): THtmlElement;
-    procedure AfterConstruction; override;
-    procedure BeforeDestruction; override;
     procedure Init(DocPos: Integer); override;
     procedure StrToElement;
     procedure StrToEndSym;
@@ -140,7 +138,7 @@ type
     function GetCodePage: Integer;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
-    procedure AssignAttributes(Element: THtmlElement; Attributes: THtmlAttributeList);
+    procedure AssignAttributes(Element: THtmlElement; const Attributes: THtmlAttributeList);
     procedure GetChildren(Parent: THtmlElement);
     procedure GetCh;
     procedure GetChSkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
@@ -150,7 +148,7 @@ type
     procedure GetChBasic;
     procedure First; {$ifdef UseInline} inline; {$endif}
     procedure Next;
-    function GetStyleProperties(Str: ThtString): TPropertyList; overload;
+    function GetStyleProperties(Str: ThtString): TStylePropertyList; overload;
     property CodePage: Integer read GetCodePage;
   public
     constructor Create(Doc: TBuffer; const Base: ThtString = '');
@@ -271,20 +269,6 @@ end;
 
 { THtmlToken }
 
-//-- BG ---------------------------------------------------------- 28.03.2011 --
-procedure THtmlToken.AfterConstruction;
-begin
-  inherited;
-  FAttributes := THtmlAttributeList.Create;
-end;
-
-//-- BG ---------------------------------------------------------- 28.03.2011 --
-procedure THtmlToken.BeforeDestruction;
-begin
-  FAttributes.Free;
-  inherited;
-end;
-
 //-- BG ---------------------------------------------------------- 31.03.2011 --
 function THtmlToken.CreateElement(Parent: THtmlElement): THtmlElement;
 begin
@@ -330,19 +314,20 @@ end;
 { THtmlParser }
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
-procedure THtmlParser.AssignAttributes(Element: THtmlElement; Attributes: THtmlAttributeList);
+procedure THtmlParser.AssignAttributes(Element: THtmlElement; const Attributes: THtmlAttributeList);
 var
-  I: Integer;
   Attr: THtmlAttribute;
 begin
-  for I := 0 To Attributes.Count - 1 do
+  Attr := Attributes.First;
+  while Attr <> nil do
   begin
-    Attr := Attributes[I];
     case Attr.Symbol of
-      StyleAttr: Element.StyleProperties := GetStyleProperties(Attr.Value);
+      StyleAttr:
+        Element.StyleProperties := GetStyleProperties(Attr.Value);
     else
-      Element.SetAttribute(Attr.Symbol, Attr.Value);
+      Element.SetAttribute(Attr);
     end;
+    Attr := Attr.Next;
   end;
 end;
 
@@ -895,14 +880,14 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
-function THtmlParser.GetStyleProperties(Str: ThtString): TPropertyList;
+function THtmlParser.GetStyleProperties(Str: ThtString): TStylePropertyList;
 var
   Doc: TBuffer;
   Ch: ThtChar;
 begin
+  Result.Init;
   Doc := TBuffer.Create(Str);
   try
-    Result := TPropertyList.Create;
     with THtmlStyleParser.Create(poStyle, Doc, FBase) do
       try
         Ch := ' ';
