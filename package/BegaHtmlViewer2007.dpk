@@ -1,7 +1,6 @@
 package BegaHtmlViewer2007;
 
 {$R *.res}
-{$R 'FramBrwz.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -32,6 +31,7 @@ requires
   vcl,
   vcljpg,
   TntUnicodeVclD11,
+  FrameViewer2007,
   vclactnband,
   vclx,
   dsnap,
@@ -41,15 +41,11 @@ requires
   xmlrtl;
 
 contains
-  HtmlBuffer in '..\source\HtmlBuffer.pas',
-  HtmlGlobals in '..\source\HtmlGlobals.pas',
-  URLSubs in '..\source\URLSubs.pas',
-  HtmlSymbols in '..\source\HtmlSymbols.pas',
-  Parser in '..\source\Parser.pas',
-  HtmlStyles in '..\source\HtmlStyles.pas',
   HtmlTree in '..\source\HtmlTree.pas',
   StyleParser in '..\source\StyleParser.pas',
   HtmlDocument in '..\source\HtmlDocument.pas',
-  HtmlParser in '..\source\HtmlParser.pas';
-  
+  HtmlParser in '..\source\HtmlParser.pas',
+  HtmlViewer in '..\source\HtmlViewer.pas',
+  HtmlDraw in '..\source\HtmlDraw.pas';
+
 end.
