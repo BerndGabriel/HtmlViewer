@@ -34,6 +34,8 @@ uses
   //
   HtmlDraw,
   HtmlGlobals,
+  HtmlImages,
+  StyleUn,
   HtmlTree;
 
 type
@@ -75,23 +77,31 @@ type
 
   THtmlView = class
   private
+    // structure
     FParent: THtmlView;                    // parent view or nil if this is the root view.
     FPrev: THtmlView;                      // previous sibling in parent's content.
     FNext: THtmlView;                      // next sibling in parent's content.
     FChildren: THtmlViewList;              // the content.
     FBounds: TRect;
-    //
+    // border
     FMargins: TRectIntegers;
     FBorderWidths: TRectIntegers;
     FBorderColors: TRectColors;
     FBorderStyles: TRectStyles;
-    FColor: TColor;
+    FBackgroundColor: TColor;
+    // content
     FPadding: TRectIntegers;
-    //
-    FText: ThtString;
     FAlignment: TAlignment;
+    // text
+    FText: ThtString;
     FFont: TFont;
+    // image
+    FImage: ThtImage;
+    FTiled: Boolean;
+    FTileWidth: Integer;
+    FTileHeight: Integer;
   protected
+    function Clipping: Boolean;
     property Parent: THtmlView read FParent;
     property Prev: THtmlView read FPrev;
     property Next: THtmlView read FNext;
@@ -107,12 +117,16 @@ type
     property BorderWidths: TRectIntegers read FBorderWidths write FBorderWidths;
     property BorderColors: TRectColors read FBorderColors write FBorderColors;
     property BorderStyles: TRectStyles read FBorderStyles write FBorderStyles;
-    property Color: TColor read FColor write FColor;
+    property Color: TColor read FBackgroundColor write FBackgroundColor;
     property Padding: TRectIntegers read FPadding write FPadding;
     //
     property Alignment: TAlignment read FAlignment write FAlignment;
     property Font: TFont read FFont;
     property Text: ThtString read FText write FText;
+    property Image: ThtImage read FImage write FImage;
+    property Tiled: Boolean read FTiled write FTiled;
+    property TileHeight: Integer read FTileHeight write FTileHeight;
+    property TileWidth: Integer read FTileWidth write FTileWidth;
   end;
 
   THtmlFrame = class(THtmlView)
@@ -240,41 +254,124 @@ begin
   inherited;
 end;
 
+//-- BG ---------------------------------------------------------- 13.04.2011 --
+function THtmlView.Clipping: Boolean;
+begin
+  Result := False;
+end;
+
 //-- BG ---------------------------------------------------------- 04.04.2011 --
 procedure THtmlView.Paint(Canvas: TCanvas);
+
+  procedure DrawTestOutline(const Rect: TRect);
+  begin
+    Canvas.Brush.Style := bsSolid;
+    Canvas.Brush.Color := clBlack;
+    Canvas.FrameRect(Rect);
+  end;
+
 var
   Rect: TRect;
+  ContentWidth, ContentHeight: Integer;
   Child: THtmlView;
-  Org: TPoint;
-  Flags: Integer;
+  Org, Tile, TiledEnd: TPoint;
+  Flags, ContentRegion, ExistingRegion, CombinedRegionResult: Integer;
 begin
+  DrawTestOutline(BoundsRect);
   DeflateRect(Rect, BoundsRect, Margins);
+
+  // border
   DrawBorder(Canvas, Rect, BorderWidths, BorderColors, BorderStyles, Color);
   DeflateRect(Rect, BorderWidths);
+
+  // content
   DeflateRect(Rect, Padding);
-  if Length(Text) > 0 then
+  CombinedRegionResult := SIMPLEREGION;
+  ContentRegion := 0;
+  ExistingRegion := 0;
+  if Clipping or Tiled then
   begin
-    case Alignment of
-      taLeftJustify: Flags := DT_LEFT;
-      taRightJustify: Flags := DT_RIGHT;
-      taCenter: Flags := DT_CENTER;
-    end;
-    Canvas.Brush.Color := clNone;
-    Canvas.Brush.Style := bsClear;
-    Canvas.Font := Font;
-    Canvas.Pen.Color := clBlack;
-    Canvas.Rectangle(Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
-    DrawTextW(Canvas.Handle, PhtChar(Text), Length(Text), Rect, Flags + DT_NOCLIP + DT_VCENTER + DT_SINGLELINE);
+    ContentRegion := CreateRectRgnIndirect(Rect);
+    ExistingRegion := GetClipRegion(Canvas);
+    if ExistingRegion <> 0 then
+      CombinedRegionResult := CombineRgn(ContentRegion, ContentRegion, ExistingRegion, RGN_AND);
   end;
-  if Children.First <> nil then
-  begin
-    GetWindowOrgEx(Canvas.Handle, Org);
-    SetWindowOrgEx(Canvas.Handle, Org.X + Rect.Left, Org.Y + Rect.Top, nil);
-    Child := Children.First;
-    repeat
-      Child.Paint(Canvas);
-      Child := Child.Next;
-    until Child = nil;
+  try
+    if CombinedRegionResult in [SIMPLEREGION, COMPLEXREGION] then
+    begin
+      ContentWidth := Rect.Right - Rect.Left;
+      ContentHeight := Rect.Bottom - Rect.Top;
+
+      if Image <> nil then
+      begin
+        // image
+        if (Image = ErrorImage) or (Image = DefImage) then
+        begin
+          Image.Draw(Canvas, Rect.Left + 4, Rect.Top + 4, Image.Width, Image.Height);
+        end
+        else if Tiled then
+        begin
+          // prepare horizontal tiling
+          if TileHeight = 0 then
+            TileHeight := Image.Height;
+          Tile.X := GetPositionInRange(pCenter, 0, Rect.Right - Rect.Left - TileWidth) + Rect.Left;
+          AdjustForTiling(Tiled, Rect.Left, Rect.Right, TileWidth, Tile.X, TiledEnd.X);
+
+          // prepare vertical tiling
+          if TileWidth = 0 then
+            TileWidth := Image.Width;
+          Tile.Y := GetPositionInRange(pCenter, 0, Rect.Bottom - Rect.Top - TileHeight) + Rect.Top;
+          AdjustForTiling(Tiled, Rect.Top, Rect.Bottom, TileHeight, Tile.Y, TiledEnd.Y);
+
+          // clip'n'paint
+          SelectClipRgn(Canvas.Handle, ContentRegion);
+          Image.DrawTiled(Canvas, Tile.X, Tile.Y, TiledEnd.X, TiledEnd.Y, TileWidth, TileHeight);
+          SelectClipRgn(Canvas.Handle, ExistingRegion);
+        end
+        else
+          Image.Draw(Canvas, Rect.Left, Rect.Top, ContentWidth, ContentHeight);
+      end;
+
+      if Clipping then
+        SelectClipRgn(Canvas.Handle, ContentRegion);
+
+      if Length(Text) > 0 then
+      begin
+        // text
+        DrawTestOutline(Rect);
+        case Alignment of
+          taLeftJustify: Flags := DT_LEFT;
+          taRightJustify: Flags := DT_RIGHT;
+          taCenter: Flags := DT_CENTER;
+        else
+          Flags := 0;
+        end;
+        Canvas.Brush.Style := bsClear;
+        Canvas.Font := Font;
+        DrawTextW(Canvas.Handle, PhtChar(Text), Length(Text), Rect, Flags + DT_NOCLIP + DT_VCENTER + DT_SINGLELINE);
+      end;
+
+      // structure
+      if Children.First <> nil then
+      begin
+        GetWindowOrgEx(Canvas.Handle, Org);
+        SetWindowOrgEx(Canvas.Handle, Org.X + Rect.Left, Org.Y + Rect.Top, nil);
+        Child := Children.First;
+        repeat
+          Child.Paint(Canvas);
+          Child := Child.Next;
+        until Child = nil;
+        SetWindowOrgEx(Canvas.Handle, Org.X, Org.Y, nil);
+      end;
+    end;
+  finally
+    if ContentRegion <> 0 then
+    begin
+      SelectClipRgn(Canvas.Handle, ExistingRegion);
+      DeleteObject(ContentRegion);
+      if ExistingRegion <> 0 then
+        DeleteObject(ExistingRegion);
+    end;
   end;
 end;
 

@@ -58,6 +58,9 @@ contains
   HtmlGlobals in '..\source\HtmlGlobals.pas',
   HtmlBuffer in '..\source\HtmlBuffer.pas',
   StyleParser in '..\source\StyleParser.pas',
-  HtmlStyles in '..\source\HtmlStyles.pas';
+  HtmlStyles in '..\source\HtmlStyles.pas',
+  HtmlSymbols in '..\source\HtmlSymbols.pas',
+  Parser in '..\source\Parser.pas',
+  HtmlImages in '..\source\HtmlImages.pas';
 
 end.

@@ -146,8 +146,9 @@ type
   TextTransformType = (txNone, txUpper, txLower, txCaps);
   //WhiteSpaceType = (wsNormal, wsPre, wsNoWrap, wsPreWrap, wsPreLine{, wsInherit});
 
+  TPosition = (pTop, pCenter, pBottom, pLeft, pRight, pPercent, pDim);
   PositionRec = record
-    PosType: (pTop, pCenter, pBottom, pLeft, pRight, PPercent, pDim);
+    PosType: TPosition;
     Value: Integer;
     RepeatD: Boolean;
     Fixed: Boolean;

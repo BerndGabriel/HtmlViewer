@@ -36,7 +36,7 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
-  UrlSubs, HtmlGlobals, HtmlBuffer, Htmlsubs, Htmlview, HTMLUn2, ReadHTML;
+  UrlSubs, HtmlGlobals, HtmlBuffer, HtmlImages, Htmlsubs, Htmlview, HTMLUn2, ReadHTML;
 
 type
   {common to TFrameViewer and TFrameBrowser}
@@ -69,7 +69,7 @@ type
   TFVBase = class(TFrameViewerBase) {TFrameViewerBase is in ReadHTML.pas}
   private
     FBackground: TColor;
-    FBitmapList: TStringBitmapList;
+    FImageCache: ThtImageCache;
     FCharset: TFontCharset;
     FCursor: TCursor;
 //BG, 21.08.2010: has no effect:    FDither: Boolean; 
@@ -2561,7 +2561,7 @@ begin
   ProcessList := TList.Create;
   FLinkAttributes := TStringList.Create;
   FViewImages := True;
-  FBitmapList := TStringBitmapList.Create;
+  FImageCache := ThtImageCache.Create;
   FImageCacheCount := 5;
   FHistory := TStringList.Create;
   FPosition := TList.Create;
@@ -2620,7 +2620,7 @@ begin
   Visited.Free;
   FViewerList.Free;
   inherited;
-  FBitmapList.Free;
+  FImageCache.Free;
 end;
 
 {----------------TFrameViewer.Destroy}
@@ -2654,7 +2654,7 @@ begin
       BevelOuter := bvLowered;
       BevelWidth := 2;
     end;
-    FBitmapList.Clear;
+    FImageCache.Clear;
     FURL := '';
     FTarget := '';
     FBaseEx := '';
@@ -3604,7 +3604,7 @@ begin
   Result.FrameOwner := Owner;
   Result.DefBackground := FBackground;
   Result.ViewImages := ViewImages;
-  Result.SetStringBitmapList(FBitmapList);
+  Result.SetImageCache(FImageCache);
   Result.ImageCacheCount := ImageCacheCount;
   Result.NoSelect := NoSelect;
   Result.DefFontColor := DefFontColor;

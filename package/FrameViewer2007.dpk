@@ -56,6 +56,10 @@ contains
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
   HTMLSubs in '..\source\HTMLSubs.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  HtmlImages in '..\source\HtmlImages.pas',
+  HtmlSymbols in '..\source\HtmlSymbols.pas',
+  Parser in '..\source\Parser.pas',
+  HtmlStyles in '..\source\HtmlStyles.pas';
 
 end.

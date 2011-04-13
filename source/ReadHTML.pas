@@ -1438,7 +1438,7 @@ var
       end
       else
 {$IFDEF DebugIt}
-        ShowMessage('Table cell error, ReadHTML.pas, DoTable')
+        //ShowMessage('Table cell error, ReadHTML.pas, DoTable')
 {$ENDIF}
         ;
       SectionList := nil;

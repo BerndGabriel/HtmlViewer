@@ -47,7 +47,7 @@ type
     constructor Create(Filename: WideString; TmpFile: boolean = False); overload;
     constructor Create(IStr: IStream); overload;
     destructor Destroy; override;
-    function GetTBitmap: TBitmap;
+    function GetBitmap: TBitmap;
     property Height: integer read GetHeight;
     property Width: integer read GetWidth;
   end;
@@ -337,7 +337,7 @@ begin
   Result := fHeight;
 end;
 
-function TGpImage.GetTBitmap: TBitmap;
+function TGpImage.GetBitmap: TBitmap;
 var
   g: TGpGraphics;
 begin

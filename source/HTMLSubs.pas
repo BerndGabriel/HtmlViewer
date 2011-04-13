@@ -73,7 +73,8 @@ uses
   Parser,
   HTMLUn2,
   StyleUn,
-  HTMLGif2;
+  HTMLGif2,
+  HtmlImages;
 
 type
 
@@ -183,7 +184,7 @@ type
 //------------------------------------------------------------------------------
 
   TCellBasic = class(TSectionBaseList) {a list of sections and blocks}
-  strict private
+  private
     FDocument: ThtDocument; // the document it belongs to
     FOwnerBlock: TBlock;         // the parental block it is placed in
   public
@@ -389,21 +390,21 @@ type
 
   TImageObj = class(TFloatingObj) {inline image info}
   private
-    FImage: TgpObject; {bitmap possibly converted from GIF, Jpeg, etc or animated GIF}
-    FBitmap: TBitmap;
+    FImage: ThtImage;
+//    FBitmap: TBitmap;
+    OrigImage: ThtImage; {same as above unless swapped}
+//    Mask: TBitmap; {Image's mask if needed for transparency}
+    Transparent: TTransparency; {None, Lower Left Corner, or Transp GIF}
     FHover: HoverType;
     FHoverImage: boolean;
     AltHeight, AltWidth: Integer;
     Positioning: PositionType;
     function GetBitmap: TBitmap;
     procedure SetHover(Value: HoverType);
-    procedure setImage(const AValue: TgpObject);
+//    procedure SetImage(const AValue: ThtImage);
   public
     ObjHeight, ObjWidth: Integer; {width as drawn}
     Source: ThtString; {the src= attribute}
-    OrigImage: TgpObject; {same as above unless swapped}
-    Mask: TBitmap; {Image's mask if needed for transparency}
-    Transparent: Transparency; {None, Lower Left Corner, or Transp GIF}
     IsMap, UseMap: boolean;
     MapName: ThtString;
     MyFormControl: TImageFormControlObj; {if an <INPUT type=image}
@@ -416,13 +417,13 @@ type
     constructor CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TImageObj);
     destructor Destroy; override;
     procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
-    procedure DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: TgpObject; ddMask: TBitmap);
+    procedure DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: ThtImage);
     procedure Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj);
     function InsertImage(const UName: ThtString; Error: boolean; var Reformat: boolean): boolean;
 
     property Bitmap: TBitmap read GetBitmap;
     property Hover: HoverType read FHover write SetHover;
-    property Image: TgpObject read FImage write setImage;
+    property Image: ThtImage read FImage ; //write SetImage;
     procedure ReplaceImage(NewImage: TStream);
   end;
 
@@ -1268,9 +1269,10 @@ type
     PreFontName: ThtString; {<pre>, <code> font for document}
 
     OnBackgroundChange: TNotifyEvent;
-    BackgroundBitmap: TGpObject; //TBitmap;
-    BackgroundMask: TBitmap;
-    BackgroundAniGif: TGifImage;
+//    BackgroundBitmap: TGpObject; //TBitmap;
+//    BackgroundMask: TBitmap;
+//    BackgroundAniGif: TGifImage;
+    BackgroundImage: ThtImage;
     BackgroundPRec: PtPositionRec;
     BitmapName: ThtString; {name of background bitmap}
     BitmapLoaded: boolean; {if background bitmap is loaded}
@@ -1300,7 +1302,7 @@ type
     FirstLineHtPtr: PInteger;
     IDNameList: TIDObjectList;
     PositionList: TList;
-    BitmapList: TStringBitmapList;
+    ImageCache: ThtImageCache;
     SectionCount: Integer;
     CycleNumber: Integer;
     ProgressStart: Integer;
@@ -1330,8 +1332,7 @@ type
     function GetFormcontrolData: TFreeList;
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTheBitmap(const BMName: ThtString;
-      var Transparent: Transparency; var AMask: TBitmap; var FromCache, Delay: boolean): TgpObject;
+    function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
     function GetURL(Canvas: TCanvas; X, Y: Integer;
       var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
     procedure CancelActives;
@@ -1418,6 +1419,7 @@ var
   //Base: ThtString;
   //BaseTarget: ThtString;
   NoBreak: boolean; {set when in <NoBr>}
+  WaitStream: TMemoryStream;
 
 implementation
 
@@ -1908,7 +1910,7 @@ begin
   except
     Result := '';
 {$IFDEF DebugIt}
-    ShowMessage('Bad TFontObj, htmlsubs.pas, TFontObj.GetUrl');
+    //ShowMessage('Bad TFontObj, htmlsubs.pas, TFontObj.GetUrl');
 {$ENDIF}
   end;
 end;
@@ -2198,8 +2200,7 @@ begin
   SpecWidth := T.SpecWidth;
   PercentWidth := T.PercentWidth;
   PercentHeight := T.PercentHeight;
-  Image := T.Image;
-  Mask := T.Mask;
+  FImage := T.Image;
   IsMap := T.IsMap;
   Transparent := T.Transparent;
 end;
@@ -2209,55 +2210,47 @@ begin
   if not Document.IsCopy then
   begin
     if (Source <> '') and Assigned(OrigImage) then
-      Document.BitmapList.DecUsage(Source);
+      Document.ImageCache.DecUsage(Source);
     if Swapped and (Image <> OrigImage) then
     begin {not in cache}
       Image.Free;
-      Mask.Free;
     end;
-    if (OrigImage is TGifImage) and TGifImage(OrigImage).IsCopy then
+    if (OrigImage is ThtGifImage) and ThtGifImage(OrigImage).Gif.IsCopy then
       OrigImage.Free;
   end;
-  FBitmap.Free;
+//  FBitmap.Free;
   inherited Destroy;
 end;
 
 function TImageObj.GetBitmap: TBitmap;
 begin
-  Result := nil;
-  if Image = ErrorBitmap then
-    Exit;
-  if Image is TGifImage then
-    Result := TGifImage(Image).Bitmap
-  else if (Image is TBitmap) {$IFNDEF NoGDIPlus}or (Image is TGpBitmap){$ENDIF} then
+  if Image is ThtBitmapImage then
   begin
-    if FBitmap = nil then
+    if Image.Bitmap = ErrorBitmap then
+      Result := nil
+    else
     begin
-      if Image is TBitmap then
-      begin
-        FBitmap := TBitmap.Create;
-        FBitmap.Assign(TBitmap(Image));
-        if ColorBits = 8 then
-          FBitmap.Palette := CopyPalette(ThePalette);
-      end
-{$IFNDEF NoGDIPlus}
-      else {it's a TGpBitmap}
-        FBitmap := TGpBitmap(Image).GetTBitmap
-{$ENDIF NoGDIPlus}
-        ;
-    end;
-    Result := FBitmap;
+//      if FBitmap = nil then
+//      begin
+//        FBitmap := TBitmap.Create;
+//        FBitmap.Assign(TBitmap(Image));
+//        if ColorBits = 8 then
+//          FBitmap.Palette := CopyPalette(ThePalette);
+//      end;
+//      Result := FBitmap;
+      Result := Image.Bitmap;
+    end
   end
-{$IFNDEF NoMetafile}
-  else if (Image is ThtMetaFile) then
-    Result := ThtMetaFile(Image).WhiteBGBitmap;
-{$ENDIF}
+  else if Image <> nil  then
+    Result := Image.Bitmap
+  else
+    Result := nil;
 end;
 
 procedure TImageObj.SetHover(Value: HoverType);
 begin
-  if (Value <> FHover) and FHoverImage and (Image is TGifImage) then
-    with TGifImage(Image) do
+  if (Value <> FHover) and FHoverImage and (Image is ThtGifImage) then
+    with ThtGifImage(Image).Gif do
     begin
       if Value <> hvOff then
         case NumFrames of
@@ -2284,70 +2277,53 @@ begin
     end;
 end;
 
-procedure TImageObj.setImage(const AValue: TgpObject);
-begin
-  if FImage = AValue then exit;
-  FImage := AValue;
-end;
+//procedure TImageObj.SetImage(const AValue: ThtImage);
+//begin
+//  if FImage = AValue then exit;
+//  FImage := AValue;
+//end;
 
 {----------------TImageObj.ReplaceImage}
 
 procedure TImageObj.ReplaceImage(NewImage: TStream);
 var
-  TmpImage: TGpObject;
-  AMask: TBitmap;
-  Stream: TMemoryStream;
+  TmpImage: ThtImage;
   I: Integer;
 begin
   Transparent := NotTransp;
-  AMask := nil;
-  if NewImage is TMemoryStream then
-    TmpImage := LoadImageFromStream(TMemoryStream(NewImage), Transparent, AMask)
-  else
-  begin
-    // TODO -oBG, 30.11.2010: do we need this intermediate stream?
-    Stream := TMemoryStream.Create;
-    try
-      Stream.LoadFromStream(NewImage);
-      TmpImage := LoadImageFromStream(Stream, Transparent, AMask);
-    finally
-      Stream.Free;
-    end;
-  end;
+  TmpImage := LoadImageFromStream(NewImage, Transparent);
   if Assigned(TmpImage) then
   begin
+    // remove current image
     if not Swapped then
     begin
     {OrigImage is left in cache and kept}
-      if (Image is TGifImage) then
-        Document.AGifList.Remove(Image);
+      if Image is ThtGifImage then
+        Document.AGifList.Remove(ThtGifImage(Image).Gif);
       Swapped := True;
     end
     else {swapped already}
     begin
-      if (Image is TGifImage) then
-      begin
-        Document.AGifList.Remove(Image);
-      end;
-      Image.Free;
-      FreeAndNil(Mask);
+      if Image is ThtGifImage then
+        Document.AGifList.Remove(ThtGifImage(Image).Gif);
+      FImage.Free;
     end;
-    FreeAndNil(FBitmap);
-    Image := TmpImage;
-    if (Image is TGifImage) then
+
+    // set new image
+    FImage := TmpImage;
+    if Image is ThtGifImage then
     begin
       if not FHoverImage then
       begin
-        TGifImage(Image).Animate := True;
-        Document.AGifList.Add(Image);
+        ThtGifImage(Image).Gif.Animate := True;
+        Document.AGifList.Add(ThtGifImage(Image).Gif);
       end
       else
       begin
-        TGifImage(Image).Animate := False;
+        ThtGifImage(Image).Gif.Animate := False;
         SetHover(hvOff);
       end;
     end;
-    Mask := AMask;
     if Missing then
     begin {if waiting for image, no longer want it}
       with Document.MissingImages do
@@ -2359,6 +2335,7 @@ begin
           end;
       Missing := False;
     end;
+
     Document.PPanel.Invalidate;
   end;
 end;
@@ -2367,44 +2344,40 @@ end;
 
 function TImageObj.InsertImage(const UName: ThtString; Error: boolean; var Reformat: boolean): boolean;
 var
-  TmpImage: TgpObject;
+  TmpImage: ThtImage;
   FromCache, Delay: boolean;
 begin
   Result := False;
   Reformat := False;
-  if Image = DefBitmap then
+  if FImage = DefImage then
   begin
     Result := True;
     if Error then
-    begin
-      Image := ErrorBitmap;
-      Mask := ErrorBitmapMask;
-      Transparent := LLCorner;
-    end
+      FImage := ErrorImage
     else
     begin
-      TmpImage := Document.GetTheBitmap(UName, Transparent, Mask, FromCache, Delay);
+      TmpImage := Document.GetTheImage(UName, Transparent, FromCache, Delay);
       if not Assigned(TmpImage) then
         Exit;
 
-      if TmpImage is TGIFImage then
+      if TmpImage is ThtGifImage then
       begin
         if FromCache then {it would be}
-          Image := TGifImage.CreateCopy(TGifImage(TmpImage)) {it's in Cache already, make copy}
+          FImage := ThtGifImage(TmpImage).Clone {it's in Cache already, make copy}
         else
-          Image := TmpImage;
+          FImage := TmpImage;
         if not FHoverImage then
         begin
-          Document.AGifList.Add(Image);
-          TGifImage(Image).Animate := True;
+          ThtGifImage(Image).Gif.Animate := True;
+          Document.AGifList.Add(ThtGifImage(Image).Gif);
           if Assigned(Document.Timer) then
             Document.Timer.Enabled := True;
         end
         else
-          TGifImage(Image).Animate := False;
+          ThtGifImage(Image).Gif.Animate := False;
       end
       else
-        Image := TmpImage;
+        FImage := TmpImage;
       OrigImage := Image;
     end;
     Missing := False;
@@ -2420,79 +2393,79 @@ procedure TImageObj.DrawLogic(SectionList: ThtDocument; Canvas: TCanvas;
   FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
 {calculate the height and width}
 var
-  TmpImage: TgpObject;
+  TempImage: ThtImage;
   ImHeight, ImWidth: Integer;
   ViewImages, FromCache: boolean;
   Rslt: ThtString;
   ARect: TRect;
   SubstImage: Boolean;
   HasBlueBox: Boolean;
-
 begin
   ViewImages := Document.ShowImages;
-
-  TmpImage := Image;
-  if ViewImages and not Assigned(TmpImage) then
+  if ViewImages then
   begin
-    if Source <> '' then
-      with SectionList do
-      begin
-        if not Assigned(GetBitmap) and not Assigned(GetImage) then
-          Source := TheOwner.HtmlExpandFilename(Source)
-        else if Assigned(ExpandName) then
+    if Image = nil then
+    begin
+      TempImage := nil;
+      if Source <> '' then
+        with SectionList do
         begin
-          ExpandName(TheOwner, Source, Rslt);
-          Source := Rslt;
+          if not Assigned(GetBitmap) and not Assigned(GetImage) then
+            Source := TheOwner.HtmlExpandFilename(Source)
+          else if Assigned(ExpandName) then
+          begin
+            ExpandName(TheOwner, Source, Rslt);
+            Source := Rslt;
+          end;
+          if MissingImages.IndexOf(Uppercase(Source)) = -1 then
+            TempImage := Document.GetTheImage(Source, Transparent, FromCache, Missing)
+          else
+            Missing := True; {already in list, don't request it again}
         end;
-        if MissingImages.IndexOf(Uppercase(Source)) = -1 then
-          TmpImage := Document.GetTheBitmap(Source, Transparent, Mask, FromCache, Missing)
+
+      if TempImage = nil then
+      begin
+        if Missing then
+        begin
+          FImage := DefImage;
+          Document.MissingImages.AddObject(Source, Self); {add it even if it's there already}
+        end
         else
-          Missing := True; {already in list, don't request it again}
-      end;
-    if not Assigned(TmpImage) then
-    begin
-      if Missing then
+        begin
+          FImage := ErrorImage;
+        end;
+      end
+      else if TempImage is ThtGifImage then
       begin
-        Image := DefBitmap;
-        TmpImage := DefBitmap;
-        Document.MissingImages.AddObject(Source, Self); {add it even if it's there already}
+        if FromCache then
+          FImage := ThtGifImage(TempImage).Clone {it's in Cache already, make copy}
+        else
+          FImage := TempImage;
+        OrigImage := FImage;
+        if not FHoverImage then
+        begin
+          ThtGifImage(Image).Gif.Animate := True;
+          Document.AGifList.Add(ThtGifImage(Image).Gif);
+          if Assigned(Document.Timer) then
+            Document.Timer.Enabled := True;
+        end
+        else
+          ThtGifImage(Image).Gif.Animate := False;
       end
       else
       begin
-        Image := ErrorBitmap;
-        TmpImage := ErrorBitmap;
-        Mask := ErrorBitmapMask;
-        Transparent := LLCorner;
+        FImage := TempImage; //TBitmap(TmpImage);
+        OrigImage := FImage;
       end;
-    end
-    else if TmpImage is TGifImage then
-    begin
-      if FromCache then
-      begin {it's in Cache already, make copy}
-        Image := TGifImage.CreateCopy(TGifImage(TmpImage));
-        TmpImage := Image;
-      end
-      else
-        Image := TmpImage;
-      OrigImage := Image;
-      if not FHoverImage then
-        Document.AGifList.Add(Image)
-      else
-        TGifImage(Image).Animate := False;
-    end
-    else
-    begin
-      Image := TmpImage; //TBitmap(TmpImage);
-      OrigImage := Image;
     end;
-  end;
-  if not ViewImages then
-    TmpImage := DefBitMap;
+  end
+  else
+    FImage := DefImage;
 
-  ImHeight := GetImageHeight(TmpImage);
-  ImWidth := GetImageWidth(TmpImage);
+  ImHeight := Image.Height;
+  ImWidth := Image.Width;
 
-  SubstImage := (Image = ErrorBitmap) or (TmpImage = DefBitmap);
+  SubstImage := (Image = ErrorImage) or (Image = DefImage);
 
   if not ImageKnown or PercentWidth or PercentHeight then
   begin
@@ -2587,19 +2560,20 @@ end;
 
 {----------------TImageObj.DoDraw}
 
-procedure TImageObj.DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: TgpObject; ddMask: TBitmap);
+procedure TImageObj.DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: ThtImage);
 {Y relative to top of display here}
-var
-  DC: HDC;
-  Img: TBitmap absolute ddImage;
-  Gif: TGifImage absolute ddImage;
-  W, H: Integer;
-  PrintTransparent: boolean;
+//var
+//  DC: HDC;
+//  Img: TBitmap absolute ddImage;
+//  Gif: TGifImage absolute ddImage;
+//  W, H: Integer;
+//  PrintTransparent: boolean;
 begin
+(*
   DC := Canvas.Handle;
 
   {$IFNDEF NoGDIPlus}
-  if TObject(ddImage) is TGPImage then
+  if ddImage is ThtPngImage then
   begin
     if not Document.Printing then
       StretchDrawGpImage(DC, TGPImage(ddImage), XX, Y, ObjWidth, ObjHeight)
@@ -2611,10 +2585,21 @@ begin
     Exit;
   end;
   {$ENDIF !NoGDIPlus}
+*)
 
   try
     if not Document.IsCopy then
-    begin
+      if (ddImage = ErrorImage) or (ddImage = DefImage) then
+        ddImage.Draw(Canvas, XX, Y, ddImage.Width, ddImage.Height)
+      else
+        ddImage.Draw(Canvas, XX, Y, ObjWidth, ObjHeight)
+    else
+      if (ddImage = ErrorImage) or (ddImage = DefImage) then
+        ddImage.Print(Canvas, XX, Y, ddImage.Width, ddImage.Height, clWhite)
+      else
+        ddImage.Print(Canvas, XX, Y, ObjWidth, ObjHeight, clWhite)
+    ;
+(*
       if ddImage is TGifImage then
       begin
         Gif.ShowIt := True;
@@ -2681,6 +2666,7 @@ begin
         Canvas.StretchDraw(Rect(XX, Y, XX + ObjWidth, Y + ObjHeight), ThtMetaFile(ddImage));
 {$ENDIF}
     end;
+*)
   except
   end;
 end;
@@ -2774,11 +2760,9 @@ begin
     htStyles(bssSolid, bssSolid, bssSolid, bssSolid));
 end;
 
-procedure TImageObj.Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer;
-  FO: TFontObj);
+procedure TImageObj.Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj);
 var
-  TmpImage: TgpObject;
-  TmpMask: TBitmap;
+  TmpImage: ThtImage;
   MiddleAlignTop: Integer;
   ViewImages: boolean;
   SubstImage: boolean;
@@ -2788,28 +2772,16 @@ var
   SaveWidth: Integer;
   SaveStyle: TPenStyle;
   YY: Integer;
-
 begin
-  with Document do
-  begin
-    ViewImages := ShowImages;
-    Dec(TopY, YOff);
-    Dec(YBaseLine, YOff);
-  end;
+  ViewImages := Document.ShowImages;
+  Dec(TopY, Document.YOff);
+  Dec(YBaseLine, Document.YOff);
+
   if ViewImages then
-  begin
-    TmpImage := Image;
-    if Image is TBitmap then
-      TmpMask := Mask
-    else
-      TmpMask := nil;
-  end
+    TmpImage := Image
   else
-  begin
-    TmpImage := DefBitMap;
-    TmpMask := nil;
-  end;
-  SubstImage := not ViewImages or (TmpImage = ErrorBitmap) or (TmpImage = DefBitmap); {substitute image}
+    TmpImage := DefImage;
+  SubstImage := not ViewImages or (TmpImage = ErrorImage) or (TmpImage = DefImage); {substitute image}
 
   with Canvas do
   begin
@@ -2823,6 +2795,7 @@ begin
     Ofst := 4
   else
     Ofst := 0;
+    
   if VertAlign = AMiddle then
     MiddleAlignTop := YBaseLine + FO.Descent - (FO.tmHeight div 2) - ((ImageHeight - VSpaceT + VSpaceB) div 2)
   else
@@ -2852,7 +2825,7 @@ begin
   end;
 
   if not SubstImage or (AltHeight >= 16 + 8) and (AltWidth >= 16 + 8) then
-    Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage, TmpMask);
+    Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage);
   Inc(DrawYY, Document.YOff);
   SetTextAlign(Canvas.Handle, TA_Top);
   if SubstImage and (BorderSize = 0) then
@@ -5246,218 +5219,6 @@ begin
   Result := MargArray[piWidth];
 end;
 
-procedure DoImageStuff(Canvas: TCanvas; IW, IH: Integer; BGImage: TImageObj; PRec: PtPositionRec;
-  var TiledImage: TgpObject; var TiledMask: TBitmap; var NoMask: boolean);
-{Set up for the background image. Allow for tiling, and transparency
-  BGImage is the image
-  PRec describes the location and tiling
-  IW, IH, the width and height of the background
-}
-var
-  I, OW, OH, X, XX, Y, X2, Y2: Integer;
-  P: array[1..2] of Integer;
-  TheMask, NewBitmap, NewMask: TBitmap;
-  TheGpObj: TGpObject;
-  {$IFNDEF NoGDIPlus}
-  g: TgpGraphics;
-  {$ENDIF !NoGDIPlus}
-
-  procedure Tile(Bitmap, Mask: TBitmap; W, H: Integer);
-  begin
-    repeat {tile BGImage in the various dc's}
-      XX := X;
-      repeat
-        TBitmap(TiledImage).Canvas.Draw(XX, Y, Bitmap);
-        if Assigned(TheMask) then
-          TiledMask.Canvas.Draw(XX, Y, Mask)
-        else if not NoMask then
-          PatBlt(TiledMask.Canvas.Handle, XX, Y, Bitmap.Width, Bitmap.Height, Blackness);
-        Inc(XX, Bitmap.Width);
-      until XX >= X2;
-      Inc(Y, Bitmap.Height);
-    until Y >= Y2;
-  end;
-
-  {$IFNDEF NoGDIPlus}
-  procedure TileGpImage(Image: TgpImage; W, H: Integer);
-  var
-    ImW, ImH: Integer;
-    graphics: TgpGraphics;
-  begin
-    ImW := Image.Width;
-    ImH := Image.Height;
-    try
-      graphics := TGPGraphics.Create(TgpImage(TiledImage));
-      try
-        repeat {tile Image in the various dc's}
-          XX := X;
-          repeat
-            graphics.DrawImage(Image, XX, Y, Image.Width, Image.Height);
-            Inc(XX, ImW);
-          until XX >= X2;
-          Inc(Y, ImH);
-        until Y >= Y2;
-      except
-      end;
-      graphics.Free;
-    except
-    end;
-  end;
-  {$ENDIF !NoGDIPlus}
-
-var
-  IsTiledGpImage: Boolean;
-begin
-  if (BGImage.Image is TBitmap) then
-  begin
-    TheGpObj := TBitmap(BGImage.Image);
-    TheMask := BGImage.Mask;
-  end
-  else if BGImage.Image is TGifImage then
-  begin
-    TheGpObj := TGifImage(BGImage.Image).MaskedBitmap;
-    TheMask := TGifImage(BGImage.Image).Mask;
-  end
-{$IFNDEF NoMetafile}
-  else if BGImage.Image is ThtMetafile then
-  begin
-    TheGpObj := ThtMetafile(BGImage.Image).Bitmap;
-    TheMask := ThtMetafile(BGImage.Image).Mask;
-  end
-{$ENDIF}
-  else
-  begin
-    TheGpObj := BGImage.Image;
-    TheMask := nil;
-  end;
-
-  NoMask := not Assigned(TheMask) and PRec[1].RepeatD and PRec[2].RepeatD;
-
-  OW := GetImageWidth(BGImage.Image);
-  OH := GetImageHeight(BGImage.Image);
-
-  {$IFNDEF NoGDIPlus}
-  if (BGImage.Image is TgpImage) and not ((OW = 1) or (OH = 1)) then
-  begin {TiledImage will be a TGpBitmap unless Image needs to be enlarged}
-    with TgpBitmap(TiledImage) do
-      if Assigned(TiledImage) and ((IW <> Width) or (IH <> Height)) then
-        FreeAndNil(TiledImage);
-    if not Assigned(TiledImage) then
-      TiledImage := TgpBitmap.Create(IW, IH);
-    g := TgpGraphics.Create(TgpBitmap(TiledImage));
-    g.Clear(0); {clear to transparent black}
-    g.Free;
-    IsTiledGpImage := False;
-  end
-  else
-  {$ENDIF !NoGDIPlus}
-  begin {TiledImage will be a TBitmap}
-    if not Assigned(TiledImage) then
-      TiledImage := TBitmap.Create;
-    TBitmap(TiledImage).Palette := CopyPalette(ThePalette);
-    TBitmap(TiledImage).Height := IH;
-    TBitmap(TiledImage).Width := IW;
-    PatBlt(TBitmap(TiledImage).Canvas.Handle, 0, 0, IW, IH, Blackness);
-    IsTiledGpImage := True;
-  end;
-
-  if not NoMask and ((BGImage.Image is TBitmap)
-//BG, 25.08.2007:
-    or (BGImage.Image is TGifImage)
-//BG, 25.08.2007
-{$IFNDEF NoMetafile}
-    or (BGImage.Image is ThtMetafile)
-{$ENDIF}
-    or IsTiledGpImage
-    ) then
-  begin
-    if not Assigned(TiledMask) then
-      TiledMask := TBitmap.Create;
-    TiledMask.Monochrome := True;
-    TiledMask.Height := IH;
-    TiledMask.Width := IW;
-    if not Assigned(TheMask) then
-      PatBlt(TiledMask.Canvas.Handle, 0, 0, IW, IH, Whiteness);
-  end;
-
-{compute the location and tiling of BGImage in the background}
-  P[1] := 0; P[2] := 0;
-  for I := 1 to 2 do
-    with PRec[I] do
-    begin
-      case PosType of
-        pTop:
-          P[I] := 0;
-        pCenter:
-          if I = 1 then
-            P[1] := IW div 2 - OW div 2
-          else
-            P[2] := IH div 2 - OH div 2;
-        pBottom:
-          P[I] := IH - OH;
-        pLeft:
-          P[I] := 0;
-        pRight:
-          P[I] := IW - OW;
-        PPercent:
-          if I = 1 then
-            P[1] := ((IW - OW) * Value) div 100
-          else
-            P[2] := ((IH - OH) * Value) div 100;
-        pDim:
-          P[I] := Value;
-      end;
-      if I = 1 then
-        P[1] := Min(Max(P[1], -OW), IW)
-      else
-        P[2] := Min(Max(P[2], -OH), IH);
-    end;
-
-  X := P[1];
-  Y := P[2];
-  if PRec[2].RepeatD then
-  begin
-    while Y > 0 do
-      Dec(Y, OH);
-    Y2 := IH;
-  end
-  else
-    Y2 := Y;
-  if PRec[1].RepeatD then
-  begin
-    while X > 0 do
-      Dec(X, OW);
-    X2 := IW;
-  end
-  else
-    X2 := X;
-
-  if ((OW = 1) or (OH = 1)) then
-  begin {in case a 1 pixel bitmap is being tiled.  EnlargeImage returns a
-     TBitmap regardless of TheGpObj type.}
-    NewBitmap := EnlargeImage(TheGpObj, X2 - X + 1, Y2 - Y + 1);
-    try
-      if Assigned(TheMask) then
-        NewMask := EnlargeImage(TheMask, X2 - X + 1, Y2 - Y + 1)
-      else
-        NewMask := nil;
-      try
-        Tile(NewBitmap, NewMask, X2 - X + 1, Y2 - Y + 1);
-      finally
-        NewMask.Free;
-      end;
-    finally
-      NewBitmap.Free;
-    end;
-  end
-  else if (TheGpObj is TBitmap) then
-    Tile(TBitmap(TheGpObj), TheMask, OW, OH)
-    {$IFNDEF NoGDIPlus}
-  else
-    TileGpImage(TgpImage(TheGpObj), OW, OH)
-    {$ENDIF !NoGDIPlus}
-    ;
-end;
 
 {----------------TBlock.DrawLogic}
 
@@ -5657,7 +5418,7 @@ begin
     if Assigned(BGImage) and Document.ShowImages then
     begin
       BGImage.DrawLogic(Document, Canvas, nil, 100, 0);
-      if (BGImage.Image = ErrorBitmap) then
+      if BGImage.Image = ErrorImage then
       begin
         FreeAndNil(BGImage);
         NeedDoImageStuff := False;
@@ -5934,9 +5695,9 @@ begin
     begin
       HasBackgroundColor := MargArray[BackgroundColor] <> clNone;
       try
-        if NeedDoImageStuff and Assigned(BGImage) and (BGImage.Image <> DefBitmap) then
+        if NeedDoImageStuff and Assigned(BGImage) and (BGImage.Image <> DefImage) then
         begin
-          if BGImage.Image = ErrorBitmap then {Skip the background image}
+          if BGImage.Image = ErrorImage then {Skip the background image}
             FreeAndNil(BGImage)
           else
           try
@@ -5946,7 +5707,7 @@ begin
               TmpHt := ClientContentBot - ContentTop + MargArray[PaddingTop] + MargArray[PaddingBottom];
 
             DoImageStuff(Canvas, MargArray[PaddingLeft] + NewWidth + MargArray[PaddingRight],
-              TmpHt, BGImage, PRec, TiledImage, TiledMask, NoMask);
+              TmpHt, BGImage.Image, PRec, TiledImage, TiledMask, NoMask);
             if Document.IsCopy and (TiledImage is TBitmap) then
               TBitmap(TiledImage).HandleType := bmDIB;
           except {bad image, get rid of it}
@@ -6033,33 +5794,37 @@ begin
     end;
 
     if HideOverflow then
+    begin
       if FloatLR = ANone then
         GetClippingRgn(Canvas, Rect(PdRect.Left + MargArray[PaddingLeft], PdRect.Top + MargArray[PaddingTop],
           PdRect.Right - MargArray[PaddingRight], PdRect.Bottom - MargArray[PaddingBottom]),
           Document.Printing, Rgn, SaveRgn)
       else
         GetClippingRgn(Canvas, Rect(PdRect.Left, PdRect.Top, PdRect.Right, PdRect.Bottom), Document.Printing, Rgn, SaveRgn);
-
-    SaveID := IMgr.CurrentID;
-    Imgr.CurrentID := Self;
-    if Positioning = posRelative then
-      DrawTheList(Canvas, ARect, NewWidth, X,
-        RefX + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
-        Y + MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop])
-    else if Positioning = posAbsolute then
-      DrawTheList(Canvas, ARect, NewWidth, X,
-        RefX + MargArray[BorderLeftWidth],
-        Y + MargArray[MarginTop] + MargArray[BorderTopWidth])
-    else
-      DrawTheList(Canvas, ARect, NewWidth, X, XRef, YRef);
-    Imgr.CurrentID := SaveID;
-
-    if HideOverflow then {restore any previous clip region}
-    begin
-      SelectClipRgn(Canvas.Handle, SaveRgn);
-      DeleteObject(Rgn);
-      if SaveRgn <> 0 then
-        DeleteObject(SaveRgn);
+      SelectClipRgn(Canvas.Handle, Rgn);
+    end;
+    try
+      SaveID := IMgr.CurrentID;
+      Imgr.CurrentID := Self;
+      if Positioning = posRelative then
+        DrawTheList(Canvas, ARect, NewWidth, X,
+          RefX + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
+          Y + MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop])
+      else if Positioning = posAbsolute then
+        DrawTheList(Canvas, ARect, NewWidth, X,
+          RefX + MargArray[BorderLeftWidth],
+          Y + MargArray[MarginTop] + MargArray[BorderTopWidth])
+      else
+        DrawTheList(Canvas, ARect, NewWidth, X, XRef, YRef);
+      Imgr.CurrentID := SaveID;
+    finally
+      if HideOverflow then {restore any previous clip region}
+      begin
+        SelectClipRgn(Canvas.Handle, SaveRgn);
+        DeleteObject(Rgn);
+        if SaveRgn <> 0 then
+          DeleteObject(SaveRgn);
+      end;
     end;
     DrawBlockBorder(Canvas, MyRect, PdRect);
   finally
@@ -6756,11 +6521,8 @@ begin
   if Assigned(Image) then
   begin
     Image.DrawLogic(Document, Canvas, nil, 100, 0);
-    if (Image.Image = ErrorBitmap) then
-    begin
-      Image.Free;
-      Image := nil;
-    end;
+    if Image.Image = ErrorImage then
+      FreeAndNil(Image);
   end;
   Document.FirstLineHtPtr := @FirstLineHt;
   FirstLineHt := 0;
@@ -6813,59 +6575,57 @@ begin
     YB := FirstLineHt - Document.YOff;
     if (YB < ARect.Top - 50) or (YB > ARect.Bottom + 50) then
       Exit;
-    if Assigned(Image) and (Image.Image <> DefBitmap) and Document.ShowImages then
-    begin
-      Image.DoDraw(Canvas, X - 16, YB - Image.ObjHeight, Image.Image, Image.Mask);
-    end
-
-    else if not (ListType in [None, Definition]) then
-    begin
-      if ListStyleType in [lbDecimal, lbLowerAlpha, lbLowerRoman, lbUpperAlpha, lbUpperRoman] then
+    if Assigned(Image) and (Image.Image <> DefImage) and Document.ShowImages then
+      Image.DoDraw(Canvas, X - 16, YB - Image.ObjHeight, Image.Image)
+    else
+      if not (ListType in [None, Definition]) then
       begin
-        AlphaNumb := Min(ListNumb - 1, 25);
-        case ListStyleType of
-          lbLowerAlpha: NStr := chr(ord('a') + AlphaNumb);
-          lbUpperAlpha: NStr := chr(ord('A') + AlphaNumb);
-          lbLowerRoman: NStr := LowRoman[Min(ListNumb, MaxRoman)];
-          lbUpperRoman: NStr := HighRoman[Min(ListNumb, MaxRoman)];
-        else
-          NStr := IntToStr(ListNumb);
-        end;
-        Canvas.Font := ListFont;
-        NStr := NStr + '.';
-        BkMode := SetBkMode(Canvas.Handle, Transparent);
-        TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
-        Canvas.TextOut(X - 10 - Canvas.TextWidth(NStr), YB, NStr);
-        SetTextAlign(Canvas.Handle, TAlign);
-        SetBkMode(Canvas.Handle, BkMode);
-      end
-      else if (ListStyleType in [lbCircle, lbDisc, lbSquare]) then
-        with Canvas do
+        if ListStyleType in [lbDecimal, lbLowerAlpha, lbLowerRoman, lbUpperAlpha, lbUpperRoman] then
         begin
-          PenColor := Pen.Color;
-          PenStyle := Pen.Style;
-          Pen.Color := ListFont.Color;
-          Pen.Style := psSolid;
-          BrushStyle := Brush.Style;
-          BrushColor := Brush.Color;
-          Brush.Style := bsSolid;
-          Brush.Color := ListFont.Color;
+          AlphaNumb := Min(ListNumb - 1, 25);
           case ListStyleType of
-            lbCircle:
-              begin
-                Brush.Style := bsClear;
-                Circle(X - 16, YB, 7);
-              end;
-            lbDisc:
-              Circle(X - 15, YB - 1, 5);
-            lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
+            lbLowerAlpha: NStr := chr(ord('a') + AlphaNumb);
+            lbUpperAlpha: NStr := chr(ord('A') + AlphaNumb);
+            lbLowerRoman: NStr := LowRoman[Min(ListNumb, MaxRoman)];
+            lbUpperRoman: NStr := HighRoman[Min(ListNumb, MaxRoman)];
+          else
+            NStr := IntToStr(ListNumb);
           end;
-          Brush.Color := BrushColor;
-          Brush.Style := BrushStyle;
-          Pen.Color := PenColor;
-          Pen.Style := PenStyle;
-        end;
-    end;
+          Canvas.Font := ListFont;
+          NStr := NStr + '.';
+          BkMode := SetBkMode(Canvas.Handle, Transparent);
+          TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
+          Canvas.TextOut(X - 10 - Canvas.TextWidth(NStr), YB, NStr);
+          SetTextAlign(Canvas.Handle, TAlign);
+          SetBkMode(Canvas.Handle, BkMode);
+        end
+        else if (ListStyleType in [lbCircle, lbDisc, lbSquare]) then
+          with Canvas do
+          begin
+            PenColor := Pen.Color;
+            PenStyle := Pen.Style;
+            Pen.Color := ListFont.Color;
+            Pen.Style := psSolid;
+            BrushStyle := Brush.Style;
+            BrushColor := Brush.Color;
+            Brush.Style := bsSolid;
+            Brush.Color := ListFont.Color;
+            case ListStyleType of
+              lbCircle:
+                begin
+                  Brush.Style := bsClear;
+                  Circle(X - 16, YB, 7);
+                end;
+              lbDisc:
+                Circle(X - 15, YB - 1, 5);
+              lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
+            end;
+            Brush.Color := BrushColor;
+            Brush.Style := BrushStyle;
+            Pen.Color := PenColor;
+            Pen.Style := PenStyle;
+          end;
+      end;
   end;
 end;
 
@@ -7010,7 +6770,7 @@ constructor ThtDocument.CreateCopy(T: ThtDocument);
 begin
   PrintTableBackground := T.PrintTableBackground;
   PrintBackground := T.PrintBackground;
-  BitmapList := T.BitmapList; {same list}
+  ImageCache := T.ImageCache; {same list}
   InlineList := T.InlineList; {same list}
   IsCopy := True;
   inherited CreateCopy(Self, nil, T);
@@ -7115,22 +6875,27 @@ end;
 
 procedure ThtDocument.CheckGIFList(Sender: TObject);
 var
+  IsAniGifBackground: Boolean;
   I: Integer;
   Frame: Integer;
 begin
   if IsCopy then
     Exit;
   Frame := 0;
-  if Assigned(BackgroundAniGif) then
-    Frame := BackgroundAniGif.CurrentFrame;
+  IsAniGifBackground := BackgroundImage is ThtGifImage;
+  if IsAniGifBackground then
+  begin
+    IsAniGifBackground := ThtGifImage(BackgroundImage).Gif.Animate;
+    if IsAniGifBackground then
+      Frame := ThtGifImage(BackgroundImage).Gif.CurrentFrame;
+  end;
   for I := 0 to AGifList.Count - 1 do
     with TGifImage(AGifList.Items[I]) do
       if ShowIt then
-      begin
         CheckTime(PPanel);
-      end;
-  if Assigned(BackgroundAniGif) and (Frame <> BackgroundAniGif.CurrentFrame) then
-    PPanel.Invalidate;
+  if IsAniGifBackground then
+    if Frame <> ThtGifImage(BackgroundImage).Gif.CurrentFrame then
+      PPanel.Invalidate;
   Timer.Interval := 40;
 end;
 
@@ -7163,11 +6928,9 @@ begin
     PositionList.Clear;
     TInlineList(InlineList).Clear;
   end;
-  BackgroundBitmap := nil;
-  BackgroundMask := nil;
-  BackgroundAniGif := nil;
+  BackgroundImage := nil;
   if BitmapLoaded and (BitmapName <> '') then
-    BitmapList.DecUsage(BitmapName);
+    ImageCache.DecUsage(BitmapName);
   BitmapName := '';
   BitmapLoaded := False;
   AGifList.Clear;
@@ -7416,8 +7179,8 @@ begin
     begin
       ShowIt := False;
     end;
-  if Assigned(BackgroundAniGif) and not IsCopy then
-    BackgroundAniGif.ShowIt := True;
+  if (BackgroundImage is ThtGifImage) and not IsCopy then
+    ThtGifImage(BackgroundImage).Gif.ShowIt := True;
   if (ColorBits <= 8) then
   begin
     OldPal := SelectPalette(Canvas.Handle, ThePalette, True);
@@ -7472,8 +7235,7 @@ end;
 
 procedure ThtDocument.SetBackgroundBitmap(const Name: ThtString; const APrec: PtPositionRec);
 begin
-  BackgroundBitmap := nil;
-  BackgroundAniGif := nil;
+  BackgroundImage := nil;
   BitmapName := Name;
   BitmapLoaded := False;
   BackgroundPRec := APrec;
@@ -7484,40 +7246,25 @@ procedure ThtDocument.InsertImage(const Src: ThtString; Stream: TStream; var Ref
 var
   UName: ThtString;
   I, J: Integer;
-  Pair: TBitmapItem;
+  Image: ThtImage;
   Rformat, Error: boolean;
-  Image: TgpObject;
-  AMask: TBitmap;
-  Tr, Transparent: Transparency;
+  Transparent: TTransparency;
   Obj: TObject;
 begin
   Image := nil;
-  AMask := nil;
   Error := False;
   Reformat := False;
   UName := Trim(Uppercase(Src));
-  I := BitmapList.IndexOf(UName); {first see if the bitmap is already loaded}
+  I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
   J := MissingImages.IndexOf(UName); {see if it's in missing image list}
   if (I = -1) and (J >= 0) then
   begin
     Transparent := NotTransp;
-    Image := LoadImageFromStream(Stream, Transparent, AMask);
-    if Assigned(Image) then {put in Cache}
-    try
-      if Assigned(AMask) then
-        Tr := Transparent
-      else
-        Tr := NotTransp;
-      Pair := TBitmapItem.Create(Image, AMask, Tr);
-      try
-        BitmapList.AddObject(UName, Pair); {put new bitmap in list}
-        BitmapList.DecUsage(UName); {this does not count as being used yet}
-      except
-        Pair.Mask := nil;
-        Pair.MImage := nil;
-        Pair.Free;
-      end;
-    except {accept inability to create}
+    Image := LoadImageFromStream(Stream, Transparent);
+    if Image <> nil then {put in Cache}
+    begin
+      ImageCache.AddObject(UName, Image); {put new bitmap in list}
+      ImageCache.DecUsage(UName); {this does not count as being used yet}
     end
     else
       Error := True; {bad stream or Nil}
@@ -7541,106 +7288,84 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.GetTheBitmap(const BMName: ThtString; var Transparent: Transparency;
-  var AMask: TBitmap; var FromCache, Delay: boolean): TgpObject;
-{Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy
- them}
-{Transparent may be set to NotTransp or LLCorner on entry but may discover it's
- TGif here}
+function ThtDocument.GetTheImage(
+  const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
+{Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
+{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TGif here}
+
+  procedure GetTheBitmap;
+  var
+    Color: TColor;
+    Bitmap: TBitmap;
+  begin
+    if Assigned(GetBitmap) then
+    begin {the OnBitmapRequest event}
+      Bitmap := nil;
+      Color := -1;
+      GetBitmap(TheOwner, BMName, Bitmap, Color);
+      if Bitmap <> nil then
+        if Color <> -1 then
+          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(TBitmap(Result), True, Color), TrGif)
+        else if Transparent = LLCorner then
+          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(TBitmap(Result), False, 0), LLCorner)
+        else
+          Result := ThtBitmapImage.Create(Bitmap, nil, NotTransp);
+    end;
+  end;
+
+  procedure GetTheStream;
+  var
+    Stream: TStream;
+  begin
+    if Assigned(GetImage) then
+    begin {the OnImageRequest}
+      Stream := nil;
+      GetImage(TheOwner, BMName, Stream);
+      if Stream = WaitStream then
+        Delay := True
+      else if Stream <> nil then
+        try
+          Result := LoadImageFromStream(Stream, Transparent);
+        finally
+          if assigned(GottenImage) then
+            GottenImage(TheOwner, BMName, Stream);
+        end
+      else
+        Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent);
+    end;
+  end;
 
 var
   UName: ThtString;
   I: Integer;
-  Pair: TBitmapItem;
-  Tr: Transparency;
-  Stream: TStream;
-  Color: TColor;
 begin
-  AMask := nil;
+  Result := nil;
   Delay := False;
   FromCache := False;
   if BMName <> '' then
   begin
     UName := Trim(Uppercase(BMName));
-    I := BitmapList.IndexOf(UName); {first see if the bitmap is already loaded}
-    if I > -1 then
+    I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
+    if I >= 0 then
     begin {yes, handle the case where the image is already loaded}
-      Result := BitmapList.GetImage(I);
+      Result := ImageCache.GetImage(I);
       FromCache := True;
-      if Result is TBitmap then
-        with BitmapList.Objects[I] do
-        begin
-          if Transp = TrGif then
-            Transparent := TrGif {it's a transparent GIF}
-          else if Transp = TrPng then
-            Transparent := TrPng
-          else if Transparent = LLCorner then
-          begin
-            if not Assigned(Mask) then {1st bitmap may not have been marked transp}
-              Mask := GetImageMask(TBitmap(MImage), False, 0);
-            if Assigned(Mask) then
-              Transp := LLCorner;
-          end;
-          AMask := Mask;
-        end;
-      Exit;
-    end;
-
-  {The image is not loaded yet, need to get it}
-    Result := nil;
-    if Assigned(GetBitmap) or Assigned(GetImage) then
-    begin
-      if Assigned(GetBitmap) then
-      begin {the OnBitmapRequest event}
-        Color := -1;
-        GetBitmap(TheOwner, BMName, TBitmap(Result), Color);
-        if Assigned(Result) then
-          if Color <> -1 then
-          begin
-            AMask := GetImageMask(TBitmap(Result), True, Color);
-            Transparent := TrGif;
-          end
-          else if (Transparent = LLCorner) then
-            AMask := GetImageMask(TBitmap(Result), False, 0);
-      end;
-      if Assigned(GetImage) then
-      begin {the OnImageRequest}
-        Stream := nil;
-        GetImage(TheOwner, BMName, Stream);
-        if Stream = WaitStream then
-          Delay := True
-        else if Assigned(Stream) then
-          try
-            Result := LoadImageFromStream(Stream, Transparent, AMask);
-          finally
-            if assigned(GottenImage) then
-              GottenImage(TheOwner, BMName, Stream);
-          end
-        else
-          Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent, AMask);
-      end;
     end
     else
-      Result := LoadImageFromFile(BMName, Transparent, AMask);
-    if Assigned(Result) then {put in Image List for use later also}
-    try
-      if Assigned(AMask) then
-        Tr := Transparent
+    begin
+    {The image is not loaded yet, need to get it}
+      if Assigned(GetBitmap) or Assigned(GetImage) then
+      begin
+        GetTheBitmap;
+        GetTheStream;
+      end
       else
-        Tr := NotTransp;
-      Pair := TBitmapItem.Create(Result, AMask, Tr);
-      try
-        BitmapList.AddObject(UName, Pair); {put new bitmap in list}
-      except
-        Pair.Mask := nil;
-        Pair.MImage := nil;
-        Pair.Free;
-      end;
-    except {accept inability to create}
+        Result := LoadImageFromFile(BMName, Transparent);
+
+      if Result <> nil then {put in Image List for use later also}
+        ImageCache.AddObject(UName, Result); {put new bitmap in list}
     end;
-  end
-  else
-    Result := nil;
+  end;
 end;
 
 //------------------------------------------------------------------------------
@@ -7663,56 +7388,42 @@ end;
 
 procedure ThtDocument.GetBackgroundBitmap;
 var
-  Mask: TBitmap;
-  Dummy1: Transparency;
-  TmpResult: TgpObject;
+  Dummy1: TTransparency;
   FromCache, Delay: boolean;
   Rslt: ThtString;
+  I: Integer;
 begin
-  if ShowImages and not BitmapLoaded and (BitmapName <> '') then
-  begin
-    if not Assigned(BackgroundBitmap) then
+  if ShowImages and (BitmapName <> '') then
+    if BackgroundImage = nil then
     begin
-      Dummy1 := NotTransp;
-      if not Assigned(GetBitmap) and not Assigned(GetImage) then
-        BitmapName := TheOwner.HtmlExpandFilename(BitmapName)
-      else if Assigned(ExpandName) then
+      if BitmapLoaded then
       begin
-        ExpandName(TheOwner, BitmapName, Rslt);
-        BitmapName := Rslt;
-      end;
-      TmpResult := GetTheBitmap(BitmapName, Dummy1, Mask, FromCache, Delay); {might be Nil}
-      if (TmpResult is TBitmap) {$IFNDEF NoGDIPlus}or (TmpResult is TGpImage){$ENDIF !NoGDIPlus} then
-      begin
-        BackgroundBitmap := TmpResult;
-        BackgroundMask := Mask;
+        I := ImageCache.IndexOf(Trim(UpperCase(BitmapName))); {first see if the bitmap is already loaded}
+        if I >= 0 then
+          BackgroundImage := ImageCache.GetImage(I);
       end
-      else if TmpResult is TGifImage then
-      begin
-        BackgroundBitmap := TGifImage(TmpResult).MaskedBitmap;
-        BackgroundMask := TGifImage(TmpResult).Mask;
-        if TGifImage(TmpResult).IsAnimated and not IsCopy then
-        begin
-          BackgroundAniGif := TGifImage(TmpResult);
-          AGifList.Add(BackgroundAniGif);
-          BackgroundAniGif.Animate := True;
-        end;
-      end
-{$IFNDEF NoMetafile}
-      else if TmpResult is ThtMetaFile then
-      begin
-        BackgroundBitmap := ThtMetaFile(TmpResult);
-      end
-{$ENDIF}
       else
       begin
-        BackgroundBitmap := nil;
+        Dummy1 := NotTransp;
+        if not Assigned(GetBitmap) and not Assigned(GetImage) then
+          BitmapName := TheOwner.HtmlExpandFilename(BitmapName)
+        else if Assigned(ExpandName) then
+        begin
+          ExpandName(TheOwner, BitmapName, Rslt);
+          BitmapName := Rslt;
+        end;
+        BackgroundImage := GetTheImage(BitmapName, Dummy1, FromCache, Delay); {might be Nil}
         if Delay then
           MissingImages.AddObject(BitmapName, Self);
+        BitmapLoaded := True;
       end;
-      BitmapLoaded := True;
+      if BackgroundImage is ThtGifImage then
+        if ThtGifImage(BackgroundImage).Gif.IsAnimated and not IsCopy then
+        begin
+          AGifList.Add(ThtGifImage(BackgroundImage).Gif);
+          ThtGifImage(BackgroundImage).Gif.Animate := True;
+        end;
     end;
-  end;
 end;
 
 //------------------------------------------------------------------------------
@@ -8067,11 +7778,8 @@ begin
   if Assigned(BGImage) and Cell.Document.ShowImages then
   begin
     BGImage.DrawLogic(Cell.Document, Canvas, nil, 100, 0);
-    if BGImage.Image = ErrorBitmap then
-    begin
-      BGImage.Free;
-      BGImage := nil;
-    end
+    if BGImage.Image = ErrorImage then
+      FreeAndNil(BGImage)
     else
     begin
       BGImage.ImageKnown := True; {won't need reformat on InsertImage}
@@ -8138,14 +7846,14 @@ begin
     begin
       if BGImage = nil then
         NeedDoImageStuff := False
-      else if BGImage.Image <> DefBitmap then
+      else if BGImage.Image <> DefImage then
       begin
-        if BGImage.Image = ErrorBitmap then {Skip the background image}
+        if BGImage.Image = ErrorImage then {Skip the background image}
           FreeAndNil(BGImage)
         else
         try
           DoImageStuff(Canvas, Wd - CellSpacing, Ht - CellSpacing,
-            BGImage, PRec, TiledImage, TiledMask, NoMask);
+            BGImage.Image, PRec, TiledImage, TiledMask, NoMask);
           if Cell.Document.IsCopy and (TiledImage is TBitmap) then
             TBitmap(TiledImage).HandleType := bmDIB;
         except {bad image, get rid of it}
@@ -14326,4 +14034,7 @@ initialization
     UnicodeControls := not IsWin32Platform;
   {$ENDIF}
 {$endif}
+  WaitStream := TMemoryStream.Create;
+finalization
+  WaitStream.Free;
 end.
