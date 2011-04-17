@@ -69,7 +69,7 @@ uses
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
   HtmlGlobals,
-//  HtmlStyles,
+  StyleTypes,
   Parser,
   HTMLUn2,
   StyleUn,
@@ -6054,7 +6054,7 @@ begin
           if not Assigned(BGImage) then
           begin
             BGImage := TImageObj.SimpleCreate(Document, MyCell, Name);
-            PRec[1].PosType := pDim;
+            PRec[1].PosType := bpDim;
             PRec[1].Value := 0;
             PRec[1].RepeatD := True;
             PRec[2] := PRec[1];

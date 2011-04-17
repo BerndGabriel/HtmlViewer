@@ -33,7 +33,8 @@ uses
   Windows, Classes, Contnrs, Variants, SysUtils,
   //
   HtmlGlobals,
-  HtmlSymbols;
+  HtmlSymbols,
+  StyleTypes;
 
 //------------------------------------------------------------------------------
 // style properties
@@ -88,8 +89,8 @@ const
 const
   varInherit = $123; // a value of this variant type indicates, that this value is to be inherited from parent object.
 
-function Inherit: Variant; {$ifdef UseInline} inline; {$endif}
-function VarIsInherit(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
+function Inherit: Variant; //{$ifdef UseInline} inline; {$endif}
+function VarIsInherit(const Value: Variant): Boolean; //{$ifdef UseInline} inline; {$endif}
 
 type
   TStyleProperty = class
@@ -98,16 +99,14 @@ type
     FNext: TStyleProperty;
     FSymbol: TStylePropertySymbol;
     FPrecedence: TPropertyPrecedence;
-    FSpecifiedValue: Variant;
-    FCalculatedValue: Variant;
+    FValue: Variant;
   public
-    constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant); overload;
-    constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant); overload;
+    constructor Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; const Value: Variant); overload;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
+    destructor Destroy; override;
     property Symbol: TStylePropertySymbol read FSymbol;
     property Precedence: TPropertyPrecedence read FPrecedence;
-    property SpecifiedValue: Variant read FSpecifiedValue;
-    property CalculatedValue: Variant read FCalculatedValue write FCalculatedValue;
+    property Value: Variant read FValue;
     property Next: TStyleProperty read FNext;
     property Prev: TStyleProperty read FPrev;
   end;
@@ -117,16 +116,21 @@ type
   private
     FFirst: TStyleProperty;
     FLast: TStyleProperty;
+    function GetItem(Index: TStylePropertySymbol): TStyleProperty;
   public
     function IsEmpty: Boolean;
     function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
-    procedure Init;
     procedure Add(Prop: TStyleProperty);
     procedure Assign(const List: TStylePropertyList);
     procedure Clear;
+{$ifdef UseEnhancedRecord}
+    procedure Free;
+{$endif}
+    procedure Init;
     procedure Remove(Prop: TStyleProperty);
     property First: TStyleProperty read FFirst;
     property Last: TStyleProperty read FLast;
+    property Items[Index: TStylePropertySymbol]: TStyleProperty read GetItem; default;
   end;
 
 //------------------------------------------------------------------------------
@@ -311,59 +315,13 @@ type
     procedure Add(Sele: TStyleSelector);
     procedure Assign(const List: TStyleSelectorList);
     procedure Clear;
+{$ifdef UseEnhancedRecord}
+    procedure Free;
+{$endif}
     procedure Remove(Prop: TStyleSelector);
     property First: TStyleSelector read FFirst;
     property Last: TStyleSelector read FLast;
   end;
-
-//------------------------------------------------------------------------------
-// media types
-//------------------------------------------------------------------------------
-
-type
-  // http://www.w3.org/TR/2010/WD-CSS2-20101207/media.html
-  TMediaType = (
-    mtAll,        // Suitable for all devices.
-    mtBraille,    // Intended for braille tactile feedback devices.
-    mtEmbossed,   // Intended for paged braille printers.
-    mtHandheld,   // Intended for handheld devices (typically small screen, limited bandwidth).
-    mtPrint,      // Intended for paged material and for documents viewed on screen in print preview mode. Please consult the section on paged media for information about formatting issues that are specific to paged media.
-    mtProjection, // Intended for projected presentations, for example projectors. Please consult the section on paged media for information about formatting issues that are specific to paged media.
-    mtScreen,     // Intended primarily for color computer screens.
-    mtSpeech,     // Intended for speech synthesizers. Note: CSS2 had a similar media type called 'aural' for this purpose. See the appendix on aural style sheets for details.
-    mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
-    mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
-  );
-  TMediaTypes = set of TMediaType;
-
-const
-  CMediaTypes: array[TMediaType] of ThtString = (
-    'all',
-    'braille',
-    'embossed',
-    'handheld',
-    'print',
-    'projection',
-    'screen',
-    'speech',
-    'tty',
-    'tv'
-  );
-  AllMediaTypes: TMediaTypes = [
-    //mtAll,        // Suitable for all devices.
-    mtBraille,    // Intended for braille tactile feedback devices.
-    mtEmbossed,   // Intended for paged braille printers.
-    mtHandheld,   // Intended for handheld devices (typically small screen, limited bandwidth).
-    mtPrint,      // Intended for paged material and for documents viewed on screen in print preview mode. Please consult the section on paged media for information about formatting issues that are specific to paged media.
-    mtProjection, // Intended for projected presentations, for example projectors. Please consult the section on paged media for information about formatting issues that are specific to paged media.
-    mtScreen,     // Intended primarily for color computer screens.
-    mtSpeech,     // Intended for speech synthesizers. Note: CSS2 had a similar media type called 'aural' for this purpose. See the appendix on aural style sheets for details.
-    mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
-    mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
-  ];
-
-function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
-function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
 
 //------------------------------------------------------------------------------
 // style rule sets
@@ -378,7 +336,9 @@ type
     Properties: TStylePropertyList;
     Selectors: TStyleSelectorList;
     constructor Create(MediaTypes: TMediaTypes);
-    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
+    destructor Destroy; override; {$ifdef UseToStringOverride} override; {$endif}
+    function ToString: ThtString;
+    property MediaTypes: TMediaTypes read FMediaTypes;
   end;
 
   TRulesetList = class(TObjectList)
@@ -430,7 +390,7 @@ type
   end;
 
 //------------------------------------------------------------------------------
-// 
+//
 //------------------------------------------------------------------------------
 
 function GetCssDefaults: TStream;
@@ -443,38 +403,6 @@ implementation
 function GetCssDefaults: TStream;
 begin
   Result := TResourceStream.Create(hInstance, 'CSS_DEFAULTS', RT_RCDATA);
-end;
-
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
-var
-  I: TMediaType;
-begin
-  SetLength(Result, 0);
-  for I := low(I) to high(I) do
-    if I in MediaTypes then
-    begin
-      if Length(Result) = 0 then
-        Result := CMediaTypes[I]
-      else
-        Result := Result + ', ' + CMediaTypes[I];
-    end;
-end;
-
-
-//-- BG ---------------------------------------------------------- 15.03.2011 --
-function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
-var
-  I: TMediaType;
-begin
-  for I := low(I) to high(I) do
-    if CMediaTypes[I] = Str then
-    begin
-      Result := True;
-      MediaType := I;
-      exit;
-    end;
-  Result := False;
 end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
@@ -496,37 +424,36 @@ end;
 function Inherit: Variant;
 // returns a variant of type varInherit
 begin
-  TVarData(Result).VType := varInherit;
+  TVarData(Result).VType := varEmpty; //varInherit;
 end;
 
 //-- BG ---------------------------------------------------------- 21.03.2011 --
 function VarIsInherit(const Value: Variant): Boolean;
 // returns true, if Value is of type varInherit
 begin
-  Result := VarType(Value) = varInherit;
+  Result := VarType(Value) = varEmpty; //varInherit;
 end;
 
 
 { TStyleProperty }
 
 //-- BG ---------------------------------------------------------- 13.03.2011 --
-constructor TStyleProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue: Variant);
+constructor TStyleProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; const Value: Variant);
 begin
   inherited Create;
   FSymbol := Symbol;
   FPrecedence := Precedence;
-  FSpecifiedValue := SpecifiedValue;
-  FCalculatedValue := Null;
+  FValue := Value;
 end;
 
-//-- BG ---------------------------------------------------------- 13.03.2011 --
-constructor TStyleProperty.Create(Symbol: TStylePropertySymbol; Precedence: TPropertyPrecedence; SpecifiedValue, CalculatedValue: Variant);
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+destructor TStyleProperty.Destroy;
 begin
-  inherited Create;
-  FSymbol := Symbol;
-  FPrecedence := Precedence;
-  FSpecifiedValue := SpecifiedValue;
-  FCalculatedValue := CalculatedValue;
+  if Prev <> nil then
+    Prev.FNext := Next;
+  if Next <> nil then
+    Next.FPrev := Prev;
+  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
@@ -536,13 +463,18 @@ function TStyleProperty.ToString: ThtString;
   begin
     if VarIsNull(Value) then
       Result := ''
+    else if VarIsStr(Value) then
+      Result := '"' + Value + '"'
+    else if VarIsInherit(Value) then
+      Result := '"inherit"'
     else
       Result := Value;
   end;
 
 begin
-  Result := PropertySymbolToStr(FSymbol) + ': ' + VariantToStr(SpecifiedValue) +
-    ' /* ' + CPropertyPrecedence[FPrecedence] + ', ' + VariantToStr(CalculatedValue) + ' */';
+  Result :=
+    PropertySymbolToStr(FSymbol) + ': ' + VariantToStr(Value) +
+    ' /* ' + CPropertyPrecedence[FPrecedence] + ' */';
 end;
 
 { TStylePropertyList }
@@ -598,6 +530,31 @@ begin
     Link := First;
     FFirst := Link.Next;
     Link.Free;
+  end;
+end;
+
+{$ifdef UseEnhancedRecord}
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure TStylePropertyList.Free;
+begin
+  Clear;
+end;
+{$endif}
+
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+function TStylePropertyList.GetItem(Index: TStylePropertySymbol): TStyleProperty;
+begin
+  Result := First;
+  while Result <> nil do
+  begin
+    if Result.Symbol = Index then
+      exit;
+    if Result.Symbol > Index then
+    begin
+      Result := nil;
+      exit;
+    end;
+    Result := Result.Next;
   end;
 end;
 
@@ -951,6 +908,14 @@ begin
   end;
 end;
 
+{$ifdef UseEnhancedRecord}
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure TStyleSelectorList.Free;
+begin
+  Clear;
+end;
+{$endif}
+
 //-- BG ---------------------------------------------------------- 02.04.2011 --
 procedure TStyleSelectorList.Init;
 begin
@@ -996,6 +961,14 @@ constructor TRuleset.Create(MediaTypes: TMediaTypes);
 begin
   inherited Create;
   FMediaTypes := MediaTypes
+end;
+
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+destructor TRuleset.Destroy;
+begin
+  Properties.Free;
+  Selectors.Free;
+  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --

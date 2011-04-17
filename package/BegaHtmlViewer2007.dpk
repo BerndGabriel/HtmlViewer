@@ -14,7 +14,7 @@ package BegaHtmlViewer2007;
 {$OPTIMIZATION ON}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
-{$REFERENCEINFO OFF}
+{$REFERENCEINFO ON}
 {$SAFEDIVIDE OFF}
 {$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
@@ -46,6 +46,8 @@ contains
   HtmlDocument in '..\source\HtmlDocument.pas',
   HtmlParser in '..\source\HtmlParser.pas',
   HtmlViewer in '..\source\HtmlViewer.pas',
-  HtmlDraw in '..\source\HtmlDraw.pas';
+  HtmlDraw in '..\source\HtmlDraw.pas',
+  HtmlBoxes in '..\source\HtmlBoxes.pas',
+  HtmlRenderer in '..\source\HtmlRenderer.pas';
 
 end.

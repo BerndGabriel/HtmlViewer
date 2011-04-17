@@ -41,7 +41,13 @@ uses
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
-  UrlSubs, StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2, HtmlImages;
+  HtmlBuffer,
+  HtmlGif2,
+  HtmlGlobals,
+  HtmlImages,
+  StyleTypes,
+  StyleUn,
+  UrlSubs;
 
 const
   VersionNo = '11';

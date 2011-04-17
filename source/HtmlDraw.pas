@@ -35,7 +35,8 @@ uses
   Windows, Graphics, Types, Math,
   //
   HtmlGlobals,
-  HtmlSymbols;
+  //HtmlSymbols,
+  StyleTypes;
 
 type
   TRectEdge = (reLeft, reTop, reRight, reBottom);

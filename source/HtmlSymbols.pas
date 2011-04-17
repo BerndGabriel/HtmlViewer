@@ -40,6 +40,45 @@ uses
   HtmlGlobals;
 
 type
+  THtmlLinkType = (
+    ltUnknown,
+    ltAlternate,
+    ltStylesheet,
+    ltStart,
+    ltNext,
+    ltPrev,
+    ltContents,
+    ltIndex,
+    ltGlossary,
+    ltCopyright,
+    ltChapter,
+    ltSection,
+    ltSubsection,
+    ltAppendix,
+    ltHelp,
+    ltBookmark,
+    ltShortcutIcon);
+const
+  CHtmlLinkType: array [THtmlLinkType] of ThtString = (
+    '',
+    'alernate',
+    'stylesheet',
+    'start',
+    'next',
+    'prev',
+    'contents',
+    'index',
+    'glossary',
+    'copyright',
+    'chapter',
+    'section',
+    'subsection',
+    'appendix',
+    'help',
+    'bookmark',
+    'shortcut icon');
+
+type
   THtmlElementSymbol = (
     // virtual html elements
     NoEndSy,      // indicates in TElementDescription, that this element has no end tag.
@@ -150,9 +189,6 @@ type
     WrapSy);                      // extension
 
   THtmlElementSymbols = set of THtmlElementSymbol;
-
-
-
 
   THtmlAttributeSymbol = (
     UnknownAttr,
@@ -341,69 +377,8 @@ type
   TStylePropertySymbol = FontFamily..psEmptyCells;
   TPropertyArray = array [TStylePropertySymbol] of Variant;
 
-type
-  TBorderStyle = (
-    bssNone,
-    bssSolid,
-    bssInset,
-    bssOutset,
-    bssGroove,
-    bssRidge,
-    bssDashed,
-    bssDotted,
-    bssDouble);
-const
-  CBorderStyle: array[TBorderStyle] of ThtString = (
-    'none',
-    'solid',
-    'inset',
-    'outset',
-    'groove',
-    'ridge',
-    'dashed',
-    'dotted',
-    'double');
-
-type
-  TPropDisplay = (
-    pdUnassigned,
-    pdInline,
-    pdBlock,
-    pdListItem,
-    pdRunIn,
-    pdInlineBlock,
-    pdTable,
-    pdInlineTable,
-    pdTableRowGroup,
-    pdTableHeaderGroup,
-    pdTableFooterGroup,
-    pdTableRow,
-    pdTableColumnGroup,
-    pdTableColumn,
-    pdTableCell,
-    pdTableCaption,
-    pdNone);
-
-const
-  CPropDisplay: array [TPropDisplay] of ThtString = (
-    '',
-    'inline',
-    'block',
-    'list-item',
-    'run-in',
-    'inline-block',
-    'table',
-    'inline-table',
-    'table-row-group',
-    'table-header-group',
-    'table-footer-group',
-    'table-row',
-    'table-column-group',
-    'table-column',
-    'table-cell',
-    'table-caption',
-    'none');
-
+function TryStrToLinkType(const Str: ThtString; out LinkType: THtmlLinkType): Boolean;
+  
 function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
 function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
 
@@ -411,8 +386,6 @@ function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
 function TryStrToPropertySymbol(const Str: ThtString; out Sy: TPropertySymbol): Boolean;
 
 function TryNameToColor(const Name: ThtString; out Color: TColor): Boolean;
-function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
-function TryStrToDisplay(const Str: ThtString; out Display: TPropDisplay): Boolean;
 function TryStrToEntity(const Str: ThtString; out Entity: Integer): Boolean;
 
 implementation
@@ -1289,39 +1262,21 @@ begin
   Result := PAttributeDescription(AttributeDescriptionsIndex[Sy]).Name;
 end;
 
-//------------------------------------------------------------------------------
-// misc
-//------------------------------------------------------------------------------
-
-//-- BG ---------------------------------------------------------- 16.03.2011 --
-function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+function TryStrToLinkType(const Str: ThtString; out LinkType: THtmlLinkType): Boolean;
 var
-  I: TBorderStyle;
+  I: THtmlLinkType;
 begin
   for I := low(I) to high(I) do
-    if CBorderStyle[I] = Str then
+    if CHtmlLinkType[I] = Str then
     begin
       Result := True;
-      BorderStyle := I;
+      LinkType := I;
       exit;
     end;
   Result := False;
 end;
 
-//-- BG ---------------------------------------------------------- 16.03.2011 --
-function TryStrToDisplay(const Str: ThtString; out Display: TPropDisplay): Boolean;
-var
-  I: TPropDisplay;
-begin
-  for I := low(I) to high(I) do
-    if CPropDisplay[I] = Str then
-    begin
-      Result := True;
-      Display := I;
-      exit;
-    end;
-  Result := False;
-end;
 
 initialization
   InitAttributes;

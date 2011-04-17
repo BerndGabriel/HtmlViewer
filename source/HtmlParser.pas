@@ -40,12 +40,14 @@ uses
 {$endif}
   //
   HtmlBuffer,
+  HtmlDocument,
   HtmlGlobals,
-  HtmlSymbols,
   HtmlStyles,
+  HtmlSymbols,
   HtmlTree,
+  Parser,
   StyleParser,
-  HtmlDocument;
+  StyleTypes;
 
 const
   MaxTokenlength = 300;
@@ -111,21 +113,17 @@ type
 
   THtmlParserState = set of (hpsInComment, hpsInScript, hpsInStyle);
 
-  THtmlParser = class
+  THtmlParser = class(TCustomParser)
   private
-    // input
-    FDoc: TBuffer;
-    FBase: ThtString;
-
     // state
     FState: THtmlParserState;
-    FDocStack: TStack;
     FProgress: Integer;
     LCh: ThtChar;
     FDocPos: Integer; // byte position of LCh in document
     LCToken: THtmlToken;
 
     // events
+    FOnGetBuffer: TGetBufferEvent;
     FOnInclude: TIncludeEvent;
     FOnProgress: TProgressEvent;
 
@@ -135,7 +133,7 @@ type
 {$ifdef DebugIt}
     // debug
     LIdentPos: Integer;
-    procedure checkPosition(var Pos: Integer);
+    procedure CheckPosition(var Pos: Integer);
 {$endif}
 
     function CreateRootElement(const Ed: THtmlElementDescription): THtmlElement;
@@ -145,8 +143,6 @@ type
     procedure GetChildren(Parent: THtmlElement);
     procedure GetCh;
     procedure GetChSkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
-    procedure PopDoc;
-    procedure PushDoc(NewDoc: TBuffer);
     procedure SkipWhiteSpace;
     procedure GetChBasic;
     procedure First; {$ifdef UseInline} inline; {$endif}
@@ -156,17 +152,12 @@ type
     constructor Create(Doc: TBuffer; const Base: ThtString = '');
     destructor Destroy; override;
     procedure ParseHtmlDocument(Document: THtmlDocument);
+    property OnGetBuffer;
     property OnInclude: TIncludeEvent read FOnInclude write FOnInclude;
     property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
   end;
 
 implementation
-
-type
-  THtmlParserDocStackItem = class
-    Doc: TBuffer;
-    Base: ThtString;
-  end;
 
 { TCharBuffer }
 
@@ -345,25 +336,22 @@ end;
 {$ifdef DebugIt}
 
 //-- BG ---------------------------------------------------------- 19.03.2011 --
-procedure THtmlParser.checkPosition(var Pos: Integer);
+procedure THtmlParser.CheckPosition(var Pos: Integer);
   procedure stopHere();
   begin
   end;
 begin
-  if Pos = FDoc.Position then
+  if Pos = Doc.Position then
     stopHere();
-  Pos := FDoc.Position;
+  Pos := Doc.Position;
 end;
 {$endif}
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 constructor THtmlParser.Create(Doc: TBuffer; const Base: ThtString);
 begin
-  inherited Create;
-  FDocStack := TStack.Create;
+  inherited Create(Doc, Base);
   LCToken := THtmlToken.Create;
-  FDoc := Doc;
-  FBase := Base;
 end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --
@@ -376,7 +364,6 @@ end;
 destructor THtmlParser.Destroy;
 begin
   LCToken.Free;
-  FDocStack.Free;
   inherited;
 end;
 
@@ -403,7 +390,7 @@ procedure THtmlParser.GetCh;
 
         '!':
           // accept --!> also.
-          if FDoc.PeekChar <> '>' then
+          if Doc.PeekChar <> '>' then
             DashCount := 0;
 
         '>':
@@ -459,7 +446,7 @@ procedure THtmlParser.GetCh;
             end;
 
             AmperChar:
-              htAppendStr(S, GetEntityStr(FDoc.CodePage));
+              htAppendStr(S, GetEntityStr(Doc.CodePage));
 
           else
             if LCh = Term then
@@ -540,7 +527,7 @@ begin {Getch}
     GetChBasic;
     if (LCh = LessChar) and (FState * [hpsInScript, hpsInStyle] = []) then
     begin
-      case FDoc.PeekChar of
+      case Doc.PeekChar of
         '!':
         begin
           GetChBasic;
@@ -571,7 +558,7 @@ begin {Getch}
           Comment := True;
           repeat
             GetChBasic;
-          until (LCh = '%') and (FDoc.PeekChar = GreaterChar) or (LCh = EOFChar);
+          until (LCh = '%') and (Doc.PeekChar = GreaterChar) or (LCh = EOFChar);
           GetChBasic;
         end;
       end;
@@ -585,11 +572,11 @@ procedure THtmlParser.GetChBasic; {read a character}
   function ReadChar: ThtChar;
   begin
     repeat
-      if not FDocStack.AtLeast(1) then
+      if not DocStack.AtLeast(1) then
         // update document position only for outmost document
-        FDocPos := FDoc.Position;
-      Result := FDoc.NextChar;
-      if (Result = EofChar) and FDocStack.AtLeast(1) then
+        FDocPos := Doc.Position;
+      Result := Doc.NextChar;
+      if (Result = EofChar) and DocStack.AtLeast(1) then
         PopDoc
       else
         break;
@@ -599,7 +586,7 @@ procedure THtmlParser.GetChBasic; {read a character}
     begin
       Inc(FProgress);
       if (Result = EofChar) or (FProgress and $FFF = 0) {about every 4000 chars} then
-        FOnProgress(Self, FDoc.Position, FDoc.Size);
+        FOnProgress(Self, Doc.Position, Doc.Size);
     end;
   end;
 
@@ -607,7 +594,7 @@ begin
   LCh := ReadChar;
   case LCh of
     CrChar:
-      if FDoc.PeekChar = LfChar then
+      if Doc.PeekChar = LfChar then
         ReadChar;
 
     TabChar:
@@ -720,7 +707,7 @@ end;
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 function THtmlParser.GetCodePage: Integer;
 begin
-  Result := FDoc.CodePage;
+  Result := Doc.CodePage;
 end;
 
 
@@ -878,7 +865,7 @@ begin
     Result := Length(Identifier) > 0
 {$ifdef DebugIt}
   else
-    checkPosition(LIdentPos)
+    CheckPosition(LIdentPos)
 {$endif}
   ;
 end;
@@ -1071,7 +1058,9 @@ procedure THtmlParser.Next;
     // preformatted text
     while (LCh <> GreaterChar) and (LCh <> EofChar) do
       GetChSkipWhiteSpace;
-    if not (LCToken.Symbol in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
+    if LCToken.Symbol in [StyleSy, ScriptSy] then
+      GetChBasic {don't skip whitespace etc. in case <!-- comment immediately follows}
+    else
       GetChSkipWhiteSpace;
   end;
 
@@ -1130,19 +1119,151 @@ end;
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
 
+  procedure ParseStyle;
+  var
+    StyleParser: THtmlStyleParser;
+  begin
+    StyleParser := THtmlStyleParser.Create(poAuthor, Doc, LinkPath);
+    try
+      StyleParser.ParseStyleTag(LCh, Document.RuleSets);
+    finally
+      StyleParser.Free;
+    end;
+  end;
+
   procedure ParseTree;
   begin
     GetChildren(Document.Tree);
-//    if LCToken.Symbol = Ed.EndSym then
-//      Next;
-//    if LCToken.Symbol = HtmlEndSy then
-//      Next;
+  end;
+
+  procedure ProcessBase;
+  var
+    HRef: THtmlAttribute;
+  begin
+    if LCToken.Attributes.Find(HRefAttr, HRef) then
+      LinkPath := HRef.Value;
+  end;
+
+  procedure ProcessLink;
+
+    procedure ProcessStylesheet(const HRef: ThtString; const MediaTypes: TMediaTypes);
+    var
+      Buffer: TBuffer;
+      Parser: THtmlStyleParser;
+    begin
+      Buffer := GetBuffer(HRef);
+      if Buffer <> nil then
+      begin
+        Parser := THtmlStyleParser.Create(poAuthor, Buffer, LinkPath);
+        try
+          Parser.SupportedMediaTypes := MediaTypes;
+          Parser.ParseStyleSheet(Document.Rulesets);
+        finally
+          Parser.Free;
+          Buffer.Free;
+        end;
+      end;
+    end;
+
+  var
+    Rel, HRef, Media: THtmlAttribute;
+    Url: ThtString;
+    LinkType: THtmlLinkType;
+    MediaTypes: TMediaTypes;
+  begin
+    if LCToken.Attributes.Find(HRefAttr, HRef) then
+    begin
+      Url := AddPath(HRef.Value);
+      if LCToken.Attributes.Find(RelAttr, Rel) then
+        if TryStrToLinkType(Rel.Value, LinkType) then
+          case LinkType of
+            ltStylesheet:
+              if LCToken.Attributes.Find(MediaAttr, Media) then
+                if TryStrToMediaTypes(Media.Value, MediaTypes) then
+                  ProcessStylesheet(Url, MediaTypes);
+
+          end;
+    end;
+  end;
+
+  procedure ProcessMeta;
+  begin
+    //TODO -1 -oBG, 16.04.2011: process <meta>
+  end;
+
+  procedure ProcessTitle;
+  begin
+    //TODO -1 -oBG, 16.04.2011: process <title>
+  end;
+
+  procedure ParseHead;
+  begin
+    //TODO -5 -oBG, 29.03.2011: process the attributes of element 'head'
+    Next;
+    repeat
+      case LCToken.Symbol of
+        BaseSy:
+        begin
+          ProcessBase;
+          Next;
+        end;
+
+        IsIndexSy:
+          Next;
+
+        LinkSy:
+        begin
+          ProcessLink;
+          Next;
+        end;
+
+        MetaSy:
+        begin
+          ProcessMeta;
+          Next;
+        end;
+
+        ObjectSy:
+          Next;
+
+        ScriptSy:
+          Next;
+
+        StyleSy:
+        begin
+          ParseStyle;
+          Next;
+          if LCToken.Symbol = StyleEndSy then
+            Next;
+        end;
+
+        TitleSy:
+        begin
+          ProcessTitle;
+          Next;
+          if LCToken.Symbol = TitleEndSy then
+            Next;
+        end;
+
+        HeadEndSy:
+        begin
+          Next;
+          break;
+        end;
+
+        EofSy:
+          break;
+      else
+        Next;
+      end;
+    until False;
   end;
 
 var
   Ed: THtmlElementDescription;
 begin
   FDocument := Document;
+  FDocument.Name := Doc.Name;
   try
     try
       First;
@@ -1155,70 +1276,28 @@ begin
           end;
 
           HeadSy:
-          begin
-            Ed := LCToken.Ed;
-            //TODO -5 -oBG, 29.03.2011: process the attributes of element 'head'
-            Next;
-            repeat
-              case LCToken.Symbol of
-                BaseSy:
-                  Next;
+            ParseHead;
 
-                IsIndexSy:
-                  Next;
-
-                LinkSy:
-                  Next;
-
-                MetaSy:
-                  Next;
-
-                ObjectSy:
-                  Next;
-
-                ScriptSy:
-                  Next;
-
-                StyleSy:
-                  Next;
-
-                TitleSy:
-                  Next;
-
-                HeadEndSy:
-                begin
-                  Next;
-                  break;
-                end;
-
-                EofSy:
-                  break;
-              else
-                Next;
-              end;
-            until False;
-          end;
-
+          UnknownSy,
           HeadEndSy:
-          begin
+            // ignore redundant </head> and any unknown tag
             Next;
-          end;
 
           HtmlEndSy:
           begin
+            // correct end of document
             Next;
             break;
           end;
 
           EofSy:
+            // sudden end of document
             break;
-
-          UnknownSy:
-            Next;
 
           BodySy,
           FrameSetSy:
           begin
+            // the main document starts now:
             Document.Tree := LCToken.CreateElement(nil);
             Next;
             ParseTree;
@@ -1228,6 +1307,9 @@ begin
         else
           if (LCToken.Symbol <> TextSy) or (Length(Trim(LCToken.S)) > 0) then
           begin
+            // html document without explicit <body> or <frameset> tag.
+            // We found an unempty text element or any other element.
+            // Embed the document into the appropriate root element:
             Ed := ElementSymbolToElementDescription(BodySy);
             if LCToken.Symbol in Ed.Content then
             begin
@@ -1243,7 +1325,10 @@ begin
               break;
             end;
           end;
-          //BG, 30.03.2011: skip this token.
+          // We are here because LCToken meets one of the following conditions:
+          // - the element is a text element without text.
+          // - the element is containable by neither <body> nor <frameset>.
+          //BG, 30.03.2011: skip this token
           Next;
         end;
       until False;
@@ -1254,29 +1339,6 @@ begin
   finally
     FDocument := nil;
   end;
-end;
-
-//-- BG ---------------------------------------------------------- 27.03.2011 --
-procedure THtmlParser.PopDoc;
-var
-  Item: THtmlParserDocStackItem;
-begin
-  Item := THtmlParserDocStackItem(FDocStack.Pop);
-  FDoc := Item.Doc;
-  FBase := Item.Base;
-  Item.Free;
-end;
-
-//-- BG ---------------------------------------------------------- 27.03.2011 --
-procedure THtmlParser.PushDoc(NewDoc: TBuffer);
-var
-  Item: THtmlParserDocStackItem;
-begin
-  Item := THtmlParserDocStackItem.Create;
-  Item.Doc := FDoc;
-  Item.Base := FBase;
-  FDocStack.Push(Item);
-  FDoc := NewDoc;
 end;
 
 //------------------------------------------------------------------------------

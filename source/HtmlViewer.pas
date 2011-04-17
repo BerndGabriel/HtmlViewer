@@ -33,6 +33,7 @@ uses
   Windows, Graphics, SysUtils, Classes, Controls, ExtCtrls,
   //
   HtmlDocument,
+  HtmlBoxes,
   HtmlTree;
 
 type
@@ -51,18 +52,18 @@ type
     FState: THtmlViewerState;
     FOptions: THtmlViewerOptions;
     FDocument: THtmlDocument;
-    FView: THtmlView;
+    FView: THtmlBox;
     procedure SetDocument(const Value: THtmlDocument);
     procedure SetViewerOptions(const Value: THtmlViewerOptions);
     procedure SetViewerState(const Value: THtmlViewerState);
-    procedure SetView(const Value: THtmlView);
+    procedure SetView(const Value: THtmlBox);
   protected
     procedure UpdateDocument;
     procedure UpdateView;
     procedure Paint; override;
   public
     property HtmlDocument: THtmlDocument read FDocument write SetDocument;
-    property HtmlView: THtmlView read FView write SetView;
+    property HtmlView: THtmlBox read FView write SetView;
     property ViewerOptions: THtmlViewerOptions read FOptions write SetViewerOptions;
     property ViewerState: THtmlViewerState read FState write SetViewerState;
   end;
@@ -127,7 +128,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
-procedure TCustomHtmlViewer.SetView(const Value: THtmlView);
+procedure TCustomHtmlViewer.SetView(const Value: THtmlBox);
 begin
   if FView <> Value then
   begin

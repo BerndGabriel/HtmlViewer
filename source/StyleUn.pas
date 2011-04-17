@@ -38,7 +38,11 @@ uses
   Windows,
 {$endif}
   Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
-  Parser, HtmlGlobals, HtmlBuffer;
+  //
+  HtmlBuffer,
+  HtmlGlobals,
+  Parser,
+  StyleTypes;
 
 type
   TPropertyIndex = (
@@ -108,53 +112,21 @@ const
     'border-style'
   );
 
-//BG, 16.09.2010: CSS2.2: same sizes like html font size:
-type
-  TFontSizeIncrement = -6..6;
-const
-  FontConvBase: array[1..7] of double = (8.0, 10.0, 12.0, 14.0, 18.0, 24.0, 36.0);
-  PreFontConvBase: array[1..7] of double = (7.0, 8.0, 10.0, 12.0, 15.0, 20.0, 30.0);
 var
   FontConv: array[1..7] of double;
   PreFontConv: array[1..7] of double;
 
 type
-  AlignmentType = (ANone, ATop, AMiddle, ABaseline, ABottom, ALeft, ARight, AJustify, ASub, ASuper);
-const
-  CAlignmentType: array[AlignmentType] of ThtString = (
-    'none', 'top', 'middle', 'baseline', 'bottom', 'left', 'right', 'justify', 'sub', 'super');
+  AlignmentType = TAlignmentStyle;
+  BorderStyleType = TBorderStyle;
+  ClearAttrType = TClearStyle;
+  TPropDisplay = TDisplayStyle;
+  ListBulletType = TBulletStyle;
+  PositionType = TBoxPositionStyle;
+  TextTransformType = TTextTransformStyle;
+  VisibilityType = TVisibilityStyle;
 
 type
-  BorderStyleType = (
-    bssNone, bssSolid, bssInset, bssOutset, bssGroove, bssRidge, bssDashed, bssDotted, bssDouble);
-const
-  CBorderStyleType: array[BorderStyleType] of ThtString = (
-    'none', 'solid', 'inset', 'outset', 'groove', 'ridge', 'dashed', 'dotted', 'double');
-
-type
-  ListBulletType = (lbBlank, lbCircle, lbDecimal, lbDisc, lbLowerAlpha, lbLowerRoman,
-    lbNone, lbSquare, lbUpperAlpha, lbUpperRoman);
-const
-  CListBulletType: array[ListBulletType] of ThtString =
-  ('blank', 'circle', 'decimal', 'disc', 'lower-alpha', 'lower-roman',
-    'none', 'square', 'upper-alpha', 'upper-roman');
-
-type
-  ClearAttrType = (clrNone, clLeft, clRight, clAll);
-  PositionType = (posStatic, posRelative, posAbsolute, posFixed);
-  VisibilityType = (viInherit, viHidden, viVisible);
-  TextTransformType = (txNone, txUpper, txLower, txCaps);
-  //WhiteSpaceType = (wsNormal, wsPre, wsNoWrap, wsPreWrap, wsPreLine{, wsInherit});
-
-  TPosition = (pTop, pCenter, pBottom, pLeft, pRight, pPercent, pDim);
-  PositionRec = record
-    PosType: TPosition;
-    Value: Integer;
-    RepeatD: Boolean;
-    Fixed: Boolean;
-  end;
-  PtPositionRec = array[1..2] of PositionRec;
-
   ThtFontInfo = class
   public
     iName: ThtString;
@@ -200,25 +172,6 @@ type
     procedure Assign(Source: TPersistent); overload; override;
     procedure AssignToCanvas(Canvas: TCanvas);
   end;
-
-type
-  TPropDisplay = (
-    pdUnassigned,
-    pdBlock,
-    pdInline,
-    pdInlineBlock,
-    pdListItem,
-    pdRunIn,
-    pdNone);
-const
-  CPropDisplay: array [TPropDisplay] of ThtString = (
-    '',
-    'block',
-    'inline',
-    'inline-block',
-    'list-item',
-    'run-in',
-    'none');
 
 type
   TStyleList = class;
@@ -359,9 +312,6 @@ function SortedColors: ThtStringList;
 
 function ReadFontName(S: ThtString): ThtString;
 
-//function TryStrToPropIndex(const PropWord: ThtString; var PropIndex: PropIndices): Boolean;
-function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: BorderStyleType): Boolean;
-
 implementation
 
 type
@@ -418,22 +368,6 @@ begin
       PropIndex := P;
   end;
 end;
-
-//-- BG ---------------------------------------------------------- 16.03.2011 --
-function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: BorderStyleType): Boolean;
-var
-  I: BorderStyleType;
-begin
-  for I := low(I) to high(I) do
-    if CBorderStyleType[I] = Str then
-    begin
-      Result := True;
-      BorderStyle := I;
-      exit;
-    end;
-  Result := False;
-end;
-
 
 {----------------TMyFont.Assign}
 
@@ -753,7 +687,7 @@ begin
 //BG, 29.08.2009: thanks to SourceForge user 'bolex': 'not' was missing.
   if (not VarIsStr(Props[BackgroundPosition])) then
   begin
-    P[1].PosType := pDim;
+    P[1].PosType := bpDim;
     P[1].Value := 0;
     P[2] := P[1];
   end
@@ -776,36 +710,36 @@ begin
     XY := 1; {X}
     while I <= N do
     begin
-      P[XY].PosType := pDim;
+      P[XY].PosType := bpDim;
       if S[I] = 'center' then
-        P[XY].PosType := pCenter
+        P[XY].PosType := bpCenter
       else if Pos('%', S[I]) > 0 then
-        P[XY].PosType := pPercent
+        P[XY].PosType := bpPercent
       else if S[I] = 'left' then
       begin
         if XY = 2 then {entered in reverse direction}
           P[2] := P[1];
-        P[1].PosType := pLeft;
+        P[1].PosType := bpLeft;
       end
       else if S[I] = 'right' then
       begin
         if XY = 2 then
           P[2] := P[1];
-        P[1].PosType := pRight;
+        P[1].PosType := bpRight;
       end
       else if S[I] = 'top' then
       begin
-        P[2].PosType := pTop;
+        P[2].PosType := bpTop;
         if XY = 1 then
           Dec(XY); {read next one into X}
       end
       else if S[I] = 'bottom' then
       begin
-        P[2].PosType := pBottom;
+        P[2].PosType := bpBottom;
         if XY = 1 then
           Dec(XY);
       end;
-      if P[XY].PosType in [pDim, pPercent] then
+      if P[XY].PosType in [bpDim, bpPercent] then
       begin
         P[XY].Value := LengthConv(S[I], False, 100, EmSize, ExSize, 0);
       end;
@@ -814,9 +748,9 @@ begin
     end;
     if N = 1 then
       if XY = 2 then
-        P[2].PosType := pCenter
+        P[2].PosType := bpCenter
       else
-        P[1].PosType := pCenter; {single entry but it was a Y}
+        P[1].PosType := bpCenter; {single entry but it was a Y}
   end;
   P[1].RepeatD := True;
   P[2].RepeatD := True;
@@ -919,37 +853,20 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.09.2009 --
-function TProperties.GetDisplay: TPropDisplay;
-var
-  S: ThtString;
+function TProperties.GetDisplay: TDisplayStyle;
 begin
   if VarIsStr(Props[piDisplay]) then
-  begin
-    S := Props[piDisplay];
-    Result := high(TPropDisplay);
-    while Result > pdUnassigned do
-    begin
-      if S = CPropDisplay[Result] then
-        exit;
-      dec(Result);
-    end;
-  end
-  else
-    Result := pdUnassigned;
+    if TryStrToDisplayStyle(Props[piDisplay], Result) then
+      exit;
+  Result := pdUnassigned;
 end;
 
+//-- BG ---------------------------------------------------------- 16.04.2011 --
 function TProperties.GetListStyleType: ListBulletType;
-var
-  I: ListBulletType;
-
 begin
   if VarIsStr(Props[ListStyleType]) then
-    for I := Low(ListBulletType) to High(ListBulletType) do
-      if CListBulletType[I] = Props[ListStyleType] then
-      begin
-        Result := I;
-        Exit;
-      end;
+    if TryStrToBulletStyle(Props[ListStyleType], Result) then
+      Exit;
   Result := lbBlank;
 end;
 
@@ -1092,22 +1009,10 @@ end;
 //-- BG ---------------------------------------------------------- 12.03.2011 --
 function TProperties.GetBorderStyle(Index: PropIndices; var BorderStyle: BorderStyleType): Boolean;
 // Returns True, if there is a valid border style property. 
-var
-  I: BorderStyleType;
-  S: ThtString;
 begin
   Result := False;
   if VarIsStr(Props[Index]) then
-  begin
-    S := Props[Index];
-    for I := low(CBorderStyleType) to high(CBorderStyleType) do
-      if S = CBorderStyleType[I] then
-      begin
-        BorderStyle := I;
-        Result := True;
-        break;
-      end;
-  end
+    Result := TryStrToBorderStyle(Props[Index], BorderStyle)
   else if VarType(Props[Index]) in varInt then
     if (Props[Index] >= low(BorderStyleType)) and (Props[Index] <= high(BorderStyleType)) then
     begin

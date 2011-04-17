@@ -30,15 +30,48 @@ unit Parser;
 interface
 
 uses
-  Graphics, Variants, SysUtils, Math,
+  Graphics, Classes, Variants, SysUtils, Math, Contnrs,
   //
+  HtmlBuffer,
   HtmlGlobals,
-  HtmlSymbols;
+  HtmlSymbols,
+  UrlSubs;
+
+type
+  TGetBufferEvent = function(Sender: TObject; const Url: ThtString): TBuffer of object;
+
+  TCustomParser = class
+  private
+    // input
+    FDoc: TBuffer;
+    FLinkPath: ThtString;
+    FDocStack: TStack;
+    FOnGetBuffer: TGetBufferEvent;
+  protected
+    constructor Create(Doc: TBuffer; const LinkPath: ThtString);
+    // AddPath() is used to form an absolute path name for imported buffers by prefixing relative names with LinkPath.
+    function AddPath(const S: ThtString): ThtString;
+    function GetBuffer(const Url: ThtString): TBuffer;
+    procedure PopDoc;
+    procedure PushDoc(NewDoc: TBuffer);
+    property Doc: TBuffer read FDoc;
+    property DocStack: TStack read FDocStack;
+    property LinkPath: ThtString read FLinkPath write FLinkPath;
+    property OnGetBuffer: TGetBufferEvent read FOnGetBuffer write FOnGetBuffer;
+  public
+    destructor Destroy; override;
+  end;
 
 function ReadURL(Item: Variant): ThtString;
 function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
 
 implementation
+
+type
+  TParserDocStackItem = class
+    Doc: TBuffer;
+    Base: ThtString;
+  end;
 
 //-- BG ---------------------------------------------------------- 17.02.2011 --
 function FindChar(const S: ThtString; C: ThtChar; I, L: Integer): Integer;
@@ -272,6 +305,91 @@ begin
     LastS := S1;
     LastColor := Color;
   end;
+end;
+
+{ TCustomParser }
+
+{----------------AddPath}
+function TCustomParser.AddPath(const S: ThtString): ThtString;
+begin
+  if (Pos('://', FLinkPath) > 0) then
+    if not IsFullUrl(S) then
+      Result := CombineURL(FLinkPath, S)
+    else
+      Result := S
+  else
+  begin
+    Result := HTMLToDos(S);
+    if (Pos(':', Result) <> 2) and (Pos('\\', Result) <> 1) then
+      Result := FLinkPath + Result;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 17.04.2011 --
+constructor TCustomParser.Create(Doc: TBuffer; const LinkPath: ThtString);
+begin
+  inherited Create;
+  FDocStack := TStack.Create;
+  FDoc := Doc;
+  if Length(LinkPath) > 0 then
+    FLinkPath := LinkPath
+  else
+    FLinkPath := GetURLBase(Doc.Name);
+end;
+
+//-- BG ---------------------------------------------------------- 17.04.2011 --
+destructor TCustomParser.Destroy;
+begin
+  FDocStack.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 17.04.2011 --
+function TCustomParser.GetBuffer(const Url: ThtString): TBuffer;
+var
+  Filename: ThtString;
+  Stream: TStream;
+begin
+  if assigned(FOnGetBuffer) then
+    Result := FOnGetBuffer(Self, Url)
+  else
+  begin
+    Filename := HTMLToDos(Url);
+    if FileExists(Filename) then
+    begin
+      Stream := TFileStream.Create(Filename, fmOpenRead + fmShareDenyWrite);
+      try
+        Result := TBuffer.Create(Stream, Filename);
+      finally
+        Stream.Free;
+      end;
+    end
+    else
+      Result := nil;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+procedure TCustomParser.PopDoc;
+var
+  Item: TParserDocStackItem;
+begin
+  Item := TParserDocStackItem(FDocStack.Pop);
+  FDoc := Item.Doc;
+  FLinkPath := Item.Base;
+  Item.Free;
+end;
+
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+procedure TCustomParser.PushDoc(NewDoc: TBuffer);
+var
+  Item: TParserDocStackItem;
+begin
+  Item := TParserDocStackItem.Create;
+  Item.Doc := Doc;
+  Item.Base := LinkPath;
+  FDocStack.Push(Item);
+  FDoc := NewDoc;
 end;
 
 end.

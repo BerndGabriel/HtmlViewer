@@ -9,7 +9,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Menus,
+  Dialogs, StdCtrls, Menus, ComCtrls,
 
   // shared units
   TntDialogs,
@@ -21,15 +21,18 @@ uses
   BegaVirtualTrees,
 
   // own units
-  HtmlGlobals,
+  HtmlBoxes,
   HtmlBuffer,
-  HtmlSymbols,
   HtmlDocument,
   HtmlDraw,
+  HtmlGlobals,
   HtmlImages,
-  HtmlTree,
   HtmlParser,
-  HtmlViewer;
+  HtmlSymbols,
+  HtmlTree,
+  HtmlViewer,
+  StyleTypes,
+  UrlSubs;
 
 type
   TFormHtmlViewer12Test = class(TForm)
@@ -38,9 +41,13 @@ type
     menu: TMainMenu;
     menuFile: TMenuItem;
     menuFileOpen: TMenuItem;
-    vtDocument: TBegaVirtualStringTree;
     BegaSplitter1: TBegaSplitter;
     HtmlViewer: THtmlViewer12;
+    PageControl: TPageControl;
+    HtmlTab: TTabSheet;
+    CssTab: TTabSheet;
+    vtDocument: TBegaVirtualStringTree;
+    CssMemo: TMemo;
     procedure cbFilesKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -54,7 +61,7 @@ type
     FBuffer: TBuffer;
     FDocument: THtmlDocument;
     FParser: THtmlParser;
-    FView: THtmlView;
+    FView: THtmlBox;
     FImageCache: ThtImageCache;
   public
     procedure Load(FileName: ThtString);
@@ -174,7 +181,7 @@ begin
   if Image <> nil then
     FImageCache.AddObject(ImageName, Image);
 
-  FView := THtmlView.Create;
+  FView := THtmlBox.Create;
   FView.BoundsRect := Rect(4, 8, 404, 308);
   FView.Margins := RectIntegers(16, 22, 4, 8);
   FView.BorderWidths := RectIntegers(4, 8, 16, 0);
@@ -189,39 +196,48 @@ begin
   FView.Font.Size := 16;
   ImageIndex := FImageCache.IndexOf(ImageName);
   if ImageIndex >= 0 then
-    FView.Image := FImageCache.GetImage(ImageIndex)
+  begin
+    FView.Image := FImageCache.GetImage(ImageIndex);
+    FView.Image.EndUse; // Both FView and GetImage have started a use, but one is required only.
+  end
   else
     FView.Image := ErrorImage;
   FView.Tiled := True;
   FView.TileWidth := 100;
   FView.TileHeight := 100;
   HtmlViewer.HtmlView := FView;
-
 end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 procedure TFormHtmlViewer12Test.FormDestroy(Sender: TObject);
 begin
-  FImageCache.Free;
+  FView.Image := nil;
   FView.Free;
+  FImageCache.Free;
+  Load('');
 end;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --
 procedure TFormHtmlViewer12Test.Load(FileName: ThtString);
 begin
   vtDocument.RootNodeCount := 0;
+  CssMemo.Clear;
   FreeAndNil(FParser);
   FreeAndNil(FDocument);
   FreeAndNil(FBuffer);
   FreeAndNil(FStream);
   FName := FileName;
-  FStream := TFileStream.Create(FName, fmOpenRead + fmShareDenyWrite);
-  FBuffer := TBuffer.Create(FStream, FName);
-  FDocument := THtmlDocument.Create;
-  FParser := THtmlParser.Create(FBuffer);
-  FParser.ParseHtmlDocument(FDocument);
-  if FDocument.Tree <> nil then
-    vtDocument.RootNodeCount := 1;
+  if Length(FName) > 0 then
+  begin
+    FStream := TFileStream.Create(FName, fmOpenRead + fmShareDenyNone);
+    FBuffer := TBuffer.Create(FStream, 'file://' + DosToHtml(FName));
+    FDocument := THtmlDocument.Create;
+    FParser := THtmlParser.Create(FBuffer);
+    FParser.ParseHtmlDocument(FDocument);
+    if FDocument.Tree <> nil then
+      vtDocument.RootNodeCount := 1;
+    CssMemo.Lines.Text := FDocument.RuleSets.ToString;
+  end;
 end;
 
 end.

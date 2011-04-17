@@ -88,6 +88,7 @@ uses
   HTMLUn2,
   HTMLSubs,
   HtmlSbs1,
+  StyleTypes,
   StyleUn;
 
 type
@@ -1298,9 +1299,8 @@ var
     function AlignmentFromString(S: ThtString): AlignmentType;
     begin
       S := LowerCase(S);
-      for Result := low(AlignmentType) to high(AlignmentType) do
-        if S = CAlignmentType[Result] then
-          exit;
+      if TryStrToAlignmentStyle(S, Result) then
+        exit;
 
       if (S = 'absmiddle') or (S = 'center') then
         Result := AMiddle

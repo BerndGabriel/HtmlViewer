@@ -47,6 +47,7 @@ uses
   HTMLUn2,
   ReadHTML,
   HTMLSubs,
+  StyleTypes,
   StyleUn;
 
 const

@@ -38,7 +38,7 @@ uses
   Classes, Graphics, SysUtils,
   //
   Parser,
-  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, HtmlStyles;
+  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, StyleTypes;
 
 
 {---------  Detect Shorthand syntax }
@@ -217,6 +217,7 @@ var
   Esc: Boolean;
   Term: ThtChar;
 begin
+  Term := #0;
   SetLength(Str, 0);
   case LCh of
     '''', '"':

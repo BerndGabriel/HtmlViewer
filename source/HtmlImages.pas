@@ -49,7 +49,7 @@ uses
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
-  UrlSubs, StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2,
+  UrlSubs, HtmlGlobals, HtmlBuffer, HtmlGif2, StyleTypes,
 {$IFDEF UNICODE} PngImage, {$ENDIF}
   DitherUnit;
 
@@ -97,6 +97,8 @@ type
     Transp: TTransparency; {identifies what the mask is for}
     constructor Create(Tr: TTransparency); overload;
     destructor Destroy; override;
+    procedure BeginUse;
+    procedure EndUse;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); virtual; abstract;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); virtual;
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); virtual;
@@ -246,42 +248,6 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer; Bitmap, Mask: TBitmap; YI, HI: Integer);
 
 function GetClipRegion(Canvas: TCanvas): Integer;
-
-function GetPositionInRange(Which: TPosition; Where, Range: Integer): Integer;
-{
- Returns a positon according to the given settings.
- Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.
- Where: percentage or pixels for Which = pPercentage resp. pDim.
- Range: the range in which the result can vary.
- In the usual alignment calculations the range is outer size - inner size.
- If you have to consider an offset to outer's parent, add it to the function result afterwards.
-}
-procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
-  var Pos: Integer; out TiledEnd: Integer);
-{
-  Returns the start and end value for tiling an object of given size.
-  Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
-    process and depending on the visibility of the object in the cliparea the untiled object is
-    processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
-    ClipMin so that the tiling process will put one of the tiles to original Pos.
-  TileAreaMin, TileAreaMax: the area in with the object is to tile.
-  TileSize: the size of the tile.
-  Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
-    of the object size to where the object covers the tile area minimum.
-  TiledEnd: a position on and after which no more tiles are processed.
-}
-procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
-  XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
-{PRec has the CSS information on the background image, it's starting location and
- whether it is tiled in x, y, neither, or both.
- ARect is the cliprect, no point in drawing tiled images outside it.
- XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.
- IW, IH are the total width and height of the document if you could see it all at once.
- BW, BH are bitmap dimensions used to calc tiling.
- X, Y are the position (window coordinates) where the first background iamge will be drawn.
- X2, Y2 are tiling limits.  X2 and Y2 may be such that 0, 1, or many images will
-   get drawn.  They're calculated so that only images within ARect are drawn.
-}
 
 procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
   Image: ThtImage; {Mask: TBitmap; AniGif: TGifImage;} BW, BH: Integer; BGColor: TColor);
@@ -1238,103 +1204,6 @@ begin
 {$endif}
 end;
 
-//-- BG ---------------------------------------------------------- 07.04.2011 --
-function GetPositionInRange(Which: TPosition; Where, Range: Integer): Integer;
-{
- Returns a positon according to the given settings.
- Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.
- Where: percentage or pixels for Which = pPercentage resp. pDim.
- Range: the range in which the result can vary.
- In the usual alignment calculations the range is outer size - inner size.
- If you have to consider an offset to outer's parent, add it to the function result afterwards.
-}
-begin
-  case Which of
-    pTop,
-    pLeft:
-      Result := 0;
-
-    pCenter:
-      Result := Range div 2;
-
-    pBottom,
-    pRight:
-      Result := Range;
-
-    pPercent:
-      Result := (Range * Where) div 100;
-
-    pDim:
-      Result := Where;
-  else
-    Result := 0;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 07.04.2011 --
-procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
-  var Pos: Integer; out TiledEnd: Integer);
-{
-  Returns the start and end value for tiling a tile of given size.
-  Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
-    process and depending on the visibility of the object in the cliparea the untiled object is
-    processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
-    ClipMin so that the tiling process will put one of the tiles to original Pos.
-  TileAreaMin, TileAreaMax: the area in with the object is to tile.
-  TileSize: the size of the tile.
-  Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
-    of the object size to where the object covers the tile area minimum.
-  TiledEnd: a position on and after which no more tiles are processed.
-}
-var
-  TileAreaMinPos: Integer;
-begin
-  if Tiled then
-  begin
-    TileAreaMinPos := TileAreaMin - Pos;
-    {figure a starting point for tiling.  This will be less that one object size less than the tile area min}
-    if TileSize <= TileAreaMinPos then
-      Pos := TileAreaMin - TileAreaMinPos mod TileSize
-    else if TileAreaMinPos < 0 then
-      Pos := TileAreaMin - (TileSize - -TileAreaMinPos mod TileSize);
-    TiledEnd := TileAreaMax;
-  end
-  else
-  begin {a single image or row}
-    TiledEnd := Pos; {assume it's not in the tile area and won't be output}
-    if (TileAreaMin < Pos + TileSize) and (Pos < TileAreaMax) then
-      Inc(TiledEnd); {it is in the tile area, show it}
-  end;
-end;
-
-{----------------CalcBackgroundLocationAndTiling}
-
-procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
-  XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
-
-{PRec has the CSS information on the background image, it's starting location and
- whether it is tiled in x, y, neither, or both.
- ARect is the cliprect, no point in drawing tiled images outside it.
- XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.
- IW, IH are the total width and height of the document if you could see it all at once.
- BW, BH are bitmap dimensions used to calc tiling.
- X, Y are the position (window coordinates) where the first background iamge will be drawn.
- X2, Y2 are tiling limits.  X2 and Y2 may be such that 0, 1, or many images will
-   get drawn.  They're calculated so that only images within ARect are drawn.
-}
-begin
-  with PRec[1] do
-  begin
-    X := GetPositionInRange(PosType, Value, IW - BW) - XOff;
-    AdjustForTiling(RepeatD, ARect.Left, ARect.Right, BW, X, X2);
-  end;
-  with PRec[2] do
-  begin
-    Y := GetPositionInRange(PosType, Value, IH - BH) - YOff;
-    AdjustForTiling(RepeatD, ARect.Top, ARect.Bottom, BH, Y, Y2);
-  end;
-end;
-
 {----------------DrawBackground}
 
 procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
@@ -2095,6 +1964,12 @@ end;
 
 { ThtImage }
 
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure ThtImage.BeginUse;
+begin
+  Inc(UsageCount);
+end;
+
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtImage.Create(Tr: TTransparency);
 begin
@@ -2104,7 +1979,7 @@ end;
 
 destructor ThtImage.Destroy;
 begin
-  Assert(UsageCount = 0, 'Freeing Image still in use');
+  Assert(UsageCount = 0, 'Freeing Image that''s still in use.');
   inherited Destroy;
 end;
 
@@ -2124,6 +1999,13 @@ begin
     end;
     Inc(Y, H);
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure ThtImage.EndUse;
+begin
+  Dec(UsageCount);
+  Assert(UsageCount >= 0, 'Cache image usage count < 0');
 end;
 
 //-- BG ---------------------------------------------------------- 10.04.2011 --
@@ -2203,13 +2085,19 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 function ThtBitmapImage.GetImageHeight: Integer;
 begin
-  Result := Bitmap.Height;
+  if Bitmap <> nil then
+    Result := Bitmap.Height
+  else
+    Result := 0;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 function ThtBitmapImage.GetImageWidth: Integer;
 begin
-  Result := Bitmap.Width;
+  if Bitmap <> nil then
+    Result := Bitmap.Width
+  else
+    Result := 0;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -2462,11 +2350,7 @@ var
 begin
   I := IndexOf(S);
   if I >= 0 then
-    with Objects[I] do
-    begin
-      Dec(UsageCount);
-      Assert(UsageCount >= 0, 'Cache image usage count < 0');
-    end;
+    Objects[I].EndUse;
 end;
 
 procedure ThtImageCache.IncUsage(const S: ThtString);
@@ -2475,7 +2359,7 @@ var
 begin
   I := IndexOf(S);
   if I >= 0 then
-    Inc(Objects[I].UsageCount);
+    Objects[I].BeginUse;
 end;
 
 procedure ThtImageCache.SetCacheCount(N: Integer);

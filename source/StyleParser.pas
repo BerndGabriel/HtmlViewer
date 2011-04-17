@@ -32,12 +32,13 @@ interface
 uses
   Graphics, Classes, SysUtils, Variants,
   //
-  UrlSubs,
+//  UrlSubs,
   Parser,
   HtmlBuffer,
   HtmlGlobals,
   HtmlSymbols,
-  HtmlStyles;
+  HtmlStyles,
+  StyleTypes;
 
 type
   EParseError = class(Exception);
@@ -46,14 +47,9 @@ type
   // http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html
   // http://www.w3.org/TR/2010/WD-CSS2-20101207/grammar.html
 
-  TGetDocumentEvent = function(Sender: TObject; const Url: ThtString): TBuffer of object;
-
-  THtmlStyleParser = class
+  THtmlStyleParser = class(TCustomParser)
   private
     FOrigin: TPropertyOrigin;
-    FDoc: TBuffer;
-    FLinkPath: ThtString;
-    FOnGetDocument: TGetDocumentEvent;
     FSupportedMediaTypes: TMediaTypes;
     //
     LCh: ThtChar;
@@ -64,9 +60,6 @@ type
     LIdentPos, LMediaPos, LWhiteSpacePos, LSelectorPos: Integer;
     procedure checkPosition(var Pos: Integer);
 
-    // AddPath() is used to form an absolute path name for imported style sheets by prefixing relative names with LinkPath.
-    function AddPath(const S: ThtString): ThtString;
-    // AddPath() is used to form an absolute path name for property value by prefixing relative names with LinkPath.
     // The result is enclose in 'url(' and ')'.
     function AddUrlPath(const S: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 
@@ -78,7 +71,6 @@ type
     procedure SkipWhiteSpace;
 
     // token retrieving methods. They do not skip trailing white spaces.
-    function GetDocument(Url: ThtString): TBuffer;
     function GetIdentifier(out Identifier: ThtString): Boolean;
     function GetString(out Str: ThtString): Boolean;
     function GetUrl(out Url: ThtString): Boolean;
@@ -109,8 +101,8 @@ type
     property SupportedMediaTypes: TMediaTypes read FSupportedMediaTypes write setSupportedMediaTypes;
     property MediaTypes: TMediaTypes read FMediaTypes write setMediaTypes;
     // used to retrieve imported style sheets. If OnGetDocument not given tries to load file from local file system.
-    property LinkPath: ThtString read FLinkPath write FLinkPath;
-    property OnGetDocument: TGetDocumentEvent read FOnGetDocument write FOnGetDocument;
+    property LinkPath;
+    property OnGetBuffer;
   end;
 
 implementation
@@ -129,31 +121,6 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
-begin
-  if mtAll in MediaTypes then
-    Result := AllMediaTypes
-  else
-    Result := MediaTypes;
-end;
-
-{----------------AddPath}
-function THtmlStyleParser.AddPath(const S: ThtString): ThtString;
-begin
-  if (Pos('://', FLinkPath) > 0) then
-    if not IsFullUrl(S) then
-      Result := CombineURL(FLinkPath, S)
-    else
-      Result := S
-  else
-  begin
-    Result := HTMLToDos(S);
-    if (Pos(':', Result) <> 2) and (Pos('\\', Result) <> 1) then
-      Result := FLinkPath + Result;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 20.03.2011 --
 function THtmlStyleParser.AddUrlPath(const S: ThtString): ThtString;
 {for <link> styles, the path is relative to that of the stylesheet directory and must be added now}
 begin
@@ -166,19 +133,17 @@ procedure THtmlStyleParser.checkPosition(var Pos: Integer);
   begin
   end;
 begin
-  if Pos = FDoc.Position then
+  if Pos = Doc.Position then
     stopHere();
-  Pos := FDoc.Position;
+  Pos := Doc.Position;
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --
 constructor THtmlStyleParser.Create(Origin: TPropertyOrigin; Doc: TBuffer;
   const LinkPath: ThtString);
 begin
-  inherited Create;
+  inherited Create(Doc, LinkPath);
   FOrigin := Origin;
-  FDoc := Doc;
-  FLinkPath := LinkPath;
   SupportedMediaTypes := AllMediaTypes;
 end;
 
@@ -186,7 +151,7 @@ end;
 //-- BG ---------------------------------------------------------- 14.03.2011 --
 procedure THtmlStyleParser.GetCh;
 begin
-  LCh := FDoc.NextChar;
+  LCh := Doc.NextChar;
   case LCh of
     #13, #12:
       LCh := LfChar;
@@ -195,7 +160,7 @@ begin
       LCh := SpcChar;
 
     '/':
-      if FDoc.PeekChar = '*' then
+      if Doc.PeekChar = '*' then
       begin
         SkipComment;
         LCh := SpcChar;
@@ -206,33 +171,8 @@ end;
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 procedure THtmlStyleParser.GetChSkipWhiteSpace;
 begin
-  LCh := FDoc.NextChar;
+  LCh := Doc.NextChar;
   SkipWhiteSpace;
-end;
-
-//-- BG ---------------------------------------------------------- 17.03.2011 --
-function THtmlStyleParser.GetDocument(Url: ThtString): TBuffer;
-var
-  Filename: ThtString;
-  Stream: TStream;
-begin
-  if assigned(FOnGetDocument) then
-    Result := FOnGetDocument(Self, Url)
-  else
-  begin
-    Filename := HTMLToDos(Url);
-    if FileExists(Filename) then
-    begin
-      Stream := TFileStream.Create(Filename, fmOpenRead + fmShareDenyWrite);
-      try
-        Result := TBuffer.Create(Stream, Filename);
-      finally
-        Stream.Free;
-      end;
-    end
-    else
-      Result := nil;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 13.03.2011 --
@@ -253,7 +193,7 @@ begin
 
     '-':
     begin
-      case FDoc.PeekChar of
+      case Doc.PeekChar of
         '0'..'9', '-':
           Result := False;
       else
@@ -439,12 +379,12 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
     Media: TMediaTypes;
     Ruleset: TRuleset;
   begin
-    Media := GetMediaTypes;
+    Media := TranslateMediaTypes(GetMediaTypes);
     case LCh of
       '{':
       begin
         GetChSkipWhiteSpace;
-        MediaTypes := Media;
+        MediaTypes := Media * SupportedMediaTypes;
         try
           repeat
             case LCh of
@@ -457,9 +397,8 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
               EofChar, '<':
                 break;
             else
-              if not ParseRuleset(Ruleset) then
-                break;
-              Rulesets.Add(Ruleset);
+              if ParseRuleset(Ruleset) then
+                Rulesets.Add(Ruleset);
             end;
           until False;
         finally
@@ -495,10 +434,10 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
         if Media <> [] then
         begin
           LinkUrl := AddPath(Url);
-          Inclusion := GetDocument(LinkUrl);
+          Inclusion := GetBuffer(LinkUrl);
           if Inclusion <> nil then
             try
-              Parser := THtmlStyleParser.Create(FOrigin, Inclusion, FLinkPath);
+              Parser := THtmlStyleParser.Create(FOrigin, Inclusion, LinkPath);
               Parser.SupportedMediaTypes := Media;
               try
                 Parser.ParseStyleSheet(Rulesets);
@@ -535,8 +474,8 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
         Info := GetCharSetCodePageInfo(Charset);
         if Info <> nil then
         begin
-          FDoc.CharSet := Info.CharSet;
-          FDoc.CodePage := Info.CodePage;
+          Doc.CharSet := Info.CharSet;
+          Doc.CodePage := Info.CodePage;
         end;
         SkipWhiteSpace;
       end;
@@ -567,7 +506,21 @@ begin
     else if AtRule = 'import' then
       DoImport
     else if AtRule = 'charset' then
-      DoCharset;
+      DoCharset
+    else if LCh = '{' then
+      repeat
+        GetChSkipWhiteSpace;
+        case LCh of
+          '}':
+          begin
+            GetChSkipWhiteSpace;
+            break;
+          end;
+          
+          EofChar:
+            break;
+        end;
+      until False;
   end;
 end;
 
@@ -673,9 +626,6 @@ function THtmlStyleParser.ParseExpression(out Terms: ThtStringArray): Boolean;
     begin
       Level := 1;
       repeat
-        SetLength(Term, Length(Term) + 1);
-        Term[Length(Term)] := LCh;
-        GetCh;
         case LCh of
           ';', '}', '!', ',', EofChar:
             break;
@@ -686,6 +636,7 @@ function THtmlStyleParser.ParseExpression(out Terms: ThtStringArray): Boolean;
             if not Result then
               exit;
             Term := Term + Str;
+            continue;
           end;
 
           ')':
@@ -702,6 +653,9 @@ function THtmlStyleParser.ParseExpression(out Terms: ThtStringArray): Boolean;
 
           '(': Inc(Level);
         end;
+        SetLength(Term, Length(Term) + 1);
+        Term[Length(Term)] := LCh;
+        GetCh;
       until False;
       Result := Length(Term) > 0;
     end;
@@ -713,7 +667,7 @@ function THtmlStyleParser.ParseExpression(out Terms: ThtStringArray): Boolean;
     repeat
       case LCh of
         '+', '-':
-          case FDoc.PeekChar of
+          case Doc.PeekChar of
             '0'..'9': Result := GetTilEnd;
           else
             Result := False;
@@ -812,7 +766,7 @@ var
       // image
       if (Pos('url(', Values[I]) > 0) then
       begin
-        if FLinkPath <> '' then {path added now only for <link...>}
+        if LinkPath <> '' then {path added now only for <link...>}
           Values[I] := AddUrlPath(Values[I]);
         ProcessProperty(BackgroundImage, Values[I]);
       end
@@ -941,7 +895,7 @@ var
     begin
       if Pos('url(', Values[I]) > 0 then
       begin
-        if FLinkPath <> '' then {path added now only for <link...>}
+        if LinkPath <> '' then {path added now only for <link...>}
           Values[I] := AddPath(Values[I]);
         ProcessProperty(ListStyleImage, Values[I]);
       end
@@ -1219,9 +1173,8 @@ begin
       '<', EofChar: break;
     else
       FCanImport := False;
-      if not ParseRuleset(Ruleset) then
-        break;
-      Rulesets.Add(Ruleset);
+      if ParseRuleset(Ruleset) then
+        Rulesets.Add(Ruleset);
     end;
     FCanCharset := False;
   until False;
@@ -1277,13 +1230,13 @@ procedure THtmlStyleParser.SkipComment;
 var
   LastCh: ThtChar;
 begin
-  LCh := FDoc.NextChar; // skip '/'
-  LCh := FDoc.NextChar; // skip '*'
+  LCh := Doc.NextChar; // skip '/'
+  LCh := Doc.NextChar; // skip '*'
   repeat
     LastCh := LCh;
-    LCh := FDoc.NextChar;
+    LCh := Doc.NextChar;
     if LCh = EofChar then
-      raise EParseError.Create('Unterminated comment in style file: ' + FDoc.Name);
+      raise EParseError.Create('Unterminated comment in style file: ' + Doc.Name);
   until (LCh = '/') and (LastCh = '*');
 end;
 
@@ -1300,14 +1253,14 @@ begin
       CrChar: ;
 
       '/':
-        if FDoc.PeekChar = '*' then
+        if Doc.PeekChar = '*' then
           SkipComment
         else
           break;
     else
       break;
     end;
-    LCh := FDoc.NextChar;
+    LCh := Doc.NextChar;
   until False;
 end;
 

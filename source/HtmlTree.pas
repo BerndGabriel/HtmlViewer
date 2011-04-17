@@ -39,7 +39,8 @@ uses
   HtmlBuffer,
   HtmlStyles,
   HtmlSymbols,
-  StyleParser;
+  StyleParser,
+  StyleTypes;
 
 //------------------------------------------------------------------------------
 // THtmlAttribute is class for all attributes of all HTML elements
@@ -74,8 +75,11 @@ type
     function ToString: ThtString;
     procedure Add(Attribute: THtmlAttribute);
     procedure Assign(const List: THtmlAttributeList);
-    procedure Init;
     procedure Clear;
+{$ifdef UseEnhancedRecord}
+    procedure Free;
+{$endif}
+    procedure Init;
     procedure Remove(Attribute: THtmlAttribute);
     property First: THtmlAttribute read FFirst;
     property Last: THtmlAttribute read FLast;
@@ -99,8 +103,11 @@ type
   public
     function IsEmpty: Boolean;
     procedure Add(Element: THtmlElement);
-    procedure Init;
     procedure Clear;
+{$ifdef UseEnhancedRecord}
+    procedure Free;
+{$endif}
+    procedure Init;
     procedure Remove(Element: THtmlElement);
     property First: THtmlElement read FFirst;
     property Last: THtmlElement read FLast;
@@ -143,9 +150,12 @@ type
     procedure AfterConstruction; override;
 {$endif}
     procedure BeforeDestruction; override;
+    // html attributes
     function FindAttribute(Attribute: THtmlAttributeSymbol; out Value: ThtString): Boolean; virtual;
-    function IsMatching(Selector: TStyleSelector): Boolean;
     procedure SetAttribute(AttrSymbol: THtmlAttributeSymbol; const Value: ThtString); virtual;
+    // css styles
+    function IsMatching(Selector: TStyleSelector): Boolean;
+    //
 {$ifdef UseEnhancedRecord}
     property FirstChild: THtmlElement read FChildren.FFirst;
     property LastChild: THtmlElement read FChildren.FLast;
@@ -561,6 +571,14 @@ begin
   end;
 end;
 
+{$ifdef UseEnhancedRecord}
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure THtmlAttributeList.Free;
+begin
+  Clear;
+end;
+{$endif}
+
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 function THtmlAttributeList.Find(Name: ThtString; out Attribute: THtmlAttribute): Boolean;
 var
@@ -695,11 +713,10 @@ begin
 {$else}
   FChildren := nil;
   Children.Free;
-
+{$endif}
   FAttributeProperties.Free;
   FStyleProperties.Free;
   FOtherAttributes.Free;
-{$endif}
   inherited;
 end;
 
@@ -741,7 +758,7 @@ end;
 //-- BG ---------------------------------------------------------- 03.04.2011 --
 function THtmlElement.GetAttribute(Symbol: THtmlAttributeSymbol): ThtString;
 begin
-
+  //TODO -1 -oBG, 16.04.2011: implement
 end;
 
 {$ifdef UseEnhancedRecord}
@@ -994,6 +1011,14 @@ begin
     Element.Free;
   end;
 end;
+
+{$ifdef UseEnhancedRecord}
+//-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure THtmlElementList.Free;
+begin
+  Clear;
+end;
+{$endif}
 
 //-- BG ---------------------------------------------------------- 03.04.2011 --
 procedure THtmlElementList.Init;
