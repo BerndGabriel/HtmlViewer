@@ -3283,7 +3283,7 @@ var
   AMarginHeight, AMarginWidth: Integer;
   LiBlock: TBlockLi;
   LiSection: TSection;
-  Ch: ThtChar;
+//  Ch: ThtChar;
 begin
   LiBlock := nil;
   LiSection := nil;
