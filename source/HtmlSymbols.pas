@@ -40,6 +40,16 @@ uses
   HtmlGlobals;
 
 type
+
+  ThtScrollInfo = record
+    BWidth: Integer;   // single border width of paintpanel
+    BWidth2: Integer;  // double border width of paintpanel
+    HWidth: Integer;   // width of paintpanel
+    VHeight: Integer;  // height of paintpanel
+    HBar: Boolean;     // show horizontal scrollbar
+    VBar: Boolean;     // show vertical scrollbar
+  end;
+
   THtmlLinkType = (
     ltUnknown,
     ltAlternate,
@@ -118,6 +128,7 @@ type
     DLSy,         DLEndSy,
     DTSy,         DTEndSy,
     EmSy,         EmEndSy,
+    EmbedSy,      EmbedEndSy,     // extension, since12 
     FieldsetSy,   FieldsetEndSy,
     FontSy,       FontEndSy,
     FormSy,       FormEndSy,
@@ -147,6 +158,7 @@ type
     MenuSy,       MenuEndSy,
     MetaSy,
     NoBrSy,       NoBrEndSy,      // extension
+    NoEmbedSy,    NoEmbedEndSy,   // extension, since12
     NoFramesSy,   NoFramesEndSy,
     NoScriptSy,   NoScriptEndSy,  // since12
     ObjectSy,     ObjectEndSy,

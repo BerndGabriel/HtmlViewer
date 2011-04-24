@@ -25,7 +25,7 @@ are covered by separate copyright notices located in those modules.
 
 {$I htmlcons.inc}
 
-unit HtmlTree;
+unit HtmlElements;
 
 interface
 
@@ -302,7 +302,7 @@ const
 
   ButtonExcludedElements = FormControlElements + [ASy, FormSy, IsIndexSy, FieldsetSy, IFrameSy];
 
-  CElementDescriptions: array [1..98] of THtmlElementDescription = (
+  CElementDescriptions: array [1..100] of THtmlElementDescription = (
     (Name: 'A';           Symbol: ASy;          Content: InlineElements;  EndSym: AEndSy),
     (Name: 'ABBR';        Symbol: AbbrSy;       Content: InlineElements;  EndSym: AbbrEndSy),     // since12
     (Name: 'ACRONYM';     Symbol: AcronymSy;    Content: InlineElements;  EndSym: AcronymEndSy),  // since12
@@ -333,6 +333,7 @@ const
     (Name: 'DL';          Symbol: DLSy;         Content: [DtSy, DdSy]; EndSym: DLEndSy),
     (Name: 'DT';          Symbol: DTSy;         Content: InlineElements;  EndSym: DTEndSy),
     (Name: 'EM';          Symbol: EmSy;         Content: InlineElements;  EndSym: EmEndSy),
+    (Name: 'EMBED';       Symbol: EmbedSy;      Content: FlowElements;  EndSym: EmbedEndSy),  // extension, since12
     (Name: 'FIELDSET';    Symbol: FieldsetSy;   Content: FlowElements + [TextSy, LegendSy];  EndSym: FieldsetEndSy),
     (Name: 'FONT';        Symbol: FontSy;       Content: InlineElements;  EndSym: FontEndSy),
     (Name: 'FORM';        Symbol: FormSy;       Content: FlowElements - [FormSy];  EndSym: FormEndSy),
@@ -361,6 +362,7 @@ const
     (Name: 'MENU';        Symbol: MenuSy;       Content: [LiSy];  EndSym: MenuEndSy),
     (Name: 'META';        Symbol: MetaSy;       EndSym: NoEndSy),
     (Name: 'NOBR';        Symbol: NoBrSy;       Content: InlineElements;  EndSym: NoBrEndSy),       // extension
+    (Name: 'NOEMBED';     Symbol: NoEmbedSy;    Content: FlowElements;  EndSym: NoEmbedEndSy),      // extension, since12
     (Name: 'NOFRAMES';    Symbol: NoFramesSy;   Content: FlowElements;  EndSym: NoFramesEndSy),
     (Name: 'NOSCRIPT';    Symbol: NoScriptSy;   Content: FlowElements;  EndSym: NoScriptEndSy), // since12
     (Name: 'OBJECT';      Symbol: ObjectSy;     Content: FlowElements + [ParamSy];  EndSym: ObjectEndSy),
@@ -676,11 +678,6 @@ end;
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 procedure THtmlElement.AddChild(Child: THtmlElement);
 begin
-{$ifdef UseEnhancedRecord}
-{$else}
-  if FChildren = nil then
-    FChildren := THtmlElementList.Create;
-{$endif}
   FChildren.Add(Child);
 end;
 
@@ -735,10 +732,6 @@ end;
 //-- BG ---------------------------------------------------------- 26.03.2011 --
 procedure THtmlElement.ExtractChild(Child: THtmlElement);
 begin
-{$ifdef UseEnhancedRecord}
-{$else}
-  if FChildren <> nil then
-{$endif}
   FChildren.Remove(Child);
 end;
 

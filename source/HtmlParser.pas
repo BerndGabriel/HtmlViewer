@@ -41,10 +41,10 @@ uses
   //
   HtmlBuffer,
   HtmlDocument,
+  HtmlElements,
   HtmlGlobals,
   HtmlStyles,
   HtmlSymbols,
-  HtmlTree,
   Parser,
   StyleParser,
   StyleTypes;
@@ -55,7 +55,6 @@ const
 type
   TIncludeEvent = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer) of object;
   TProgressEvent = procedure (Sender: TObject; Position, Maximum: Integer) of object;
-
 
 //------------------------------------------------------------------------------
 // parser
@@ -123,7 +122,6 @@ type
     LCToken: THtmlToken;
 
     // events
-    FOnGetBuffer: TGetBufferEvent;
     FOnInclude: TIncludeEvent;
     FOnProgress: TProgressEvent;
 

@@ -30,12 +30,13 @@ unit HtmlBoxes;
 interface
 
 uses
-  Windows, Graphics, Classes,
+  Windows, Graphics, Classes, Controls, StdCtrls,
   //
+  HtmlControls,
   HtmlDraw,
+  HtmlElements,
   HtmlGlobals,
   HtmlImages,
-  HtmlTree,
   StyleTypes;
 
 type
@@ -77,33 +78,46 @@ type
     // content
     FPadding: TRectIntegers;
     FAlignment: TAlignment;
-    // text
+    // content: text
     FText: ThtString;
     FFont: TFont;
-    // image
+    // content: image
     FImage: ThtImage;
     FTiled: Boolean;
     FTileWidth: Integer;
     FTileHeight: Integer;
     procedure SetImage(const Value: ThtImage);
+    function GetContentRect: TRect;
+    function GetHeight: Integer;
+    function GetWidth: Integer;
   protected
     function Clipping: Boolean;
-    property Parent: THtmlBox read FParent;
+    function IsVisible: Boolean; virtual;
+    procedure AddChild(Child: THtmlBox);
+    procedure ExtractChild(Child: THtmlBox);
+    procedure SetParent(const Value: THtmlBox);
+    property Parent: THtmlBox read FParent write SetParent;
     property Prev: THtmlBox read FPrev;
     property Next: THtmlBox read FNext;
     property Children: THtmlBoxList read FChildren;
   public
+    constructor Create(Owner: TControl; ParentBox: THtmlBox);
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
     //
-    procedure Paint(Canvas: TCanvas); virtual;
+    procedure Paint(Canvas: TScalingCanvas); virtual;
+    procedure Resized; virtual;
     property BoundsRect: TRect read FBounds write FBounds;
+    property Height: Integer read GetHeight;
+    property Width: Integer read GetWidth;
+    property Visible: Boolean read IsVisible;
     //
     property Margins: TRectIntegers read FMargins write FMargins;
     property BorderWidths: TRectIntegers read FBorderWidths write FBorderWidths;
     property BorderColors: TRectColors read FBorderColors write FBorderColors;
     property BorderStyles: TRectStyles read FBorderStyles write FBorderStyles;
     property Color: TColor read FBackgroundColor write FBackgroundColor;
+    property ContentRect: TRect read GetContentRect;
     property Padding: TRectIntegers read FPadding write FPadding;
     //
     property Alignment: TAlignment read FAlignment write FAlignment;
@@ -115,12 +129,84 @@ type
     property TileWidth: Integer read FTileWidth write FTileWidth;
   end;
 
-  THtmlAnonymous = class(THtmlBox)
+//------------------------------------------------------------------------------
+// THtmlControlBox
+//------------------------------------------------------------------------------
 
+  THtmlControlBox = class(THtmlBox)
+  protected
+    function GetControl: TControl; virtual; abstract;
+    function IsVisible: Boolean; override;
+  public
+    procedure Resized; override;
+    property Control: TControl read GetControl;
   end;
 
-  THtmlFrame = class(THtmlBox)
+//------------------------------------------------------------------------------
+// THtmlScrollControl
+//------------------------------------------------------------------------------
 
+  THtmlScrollControl = class(TCustomHtmlScrollBox)
+  private
+    FBox: THtmlBox;
+  protected
+    function GetContentHeight: Integer; override;
+    function GetContentWidth: Integer; override;
+    procedure Init(Box: THtmlBox);
+    procedure Paint; override;
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlFramesetBox
+//------------------------------------------------------------------------------
+
+  THtmlFramesetControl = class(THtmlScrollControl)
+  end;
+
+  THtmlFramesetBox = class(THtmlControlBox)
+  private
+    FControl: THtmlFramesetControl;
+  protected
+    function GetControl: TControl; override;
+  public
+    constructor Create(Owner: TControl; ParentBox: THtmlBox);
+    property Control: THtmlFramesetControl read FControl;
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlBodyBox
+//------------------------------------------------------------------------------
+
+  THtmlBodyControl = class(THtmlScrollControl)
+  end;
+
+  THtmlBodyBox = class(THtmlControlBox)
+  private
+    FControl: THtmlBodyControl;
+  protected
+    function GetControl: TControl; override;
+  public
+    constructor Create(Owner: TControl; ParentBox: THtmlBox);
+    property Control: THtmlBodyControl read FControl;
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlFormControlBox
+//------------------------------------------------------------------------------
+//
+//  THtmlFormControlBox = class(THtmlBox)
+//  protected
+//    function GetControl: TWinControl; virtual; abstract;
+//  public
+//    constructor Create(Owner: TControl; ParentBox: THtmlBox);
+//    property Control: TWinControl read GetControl;
+//  end;
+//
+//------------------------------------------------------------------------------
+// THtmlAnonymousBox
+//------------------------------------------------------------------------------
+
+  THtmlAnonymousBox = class(THtmlBox)
   end;
 
 implementation
@@ -211,6 +297,12 @@ end;
 
 { THtmlBox }
 
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlBox.AddChild(Child: THtmlBox);
+begin
+  FChildren.Add(Child);
+end;
+
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 procedure THtmlBox.AfterConstruction;
 begin
@@ -241,8 +333,47 @@ begin
   Result := False;
 end;
 
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+constructor THtmlBox.Create(Owner: TControl; ParentBox: THtmlBox);
+begin
+  inherited Create;
+  Parent := ParentBox;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlBox.ExtractChild(Child: THtmlBox);
+begin
+  FChildren.Remove(Child);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlBox.GetContentRect: TRect;
+begin
+  DeflateRect(Result, BoundsRect, Margins);
+  DeflateRect(Result, BorderWidths);
+  DeflateRect(Result, Padding);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlBox.GetHeight: Integer;
+begin
+  Result := FBounds.Bottom - FBounds.Top;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlBox.GetWidth: Integer;
+begin
+  Result := FBounds.Right- FBounds.Left;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlBox.IsVisible: Boolean;
+begin
+  Result := (FParent = nil) or (FParent.Visible); 
+end;
+
 //-- BG ---------------------------------------------------------- 04.04.2011 --
-procedure THtmlBox.Paint(Canvas: TCanvas);
+procedure THtmlBox.Paint(Canvas: TScalingCanvas);
 
   procedure DrawTestOutline(const Rect: TRect);
   begin
@@ -252,12 +383,15 @@ procedure THtmlBox.Paint(Canvas: TCanvas);
   end;
 
 var
-  Rect: TRect;
+  Rect, ScrRect: TRect;
   ContentWidth, ContentHeight: Integer;
   Child: THtmlBox;
   Org, Tile, TiledEnd: TPoint;
   Flags, ContentRegion, ExistingRegion, CombinedRegionResult: Integer;
 begin
+  if not Visible then
+    exit;
+
   DrawTestOutline(BoundsRect);
   DeflateRect(Rect, BoundsRect, Margins);
 
@@ -272,7 +406,9 @@ begin
   ExistingRegion := 0;
   if Clipping or Tiled then
   begin
-    ContentRegion := CreateRectRgnIndirect(Rect);
+    ScrRect.TopLeft := Canvas.ToWindowUnits(Rect.TopLeft);
+    ScrRect.BottomRight := Canvas.ToWindowUnits(Rect.BottomRight);
+    ContentRegion := CreateRectRgnIndirect(ScrRect);
     ExistingRegion := GetClipRegion(Canvas);
     if ExistingRegion <> 0 then
       CombinedRegionResult := CombineRgn(ContentRegion, ContentRegion, ExistingRegion, RGN_AND);
@@ -356,6 +492,12 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlBox.Resized;
+begin
+// override me
+end;
+
 //-- BG ---------------------------------------------------------- 16.04.2011 --
 procedure THtmlBox.SetImage(const Value: ThtImage);
 begin
@@ -367,6 +509,112 @@ begin
     if FImage <> nil then
       FImage.BeginUse;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlBox.SetParent(const Value: THtmlBox);
+begin
+  if FParent <> Value then
+  begin
+    if FParent <> nil then
+      FParent.ExtractChild(Self);
+    FParent := Value;
+    if FParent <> nil then
+      FParent.AddChild(Self);
+  end;
+end;
+
+{ THtmlControlBox }
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlControlBox.IsVisible: Boolean;
+begin
+  Result := GetControl.Visible and inherited IsVisible;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlControlBox.Resized;
+begin
+  inherited;
+  Control.BoundsRect := ContentRect;
+end;
+
+{ THtmlScrollControl }
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlScrollControl.GetContentHeight: Integer;
+begin
+  Result := FBox.Height;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlScrollControl.GetContentWidth: Integer;
+begin
+  Result := FBox.Width;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlScrollControl.Init(Box: THtmlBox);
+
+  function GetParent(C: TComponent): TWinControl;
+  begin
+    while C <> nil do
+    begin
+      if C is TWinControl then
+      begin
+        Result := TWinControl(C);
+        exit;
+      end;
+      C := C.Owner;
+    end;
+    Result := nil;
+  end;
+
+begin
+  FBox := Box;
+//  Visible := False;
+//  BoundsRect := Box.ContentRect;
+  Parent := GetParent(Owner);
+  Align := alClient;
+  ScrollBars := ssBoth;
+end;
+
+procedure THtmlScrollControl.Paint;
+begin
+  inherited;
+  FBox.Paint(Canvas);
+end;
+
+{ THtmlFramesetBox }
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+constructor THtmlFramesetBox.Create(Owner: TControl; ParentBox: THtmlBox);
+begin
+  inherited; //Create(Owner, ParentBox);
+  FControl := THtmlFramesetControl.Create(Owner);
+  FControl.Init(Self);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlFramesetBox.GetControl: TControl;
+begin
+  Result := FControl;
+end;
+
+{ THtmlBodyBox }
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+constructor THtmlBodyBox.Create(Owner: TControl; ParentBox: THtmlBox);
+begin
+  inherited; //Create(Owner, ParentBox);
+  FControl := THtmlBodyControl.Create(Owner);
+  FControl.Init(Self);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function THtmlBodyBox.GetControl: TControl;
+begin
+  Result := FControl;
 end;
 
 end.

@@ -41,13 +41,15 @@ requires
   xmlrtl;
 
 contains
-  HtmlTree in '..\source\HtmlTree.pas',
+  HtmlElements in '..\source\HtmlElements.pas',
   StyleParser in '..\source\StyleParser.pas',
   HtmlDocument in '..\source\HtmlDocument.pas',
   HtmlParser in '..\source\HtmlParser.pas',
   HtmlViewer in '..\source\HtmlViewer.pas',
   HtmlDraw in '..\source\HtmlDraw.pas',
   HtmlBoxes in '..\source\HtmlBoxes.pas',
-  HtmlRenderer in '..\source\HtmlRenderer.pas';
+  HtmlRenderer in '..\source\HtmlRenderer.pas',
+  BegaClasses in '..\source\BegaClasses.pas',
+  HtmlControls in '..\source\HtmlControls.pas';
 
 end.

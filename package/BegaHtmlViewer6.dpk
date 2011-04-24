@@ -28,18 +28,20 @@ package BegaHtmlViewer6;
 requires
   rtl,
   vcl,
-  TntUnicodeVcl_R60;
+  TntUnicodeVcl_R60,
+  vcljpg,
+  FrameViewer6;
 
 contains
-  HtmlBuffer in '..\source\HtmlBuffer.pas',
   HtmlDocument in '..\source\HtmlDocument.pas',
-  HtmlGlobals in '..\source\HtmlGlobals.pas',
   HtmlParser in '..\source\HtmlParser.pas',
-  HtmlStyles in '..\source\HtmlStyles.pas',
-  HtmlSymbols in '..\source\HtmlSymbols.pas',
-  HtmlTree in '..\source\HtmlTree.pas',
-  Parser in '..\source\Parser.pas',
   StyleParser in '..\source\StyleParser.pas',
-  URLSubs in '..\source\URLSubs.pas';
+  BegaClasses in '..\source\BegaClasses.pas',
+  HtmlBoxes in '..\source\HtmlBoxes.pas',
+  HtmlControls in '..\source\HtmlControls.pas',
+  HtmlDraw in '..\source\HtmlDraw.pas',
+  HtmlElements in '..\source\HtmlElements.pas',
+  HtmlRenderer in '..\source\HtmlRenderer.pas',
+  HtmlViewer in '..\source\HtmlViewer.pas';
 
 end.

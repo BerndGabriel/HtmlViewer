@@ -30,13 +30,48 @@ unit HtmlRenderer;
 interface
 
 uses
-  HtmlTree,
-  HtmlDocument,
+  Classes, Controls, Contnrs,
+  BegaClasses,
   HtmlBoxes,
+  HtmlDocument,
+  HtmlElements,
   HtmlStyles,
   StyleTypes;
 
 type
+
+//------------------------------------------------------------------------------
+// THtmlControlOfElementMap remembers controls that are used to render elements.
+//------------------------------------------------------------------------------
+// Some elements like the user interaction elements button, input, etc. and
+// objects like frames and iframes are represented by controls of the underlying
+// visual component library (VCL, LCL, ...). These must be reused by consecutive
+// renderings. This map supports one control per element.
+//------------------------------------------------------------------------------
+
+  THtmlControlOfElementMap = class(TBegaCustomMap)
+  private
+    function GetKey(Index: Integer): THtmlElement;
+    function GetValue(Index: Integer): TControl;
+  public
+    function Get(Key: THtmlElement): TControl; {$ifdef UseInline} inline; {$endif}
+    function Put(Key: THtmlElement; Control: TControl): TControl; {$ifdef UseInline} inline; {$endif}
+    function Remove(Key: THtmlElement): TControl; {$ifdef UseInline} inline; {$endif}
+    property Elements[Index: Integer]: THtmlElement read GetKey;
+    property Controls[Index: Integer]: TControl read GetValue;
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlRenderedDocument holds the rendered html document.
+//------------------------------------------------------------------------------
+// It is a collection of html boxes. A html element produces null or more
+// html boxes when rendered.
+//
+// An element with Display:none produces no box at all.
+// A non empty block element produces 1 box.
+// A non empty inline element produces 1 or more boxes depending on line wraps
+// and space left by aligned elements.
+//------------------------------------------------------------------------------
 
   THtmlRenderedDocument = class
   private
@@ -44,18 +79,37 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    property Boxes: THtmlBoxList read FBoxes;
   end;
+
+//------------------------------------------------------------------------------
+// THtmlRenderer renders html documents.
+//------------------------------------------------------------------------------
+// Given source document, media type, destination area, and optionally (if re-
+// rendered) the used visual controls, it renders the document for the specified
+// media and area.
+//------------------------------------------------------------------------------
+
+  TMediaCapabilities = set of (mcFrames, mcScript, mcEmbed);
 
   THtmlRenderer = class
   private
     FDocument: THtmlDocument; // the source to render to destination
     FMediaType: TMediaType;   // media type of destination
+    FCapabilities: TMediaCapabilities;
     FWidth: Integer;          // width of destination in pixels
-    FHeight: Integer;          // height of destination in pixels
+    FHeight: Integer;         // height of destination in pixels
+    FControls: THtmlControlOfElementMap;
     function getResultingProperties(Element: THtmlElement): TResultingPropertyMap;
+    procedure SetControls(const Value: THtmlControlOfElementMap);
   public
     constructor Create(Document: THtmlDocument; MediaType: TMediaType; Width, Height: Integer);
     function Rendered: THtmlRenderedDocument;
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
+    property ControlOfElementMap: THtmlControlOfElementMap read FControls write SetControls;
+    property MediaCapabilities: TMediaCapabilities read FCapabilities write FCapabilities;
+    property MediaType: TMediaType read FMediaType;
   end;
 
 implementation
@@ -63,6 +117,20 @@ implementation
 { THtmlRenderer }
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
+procedure THtmlRenderer.AfterConstruction;
+begin
+  inherited;
+  FControls := THtmlControlOfElementMap.Create;
+  FCapabilities := [mcFrames];
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+procedure THtmlRenderer.BeforeDestruction;
+begin
+  FControls.Free;
+  inherited;
+end;
+
 constructor THtmlRenderer.Create(Document: THtmlDocument; MediaType: TMediaType; Width, Height: Integer);
 begin
   inherited Create;
@@ -114,7 +182,14 @@ end;
 function THtmlRenderer.Rendered: THtmlRenderedDocument;
 begin
   Result := THtmlRenderedDocument.Create;
+  
+end;
 
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+procedure THtmlRenderer.SetControls(const Value: THtmlControlOfElementMap);
+begin
+  if FControls <> Value then
+    FControls.Assign(Value);
 end;
 
 { THtmlRenderedDocument }
@@ -135,6 +210,38 @@ begin
   FBoxes.Free;
 {$endif}
   inherited;
+end;
+
+{ THtmlControlOfElementMap }
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.Get(Key: THtmlElement): TControl;
+begin
+  Result := inherited Get(Key);
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.GetKey(Index: Integer): THtmlElement;
+begin
+  Result := inherited GetKey(Index);
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.GetValue(Index: Integer): TControl;
+begin
+  Result := inherited GetValue(Index);
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.Put(Key: THtmlElement; Control: TControl): TControl;
+begin
+  Result := inherited Put(Key, Control);
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.Remove(Key: THtmlElement): TControl;
+begin
+  Result := inherited Remove(Key);
 end;
 
 end.

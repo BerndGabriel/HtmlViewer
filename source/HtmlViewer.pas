@@ -30,11 +30,11 @@ unit HtmlViewer;
 interface
 
 uses
-  Windows, Graphics, SysUtils, Classes, Controls, ExtCtrls,
+  Windows, Graphics, Messages, SysUtils, Classes, Controls, ExtCtrls,
   //
-  HtmlDocument,
   HtmlBoxes,
-  HtmlTree;
+  HtmlDocument,
+  HtmlElements;
 
 type
 
@@ -47,7 +47,7 @@ type
     vsViewChanged
   );
 
-  TCustomHtmlViewer = class(TCustomControl)
+  TCustomHtmlViewer = class(TWinControl)
   private
     FState: THtmlViewerState;
     FOptions: THtmlViewerOptions;
@@ -60,7 +60,8 @@ type
   protected
     procedure UpdateDocument;
     procedure UpdateView;
-    procedure Paint; override;
+    procedure Resize; override;
+    procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
   public
     property HtmlDocument: THtmlDocument read FDocument write SetDocument;
     property HtmlView: THtmlBox read FView write SetView;
@@ -104,16 +105,11 @@ end;
 { TCustomHtmlViewer }
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --
-procedure TCustomHtmlViewer.Paint;
+procedure TCustomHtmlViewer.Resize;
 begin
   inherited;
   if FView <> nil then
-    FView.Paint(Canvas)
-  else
-  begin
-    Canvas.Brush.Color := Color;
-    Canvas.FillRect(ClientRect);
-  end;
+    FView.Resized;
 end;
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --
@@ -182,6 +178,15 @@ begin
     //TODO -1 -oBG, 04.04.2011: update display structure after any visually relevant changes except document changes.
 
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlViewer.WMEraseBkgnd(var Message: TWMEraseBkgnd);
+begin
+  if csDesigning in ComponentState then
+    inherited
+  else
+    Message.Result := 1;
 end;
 
 end.

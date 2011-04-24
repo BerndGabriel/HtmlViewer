@@ -35,15 +35,52 @@ uses
 type
 
 //------------------------------------------------------------------------------
-// THtmlScrollBox implements a canvas for scaleable and scrollable content
+// TScrollCanvas implements a canvas for scaleable and scrollable content
 //------------------------------------------------------------------------------
-// Content is the rectangular area Rect(0, 0, ContentWidth, ContentHeight)
-// What is painted in the THtmlScrollBox depends on its ClientRect, the Scale
-// and the ContentPosition (the point that maps to the ClientRect's origin.
+// ... and offers adequate transformation methods.
 //
-// Scaling:
+// "Window" is the rectangular area Rect(0, 0, Width, Height);
+// "Content" is the rectangular area Rect(0, 0, ContentWidth, ContentHeight)
+// "ContentPosition" is the content point that is shown at the window point (0, 0).
+// What is shown at window point(Width, Height) depends on ContentPosition and Scale.
 // A Scale > 1 enlarges the content, a Scale > 0 and < 1 shrinks the content.
 // A Scale <= 0 is not specified. Default Scale is 1.
+//------------------------------------------------------------------------------
+
+  TCustomHtmlScrollBox = class;
+
+  TScalingCanvas = class(TControlCanvas)
+  private
+    FControl: TCustomHtmlScrollBox;
+    FWinExt: Integer; // scale nominator, window units
+    FDocExt: Integer; // scale denominator, content units
+    FContentPosition: TPoint;
+    function GetScale: Double;
+    procedure SetScale(const Value: Double);
+    procedure SetContentPosition(const Value: TPoint);
+    procedure SetContentPositionLeft(const Value: Integer);
+    procedure SetContentPositionTop(const Value: Integer); // content position at viewport origin
+  public
+    constructor Create(Control: TCustomHtmlScrollBox);
+    function ToContentUnits(const WindowPoint: TPoint): TPoint; overload;
+    function ToContentUnits(WindowUnits: Integer): Integer; overload;
+    function ToWindowUnits(const ContentPoint: TPoint): TPoint; overload;
+    function ToWindowUnits(ContentUnits: Integer): Integer; overload;
+    procedure BeforePaint;
+    procedure AfterPaint;
+    property ContentPosition: TPoint read FContentPosition write SetContentPosition;
+    property ContentPositionLeft: Integer read FContentPosition.X write SetContentPositionLeft;
+    property ContentPositionTop: Integer read FContentPosition.Y write SetContentPositionTop;
+    property DocExt: Integer read FDocExt; // scale denominator, content units
+    property WinExt: Integer read FWinExt; // scale nominator, window units
+    property Scale: Double read GetScale write SetScale;
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlScrollBox implements a control with scrollbars for scaleable content.
+//------------------------------------------------------------------------------
+// All scaling transformations are implemented in TScalingCanvas.
+//
 //
 // Scrolling:
 // The ScrollIncrement determines, how many window pixels the content is scrolled.
@@ -64,15 +101,16 @@ type
 
   THtmlScrollBoxState = set of (sbsUpdating);
 
-  THtmlScrollBox = class(TCustomControl)
+  TCustomHtmlScrollBox = class(TWinControl)
   private
+    FCanvas: TScalingCanvas;
     FState: THtmlScrollBoxState;
-    FWinExt: Integer; // scale nominator, window units
-    FDocExt: Integer; // scale denominator, content units
     FScrollIncrement: Integer; // how far to scroll with arrow buttons, window units
-    FContentPosition: TPoint; // content position at viewport origin
     FScrollBars: TScrollStyle; // which scrollbars are enabled?
     FScrollInfos: ThtScrollInfos; // used by UpdateScrollbars to remember the scrollbar settings.
+    function GetContentPosition: TPoint;
+    function GetContentPositionX: Integer;
+    function GetContentPositionY: Integer;
     function GetScale: Double;
     function GetScrollInfo(Which: Integer): TScrollInfo;
     procedure SetContentPosition(const Value: TPoint);
@@ -85,19 +123,20 @@ type
     function GetContentHeight: Integer; virtual; abstract;
     function GetContentWidth: Integer; virtual; abstract;
     procedure Resize; override;
-    procedure Paint; override;
+    procedure Paint; virtual;
+    procedure PaintWindow(DC: HDC); override;
     procedure WMHScroll(var Message: TWMHScroll); message WM_HSCROLL;
+    procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
     procedure WMVScroll(var Message: TWMVScroll); message WM_VSCROLL;
-    property DocExt: Integer read FDocExt; // scale denominator, content units
-    property WinExt: Integer read FWinExt; // scale nominator, window units
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    property Canvas: TScalingCanvas read FCanvas;
   public
     constructor Create(AOwner: TComponent); override;
-    function ToContentUnits(WindowUnits: Integer): Integer;
-    function ToWindowUnits(ContentUnits: Integer): Integer;
+    destructor Destroy; override;
     property ContentHeight: Integer read GetContentHeight;
-    property ContentPosition: TPoint read FContentPosition write SetContentPosition;
-    property ContentPositionLeft: Integer read FContentPosition.X write SetContentPositionLeft;
-    property ContentPositionTop: Integer read FContentPosition.Y write SetContentPositionTop;
+    property ContentPosition: TPoint read GetContentPosition write SetContentPosition;
+    property ContentPositionLeft: Integer read GetContentPositionX write SetContentPositionLeft;
+    property ContentPositionTop: Integer read GetContentPositionY write SetContentPositionTop;
     property ContentWidth: Integer read GetContentWidth;
     property Scale: Double read GetScale write SetScale;
     property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
@@ -106,10 +145,10 @@ type
 implementation
 
 var
-  sbWidth, sbHeight: Integer;
+  sbWidth, sbHeight: Integer; // UpdateScrollBars remembers the current scrollbar sizes here.
 
 //-- BG ---------------------------------------------------------- 22.04.2011 --
-function NewPosition(const SI: TScrollInfo; var Value: Integer): Boolean;
+function ClipPosition(const SI: TScrollInfo; var Value: Integer): Boolean;
 begin
   if Value < SI.nMin then
     Value := SI.nMin
@@ -118,19 +157,38 @@ begin
   Result := Value <> SI.nPos;
 end;
 
-{ THtmlScrollBox }
+{ TScalingCanvas }
 
-//-- BG ---------------------------------------------------------- 22.04.2011 --
-constructor THtmlScrollBox.Create(AOwner: TComponent);
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TScalingCanvas.AfterPaint;
+// Resets the content/window transformation parameters.
 begin
-  inherited;
-  FScrollIncrement := 17;
-  FDocExt := 10000;
-  FWinExt := 10000;
+  SetMapMode(Handle, MM_TEXT);
+  SetWindowOrgEx(Handle, 0, 0, nil);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TScalingCanvas.BeforePaint;
+// Set the content/window transformation parameters
+begin
+  SetMapMode(Handle, MM_ISOTROPIC);
+  SetWindowOrgEx(Handle, FContentPosition.X, FContentPosition.Y, nil);
+  SetWindowExtEx(Handle, FDocExt, FDocExt, nil);
+  SetViewportExtEx(Handle, FWinExt, FWinExt, nil);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+constructor TScalingCanvas.Create(Control: TCustomHtmlScrollBox);
+begin
+  inherited Create;
+  FWinExt := 10000; // 10000 allows finer scales than currently screens have pixels.
+  FDocExt := 10000; // 10000 allows finer scales than currently screens have pixels.
+  FControl := Control;
+  inherited Control := Control;
 end;
 
 //-- BG ---------------------------------------------------------- 22.04.2011 --
-function THtmlScrollBox.GetScale: Double;
+function TScalingCanvas.GetScale: Double;
 begin
   if (FWinExt <> 0) and (FDocExt <> 0) then
     Result := FWinExt / FDocExt
@@ -138,80 +196,40 @@ begin
     Result := 1.0;
 end;
 
-//-- BG ---------------------------------------------------------- 20.04.2011 --
-function THtmlScrollBox.GetScrollInfo(Which: Integer): TScrollInfo;
-begin
-  Result.cbSize := SizeOf(TScrollInfo);
-  Result.fMask := SIF_ALL;
-  Windows.GetScrollInfo(Handle, Which, Result);
-end;
-
 //-- BG ---------------------------------------------------------- 22.04.2011 --
-procedure THtmlScrollBox.Paint;
-begin
-  SetMapMode(Canvas.Handle, MM_ISOTROPIC);
-  SetWindowOrgEx(Canvas.Handle, ContentPositionLeft, ContentPositionTop, nil);
-  SetWindowExtEx(Canvas.Handle, FDocExt, FDocExt, nil);
-  SetViewportExtEx(Canvas.Handle, FWinExt, FWinExt, nil);
-
-  Canvas.Pen.Color := clYellow;
-  Canvas.Brush.Color := clBlue;
-  Canvas.Rectangle(0, 0, ContentWidth, ContentHeight);
-  Canvas.Pen.Color := clRed;
-  Canvas.MoveTo(ContentPositionLeft - 20, ContentPositionTop);
-  Canvas.LineTo(ContentPositionLeft + 60, ContentPositionTop);
-  Canvas.MoveTo(ContentPositionLeft, ContentPositionTop - 20);
-  Canvas.LineTo(ContentPositionLeft, ContentPositionTop + 60);
-  Canvas.Pen.Color := clLime;
-  Canvas.MoveTo(300 - 20, 100);
-  Canvas.LineTo(300 + 60, 100);
-  Canvas.MoveTo(300, 100 - 20);
-  Canvas.LineTo(300, 100 + 60);
-  inherited;
-
-  SetMapMode(Canvas.Handle, MM_TEXT);
-  SetWindowOrgEx(Canvas.Handle, 0, 0, nil);
-end;
-
-//-- BG ---------------------------------------------------------- 20.04.2011 --
-procedure THtmlScrollBox.Resize;
-begin
-  inherited;
-  UpdateScrollBars;
-end;
-
-//-- BG ---------------------------------------------------------- 22.04.2011 --
-procedure THtmlScrollBox.SetContentPosition(const Value: TPoint);
+procedure TScalingCanvas.SetContentPosition(const Value: TPoint);
 begin
   if (FContentPosition.X <> Value.X) or (FContentPosition.Y <> Value.Y) then
   begin
     FContentPosition := Value;
-    UpdateScrollBars;
+    FControl.UpdateScrollBars;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.04.2011 --
-procedure THtmlScrollBox.SetContentPositionLeft(const Value: Integer);
+procedure TScalingCanvas.SetContentPositionLeft(const Value: Integer);
 begin
   if FContentPosition.X <> Value then
   begin
     FContentPosition.X := Value;
-    UpdateScrollBars;
+    FControl.UpdateScrollBars;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.04.2011 --
-procedure THtmlScrollBox.SetContentPositionTop(const Value: Integer);
+procedure TScalingCanvas.SetContentPositionTop(const Value: Integer);
 begin
   if FContentPosition.Y <> Value then
   begin
     FContentPosition.Y := Value;
-    UpdateScrollBars;
+    FControl.UpdateScrollBars;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.04.2011 --
-procedure THtmlScrollBox.SetScale(const Value: Double);
+procedure TScalingCanvas.SetScale(const Value: Double);
+// Converts the floating point value to a fraction, which is
+// used by Windows via GetWindowExtEx and GetViewportExtEx.
 var
   DocExt, WinExt: Integer;
   VAbs: Double;
@@ -278,12 +296,236 @@ begin
   begin
     FDocExt := DocExt;
     FWinExt := WinExt;
-    UpdateScrollBars;
+    FControl.UpdateScrollBars;
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 22.04.2011 --
+function TScalingCanvas.ToContentUnits(WindowUnits: Integer): Integer;
+// Converts an amount of units of the window coordinate system to units of the content coordinate system.
+// No translation, only the scale transformation. Use this for e.g. size or distance transformations.
+//
+// Complete coordinate translations are calculated with the overloaded version with the TPoint parameter.
+begin
+  Result := MulDiv(WindowUnits, FDocExt, FWinExt);
+end;
+
+//-- BG ---------------------------------------------------------- 22.04.2011 --
+function TScalingCanvas.ToContentUnits(const WindowPoint: TPoint): TPoint;
+// Converts a point of the window coordinate system to a point in the content coordinate system.
+// Includes both translation and scale transformation. The window origin is always (0,0).
+//
+// To transform a size or distance value use the overloaded version with the Integer parameter.
+begin
+  Result.X := MulDiv(WindowPoint.X, FDocExt, FWinExt) + ContentPositionLeft;
+  Result.Y := MulDiv(WindowPoint.Y, FDocExt, FWinExt) + ContentPositionTop;
+end;
+
+//-- BG ---------------------------------------------------------- 22.04.2011 --
+function TScalingCanvas.ToWindowUnits(ContentUnits: Integer): Integer;
+// Converts an amount of units of the content coordinate system to units of the window coordinate system.
+// No translation, only the scale transformation. Use this for e.g. size or distance transformations.
+//
+// Complete coordinate translations are calculated with the overloaded version with the TPoint parameter.
+begin
+  Result := MulDiv(ContentUnits, FWinExt, FDocExt);
+end;
+
+//-- BG ---------------------------------------------------------- 22.04.2011 --
+function TScalingCanvas.ToWindowUnits(const ContentPoint: TPoint): TPoint;
+// Converts a point of the content coordinate system to a point in the window coordinate system.
+// Includes both translation and scale transformation. The window origin is always (0,0).
+//
+// To transform a size or distance value use the overloaded version with the Integer parameter.
+begin
+  Result.X := MulDiv(ContentPoint.X - ContentPositionLeft, FWinExt, FDocExt);
+  Result.Y := MulDiv(ContentPoint.Y - ContentPositionTop, FWinExt, FDocExt);
+end;
+
+{ TCustomHtmlScrollBox }
+
+//-- BG ---------------------------------------------------------- 22.04.2011 --
+constructor TCustomHtmlScrollBox.Create(AOwner: TComponent);
+begin
+  inherited;
+  DoubleBuffered := True; // less flickering
+  FCanvas := TScalingCanvas.Create(Self);
+  FScrollIncrement := 17;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+destructor TCustomHtmlScrollBox.Destroy;
+begin
+  FCanvas.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function TCustomHtmlScrollBox.GetContentPosition: TPoint;
+begin
+  Result := Canvas.ContentPosition;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function TCustomHtmlScrollBox.GetContentPositionX: Integer;
+begin
+  Result := Canvas.ContentPositionLeft;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function TCustomHtmlScrollBox.GetContentPositionY: Integer;
+begin
+  Result := Canvas.ContentPositionTop;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+function TCustomHtmlScrollBox.GetScale: Double;
+begin
+  Result := Canvas.Scale;
+end;
+
+//-- BG ---------------------------------------------------------- 20.04.2011 --
+function TCustomHtmlScrollBox.GetScrollInfo(Which: Integer): TScrollInfo;
+begin
+  Result.cbSize := SizeOf(TScrollInfo);
+  Result.fMask := SIF_ALL;
+  Windows.GetScrollInfo(Handle, Which, Result);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.KeyDown(var Key: Word; Shift: TShiftState);
+var
+  SI: TScrollInfo;
+
+  procedure SetHPosition(Value: Integer);
+  begin
+    if ClipPosition(SI, Value) then
+      Canvas.ContentPositionLeft := Canvas.ToContentUnits(Value);
+  end;
+
+  procedure SetVPosition(Value: Integer);
+  begin
+    if ClipPosition(SI, Value) then
+      Canvas.ContentPositionTop := Canvas.ToContentUnits(Value);
+  end;
+
+begin
+  case Key of
+    VK_PRIOR:
+    begin
+      SI := GetScrollInfo(SB_VERT);
+      SetVPosition(SI.nPos - Integer(SI.nPage));
+    end;
+
+    VK_UP:
+    begin
+      SI := GetScrollInfo(SB_VERT);
+      SetVPosition(SI.nPos - FScrollIncrement);
+    end;
+
+    VK_LEFT:
+    begin
+      SI := GetScrollInfo(SB_HORZ);
+      SetHPosition(SI.nPos - FScrollIncrement);
+    end;
+
+    VK_RIGHT:
+    begin
+      SI := GetScrollInfo(SB_HORZ);
+      SetHPosition(SI.nPos + FScrollIncrement);
+    end;
+
+    VK_DOWN:
+    begin
+      SI := GetScrollInfo(SB_VERT);
+      SetVPosition(SI.nPos + FScrollIncrement);
+    end;
+
+    VK_NEXT:
+    begin
+      SI := GetScrollInfo(SB_VERT);
+      SetVPosition(SI.nPos + Integer(SI.nPage));
+    end;
+
+  else
+    inherited;
+  end;
+
+end;
+
+//-- BG ---------------------------------------------------------- 22.04.2011 --
+procedure TCustomHtmlScrollBox.Paint;
+begin
+// override me
+
+// some test drawings:
+//  Canvas.Pen.Color := clYellow;
+//  Canvas.Brush.Color := clBlue;
+//  Canvas.Rectangle(0, 0, ContentWidth, ContentHeight);
+//  Canvas.Pen.Color := clRed;
+//  Canvas.MoveTo(ContentPositionLeft - 20, ContentPositionTop);
+//  Canvas.LineTo(ContentPositionLeft + 60, ContentPositionTop);
+//  Canvas.MoveTo(ContentPositionLeft, ContentPositionTop - 20);
+//  Canvas.LineTo(ContentPositionLeft, ContentPositionTop + 60);
+//  Canvas.Pen.Color := clLime;
+//  Canvas.MoveTo(300 - 20, 100);
+//  Canvas.LineTo(300 + 60, 100);
+//  Canvas.MoveTo(300, 100 - 20);
+//  Canvas.LineTo(300, 100 + 60);
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.PaintWindow(DC: HDC);
+begin
+  FCanvas.Lock;
+  try
+    FCanvas.Handle := DC;
+    try
+      FCanvas.UpdateTextFlags;
+      FCanvas.BeforePaint;
+      Paint;
+      FCanvas.AfterPaint;
+    finally
+      FCanvas.Handle := 0;
+    end;
+  finally
+    FCanvas.Unlock;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.04.2011 --
+procedure TCustomHtmlScrollBox.Resize;
+begin
+  inherited;
+  UpdateScrollBars;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.SetContentPosition(const Value: TPoint);
+begin
+  Canvas.ContentPosition := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.SetContentPositionLeft(const Value: Integer);
+begin
+  Canvas.ContentPositionLeft := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.SetContentPositionTop(const Value: Integer);
+begin
+  Canvas.ContentPositionTop := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.SetScale(const Value: Double);
+begin
+  Canvas.Scale := Value;
+end;
+
 //-- BG ---------------------------------------------------------- 19.04.2011 --
-procedure THtmlScrollBox.SetScrollBars(const Value: TScrollStyle);
+procedure TCustomHtmlScrollBox.SetScrollBars(const Value: TScrollStyle);
 begin
   if FScrollBars <> Value then
   begin
@@ -292,20 +534,8 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 22.04.2011 --
-function THtmlScrollBox.ToContentUnits(WindowUnits: Integer): Integer;
-begin
-  Result := MulDiv(WindowUnits, FDocExt, FWinExt);
-end;
-
-//-- BG ---------------------------------------------------------- 22.04.2011 --
-function THtmlScrollBox.ToWindowUnits(ContentUnits: Integer): Integer;
-begin
-  Result := MulDiv(ContentUnits, FWinExt, FDocExt);
-end;
-
 //-- BG ---------------------------------------------------------- 19.04.2011 --
-procedure THtmlScrollBox.UpdateScrollBars;
+procedure TCustomHtmlScrollBox.UpdateScrollBars;
 
   function GetScrollInfos: ThtScrollInfos;
   begin
@@ -321,12 +551,12 @@ procedure THtmlScrollBox.UpdateScrollBars;
 
     Result := FScrollInfos;
 
-    Result.H.DocSize := ToWindowUnits(ContentWidth);
+    Result.H.DocSize := Canvas.ToWindowUnits(ContentWidth);
     Result.H.WinSize := ClientWidth;
     if Result.V.Show then
       Inc(Result.H.WinSize, sbWidth);
 
-    Result.V.DocSize := ToWindowUnits(ContentHeight);
+    Result.V.DocSize := Canvas.ToWindowUnits(ContentHeight);
     Result.V.WinSize := ClientHeight;
     if Result.H.Show then
       Inc(Result.V.WinSize, sbHeight);
@@ -390,21 +620,25 @@ begin
     begin
       Info.nMax := FScrollInfos.H.DocSize;
       Info.nPage := FScrollInfos.H.WinSize;
-      Info.nPos := ToWindowUnits(ContentPositionLeft);
+      Info.nPos := Canvas.ToWindowUnits(Canvas.ContentPositionLeft);
       SetScrollInfo(Handle, SB_HORZ, Info, True);
       Info := GetScrollInfo(SB_HORZ);
-      FContentPosition.X := ToContentUnits(Info.nPos);
-    end;
+      Canvas.FContentPosition.X := Canvas.ToContentUnits(Info.nPos);
+    end
+    else
+      Canvas.FContentPosition.X := 0;
 
     if FScrollInfos.V.Show then
     begin
       Info.nMax := FScrollInfos.V.DocSize;
       Info.nPage := FScrollInfos.V.WinSize;
-      Info.nPos := ToWindowUnits(ContentPositionTop);
+      Info.nPos := Canvas.ToWindowUnits(Canvas.ContentPositionTop);
       SetScrollInfo(Handle, SB_VERT, Info, True);
       Info := GetScrollInfo(SB_VERT);
-      FContentPosition.Y := ToContentUnits(Info.nPos);
-    end;
+      Canvas.FContentPosition.Y := Canvas.ToContentUnits(Info.nPos);
+    end
+    else
+      Canvas.FContentPosition.Y := 0;
   finally
     Exclude(FState, sbsUpdating);
   end;
@@ -412,14 +646,14 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.04.2011 --
-procedure THtmlScrollBox.WMHScroll(var Message: TWMHScroll);
+procedure TCustomHtmlScrollBox.WMHScroll(var Message: TWMHScroll);
 var
   SI: TScrollInfo;
 
   procedure SetPosition(Value: Integer);
   begin
-    if NewPosition(SI, Value) then
-      ContentPositionLeft := ToContentUnits(Value);
+    if ClipPosition(SI, Value) then
+      Canvas.ContentPositionLeft := Canvas.ToContentUnits(Value);
   end;
 
 begin
@@ -437,15 +671,23 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure TCustomHtmlScrollBox.WMPaint(var Message: TWMPaint);
+begin
+  ControlState := ControlState + [csCustomPaint];
+  inherited;
+  ControlState := ControlState - [csCustomPaint];
+end;
+
 //-- BG ---------------------------------------------------------- 20.04.2011 --
-procedure THtmlScrollBox.WMVScroll(var Message: TWMVScroll);
+procedure TCustomHtmlScrollBox.WMVScroll(var Message: TWMVScroll);
 var
   SI: TScrollInfo;
 
   procedure SetPosition(Value: Integer);
   begin
-    if NewPosition(SI, Value) then
-      ContentPositionTop := ToContentUnits(Value);
+    if ClipPosition(SI, Value) then
+      Canvas.ContentPositionTop := Canvas.ToContentUnits(Value);
   end;
 
 begin

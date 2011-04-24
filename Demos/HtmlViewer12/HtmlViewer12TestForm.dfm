@@ -12,23 +12,17 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
   Font.Style = []
   Menu = menu
   OldCreateOrder = False
-  ScreenSnap = True
   ShowHint = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
-  object BegaSplitter1: TBegaSplitter
+  object BegaSplitter1: TSplitter
     Left = 395
     Top = 21
     Width = 8
     Height = 632
-    Cursor = crHSplit
-    ButtonAlign = baCenter
-    ButtonKind = bkNone
     ResizeStyle = rsUpdate
-    ExplicitLeft = 440
-    ExplicitTop = 45
   end
   object cbFiles: TBegaCombobox
     Left = 0
@@ -49,8 +43,8 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Width = 680
     Height = 632
     Align = alClient
-    Color = clMoneyGreen
-    DoubleBuffered = True
+    Color = clTeal
+    DoubleBuffered = False
     ParentColor = False
     TabOrder = 1
     ViewerOptions = []
@@ -65,6 +59,10 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     TabOrder = 2
     object HtmlTab: TTabSheet
       Caption = 'Html'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object vtDocument: TBegaVirtualStringTree
         Left = 0
         Top = 0

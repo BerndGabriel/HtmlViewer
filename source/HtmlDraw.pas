@@ -160,17 +160,42 @@ procedure DrawBorder(Canvas: TCanvas; ORect: TRect; const W: TRectIntegers; cons
 type
   TBorderPointArray = array[0..3] of TPoint;
 
-  function CreateOnePolygonRgn(const PO, PI: TBorderPointArray; I: Integer): HRGN;
+var
+  MapMode: Integer;
+  WindOrg, ViewOrg: TPoint;
+  WindExt, ViewExt: TSize;
+
+  function CreateOnePolygonRgn(const PO, PI: TBorderPointArray; I: Integer; Transform: Boolean): HRGN;
+
+    function ToViewport(P: TPoint): TPoint;
+    begin
+      Result.X := MulDiv(P.X - WindOrg.X, ViewExt.cx, WindExt.cx) + ViewOrg.X;
+      Result.Y := MulDiv(P.Y - WindOrg.Y, ViewExt.cy, WindExt.cy) + ViewOrg.Y;
+    end;
+
   var
     P: TBorderPointArray;
   begin
-    P[0] := PO[I];
-    P[3] := PI[I];
-    Inc(I);
-    if I = 4 then
-      I := 0;
-    P[1] := PO[I];
-    P[2] := PI[I];
+    if not Transform then
+    begin
+      P[0] := PO[I];
+      P[3] := PI[I];
+      Inc(I);
+      if I = 4 then
+        I := 0;
+      P[1] := PO[I];
+      P[2] := PI[I];
+    end
+    else
+    begin
+      P[0] := ToViewport(PO[I]);
+      P[3] := ToViewport(PI[I]);
+      Inc(I);
+      if I = 4 then
+        I := 0;
+      P[1] := ToViewport(PO[I]);
+      P[2] := ToViewport(PI[I]);
+    end;
     Result := CreatePolygonRgn(P, 4, ALTERNATE);
   end;
 
@@ -181,7 +206,7 @@ type
   begin
     if Color = clNone then
       exit;
-    R := CreateOnePolygonRgn(PO, PI, I);
+    R := CreateOnePolygonRgn(PO, PI, I, False);
     try
       with Canvas do
       begin
@@ -205,7 +230,7 @@ var
   InPath: boolean;
   PenType, Start: Integer;
   StyleSet: set of TBorderStyle;
-  R, OldClpRgn: HRGN;
+  R, RClp, OldClpRgn: HRGN;
   HasOldClpRgn: Integer;
 begin
   if (W[reLeft] = 0) and (W[reTop] = 0) and (W[reRight] = 0) and (W[reBottom] = 0) then
@@ -235,6 +260,7 @@ begin
 
 {Points midway between the outer and inner rectangle are needed for
  ridge, groove, dashed, dotted styles}
+  MapMode := MM_TEXT;
   if [bssRidge, bssGroove, bssDotted, bssDashed] * StyleSet <> [] then
   begin
     MRect := Rect(
@@ -248,6 +274,24 @@ begin
       PM[1] := TopLeft;
       PM[2] := Point(Right, Top);
       PM[3] := BottomRight;
+    end;
+    if [bssDotted, bssDashed] * StyleSet <> [] then
+    begin
+      MapMode := GetMapMode(Canvas.Handle);
+      if MapMode <> MM_TEXT then
+      begin
+        GetWindowOrgEx(Canvas.Handle, WindOrg);
+        GetViewportOrgEx(Canvas.Handle, ViewOrg);
+// We support MM_TEXT, MM_ISOTROPIC, MM_ANISOTROPIC only.
+//        case MapMode of
+//          MM_ISOTROPIC,
+//          MM_ANISOTROPIC:
+//          begin
+            GetWindowExtEx(Canvas.Handle, WindExt);
+            GetViewportExtEx(Canvas.Handle, ViewExt);
+//          end;
+//        end;
+      end;
     end;
   end;
 
@@ -338,15 +382,11 @@ begin
         begin
           OldClpRgn := CreateRectRgn(0, 0, 1, 1); // just a dummy to hold the actual old clip region after GetClipRgn
           HasOldClpRgn := GetClipRgn(Canvas.Handle, OldClpRgn);
-          R := CreateOnePolygonRgn(PO, PI, I);
+          R := CreateOnePolygonRgn(PO, PI, I, MapMode <> MM_TEXT);
           SelectClipRgn(Canvas.Handle, R);
           try
             if BGround <> clNone then
-            begin
-              Canvas.Brush.Color := BGround or PalRelative;
-              Canvas.Brush.Style := bsSolid;
-              FillRgn(Canvas.Handle, R, Canvas.Brush.Handle);
-            end;
+              DrawOnePolygon(PO, PI, I, BGround);
             if not InPath then
             begin
               lb.lbStyle := BS_SOLID;

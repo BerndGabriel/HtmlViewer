@@ -32,8 +32,8 @@ interface
 uses
   Windows, Classes, Graphics,
   //
+  HtmlElements,
   HtmlGlobals,
-  HtmlTree,
   HtmlStyles;
 
 type

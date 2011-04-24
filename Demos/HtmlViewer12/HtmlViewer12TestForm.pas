@@ -25,14 +25,14 @@ uses
   HtmlBuffer,
   HtmlDocument,
   HtmlDraw,
+  HtmlElements,
   HtmlGlobals,
   HtmlImages,
   HtmlParser,
   HtmlSymbols,
-  HtmlTree,
   HtmlViewer,
   StyleTypes,
-  UrlSubs;
+  UrlSubs, ExtCtrls;
 
 type
   TFormHtmlViewer12Test = class(TForm)
@@ -41,13 +41,13 @@ type
     menu: TMainMenu;
     menuFile: TMenuItem;
     menuFileOpen: TMenuItem;
-    BegaSplitter1: TBegaSplitter;
     HtmlViewer: THtmlViewer12;
     PageControl: TPageControl;
     HtmlTab: TTabSheet;
     CssTab: TTabSheet;
     vtDocument: TBegaVirtualStringTree;
     CssMemo: TMemo;
+    BegaSplitter1: TSplitter;
     procedure cbFilesKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -181,7 +181,7 @@ begin
   if Image <> nil then
     FImageCache.AddObject(ImageName, Image);
 
-  FView := THtmlBox.Create;
+  FView := THtmlBodyBox.Create(HtmlViewer, nil);
   FView.BoundsRect := Rect(4, 8, 404, 308);
   FView.Margins := RectIntegers(16, 22, 4, 8);
   FView.BorderWidths := RectIntegers(4, 8, 16, 0);
