@@ -1263,6 +1263,7 @@ begin
   FDocument := Document;
   FDocument.Name := Doc.Name;
   try
+    THtmlStyleParser.ParseCssDefaults(FDocument.RuleSets);
     try
       First;
       repeat

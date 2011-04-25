@@ -30,9 +30,8 @@ unit StyleParser;
 interface
 
 uses
-  Graphics, Classes, SysUtils, Variants,
+  Windows, Graphics, Classes, SysUtils, Variants,
   //
-//  UrlSubs,
   Parser,
   HtmlBuffer,
   HtmlGlobals,
@@ -363,7 +362,7 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
       exit;
     repeat
       checkPosition(LMediaPos);
-      if TryStrToMediaType(Identifier, MediaType) then
+      if TryStrToMediaType(htLowerCase(Identifier), MediaType) then
         Include(Result, MediaType);
       SkipWhiteSpace;
       if LCh <> ',' then
@@ -1023,9 +1022,79 @@ function THtmlStyleParser.ParseSelectors(var Selectors: TStyleSelectorList): Boo
         end;
       end;
 
+      function GetAttributeMatch(out Match: TAttributeMatch): Boolean;
+
+        function GetMatchOperator(out Oper: TAttributeMatchOperator): Boolean;
+        var
+          Str: ThtString;
+        begin
+          SetLength(Str, 0);
+          repeat
+            case LCh of
+              ']':
+              begin
+                Result := Length(Str) = 0;
+                if Result then
+                  Oper := amoSet;
+                exit;
+              end;
+
+              '=':
+              begin
+                SetLength(Str, Length(Str) + 1);
+                Str[Length(Str)] := LCh;
+                GetChSkipWhiteSpace;
+                Result := TryStrToAttributeMatchOperator(Str, Oper);
+                exit;
+              end;
+
+              EofChar, '{':
+              begin
+                Result := False;
+                exit;
+              end;
+            end;
+            SetLength(Str, Length(Str) + 1);
+            Str[Length(Str)] := LCh;
+            GetCh;
+          until False;
+        end;
+
+      var
+        Str: ThtString;
+        Attr: THtmlAttributeSymbol;
+        Oper: TAttributeMatchOperator;
+      begin
+        Result := GetIdentifier(Str) and TryStrToAttributeSymbol(htUpperCase(Str), Attr);
+        if Result then
+        begin
+          SkipWhiteSpace;
+          Result := GetMatchOperator(Oper);
+          if Result then
+          begin
+            if Oper <> amoSet then
+            begin
+              SkipWhiteSpace;
+              Result := GetIdentifier(Str) or GetString(Str);
+              SkipWhiteSpace;
+            end;
+            if Result then
+            begin
+              Result := LCh = ']';
+              if Result then
+              begin
+                Match := TAttributeMatch.Create(Attr, Oper, Str);
+                GetChSkipWhiteSpace;
+              end;
+            end;
+          end;
+        end;
+      end;
+
     var
       Name: ThtString;
       Pseudo: TPseudo;
+      Match: TAttributeMatch;
     begin
       Result := GetElementName(Name);
       if Result then
@@ -1064,24 +1133,12 @@ function THtmlStyleParser.ParseSelectors(var Selectors: TStyleSelectorList): Boo
 
           '[':
           begin
-            GetCh;
-            //TODO -oBG, 21.03.2011: get attribute match
-            repeat
-              case LCh of
-                ']':
-                begin
-                  GetCh;
-                  Result := True;
-                  break;
-                end;
-
-                EofChar, '{':
-                begin
-                  Result := False;
-                  break;
-                end;
-              end;
-            until False;
+            GetChSkipWhiteSpace;
+            Result := GetAttributeMatch(Match);
+            if Result then
+              Selector.AddAttributeMatch(Match)
+            else
+              exit;
           end;
 
         else

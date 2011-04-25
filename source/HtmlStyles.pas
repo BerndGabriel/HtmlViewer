@@ -179,6 +179,7 @@ type
   end;
 
 function CompareAttributeMatches(P1, P2: Pointer): Integer;
+function TryStrToAttributeMatchOperator(Str: ThtString; out Oper: TAttributeMatchOperator): Boolean;
 
 type
   TPseudo = (
@@ -641,6 +642,21 @@ begin
   if Result <> 0 then
     exit;
   Result := htCompareString(A1.Value, A2.Value);
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+function TryStrToAttributeMatchOperator(Str: ThtString; out Oper: TAttributeMatchOperator): Boolean;
+var
+  I: TAttributeMatchOperator;
+begin
+  for I := low(I) to high(I) do
+    if CAttributeMatchOperator[I] = Str then
+    begin
+      Result := True;
+      Oper := I;
+      exit;
+    end;
+  Result := False;
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --

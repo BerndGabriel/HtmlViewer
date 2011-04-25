@@ -1127,7 +1127,7 @@ type
 const
   UnknownAd: TAttributeDescription = (Name: 'unknown'; Attr: UnknownAttr);
 
-  CAttributeDescriptions: array[1..100] of TAttributeDescription = (
+  CAttributeDescriptions: array[1..101] of TAttributeDescription = (
     (Name: 'ACTION';            Attr: ActionAttr),
     (Name: 'ACTIVE';            Attr: ActiveAttr),
     (Name: 'ALIGN';             Attr: AlignAttr),
@@ -1151,6 +1151,7 @@ const
     (Name: 'COLSPAN';           Attr: ColSpanAttr),
     (Name: 'CONTENT';           Attr: ContentAttr),
     (Name: 'COORDS';            Attr: CoordsAttr),
+    (Name: 'DIR';               Attr: DirAttr),
     (Name: 'DISABLED';          Attr: DisabledAttr),
     (Name: 'ENCTYPE';           Attr: EncTypeAttr),
     (Name: 'FACE';              Attr: FaceAttr),

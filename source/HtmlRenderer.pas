@@ -36,6 +36,7 @@ uses
   HtmlDocument,
   HtmlElements,
   HtmlStyles,
+  HtmlSymbols,
   StyleTypes;
 
 type
@@ -74,12 +75,13 @@ type
 //------------------------------------------------------------------------------
 
   THtmlRenderedDocument = class
+  end;
+
+  THtmlVisualizedDocument = class(THtmlRenderedDocument)
   private
-    FBoxes: THtmlBoxList;
+    FView: THtmlBox;
   public
-    constructor Create;
-    destructor Destroy; override;
-    property Boxes: THtmlBoxList read FBoxes;
+    constructor Create(View: THtmlBox);
   end;
 
 //------------------------------------------------------------------------------
@@ -92,44 +94,71 @@ type
 
   TMediaCapabilities = set of (mcFrames, mcScript, mcEmbed);
 
-  THtmlRenderer = class
+  THtmlRenderer = class abstract
   private
     FDocument: THtmlDocument; // the source to render to destination
     FMediaType: TMediaType;   // media type of destination
     FCapabilities: TMediaCapabilities;
     FWidth: Integer;          // width of destination in pixels
     FHeight: Integer;         // height of destination in pixels
-    FControls: THtmlControlOfElementMap;
-    function getResultingProperties(Element: THtmlElement): TResultingPropertyMap;
-    procedure SetControls(const Value: THtmlControlOfElementMap);
+    function GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
   public
     constructor Create(Document: THtmlDocument; MediaType: TMediaType; Width, Height: Integer);
-    function Rendered: THtmlRenderedDocument;
-    procedure AfterConstruction; override;
-    procedure BeforeDestruction; override;
-    property ControlOfElementMap: THtmlControlOfElementMap read FControls write SetControls;
     property MediaCapabilities: TMediaCapabilities read FCapabilities write FCapabilities;
     property MediaType: TMediaType read FMediaType;
   end;
 
+  THtmlVisualRenderer = class(THtmlRenderer)
+  private
+    FControls: THtmlControlOfElementMap;
+    function GetControl(Element: THtmlElement): TControl;
+    procedure SetControls(const Value: THtmlControlOfElementMap);
+    procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); overload;
+  protected
+    procedure RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
+    procedure RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
+  public
+    constructor Create(Document: THtmlDocument; ControlMap: THtmlControlOfElementMap; MediaType: TMediaType; Width, Height: Integer);
+    procedure Render(Owner: TWinControl; ParentBox: THtmlBox); overload;
+    property ControlOfElementMap: THtmlControlOfElementMap read FControls write SetControls;
+  end;
+
+
 implementation
 
-{ THtmlRenderer }
+{ THtmlControlOfElementMap }
 
-//-- BG ---------------------------------------------------------- 16.04.2011 --
-procedure THtmlRenderer.AfterConstruction;
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.Get(Key: THtmlElement): TControl;
 begin
-  inherited;
-  FControls := THtmlControlOfElementMap.Create;
-  FCapabilities := [mcFrames];
+  Result := inherited Get(Key);
 end;
 
 //-- BG ---------------------------------------------------------- 18.04.2011 --
-procedure THtmlRenderer.BeforeDestruction;
+function THtmlControlOfElementMap.GetKey(Index: Integer): THtmlElement;
 begin
-  FControls.Free;
-  inherited;
+  Result := inherited GetKey(Index);
 end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.GetValue(Index: Integer): TControl;
+begin
+  Result := inherited GetValue(Index);
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.Put(Key: THtmlElement; Control: TControl): TControl;
+begin
+  Result := inherited Put(Key, Control);
+end;
+
+//-- BG ---------------------------------------------------------- 18.04.2011 --
+function THtmlControlOfElementMap.Remove(Key: THtmlElement): TControl;
+begin
+  Result := inherited Remove(Key);
+end;
+
+{ THtmlRenderer }
 
 constructor THtmlRenderer.Create(Document: THtmlDocument; MediaType: TMediaType; Width, Height: Integer);
 begin
@@ -141,7 +170,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.04.2011 --
-function THtmlRenderer.getResultingProperties(Element: THtmlElement): TResultingPropertyMap;
+function THtmlRenderer.GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
 var
   I: Integer;
   Ruleset: TRuleset;
@@ -178,70 +207,78 @@ begin
   Result.UpdateFromAttributes(Element.AttributeProperties, False);
 end;
 
-//-- BG ---------------------------------------------------------- 17.04.2011 --
-function THtmlRenderer.Rendered: THtmlRenderedDocument;
+{ THtmlVisualizedDocument }
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+constructor THtmlVisualizedDocument.Create(View: THtmlBox);
 begin
-  Result := THtmlRenderedDocument.Create;
-  
+  FView := View;
+end;
+
+{ THtmlVisualRenderer }
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+constructor THtmlVisualRenderer.Create(Document: THtmlDocument;
+  ControlMap: THtmlControlOfElementMap; MediaType: TMediaType; Width, Height: Integer);
+begin
+  inherited Create(Document, MediaType, Width, Height);
+  FCapabilities := [mcFrames];
+  FControls := ControlMap;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+function THtmlVisualRenderer.GetControl(Element: THtmlElement): TControl;
+begin
+  if FControls <> nil then
+    Result := FControls.Get(Element)
+  else
+    Result := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 17.04.2011 --
+procedure THtmlVisualRenderer.Render(Owner: TWinControl; ParentBox: THtmlBox);
+begin
+  Render(Owner, ParentBox, FDocument.Tree);
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure THtmlVisualRenderer.Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
+begin
+  case Element.Symbol of
+    FrameSetSy: RenderFrameset(Owner, ParentBox, Element);
+    BodySy: RenderBody(Owner, ParentBox, Element);
+  else
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure THtmlVisualRenderer.RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
+var
+  Box: THtmlBodyBox;
+  Control: THtmlBodyControl;
+  Properties: TResultingPropertyMap;
+begin
+  Control := ControlOfElementMap.Get(Element) as THtmlBodyControl;
+  if Control = nil then
+  begin
+    Control := THtmlBodyControl.Create(Owner);
+    ControlOfElementMap.Put(Element, Control);
+  end;
+  Box := THtmlBodyBox.Create(ParentBox, Control);
+  Properties := GetResultingProperties(Element);
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure THtmlVisualRenderer.RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
+begin
+
 end;
 
 //-- BG ---------------------------------------------------------- 18.04.2011 --
-procedure THtmlRenderer.SetControls(const Value: THtmlControlOfElementMap);
+procedure THtmlVisualRenderer.SetControls(const Value: THtmlControlOfElementMap);
 begin
   if FControls <> Value then
     FControls.Assign(Value);
-end;
-
-{ THtmlRenderedDocument }
-
-constructor THtmlRenderedDocument.Create;
-begin
-  inherited Create;
-{$ifdef UseEnhancedRecord}
-{$else}
-  FBoxes := THtmlBoxList.Create;
-{$endif}
-end;
-
-destructor THtmlRenderedDocument.Destroy;
-begin
-{$ifdef UseEnhancedRecord}
-{$else}
-  FBoxes.Free;
-{$endif}
-  inherited;
-end;
-
-{ THtmlControlOfElementMap }
-
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-function THtmlControlOfElementMap.Get(Key: THtmlElement): TControl;
-begin
-  Result := inherited Get(Key);
-end;
-
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-function THtmlControlOfElementMap.GetKey(Index: Integer): THtmlElement;
-begin
-  Result := inherited GetKey(Index);
-end;
-
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-function THtmlControlOfElementMap.GetValue(Index: Integer): TControl;
-begin
-  Result := inherited GetValue(Index);
-end;
-
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-function THtmlControlOfElementMap.Put(Key: THtmlElement; Control: TControl): TControl;
-begin
-  Result := inherited Put(Key, Control);
-end;
-
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-function THtmlControlOfElementMap.Remove(Key: THtmlElement): TControl;
-begin
-  Result := inherited Remove(Key);
 end;
 
 end.

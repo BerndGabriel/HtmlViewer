@@ -99,14 +99,17 @@ type
     property Parent: THtmlBox read FParent write SetParent;
     property Prev: THtmlBox read FPrev;
     property Next: THtmlBox read FNext;
-    property Children: THtmlBoxList read FChildren;
   public
-    constructor Create(Owner: TControl; ParentBox: THtmlBox);
+    // construction / destruction
+    constructor Create(ParentBox: THtmlBox);
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
+    // change events sent by THtmlViewer
+    procedure Resized; virtual;
+    procedure Rescaled(const NewScale: Double); virtual;
     //
     procedure Paint(Canvas: TScalingCanvas); virtual;
-    procedure Resized; virtual;
+    //
     property BoundsRect: TRect read FBounds write FBounds;
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
@@ -121,6 +124,7 @@ type
     property Padding: TRectIntegers read FPadding write FPadding;
     //
     property Alignment: TAlignment read FAlignment write FAlignment;
+    property Children: THtmlBoxList read FChildren;
     property Font: TFont read FFont;
     property Text: ThtString read FText write FText;
     property Image: ThtImage read FImage write SetImage;
@@ -169,7 +173,8 @@ type
   protected
     function GetControl: TControl; override;
   public
-    constructor Create(Owner: TControl; ParentBox: THtmlBox);
+    constructor Create(ParentBox: THtmlBox; Control: THtmlFramesetControl);
+    procedure Rescaled(const NewScale: Double); override;
     property Control: THtmlFramesetControl read FControl;
   end;
 
@@ -186,14 +191,15 @@ type
   protected
     function GetControl: TControl; override;
   public
-    constructor Create(Owner: TControl; ParentBox: THtmlBox);
+    constructor Create(ParentBox: THtmlBox; Control: THtmlBodyControl); overload;
+    procedure Rescaled(const NewScale: Double); override;
     property Control: THtmlBodyControl read FControl;
   end;
 
 //------------------------------------------------------------------------------
 // THtmlFormControlBox
 //------------------------------------------------------------------------------
-//
+
 //  THtmlFormControlBox = class(THtmlBox)
 //  protected
 //    function GetControl: TWinControl; virtual; abstract;
@@ -201,7 +207,7 @@ type
 //    constructor Create(Owner: TControl; ParentBox: THtmlBox);
 //    property Control: TWinControl read GetControl;
 //  end;
-//
+
 //------------------------------------------------------------------------------
 // THtmlAnonymousBox
 //------------------------------------------------------------------------------
@@ -334,7 +340,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-constructor THtmlBox.Create(Owner: TControl; ParentBox: THtmlBox);
+constructor THtmlBox.Create(ParentBox: THtmlBox);
 begin
   inherited Create;
   Parent := ParentBox;
@@ -492,6 +498,12 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure THtmlBox.Rescaled(const NewScale: Double);
+begin
+// override me
+end;
+
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 procedure THtmlBox.Resized;
 begin
@@ -572,8 +584,6 @@ procedure THtmlScrollControl.Init(Box: THtmlBox);
 
 begin
   FBox := Box;
-//  Visible := False;
-//  BoundsRect := Box.ContentRect;
   Parent := GetParent(Owner);
   Align := alClient;
   ScrollBars := ssBoth;
@@ -588,10 +598,10 @@ end;
 { THtmlFramesetBox }
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-constructor THtmlFramesetBox.Create(Owner: TControl; ParentBox: THtmlBox);
+constructor THtmlFramesetBox.Create(ParentBox: THtmlBox; Control: THtmlFramesetControl);
 begin
-  inherited; //Create(Owner, ParentBox);
-  FControl := THtmlFramesetControl.Create(Owner);
+  inherited Create(ParentBox);
+  FControl := Control;
   FControl.Init(Self);
 end;
 
@@ -601,13 +611,20 @@ begin
   Result := FControl;
 end;
 
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure THtmlFramesetBox.Rescaled(const NewScale: Double);
+begin
+  inherited;
+  FControl.Scale := NewScale;
+end;
+
 { THtmlBodyBox }
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-constructor THtmlBodyBox.Create(Owner: TControl; ParentBox: THtmlBox);
+constructor THtmlBodyBox.Create(ParentBox: THtmlBox; Control: THtmlBodyControl);
 begin
-  inherited; //Create(Owner, ParentBox);
-  FControl := THtmlBodyControl.Create(Owner);
+  inherited Create(ParentBox);
+  FControl := Control;
   FControl.Init(Self);
 end;
 
@@ -615,6 +632,13 @@ end;
 function THtmlBodyBox.GetControl: TControl;
 begin
   Result := FControl;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure THtmlBodyBox.Rescaled(const NewScale: Double);
+begin
+  inherited;
+  FControl.Scale := NewScale;
 end;
 
 end.

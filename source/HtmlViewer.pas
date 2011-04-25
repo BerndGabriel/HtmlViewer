@@ -34,9 +34,17 @@ uses
   //
   HtmlBoxes,
   HtmlDocument,
-  HtmlElements;
+  HtmlElements,
+  HtmlRenderer,
+  StyleTypes;
 
 type
+
+//------------------------------------------------------------------------------
+// TCustomHtmlViewer is base class for THtmlViewer 12
+//------------------------------------------------------------------------------
+// It is the hood of both framed and single HTML document visualizations.
+//------------------------------------------------------------------------------
 
   THtmlViewerOptions = set of (
     voOwnsDocument
@@ -52,19 +60,26 @@ type
     FState: THtmlViewerState;
     FOptions: THtmlViewerOptions;
     FDocument: THtmlDocument;
-    FView: THtmlBox;
+    FControlMap: THtmlControlOfElementMap; // remember the controls per element
+    FView: THtmlBox; // just a hook for the boxes to show.
+    FScale: Double;
     procedure SetDocument(const Value: THtmlDocument);
     procedure SetViewerOptions(const Value: THtmlViewerOptions);
     procedure SetViewerState(const Value: THtmlViewerState);
-    procedure SetView(const Value: THtmlBox);
+    procedure SetScale(const Value: Double);
   protected
     procedure UpdateDocument;
     procedure UpdateView;
     procedure Resize; override;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
   public
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
+    procedure AddView(const Value: THtmlBox);
+    procedure ClearView;
     property HtmlDocument: THtmlDocument read FDocument write SetDocument;
-    property HtmlView: THtmlBox read FView write SetView;
+    property HtmlView: THtmlBox read FView;
+    property Scale: Double read FScale write SetScale;
     property ViewerOptions: THtmlViewerOptions read FOptions write SetViewerOptions;
     property ViewerState: THtmlViewerState read FState write SetViewerState;
   end;
@@ -104,6 +119,37 @@ end;
 
 { TCustomHtmlViewer }
 
+//-- BG ---------------------------------------------------------- 05.04.2011 --
+procedure TCustomHtmlViewer.AddView(const Value: THtmlBox);
+begin
+  FView.Children.Add(Value);
+  Include(FState, vsViewChanged);
+  Invalidate;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure TCustomHtmlViewer.AfterConstruction;
+begin
+  inherited;
+  FControlMap := THtmlControlOfElementMap.Create;
+  FView := THtmlBox.Create(nil);
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure TCustomHtmlViewer.BeforeDestruction;
+begin
+  FControlMap.Free;
+  SetDocument(nil);
+  FView.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure TCustomHtmlViewer.ClearView;
+begin
+  FView.Children.Clear;
+end;
+
 //-- BG ---------------------------------------------------------- 04.04.2011 --
 procedure TCustomHtmlViewer.Resize;
 begin
@@ -117,19 +163,23 @@ procedure TCustomHtmlViewer.SetDocument(const Value: THtmlDocument);
 begin
   if FDocument <> Value then
   begin
+    if FDocument <> nil then
+      if voOwnsDocument in FOptions then
+        FDocument.Free;
     FDocument := Value;
     Include(FState, vsDocumentChanged);
     Invalidate;
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 05.04.2011 --
-procedure TCustomHtmlViewer.SetView(const Value: THtmlBox);
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+procedure TCustomHtmlViewer.SetScale(const Value: Double);
 begin
-  if FView <> Value then
+  if FScale <> Value then
   begin
-    FView := Value;
-    Include(FState, vsViewChanged);
+    FScale := Value;
+    if FView <> nil then
+      FView.Rescaled(Value);
     Invalidate;
   end;
 end;
@@ -157,20 +207,28 @@ end;
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --
 procedure TCustomHtmlViewer.UpdateDocument;
-// rebuild internal representation after document/structure has changed.
+// Rebuild internal representation after document/structure has changed.
+var
+  Renderer: THtmlVisualRenderer;
 begin
   if vsDocumentChanged in FState then
   begin
     Exclude(FState, vsDocumentChanged);
-    //TODO -1 -oBG, 04.04.2011: get (new) display structure from document
-
-    Include(FState, vsViewChanged);
+    FView.Children.Clear;
+    Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, mtScreen, ClientWidth, ClientHeight);
+    try
+      Renderer.MediaCapabilities := [mcFrames];
+      Renderer.Render(Self, FView);
+    finally
+      Include(FState, vsViewChanged);
+      Renderer.Free;
+    end;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --
 procedure TCustomHtmlViewer.UpdateView;
-// update internal representation after visually relevant parameters have changed.
+// Update internal representation after visually relevant parameters have changed.
 begin
   if vsViewChanged in FState then
   begin
@@ -183,9 +241,11 @@ end;
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 procedure TCustomHtmlViewer.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 begin
-  if csDesigning in ComponentState then
+  if FView = nil then
+    // fill background as long as there is no box to show.
     inherited
   else
+    // avoid flickering, if there is a box.
     Message.Result := 1;
 end;
 

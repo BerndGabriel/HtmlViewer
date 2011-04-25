@@ -181,7 +181,7 @@ begin
   if Image <> nil then
     FImageCache.AddObject(ImageName, Image);
 
-  FView := THtmlBodyBox.Create(HtmlViewer, nil);
+  FView := THtmlBodyBox.Create(nil, THtmlBodyControl.Create(HtmlViewer));
   FView.BoundsRect := Rect(4, 8, 404, 308);
   FView.Margins := RectIntegers(16, 22, 4, 8);
   FView.BorderWidths := RectIntegers(4, 8, 16, 0);
@@ -205,7 +205,7 @@ begin
   FView.Tiled := True;
   FView.TileWidth := 100;
   FView.TileHeight := 100;
-  HtmlViewer.HtmlView := FView;
+  HtmlViewer.AddView(FView);
 end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
