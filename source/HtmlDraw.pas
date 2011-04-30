@@ -230,7 +230,7 @@ var
   InPath: boolean;
   PenType, Start: Integer;
   StyleSet: set of TBorderStyle;
-  R, RClp, OldClpRgn: HRGN;
+  R, OldClpRgn: HRGN;
   HasOldClpRgn: Integer;
 begin
   if (W[reLeft] = 0) and (W[reTop] = 0) and (W[reRight] = 0) and (W[reBottom] = 0) then

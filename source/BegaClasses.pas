@@ -30,7 +30,8 @@ unit BegaClasses;
 interface
 
 uses
-  Classes;
+  Classes,
+  HtmlGlobals;
 
 type
   TBegaCustomMap = class
@@ -121,21 +122,19 @@ begin
     while Low < High do
     begin
       Mid := (Low + High) shr 1;
-{$ifdef FPC}
       if PtrUInt(FKeys[Mid]) < PtrUInt(Key) then
-{$else}
-      if Cardinal(FKeys[Mid]) < Cardinal(Key) then
-{$endif}
         Low := Mid + 1
       else
         High := Mid;
     end;
     Index := High;
+    Result := (Index < Count) and (PtrUInt(FKeys[Index]) = PtrUInt(Key));
   end
   else
   begin
     Index := FKeys.IndexOf(Key);
-    if Index < 0 then
+    Result := Index >= 0;
+    if not Result then
       Index := FKeys.Count;
   end;
 end;

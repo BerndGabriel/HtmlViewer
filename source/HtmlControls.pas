@@ -55,6 +55,12 @@ type
     FWinExt: Integer; // scale nominator, window units
     FDocExt: Integer; // scale denominator, content units
     FContentPosition: TPoint;
+    FWinClipRect: TRect;
+    // Filled by BeforePaint and used by AfterPaint.
+    FOldClipRegion: HRGN;
+    FOldMapMode: Integer;
+    FOldDocOrg, FOldWinOrg: TPoint;
+    FOldDocExt, FOldWinExt: TSize;
     function GetScale: Double;
     procedure SetScale(const Value: Double);
     procedure SetContentPosition(const Value: TPoint);
@@ -68,6 +74,7 @@ type
     function ToWindowUnits(ContentUnits: Integer): Integer; overload;
     procedure BeforePaint;
     procedure AfterPaint;
+    property ClipRect: TRect read FWinClipRect;
     property ContentPosition: TPoint read FContentPosition write SetContentPosition;
     property ContentPositionLeft: Integer read FContentPosition.X write SetContentPositionLeft;
     property ContentPositionTop: Integer read FContentPosition.Y write SetContentPositionTop;
@@ -163,26 +170,48 @@ end;
 procedure TScalingCanvas.AfterPaint;
 // Resets the content/window transformation parameters.
 begin
-  SetMapMode(Handle, MM_TEXT);
-  SetWindowOrgEx(Handle, 0, 0, nil);
+  SetMapMode(Handle, FOldMapMode);
+  if FOldMapMode in [MM_ISOTROPIC, MM_ANISOTROPIC] then
+  begin
+    SetWindowExtEx(Handle, FOldDocExt.cx, FOldDocExt.cy, nil);
+    SetViewportExtEx(Handle, FOldWinExt.cx, FOldWinExt.cy, nil);
+  end;
+  SetWindowOrgEx(Handle, FOldDocOrg.X, FOldDocOrg.Y, nil);
+  SetViewportOrgEx(Handle, FOldWinOrg.X, FOldWinOrg.Y, nil);
+  SelectClipRgn(Handle, FOldClipRegion);
+  if FOldClipRegion <> 0 then
+    DeleteObject(FOldClipRegion);
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 procedure TScalingCanvas.BeforePaint;
-// Set the content/window transformation parameters
+// Set the content/window transformation parameters.
+//
+// In DoubleBuffer mode Delphi 6 creates a buffer as large as the entire window,
+// while Delphi 2007+ create a buffer as small as the ClipRect only an sets
+// WindowOrg to the upper left corner of the ClipRect (which is wrong, as it
+// sets device coordinates, which had to be set to ViewportOrg).
 begin
+  FOldClipRegion := CreateRectRgn(0, 0, 1, 1);
+  GetClipRgn(Handle, FOldClipRegion);
+  FWinClipRect := inherited ClipRect;
+  FOldMapMode := GetMapMode(Handle);
+  GetWindowOrgEx(Handle, FOldDocOrg);
+  GetViewportOrgEx(Handle, FOldWinOrg);
+
   SetMapMode(Handle, MM_ISOTROPIC);
+  SetWindowExtEx(Handle, FDocExt, FDocExt, @FOldDocExt);
+  SetViewportExtEx(Handle, FWinExt, FWinExt, @FOldWinExt);
   SetWindowOrgEx(Handle, FContentPosition.X, FContentPosition.Y, nil);
-  SetWindowExtEx(Handle, FDocExt, FDocExt, nil);
-  SetViewportExtEx(Handle, FWinExt, FWinExt, nil);
+  SetViewportOrgEx(Handle, -FWinClipRect.Left, -FWinClipRect.Top, nil);
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 constructor TScalingCanvas.Create(Control: TCustomHtmlScrollBox);
 begin
   inherited Create;
-  FWinExt := 10000; // 10000 allows finer scales than currently screens have pixels.
-  FDocExt := 10000; // 10000 allows finer scales than currently screens have pixels.
+  FWinExt := 10000; // 10000 allows finer scales than current screens have pixels.
+  FDocExt := 10000; // 10000 allows finer scales than current screens have pixels.
   FControl := Control;
   inherited Control := Control;
 end;
@@ -317,8 +346,8 @@ function TScalingCanvas.ToContentUnits(const WindowPoint: TPoint): TPoint;
 //
 // To transform a size or distance value use the overloaded version with the Integer parameter.
 begin
-  Result.X := MulDiv(WindowPoint.X, FDocExt, FWinExt) + ContentPositionLeft;
-  Result.Y := MulDiv(WindowPoint.Y, FDocExt, FWinExt) + ContentPositionTop;
+  Result.X := MulDiv(WindowPoint.X + FWinClipRect.Left, FDocExt, FWinExt) + ContentPositionLeft;
+  Result.Y := MulDiv(WindowPoint.Y + FWinClipRect.Top, FDocExt, FWinExt) + ContentPositionTop;
 end;
 
 //-- BG ---------------------------------------------------------- 22.04.2011 --
@@ -338,8 +367,8 @@ function TScalingCanvas.ToWindowUnits(const ContentPoint: TPoint): TPoint;
 //
 // To transform a size or distance value use the overloaded version with the Integer parameter.
 begin
-  Result.X := MulDiv(ContentPoint.X - ContentPositionLeft, FWinExt, FDocExt);
-  Result.Y := MulDiv(ContentPoint.Y - ContentPositionTop, FWinExt, FDocExt);
+  Result.X := MulDiv(ContentPoint.X - ContentPositionLeft, FWinExt, FDocExt) - FWinClipRect.Left;
+  Result.Y := MulDiv(ContentPoint.Y - ContentPositionTop, FWinExt, FDocExt) - FWinClipRect.Top;
 end;
 
 { TCustomHtmlScrollBox }
@@ -483,8 +512,11 @@ begin
     try
       FCanvas.UpdateTextFlags;
       FCanvas.BeforePaint;
-      Paint;
-      FCanvas.AfterPaint;
+      try
+        Paint;
+      finally
+        FCanvas.AfterPaint;
+      end;
     finally
       FCanvas.Handle := 0;
     end;

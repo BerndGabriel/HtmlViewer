@@ -26,18 +26,23 @@ package BegaHtmlViewer2009;
 
 requires
   rtl,
-  vcl;
+  vcl,
+  vclimg,
+  FrameViewer2009,
+  designide,
+  xmlrtl,
+  vclactnband,
+  vclx;
 
 contains
-  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  BegaClasses in '..\source\BegaClasses.pas',
+  HtmlBoxes in '..\source\HtmlBoxes.pas',
+  HtmlControls in '..\source\HtmlControls.pas',
   HtmlDocument in '..\source\HtmlDocument.pas',
-  HtmlGlobals in '..\source\HtmlGlobals.pas',
+  HtmlElements in '..\source\HtmlElements.pas',
   HtmlParser in '..\source\HtmlParser.pas',
-  HtmlSymbols in '..\source\HtmlSymbols.pas',
-  StyleParser in '..\source\StyleParser.pas',
-  HtmlStyles in '..\source\HtmlStyles.pas',
-  HtmlTree in '..\source\HtmlTree.pas',
-  Parser in '..\source\Parser.pas',
-  URLSubs in '..\source\URLSubs.pas';
+  HtmlRenderer in '..\source\HtmlRenderer.pas',
+  HtmlViewer in '..\source\HtmlViewer.pas',
+  HtmlDraw in '..\source\HtmlDraw.pas';
 
 end.

@@ -119,7 +119,7 @@ type
     function GetItem(Index: TStylePropertySymbol): TStyleProperty;
   public
     function IsEmpty: Boolean;
-    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
+    function ToString: ThtString; {$ifdef UseEnhancedRecord} {$else} {$ifdef UseToStringOverride} override; {$endif} {$endif}
     procedure Add(Prop: TStyleProperty);
     procedure Assign(const List: TStylePropertyList);
     procedure Clear;
@@ -311,7 +311,7 @@ type
     FLast: TStyleSelector;
   public
     function IsEmpty: Boolean;
-    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
+    function ToString: ThtString; {$ifdef UseEnhancedRecord} {$else} {$ifdef UseToStringOverride} override; {$endif} {$endif}
     procedure Init;
     procedure Add(Sele: TStyleSelector);
     procedure Assign(const List: TStyleSelectorList);
@@ -337,8 +337,8 @@ type
     Properties: TStylePropertyList;
     Selectors: TStyleSelectorList;
     constructor Create(MediaTypes: TMediaTypes);
-    destructor Destroy; override; {$ifdef UseToStringOverride} override; {$endif}
-    function ToString: ThtString;
+    destructor Destroy; override;
+    function ToString: ThtString; {$ifdef UseToStringOverride} override; {$endif}
     property MediaTypes: TMediaTypes read FMediaTypes;
   end;
 

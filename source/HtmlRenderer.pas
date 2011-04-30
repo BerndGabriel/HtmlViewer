@@ -94,7 +94,7 @@ type
 
   TMediaCapabilities = set of (mcFrames, mcScript, mcEmbed);
 
-  THtmlRenderer = class abstract
+  THtmlRenderer = class
   private
     FDocument: THtmlDocument; // the source to render to destination
     FMediaType: TMediaType;   // media type of destination

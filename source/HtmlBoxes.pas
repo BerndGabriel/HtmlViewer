@@ -500,14 +500,28 @@ end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 procedure THtmlBox.Rescaled(const NewScale: Double);
+var
+  Child: THtmlBox;
 begin
-// override me
+  Child := Children.First;
+  while Child <> nil do
+  begin
+    Child.Rescaled(NewScale);
+    Child := Child.Next;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 procedure THtmlBox.Resized;
+var
+  Child: THtmlBox;
 begin
-// override me
+  Child := Children.First;
+  while Child <> nil do
+  begin
+    Child.Resized;
+    Child := Child.Next;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
