@@ -49,8 +49,11 @@ type
 
   TCustomHtmlScrollBox = class;
 
+  TScalingCanvasState = set of (scsPainting);
+
   TScalingCanvas = class(TControlCanvas)
   private
+    FCanvasState: TScalingCanvasState;
     FControl: TCustomHtmlScrollBox;
     FWinExt: Integer; // scale nominator, window units
     FDocExt: Integer; // scale denominator, content units
@@ -81,6 +84,7 @@ type
     property DocExt: Integer read FDocExt; // scale denominator, content units
     property WinExt: Integer read FWinExt; // scale nominator, window units
     property Scale: Double read GetScale write SetScale;
+    property CanvasState: TScalingCanvasState read FCanvasState;
   end;
 
 //------------------------------------------------------------------------------
@@ -170,6 +174,7 @@ end;
 procedure TScalingCanvas.AfterPaint;
 // Resets the content/window transformation parameters.
 begin
+  Exclude(FCanvasState, scsPainting);
   SetMapMode(Handle, FOldMapMode);
   if FOldMapMode in [MM_ISOTROPIC, MM_ANISOTROPIC] then
   begin
@@ -204,6 +209,7 @@ begin
   SetViewportExtEx(Handle, FWinExt, FWinExt, @FOldWinExt);
   SetWindowOrgEx(Handle, FContentPosition.X, FContentPosition.Y, nil);
   SetViewportOrgEx(Handle, -FWinClipRect.Left, -FWinClipRect.Top, nil);
+  Include(FCanvasState, scsPainting);
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -342,10 +348,11 @@ end;
 //-- BG ---------------------------------------------------------- 22.04.2011 --
 function TScalingCanvas.ToContentUnits(const WindowPoint: TPoint): TPoint;
 // Converts a point of the window coordinate system to a point in the content coordinate system.
-// Includes both translation and scale transformation. The window origin is always (0,0).
+// Includes both translation and scale transformation.
 //
 // To transform a size or distance value use the overloaded version with the Integer parameter.
 begin
+  assert(scsPainting in CanvasState, 'ToContentUnits: Coordinate transformation is valid while painting only');
   Result.X := MulDiv(WindowPoint.X + FWinClipRect.Left, FDocExt, FWinExt) + ContentPositionLeft;
   Result.Y := MulDiv(WindowPoint.Y + FWinClipRect.Top, FDocExt, FWinExt) + ContentPositionTop;
 end;
@@ -363,10 +370,11 @@ end;
 //-- BG ---------------------------------------------------------- 22.04.2011 --
 function TScalingCanvas.ToWindowUnits(const ContentPoint: TPoint): TPoint;
 // Converts a point of the content coordinate system to a point in the window coordinate system.
-// Includes both translation and scale transformation. The window origin is always (0,0).
+// Includes both translation and scale transformation.
 //
 // To transform a size or distance value use the overloaded version with the Integer parameter.
 begin
+  assert(scsPainting in CanvasState, 'ToWindowUnits: Coordinate transformation is valid while painting only');
   Result.X := MulDiv(ContentPoint.X - ContentPositionLeft, FWinExt, FDocExt) - FWinClipRect.Left;
   Result.Y := MulDiv(ContentPoint.Y - ContentPositionTop, FWinExt, FDocExt) - FWinClipRect.Top;
 end;

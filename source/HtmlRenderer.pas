@@ -30,14 +30,23 @@ unit HtmlRenderer;
 interface
 
 uses
-  Classes, Controls, Contnrs,
+  Windows, SysUtils,
+  Classes, Controls, Contnrs, Graphics, Variants, Math,
+  //
   BegaClasses,
   HtmlBoxes,
+  HtmlBuffer,
   HtmlDocument,
+  HtmlDraw,
   HtmlElements,
+  HtmlFonts,
+  HtmlGlobals,
+  HtmlImages,
   HtmlStyles,
   HtmlSymbols,
-  StyleTypes;
+  Parser,
+  StyleTypes,
+  UrlSubs;
 
 type
 
@@ -74,15 +83,15 @@ type
 // and space left by aligned elements.
 //------------------------------------------------------------------------------
 
-  THtmlRenderedDocument = class
-  end;
-
-  THtmlVisualizedDocument = class(THtmlRenderedDocument)
-  private
-    FView: THtmlBox;
-  public
-    constructor Create(View: THtmlBox);
-  end;
+//  THtmlRenderedDocument = class
+//  end;
+//
+//  THtmlVisualizedDocument = class(THtmlRenderedDocument)
+//  private
+//    FView: THtmlBox;
+//  public
+//    constructor Create(View: THtmlBox);
+//  end;
 
 //------------------------------------------------------------------------------
 // THtmlRenderer renders html documents.
@@ -99,30 +108,59 @@ type
     FDocument: THtmlDocument; // the source to render to destination
     FMediaType: TMediaType;   // media type of destination
     FCapabilities: TMediaCapabilities;
-    FWidth: Integer;          // width of destination in pixels
-    FHeight: Integer;         // height of destination in pixels
+    FOnGetBuffer: TGetBufferEvent;
     function GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
+  protected
+    function GetBuffer(const Url: ThtString): ThtBuffer;
   public
-    constructor Create(Document: THtmlDocument; MediaType: TMediaType; Width, Height: Integer);
+    constructor Create(Document: THtmlDocument; MediaType: TMediaType);
     property MediaCapabilities: TMediaCapabilities read FCapabilities write FCapabilities;
     property MediaType: TMediaType read FMediaType;
+    property OnGetBuffer: TGetBufferEvent read FOnGetBuffer write FOnGetBuffer;
+  end;
+
+  THtmlRendererBlockInfo = record
+    Display: TDisplayStyle;
+    Position: TBoxPositionStyle;
+    Float: TBoxFloatStyle;
   end;
 
   THtmlVisualRenderer = class(THtmlRenderer)
   private
     FControls: THtmlControlOfElementMap;
-    function GetControl(Element: THtmlElement): TControl;
-    procedure SetControls(const Value: THtmlControlOfElementMap);
+    FWidth: Integer;          // width of destination in pixels
+    FHeight: Integer;
+    FDefaultFont: ThtFont;
+    FDefaultFontInfo: ThtFontInfo;
+    FOnGetImage: TGetImageEvent;         // height of destination in pixels
+    function GetBorderStyle(Prop: TResultingProperty; Parent, Default: TBorderStyle): TBorderStyle;
+    function GetColor(Prop: TResultingProperty; Parent, Default: TColor): TColor;
+    function GetControl(const Element: THtmlElement): TControl;
+    function DefaultFontSize: Double;
+    function GetDisplay(Prop: TResultingProperty; Parent, Default: TDisplayStyle): TDisplayStyle;
+    function GetFloat(Prop: TResultingProperty; Parent, Default: TBoxFloatStyle): TBoxFloatStyle;
+    function GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
+    function GetLength(Prop: TResultingProperty; Relative: Boolean; Parent, EmBase, Default: Double): Double;
+    function GetPosition(Prop: TResultingProperty; Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
+    function GetPropValue(Prop: TResultingProperty; Parent, Default: Variant): Variant;
     procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); overload;
+    procedure SetControls(const Value: THtmlControlOfElementMap);
+    procedure SetPropertiesToBox(Element: THtmlElement; Box: THtmlBox; Properties: TResultingPropertyMap);
+    procedure GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
   protected
     procedure RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
     procedure RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
   public
-    constructor Create(Document: THtmlDocument; ControlMap: THtmlControlOfElementMap; MediaType: TMediaType; Width, Height: Integer);
+    constructor Create(
+      Document: THtmlDocument;
+      ControlMap: THtmlControlOfElementMap;
+      MediaType: TMediaType;
+      DefaultFont: ThtFont;
+      Width, Height: Integer);
     procedure Render(Owner: TWinControl; ParentBox: THtmlBox); overload;
     property ControlOfElementMap: THtmlControlOfElementMap read FControls write SetControls;
+    property OnGetImage: TGetImageEvent read FOnGetImage write FOnGetImage;
   end;
-
 
 implementation
 
@@ -160,13 +198,36 @@ end;
 
 { THtmlRenderer }
 
-constructor THtmlRenderer.Create(Document: THtmlDocument; MediaType: TMediaType; Width, Height: Integer);
+constructor THtmlRenderer.Create(Document: THtmlDocument; MediaType: TMediaType);
 begin
   inherited Create;
   FDocument := Document;
   FMediaType := MediaType;
-  FWidth := Width;
-  FHeight := Height;
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function THtmlRenderer.GetBuffer(const Url: ThtString): ThtBuffer;
+var
+  Filename: ThtString;
+  Stream: TStream;
+begin
+  if assigned(FOnGetBuffer) then
+    Result := FOnGetBuffer(Self, Url)
+  else
+  begin
+    Filename := HTMLToDos(Url);
+    if FileExists(Filename) then
+    begin
+      Stream := TFileStream.Create(Filename, fmOpenRead + fmShareDenyWrite);
+      try
+        Result := TBuffer.Create(Stream, Filename);
+      finally
+        Stream.Free;
+      end;
+    end
+    else
+      Result := nil;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 17.04.2011 --
@@ -207,32 +268,396 @@ begin
   Result.UpdateFromAttributes(Element.AttributeProperties, False);
 end;
 
-{ THtmlVisualizedDocument }
-
-//-- BG ---------------------------------------------------------- 25.04.2011 --
-constructor THtmlVisualizedDocument.Create(View: THtmlBox);
-begin
-  FView := View;
-end;
+//{ THtmlVisualizedDocument }
+//
+////-- BG ---------------------------------------------------------- 25.04.2011 --
+//constructor THtmlVisualizedDocument.Create(View: THtmlBox);
+//begin
+//  FView := View;
+//end;
 
 { THtmlVisualRenderer }
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 constructor THtmlVisualRenderer.Create(Document: THtmlDocument;
-  ControlMap: THtmlControlOfElementMap; MediaType: TMediaType; Width, Height: Integer);
+  ControlMap: THtmlControlOfElementMap; MediaType: TMediaType; DefaultFont: ThtFont; Width, Height: Integer);
 begin
-  inherited Create(Document, MediaType, Width, Height);
+  inherited Create(Document, MediaType);
   FCapabilities := [mcFrames];
   FControls := ControlMap;
+  FDefaultFont := DefaultFont;
+  FWidth := Width;
+  FHeight := Height;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function THtmlVisualRenderer.DefaultFontSize: Double;
+begin
+  if FDefaultFont = nil then
+    Result := 12
+  else if FDefaultFont.Size < 0 then
+    Result := FDefaultFont.Height * 72 / FDefaultFont.PixelsPerInch
+  else
+    Result := FDefaultFont.Size;
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function THtmlVisualRenderer.GetBorderStyle(Prop: TResultingProperty; Parent, Default: TBorderStyle): TBorderStyle;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else
+      case VarType(Prop.Prop.Value) of
+        varUString,
+        varString:
+          if TryStrToBorderStyle(Prop.Prop.Value, Result) then
+            Prop.Prop.Value := Integer(Result);
+
+        varByte,
+        varWord,
+        varInteger:
+          Result := TBorderStyle(Prop.Prop.Value);
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function THtmlVisualRenderer.GetColor(Prop: TResultingProperty; Parent, Default: TColor): TColor;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else
+      case VarType(Prop.Prop.Value) of
+        varUString,
+        varString:
+          if TryStrToColor(Prop.Prop.Value, False, Result) then
+            Prop.Prop.Value := Integer(Result);
+
+        varInteger:
+          Result := TColor(Prop.Prop.Value);
+      end;
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
-function THtmlVisualRenderer.GetControl(Element: THtmlElement): TControl;
+function THtmlVisualRenderer.GetControl(const Element: THtmlElement): TControl;
 begin
   if FControls <> nil then
     Result := FControls.Get(Element)
   else
     Result := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function THtmlVisualRenderer.GetDisplay(Prop: TResultingProperty; Parent, Default: TDisplayStyle): TDisplayStyle;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else
+      case VarType(Prop.Prop.Value) of
+        varUString,
+        varString:
+          if TryStrToDisplayStyle(Prop.Prop.Value, Result) then
+            Prop.Prop.Value := Integer(Result);
+
+        varByte,
+        varWord,
+        varInteger:
+          Result := TDisplayStyle(Prop.Prop.Value);
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function THtmlVisualRenderer.GetFloat(Prop: TResultingProperty; Parent, Default: TBoxFloatStyle): TBoxFloatStyle;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else
+      case VarType(Prop.Prop.Value) of
+        varUString,
+        varString:
+          if TryStrToBoxFloatStyle(Prop.Prop.Value, Result) then
+            Prop.Prop.Value := Integer(Result);
+
+        varByte,
+        varWord,
+        varInteger:
+          Result := TBoxFloatStyle(Prop.Prop.Value);
+      end;
+end;
+
+//------------------------------------------------------------------------------
+procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
+
+  //BG, 03.05.2011:
+  function GetFontWeight(Prop: TResultingProperty; Parent, Default: Integer): Integer;
+  // CSS 2.1:
+  // Parent  | 100 200 300 400 500 600 700 800 900
+  // --------+------------------------------------
+  // bolder  | 400 400 400 700 700 900 900 900 900
+  // lighter | 100 100 100 100 100 400 400 700 700
+  begin
+    Result := Default;
+    if Prop <> nil then
+      if Prop.Prop.Value = Inherit then
+        Result := Parent
+      else
+        case VarType(Prop.Prop.Value) of
+          varUString,
+          varString:
+          begin
+            if htCompareString(Prop.Prop.Value, 'normal') = 0 then
+              Result := 400
+            else if htCompareString(Prop.Prop.Value, 'bold') = 0 then
+              Result := 700
+            else if htCompareString(Prop.Prop.Value, 'bolder') = 0 then
+              if Parent <= 300 then
+                Result := 400
+              else if Parent < 600 then
+                Result := 700
+              else
+                Result := 900
+            else if htCompareString(Prop.Prop.Value, 'lighter') = 0 then
+              if Parent <= 500 then
+                Result := 100
+              else if Parent < 800 then
+                Result := 400
+              else
+                Result := 700
+            else if htCompareString(Prop.Prop.Value, 'light') = 0 then
+              Result := 100;
+            Prop.Prop.Value := Result;
+          end;
+
+          varSingle,
+          varDouble,
+          varByte,
+          varWord,
+          varInteger:
+            Result := Prop.Prop.Value;
+        end;
+  end;
+
+  //BG, 03.05.2011:
+  function IsItalic(Prop: TResultingProperty; Parent, Default: Boolean): Boolean;
+  begin
+    Result := Default;
+    if Prop <> nil then
+      if Prop.Prop.Value = Inherit then
+        Result := Parent
+      else
+        case VarType(Prop.Prop.Value) of
+          varUString,
+          varString:
+          begin
+            if htCompareString(Prop.Prop.Value, 'italic') = 0 then
+              Result := True
+            else if htCompareString(Prop.Prop.Value, 'oblique') = 0 then
+              Result := True
+            else
+              Result := False;
+            Prop.Prop.Value := Result;
+          end;
+
+          varBoolean:
+            Result := Prop.Prop.Value;
+        end;
+  end;
+
+  //BG, 03.05.2011:
+  function GetTextDecoration(Prop: TResultingProperty; Parent, Default: TFontStyles): TFontStyles;
+  var
+    ResultAsByte: Byte absolute Result;
+  begin
+    Result := Default;
+    if Prop <> nil then
+      if Prop.Prop.Value = Inherit then
+        Result := Parent
+      else
+        case VarType(Prop.Prop.Value) of
+          varUString,
+          varString:
+          begin
+            if htCompareString(Prop.Prop.Value, 'underline') = 0 then
+              Result := [fsUnderline]
+            else if htCompareString(Prop.Prop.Value, 'line-through') = 0 then
+              Result := [fsStrikeOut]
+            else
+              Result := [];
+            Prop.Prop.Value := ResultAsByte;
+          end;
+
+          varByte,
+          varWord,
+          varInteger:
+            ResultAsByte := Prop.Prop.Value;
+        end;
+  end;
+
+  //BG, 03.05.2011:
+  function GetFontName(Prop: TResultingProperty; Parent, Default: ThtString): ThtString;
+
+    function FontFamilyToFontName(Family: ThtString): ThtString;
+    begin
+      Result := Family;
+    end;
+
+  begin
+    Result := Default;
+    if Prop <> nil then
+      if Prop.Prop.Value = Inherit then
+        Result := Parent
+      else
+        case VarType(Prop.Prop.Value) of
+          varUString,
+          varString:
+          begin
+            Result := FontFamilyToFontName(Prop.Prop.Value);
+            Prop.Prop.Value := Result;
+          end;
+        end;
+  end;
+
+  //BG, 03.05.2011:
+  function GetFontSize(Prop: TResultingProperty; Parent, Default: Double): Double;
+  begin
+    Result := Default;
+    if Prop <> nil then
+      if Prop.Prop.Value = Inherit then
+        Result := Parent
+      else
+        case VarType(Prop.Prop.Value) of
+          varUString,
+          varString:
+          begin
+            Result := StrToFontSize(Prop.Prop.Value, FontConvBase, DefaultFontSize, Parent, Default);
+            Prop.Prop.Value := Result;
+          end;
+
+          varSingle,
+          varDouble,
+          varByte,
+          varWord,
+          varInteger:
+            Result := Prop.Prop.Value;
+        end;
+  end;
+
+var
+  Wt: Integer;
+  Style: TFontStyles;
+begin
+  Font.ibgColor := GetColor(Props[BackgroundColor], Parent.ibgColor, Default.ibgColor);
+  Font.iColor := GetColor(Props[Color], Parent.iColor, Default.iColor);
+
+  Style := [];
+  if GetFontWeight(Props[FontWeight], Parent.iWeight, Default.iWeight) >= 600 then
+    Include(Style, fsBold);
+  if IsItalic(Props[FontStyle], fsItalic in Parent.iStyle, fsItalic in Default.iStyle) then
+    Include(Style, fsItalic);
+  Font.iStyle := Style + GetTextDecoration(Props[TextDecoration],
+    Parent.iStyle * [fsUnderline, fsStrikeOut],
+    Default.iStyle * [fsUnderline, fsStrikeOut]);
+
+  Font.iSize := GetFontSize(Props[FontSize], Parent.iSize, Default.iSize);
+  Font.iCharset := Default.iCharSet;
+
+  Font.iName := GetFontName(Props[FontFamily], Parent.iName, Default.iName);
+  Font.iCharExtra := GetPropValue(Props[LetterSpacing], Parent.iCharExtra, Default.iCharExtra);
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function THtmlVisualRenderer.GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
+var
+  Filename: ThtString;
+  Stream: TStream;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else if assigned(FOnGetImage) then
+      Result := FOnGetImage(Self, Prop.Prop.Value)
+    else
+    begin
+      Filename := HTMLToDos(Prop.Prop.Value);
+      if FileExists(Filename) then
+      begin
+        Stream := TFileStream.Create(Filename, fmOpenRead + fmShareDenyWrite);
+        try
+          Result := LoadImageFromStream(Stream, NotTransp);
+        finally
+          Stream.Free;
+        end;
+      end
+      else
+        Result := nil;
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function THtmlVisualRenderer.GetLength(Prop: TResultingProperty; Relative: Boolean; Parent, EmBase, Default: Double): Double;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else
+      case VarType(Prop.Prop.Value) of
+        varUString,
+        varString:
+        begin
+          Result := StrToLength(Prop.Prop.Value, Relative, Parent, EmBase, Default);
+          Prop.Prop.Value := Result;
+        end;
+
+        varSingle,
+        varDouble,
+        varByte,
+        varWord,
+        varInteger:
+          Result := Prop.Prop.Value;
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function THtmlVisualRenderer.GetPosition(Prop: TResultingProperty; Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
+begin
+  Result := Default;
+  if Prop <> nil then
+    if Prop.Prop.Value = Inherit then
+      Result := Parent
+    else
+      case VarType(Prop.Prop.Value) of
+        varUString,
+        varString:
+          if TryStrToBoxPositionStyle(Prop.Prop.Value, Result) then
+            Prop.Prop.Value := Integer(Result);
+
+        varByte,
+        varWord,
+        varInteger:
+          Result := TBoxPositionStyle(Prop.Prop.Value);
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function THtmlVisualRenderer.GetPropValue(Prop: TResultingProperty; Parent, Default: Variant): Variant;
+begin
+  if Prop = nil then
+    Result := Default
+  else
+  begin
+    Result := Prop.Prop.Value;
+    if Result = Inherit then
+      Result := Parent;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 17.04.2011 --
@@ -256,16 +681,54 @@ procedure THtmlVisualRenderer.RenderBody(Owner: TWinControl; ParentBox: THtmlBox
 var
   Box: THtmlBodyBox;
   Control: THtmlBodyControl;
+  Child: THtmlElement;
   Properties: TResultingPropertyMap;
+  Info: THtmlRendererBlockInfo;
 begin
-  Control := ControlOfElementMap.Get(Element) as THtmlBodyControl;
+  Properties := GetResultingProperties(Element);
+
+  // compute display, position and float:
+  Info.Display := GetDisplay(Properties[psDisplay], pdBlock, pdBlock);
+  if Info.Display = pdNone then
+    exit;
+
+  Info.Position := GetPosition(Properties[psPosition], posStatic, posStatic);
+  case Info.Position of
+    posAbsolute,
+    posFixed:
+    begin
+      Info.Float := flNone;
+      Info.Display := ToRootDisplayStyle(Info.Display);
+    end;
+  else
+    Info.Float := GetFloat(Properties[psFloat], flNone, flNone);
+    if Info.Float <> flNone then
+      Info.Display := ToRootDisplayStyle(Info.Display);
+  end;
+  // for the root element:
+  Info.Display := ToRootDisplayStyle(Info.Display);
+
+  // get or create the body control
+  Control := GetControl(Element) as THtmlBodyControl;
   if Control = nil then
   begin
     Control := THtmlBodyControl.Create(Owner);
     ControlOfElementMap.Put(Element, Control);
   end;
   Box := THtmlBodyBox.Create(ParentBox, Control);
-  Properties := GetResultingProperties(Element);
+  Box.BoundsRect := ParentBox.BoundsRect;
+  Box.Tiled := True;
+
+  // set properties
+  SetPropertiesToBox(Element, Box, Properties);
+
+  // render children
+  Child := Element.FirstChild;
+  while Child <> nil do
+  begin
+    Render(Control, Box, Child);
+    Child := Child.Next;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
@@ -279,6 +742,82 @@ procedure THtmlVisualRenderer.SetControls(const Value: THtmlControlOfElementMap)
 begin
   if FControls <> Value then
     FControls.Assign(Value);
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+procedure THtmlVisualRenderer.SetPropertiesToBox(Element: THtmlElement; Box: THtmlBox; Properties: TResultingPropertyMap);
+
+  function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
+  begin
+    Result[reLeft]   := Round(GetLength(Properties[Left],   False, Parent[reLeft],   BaseSize, Default[reLeft]  ));
+    Result[reTop]    := Round(GetLength(Properties[Top],    False, Parent[reTop],    BaseSize, Default[reTop]   ));
+    Result[reRight]  := Round(GetLength(Properties[Right],  False, Parent[reRight],  BaseSize, Default[reRight] ));
+    Result[reBottom] := Round(GetLength(Properties[Bottom], False, Parent[reBottom], BaseSize, Default[reBottom]));
+  end;
+
+  function GetColors(Left, Top, Right, Bottom: TPropertySymbol; Parent, Default: TRectColors): TRectColors;
+  begin
+    Result[reLeft]   := GetColor(Properties[Left],   Parent[reLeft],   Default[reLeft]  );
+    Result[reTop]    := GetColor(Properties[Top],    Parent[reTop],    Default[reTop]   );
+    Result[reRight]  := GetColor(Properties[Right],  Parent[reRight],  Default[reRight] );
+    Result[reBottom] := GetColor(Properties[Bottom], Parent[reBottom], Default[reBottom]);
+  end;
+
+  function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; Parent, Default: TRectStyles): TRectStyles;
+  begin
+    Result[reLeft]   := GetBorderStyle(Properties[Left],   Parent[reLeft],   Default[reLeft]);
+    Result[reTop]    := GetBorderStyle(Properties[Top],    Parent[reTop],    Default[reTop]);
+    Result[reRight]  := GetBorderStyle(Properties[Right],  Parent[reRight],  Default[reRight]);
+    Result[reBottom] := GetBorderStyle(Properties[Bottom], Parent[reBottom], Default[reBottom]);
+  end;
+
+const
+  NullLengths: TRectIntegers = (0, 0, 0, 0);
+  NoneColors: TRectColors = (clNone, clNone, clNone, clNone);
+  NoneStyles: TRectStyles = (bssNone, bssNone, bssNone, bssNone);
+var
+  ParentBox: THtmlBox;
+  FontInfo: ThtFontInfo;
+  EmBase: Integer;
+begin
+  ParentBox := Box.Parent;
+  while ParentBox is THtmlAnonymousBox do
+    ParentBox := ParentBox.Parent;
+
+  // Font
+  GetFontInfo(Properties, FontInfo, FDefaultFontInfo, FDefaultFontInfo);
+  Box.Font := AllMyFonts.GetFontLike(FontInfo);
+  EmBase := Box.Font.EmSize;
+
+  // Background
+  if ParentBox <> nil then
+    Box.Color := GetColor(Properties[BackgroundColor], ParentBox.Color, clNone)
+  else
+    Box.Color := GetColor(Properties[BackgroundColor], clNone, clNone);
+
+  if ParentBox <> nil then
+    Box.Image := GetImage(Properties[BackgroundImage], ParentBox.Image, nil)
+  else
+    Box.Image := GetImage(Properties[BackgroundImage], nil, nil);
+
+  // Borders
+  if ParentBox <> nil then
+  begin
+    Box.Margins      := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, ParentBox.Margins, NullLengths, EmBase);
+    Box.Paddings     := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, ParentBox.Paddings, NullLengths, EmBase);
+    Box.BorderWidths := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, ParentBox.BorderWidths, NullLengths, EmBase);
+    Box.BorderColors := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
+    Box.BorderStyles := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
+  end
+  else
+  begin
+    Box.Margins      := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, NullLengths, NullLengths, EmBase);
+    Box.Paddings     := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, NullLengths, NullLengths, EmBase);
+    Box.BorderWidths := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, NullLengths, NullLengths, EmBase);
+    Box.BorderColors := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, NoneColors, NoneColors);
+    Box.BorderStyles := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, NoneStyles, NoneStyles);
+  end;
+
 end;
 
 end.

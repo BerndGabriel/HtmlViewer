@@ -26,7 +26,6 @@ package FrameViewer2009;
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
 {$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
-{$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
 requires
@@ -61,6 +60,8 @@ contains
   StyleTypes in '..\source\StyleTypes.pas',
   HtmlImages in '..\source\HtmlImages.pas',
   HtmlSymbols in '..\source\HtmlSymbols.pas',
-  Parser in '..\source\Parser.pas';
+  Parser in '..\source\Parser.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas';
 
 end.

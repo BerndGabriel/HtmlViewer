@@ -154,8 +154,8 @@ end;
 procedure TCustomHtmlViewer.Resize;
 begin
   inherited;
-  if FView <> nil then
-    FView.Resized;
+  Include(FState, vsDocumentChanged);
+  UpdateDocument;
 end;
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --
@@ -168,6 +168,8 @@ begin
         FDocument.Free;
     FDocument := Value;
     Include(FState, vsDocumentChanged);
+    UpdateDocument;
+    UpdateView;
     Invalidate;
   end;
 end;
@@ -178,8 +180,7 @@ begin
   if FScale <> Value then
   begin
     FScale := Value;
-    if FView <> nil then
-      FView.Rescaled(Value);
+    FView.Rescaled(Value);
     Invalidate;
   end;
 end;
@@ -215,13 +216,17 @@ begin
   begin
     Exclude(FState, vsDocumentChanged);
     FView.Children.Clear;
-    Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, mtScreen, ClientWidth, ClientHeight);
-    try
-      Renderer.MediaCapabilities := [mcFrames];
-      Renderer.Render(Self, FView);
-    finally
-      Include(FState, vsViewChanged);
-      Renderer.Free;
+    if FDocument <> nil then
+    begin                                                                      //TODO -1 -oBG, 02.05.2011:  Defaultfont parameter
+      FView.BoundsRect := ClientRect;
+      Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, mtScreen, nil, ClientWidth, ClientHeight);
+      try
+        Renderer.MediaCapabilities := [mcFrames];
+        Renderer.Render(Self, FView);
+      finally
+        Include(FState, vsViewChanged);
+        Renderer.Free;
+      end;
     end;
   end;
 end;
@@ -241,7 +246,7 @@ end;
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 procedure TCustomHtmlViewer.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 begin
-  if FView = nil then
+  if FView.Children.IsEmpty then
     // fill background as long as there is no box to show.
     inherited
   else

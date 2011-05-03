@@ -36,7 +36,12 @@ uses
   Windows,
 {$endif}
   Classes, Graphics, Controls,
-  HtmlGlobals, HTMLUn2, HTMLSubs, StyleUn;
+  //
+  HtmlGlobals,
+  HtmlFonts,
+  HTMLUn2,
+  HTMLSubs,
+  StyleUn;
 
 type
 
@@ -212,7 +217,7 @@ var
   T: TAttribute;
   Multiple: boolean;
   PntPanel: TWinControl; //TPaintPanel;
-  Tmp: TMyFont;
+  Tmp: ThtFont;
 begin
   inherited;
   CodePage := Prop.CodePage;
@@ -430,7 +435,7 @@ end;
 constructor TComboFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); 
 var
   PntPanel: TWinControl; //TPaintPanel;
-  Tmp: TMyFont;
+  Tmp: ThtFont;
 begin
   inherited;
   CodePage := Prop.CodePage;
@@ -587,7 +592,7 @@ var
   PntPanel: TWinControl; //TPaintPanel;
   I: integer;
   SB: TScrollStyle;
-  Tmp: TMyFont;
+  Tmp: ThtFont;
 begin
   inherited;
   CodePage := Prop.CodePage;

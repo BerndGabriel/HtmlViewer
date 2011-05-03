@@ -25,14 +25,21 @@ Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
+{$I htmlcons.inc}
+
 unit StyleTypes;
 
 interface
 
 uses
-  Windows, SysUtils,
+  Windows, SysUtils, Math, Forms, Variants,
   //
   HtmlGlobals;
+
+const
+  varInt = [varInteger, varByte, varSmallInt, varShortInt, varWord, varLongWord];
+  varFloat = [varSingle, varDouble, varCurrency];
+  varNum = varInt + varFloat;
 
 type
   TAlignmentStyle = (
@@ -78,11 +85,32 @@ type
   PtPositionRec = array[1..2] of PositionRec;
 
 type
+  TBoxFloatStyle = (
+    flNone,
+    flLeft,
+    flRight,
+    flTop,
+    flBottom);
+const
+  CBoxFloatStyle: array[TBoxFloatStyle] of ThtString = (
+    'none',
+    'left',
+    'right',
+    'top',
+    'bottom');
+
+type
   TBoxPositionStyle = (
     posStatic,
     posRelative,
     posAbsolute,
     posFixed);
+const
+  CBoxPositionStyle: array[TBoxPositionStyle] of ThtString = (
+    'static',
+    'relative',
+    'absolute',
+    'fixed');
 
 type
   TBorderStyle = (
@@ -159,6 +187,8 @@ type
     pdTableCaption,
     pdNone);
 
+function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle;
+
 const
   CDisplayStyle: array [TDisplayStyle] of ThtString = (
     '',
@@ -203,9 +233,11 @@ type
 //BG, 16.09.2010: CSS2.2: same sizes like html font size:
 type
   TFontSizeIncrement = -6..6;
+  TFontConvBase = array[0..7] of Double;
+  TFontConv = array[1..7] of Double;
 const
-  FontConvBase: array[1..7] of double = (8.0, 10.0, 12.0, 14.0, 18.0, 24.0, 36.0);
-  PreFontConvBase: array[1..7] of double = (7.0, 8.0, 10.0, 12.0, 15.0, 20.0, 30.0);
+  FontConvBase: TFontConvBase = (0.5833, 0.75, 0.8333, 1.0, 1.1667, 1.5, 2.0, 3.0);
+  PreFontConvBase: TFontConvBase = (0.5, 0.5833, 0.75, 0.8333, 1.0, 1.25, 1.6667, 2.5);
 
 //------------------------------------------------------------------------------
 // media types
@@ -258,8 +290,15 @@ function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
 function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
 function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): Boolean;
 
+function StrToFontName(const Str: ThtString): ThtString;
+function StrToFontSize(const Str: ThtString; const FontConvBase: TFontConvBase; DefaultFontSize, Base, Default: Double): Double; overload;
+function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, Default: Double): Double; overload;
+function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+
 function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlignmentStyle): Boolean;
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
+function TryStrToBoxFloatStyle(const Str: ThtString; out Float: TBoxFloatStyle): Boolean;
+function TryStrToBoxPositionStyle(const Str: ThtString; out Position: TBoxPositionStyle): Boolean;
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: TBulletStyle): Boolean;
 function TryStrToDisplayStyle(const Str: ThtString; out Display: TDisplayStyle): Boolean;
 
@@ -394,6 +433,37 @@ begin
   Result := False;
 end;
 
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TryStrToBoxFloatStyle(const Str: ThtString; out Float: TBoxFloatStyle): Boolean;
+var
+  I: TBoxFloatStyle;
+begin
+  for I := low(I) to high(I) do
+    if CBoxFloatStyle[I] = Str then
+    begin
+      Result := True;
+      Float := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TryStrToBoxPositionStyle(const Str: ThtString; out Position: TBoxPositionStyle): Boolean;
+var
+  I: TBoxPositionStyle;
+begin
+  for I := low(I) to high(I) do
+    if CBoxPositionStyle[I] = Str then
+    begin
+      Result := True;
+      Position := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+
 //-- BG ---------------------------------------------------------- 16.04.2011 --
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: TBulletStyle): Boolean;
 var
@@ -422,6 +492,449 @@ begin
       exit;
     end;
   Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle;
+begin
+  case Display of
+    pdInlineTable:
+      Result := pdTable;
+
+    pdInline,
+    pdInlineBlock,
+    pdRunIn,
+    pdTableCaption,
+    pdTableCell,
+    pdTableColumn,
+    pdTableColumnGroup,
+    pdTableFooterGroup,
+    pdTableHeaderGroup,
+    pdTableRow,
+    pdTableRowGroup:
+      Result := pdBlock;
+  else
+    Result := Display;
+  end;
+end;
+
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function StrToFontName(const Str: ThtString): ThtString;
+
+  function GetNextSplitter(const Str: String; var I: Integer; out Splitter: ThtString): Boolean;
+  var
+    J: Integer;
+    Dlm: ThtChar;
+  begin
+    Result := I < Length(Str);
+    if Result then
+    begin
+      J := PosX(',', Str, I);
+      if J = 0 then
+        // no more commas, try the rest
+        J := Length(Str) + 1;
+
+      // trim left and detect string delimiters " or '
+      Dlm := #0;
+      while I < J do
+      begin
+        case Str[I] of
+          TabChar,
+          LfChar,
+          FfChar,
+          CrChar,
+          SpcChar:
+            Inc(I);
+
+          '''',
+          '"':
+          begin
+            Dlm := Str[I];
+            Inc(I);
+            break;
+          end;
+        else
+          break;
+        end;
+      end;
+
+      // trim right and detect matching string delimiter
+      while I < J do
+      begin
+        case Str[J - 1] of
+          TabChar,
+          LfChar,
+          FfChar,
+          CrChar,
+          SpcChar:
+            Dec(I);
+        else
+          if Str[J - 1] = Dlm then
+            Dec(J);
+          break;
+        end;
+      end;
+
+      if I < J then
+        Splitter := Copy(Str, I, J - I)
+      else
+        Result := False;
+      I := J + 1;
+    end;
+  end;
+
+  procedure TranslateGenericFontName(var Str: ThtString);
+  const
+    AMax = 5;
+    Generic1: array[1..AMax] of ThtString = ('serif', 'monospace', 'sans-serif', 'cursive', 'helvetica');
+    Generic2: array[1..AMax] of ThtString = ('Times New Roman', 'Courier New', 'Arial', 'Lucida Handwriting', 'Arial');
+  var
+    I: Integer;
+    F: ThtString;
+  begin
+    F := htLowerCase(Str);
+    for I := 1 to AMax do
+      if htCompareString(F, Generic1[I]) = 0 then
+      begin
+        Str := Generic2[I];
+        break;
+      end;
+  end;
+
+var
+  Pos: Integer;
+  FontName: ThtString;
+begin
+  Pos := 1;
+  while GetNextSplitter(Str, Pos, FontName) do
+  begin
+    TranslateGenericFontName(FontName);
+    if Screen.Fonts.IndexOf(FontName) >= 0 then
+    begin
+      Result := FontName;
+      break;
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.07.2010 --
+function DecodeSize(const Str: ThtString; out V: Double; out U: ThtString): Boolean;
+var
+  I, J, L: Integer;
+begin
+  U := '';
+  Val(Str, V, I);
+  Result := I <> 1;
+  if Result then
+  begin
+    L := Length(Str);
+    if I = 0 then
+      I := L + 1;
+    J := Pos('e', Str); {'e' would be legal for Val but not for us}
+    if (J > 0) and (I > J) then
+      I := J;
+    if I <= L then
+    begin
+      Val(Copy(Str, 1, I - 1), V, J);
+      U := Trim(Copy(Str, I, L - I + 1)); // text after number, maybe a unit
+    end;
+  end;
+end;
+
+const
+// CSS 2.1 defines a fixed ratio between pt and px at 96 dpi: 1px = 0.75pt.
+// (see http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-length for details).
+  PixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
+  PointsPerInch = 72.0;
+  PointsPerPixel = PointsPerInch / PixelsPerInch;
+
+type
+  TLengthUnitInfo = record
+    Name: ThtString;
+    Factor: Double; // factor of length unit
+    Index: Integer; // index of font size
+    IsAbsolute: Boolean;
+  end;
+  ThtUnit = (
+    luNone, luEm, luEx, luPercent, luPt, luPx, luPc, luIn, luCm, luMm,
+    fsNone, fsSmaller, fsLarger,
+    fsXxSmall, fsXSmall, fsSmall, fsMedium, fsLarge, fsXLarge, fsXxLarge);
+
+  TLengthUnit = luNone..luMm;
+  TFontSize = fsNone..fsXxLarge;
+
+const
+  CUnitInfo: array [ThtUnit] of TLengthUnitInfo = (
+    // length units
+    (Name: '';   Factor: 1.00; IsAbsolute: True),
+    (Name: 'em'; Factor: 1.00; IsAbsolute: False),
+    (Name: 'ex'; Factor: 0.50; IsAbsolute: False),
+    (Name: '%' ; Factor: 0.01; IsAbsolute: False),
+    (Name: 'pt'; Factor: 0.75; IsAbsolute: True),
+    (Name: 'px'; Factor: 1.00; IsAbsolute: True),
+    (Name: 'pc'; Factor: 9.00; IsAbsolute: True),
+    (Name: 'in'; Factor: PixelsPerInch       ; IsAbsolute: True),
+    (Name: 'cm'; Factor: PixelsPerInch / 2.54; IsAbsolute: True),
+    (Name: 'mm'; Factor: PixelsPerInch / 25.4; IsAbsolute: True),
+    // css font sizes
+    (Name: '';          Index:  3; IsAbsolute: True),
+    (Name: 'smaller';   Index: -1; IsAbsolute: False),
+    (Name: 'larger';    Index:  1; IsAbsolute: False),
+    (Name: 'xx-small';  Index:  0; IsAbsolute: True),
+    (Name: 'x-small';   Index:  1; IsAbsolute: True),
+    (Name: 'small';     Index:  2; IsAbsolute: True),
+    (Name: 'medium';    Index:  3; IsAbsolute: True),
+    (Name: 'large';     Index:  4; IsAbsolute: True),
+    (Name: 'x-large';   Index:  5; IsAbsolute: True),
+    (Name: 'xx-large';  Index:  6; IsAbsolute: True)
+  );
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TryStrToLenthUnit(const Str: ThtString; out LengthUnit: TLengthUnit): Boolean;
+var
+  L: ThtString;
+  I: TLengthUnit;
+begin
+  L := htLowerCase(Str);
+  for I := low(I) to high(I) do
+    if htCompareString(CUnitInfo[I].Name, L) = 0 then
+    begin
+      Result := True;
+      LengthUnit := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TryStrToFontSize(const Str: ThtString; out FontSize: TFontSize): Boolean;
+var
+  L: ThtString;
+  I: TFontSize;
+begin
+  L := htLowerCase(Str);
+  for I := low(I) to high(I) do
+    if htCompareString(CUnitInfo[I].Name, L) = 0 then
+    begin
+      Result := True;
+      FontSize := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//------------------------------------------------------------------------------
+function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+{given a length ThtString, return the appropriate pixel value.
+ Base is the base value for a relative value without unit or with percentage.
+ EmBase is the base value for units relative to the font.
+ Default returned if no match.
+}
+var
+  V: Double;
+  U: ThtString;
+  LU: TLengthUnit;
+begin
+  Result := Default;
+  if DecodeSize(Str, V, U) then
+  begin
+    {U the units}
+    if U = '' then
+    begin
+      if Relative then
+        Result := Round(V * Base);
+    end
+    else if TryStrToLenthUnit(U, LU) then
+      with CUnitInfo[LU] do
+        if IsAbsolute then
+          Result := V * Factor
+        else if LU = luPercent then
+          Result := V * Factor * Base
+        else
+          Result := V * Factor * EmBase
+    else
+  end;
+end;
+
+//------------------------------------------------------------------------------
+function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, Default: Double): Double;
+{given a font-size ThtString, return the point size}
+
+  function IncFontSize(Increment: TFontSizeIncrement): Double;
+  var
+    OldIndex, NewIndex: Byte;
+    D1, D2: Double;
+  begin
+    // get nearest old font size index
+    OldIndex := 4;
+    D1 := Base - FontConv[OldIndex];
+    repeat
+      case Sign(D1) of
+        -1:
+        begin
+          Dec(OldIndex);
+          D2 := Base - FontConv[OldIndex];
+          if D2 >= 0 then
+          begin
+            if Abs(D1) < Abs(D2) then
+              Inc(OldIndex);
+            break;
+          end;
+          D1 := D2;
+        end;
+
+        1:
+        begin
+          Inc(OldIndex);
+          D2 := Base - FontConv[OldIndex];
+          if D2 <= 0 then
+          begin
+            if Abs(D1) > Abs(D2) then
+              Dec(OldIndex);
+            break;
+          end;
+          D1 := D2;
+        end;
+
+      else
+        break;
+      end;
+    until (OldIndex = 1) or (OldIndex = 7);
+
+    NewIndex := OldIndex + Increment;
+    if NewIndex < 1 then
+    begin
+      Inc(OldIndex, 1 - NewIndex);
+      NewIndex := 1;
+    end
+    else if NewIndex > 7 then
+    begin
+      Dec(OldIndex, NewIndex - 7);
+      NewIndex := 7;
+    end;
+
+    if OldIndex = NewIndex then
+      Result := Base
+    else
+      Result := Base * FontConv[NewIndex] / FontConv[OldIndex];
+  end;
+
+var
+  V: Double;
+  U: ThtString;
+  LU: TLengthUnit;
+  FS: TFontSize;
+begin
+  Result := Default;
+  if DecodeSize(Str, V, U) then
+  begin
+    if TryStrToLenthUnit(U, LU) then
+      with CUnitInfo[LU] do
+        if IsAbsolute then
+          Result := V * Factor * PointsPerPixel
+        else
+          Result := V * Factor * Base;
+  end
+  else
+  begin
+    if TryStrToFontSize(Str, FS) then
+      with CUnitInfo[FS] do
+        if IsAbsolute then
+          Result := FontConv[Index]
+        else
+          Result := IncFontSize(Index);
+  end;
+end;
+
+//------------------------------------------------------------------------------
+function StrToFontSize(const Str: ThtString; const FontConvBase: TFontConvBase; DefaultFontSize, Base, Default: Double): Double;
+{given a font-size ThtString, return the point size}
+
+  function IncFontSize(Increment: TFontSizeIncrement): Double;
+  var
+    OldIndex, NewIndex: Byte;
+    D1, D2: Double;
+  begin
+    // get nearest old font size index
+    OldIndex := 4;
+    D1 := Base - FontConvBase[OldIndex] * DefaultFontSize;
+    repeat
+      case Sign(D1) of
+        -1:
+        begin
+          Dec(OldIndex);
+          D2 := Base - FontConvBase[OldIndex] * DefaultFontSize;
+          if D2 >= 0 then
+          begin
+            if Abs(D1) < Abs(D2) then
+              Inc(OldIndex);
+            break;
+          end;
+          D1 := D2;
+        end;
+
+        1:
+        begin
+          Inc(OldIndex);
+          D2 := Base - FontConvBase[OldIndex] * DefaultFontSize;
+          if D2 <= 0 then
+          begin
+            if Abs(D1) > Abs(D2) then
+              Dec(OldIndex);
+            break;
+          end;
+          D1 := D2;
+        end;
+
+      else
+        break;
+      end;
+    until (OldIndex = 1) or (OldIndex = 7);
+
+    NewIndex := OldIndex + Increment;
+    if NewIndex < 1 then
+    begin
+      Inc(OldIndex, 1 - NewIndex);
+      NewIndex := 1;
+    end
+    else if NewIndex > 7 then
+    begin
+      Dec(OldIndex, NewIndex - 7);
+      NewIndex := 7;
+    end;
+
+    if OldIndex = NewIndex then
+      Result := Base
+    else
+      Result := Base * FontConvBase[NewIndex] / FontConvBase[OldIndex];
+  end;
+
+var
+  V: Double;
+  U: ThtString;
+  LU: TLengthUnit;
+  FS: TFontSize;
+begin
+  Result := Default;
+  if DecodeSize(Str, V, U) then
+  begin
+    if TryStrToLenthUnit(U, LU) then
+      with CUnitInfo[LU] do
+        if IsAbsolute then
+          Result := V * Factor * PointsPerPixel
+        else
+          Result := V * Factor * Base;
+  end
+  else
+  begin
+    if TryStrToFontSize(Str, FS) then
+      with CUnitInfo[FS] do
+        if IsAbsolute then
+          Result := FontConvBase[Index] * DefaultFontSize
+        else
+          Result := IncFontSize(Index);
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 07.04.2011 --
@@ -493,8 +1006,7 @@ begin
   end;
 end;
 
-{----------------CalcBackgroundLocationAndTiling}
-
+//-- BG ---------------------------------------------------------- 07.04.2011 --
 procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
   XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
 

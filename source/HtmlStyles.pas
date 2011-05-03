@@ -106,7 +106,7 @@ type
     destructor Destroy; override;
     property Symbol: TStylePropertySymbol read FSymbol;
     property Precedence: TPropertyPrecedence read FPrecedence;
-    property Value: Variant read FValue;
+    property Value: Variant read FValue write FValue;
     property Next: TStyleProperty read FNext;
     property Prev: TStyleProperty read FPrev;
   end;
@@ -365,6 +365,8 @@ type
   public
     function Compare(const AProperty: TStyleProperty; const ASelector: TStyleSelector): Integer; {$ifdef UseInline} inline; {$endif}
     procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
+    property Prop: TStyleProperty read FProperty;
+    property Sele: TStyleSelector read FSelector;
   end;
 
   TResultingProperties = array [TStylePropertySymbol] of TResultingProperty;
@@ -381,7 +383,7 @@ type
   private
     FStyle: TStyleSelector; // the selector for updating from style attributes
     FProps: TResultingProperties; // the resulting properties
-    procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
+    procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector);
   public
     destructor Destroy; override;
     function Get(Index: TStylePropertySymbol): TResultingProperty; {$ifdef UseInline} inline; {$endif}

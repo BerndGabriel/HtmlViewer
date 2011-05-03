@@ -38,8 +38,6 @@ uses
   UrlSubs;
 
 type
-  TGetBufferEvent = function(Sender: TObject; const Url: ThtString): TBuffer of object;
-
   TCustomParser = class
   private
     // input

@@ -839,9 +839,12 @@ function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
 
     // a loop about tags? there is one or none tag in the selector.
     for Index := Low(Selector.Tags) to High(Selector.Tags) do
-      if TryStrToElementSymbol(Selector.Tags[Index], S) then
-        if S <> FSymbol then
-          exit;
+    begin
+      if not TryStrToElementSymbol(Selector.Tags[Index], S) then
+        exit;
+      if S <> FSymbol then
+        exit;
+    end;
 
     // a loop about ids? CSS 2.1 allows more than 1 ID, but most browsers do not support them.
     if not IncludesStringArray(Selector.Ids, FIds) then
@@ -933,6 +936,7 @@ begin
     //
     HeightAttr:     AddProperty(psHeight);
     WidthAttr:      AddProperty(psWidth);
+    BackgroundAttr: AddProperty(BackgroundImage);
     //
     AlignAttr:      AddProperty(TextAlign);
     SizeAttr:

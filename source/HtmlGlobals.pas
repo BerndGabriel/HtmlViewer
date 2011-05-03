@@ -64,7 +64,7 @@ uses
     {$endif}
   {$endif UseTNT}
 {$endif}
-  HtmlBuffer;
+  Math;
 
 type
 

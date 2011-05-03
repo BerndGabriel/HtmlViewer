@@ -69,6 +69,7 @@ uses
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
   HtmlGlobals,
+  HtmlFonts,
   StyleTypes,
   Parser,
   HTMLUn2,
@@ -272,7 +273,7 @@ type
 {$ENDIF}
   public
     Pos: Integer; {0..Len  Index where font takes effect}
-    TheFont: TMyFont;
+    TheFont: ThtFont;
     FIArray: TFontInfoArray;
     FontHeight, {tmHeight+tmExternalLeading}
       tmHeight,
@@ -281,10 +282,10 @@ type
       Descent: Integer;
     SScript: AlignmentType;
     TabControl: ThtTabControl;
-    constructor Create(ASection: TSection; F: TMyFont; Position: Integer);
+    constructor Create(ASection: TSection; F: ThtFont; Position: Integer);
     constructor CreateCopy(ASection: TSection; T: TFontObj);
     destructor Destroy; override;
-    procedure ReplaceFont(F: TMyFont);
+    procedure ReplaceFont(F: ThtFont);
     procedure ConvertFont(const FI: ThtFontInfo);
     procedure FontChanged;
     function GetOverhang: Integer;
@@ -299,7 +300,7 @@ type
   TFontList = class(TFreeList) {a list of TFontObj's}
   public
     constructor CreateCopy(ASection: TSection; T: TFontList);
-    function GetFontAt(Posn: Integer; var OHang: Integer): TMyFont;
+    function GetFontAt(Posn: Integer; var OHang: Integer): ThtFont;
     function GetFontCountAt(Posn, Leng: Integer): Integer;
     function GetFontObjAt(Posn: Integer; var Index: Integer): TFontObj;
     procedure Decrement(N: Integer; Document: ThtDocument);
@@ -1443,10 +1444,13 @@ procedure InitializeFontSizes(Size: Integer);
 var
   I: Integer;
 begin
-  for I := 1 to 7 do
+  //BG, 01.05.2011: FontConvBase[1] relates to css font size 'x-small'.
+  FontConv[1] := FontConvBase[0] * Size;
+  PreFontConv[1] := PreFontConvBase[0] * Size;
+  for I := 2 to 7 do
   begin
-    FontConv[I] := FontConvBase[I] * Size / 12.0;
-    PreFontConv[I] := PreFontConvBase[I] * Size / 12.0;
+    FontConv[I] := FontConvBase[I] * Size;
+    PreFontConv[I] := PreFontConvBase[I] * Size;
   end;
 end;
 
@@ -1671,7 +1675,7 @@ type
     property EndB[I: Integer]: Integer read GetEndB;
   end;
 
-constructor TFontObj.Create(ASection: TSection; F: TMyFont; Position: Integer);
+constructor TFontObj.Create(ASection: TSection; F: ThtFont; Position: Integer);
 begin
   inherited Create;
   FSection := ASection;
@@ -1806,7 +1810,7 @@ begin
     FIArray := TFontInfoArray.Create;
 end;
 
-procedure TFontObj.ReplaceFont(F: TMyFont);
+procedure TFontObj.ReplaceFont(F: ThtFont);
 begin
   TheFont.Free;
   TheFont := F;
@@ -1825,7 +1829,7 @@ begin
   FSection := ASection;
   Pos := T.Pos;
   SScript := T.SScript;
-  TheFont := TMyFont.Create;
+  TheFont := ThtFont.Create;
   TheFont.Assign(T.TheFont);
   if Assigned(T.FIArray) then
     ConvertFont(T.FIArray.Ar[LFont]);
@@ -1949,7 +1953,7 @@ begin
 end;
 
 function TFontList.GetFontAt(Posn: Integer;
-  var OHang: Integer): TMyFont;
+  var OHang: Integer): ThtFont;
 {given a character index, find the font that's effective there}
 var
   I, PosX: Integer;
@@ -3754,7 +3758,7 @@ var
   T: TAttribute;
   PntPanel: TWinControl; //TPaintPanel;
   I: Integer;
-  Tmp: TMyFont;
+  Tmp: ThtFont;
 begin
   inherited Create(Document, Parent, Position, L, Prop);
   CodePage := Prop.CodePage;
@@ -3912,7 +3916,7 @@ constructor TButtonFormControlObj.Create(Document: ThtDocument; Parent: TCellBas
   const Typ: ThtString; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
-  Tmp: TMyFont;
+  Tmp: ThtFont;
 begin
   inherited Create(Document, Parent, Position, L, Prop);
   if Typ = 'submit' then
@@ -6419,7 +6423,7 @@ constructor TBlockLI.Create(OwnerCell: TCellBasic; Attributes: TAttributeList; P
 var
   Tmp: ListBulletType;
   S: ThtString;
-  TmpFont: TMyFont;
+  TmpFont: ThtFont;
 begin
   inherited Create(OwnerCell, Attributes, Prop);
 
@@ -6483,7 +6487,7 @@ begin
     end;
 
   FListNumb := AListNumb;
-  FListFont := TMyFont.Create;
+  FListFont := ThtFont.Create;
   TmpFont := Prop.GetFont;
   FListFont.Assign(TmpFont);
   TmpFont.Free;
@@ -6504,7 +6508,7 @@ begin
   FListStyleType := TT.FListStyleType;
   if Assigned(TT.Image) then
     Image := TImageObj.CreateCopy(Document, MyCell, TT.Image);
-  FListFont := TMyFont.Create;
+  FListFont := ThtFont.Create;
   FListFont.Assign(TT.ListFont);
 end;
 
@@ -10373,7 +10377,7 @@ procedure TSection.ChangeFont(Prop: TProperties);
 var
   FO: TFontObj;
   LastUrl: TUrlTarget;
-  NewFont: TMyFont;
+  NewFont: ThtFont;
   Align: AlignmentType;
 begin
   FO := TFontObj(Fonts[Fonts.Count - 1]);
@@ -10408,7 +10412,7 @@ procedure TSection.HRef(Sy: Symb; List: ThtDocument; AnURL: TUrlTarget;
   Attributes: TAttributeList; Prop: TProperties);
 var
   FO: TFontObj;
-  NewFont: TMyFont;
+  NewFont: ThtFont;
   Align: AlignmentType;
 begin
   FO := TFontObj(Fonts[Fonts.Count - 1]);
@@ -10844,7 +10848,7 @@ var
   I, J, J1, OHang, Wid, HSpcL, HSpcR: Integer;
   Align: AlignmentType;
   FlObj: TFloatingObj;
-  Font: TMyFont;
+  Font: ThtFont;
 begin
   Result := 0;
   while N > 0 do
@@ -10904,7 +10908,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     FlObj: TFloatingObj;
     FcObj: TFormControlObj;
     BrChr, TheStart: PWideChar;
-    Font, LastFont: TMyFont;
+    Font, LastFont: ThtFont;
     Save: TSize;
     FoundBreak: boolean;
     HyphenWidth: Integer;

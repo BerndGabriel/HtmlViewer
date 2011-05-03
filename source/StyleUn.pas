@@ -40,6 +40,7 @@ uses
   Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
   //
   HtmlBuffer,
+  HtmlFonts,
   HtmlGlobals,
   Parser,
   StyleTypes;
@@ -112,10 +113,6 @@ const
     'border-style'
   );
 
-var
-  FontConv: array[1..7] of double;
-  PreFontConv: array[1..7] of double;
-
 type
   AlignmentType = TAlignmentStyle;
   BorderStyleType = TBorderStyle;
@@ -127,61 +124,14 @@ type
   VisibilityType = TVisibilityStyle;
 
 type
-  ThtFontInfo = class
-  public
-    iName: ThtString;
-    iSize: Double;
-    iStyle: TFontStyles;
-    iColor: TColor;
-    ibgColor: TColor;
-    iCharSet: TFontCharSet;
-    iCharExtra: Variant;
-    procedure Assign(Source: ThtFontInfo);
-  end;
-
-  // link state
-  FIIndex = (
-    LFont,  // initial link
-    VFont,  // visited link
-    HLFont, // hovered link
-    HVFont  // hovered visited link
-  );
-  TFontInfoArray = class
-  public
-    Ar: array[LFont..HVFont] of ThtFontInfo;
-    constructor Create;
-    destructor Destroy; override;
-    procedure Assign(Source: TFontInfoArray);
-  end;
-
-  TMyFont = class(TFont)
-  public
-    bgColor: TColor;
-    tmHeight: Integer;
-    tmDescent: Integer;
-    tmExternalLeading: Integer;
-    tmAveCharWidth: Integer;
-    tmMaxCharWidth: Integer;
-    tmCharset: Integer;
-    CharExtra: Integer;
-    EmSize: Integer;
-    ExSize: Integer;
-    constructor Create; {$ifdef LCL} override; {$endif}
-    destructor Destroy; override;
-    procedure Assign(const Info: ThtFontInfo); reintroduce; overload;
-    procedure Assign(Source: TPersistent); overload; override;
-    procedure AssignToCanvas(Canvas: TCanvas);
-  end;
-
-type
   TStyleList = class;
   TPropStack = class;
 
   TProperties = class
   private
-  
+
     PropStack: TPropStack; // owner
-    TheFont: TMyFont;
+    TheFont: ThtFont;
     InLink: Boolean;
     DefFontname: ThtString;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
@@ -212,7 +162,7 @@ type
     function GetClear(var Clr: ClearAttrType): Boolean;
     function GetDisplay: TPropDisplay; //BG, 15.09.2009
     function GetFloat(var Align: AlignmentType): Boolean;
-    function GetFont: TMyFont;
+    function GetFont: ThtFont;
     function GetFontVariant: ThtString;
     function GetLineHeight(NewHeight: Integer): Integer;
     function GetListStyleImage: ThtString;
@@ -289,10 +239,6 @@ const
   ImageSpace = 3; {extra space for left, right images}
   ListIndent = 40;
 
-  varInt = [varInteger, varByte, varSmallInt, varShortInt, varWord, varLongWord];
-  varFloat = [varSingle, varDouble, varCurrency];
-  varNum = varInt + varFloat;
-
   EastEurope8859_2 = 31; {for 8859-2}
 
 //BG, 05.10.2010: added:
@@ -308,27 +254,17 @@ procedure ConvVertMargins(const VM: TVMarginArray; BaseHeight, EmSize, ExSize: I
 
 function SortedProperties: ThtStringList;
 
-function SortedColors: ThtStringList;
-
 function ReadFontName(S: ThtString): ThtString;
 
-implementation
+var
+  FontConv: array[1..7] of Double;
+  PreFontConv: array[1..7] of Double;
 
-type
-  TMyFontCache = class
-  private
-    FFontsByName: ThtStringList;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Add(Font: TMyFont);
-    function Find(const FontInfo: ThtFontInfo): TMyFont;
-  end;
+implementation
 
 var
   DefPointSize: Double;
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
-  AllMyFonts: TMyFontCache;
 
 function FontSizeConv(const Str: ThtString; OldSize: Double): Double; forward;
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
@@ -367,54 +303,6 @@ begin
     if Result then
       PropIndex := P;
   end;
-end;
-
-{----------------TMyFont.Assign}
-
-procedure TMyFont.Assign(Source: TPersistent);
-begin
-  if Source is TMyFont then
-  begin
-    bgColor := TMyFont(Source).bgColor;
-    tmHeight := TMyFont(Source).tmHeight;
-    tmDescent := TMyFont(Source).tmDescent;
-    tmExternalLeading := TMyFont(Source).tmExternalLeading;
-    tmAveCharWidth := TMyFont(Source).tmAveCharWidth;
-    tmMaxCharWidth := TMyFont(Source).tmMaxCharWidth;
-    tmCharset := TMyFont(Source).tmCharset;
-    CharExtra := TMyFont(Source).CharExtra;
-    EmSize := TMyFont(Source).EmSize;
-    ExSize := TMyFont(Source).ExSize;
-  end;
-  inherited Assign(Source);
-end;
-
-//-- BG ---------------------------------------------------------- 12.03.2011 --
-procedure TMyFont.Assign(const Info: ThtFontInfo);
-begin
-  Name := Info.iName;
-  Height := -Round(Info.iSize * Screen.PixelsPerInch / 72);
-  Style := Info.iStyle;
-  bgColor := Info.ibgColor;
-  Color := Info.iColor;
-  CharSet := Info.iCharSet;
-end;
-
-procedure TMyFont.AssignToCanvas(Canvas: TCanvas);
-begin
-  Canvas.Font := Self;
-  SetTextCharacterExtra(Canvas.Handle, CharExtra);
-end;
-
-destructor TMyFont.destroy;
-begin
-  inherited;
-end;
-
-constructor TMyFont.Create;
-begin
-  inherited;
-  Charset := DEFAULT_CHARSET;
 end;
 
 var
@@ -1814,91 +1702,18 @@ begin
   end;
 end;
 
-function TProperties.GetFont: TMyFont;
+function TProperties.GetFont: ThtFont;
 var
   Font: ThtFontInfo;
-  Save: THandle;
-  SaveCharSet: TFontCharSet;
-  tm: TTextmetric;
-  DC: HDC;
-  V: Variant;
-  SameFont: TMyFont;
 begin {call only if all things valid}
   if TheFont = nil then
   begin
-    Font := ThtFontInfo.Create;
-    try
-      GetSingleFontInfo(Font);
-      SameFont := AllMyFonts.Find(Font);
-      if SameFont = nil then
-      begin
-        SameFont := TMyFont.Create;
-        SameFont.Name := Font.iName;
-        SameFont.Height := -Round(Font.iSize * Screen.PixelsPerInch / 72);
-        SameFont.Style := Font.iStyle;
-        SameFont.Charset := Font.iCharSet;
-        AllMyFonts.Add(SameFont);
-
-        // If this is a Symbol charset, then keep it that way.
-        // To check the font's real charset, use Default_Charset
-        SaveCharSet := SameFont.CharSet;
-        SameFont.CharSet := Default_Charset;
-        DC := GetDC(0);
-        try
-          Save := SelectObject(DC, SameFont.Handle);
-          try
-            GetTextMetrics(DC, tm);
-          finally
-            SelectObject(DC, Save);
-          end;
-          if tm.tmCharset = Symbol_Charset then
-            SameFont.Charset := Symbol_CharSet
-          else
-            SameFont.Charset := SaveCharSet;
-          {now get the info on the finalized font}
-          if SameFont.Charset <> Default_Charset then {else already have the textmetrics}
-          begin
-            Save := SelectObject(DC, SameFont.Handle);
-            try
-              GetTextMetrics(DC, tm);
-            finally
-              SelectObject(DC, Save);
-            end;
-          end;
-        finally
-          ReleaseDC(0, DC);
-        end;
-        {calculate EmSize with current font rather than inherited}
-        SameFont.EmSize := tm.tmHeight - tm.tmInternalLeading;
-        SameFont.ExSize := EmSize div 2; {apparently correlates with what browsers are doing}
-        SameFont.tmHeight := tm.tmHeight;
-        SameFont.tmDescent := tm.tmDescent;
-        SameFont.tmExternalLeading := tm.tmExternalLeading;
-        SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
-        SameFont.tmAveCharWidth := tm.tmAveCharWidth;
-        SameFont.tmCharset := tm.tmCharset;
-      end;
-      TheFont := TMyFont.Create;
-      TheFont.Assign(SameFont);
-      TheFont.bgColor := Font.ibgColor;
-      TheFont.Color := Font.iColor;
-      V := Font.iCharExtra;
-    finally
-      Font.Free;
-    end;
+    GetSingleFontInfo(Font);
+    TheFont := AllMyFonts.GetFontLike(Font);
     FEmSize := TheFont.EmSize;
     FExSize := TheFont.ExSize;
-    if VarType(V) in VarInt then
-      TheFont.CharExtra := V
-    else if VarIsStr(V) then
-      if V = 'normal' then
-        TheFont.CharExtra := 0
-      else
-        TheFont.CharExtra := LengthConv(V, False, EmSize, EmSize, ExSize, 0)
-    else
-      TheFont.CharExtra := 0;
   end;
-  Result := TMyFont.Create;
+  Result := ThtFont.Create;
   Result.Assign(TheFont);
 end;
 
@@ -2546,141 +2361,6 @@ begin
   Result := Get(Count - 1);
 end;
 
-
-const
-  NumColors = 176;
-  Colors: array[1..NumColors] of ThtString = ('transparent',
-    'black', 'maroon', 'green', 'olive', 'navy', 'purple', 'teal', 'gray',
-    'silver', 'red', 'lime', 'yellow', 'blue', 'fuchsia', 'aqua', 'white',
-    'aliceblue', 'antiquewhite', 'aquamarine', 'azure', 'beige',
-    'bisque', 'blanchedalmond', 'blueviolet', 'brown', 'burlywood',
-    'cadetblue', 'chartreuse', 'chocolate', 'coral', 'cornflowerblue',
-    'cornsilk', 'crimson', 'cyan', 'darkblue', 'darkcyan',
-    'darkgoldenrod', 'darkgray', 'darkgreen', 'darkkhaki', 'darkmagenta',
-    'darkolivegreen', 'darkorange', 'darkorchid', 'darkred', 'darksalmon',
-    'darkseagreen', 'darkslateblue', 'darkslategray', 'darkturquoise', 'darkviolet',
-    'deeppink', 'deepskyblue', 'dimgray', 'dodgerblue', 'firebrick',
-    'floralwhite', 'forestgreen', 'gainsboro', 'ghostwhite', 'gold',
-    'goldenrod', 'greenyellow', 'honeydew', 'hotpink', 'indianred',
-    'indigo', 'ivory', 'khaki', 'lavender', 'lavenderblush',
-    'lawngreen', 'lemonchiffon', 'lightblue', 'lightcoral', 'lightcyan',
-    'lightgoldenrodyellow', 'lightgreen', 'lightgray', 'lightpink', 'lightsalmon',
-    'lightseagreen', 'lightskyblue', 'lightslategray', 'lightsteelblue', 'lightyellow',
-    'limegreen', 'linen', 'magenta', 'mediumaquamarine', 'mediumblue',
-    'mediumorchid', 'mediumpurple', 'mediumseagreen', 'mediumslateblue', 'mediumspringgreen',
-    'mediumturquoise', 'mediumvioletred', 'midnightblue', 'mintcream', 'mistyrose',
-    'moccasin', 'navajowhite', 'oldlace', 'olivedrab', 'orange',
-    'orangered', 'orchid', 'palegoldenrod', 'palegreen', 'paleturquoise',
-    'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink',
-    'plum', 'powderblue', 'rosybrown', 'royalblue', 'saddlebrown',
-    'salmon', 'sandybrown', 'seagreen', 'seashell', 'sienna',
-    'skyblue', 'slateblue', 'slategray', 'snow', 'springgreen',
-    'steelblue', 'tan', 'thistle', 'tomato', 'turquoise',
-    'violet', 'wheat', 'whitesmoke', 'yellowgreen',
-
-    'grey', 'darkgrey', 'darkslategrey', 'dimgrey', 'lightgrey', 'lightslategrey', 'slategrey',
-    'background', 'activecaption', 'inactivecaption', 'menu', 'window',
-    'windowframe', 'menutext', 'windowtext', 'captiontext', 'activeborder',
-    'inactiveborder', 'appworkSpace', 'highlight', 'hightlighttext', 'buttonface',
-    'buttonshadow', 'graytext', 'buttontext', 'inactivecaptiontext', 'buttonhighlight',
-    'threeddarkshadow', 'threedlightshadow', 'infotext', 'infobackground', 'scrollbar',
-    'threedface', 'threedhighlight', 'threedshadow');
-
-  ColorValues: array[1..NumColors] of TColor = (clNone,
-    clBLACK, clMAROON, clGREEN, clOLIVE, clNAVY, clPURPLE, clTEAL, clGRAY,
-    clSILVER, clRED, clLIME, clYELLOW, clBLUE, clFUCHSIA, clAQUA, clWHITE,
-    $FFF8F0, $D7EBFA, $D4FF7F, $FFFFF0, $DCF5F5,
-    $C4E4FF, $CDEBFF, $E22B8A, $2A2AA5, $87B8DE,
-    $A09E5F, $00FF7F, $1E69D2, $507FFF, $ED9564,
-    $DCF8FF, $3614DC, $FFFF00, $8B0000, $8B8B00,
-    $0B86B8, $A9A9A9, $006400, $6BB7BD, $8B008B,
-    $2F6B55, $008CFF, $CC3299, $00008B, $7A96E9,
-    $8FBC8F, $8B3D48, $4F4F2F, $D1CE00, $D30094,
-    $9314FF, $FFBF00, $696969, $FF901E, $2222B2,
-    $F0FAFF, $228B22, $DCDCDC, $FFF8F8, $00D7FF,
-    $20A5DA, $2FFFAD, $F0FFF0, $B469FF, $5C5CCD,
-    $82004B, $F0FFFF, $8CE6F0, $FAE6E6, $F5F0FF,
-    $00FC7C, $CDFAFF, $E6D8AD, $8080F0, $FFFFE0,
-    $D2FAFA, $90EE90, $D3D3D3, $C1B6FF, $7AA0FF,
-    $AAB220, $FACE87, $998877, $DEC4B0, $E0FFFF,
-    $32CD32, $E6F0FA, $FF00FF, $AACD66, $CD0000,
-    $D355BA, $DB7093, $71B33C, $EE687B, $9AFA00,
-    $CCD148, $8515C7, $701919, $FAFFF5, $E1E4FF,
-    $B5E4FF, $ADDEFF, $E6F5FD, $238E6B, $00A5FF,
-    $0045FF, $D670DA, $AAE8EE, $98FB98, $EEEEAF,
-    $9370DB, $D5EFFF, $B9DAFF, $3F85CD, $CBC0FF,
-    $DDA0DD, $E6E0B0, $8F8FBC, $E16941, $13458B,
-    $7280FA, $60A4F4, $578B2E, $EEF5FF, $2D52A0,
-    $EBCE87, $CD5A6A, $908070, $FAFAFF, $7FFF00,
-    $B48246, $8CB4D2, $D8BFD8, $4763FF, $D0E040,
-    $EE82EE, $B3DEF5, $F5F5F5, $32CD9A,
-    clgray, $A9A9A9, $4F4F2F, $696969, $D3D3D3, $998877, $908070,
-    clBackground, clActiveCaption, clInactiveCaption, clMenu, clWindow,
-    clWindowFrame, clMenuText, clWindowText, clCaptionText, clActiveBorder,
-    clInactiveBorder, clAppWorkSpace, clHighlight, clHighlightText, clBtnFace,
-    clBtnShadow, clGrayText, clBtnText, clInactiveCaptionText, clBtnHighlight,
-    cl3DDkShadow, clBtnHighlight, clInfoText, clInfoBk, clScrollBar,
-    clBtnFace, cl3DLight, clBtnShadow);
-
-var
-  ColorStrings: ThtStringList;
-
-function SortedColors: ThtStringList;
-var
-  I: Integer;
-begin
-// Put the Colors into a sorted StringList for faster access.
-  if ColorStrings = nil then
-  begin
-    ColorStrings := ThtStringList.Create;
-    for I := 1 to NumColors do
-      ColorStrings.AddObject(Colors[I], Pointer(ColorValues[I]));
-    ColorStrings.Sort;
-  end;
-  Result := ColorStrings;
-end;
-
-{ ThtFontInfo }
-
-procedure ThtFontInfo.Assign(Source: ThtFontInfo);
-begin
-  iName := Source.iName;
-  iSize := Source.iSize;
-  iStyle := Source.iStyle;
-  iColor := Source.iColor;
-  ibgColor := Source.ibgColor;
-  iCharSet := Source.iCharSet;
-  iCharExtra := Source.iCharExtra;
-end;
-
-{ TFontInfoArray }
-
-constructor TFontInfoArray.Create;
-var
-  I: FIIndex;
-begin
-  inherited Create;
-  for I := LFont to HVFont do
-    Ar[I] := ThtFontInfo.Create;
-end;
-
-destructor TFontInfoArray.Destroy;
-var
-  I: FIIndex;
-begin
-  for I := LFont to HVFont do
-    Ar[I].Free;
-  inherited;
-end;
-
-procedure TFontInfoArray.Assign(Source: TFontInfoArray);
-var
-  I: FIIndex;
-begin
-  for I := LFont to HVFont do
-    Ar[I].Assign(Source.Ar[I]);
-end;
-
 //BG, 14.07.2010:
 function decodeSize(const Str: ThtString; out V: extended; out U: ThtString): Boolean;
 var
@@ -2876,78 +2556,8 @@ begin
     Result := Default;
 end;
 
-{ TMyFontCache }
-
-type
-  ThtStringListOpener = class(ThtStringList)
-  end;
-
-//-- BG ---------------------------------------------------------- 30.01.2011 --
-procedure TMyFontCache.Add(Font: TMyFont);
-var
-  I: Integer;
-begin
-  if not FFontsByName.Find(htLowerCase(Font.Name), I) then
-    ThtStringListOpener(FFontsByName).InsertItem(I, Font.Name, TObjectList.Create(True));
-  TObjectList(FFontsByName.Objects[I]).Add(Font);
-end;
-
-//-- BG ---------------------------------------------------------- 30.01.2011 --
-constructor TMyFontCache.Create;
-begin
-  inherited;
-  FFontsByName := ThtStringList.Create;
-  FFontsByName.Sorted := True;
-end;
-
-//-- BG ---------------------------------------------------------- 30.01.2011 --
-destructor TMyFontCache.Destroy;
-var
-  I: Integer;
-begin
-  for I := 0 to FFontsByName.Count - 1 do
-    FFontsByName.Objects[I].Free;
-  FFontsByName.Free;
-  inherited;
-end;
-
-//-- BG ---------------------------------------------------------- 30.01.2011 --
-function TMyFontCache.Find(const FontInfo: ThtFontInfo): TMyFont;
-
-  function SameFonts(F1: TMyFont; F2: ThtFontInfo): Boolean;
-  begin
-    if F2 <> nil then
-      if F1.Height = -Round(F2.iSize * Screen.PixelsPerInch / 72) then
-        if F1.Style = F2.iStyle then
-          if F1.Charset = F2.iCharset then
-          begin
-            Result := True;
-            exit;
-          end;
-    Result := False;
-  end;
-
-var
-  I: Integer;
-  Fonts: TObjectList;
-begin
-  if FFontsByName.Find(htLowerCase(FontInfo.iName), I) then
-  begin
-    Fonts := TObjectList(FFontsByName.Objects[I]);
-    for I := 0 to Fonts.Count - 1 do
-    begin
-      Result := TMyFont(Fonts[I]);
-      if SameFonts(Result, FontInfo) then
-        exit;
-    end;
-  end;
-  Result := nil;
-end;
-
 initialization
-  AllMyFonts := TMyFontCache.Create;
 finalization
-  FreeAndNil(AllMyFonts);
-  FreeAndNil(ColorStrings);
+//  FreeAndNil(ColorStrings);
   FreeAndNil(PropertyStrings);
 end.

@@ -45,7 +45,10 @@ uses
 {$ifdef UNICODE}
   AnsiStrings,
 {$endif}
-  Math;
+  Math,
+  //
+  HtmlCaches,
+  HtmlGlobals;
 
 const
   // more char sets
@@ -66,9 +69,9 @@ type
   TBuffCodePage = LongInt;
   TBuffCharSet = SmallInt;  // slightly more than a TFontCharset.
 
-  TBuffChar = WideChar;     // the type of a wide char
-  PBuffChar = PWideChar;
-  TBuffString = WideString; // the type of a wide string
+  TBuffChar = ThtChar;     // the type of a wide char
+  PBuffChar = PhtChar;
+  TBuffString = ThtString; // the type of a wide string
 
   TBuffPointer = record
     case Integer of
@@ -89,7 +92,7 @@ type
   TBuffArray4 = array [0..3] of Byte;
 
   // BG, 17.12.2010: helps converting any kind of stream to WideChars.
-  TBuffer = class
+  TBuffer = class(ThtCachable)
   private
     FBuffer: TBuffArray;
     FName: TBuffString;
@@ -126,6 +129,21 @@ type
     property CharSet: TBuffCharSet read FCharSet write FCharSet;
     property CodePage: TBuffCodePage read FCodePage write FCodePage;
     property Position: Integer read GetPosition write SetPostion;
+  end;
+
+  ThtBuffer = TBuffer;
+
+  TGetBufferEvent = function(Sender: TObject; const Url: TBuffString): ThtBuffer of object;
+
+//------------------------------------------------------------------------------
+// ThtBufferCache is the buffer cache, that holds the above buffers.
+//------------------------------------------------------------------------------
+
+  ThtBufferCache = class(ThtCache)
+  {a list of buffer filenames and their ThtBuffers}
+  public
+    function AddObject(const S: ThtString; AObject: ThtBuffer): Integer; reintroduce; {$ifdef UseInline} inline; {$endif}
+    function GetBuffer(I: Integer): ThtBuffer; {$ifdef UseInline} inline; {$endif}
   end;
 
   TBuffCharSetCodePageInfo = class
@@ -951,6 +969,20 @@ end;
 function TBuffer.Size: Integer;
 begin
   Result := Length(FBuffer);
+end;
+
+{ ThtBufferCache }
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function ThtBufferCache.AddObject(const S: ThtString; AObject: ThtBuffer): Integer;
+begin
+  Result := inherited AddObject(S, AObject);
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function ThtBufferCache.GetBuffer(I: Integer): ThtBuffer;
+begin
+  Result := ThtBuffer(GetCachable(I));
 end;
 
 // GDG

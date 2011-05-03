@@ -49,7 +49,11 @@ uses
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
-  UrlSubs, HtmlGlobals, HtmlBuffer, HtmlGif2, StyleTypes,
+  UrlSubs,
+  HtmlCaches,
+  HtmlGlobals,
+  HtmlGif2,
+  StyleTypes,
 {$IFDEF UNICODE} PngImage, {$ENDIF}
   DitherUnit;
 
@@ -71,11 +75,11 @@ const
 type
 
 //------------------------------------------------------------------------------
-// ThtImage is an image container.
+// ThtImage is an image wrapper.
 //------------------------------------------------------------------------------
-// It is used in place of any bitmap / image type used in HtmlViewer.
+// It is used in place of any bitmap / image type used in HtmlViewer < 11.
 // Currently it supports ThtBitmap, (animated) TGifImage, TGpImage or ThtMetafile
-// It replaces the unspecific TgpObject and TBitmapItem of the image cache.
+// It replaces the unspecific TgpObject and TBitmapItem of the old image cache.
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
@@ -83,10 +87,7 @@ type
   TTransparency = (NotTransp, LLCorner, TrGif, TrPng);
 
   //BG, 09.04.2011
-  ThtImage = class(TObject)
-  private
-    AccessCount: Integer;
-    UsageCount: Integer; {how many times in use}
+  ThtImage = class(ThtCachable)
   protected
     function GetGpObject: TGpObject; virtual; abstract;
     function GetBitmap: TBitmap; virtual; abstract;
@@ -96,9 +97,6 @@ type
   public
     Transp: TTransparency; {identifies what the mask is for}
     constructor Create(Tr: TTransparency); overload;
-    destructor Destroy; override;
-    procedure BeginUse;
-    procedure EndUse;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); virtual; abstract;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); virtual;
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); virtual;
@@ -109,6 +107,27 @@ type
     property Width: Integer read GetImageWidth;
     //property MImage: TGpObject read GetGpObject;
   end;
+
+  TGetImageEvent = function(Sender: TObject; const Url: ThtString): ThtImage of object;
+
+//------------------------------------------------------------------------------
+// ThtImageCache is the image cache, that holds the above image wrappers.
+//------------------------------------------------------------------------------
+
+  ThtImageCache = class(ThtCache)
+  {a list of image filenames and their ThtImages}
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function AddObject(const S: ThtString; AObject: ThtImage): Integer; reintroduce; {$ifdef UseInline} inline; {$endif}
+    function GetImage(I: Integer): ThtImage; {$ifdef UseInline} inline; {$endif}
+  end;
+
+//------------------------------------------------------------------------------
+// always supported image kinds: bitmap and (animated) gif.
+//------------------------------------------------------------------------------
+// optionally supported image kinds: png and metafile.
+//------------------------------------------------------------------------------
 
   //BG, 09.04.2011
   ThtBitmapImage = class(ThtImage)
@@ -165,7 +184,6 @@ type
 {$ENDIF !NoGDIPlus}
 
 {$IFNDEF NoMetafile}
-
 //------------------------------------------------------------------------------
 // bitmap meta file
 //------------------------------------------------------------------------------
@@ -185,9 +203,6 @@ type
     property WhiteBGBitmap: TBitmap read GetWhiteBGBitmap;
   end;
 
-{$ENDIF}
-
-{$IFNDEF NoMetafile}
   //BG, 09.04.2011
   ThtMetafileImage = class(ThtImage)
   private
@@ -205,30 +220,6 @@ type
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
   end;
 {$ENDIF !NoMetafile}
-
-//------------------------------------------------------------------------------
-// image cache
-//------------------------------------------------------------------------------
-
-  ThtImageCache = class(ThtStringList)
-  {a list of image filenames and their ThtImages}
-  private
-    FMaxCache: Integer;
-    function GetObject(Index: Integer): ThtImage; reintroduce;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    function AddObject(const S: ThtString; AObject: ThtImage): Integer; reintroduce;
-    function GetImage(I: Integer): ThtImage; {$ifdef UseInline} inline; {$endif}
-    procedure BumpAndCheck;
-    procedure Clear; override;
-    procedure DecUsage(const S: ThtString);
-    procedure IncUsage(const S: ThtString);
-    procedure PurgeCache;
-    procedure SetCacheCount(N: Integer);
-    property MaxCache: Integer read FMaxCache;
-    property Objects[Index: Integer]: ThtImage read GetObject;
-  end;
 
 //------------------------------------------------------------------------------
 // image methods
@@ -1964,23 +1955,11 @@ end;
 
 { ThtImage }
 
-//-- BG ---------------------------------------------------------- 16.04.2011 --
-procedure ThtImage.BeginUse;
-begin
-  Inc(UsageCount);
-end;
-
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtImage.Create(Tr: TTransparency);
 begin
   inherited Create;
   Transp := Tr;
-end;
-
-destructor ThtImage.Destroy;
-begin
-  Assert(UsageCount = 0, 'Freeing Image that''s still in use.');
-  inherited Destroy;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -1999,13 +1978,6 @@ begin
     end;
     Inc(Y, H);
   end;
-end;
-
-//-- BG ---------------------------------------------------------- 16.04.2011 --
-procedure ThtImage.EndUse;
-begin
-  Dec(UsageCount);
-  Assert(UsageCount >= 0, 'Cache image usage count < 0');
 end;
 
 //-- BG ---------------------------------------------------------- 10.04.2011 --
@@ -2316,122 +2288,34 @@ end;
 
 { ThtImageCache }
 
+//------------------------------------------------------------------------------
 constructor ThtImageCache.Create;
 begin
   inherited Create;
-  FMaxCache := 100;
-  Sorted := True;
   {$IFNDEF NoGDIPlus}
   CheckInitGDIPlus;
   {$ENDIF NoGDIPlus}
 end;
 
+//------------------------------------------------------------------------------
 destructor ThtImageCache.Destroy;
-var
-  I: Integer;
 begin
-  for I := 0 to Count - 1 do
-    Objects[I].Free;
   {$IFNDEF NoGDIPlus}
   CheckExitGDIPlus;
   {$ENDIF NoGDIPlus}
   inherited Destroy;
 end;
 
+//------------------------------------------------------------------------------
 function ThtImageCache.AddObject(const S: ThtString; AObject: ThtImage): Integer;
 begin
   Result := inherited AddObject(S, AObject);
-  Inc(AObject.UsageCount);
-end;
-
-procedure ThtImageCache.DecUsage(const S: ThtString);
-var
-  I: Integer;
-begin
-  I := IndexOf(S);
-  if I >= 0 then
-    Objects[I].EndUse;
-end;
-
-procedure ThtImageCache.IncUsage(const S: ThtString);
-var
-  I: Integer;
-begin
-  I := IndexOf(S);
-  if I >= 0 then
-    Objects[I].BeginUse;
-end;
-
-procedure ThtImageCache.SetCacheCount(N: Integer);
-var
-  I: Integer;
-begin
-  for I := Count - 1 downto 0 do
-    with Objects[I] do
-    begin
-      if (AccessCount > N) and (UsageCount <= 0) then
-      begin
-        Delete(I);
-        Free;
-      end;
-    end;
-  FMaxCache := N;
 end;
 
 //-- BG ---------------------------------------------------------- 11.04.2011 --
 function ThtImageCache.GetImage(I: Integer): ThtImage;
 begin
-  Result := Objects[I];
-  Result.AccessCount := 0;
-  Inc(Result.UsageCount);
-end;
-
-//-- BG ---------------------------------------------------------- 06.03.2011 --
-function ThtImageCache.GetObject(Index: Integer): ThtImage;
-begin
-  Result := ThtImage(inherited GetObject(Index));
-end;
-
-procedure ThtImageCache.BumpAndCheck;
-var
-  I: Integer;
-  Tmp: ThtImage;
-begin
-  for I := Count - 1 downto 0 do
-  begin
-    Tmp := Objects[I];
-    Inc(Tmp.AccessCount);
-    if (Tmp.AccessCount > FMaxCache) and (Tmp.UsageCount <= 0) then
-    begin
-      Delete(I);
-      Tmp.Free; {the ThtImage}
-    end;
-  end;
-end;
-
-procedure ThtImageCache.PurgeCache;
-var
-  I: Integer;
-  Tmp: ThtImage;
-begin
-  for I := Count - 1 downto 0 do
-  begin
-    Tmp := Objects[I];
-    if (Tmp.UsageCount <= 0) then
-    begin
-      Delete(I);
-      Tmp.Free; {the ThtImage}
-    end;
-  end;
-end;
-
-procedure ThtImageCache.Clear;
-var
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do
-    Objects[I].Free;
-  inherited Clear;
+  Result := ThtImage(inherited GetCachable(I));
 end;
 
 initialization

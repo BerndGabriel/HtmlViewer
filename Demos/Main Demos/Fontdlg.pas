@@ -6,7 +6,10 @@ interface
 
 uses
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Spin, Buttons,
-  StyleUn, HTMLUn2, Htmlview;
+  StyleUn,
+  //
+  HtmlSymbols,
+  HTMLUn2, Htmlview;
 
 type
   TFontForm = class(TForm)
@@ -40,6 +43,7 @@ type
     procedure FontNameButtonClick(Sender: TObject);
   private
     Colors: TStringList;
+    FCustomColor: TColorDescription;
     CustomColorIndex: Integer;
     InitialFontName: string;
     InitialFontSize: integer;
@@ -89,7 +93,7 @@ const
 function ColorOfIndex(Colors: TStrings; Index: Integer; DefaultColor: TColor): TColor;
 begin
   try
-    Result := TColor(Colors.Objects[Index]);
+    Result := PColorDescription(Colors.Objects[Index]).Color;
   except
     Result := DefaultColor;
   end;
@@ -101,7 +105,7 @@ begin
   if Result < 0 then
   begin
     Result := CustomColorIndex;
-    Colors.Objects[Result] := TObject(Color);
+    PColorDescription(Colors.Objects[Result]).Color := Color;
   end;
 end;
 
@@ -156,9 +160,11 @@ procedure TFontForm.FormCreate(Sender: TObject);
 begin
   FontNameComboBox.Items := Screen.Fonts;
   Colors := TStringList.Create;
-  Colors.Assign(StyleUn.SortedColors);
+  Colors.Assign(AllMyColors);
   Colors.Sorted := True;
-  CustomColorIndex := Colors.Add(CustomColor);
+  FCustomColor.Name := CustomColor;
+  FCustomColor.Color := 0;
+  CustomColorIndex := Colors.AddObject(CustomColor, TObject(@FCustomColor));
   FontColorComboBox.Items := Colors;
   LinkColorComboBox.Items := Colors;
   BackgroundColorComboBox.Items := Colors;

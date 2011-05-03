@@ -35,6 +35,7 @@ uses
   HtmlControls,
   HtmlDraw,
   HtmlElements,
+  HtmlFonts,
   HtmlGlobals,
   HtmlImages,
   StyleTypes;
@@ -80,7 +81,7 @@ type
     FAlignment: TAlignment;
     // content: text
     FText: ThtString;
-    FFont: TFont;
+    FFont: ThtFont;
     // content: image
     FImage: ThtImage;
     FTiled: Boolean;
@@ -90,13 +91,13 @@ type
     function GetContentRect: TRect;
     function GetHeight: Integer;
     function GetWidth: Integer;
+    procedure SetFont(const Value: ThtFont);
   protected
     function Clipping: Boolean;
     function IsVisible: Boolean; virtual;
     procedure AddChild(Child: THtmlBox);
     procedure ExtractChild(Child: THtmlBox);
     procedure SetParent(const Value: THtmlBox);
-    property Parent: THtmlBox read FParent write SetParent;
     property Prev: THtmlBox read FPrev;
     property Next: THtmlBox read FNext;
   public
@@ -110,6 +111,7 @@ type
     //
     procedure Paint(Canvas: TScalingCanvas); virtual;
     //
+    property Parent: THtmlBox read FParent write SetParent;
     property BoundsRect: TRect read FBounds write FBounds;
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
@@ -121,11 +123,11 @@ type
     property BorderStyles: TRectStyles read FBorderStyles write FBorderStyles;
     property Color: TColor read FBackgroundColor write FBackgroundColor;
     property ContentRect: TRect read GetContentRect;
-    property Padding: TRectIntegers read FPadding write FPadding;
+    property Paddings: TRectIntegers read FPadding write FPadding;
     //
     property Alignment: TAlignment read FAlignment write FAlignment;
     property Children: THtmlBoxList read FChildren;
-    property Font: TFont read FFont;
+    property Font: ThtFont read FFont write SetFont;
     property Text: ThtString read FText write FText;
     property Image: ThtImage read FImage write SetImage;
     property Tiled: Boolean read FTiled write FTiled;
@@ -313,7 +315,7 @@ end;
 procedure THtmlBox.AfterConstruction;
 begin
   inherited;
-  FFont := TFont.Create;
+  FFont := ThtFont.Create;
 {$ifdef UseEnhancedRecord}
 {$else}
   FChildren := THtmlBoxList.Create;
@@ -357,7 +359,7 @@ function THtmlBox.GetContentRect: TRect;
 begin
   DeflateRect(Result, BoundsRect, Margins);
   DeflateRect(Result, BorderWidths);
-  DeflateRect(Result, Padding);
+  DeflateRect(Result, Paddings);
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -406,7 +408,7 @@ begin
   DeflateRect(Rect, BorderWidths);
 
   // content
-  DeflateRect(Rect, Padding);
+  DeflateRect(Rect, Paddings);
   CombinedRegionResult := SIMPLEREGION;
   ContentRegion := 0;
   ExistingRegion := 0;
@@ -435,14 +437,14 @@ begin
         else if Tiled then
         begin
           // prepare horizontal tiling
-          if TileHeight = 0 then
-            TileHeight := Image.Height;
+          if TileWidth = 0 then
+            TileWidth := Image.Width;
           Tile.X := GetPositionInRange(bpCenter, 0, Rect.Right - Rect.Left - TileWidth) + Rect.Left;
           AdjustForTiling(Tiled, Rect.Left, Rect.Right, TileWidth, Tile.X, TiledEnd.X);
 
           // prepare vertical tiling
-          if TileWidth = 0 then
-            TileWidth := Image.Width;
+          if TileHeight = 0 then
+            TileHeight := Image.Height;
           Tile.Y := GetPositionInRange(bpCenter, 0, Rect.Bottom - Rect.Top - TileHeight) + Rect.Top;
           AdjustForTiling(Tiled, Rect.Top, Rect.Bottom, TileHeight, Tile.Y, TiledEnd.Y);
 
@@ -522,6 +524,12 @@ begin
     Child.Resized;
     Child := Child.Next;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+procedure THtmlBox.SetFont(const Value: ThtFont);
+begin
+  FFont.Assign(Value);
 end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --

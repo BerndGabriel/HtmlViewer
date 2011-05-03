@@ -1098,7 +1098,7 @@ function THtmlStyleParser.ParseSelectors(var Selectors: TStyleSelectorList): Boo
     begin
       Result := GetElementName(Name);
       if Result then
-        Selector.AddTag(Name);
+        Selector.AddTag(htUpperCase(Name));
       repeat
         case LCh of
           '#':

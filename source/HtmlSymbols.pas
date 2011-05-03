@@ -371,7 +371,7 @@ type
     psWidth, psHeight, psTop, psBottom, psRight, psLeft,
 
     Visibility, LineHeight, BackgroundImage, BackgroundPosition,
-    BackgroundRepeat, BackgroundAttachment, VerticalAlign, Position, ZIndex,
+    BackgroundRepeat, BackgroundAttachment, VerticalAlign, psPosition, ZIndex,
     ListStyleType, ListStyleImage, psFloat, psClear, TextIndent,
     PageBreakBefore, PageBreakAfter, PageBreakInside, TextTransform,
     WordWrap, FontVariant, BorderCollapse, OverFlow, psDisplay, psEmptyCells,
@@ -389,8 +389,18 @@ type
   TStylePropertySymbol = FontFamily..psEmptyCells;
   TPropertyArray = array [TStylePropertySymbol] of Variant;
 
+type
+  PColorDescription = ^TColorDescription;
+  TColorDescription = record
+    Name: ThtString;
+    Color: TColor;
+  end;
+
+function AllMyColors: ThtStringList;
+
+
 function TryStrToLinkType(const Str: ThtString; out LinkType: THtmlLinkType): Boolean;
-  
+
 function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
 function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
 
@@ -802,7 +812,7 @@ const
     (Name: 'background-repeat';        Symbol: BackgroundRepeat),
     (Name: 'background-attachment';    Symbol: BackgroundAttachment),
     (Name: 'vertical-align';           Symbol: VerticalAlign),
-    (Name: 'position';                 Symbol: Position),
+    (Name: 'position';                 Symbol: psPosition),
     (Name: 'z-index';                  Symbol: ZIndex),
     (Name: 'list-style-type';          Symbol: ListStyleType),
     (Name: 'list-style-image';         Symbol: ListStyleImage),
@@ -891,13 +901,6 @@ end;
 //------------------------------------------------------------------------------
 // colors
 //------------------------------------------------------------------------------
-
-type
-  PColorDescription = ^TColorDescription;
-  TColorDescription = record
-    Name: ThtString;
-    Color: TColor;
-  end;
 
 const
   CColorDescriptions: array[1..176] of TColorDescription = (
@@ -1081,6 +1084,11 @@ const
 
 var
   ColorDescriptions: ThtStringList;
+
+function AllMyColors: ThtStringList;
+begin
+  Result := ColorDescriptions;
+end;
 
 procedure InitColors;
 var

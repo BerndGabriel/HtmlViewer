@@ -24,7 +24,10 @@
   {$define ver120_plus}
 
   // compiler features
-  {$define UseInline}
+  {$ifdef DEBUG}
+  {$else}
+    {$define UseInline}
+  {$endif}
   {.$define UseEnhancedRecord}
   {.$define UseToStringOverride}
 {$else}
@@ -100,7 +103,10 @@
   { Compiler Features }
 
   {$ifdef Compiler17_Plus}
-    {$define UseInline}
+    {$ifdef DEBUG}
+    {$else}
+      {$define UseInline}
+    {$endif}
   {$endif}
 
   {$ifdef Compiler18_Plus}
