@@ -1,9 +1,9 @@
 object FormHtmlViewer12Test: TFormHtmlViewer12Test
   Left = 648
   Top = 25
+  Width = 1091
+  Height = 707
   Caption = 'HtmlViewer 12 Test'
-  ClientHeight = 653
-  ClientWidth = 1083
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,6 +22,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Top = 0
     Width = 8
     Height = 653
+    Cursor = crHSplit
     ResizeStyle = rsUpdate
   end
   object HtmlViewer: THtmlViewer12
@@ -43,6 +44,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Height = 653
     ActivePage = CssTab
     Align = alLeft
+    TabIndex = 1
     TabOrder = 0
     object HtmlTab: TTabSheet
       Caption = 'Html'

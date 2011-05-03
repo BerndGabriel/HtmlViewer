@@ -978,7 +978,12 @@ end;
 constructor TRuleset.Create(MediaTypes: TMediaTypes);
 begin
   inherited Create;
-  FMediaTypes := MediaTypes
+  FMediaTypes := MediaTypes;
+{$ifdef UseEnhancedRecord}
+{$else}
+  Selectors := TStyleSelectorList.Create;
+  Properties := TStylePropertyList.Create;
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --

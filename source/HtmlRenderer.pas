@@ -310,7 +310,9 @@ begin
       Result := Parent
     else
       case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
         varUString,
+{$endif}
         varString:
           if TryStrToBorderStyle(Prop.Prop.Value, Result) then
             Prop.Prop.Value := Integer(Result);
@@ -331,7 +333,9 @@ begin
       Result := Parent
     else
       case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
         varUString,
+{$endif}
         varString:
           if TryStrToColor(Prop.Prop.Value, False, Result) then
             Prop.Prop.Value := Integer(Result);
@@ -359,7 +363,9 @@ begin
       Result := Parent
     else
       case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
         varUString,
+{$endif}
         varString:
           if TryStrToDisplayStyle(Prop.Prop.Value, Result) then
             Prop.Prop.Value := Integer(Result);
@@ -380,7 +386,9 @@ begin
       Result := Parent
     else
       case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
         varUString,
+{$endif}
         varString:
           if TryStrToBoxFloatStyle(Prop.Prop.Value, Result) then
             Prop.Prop.Value := Integer(Result);
@@ -409,7 +417,9 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
         Result := Parent
       else
         case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
           varUString,
+{$endif}
           varString:
           begin
             if htCompareString(Prop.Prop.Value, 'normal') = 0 then
@@ -453,7 +463,9 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
         Result := Parent
       else
         case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
           varUString,
+{$endif}
           varString:
           begin
             if htCompareString(Prop.Prop.Value, 'italic') = 0 then
@@ -481,7 +493,9 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
         Result := Parent
       else
         case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
           varUString,
+{$endif}
           varString:
           begin
             if htCompareString(Prop.Prop.Value, 'underline') = 0 then
@@ -515,7 +529,9 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
         Result := Parent
       else
         case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
           varUString,
+{$endif}
           varString:
           begin
             Result := FontFamilyToFontName(Prop.Prop.Value);
@@ -533,7 +549,9 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
         Result := Parent
       else
         case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
           varUString,
+{$endif}
           varString:
           begin
             Result := StrToFontSize(Prop.Prop.Value, FontConvBase, DefaultFontSize, Parent, Default);
@@ -550,7 +568,6 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
   end;
 
 var
-  Wt: Integer;
   Style: TFontStyles;
 begin
   Font.ibgColor := GetColor(Props[BackgroundColor], Parent.ibgColor, Default.ibgColor);
@@ -610,7 +627,9 @@ begin
       Result := Parent
     else
       case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
         varUString,
+{$endif}
         varString:
         begin
           Result := StrToLength(Prop.Prop.Value, Relative, Parent, EmBase, Default);
@@ -635,7 +654,9 @@ begin
       Result := Parent
     else
       case VarType(Prop.Prop.Value) of
+{$ifdef Compiler20_Plus}
         varUString,
+{$endif}
         varString:
           if TryStrToBoxPositionStyle(Prop.Prop.Value, Result) then
             Prop.Prop.Value := Integer(Result);
@@ -686,48 +707,51 @@ var
   Info: THtmlRendererBlockInfo;
 begin
   Properties := GetResultingProperties(Element);
+  try
+    // compute display, position and float:
+    Info.Display := GetDisplay(Properties[psDisplay], pdBlock, pdBlock);
+    if Info.Display = pdNone then
+      exit;
 
-  // compute display, position and float:
-  Info.Display := GetDisplay(Properties[psDisplay], pdBlock, pdBlock);
-  if Info.Display = pdNone then
-    exit;
-
-  Info.Position := GetPosition(Properties[psPosition], posStatic, posStatic);
-  case Info.Position of
-    posAbsolute,
-    posFixed:
-    begin
-      Info.Float := flNone;
-      Info.Display := ToRootDisplayStyle(Info.Display);
+    Info.Position := GetPosition(Properties[psPosition], posStatic, posStatic);
+    case Info.Position of
+      posAbsolute,
+      posFixed:
+      begin
+        Info.Float := flNone;
+        Info.Display := ToRootDisplayStyle(Info.Display);
+      end;
+    else
+      Info.Float := GetFloat(Properties[psFloat], flNone, flNone);
+      if Info.Float <> flNone then
+        Info.Display := ToRootDisplayStyle(Info.Display);
     end;
-  else
-    Info.Float := GetFloat(Properties[psFloat], flNone, flNone);
-    if Info.Float <> flNone then
-      Info.Display := ToRootDisplayStyle(Info.Display);
-  end;
-  // for the root element:
-  Info.Display := ToRootDisplayStyle(Info.Display);
+    // for the root element:
+    Info.Display := ToRootDisplayStyle(Info.Display);
 
-  // get or create the body control
-  Control := GetControl(Element) as THtmlBodyControl;
-  if Control = nil then
-  begin
-    Control := THtmlBodyControl.Create(Owner);
-    ControlOfElementMap.Put(Element, Control);
-  end;
-  Box := THtmlBodyBox.Create(ParentBox, Control);
-  Box.BoundsRect := ParentBox.BoundsRect;
-  Box.Tiled := True;
+    // get or create the body control
+    Control := GetControl(Element) as THtmlBodyControl;
+    if Control = nil then
+    begin
+      Control := THtmlBodyControl.Create(Owner);
+      ControlOfElementMap.Put(Element, Control);
+    end;
+    Box := THtmlBodyBox.Create(ParentBox, Control);
+    Box.BoundsRect := ParentBox.BoundsRect;
+    Box.Tiled := True;
 
-  // set properties
-  SetPropertiesToBox(Element, Box, Properties);
+    // set properties
+    SetPropertiesToBox(Element, Box, Properties);
 
-  // render children
-  Child := Element.FirstChild;
-  while Child <> nil do
-  begin
-    Render(Control, Box, Child);
-    Child := Child.Next;
+    // render children
+    Child := Element.FirstChild;
+    while Child <> nil do
+    begin
+      Render(Control, Box, Child);
+      Child := Child.Next;
+    end;
+  finally
+    Properties.Free;
   end;
 end;
 
@@ -779,6 +803,7 @@ var
   ParentBox: THtmlBox;
   FontInfo: ThtFontInfo;
   EmBase: Integer;
+  Font: ThtFont;
 begin
   ParentBox := Box.Parent;
   while ParentBox is THtmlAnonymousBox do
@@ -786,8 +811,10 @@ begin
 
   // Font
   GetFontInfo(Properties, FontInfo, FDefaultFontInfo, FDefaultFontInfo);
-  Box.Font := AllMyFonts.GetFontLike(FontInfo);
-  EmBase := Box.Font.EmSize;
+  Font := AllMyFonts.GetFontLike(FontInfo);
+  Box.Font := Font;
+  EmBase := Font.EmSize;
+  freeAndNil(Font);
 
   // Background
   if ParentBox <> nil then

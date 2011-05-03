@@ -330,8 +330,8 @@ begin
   FChildren.Free;
 {$endif}
   FFont.Free;
-  if FImage <> nil then
-    FImage.EndUse;
+  Parent := nil;
+  Image := nil;
   inherited;
 end;
 

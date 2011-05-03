@@ -522,7 +522,7 @@ end;
 //-- BG ---------------------------------------------------------- 01.05.2011 --
 function StrToFontName(const Str: ThtString): ThtString;
 
-  function GetNextSplitter(const Str: String; var I: Integer; out Splitter: ThtString): Boolean;
+  function GetNextSplitter(const Str: ThtString; var I: Integer; out Splitter: ThtString): Boolean;
   var
     J: Integer;
     Dlm: ThtChar;
