@@ -293,8 +293,6 @@ var
 //    Buffer: array [0..511] of WideChar;
 begin
   inherited Create;
-  if not FileExists(FileName) then
-    raise EGDIPlus.Create(Format('Image file %s not found.', [FileName]));
   err := GdipLoadImageFromFile(PWideChar(FileName), fHandle);
   if err <> 0 then
     raise EGDIPlus.Create(Format('Can''t load image file %s.', [FileName]));
