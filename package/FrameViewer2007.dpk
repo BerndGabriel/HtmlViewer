@@ -14,7 +14,7 @@ package FrameViewer2007;
 {$LOCALSYMBOLS ON}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
-{$OPTIMIZATION OFF}
+{$OPTIMIZATION ON}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
 {$REFERENCEINFO OFF}
@@ -28,6 +28,7 @@ package FrameViewer2007;
 {$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
+{$DEFINE DEBUG}
 
 requires
   vcl,
@@ -61,6 +62,8 @@ contains
   HtmlSymbols in '..\source\HtmlSymbols.pas',
   Parser in '..\source\Parser.pas',
   HtmlStyles in '..\source\HtmlStyles.pas',
-  StyleTypes in '..\source\StyleTypes.pas';
+  StyleTypes in '..\source\StyleTypes.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas';
 
 end.
