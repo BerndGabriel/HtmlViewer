@@ -290,12 +290,14 @@ end;
 constructor TGpImage.Create(Filename: WideString; TmpFile: boolean = False);
 var
   err: Integer;
-//    Buffer: array [0..511] of WideChar;
 begin
   inherited Create;
   err := GdipLoadImageFromFile(PWideChar(FileName), fHandle);
   if err <> 0 then
-    raise EGDIPlus.Create(Format('Can''t load image file %s.', [FileName]));
+    if GetLastError = 2 then
+      raise EGDIPlus.Create(Format('Image file "%s" not found.', [FileName]))
+    else
+      raise EGDIPlus.Create(Format('Can''t load image file "%s".', [FileName]));
   if TmpFile then
     fFilename := Filename;
 end;
