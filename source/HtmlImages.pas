@@ -71,7 +71,7 @@ const
   Hand_Cursor = 1003;
   ThickIBeam_Cursor = 1006;
 {$endif}
-  
+
 type
 
 //------------------------------------------------------------------------------
@@ -668,6 +668,7 @@ function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var A
       ThtMetaFile(Result).LoadFromStream(Stream);
     except
       FreeAndNil(Result);
+      raise;
     end;
   end;
 {$endif}
@@ -681,9 +682,13 @@ var
 {$IFNDEF NoGDIPlus}
   Filename: string;
   F: TFileStream;
+  Png: TgpImage;
 {$ENDIF !NoGDIPlus}
   NonAnimated: boolean;
   Gif: TGifImage;
+{$IFNDEF NoMetafile}
+  Meta: ThtMetaFile;
+{$ENDIF}
 begin
   Result := nil;
   if not Assigned(Stream) or (Stream.Size < 20) then
@@ -748,25 +753,25 @@ begin
 {$else}
   {$IFNDEF NoGDIPlus}
         if GDIPlusActive then
-          try
-            if not TempPathInited then
-            begin
-              GetTempPath(Max_Path, TempPath);
-              TempPathInited := True;
-            end;
-            SetLength(Filename, Max_Path+1);
-            GetTempFilename(TempPath, 'png', 0, PChar(Filename));
-            SetLength(Filename, Pos(#0, Filename) - 1);
-            F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
-            try
-              F.CopyFrom(Stream, Stream.Size);
-            finally
-              F.Free;
-            end;
-            Result := ThtPngImage.Create(TgpImage.Create(Filename, True)); {True because it's a temporary file}
-            Exit;
-          except
+        begin
+          if not TempPathInited then
+          begin
+            GetTempPath(Max_Path, TempPath);
+            TempPathInited := True;
           end;
+          SetLength(Filename, Max_Path+1);
+          GetTempFilename(TempPath, 'png', 0, PChar(Filename));
+          SetLength(Filename, Pos(#0, Filename) - 1);
+          F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
+          try
+            F.CopyFrom(Stream, Stream.Size);
+          finally
+            F.Free;
+          end;
+          Png := TgpImage.Create(Filename, True); {True because it's a temporary file}
+          Result := ThtPngImage.Create(Png);
+          Exit;
+        end;
   {$ENDIF !NoGDIPlus}
 {$endif}
         ;
@@ -812,7 +817,8 @@ begin
   if not Assigned(Result) then
   begin
     try
-      Result := ThtMetafileImage.Create(LoadMetafileFromStream(Stream));
+      Meta := LoadMetafileFromStream(Stream);
+      Result := ThtMetafileImage.Create(Meta);
 //      AMask := nil;
 //      Transparent := NotTransp;
 //      ThtMetaFile(Result).LoadFromStream(Stream);
@@ -1374,12 +1380,12 @@ begin
       NewBitmap.Free;
     end;
   end
-  else if (TheGpObj is TBitmap) then
-    Tile(TBitmap(TheGpObj), TheMask, OW, OH)
 {$IFNDEF NoGDIPlus}
-  else
-    TileGpImage(TgpImage(TheGpObj), OW, OH)
+  else if (BGImage is ThtPngImage) then
+    TileGpImage(TgpImage(BGImage.GetGpObject), OW, OH)
 {$ENDIF !NoGDIPlus}
+  else
+    Tile(TBitmap(TheGpObj), TheMask, OW, OH)
   ;
 end;
 
