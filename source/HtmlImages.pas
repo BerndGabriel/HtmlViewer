@@ -2307,6 +2307,8 @@ end;
 destructor ThtImageCache.Destroy;
 begin
   {$IFNDEF NoGDIPlus}
+  // must exit GDI after freeing images in clear!
+  Clear;
   CheckExitGDIPlus;
   {$ENDIF NoGDIPlus}
   inherited Destroy;
