@@ -42,6 +42,7 @@ uses
   WideStringsLcl,
 {$else}
   Consts,
+  StrUtils,
   {$ifdef UseTNT}
     {$message 'HtmlViewer uses TNT unicode controls.'}
     TntControls,
@@ -264,9 +265,10 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
 procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
-function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
+function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function SameStringArray(const A1, A2: ThtStringArray): Boolean;
 function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
 procedure SortStringArray(A: ThtStringArray);
@@ -533,10 +535,25 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htLowerCase(Str: ThtString): ThtString;
-begin
 {$ifdef UNICODE}
+begin
   Result := LowerCase(Str);
 {$else}
+var
+  Len, NewLen: Integer;
+  Tmp: string;
+begin
+  if IsWin32Platform then
+  begin {win95,98,ME}
+    SetLength(Tmp, 2 * Len);
+    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), 2 * Len, nil, nil);
+    SetLength(Tmp, NewLen);
+    Tmp := AnsiLowercase(Tmp);
+    SetLength(Result, Len);
+    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
+    exit;
+  end;
+
   Result := Str;
   CharLowerBuffW(@Result[1], Length(Result));
 {$endif}
@@ -553,12 +570,51 @@ begin
 {$endif}
 end;
 
+//-- BG ---------------------------------------------------------- 09.08.2011 --
+function htTrim(Str: ThtString): ThtString;
+{$ifdef UNICODE}
+begin
+  Result := Trim(Str);
+{$else}
+var
+  I, L: Integer;
+begin
+  L := Length(Str);
+  I := 1;
+  while (I <= L) and (Str[I] <= ' ') do
+    Inc(I);
+  if I > L then
+    Result := ''
+  else
+  begin
+    while Str[L] <= ' ' do
+      Dec(L);
+    Result := Copy(Str, I, L - I + 1);
+  end;
+{$endif}
+end;
+
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htUpperCase(Str: ThtString): ThtString;
-begin
 {$ifdef UNICODE}
+begin
   Result := UpperCase(Str);
 {$else}
+var
+  Len, NewLen: Integer;
+  Tmp: string;
+begin
+  if IsWin32Platform then
+  begin {win95,98,ME}
+    SetLength(Tmp, 2 * Len);
+    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), 2 * Len, nil, nil);
+    SetLength(Tmp, NewLen);
+    Tmp := AnsiUppercase(Tmp);
+    SetLength(Result, Len);
+    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
+    exit;
+  end;
+
   Result := Str;
   CharUpperBuffW(@Result[1], Length(Result));
 {$endif}

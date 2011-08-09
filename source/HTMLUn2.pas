@@ -442,9 +442,9 @@ function StrPosW(Str, SubStr: PWideChar): PWideChar;
 function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
 function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
 function WidePos(SubStr, S: WideString): Integer;
-function WideTrim(const S: WideString): WideString;
-function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
-function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
+//function WideTrim(const S: WideString): WideString; deprecated; // use HtmlGlobals.htTrim() instead
+//function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif} deprecated; // use HtmlGlobals.htUppercase() instead
+//function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}deprecated; // use HtmlGlobals.htLowercase() instead
 function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
 function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
 
@@ -717,73 +717,73 @@ begin
     Result := P - PWideChar(S) + 1;
 end;
 
-{----------------WideUpperCase1}
-
-{$ifdef UNICODE}
-
-function WideUpperCase1(const S: WideString): WideString;
-begin
-  Result := WideUpperCase(S);
-end;
-
-function WideLowerCase1(const S: WideString): WideString;
-begin
-  Result := WideLowerCase(S);
-end;
-
-{$else}
-
-function WideUpperCase1(const S: WideString): WideString;
-var
-  Len, NewLen: Integer;
-  Tmp: string;
-begin
-  Len := Length(S);
-  if not IsWin32Platform then
-  begin
-    SetString(Result, PWideChar(S), Len);
-    if Len > 0 then
-      CharUpperBuffW(Pointer(Result), Len);
-  end
-  else
-  begin {win95,98,ME}
-    SetLength(Tmp, 2 * Len);
-    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
-    SetLength(Tmp, NewLen);
-    Tmp := AnsiUppercase(Tmp);
-    SetLength(Result, Len);
-    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
-  end;
-end;
-
-function WideLowerCase1(const S: WideString): WideString;
-var
-  Len, NewLen: Integer;
-  Tmp: string;
-begin
-  Len := Length(S);
-  if not IsWin32Platform then
-  begin
-    SetString(Result, PWideChar(S), Len);
-    if Len > 0 then
-      CharLowerBuffW(Pointer(Result), Len);
-  end
-  else
-  begin {win95,98,ME}
-    SetLength(Tmp, 2 * Len);
-    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
-    SetLength(Tmp, NewLen);
-    Tmp := AnsiLowercase(Tmp);
-    SetLength(Result, Len);
-    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
-  end;
-end;
-
-{$endif}
+//{----------------WideUpperCase1}
+//
+//{$ifdef UNICODE}
+//
+//function WideUpperCase1(const S: WideString): WideString;
+//begin
+//  Result := WideUpperCase(S);
+//end;
+//
+//function WideLowerCase1(const S: WideString): WideString;
+//begin
+//  Result := WideLowerCase(S);
+//end;
+//
+//{$else}
+//
+//function WideUpperCase1(const S: WideString): WideString;
+//var
+//  Len, NewLen: Integer;
+//  Tmp: string;
+//begin
+//  Len := Length(S);
+//  if not IsWin32Platform then
+//  begin
+//    SetString(Result, PWideChar(S), Len);
+//    if Len > 0 then
+//      CharUpperBuffW(Pointer(Result), Len);
+//  end
+//  else
+//  begin {win95,98,ME}
+//    SetLength(Tmp, 2 * Len);
+//    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
+//    SetLength(Tmp, NewLen);
+//    Tmp := AnsiUppercase(Tmp);
+//    SetLength(Result, Len);
+//    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
+//  end;
+//end;
+//
+//function WideLowerCase1(const S: WideString): WideString;
+//var
+//  Len, NewLen: Integer;
+//  Tmp: string;
+//begin
+//  Len := Length(S);
+//  if not IsWin32Platform then
+//  begin
+//    SetString(Result, PWideChar(S), Len);
+//    if Len > 0 then
+//      CharLowerBuffW(Pointer(Result), Len);
+//  end
+//  else
+//  begin {win95,98,ME}
+//    SetLength(Tmp, 2 * Len);
+//    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
+//    SetLength(Tmp, NewLen);
+//    Tmp := AnsiLowercase(Tmp);
+//    SetLength(Result, Len);
+//    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
+//  end;
+//end;
+//
+//{$endif}
 
 function WideSameText1(const S1, S2: WideString): boolean;
 begin
-  Result := WideUpperCase1(S1) = WideUpperCase1(S2);
+  Result := htUpperCase(S1) = htUpperCase(S2);
 end;
 
 function WideSameStr1(const S1, S2: WideString): boolean;

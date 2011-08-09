@@ -665,7 +665,7 @@ function THtmlParser.GetTag: Boolean; {Pick up a Tag or pass a single LessChar}
     function GetID(out S: ThtString): Boolean;
     begin
       S := '';
-      while LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('-'), ThtChar('0')..ThtChar('9')] do
+      while LCh in [ThtChar('a')..ThtChar('z'), ThtChar('A')..ThtChar('Z'), ThtChar('-'), ThtChar('$'), ThtChar('0')..ThtChar('9')] do
       begin
         SetLength(S, Length(S) + 1);
         S[Length(S)] := LCh;
@@ -1758,7 +1758,7 @@ begin
     case Sy of
       OptionSy, OptionEndSy:
         begin
-          WS := WideTrim(WS);
+          WS := htTrim(WS);
           if InOption then
             Select.AddStr(WS, Selected, Attr, CodePage);
           Selected := False;
@@ -1777,7 +1777,7 @@ begin
   end;
   if InOption then
   begin
-    WS := WideTrim(WS);
+    WS := htTrim(WS);
     Select.AddStr(WS, Selected, Attr, CodePage);
   end;
   Select.ResetToValue;

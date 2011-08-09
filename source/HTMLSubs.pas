@@ -391,10 +391,9 @@ type
 
   TImageObj = class(TFloatingObj) {inline image info}
   private
+    FSource: ThtString;
     FImage: ThtImage;
-//    FBitmap: TBitmap;
     OrigImage: ThtImage; {same as above unless swapped}
-//    Mask: TBitmap; {Image's mask if needed for transparency}
     Transparent: TTransparency; {None, Lower Left Corner, or Transp GIF}
     FHover: HoverType;
     FHoverImage: boolean;
@@ -405,14 +404,13 @@ type
 //    procedure SetImage(const AValue: ThtImage);
   public
     ObjHeight, ObjWidth: Integer; {width as drawn}
-    Source: ThtString; {the src= attribute}
     IsMap, UseMap: boolean;
     MapName: ThtString;
     MyFormControl: TImageFormControlObj; {if an <INPUT type=image}
     //unused: MyCell: TCellBasic;
     Swapped: boolean; {image has been replaced}
     Missing: boolean; {waiting for image to be downloaded}
-
+  public
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList);
     constructor SimpleCreate(Document: ThtDocument; Parent: TCellBasic; const AnURL: ThtString);
     constructor CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TImageObj);
@@ -425,6 +423,7 @@ type
     property Bitmap: TBitmap read GetBitmap;
     property Hover: HoverType read FHover write SetHover;
     property Image: ThtImage read FImage ; //write SetImage;
+    property Source: ThtString read FSource; {the src= attribute}
     procedure ReplaceImage(NewImage: TStream);
   end;
 
@@ -823,7 +822,7 @@ type
   public
     EditSize: Integer;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); //override;
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -845,7 +844,7 @@ type
     Which: WhichType;
     MyEdit: TEditFormControlObj;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); //override;
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
     destructor Destroy; override;
     procedure ButtonClick(Sender: TObject);
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -2084,7 +2083,7 @@ begin
     with L[I] do
       case Which of
         SrcSy:
-          Source := Trim(Name);
+          FSource := htTrim(Name);
 
         AltSy:
           begin
@@ -2098,7 +2097,7 @@ begin
         UseMapSy:
           begin
             UseMap := True;
-            S := Trim(Uppercase(Name));
+            S := htUpperCase(htTrim(Name));
             if (Length(S) > 1) and (S[1] = '#') then
               System.Delete(S, 1, 1);
             MapName := S;
@@ -2106,7 +2105,7 @@ begin
 
         AlignSy:
           begin
-            S := UpperCase(Name);
+            S := htUpperCase(htTrim(Name));
             if S = 'TOP' then
               VertAlign := ATop
             else if (S = 'MIDDLE') or (S = 'ABSMIDDLE') then
@@ -2187,7 +2186,7 @@ begin
   inherited Create(Parent, nil, nil);
   VertAlign := ABottom; {default}
   Floating := ANone; {default}
-  Source := AnURL;
+  FSource := AnURL;
   NoBorder := True;
   BorderSize := 0;
   SpecHeight := -1;
@@ -2207,6 +2206,7 @@ begin
   FImage := T.Image;
   IsMap := T.IsMap;
   Transparent := T.Transparent;
+  FSource := T.FSource;
 end;
 
 destructor TImageObj.Destroy;
@@ -2214,7 +2214,7 @@ begin
   if not Document.IsCopy then
   begin
     if (Source <> '') and Assigned(OrigImage) then
-      Document.ImageCache.DecUsage(Source);
+      Document.ImageCache.DecUsage(htUpperCase(htTrim(Source)));
     if Swapped and (Image <> OrigImage) then
     begin {not in cache}
       Image.Free;
@@ -2404,35 +2404,37 @@ var
   ARect: TRect;
   SubstImage: Boolean;
   HasBlueBox: Boolean;
+  UName: ThtString;
 begin
   ViewImages := Document.ShowImages;
   if ViewImages then
   begin
-    if Image = nil then
+    if FImage = nil then
     begin
       TempImage := nil;
-      if Source <> '' then
-        with SectionList do
+      UName := htUpperCase(htTrim(Source));                               
+      if UName <> '' then
+      begin
+        if not Assigned(Document.GetBitmap) and not Assigned(Document.GetImage) then
+          FSource := Document.TheOwner.HtmlExpandFilename(Source)
+        else if Assigned(Document.ExpandName) then
         begin
-          if not Assigned(GetBitmap) and not Assigned(GetImage) then
-            Source := TheOwner.HtmlExpandFilename(Source)
-          else if Assigned(ExpandName) then
-          begin
-            ExpandName(TheOwner, Source, Rslt);
-            Source := Rslt;
-          end;
-          if MissingImages.IndexOf(Uppercase(Source)) = -1 then
-            TempImage := Document.GetTheImage(Source, Transparent, FromCache, Missing)
-          else
-            Missing := True; {already in list, don't request it again}
+          Document.ExpandName(Document.TheOwner, Source, Rslt);
+          FSource := Rslt;
         end;
+        UName := htUpperCase(htTrim(Source));
+        if Document.MissingImages.IndexOf(UName) = -1 then
+          TempImage := Document.GetTheImage(Source, Transparent, FromCache, Missing)
+        else
+          Missing := True; {already in list, don't request it again}
+      end;
 
       if TempImage = nil then
       begin
         if Missing then
         begin
           FImage := DefImage;
-          Document.MissingImages.AddObject(Source, Self); {add it even if it's there already}
+          Document.MissingImages.AddObject(UName, Self); {add it even if it's there already}
         end
         else
         begin
@@ -7258,7 +7260,7 @@ begin
   Image := nil;
   Error := False;
   Reformat := False;
-  UName := Trim(Uppercase(Src));
+  UName := htUpperCase(htTrim(Src));
   I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
   J := MissingImages.IndexOf(UName); {see if it's in missing image list}
   if (I = -1) and (J >= 0) then
@@ -7348,7 +7350,7 @@ begin
   FromCache := False;
   if BMName <> '' then
   begin
-    UName := Trim(Uppercase(BMName));
+    UName := htUpperCase(htTrim(BMName));
     I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
     if I >= 0 then
     begin {yes, handle the case where the image is already loaded}
@@ -7396,13 +7398,15 @@ var
   FromCache, Delay: boolean;
   Rslt: ThtString;
   I: Integer;
+  UName: ThtString;
 begin
-  if ShowImages and (BitmapName <> '') then
+  UName := htUpperCase(htTrim(BitmapName));
+  if ShowImages and (UName <> '') then
     if BackgroundImage = nil then
     begin
       if BitmapLoaded then
       begin
-        I := ImageCache.IndexOf(Trim(UpperCase(BitmapName))); {first see if the bitmap is already loaded}
+        I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
         if I >= 0 then
           BackgroundImage := ImageCache.GetImage(I);
       end
@@ -7418,7 +7422,7 @@ begin
         end;
         BackgroundImage := GetTheImage(BitmapName, Dummy1, FromCache, Delay); {might be Nil}
         if Delay then
-          MissingImages.AddObject(BitmapName, Self);
+          MissingImages.AddObject(htUpperCase(htTrim(BitmapName)), Self);
         BitmapLoaded := True;
       end;
       if BackgroundImage is ThtGifImage then
@@ -10186,9 +10190,9 @@ begin
     Allocate(L + 500); {L+3 to permit additions later}
   case PropStack.Last.GetTextTransform of
     txUpper:
-      St := WideUpperCase1(T.S);
+      St := htUpperCase(T.S);
     txLower:
-      St := WideLowerCase1(T.S);
+      St := htLowerCase(T.S);
   else
     St := T.S;
   end;
@@ -10202,7 +10206,7 @@ begin
 
   if PropStack.Last.GetFontVariant = 'small-caps' then
   begin
-    StU := WideUpperCase1(St);
+    StU := htUpperCase(St);
     BuffS := BuffS + StU;
     Small := False;
     for I := 1 to Length(St) do
@@ -12392,7 +12396,7 @@ begin
   if MatchCase then
     ToSearch := BuffS
   else
-    ToSearch := WideLowerCase1(BuffS); {ToFind already lower case}
+    ToSearch := htLowerCase(BuffS); {ToFind already lower case}
 
   P := StrPosW(PWideChar(ToSearch) + I, PWideChar(ToFind));
   if Assigned(P) then
@@ -12424,7 +12428,7 @@ begin
   else
     ToSearch := Copy(BuffS, 1, From - StartCurs); {Search smaller part}
   if not MatchCase then
-    ToSearch := WideLowerCase1(ToSearch); {ToFind already lower case}
+    ToSearch := htLowerCase(ToSearch); {ToFind already lower case}
 
 {search backwards for the end ThtChar of ToFind}
   P := StrRScanW(PWideChar(ToSearch), ToFind[ToFindLen]);
