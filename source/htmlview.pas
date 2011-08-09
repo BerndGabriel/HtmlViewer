@@ -345,20 +345,21 @@ type
   protected
     ScrollWidth: Integer;
 
+    function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     function GetPalette: HPALETTE; override;
     function HotSpotClickHandled: Boolean; dynamic;
+    function IsProcessing: Boolean;
     procedure DoBackground1(ACanvas: TCanvas; ATop, AWidth, AHeight, FullHeight: Integer);
     procedure DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
-    function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     procedure HTMLMouseDblClk(Message: TWMMouse);
     procedure HTMLMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
     procedure HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
+    procedure LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
-    procedure LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);    
     procedure PaintWindow(DC: HDC); override;
     procedure SetCursor(Value: TCursor); {$ifdef LCL} override; {$endif LCL}
     procedure SetOnScript(Handler: TScriptEvent); override;
@@ -819,7 +820,7 @@ var
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   if Filename <> '' then
   begin
@@ -851,7 +852,7 @@ var
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   if Filename <> '' then
   begin
@@ -883,7 +884,7 @@ var
   OldFormData: TFreeList;
 
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   if Filename <> '' then
   begin
@@ -963,7 +964,7 @@ var
   I: Integer;
   Dest, FName, OldFile: ThtString;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   SetProcessing(True);
   FRefreshDelay := 0;
@@ -1019,7 +1020,7 @@ var
   I: Integer;
   Dest, FName, OldFile: ThtString;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   SetProcessing(True);
   FRefreshDelay := 0;
@@ -1087,7 +1088,7 @@ var
   OldCursor: TCursor;
   SaveOnImageRequest: TGetImageEvent;
 begin
-  if (vsProcessing in FViewerState) or not Assigned(AStream) then
+  if IsProcessing or not Assigned(AStream) then
     Exit;
   SetProcessing(True);
   OldCursor := Screen.Cursor;
@@ -1375,7 +1376,7 @@ begin
   inherited;
   if vsCreating in FViewerState then
     Exit;
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     DoScrollBars
   else
     Layout;
@@ -1424,7 +1425,7 @@ procedure THtmlViewer.Layout;
 var
   OldPos: Integer;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   SetProcessing(True);
   try
@@ -1549,6 +1550,14 @@ begin
 end;
 
 {----------------THtmlViewer.CheckVisitedLinks}
+
+//-- BG ---------------------------------------------------------- 09.08.2011 --
+function THtmlViewer.IsProcessing: Boolean;
+begin
+  Result := vsProcessing in FViewerState;
+//  if Result then
+//    assert(False, 'Viewer processing. Data may get lost!');
+end;
 
 procedure THtmlViewer.CheckVisitedLinks;
 var
@@ -2202,8 +2211,8 @@ var
   OldPos: Integer;
   OldCursor: TCursor;
 begin
-  if vsProcessing in FViewerState then
-    exit;
+  if IsProcessing then
+    Exit;
   if Value <> FSectionList.ShowImages then
   begin
     OldCursor := Screen.Cursor;
@@ -2227,20 +2236,20 @@ begin
 end;
 
 {----------------THtmlViewer.InsertImage}
-
 function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
 var
   OldPos: Integer;
   ReFormat: Boolean;
 begin
   Result := False;
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   try
     SetProcessing(True);
     FSectionList.InsertImage(Src, Stream, Reformat);
     FSectionList.GetBackgroundBitmap; {in case it's the one placed}
     if Reformat then
+    begin
       if FSectionList.Count > 0 then
       begin
         FSectionList.GetBackgroundBitmap; {load any background bitmap}
@@ -2248,6 +2257,7 @@ begin
         DoLogic;
         Position := OldPos;
       end;
+    end;
     Invalidate;
   finally
     SetProcessing(False);
@@ -2288,7 +2298,7 @@ end;
 
 procedure THtmlViewer.SetDefBackground(Value: TColor);
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   FBackground := Value;
   FSectionList.Background := Value;
@@ -2574,8 +2584,8 @@ var
   end;
 
 begin
-  if vsProcessing in FViewerState then
-    exit;
+  if IsProcessing then
+    Exit;
   with FHistory do
     if (Value <> FHistoryIndex) and (Value >= 0) and (Value < Count) then
     begin
@@ -3006,7 +3016,7 @@ end;
 function THtmlViewer.MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 begin
   Result := nil;
-  if (vsProcessing in FViewerState) or (FSectionList.Count = 0) then
+  if IsProcessing or (FSectionList.Count = 0) then
     Exit;
   if Height > 4000 then
     raise EExcessiveSizeError.Create('Vertical Height exceeds 4000');
@@ -3031,7 +3041,7 @@ var
   Canvas: TMetaFileCanvas;
 begin
   Result := nil;
-  if (vsProcessing in FViewerState) or (FSectionList.Count = 0) then
+  if IsProcessing or (FSectionList.Count = 0) then
     Exit;
   if Height > 4000 then
     raise EExcessiveSizeError.Create('Vertical Height exceeds 4000');
@@ -3076,7 +3086,7 @@ begin
   Done := False;
   Result := nil;
   TablePartRec := nil;
-  if (vsProcessing in FViewerState) or (SectionList.Count = 0) then
+  if IsProcessing or (SectionList.Count = 0) then
     Exit;
   CopyList := ThtDocument.CreateCopy(SectionList);
   try
@@ -3354,7 +3364,7 @@ begin
   if Assigned(FOnPageEvent) then
     FOnPageEvent(Self, 0, Done);
   FPage := 0;
-  if (vsProcessing in FViewerState) or (FSectionList.Count = 0) then
+  if IsProcessing or (FSectionList.Count = 0) then
     Exit;
   PrintList := ThtDocument.CreateCopy(FSectionList);
   PrintList.SetYOffset(0);
@@ -3910,7 +3920,7 @@ begin
     FOnPageEvent(Self, 0, Done);
   FPage := 0;
   Result := 0;
-  if (vsProcessing in FViewerState) or (SectionList.Count = 0) then
+  if IsProcessing or (SectionList.Count = 0) then
     Exit;
   PrintList := ThtDocument.CreateCopy(SectionList);
   PrintList.SetYOffset(0);
@@ -4440,7 +4450,7 @@ begin
     if MatchCase then
       S1 := S
     else
-      S1 := WideLowerCase1(S);
+      S1 := htLowerCase(S);
     if Reverse then
       Curs := FindStringR(CaretPos, S1, MatchCase)
     else
@@ -4533,7 +4543,7 @@ end;
 procedure THtmlViewer.Clear;
 {Note: because of Frames do not clear history list here}
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   HTMLTimer.Enabled := False;
   FSectionList.Clear;
