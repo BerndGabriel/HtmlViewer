@@ -805,10 +805,14 @@ begin
       end;
     end;
 
-    if Transparent = LLCorner then
-      Mask := GetImageMask(Bitmap, False, 0);
-    Bitmap := ConvertImage(Bitmap);
-    Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
+    if Result = nil then
+      if Bitmap <> nil then
+      begin
+        if Transparent = LLCorner then
+          Mask := GetImageMask(Bitmap, False, 0);
+        Bitmap := ConvertImage(Bitmap);
+        Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
+      end;
   except
     freeAndNil(Bitmap);
     freeAndNil(Mask);
@@ -1394,27 +1398,40 @@ end;
 function EnlargeImage(Image: TGpObject; W, H: Integer): TBitmap;
 {enlarge 1 pixel images for tiling.  Returns a TBitmap regardless of Image type}
 var
-  NewBitmap: TBitmap;
+  TmpBitmap: TBitmap;
+{$IFNDEF NoGDIPlus}
+  OwnsBitmap: Boolean;
+{$ENDIF !NoGDIPlus}
 begin
   Result := TBitmap.Create;
-  {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    NewBitmap := TGpImage(Image).GetBitmap
-  else {$ENDIF !NoGDIPlus}
-    NewBitmap := Image as TBitmap;
-  Result.Assign(NewBitmap);
-  if NewBitmap.Width = 1 then
+  OwnsBitmap := False;
+  if Image is ThtImage then
+  begin
+    TmpBitmap := ThtImage(Image).GetBitmap;
+{$IFNDEF NoGDIPlus}
+    OwnsBitmap := Image is ThtPngImage;
+  end
+  else if Image is TGpImage then
+  begin
+    TmpBitmap := TGpImage(Image).GetBitmap;
+    OwnsBitmap := True;
+{$ENDIF !NoGDIPlus}
+  end
+  else
+    TmpBitmap := Image as TBitmap;
+  Result.Assign(TmpBitmap);
+  if TmpBitmap.Width = 1 then
     Result.Width := Min(100, W)
   else
-    Result.Width := NewBitmap.Width;
-  if NewBitmap.Height = 1 then
+    Result.Width := TmpBitmap.Width;
+  if TmpBitmap.Height = 1 then
     Result.Height := Min(100, H)
   else
-    Result.Height := NewBitmap.Height;
-  Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), NewBitmap);
+    Result.Height := TmpBitmap.Height;
+  Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), TmpBitmap);
   {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    NewBitmap.Free;
+  if OwnsBitmap then
+    TmpBitmap.Free;
   {$ENDIF NoGDIPlus}
 end;
 
@@ -2018,6 +2035,8 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtBitmapImage.Create(AImage, AMask: TBitmap; Tr: TTransparency);
 begin
+  if AImage = nil then
+    raise EInvalidImage.Create('ThtBitmapImage requires an image');
   inherited Create(Tr);
   Bitmap := AImage;
   Mask := AMask;
@@ -2034,6 +2053,8 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 procedure ThtBitmapImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 begin
+  if Bitmap = nil then
+    exit;
   if Mask = nil then
   begin
 {$IFDEF HalfToneStretching}

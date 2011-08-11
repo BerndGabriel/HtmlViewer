@@ -32,6 +32,7 @@ unit HtmlCaches;
 interface
 
 uses
+  SysUtils,
   HtmlGlobals;
 
 type
@@ -85,7 +86,7 @@ end;
 //-- BG ---------------------------------------------------------- 16.04.2011 --
 destructor ThtCachable.Destroy;
 begin
-  Assert(UsageCount = 0, 'Freeing cached ' + ClassName + ' that''s still in use.');
+  Assert(UsageCount = 0, 'Freeing cached ' + ClassName + ' that''s still in use ' + IntToStr(UsageCount) + ' time/s.' );
   inherited;
 end;
 

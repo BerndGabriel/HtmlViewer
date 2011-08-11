@@ -36,7 +36,7 @@ uses
 {$else}
   Windows,
 {$endif}
-  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls,
+  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Contnrs,
 {$ifndef NoMetafile}
   MetaFilePrinter, vwPrint,
 {$endif}
@@ -229,6 +229,13 @@ type
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 //
+
+    // BG, 10.08.2011 speed up inserting images
+    InsertedImages: TStrings;
+    ImagesInserted: TTimer;
+    ImagesReformat: Boolean;
+    procedure ImagesInsertedTimer(Sender: TObject);
+
     function CreateHeaderFooter: THtmlViewer;
     function GetBase: ThtString;
     function GetBaseTarget: ThtString;
@@ -716,6 +723,12 @@ begin
   HTMLTimer.OnTimer := HTMLTimerTimer;
   FLinkAttributes := ThtStringList.Create;
 
+  InsertedImages := TStringList.Create;
+  ImagesInserted := TTimer.Create(Self);
+  ImagesInserted.Enabled := False;
+  ImagesInserted.Interval := 100;
+  ImagesInserted.OnTimer := ImagesInsertedTimer;
+
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
   DoScrollBars;
@@ -728,6 +741,9 @@ begin
 {$ifndef NoMetaFile}
   AbortPrint;
 {$endif}
+  ImagesInserted.Free;
+  InsertedImages.Free;
+  HTMLTimer.Free;
   Exclude(FViewerState, vsMiddleScrollOn);
   if vsLocalImageCache in FViewerState then
   begin
@@ -739,7 +755,6 @@ begin
   FPositionHistory.Free;
   FTitleHistory.Free;
   Visited.Free;
-  HTMLTimer.Free;
   FLinkAttributes.Free;
   FDocument.Free;
   inherited Destroy;
@@ -2237,16 +2252,36 @@ end;
 
 {----------------THtmlViewer.InsertImage}
 function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
+begin
+  InsertedImages.AddObject(Src, Stream);
+  if not ImagesInserted.Enabled then
+    ImagesInserted.Enabled := True
+  else if InsertedImages.Count >= 10 then
+    ImagesInsertedTimer(nil);
+  Result := True;
+end;
+
+//-- BG ---------------------------------------------------------- 10.08.2011 --
+procedure THtmlViewer.ImagesInsertedTimer(Sender: TObject);
 var
   OldPos: Integer;
-  ReFormat: Boolean;
+  Reformat, ImageReformat: Boolean;
 begin
-  Result := False;
   if IsProcessing then
     Exit;
+    
+  SetProcessing(True);
   try
-    SetProcessing(True);
-    FSectionList.InsertImage(Src, Stream, Reformat);
+    ImagesInserted.Enabled := False;
+    Reformat := ImagesReformat;
+    ImagesReformat := False;
+    while InsertedImages.Count > 0 do
+    begin
+      FSectionList.InsertImage(InsertedImages[0], TStream(InsertedImages.Objects[0]), ImageReformat);
+      if ImageReformat then
+        Reformat := True;
+      InsertedImages.Delete(0);
+    end;
     FSectionList.GetBackgroundBitmap; {in case it's the one placed}
     if Reformat then
     begin
@@ -2261,7 +2296,6 @@ begin
     Invalidate;
   finally
     SetProcessing(False);
-    Result := True;
   end;
 end;
 
@@ -2992,7 +3026,7 @@ begin
         NewMask := nil;
         NewBitmap := nil;
         try
-          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewImage, NewBitmap.Width, NewBitmap.Height, ACanvas.Brush.Color);
+          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewImage, NewImage.Width, NewImage.Height, ACanvas.Brush.Color);
         finally
           NewImage.Free;
         end;

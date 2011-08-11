@@ -2064,7 +2064,7 @@ begin
 end;
 
 {----------------TImageObj.Create}
-
+var ImgageCount: Integer;
 constructor TImageObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList);
 var
   I: Integer;
@@ -2072,6 +2072,7 @@ var
   NewSpace: Integer;
   T: TAttribute;
 begin
+  inc(ImgageCount);  
   inherited Create(Parent, L, nil);
   Pos := Position;
   VertAlign := ABottom; {default}
@@ -2565,115 +2566,37 @@ begin
 end;
 
 {----------------TImageObj.DoDraw}
-
+var
+  LastExceptionMessage: String;
+  LastDdImage: ThtImage;
 procedure TImageObj.DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: ThtImage);
 {Y relative to top of display here}
-//var
-//  DC: HDC;
-//  Img: TBitmap absolute ddImage;
-//  Gif: TGifImage absolute ddImage;
-//  W, H: Integer;
-//  PrintTransparent: boolean;
+var
+  W, H: Integer;
 begin
-(*
-  DC := Canvas.Handle;
-
-  {$IFNDEF NoGDIPlus}
-  if ddImage is ThtPngImage then
+  if (ddImage = ErrorImage) or (ddImage = DefImage) then
   begin
-    if not Document.Printing then
-      StretchDrawGpImage(DC, TGPImage(ddImage), XX, Y, ObjWidth, ObjHeight)
-    else if not Document.PrintBackground and (Positioning = posStatic) then {Printing}
-      StretchPrintGpImageOnColor(Canvas, TGpImage(ddImage), XX, Y, ObjWidth, ObjHeight)
-    else
-      StretchPrintGpImageDirect(DC, TGPImage(ddImage), XX, Y, ObjWidth, ObjHeight,
-        Document.ScaleX, Document.ScaleY);
-    Exit;
+    W := ddImage.Width;
+    H := ddImage.Height;
+  end
+  else if ddImage = nil then
+    exit
+  else
+  begin
+    W := ObjWidth;
+    H := ObjHeight;
   end;
-  {$ENDIF !NoGDIPlus}
-*)
-
   try
-    if not Document.IsCopy then
-      if (ddImage = ErrorImage) or (ddImage = DefImage) then
-        ddImage.Draw(Canvas, XX, Y, ddImage.Width, ddImage.Height)
-      else
-        ddImage.Draw(Canvas, XX, Y, ObjWidth, ObjHeight)
+    if Document.IsCopy then
+      ddImage.Print(Canvas, XX, Y, W, H, clWhite)
     else
-      if (ddImage = ErrorImage) or (ddImage = DefImage) then
-        ddImage.Print(Canvas, XX, Y, ddImage.Width, ddImage.Height, clWhite)
-      else
-        ddImage.Print(Canvas, XX, Y, ObjWidth, ObjHeight, clWhite)
-    ;
-(*
-      if ddImage is TGifImage then
-      begin
-        Gif.ShowIt := True;
-        Gif.Visible := True;
-        Gif.Draw(Canvas, XX, Y, ObjWidth, ObjHeight);
-      end
-      else if ((Transparent <> NotTransp) or (ddImage = ErrorBitmap)) and Assigned(ddMask) then
-        if ddImage = ErrorBitmap then
-          FinishTransparentBitmap(DC, Img, Mask, XX, Y, Img.Width, Img.Height)
-        else
-          FinishTransparentBitmap(DC, Img, Mask, XX, Y, ObjWidth, ObjHeight)
-      else
-      begin
-        if (ddImage = DefBitMap) or (ddImage = ErrorBitmap) then
-          BitBlt(DC, XX, Y, Img.Width, Img.Height, Img.Canvas.Handle, 0, 0, SRCCOPY)
-        else if ddImage is TBitmap then
-        begin
-{$IFDEF HalfToneStretching}
-          SetStretchBltMode(DC, HALFTONE);
-{$ELSE}
-          SetStretchBltMode(DC, COLORONCOLOR);
-{$ENDIF}
-          SetBrushOrgEx(DC, 0, 0, nil);
-          StretchBlt(DC, XX, Y, ObjWidth, ObjHeight, Img.Canvas.Handle, 0, 0, Img.Width, Img.Height, SRCCOPY);
-        end
-{$IFNDEF NoMetafile}
-        else if ddImage is ThtMetaFile then
-          Canvas.StretchDraw(Rect(XX, Y, XX + ObjWidth, Y + ObjHeight), ThtMetaFile(ddImage));
-{$ENDIF}
-      end;
-    end
-    else
-    begin {printing}
-      if ddImage is TGifImage then
-      begin
-        ddMask := Gif.Mask;
-        if Assigned(ddMask) then
-          Transparent := TrGif;
-        Img := Gif.MaskedBitmap;
-        Img.Palette := CopyPalette(ThePalette);
-        Img.HandleType := bmDIB;
-      end;
-      if (ddImage = DefBitMap) or (ddImage = ErrorBitmap) then
-      begin
-        W := TBitmap(ddImage).Width;
-        H := TBitmap(ddImage).Height;
-      end
-      else
-      begin
-        W := ObjWidth;
-        H := ObjHeight;
-      end;
-
-      PrintTransparent := ((Transparent <> NotTransp) or (ddImage = ErrorBitmap))
-        and Assigned(ddMask);
-      if PrintTransparent then
-        PrintTransparentBitmap3(Canvas, XX, Y, W, H, TBitmap(ddImage), ddMask, 0, TBitmap(ddImage).Height)
-      else if ddImage is TBitmap then
-      begin {printing, not transparent}
-        PrintBitmap(Canvas, XX, Y, W, H, TBitmap(ddImage));
-      end
-{$IFNDEF NoMetafile}
-      else if ddImage is ThtMetaFile then
-        Canvas.StretchDraw(Rect(XX, Y, XX + ObjWidth, Y + ObjHeight), ThtMetaFile(ddImage));
-{$ENDIF}
-    end;
-*)
+      ddImage.Draw(Canvas, XX, Y, W, H);
   except
+    on E: Exception do
+    begin
+      LastExceptionMessage := E.Message;
+      LastDdImage := ddImage;
+    end;
   end;
 end;
 
