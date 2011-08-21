@@ -63,7 +63,7 @@ type
     URL, Target: ThtString;
     Image: TImageObj;
     ImageX, ImageY: Integer;
-    ClickWord: WideString;
+    ClickWord: UnicodeString;
   end;
   TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
   THotSpotEvent = procedure(Sender: TObject; const SRC: ThtString) of object;
@@ -157,7 +157,7 @@ type
     FImageStream: TStream;
     FLinkAttributes: ThtStringList;
     FLinkStart: TPoint;
-    FLinkText: WideString;
+    FLinkText: UnicodeString;
     FMarginHeight, FMarginWidth: Integer;
     FMaxVertical: Integer;
     FNameList: ThtStringList;
@@ -271,11 +271,11 @@ type
     function GetScrollBarRange: Integer;
     function GetScrollPos: Integer;
     function GetSelLength: Integer;
-    function GetSelText: WideString;
+    function GetSelText: UnicodeString;
     function GetTitle: ThtString;
     //function GetViewerStateBit(Index: THtmlViewerStateBit): Boolean;
     function GetViewImages: Boolean;
-    function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: WideString): Boolean;
+    function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
     procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
@@ -379,14 +379,14 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function DisplayPosToXy(DisplayPos: Integer; var X, Y: Integer): Boolean;
-    function Find(const S: WideString; MatchCase: Boolean): Boolean;
+    function Find(const S: UnicodeString; MatchCase: Boolean): Boolean;
     function FindDisplayPos(SourcePos: Integer; Prev: Boolean): Integer;
-    function FindEx(const S: WideString; MatchCase, Reverse: Boolean): Boolean;
+    function FindEx(const S: UnicodeString; MatchCase, Reverse: Boolean): Boolean;
     function FindSourcePos(DisplayPos: Integer): Integer;
     function FullDisplaySize(FormatWidth: Integer): TSize;
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTextByIndices(AStart, ALast: Integer): WideString;
+    function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
     function GetURL(X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
@@ -458,7 +458,7 @@ type
     property LinkAttributes: ThtStringList read FLinkAttributes;
     property LinkList: TList read GetLinkList;
     property LinkStart: TPoint read FLinkStart;
-    property LinkText: WideString read FLinkText write FLinkText;
+    property LinkText: UnicodeString read FLinkText write FLinkText;
     property MaxVertical: Integer read FMaxVertical;
     property NameList: ThtStringList read GetNameList;
     property OnExpandName: TExpandNameEvent read GetOnExpandName write SetOnExpandName;
@@ -470,7 +470,7 @@ type
     property SectionList: ThtDocument read FSectionList;
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read FCaretPos write SetSelStart;
-    property SelText: WideString read GetSelText;
+    property SelText: UnicodeString read GetSelText;
     property Target: ThtString read FTarget write FTarget;
     property TitleAttr: ThtString read FTitleAttr;
     property TitleHistory: ThtStrings read FTitleHistory;
@@ -1707,7 +1707,7 @@ begin
     end;
 end;
 
-function THtmlViewer.GetTextByIndices(AStart, ALast: Integer): WideString;
+function THtmlViewer.GetTextByIndices(AStart, ALast: Integer): UnicodeString;
 var
   SaveSelB: Integer;
   SaveSelE: Integer;
@@ -1817,7 +1817,7 @@ var
   IX, IY: Integer;
   InImage, TmpLeft: Boolean;
   Parameters: TRightClickParameters;
-  AWord: WideString;
+  AWord: UnicodeString;
   St, En: Integer;
   guResult: guResultType;
   I, ThisID: Integer;
@@ -1974,14 +1974,14 @@ end;
 
 {----------------THtmlViewer.GetWordAtCursor}
 
-function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: WideString): Boolean;
+function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
 var
   XR, X1, CaretHt: Integer;
   YR, Y1: Integer;
   Obj: TObject;
   Ch: WideChar;
   InText: Boolean;
-  Tmp: WideString;
+  Tmp: UnicodeString;
 
   function AlphaNum(Ch: WideChar): Boolean;
   begin
@@ -2053,7 +2053,7 @@ end;
 procedure THtmlViewer.HTMLMouseDblClk(Message: TWMMouse);
 var
   st, en: Integer;
-  AWord: WideString;
+  AWord: UnicodeString;
 begin
   FSectionList.LButtonDown(True);
   if FViewerState * [vsProcessing, vsHotSpotAction] <> [] then
@@ -2927,7 +2927,7 @@ begin
       NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y);
       try
         if Assigned(Image.Mask) then
-          NewMask := TBitmap(EnlargeImage(Image.Mask, X2 - X, Y2 - Y))
+          NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y)
         else
           NewMask := nil;
         NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, LLCorner);
@@ -3020,7 +3020,7 @@ begin
       NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y); // as TBitmap;
       try
         if Assigned(Image.Mask) then
-          NewMask := TBitmap(EnlargeImage(Image.Mask, X2 - X, Y2 - Y));
+          NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y);
 
         NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, LLCorner);
         NewMask := nil;
@@ -4464,17 +4464,17 @@ begin
   FOnFormSubmit(Self, FAction, FFormTarget, FEncType, FMethod, FStringList);
 end; {user disposes of the ThtStringList}
 
-function THtmlViewer.Find(const S: WideString; MatchCase: Boolean): Boolean;
+function THtmlViewer.Find(const S: UnicodeString; MatchCase: Boolean): Boolean;
 begin
   Result := FindEx(S, MatchCase, False);
 end;
 
-function THtmlViewer.FindEx(const S: WideString; MatchCase, Reverse: Boolean): Boolean;
+function THtmlViewer.FindEx(const S: UnicodeString; MatchCase, Reverse: Boolean): Boolean;
 var
   Curs: Integer;
   X: Integer;
   Y, Pos: Integer;
-  S1: WideString;
+  S1: UnicodeString;
 begin
   Result := False;
   if S = '' then
@@ -4858,7 +4858,7 @@ begin
     Result := FSectionList.GetSelTextBuf(Buffer, BufSize);
 end;
 
-function THtmlViewer.GetSelText: WideString;
+function THtmlViewer.GetSelText: UnicodeString;
 var
   Len: Integer;
 begin

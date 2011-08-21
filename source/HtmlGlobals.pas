@@ -110,6 +110,7 @@ type
   ThtStringList = TStringList;
   PhtChar = PChar;
 {$else}
+  UnicodeString = WideString;
   ThtChar = WideChar;
   ThtString = WideString;
   ThtStrings = TWideStrings;
@@ -545,8 +546,10 @@ var
 begin
   if IsWin32Platform then
   begin {win95,98,ME}
-    SetLength(Tmp, 2 * Len);
-    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), 2 * Len, nil, nil);
+    Len := Length(Str);
+    NewLen := 2 * Len;
+    SetLength(Tmp, NewLen);
+    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), NewLen, nil, nil);
     SetLength(Tmp, NewLen);
     Tmp := AnsiLowercase(Tmp);
     SetLength(Result, Len);
@@ -606,8 +609,10 @@ var
 begin
   if IsWin32Platform then
   begin {win95,98,ME}
-    SetLength(Tmp, 2 * Len);
-    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), 2 * Len, nil, nil);
+    Len := Length(Str);
+    NewLen := 2 * Len;
+    SetLength(Tmp, NewLen);
+    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), NewLen, nil, nil);
     SetLength(Tmp, NewLen);
     Tmp := AnsiUppercase(Tmp);
     SetLength(Result, Len);

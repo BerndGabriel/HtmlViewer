@@ -158,8 +158,8 @@ type
     function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
     function FindSourcePos(DocPos: Integer): Integer; virtual;
-    function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; virtual;
-    function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; virtual;
+    function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
+    function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; virtual;
     function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
     function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; virtual;
@@ -210,8 +210,8 @@ type
     function Draw(Canvas: TCanvas; ARect: TRect; ClipWidth, X, Y, XRef, YRef: Integer): Integer; virtual;
     function FindCursor(Canvas: TCanvas; X: Integer; Y: Integer; var XR, YR, Ht: Integer; var Intext: boolean): Integer;
     function FindSourcePos(DocPos: Integer): Integer;
-    function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
-    function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+    function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
+    function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
     function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
     function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
@@ -493,7 +493,7 @@ type
     property PosIndex[I: Integer]: IndexObj read GetIndexObj;
     procedure CheckForInlines(LR: Linerec);
   public
-    BuffS: WideString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section}
+    BuffS: UnicodeString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section}
     Buff: PWideChar;    {same as above}
     Brk: string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One of 'a' (optional), 'n' (no), 's' (soft), 'y' (yes) per character in BuffS
     XP: PXArray;
@@ -529,8 +529,8 @@ type
     function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
-    function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
-    function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
+    function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
+    function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindTextWidth(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
     function FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
@@ -628,8 +628,8 @@ type
     function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
-    function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
-    function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
+    function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
+    function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; virtual;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
     function GetURL(Canvas: TCanvas; X, Y: Integer;
@@ -1183,8 +1183,8 @@ type
     function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
-    function FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
-    function FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer; override;
+    function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
+    function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     procedure CopyToClipboard; override;
@@ -4466,7 +4466,7 @@ end;
 
 {----------------TCellBasic.FindString}
 
-function TCellBasic.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TCellBasic.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 var
   I: Integer;
 begin
@@ -4481,7 +4481,7 @@ end;
 
 {----------------TCellBasic.FindStringR}
 
-function TCellBasic.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TCellBasic.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 var
   I: Integer;
 begin
@@ -4888,7 +4888,7 @@ end;
 
 {----------------TBlock.FindString}
 
-function TBlock.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TBlock.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 begin
   case Display of
     pdNone: Result := -1;
@@ -4902,7 +4902,7 @@ end;
 
 {----------------TBlock.FindStringR}
 
-function TBlock.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TBlock.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 begin
   case Display of
     pdNone: Result := -1;
@@ -9802,7 +9802,7 @@ end;
 
 {----------------THtmlTable.FindString}
 
-function THtmlTable.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function THtmlTable.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 
 var
   I, J: Integer;
@@ -9822,7 +9822,7 @@ end;
 
 {----------------THtmlTable.FindStringR}
 
-function THtmlTable.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function THtmlTable.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 
 var
   I, J: Integer;
@@ -10099,7 +10099,7 @@ procedure TSection.AddTokenObj(T: TokenObj);
 var
   L, I: Integer;
   C: char;
-  St, StU: WideString;
+  St, StU: UnicodeString;
   Small: boolean;
 begin
   if T.Count = 0 then
@@ -10216,18 +10216,18 @@ begin
       and (BuffS[I + 1] = ' ') then
       Remove(I + 1);
 
-  I := WidePos(WideString(' ' + #8), BuffS); {#8 is break ThtChar}
+  I := WidePos(UnicodeString(' ' + #8), BuffS); {#8 is break ThtChar}
   while I > 0 do
   begin
     Remove(I);
-    I := WidePos(WideString(' ' + #8), BuffS);
+    I := WidePos(UnicodeString(' ' + #8), BuffS);
   end;
 
-  I := WidePos(WideString(#8 + ' '), BuffS);
+  I := WidePos(UnicodeString(#8 + ' '), BuffS);
   while I > 0 do
   begin
     Remove(I + 1);
-    I := WidePos(WideString(#8 + ' '), BuffS);
+    I := WidePos(UnicodeString(#8 + ' '), BuffS);
   end;
 
   if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = #8) then
@@ -11503,9 +11503,9 @@ var
     LR: LineRec;
     Start: PWideChar;
     Cnt, Descent: Integer;
-    St: WideString;
+    St: UnicodeString;
 
-    function AddHyphen(P: PWideChar; N: Integer): WideString;
+    function AddHyphen(P: PWideChar; N: Integer): UnicodeString;
     var
       I: Integer;
     begin
@@ -12297,7 +12297,7 @@ end;
 
 {----------------TSection.FindString}
 
-function TSection.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TSection.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 {find the first occurance of the ThtString, ToFind, with a cursor value >= to From.
  ToFind is in lower case if MatchCase is False.  ToFind is known to have a length
  of at least one.
@@ -12305,7 +12305,7 @@ function TSection.FindString(From: Integer; const ToFind: WideString; MatchCase:
 var
   P: PWideChar;
   I: Integer;
-  ToSearch: WideString;
+  ToSearch: UnicodeString;
 
 begin
   Result := -1;
@@ -12328,7 +12328,7 @@ end;
 
 {----------------TSection.FindStringR}
 
-function TSection.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TSection.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 {find the first occurance of the ThtString, ToFind, with a cursor value <= to From.
  ToFind is in lower case if MatchCase is False.  ToFind is known to have a length
  of at least one.
@@ -12336,7 +12336,7 @@ function TSection.FindStringR(From: Integer; const ToFind: WideString; MatchCase
 var
   P: PWideChar;
   ToFindLen: word;
-  ToMatch, ToSearch: WideString;
+  ToMatch, ToSearch: UnicodeString;
 
 begin
   Result := -1;
@@ -13840,12 +13840,12 @@ begin
   Result := -1;
 end;
 
-function TSectionBase.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TSectionBase.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 begin
   Result := -1;
 end;
 
-function TSectionBase.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function TSectionBase.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 begin
   Result := -1;
 end;

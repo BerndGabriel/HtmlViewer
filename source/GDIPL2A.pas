@@ -30,7 +30,8 @@ unit GDIPL2A;
 interface
 
 uses
-  Windows, ActiveX, SysUtils, Graphics;
+  Windows, ActiveX, SysUtils, Graphics,
+  HtmlGlobals;
 
 var
   GDIPlusActive: boolean;
@@ -44,7 +45,7 @@ type
     function GetHeight: integer;
     function GetWidth: integer;
   public
-    constructor Create(Filename: WideString; TmpFile: boolean = False); overload;
+    constructor Create(Filename: UnicodeString; TmpFile: boolean = False); overload;
     constructor Create(IStr: IStream); overload;
     destructor Destroy; override;
     function GetBitmap: TBitmap;
@@ -287,7 +288,7 @@ end;
 
 { TGpImage }
 
-constructor TGpImage.Create(Filename: WideString; TmpFile: boolean = False);
+constructor TGpImage.Create(Filename: UnicodeString; TmpFile: boolean = False);
 var
   err: Integer;
 begin

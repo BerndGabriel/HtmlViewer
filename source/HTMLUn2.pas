@@ -303,11 +303,11 @@ type
 
   TokenObj = class
   private
-    St: WideString;
+    St: UnicodeString;
     StringOK: boolean;
     FCapacity: Integer;
     FCount: Integer;
-    function GetString: WideString;
+    function GetString: UnicodeString;
     procedure SetCapacity(NewCapacity: Integer);
   public
     C: PChrArray;
@@ -323,7 +323,7 @@ type
 
     property Capacity: Integer read FCapacity write SetCapacity;
     property Count: Integer read FCount;
-    property S: WideString read GetString;
+    property S: UnicodeString read GetString;
   end;
 
 //------------------------------------------------------------------------------
@@ -441,18 +441,18 @@ function StrLenW(Str: PWideChar): Cardinal;
 function StrPosW(Str, SubStr: PWideChar): PWideChar;
 function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
 function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
-function WidePos(SubStr, S: WideString): Integer;
-//function WideTrim(const S: WideString): WideString; deprecated; // use HtmlGlobals.htTrim() instead
-//function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif} deprecated; // use HtmlGlobals.htUppercase() instead
-//function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}deprecated; // use HtmlGlobals.htLowercase() instead
-function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
-function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
+function WidePos(SubStr, S: UnicodeString): Integer;
+//function WideTrim(const S: UnicodeString): UnicodeString; deprecated; // use HtmlGlobals.htTrim() instead
+//function WideUpperCase1(const S: UnicodeString): UnicodeString; {$ifdef UNICODE} inline; {$endif} deprecated; // use HtmlGlobals.htUppercase() instead
+//function WideLowerCase1(const S: UnicodeString): UnicodeString; {$ifdef UNICODE} inline; {$endif}deprecated; // use HtmlGlobals.htLowercase() instead
+function WideSameText1(const S1, S2: UnicodeString): boolean; {$ifdef UseInline} inline; {$endif}
+function WideSameStr1(const S1, S2: UnicodeString): boolean;  {$ifdef UseInline} inline; {$endif}
 
-function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
+function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
-procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: WideString);
+procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 
 //------------------------------------------------------------------------------
 // canvas methods
@@ -483,7 +483,7 @@ type
 // Pascal-ized equivalents of assembler functions.
 function StrLenW(Str: PWideChar): Cardinal;
 begin
-  Result := Length(WideString(Str));
+  Result := Length(UnicodeString(Str));
 end;
 
 function StrPosW(Str, SubStr: PWideChar): PWideChar;
@@ -705,7 +705,7 @@ end;
 
 {----------------WidePos}
 
-function WidePos(SubStr, S: WideString): Integer;
+function WidePos(SubStr, S: UnicodeString): Integer;
 // Unicode equivalent for Pos() function.
 var
   P: PWideChar;
@@ -721,19 +721,19 @@ end;
 //
 //{$ifdef UNICODE}
 //
-//function WideUpperCase1(const S: WideString): WideString;
+//function WideUpperCase1(const S: UnicodeString): UnicodeString;
 //begin
 //  Result := WideUpperCase(S);
 //end;
 //
-//function WideLowerCase1(const S: WideString): WideString;
+//function WideLowerCase1(const S: UnicodeString): UnicodeString;
 //begin
 //  Result := WideLowerCase(S);
 //end;
 //
 //{$else}
 //
-//function WideUpperCase1(const S: WideString): WideString;
+//function WideUpperCase1(const S: UnicodeString): UnicodeString;
 //var
 //  Len, NewLen: Integer;
 //  Tmp: string;
@@ -756,7 +756,7 @@ end;
 //  end;
 //end;
 //
-//function WideLowerCase1(const S: WideString): WideString;
+//function WideLowerCase1(const S: UnicodeString): UnicodeString;
 //var
 //  Len, NewLen: Integer;
 //  Tmp: string;
@@ -781,12 +781,12 @@ end;
 //
 //{$endif}
 
-function WideSameText1(const S1, S2: WideString): boolean;
+function WideSameText1(const S1, S2: UnicodeString): boolean;
 begin
   Result := htUpperCase(S1) = htUpperCase(S2);
 end;
 
-function WideSameStr1(const S1, S2: WideString): boolean;
+function WideSameStr1(const S1, S2: UnicodeString): boolean;
 begin
   Result := S1 = S2;
 end;
@@ -851,7 +851,7 @@ begin
     CombineRgn(Rgn, Rgn, SaveRgn, Rgn_And);
 end;
 
-function WideTrim(const S: WideString): WideString;
+function WideTrim(const S: UnicodeString): UnicodeString;
 var
   I, L: Integer;
 begin
@@ -869,7 +869,7 @@ begin
   end;
 end;
 
-procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: WideString);
+procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 {Wraps text in a clipping rectangle. Font must be set on entry}
 var
   ARect: TRect;
@@ -2093,7 +2093,7 @@ begin
   StringOK := True;
 end;
 
-function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
+function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): Ansistring;
 var
   NewLen, Len: Integer;
 begin
@@ -2200,7 +2200,7 @@ begin
   end;
 end;
 
-function TokenObj.GetString: WideString;
+function TokenObj.GetString: UnicodeString;
 begin
   if not StringOK then
   begin

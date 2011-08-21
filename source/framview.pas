@@ -153,7 +153,7 @@ type
     function GetProcessing: boolean;
     function GetSelLength: integer;
     function GetSelStart: integer;
-    function GetSelText: WideString;
+    function GetSelText: UnicodeString;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: integer): integer;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
     function GetTarget: ThtString;
@@ -246,8 +246,8 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function CreateSubFrameSet(FrameSet: TObject): TObject; override;
-    function Find(const S: WideString; MatchCase: boolean): boolean;
-    function FindEx(const S: WideString; MatchCase, Reverse: boolean): boolean;
+    function Find(const S: UnicodeString; MatchCase: boolean): boolean;
+    function FindEx(const S: UnicodeString; MatchCase, Reverse: boolean): boolean;
     function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TMemoryStream): boolean;
     function ViewerFromTarget(const Target: ThtString): THtmlViewer;
 {$ifndef NoMetafile}
@@ -283,7 +283,7 @@ type
     property Processing: boolean read GetProcessing;
     property SelLength: integer read GetSelLength write SetSelLength;
     property SelStart: integer read GetSelStart write SetSelStart;
-    property SelText: WideString read GetSelText;
+    property SelText: UnicodeString read GetSelText;
     property Target: ThtString read GetTarget;
     property TitleHistory: TStrings read FTitleHistory;
     property URL: ThtString read GetFURL;
@@ -4455,7 +4455,7 @@ begin
     Vw.CaretPos := Value;
 end;
 
-function TFVBase.GetSelText: WideString;
+function TFVBase.GetSelText: UnicodeString;
 var
   AViewer: THtmlViewer;
 begin
@@ -4644,14 +4644,14 @@ end;
 
 {----------------TFVBase.Find}
 
-function TFVBase.Find(const S: WideString; MatchCase: boolean): boolean;
+function TFVBase.Find(const S: UnicodeString; MatchCase: boolean): boolean;
 begin
   Result := FindEx(S, MatchCase, False);
 end;
 
 {----------------TFVBase.FindEx}
 
-function TFVBase.FindEx(const S: WideString; MatchCase, Reverse: boolean): boolean;
+function TFVBase.FindEx(const S: UnicodeString; MatchCase, Reverse: boolean): boolean;
 var
   AViewer: THtmlViewer;
 begin

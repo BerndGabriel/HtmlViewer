@@ -1739,7 +1739,7 @@ procedure THtmlParser.GetOptions(Select: TOptionsFormControlObj);
  {get the <option>s for Select form control}
 var
   InOption, Selected: Boolean;
-  WS: WideString;
+  WS: UnicodeString;
   SaveNoBreak: Boolean;
   CodePage: Integer;
   Attr: ThtStringList;
