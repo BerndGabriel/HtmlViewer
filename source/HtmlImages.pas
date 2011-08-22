@@ -120,6 +120,8 @@ type
     constructor Create;
     destructor Destroy; override;
     function AddObject(const S: ThtString; AObject: ThtImage): Integer; reintroduce; {$ifdef UseInline} inline; {$endif}
+    // InsertImage(): Get the proper Index by using Find().
+    procedure InsertImage(Index: Integer; const S: ThtString; AObject: ThtImage); {$ifdef UseInline} inline; {$endif}
     function GetImage(I: Integer): ThtImage; {$ifdef UseInline} inline; {$endif}
   end;
 
@@ -2345,6 +2347,12 @@ end;
 function ThtImageCache.GetImage(I: Integer): ThtImage;
 begin
   Result := ThtImage(inherited GetCachable(I));
+end;
+
+//-- BG ---------------------------------------------------------- 19.08.2011 --
+procedure ThtImageCache.InsertImage(Index: Integer; const S: ThtString; AObject: ThtImage);
+begin
+  InsertItem(Index, S, AObject);
 end;
 
 initialization

@@ -154,6 +154,8 @@ type
 
   THtmlScrollControl = class(TCustomHtmlScrollBox)
   private
+    // BG, 19.08.2011:  FBox is a reference to the box, that owns this scroll control.
+    // Do not free in desctructor!
     FBox: THtmlBox;
   protected
     function GetContentHeight: Integer; override;
@@ -326,6 +328,7 @@ end;
 procedure THtmlBox.BeforeDestruction;
 begin
 {$ifdef UseEnhancedRecord}
+  FChildren.Clear;
 {$else}
   FChildren.Free;
 {$endif}
@@ -611,6 +614,7 @@ begin
   ScrollBars := ssBoth;
 end;
 
+//-- BG ---------------------------------------------------------- 24.04.2011 --
 procedure THtmlScrollControl.Paint;
 begin
   inherited;

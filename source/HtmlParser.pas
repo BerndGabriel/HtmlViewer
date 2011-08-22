@@ -1249,7 +1249,10 @@ procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
           break;
         end;
 
+        BodySy,
+        FrameSetSy,
         EofSy:
+          // oops, HeadEndSy is missing.
           break;
       else
         Next;
