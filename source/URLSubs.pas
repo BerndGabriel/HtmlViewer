@@ -34,6 +34,30 @@ uses
   HtmlGlobals;
 
 {***************************************************************************************************
+ * new URI processing methods. Incl. IPv6, UNC and DOS path recognition
+ **************************************************************************************************}
+
+type
+  // BG, 21.08.2011:
+  TUri = record
+    Scheme: ThtString;
+    Username: ThtString;
+    Password: ThtString;
+    Host: ThtString;
+    Port: ThtString;
+    Path: ThtString;
+    Query: ThtString;
+    Fragment: ThtString;
+  end;
+
+function DecodeUri(Uri: ThtString): ThtString;
+function StrToUri(Uri: ThtString): TUri;
+// TODO -oBG, 23.08.2011: procedure NormalizeUri(var Uri: TUri);
+// TODO -oBG, 23.08.2011: function CombineUri(BaseUri, RelativeUri: TUri): TUri;
+function UriToStr(Uri: TUri): ThtString;
+
+
+{***************************************************************************************************
  * URL processing methods
  **************************************************************************************************}
 
@@ -327,62 +351,65 @@ begin
     end;
 end;
 
-{ Find the count'th occurence of the s ThtString in the t ThtString.              }
-{ If count < 0 then look from the back                                      }
-{Thanx to François PIETTE}
-
-function Posn(const s, t: ThtString; Count: Integer): Integer;
-var
-  i, h, Last: Integer;
-  u: ThtString;
-begin
-  u := t;
-  if Count > 0 then
-  begin
-    Result := Length(t);
-    for i := 1 to Count do
-    begin
-      h := Pos(s, u);
-      if h > 0 then
-        u := Copy(u, h + 1, Length(u))
-      else
-      begin
-        u := '';
-        Inc(Result);
-      end;
-    end;
-    Result := Result - Length(u);
-  end
-  else if Count < 0 then
-  begin
-    Last := 0;
-    for i := Length(t) downto 1 do
-    begin
-      u := Copy(t, i, Length(t));
-      h := Pos(s, u);
-      if (h <> 0) and ((h + i) <> Last) then
-      begin
-        Last := h + i - 1;
-        Inc(count);
-        if Count = 0 then
-          break;
-      end;
-    end;
-    if Count = 0 then
-      Result := Last
-    else
-      Result := 0;
-  end
-  else
-    Result := 0;
-end;
-
-{ Syntax of an URL: protocol://[user[:password]@]server[:port]/path         }
-{Thanx to François PIETTE}
+// Syntax of an URL: protocol://[user[:password]@]server[:port]/path
+// Thanx to François PIETTE
 
 procedure ParseURL(
   const url: ThtString;
   out Proto, User, Pass, Host, Port, Path: ThtString);
+
+  // Find the count'th occurence of string s in string t.
+  // If count < 0 then look from the back
+  // Thanx to François PIETTE
+
+  function Posn(const s, t: ThtString; Count: Integer): Integer;
+  var
+    i, h: Integer;
+    u: ThtString;
+  begin
+    if Count > 0 then
+    begin
+      u := t;
+      Result := Length(u);
+      for i := 1 to Count do
+      begin
+        h := Pos(s, u);
+        if h > 0 then
+          u := Copy(u, h + 1, Length(u))
+        else
+        begin
+          u := '';
+          Inc(Result);
+        end;
+      end;
+      Result := Result - Length(u);
+    end
+    else if Count < 0 then
+    begin
+      Result := 0;
+      // BG, 21.08.2011: just a little optimizing:
+      // - cannot match, if copy of t is shorter than s: start with i at Length(t) - Length(s) + 1.
+      // - cannot match, if 1st char already does not match: skip the string copy and pos.
+      for i := Length(t) - Length(s) + 1 downto 1 do
+        if t[i] = s[1] then
+        begin
+          u := Copy(t, i, Length(t));
+          h := Pos(s, u);
+          if (h <> 0) and ((h + i) <> Result) then
+          begin
+            Result := h + i - 1;
+            Inc(Count);
+            if Count = 0 then
+              break;
+          end;
+        end;
+      if Count <> 0 then
+        Result := 0;
+    end
+    else
+      Result := 0;
+  end;
+
 var
   p, q: Integer;
   s: ThtString;
@@ -402,7 +429,7 @@ begin
   begin
     if (url[1] = '/') then
     begin
-            { Absolute path without protocol specified }
+      { Absolute path without protocol specified }
       proto := 'http';
       p := 1;
       if (Length(url) > 1) and (url[2] <> '/') then
@@ -418,7 +445,7 @@ begin
       p := 6;
       if (Length(url) > 6) and (url[7] <> '/') then
       begin
-                { Relative path }
+        { Relative path }
         Path := Copy(url, 6, Length(url));
         Exit;
       end;
@@ -641,6 +668,325 @@ begin
     if Result[1] = '\' then
       Result := Root + Result;
   end;
+end;
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+const
+  CDefaultScheme = 'http';
+
+//-- BG ---------------------------------------------------------- 22.08.2011 --
+function DecodeUri(Uri: ThtString): ThtString;
+// convert the percent encoded characters back to ansi/ascii chars.
+
+  function Next(const Uri: ThtString; var I: Integer): ThtChar; inline
+  begin
+    if I < Length(Uri) then
+    begin
+      Inc(I);
+      Result := Uri[I];
+    end
+    else
+      Result := #0;
+  end;
+
+  function Chr2Hex(Ch: ThtChar): Integer;
+  begin
+    case Ch of
+      '0'..'9': Result := Ord(Ch) - Ord('0');
+      'a'..'f': Result := Ord(Ch) - Ord('a') + 10;
+      'A'..'F': Result := Ord(Ch) - Ord('A') + 10;
+    else
+      Result := 0;
+    end;
+  end;
+
+var
+  I, J, Len: Integer;
+  Ch: ThtChar;
+begin
+  Len := Length(Uri);
+  SetLength(Result, Len);
+  I := 0;
+  J := 0;
+  repeat
+    Ch := Next(Uri, I);
+    case Ch of
+      '%':
+      begin
+        Ch := Next(Uri, I);
+        Ch := ThtChar(Chr2Hex(Ch) shl 4 + Chr2Hex(Next(Uri, I)));
+      end;
+
+      #0:
+        break;
+    end;
+    Inc(J);
+    Result[J] := Ch;
+  until False;
+  SetLength(Result, J);
+end;
+
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+function StrToUri(Uri: ThtString): TUri;
+
+  function IsAlpha(Ch: ThtChar): Boolean; inline;
+  begin
+    case Ch of
+      'a'..'z', 'A'..'Z':
+        Result := True;
+    else
+      Result := False;
+    end;
+  end;
+
+  function IsDigit(Ch: ThtChar): Boolean; inline;
+  begin
+    case Ch of
+      '0'..'9':
+        Result := True;
+    else
+      Result := False;
+    end;
+  end;
+
+  function Copy(const Uri: ThtString; I, Len: Integer): ThtString;
+  begin
+    if Len > 0 then
+      Result := System.Copy(Uri, I, Len)
+    else
+      Result := '';
+  end;
+
+  function Next(const Uri: ThtString; var I: Integer): ThtChar; inline;
+  begin
+    if I < Length(Uri) then
+    begin
+      Inc(I);
+      Result := Uri[I];
+      if Result = '\' then
+        Result := '/';
+    end
+    else
+      Result := #0;
+  end;
+
+var
+  I, Beg: Integer;
+  Ch: ThtChar;
+  IsPort: Boolean;
+begin
+  I := 0;
+
+  // parse scheme
+  Result.Scheme := '';
+  Ch := Next(Uri, I);
+  Beg := I;
+  if IsAlpha(Ch) then
+  begin
+    repeat
+      case Ch of
+        ':':
+        begin
+          // end of scheme or is it a DOS path?
+          if I = 2 then
+          begin
+            // assume, it is a DOS path
+            Result.Scheme := 'file';
+            Uri := '///' + Uri;
+            I := 1;
+            Ch := Uri[I];
+            break;
+          end
+          else
+            Result.Scheme := Copy(Uri, Beg, I - Beg);
+          Ch := Next(Uri, I);
+          Beg := I;
+          break;
+        end;
+
+        '/', '?', '#', #0:
+          // scheme is omitted
+          break;
+
+      end;
+      Ch := Next(Uri, I);
+    until False;
+  end;
+
+  // parse hierarchy
+  IsPort := False;
+  Result.Username := '';
+  Result.Password := '';
+  Result.Host := '';
+  Result.Port := '';
+  if Ch = '/' then
+  begin
+    Ch := Next(Uri, I);
+    if Ch = '/' then
+    begin
+      Ch := Next(Uri, I);
+      Beg := I;
+      repeat
+        case Ch of
+          ':':
+          begin
+            // Maybe between username and password or host and port.
+
+            // Assume it will become host, because host is read later than username and
+            // thus will not overwrite the previously gotten username, if the guess is wrong.
+            Result.Host := Copy(Uri, Beg, I - Beg);
+            Ch := Next(Uri, I);
+            Beg := I;
+            repeat
+              case Ch of
+                '@':
+                begin
+                  // got username and password
+                  Result.Username := Result.Host;
+                  Result.Password := Copy(Uri, Beg, I - Beg);
+                  Result.Host := '';
+                  Ch := Next(Uri, I);
+                  Beg := I;
+                  break;
+                end;
+
+                '/', '?', '#', #0:
+                begin
+                  // got host and port
+                  Result.Port := Copy(Uri, Beg, I - Beg);
+                  IsPort := True;
+                  Beg := I;
+                  break;
+                end;
+
+              end;
+              Ch := Next(Uri, I);
+            until False;
+            continue;
+          end;
+
+          '[':
+            if I = Beg then
+            begin
+              // ipv6address or ipvFuture
+              Ch := Next(Uri, I);
+              repeat
+                case Ch of
+                  ']':
+                    break;
+
+                  '/', '?', '#', #0:
+                    break;
+                end;
+                Ch := Next(Uri, I);
+              until False;
+            end;
+
+          '/', '?', '#', #0:
+          begin
+            // path begins or hierarchy is omitted
+            if not IsPort then
+            begin
+              // remember host, as not yet done with the port.
+              Result.Host := Copy(Uri, Beg, I - Beg);
+              Beg := I;
+            end;
+            break;
+          end;
+
+        end;
+        Ch := Next(Uri, I);
+      until False;
+    end;
+  end;
+
+  // parse path
+  Result.Path := '';
+  if Ch = '/' then
+  begin
+    // skip leading '/'
+    Ch := Next(Uri, I);
+    Beg := I;
+  end;
+  repeat
+    case Ch of
+      '?', '#', #0:
+      begin
+        // end of path
+        Result.Path := Copy(Uri, Beg, I - Beg);
+        break;
+      end;
+    end;
+    Ch := Next(Uri, I);
+  until False;
+
+  // parse query
+  Result.Query := '';
+  if Ch = '?' then
+  begin
+    Ch := Next(Uri, I);
+    Beg := I;
+    repeat
+      case Ch of
+        '#', #0:
+        begin
+          // end of path
+          Result.Query := Copy(Uri, Beg, I - Beg);
+          break;
+        end;
+      end;
+      Ch := Next(Uri, I);
+    until False;
+  end;
+
+  // parse fragment
+  Result.Fragment := '';
+  if Ch = '#' then
+  begin
+    Beg := I + 1;
+    I := Length(Uri) + 1;
+    Result.Fragment := Copy(Uri, Beg, I - Beg);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+procedure NormalizeUri(var Uri: TUri);
+begin
+end;
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+function CombineUri(BaseUri, RelativeUri: TUri): TUri;
+begin
+end;
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+function UriToStr(Uri: TUri): ThtString;
+var
+  HierarchyPrefix: ThtString;
+begin
+  Result := '';
+  if Length(Uri.Scheme) > 0 then Result := Uri.Scheme + ':';
+  HierarchyPrefix := '//';
+  if Length(Uri.Username) > 0 then
+  begin
+    Result := Result + HierarchyPrefix + Uri.Username + ':' + Uri.Password + '@';
+    HierarchyPrefix := '';
+  end;
+  if Length(Uri.Host) > 0 then
+  begin
+    Result := Result + HierarchyPrefix + Uri.Host;
+    HierarchyPrefix := '/';
+  end
+  else
+    HierarchyPrefix := '';
+
+  if Length(Uri.Port)     > 0 then Result := Result + ':' + Uri.Port;
+  if Length(Uri.Path)     > 0 then Result := Result + HierarchyPrefix + Uri.Path;
+  if Length(Uri.Query)    > 0 then Result := Result + '?' + Uri.Query;
+  if Length(Uri.Fragment) > 0 then Result := Result + '#' + Uri.Fragment;
 end;
 
 end.
