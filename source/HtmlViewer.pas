@@ -35,6 +35,7 @@ uses
   HtmlBoxes,
   HtmlDocument,
   HtmlElements,
+  HtmlImages,
   HtmlRenderer,
   StyleTypes;
 
@@ -61,7 +62,8 @@ type
     FOptions: THtmlViewerOptions;
     FDocument: THtmlDocument;
     FControlMap: THtmlControlOfElementMap; // remember the controls per element
-    FView: THtmlBox; // just a hook for the boxes to show.
+    FImageCache: ThtImageCache;
+    FView: THtmlBox; // the hook for the boxes to show.
     FScale: Double;
     procedure SetDocument(const Value: THtmlDocument);
     procedure SetViewerOptions(const Value: THtmlViewerOptions);
@@ -132,15 +134,17 @@ procedure TCustomHtmlViewer.AfterConstruction;
 begin
   inherited;
   FControlMap := THtmlControlOfElementMap.Create;
+  FImageCache := ThtImageCache.Create;
   FView := THtmlBox.Create(nil);
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 procedure TCustomHtmlViewer.BeforeDestruction;
 begin
-  FControlMap.Free;
   SetDocument(nil);
   FView.Free;
+  FControlMap.Free;
+  FImageCache.Free;
   inherited;
 end;
 
@@ -208,26 +212,31 @@ end;
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --
 procedure TCustomHtmlViewer.UpdateDocument;
-// Rebuild internal representation after document/structure has changed.
+// Rebuild internal representation after document/structure or client rect has changed.
 var
   Renderer: THtmlVisualRenderer;
 begin
   if vsDocumentChanged in FState then
-  begin
-    Exclude(FState, vsDocumentChanged);
+  try
     FView.Children.Clear;
     if FDocument <> nil then
     begin                                                                      //TODO -1 -oBG, 02.05.2011:  Defaultfont parameter
       FView.BoundsRect := ClientRect;
-      Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, mtScreen, nil, ClientWidth, ClientHeight);
-      try
-        Renderer.MediaCapabilities := [mcFrames];
-        Renderer.Render(Self, FView);
-      finally
-        Include(FState, vsViewChanged);
-        Renderer.Free;
+      // setting bounds rect may have called Resize and thus has updated the document already.
+      if vsDocumentChanged in FState then
+      begin
+        Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, FImageCache, mtScreen, nil, ClientWidth, ClientHeight);
+        try
+          Renderer.MediaCapabilities := [mcFrames];
+          Renderer.Render(Self, FView);
+        finally
+          Include(FState, vsViewChanged);
+          Renderer.Free;
+        end;
       end;
     end;
+  finally
+    Exclude(FState, vsDocumentChanged);
   end;
 end;
 

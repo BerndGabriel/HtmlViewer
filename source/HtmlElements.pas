@@ -936,6 +936,7 @@ begin
     //
     HeightAttr:     AddProperty(psHeight);
     WidthAttr:      AddProperty(psWidth);
+    BGColorAttr:    AddProperty(BackgroundColor);
     BackgroundAttr: AddProperty(BackgroundImage);
     //
     AlignAttr:      AddProperty(TextAlign);

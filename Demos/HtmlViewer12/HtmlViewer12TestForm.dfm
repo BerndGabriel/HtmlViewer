@@ -31,7 +31,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Height = 21
     Align = alTop
     DropDownCount = 32
-    ItemHeight = 0
+    ItemHeight = 13
     TabOrder = 0
     OnKeyPress = cbFilesKeyPress
     RegistryKey = 'Software\Fast Function Factory\BegaViewer\BrowseURL'
@@ -43,7 +43,6 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Width = 680
     Height = 632
     Align = alClient
-    Color = clTeal
     DoubleBuffered = False
     ParentColor = False
     TabOrder = 1
@@ -59,10 +58,6 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     TabOrder = 2
     object HtmlTab: TTabSheet
       Caption = 'Html'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object vtDocument: TBegaVirtualStringTree
         Left = 0
         Top = 0
@@ -130,10 +125,6 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     object CssTab: TTabSheet
       Caption = 'Css'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object CssMemo: TMemo
         Left = 0
         Top = 0

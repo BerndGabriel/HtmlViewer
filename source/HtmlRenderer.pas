@@ -110,10 +110,12 @@ type
     FCapabilities: TMediaCapabilities;
     FOnGetBuffer: TGetBufferEvent;
     function GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
+    function GetBaseUrl: ThtString;
   protected
     function GetBuffer(const Url: ThtString): ThtBuffer;
   public
     constructor Create(Document: THtmlDocument; MediaType: TMediaType);
+    property BaseUrl: ThtString read GetBaseUrl;
     property MediaCapabilities: TMediaCapabilities read FCapabilities write FCapabilities;
     property MediaType: TMediaType read FMediaType;
     property OnGetBuffer: TGetBufferEvent read FOnGetBuffer write FOnGetBuffer;
@@ -128,6 +130,7 @@ type
   THtmlVisualRenderer = class(THtmlRenderer)
   private
     FControls: THtmlControlOfElementMap;
+    FImages: ThtImageCache;
     FWidth: Integer;          // width of destination in pixels
     FHeight: Integer;
     FDefaultFont: ThtFont;
@@ -154,6 +157,7 @@ type
     constructor Create(
       Document: THtmlDocument;
       ControlMap: THtmlControlOfElementMap;
+      ImageCache: ThtImageCache;
       MediaType: TMediaType;
       DefaultFont: ThtFont;
       Width, Height: Integer);
@@ -198,11 +202,18 @@ end;
 
 { THtmlRenderer }
 
+//-- BG ---------------------------------------------------------- 17.04.2011 --
 constructor THtmlRenderer.Create(Document: THtmlDocument; MediaType: TMediaType);
 begin
   inherited Create;
   FDocument := Document;
   FMediaType := MediaType;
+end;
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+function THtmlRenderer.GetBaseUrl: ThtString;
+begin
+  Result := FDocument.BaseUrl;
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
@@ -279,12 +290,18 @@ end;
 { THtmlVisualRenderer }
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
-constructor THtmlVisualRenderer.Create(Document: THtmlDocument;
-  ControlMap: THtmlControlOfElementMap; MediaType: TMediaType; DefaultFont: ThtFont; Width, Height: Integer);
+constructor THtmlVisualRenderer.Create(
+  Document: THtmlDocument;
+  ControlMap: THtmlControlOfElementMap;
+  ImageCache: ThtImageCache;
+  MediaType: TMediaType;
+  DefaultFont: ThtFont;
+  Width, Height: Integer);
 begin
   inherited Create(Document, MediaType);
   FCapabilities := [mcFrames];
   FControls := ControlMap;
+  FImages := ImageCache;
   FDefaultFont := DefaultFont;
   FWidth := Width;
   FHeight := Height;
@@ -308,20 +325,11 @@ begin
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else
-      case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-        varUString,
-{$endif}
-        varString:
-          if TryStrToBorderStyle(Prop.Prop.Value, Result) then
-            Prop.Prop.Value := Integer(Result);
-
-        varByte,
-        varWord,
-        varInteger:
-          Result := TBorderStyle(Prop.Prop.Value);
-      end;
+    else if VarIsOrdinal(Prop.Prop.Value) then
+      Result := TBorderStyle(Prop.Prop.Value)
+    else if VarIsStr(Prop.Prop.Value) then
+      if TryStrToBorderStyle(Prop.Prop.Value, Result) then
+        Prop.Prop.Value := Integer(Result);
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
@@ -331,18 +339,11 @@ begin
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else
-      case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-        varUString,
-{$endif}
-        varString:
-          if TryStrToColor(Prop.Prop.Value, False, Result) then
-            Prop.Prop.Value := Integer(Result);
-
-        varInteger:
-          Result := TColor(Prop.Prop.Value);
-      end;
+    else if VarIsOrdinal(Prop.Prop.Value) then
+      Result := TColor(Prop.Prop.Value)
+    else if VarIsStr(Prop.Prop.Value) then
+      if TryStrToColor(Prop.Prop.Value, False, Result) then
+        Prop.Prop.Value := Integer(Result);
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
@@ -361,20 +362,11 @@ begin
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else
-      case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-        varUString,
-{$endif}
-        varString:
-          if TryStrToDisplayStyle(Prop.Prop.Value, Result) then
-            Prop.Prop.Value := Integer(Result);
-
-        varByte,
-        varWord,
-        varInteger:
-          Result := TDisplayStyle(Prop.Prop.Value);
-      end;
+    else if VarIsOrdinal(Prop.Prop.Value) then
+      Result := TDisplayStyle(Prop.Prop.Value)
+    else if VarIsStr(Prop.Prop.Value) then
+      if TryStrToDisplayStyle(Prop.Prop.Value, Result) then
+        Prop.Prop.Value := Integer(Result);
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
@@ -384,20 +376,11 @@ begin
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else
-      case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-        varUString,
-{$endif}
-        varString:
-          if TryStrToBoxFloatStyle(Prop.Prop.Value, Result) then
-            Prop.Prop.Value := Integer(Result);
-
-        varByte,
-        varWord,
-        varInteger:
-          Result := TBoxFloatStyle(Prop.Prop.Value);
-      end;
+    else if VarIsOrdinal(Prop.Prop.Value) then
+      Result := TBoxFloatStyle(Prop.Prop.Value)
+    else if VarIsStr(Prop.Prop.Value) then
+      if TryStrToBoxFloatStyle(Prop.Prop.Value, Result) then
+        Prop.Prop.Value := Integer(Result);
 end;
 
 //------------------------------------------------------------------------------
@@ -415,71 +398,53 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
     if Prop <> nil then
       if Prop.Prop.Value = Inherit then
         Result := Parent
-      else
-        case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-          varUString,
-{$endif}
-          varString:
-          begin
-            if htCompareString(Prop.Prop.Value, 'normal') = 0 then
-              Result := 400
-            else if htCompareString(Prop.Prop.Value, 'bold') = 0 then
-              Result := 700
-            else if htCompareString(Prop.Prop.Value, 'bolder') = 0 then
-              if Parent <= 300 then
-                Result := 400
-              else if Parent < 600 then
-                Result := 700
-              else
-                Result := 900
-            else if htCompareString(Prop.Prop.Value, 'lighter') = 0 then
-              if Parent <= 500 then
-                Result := 100
-              else if Parent < 800 then
-                Result := 400
-              else
-                Result := 700
-            else if htCompareString(Prop.Prop.Value, 'light') = 0 then
-              Result := 100;
-            Prop.Prop.Value := Result;
-          end;
-
-          varSingle,
-          varDouble,
-          varByte,
-          varWord,
-          varInteger:
-            Result := Prop.Prop.Value;
-        end;
+      else if VarIsNumeric(Prop.Prop.Value) then
+        Result := Prop.Prop.Value
+      else if VarIsStr(Prop.Prop.Value) then
+      begin
+        if htCompareString(Prop.Prop.Value, 'normal') = 0 then
+          Result := 400
+        else if htCompareString(Prop.Prop.Value, 'bold') = 0 then
+          Result := 700
+        else if htCompareString(Prop.Prop.Value, 'bolder') = 0 then
+          if Parent <= 300 then
+            Result := 400
+          else if Parent < 600 then
+            Result := 700
+          else
+            Result := 900
+        else if htCompareString(Prop.Prop.Value, 'lighter') = 0 then
+          if Parent <= 500 then
+            Result := 100
+          else if Parent < 800 then
+            Result := 400
+          else
+            Result := 700
+        else if htCompareString(Prop.Prop.Value, 'light') = 0 then
+          Result := 100;
+        Prop.Prop.Value := Result;
+      end;
   end;
 
   //BG, 03.05.2011:
   function IsItalic(Prop: TResultingProperty; Parent, Default: Boolean): Boolean;
-  begin
+  begin                                                                                                         
     Result := Default;
     if Prop <> nil then
       if Prop.Prop.Value = Inherit then
         Result := Parent
-      else
-        case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-          varUString,
-{$endif}
-          varString:
-          begin
-            if htCompareString(Prop.Prop.Value, 'italic') = 0 then
-              Result := True
-            else if htCompareString(Prop.Prop.Value, 'oblique') = 0 then
-              Result := True
-            else
-              Result := False;
-            Prop.Prop.Value := Result;
-          end;
-
-          varBoolean:
-            Result := Prop.Prop.Value;
-        end;
+      else if VarIsType(Prop.Prop.Value, varBoolean) then
+        Result := Prop.Prop.Value
+      else if VarIsStr(Prop.Prop.Value) then
+      begin
+        if htCompareString(Prop.Prop.Value, 'italic') = 0 then
+          Result := True
+        else if htCompareString(Prop.Prop.Value, 'oblique') = 0 then
+          Result := True
+        else
+          Result := False;
+        Prop.Prop.Value := Result;
+      end;
   end;
 
   //BG, 03.05.2011:
@@ -491,27 +456,18 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
     if Prop <> nil then
       if Prop.Prop.Value = Inherit then
         Result := Parent
-      else
-        case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-          varUString,
-{$endif}
-          varString:
-          begin
-            if htCompareString(Prop.Prop.Value, 'underline') = 0 then
-              Result := [fsUnderline]
-            else if htCompareString(Prop.Prop.Value, 'line-through') = 0 then
-              Result := [fsStrikeOut]
-            else
-              Result := [];
-            Prop.Prop.Value := ResultAsByte;
-          end;
-
-          varByte,
-          varWord,
-          varInteger:
-            ResultAsByte := Prop.Prop.Value;
-        end;
+      else if VarIsOrdinal(Prop.Prop.Value) then
+        ResultAsByte := Prop.Prop.Value
+      else if VarIsStr(Prop.Prop.Value) then
+      begin
+        if htCompareString(Prop.Prop.Value, 'underline') = 0 then
+          Result := [fsUnderline]
+        else if htCompareString(Prop.Prop.Value, 'line-through') = 0 then
+          Result := [fsStrikeOut]
+        else
+          Result := [];
+        Prop.Prop.Value := ResultAsByte;
+      end;
   end;
 
   //BG, 03.05.2011:
@@ -527,17 +483,11 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
     if Prop <> nil then
       if Prop.Prop.Value = Inherit then
         Result := Parent
-      else
-        case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-          varUString,
-{$endif}
-          varString:
-          begin
-            Result := FontFamilyToFontName(Prop.Prop.Value);
-            Prop.Prop.Value := Result;
-          end;
-        end;
+      else if VarIsStr(Prop.Prop.Value) then
+      begin
+        Result := FontFamilyToFontName(Prop.Prop.Value);
+        Prop.Prop.Value := Result;
+      end;
   end;
 
   //BG, 03.05.2011:
@@ -547,24 +497,13 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
     if Prop <> nil then
       if Prop.Prop.Value = Inherit then
         Result := Parent
-      else
-        case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-          varUString,
-{$endif}
-          varString:
-          begin
-            Result := StrToFontSize(Prop.Prop.Value, FontConvBase, DefaultFontSize, Parent, Default);
-            Prop.Prop.Value := Result;
-          end;
-
-          varSingle,
-          varDouble,
-          varByte,
-          varWord,
-          varInteger:
-            Result := Prop.Prop.Value;
-        end;
+      else if VarIsNumeric(Prop.Prop.Value) then
+        Result := Prop.Prop.Value
+      else if VarIsStr(Prop.Prop.Value) then
+      begin
+        Result := StrToFontSize(Prop.Prop.Value, FontConvBase, DefaultFontSize, Parent, Default);
+        Prop.Prop.Value := Result;
+      end;
   end;
 
 var
@@ -592,31 +531,44 @@ end;
 //-- BG ---------------------------------------------------------- 30.04.2011 --
 function THtmlVisualRenderer.GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
 var
-  Filename: ThtString;
+  ImageName: ThtString;
+  ImageIndex: Integer;
+  FileName: ThtString;
   Stream: TStream;
 begin
   Result := Default;
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else if assigned(FOnGetImage) then
-      Result := FOnGetImage(Self, Prop.Prop.Value)
     else
     begin
-      Filename := HTMLToDos(Prop.Prop.Value);
-      if FileExists(Filename) then
-      begin
-        Stream := TFileStream.Create(Filename, fmOpenRead + fmShareDenyWrite);
-        try
-          Result := LoadImageFromStream(Stream, NotTransp);
-        finally
-          Stream.Free;
-        end;
-      end
+      ImageName := Prop.Prop.Value;
+      if FImages.Find(ImageName, ImageIndex) then
+        Result := FImages.GetImage(ImageIndex)
       else
-        Result := nil;
+      begin
+        if assigned(FOnGetImage) then
+          Result := FOnGetImage(Self, ImageName)
+        else
+        begin
+          FileName := HTMLToDos(ImageName);
+          try
+            Stream := TFileStream.Create(FileName, fmOpenRead + fmShareDenyWrite);
+            try
+              Result := LoadImageFromStream(Stream, NotTransp);
+            finally
+              Stream.Free;
+            end;
+          except
+            Result := nil;
+          end;
+        end;
+        FImages.InsertImage(ImageIndex, ImageName, Result);
+      end;
     end;
 end;
+
+var tmp: ThtString;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
 function THtmlVisualRenderer.GetLength(Prop: TResultingProperty; Relative: Boolean; Parent, EmBase, Default: Double): Double;
@@ -625,24 +577,13 @@ begin
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else
-      case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-        varUString,
-{$endif}
-        varString:
-        begin
-          Result := StrToLength(Prop.Prop.Value, Relative, Parent, EmBase, Default);
-          Prop.Prop.Value := Result;
-        end;
-
-        varSingle,
-        varDouble,
-        varByte,
-        varWord,
-        varInteger:
-          Result := Prop.Prop.Value;
-      end;
+    else if VarIsNumeric(Prop.Prop.Value) then
+      Result := Prop.Prop.Value
+    else if VarIsStr(Prop.Prop.Value) then
+    begin
+      Result := StrToLength(Prop.Prop.Value, Relative, Parent, EmBase, Default);
+      Prop.Prop.Value := Result;
+    end;
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
@@ -652,20 +593,11 @@ begin
   if Prop <> nil then
     if Prop.Prop.Value = Inherit then
       Result := Parent
-    else
-      case VarType(Prop.Prop.Value) of
-{$ifdef Compiler20_Plus}
-        varUString,
-{$endif}
-        varString:
-          if TryStrToBoxPositionStyle(Prop.Prop.Value, Result) then
-            Prop.Prop.Value := Integer(Result);
-
-        varByte,
-        varWord,
-        varInteger:
-          Result := TBoxPositionStyle(Prop.Prop.Value);
-      end;
+    else if VarIsOrdinal(Prop.Prop.Value) then
+      Result := TBoxPositionStyle(Prop.Prop.Value)
+    else if VarIsStr(Prop.Prop.Value) then
+      if TryStrToBoxPositionStyle(Prop.Prop.Value, Result) then
+        Prop.Prop.Value := Integer(Result);
 end;
 
 //-- BG ---------------------------------------------------------- 03.05.2011 --

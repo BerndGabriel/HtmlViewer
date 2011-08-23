@@ -530,7 +530,7 @@ begin
 {$ifdef UNICODE}
   Result := CompareStr(S1, S2);
 {$else}
-  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2));
+  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2)) - 2;
 {$endif}
 end;
 

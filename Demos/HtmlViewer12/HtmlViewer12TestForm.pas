@@ -62,8 +62,6 @@ type
     FDocument: THtmlDocument;
     FParser: THtmlParser;
     FView: THtmlBox;
-    FBufferCache: ThtBufferCache;
-    FImageCache: ThtImageCache;
   public
     procedure Load(FileName: ThtString);
   end;
@@ -172,49 +170,13 @@ end;
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 procedure TFormHtmlViewer12Test.FormCreate(Sender: TObject);
 
-// simple test example with parsing a document:
+  // simple test example with parsing a document:
   procedure InitTest;
   begin
     Load('HtmlViewer12Test.html');
   end;
 
-var
-  Image: ThtImage;
-  ImageName: string;
-  ImageIndex: Integer;
 begin
-  FBufferCache := ThtBufferCache.Create;
-  FImageCache := ThtImageCache.Create;
-//  ImageName := 'pengbrew.png';
-//  Image := LoadImageFromFile(ImageName, TrPng);
-//  if Image <> nil then
-//    FImageCache.AddObject(ImageName, Image);
-//
-//  FView := THtmlBodyBox.Create(nil, THtmlBodyControl.Create(HtmlViewer));
-//  FView.BoundsRect := Rect(4, 8, 404, 308);
-//  FView.Margins := RectIntegers(16, 22, 4, 8);
-//  FView.BorderWidths := RectIntegers(4, 8, 16, 0);
-//  FView.Paddings := RectIntegers(6, 2, 4, 10);
-//  FView.BorderColors := RectColors(clRed, clAqua, clGreen, clOlive);
-//  FView.BorderStyles := RectStyles(bssSolid, bssDashed, bssDouble, bssGroove);
-//  FView.Color := clNone;
-//  FView.Text := 'HtmlViewer ' + ThtChar(8805) + ' 12';
-//  FView.Alignment := taCenter;
-//  FView.Font.Style := [fsItalic];
-//  FView.Font.Color := clCaptionText;
-//  FView.Font.Size := 16;
-//  ImageIndex := FImageCache.IndexOf(ImageName);
-//  if ImageIndex >= 0 then
-//  begin
-//    FView.Image := FImageCache.GetImage(ImageIndex);
-//    FView.Image.EndUse; // Both FView and GetImage have started a use, but one is required only.
-//  end
-//  else
-//    FView.Image := ErrorImage;
-//  FView.Tiled := True;
-//  FView.TileWidth := 100;
-//  FView.TileHeight := 100;
-//  HtmlViewer.AddView(FView);
   InitTest;
 end;
 
@@ -226,16 +188,20 @@ begin
     FView.Image := nil;
     FView.Free;
   end;
-  FBufferCache.Free;
-  FImageCache.Free;
   Load('');
 end;
+
+var
+  Uri: TUri;
+  Filename: ThtString;
+  Filenames: ThtStringList;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --
 procedure TFormHtmlViewer12Test.Load(FileName: ThtString);
 begin
   vtDocument.RootNodeCount := 0;
   CssMemo.Clear;
+  HtmlViewer.HtmlDocument := nil;
   FreeAndNil(FParser);
   FreeAndNil(FDocument);
   FreeAndNil(FBuffer);
@@ -244,7 +210,7 @@ begin
   if Length(FName) > 0 then
   begin
     FStream := TFileStream.Create(FName, fmOpenRead + fmShareDenyNone);
-    FBuffer := TBuffer.Create(FStream, 'file://' + DosToHtml(FName));
+    FBuffer := TBuffer.Create(FStream, 'file:///' + DosToHtml(FName));
     FDocument := THtmlDocument.Create;
     FParser := THtmlParser.Create(FBuffer);
     FParser.ParseHtmlDocument(FDocument);
@@ -252,7 +218,13 @@ begin
       vtDocument.RootNodeCount := 1;
     CssMemo.Lines.Text := FDocument.RuleSets.ToString;
     HtmlViewer.HtmlDocument := FDocument;
+    if cbFiles.Items.IndexOf(FileName) < 0 then
+      cbFiles.Items.Insert(0, FileName);
   end;
 end;
 
+initialization
+  Filenames := ThtStringList.Create;
+finalization
+  Filenames.Free;
 end.

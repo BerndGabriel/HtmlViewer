@@ -48,10 +48,12 @@ type
     FTitle: ThtString;
     FName: ThtString;
     FTree: THtmlElement;
+    FBaseUrl: ThtString;
     procedure setTree(const Value: THtmlElement);
   public
     constructor Create;
     destructor Destroy; override;
+    property BaseUrl: ThtString read FBaseUrl write FBaseUrl;
     property RuleSets: TRulesetList read FRuleSets;
     property Title: ThtString read FTitle write FTitle;
     property Tree: THtmlElement read FTree write setTree;
