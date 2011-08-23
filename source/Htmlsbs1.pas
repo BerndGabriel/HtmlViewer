@@ -246,7 +246,6 @@ end;
 
 destructor TListBoxFormControlObj.Destroy;
 begin
-  TheOptions.Free;
   FControl.Free;
   inherited Destroy;
 end;
