@@ -136,7 +136,15 @@ type
   end;
 
 //------------------------------------------------------------------------------
-// THtmlControlBox
+// THtmlElementBox is (base) class for ordinary HTML elements
+//------------------------------------------------------------------------------
+
+  THtmlElementBox = class(THtmlBox)
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlControlBox is base class for the visual representations of the root
+//                 THtmlElements BODY and FRAMESET.
 //------------------------------------------------------------------------------
 
   THtmlControlBox = class(THtmlBox)
@@ -149,7 +157,8 @@ type
   end;
 
 //------------------------------------------------------------------------------
-// THtmlScrollControl
+// THtmlScrollControl is base class for the scroll boxes visually representing
+//                    the root THtmlElements BODY and FRAMESET.
 //------------------------------------------------------------------------------
 
   THtmlScrollControl = class(TCustomHtmlScrollBox)
@@ -214,6 +223,9 @@ type
 
 //------------------------------------------------------------------------------
 // THtmlAnonymousBox
+//------------------------------------------------------------------------------
+// The renderer generates THtmlAnonymousBoxes to group lines of inline elements
+// and text.
 //------------------------------------------------------------------------------
 
   THtmlAnonymousBox = class(THtmlBox)

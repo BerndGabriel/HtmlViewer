@@ -186,9 +186,6 @@ type
     pdTableCell,
     pdTableCaption,
     pdNone);
-
-function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle;
-
 const
   CDisplayStyle: array [TDisplayStyle] of ThtString = (
     '',
@@ -208,6 +205,27 @@ const
     'table-cell',
     'table-caption',
     'none');
+
+  CRootDisplayStyle: array[TDisplayStyle] of TDisplayStyle = (
+    pdUnassigned,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdTable,
+    pdTable,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdBlock,
+    pdNone);
+
+function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle; {$ifdef UseInline} inline; {$endif}
 
 type
   TTextTransformStyle = (
@@ -495,27 +513,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle;
+function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle; {$ifdef UseInline} inline; {$endif}
 begin
-  case Display of
-    pdInlineTable:
-      Result := pdTable;
-
-    pdInline,
-    pdInlineBlock,
-    pdRunIn,
-    pdTableCaption,
-    pdTableCell,
-    pdTableColumn,
-    pdTableColumnGroup,
-    pdTableFooterGroup,
-    pdTableHeaderGroup,
-    pdTableRow,
-    pdTableRowGroup:
-      Result := pdBlock;
-  else
-    Result := Display;
-  end;
+  Result := CRootDisplayStyle[Display];
 end;
 
 

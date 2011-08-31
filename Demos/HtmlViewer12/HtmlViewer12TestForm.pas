@@ -9,7 +9,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Menus, ComCtrls,
+  Dialogs, StdCtrls, Menus, ComCtrls, ExtCtrls,
 
   // shared units
   TntDialogs,
@@ -30,9 +30,9 @@ uses
   HtmlImages,
   HtmlParser,
   HtmlSymbols,
+  HtmlUri,
   HtmlViewer,
-  StyleTypes,
-  UrlSubs, ExtCtrls;
+  StyleTypes;
 
 type
   TFormHtmlViewer12Test = class(TForm)
@@ -210,7 +210,8 @@ begin
   if Length(FName) > 0 then
   begin
     FStream := TFileStream.Create(FName, fmOpenRead + fmShareDenyNone);
-    FBuffer := TBuffer.Create(FStream, 'file:///' + DosToHtml(FName));
+
+    FBuffer := TBuffer.Create(FStream, StrToUriStr(FName, 'file'));
     FDocument := THtmlDocument.Create;
     FParser := THtmlParser.Create(FBuffer);
     FParser.ParseHtmlDocument(FDocument);

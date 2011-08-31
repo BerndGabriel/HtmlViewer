@@ -170,6 +170,7 @@ begin
     if FDocument <> nil then
       if voOwnsDocument in FOptions then
         FDocument.Free;
+    FControlMap.Clear;
     FDocument := Value;
     Include(FState, vsDocumentChanged);
     UpdateDocument;

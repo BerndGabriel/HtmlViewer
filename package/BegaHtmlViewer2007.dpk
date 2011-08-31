@@ -50,6 +50,8 @@ contains
   HtmlBoxes in '..\source\HtmlBoxes.pas',
   HtmlRenderer in '..\source\HtmlRenderer.pas',
   BegaClasses in '..\source\BegaClasses.pas',
-  HtmlControls in '..\source\HtmlControls.pas';
+  HtmlControls in '..\source\HtmlControls.pas',
+  HtmlUri in '..\source\HtmlUri.pas',
+  HtmlIndentation in '..\source\HtmlIndentation.pas';
 
 end.

@@ -1,6 +1,6 @@
 object FormHtmlViewer12Test: TFormHtmlViewer12Test
-  Left = 648
-  Top = 25
+  Left = 0
+  Top = 0
   Caption = 'HtmlViewer 12 Test'
   ClientHeight = 653
   ClientWidth = 1083
@@ -19,32 +19,112 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
   TextHeight = 13
   object BegaSplitter1: TSplitter
     Left = 395
-    Top = 0
+    Top = 21
     Width = 8
-    Height = 653
+    Height = 632
     ResizeStyle = rsUpdate
+  end
+  object cbFiles: TBegaCombobox
+    Left = 0
+    Top = 0
+    Width = 1083
+    Height = 21
+    Align = alTop
+    DropDownCount = 32
+    ItemHeight = 13
+    TabOrder = 0
+    OnKeyPress = cbFilesKeyPress
+    RegistryKey = 'Software\Fast Function Factory\BegaViewer\BrowseURL'
+    RegistryValuePrefix = 'URL'
   end
   object HtmlViewer: THtmlViewer12
     Left = 403
-    Top = 0
+    Top = 21
     Width = 680
-    Height = 653
+    Height = 632
     Align = alClient
-    Color = clSilver
+    Color = clBtnFace
     ParentColor = False
     TabOrder = 1
     ViewerOptions = []
   end
   object PageControl: TPageControl
     Left = 0
-    Top = 0
+    Top = 21
     Width = 395
-    Height = 653
+    Height = 632
     ActivePage = CssTab
     Align = alLeft
-    TabOrder = 0
+    TabOrder = 2
     object HtmlTab: TTabSheet
       Caption = 'Html'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
+      object vtDocument: TBegaVirtualStringTree
+        Left = 0
+        Top = 0
+        Width = 387
+        Height = 604
+        Align = alClient
+        Header.AutoSizeIndex = -1
+        Header.DefaultHeight = 17
+        Header.Font.Charset = DEFAULT_CHARSET
+        Header.Font.Color = clWindowText
+        Header.Font.Height = -11
+        Header.Font.Name = 'Tahoma'
+        Header.Font.Style = []
+        Header.Options = [hoAutoResize, hoColumnResize, hoDblClickResize, hoDrag, hoShowSortGlyphs, hoVisible, hoAutoSpring]
+        NodeDataSize = 4
+        TabOrder = 0
+        TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowHorzGridLines, toShowRoot, toShowTreeLines, toThemeAware, toUseBlendedImages]
+        OnGetText = vtDocumentGetText
+        OnInitChildren = vtDocumentInitChildren
+        OnInitNode = vtDocumentInitNode
+        Columns = <
+          item
+            Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
+            Position = 0
+            Width = 91
+            WideText = 'Element'
+          end
+          item
+            Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
+            Position = 1
+            Width = 91
+            WideText = 'Class'
+          end
+          item
+            Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
+            Position = 2
+            Width = 91
+            WideText = 'Id'
+          end
+          item
+            Position = 3
+            Width = 60
+            WideText = 'DocPos'
+          end
+          item
+            Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
+            Position = 4
+            Width = 91
+            WideText = 'Style'
+          end
+          item
+            Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
+            Position = 5
+            Width = 91
+            WideText = 'Props'
+          end
+          item
+            Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
+            Position = 6
+            Width = 10
+            WideText = 'Attrs'
+          end>
+      end
     end
     object CssTab: TTabSheet
       Caption = 'Css'
@@ -53,7 +133,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
         Left = 0
         Top = 0
         Width = 387
-        Height = 625
+        Height = 604
         Align = alClient
         ScrollBars = ssBoth
         TabOrder = 0

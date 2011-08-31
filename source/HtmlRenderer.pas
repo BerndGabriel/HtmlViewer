@@ -42,6 +42,7 @@ uses
   HtmlFonts,
   HtmlGlobals,
   HtmlImages,
+  HtmlIndentation,
   HtmlStyles,
   HtmlSymbols,
   Parser,
@@ -66,7 +67,7 @@ type
   public
     function Get(Key: THtmlElement): TControl; {$ifdef UseInline} inline; {$endif}
     function Put(Key: THtmlElement; Control: TControl): TControl; {$ifdef UseInline} inline; {$endif}
-    function Remove(Key: THtmlElement): TControl; {$ifdef UseInline} inline; {$endif}
+    procedure Clear;
     property Elements[Index: Integer]: THtmlElement read GetKey;
     property Controls[Index: Integer]: TControl read GetValue;
   end;
@@ -129,13 +130,28 @@ type
 
   THtmlVisualRenderer = class(THtmlRenderer)
   private
+    //--------------------------------------
+    // settings / environment
+    //--------------------------------------
+
+    // general
+    FWidth: Integer;          // width of destination viewport in pixels
+    FHeight: Integer;         // height of destination viewport in pixels
     FControls: THtmlControlOfElementMap;
-    FImages: ThtImageCache;
-    FWidth: Integer;          // width of destination in pixels
-    FHeight: Integer;
+    // fonts
     FDefaultFont: ThtFont;
     FDefaultFontInfo: ThtFontInfo;
-    FOnGetImage: TGetImageEvent;         // height of destination in pixels
+    // images
+    FImages: ThtImageCache;
+    FOnGetImage: TGetImageEvent;
+
+    //--------------------------------------
+    // status
+    //--------------------------------------
+
+    // positioning
+    FSketchMapStack: TSketchMapStack;
+
     function GetBorderStyle(Prop: TResultingProperty; Parent, Default: TBorderStyle): TBorderStyle;
     function GetColor(Prop: TResultingProperty; Parent, Default: TColor): TColor;
     function GetControl(const Element: THtmlElement): TControl;
@@ -146,13 +162,16 @@ type
     function GetLength(Prop: TResultingProperty; Relative: Boolean; Parent, EmBase, Default: Double): Double;
     function GetPosition(Prop: TResultingProperty; Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
     function GetPropValue(Prop: TResultingProperty; Parent, Default: Variant): Variant;
-    procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); overload;
-    procedure SetControls(const Value: THtmlControlOfElementMap);
+    //procedure SetControls(const Value: THtmlControlOfElementMap);
     procedure SetPropertiesToBox(Element: THtmlElement; Box: THtmlBox; Properties: TResultingPropertyMap);
     procedure GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
+    //
+    procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); overload;
   protected
-    procedure RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
     procedure RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
+    procedure RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
+    procedure RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
+    procedure RenderText(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
   public
     constructor Create(
       Document: THtmlDocument;
@@ -161,14 +180,23 @@ type
       MediaType: TMediaType;
       DefaultFont: ThtFont;
       Width, Height: Integer);
+    destructor Destroy; override;
     procedure Render(Owner: TWinControl; ParentBox: THtmlBox); overload;
-    property ControlOfElementMap: THtmlControlOfElementMap read FControls write SetControls;
+    property ControlOfElementMap: THtmlControlOfElementMap read FControls; // write SetControls;
     property OnGetImage: TGetImageEvent read FOnGetImage write FOnGetImage;
   end;
 
 implementation
 
 { THtmlControlOfElementMap }
+
+procedure THtmlControlOfElementMap.Clear;
+var
+  Index: Integer;
+begin
+  for Index := Count - 1 downto 0 do
+    TControl(Remove(Index)).Free;
+end;
 
 //-- BG ---------------------------------------------------------- 18.04.2011 --
 function THtmlControlOfElementMap.Get(Key: THtmlElement): TControl;
@@ -192,12 +220,6 @@ end;
 function THtmlControlOfElementMap.Put(Key: THtmlElement; Control: TControl): TControl;
 begin
   Result := inherited Put(Key, Control);
-end;
-
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-function THtmlControlOfElementMap.Remove(Key: THtmlElement): TControl;
-begin
-  Result := inherited Remove(Key);
 end;
 
 { THtmlRenderer }
@@ -299,6 +321,7 @@ constructor THtmlVisualRenderer.Create(
   Width, Height: Integer);
 begin
   inherited Create(Document, MediaType);
+  FSketchMapStack := TSketchMapStack.Create;
   FCapabilities := [mcFrames];
   FControls := ControlMap;
   FImages := ImageCache;
@@ -316,6 +339,13 @@ begin
     Result := FDefaultFont.Height * 72 / FDefaultFont.PixelsPerInch
   else
     Result := FDefaultFont.Size;
+end;
+
+//-- BG ---------------------------------------------------------- 28.08.2011 --
+destructor THtmlVisualRenderer.Destroy;
+begin
+  FSketchMapStack.Free;
+  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
@@ -625,6 +655,12 @@ begin
   case Element.Symbol of
     FrameSetSy: RenderFrameset(Owner, ParentBox, Element);
     BodySy: RenderBody(Owner, ParentBox, Element);
+
+    TextSy: RenderText(Owner, ParentBox, Element);
+
+    PSy,
+    DivSy,
+    SpanSy: RenderBox(Owner, ParentBox, Element);
   else
   end;
 end;
@@ -687,23 +723,74 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 29.08.2011 --
+procedure THtmlVisualRenderer.RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
+var
+  Box: THtmlElementBox;
+  Child: THtmlElement;
+  Properties: TResultingPropertyMap;
+  Info: THtmlRendererBlockInfo;
+begin
+  Properties := GetResultingProperties(Element);
+  try
+    // compute display, position and float:
+    Info.Display := GetDisplay(Properties[psDisplay], pdBlock, pdBlock);
+    if Info.Display = pdNone then
+      exit;
+
+    Info.Position := GetPosition(Properties[psPosition], posStatic, posStatic);
+    case Info.Position of
+      posAbsolute,
+      posFixed:
+      begin
+        Info.Float := flNone;
+      end;
+    else
+      Info.Float := GetFloat(Properties[psFloat], flNone, flNone);
+    end;
+
+    Box := THtmlElementBox.Create(ParentBox);
+    Box.BoundsRect := ParentBox.BoundsRect;
+    Box.Tiled := True;
+
+    // set properties
+    SetPropertiesToBox(Element, Box, Properties);
+
+    // render children
+    Child := Element.FirstChild;
+    while Child <> nil do
+    begin
+      Render(Owner, Box, Child);
+      Child := Child.Next;
+    end;
+  finally
+    Properties.Free;
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 procedure THtmlVisualRenderer.RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
 begin
 
 end;
 
-//-- BG ---------------------------------------------------------- 18.04.2011 --
-procedure THtmlVisualRenderer.SetControls(const Value: THtmlControlOfElementMap);
+//-- BG ---------------------------------------------------------- 28.08.2011 --
+procedure THtmlVisualRenderer.RenderText(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
 begin
-  if FControls <> Value then
-    FControls.Assign(Value);
+
 end;
+
+////-- BG ---------------------------------------------------------- 18.04.2011 --
+//procedure THtmlVisualRenderer.SetControls(const Value: THtmlControlOfElementMap);
+//begin
+//  if FControls <> Value then
+//    FControls.Assign(Value);
+//end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
 procedure THtmlVisualRenderer.SetPropertiesToBox(Element: THtmlElement; Box: THtmlBox; Properties: TResultingPropertyMap);
 
-  function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
+  function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
   begin
     Result[reLeft]   := Round(GetLength(Properties[Left],   False, Parent[reLeft],   BaseSize, Default[reLeft]  ));
     Result[reTop]    := Round(GetLength(Properties[Top],    False, Parent[reTop],    BaseSize, Default[reTop]   ));
@@ -711,7 +798,7 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(Element: THtmlElement; Box: THt
     Result[reBottom] := Round(GetLength(Properties[Bottom], False, Parent[reBottom], BaseSize, Default[reBottom]));
   end;
 
-  function GetColors(Left, Top, Right, Bottom: TPropertySymbol; Parent, Default: TRectColors): TRectColors;
+  function GetColors(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectColors): TRectColors;
   begin
     Result[reLeft]   := GetColor(Properties[Left],   Parent[reLeft],   Default[reLeft]  );
     Result[reTop]    := GetColor(Properties[Top],    Parent[reTop],    Default[reTop]   );
@@ -719,7 +806,7 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(Element: THtmlElement; Box: THt
     Result[reBottom] := GetColor(Properties[Bottom], Parent[reBottom], Default[reBottom]);
   end;
 
-  function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; Parent, Default: TRectStyles): TRectStyles;
+  function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectStyles): TRectStyles;
   begin
     Result[reLeft]   := GetBorderStyle(Properties[Left],   Parent[reLeft],   Default[reLeft]);
     Result[reTop]    := GetBorderStyle(Properties[Top],    Parent[reTop],    Default[reTop]);
@@ -748,35 +835,26 @@ begin
   EmBase := Font.EmSize;
   freeAndNil(Font);
 
-  // Background
-  if ParentBox <> nil then
-    Box.Color := GetColor(Properties[BackgroundColor], ParentBox.Color, clNone)
-  else
-    Box.Color := GetColor(Properties[BackgroundColor], clNone, clNone);
-
-  if ParentBox <> nil then
-    Box.Image := GetImage(Properties[BackgroundImage], ParentBox.Image, nil)
-  else
-    Box.Image := GetImage(Properties[BackgroundImage], nil, nil);
-
-  // Borders
   if ParentBox <> nil then
   begin
-    Box.Margins      := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, ParentBox.Margins, NullLengths, EmBase);
-    Box.Paddings     := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, ParentBox.Paddings, NullLengths, EmBase);
-    Box.BorderWidths := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, ParentBox.BorderWidths, NullLengths, EmBase);
-    Box.BorderColors := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
-    Box.BorderStyles := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
+    Box.Color         := GetColor(Properties[BackgroundColor], ParentBox.Color, clNone);
+    Box.Image         := GetImage(Properties[BackgroundImage], ParentBox.Image, nil);
+    Box.Margins       := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, ParentBox.Margins, NullLengths, EmBase);
+    Box.Paddings      := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, ParentBox.Paddings, NullLengths, EmBase);
+    Box.BorderWidths  := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, ParentBox.BorderWidths, NullLengths, EmBase);
+    Box.BorderColors  := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
+    Box.BorderStyles  := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
   end
   else
   begin
-    Box.Margins      := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, NullLengths, NullLengths, EmBase);
-    Box.Paddings     := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, NullLengths, NullLengths, EmBase);
-    Box.BorderWidths := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, NullLengths, NullLengths, EmBase);
-    Box.BorderColors := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, NoneColors, NoneColors);
-    Box.BorderStyles := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, NoneStyles, NoneStyles);
+    Box.Color         := GetColor(Properties[BackgroundColor], clNone, clNone);
+    Box.Image         := GetImage(Properties[BackgroundImage], nil, nil);
+    Box.Margins       := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, NullLengths, NullLengths, EmBase);
+    Box.Paddings      := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, NullLengths, NullLengths, EmBase);
+    Box.BorderWidths  := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, NullLengths, NullLengths, EmBase);
+    Box.BorderColors  := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, NoneColors, NoneColors);
+    Box.BorderStyles  := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, NoneStyles, NoneStyles);
   end;
-
 end;
 
 end.
