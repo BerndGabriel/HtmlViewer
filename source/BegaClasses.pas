@@ -54,7 +54,8 @@ type
     function Find(Key: Pointer; out Index: Integer): Boolean;
     function Get(Key: Pointer): Pointer; {$ifdef UseInline} inline; {$endif}
     function Put(Key, Value: Pointer): Pointer; {$ifdef UseInline} inline; {$endif}
-    function Remove(Key: Pointer): Pointer; {$ifdef UseInline} inline; {$endif}
+    function Remove(Index: Integer): Pointer; overload; {$ifdef UseInline} inline; {$endif}
+    function Remove(Key: Pointer): Pointer; overload; {$ifdef UseInline} inline; {$endif}
     procedure Assign(Source: TBegaCustomMap); {$ifdef UseInline} inline; {$endif}
     procedure Clear; {$ifdef UseInline} inline; {$endif}
     property Count: Integer read GetCount;
@@ -96,6 +97,7 @@ begin
   inherited;
 end;
 
+//-- BG ---------------------------------------------------------- 18.04.2011 --
 procedure TBegaCustomMap.Clear;
 begin
   FKeys.Clear;
@@ -186,17 +188,21 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 31.08.2011 --
+function TBegaCustomMap.Remove(Index: Integer): Pointer;
+begin
+  Result := FValues[Index];
+  FKeys.Delete(Index);
+  FValues.Delete(Index);
+end;
+
 //-- BG ---------------------------------------------------------- 18.04.2011 --
 function TBegaCustomMap.Remove(Key: Pointer): Pointer;
 var
   Index: Integer;
 begin
   if Find(Key, Index) then
-  begin
-    Result := FValues[Index];
-    FKeys.Delete(Index);
-    FValues.Delete(Index);
-  end
+    Result := Remove(Index)
   else
     Result := nil;
 end;
