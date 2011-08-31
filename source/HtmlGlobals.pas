@@ -290,9 +290,6 @@ procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
 implementation
 
-//uses
-//  HTMLUn2;
-
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
 begin
