@@ -599,7 +599,7 @@ type
     Visibility: VisibilityType;
     BottomAuto: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
-    HideOverflow: boolean;
+    HideOverflow: Boolean;
     Justify: JustifyType;
     Converted: boolean;
     // END: this area is copied by move() in CreateCopy()
@@ -5568,7 +5568,7 @@ var
   IT, IH, FT, IW: Integer;
   Rgn, SaveRgn, SaveRgn1: HRgn;
   OpenRgn: Boolean;
-  PdRect: TRect;
+  PdRect, CnRect: TRect; // padding rect, content rect
 begin
   YOffset := Document.YOff;
 
@@ -5602,6 +5602,12 @@ begin
   PdRect.Top    := MyRect.Top    + MargArray[BorderTopWidth];
   PdRect.Right  := MyRect.Right  - MargArray[BorderRightWidth];
   PdRect.Bottom := MyRect.Bottom - MargArray[BorderBottomWidth];
+
+  // CnRect is the content rectangle of this block in screen coordinates
+  CnRect.Left   := PdRect.Left   + MargArray[PaddingLeft];
+  CnRect.Top    := PdRect.Top    + MargArray[PaddingTop];
+  CnRect.Right  := PdRect.Right  - MargArray[PaddingRight];
+  CnRect.Bottom := PdRect.Bottom - MargArray[PaddingBottom];
 
   IT := Max(0, ARect.Top - 2 - PdRect.Top);
   FT := Max(PdRect.Top, ARect.Top - 2); {top of area drawn, screen coordinates}
@@ -5721,12 +5727,12 @@ begin
 
     if HideOverflow then
     begin
-      if FloatLR = ANone then
-        GetClippingRgn(Canvas, Rect(PdRect.Left + MargArray[PaddingLeft], PdRect.Top + MargArray[PaddingTop],
-          PdRect.Right - MargArray[PaddingRight], PdRect.Bottom - MargArray[PaddingBottom]),
-          Document.Printing, Rgn, SaveRgn)
-      else
-        GetClippingRgn(Canvas, Rect(PdRect.Left, PdRect.Top, PdRect.Right, PdRect.Bottom), Document.Printing, Rgn, SaveRgn);
+// BG, 28.08.2011: always clip to content rect:    
+//      if FloatLR = ANone then
+        GetClippingRgn(Canvas, Rect(CnRect.Left, CnRect.Top, CnRect.Right, CnRect.Bottom), Document.Printing, Rgn, SaveRgn)
+//      else
+//        GetClippingRgn(Canvas, Rect(PdRect.Left, PdRect.Top, PdRect.Right, PdRect.Bottom), Document.Printing, Rgn, SaveRgn)
+      ;
       SelectClipRgn(Canvas.Handle, Rgn);
     end;
     try
@@ -11065,10 +11071,23 @@ var
 
     SB := 0; {if there are images, then maybe they add extra space}
     SA := 0; {space before and after}
-    if LineHeight >= 0 then
+    if LineHeight > 0 then
     begin
-      SB := (LineHeight - DHt) div 2;
-      SA := (LineHeight - DHt) - SB;
+      // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
+      case Align of
+        aTop:
+          SA := LineHeight;
+
+        aMiddle:
+          begin
+            SB := (LineHeight - DHt) div 2;
+            SA := (LineHeight - DHt) - SB;
+          end;
+
+        aBaseline,
+        aBottom:
+          SB := LineHeight;
+      end;
     end;
     Cnt := 0;
     repeat
@@ -11082,8 +11101,10 @@ var
           if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
             TImageObj(FLObj).MyFormControl.FYValue := Y;
           case Align of
-            ATop: SA := Max(SA, H - DHt);
-            AMiddle:
+            aTop:
+              SA := Max(SA, H - DHt);
+
+            aMiddle:
               begin
                 if DHt = 0 then
                 begin
@@ -11094,7 +11115,10 @@ var
                 SA := Max(SA, Tmp);
                 SB := Max(SB, (H - DHt - Tmp));
               end;
-            ABottom, ABaseline: SB := Max(SB, H - (DHt - LR.Descent));
+
+            aBaseline,
+            aBottom:
+              SB := Max(SB, H - (DHt - LR.Descent));
           end;
         end;
       end;
@@ -11229,14 +11253,28 @@ begin {TSection.DrawLogic}
   begin
     Obj := TFloatingObj(Images[I]);
     Obj.DrawLogic(Self.Document, Canvas, Fonts.GetFontObjAt(Obj.Pos, Indx), Width, HtRef);
-    MaxWidth := Max(MaxWidth, Obj.ImageWidth); {HScrollBar for wide images}
+    // BG, 28.08.2011:
+    if OwnerBlock.HideOverflow then
+    begin
+      if Obj.ImageWidth > Width then
+        Obj.ImageWidth := Width;
+    end
+    else
+      MaxWidth := Max(MaxWidth, Obj.ImageWidth); {HScrollBar for wide images}
   end;
   for I := 0 to FormControls.Count - 1 do
   begin
     Ctrl := FormControls[I];
     if Ctrl.PercentWidth then
       Ctrl.Width := Max(10, Min(MulDiv(Ctrl.FWidth, Width, 100), Width - Ctrl.HSpaceL - Ctrl.HSpaceR));
-    MaxWidth := Max(MaxWidth, Ctrl.Width);
+    // BG, 28.08.2011:
+    if OwnerBlock.HideOverflow then
+    begin
+      if Ctrl.Width > Width then
+        Ctrl.Width := Width;
+    end
+    else
+      MaxWidth := Max(MaxWidth, Ctrl.Width);
   end;
 
   YDoneFlObj := Y;
@@ -11292,7 +11330,7 @@ begin {TSection.DrawLogic}
         LineComplete(N);
       end
       else
-      begin {move down where it's wider}
+      begin {move down to where it's wider}
         LR.LineHt := Tmp;
         Inc(SectionHeight, Tmp);
         LR.Ln := 0;
@@ -11417,6 +11455,11 @@ begin {TSection.DrawLogic}
       TheOwner.htProgress(ProgressStart + ((100 - ProgressStart) * SectionNumber) div SectionCount);
     ThisCycle := CycleNumber; {only once per cycle}
   end;
+
+  // BG, 28.08.2011:
+  if OwnerBlock.HideOverflow then
+    if MaxWidth > Width then
+      MaxWidth := Width;
 end;
 
 {----------------TSection.CheckForInlines}
