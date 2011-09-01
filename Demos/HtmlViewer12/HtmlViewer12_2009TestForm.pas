@@ -29,6 +29,7 @@ uses
   HtmlImages,
   HtmlParser,
   HtmlSymbols,
+  HtmlUri,
   HtmlViewer,
   StyleTypes,
   UrlSubs, ExtCtrls;
