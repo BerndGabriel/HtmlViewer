@@ -67,7 +67,7 @@ type
     ListStyleType, ListStyleImage, Float, Clear, TextIndent,
     PageBreakBefore, PageBreakAfter, PageBreakInside, TextTransform,
     WordWrap, FontVariant, BorderCollapse, OverFlow, piDisplay, piEmptyCells,
-    //TODO -oBG, 12.03.2011: piWhiteSpace
+    piWhiteSpace,
 
     // short hands
     MarginX, PaddingX, BorderWidthX, BorderX,
@@ -78,7 +78,7 @@ type
 
   TShortHand = MarginX..BorderStyleX;
 
-  PropIndices = FontFamily..piEmptyCells;
+  PropIndices = FontFamily..piWhiteSpace;
   TPropertyArray = array [PropIndices] of Variant;
 
   MarginIndices = BackgroundColor..LeftPos;
@@ -104,7 +104,7 @@ const
     'list-style-type', 'list-style-image', 'float', 'clear', 'text-indent',
     'page-break-before', 'page-break-after', 'page-break-inside', 'text-transform',
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells',
-    //'white-space'
+    'white-space',
 
     // short hand names
     'margin', 'padding', 'border-width', 'border',

@@ -511,8 +511,9 @@ type
     StoredMin, StoredMax: Integer;
     FirstLineIndent: Integer;
     FLPercent: Integer;
-    BreakWord: boolean;
+    BreakWord: Boolean;
     TextWidth: Integer;
+    WhiteSpaceStyle: TWhiteSpaceStyle;
 
     constructor Create(OwnerCell: TCellBasic; Attr: TAttributeList; Prop: TProperties; AnURL: TUrlTarget; FirstItem: boolean);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); override;
@@ -1382,11 +1383,11 @@ type
 
   TPreFormated = class(TSection)
   {section for preformated, <pre>}
-  public
-    procedure ProcessText(TagIndex: Integer); override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
-    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
+//  public
+//    procedure ProcessText(TagIndex: Integer); override;
+//    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+//      var MaxWidth, Curs: Integer): Integer; override;
+//    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   end;
 
 //------------------------------------------------------------------------------
@@ -4331,20 +4332,23 @@ end;
 {----------------TCellBasic.Add}
 
 procedure TCellBasic.Add(Item: TSectionBase; TagIndex: Integer);
+var
+  Section: TSection absolute Item;
 begin
   if Assigned(Item) then
   begin
-    if (Item is TSection) and Assigned(TSection(Item).XP) then {XP not assigned if printing}
-    begin
-      TSection(Item).ProcessText(TagIndex);
-      if not (Item is TPreFormated) and (TSection(Item).Len = 0)
-        and not TSection(Item).AnchorName and (TSection(Item).ClearAttr = clrNone) then
+    if Item is TSection then
+      if Assigned(Section.XP) then {XP not assigned if printing}
       begin
-        TSection(Item).CheckFree;
-        Item.Free; {discard empty TSections that aren't anchors}
-        Exit;
+        Section.ProcessText(TagIndex);
+        if not (Section.WhiteSpaceStyle in [wsPre, wsPreWrap, wsPreLine]) and (Section.Len = 0)
+          and not Section.AnchorName and (Section.ClearAttr = clrNone) then
+        begin
+          Section.CheckFree;
+          Item.Free; {discard empty TSections that aren't anchors}
+          Exit;
+        end;
       end;
-    end;
     inherited Add(Item);
     Item.SetDocument(Document);
   end;
@@ -9989,7 +9993,30 @@ begin
     Justify := FullJustify
   else
     Justify := Left;
+
   BreakWord := Prop.Props[WordWrap] = 'break-word';
+
+  if Self is TPreFormated then
+    WhiteSpaceStyle := wsPre
+  else if NoBreak then
+    WhiteSpaceStyle := wsNoWrap
+  else
+    WhiteSpaceStyle := wsNormal;
+  if VarIsOrdinal(Prop.Props[piWhiteSpace]) then
+    WhiteSpaceStyle := TWhiteSpaceStyle(Prop.Props[piWhiteSpace])
+  else if VarIsStr(Prop.Props[piWhiteSpace]) then
+  begin
+    if Prop.Props[piWhiteSpace] = 'pre' then
+      WhiteSpaceStyle := wsPre
+    else if Prop.Props[piWhiteSpace] = 'nowrap' then
+      WhiteSpaceStyle := wsNoWrap
+    else if Prop.Props[piWhiteSpace] = 'pre-wrap' then
+      WhiteSpaceStyle := wsPreWrap
+    else if Prop.Props[piWhiteSpace] = 'pre-line' then
+      WhiteSpaceStyle := wsPreLine
+    else if Prop.Props[piWhiteSpace] = 'normal' then
+      WhiteSpaceStyle := wsNormal;
+  end;
 end;
 
 {----------------TSection.CreateCopy}
@@ -10123,7 +10150,8 @@ begin
     St := T.S;
   end;
   Move(T.I[1], XP^[Len], T.Count * Sizeof(Integer));
-  if NoBreak or (Self is TPreformated) then
+  // BG, 31.08.2011: added: WhiteSpaceStyle
+  if NoBreak or (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) then
     C := 'n'
   else
     C := 'y';
@@ -10191,63 +10219,76 @@ var
   end;
 
 begin
-  while (Length(BuffS) > 0) and (BuffS[1] = ' ') do
-    Remove(1);
-
-  I := WidePos(Shy, BuffS);
-  while I > 0 do
-  begin
-    Remove(I);
-    if (I > 1) and (Brk[I - 1] <> 'n') then
-      Brk[I - 1] := 's';
-    I := WidePos(Shy, BuffS);
-  end;
-
-  I := WidePos('  ', BuffS);
-  while I > 0 do
-  begin
-    if Brk[I] = 'n' then
-      Remove(I)
-    else
-      Remove(I + 1);
-    I := WidePos('  ', BuffS);
-  end;
-
-{After floating images at start, delete an annoying space}
-  for I := Length(BuffS) - 1 downto 1 do
-    if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).Floating in [ALeft, ARight])
-      and (BuffS[I + 1] = ' ') then
-      Remove(I + 1);
-
-  I := WidePos(UnicodeString(' ' + #8), BuffS); {#8 is break ThtChar}
-  while I > 0 do
-  begin
-    Remove(I);
-    I := WidePos(UnicodeString(' ' + #8), BuffS);
-  end;
-
-  I := WidePos(UnicodeString(#8 + ' '), BuffS);
-  while I > 0 do
-  begin
-    Remove(I + 1);
-    I := WidePos(UnicodeString(#8 + ' '), BuffS);
-  end;
-
-  if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = #8) then
-    Remove(Length(BuffS));
-
-  if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = ' ') then
-    Remove(Length(BuffS));
-
-  if (BuffS <> #8) and (Length(BuffS) > 0) and (BuffS[Length(BuffS)] <> ' ') then
+  if WhiteSpaceStyle in [wsPre] then
   begin
     FO := TFontObj(Fonts.Items[Fonts.Count - 1]); {keep font the same for inserted space}
     if FO.Pos = Length(BuffS) then
       Inc(FO.Pos);
     BuffS := BuffS + ' ';
-    XP^[Length(BuffS) - 1] := TagIndex;
-  end;
+    XP^[Length(BuffS) - 1] := XP^[Length(BuffS) - 2] + 1;
+  end
+  else
+  begin
+    I := WidePos(Shy, BuffS);
+    while I > 0 do
+    begin
+      Remove(I);
+      if (I > 1) and (Brk[I - 1] <> 'n') then
+        Brk[I - 1] := 's';
+      I := WidePos(Shy, BuffS);
+    end;
 
+    if WhiteSpaceStyle in [wsNormal, wsNoWrap, wsPreLine] then
+    begin
+      while (Length(BuffS) > 0) and (BuffS[1] = ' ') do
+        Remove(1);
+
+      I := WidePos('  ', BuffS);
+      while I > 0 do
+      begin
+        if Brk[I] = 'n' then
+          Remove(I)
+        else
+          Remove(I + 1);
+        I := WidePos('  ', BuffS);
+      end;
+
+      {After floating images at start, delete an annoying space}
+      for I := Length(BuffS) - 1 downto 1 do
+        if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).Floating in [ALeft, ARight])
+          and (BuffS[I + 1] = ' ') then
+          Remove(I + 1);
+
+      I := WidePos(UnicodeString(' ' + #8), BuffS); {#8 is break char}
+      while I > 0 do
+      begin
+        Remove(I);
+        I := WidePos(UnicodeString(' ' + #8), BuffS);
+      end;
+
+      I := WidePos(UnicodeString(#8 + ' '), BuffS);
+      while I > 0 do
+      begin
+        Remove(I + 1);
+        I := WidePos(UnicodeString(#8 + ' '), BuffS);
+      end;
+
+      if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = #8) then
+        Remove(Length(BuffS));
+
+      if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = ' ') then
+        Remove(Length(BuffS));
+
+      if (BuffS <> #8) and (Length(BuffS) > 0) and (BuffS[Length(BuffS)] <> ' ') then
+      begin
+        FO := TFontObj(Fonts.Items[Fonts.Count - 1]); {keep font the same for inserted space}
+        if FO.Pos = Length(BuffS) then
+          Inc(FO.Pos);
+        BuffS := BuffS + ' ';
+        XP^[Length(BuffS) - 1] := TagIndex;
+      end;
+    end;
+  end;
   Finish;
 end;
 
@@ -10618,17 +10659,35 @@ var
   end;
 
 begin
+  if Len = 0 then
+  begin
+    Min := 0;
+    Max := 0;
+    Exit;
+  end;
+
+  if not BreakWord and (WhiteSpaceStyle in [wsPre, wsNoWrap]) then
+  begin
+    if StoredMax = 0 then
+    begin
+      Max := FindTextWidth(Canvas, Buff, Len - 1, False);
+      StoredMax := Max;
+    end
+    else
+      Max := StoredMax;
+    Min := Math.Min(MaxHScroll, Max);
+    Exit;
+  end;
+
   if (StoredMin > 0) and (Images.Count = 0) then
   begin
     Min := StoredMin;
     Max := StoredMax;
     Exit;
   end;
+
   Min := 0;
   Max := 0;
-  if Len = 0 then
-    Exit;
-
   for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
   begin
     Obj := Images[I];
@@ -10991,475 +11050,509 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       Inc(Result);
   end;
 
-var
-  PStart, Last: PWideChar;
-  ImgHt: Integer;
-  Finished: boolean;
-  LR: LineRec;
-  AccumImgBot: Integer;
-
-  function GetClearSpace(ClearAttr: ClearAttrType): Integer;
+  procedure DoDrawLogic;
   var
-    CL, CR: Integer;
-  begin
-    Result := 0;
-    if (ClearAttr <> clrNone) then
-    begin {may need to move down past floating image}
-      IMgr.GetClearY(CL, CR);
-      case ClearAttr of
-        clLeft: Result := Max(0, CL - Y - 1);
-        clRight: Result := Max(0, CR - Y - 1);
-        clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
-      end;
-    end;
-  end;
+    PStart, Last: PWideChar;
+    ImgHt: Integer;
+    Finished: boolean;
+    LR: LineRec;
+    AccumImgBot: Integer;
 
-  procedure LineComplete(NN: Integer);
-  var
-    I, J, DHt, Desc, Tmp, TmpRt, Cnt, Index, H, SB, SA: Integer;
-    FO: TFontObj;
-    Align: AlignmentType;
-    FormAlign: AlignmentType;
-    NoChar: boolean;
-    P: PWideChar;
-    FCO: TFormControlObj;
-    FlObj: TFloatingObj;
-    LRTextWidth: Integer;
-    OHang: Integer;
-
-    function FindSpaces: Integer;
+    function GetClearSpace(ClearAttr: ClearAttrType): Integer;
     var
-      I: Integer;
+      CL, CR: Integer;
     begin
       Result := 0;
-      for I := 0 to NN - 2 do {-2 so as not to count end spaces}
-        if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
-          Inc(Result);
-    end;
-
-  begin
-    DHt := 0; {for the fonts on this line get the maximum height}
-    Cnt := 0;
-    Desc := 0;
-    P := PStart;
-    if (NN = 1) and (P^ = BrkCh) then
-      NoChar := False
-    else
-    begin
-      NoChar := True;
-      for I := 0 to NN - 1 do
-      begin
-        if (not (P^ in [FmCtl, ImgPan, BrkCh])) {ignore images and space on end}
-          and (not ((P = Last) and (Last^ = ' '))) then
-        begin {check for the no character case}
-          NoChar := False;
-          Break;
+      if (ClearAttr <> clrNone) then
+      begin {may need to move down past floating image}
+        IMgr.GetClearY(CL, CR);
+        case ClearAttr of
+          clLeft: Result := Max(0, CL - Y - 1);
+          clRight: Result := Max(0, CR - Y - 1);
+          clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
         end;
-        Inc(P);
       end;
     end;
 
-    if not NoChar then
-      repeat
-        FO := Fonts.GetFontObjAt(PStart - Buff + Cnt, Index);
-        Tmp := FO.GetHeight(Desc);
-        DHt := Max(DHt, Tmp);
-        LR.Descent := Max(LR.Descent, Desc);
-        J := Fonts.GetFontCountAt(PStart - Buff + Cnt, Len);
-        Inc(Cnt, J);
-      until Cnt >= NN;
+    procedure LineComplete(NN: Integer);
+    var
+      I, J, DHt, Desc, Tmp, TmpRt, Cnt, Index, H, SB, SA: Integer;
+      FO: TFontObj;
+      Align: AlignmentType;
+      FormAlign: AlignmentType;
+      NoChar: boolean;
+      P: PWideChar;
+      FCO: TFormControlObj;
+      FlObj: TFloatingObj;
+      LRTextWidth: Integer;
+      OHang: Integer;
 
-    SB := 0; {if there are images, then maybe they add extra space}
-    SA := 0; {space before and after}
-    if LineHeight > 0 then
-    begin
-      // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
-      case Align of
-        aTop:
-          SA := LineHeight;
-
-        aMiddle:
-          begin
-            SB := (LineHeight - DHt) div 2;
-            SA := (LineHeight - DHt) - SB;
-          end;
-
-        aBaseline,
-        aBottom:
-          SB := LineHeight;
-      end;
-    end;
-    Cnt := 0;
-    repeat
-      Cnt := Cnt + Images.GetImageCountAt(PStart - Buff + Cnt);
-      if Cnt < NN then
+      function FindSpaces: Integer;
+      var
+        I: Integer;
       begin
-        H := Images.GetHeightAt(PStart - Buff + Cnt, Align, FlObj);
-        if FlObj.Floating = ANone then
+        Result := 0;
+        for I := 0 to NN - 2 do {-2 so as not to count end spaces}
+          if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
+            Inc(Result);
+      end;
+
+    begin
+      DHt := 0; {for the fonts on this line get the maximum height}
+      Cnt := 0;
+      Desc := 0;
+      P := PStart;
+      if (NN = 1) and (P^ = BrkCh) then
+        NoChar := False
+      else
+      begin
+        NoChar := True;
+        for I := 0 to NN - 1 do
         begin
-          FlObj.DrawYY := Y; {approx y dimension}
-          if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
-            TImageObj(FLObj).MyFormControl.FYValue := Y;
-          case Align of
-            aTop:
-              SA := Max(SA, H - DHt);
+          if (not (P^ in [FmCtl, ImgPan, BrkCh])) {ignore images and space on end}
+            and (not ((P = Last) and (Last^ = ' '))) then
+          begin {check for the no character case}
+            NoChar := False;
+            Break;
+          end;
+          Inc(P);
+        end;
+      end;
 
-            aMiddle:
-              begin
-                if DHt = 0 then
+      if not NoChar then
+        repeat
+          FO := Fonts.GetFontObjAt(PStart - Buff + Cnt, Index);
+          Tmp := FO.GetHeight(Desc);
+          DHt := Max(DHt, Tmp);
+          LR.Descent := Max(LR.Descent, Desc);
+          J := Fonts.GetFontCountAt(PStart - Buff + Cnt, Len);
+          Inc(Cnt, J);
+        until Cnt >= NN;
+
+      SB := 0; {if there are images, then maybe they add extra space}
+      SA := 0; {space before and after}
+      if LineHeight > 0 then
+      begin
+        // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
+        case Align of
+          aTop:
+            SA := LineHeight;
+
+          aMiddle:
+            begin
+              SB := (LineHeight - DHt) div 2;
+              SA := (LineHeight - DHt) - SB;
+            end;
+
+          aBaseline,
+          aBottom:
+            SB := LineHeight;
+        end;
+      end;
+      Cnt := 0;
+      repeat
+        Cnt := Cnt + Images.GetImageCountAt(PStart - Buff + Cnt);
+        if Cnt < NN then
+        begin
+          H := Images.GetHeightAt(PStart - Buff + Cnt, Align, FlObj);
+          if FlObj.Floating = ANone then
+          begin
+            FlObj.DrawYY := Y; {approx y dimension}
+            if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
+              TImageObj(FLObj).MyFormControl.FYValue := Y;
+            case Align of
+              aTop:
+                SA := Max(SA, H - DHt);
+
+              aMiddle:
                 begin
-                  DHt := Fonts.GetFontObjAt(PStart - Buff, Index).GetHeight(Desc);
-                  LR.Descent := Desc;
+                  if DHt = 0 then
+                  begin
+                    DHt := Fonts.GetFontObjAt(PStart - Buff, Index).GetHeight(Desc);
+                    LR.Descent := Desc;
+                  end;
+                  Tmp := (H - DHt) div 2;
+                  SA := Max(SA, Tmp);
+                  SB := Max(SB, (H - DHt - Tmp));
                 end;
-                Tmp := (H - DHt) div 2;
-                SA := Max(SA, Tmp);
-                SB := Max(SB, (H - DHt - Tmp));
-              end;
 
-            aBaseline,
-            aBottom:
-              SB := Max(SB, H - (DHt - LR.Descent));
+              aBaseline,
+              aBottom:
+                SB := Max(SB, H - (DHt - LR.Descent));
+            end;
+          end;
+        end;
+        Inc(Cnt); {to skip by the image}
+      until Cnt >= NN;
+
+      Cnt := 0; {now check on form controls}
+      repeat
+        Inc(Cnt, FormControls.GetControlCountAt(PStart - Buff + Cnt));
+        if Cnt < NN then
+        begin
+          FCO := FormControls.FindControl(PStart - Buff + Cnt);
+          H := FormControls.GetHeightAt(PStart - Buff + Cnt, FormAlign);
+          case FormAlign of
+            ATop:
+              SA := Max(SA, H + FCO.VSpaceB + FCO.VSpaceT - Dht);
+            AMiddle:
+              begin
+                Tmp := (H - DHt) div 2;
+                SA := Max(SA, Tmp + FCO.VSpaceB);
+                SB := Max(SB, (H - DHt - Tmp + FCO.VSpaceT));
+              end;
+            ABaseline:
+              SB := Max(SB, H + FCO.VSpaceT + FCO.VSpaceB - (DHt - LR.Descent));
+            ABottom:
+              SB := Max(SB, H + FCO.VSpaceT + FCO.VSpaceB - DHt);
+          end;
+          if Assigned(FCO) and not Document.IsCopy then
+            FCO.FYValue := Y;
+        end;
+        Inc(Cnt); {to skip by the control}
+      until Cnt >= NN;
+
+  {$IFNDEF NoTabLink}
+      if not Document.IsCopy then
+      begin
+        Cnt := 0; {now check URLs}
+        repeat
+          FO := Fonts.GetFontObjAt(PStart - Buff + Cnt, Index);
+          FO.AssignY(Y);
+          Cnt := Cnt + Fonts.GetFontCountAt(PStart - Buff + Cnt, Len);
+        until Cnt >= NN;
+      end;
+  {$ENDIF}
+
+      LR.Start := PStart;
+      LR.LineHt := DHt;
+      LR.Ln := NN;
+      if Brk[PStart - Buff + NN] = 's' then {see if there is a soft hyphen on the end}
+        LR.Shy := True;
+      TmpRt := IMgr.RightSide(Y);
+      Tmp := IMgr.LeftIndent(Y);
+      if PStart = Buff then
+        Tmp := Tmp + FirstLineIndent;
+
+      LRTextWidth := FindTextWidth(Canvas, PStart, NN, True);
+      if LR.Shy then
+      begin {take into account the width of the hyphen}
+        Fonts.GetFontAt(PStart - Buff + NN - 1, OHang).AssignToCanvas(Canvas);
+        Inc(LRTextWidth, Canvas.TextWidth('-'));
+      end;
+      TextWidth := Max(TextWidth, LRTextWidth);
+      case Justify of
+        Left:     LR.LineIndent := Tmp - X;
+        Centered: LR.LineIndent := (TmpRt + Tmp - LRTextWidth) div 2 - X;
+        Right:    LR.LineIndent := TmpRt - X - LRTextWidth;
+      else
+        {Justify = FullJustify}
+        LR.LineIndent := Tmp - X;
+        if not Finished then
+        begin
+          LR.Extra := TmpRt - Tmp - LRTextWidth;
+          LR.Spaces := FindSpaces;
+        end;
+      end;
+      LR.DrawWidth := TmpRt - Tmp;
+      LR.SpaceBefore := LR.SpaceBefore + SB;
+      LR.SpaceAfter := SA;
+      Lines.Add(LR);
+      Inc(PStart, NN);
+      SectionHeight := SectionHeight + DHt + SA + LR.SpaceBefore;
+      Tmp := DHt + SA + SB;
+      Inc(Y, Tmp);
+      LR.LineImgHt := Max(Tmp, ImgHt);
+    end;
+
+  var
+    P: PWideChar;
+    MaxChars: Integer;
+    N, NN, Width, I, Indx: Integer;
+    Tmp: Integer;
+    Obj: TFloatingObj;
+    TopY, HtRef: Integer;
+    Ctrl: TFormControlObj;
+    //BG, 06.02.2011: floating objects:
+    PDoneFlObj: PWideChar;
+    YDoneFlObj: Integer;
+  begin
+    YDraw := Y;
+    AccumImgBot := 0;
+    TopY := Y;
+    ContentTop := Y;
+    DrawTop := Y;
+    StartCurs := Curs;
+    PStart := Buff;
+    Last := Buff + Len - 1;
+    SectionHeight := 0;
+    Lines.Clear;
+    TextWidth := 0;
+    if Len = 0 then
+    begin
+      Result := GetClearSpace(ClearAttr);
+      DrawHeight := Result;
+      SectionHeight := Result;
+      ContentBot := Y + Result;
+      DrawBot := ContentBot;
+      MaxWidth := 0;
+      DrawWidth := 0;
+      Exit;
+    end;
+    if FLPercent <> 0 then
+      FirstLineIndent := (FLPercent * AWidth) div 100; {percentage calculated}
+    Finished := False;
+    DrawWidth := IMgr.RightSide(Y) - X;
+    Width := Min(IMgr.RightSide(Y) - IMgr.LeftIndent(Y), AWidth);
+    MaxWidth := Width;
+    if AHeight = 0 then
+      HtRef := BlHt
+    else
+      HtRef := AHeight;
+    for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
+    begin
+      Obj := TFloatingObj(Images[I]);
+      Obj.DrawLogic(Self.Document, Canvas, Fonts.GetFontObjAt(Obj.Pos, Indx), Width, HtRef);
+      // BG, 28.08.2011:
+      if OwnerBlock.HideOverflow then
+      begin
+        if Obj.ImageWidth > Width then
+          Obj.ImageWidth := Width;
+      end
+      else
+        MaxWidth := Max(MaxWidth, Obj.ImageWidth); {HScrollBar for wide images}
+    end;
+    for I := 0 to FormControls.Count - 1 do
+    begin
+      Ctrl := FormControls[I];
+      if Ctrl.PercentWidth then
+        Ctrl.Width := Max(10, Min(MulDiv(Ctrl.FWidth, Width, 100), Width - Ctrl.HSpaceL - Ctrl.HSpaceR));
+      // BG, 28.08.2011:
+      if OwnerBlock.HideOverflow then
+      begin
+        if Ctrl.Width > Width then
+          Ctrl.Width := Width;
+      end
+      else
+        MaxWidth := Max(MaxWidth, Ctrl.Width);
+    end;
+
+    YDoneFlObj := Y;
+    PDoneFlObj := PStart - 1;
+    while not Finished do
+    begin
+      MaxChars := Last - PStart + 1;
+      if MaxChars <= 0 then
+        Break;
+      LR := LineRec.Create(Document); {a new line}
+      if Lines.Count = 0 then
+      begin {may need to move down past floating image}
+        Tmp := GetClearSpace(ClearAttr);
+        if Tmp > 0 then
+        begin
+          LR.LineHt := Tmp;
+          Inc(SectionHeight, Tmp);
+          LR.Ln := 0;
+          LR.Start := PStart;
+          Inc(Y, Tmp);
+          Lines.Add(LR);
+          LR := LineRec.Create(Document);
+        end;
+      end;
+
+      ImgHt := 0;
+      NN := 0;
+      if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not BreakWord then
+        N := MaxChars
+      else
+      begin
+        NN := FindCountThatFits1(Canvas, PStart, MaxChars, X, Y, IMgr, YDoneFlObj, ImgHt, PDoneFlObj);
+        N := Max(NN, 1); {N = at least 1}
+      end;
+
+      AccumImgBot := Max(AccumImgBot, Y + ImgHt);
+      if NN = 0 then {if nothing fits, see if we can move down}
+        Tmp := IMgr.GetNextWiderY(Y) - Y
+      else
+        Tmp := 0;
+      if Tmp > 0 then
+      begin
+        //BG, 24.01.2010: do not move down images or trailing spaces.
+        P := PStart + N - 1; {the last ThtChar that fits}
+        if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+        begin {move past spaces so as not to print any on next line}
+          while (N < MaxChars) and ((P + 1)^ = ' ') do
+          begin
+            Inc(P);
+            Inc(N);
+          end;
+          Finished := N >= MaxChars;
+          LineComplete(N);
+        end
+        else
+        begin {move down to where it's wider}
+          LR.LineHt := Tmp;
+          Inc(SectionHeight, Tmp);
+          LR.Ln := 0;
+          LR.Start := PStart;
+          Inc(Y, Tmp);
+          Lines.Add(LR);
+        end
+      end {else can't move down or don't have to}
+      else if N = MaxChars then
+      begin {Do the remainder}
+        Finished := True;
+        LineComplete(N);
+      end
+      else
+      begin
+        P := PStart + N - 1; {the last ThtChar that fits}
+        if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
+        or (P^ = BrkCh) then
+        begin {move past spaces so as not to print any on next line}
+          while (N < MaxChars) and ((P + 1)^ = ' ') do
+          begin
+            Inc(P);
+            Inc(N);
+          end;
+          Finished := N >= MaxChars;
+          LineComplete(N);
+        end
+        else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
+        begin
+          repeat
+            Inc(N); {pass the space}
+            Inc(p);
+          until (N >= MaxChars) or ((P + 1)^ <> ' ');
+          Finished := N >= MaxChars;
+          LineComplete(N);
+        end
+        else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
+        begin
+          Finished := False;
+          LineComplete(N);
+        end
+        else
+        begin {non space, wrap it by backing off to previous space or image}
+          while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
+            or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
+            or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
+            Dec(P);
+          if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
+          begin {no space found, forget the wrap, write the whole word and any
+                 spaces found after it}
+            if BreakWord then
+              LineComplete(N)
+            else
+            begin
+              P := PStart + N - 1;
+
+              while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
+              and not (Brk[P - Buff + 1] in ['a', 's'])
+                and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
+              or (Brk[P - Buff + 2] = 'n') do
+              begin
+                Inc(P);
+              end;
+              while (P <> Last) and ((P + 1)^ = ' ') do
+              begin
+                Inc(P);
+              end;
+              if (P <> Last) and ((P + 1)^ = BrkCh) then
+                Inc(P);
+            {Line is too long, add spacer line to where it's clear}
+              Tmp := IMgr.GetNextWiderY(Y) - Y;
+              if Tmp > 0 then
+              begin
+                LR.LineHt := Tmp;
+                Inc(SectionHeight, Tmp);
+                LR.Ln := 0;
+                LR.Start := PStart;
+                Inc(Y, Tmp);
+                Lines.Add(LR);
+              end
+              else
+              begin {line is too long but do it anyway}
+                MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
+                Finished := P = Last;
+                LineComplete(P - PStart + 1);
+              end;
+            end
+          end
+          else
+          begin {found space}
+            while (P + 1)^ = ' ' do
+            begin
+              if P = Last then
+              begin
+                Inc(P);
+                Dec(P);
+              end;
+              Inc(P);
+            end;
+            LineComplete(P - PStart + 1);
           end;
         end;
       end;
-      Inc(Cnt); {to skip by the image}
-    until Cnt >= NN;
+    end;
+    Curs := StartCurs + Len;
 
-    Cnt := 0; {now check on form controls}
-    repeat
-      Inc(Cnt, FormControls.GetControlCountAt(PStart - Buff + Cnt));
-      if Cnt < NN then
-      begin
-        FCO := FormControls.FindControl(PStart - Buff + Cnt);
-        H := FormControls.GetHeightAt(PStart - Buff + Cnt, FormAlign);
-        case FormAlign of
-          ATop:
-            SA := Max(SA, H + FCO.VSpaceB + FCO.VSpaceT - Dht);
-          AMiddle:
-            begin
-              Tmp := (H - DHt) div 2;
-              SA := Max(SA, Tmp + FCO.VSpaceB);
-              SB := Max(SB, (H - DHt - Tmp + FCO.VSpaceT));
-            end;
-          ABaseline:
-            SB := Max(SB, H + FCO.VSpaceT + FCO.VSpaceB - (DHt - LR.Descent));
-          ABottom:
-            SB := Max(SB, H + FCO.VSpaceT + FCO.VSpaceB - DHt);
-        end;
-        if Assigned(FCO) and not Document.IsCopy then
-          FCO.FYValue := Y;
-      end;
-      Inc(Cnt); {to skip by the control}
-    until Cnt >= NN;
+    if Assigned(Document.FirstLineHtPtr) and (Lines.Count > 0) then {used for List items}
+      with LineRec(Lines[0]) do
+        if (Document.FirstLineHtPtr^ = 0) then
+          Document.FirstLineHtPtr^ := YDraw + LineHt - Descent + SpaceBefore;
 
-{$IFNDEF NoTabLink}
-    if not Document.IsCopy then
+    DrawHeight := AccumImgBot - TopY; {in case image overhangs}
+    if DrawHeight < SectionHeight then
+      DrawHeight := SectionHeight;
+    Result := SectionHeight;
+    ContentBot := TopY + SectionHeight;
+    DrawBot := TopY + DrawHeight;
+    with Document do
     begin
-      Cnt := 0; {now check URLs}
-      repeat
-        FO := Fonts.GetFontObjAt(PStart - Buff + Cnt, Index);
-        FO.AssignY(Y);
-        Cnt := Cnt + Fonts.GetFontCountAt(PStart - Buff + Cnt, Len);
-      until Cnt >= NN;
+      if not IsCopy and (SectionNumber mod 50 = 0) and (ThisCycle <> CycleNumber)
+        and (SectionCount > 0) then
+        TheOwner.htProgress(ProgressStart + ((100 - ProgressStart) * SectionNumber) div SectionCount);
+      ThisCycle := CycleNumber; {only once per cycle}
     end;
-{$ENDIF}
 
-    LR.Start := PStart;
-    LR.LineHt := DHt;
-    LR.Ln := NN;
-    if Brk[PStart - Buff + NN] = 's' then {see if there is a soft hyphen on the end}
-      LR.Shy := True;
-    TmpRt := IMgr.RightSide(Y);
-    Tmp := IMgr.LeftIndent(Y);
-    if PStart = Buff then
-      Tmp := Tmp + FirstLineIndent;
-
-    LRTextWidth := FindTextWidth(Canvas, PStart, NN, True);
-    if LR.Shy then
-    begin {take into account the width of the hyphen}
-      Fonts.GetFontAt(PStart - Buff + NN - 1, OHang).AssignToCanvas(Canvas);
-      Inc(LRTextWidth, Canvas.TextWidth('-'));
-    end;
-    TextWidth := Max(TextWidth, LRTextWidth);
-    case Justify of
-      Left:     LR.LineIndent := Tmp - X;
-      Centered: LR.LineIndent := (TmpRt + Tmp - LRTextWidth) div 2 - X;
-      Right:    LR.LineIndent := TmpRt - X - LRTextWidth;
-    else
-      {Justify = FullJustify}
-      LR.LineIndent := Tmp - X;
-      if not Finished then
-      begin
-        LR.Extra := TmpRt - Tmp - LRTextWidth;
-        LR.Spaces := FindSpaces;
-      end;
-    end;
-    LR.DrawWidth := TmpRt - Tmp;
-    LR.SpaceBefore := LR.SpaceBefore + SB;
-    LR.SpaceAfter := SA;
-    Lines.Add(LR);
-    Inc(PStart, NN);
-    SectionHeight := SectionHeight + DHt + SA + LR.SpaceBefore;
-    Tmp := DHt + SA + SB;
-    Inc(Y, Tmp);
-    LR.LineImgHt := Max(Tmp, ImgHt);
+    // BG, 28.08.2011:
+    if OwnerBlock.HideOverflow then
+      if MaxWidth > Width then
+        MaxWidth := Width;
   end;
 
 var
-  P: PWideChar;
-  MaxChars: Integer;
-  N, NN, Width, I, Indx: Integer;
-  Tmp: Integer;
-  Obj: TFloatingObj;
-  TopY, HtRef: Integer;
-  Ctrl: TFormControlObj;
-  //BG, 06.02.2011: floating objects:
-  PDoneFlObj: PWideChar;
-  YDoneFlObj: Integer;
+  Dummy: Integer;
+  Save: Integer;
 begin {TSection.DrawLogic}
-  YDraw := Y;
-  AccumImgBot := 0;
-  TopY := Y;
-  ContentTop := Y;
-  DrawTop := Y;
-  StartCurs := Curs;
-  PStart := Buff;
-  Last := Buff + Len - 1;
-  SectionHeight := 0;
-  Lines.Clear;
-  TextWidth := 0;
-  if Len = 0 then
+  if WhiteSpaceStyle in [wsPre, wsNoWrap] then
   begin
-    Result := GetClearSpace(ClearAttr);
-    DrawHeight := Result;
-    SectionHeight := Result;
-    ContentBot := Y + Result;
-    DrawBot := ContentBot;
-    MaxWidth := 0;
-    DrawWidth := 0;
-    Exit;
-  end;
-  if FLPercent <> 0 then
-    FirstLineIndent := (FLPercent * AWidth) div 100; {percentage calculated}
-  Finished := False;
-  DrawWidth := IMgr.RightSide(Y) - X;
-  Width := Min(IMgr.RightSide(Y) - IMgr.LeftIndent(Y), AWidth);
-  MaxWidth := Width;
-  if AHeight = 0 then
-    HtRef := BlHt
-  else
-    HtRef := AHeight;
-  for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
-  begin
-    Obj := TFloatingObj(Images[I]);
-    Obj.DrawLogic(Self.Document, Canvas, Fonts.GetFontObjAt(Obj.Pos, Indx), Width, HtRef);
-    // BG, 28.08.2011:
-    if OwnerBlock.HideOverflow then
+    if Len = 0 then
     begin
-      if Obj.ImageWidth > Width then
-        Obj.ImageWidth := Width;
-    end
-    else
-      MaxWidth := Max(MaxWidth, Obj.ImageWidth); {HScrollBar for wide images}
-  end;
-  for I := 0 to FormControls.Count - 1 do
-  begin
-    Ctrl := FormControls[I];
-    if Ctrl.PercentWidth then
-      Ctrl.Width := Max(10, Min(MulDiv(Ctrl.FWidth, Width, 100), Width - Ctrl.HSpaceL - Ctrl.HSpaceR));
-    // BG, 28.08.2011:
-    if OwnerBlock.HideOverflow then
-    begin
-      if Ctrl.Width > Width then
-        Ctrl.Width := Width;
-    end
-    else
-      MaxWidth := Max(MaxWidth, Ctrl.Width);
-  end;
-
-  YDoneFlObj := Y;
-  PDoneFlObj := PStart - 1;
-  while not Finished do
-  begin
-    MaxChars := Last - PStart + 1;
-    if MaxChars <= 0 then
-      Break;
-    LR := LineRec.Create(Document); {a new line}
-    if Lines.Count = 0 then
-    begin {may need to move down past floating image}
-      Tmp := GetClearSpace(ClearAttr);
-      if Tmp > 0 then
-      begin
-        LR.LineHt := Tmp;
-        Inc(SectionHeight, Tmp);
-        LR.Ln := 0;
-        LR.Start := PStart;
-        Inc(Y, Tmp);
-        Lines.Add(LR);
-        LR := LineRec.Create(Document);
-      end;
+      ContentTop := Y;
+      Result := Fonts.GetFontObjAt(0, Dummy).FontHeight;
+      SectionHeight := Result;
+      MaxWidth := 0;
+      YDraw := Y;
+      DrawHeight := Result;
+      ContentBot := Y + Result;
+      DrawBot := ContentBot;
+      exit;
     end;
 
-    ImgHt := 0;
-    NN := 0;
-    if (Self is TPreformated) and not BreakWord then
-      N := MaxChars
-    else
+    if not BreakWord then
     begin
-      NN := FindCountThatFits1(Canvas, PStart, MaxChars, X, Y, IMgr, YDoneFlObj, ImgHt, PDoneFlObj);
-      N := Max(NN, 1); {N = at least 1}
-    end;
-
-    AccumImgBot := Max(AccumImgBot, Y + ImgHt);
-    if NN = 0 then {if nothing fits, see if we can move down}
-      Tmp := IMgr.GetNextWiderY(Y) - Y
-    else
-      Tmp := 0;
-    if Tmp > 0 then
-    begin
-      //BG, 24.01.2010: do not move down images or trailing spaces.
-      P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
-      begin {move past spaces so as not to print any on next line}
-        while (N < MaxChars) and ((P + 1)^ = ' ') do
-        begin
-          Inc(P);
-          Inc(N);
-        end;
-        Finished := N >= MaxChars;
-        LineComplete(N);
-      end
-      else
-      begin {move down to where it's wider}
-        LR.LineHt := Tmp;
-        Inc(SectionHeight, Tmp);
-        LR.Ln := 0;
-        LR.Start := PStart;
-        Inc(Y, Tmp);
-        Lines.Add(LR);
-      end
-    end {else can't move down or don't have to}
-    else if N = MaxChars then
-    begin {Do the remainder}
-      Finished := True;
-      LineComplete(N);
-    end
-    else
-    begin
-      P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
-      or (P^ = BrkCh) then
-      begin {move past spaces so as not to print any on next line}
-        while (N < MaxChars) and ((P + 1)^ = ' ') do
-        begin
-          Inc(P);
-          Inc(N);
-        end;
-        Finished := N >= MaxChars;
-        LineComplete(N);
-      end
-      else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
-      begin
-        repeat
-          Inc(N); {pass the space}
-          Inc(p);
-        until (N >= MaxChars) or ((P + 1)^ <> ' ');
-        Finished := N >= MaxChars;
-        LineComplete(N);
-      end
-      else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
-      begin
-        Finished := False;
-        LineComplete(N);
-      end
-      else
-      begin {non space, wrap it by backing off to previous space or image}
-        while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
-          or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
-          or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
-          Dec(P);
-        if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
-        begin {no space found, forget the wrap, write the whole word and any
-               spaces found after it}
-          if BreakWord then
-            LineComplete(N)
-          else
-          begin
-            P := PStart + N - 1;
-
-            while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
-            and not (Brk[P - Buff + 1] in ['a', 's'])
-              and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
-            or (Brk[P - Buff + 2] = 'n') do
-            begin
-              Inc(P);
-            end;
-            while (P <> Last) and ((P + 1)^ = ' ') do
-            begin
-              Inc(P);
-            end;
-            if (P <> Last) and ((P + 1)^ = BrkCh) then
-              Inc(P);
-          {Line is too long, add spacer line to where it's clear}
-            Tmp := IMgr.GetNextWiderY(Y) - Y;
-            if Tmp > 0 then
-            begin
-              LR.LineHt := Tmp;
-              Inc(SectionHeight, Tmp);
-              LR.Ln := 0;
-              LR.Start := PStart;
-              Inc(Y, Tmp);
-              Lines.Add(LR);
-            end
-            else
-            begin {line is too long but do it anyway}
-              MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
-              Finished := P = Last;
-              LineComplete(P - PStart + 1);
-            end;
-          end
-        end
-        else
-        begin {found space}
-          while (P + 1)^ = ' ' do
-          begin
-            if P = Last then
-            begin
-              Inc(P);
-              Dec(P);
-            end;
-            Inc(P);
-          end;
-          LineComplete(P - PStart + 1);
-        end;
-      end;
+    {call with large width to prevent wrapping}
+      Save := IMgr.Width;
+      IMgr.Width := 32000;
+      DoDrawLogic;
+      IMgr.Width := Save;
+      MinMaxWidth(Canvas, Dummy, MaxWidth); {return MaxWidth}
+      exit;
     end;
   end;
-  Curs := StartCurs + Len;
-
-  if Assigned(Document.FirstLineHtPtr) and (Lines.Count > 0) then {used for List items}
-    with LineRec(Lines[0]) do
-      if (Document.FirstLineHtPtr^ = 0) then
-        Document.FirstLineHtPtr^ := YDraw + LineHt - Descent + SpaceBefore;
-
-  DrawHeight := AccumImgBot - TopY; {in case image overhangs}
-  if DrawHeight < SectionHeight then
-    DrawHeight := SectionHeight;
-  Result := SectionHeight;
-  ContentBot := TopY + SectionHeight;
-  DrawBot := TopY + DrawHeight;
-  with Document do
-  begin
-    if not IsCopy and (SectionNumber mod 50 = 0) and (ThisCycle <> CycleNumber)
-      and (SectionCount > 0) then
-      TheOwner.htProgress(ProgressStart + ((100 - ProgressStart) * SectionNumber) div SectionCount);
-    ThisCycle := CycleNumber; {only once per cycle}
-  end;
-
-  // BG, 28.08.2011:
-  if OwnerBlock.HideOverflow then
-    if MaxWidth > Width then
-      MaxWidth := Width;
+  DoDrawLogic;
 end;
 
 {----------------TSection.CheckForInlines}
@@ -11941,7 +12034,7 @@ var
             Tmp := I - 1 {at end of line, don't show space or break}
           else
             Tmp := I;
-          if (Self is TPreformated) and not OwnerBlock.HideOverflow then
+          if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not OwnerBlock.HideOverflow then
           begin {so will clip in Table cells}
             ARect := Rect(IMgr.LfEdge, Y - LR.LineHt - LR.SpaceBefore - YOffset, X + IMgr.ClipWidth, Y - YOffset + 1);
             ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil);
@@ -13268,74 +13361,74 @@ begin
     end;
 end;
 
-procedure TPreformated.ProcessText(TagIndex: Integer);
-var
-  FO: TFontObj;
-begin
-  FO := TFontObj(Fonts.Items[Fonts.Count - 1]); {keep font the same for inserted space}
-  if FO.Pos = Length(BuffS) then
-    Inc(FO.Pos);
-  BuffS := BuffS + ' ';
-  XP^[Length(BuffS) - 1] := XP^[Length(BuffS) - 2] + 1;
-  Finish;
-end;
-
-procedure TPreformated.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
-begin
-  if BreakWord then
-  begin
-    inherited;
-    Exit;
-  end;
-  if Len = 0 then
-  begin
-    Max := 0;
-    Min := 0;
-  end
-  else
-  begin
-    if StoredMax = 0 then
-    begin
-      Max := FindTextWidth(Canvas, Buff, Len - 1, False);
-      StoredMax := Max;
-    end
-    else
-      Max := StoredMax;
-    Min := Math.Min(MaxHScroll, Max);
-  end;
-end;
-
-function TPreFormated.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-  var MaxWidth: Integer; var Curs: Integer): Integer;
-var
-  Dummy: Integer;
-  Save: Integer;
-begin
-  if Len = 0 then
-  begin
-    ContentTop := Y;
-    Result := Fonts.GetFontObjAt(0, Dummy).FontHeight;
-    SectionHeight := Result;
-    MaxWidth := 0;
-    YDraw := Y;
-    DrawHeight := Result;
-    ContentBot := Y + Result;
-    DrawBot := ContentBot;
-  end
-  else if not BreakWord then
-  begin
-  {call with large width to prevent wrapping}
-    Save := IMgr.Width;
-    IMgr.Width := 32000;
-    Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, Dummy, Curs);
-    IMgr.Width := Save;
-    MinMaxWidth(Canvas, Dummy, MaxWidth); {return MaxWidth}
-  end
-  else
-  begin
-    Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
-  end;
-end;
+//procedure TPreformated.ProcessText(TagIndex: Integer);
+//var
+//  FO: TFontObj;
+//begin
+//  FO := TFontObj(Fonts.Items[Fonts.Count - 1]); {keep font the same for inserted space}
+//  if FO.Pos = Length(BuffS) then
+//    Inc(FO.Pos);
+//  BuffS := BuffS + ' ';
+//  XP^[Length(BuffS) - 1] := XP^[Length(BuffS) - 2] + 1;
+//  Finish;
+//end;
+//
+//procedure TPreformated.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
+//begin
+//  if BreakWord then
+//  begin
+//    inherited;
+//    Exit;
+//  end;
+//  if Len = 0 then
+//  begin
+//    Max := 0;
+//    Min := 0;
+//  end
+//  else
+//  begin
+//    if StoredMax = 0 then
+//    begin
+//      Max := FindTextWidth(Canvas, Buff, Len - 1, False);
+//      StoredMax := Max;
+//    end
+//    else
+//      Max := StoredMax;
+//    Min := Math.Min(MaxHScroll, Max);
+//  end;
+//end;
+//
+//function TPreFormated.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+//  var MaxWidth: Integer; var Curs: Integer): Integer;
+//var
+//  Dummy: Integer;
+//  Save: Integer;
+//begin
+//  if Len = 0 then
+//  begin
+//    ContentTop := Y;
+//    Result := Fonts.GetFontObjAt(0, Dummy).FontHeight;
+//    SectionHeight := Result;
+//    MaxWidth := 0;
+//    YDraw := Y;
+//    DrawHeight := Result;
+//    ContentBot := Y + Result;
+//    DrawBot := ContentBot;
+//  end
+//  else if not BreakWord then
+//  begin
+//  {call with large width to prevent wrapping}
+//    Save := IMgr.Width;
+//    IMgr.Width := 32000;
+//    Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, Dummy, Curs);
+//    IMgr.Width := Save;
+//    MinMaxWidth(Canvas, Dummy, MaxWidth); {return MaxWidth}
+//  end
+//  else
+//  begin
+//    Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
+//  end;
+//end;
 
 { THtmlPropStack }
 

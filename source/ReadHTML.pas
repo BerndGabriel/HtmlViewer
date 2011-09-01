@@ -2219,6 +2219,7 @@ var
               case Sy of
                 TextSy: {this would be an isolated LessChar}
                   S.AddUnicodeChar('<', PropStack.SIndex);
+
                 BRSy:
                   begin
                     Section.AddTokenObj(S);
@@ -2234,6 +2235,7 @@ var
                     if LCh = CrChar then
                       GetCh;
                   end;
+
                 PSy:
                   begin
                     if InP then
@@ -2258,6 +2260,7 @@ var
                     Section := TPreFormated.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
                     InP := True;
                   end;
+
                 PEndSy:
                   begin
                     if InP then
@@ -2271,10 +2274,10 @@ var
                   Done := True;
 
                 BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
-                  USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
-                  SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
-                  SubSy, SubEndSy, SupSy, SupEndSy, BigSy, BigEndSy, SmallSy, SmallEndSy,
-                  LabelSy, LabelEndSy:
+                USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
+                SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
+                SubSy, SubEndSy, SupSy, SupEndSy, BigSy, BigEndSy, SmallSy, SmallEndSy,
+                LabelSy, LabelEndSy:
                   begin
                     Section.AddTokenObj(S);
                     S.Clear;
@@ -2293,7 +2296,6 @@ var
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
                         PopAProp(EndSymbToStr(Sy));
                     end;
-
                     Section.ChangeFont(PropStack.Last);
                   end;
 
@@ -2304,6 +2306,7 @@ var
                     ChangeTheFont(Sy, True);
                     Section.ChangeFont(PropStack.Last);
                   end;
+
                 FontEndSy:
                   if PropStackIndex > InitialStackIndex then
                   begin
@@ -2312,6 +2315,7 @@ var
                     S.Clear;
                     Section.ChangeFont(PropStack.Last);
                   end;
+
                 ASy:
                   begin
                     Section.AddTokenObj(S);
@@ -2356,12 +2360,14 @@ var
                     if FoundHRef then
                       Section.HRef(HRefSy, PropStack.Document, CurrentUrlTarget, Attributes, PropStack.Last);
                   end;
+
                 AEndSy:
                   begin
                     Section.AddTokenObj(S);
                     S.Clear;
                     DoAEnd;
                   end;
+
                 ImageSy:
                   begin
                     Section.AddTokenObj(S);
@@ -2371,6 +2377,7 @@ var
                     PopAProp('img');
                     S.Clear;
                   end;
+
                 PanelSy:
                   begin
                     Section.AddTokenObj(S);
@@ -2380,6 +2387,7 @@ var
                     PopAProp('panel');
                     S.Clear;
                   end;
+
                 ObjectSy:
                   begin
                     Section.AddTokenObj(S);
@@ -2394,6 +2402,7 @@ var
                     if LCh = CrChar then
                       GetCh;
                   end;
+
                 PageSy:
                   begin
                     Section.AddTokenObj(S);
@@ -2402,6 +2411,7 @@ var
                     SectionList.Add(TPage.Create(SectionList, nil, PropStack.Last), TagIndex);
                     Section := TPreFormated.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, False);
                   end;
+
                 InputSy, SelectSy:
                   begin
                     SaveSy := Sy;
@@ -2415,6 +2425,7 @@ var
                     PopAProp(SymbToStr(SaveSy));
                     S.Clear; ;
                   end;
+
                 TextAreaSy:
                   begin
                     Section.AddTokenObj(S);
@@ -2426,6 +2437,7 @@ var
                     PopAProp('textarea');
                     S.Clear;
                   end;
+
                 FormSy:
                   begin
                     if InP then
@@ -2447,6 +2459,7 @@ var
                     Section := TPreFormated.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
                     InForm := True;
                   end;
+
                 FormEndSy:
                   begin
                     if InP then
@@ -2456,8 +2469,12 @@ var
                     if not Assigned(Section) then
                       Section := TPreFormated.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
                   end;
-                MapSy: DoMap;
-                ScriptSy: DoScript(PropStack.Document.ScriptEvent);
+
+                MapSy:
+                  DoMap;
+
+                ScriptSy:
+                  DoScript(PropStack.Document.ScriptEvent);
               end;
             end;
 
@@ -2506,6 +2523,7 @@ begin
           Section.AddTokenObj(LCToken);
         Next;
       end;
+
     ImageSy, PanelSy:
       begin
         if not Assigned(Section) then
@@ -2522,14 +2540,13 @@ begin
         PopAProp(SymbToStr(Sy));
         Next;
       end;
+
     ObjectSy:
-      begin
-        DoObjectTag(C, N, IX);
-      end;
+      DoObjectTag(C, N, IX);
+
     ObjectEndSy:
-      begin
-        Next;
-      end;
+      Next;
+
     InputSy, SelectSy:
       begin
         if not Assigned(Section) then
@@ -2544,6 +2561,7 @@ begin
         PopAProp(SymbToStr(SaveSy));
         Next;
       end;
+
     TextAreaSy:
       begin
         if not Assigned(Section) then
@@ -2557,8 +2575,10 @@ begin
         PopAProp('textarea');
         Next;
       end;
+
     TextAreaEndSy: {a syntax error but shouldn't hang}
       Next;
+
     PageSy:
       begin
         SectionList.Add(Section, TagIndex);
@@ -2567,8 +2587,10 @@ begin
         SectionList.Add(Page, TagIndex);
         Next;
       end;
+
     BRSy:
       DoBr([]);
+
     NoBrSy, NoBrEndSy:
       begin
         if Assigned(Section) then
@@ -2576,6 +2598,7 @@ begin
         NoBreak := Sy = NoBrSy;
         Next;
       end;
+
     WbrSy:
       begin
         if Assigned(Section) then
@@ -2583,75 +2606,44 @@ begin
         Section.AddOpBrk;
         Next;
       end;
-    BSy, BEndSy, ISy, IEndSy, StrongSy, StrongEndSy, EmSy, EmEndSy,
-      CiteSy, CiteEndSy, VarSy, VarEndSy, USy, UEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy:
+
+    BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy,
+    CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
       begin
-        case Sy of
-          BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy:
-            begin
-              PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-              Prop := TProperties(PropStack.Last);
-              Prop.SetFontBG;
-              if Prop.HasBorderStyle then {start of inline border}
-                PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
-            end;
-          BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy:
-            PopAProp(EndSymbToStr(Sy));
-        end;
+        PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        Prop := TProperties(PropStack.Last);
+        Prop.SetFontBG;
+        if Prop.HasBorderStyle then {start of inline border}
+          PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
         if Assigned(Section) then
           Section.ChangeFont(PropStack.Last);
         Next;
       end;
 
-    SubSy, SubEndSy, SupSy, SupEndSy, BigSy, BigEndSy, SmallSy, SmallEndSy:
+    SubSy, SupSy, BigSy, SmallSy:
       begin
-        case Sy of
-          SubEndSy, SupEndSy, SmallEndSy, BigEndSy:
-            begin
-              PopAProp(EndSymbToStr(Sy));
-            end;
-          SubSy, SupSy, BigSy, SmallSy:
-            begin
-              if not Assigned(Section) then
-                Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
-              PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-              Prop := TProperties(PropStack.Last);
-              Prop.SetFontBG;
-              if Prop.HasBorderStyle then
-                PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
-            end;
-        end;
+        if not Assigned(Section) then
+          Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
+        PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        Prop := TProperties(PropStack.Last);
+        Prop.SetFontBG;
+        if Prop.HasBorderStyle then
+          PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
+        if Assigned(Section) then
+          Section.ChangeFont(PropStack.Last);
+        Next;
+      end;
 
-        if Assigned(Section) then
-          Section.ChangeFont(PropStack.Last);
-        Next;
-      end;
-    CodeSy, TTSy, KbdSy, SampSy, CodeEndSy, TTEndSy, KbdEndSy, SampEndSy,
-      SpanSy, SpanEndSy, LabelSy, LabelEndSy:
+    BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy,
+    SubEndSy, SupEndSy, SmallEndSy, BigEndSy, FontEndSy,
+    CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
       begin
-        case Sy of
-          CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
-            begin
-              PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-              Prop := TProperties(PropStack.Last);
-              Prop.SetFontBG;
-              if Prop.HasBorderStyle then
-                PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
-            end;
-          CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
-            PopAProp(EndSymbToStr(Sy));
-        end;
+        PopAProp(EndSymbToStr(Sy));
         if Assigned(Section) then
           Section.ChangeFont(PropStack.Last);
         Next;
       end;
-    FontEndSy:
-      begin
-        PopAProp('font');
-        if Assigned(Section) then
-          Section.ChangeFont(PropStack.Last);
-        Next;
-      end;
+
     FontSy, BaseFontSy:
       begin
         ChangeTheFont(Sy, False);
@@ -2659,6 +2651,7 @@ begin
           Section.ChangeFont(PropStack.Last);
         Next;
       end;
+
     ASy:
       begin
         FoundHRef := False;
@@ -2703,11 +2696,13 @@ begin
           Section.HRef(HRefSy, PropStack.Document, CurrentUrlTarget, Attributes, PropStack.Last);
         Next;
       end;
+
     AEndSy:
       begin
         DoAEnd;
         Next;
       end;
+
     HeadingSy:
       if (HeadingLevel in [1..6]) then
       begin
@@ -2731,19 +2726,24 @@ begin
         while not Done do
           case Sy of
             TextSy, BrSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
-              EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
-              CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
-              SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
-              TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, BigEndSy,
-              SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
-              InputSy, TextAreaSy, TextAreaEndSy, SelectSy,
-              ImageSy, FontSy, FontEndSy, BaseFontSy, LabelSy, LabelEndSy,
-              ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
+            EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
+            CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
+            SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
+            TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, BigEndSy,
+            SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
+            InputSy, TextAreaSy, TextAreaEndSy, SelectSy,
+            ImageSy, FontSy, FontEndSy, BaseFontSy, LabelSy, LabelEndSy,
+            ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
               DoCommonSy;
+
             CommandSy:
               Next;
-            PSy: DoP([]);
-            DivSy: DoDivEtc(DivSy, [HeadingEndSy]);
+
+            PSy:
+              DoP([]);
+
+            DivSy:
+              DoDivEtc(DivSy, [HeadingEndSy]);
           else
             Done := True;
           end;
@@ -2756,7 +2756,9 @@ begin
       end
       else
         Next;
-    HeadingEndSy: Next; {in case of extra entry}
+
+    HeadingEndSy:
+      Next; {in case of extra entry}
 
     HRSy:
       begin
@@ -2776,6 +2778,7 @@ begin
         Section := nil;
         Next;
       end;
+
     PreSy:
       if not Attributes.Find(WrapSy, T) then
         DoPreSy
@@ -2786,13 +2789,19 @@ begin
         PushNewProp('pre', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         Next;
       end;
+
     PreEndSy:
       begin
         PopAProp('pre');
         Next;
       end;
-    TableSy: DoTable;
-    MapSy: DoMap;
+
+    TableSy:
+      DoTable;
+
+    MapSy:
+      DoMap;
+
     ScriptSy:
       begin
         DoScript(PropStack.Document.ScriptEvent);
