@@ -11167,7 +11167,7 @@ var
 
   procedure LineComplete(NN: Integer);
   var
-    I, J, DHt, Desc, Tmp, TmpRt, Cnt, Index, H, SB, SA, Tmp1: Integer;
+    I, J, DHt, Desc, Tmp, TmpRt, Cnt, Index, H, SB, SA: Integer;
     FO: TFontObj;
     Align: AlignmentType;
     FormAlign: AlignmentType;
