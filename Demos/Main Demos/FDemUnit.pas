@@ -79,14 +79,14 @@ const
   MaxHistories = 6;  {size of History list}
 
 type
-
-  { TForm1 }
-
+// Delphi 6 form editor fails with conditionals in form declaration:
 {$ifdef UseTNT}
-  TForm1 = class(TTntForm)
+    TBaseForm = TTntForm;
 {$else}
-  TForm1 = class(TForm)
+    TBaseForm = TForm;
 {$endif}
+
+  TForm1 = class(TBaseForm)
     About1: TMenuItem;
     BackButton: TButton;
     Copy1: TMenuItem;
