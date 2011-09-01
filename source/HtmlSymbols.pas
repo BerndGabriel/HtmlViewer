@@ -375,7 +375,7 @@ type
     ListStyleType, ListStyleImage, psFloat, psClear, TextIndent,
     PageBreakBefore, PageBreakAfter, PageBreakInside, TextTransform,
     WordWrap, FontVariant, BorderCollapse, OverFlow, psDisplay, psEmptyCells,
-    //TODO -oBG, 12.03.2011: psWhiteSpace
+    psWhiteSpace,
 
     // short hands
     MarginX, PaddingX, BorderWidthX, BorderX,
@@ -386,7 +386,7 @@ type
 
   TShortHandSymbol = MarginX..BorderStyleX;
 
-  TStylePropertySymbol = FontFamily..psEmptyCells;
+  TStylePropertySymbol = FontFamily..psWhiteSpace;
   TPropertyArray = array [TStylePropertySymbol] of Variant;
 
 type
@@ -769,7 +769,7 @@ type
   end;
 
 const
-  CPropertyDescriptions: array [1..72] of TPropertyDescription = (
+  CPropertyDescriptions: array [1..73] of TPropertyDescription = (
     (Name: 'font-family';              Symbol: FontFamily),
     (Name: 'font-size';                Symbol: FontSize),
     (Name: 'font-style';               Symbol: FontStyle),
@@ -829,7 +829,7 @@ const
     (Name: 'overflow';                 Symbol: OverFlow),
     (Name: 'display';                  Symbol: psDisplay),
     (Name: 'empty-cells';              Symbol: psEmptyCells),
-    //(Name: 'white-space'
+    (Name: 'white-space';              Symbol: psWhiteSpace),
 
     // short hand names
     (Name: 'margin';                   Symbol: MarginX),
