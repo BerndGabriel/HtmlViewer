@@ -4703,7 +4703,7 @@ end;
 procedure TBlock.CollapseMargins;
 {adjacent vertical margins need to be reduced}
 var
-  TopAuto, Done: boolean;
+  TopAuto: boolean;
   TB: TSectionBase;
   LastMargin, Negs, I: Integer;
   Tag: ThtString;
@@ -4716,19 +4716,18 @@ begin
       MargArray[MarginTop] := 0;
   end
   else if FloatLR in [ALeft, ARight] then {do nothing}
+  else if Display = pdNone then {do nothing}
   else
     with OwnerCell do
     begin
-      I := Count - 1; {find the preceding block that isn't absolute positioning}
-      Done := False;
-      while (I >= 0) and not Done do
+      I := OwnerCell.Count - 2; {find the preceding block that isn't absolute positioning}
+      while I >= 0 do
       begin
-        TB := TSectionBase(Items[I]);
-        if ((TB is TBlock) and (TBlock(TB).Positioning <> PosAbsolute))
-          or not (TB is TBlock) then {allow for a TSection}
-          Done := True
-        else
-          Dec(I);
+        TB := OwnerCell[I];
+        if TB.Display <> pdNone then
+          if not (TB is TBlock) or (TBlock(TB).Positioning <> PosAbsolute) then
+            break;
+        Dec(I);
       end;
       Tag := OwnerCell.OwnersTag;
       if I < 0 then
@@ -4747,7 +4746,7 @@ begin
       end
       else
       begin
-        TB := Items[I];
+        TB := OwnerCell[I];
         if ((TB is TTableBlock) or (TB is TTableAndCaptionBlock)) and
           (TBlock(TB).FloatLR in [ALeft, ARight])
           and TopAuto then
