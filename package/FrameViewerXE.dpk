@@ -1,0 +1,60 @@
+package FrameViewerXE;
+
+{$R *.res}
+{$R 'framview.dcr'}
+{$R 'htmlview.dcr'}
+{$R 'frambrwz.dcr'}
+{$ALIGN 1}
+{$ASSERTIONS OFF}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA OFF}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  vcl,
+  vclimg,
+  designide,
+  rtl;
+
+contains
+  framview in '..\source\framview.pas',
+  htmlview in '..\source\htmlview.pas',
+  readhtml in '..\source\readhtml.pas',
+  Htmlsbs1 in '..\source\Htmlsbs1.pas',
+  htmlsubs in '..\source\htmlsubs.pas',
+  HTMLUn2 in '..\source\HTMLUn2.pas',
+  vwPrint in '..\source\vwPrint.pas',
+  MetaFilePrinter in '..\source\MetaFilePrinter.pas',
+  URLSubs in '..\source\URLSubs.pas',
+  FramBrwz in '..\source\FramBrwz.pas',
+  DitherUnit in '..\source\DitherUnit.pas',
+  HTMLCompEdit in '..\source\HTMLCompEdit.pas',
+  StyleUn in '..\source\StyleUn.pas',
+  StylePars in '..\source\StylePars.pas',
+  HTMLGif2 in '..\source\HTMLGif2.pas',
+  htmlgif1 in '..\source\htmlgif1.pas',
+  FrameViewerReg in '..\source\FrameViewerReg.pas',
+  GDIPL2A in '..\source\GDIPL2A.pas',
+  HtmlGlobals in '..\source\HtmlGlobals.pas',
+  HtmlBuffer in '..\source\HtmlBuffer.pas';
+
+end.
