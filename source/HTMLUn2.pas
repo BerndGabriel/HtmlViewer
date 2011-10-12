@@ -597,73 +597,7 @@ uses
 type
   EGDIPlus = class(Exception);
 
-{$ifdef FPC}
-
-// Pascal-ized equivalents of assembler functions.
-function StrLenW(Str: PWideChar): Cardinal;
-begin
-  Result := Length(WideString(Str));
-end;
-
-function StrPosW(Str, SubStr: PWideChar): PWideChar;
-var
-  StrPos    : PWideChar;
-  SubstrPos : PWideChar;
-begin
-  if SubStr^ = #0 then  // Make sure substring not null string
-  begin
-    Result := nil;
-    Exit;
-  end;
-  Result := Str;
-  while Result^ <> #0 do  // Until reach end of string
-  begin
-    StrPos := Result;
-    SubstrPos := SubStr;
-    while SubstrPos^ <> #0 do  // Until reach end of substring
-    begin
-      if StrPos^ <> SubstrPos^ then  // No point in continuing?
-        Break;
-      StrPos := StrPos + 1;
-      SubstrPos := SubstrPos + 1;
-    end;
-    if SubstrPos^ = #0 then  // Break because reached end of substring?
-      Exit;
-    Result := Result + 1;
-  end;
-  Result := nil;
-end;
-
-function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
-begin
-  Result := StrScanW(Str, #0);
-  if Chr = #0 then  // Null-terminating char considered part of string.
-    Exit;
-  while Result <> Str do
-  begin
-    Result := Result - 1;
-    if Result^ = Chr then
-      Exit;
-  end;
-  Result := nil;
-end;
-
-function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
-begin
-  Result := Str;
-  while Result^ <> #0 do
-  begin
-    if Result^ = Chr then
-      Exit;
-    Result := Result + 1;
-  end;
-  if Chr = #0 then
-    Exit;  // Null-terminating char considered part of string. See call
-           // searching for #0 to find end of string.
-  Result := nil;
-end;
-
-{$else}
+{$ifdef UseASMx86}
 
 function StrLenW(Str: PWideChar): Cardinal;
 // returns number of characters in a ThtString excluding the null terminator
@@ -768,6 +702,72 @@ asm
         DEC     EAX
         DEC     EAX
 @@1:    POP     EDI
+end;
+
+{$else}
+
+// Pascal-ized equivalents of assembler functions.
+function StrLenW(Str: PWideChar): Cardinal;
+begin
+  Result := Length(WideString(Str));
+end;
+
+function StrPosW(Str, SubStr: PWideChar): PWideChar;
+var
+  StrPos    : PWideChar;
+  SubstrPos : PWideChar;
+begin
+  if SubStr^ = #0 then  // Make sure substring not null string
+  begin
+    Result := nil;
+    Exit;
+  end;
+  Result := Str;
+  while Result^ <> #0 do  // Until reach end of string
+  begin
+    StrPos := Result;
+    SubstrPos := SubStr;
+    while SubstrPos^ <> #0 do  // Until reach end of substring
+    begin
+      if StrPos^ <> SubstrPos^ then  // No point in continuing?
+        Break;
+      StrPos := StrPos + 1;
+      SubstrPos := SubstrPos + 1;
+    end;
+    if SubstrPos^ = #0 then  // Break because reached end of substring?
+      Exit;
+    Result := Result + 1;
+  end;
+  Result := nil;
+end;
+
+function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
+begin
+  Result := StrScanW(Str, #0);
+  if Chr = #0 then  // Null-terminating char considered part of string.
+    Exit;
+  while Result <> Str do
+  begin
+    Result := Result - 1;
+    if Result^ = Chr then
+      Exit;
+  end;
+  Result := nil;
+end;
+
+function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
+begin
+  Result := Str;
+  while Result^ <> #0 do
+  begin
+    if Result^ = Chr then
+      Exit;
+    Result := Result + 1;
+  end;
+  if Chr = #0 then
+    Exit;  // Null-terminating char considered part of string. See call
+           // searching for #0 to find end of string.
+  Result := nil;
 end;
 
 {$endif}

@@ -81,6 +81,16 @@
                   {$ifdef ver185}
                   {$else}
                     {$define Compiler20_Plus}
+                    {$ifdef ver200}
+                    {$else}
+                      {$ifdef ver210}
+                      {$else}
+                        {$ifdef ver220}
+                        {$else}
+                          {$define Compiler23_Plus}
+                        {$endif}
+                      {$endif}
+                    {$endif}
                   {$endif}
                 {$endif}
               {$endif}
@@ -93,8 +103,18 @@
     {$message 'Sorry, but Delphi versions before 6 are not supported.'}
   {$endif}
 
+  { Compiler Features }
+
   {$ifdef Compiler17_Plus}
-    {$define UseInline}
+    {$ifdef DEBUG}
+    {$else}
+      {$define UseInline}
+    {$endif}
+  {$endif}
+
+  {$ifdef Compiler23_Plus}
+  {$else}
+    {$define UseASMx86}
   {$endif}
 
   { Set Delphi Compiler Switches }
