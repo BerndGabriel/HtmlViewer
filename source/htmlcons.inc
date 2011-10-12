@@ -35,6 +35,7 @@
 { Identify Delphi Compiler Version:
 
   Compiler    Version Compiler Defined Symbol
+  Delphi XE2    23    VER230
   Delphi XE     22    VER220
   Delphi 2010   21    VER210
   Delphi 2009   20    VER200
@@ -88,6 +89,16 @@
                   {$ifdef ver185}
                   {$else}
                     {$define Compiler20_Plus}
+                    {$ifdef ver200}
+                    {$else}
+                      {$ifdef ver210}
+                      {$else}
+                        {$ifdef ver220}
+                        {$else}
+                          {$define Compiler23_Plus}
+                        {$endif}
+                      {$endif}
+                    {$endif}
                   {$endif}
                 {$endif}
               {$endif}
@@ -115,6 +126,11 @@
 
   {$ifdef Compiler20_Plus}
     {$define UseToStringOverride}
+  {$endif}
+
+  {$ifdef Compiler22_Plus}
+  {$else}
+    {$define UseASMx86}
   {$endif}
 
 
