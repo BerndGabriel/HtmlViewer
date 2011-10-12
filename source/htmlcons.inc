@@ -128,7 +128,7 @@
     {$define UseToStringOverride}
   {$endif}
 
-  {$ifdef Compiler22_Plus}
+  {$ifdef Compiler23_Plus}
   {$else}
     {$define UseASMx86}
   {$endif}
