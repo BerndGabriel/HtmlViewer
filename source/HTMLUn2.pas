@@ -709,7 +709,10 @@ end;
 // Pascal-ized equivalents of assembler functions.
 function StrLenW(Str: PWideChar): Cardinal;
 begin
-  Result := Length(WideString(Str));
+  Result := 0;
+  if Str <> nil then
+    while Str[Result] <> #0 do
+      Inc(Result);
 end;
 
 function StrPosW(Str, SubStr: PWideChar): PWideChar;
