@@ -82,6 +82,13 @@ type
   TBuffArray = array of Byte;
   TBuffArray4 = array [0..3] of Byte;
 
+  // BG, 11.11.2011: Issue 93: LoadStrings failure
+  TBufferState = set of (
+    bsFixedCodePage // ignore writing to property CodePage.
+                    // Helps to ignore <META http-equiv="Content-Type" ...>,
+                    // if buffer is an already converted TBuffString.
+  );
+
   // BG, 17.12.2010: helps converting any kind of stream to WideChars.
   TBuffer = class
   private
@@ -91,6 +98,7 @@ type
     FEnd: TBuffPointer;
     FJis: TBuffJisState;
 
+    FState: TBufferState;
     FCharSet: TBuffCharSet;
     FCodePage: TBuffCodePage;
     FInitalCodePage: TBuffCodePage;
@@ -103,6 +111,8 @@ type
     procedure Reset;
     procedure SetStream(Stream: TStream); {$ifdef UseInline} inline; {$endif}
     procedure SetPostion(const Value: Integer); {$ifdef UseInline} inline; {$endif}
+    procedure SetCharSet(const Value: TBuffCharSet);
+    procedure SetCodePage(const Value: TBuffCodePage);
   protected
   public
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
@@ -117,8 +127,8 @@ type
     function Size: Integer;
     function GetString(FromIndex, UntilIndex: Integer): TBuffString;
     property Name: TBuffString read FName;
-    property CharSet: TBuffCharSet read FCharSet write FCharSet;
-    property CodePage: TBuffCodePage read FCodePage write FCodePage;
+    property CharSet: TBuffCharSet read FCharSet write SetCharSet;
+    property CodePage: TBuffCodePage read FCodePage write SetCodePage;
     property Position: Integer read GetPosition write SetPostion;
   end;
 
@@ -499,6 +509,7 @@ begin
   FName := Name;
   FCodePage := CP_UTF16LE;
   FInitalCodePage := FCodePage;
+  Include(FState, bsFixedCodePage);
   FCharSet := UNKNOWN_CHARSET;
 end;
 
@@ -558,6 +569,7 @@ begin
           // this is little endian unicode
           FCodePage := CP_UTF16LE;
           FInitalCodePage := FCodePage;
+          Include(FState, bsFixedCodePage);
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
           Exit;
@@ -569,6 +581,7 @@ begin
           // swap the 2 bytes of one char.
           FCodePage := CP_UTF16BE;
           FInitalCodePage := FCodePage;
+          Include(FState, bsFixedCodePage);
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
           Exit;
@@ -583,6 +596,7 @@ begin
             // this is UTF-8
             FCodePage := CP_UTF8;
             FInitalCodePage := FCodePage;
+            Include(FState, bsFixedCodePage);
             FCharSet := DEFAULT_CHARSET;
             Inc(FPos.BytePtr);
             Exit;
@@ -596,6 +610,7 @@ begin
     FCharSet := SHIFTJIS_CHARSET;
     FCodePage := CP_ISO2022JP;
     FInitalCodePage := FCodePage;
+    Include(FState, bsFixedCodePage);
     exit;
   end;
   // no preamble: this is most probably a 1-byte per character code.
@@ -910,6 +925,20 @@ procedure TBuffer.Reset;
 begin
   FPos.AnsiChr := PAnsiChar(FBuffer);
   FEnd.AnsiChr := FPos.AnsiChr + Length(FBuffer);
+end;
+
+//-- BG --------------------------------------------------------- 11.11.2011 --
+procedure TBuffer.SetCharSet(const Value: TBuffCharSet);
+begin
+  FCharSet := Value;
+end;
+
+//-- BG --------------------------------------------------------- 11.11.2011 --
+procedure TBuffer.SetCodePage(const Value: TBuffCodePage);
+begin
+  if bsFixedCodePage in FState then
+    exit;
+  FCodePage := Value;
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
