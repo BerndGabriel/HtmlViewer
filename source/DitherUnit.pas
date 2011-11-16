@@ -635,6 +635,7 @@ var
   // There is a bug in the ByteSwapColors from Delphi 3.0
 
   procedure ByteSwapColors(var Colors; Count: Integer);
+  {$IFDEF WIN32}
   var // convert RGB to BGR and vice-versa.  TRGBQuad <-> TPaletteEntry
     SysInfo: TSystemInfo;
   begin
@@ -669,6 +670,27 @@ var
           POP   EBX
       @@END:
     end;
+    {$ELSE}
+    {From Delphi XE2
+    Vcl.Graphics unit
+    Copyright(c) 1995-2011 Embarcadero Technologies, Inc.
+    }
+  var
+  C: PDWORD;
+  Color: DWORD;
+  I: Integer;
+  begin
+    C := @Colors;
+    I := 0;
+    while I < Count do
+    begin
+      Color := C^;
+      C^ := (Byte(Color shr 16) or (Word(Color) shr 8) shl 8) or
+        (Byte(Word(Color)) shl 16);
+      Inc(I);
+      Inc(C);
+    end;
+    {$ENDIF}
   end;
 {$ENDIF}
 begin
