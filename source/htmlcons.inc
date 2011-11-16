@@ -148,6 +148,10 @@
     {$J+}  {typed constants are modifiable}
     {$H+}  {LongStrings On}
   {$endif}
+  {$ifdef Win64}
+    {$J+}  {typed constants are modifiable}
+    {$H+}  {LongStrings On}
+  {$endif}
 
   {$ifdef DebugIt}
     {$W+}  {Stack frames on}
