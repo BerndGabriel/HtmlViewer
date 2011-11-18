@@ -42,6 +42,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
+    <Version Major="11"/>
     <Files Count="17">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
