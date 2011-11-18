@@ -5,6 +5,7 @@
 <link REL="stylesheet" TYPE="text/css" HREF="demo.css">
 <style TYPE="text/css"> <!--
   h2   {font-size: 18pt; font-weight: bold;}
+  h5   {color: #5f5f5f; font-weight: bold;}
   .expand {margin-left: 20px; Margin-top: 10px; margin-bottom: 10px;}
   a.expandhead {text-decoration: none;}
   li    {Margin-top:2;}
@@ -18,24 +19,24 @@
 
 <h2 align="center"><font color="#a00000">What's New</font></h2>
 
-<!--   Version 11  -->
+
 <p class="heading">Version 11</p>
+<h5>Added</h5>
 <ul>
   <li>HtmlViewer/FrameViewer developement available at <a href="http://github.com/BerndGabriel/HtmlViewer">http://github.com/BerndGabriel/HtmlViewer</a>.
   <li>Support Lazarus 0.9.31
   <li>Thoroughgoing unicode support in Delphi 6..2010 and Lazarus 0.9.31
   <li>Enhanced support for styles <b>float</b> and <b>clear</b> 
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 10</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fixed: Issue 56: Using 2 Apps with THTMLViewer causes images not to be displayed.
   <li>Fixed: Issue 61: HTMLViewer PrintPreview issue with objects hidden by positions with negative coordinates. 
   <li>Tuned: Document loading and formatting. Especially large documents benefit from this tunings immense.
 </ul>
 
-<!--   Version 10  -->
 <p class="heading">Version 10</p>
+<h5>Added</h5>
 <ul>
   <li>HtmlViewer/FrameViewer is public domain at <a href="http://code.google.com/p/thtmlviewer">http://code.google.com/p/thtmlviewer</a>.
   <li>Support up to Delphi 2010
@@ -48,8 +49,7 @@
   <li>Contextual style evaluation for tags with ID.
   <li>Mouse middle button click scroll now scrolls with speed analog to distance from click position.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 10</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix THtmlViewer.ReloadFiles, which did not tell OnGetPostRequest/OnGetPostRequestEx, that this is a reload operation.
   <li>Fix page break in print preview: Page break placed more exactly between table rows.
@@ -62,13 +62,12 @@
   <li>Fix some memory leaks and a buffer overrun.
 </ul>
 
-<!--   Version 9.45  -->
 <p class="heading">Version 9.45</p>
+<h5>Added</h5>
 <ul>
   <li>Add TPrinterSetupDialog to Frame Demo program.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.45</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Allow <b>background: none;</b> to suppress background color.
   <li>Fix problem where caret could not be found in text to left of floating object.
@@ -76,43 +75,35 @@
   <li>Fix <b>MakePagedMetafiles</b> to properly page.
 </ul>
 
-<!--   Version 9.44  -->
 <p class="heading">Version 9.44</p>
+<h5>Added</h5>
 <ul>
   <li>Add an item to the <b>htOption</b> and <b>fvOption</b> properties to prevent links
       from being selected when clicked. See the helpfile.
   <li>Add <b>NoGDIPlus</b> compile time option.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.44</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
-  <li>Fix problem with underlining some Chinese and Japanese characters
-   for some fonts.
-  <li>Change initialization of GDIPLUS.DLL to fix problems with some DLL
-      and ActiveX applications.
-  <li>Fix problem with 3 or more nested <b>&lt;ul&gt;</b>s in a table when the end
-      tags were missing. 
-
+  <li>Fix problem with underlining some Chinese and Japanese characters for some fonts.
+  <li>Change initialization of GDIPLUS.DLL to fix problems with some DLL and ActiveX applications.
+  <li>Fix problem with 3 or more nested <b>&lt;ul&gt;</b>s in a table when the end tags were missing. 
 </ul>
 
-<!--   Version 9.43  -->
 <p class="heading">Version 9.43</p>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.43</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix clip region error when printing with high dpi resolution.
-  <li>Fix bug with TabIndex attribute when used in links
-      where a leading space had to be eliminated.
+  <li>Fix bug with TabIndex attribute when used in links where a leading space had to be eliminated.
   <li>Fix problem stretching small (like 1 pixel) png images.
 </ul>
 
-<!--   Version 9.42  -->
+
 <p class="heading">Version 9.42</p>
+<h5>Added</h5>
 <ul>
   <li>Add support for parent child operator (&gt;) in contextual selectors.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.42</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix contextual selector syntax problem.
   <li>Remove restriction of 2000 on &lt;pre&gt; text length. Use MaxHScroll
@@ -123,183 +114,164 @@
         than its enclosed object if viewer was shrunk.
 </ul>
 
-<!--   Version 9.41  -->
 <p class="heading">Version 9.41</p>
+<h5>Added</h5>
 <ul>
   <li>Limit extremely large font size entries.
   <li>Allow some null characters in document without aborting. Substitute
       "?" for some control characters.
   <li>A table cell may now be hotlinked using syntax like:
       <blockquote>&lt;td href="file.htm#offset" target="sometarget"&gt;...&lt;/td&gt;</blockquote>
-      The <b>Title</b>attribute can now also be used for the whole table cell.
+      The <b>Title</b> attribute can now also be used for the whole table cell.
   <li>Added Thai language support.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.41</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix problem where text file would not scroll horizontally.
-  <li>Fix <b>&lt;center&gt;</b>which didn't work if the block had a restricted width set.
-  <li>Fix problem with selecting text when the Text-Indent property
-      was negative.
+  <li>Fix <b>&lt;center&gt;</b> which didn't work if the block had a restricted width set.
+  <li>Fix problem with selecting text when the Text-Indent property was negative.
   <li>Some fixes for Absolute and Relative blocks.
-  <li>Fix problems where ThtmlViewer cursors conflicted with user's special
-        cursors.
+  <li>Fix problems where ThtmlViewer cursors conflicted with user's special cursors.
 </ul>
 
-
-<!--   Version 9.4  -->
 <p class="heading">Version 9.4</p>
+<h5>Added</h5>
 <ul>
   <li>Add support for alpha transparency in PNG images.
       <a href="things.htm#PNGSupport">See PNG Image Support.</a>
   <li>Permit Page-Break properties in <b>&lt;br&gt;</b> tag.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.4</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Remove NoGIF and NoPNG compile time options.
   <li>Modify Word-wrap: break-word; so that it works like in IExplorer.
  </ul>
 
-
-<!--   Version 9.32  -->
 <p class="heading">Version 9.32</p>
+<h5>Added</h5>
 <ul>
-  <li>Add <b>Delphi 2006</b>to the Delphi versions supported.
+  <li>Add <b>Delphi 2006</b> to the Delphi versions supported.
   <li>Add char entity, "&amp;apos;" as #8217.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.32</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix clipping problem in &lt;pre&gt; text which showed up for wide left margins.
   <li>Fix some table colspan problems when rowspan is used.
   <li>Fix problem where Floating blocks were not correct when text-align is center
       or right.
   <li>Permit Floating objects when positioning is Relative.
- </ul>
+</ul>
 
-
-<!--   Version 9.31  -->
 <p class="heading">Version 9.31</p>
+<h5>Added</h5>
 <ul>
-  <li>Add <b>OnObjectTag</b>event to allow user to add support for objects. See the helpfile and
+  <li>Add <b>OnObjectTag</b> event to allow user to add support for objects. See the helpfile and
       FlashDemo program.
-  <li>Use font specified by the <b>DefaultFontName</b>property when a font can't be found.
-  <li><b>IDControl</b>property can now be used for hidden "controls" also. See helpfile for
+  <li>Use font specified by the <b>DefaultFontName</b> property when a font can't be found.
+  <li><b>IDControl</b> property can now be used for hidden "controls" also. See helpfile for
       details.
   <li>Add Readonly attribute support for <b>&lt;input&gt;</b> and <b>&lt;textarea&gt;</b>.
   <li>Add background color CSS support for form controls.
-  <li><b>OpenPrint</b>, <b>AbortPrint</b>, and <b>ClosePrint</b>methods are now available to allow printing of
+  <li><b>OpenPrint</b>, <b>AbortPrint</b>, and <b>ClosePrint</b> methods are now available to allow printing of
         miscellaneous pages in one print job.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.31</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
-  <li>A <b>&lt;li&gt;</b>without text following will now show the bullet.
+  <li>A <b>&lt;li&gt;</b> without text following will now show the bullet.
   <li>Fix several gif and animated gif problems.
- </ul>
+</ul>
 
-
-<!--   Version 9.3  -->
 <p class="heading">Version 9.3</p>
+<h5>Added</h5>
 <ul>
   <li>Add printing support for <b>&lt;thead&gt;</b>, <b>&lt;tbody&gt;</b>, and <b>&lt;tfoot&gt;</b>.
         See <a href="things.htm#HeadFoot">things.htm</a>for details.
   <li>Add support for using multiple CSS classes as in <b>class="class1 class2"</b>.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.3</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix &lt;page&gt; tag problem with horizontal scrollbar.
   <li>Fix width=100% on images so the width includes the border.
- </ul>
-
-
-<!--   Version 9.27  -->
-<p class="heading">Version 9.27</p>
-<ul>
-  <li>Add support for <b>&amp;shy;</b>the soft hyphen.
-  <li>Change the action of <b>&lt;wbr&gt;</b>so that it can be used anywhere, not just
-        within a <b>&lt;nobr&gt;</b>section. It no longer forces the addition of a
-      space character.
-  <li>Support for <b>overflow: hidden;</b>CSS property.
-  <li><b><a href="things.htm#OpOnChange">OpOnChange</a></b>compiler option
-      changes how the OnObjectChange event
-        works with <b>&lt;select&gt;</b>form controls.
-  <li>Add <b>Border</b> attribute to <b>&lt;img&gt;</b> tag to adjust border size.
 </ul>
 
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.27</font></h5>
+<p class="heading">Version 9.27</p>
+<h5>Added</h5>
+<ul>
+  <li>Add support for <b>&amp;shy;</b> the soft hyphen.
+  <li>Change the action of <b>&lt;wbr&gt;</b> so that it can be used anywhere, not just
+        within a <b>&lt;nobr&gt;</b> section. It no longer forces the addition of a
+      space character.
+  <li>Support for <b>overflow: hidden;</b> CSS property.
+  <li><b><a href="things.htm#OpOnChange">OpOnChange</a></b> compiler option
+      changes how the OnObjectChange event
+        works with <b>&lt;select&gt;</b> form controls.
+  <li>Add <b>Border</b> attribute to <b>&lt;img&gt;</b> tag to adjust border size.
+</ul>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Form control borders now space vertically properly.
-  <li>Large blocks of <b>Alt=</b> text in <b>&lt;img&gt;</b>tags now can be made to wrap
+  <li>Large blocks of <b>Alt=</b> text in <b>&lt;img&gt;</b> tags now can be made to wrap
       in the space alloted for display.
- </ul>
+</ul>
 
-<!--   Version 9.26  -->
 <p class="heading">Version 9.26</p>
+<h5>Added</h5>
 <ul>
-  <li>New <b>LinkText</b>property gives the text displayed for the link.
-  <li>New <b>LinkAttributes</b>property gives all attributes assigned to the link.
-  <li><b>NumPrinterPages</b> now has optional <b>WidthRatio</b>parameter which
-    detects width overflow in printing and gives a <b>PrintScale</b>factor
+  <li>New <b>LinkText</b> property gives the text displayed for the link.
+  <li>New <b>LinkAttributes</b> property gives all attributes assigned to the link.
+  <li><b>NumPrinterPages</b> now has optional <b>WidthRatio</b> parameter which
+    detects width overflow in printing and gives a <b>PrintScale</b> factor
   which will eliminate overflow.
   <li>&lt;%....%&gt; now regarded as comment.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.26</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix problem in Delphi 2005 version when Themes used.
   <li>Fix Inline borders which did not scroll horizontally.
   <li>Detect GIF images by content rather than .GIF file externsion.
 </ul>
 
-<!--   Version 9.25  -->
 <p class="heading">Version 9.25</p>
+<h5>Added</h5>
 <ul>
-  <li><b>Delphi 2005</b>Support.
-  <li>New <b>GetCharAtPos</b>method which returns the character at a given
+  <li><b>Delphi 2005</b> Support.
+  <li>New <b>GetCharAtPos</b> method which returns the character at a given
   position as well as its font.
-  <li>New <b>MakePagedMetaFiles</b> method similar to <b>MakeMetaFile</b>but splits
+  <li>New <b>MakePagedMetaFiles</b> method similar to <b>MakeMetaFile</b> but splits
    pages more appropriatly.
-  <li>Add <b>Word-Wrap: break-word</b>; property.
- 
+  <li>Add <b>Word-Wrap: break-word;</b> property. 
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.25</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Ignore &lt;?xml .....&gt; clauses.
 </ul>
 
-<!--   Version 9.24  -->
 <p class="heading">Version 9.24</p>
+<h5>Added</h5>
 <ul>
   <li>Add HTML <b>CopyToClipboard</b>. This is not a perfect implementation but
       should be useful.
-  <li><b>htNoWheelMouse</b> and <b>htNoWheelMouse</b>options disable the mouse
+  <li><b>htNoWheelMouse</b> and <b>htNoWheelMouse</b> options disable the mouse
       wheel so that it may be used for other middle button operations.
-  <li>The <b>TitleAttr</b>property now works with most form controls.
- 
+  <li>The <b>TitleAttr</b> property now works with most form controls. 
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.24</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
-  <li><b>FindSourcePos</b> and <b>FindDisplayPos</b>methods now working for UTF-8 input.
+  <li><b>FindSourcePos</b> and <b>FindDisplayPos</b> methods now working for UTF-8 input.
   <li>Fix "LastPage" in <b>OnHTMLHeader/Footer</b>.
   <li>Fix problem where text was being clipped in form controls when printed.
 </ul>
 
-<!--   Version 9.23  -->
 <p class="heading">Version 9.23</p>
+<h5>Added</h5>
 <ul>
   <li>Parse the "@ media screen..." items for stylesheets.
       Other media options are ignored.
-  <li>Extend the <b>IDControl</b>property to include images as well as form controls.
+  <li>Extend the <b>IDControl</b> property to include images as well as form controls.
   <li>3D borders now removed from <b>&lt;input&gt;</b>, <b>&lt;textarea&gt;</b>, and
       <b>&lt;select&gt;</b> form controls when a CSS border is defined.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.23</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix radio buttons so tabbing into a group that has nothing checked
       doesn't check one of them.
@@ -309,42 +281,40 @@
   <li>Fix problem with Delphi 7 and XP manifest
 </ul>
 
-<!--   Version 9.22  -->
 <p class="heading">Version 9.22</p>
+<h5>Added</h5>
 <ul>
-  <li>New <b>OnPrintHTMLHeader</b> and <b>OnPrintHTMLFooter</b>events allow HTML
-  headers and footers when printing. See the helpfile for usage details.
-  Also, there is a demo program in the Demos directory.
+  <li>New <b>OnPrintHTMLHeader</b> and <b>OnPrintHTMLFooter</b> events allow HTML
+	headers and footers when printing. See the helpfile for usage details.
+	Also, there is a demo program in the Demos directory.
   <li>Printing of document background colors and images is now an option. See
-    the <b>htPrintBackground</b>selection in the htOptions/fvOptions property.
-  <li>The CSS <b>letter-spacing</b>property has been added.
-  <li>Height in percentage is now supported for the <b>&lt;img&gt;</b>tag.
-  <li><b>Metafiles</b>may now be displayed. However, this feature is off by default
-  because there is a conflict with some print operations in Win98 when
-    metafiles are used. To turn metafile support on, undefine <b>NoMetafile</b>in
+    the <b>htPrintBackground</b> selection in the htOptions/fvOptions property.
+  <li>The CSS <b>letter-spacing</b> property has been added.
+  <li>Height in percentage is now supported for the <b>&lt;img&gt;</b> tag.
+  <li><b>Metafiles</b> may now be displayed. However, this feature is off by default
+	because there is a conflict with some print operations in Win98 when
+    metafiles are used. To turn metafile support on, undefine <b>NoMetafile</b> in
     htmlcons.inc.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.22</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix problem with tall table cells in Win98/95.
   <li>The Quirk compile time option was fixed so that text color defined
-    in the <b>&lt;body&gt;</b>tag is also used in tables.
+    in the <b>&lt;body&gt;</b> tag is also used in tables.
   <li>The positioning accuracy of links was improved.
 </ul>
 
-<!--   Version 9.21  -->
 <p class="heading">Version 9.21</p>
+<h5>Added</h5>
 <ul>
   <li>Make provision for using third party TNT or Elpack Unicode controls
       for Form controls. See htmlcons.inc for more details.
-  <li><b>ThtmlViewer.LoadFromString</b>now has overload to accept WideString
+  <li><b>ThtmlViewer.LoadFromString</b> now has overload to accept WideString
         input for Delphi 6 and 7.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.21</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
-  <li>Change <b>Print Preview</b>to use the screen device context instead of
+  <li>Change <b>Print Preview</b> to use the screen device context instead of
       printer device context to avoid problems with some Win98 printer
       drivers.
   <li>Fix tabbing so can tab into a Radiobutton group that has no button
@@ -357,16 +327,15 @@
   <li>Fix a problem with transparency with some PNG images.
 </ul>
 
-<!--   Version 9.2  -->
 <p class="heading">Version 9.2</p>
+<h5>Added</h5>
 <ul>
   <li>Width settings in percentage now supported for Form controls.
   <li>Height in percentage can now be specified for tables, table cells,
       and most block tags.
   <li>ThtmlViewer now has <b>HScrollbar</b> and <b>VScrollbar</b> properties.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.2</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Speedup, particularly for heavily nested tables.
   <li>Widen &lt;input type="edit"&gt; sizes which were too skimpy.
@@ -376,18 +345,17 @@
   <li>Fix for certain animated GIF images
 </ul>
 
-<!--   Version 9.13  -->
 <p class="heading">Version 9.13</p>
+<h5>Added</h5>
 <ul>
   <li>Borders now supported for most <span style="BORDER-RIGHT: red thin solid; BORDER-TOP: red thin solid; BORDER-LEFT: red thin solid; BORDER-BOTTOM: red thin solid">inline</span>elements.
   <li>Support for font-variant: small-caps.
-  <li><b>Quirk</b>compile time constant simulates some quirks of other browsers.
-  <li><b>fvNoFocusRect</b> added to <b>fvOptions</b>property allows elimination of the
+  <li><b>Quirk</b> compile time constant simulates some quirks of other browsers.
+  <li><b>fvNoFocusRect</b> added to <b>fvOptions</b> property allows elimination of the
       focus rectangle around frames.
   <li>Code page 28592 now used for iso 8859-2 East European font.
 </ul>
-
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.13</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix several errors in handling of &lt;script&gt; tag and OnScript event.
   <li>Fix border repainting problem in TFrameViewer, TFrameBrowser.
@@ -396,109 +364,102 @@
       image display and printing.
 </ul>
 
-<!--   Version 9.12  -->
+<h5>Added</h5>
 <p class="heading">Version 9.12</p>
 <ul>
-  <li>Support for <b>TopMargin</b> and <b>LeftMargin</b> attributes in <b>&lt;body&gt;</b>tag.
-  <li>The <b>TitleAttr</b> property now works in the <b>&lt;area&gt;</b>tag.
-  <li>Setting the Stream parameter to Nil in the <b>InsertImage</b>method now causes an
+  <li>Support for <b>TopMargin</b> and <b>LeftMargin</b> attributes in <b>&lt;body&gt;</b> tag.
+  <li>The <b>TitleAttr</b> property now works in the <b>&lt;area&gt;</b> tag.
+  <li>Setting the Stream parameter to Nil in the <b>InsertImage</b> method now causes an
         error image to be displayed.
 </ul>
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.12</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>A new unit, <b>frameviewerreg.pas</b>, has been added. It contains the component registrations.
-  <li>Make check for utf-8 in <b>&lt;meta&gt;</b>tag to be case independent.
+  <li>Make check for utf-8 in <b>&lt;meta&gt;</b> tag to be case independent.
   <li>The <b>under-line</b> option of the <b>text-decoration</b> property was incorrectly set to <b>line-under</b>.
   <li>Fix Copy To Clipboard to work in Win95/98/ME.
   <li>Several animated Gif problems were fixed.
 </ul>
 
-<!--   Version 9.11  -->
 <p class="heading">Version 9.11</p>
+<h5>Added</h5>
 <ul>
-
-  <li>Type="file" now supported for the <b>&lt;input&gt;</b> tag. <b>OnFileBrowse</b>event
+  <li>Type="file" now supported for the <b>&lt;input&gt;</b> tag. <b>OnFileBrowse</b> event
       gives users control over the associated Browse button.
   <li>Clipboard output is now Unicode.
   <li>Add Border-color and Border-style shortcut properties with 1 to 4 values.
   <li>Check for UTF-8 signature at start of HTML document.
 </ul>
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.11</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Changes to remove problems with Delphi 7's Theme Manager when a manifest file
       was used.
-  <li>The <b>Seltext</b>property is now WideString in TFrameViewer and TFrameBrowser as
+  <li>The <b>Seltext</b> property is now WideString in TFrameViewer and TFrameBrowser as
       it should be.
   <li>Improvements in the focus rectangle used to indicate focus on links and
       form controls.
-  <li>Fix problem with ID= attributes in <b>&lt;table&gt;</b>tag in Version 9.1.
+  <li>Fix problem with ID= attributes in <b>&lt;table&gt;</b> tag in Version 9.1.
   <li>Faster Radio Buttons.
 </ul>
 
-<!--   Version 9.1  -->
 <p class="heading">Version 9.1</p>
+<h5>Added</h5>
 <ul>
   <li>All CSS border styles now supported. Colors and styles may be separately
      defined for the four border edges.
-  <li><b>ThtmlViewer.LoadFromString</b> and <b>LoadTextFromString</b>methods.
+  <li><b>ThtmlViewer.LoadFromString</b> and <b>LoadTextFromString</b> methods.
   <li>New optional Reference parameter for <b>LoadFromStream</b>, <b>LoadStrings</b>,
-      and <b>LoadFromBuffer</b>methods.
-  <li>A new <b>TFormcontrolObj.AttributeValue</b>Property gives access to special user
+      and <b>LoadFromBuffer</b> methods.
+  <li>A new <b>TFormcontrolObj.AttributeValue</b> property gives access to special user
     attributes in Form Control tags.
   <li>Add Disable attribute support for Form Control tags.
 </ul>
-<h5 align="center"><font color="#5f5f5f">Bug Fixes and Changes, Version 9.1</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
-  <li>Fix <b>&lt;span&gt;</b> tag problem with <b>style</b>attribute.
-  <li>Add <b>OnProgress</b> event to <b>TFrameBrowser</b>which was mistakenly omitted.
+  <li>Fix <b>&lt;span&gt;</b> tag problem with <b>style</b> attribute.
+  <li>Add <b>OnProgress</b> event to <b>TFrameBrowser</b> which was mistakenly omitted.
   <li>Fix transparency problem which was present for some PNG images.
-  <li>Remove extra CRLFs on short <b>SelText</b>items.
-  <li>Limit Tabbing between links to documents with less than 400 links to avoid
-       slow response times.
+  <li>Remove extra CRLFs on short <b>SelText</b> items.
+  <li>Limit Tabbing between links to documents with less than 400 links to avoid slow response times.
 </ul>
 
-
-<!--   Version 9.03  -->
 <p class="heading">Version 9.03</p>
+<h5>Added</h5>
 <ul>
   <li>Delphi 7 support.
   <li>Shift Left Button click can now be used to hilite text.
   <li>Copy to clipboard no longer restricted to 32k.
 </ul>
-<h5 align="center"><font color="#5f5f5f">Bug fixes and Changes, Version 9.03</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Change OnInclude event parameter list.
   <li>Fix problem which caused occasional blank pages with page-break-before.
   <li>Some text wrapping problems fixed.
   <li>Win2000 text formatting problem fixed.
   <li>Png Image units renamed.
-  <li>Fix problem which occured when a background image was used in an empty
-        table cell.
+  <li>Fix problem which occured when a background image was used in an empty table cell.
 </ul>
 
-
-<!--   Version 9.02  -->
 <p class="heading">Version 9.02</p>
+<h5>Added</h5>
 <ul>
   <li>Add tabbing ability for links. Show focus on current link.
 </ul>
-<h5 align="center"><font color="#5f5f5f">Bug fixes and Changes, Version 9.02</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix several Win95 problems with Unicode handling.
 </ul>
 
-
-<!--   Version 9.01  -->
 <p class="heading">Version 9.01</p>
-<h5 align="center"><font color="#5f5f5f">Bug fixes and Changes, Version 9.01</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>Fix problem where very large animated Gifs would cause exceptlions in Win9xx.
   <li>Fix Uppercase and Lowercase functions which did not work in Win9xx.
   <li>Fix some problems with <b>&lt;nobr&gt;</b>.
 </ul>
 
-<!--   Version 9  -->
 <p class="heading">Version 9</p>
+<h5>Added</h5>
 <ul>
   <li>Internal manipulation is done in Unicode now. This should 
   substantially improve language handling and character entity 
@@ -515,9 +476,7 @@
   <li>A PrintScale property allows changing the scale of the printed output.
   <li>TabIndex attribute for form controls allows specifying tab order.
 </ul>
-<hr width="85%">
-
-<h5 align="center"><font color="#5f5f5f">Bug fixes and Changes, Version 9</font></h5>
+<h5>Fixed and Changed</h5>
 <ul>
   <li>CopyToClipboard and SelText have been changed to remove excessive 
   CRLFs and spaces.
