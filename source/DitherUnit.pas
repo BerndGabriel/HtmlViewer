@@ -231,7 +231,7 @@ procedure Error(msg: string);
   end;
 
 begin
-  raise GIFException.Create(msg)at ReturnAddr;
+  raise GIFException.Create(msg) at ReturnAddr;
 end;
 
 // Round to arbitrary number of bits
@@ -586,10 +586,10 @@ begin
   finally
     FBitmap.Palette := SavePalette;
   end;
-{$ELSE}
+{$ELSE PIXELFORMAT_TOO_SLOW}
   FDIBInfo := nil;
   FDIBBits := nil;
-{$ENDIF}
+{$ENDIF PIXELFORMAT_TOO_SLOW}
 end;
 
 destructor TDIBWriter.Destroy;
@@ -616,13 +616,13 @@ begin
       Row := biHeight - Row - 1;
     Result := PByte(Cardinal(FDIBBits) + Cardinal(Row) * AlignBit(biWidth, biBitCount, 32));
   end;
-{$ELSE}
+{$ELSE PIXELFORMAT_TOO_SLOW}
 {$ifdef LCL}
   Result := nil;  // ToDo: Find replacement of FBitmap.ScanLine for LCL
-{$else}
+{$else LCL}
   Result := FBitmap.ScanLine[Row];
-{$endif}
-{$ENDIF}
+{$endif LCL}
+{$ENDIF PIXELFORMAT_TOO_SLOW}
 end;
 
 procedure TDIBWriter.CreateDIB;
@@ -631,12 +631,12 @@ var
   SrcColors,
     DstColors: WORD;
 
+  procedure ByteSwapColors(var Colors; Count: Integer);
+  // convert RGB to BGR and vice-versa.  TRGBQuad <-> TPaletteEntry
+{$IFDEF WIN32}
   // From Delphi 3.02 graphics.pas
   // There is a bug in the ByteSwapColors from Delphi 3.0
-
-  procedure ByteSwapColors(var Colors; Count: Integer);
-  {$IFDEF WIN32}
-  var // convert RGB to BGR and vice-versa.  TRGBQuad <-> TPaletteEntry
+  var
     SysInfo: TSystemInfo;
   begin
     GetSystemInfo(SysInfo);
@@ -670,15 +670,14 @@ var
           POP   EBX
       @@END:
     end;
-    {$ELSE}
-    {From Delphi XE2
-    Vcl.Graphics unit
-    Copyright(c) 1995-2011 Embarcadero Technologies, Inc.
-    }
+{$ENDIF WIN32}
+{$IFDEF WIN64}
+  // From Delphi XE2 Vcl.Graphics unit
+  // Copyright(c) 1995-2011 Embarcadero Technologies, Inc.
   var
-  C: PDWORD;
-  Color: DWORD;
-  I: Integer;
+    C: PDWORD;
+    Color: DWORD;
+    I: Integer;
   begin
     C := @Colors;
     I := 0;
@@ -690,9 +689,9 @@ var
       Inc(I);
       Inc(C);
     end;
-    {$ENDIF}
+{$ENDIF WIN64}
   end;
-{$ENDIF}
+{$ENDIF PIXELFORMAT_TOO_SLOW}
 begin
 {$IFDEF PIXELFORMAT_TOO_SLOW}
   if (FBitmap.Handle = 0) then
@@ -738,14 +737,13 @@ begin
       if (SrcColors < DstColors) then
         FillChar(pointer(LongInt(@FDIBInfo^.bmiColors) + SizeOf(TRGBQuad) * SrcColors)^,
           DstColors - SrcColors, 0);
-     {.$ENDIF}
     end;
 
   except
     FreeDIB;
     raise;
   end;
-{$ENDIF}
+{$ENDIF PIXELFORMAT_TOO_SLOW}
 end;
 
 procedure TDIBWriter.FreeDIB;
