@@ -303,14 +303,11 @@ procedure TForm1.HotSpotClick(Sender: TObject; const URL: ThtString; var Handled
 const
   snd_Async = $0001;  { play asynchronously }
 var
-  PC: array[0..255] of char;
-{$ifdef LCL}
-  PC2: array[0..255] of char;
-{$endif}
-  S, Params: string[255];
-  Ext: string[5];
-  ID: string;
+  PC: array[0..255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
+  S, Params: ThtString;
+  Ext: string;
   I, J, K: integer;
+  ID: string;
 
 begin
 Handled := False;
@@ -318,10 +315,12 @@ Handled := False;
 {The following looks for a link of the form, "IDExpand_XXX".  This is interpreted
  as meaning a block with an ID="XXXPlus" or ID="XXXMinus" attribute should
  have its Display property toggled.
-} 
+}
 I := Pos('IDEXPAND_', Uppercase(URL));
 if I=1 then
   begin
+  if Assigned(Viewer) then
+    begin
     ID := Copy(URL, 10, Length(URL)-9);
     if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
       Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
@@ -329,10 +328,12 @@ if I=1 then
       Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
     Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
     Viewer.Reformat;
-    Handled := True;
-    Exit;
+    end;
+  Handled := True;
+  Exit;
   end;
 
+{check for various file types}
 I := Pos(':', URL);
 J := Pos('FILE:', UpperCase(URL));
 if (I <= 2) or (J > 0) then
@@ -343,54 +344,46 @@ if (I <= 2) or (J > 0) then
   if K > 0 then
     begin
     Params := Copy(S, K+1, 255); {save any parameters}
-    S[0] := Ansichar(K-1);            {truncate S}
+    setLength(S, K-1);            {truncate S}
     end
   else Params := '';
-  S := Viewer.HTMLExpandFileName(S);
+  S := (Sender as TFrameViewer).HTMLExpandFileName(S);
   Ext := Uppercase(ExtractFileExt(S));
   if Ext = '.WAV' then
     begin
     Handled := True;
-{$ifndef LCL}
+{$ifndef MultiMediaMissing}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
 {$endif}
     end
   else if Ext = '.EXE' then
     begin
     Handled := True;
-{$ifdef LCL}
-    OpenDocument(s);
-{$else}
-    WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
-{$endif}
+    StartProcess(S + ' ' + Params, SW_SHOW);
     end
   else if (Ext = '.MID') or (Ext = '.AVI')  then
     begin
     Handled := True;
-{$ifdef LCL}
-    OpenDocument(s);
-{$else}
-    WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
-{$endif}
+    StartProcess('MPlayer.exe /play /close ' + S, SW_SHOW);
     end;
   {else ignore other extensions}
   Edit1.Text := URL;
   Exit;
   end;
-
-  I := Pos('MAILTO:', UpperCase(URL));
-  J := Pos('HTTP:', UpperCase(URL));
-  if (I > 0) or (J > 0) then
+I := Pos('MAILTO:', UpperCase(URL));
+J := Pos('HTTP://', UpperCase(URL));
+if (I > 0) or (J > 0) then
   begin
+  {Note: ShellExecute causes problems when run from Delphi 4 IDE}
 {$ifdef LCL}
-    OpenDocument(URL);
+  OpenDocument(StrPCopy(PC, URL));
 {$else}
-    ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
+  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
 {$endif}
-    Handled := True;
-    Exit;
+  Handled := True;
+  Exit;
   end;
-  Edit1.Text := URL;   {other protocall}
+Edit1.Text := URL;   {other protocall}
 end;
 
 procedure TForm1.ShowImagesClick(Sender: TObject);
@@ -847,11 +840,7 @@ procedure TForm1.OpenInNewWindowClick(Sender: TObject);
 var
   PC: array[0..255] of char;
 begin
-{$ifdef LCL}
-  OpenDocument(ParamStr(0));
-{$else}
-  WinExec(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
-{$endif}
+  StartProcess(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
 end;
 
 procedure TForm1.MetaTimerTimer(Sender: TObject);
