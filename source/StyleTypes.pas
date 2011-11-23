@@ -32,7 +32,7 @@ unit StyleTypes;
 interface
 
 uses
-  Windows, SysUtils, Math, Forms, Variants,
+  Windows, SysUtils, Math, Forms, Variants, Graphics,
   //
   HtmlGlobals;
 
@@ -172,9 +172,10 @@ type
     pdUnassigned,
     pdInline,
     pdBlock,
+    pdInlineBlock,
     pdListItem,
     pdRunIn,
-    pdInlineBlock,
+    pdCompact,
     pdTable,
     pdInlineTable,
     pdTableRowGroup,
@@ -191,9 +192,10 @@ const
     '',
     'inline',
     'block',
+    'inline-block',
     'list-item',
     'run-in',
-    'inline-block',
+    'compact',
     'table',
     'inline-table',
     'table-row-group',
@@ -208,6 +210,7 @@ const
 
   CRootDisplayStyle: array[TDisplayStyle] of TDisplayStyle = (
     pdUnassigned,
+    pdBlock,
     pdBlock,
     pdBlock,
     pdBlock,
@@ -254,8 +257,22 @@ type
   TFontConvBase = array[0..7] of Double;
   TFontConv = array[1..7] of Double;
 const
-  FontConvBase: TFontConvBase = (0.5833, 0.75, 0.8333, 1.0, 1.1667, 1.5, 2.0, 3.0);
-  PreFontConvBase: TFontConvBase = (0.5, 0.5833, 0.75, 0.8333, 1.0, 1.25, 1.6667, 2.5);
+  FontConvBase:    TFontConvBase = (0.5833, 0.75,   0.8333, 1.0,    1.1667, 1.5,  2.0,    3.0);
+  PreFontConvBase: TFontConvBase = (0.5,    0.5833, 0.75,   0.8333, 1.0,    1.25, 1.6667, 2.5);
+
+type
+  TRectEdge     = (reLeft, reTop, reRight, reBottom);
+  TRectIntegers = packed array[TRectEdge] of Integer;
+  TRectColors   = packed array[TRectEdge] of TColor;
+  TRectStyles   = packed array[TRectEdge] of TBorderStyle;
+const
+  NullIntegers: TRectIntegers = (0, 0, 0, 0);
+  NoneColors: TRectColors = (clNone, clNone, clNone, clNone);
+  NoneStyles: TRectStyles = (bssNone, bssNone, bssNone, bssNone);
+
+function RectIntegers(Left, Top, Right, Bottom: Integer): TRectIntegers;
+function RectColors(Left, Top, Right, Bottom: TColor): TRectColors;
+function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
 
 //------------------------------------------------------------------------------
 // media types
@@ -357,6 +374,33 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
 }
 
 implementation
+
+//-- BG ---------------------------------------------------------- 05.04.2011 --
+function RectIntegers(Left, Top, Right, Bottom: Integer): TRectIntegers;
+begin
+  Result[reTop] := Top;
+  Result[reLeft] := Left;
+  Result[reRight] := Right;
+  Result[reBottom] := Bottom;
+end;
+
+//-- BG ---------------------------------------------------------- 05.04.2011 --
+function RectColors(Left, Top, Right, Bottom: TColor): TRectColors;
+begin
+  Result[reTop] := Top;
+  Result[reLeft] := Left;
+  Result[reRight] := Right;
+  Result[reBottom] := Bottom;
+end;
+
+//-- BG ---------------------------------------------------------- 05.04.2011 --
+function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
+begin
+  Result[reTop] := Top;
+  Result[reLeft] := Left;
+  Result[reRight] := Right;
+  Result[reBottom] := Bottom;
+end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;

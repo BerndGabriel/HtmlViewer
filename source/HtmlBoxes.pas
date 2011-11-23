@@ -69,7 +69,11 @@ type
     FPrev: THtmlBox;                      // previous sibling in parent's content.
     FNext: THtmlBox;                      // next sibling in parent's content.
     FChildren: THtmlBoxList;              // the content.
+    // position
     FBounds: TRect;
+    FDisplay: TDisplayStyle;
+    FFloat: TBoxFloatStyle;
+    FPosition: TBoxPositionStyle;
     // border
     FMargins: TRectIntegers;
     FBorderWidths: TRectIntegers;
@@ -113,6 +117,9 @@ type
     //
     property Parent: THtmlBox read FParent write SetParent;
     property BoundsRect: TRect read FBounds write FBounds;
+    property Display: TDisplayStyle read FDisplay write FDisplay;
+    property Float: TBoxFloatStyle read FFloat write FFloat;
+    property Position: TBoxPositionStyle read FPosition write FPosition;
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
     property Visible: Boolean read IsVisible;
@@ -147,7 +154,7 @@ type
 //                 THtmlElements BODY and FRAMESET.
 //------------------------------------------------------------------------------
 
-  THtmlControlBox = class(THtmlBox)
+  THtmlControlBox = class(THtmlElementBox)
   protected
     function GetControl: TControl; virtual; abstract;
     function IsVisible: Boolean; override;
@@ -361,6 +368,8 @@ constructor THtmlBox.Create(ParentBox: THtmlBox);
 begin
   inherited Create;
   Parent := ParentBox;
+  FBackgroundColor := clNone;
+  FBorderColors := NoneColors;
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -392,7 +401,7 @@ end;
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 function THtmlBox.IsVisible: Boolean;
 begin
-  Result := (FParent = nil) or (FParent.Visible); 
+  Result := (FDisplay <> pdNone) and ((FParent = nil) or FParent.Visible);
 end;
 
 //-- BG ---------------------------------------------------------- 04.04.2011 --

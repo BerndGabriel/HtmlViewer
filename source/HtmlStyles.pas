@@ -30,10 +30,11 @@ unit HtmlStyles;
 interface
 
 uses
-  Windows, Classes, Contnrs, Variants, SysUtils,
+  Windows, Classes, Contnrs, Variants, SysUtils, Graphics,
   //
   HtmlGlobals,
   HtmlSymbols,
+  Parser,
   StyleTypes;
 
 //------------------------------------------------------------------------------
@@ -363,6 +364,19 @@ type
     FProperty: TStyleProperty;
     FSelector: TStyleSelector;
   public
+    function GetBorderStyle(Parent, Default: TBorderStyle): TBorderStyle;
+    function GetColor(Parent, Default: TColor): TColor;
+    function GetDisplay(Parent, Default: TDisplayStyle): TDisplayStyle;
+    function GetFloat(Parent, Default: TBoxFloatStyle): TBoxFloatStyle;
+    function GetFontName(Parent, Default: ThtString): ThtString;
+    function GetFontSize(DefaultFontSize, Parent, Default: Double): Double;
+    function GetFontWeight(Parent, Default: Integer): Integer;
+    function GetLength(Relative: Boolean; Parent, EmBase, Default: Double): Double;
+    function GetPosition(Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
+    function GetTextDecoration(Parent, Default: TFontStyles): TFontStyles;
+    function GetValue(Parent, Default: Variant): Variant;
+    function IsItalic(Parent, Default: Boolean): Boolean;
+    //
     function Compare(const AProperty: TStyleProperty; const ASelector: TStyleSelector): Integer; {$ifdef UseInline} inline; {$endif}
     procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
     property Prop: TStyleProperty read FProperty;
@@ -370,6 +384,12 @@ type
   end;
 
   TResultingProperties = array [TStylePropertySymbol] of TResultingProperty;
+
+  THtmlElementBoxingInfo = record
+    Display: TDisplayStyle;
+    Position: TBoxPositionStyle;
+    Float: TBoxFloatStyle;
+  end;
 
   // How to compute the resulting properties:
   // 1) Fill map with properties from style attribute (highest prio) using UpdateFromStyleAttribute(),
@@ -387,9 +407,13 @@ type
   public
     destructor Destroy; override;
     function Get(Index: TStylePropertySymbol): TResultingProperty; {$ifdef UseInline} inline; {$endif}
+    function GetColors(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectColors): TRectColors;
+    function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
+    function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectStyles): TRectStyles;
+    procedure GetElementBoxingInfo(var Info: THtmlElementBoxingInfo);
     procedure UpdateFromAttributes(const Properties: TStylePropertyList; IsFromStyleAttr: Boolean); {$ifdef UseInline} inline; {$endif}
     procedure UpdateFromProperties(const Properties: TStylePropertyList; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
-    property ResultingProperties[Index: TStylePropertySymbol]: TResultingProperty read Get; default;
+    property Properties[Index: TStylePropertySymbol]: TResultingProperty read Get; default;
   end;
 
 //------------------------------------------------------------------------------
@@ -1085,8 +1109,10 @@ begin
     for I := 0 to Count - 1 do
       Strings.Add(Self[I].ToString);
     Result := Strings.Text;
+{$ifdef DEBUG}
     if Length(Result) > 0 then
       Strings.SaveToFile('C:\Temp\Rulesets.css');
+{$endif}      
   finally
     Strings.Free;
   end;
@@ -1094,6 +1120,7 @@ end;
 
 { TResultingProperty }
 
+//-- BG ---------------------------------------------------------- 22.03.2011 --
 function TResultingProperty.Compare(const AProperty: TStyleProperty; const ASelector: TStyleSelector): Integer;
 begin
   Result := Ord(FProperty.Precedence) - Ord(AProperty.Precedence);
@@ -1101,6 +1128,226 @@ begin
     exit;
 
   Result := FSelector.CompareSpecificity(ASelector);
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function TResultingProperty.GetBorderStyle(Parent, Default: TBorderStyle): TBorderStyle;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsOrdinal(Prop.Value) then
+      Result := TBorderStyle(Prop.Value)
+    else if VarIsStr(Prop.Value) then
+      if TryStrToBorderStyle(Prop.Value, Result) then
+        Prop.Value := Integer(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingProperty.GetColor(Parent, Default: TColor): TColor;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsOrdinal(Prop.Value) then
+      Result := TColor(Prop.Value)
+    else if VarIsStr(Prop.Value) then
+      if TryStrToColor(Prop.Value, False, Result) then
+        Prop.Value := Integer(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingProperty.GetDisplay(Parent, Default: TDisplayStyle): TDisplayStyle;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsOrdinal(Prop.Value) then
+      Result := TDisplayStyle(Prop.Value)
+    else if VarIsStr(Prop.Value) then
+      if TryStrToDisplayStyle(Prop.Value, Result) then
+        Prop.Value := Integer(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingProperty.GetFloat(Parent, Default: TBoxFloatStyle): TBoxFloatStyle;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsOrdinal(Prop.Value) then
+      Result := TBoxFloatStyle(Prop.Value)
+    else if VarIsStr(Prop.Value) then
+      if TryStrToBoxFloatStyle(Prop.Value, Result) then
+        Prop.Value := Integer(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function TResultingProperty.GetFontName(Parent, Default: ThtString): ThtString;
+
+  function FontFamilyToFontName(Family: ThtString): ThtString;
+  begin
+    //TODO -oBG, 03.05.2011: translate font famliy to font name
+    Result := Family;
+  end;
+
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsStr(Prop.Value) then
+    begin
+      Result := FontFamilyToFontName(Prop.Value);
+      Prop.Value := Result;
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function TResultingProperty.GetFontSize(DefaultFontSize, Parent, Default: Double): Double;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsNumeric(Prop.Value) then
+      Result := Prop.Value
+    else if VarIsStr(Prop.Value) then
+    begin
+      Result := StrToFontSize(Prop.Value, FontConvBase, DefaultFontSize, Parent, Default);
+      Prop.Value := Result;
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function TResultingProperty.GetFontWeight(Parent, Default: Integer): Integer;
+// CSS 2.1:
+// Parent  | 100 200 300 400 500 600 700 800 900
+// --------+------------------------------------
+// bolder  | 400 400 400 700 700 900 900 900 900
+// lighter | 100 100 100 100 100 400 400 700 700
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsNumeric(Prop.Value) then
+      Result := Prop.Value
+    else if VarIsStr(Prop.Value) then
+    begin
+      if htCompareString(Prop.Value, 'normal') = 0 then
+        Result := 400
+      else if htCompareString(Prop.Value, 'bold') = 0 then
+        Result := 700
+      else if htCompareString(Prop.Value, 'bolder') = 0 then
+        if Parent <= 300 then
+          Result := 400
+        else if Parent < 600 then
+          Result := 700
+        else
+          Result := 900
+      else if htCompareString(Prop.Value, 'lighter') = 0 then
+        if Parent <= 500 then
+          Result := 100
+        else if Parent < 800 then
+          Result := 400
+        else
+          Result := 700
+      else if htCompareString(Prop.Value, 'light') = 0 then
+        Result := 100;
+      Prop.Value := Result;
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 30.04.2011 --
+function TResultingProperty.GetLength(Relative: Boolean; Parent, EmBase, Default: Double): Double;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsNumeric(Prop.Value) then
+      Result := Prop.Value
+    else if VarIsStr(Prop.Value) then
+    begin
+      Result := StrToLength(Prop.Value, Relative, Parent, EmBase, Default);
+      Prop.Value := Result;
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingProperty.GetPosition(Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsOrdinal(Prop.Value) then
+      Result := TBoxPositionStyle(Prop.Value)
+    else if VarIsStr(Prop.Value) then
+      if TryStrToBoxPositionStyle(Prop.Value, Result) then
+        Prop.Value := Integer(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function TResultingProperty.GetTextDecoration(Parent, Default: TFontStyles): TFontStyles;
+var
+  ResultAsByte: Byte absolute Result;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsOrdinal(Prop.Value) then
+      ResultAsByte := Prop.Value
+    else if VarIsStr(Prop.Value) then
+    begin
+      if htCompareString(Prop.Value, 'underline') = 0 then
+        Result := [fsUnderline]
+      else if htCompareString(Prop.Value, 'line-through') = 0 then
+        Result := [fsStrikeOut]
+      else
+        Result := [];
+      Prop.Value := ResultAsByte;
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function TResultingProperty.GetValue(Parent, Default: Variant): Variant;
+begin
+  if Self = nil then
+    Result := Default
+  else
+  begin
+    Result := Prop.Value;
+    if Result = Inherit then
+      Result := Parent;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 03.05.2011 --
+function TResultingProperty.IsItalic(Parent, Default: Boolean): Boolean;
+begin
+  Result := Default;
+  if Self <> nil then
+    if Prop.Value = Inherit then
+      Result := Parent
+    else if VarIsType(Prop.Value, varBoolean) then
+      Result := Prop.Value
+    else if VarIsStr(Prop.Value) then
+    begin
+      if htCompareString(Prop.Value, 'italic') = 0 then
+        Result := True
+      else if htCompareString(Prop.Value, 'oblique') = 0 then
+        Result := True
+      else
+        Result := False;
+      Prop.Value := Result;
+    end;
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --
@@ -1126,6 +1373,64 @@ end;
 function TResultingPropertyMap.Get(Index: TStylePropertySymbol): TResultingProperty;
 begin
   Result := FProps[Index];
+end;
+
+//-- BG ---------------------------------------------------------- 03.09.2011 --
+procedure TResultingPropertyMap.GetElementBoxingInfo(var Info: THtmlElementBoxingInfo);
+begin
+  //compute display, position and float according to CSS3 (http://www.w3.org/TR/css3-box/)
+  Info.Display := Properties[psDisplay].GetDisplay(Info.Display, pdInline);
+  case Info.Display of
+    pdNone:
+    begin
+      Info.Position := posAbsolute;
+      Info.Float := flNone;
+    end;
+  else
+    Info.Position := Properties[psPosition].GetPosition(Info.Position, posStatic);
+    case Info.Position of
+      posAbsolute,
+      posFixed:
+      begin
+        Info.Float := flNone;
+        Info.Display := ToRootDisplayStyle(Info.Display);
+      end;
+    else
+      Info.Float := Properties[psFloat].GetFloat(Info.Float, flNone);
+      case Info.Float of
+        flNone:;
+      else
+        Info.Display := ToRootDisplayStyle(Info.Display);
+      end;
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingPropertyMap.GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
+begin
+  Result[reLeft]   := Round(Properties[Left].  GetLength(False, Parent[reLeft],   BaseSize, Default[reLeft]  ));
+  Result[reTop]    := Round(Properties[Top].   GetLength(False, Parent[reTop],    BaseSize, Default[reTop]   ));
+  Result[reRight]  := Round(Properties[Right]. GetLength(False, Parent[reRight],  BaseSize, Default[reRight] ));
+  Result[reBottom] := Round(Properties[Bottom].GetLength(False, Parent[reBottom], BaseSize, Default[reBottom]));
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingPropertyMap.GetColors(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectColors): TRectColors;
+begin
+  Result[reLeft]   := Properties[Left].  GetColor(Parent[reLeft],   Default[reLeft]  );
+  Result[reTop]    := Properties[Top].   GetColor(Parent[reTop],    Default[reTop]   );
+  Result[reRight]  := Properties[Right]. GetColor(Parent[reRight],  Default[reRight] );
+  Result[reBottom] := Properties[Bottom].GetColor(Parent[reBottom], Default[reBottom]);
+end;
+
+//-- BG ---------------------------------------------------------- 01.05.2011 --
+function TResultingPropertyMap.GetStyles(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectStyles): TRectStyles;
+begin
+  Result[reLeft]   := Properties[Left].  GetBorderStyle(Parent[reLeft],   Default[reLeft]);
+  Result[reTop]    := Properties[Top].   GetBorderStyle(Parent[reTop],    Default[reTop]);
+  Result[reRight]  := Properties[Right]. GetBorderStyle(Parent[reRight],  Default[reRight]);
+  Result[reBottom] := Properties[Bottom].GetBorderStyle(Parent[reBottom], Default[reBottom]);
 end;
 
 //-- BG ---------------------------------------------------------- 22.03.2011 --

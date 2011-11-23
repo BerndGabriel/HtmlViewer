@@ -84,7 +84,7 @@ type
     function LeftEdge(Y: Integer): Integer;
     function RightEdge(Y: Integer): Integer;
   public
-    constructor Create;
+    constructor Create(Width: Integer);
     destructor Destroy; override;
     function AddLeft(YT, YB, W: Integer): TIndentation;
     function AddRight(YT, YB, W: Integer): TIndentation;
@@ -94,7 +94,7 @@ type
     function GetClearY: Integer; overload;
     function GetClearLeftY: Integer; overload;
     function GetClearRightY: Integer; overload;
-    procedure Init(Width: Integer);
+    //procedure Init(Width: Integer);
   end;
 
   EIndentationManagerStackException = class(EIndentationException);
@@ -146,9 +146,10 @@ end;
 { TIndentationManager }
 
 //-- BG ---------------------------------------------------------- 27.08.2011 --
-constructor TSketchMap.Create;
+constructor TSketchMap.Create(Width: Integer);
 begin
   inherited Create;
+  Self.Width := Width;
   R := TIndentationList.Create;
   L := TIndentationList.Create;
 end;
@@ -181,13 +182,13 @@ begin
   R.Add(Result);
 end;
 
-//-- BG ---------------------------------------------------------- 23.02.2011 --
-procedure TSketchMap.Init(Width: Integer);
-begin
-  Self.Width := Width;
-  R.Clear;
-  L.Clear;
-end;
+////-- BG ---------------------------------------------------------- 23.02.2011 --
+//procedure TSketchMap.Init(Width: Integer);
+//begin
+//  Self.Width := Width;
+//  R.Clear;
+//  L.Clear;
+//end;
 
 const
   BigY = 9999999;

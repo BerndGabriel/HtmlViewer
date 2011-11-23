@@ -50,6 +50,7 @@ uses
   UrlSubs;
 
 type
+  EHtmlRendererException = class(Exception);
 
 //------------------------------------------------------------------------------
 // THtmlControlOfElementMap remembers controls that are used to render elements.
@@ -122,12 +123,6 @@ type
     property OnGetBuffer: TGetBufferEvent read FOnGetBuffer write FOnGetBuffer;
   end;
 
-  THtmlRendererBlockInfo = record
-    Display: TDisplayStyle;
-    Position: TBoxPositionStyle;
-    Float: TBoxFloatStyle;
-  end;
-
   THtmlVisualRenderer = class(THtmlRenderer)
   private
     //--------------------------------------
@@ -135,7 +130,6 @@ type
     //--------------------------------------
 
     // general
-    FWidth: Integer;          // width of destination viewport in pixels
     FHeight: Integer;         // height of destination viewport in pixels
     FControls: THtmlControlOfElementMap;
     // fonts
@@ -152,26 +146,22 @@ type
     // positioning
     FSketchMapStack: TSketchMapStack;
 
-    function GetBorderStyle(Prop: TResultingProperty; Parent, Default: TBorderStyle): TBorderStyle;
-    function GetColor(Prop: TResultingProperty; Parent, Default: TColor): TColor;
-    function GetControl(const Element: THtmlElement): TControl;
     function DefaultFontSize: Double;
-    function GetDisplay(Prop: TResultingProperty; Parent, Default: TDisplayStyle): TDisplayStyle;
-    function GetFloat(Prop: TResultingProperty; Parent, Default: TBoxFloatStyle): TBoxFloatStyle;
+    function GetControl(const Element: THtmlElement): TControl;
     function GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
-    function GetLength(Prop: TResultingProperty; Relative: Boolean; Parent, EmBase, Default: Double): Double;
-    function GetPosition(Prop: TResultingProperty; Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
-    function GetPropValue(Prop: TResultingProperty; Parent, Default: Variant): Variant;
-    //procedure SetControls(const Value: THtmlControlOfElementMap);
-    procedure SetPropertiesToBox(Element: THtmlElement; Box: THtmlBox; Properties: TResultingPropertyMap);
+    function SketchMap: TSketchMap; {$ifdef UseInline} inline; {$endif}
     procedure GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
+    procedure SetPropertiesToBox(
+      Element: THtmlElement;
+      Box: THtmlBox;
+      Properties: TResultingPropertyMap;
+      const Info: THtmlElementBoxingInfo);
     //
-    procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); overload;
+    procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
   protected
     procedure RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
     procedure RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
     procedure RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
-    procedure RenderText(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
   public
     constructor Create(
       Document: THtmlDocument;
@@ -181,12 +171,15 @@ type
       DefaultFont: ThtFont;
       Width, Height: Integer);
     destructor Destroy; override;
-    procedure Render(Owner: TWinControl; ParentBox: THtmlBox); overload;
-    property ControlOfElementMap: THtmlControlOfElementMap read FControls; // write SetControls;
+    procedure RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
+    property ControlOfElementMap: THtmlControlOfElementMap read FControls;
     property OnGetImage: TGetImageEvent read FOnGetImage write FOnGetImage;
   end;
 
 implementation
+
+var
+  DefaultBox: THtmlBox;
 
 { THtmlControlOfElementMap }
 
@@ -301,14 +294,6 @@ begin
   Result.UpdateFromAttributes(Element.AttributeProperties, False);
 end;
 
-//{ THtmlVisualizedDocument }
-//
-////-- BG ---------------------------------------------------------- 25.04.2011 --
-//constructor THtmlVisualizedDocument.Create(View: THtmlBox);
-//begin
-//  FView := View;
-//end;
-
 { THtmlVisualRenderer }
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
@@ -322,11 +307,11 @@ constructor THtmlVisualRenderer.Create(
 begin
   inherited Create(Document, MediaType);
   FSketchMapStack := TSketchMapStack.Create;
+  FSketchMapStack.Push(TSketchMap.Create(Width));
   FCapabilities := [mcFrames];
   FControls := ControlMap;
   FImages := ImageCache;
   FDefaultFont := DefaultFont;
-  FWidth := Width;
   FHeight := Height;
 end;
 
@@ -348,34 +333,6 @@ begin
   inherited;
 end;
 
-//-- BG ---------------------------------------------------------- 30.04.2011 --
-function THtmlVisualRenderer.GetBorderStyle(Prop: TResultingProperty; Parent, Default: TBorderStyle): TBorderStyle;
-begin
-  Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else if VarIsOrdinal(Prop.Prop.Value) then
-      Result := TBorderStyle(Prop.Prop.Value)
-    else if VarIsStr(Prop.Prop.Value) then
-      if TryStrToBorderStyle(Prop.Prop.Value, Result) then
-        Prop.Prop.Value := Integer(Result);
-end;
-
-//-- BG ---------------------------------------------------------- 01.05.2011 --
-function THtmlVisualRenderer.GetColor(Prop: TResultingProperty; Parent, Default: TColor): TColor;
-begin
-  Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else if VarIsOrdinal(Prop.Prop.Value) then
-      Result := TColor(Prop.Prop.Value)
-    else if VarIsStr(Prop.Prop.Value) then
-      if TryStrToColor(Prop.Prop.Value, False, Result) then
-        Prop.Prop.Value := Integer(Result);
-end;
-
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 function THtmlVisualRenderer.GetControl(const Element: THtmlElement): TControl;
 begin
@@ -385,177 +342,28 @@ begin
     Result := nil;
 end;
 
-//-- BG ---------------------------------------------------------- 01.05.2011 --
-function THtmlVisualRenderer.GetDisplay(Prop: TResultingProperty; Parent, Default: TDisplayStyle): TDisplayStyle;
-begin
-  Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else if VarIsOrdinal(Prop.Prop.Value) then
-      Result := TDisplayStyle(Prop.Prop.Value)
-    else if VarIsStr(Prop.Prop.Value) then
-      if TryStrToDisplayStyle(Prop.Prop.Value, Result) then
-        Prop.Prop.Value := Integer(Result);
-end;
-
-//-- BG ---------------------------------------------------------- 01.05.2011 --
-function THtmlVisualRenderer.GetFloat(Prop: TResultingProperty; Parent, Default: TBoxFloatStyle): TBoxFloatStyle;
-begin
-  Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else if VarIsOrdinal(Prop.Prop.Value) then
-      Result := TBoxFloatStyle(Prop.Prop.Value)
-    else if VarIsStr(Prop.Prop.Value) then
-      if TryStrToBoxFloatStyle(Prop.Prop.Value, Result) then
-        Prop.Prop.Value := Integer(Result);
-end;
-
 //------------------------------------------------------------------------------
 procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
-
-  //BG, 03.05.2011:
-  function GetFontWeight(Prop: TResultingProperty; Parent, Default: Integer): Integer;
-  // CSS 2.1:
-  // Parent  | 100 200 300 400 500 600 700 800 900
-  // --------+------------------------------------
-  // bolder  | 400 400 400 700 700 900 900 900 900
-  // lighter | 100 100 100 100 100 400 400 700 700
-  begin
-    Result := Default;
-    if Prop <> nil then
-      if Prop.Prop.Value = Inherit then
-        Result := Parent
-      else if VarIsNumeric(Prop.Prop.Value) then
-        Result := Prop.Prop.Value
-      else if VarIsStr(Prop.Prop.Value) then
-      begin
-        if htCompareString(Prop.Prop.Value, 'normal') = 0 then
-          Result := 400
-        else if htCompareString(Prop.Prop.Value, 'bold') = 0 then
-          Result := 700
-        else if htCompareString(Prop.Prop.Value, 'bolder') = 0 then
-          if Parent <= 300 then
-            Result := 400
-          else if Parent < 600 then
-            Result := 700
-          else
-            Result := 900
-        else if htCompareString(Prop.Prop.Value, 'lighter') = 0 then
-          if Parent <= 500 then
-            Result := 100
-          else if Parent < 800 then
-            Result := 400
-          else
-            Result := 700
-        else if htCompareString(Prop.Prop.Value, 'light') = 0 then
-          Result := 100;
-        Prop.Prop.Value := Result;
-      end;
-  end;
-
-  //BG, 03.05.2011:
-  function IsItalic(Prop: TResultingProperty; Parent, Default: Boolean): Boolean;
-  begin                                                                                                         
-    Result := Default;
-    if Prop <> nil then
-      if Prop.Prop.Value = Inherit then
-        Result := Parent
-      else if VarIsType(Prop.Prop.Value, varBoolean) then
-        Result := Prop.Prop.Value
-      else if VarIsStr(Prop.Prop.Value) then
-      begin
-        if htCompareString(Prop.Prop.Value, 'italic') = 0 then
-          Result := True
-        else if htCompareString(Prop.Prop.Value, 'oblique') = 0 then
-          Result := True
-        else
-          Result := False;
-        Prop.Prop.Value := Result;
-      end;
-  end;
-
-  //BG, 03.05.2011:
-  function GetTextDecoration(Prop: TResultingProperty; Parent, Default: TFontStyles): TFontStyles;
-  var
-    ResultAsByte: Byte absolute Result;
-  begin
-    Result := Default;
-    if Prop <> nil then
-      if Prop.Prop.Value = Inherit then
-        Result := Parent
-      else if VarIsOrdinal(Prop.Prop.Value) then
-        ResultAsByte := Prop.Prop.Value
-      else if VarIsStr(Prop.Prop.Value) then
-      begin
-        if htCompareString(Prop.Prop.Value, 'underline') = 0 then
-          Result := [fsUnderline]
-        else if htCompareString(Prop.Prop.Value, 'line-through') = 0 then
-          Result := [fsStrikeOut]
-        else
-          Result := [];
-        Prop.Prop.Value := ResultAsByte;
-      end;
-  end;
-
-  //BG, 03.05.2011:
-  function GetFontName(Prop: TResultingProperty; Parent, Default: ThtString): ThtString;
-
-    function FontFamilyToFontName(Family: ThtString): ThtString;
-    begin
-      Result := Family;
-    end;
-
-  begin
-    Result := Default;
-    if Prop <> nil then
-      if Prop.Prop.Value = Inherit then
-        Result := Parent
-      else if VarIsStr(Prop.Prop.Value) then
-      begin
-        Result := FontFamilyToFontName(Prop.Prop.Value);
-        Prop.Prop.Value := Result;
-      end;
-  end;
-
-  //BG, 03.05.2011:
-  function GetFontSize(Prop: TResultingProperty; Parent, Default: Double): Double;
-  begin
-    Result := Default;
-    if Prop <> nil then
-      if Prop.Prop.Value = Inherit then
-        Result := Parent
-      else if VarIsNumeric(Prop.Prop.Value) then
-        Result := Prop.Prop.Value
-      else if VarIsStr(Prop.Prop.Value) then
-      begin
-        Result := StrToFontSize(Prop.Prop.Value, FontConvBase, DefaultFontSize, Parent, Default);
-        Prop.Prop.Value := Result;
-      end;
-  end;
-
 var
   Style: TFontStyles;
 begin
-  Font.ibgColor := GetColor(Props[BackgroundColor], Parent.ibgColor, Default.ibgColor);
-  Font.iColor := GetColor(Props[Color], Parent.iColor, Default.iColor);
+  Font.ibgColor := Props[BackgroundColor].GetColor(Parent.ibgColor, Default.ibgColor);
+  Font.iColor := Props[Color].GetColor(Parent.iColor, Default.iColor);
 
   Style := [];
-  if GetFontWeight(Props[FontWeight], Parent.iWeight, Default.iWeight) >= 600 then
+  if Props[FontWeight].GetFontWeight(Parent.iWeight, Default.iWeight) >= 600 then
     Include(Style, fsBold);
-  if IsItalic(Props[FontStyle], fsItalic in Parent.iStyle, fsItalic in Default.iStyle) then
+  if Props[FontStyle].IsItalic(fsItalic in Parent.iStyle, fsItalic in Default.iStyle) then
     Include(Style, fsItalic);
-  Font.iStyle := Style + GetTextDecoration(Props[TextDecoration],
+  Font.iStyle := Style + Props[TextDecoration].GetTextDecoration(
     Parent.iStyle * [fsUnderline, fsStrikeOut],
     Default.iStyle * [fsUnderline, fsStrikeOut]);
 
-  Font.iSize := GetFontSize(Props[FontSize], Parent.iSize, Default.iSize);
+  Font.iSize := Props[FontSize].GetFontSize(DefaultFontSize, Parent.iSize, Default.iSize);
   Font.iCharset := Default.iCharSet;
 
-  Font.iName := GetFontName(Props[FontFamily], Parent.iName, Default.iName);
-  Font.iCharExtra := GetPropValue(Props[LetterSpacing], Parent.iCharExtra, Default.iCharExtra);
+  Font.iName := Props[FontFamily].GetFontName(Parent.iName, Default.iName);
+  Font.iCharExtra := Props[LetterSpacing].GetValue(Parent.iCharExtra, Default.iCharExtra);
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
@@ -598,53 +406,8 @@ begin
     end;
 end;
 
-var tmp: ThtString;
-
-//-- BG ---------------------------------------------------------- 30.04.2011 --
-function THtmlVisualRenderer.GetLength(Prop: TResultingProperty; Relative: Boolean; Parent, EmBase, Default: Double): Double;
-begin
-  Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else if VarIsNumeric(Prop.Prop.Value) then
-      Result := Prop.Prop.Value
-    else if VarIsStr(Prop.Prop.Value) then
-    begin
-      Result := StrToLength(Prop.Prop.Value, Relative, Parent, EmBase, Default);
-      Prop.Prop.Value := Result;
-    end;
-end;
-
-//-- BG ---------------------------------------------------------- 01.05.2011 --
-function THtmlVisualRenderer.GetPosition(Prop: TResultingProperty; Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
-begin
-  Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else if VarIsOrdinal(Prop.Prop.Value) then
-      Result := TBoxPositionStyle(Prop.Prop.Value)
-    else if VarIsStr(Prop.Prop.Value) then
-      if TryStrToBoxPositionStyle(Prop.Prop.Value, Result) then
-        Prop.Prop.Value := Integer(Result);
-end;
-
-//-- BG ---------------------------------------------------------- 03.05.2011 --
-function THtmlVisualRenderer.GetPropValue(Prop: TResultingProperty; Parent, Default: Variant): Variant;
-begin
-  if Prop = nil then
-    Result := Default
-  else
-  begin
-    Result := Prop.Prop.Value;
-    if Result = Inherit then
-      Result := Parent;
-  end;
-end;
-
 //-- BG ---------------------------------------------------------- 17.04.2011 --
-procedure THtmlVisualRenderer.Render(Owner: TWinControl; ParentBox: THtmlBox);
+procedure THtmlVisualRenderer.RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
 begin
   Render(Owner, ParentBox, FDocument.Tree);
 end;
@@ -655,13 +418,8 @@ begin
   case Element.Symbol of
     FrameSetSy: RenderFrameset(Owner, ParentBox, Element);
     BodySy: RenderBody(Owner, ParentBox, Element);
-
-    TextSy: RenderText(Owner, ParentBox, Element);
-
-    PSy,
-    DivSy,
-    SpanSy: RenderBox(Owner, ParentBox, Element);
   else
+    RenderBox(Owner, ParentBox, Element);
   end;
 end;
 
@@ -672,30 +430,19 @@ var
   Control: THtmlBodyControl;
   Child: THtmlElement;
   Properties: TResultingPropertyMap;
-  Info: THtmlRendererBlockInfo;
+  Info: THtmlElementBoxingInfo;
 begin
+  if ParentBox = nil then
+    raise EHtmlRendererException.Create('RenderBody() requires a parent box <> nil');
   Properties := GetResultingProperties(Element);
   try
-    // compute display, position and float:
-    Info.Display := GetDisplay(Properties[psDisplay], pdBlock, pdBlock);
+    Info.Display := pdBlock;
+    Info.Position := posStatic;
+    Info.Float := flNone;
+    Properties.GetElementBoxingInfo(Info);
+    Info.Display := ToRootDisplayStyle(Info.Display);
     if Info.Display = pdNone then
       exit;
-
-    Info.Position := GetPosition(Properties[psPosition], posStatic, posStatic);
-    case Info.Position of
-      posAbsolute,
-      posFixed:
-      begin
-        Info.Float := flNone;
-        Info.Display := ToRootDisplayStyle(Info.Display);
-      end;
-    else
-      Info.Float := GetFloat(Properties[psFloat], flNone, flNone);
-      if Info.Float <> flNone then
-        Info.Display := ToRootDisplayStyle(Info.Display);
-    end;
-    // for the root element:
-    Info.Display := ToRootDisplayStyle(Info.Display);
 
     // get or create the body control
     Control := GetControl(Element) as THtmlBodyControl;
@@ -709,15 +456,21 @@ begin
     Box.Tiled := True;
 
     // set properties
-    SetPropertiesToBox(Element, Box, Properties);
+    SetPropertiesToBox(Element, Box, Properties, Info);
 
     // render children
+
+    // pass 1: create the boxes
     Child := Element.FirstChild;
     while Child <> nil do
     begin
       Render(Control, Box, Child);
       Child := Child.Next;
     end;
+
+    // pass 2: convert the boxes, if necessary
+    // - A block container box either contains only block-level boxes or only inline-level boxes.
+    // - An inline container ...
   finally
     Properties.Free;
   end;
@@ -729,32 +482,59 @@ var
   Box: THtmlElementBox;
   Child: THtmlElement;
   Properties: TResultingPropertyMap;
-  Info: THtmlRendererBlockInfo;
+  Info: THtmlElementBoxingInfo;
 begin
+  if ParentBox = nil then
+    raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil');
   Properties := GetResultingProperties(Element);
   try
-    // compute display, position and float:
-    Info.Display := GetDisplay(Properties[psDisplay], pdBlock, pdBlock);
-    if Info.Display = pdNone then
-      exit;
+    Info.Display := ParentBox.Display;
+    Info.Position := ParentBox.Position;
+    Info.Float := ParentBox.Float;
+    Properties.GetElementBoxingInfo(Info);
+    case Info.Display of
+      // block level elements
+      pdBlock:
+        Box := THtmlElementBox.Create(ParentBox);
+//      pdListItem: ;
+//      pdTable: ;
 
-    Info.Position := GetPosition(Properties[psPosition], posStatic, posStatic);
-    case Info.Position of
-      posAbsolute,
-      posFixed:
-      begin
-        Info.Float := flNone;
-      end;
+      // inline level elements
+      pdInline:
+        Box := THtmlElementBox.Create(ParentBox);
+//      pdInlineBlock: ;
+//      pdInlineTable: ;
+
+//      pdRunIn:
+//        // http://www.w3.org/TR/css3-box/#run-in-boxes:
+//        // If the run-in box contains a block box, the run-in box becomes a block box.
+//        // If a sibling block box (that does not float and is not absolutely positioned) follows
+//        //  the run-in box, the run-in box becomes the first inline box of the block box. A run-in
+//        //  cannot run in to a block that already starts with a run-in or that itself is a run-in.
+//        // Otherwise, the run-in box becomes a block box.
+//        // TODO -oBG, 04.09.2011: pdRunIn --> pdBlock or pdInline
+//        ;
+//
+//      pdTableRowGroup: ;
+//      pdTableHeaderGroup: ;
+//      pdTableFooterGroup: ;
+//      pdTableRow: ;
+//      pdTableColumnGroup: ;
+//      pdTableColumn: ;
+//      pdTableCell: ;
+//      pdTableCaption: ;
+//
+      pdUnassigned:
+        raise EHtmlRendererException.Create('No "Display" assigned.');
+        
+      pdNone:
+        exit;
     else
-      Info.Float := GetFloat(Properties[psFloat], flNone, flNone);
+      raise EHtmlRendererException.Create('"Display:' + CDisplayStyle[Info.Display] + '" not yet supported.');
     end;
 
-    Box := THtmlElementBox.Create(ParentBox);
-    Box.BoundsRect := ParentBox.BoundsRect;
-    Box.Tiled := True;
-
     // set properties
-    SetPropertiesToBox(Element, Box, Properties);
+    SetPropertiesToBox(Element, Box, Properties, Info);
 
     // render children
     Child := Element.FirstChild;
@@ -774,59 +554,24 @@ begin
 
 end;
 
-//-- BG ---------------------------------------------------------- 28.08.2011 --
-procedure THtmlVisualRenderer.RenderText(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
-begin
-
-end;
-
-////-- BG ---------------------------------------------------------- 18.04.2011 --
-//procedure THtmlVisualRenderer.SetControls(const Value: THtmlControlOfElementMap);
-//begin
-//  if FControls <> Value then
-//    FControls.Assign(Value);
-//end;
-
 //-- BG ---------------------------------------------------------- 30.04.2011 --
-procedure THtmlVisualRenderer.SetPropertiesToBox(Element: THtmlElement; Box: THtmlBox; Properties: TResultingPropertyMap);
-
-  function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
-  begin
-    Result[reLeft]   := Round(GetLength(Properties[Left],   False, Parent[reLeft],   BaseSize, Default[reLeft]  ));
-    Result[reTop]    := Round(GetLength(Properties[Top],    False, Parent[reTop],    BaseSize, Default[reTop]   ));
-    Result[reRight]  := Round(GetLength(Properties[Right],  False, Parent[reRight],  BaseSize, Default[reRight] ));
-    Result[reBottom] := Round(GetLength(Properties[Bottom], False, Parent[reBottom], BaseSize, Default[reBottom]));
-  end;
-
-  function GetColors(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectColors): TRectColors;
-  begin
-    Result[reLeft]   := GetColor(Properties[Left],   Parent[reLeft],   Default[reLeft]  );
-    Result[reTop]    := GetColor(Properties[Top],    Parent[reTop],    Default[reTop]   );
-    Result[reRight]  := GetColor(Properties[Right],  Parent[reRight],  Default[reRight] );
-    Result[reBottom] := GetColor(Properties[Bottom], Parent[reBottom], Default[reBottom]);
-  end;
-
-  function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectStyles): TRectStyles;
-  begin
-    Result[reLeft]   := GetBorderStyle(Properties[Left],   Parent[reLeft],   Default[reLeft]);
-    Result[reTop]    := GetBorderStyle(Properties[Top],    Parent[reTop],    Default[reTop]);
-    Result[reRight]  := GetBorderStyle(Properties[Right],  Parent[reRight],  Default[reRight]);
-    Result[reBottom] := GetBorderStyle(Properties[Bottom], Parent[reBottom], Default[reBottom]);
-  end;
-
-const
-  NullLengths: TRectIntegers = (0, 0, 0, 0);
-  NoneColors: TRectColors = (clNone, clNone, clNone, clNone);
-  NoneStyles: TRectStyles = (bssNone, bssNone, bssNone, bssNone);
+procedure THtmlVisualRenderer.SetPropertiesToBox(
+  Element: THtmlElement;
+  Box: THtmlBox;
+  Properties: TResultingPropertyMap;
+  const Info: THtmlElementBoxingInfo);
 var
   ParentBox: THtmlBox;
   FontInfo: ThtFontInfo;
   EmBase: Integer;
   Font: ThtFont;
+  Rect: TRect;
 begin
   ParentBox := Box.Parent;
   while ParentBox is THtmlAnonymousBox do
     ParentBox := ParentBox.Parent;
+  if ParentBox = nil then
+    ParentBox := DefaultBox;
 
   // Font
   GetFontInfo(Properties, FontInfo, FDefaultFontInfo, FDefaultFontInfo);
@@ -835,26 +580,48 @@ begin
   EmBase := Font.EmSize;
   freeAndNil(Font);
 
-  if ParentBox <> nil then
-  begin
-    Box.Color         := GetColor(Properties[BackgroundColor], ParentBox.Color, clNone);
-    Box.Image         := GetImage(Properties[BackgroundImage], ParentBox.Image, nil);
-    Box.Margins       := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, ParentBox.Margins, NullLengths, EmBase);
-    Box.Paddings      := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, ParentBox.Paddings, NullLengths, EmBase);
-    Box.BorderWidths  := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, ParentBox.BorderWidths, NullLengths, EmBase);
-    Box.BorderColors  := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
-    Box.BorderStyles  := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
-  end
+  Box.Color         := Properties[BackgroundColor].GetColor(ParentBox.Color, clNone);
+  Box.Image         := GetImage(Properties[BackgroundImage], ParentBox.Image, nil);
+  Box.Margins       := Properties.GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, ParentBox.Margins, NullIntegers, EmBase);
+  Box.Paddings      := Properties.GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, ParentBox.Paddings, NullIntegers, EmBase);
+  Box.BorderWidths  := Properties.GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, ParentBox.BorderWidths, NullIntegers, EmBase);
+  Box.BorderColors  := Properties.GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
+  Box.BorderStyles  := Properties.GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
+
+  Box.Display := Info.Display;
+  Box.Float := Info.Float;
+  Box.Position := Info.Position;
+  case Box.Display of
+    pdUnassigned,
+    pdNone:
+      raise EHtmlRendererException.Create('A box having "Display:' + CDisplayStyle[Box.Display] + '" is not supported.');
   else
-  begin
-    Box.Color         := GetColor(Properties[BackgroundColor], clNone, clNone);
-    Box.Image         := GetImage(Properties[BackgroundImage], nil, nil);
-    Box.Margins       := GetLengths(MarginLeft, MarginTop, MarginRight, MarginBottom, NullLengths, NullLengths, EmBase);
-    Box.Paddings      := GetLengths(PaddingLeft, PaddingTop, PaddingRight, PaddingBottom, NullLengths, NullLengths, EmBase);
-    Box.BorderWidths  := GetLengths(BorderLeftWidth, BorderTopWidth, BorderRightWidth, BorderBottomWidth, NullLengths, NullLengths, EmBase);
-    Box.BorderColors  := GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, NoneColors, NoneColors);
-    Box.BorderStyles  := GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, NoneStyles, NoneStyles);
+    Rect := ParentBox.BoundsRect;
+    case Box.Position of
+      posStatic:
+      begin
+        Rect.Right  := Round(Properties[psWidth] .GetLength(False, Rect.Right - Rect.Left, EmBase, 0.0));
+        Rect.Bottom := Round(Properties[psHeight].GetLength(False, Rect.Bottom - Rect.Top, EmBase, 0.0));
+        Rect.Top    := 0;
+        Rect.Left   := 0;
+      end;
+    else
+      Rect.Top    := Round(Properties[psTop]   .GetLength(False, Rect.Top   , EmBase, 0.0));
+      Rect.Left   := Round(Properties[psLeft]  .GetLength(False, Rect.Left  , EmBase, 0.0));
+      Rect.Right  := Round(Properties[psRight] .GetLength(False, Rect.Right , EmBase, 0.0));
+      Rect.Bottom := Round(Properties[psBottom].GetLength(False, Rect.Bottom, EmBase, 0.0));
+    end;
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 04.09.2011 --
+function THtmlVisualRenderer.SketchMap: TSketchMap;
+begin
+  Result := FSketchMapStack.Top;
+end;
+
+initialization
+  DefaultBox := THtmlBox.Create(nil);
+finalization
+  DefaultBox.Free;
 end.

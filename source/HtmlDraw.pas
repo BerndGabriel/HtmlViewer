@@ -35,18 +35,7 @@ uses
   Windows, Graphics, Types, Math,
   //
   HtmlGlobals,
-  //HtmlSymbols,
   StyleTypes;
-
-type
-  TRectEdge = (reLeft, reTop, reRight, reBottom);
-  TRectIntegers = packed array[TRectEdge] of Integer;
-  TRectColors = packed array[TRectEdge] of TColor;
-  TRectStyles = packed array[TRectEdge] of TBorderStyle;
-
-function RectIntegers(Left, Top, Right, Bottom: Integer): TRectIntegers;
-function RectColors(Left, Top, Right, Bottom: TColor): TRectColors;
-function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
 
 procedure DeflateRect(var Rect: TRect; const Delta: TRectIntegers); overload;
 procedure DeflateRect(var Rect: TRect; const Source: TRect; const Delta: TRectIntegers); overload;
@@ -55,33 +44,6 @@ procedure InflateRect(var Rect: TRect; const Source: TRect; const Delta: TRectIn
 procedure DrawBorder(Canvas: TCanvas; ORect: TRect; const W: TRectIntegers; const C: TRectColors; const S: TRectStyles; BGround: TColor);
 
 implementation
-
-//-- BG ---------------------------------------------------------- 05.04.2011 --
-function RectIntegers(Left, Top, Right, Bottom: Integer): TRectIntegers;
-begin
-  Result[reTop] := Top;
-  Result[reLeft] := Left;
-  Result[reRight] := Right;
-  Result[reBottom] := Bottom;
-end;
-
-//-- BG ---------------------------------------------------------- 05.04.2011 --
-function RectColors(Left, Top, Right, Bottom: TColor): TRectColors;
-begin
-  Result[reTop] := Top;
-  Result[reLeft] := Left;
-  Result[reRight] := Right;
-  Result[reBottom] := Bottom;
-end;
-
-//-- BG ---------------------------------------------------------- 05.04.2011 --
-function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
-begin
-  Result[reTop] := Top;
-  Result[reLeft] := Left;
-  Result[reRight] := Right;
-  Result[reBottom] := Bottom;
-end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 procedure DeflateRect(var Rect: TRect; const Delta: TRectIntegers); overload;

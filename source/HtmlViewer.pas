@@ -229,7 +229,7 @@ begin
         Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, FImageCache, mtScreen, nil, ClientWidth, ClientHeight);
         try
           Renderer.MediaCapabilities := [mcFrames];
-          Renderer.Render(Self, FView);
+          Renderer.RenderDocument(Self, FView);
         finally
           Include(FState, vsViewChanged);
           Renderer.Free;

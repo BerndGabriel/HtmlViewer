@@ -181,8 +181,8 @@ type
   THtmlElementDescription = record
     Name: ThtString;
     Symbol: THtmlElementSymbol;
-    Content: THtmlElementSymbols; // allowed content
-    EndSym: THtmlElementSymbol;   // NoEndSy == no end symbol
+    Content: THtmlElementSymbols;   // allowed content
+    EndSym: THtmlElementSymbol;     // NoEndSy == no end symbol
     IsNode: Boolean;
   end;
 
