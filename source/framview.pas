@@ -58,11 +58,12 @@ type
   TStreamRequestEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
   TStringsRequestEvent = procedure(Sender: TObject; const SRC: ThtString; var Strings: ThtStrings) of object;
 
-  {common base class for TFrameViewer and TFrameBrowser}
+  {TFVBase is common base class for TFrameViewer and TFrameBrowser}
 
+  TViewerFrameBase = class;
+  TViewerFrameClass = class of TViewerFrameBase;
   TFrameSetBase = class;
   TFrameSetClass = class of TFrameSetBase;
-  THtmlViewerClass = class of THtmlViewer;
   TSubFrameSetBase = class;
   TSubFrameSetClass = class of TSubFrameSetBase;
 
@@ -72,7 +73,7 @@ type
     FImageCache: ThtImageCache;
     FCharset: TFontCharset;
     FCursor: TCursor;
-//BG, 21.08.2010: has no effect:    FDither: Boolean; 
+//BG, 21.08.2010: has no effect:    FDither: Boolean;
     FFontColor: TColor;
     FFontName: ThtString;
     FFontSize: Integer;
@@ -374,7 +375,7 @@ type
 
 {TFrameViewer Types}
 
-  TFrameBase = class(TCustomPanel) {base class for other classes}
+  TFrameBase = class(ThtControlBase) {base class for other classes}
   private
     FMasterSet: TFrameSetBase; {Points to top (master) TFrameSetBase}
     FOwner: TSubFrameSetBase;
@@ -442,7 +443,6 @@ type
     property Viewer: THtmlViewer read FViewer;
     property FrameSet: TSubFrameSetBase read FFrameSet;
   end;
-  TViewerFrameClass = class of TViewerFrameBase;
 
   TSubFrameSetBase = class(TFrameBase) {can contain one or more TFrames and/or TSubFrameSets}
   protected
@@ -3601,7 +3601,6 @@ end;
 function TFVBase.CreateViewer(Owner: TComponent): THtmlViewer;
 begin
   Result := GetViewerClass.Create(Owner); {the Viewer for the frame}
-  Result.FrameOwner := Owner;
   Result.DefBackground := FBackground;
   Result.ViewImages := ViewImages;
   Result.SetImageCache(FImageCache);

@@ -102,7 +102,7 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy);
+    ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy);
 
 //------------------------------------------------------------------------------
 
@@ -364,21 +364,13 @@ type
   guResultType = set of (guUrl, guControl, guTitle);
 
 //------------------------------------------------------------------------------
-// ThtTabControl is base class for
+// ThtControlBase is base class for TViewerBase and TFrameBase
 //------------------------------------------------------------------------------
 
-  ThtTabControl = class(TWinControl)
-  private
-    procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
-  protected
-    property OnEnter;
-    property OnExit;
-    property TabStop;
-    property OnKeyUp;
-  end;
+  ThtControlBase = class(TWinControl);
 
 //------------------------------------------------------------------------------
-// TViewerBase is base class for both THtmlViewer and TFrameViewer
+// TViewerBase is base class for THtmlViewer and TFrameViewer
 //------------------------------------------------------------------------------
 
   TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
@@ -388,7 +380,7 @@ type
   TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;
   TSoundType = procedure(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: boolean) of object;
 
-  TViewerBase = class(TWinControl)
+  TViewerBase = class(ThtControlBase)
   private
     FOnInclude: TIncludeType;
     FOnLink: TLinkType;
@@ -400,6 +392,7 @@ type
     procedure SetOnScript(Handler: TScriptEvent); virtual;
     procedure SetOnSoundRequest(Handler: TSoundType); virtual;
   public
+    constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
@@ -2646,14 +2639,18 @@ begin
   end;
 end;
 
-{ ThtTabcontrol }
-
-procedure ThtTabcontrol.WMGetDlgCode(var Message: TMessage);
-begin
-  Message.Result := DLGC_WantArrows; {this to eat the arrow keys}
-end;
-
 { TViewerBase }
+
+//-- BG ---------------------------------------------------------- 16.11.2011 --
+constructor TViewerBase.CreateCopy(Owner: TComponent; Source: TViewerBase);
+begin
+  Create(Owner);
+
+  FOnInclude := Source.FOnInclude;
+  FOnLink := Source.FOnLink;
+  FOnScript := Source.FOnScript;
+  FOnSoundRequest := Source.FOnSoundRequest;
+end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
 procedure TViewerBase.SetOnInclude(Handler: TIncludeType);

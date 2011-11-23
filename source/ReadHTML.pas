@@ -1,6 +1,8 @@
 {
 Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Copyright (c) 1995-2008 by L. David Baldwin,
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 *********************************************************
 *                                                       *
@@ -138,7 +140,6 @@ type
 
     function CollectText: Boolean;
     function DoCharSet(Content: ThtString): Boolean;
-    function DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
     function FindAlignment: ThtString;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetNameValueParameter(var Name, Value: ThtString): Boolean;
@@ -159,6 +160,7 @@ type
     procedure DoLists(Sym: Symb; const TermSet: SymbSet);
     procedure DoMap;
     procedure DoMeta(Sender: TObject);
+    procedure DoObjectTag(var C: ThtChar; var N, IX: Integer);
     procedure DoP(const TermSet: SymbSet);
     procedure DoScript(Ascript: TScriptEvent);
     procedure DoSound;
@@ -1937,14 +1939,7 @@ begin
   end;
 end;
 
-function THtmlParser.DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
-var
-  WantPanel: Boolean;
-  SL, Params: ThtStringList;
-  Prop: TProperties;
-  PO: TPanelObj;
-  S: ThtString;
-  T: TAttribute;
+procedure THtmlParser.DoObjectTag(var C: ThtChar; var N, IX: Integer);
 
   procedure SavePosition;
   begin
@@ -1958,14 +1953,20 @@ var
     SavePosition;
     Next;
   end;
+
+var
+  WantPanel: Boolean;
+  SL, Params: ThtStringList;
+  Prop: TProperties;
+  PO: TPanelObj;
+  S: ThtString;
+  T: TAttribute;
 begin
-  Result := False;
-  if Assigned(CallingObject) then
+  if CallingObject is THtmlViewer then
   begin
-    if Assigned(ThtmlViewer(CallingObject).OnObjectTag) then
+    if Assigned(THtmlViewer(CallingObject).OnObjectTag) then
     begin
       SL := Attributes.CreateStringList;
-      Result := True;
       if not Assigned(Section) then
         Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
       PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -2368,23 +2369,17 @@ var
                     DoAEnd;
                   end;
 
-                ImageSy:
+                ImageSy, PanelSy, IFrameSy:
                   begin
                     Section.AddTokenObj(S);
-                    PushNewProp('img', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-                    IO := Section.AddImage(Attributes, SectionList, TagIndex);
+                    PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+                    case Sy of
+                      ImageSy: IO := Section.AddImage(Attributes, SectionList, TagIndex);
+                      PanelSy: IO := Section.AddPanel(Attributes, SectionList, TagIndex);
+                      IFrameSy: IO := Section.AddFrame(Attributes, SectionList, TagIndex);
+                    end;
                     IO.ProcessProperties(PropStack.Last);
-                    PopAProp('img');
-                    S.Clear;
-                  end;
-
-                PanelSy:
-                  begin
-                    Section.AddTokenObj(S);
-                    PushNewProp('panel', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-                    IO := Section.AddPanel(Attributes, SectionList, TagIndex);
-                    IO.ProcessProperties(PropStack.Last);
-                    PopAProp('panel');
+                    PopAProp(SymbToStr(Sy));
                     S.Clear;
                   end;
 
@@ -2524,7 +2519,7 @@ begin
         Next;
       end;
 
-    ImageSy, PanelSy:
+    ImageSy, PanelSy, IFrameSy:
       begin
         if not Assigned(Section) then
           Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
@@ -2532,10 +2527,11 @@ begin
         Prop := PropStack.Last;
         if Prop.HasBorderStyle then {start of inline border}
           PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
-        if Sy = ImageSy then
-          IO := Section.AddImage(Attributes, SectionList, TagIndex)
-        else
-          IO := Section.AddPanel(Attributes, SectionList, TagIndex);
+        case Sy of
+          ImageSy: IO := Section.AddImage(Attributes, SectionList, TagIndex);
+          PanelSy: IO := Section.AddPanel(Attributes, SectionList, TagIndex);
+          IFrameSy: IO := Section.AddFrame(Attributes, SectionList, TagIndex);
+        end;
         IO.ProcessProperties(PropStack.Last);
         PopAProp(SymbToStr(Sy));
         Next;
@@ -2544,7 +2540,8 @@ begin
     ObjectSy:
       DoObjectTag(C, N, IX);
 
-    ObjectEndSy:
+    ObjectEndSy,
+    IFrameEndSy:
       Next;
 
     InputSy, SelectSy:
@@ -2733,7 +2730,8 @@ begin
             SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
             InputSy, TextAreaSy, TextAreaEndSy, SelectSy,
             ImageSy, FontSy, FontEndSy, BaseFontSy, LabelSy, LabelEndSy,
-            ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
+            ScriptSy, ScriptEndSy, PanelSy, HRSy,
+            ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
               DoCommonSy;
 
             CommandSy:
@@ -2864,7 +2862,8 @@ begin
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
       SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
       InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
-      ImageSy, FontSy, BaseFontSy, BRSy, ObjectSy, ObjectEndSy,
+      ImageSy, FontSy, BaseFontSy, BRSy,
+      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy,
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, CommandSy])
   do
     if Sy <> CommandSy then
@@ -2955,7 +2954,8 @@ begin
         SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
         InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, BaseFontSy, BrSy, HeadingSy,
-        MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, ObjectSy, ObjectEndSy:
+        MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy,
+        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
         DoCommonSy;
       PSy:
         if BlockType in [OLSy, ULSy, DirSy, MenuSy, DLSy] then
@@ -3076,7 +3076,7 @@ begin
         InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
         SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-        ObjectSy, ObjectEndSy:
+        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
         DoCommonSy;
     else if Sy in TermSet then {exit below}
     else
@@ -3310,7 +3310,7 @@ begin
         InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
         SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-        ObjectSy, ObjectEndSy:
+        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
         DoCommonSy;
       BodySy:
         begin
@@ -4362,7 +4362,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..82] of TResWord = (
+  ResWordDefinitions: array[1..83] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4444,7 +4444,8 @@ const
     (Name: 'LINK';        Symbol: LinkSy;       EndSym: CommandSy),
     (Name: 'COL';         Symbol: ColSy;        EndSym: CommandSy),
     (Name: 'PARAM';       Symbol: ParamSy;      EndSym: CommandSy),
-    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy)
+    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy),
+    (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy)
     );
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
