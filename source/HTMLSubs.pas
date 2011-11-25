@@ -72,10 +72,10 @@ uses
   HtmlFonts,
   StyleTypes,
   Parser,
+  HtmlImages, // use before HTMLUn2, as both define a TGetImageEvent, but we need the one of HTMLUn2 here.
   HTMLUn2,
   StyleUn,
-  HTMLGif2,
-  HtmlImages;
+  HTMLGif2;
 
 type
 
@@ -361,6 +361,7 @@ type
     procedure SetAlt(CodePage: Integer; const Value: ThtString);
     property Alt: ThtString read FAlt;
   end;
+  TFloatingObjClass = class of TFloatingObj;
 
 
   // base class for inline panel and frame info
@@ -372,18 +373,6 @@ type
   public
     procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
   end;
-
-
-  ThvPanel = class(TPanel)
-  public
-    FVisible: boolean;
-    procedure SetVisible(Value: boolean);
-    property Visible: boolean read FVisible write SetVisible default True;
-  end;
-
-  TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: ThtString; Panel: ThvPanel) of object;
-  TPanelDestroyEvent = procedure(Sender: TObject; Panel: ThvPanel) of object;
-  TPanelPrintEvent = procedure(Sender: TObject; Panel: ThvPanel; const Bitmap: TBitmap) of object;
 
 
   // inline panel (object) info
@@ -407,7 +396,7 @@ type
   // inline frame info
   TFrameObj = class(TControlObj)
   private
-    FFrame: ThtControlBase;
+    FViewer: TViewerBase;
     FSource, FUrl: ThtString;
     frMarginWidth: Integer;
     frMarginHeight: Integer;
@@ -1255,15 +1244,6 @@ type
 // ThtDocument, a complete html document, that can draw itself on a canvas.
 //------------------------------------------------------------------------------
 
-  TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: ThtString; ARect: TRect) of object;
-  TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: ThtString) of object;
-  TGetBitmapEvent = procedure(Sender: TObject; const SRC: ThtString; var Bitmap: TBitmap; var Color: TColor) of object;
-  TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
-  TGottenImageEvent = TGetImageEvent;
-  TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList) of object;
-  TObjectTagEvent = procedure(Sender: TObject; Panel: ThvPanel; const Attributes, Params: ThtStringList; var WantPanel: boolean) of object;
-  TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: ThtString) of object;
-  ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: ThtString) of object;
   TExpandNameEvent = procedure(Sender: TObject; const SRC: ThtString; var Result: ThtString) of object;
 
   THtmlStyleList = class(TStyleList) {a list of all the styles -- the stylesheet}
@@ -2783,11 +2763,12 @@ var
   Item: TFloatingObj;
 begin
   inherited create;
-  for I := 0 to T.Count - 1 do
-  begin
-    Item := T.Items[I];
-    Add(Item.Clone(AMasterList, Parent));
-  end;
+  if T <> nil then
+    for I := 0 to T.Count - 1 do
+    begin
+      Item := T.Items[I];
+      Add(Item.Clone(AMasterList, Parent));
+    end;
 end;
 
 function TFloatingObjList.FindImage(Posn: Integer): TFloatingObj;
@@ -6629,13 +6610,6 @@ begin
   ImageCache := T.ImageCache; {same list}
   InlineList := T.InlineList; {same list}
   IsCopy := True;
-  inherited CreateCopy(Self, nil, T);
-// r14: Added some fixes for object copies done using Move(), re-checked Unicode Support, minor fixes for file structure
-// was: System.Move(T.ShowImages, ShowImages, DWord(@Background) - DWord(@ShowImages) + Sizeof(Integer));
-  //BG, 08.06.2010: Issue 9: Getting black background
-  // this Move() copied 24 fields including a ThtString, not only ShowImages.
-  // re-introduce Move() after moving ThtString out of the moved area between ShowImages and Background.
-  //ShowImages := T.ShowImages;
   System.Move(T.ShowImages, ShowImages, PtrSub(@Background, @ShowImages) + Sizeof(Integer));
   PreFontName := T.PreFontName;
   htmlFormList := TFreeList.Create; {no copy of list made}
@@ -6644,6 +6618,12 @@ begin
   MissingImages := ThtStringList.Create;
   PanelList := TList.Create;
   DrawList := TDrawList.Create;
+  inherited CreateCopy(Self, nil, T);
+// r14: Added some fixes for object copies done using Move(), re-checked Unicode Support, minor fixes for file structure
+// was: System.Move(T.ShowImages, ShowImages, DWord(@Background) - DWord(@ShowImages) + Sizeof(Integer));
+  //BG, 08.06.2010: Issue 9: Getting black background
+  // this Move() copied 24 fields including a ThtString, not only ShowImages.
+  // re-introduce Move() after moving ThtString out of the moved area between ShowImages and Background.
   ScaleX := 1.0;
   ScaleY := 1.0;
 end;
@@ -12760,18 +12740,6 @@ begin
   Result := Panel;
 end;
 
-procedure ThvPanel.SetVisible(Value: boolean);
-begin
-  if Value <> FVisible then
-  begin
-    FVisible := Value;
-    if FVisible then
-      Show
-    else
-      Hide;
-  end;
-end;
-
 {----------------TCell.Create}
 
 constructor TCell.Create(Master: ThtDocument; OwnerBlock: TBlock);
@@ -13669,7 +13637,7 @@ end;
 //-- BG ---------------------------------------------------------- 12.11.2011 --
 function TFloatingObj.Clone(Document: ThtDocument; Parent: TCellBasic): TFloatingObj;
 begin
-  Result := TFloatingObj(ClassType).CreateCopy(Document, Parent, Self);
+  Result := TFloatingObjClass(ClassType).CreateCopy(Document, Parent, Self);
 end;
 
 //-- BG ---------------------------------------------------------- 12.11.2011 --
@@ -14121,8 +14089,8 @@ begin
       end;
   CreateFrame;
   UpdateFrame;
-  SetWidth := FFrame.Width;
-  SetHeight := FFrame.Height;
+  SetWidth := FViewer.Width;
+  SetHeight := FViewer.Height;
 end;
 
 //-- BG ---------------------------------------------------------- 12.11.2011 --
@@ -14140,100 +14108,25 @@ end;
 
 //-- BG ---------------------------------------------------------- 13.11.2011 --
 procedure TFrameObj.CreateFrame;
-// Create a THtmlViewer, FrameViewer or FrameBrowser depending on host component.
-
-{.$define USE_HTMLVIEWER_ONLY}
-
-{$ifdef USE_HTMLVIEWER_ONLY}
-  function CreateViewer(ControlOwner: TPaintPanel; FrameOwner: THtmlViewer): THtmlViewer;
-  begin
-    Result := THtmlViewer.Create(ControlOwner); {the Viewer for the frame}
-    Result.Parent := ControlOwner;
-    Result.FrameOwner := FrameOwner;
-    Result.DefBackground := FrameOwner.DefBackground;
-    Result.Base := FrameOwner.Base;
-    Result.ViewImages := FrameOwner.ViewImages;
-//    Result.SetImageCache(FrameOwner.ImageCache);
-//    Result.ImageCacheCount := FrameOwner.ImageCacheCount;
-    Result.NoSelect := FrameOwner.NoSelect;
-    Result.DefFontColor := FrameOwner.DefFontColor;
-    Result.DefHotSpotColor := FrameOwner.DefHotSpotColor;
-    Result.DefVisitedLinkColor := FrameOwner.DefVisitedLinkColor;
-    Result.DefOverLinkColor := FrameOwner.DefOverLinkColor;
-    Result.DefFontSize := FrameOwner.DefFontSize;
-    Result.DefFontName := FrameOwner.DefFontName;
-    Result.DefPreFontName := FrameOwner.DefPreFontName;
-    Result.OnBitmapRequest := FrameOwner.OnBitmapRequest;
-    Result.htOptions := FrameOwner.htOptions;
-    Result.OnImageRequest := FrameOwner.OnImageRequest;
-    Result.OnFormSubmit := FrameOwner.OnFormSubmit;
-    Result.OnLink := FrameOwner.OnLink;
-    Result.OnMeta := FrameOwner.OnMeta;
-    Result.OnRightClick := FrameOwner.OnRightClick;
-    Result.OnProcessing := FrameOwner.OnProcessing;
-    Result.OnMouseDown := FrameOwner.OnMouseDown;
-    Result.OnMouseMove := FrameOwner.OnMouseMove;
-    Result.OnMouseUp := FrameOwner.OnMouseUp;
-    Result.OnKeyDown := FrameOwner.OnKeyDown;
-    Result.OnKeyUp := FrameOwner.OnKeyUp;
-    Result.OnKeyPress := FrameOwner.OnKeyPress;
-    Result.Cursor := FrameOwner.Cursor;
-//    Result.HistoryMaxCount := FrameOwner.HistoryMaxCount;
-    Result.OnScript := FrameOwner.OnScript;
-//    Result.PrintMarginLeft := FrameOwner.PrintMarginLeft;
-//    Result.PrintMarginRight := FrameOwner.PrintMarginRight;
-//    Result.PrintMarginTop := FrameOwner.PrintMarginTop;
-//    Result.PrintMarginBottom := FrameOwner.PrintMarginBottom;
-    Result.PrintMaxHPages := FrameOwner.PrintMaxHPages;
-    Result.PrintScale := FrameOwner.PrintScale;
-//    Result.OnPrintHeader := FrameOwner.OnPrintHeader;
-//    Result.OnPrintFooter := FrameOwner.OnPrintFooter;
-//    Result.OnPrintHtmlHeader := FrameOwner.OnPrintHtmlHeader;
-//    Result.OnPrintHtmlFooter := FrameOwner.OnPrintHtmlFooter;
-    Result.OnInclude := FrameOwner.OnInclude;
-    Result.OnSoundRequest := FrameOwner.OnSoundRequest;
-    Result.OnImageOver := FrameOwner.OnImageOver;
-    Result.OnImageClick := FrameOwner.OnImageClick;
-    Result.OnFileBrowse := FrameOwner.OnFileBrowse;
-    Result.OnObjectClick := FrameOwner.OnObjectClick;
-    Result.OnObjectFocus := FrameOwner.OnObjectFocus;
-    Result.OnObjectBlur := FrameOwner.OnObjectBlur;
-    Result.OnObjectChange := FrameOwner.OnObjectChange;
-    Result.ServerRoot := FrameOwner.ServerRoot;
-    Result.OnMouseDouble := FrameOwner.OnMouseDouble;
-    Result.OnPanelCreate := FrameOwner.OnPanelCreate;
-    Result.OnPanelDestroy := FrameOwner.OnPanelDestroy;
-    Result.OnPanelPrint := FrameOwner.OnPanelPrint;
-    Result.OnDragDrop := FrameOwner.OnDragDrop;
-    Result.OnDragOver := FrameOwner.OnDragOver;
-    Result.OnParseBegin := FrameOwner.OnParseBegin;
-    Result.OnParseEnd := FrameOwner.OnParseEnd;
-    Result.OnProgress := FrameOwner.OnProgress;
-    Result.OnObjectTag := FrameOwner.OnObjectTag;
-    if NoScroll then
-      Result.ScrollBars := ssNone;
-  end;
-{$endif USE_HTMLVIEWER_ONLY}
-
+// Create a THtmlViewer, TFrameViewer or TFrameBrowser depending on host component.
 var
   PaintPanel: TPaintPanel;
   HtmlViewer: THtmlViewer;
 begin
   PaintPanel := TPaintPanel(Document.PPanel);
   HtmlViewer := PaintPanel.ParentViewer;
-{$ifdef USE_HTMLVIEWER_ONLY}
-  FFrame := CreateViewer(PaintPanel, HtmlViewer);
-{$else USE_HTMLVIEWER_ONLY}
-  FFrame := HtmlViewer.CreateIFrameControl;
-{$endif USE_HTMLVIEWER_ONLY}
-  FFrame.Parent := PaintPanel;
-  FUrl := HtmlViewer.HtmlExpandFilename(FSource);
+  FViewer := HtmlViewer.CreateIFrameControl;
+  FViewer.Parent := PaintPanel;
+  if Assigned(HtmlViewer.OnExpandName) then
+    HtmlViewer.OnExpandName(HtmlViewer, FSource, FUrl)
+  else
+    FUrl := HtmlViewer.HtmlExpandFilename(FSource);
 end;
 
 //-- BG ---------------------------------------------------------- 12.11.2011 --
 destructor TFrameObj.Destroy;
 begin
-  FreeAndNil(FFrame);
+  FreeAndNil(FViewer);
   inherited;
 end;
 
@@ -14246,13 +14139,12 @@ end;
 //-- BG ---------------------------------------------------------- 16.11.2011 --
 function TFrameObj.GetControl: TWinControl;
 begin
-  Result := FFrame;
+  Result := FViewer;
 end;
 
 //-- BG ---------------------------------------------------------- 14.11.2011 --
 procedure TFrameObj.UpdateFrame;
 var
-  Viewer: THtmlViewer;
   LCurrentStyle: TFontStyles; {as set by <b>, <i>, etc.}
   LCurrentForm: ThtmlForm;
   LPropStack: THtmlPropStack;
@@ -14264,19 +14156,13 @@ begin
   LPropStack := PropStack;
   PropStack := THtmlPropStack.Create;
   try
-    Viewer := THtmlViewer(FFrame);
-    try
-      Viewer.LoadFromFile(FUrl);
-    except
-
-    end;
+    FViewer.Load(FUrl);
   finally
     PropStack.Free;
     PropStack := LPropStack;
     CurrentForm := LCurrentForm;
     CurrentStyle := LCurrentStyle;
     NoBreak := LNoBreak;
-
   end;
 end;
 

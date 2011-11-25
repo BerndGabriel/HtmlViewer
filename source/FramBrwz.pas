@@ -123,11 +123,13 @@ type
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
   public
     constructor Create(AOwner: TComponent); override;
+    constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     function GetViewerUrlBase(Viewer: ThtmlViewer): ThtString;
     procedure GetPostQuery(const URL, Query, EncType: ThtString; IsGet: boolean);
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: boolean); override;
+    procedure Load(const SRC: ThtString); override;
     procedure LoadFromFile(const Name: ThtString); override;
-    procedure LoadURL(const URL: ThtString);
+    procedure LoadURL(const URL: ThtString); 
     property EncodePostArgs: boolean read FEncodePostArgs write FEncodePostArgs;
   published
     property OnGetPostRequest: TGetPostRequestEvent read FOnGetPostRequest write FOnGetPostRequest;
@@ -725,6 +727,27 @@ constructor TFrameBrowser.Create(AOwner: TComponent);
 begin
   inherited;
   FEncodePostArgs := True;
+end;
+
+//-- BG ---------------------------------------------------------- 25.11.2011 --
+constructor TFrameBrowser.CreateCopy(Owner: TComponent; Source: TViewerBase);
+var
+  Viewer: TFrameBrowser absolute Source;
+begin
+  inherited;
+  if Source is TFrameBrowser then
+  begin
+    OnGetPostRequest := Viewer.OnGetPostRequest;
+    OnGetPostRequestEx := Viewer.OnGetPostRequestEx;
+    OnFormSubmit := Viewer.OnFormSubmit;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.11.2011 --
+procedure TFrameBrowser.Load(const SRC: ThtString);
+begin
+  inherited;
+  LoadUrl(SRC);
 end;
 
 //-- BG ---------------------------------------------------------- 24.09.2010 --

@@ -34,7 +34,7 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Classes, Graphics, ClipBrd, Controls, Messages, Variants, Types,
+  SysUtils, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types,
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
@@ -364,6 +364,24 @@ type
   guResultType = set of (guUrl, guControl, guTitle);
 
 //------------------------------------------------------------------------------
+// ThvPanel is base class for panels held in TPanelObj
+//------------------------------------------------------------------------------
+
+  ThvPanel = class(TPanel)
+  public
+    FVisible: boolean;
+    procedure SetVisible(Value: boolean);
+    property Visible: boolean read FVisible write SetVisible default True;
+  end;
+
+  TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: ThtString; Panel: ThvPanel) of object;
+  TPanelDestroyEvent = procedure(Sender: TObject; Panel: ThvPanel) of object;
+  TPanelPrintEvent = procedure(Sender: TObject; Panel: ThvPanel; const Bitmap: TBitmap) of object;
+  TObjectTagEvent = procedure(Sender: TObject; Panel: ThvPanel; const Attributes, Params: ThtStringList; var WantPanel: boolean) of object;
+  TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: ThtString) of object;
+  ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: ThtString) of object;
+
+//------------------------------------------------------------------------------
 // ThtControlBase is base class for TViewerBase and TFrameBase
 //------------------------------------------------------------------------------
 
@@ -374,30 +392,199 @@ type
 //------------------------------------------------------------------------------
 
   TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
+
+  THotSpotTargetClickEvent = procedure(Sender: TObject; const Target, URL: ThtString; var Handled: boolean) of object;
+  THotSpotTargetEvent = procedure(Sender: TObject; const Target, URL: ThtString) of object;
+  ThtProgressEvent = procedure(Sender: TObject; Stage: TProgressStage; PercentDone: Integer) of object;
+  TImageClickEvent = procedure(Sender, Obj: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer) of object;
+  TImageOverEvent = procedure(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer) of object;
   TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer) of object;
   TLinkType = procedure(Sender: TObject; const Rel, Rev, Href: ThtString) of object;
   TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: ThtString) of object;
+  TPagePrinted = procedure(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer; var StopPrinting: Boolean) of object;
+  TParseEvent = procedure(Sender: TObject; var Source: TBuffer) of object;
+  TProcessingEvent = procedure(Sender: TObject; ProcessingOn: Boolean) of object;
   TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;
   TSoundType = procedure(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: boolean) of object;
+  THTMLViewPrinted = TNotifyEvent;
+  THTMLViewPrinting = procedure(Sender: TObject; var StopPrinting: Boolean) of object;
+  TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: ThtString; ARect: TRect) of object;
+  TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: ThtString) of object;
+  TGetBitmapEvent = procedure(Sender: TObject; const SRC: ThtString; var Bitmap: TBitmap; var Color: TColor) of object;
+  TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
+  TGottenImageEvent = TGetImageEvent;
+  TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList) of object;
 
   TViewerBase = class(ThtControlBase)
   private
+    FBackGround, FHotSpotColor, FVisitedColor, FOverColor: TColor;
+    FCharset: TFontCharset;
+    FCodePage: Integer;
+    FFontColor: TColor;
+    FFontName, FPreFontName: TFontName;
+    FFontSize: Integer;
+    FHistoryMaxCount, FImageCacheCount, FVisitedMaxCount: Integer;
+    FMarginWidth, FMarginHeight: Integer;
+    FNoSelect: Boolean;
+    FPrintMarginLeft, FPrintMarginRight, FPrintMarginTop, FPrintMarginBottom: Double;
+    FPrintMaxHPages: Integer;
+    FPrintScale: Double;
+    FServerRoot: ThtString;
+    //
+    FOnDragDrop: TDragDropEvent;
+    FOnDragOver: TDragOverEvent;
+    FOnHistoryChange: TNotifyEvent;
+    FOnHotSpotTargetClick: THotSpotTargetClickEvent;
+    FOnHotSpotTargetCovered: THotSpotTargetEvent;
+    FOnImageClick: TImageClickEvent;
+    FOnImageOver: TImageOverEvent;
     FOnInclude: TIncludeType;
     FOnLink: TLinkType;
+    FOnMeta: TMetaType;
+    FOnMouseDouble: TMouseEvent;
+    FOnObjectBlur: ThtObjectEvent;
+    FOnObjectChange: ThtObjectEvent;
+    FOnObjectClick: TObjectClickEvent;
+    FOnObjectFocus: ThtObjectEvent;
+    FOnObjectTag: TObjectTagEvent;
+    FOnPanelCreate: TPanelCreateEvent;
+    FOnPanelDestroy: TPanelDestroyEvent;
+    FOnPanelPrint: TPanelPrintEvent;
+    FOnParseBegin: TParseEvent;
+    FOnParseEnd: TNotifyEvent;
+    FOnPrinted: THTMLViewPrinted;
+    FOnPrintHeader, FOnPrintFooter: TPagePrinted;
+    FOnPrinting: THTMLViewPrinting;
+    FOnProcessing: TProcessingEvent;
+    FOnProgress: ThtProgressEvent;
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
+    FOnImageRequested: TGottenImageEvent;
+    FOnImageRequest: TGetImageEvent;
+    FOnBitmapRequest: TGetBitmapEvent;
   protected
-    procedure SetOnInclude(Handler: TIncludeType); virtual;
-    procedure SetOnLink(Handler: TLinkType); virtual;
-    procedure SetOnScript(Handler: TScriptEvent); virtual;
-    procedure SetOnSoundRequest(Handler: TSoundType); virtual;
+    procedure SetActiveColor(const Value: TColor); virtual;
+    procedure SetCharset(const Value: TFontCharset); virtual;
+    procedure SetCodePage(const Value: Integer); virtual;
+    procedure SetDefBackground(const Value: TColor); virtual;
+    procedure SetFontColor(const Value: TColor); virtual;
+    procedure SetFontName(const Value: TFontName); virtual;
+    procedure SetFontSize(const Value: Integer); virtual;
+    procedure SetHistoryMaxCount(const Value: Integer); virtual;
+    procedure SetHotSpotColor(const Value: TColor); virtual;
+    procedure SetImageCacheCount(const Value: Integer); virtual;
+    procedure SetMarginHeight(const Value: Integer); virtual;
+    procedure SetMarginWidth(const Value: Integer); virtual;
+    procedure SetNoSelect(const Value: Boolean); virtual;
+    procedure SetOnBitmapRequest(const Value: TGetBitmapEvent); virtual;
+    procedure SetOnDragDrop(const Value: TDragDropEvent); virtual;
+    procedure SetOnDragOver(const Value: TDragOverEvent); virtual;
+    procedure SetOnHistoryChange(const Value: TNotifyEvent); virtual;
+    procedure SetOnHotSpotTargetClick(const Value: THotSpotTargetClickEvent); virtual;
+    procedure SetOnHotSpotTargetCovered(const Value: THotSpotTargetEvent); virtual;
+    procedure SetOnImageClick(const Value: TImageClickEvent); virtual;
+    procedure SetOnImageOver(const Value: TImageOverEvent); virtual;
+    procedure SetOnImageRequest(const Value: TGetImageEvent); virtual;
+    procedure SetOnImageRequested(const Value: TGottenImageEvent); virtual;
+    procedure SetOnInclude(const Handler: TIncludeType); virtual;
+    procedure SetOnLink(const Handler: TLinkType); virtual;
+    procedure SetOnMeta(const Value: TMetaType); virtual;
+    procedure SetOnMouseDouble(const Value: TMouseEvent); virtual;
+    procedure SetOnObjectBlur(const Value: ThtObjectEvent); virtual;
+    procedure SetOnObjectChange(const Value: ThtObjectEvent); virtual;
+    procedure SetOnObjectClick(const Value: TObjectClickEvent); virtual;
+    procedure SetOnObjectFocus(const Value: ThtObjectEvent); virtual;
+    procedure SetOnObjectTag(const Value: TObjectTagEvent); virtual;
+    procedure SetOnPanelCreate(const Value: TPanelCreateEvent); virtual;
+    procedure SetOnPanelDestroy(const Value: TPanelDestroyEvent); virtual;
+    procedure SetOnPanelPrint(const Value: TPanelPrintEvent); virtual;
+    procedure SetOnParseBegin(const Value: TParseEvent); virtual;
+    procedure SetOnParseEnd(const Value: TNotifyEvent); virtual;
+    procedure SetOnPrinted(const Value: THTMLViewPrinted); virtual;
+    procedure SetOnPrintFooter(const Value: TPagePrinted); virtual;
+    procedure SetOnPrintHeader(const Value: TPagePrinted); virtual;
+    procedure SetOnPrinting(const Value: THTMLViewPrinting); virtual;
+    procedure SetOnProcessing(const Value: TProcessingEvent); virtual;
+    procedure SetOnProgress(const Value: ThtProgressEvent); virtual;
+    procedure SetOnScript(const Handler: TScriptEvent); virtual;
+    procedure SetOnSoundRequest(const Handler: TSoundType); virtual;
+    procedure SetPreFontName(const Value: TFontName); virtual;
+    procedure SetPrintMarginBottom(const Value: Double); virtual;
+    procedure SetPrintMarginLeft(const Value: Double); virtual;
+    procedure SetPrintMarginRight(const Value: Double); virtual;
+    procedure SetPrintMarginTop(const Value: Double); virtual;
+    procedure SetPrintMaxHPages(const Value: Integer); virtual;
+    procedure SetPrintScale(const Value: Double); virtual;
+    procedure SetServerRoot(const Value: ThtString); virtual;
+    procedure SetVisitedColor(const Value: TColor); virtual;
+    procedure SetVisitedMaxCount(const Value: Integer); virtual;
+    procedure ViewerDragDrop(Sender, Source: TObject; X, Y: Integer);
+    procedure ViewerDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
   public
+    constructor Create(AOwner: TComponent); override;
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
+    // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
+    procedure Load(const Url: ThtString); virtual; abstract;
+
+    property CodePage: Integer read FCodePage write SetCodePage;
+    property CharSet: TFontCharset read FCharSet write SetCharset;
+    property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
+    property DefFontColor: TColor read FFontColor write SetFontColor default clBtnText;
+    property DefFontName: TFontName read FFontName write SetFontName;
+    property DefFontSize: Integer read FFontSize write SetFontSize default 12;
+    property DefHotSpotColor: TColor read FHotSpotColor write SetHotSpotColor default clBlue;
+    property DefOverLinkColor: TColor read FOverColor write SetActiveColor default clBlue;
+    property DefPreFontName: TFontName read FPreFontName write SetPreFontName;
+    property DefVisitedLinkColor: TColor read FVisitedColor write SetVisitedColor default clPurple;
+    property HistoryMaxCount: Integer read FHistoryMaxCount write SetHistoryMaxCount;
+    property ImageCacheCount: Integer read FImageCacheCount write SetImageCacheCount default 5;
+    property MarginHeight: Integer read FMarginHeight write SetMarginHeight default 5;
+    property MarginWidth: Integer read FMarginWidth write SetMarginWidth default 10;
+    property NoSelect: Boolean read FNoSelect write SetNoSelect;
+    property PrintMarginBottom: Double read FPrintMarginBottom write SetPrintMarginBottom;
+    property PrintMarginLeft: Double read FPrintMarginLeft write SetPrintMarginLeft;
+    property PrintMarginRight: Double read FPrintMarginRight write SetPrintMarginRight;
+    property PrintMarginTop: Double read FPrintMarginTop write SetPrintMarginTop;
+    property PrintMaxHPages: Integer read FPrintMaxHPages write SetPrintMaxHPages default 2;
+    property PrintScale: Double read FPrintScale write SetPrintScale;
+    property ServerRoot: ThtString read FServerRoot write SetServerRoot;
+    property VisitedMaxCount: Integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
+    //
+    property OnBitmapRequest: TGetBitmapEvent read FOnBitmapRequest write SetOnBitmapRequest;
+    property OnDragDrop: TDragDropEvent read FOnDragDrop write SetOnDragDrop;
+    property OnDragOver: TDragOverEvent read FOnDragOver write SetOnDragOver;
+    property OnHistoryChange: TNotifyEvent read FOnHistoryChange write SetOnHistoryChange;
+    property OnHotSpotTargetClick: THotSpotTargetClickEvent read FOnHotSpotTargetClick write SetOnHotSpotTargetClick;
+    property OnHotSpotTargetCovered: THotSpotTargetEvent read FOnHotSpotTargetCovered write SetOnHotSpotTargetCovered;
+    property OnImageClick: TImageClickEvent read FOnImageClick write SetOnImageClick;
+    property OnImageOver: TImageOverEvent read FOnImageOver write SetOnImageOver;
+    property OnImageRequest: TGetImageEvent read FOnImageRequest write SetOnImageRequest;
+    property OnImageRequested: TGottenImageEvent read FOnImageRequested write SetOnImageRequested;
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
+    property OnMeta: TMetaType read FOnMeta write SetOnMeta;
+    property OnMouseDouble: TMouseEvent read FOnMouseDouble write SetOnMouseDouble;
+    property OnObjectBlur: ThtObjectEvent read FOnObjectBlur write SetOnObjectBlur;
+    property OnObjectChange: ThtObjectEvent read FOnObjectChange write SetOnObjectChange;
+    property OnObjectClick: TObjectClickEvent read FOnObjectClick write SetOnObjectClick;
+    property OnObjectFocus: ThtObjectEvent read FOnObjectFocus write SetOnObjectFocus;
+    property OnObjectTag: TObjectTagEvent read FOnObjectTag write SetOnObjectTag;
+    property OnPanelCreate: TPanelCreateEvent read FOnPanelCreate write SetOnPanelCreate;
+    property OnPanelDestroy: TPanelDestroyEvent read FOnPanelDestroy write SetOnPanelDestroy;
+    property OnPanelPrint: TPanelPrintEvent read FOnPanelPrint write SetOnPanelPrint;
+    property OnParseBegin: TParseEvent read FOnParseBegin write SetOnParseBegin;
+    property OnParseEnd: TNotifyEvent read FOnParseEnd write SetOnParseEnd;
+    property OnPrinted: THTMLViewPrinted read FOnPrinted write SetOnPrinted;
+    property OnPrintFooter: TPagePrinted read FOnPrintFooter write SetOnPrintFooter;
+    property OnPrintHeader: TPagePrinted read FOnPrintHeader write SetOnPrintHeader;
+    property OnPrinting: THTMLViewPrinting read FOnPrinting write SetOnPrinting;
+    property OnProcessing: TProcessingEvent read FOnProcessing write SetOnProcessing;
+    property OnProgress: ThtProgressEvent read FOnProgress write SetOnProgress;
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
     property OnSoundRequest: TSoundType read FOnSoundRequest write SetOnSoundRequest;
   end;
+
+  TViewerBaseClass = class of TViewerBase;
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
   TTablePartRec = class
@@ -2641,39 +2828,385 @@ end;
 
 { TViewerBase }
 
+//-- BG ---------------------------------------------------------- 24.11.2011 --
+constructor TViewerBase.Create(AOwner: TComponent);
+begin
+  inherited;
+  PrintMarginLeft := 2.0;
+  PrintMarginRight := 2.0;
+  PrintMarginTop := 2.0;
+  PrintMarginBottom := 2.0;
+  PrintMaxHPages := 2;
+  PrintScale := 1.0;
+  Charset := DEFAULT_CHARSET;
+  MarginHeight := 5;
+  MarginWidth := 10;
+  DefBackground := clBtnFace;
+  DefFontColor := clBtnText;
+  DefHotSpotColor := clBlue;
+  DefOverLinkColor := clBlue;
+  DefVisitedLinkColor := clPurple;
+  VisitedMaxCount := 50;
+  DefFontSize := 12;
+  DefFontName := 'Times New Roman';
+  DefPreFontName := 'Courier New';
+  ImageCacheCount := 5;
+end;
+
 //-- BG ---------------------------------------------------------- 16.11.2011 --
 constructor TViewerBase.CreateCopy(Owner: TComponent; Source: TViewerBase);
 begin
   Create(Owner);
 
-  FOnInclude := Source.FOnInclude;
-  FOnLink := Source.FOnLink;
-  FOnScript := Source.FOnScript;
-  FOnSoundRequest := Source.FOnSoundRequest;
+  Charset := Source.Charset;
+  CodePage := Source.CodePage;
+  DefBackGround := Source.DefBackGround;
+  DefFontColor := Source.DefFontColor;
+  DefFontName := Source.DefFontName;
+  DefFontSize := Source.DefFontSize;
+  DefHotSpotColor := Source.DefHotSpotColor;
+  DefOverLinkColor := Source.DefOverLinkColor;
+  DefPreFontName := Source.DefPreFontName;
+  DefVisitedLinkColor := Source.DefVisitedLinkColor;
+  NoSelect := Source.NoSelect;
+  ServerRoot := Source.ServerRoot;
+
+  MarginHeight := Source.MarginHeight;
+  MarginWidth := Source.MarginWidth;
+  PrintMarginBottom := Source.PrintMarginBottom;
+  PrintMarginLeft := Source.PrintMarginLeft;
+  PrintMarginRight := Source.PrintMarginRight;
+  PrintMarginTop := Source.PrintMarginTop;
+  PrintMaxHPages := Source.PrintMaxHPages;
+  PrintScale := Source.PrintScale;
+
+  HistoryMaxCount := Source.HistoryMaxCount;
+  ImageCacheCount := Source.ImageCacheCount;
+  VisitedMaxCount := Source.VisitedMaxCount;
+
+  OnBitmapRequest := Source.OnBitmapRequest;
+  OnDragDrop := Source.OnDragDrop;
+  OnDragOver := Source.OnDragOver;
+  OnHotSpotTargetClick := Source.OnHotSpotTargetClick;
+  OnHotSpotTargetCovered := Source.OnHotSpotTargetCovered;
+  OnImageClick := Source.OnImageClick;
+  OnImageOver := Source.OnImageOver;
+  OnImageRequest := Source.OnImageRequest;
+  OnImageRequested := Source.OnImageRequested;
+  OnInclude := Source.OnInclude;
+  OnLink := Source.OnLink;
+  OnMeta := Source.OnMeta;
+  OnMouseDouble := Source.OnMouseDouble;
+  OnObjectTag := Source.OnObjectTag;
+  OnParseBegin := Source.OnParseBegin;
+  OnParseEnd := Source.OnParseEnd;
+  OnPrinted := Source.OnPrinted;
+  OnPrintFooter := Source.OnPrintFooter;
+  OnPrintHeader := Source.OnPrintHeader;
+  OnPrinting := Source.OnPrinting;
+  OnProcessing := Source.OnProcessing;
+  OnProgress := Source.OnProgress;
+  OnScript := Source.OnScript;
+  OnSoundRequest := Source.OnSoundRequest;
+
+  Cursor := Cursor;
+  OnKeyDown := OnKeyDown;
+  OnKeyPress := OnKeyPress;
+  OnKeyUp := OnKeyUp;
+  OnMouseDown := OnMouseDown;
+  OnMouseMove := OnMouseMove;
+  OnMouseUp := OnMouseUp;
+end;
+
+procedure TViewerBase.SetActiveColor(const Value: TColor);
+begin
+  FOverColor := Value;
+end;
+
+procedure TViewerBase.SetCharset(const Value: TFontCharset);
+begin
+  FCharSet := Value;
+end;
+
+procedure TViewerBase.SetCodePage(const Value: Integer);
+begin
+  FCodePage := Value;
+end;
+
+procedure TViewerBase.SetDefBackground(const Value: TColor);
+begin
+  FBackground := Value;
+end;
+
+procedure TViewerBase.SetOnBitmapRequest(const Value: TGetBitmapEvent);
+begin
+  FOnBitmapRequest := Value;
+end;
+
+procedure TViewerBase.SetOnDragDrop(const Value: TDragDropEvent);
+begin
+  FOnDragDrop := Value;
+end;
+
+procedure TViewerBase.SetOnDragOver(const Value: TDragOverEvent);
+begin
+  FOnDragOver := Value;
+end;
+
+procedure TViewerBase.SetFontColor(const Value: TColor);
+begin
+  FFontColor := Value;
+end;
+
+procedure TViewerBase.SetFontName(const Value: TFontName);
+begin
+  FFontName := Value;
+end;
+
+procedure TViewerBase.SetFontSize(const Value: Integer);
+begin
+  FFontSize := Value;
+end;
+
+procedure TViewerBase.SetHistoryMaxCount(const Value: Integer);
+begin
+  FHistoryMaxCount := Value;
+end;
+
+procedure TViewerBase.SetHotSpotColor(const Value: TColor);
+begin
+  FHotSpotColor := Value;
+end;
+
+procedure TViewerBase.SetImageCacheCount(const Value: Integer);
+begin
+  FImageCacheCount := Value;
+end;
+
+procedure TViewerBase.SetMarginHeight(const Value: Integer);
+begin
+  FMarginHeight := Value;
+end;
+
+procedure TViewerBase.SetMarginWidth(const Value: Integer);
+begin
+  FMarginWidth := Value;
+end;
+
+procedure TViewerBase.SetNoSelect(const Value: Boolean);
+begin
+  FNoSelect := Value;
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnInclude(Handler: TIncludeType);
+procedure TViewerBase.SetOnHistoryChange(const Value: TNotifyEvent);
+begin
+  FOnHistoryChange := Value;
+end;
+
+procedure TViewerBase.SetOnHotSpotTargetClick(const Value: THotSpotTargetClickEvent);
+begin
+  FOnHotSpotTargetClick := Value;
+end;
+
+procedure TViewerBase.SetOnHotSpotTargetCovered(const Value: THotSpotTargetEvent);
+begin
+  FOnHotSpotTargetCovered := Value;
+end;
+
+procedure TViewerBase.SetOnImageClick(const Value: TImageClickEvent);
+begin
+  FOnImageClick := Value;
+end;
+
+procedure TViewerBase.SetOnImageOver(const Value: TImageOverEvent);
+begin
+  FOnImageOver := Value;
+end;
+
+procedure TViewerBase.SetOnImageRequest(const Value: TGetImageEvent);
+begin
+  FOnImageRequest := Value;
+end;
+
+procedure TViewerBase.SetOnImageRequested(const Value: TGottenImageEvent);
+begin
+  FOnImageRequested := Value;
+end;
+
+procedure TViewerBase.SetOnInclude(const Handler: TIncludeType);
 begin
   FOnInclude := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnLink(Handler: TLinkType);
+procedure TViewerBase.SetOnLink(const Handler: TLinkType);
 begin
   FOnLink := Handler;
 end;
 
+procedure TViewerBase.SetOnMeta(const Value: TMetaType);
+begin
+  FOnMeta := Value;
+end;
+
+procedure TViewerBase.SetOnMouseDouble(const Value: TMouseEvent);
+begin
+  FOnMouseDouble := Value;
+end;
+
+procedure TViewerBase.SetOnObjectBlur(const Value: ThtObjectEvent);
+begin
+  FOnObjectBlur := Value;
+end;
+
+procedure TViewerBase.SetOnObjectChange(const Value: ThtObjectEvent);
+begin
+  FOnObjectChange := Value;
+end;
+
+procedure TViewerBase.SetOnObjectClick(const Value: TObjectClickEvent);
+begin
+  FOnObjectClick := Value;
+end;
+
+procedure TViewerBase.SetOnObjectFocus(const Value: ThtObjectEvent);
+begin
+  FOnObjectFocus := Value;
+end;
+
+procedure TViewerBase.SetOnObjectTag(const Value: TObjectTagEvent);
+begin
+  FOnObjectTag := Value;
+end;
+
+procedure TViewerBase.SetOnPanelCreate(const Value: TPanelCreateEvent);
+begin
+  FOnPanelCreate := Value;
+end;
+
+procedure TViewerBase.SetOnPanelDestroy(const Value: TPanelDestroyEvent);
+begin
+  FOnPanelDestroy := Value;
+end;
+
+procedure TViewerBase.SetOnPanelPrint(const Value: TPanelPrintEvent);
+begin
+  FOnPanelPrint := Value;
+end;
+
+procedure TViewerBase.SetOnParseBegin(const Value: TParseEvent);
+begin
+  FOnParseBegin := Value;
+end;
+
+procedure TViewerBase.SetOnParseEnd(const Value: TNotifyEvent);
+begin
+  FOnParseEnd := Value;
+end;
+
+procedure TViewerBase.SetOnPrinted(const Value: THTMLViewPrinted);
+begin
+  FOnPrinted := Value;
+end;
+
+procedure TViewerBase.SetOnPrintFooter(const Value: TPagePrinted);
+begin
+  FOnPrintFooter := Value;
+end;
+
+procedure TViewerBase.SetOnPrintHeader(const Value: TPagePrinted);
+begin
+  FOnPrintHeader := Value;
+end;
+
+procedure TViewerBase.SetOnPrinting(const Value: THTMLViewPrinting);
+begin
+  FOnPrinting := Value;
+end;
+
+procedure TViewerBase.SetOnProcessing(const Value: TProcessingEvent);
+begin
+  FOnProcessing := Value;
+end;
+
+procedure TViewerBase.SetOnProgress(const Value: ThtProgressEvent);
+begin
+  FOnProgress := Value;
+end;
+
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnScript(Handler: TScriptEvent);
+procedure TViewerBase.SetOnScript(const Handler: TScriptEvent);
 begin
   FOnScript := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnSoundRequest(Handler: TSoundType);
+procedure TViewerBase.SetOnSoundRequest(const Handler: TSoundType);
 begin
   FOnSoundRequest := Handler;
+end;
+
+procedure TViewerBase.SetPreFontName(const Value: TFontName);
+begin
+  FPreFontName := Value;
+end;
+
+procedure TViewerBase.SetPrintMarginBottom(const Value: Double);
+begin
+  FPrintMarginBottom := Value;
+end;
+
+procedure TViewerBase.SetPrintMarginLeft(const Value: Double);
+begin
+  FPrintMarginLeft := Value;
+end;
+
+procedure TViewerBase.SetPrintMarginRight(const Value: Double);
+begin
+  FPrintMarginRight := Value;
+end;
+
+procedure TViewerBase.SetPrintMarginTop(const Value: Double);
+begin
+  FPrintMarginTop := Value;
+end;
+
+procedure TViewerBase.SetPrintMaxHPages(const Value: Integer);
+begin
+  FPrintMaxHPages := Value;
+end;
+
+procedure TViewerBase.SetPrintScale(const Value: Double);
+begin
+  FPrintScale := Value;
+end;
+
+procedure TViewerBase.SetServerRoot(const Value: ThtString);
+begin
+  FServerRoot := ExcludeTrailingPathDelimiter(Trim(Value));
+end;
+
+procedure TViewerBase.SetVisitedColor(const Value: TColor);
+begin
+  FVisitedColor := Value;
+end;
+
+procedure TViewerBase.SetVisitedMaxCount(const Value: Integer);
+begin
+  FVisitedMaxCount := Value;
+end;
+
+procedure TViewerBase.ViewerDragDrop(Sender, Source: TObject; X, Y: Integer);
+begin
+  if Assigned(OnDragDrop) then
+    OnDragDrop(Self, Source, X, Y);
+end;
+
+procedure TViewerBase.ViewerDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
+begin
+  if Assigned(OnDragOver) then
+    OnDragOver(Self, Source, X, Y, State, Accept);
 end;
 
 { THtmlViewerBase }
@@ -2699,6 +3232,21 @@ function TIDObject.FreeMe: Boolean;
 begin
   Result := False;
 end;
+
+{ ThvPanel }
+
+procedure ThvPanel.SetVisible(Value: boolean);
+begin
+  if Value <> FVisible then
+  begin
+    FVisible := Value;
+    if FVisible then
+      Show
+    else
+      Hide;
+  end;
+end;
+
 
 end.
 
