@@ -40,15 +40,17 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="93">
+    <Units Count="94">
       <Unit0>
         <Filename Value="FrameDemLaz.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="FrameDemLaz"/>
+        <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="43" Y="37"/>
+        <TopLine Value="4"/>
+        <CursorPos X="10" Y="32"/>
         <UsageCount Value="130"/>
+        <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="Unit1.pas"/>
@@ -89,14 +91,10 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FDemUnit"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="225"/>
-        <CursorPos X="1" Y="233"/>
+        <TopLine Value="66"/>
+        <CursorPos X="45" Y="70"/>
         <UsageCount Value="129"/>
-        <Loaded Value="True"/>
-        <LoadedDesigner Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="FDemUnit.lfm"/>
@@ -111,8 +109,8 @@
         <UnitName Value="FrameViewer09"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
-        <CursorPos X="21" Y="15"/>
-        <UsageCount Value="5"/>
+        <CursorPos X="12" Y="22"/>
+        <UsageCount Value="10"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
@@ -142,8 +140,8 @@
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <UnitName Value="HTMLSubs"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1814"/>
-        <CursorPos X="11" Y="1829"/>
+        <TopLine Value="77"/>
+        <CursorPos X="1" Y="98"/>
         <UsageCount Value="59"/>
       </Unit10>
       <Unit11>
@@ -183,17 +181,20 @@
       <Unit15>
         <Filename Value="..\..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="566"/>
-        <CursorPos X="87" Y="580"/>
-        <UsageCount Value="9"/>
+        <TopLine Value="20"/>
+        <CursorPos X="31" Y="50"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
       </Unit15>
       <Unit16>
         <Filename Value="..\..\source\HTMLGif2.pas"/>
         <UnitName Value="HTMLGif2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="533"/>
-        <CursorPos X="1" Y="593"/>
+        <TopLine Value="19"/>
+        <CursorPos X="21" Y="39"/>
         <UsageCount Value="41"/>
       </Unit16>
       <Unit17>
@@ -235,7 +236,7 @@
         <UsageCount Value="11"/>
       </Unit21>
       <Unit22>
-        <Filename Value="..\..\..\..\HtmlViewer\Demos\Main Demos\PreviewForm.pas"/>
+        <Filename Value="L:\HtmlViewer\Demos\Main Demos\PreviewForm.pas"/>
         <UnitName Value="PreviewForm"/>
         <WindowIndex Value="0"/>
         <TopLine Value="100"/>
@@ -352,7 +353,7 @@
         <UsageCount Value="22"/>
       </Unit36>
       <Unit37>
-        <Filename Value="..\..\..\HtmlViewer.Juha\source\htmlcons.inc"/>
+        <Filename Value="L:\HtmlViewer.Juha\source\htmlcons.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="163"/>
         <CursorPos X="30" Y="207"/>
@@ -773,24 +774,24 @@
         <CursorPos X="10" Y="44"/>
         <UsageCount Value="10"/>
       </Unit92>
+      <Unit93>
+        <Filename Value="C:\lazarus\components\printers\printersdlgs.pp"/>
+        <UnitName Value="PrintersDlgs"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="8"/>
+        <CursorPos X="25" Y="12"/>
+        <UsageCount Value="10"/>
+      </Unit93>
     </Units>
-    <JumpHistory Count="4" HistoryIndex="3">
+    <JumpHistory Count="2" HistoryIndex="1">
       <Position1>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="784" Column="65" TopLine="751"/>
+        <Filename Value="..\..\source\DitherUnit.pas"/>
+        <Caret Line="588" Column="65" TopLine="566"/>
       </Position1>
       <Position2>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="280" Column="3" TopLine="280"/>
+        <Filename Value="..\..\source\DitherUnit.pas"/>
+        <Caret Line="753" Column="35" TopLine="736"/>
       </Position2>
-      <Position3>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="633" Column="94" TopLine="614"/>
-      </Position3>
-      <Position4>
-        <Filename Value="FDemUnit.pas"/>
-        <Caret Line="954" Column="38" TopLine="888"/>
-      </Position4>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
