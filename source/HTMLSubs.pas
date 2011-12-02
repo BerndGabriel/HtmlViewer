@@ -1425,6 +1425,7 @@ function htCompareText(const T1, T2: ThtString): Integer; {$ifdef UseInline} inl
 
 var
   WaitStream: TMemoryStream;
+  ErrorStream: TMemoryStream;
 {$ifdef UNICODE}
 {$else}
   UnicodeControls: boolean;
@@ -4761,11 +4762,16 @@ begin
     MargArray[piWidth] := 0;
   LeftSide := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
   RightSide := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
-  Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
   if MargArray[piWidth] > 0 then
-    Max := Min
+  begin
+    Min := MargArray[piWidth] + LeftSide + RightSide;
+    Max := Min;
+  end
   else
+  begin
+    Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
     Max := Math.Max(MaxCell, MargArray[piWidth]) + LeftSide + RightSide;
+  end;
 end;
 
 {----------------TBlock.GetURL}
@@ -4992,8 +4998,6 @@ begin
   case AutoCount of
     0:
       begin
-        if not HideOverflow then
-          MargArray[piWidth] := Max(MinWidth, MargArray[piWidth]);
         if (Justify in [centered, Right]) and (Positioning = posStatic)
           and not (FloatLR in [ALeft, ARight]) and
           (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) then
@@ -5010,12 +5014,12 @@ begin
           end;
         end;
       end;
-    1: if MargArray[piWidth] = Auto then
+
+    1:
+      if MargArray[piWidth] = Auto then
         CalcWidth
       else
       begin
-        if not HideOverflow then
-          MargArray[piWidth] := Max(MargArray[piWidth], MinWidth);
         if MargArray[MarginRight] = Auto then
           if (FloatLR in [ALeft, ARight]) then
             MargArray[MarginRight] := 0
@@ -5024,7 +5028,9 @@ begin
         else
           CalcMargLf;
       end;
-    2: if MargArray[piWidth] = Auto then
+
+    2:
+      if MargArray[piWidth] = Auto then
       begin
         if MargArray[MarginLeft] = Auto then
           MargArray[MarginLeft] := 0
@@ -5034,12 +5040,11 @@ begin
       end
       else
       begin
-        if not HideOverflow then
-          MargArray[piWidth] := Max(MargArray[piWidth], MinWidth);
         Marg2 := Max(0, AWidth - MargArray[piWidth] - BordPad);
         MargArray[MarginLeft] := Marg2 div 2;
         MargArray[MarginRight] := Marg2 div 2;
       end;
+      
     3:
       begin
         MargArray[MarginLeft] := 0;
@@ -7159,6 +7164,8 @@ function ThtDocument.GetTheImage(
       GetImage(TheOwner, BMName, Stream);
       if Stream = WaitStream then
         Delay := True
+      else if Stream <> ErrorStream then
+        Result := nil
       else if Stream <> nil then
         try
           Result := LoadImageFromStream(Stream, Transparent);
@@ -14199,6 +14206,8 @@ initialization
   {$ENDIF}
 {$endif}
   WaitStream := TMemoryStream.Create;
+  ErrorStream := TMemoryStream.Create;
 finalization
   WaitStream.Free;
+  ErrorStream.Free;
 end.
