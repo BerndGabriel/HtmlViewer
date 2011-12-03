@@ -1073,19 +1073,21 @@ var
       for I := 1 to Length(S) do
       begin
         Ch := S[I];
-        if Ch = ' ' then
-          Result := Result + '+'
-        else if not (Ch in [
+        case Ch of
+          ' ':
+            htAppendChr(Result, '+');
+
           ThtChar('a')..ThtChar('z'),
           ThtChar('A')..ThtChar('Z'),
           ThtChar('0')..ThtChar('9'),
           ThtChar('='), ThtChar('_'),
           ThtChar('-'), ThtChar('.'),
-          ThtChar('*'), ThtChar('@')])
-        then
-          Result := Result + '%' + IntToHex(ord(Ch), 2)
+          ThtChar('*'), ThtChar('@'):
+            htAppendChr(Result, Ch);
         else
-          Result := Result + Ch;
+          htAppendChr(Result, '%');
+          htAppendStr(Result, IntToHex(ord(Ch), 2));
+        end;
       end;
     end;
 

@@ -510,6 +510,14 @@ type
     Index: Integer;
   end;
 
+  TTextWrap = (
+    twNo,      // 'n'
+    twYes,     // 'y'
+    twSoft,    // 's'
+    twOptional // 'a'
+    );
+  TTextWrapArray = array of TTextWrap;
+
   TSection = class(TSectionBase)
   {TSection holds <p>, <li>, many other things, and the base for lists}
   private
@@ -521,7 +529,7 @@ type
   public
     BuffS: UnicodeString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section}
     Buff: PWideChar;    {same as above}
-    Brk: string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One of 'a' (optional), 'n' (no), 's' (soft), 'y' (yes) per character in BuffS
+    Brk: TTextWrapArray; //string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One of 'a' (optional), 'n' (no), 's' (soft), 'y' (yes) per character in BuffS
     XP: PXArray;
     BuffSize: Integer; {buffer may be larger}
     Fonts: TFontList; {List of FontObj's in this section}
@@ -10025,9 +10033,12 @@ begin
 end;
 
 procedure TSection.AddOpBrk;
+var
+  L: Integer;
 begin
-  if Brk <> '' then
-    Brk[Length(Brk)] := 'a';
+  L := Length(Brk);
+  if L > 0 then
+    Brk[L - 1] := twOptional;
 end;
 
 {----------------TSection.AddTokenObj}
@@ -10035,7 +10046,7 @@ end;
 procedure TSection.AddTokenObj(T: TokenObj);
 var
   L, I, J: Integer;
-  C: char;
+  C: TTextWrap;
   St, StU: UnicodeString;
   Small: boolean;
 begin
@@ -10059,12 +10070,12 @@ begin
   Move(T.I[1], XP^[Len], T.Count * Sizeof(Integer));
   // BG, 31.08.2011: added: WhiteSpaceStyle
   if NoBreak or (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) then
-    C := 'n'
+    C := twNo
   else
-    C := 'y';
+    C := twYes;
   J := Length(Brk);
   SetLength(Brk, J + T.Count);
-  for I := J + 1 to J + T.Count do
+  for I := J to J + T.Count - 1 do
     Brk[I] := C;
 
   if PropStack.Last.GetFontVariant = 'small-caps' then
@@ -10122,9 +10133,10 @@ var
 
   procedure Remove(I: Integer);
   begin
-    Move(XP^[I], XP^[I - 1], ((Length(BuffS)) - I) * Sizeof(Integer));
+    Move(XP^[I], XP^[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
+    Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(TTextWrap));
+    SetLength(Brk, Length(Brk) - 1);
     System.Delete(BuffS, I, 1);
-    System.Delete(Brk, I, 1);
     FormControls.Decrement(I - 1);
     Fonts.Decrement(I - 1, Document);
     Images.Decrement(I - 1);
@@ -10145,8 +10157,8 @@ begin
     while I > 0 do
     begin
       Remove(I);
-      if (I > 1) and (Brk[I - 1] <> 'n') then
-        Brk[I - 1] := 's';
+      if (I > 1) and (Brk[I - 2] <> twNo) then
+        Brk[I - 2] := twSoft;
       I := WidePos(Shy, BuffS);
     end;
 
@@ -10158,7 +10170,7 @@ begin
       I := WidePos('  ', BuffS);
       while I > 0 do
       begin
-        if Brk[I] = 'n' then
+        if Brk[I - 1] = twNo then
           Remove(I)
         else
           Remove(I + 1);
@@ -10216,7 +10228,8 @@ begin
   Len := Length(BuffS);
   if Len > 0 then
   begin
-    Brk := Brk + 'y';
+    SetLength(Brk, Length(Brk) + 1);
+    Brk[Length(Brk) - 1] := twYes;
     if Assigned(XP) then {XP = Nil when printing}
     begin
       Last := 0; {to prevent warning msg}
@@ -10433,7 +10446,7 @@ begin
   begin
     FormControls.Add(FCO);
     AddChar(FmCtl, Index); {marker for FormControl}
-    Brk[Len] := 'n'; {don't allow break between these two controls}
+    Brk[Len - 1] := twNo; {don't allow break between these two controls}
     ButtonControl := TButtonFormControlObj.Create(AMasterList, ACell, Len, S, L, Prop);
     ButtonControl.MyEdit := TEditFormControlObj(FCO);
     FormControls.Add(ButtonControl);
@@ -10443,7 +10456,7 @@ begin
     FCO.Value := ''; {value attribute should not show in TEdit}
     TEditFormControlObj(FCO).Text := '';
     AddChar(FmCtl, Index);
-    Brk[Len] := 'n';
+    Brk[Len - 1] := twNo;
   end
   else if S <> 'hidden' then
   begin
@@ -10619,7 +10632,7 @@ begin
         if Floating in [ALeft, ARight] then
         begin
           Max := Max + TotalWidth;
-          Brk[Pos + 1] := 'y'; {allow break after floating image}
+          Brk[Pos] := twYes; {allow break after floating image}
           Min := Math.Max(Min, TotalWidth);
         end
         else
@@ -10659,7 +10672,7 @@ begin
     while P^ <> #0 do
     {find the next string of chars that can't be wrapped}
     begin
-      if CanWrap(P1^) and (Brk[I] = 'y') then
+      if CanWrap(P1^) and (Brk[I - 1] = twYes) then
       begin
         Inc(P1);
         Inc(I);
@@ -10669,12 +10682,12 @@ begin
         repeat
           Inc(P1);
           Inc(I);
-          case Brk[I - 1] of
-            'a', 's':
+          case Brk[I - 2] of
+            twSoft, twOptional:
               break;
           end;
-        until (P1^ = #0) or (CanWrap(P1^) and (Brk[I] = 'y'));
-        SoftHyphen := Brk[I - 1] = 's';
+        until (P1^ = #0) or (CanWrap(P1^) and (Brk[I - 1] = twYes));
+        SoftHyphen := Brk[I - 2] = twSoft;
         case P1^ of
           WideChar('-'), WideChar('?'):
             begin
@@ -10954,7 +10967,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         J := Min(J1, J2);
         J := Min(J, J3);
         I := FitText(Canvas.Handle, Start, J, Width - XX, Save);
-        if (I > 0) and (Brk[TheStart - Buff + Cnt + I] = 's') then
+        if (I > 0) and (Brk[TheStart - Buff + Cnt + I - 1] = twSoft) then
         begin {a hyphen could go here}
           HyphenWidth := Canvas.TextWidth('-');
           if XX + Save.cx + HyphenWidth > Width then
@@ -11165,7 +11178,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       LR.Start := PStart;
       LR.LineHt := DHt;
       LR.Ln := NN;
-      if Brk[PStart - Buff + NN] = 's' then {see if there is a soft hyphen on the end}
+      if Brk[PStart - Buff + NN - 1] = twSoft then {see if there is a soft hyphen on the end}
         LR.Shy := True;
       TmpRt := IMgr.RightSide(Y);
       Tmp := IMgr.LeftIndent(Y);
@@ -11317,7 +11330,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       begin
         //BG, 24.01.2010: do not move down images or trailing spaces.
         P := PStart + N - 1; {the last char that fits}
-        if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+        if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff] <> twNo) or (P^ = BrkCh) then
         begin {move past spaces so as not to print any on next line}
           while (N < MaxChars) and ((P + 1)^ = ' ') do
           begin
@@ -11345,7 +11358,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       else
       begin
         P := PStart + N - 1; {the last ThtChar that fits}
-        if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+        if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff] <> twNo) or (P^ = BrkCh) then
         begin {move past spaces so as not to print any on next line}
           while (N < MaxChars) and ((P + 1)^ = ' ') do
           begin
@@ -11355,7 +11368,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           Finished := N >= MaxChars;
           LineComplete(N);
         end
-        else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 2] <> 'n') then
+        else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 1] <> twNo) then
         begin
           repeat
             Inc(N); {pass the space}
@@ -11364,7 +11377,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           Finished := N >= MaxChars;
           LineComplete(N);
         end
-        else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
+        else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N - 1] <> twNo) then {an image or control}
         begin
           Finished := False;
           LineComplete(N);
@@ -11372,10 +11385,10 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         else
         begin {non space, wrap it by backing off to previous space or image}
           while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
-            or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
-            or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
+            or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff] in [twSoft, twOptional]))
+            or ((Brk[P - Buff] = twNo))) and (P > PStart) do
             Dec(P);
-          if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
+          if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff] = twNo)) then
           begin {no space found, forget the wrap, write the whole word and any
                  spaces found after it}
             if BreakWord then
@@ -11386,9 +11399,9 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
 
               while (P <> Last)
                 and not (P^ in [WideChar('-'), WideChar('?')])
-                and not (Brk[P - Buff + 1] in ['a', 's'])
+                and not (Brk[P - Buff] in [twSoft, twOptional])
                 and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
-              or (Brk[P - Buff + 2] = 'n') do
+              or (Brk[P - Buff + 1] = twNo) do
               begin
                 Inc(P);
               end;
