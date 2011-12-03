@@ -1087,7 +1087,7 @@ type
     RowType: TRowType;
 
     constructor Create(Attr: TAttributeList; Prop: TProperties);
-    constructor CreateCopy(AMasterList: ThtDocument; T: TCellList);
+    constructor CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellList);
     procedure InitializeRow;
     function DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span, CellSpacing, AHeight, Rows: Integer;
       var Desired: Integer; var Spec, More: boolean): Integer;
@@ -7890,7 +7890,7 @@ end;
 
 {----------------TCellList.CreateCopy}
 
-constructor TCellList.CreateCopy(AMasterList: ThtDocument; T: TCellList);
+constructor TCellList.CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellList);
 var
   I: Integer;
 begin
@@ -7901,7 +7901,7 @@ begin
   RowType := T.Rowtype;
   for I := 0 to T.Count - 1 do
     if Assigned(T.Items[I]) then
-      Add(TCellObj.CreateCopy(AMasterList, nil, T.Items[I]))
+      Add(TCellObj.CreateCopy(AMasterList, Parent, T.Items[I]))
     else
       Add(nil);
 end;
@@ -8158,7 +8158,7 @@ begin
   inherited;
   Rows := TFreeList.Create;
   for I := 0 to HtmlTable.Rows.Count - 1 do
-    Rows.Add(TCellList.CreateCopy(Document, TCellList(HtmlTable.Rows.Items[I])));
+    Rows.Add(TCellList.CreateCopy(Document, OwnerCell.OwnerBlock, TCellList(HtmlTable.Rows.Items[I])));
 
   Move(HtmlTable.ListsProcessed, ListsProcessed, PtrSub(@EndList, @ListsProcessed));
 
