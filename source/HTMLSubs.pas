@@ -1,8 +1,8 @@
 {
-Version   11
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011 by Bernd Gabriel
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -386,7 +386,7 @@ type
     PanelPrintEvent: TPanelPrintEvent;
     FUserData: TObject;
     FMyPanelObj: TPanelObj;
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; ObjectTag: boolean); 
+    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; ObjectTag: boolean);
     constructor CreateCopy(Document: ThtDocument; Parent: TCellBasic; Source: TFloatingObj); override;
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj); override;
@@ -2627,7 +2627,7 @@ begin
     Ofst := 4
   else
     Ofst := 0;
-    
+
   if VertAlign = AMiddle then
     MiddleAlignTop := YBaseLine + FO.Descent - (FO.tmHeight div 2) - ((ClientHeight - VSpaceT + VSpaceB) div 2)
   else
@@ -3397,7 +3397,7 @@ end;
 
 {----------------TImageFormControlObj.Create}
 
-constructor TImageFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); 
+constructor TImageFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
 begin
@@ -3841,7 +3841,7 @@ end;
 //-- BG ---------------------------------------------------------- 16.01.2011 --
 function TButtonFormControlObj.GetControl: TWinControl;
 begin
-  Result := FControl; 
+  Result := FControl;
 end;
 
 procedure TButtonFormControlObj.ButtonClick(Sender: TObject);
@@ -5044,7 +5044,7 @@ begin
         MargArray[MarginLeft] := Marg2 div 2;
         MargArray[MarginRight] := Marg2 div 2;
       end;
-      
+
     3:
       begin
         MargArray[MarginLeft] := 0;
@@ -5637,7 +5637,7 @@ begin
 
     if HideOverflow then
     begin
-// BG, 28.08.2011: always clip to content rect:    
+// BG, 28.08.2011: always clip to content rect:
 //      if FloatLR = ANone then
         GetClippingRgn(Canvas, Rect(CnRect.Left, CnRect.Top, CnRect.Right, CnRect.Bottom), Document.Printing, Rgn, SaveRgn)
 //      else
@@ -7164,7 +7164,7 @@ function ThtDocument.GetTheImage(
       GetImage(TheOwner, BMName, Stream);
       if Stream = WaitStream then
         Delay := True
-      else if Stream <> ErrorStream then
+      else if Stream = ErrorStream then
         Result := nil
       else if Stream <> nil then
         try

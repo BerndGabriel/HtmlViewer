@@ -1,6 +1,6 @@
 {
-HtmlViewer Version 12
-Copyright (c) 2010-2011 by B.Gabriel
+Version   12
+Copyright (c) 2010-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

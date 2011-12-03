@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.5
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 *********************************************************
 *                                                       *
@@ -51,4 +53,3 @@ begin
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.
-

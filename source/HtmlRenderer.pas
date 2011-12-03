@@ -1,6 +1,6 @@
 {
 Version   12
-Copyright (c) 2011 by Bernd Gabriel
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -526,11 +526,12 @@ begin
 //
       pdUnassigned:
         raise EHtmlRendererException.Create('No "Display" assigned.');
-        
+
       pdNone:
         exit;
     else
-      raise EHtmlRendererException.Create('"Display:' + CDisplayStyle[Info.Display] + '" not yet supported.');
+      //raise EHtmlRendererException.Create('"Display:' + CDisplayStyle[Info.Display] + '" not yet supported.');
+      Box := THtmlElementBox.Create(ParentBox);
     end;
 
     // set properties
