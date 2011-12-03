@@ -318,26 +318,6 @@ end;
 //-- BG ---------------------------------------------------------- 21.08.2011 --
 function StrToUri(Uri: ThtString): TUri;
 
-  function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
-  begin
-    case Ch of
-      'a'..'z', 'A'..'Z':
-        Result := True;
-    else
-      Result := False;
-    end;
-  end;
-
-  function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
-  begin
-    case Ch of
-      '0'..'9':
-        Result := True;
-    else
-      Result := False;
-    end;
-  end;
-
   function Copy(const Uri: ThtString; I, Len: Integer): ThtString;
   begin
     if Len > 0 then

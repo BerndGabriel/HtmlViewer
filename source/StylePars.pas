@@ -269,17 +269,6 @@ begin
     GetCh;
 end;
 
-{----------------RemoveQuotes}
-
-function RemoveQuotes(const S: ThtString): ThtString;
-{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
-begin
-  if (Length(S) >= 2) and (S[1] in [ThtChar(''''), ThtChar('"')]) and (S[Length(S)] = S[1]) then
-    Result := Copy(S, 2, Length(S) - 2)
-  else
-    Result := S;
-end;
-
 {----------------AddPath}
 
 function THtmlStyleParser.AddPath(S: ThtString): ThtString;
@@ -591,7 +580,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
         end;
         continue;
       end;
-      if S[I, 1] in [ThtChar('0')..ThtChar('9')] then
+      if IsDigit(S[I, 1]) then
       begin
       {the following will pass 100pt, 100px, but not 100 or larger}
         if StrToIntDef(S[I], -1) < 100 then
@@ -740,11 +729,16 @@ begin
         SS[1] := C;
         SS[2] := Ch;
         GetCh;
-        while Ch in [ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), ThtChar('_'), ThtChar('-')] do
-        begin
-          SS := SS + Ch;
-          GetCh;
-        end;
+        while True do
+          case Ch of
+            'a'..'z', '0'..'9', '_', '-':
+            begin
+              SS := SS + Ch;
+              GetCh;
+            end;
+          else
+            break;
+          end;
         SL.Add(SS);
       end;
     end;
@@ -982,10 +976,13 @@ begin
     if LCh = ';' then
       GetCh;
 
-    while not (LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'),
-      MinusChar, ThtChar('}'), LessChar, EofChar])
-    do
-      GetCh;
+    while True do
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-', '}', '<', EofChar:
+          break;
+      else
+        GetCh;
+      end;
   until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
   if LCh = '}' then
     GetCh;
@@ -1096,7 +1093,7 @@ begin
       SetLength(S, Length(S) + 1);
       S[Length(S)] := LCh;
       GetCh;
-    until false;
+    until False;
     if not Ignore then
     begin
       S := FormatContextualSelector(Lowercase(Trim(S)), Sort);
@@ -1134,11 +1131,16 @@ begin
   repeat
     Prop := '';
     SkipWhiteSpace;
-    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar] do
-    begin
-      Prop := Prop + LCh;
-      GetCh;
-    end;
+    while True do
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-':
+          begin
+            Prop := Prop + LCh;
+            GetCh;
+          end;
+      else
+        break;
+      end;
     Prop := LowerCase(Trim(Prop));
     SkipWhiteSpace;
     if (LCh = ':') or (LCh = '=') then
@@ -1161,8 +1163,13 @@ begin
     SkipWhiteSpace;
     if LCh = ';' then
       GetCh;
-    while not (LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar, EofChar]) do
-      GetCh;
+    while True do
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-', EofChar:
+          break;
+      else
+        GetCh;
+      end;
   until LCh = EofChar;
 end;
 

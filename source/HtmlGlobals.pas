@@ -276,6 +276,8 @@ procedure SortStringArray(A: ThtStringArray);
 // Posx(SubStr, S, Offst): find substring in S starting at Offset:
 function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
+function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
+function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -620,6 +622,28 @@ begin
   Result := Str;
   CharUpperBuffW(@Result[1], Length(Result));
 {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
+begin
+  case Ch of
+    'a'..'z', 'A'..'Z':
+      Result := True;
+  else
+    Result := False;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 21.08.2011 --
+function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
+begin
+  case Ch of
+    '0'..'9':
+      Result := True;
+  else
+    Result := False;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --

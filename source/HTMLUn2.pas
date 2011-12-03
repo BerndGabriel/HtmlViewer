@@ -294,9 +294,10 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Add(C: ThtChar; Index: Integer);
+    procedure Add(C: ThtChar; Index: Integer); overload;
+    procedure Add(const S: ThtString; Index: Integer); overload;
     procedure Clear;
-    procedure Concat(T: TCharCollection);
+//    procedure Concat(const T: TCharCollection);
 
     property AsString: ThtString read GetAsString;
     property Indices: PIndexArray read FIndices;
@@ -318,10 +319,10 @@ type
     destructor Destroy; override;
     procedure AddUnicodeChar(Ch: WideChar; Ind: Integer);
     procedure AddString(S: TCharCollection);
-    procedure Concat(T: TokenObj);
+//    procedure Concat(T: TokenObj);
     procedure Clear;
-    procedure Remove(N: Integer);
-    procedure Replace(N: Integer; Ch: WideChar);
+//    procedure Remove(N: Integer);
+//    procedure Replace(N: Integer; Ch: WideChar);
 
     property Capacity: Integer read FCapacity write SetCapacity;
     property Count: Integer read FCount;
@@ -2219,26 +2220,44 @@ begin
   FChars[FCurrentIndex] := C;
 end;
 
-procedure TCharCollection.Clear;
-begin
-  FCurrentIndex := 0;
-  FChars := '';
-end;
-
-procedure TCharCollection.Concat(T: TCharCollection);
+procedure TCharCollection.Add(const S: ThtString; Index: Integer);
 var
   K: Integer;
 begin
-  K := FCurrentIndex + T.FCurrentIndex;
+  K := FCurrentIndex + Length(S);
   if K >= Length(FChars) then
   begin
     SetLength(FChars, K + 50);
     ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
   end;
-  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
-  Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
-  FCurrentIndex := K;
+  Move(PhtChar(S)^, FChars[FCurrentIndex + 1], Length(S) * SizeOf(ThtChar));
+  while FCurrentIndex < K do
+  begin
+    Inc(FCurrentIndex);
+    FIndices^[FCurrentIndex] := Index;
+  end;
 end;
+
+procedure TCharCollection.Clear;
+begin
+  FCurrentIndex := 0;
+  SetLength(FChars, 0);
+end;
+
+//procedure TCharCollection.Concat(T: TCharCollection);
+//var
+//  K: Integer;
+//begin
+//  K := FCurrentIndex + T.FCurrentIndex;
+//  if K >= Length(FChars) then
+//  begin
+//    SetLength(FChars, K + 50);
+//    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
+//  end;
+//  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
+//  Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
+//  FCurrentIndex := K;
+//end;
 
 { TokenObj }
 
@@ -2296,29 +2315,29 @@ begin
   end;
 end;
 
-function ByteNum(CodePage: Integer; P: PAnsiChar): Integer;
-var
-  P1: PAnsiChar;
-begin
-  if CodePage <> CP_UTF8 then
-  begin
-    P1 := {$ifdef LCL} CharNextEx {$else} CharNextExA {$endif} (CodePage, P, 0);
-    if Assigned(P1) then
-      Result := P1 - P
-    else
-      Result := 0;
-  end
-  else
-    case ord(P^) of {UTF-8}
-      0: Result := 0;
-      1..127: Result := 1;
-      192..223: Result := 2;
-      224..239: Result := 3;
-      240..247: Result := 4;
-    else
-      Result := 1; {error}
-    end;
-end;
+//function ByteNum(CodePage: Integer; P: PAnsiChar): Integer;
+//var
+//  P1: PAnsiChar;
+//begin
+//  if CodePage <> CP_UTF8 then
+//  begin
+//    P1 := {$ifdef LCL} CharNextEx {$else} CharNextExA {$endif} (CodePage, P, 0);
+//    if Assigned(P1) then
+//      Result := P1 - P
+//    else
+//      Result := 0;
+//  end
+//  else
+//    case ord(P^) of {UTF-8}
+//      0: Result := 0;
+//      1..127: Result := 1;
+//      192..223: Result := 2;
+//      224..239: Result := 3;
+//      240..247: Result := 4;
+//    else
+//      Result := 1; {error}
+//    end;
+//end;
 
 procedure TokenObj.AddString(S: TCharCollection);
 var
@@ -2333,40 +2352,40 @@ begin
   StringOK := False;
 end;
 
-procedure TokenObj.Concat(T: TokenObj);
-var
-  K: Integer;
-begin
-  K := Count + T.Count;
-  if K >= Capacity then
-    SetCapacity(K + 50);
-  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
-  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
-  FCount := K;
-  StringOK := False;
-end;
-
-procedure TokenObj.Remove(N: Integer);
-begin {remove a single character}
-  if N <= Count then
-  begin
-    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
-    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
-    if StringOK then
-      Delete(St, N, 1);
-    Dec(FCount);
-  end;
-end;
-
-procedure TokenObj.Replace(N: Integer; Ch: WideChar);
-begin {replace a single character}
-  if N <= Count then
-  begin
-    C^[N] := Ch;
-    if StringOK then
-      St[N] := Ch;
-  end;
-end;
+//procedure TokenObj.Concat(T: TokenObj);
+//var
+//  K: Integer;
+//begin
+//  K := Count + T.Count;
+//  if K >= Capacity then
+//    SetCapacity(K + 50);
+//  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
+//  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
+//  FCount := K;
+//  StringOK := False;
+//end;
+//
+//procedure TokenObj.Remove(N: Integer);
+//begin {remove a single character}
+//  if N <= Count then
+//  begin
+//    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
+//    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
+//    if StringOK then
+//      Delete(St, N, 1);
+//    Dec(FCount);
+//  end;
+//end;
+//
+//procedure TokenObj.Replace(N: Integer; Ch: WideChar);
+//begin {replace a single character}
+//  if N <= Count then
+//  begin
+//    C^[N] := Ch;
+//    if StringOK then
+//      St[N] := Ch;
+//  end;
+//end;
 
 //-- BG ---------------------------------------------------------- 20.01.2011 --
 procedure TokenObj.SetCapacity(NewCapacity: Integer);

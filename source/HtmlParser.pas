@@ -485,7 +485,7 @@ procedure THtmlParser.GetCh;
               EofChar:
                 break;
             end;
-            Value := Value + LCh;
+            htAppendChr(Value, LCh);
             GetCh;
           until False;
         end;
@@ -838,7 +838,7 @@ end;
 function THtmlParser.GetIdentifier(out Identifier: ThtString): Boolean;
 begin
   // An identifier can contain only the characters a..z, A..Z, 0..9, -, and _
-  // and start with a..z, A..Z or _] or underscore;
+  // and start with a..z, A..Z or _;
   SetLength(Identifier, 0);
   case LCh of
     'A'..'Z', 'a'..'z', '_':
@@ -847,7 +847,7 @@ begin
     Result := False;
   end;
 
-  // loop through all allowed charaters:
+  // loop through all allowed characters:
   while Result do
   begin
     case LCh of
@@ -1064,7 +1064,7 @@ procedure THtmlParser.Next;
 
   procedure CollectText;
   // Considers the current data as pure text and collects everything until
-  // the input end or one of the reserved tokens is found.
+  // the input ends or one of the reserved tokens is found.
   begin
     repeat
       case LCh of
@@ -1078,7 +1078,7 @@ procedure THtmlParser.Next;
         TabChar:
         begin
           // add 1 whitespace character per whitespace sequence only:
-          LCToken.Add(LCh, FDocPos);
+          LCToken.Add(SpcChar, FDocPos);
           GetChSkipWhiteSpace;
         end;
 

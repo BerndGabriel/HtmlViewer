@@ -1563,39 +1563,59 @@ var
       Inc(DimCount);
       Numb := '';
       GetCh;
-      while not (Ch in [ThtChar('0')..ThtChar('9'), ThtChar('*'), ThtChar(EOL), ThtChar(',')]) do
-        GetCh;
-      if Ch in [ThtChar('0')..ThtChar('9')] then
-      begin
-        while Ch in [ThtChar('0')..ThtChar('9')] do
-        begin
-          Numb := Numb + Ch;
+      while True do
+        case Ch of
+          '0'..'9', '*', EOL, ',':
+            break;
+        else
           GetCh;
         end;
-        N := Max(1, StrToInt(Numb)); {no zeros}
-        while not (Ch in [ThtChar('*'), ThtChar('%'), ThtChar(','), ThtChar(EOL)]) do
-          GetCh;
-        if ch = '*' then
-        begin
-          Dim[DimCount] := -Min(99, N); {store '*' relatives as negative, -1..-99}
-          GetCh;
-        end
-        else if Ch = '%' then
-        begin {%'s stored as -(100 + %),  i.e. -110 is 10% }
-          Dim[DimCount] := -Min(1000, N + 100); {limit to 900%}
-          GetCh;
-        end
-        else
-          Dim[DimCount] := Min(N, 5000); {limit absolute to 5000}
-      end
-      else if Ch in [ThtChar('*'), ThtChar(','), ThtChar(EOL)] then
-      begin
-        Dim[DimCount] := -1;
-        if Ch = '*' then
-          GetCh;
+
+      case Ch of
+        '0'..'9':
+          begin
+            while IsDigit(Ch) do
+            begin
+              Numb := Numb + Ch;
+              GetCh;
+            end;
+            N := Max(1, StrToInt(Numb)); {no zeros}
+            while True do
+              case Ch of
+                '*', '%', ',', EOL:
+                  break;
+              else
+                GetCh;
+              end;
+            if Ch = '*' then
+            begin
+              Dim[DimCount] := -Min(99, N); {store '*' relatives as negative, -1..-99}
+              GetCh;
+            end
+            else if Ch = '%' then
+            begin {%'s stored as -(100 + %),  i.e. -110 is 10% }
+              Dim[DimCount] := -Min(1000, N + 100); {limit to 900%}
+              GetCh;
+            end
+            else
+              Dim[DimCount] := Min(N, 5000); {limit absolute to 5000}
+          end;
+
+        '*', ',', EOL:
+          begin
+            Dim[DimCount] := -1;
+            if Ch = '*' then
+              GetCh;
+          end;
       end;
-      while not (Ch in [ThtChar(','), ThtChar(EOL)]) do
-        GetCh;
+
+      while True do
+        case Ch of
+          ',', EOL:
+            break;
+        else
+          GetCh;
+        end;
     until (Ch = EOL) or (DimCount = 20);
   end;
 

@@ -254,6 +254,7 @@ procedure ConvVertMargins(const VM: TVMarginArray; BaseHeight, EmSize, ExSize: I
 
 function SortedProperties: ThtStringList;
 
+function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
 var
@@ -1400,11 +1401,19 @@ procedure TProperties.Combine(Styles: TStyleList;
           Inc(N);
           I := Pos(' ', S);
         end;
+
         A[N].Tg := S;
-        if (N >= 2) and (Length(A[2].Tg) > 0) then
-          repeat
-            Delete(A[2].Tg, 1, 1); {remove the sort digit}
-          until (length(A[2].Tg) = 0) or not (A[2].Tg[1] in [ThtChar('0')..ThtChar('9')]);
+        if N >= 2 then
+          while Length(A[2].Tg) > 0 do
+          begin
+            case A[2].Tg[1] of
+              '0'..'9':
+                Delete(A[2].Tg, 1, 1); {remove the sort digit}
+            else
+              break;
+            end;
+          end;
+
         for I := 1 to N do
         begin
           J := Pos('>', A[I].Tg);
@@ -1717,6 +1726,22 @@ begin {call only if all things valid}
   Result.Assign(TheFont);
 end;
 
+{----------------RemoveQuotes}
+
+function RemoveQuotes(const S: ThtString): ThtString;
+{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
+begin
+  Result := S;
+  if Length(Result) >= 2 then
+  begin
+    case Result[1] of
+      '"', '''':
+        if Result[Length(Result)] = Result[1] then
+          Result := Copy(Result, 2, Length(Result) - 2);
+    end;
+  end;
+end;
+
 {----------------ReadFontName}
 
 function ReadFontName(S: ThtString): ThtString;
@@ -1744,16 +1769,15 @@ var
       Result := Trim(S);
       S := '';
     end;
+
     for I := 1 to AMax do
       if CompareText(Result, Generic1[I]) = 0 then
       begin
         Result := Generic2[I];
         break;
       end;
-    if (Result <> '') and (Result[Length(Result)] in [ThtChar('"'), ThtChar('''')]) then
-      SetLength(Result, Length(Result) - 1);
-    if (Result <> '') and (Result[1] in [ThtChar('"'),ThtChar('''')]) then
-      Delete(Result, 1, 1);
+
+    Result := RemoveQuotes(Result);
   end;
 
 begin
