@@ -731,7 +731,7 @@ begin
         case Ch of
           'a'..'z', '0'..'9', '_', '-':
           begin
-            SS := SS + Ch;
+            htAppendChr(SS, Ch);
             GetCh;
           end;
         else
@@ -740,7 +740,7 @@ begin
       SL.Add(SS);
     end;
     for I := 0 to SL.Count - 1 do
-      Result := Result + Copy(SL.Strings[I], 2, Length(SL.Strings[I]) - 1);
+      htAppendStr(Result, Copy(SL.Strings[I], 2, Length(SL.Strings[I]) - 1));
   finally
     SL.Free;
   end;
