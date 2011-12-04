@@ -692,16 +692,17 @@ var
   Ch, C: ThtChar;
   SS: ThtString;
   SL: ThtStringList;
-  Done: boolean;
   I: integer;
 
   procedure GetCh;
   begin
     if I <= Length(S) then
-      Ch := S[I]
+    begin
+      Ch := S[I];
+      Inc(I);
+    end
     else
       Ch := Eos;
-    Inc(I);
   end;
 
 begin
@@ -709,38 +710,34 @@ begin
   SL := ThtStringList.Create; {ThtStringList to do sorting}
   try
     SL.Sorted := True;
-    Done := False;
     I := 1;
     GetCh;
-    while not done do
+    while True do
     begin
-      if Ch = Eos then
-        Done := True
+      case Ch of {add digit to sort item}
+        Eos: break;
+
+        '.': C := '1';
+        ':': C := '2';
+        '#': C := '3';
       else
-      begin
-        case Ch of {add digit to sort item}
-          '.': C := '1';
-          ':': C := '2';
-          '#': C := '3';
-        else
-          C := '0';
-        end;
-        SetLength(SS, 2);
-        SS[1] := C;
-        SS[2] := Ch;
-        GetCh;
-        while True do
-          case Ch of
-            'a'..'z', '0'..'9', '_', '-':
-            begin
-              SS := SS + Ch;
-              GetCh;
-            end;
-          else
-            break;
-          end;
-        SL.Add(SS);
+        C := '0';
       end;
+      SetLength(SS, 2);
+      SS[1] := C;
+      SS[2] := Ch;
+      GetCh;
+      while True do
+        case Ch of
+          'a'..'z', '0'..'9', '_', '-':
+          begin
+            SS := SS + Ch;
+            GetCh;
+          end;
+        else
+          break;
+        end;
+      SL.Add(SS);
     end;
     for I := 0 to SL.Count - 1 do
       Result := Result + Copy(SL.Strings[I], 2, Length(SL.Strings[I]) - 1);
