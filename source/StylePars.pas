@@ -49,12 +49,15 @@ type
 
   //TProcessProc = procedure(Obj: TObject; Selectors: ThtStringList; Prop, Value: ThtString);
 
+  { THtmlStyleParser }
+
   THtmlStyleParser = class
   private
     Doc: TBuffer;
     LCh: ThtChar;
     LinkPath: ThtString;
     procedure GetCh;
+    function GetIdentifier(out Identifier: ThtString): Boolean;
     procedure SkipWhiteSpace;
     function AddPath(S: ThtString): ThtString;
     procedure DoBackground(Value: ThtString);
@@ -171,23 +174,61 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 13.03.2011 --
+function THtmlStyleParser.GetIdentifier(out Identifier: ThtString): Boolean;
+begin
+  // http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-identifier
+
+  // can contain only the characters [a-zA-Z0-9] and ISO 10646 characters U+00A0 and higher,
+  // plus the hyphen (-) and the underscore (_);
+  // Identifiers can also contain escaped characters and any ISO 10646 character as a numeric code
+  // (see next item). For instance, the identifier "B&W?" may be written as "B\&W\?" or "B\26 W\3F".
+
+  Result := True;
+  SetLength(Identifier, 0);
+
+  // they cannot start with a digit, two hyphens, or a hyphen followed by a digit.
+  case LCh of
+    '0'..'9':
+      Result := False;
+
+    '-':
+    begin
+      case Doc.PeekChar of
+        '0'..'9', '-':
+          Result := False;
+      else
+        SetLength(Identifier, Length(Identifier) + 1);
+        Identifier[Length(Identifier)] := LCh;
+        GetCh;
+      end;
+    end;
+  end;
+
+  // loop through all allowed charaters:
+  while Result do
+  begin
+    case LCh of
+      'A'..'Z', 'a'..'z', '0'..'9', '-', '_': ;
+    else
+      if LCh < #$A0 then
+        break;
+    end;
+    SetLength(Identifier, Length(Identifier) + 1);
+    Identifier[Length(Identifier)] := LCh;
+    GetCh;
+  end;
+
+  if Result then
+    Result := Length(Identifier) > 0;
+end;
+
 {-------------SkipWhiteSpace}
 
 procedure THtmlStyleParser.SkipWhiteSpace;
 begin
   while LCh = ' ' do
     GetCh;
-end;
-
-{----------------RemoveQuotes}
-
-function RemoveQuotes(const S: ThtString): ThtString;
-{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
-begin
-  if (Length(S) >= 2) and (S[1] in [ThtChar(''''), ThtChar('"')]) and (S[Length(S)] = S[1]) then
-    Result := Copy(S, 2, Length(S) - 2)
-  else
-    Result := S;
 end;
 
 {----------------AddPath}
@@ -387,7 +428,7 @@ begin
       end;
       continue;
     end;
-    if S[I, 1] in [ThtChar('0')..ThtChar('9')] then
+    if IsDigit(S[I, 1]) then
     begin
     {the following will pass 100pt, 100px, but not 100 or larger}
       if StrToIntDef(S[I], -1) < 100 then
@@ -611,16 +652,17 @@ var
   Ch, C: ThtChar;
   SS: ThtString;
   SL: ThtStringList;
-  Done: boolean;
   I: integer;
 
   procedure GetCh;
   begin
     if I <= Length(S) then
-      Ch := S[I]
+    begin
+      Ch := S[I];
+      Inc(I);
+    end
     else
       Ch := Eos;
-    Inc(I);
   end;
 
 begin
@@ -628,33 +670,34 @@ begin
   SL := ThtStringList.Create; {ThtStringList to do sorting}
   try
     SL.Sorted := True;
-    Done := False;
     I := 1;
     GetCh;
-    while not done do
+    while True do
     begin
-      if Ch = Eos then
-        Done := True
+      case Ch of {add digit to sort item}
+        Eos: break;
+
+        '.': C := '1';
+        ':': C := '2';
+        '#': C := '3';
       else
-      begin
-        case Ch of {add digit to sort item}
-          '.': C := '1';
-          ':': C := '2';
-          '#': C := '3';
-        else
-          C := '0';
-        end;
-        SetLength(SS, 2);
-        SS[1] := C;
-        SS[2] := Ch;
-        GetCh;
-        while Ch in [ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), ThtChar('_'), ThtChar('-')] do
-        begin
-          SS := SS + Ch;
-          GetCh;
-        end;
-        SL.Add(SS);
+        C := '0';
       end;
+      SetLength(SS, 2);
+      SS[1] := C;
+      SS[2] := Ch;
+      GetCh;
+      while True do
+        case Ch of
+          'a'..'z', '0'..'9', '_', '-':
+          begin
+            SS := SS + Ch;
+            GetCh;
+          end;
+        else
+          break;
+        end;
+      SL.Add(SS);
     end;
     for I := 0 to SL.Count - 1 do
       Result := Result + Copy(SL.Strings[I], 2, Length(SL.Strings[I]) - 1);
@@ -768,26 +811,25 @@ begin
     Exit;
   GetCh;
   repeat
-    Prop := '';
     SkipWhiteSpace;
-    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), ThtChar('-')] do
-    begin
-      Prop := Prop + LCh;
-      GetCh;
-    end;
-    Prop := LowerCase(Trim(Prop));
+    GetIdentifier(Prop);
     SkipWhiteSpace;
     if (LCh = ':') or (LCh = '=') then
     begin
       GetCh;
-      Value := '';
+      SkipWhiteSpace;
+
+      SetLength(Value, 0);
       while not ((LCh = ';') or (LCh = '}') or (LCh = '<') or (LCh = EofChar)) do
       begin
-        Value := Value + LCh;
+        SetLength(Value, Length(Value) + 1);
+        Value[Length(Value)] := LCh;
         GetCh;
       end;
-      Value1 := Lowercase(Trim(Value)); {leave quotes on for font:}
+      Value1 := LowerCase(Trim(Value)); {leave quotes on for font:}
       Value := RemoveQuotes(Value1);
+
+      Prop := LowerCase(Prop);
       if FindShortHand(Prop, Index) then
         DoShortHand(Index, Prop, Value, Value1)
       else
@@ -797,13 +839,16 @@ begin
         ProcessProperty(Prop, Value);
       end;
     end;
-    SkipWhiteSpace;
     if LCh = ';' then
       GetCh;
-    while not (LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'),
-      MinusChar, ThtChar('}'), LessChar, EofChar])
-    do
-      GetCh;
+
+    while True do
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-', '}', '<', EofChar:
+          break;
+      else
+        GetCh;
+      end;
   until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
   if LCh = '}' then
     GetCh;
@@ -952,11 +997,16 @@ begin
   repeat
     Prop := '';
     SkipWhiteSpace;
-    while LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar] do
-    begin
-      Prop := Prop + LCh;
-      GetCh;
-    end;
+    while True do
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-':
+          begin
+            Prop := Prop + LCh;
+            GetCh;
+          end;
+      else
+        break;
+      end;
     Prop := LowerCase(Trim(Prop));
     SkipWhiteSpace;
     if (LCh = ':') or (LCh = '=') then
@@ -979,8 +1029,13 @@ begin
     SkipWhiteSpace;
     if LCh = ';' then
       GetCh;
-    while not (LCh in [ThtChar('A')..ThtChar('Z'), ThtChar('a')..ThtChar('z'), ThtChar('0')..ThtChar('9'), MinusChar, EofChar]) do
-      GetCh;
+    while True do
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-', EofChar:
+          break;
+      else
+        GetCh;
+      end;
   until LCh = EofChar;
 end;
 

@@ -457,7 +457,7 @@ type
   public
     BuffS: WideString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section}
     Buff: PWideChar;    {same as above}
-    Brk: string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One of 'a' (optional), 'n' (no), 's' (soft), 'y' (yes) per character in BuffS
+    Brk: AnsiString;    // Brk[n]: Can I wrap to new line after BuffS[n]? One of 'a' (optional), 'n' (no), 's' (soft), 'y' (yes) per character in BuffS
     XP: PXArray;
     BuffSize: Integer; {buffer may be larger}
     Fonts: TFontList; {List of FontObj's in this section}
@@ -4745,11 +4745,16 @@ begin
     MargArray[piWidth] := 0;
   LeftSide := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
   RightSide := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
-  Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
   if MargArray[piWidth] > 0 then
-    Max := Min
+  begin
+    Min := MargArray[piWidth] + LeftSide + RightSide;
+    Max := Min;
+  end
   else
+  begin
+    Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
     Max := Math.Max(MaxCell, MargArray[piWidth]) + LeftSide + RightSide;
+  end;
 end;
 
 {----------------TBlock.GetURL}
@@ -4976,8 +4981,6 @@ begin
   case AutoCount of
     0:
       begin
-        if not HideOverflow then
-          MargArray[piWidth] := Max(MinWidth, MargArray[piWidth]);
         if (Justify in [centered, Right]) and (Positioning = posStatic)
           and not (FloatLR in [ALeft, ARight]) and
           (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) then
@@ -4994,12 +4997,12 @@ begin
           end;
         end;
       end;
-    1: if MargArray[piWidth] = Auto then
+
+    1:
+      if MargArray[piWidth] = Auto then
         CalcWidth
       else
       begin
-        if not HideOverflow then
-          MargArray[piWidth] := Max(MargArray[piWidth], MinWidth);
         if MargArray[MarginRight] = Auto then
           if (FloatLR in [ALeft, ARight]) then
             MargArray[MarginRight] := 0
@@ -5008,7 +5011,9 @@ begin
         else
           CalcMargLf;
       end;
-    2: if MargArray[piWidth] = Auto then
+
+    2:
+      if MargArray[piWidth] = Auto then
       begin
         if MargArray[MarginLeft] = Auto then
           MargArray[MarginLeft] := 0
@@ -5018,12 +5023,11 @@ begin
       end
       else
       begin
-        if not HideOverflow then
-          MargArray[piWidth] := Max(MargArray[piWidth], MinWidth);
         Marg2 := Max(0, AWidth - MargArray[piWidth] - BordPad);
         MargArray[MarginLeft] := Marg2 div 2;
         MargArray[MarginRight] := Marg2 div 2;
       end;
+
     3:
       begin
         MargArray[MarginLeft] := 0;
@@ -10249,7 +10253,7 @@ end;
 procedure TSection.AddTokenObj(T: TokenObj);
 var
   L, I: Integer;
-  C: char;
+  C: AnsiChar;
   St, StU: WideString;
   Small: boolean;
 begin
@@ -10285,8 +10289,11 @@ begin
     Small := False;
     for I := 1 to Length(St) do
     begin
-      if not (St[I] in [WideChar(' '), WideChar('0')..WideChar('9')]) then {no font changes for these chars}
-      begin
+      case St[I] of
+        WideChar(' '), WideChar('0')..WideChar('9'):
+          {no font changes for these chars}
+          ;
+      else
         if not Small then
         begin
           if StU[I] <> St[I] then
@@ -10738,10 +10745,12 @@ end;
 //BG, 20.09.2010:
 function CanWrap(C: WideChar): Boolean;
 begin
-  if C in [WideChar(' '), WideChar('-'), WideChar('?'), ImgPan, FmCtl, BrkCh] then
-    Result := True
+  case C of
+    WideChar(' '), WideChar('-'), WideChar('?'), ImgPan, FmCtl, BrkCh:
+      Result := True
   else
     Result := WrapChar(C);
+  end;
 end;
 
 {----------------TSection.MinMaxWidth}
@@ -10827,7 +10836,7 @@ begin
     P1 := P;
     I := P1 - Buff + 1;
     while P^ <> #0 do
-    {find the next ThtString of chars that can't be wrapped}
+    {find the next string of chars that can't be wrapped}
     begin
       if CanWrap(P1^) and (Brk[I] = 'y') then
       begin
@@ -10837,24 +10846,33 @@ begin
       else
       begin
         repeat
+          Inc(P1);
+          Inc(I);
+          case Brk[I - 1] of
+            's', 'a':
+              break;
+          end;
+        until (P1^ = #0) or (CanWrap(P1^) and (Brk[I] = 'y'));
+        SoftHyphen := Brk[I - 1] = 's';
+        case P1^ of
+          WideChar('-'), WideChar('?'):
+            begin
+              Inc(P1);
+              Inc(I);
+            end;
+        end;
+      end;
+      Min := Math.Max(Min, FindTextWidthB(Canvas, P, P1 - P, True));
+      while True do
+        case P1^ of
+          WideChar(' '), ImgPan, FmCtl, BrkCh:
           begin
             Inc(P1);
             Inc(I);
           end;
-        until (P1^ = #0) or (CanWrap(P1^) and (Brk[I] = 'y')) or (Brk[I - 1] in ['a', 's']);
-        SoftHyphen := Brk[I - 1] = 's';
-        if P1^ in [WideChar('-'), WideChar('?')] then
-        begin
-          Inc(P1);
-          Inc(I);
+        else
+          break;
         end;
-      end;
-      Min := Math.Max(Min, FindTextWidthB(Canvas, P, P1 - P, True));
-      while (P1^ in [WideChar(' '), ImgPan, FmCtl, BrkCh]) do
-      begin
-        Inc(P1);
-        Inc(I);
-      end;
       P := P1;
     end;
   end
@@ -10882,8 +10900,13 @@ var
 begin
   Result := 0;
   if RemoveSpaces then
-    while ((Start + N - 1)^ in [WideChar(' '), BrkCh]) do
-      Dec(N); {remove spaces on end}
+    while True do
+      case (Start + N - 1)^ of
+        WideChar(' '), BrkCh:
+          Dec(N); {remove spaces on end}
+      else
+        break;
+      end;
   while N > 0 do
   begin
     J := Images.GetImageCountAt(Start - Buff);
@@ -11199,11 +11222,14 @@ var
       NoChar := True;
       for I := 0 to NN - 1 do
       begin
-        if (not (P^ in [FmCtl, ImgPan, BrkCh])) {ignore images and space on end}
-          and (not ((P = Last) and (Last^ = ' '))) then
-        begin {check for the no character case}
-          NoChar := False;
-          Break;
+        case P^ of
+          FmCtl, ImgPan, BrkCh:;
+        else
+          if not ((P = Last) and (Last^ = ' ')) then
+          begin {check for the no character case}
+            NoChar := False;
+            Break;
+          end;
         end;
         Inc(P);
       end;
@@ -11437,7 +11463,7 @@ begin {TSection.DrawLogic}
     begin
       //BG, 24.01.2010: do not move down images or trailing spaces.
       P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+      if ((P^ in [ThtChar(' '), {FmCtl,} ThtChar(ImgPan)]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
       begin {move past spaces so as not to print any on next line}
         while (N < MaxChars) and ((P + 1)^ = ' ') do
         begin
@@ -11465,7 +11491,7 @@ begin {TSection.DrawLogic}
     else
     begin
       P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
+      if ((P^ in [ThtChar(' '), ThtChar(FmCtl), ThtChar(ImgPan)]) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n')
       or (P^ = BrkCh) then
       begin {move past spaces so as not to print any on next line}
         while (N < MaxChars) and ((P + 1)^ = ' ') do
@@ -11485,18 +11511,18 @@ begin {TSection.DrawLogic}
         Finished := N >= MaxChars;
         LineComplete(N);
       end
-      else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
+      else if (N < MaxChars) and ((P + 1)^ in [ThtChar(FmCtl), ThtChar(ImgPan)]) and (Brk[PStart - Buff + N] <> 'n') then {an image or control}
       begin
         Finished := False;
         LineComplete(N);
       end
       else
       begin {non space, wrap it by backing off to previous space or image}
-        while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
+        while ((not ((P^ in [ThtChar(' '), ThtChar('-'), ThtChar('?'), ThtChar(FmCtl), ThtChar(ImgPan)])
           or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff + 1] in ['a', 's']))
           or ((Brk[P - Buff + 1] = 'n'))) and (P > PStart) do
           Dec(P);
-        if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff + 1] = 'n')) then
+        if (P = PStart) and ((not (P^ in [ThtChar(FmCtl), ThtChar(ImgPan)])) or (Brk[PStart - Buff + 1] = 'n')) then
         begin {no space found, forget the wrap, write the whole word and any
                spaces found after it}
           if BreakWord then
@@ -11505,9 +11531,9 @@ begin {TSection.DrawLogic}
           begin
             P := PStart + N - 1;
 
-            while (P <> Last) and not (P^ in [WideChar('-'), WideChar('?')])
-            and not (Brk[P - Buff + 1] in ['a', 's'])
-              and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
+            while (P <> Last) and not (P^ in [ThtChar('-'), ThtChar('?')])
+              and not (Brk[P - Buff + 1] in ['a', 's'])
+              and not (((P + 1)^ in [ThtChar(' '), ThtChar(FmCtl), ThtChar(ImgPan), ThtChar(BrkCh)]) or WrapChar((P + 1)^))
             or (Brk[P - Buff + 2] = 'n') do
             begin
               Inc(P);
@@ -12050,7 +12076,7 @@ var
 
         if not Document.NoOutput then
         begin
-          if (Cnt - I <= 0) and ((Start + I - 1)^ in [WideChar(' '), WideChar(BrkCh)]) then
+          if (Cnt - I <= 0) and ((Start + I - 1)^ in [ThtChar(' '), ThtChar(BrkCh)]) then
             Tmp := I - 1 {at end of line, don't show space or break}
           else
             Tmp := I;
@@ -12361,14 +12387,14 @@ begin
         Exit;
       FO := Fonts.GetFontObjAt(L + (Start - Buff), Index);
       if (FO.UrlTarget.Url <> '') then {found an URL}
-        if not ((Start + L)^ in [ImgPan]) then {an image here would be in HSpace area}
+        if not ((Start + L)^ = ImgPan) then {an image here would be in HSpace area}
         begin
           Include(Result, guUrl);
           UrlTarg := MakeCopy(FO.UrlTarget);
           Document.ActiveLink := FO;
         end;
       if (FO.Title <> '') then {found a Title}
-        if not ((Start + L)^ in [ImgPan]) then {an image here would be in HSpace area}
+        if not ((Start + L)^ = ImgPan) then {an image here would be in HSpace area}
         begin
           ATitle := FO.Title;
           Include(Result, guTitle);

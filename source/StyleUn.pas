@@ -309,11 +309,10 @@ function ColorFromString(S: ThtString; NeedPound: boolean; var Color: TColor): b
 
 function ReadURL(Item: Variant): ThtString;
 
+function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
 function AlignmentFromString(S: ThtString): AlignmentType;
-
-function FindPropIndex(const PropWord: ThtString; var PropIndex: PropIndices): boolean;
 
 implementation
 
@@ -1238,6 +1237,7 @@ procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, 
 var
   I: PropIndices;
   Base: integer;
+  VMBorderStyle: Variant;
 begin
   AutoCount := 0; {count of 'auto's in width items}
   for I := Low(VM) to High(VM) do
@@ -1258,7 +1258,10 @@ begin
         end;
       BorderTopWidth..BorderLeftWidth:
         begin
-          if VM[PropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))] = bssNone then
+          VMBorderStyle := VM[PropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))];
+          if VMBorderStyle = Unassigned then
+            VMBorderStyle := bssNone;
+          if VMBorderStyle = bssNone then
             M[I] := 0
           else
           begin
@@ -1616,10 +1619,14 @@ procedure TProperties.Combine(Styles: TStyleList;
           I := Pos(' ', S);
         end;
         A[N].Tg := S;
-        if (N >= 2) and (Length(A[2].Tg) > 0) then
-          repeat
-            Delete(A[2].Tg, 1, 1); {remove the sort digit}
-          until (length(A[2].Tg) = 0) or not (A[2].Tg[1] in [ThtChar('0')..ThtChar('9')]);
+        if N >= 2 then
+          while Length(A[2].Tg) > 0 do
+            case A[2].Tg[1] of
+              '0'..'9':
+                Delete(A[2].Tg, 1, 1); {remove the sort digit}
+            else
+              break;
+            end;
         for I := 1 to N do
         begin
           J := Pos('>', A[I].Tg);
@@ -2005,6 +2012,20 @@ begin {call only if all things valid}
   Result.Assign(TheFont);
 end;
 
+{----------------RemoveQuotes}
+
+function RemoveQuotes(const S: ThtString): ThtString;
+{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
+var
+  L: Integer;
+begin
+  L := Length(S);
+  if (L >= 2) and (S[L] = S[1]) and ((S[1] = '''') or (S[1] = '"')) then
+    Result := Copy(S, 2, Length(S) - 2)
+  else
+    Result := S;
+end;
+
 {----------------ReadFontName}
 
 function ReadFontName(S: ThtString): ThtString;
@@ -2038,10 +2059,7 @@ var
         Result := Generic2[I];
         break;
       end;
-    if (Result <> '') and (Result[Length(Result)] in [ThtChar('"'), ThtChar('''')]) then
-      SetLength(Result, Length(Result) - 1);
-    if (Result <> '') and (Result[1] in [ThtChar('"'),ThtChar('''')]) then
-      Delete(Result, 1, 1);
+    Result := RemoveQuotes(Result);
   end;
 
 begin

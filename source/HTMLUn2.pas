@@ -41,7 +41,7 @@ uses
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
-  UrlSubs, StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
+  StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
   VersionNo = '11';
@@ -54,9 +54,9 @@ const
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
   BotLim = 5000;
-  FmCtl = WideChar(#2);
-  ImgPan = WideChar(#4);
-  BrkCh = WideChar(#8);
+  FmCtl = #2;
+  ImgPan = #4;
+  BrkCh = #8;
 
 type
 
@@ -338,6 +338,9 @@ type
 
   {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
    characters along with their original indices.}
+
+  { TCharCollection }
+
   TCharCollection = class
   private
     FChars: ThtString;
@@ -348,7 +351,9 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Add(C: ThtChar; Index: Integer);
+    procedure Add(C: AnsiChar; Index: Integer); overload;
+    procedure Add(C: WideChar; Index: Integer); overload;
+    procedure Add(const S: ThtString; Index: Integer); overload;
     procedure Clear;
     procedure Concat(T: TCharCollection);
 
@@ -441,20 +446,6 @@ type
 //BG, 11.09.2010: moved to this unit to reduce circular dependencies:
 
   guResultType = set of (guUrl, guControl, guTitle);
-
-//------------------------------------------------------------------------------
-// ThtTabControl is base class for
-//------------------------------------------------------------------------------
-
-  ThtTabControl = class(TWinControl)
-  private
-    procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
-  protected
-    property OnEnter;
-    property OnExit;
-    property TabStop;
-    property OnKeyUp;
-  end;
 
 //------------------------------------------------------------------------------
 // TViewerBase is base class for both THtmlViewer and TFrameViewer
@@ -2948,7 +2939,12 @@ begin
   inherited;
 end;
 
-procedure TCharCollection.Add(C: ThtChar; Index: Integer);
+procedure TCharCollection.Add(C: AnsiChar; Index: Integer);
+begin
+  Add(WideChar(C), Index);
+end;
+
+procedure TCharCollection.Add(C: WideChar; Index: Integer);
 begin
   if FCurrentIndex = Length(FChars) then
   begin
@@ -2958,6 +2954,24 @@ begin
   Inc(FCurrentIndex);
   FIndices^[FCurrentIndex] := Index;
   FChars[FCurrentIndex] := C;
+end;
+
+procedure TCharCollection.Add(const S: ThtString; Index: Integer);
+var
+  K: Integer;
+begin
+  K := FCurrentIndex + Length(S);
+  if K >= Length(FChars) then
+  begin
+    SetLength(FChars, K + 50);
+    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
+  end;
+  Move(PhtChar(S)^, FChars[FCurrentIndex + 1], Length(S) * SizeOf(ThtChar));
+  while FCurrentIndex < K do
+  begin
+    Inc(FCurrentIndex);
+    FIndices^[FCurrentIndex] := Index;
+  end;
 end;
 
 procedure TCharCollection.Clear;
@@ -4149,13 +4163,6 @@ begin
 {$ENDIF}
   else
     raise(EGDIPlus.Create('Not a TBitmap, TGifImage, TMetafile, or TGpImage'));
-end;
-
-{ ThtTabcontrol }
-
-procedure ThtTabcontrol.WMGetDlgCode(var Message: TMessage);
-begin
-  Message.Result := DLGC_WantArrows; {this to eat the arrow keys}
 end;
 
 { TViewerBase }
