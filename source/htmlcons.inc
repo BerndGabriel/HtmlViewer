@@ -156,6 +156,8 @@
 
   {$Warn Symbol_Platform Off}
 
+  {$Define OwnPaintPanelDoubleBuffering}
+
 {$endif}
 
 { Define Aspects Of HtmlViewer }
@@ -204,7 +206,8 @@
         button captions, which I (BG) cannot reproduce with D6, D2007 or D2009.
         But SchwarzK...@yandex.ru reports, that this issue appears only since r118.
         This switch reactivates the manual double buffering in TPaintPanel.Paint(), which
-        was removed with r118}
+        was removed with r118.
+        Due to several redraw errors with Delphi, OwnPaintPanelDoubleBuffering now is always set for Delphi.}
 {$Define HalfToneStretching}
         {This makes use of a better stretching methode provided by Windows: HALFTONE.
         So resized graphics (especially smaller ones) look MUCH better}
