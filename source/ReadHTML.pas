@@ -895,8 +895,8 @@ procedure THtmlParser.Next;
     SkipWhiteSpace;
     HeadingLevel := 0;
     case Sy of
-      HeadSy,
-      HeadEndSy:
+      HeadingSy,
+      HeadingEndSy:
         case LCh of
           '1'..'6':
             begin
