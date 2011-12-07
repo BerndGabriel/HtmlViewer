@@ -812,7 +812,8 @@ begin
   GetCh;
   repeat
     SkipWhiteSpace;
-    GetIdentifier(Prop);
+    if not GetIdentifier(Prop) then
+      exit;
     SkipWhiteSpace;
     if (LCh = ':') or (LCh = '=') then
     begin
