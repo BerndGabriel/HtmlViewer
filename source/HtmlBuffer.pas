@@ -124,6 +124,7 @@ type
     procedure SetCodePage(const Value: TBuffCodePage);
   protected
   public
+    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString;
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
@@ -426,6 +427,21 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
 function TBuffer.AsString: TBuffString;
+
+  procedure CharByChar;
+  var
+    I: Integer;
+  begin
+    I := 1;
+    repeat
+      Result[I] := NextChar;
+      if Result[I] = #0 then
+        break;
+      Inc(I);
+    until false;
+    SetLength(Result, I);
+  end;
+
 var
   I, J: Integer;
 begin
@@ -439,20 +455,14 @@ begin
       CP_UTF16LE,
       CP_UTF16BE,
       CP_UTF8:
-        begin
-          I := 1;
-          repeat
-            Result[I] := NextChar;
-            if Result[I] = #0 then
-              break;
-            Inc(I);
-          until false;
-          SetLength(Result, I);
-        end;
+        CharByChar;
 
       CP_ACP,
       CP_OEMCP,
       CP_MACCP:
+        if FCodePage <> FInitalCodePage then
+          CharByChar
+        else
         begin
           J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
           //BG, 23.12.2010: Some single byte chars may have been converted accidently as UTF-8.
@@ -469,19 +479,24 @@ begin
           Inc(FPos.AnsiChr, I);
         end;
     else
-      J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-      if J = 0 then
+      if FCodePage <> FInitalCodePage then
+        CharByChar
+      else
       begin
-        //BG, 14.12.2010: maybe an UTF8 without preamble?
-        J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-        if J > 0 then
+        J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+        if J = 0 then
         begin
-          FCodePage := CP_UTF8;
-          FCharSet := DEFAULT_CHARSET;
+          //BG, 14.12.2010: maybe an UTF8 without preamble?
+          J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+          if J > 0 then
+          begin
+            FCodePage := CP_UTF8;
+            FCharSet := DEFAULT_CHARSET;
+          end;
         end;
+        SetLength(Result, J);
+        Inc(FPos.AnsiChr, I);
       end;
-      SetLength(Result, J);
-      Inc(FPos.AnsiChr, I);
     end
   end
   else
@@ -551,6 +566,20 @@ begin
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
   FInitalCodePage := FCodePage;
+end;
+
+//-- BG ---------------------------------------------------------- 06.12.2011 --
+class function TBuffer.Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString;
+var
+  Buffer: TBuffer;
+begin
+  Buffer := TBuffer.Create(Text);
+  try
+    Buffer.FCodePage := CodePage;
+    Result := Buffer.AsString;
+  finally
+    Buffer.Free;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
