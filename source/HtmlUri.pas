@@ -29,6 +29,13 @@ unit HtmlUri;
 interface
 
 uses
+{$ifdef LCL}
+  Classes, SysUtils,
+  LclIntf, LclType, HtmlMisc,
+{$else}
+  Windows,
+  Classes, SysUtils,
+{$endif}
   HtmlGlobals;
 
 {***************************************************************************************************
@@ -58,7 +65,7 @@ type
 function StrToUri(Uri: ThtString): TUri; overload;
 
 // Builds an absolute URI from RelativeUri by combining it with the given AbsoluteUri.
-function CombineUri(RelativeUri, AbsoluteUri: TUri): TUri;
+function CombineUri(const RelativeUri, AbsoluteUri: TUri): TUri;
 
 // Converts all parts of the Uri to their normalized forms.
 // Converts to proper lettercase, Percent encodes reserved characters.
@@ -66,10 +73,10 @@ function CombineUri(RelativeUri, AbsoluteUri: TUri): TUri;
 procedure NormalizeUri(var Uri: TUri);
 
 // Converts a record TUri to an URI string.
-function UriToStr(Uri: TUri): ThtString;
+function UriToStr(const Uri: TUri): ThtString;
 
 // converts all percent encoded characters in the URI string back to the readable ones.
-function DecodeUri(Uri: ThtString): ThtString;
+function DecodeUri(const Uri: ThtString): ThtString;
 
 //------------------------------------------------------------------------------
 // convenience methods
@@ -111,13 +118,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 21.08.2011 --
-function CombineUri(RelativeUri, AbsoluteUri: TUri): TUri;
+function CombineUri(const RelativeUri, AbsoluteUri: TUri): TUri;
 begin
 
 end;
 
 //-- BG ---------------------------------------------------------- 22.08.2011 --
-function DecodeUri(Uri: ThtString): ThtString;
+function DecodeUri(const Uri: ThtString): ThtString;
 // convert the percent encoded characters back to ansi/ascii chars.
 var
   I, J: Integer;
@@ -506,7 +513,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 21.08.2011 --
-function UriToStr(Uri: TUri): ThtString;
+function UriToStr(const Uri: TUri): ThtString;
 var
   HierarchyPrefix: ThtString;
 begin
