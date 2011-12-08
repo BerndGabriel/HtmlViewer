@@ -712,11 +712,9 @@ begin
     SL.Sorted := True;
     I := 1;
     GetCh;
-    while True do
+    while Ch <> Eos do
     begin
       case Ch of {add digit to sort item}
-        Eos: break;
-
         '.': C := '1';
         ':': C := '2';
         '#': C := '3';
@@ -943,7 +941,8 @@ begin
   GetCh;
   repeat
     SkipWhiteSpace;
-    GetIdentifier(Prop);
+    if not GetIdentifier(Prop) then
+      exit;
     SkipWhiteSpace;
     if (LCh = ':') or (LCh = '=') then
     begin
