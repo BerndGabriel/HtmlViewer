@@ -106,7 +106,7 @@ Copyright (c) 1995 - 2008 by Anders Melander (DitherUnit.pas)
 Copyright (c) 1995 - 2008 by Ron Collins (HtmlGif1.pas)
 Copyright (c) 2008 - 2009 by Sebastian Zierer (Delphi 2009 Port)
 Copyright (c) 2008 - 2010 by Arvid Winkelsdorf (Fixes)
-Copyright (c) 2009 - 2011 by Bernd Gabriel (Fixes, Enhancements)
+Copyright (c) 2009 - 2012 by Bernd Gabriel (Fixes, Enhancements)
 
 See included License.txt
 
