@@ -40,11 +40,16 @@ uses
   StdCtrls, Buttons, Forms,
   HtmlMisc,
   WideStringsLcl,
+  {$ifdef DEBUG}
+    {$message 'HtmlViewer uses LCL standard controls.'}
+  {$endif}
 {$else}
   Consts,
   StrUtils,
   {$ifdef UseTNT}
-    {$message 'HtmlViewer uses TNT unicode controls.'}
+    {$ifdef DEBUG}
+      {$message 'HtmlViewer uses TNT unicode controls.'}
+    {$endif}
     TntControls,
     TntStdCtrls,
     {$ifdef Compiler18_Plus}
@@ -54,7 +59,9 @@ uses
     {$endif}
     TntClasses,
   {$else UseTNT}
-    {$message 'HtmlViewer uses VCL standard controls.'}
+    {$ifdef DEBUG}
+      {$message 'HtmlViewer uses VCL standard controls.'}
+    {$endif}
     StdCtrls,
     Buttons,
     {$ifdef Compiler18_Plus}
@@ -88,13 +95,15 @@ type
   {$ENDIF}
 {$ENDIF}
 
-{$ifdef UNICODE}
-  {$message 'Compiler uses unicode by default.'}
-{$else}
-  {$message 'Compiler uses single byte chars by default.'}
-{$endif}
+{$ifdef DEBUG}
+  {$ifdef UNICODE}
+    {$message 'Compiler uses unicode by default.'}
+  {$else}
+    {$message 'Compiler uses single byte chars by default.'}
+  {$endif}
 
-{$message 'HtmlViewer uses unicode.'}
+  {$message 'HtmlViewer uses unicode.'}
+{$endif}
 
 {$ifdef FPC}
 {$else}
