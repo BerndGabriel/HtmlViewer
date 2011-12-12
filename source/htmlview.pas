@@ -235,7 +235,6 @@ type
     procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
     procedure DoLogic;
     procedure DoScrollBars;
-    procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
     procedure DrawBorder;
     procedure FormControlEnterEvent(Sender: TObject);
     procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
@@ -365,6 +364,7 @@ type
     procedure CopyToClipboard;
     procedure DoEnter; override;
     procedure DoExit; override;
+    procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
     procedure htProgress(Percent: Integer); override;
     procedure htProgressEnd;
     procedure htProgressInit;
@@ -1931,12 +1931,12 @@ begin
     Result := -1;
 end;
 
-{----------------THtmlViewer.GetCharAtPos}
-
 function THtmlViewer.GetBaseTarget: ThtString;
 begin
 
 end;
+
+{----------------THtmlViewer.GetCharAtPos}
 
 function THtmlViewer.GetCharAtPos(Pos: Integer; var Ch: WideChar;
   var Font: TFont): Boolean;

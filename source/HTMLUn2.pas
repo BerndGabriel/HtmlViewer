@@ -434,6 +434,7 @@ type
     FPrintScale: Double;
     FServerRoot: ThtString;
     //
+    FOnBitmapRequest: TGetBitmapEvent;
     FOnDragDrop: TDragDropEvent;
     FOnDragOver: TDragOverEvent;
     FOnHistoryChange: TNotifyEvent;
@@ -441,6 +442,8 @@ type
     FOnHotSpotTargetCovered: THotSpotTargetEvent;
     FOnImageClick: TImageClickEvent;
     FOnImageOver: TImageOverEvent;
+    FOnImageRequest: TGetImageEvent;
+    FOnImageRequested: TGottenImageEvent;
     FOnInclude: TIncludeType;
     FOnLink: TLinkType;
     FOnMeta: TMetaType;
@@ -462,9 +465,6 @@ type
     FOnProgress: ThtProgressEvent;
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
-    FOnImageRequested: TGottenImageEvent;
-    FOnImageRequest: TGetImageEvent;
-    FOnBitmapRequest: TGetBitmapEvent;
   protected
     procedure SetActiveColor(const Value: TColor); virtual;
     procedure SetCharset(const Value: TFontCharset); virtual;
@@ -528,7 +528,6 @@ type
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
     // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
     procedure Load(const Url: ThtString); virtual; abstract;
-
     property CodePage: Integer read FCodePage write SetCodePage;
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
@@ -2908,6 +2907,7 @@ begin
   OnBitmapRequest := Source.OnBitmapRequest;
   OnDragDrop := Source.OnDragDrop;
   OnDragOver := Source.OnDragOver;
+  OnHistoryChange := Source.OnHistoryChange;
   OnHotSpotTargetClick := Source.OnHotSpotTargetClick;
   OnHotSpotTargetCovered := Source.OnHotSpotTargetCovered;
   OnImageClick := Source.OnImageClick;
@@ -2918,7 +2918,15 @@ begin
   OnLink := Source.OnLink;
   OnMeta := Source.OnMeta;
   OnMouseDouble := Source.OnMouseDouble;
+  OnObjectBlur := Source.OnObjectBlur;
+  OnObjectChange := Source.OnObjectChange;
+  OnObjectClick := Source.OnObjectClick;
+  OnObjectFocus := Source.OnObjectFocus;
   OnObjectTag := Source.OnObjectTag;
+  OnObjectTag := Source.OnObjectTag;
+  OnPanelCreate := Source.OnPanelCreate;
+  OnPanelDestroy := Source.OnPanelDestroy;
+  OnPanelPrint := Source.OnPanelPrint;
   OnParseBegin := Source.OnParseBegin;
   OnParseEnd := Source.OnParseEnd;
   OnPrinted := Source.OnPrinted;
