@@ -174,6 +174,7 @@ const
   AmperChar   = ThtChar('&');
   CrLf        = ThtString(#13#10);
   CrLfTab     = ThtString(#13#10#9);
+  NullRect: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
 
 {$ifdef LCL}
 const
@@ -287,6 +288,7 @@ function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
+function RemoveQuotes(const S: ThtString): ThtString;
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -661,6 +663,22 @@ begin
   Result := Length(A) - 1;
   while (Result >= 0) and (htCompareString(A[Result], S) <> 0) do
     Dec(Result);
+end;
+
+{----------------RemoveQuotes}
+
+function RemoveQuotes(const S: ThtString): ThtString;
+{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
+begin
+  Result := S;
+  if Length(Result) >= 2 then
+  begin
+    case Result[1] of
+      '"', '''':
+        if Result[Length(Result)] = Result[1] then
+          Result := Copy(Result, 2, Length(Result) - 2);
+    end;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --

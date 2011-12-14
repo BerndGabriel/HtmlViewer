@@ -254,7 +254,6 @@ procedure ConvVertMargins(const VM: TVMarginArray; BaseHeight, EmSize, ExSize: I
 
 function SortedProperties: ThtStringList;
 
-function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
 var
@@ -1724,22 +1723,6 @@ begin {call only if all things valid}
   end;
   Result := ThtFont.Create;
   Result.Assign(TheFont);
-end;
-
-{----------------RemoveQuotes}
-
-function RemoveQuotes(const S: ThtString): ThtString;
-{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
-begin
-  Result := S;
-  if Length(Result) >= 2 then
-  begin
-    case Result[1] of
-      '"', '''':
-        if Result[Length(Result)] = Result[1] then
-          Result := Copy(Result, 2, Length(Result) - 2);
-    end;
-  end;
 end;
 
 {----------------ReadFontName}
