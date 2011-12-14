@@ -74,6 +74,8 @@ helpfiles, etc. Graphics are easily incorporated in these documents.
 
 For a detailed list and demonstration of features start FrameDem.exe.
 
+For a detailed list of changes and bugfixes per version start FrameDem.exe 
+and click "What's new" or see "./Demos/Compiled Framedemo/whatsnew.htm".
 --------------------------------------------------------------------------------
 
 Which HtmlViewer version should I use?
@@ -86,6 +88,7 @@ HtmlViewer 11
 - is a full WideString version suitable for projects
   with several codepages/charsets.
 - with Delphi 6..2007 requires the TntUnicodeControls.
+- works with Lazarus 0.9.31
 
 --------------------------------------------------------------------------------
 
