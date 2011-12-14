@@ -371,10 +371,11 @@ type
     function GetFontName(Parent, Default: ThtString): ThtString;
     function GetFontSize(DefaultFontSize, Parent, Default: Double): Double;
     function GetFontWeight(Parent, Default: Integer): Integer;
-    function GetLength(Relative: Boolean; Parent, EmBase, Default: Double): Double;
+    function GetLength(Parent, Base, EmBase, Default: Double): Double;
     function GetPosition(Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
     function GetTextDecoration(Parent, Default: TFontStyles): TFontStyles;
     function GetValue(Parent, Default: Variant): Variant;
+    function HasValue: Boolean;
     function IsItalic(Parent, Default: Boolean): Boolean;
     //
     function Compare(const AProperty: TStyleProperty; const ASelector: TStyleSelector): Integer; {$ifdef UseInline} inline; {$endif}
@@ -1264,7 +1265,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
-function TResultingProperty.GetLength(Relative: Boolean; Parent, EmBase, Default: Double): Double;
+function TResultingProperty.GetLength(Parent, Base, EmBase, Default: Double): Double;
+{
+ Return the calculated length.
+ if Relative is true,
+}
 begin
   Result := Default;
   if Self <> nil then
@@ -1274,7 +1279,7 @@ begin
       Result := Prop.Value
     else if VarIsStr(Prop.Value) then
     begin
-      Result := StrToLength(Prop.Value, Relative, Parent, EmBase, Default);
+      Result := StrToLength(Prop.Value, False, Parent, EmBase, Default);
       Prop.Value := Result;
     end;
 end;
@@ -1327,6 +1332,12 @@ begin
     if Result = Inherit then
       Result := Parent;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2011 --
+function TResultingProperty.HasValue: Boolean;
+begin
+  Result := (Self <> nil) and (Prop.Value <> Unassigned);
 end;
 
 //-- BG ---------------------------------------------------------- 03.05.2011 --
@@ -1407,12 +1418,17 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function TResultingPropertyMap.GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
+function TResultingPropertyMap.GetLengths(Left, Top, Right, Bottom: TPropertySymbol;
+  const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
+var
+  PercentBase: Double;
 begin
-  Result[reLeft]   := Round(Properties[Left].  GetLength(False, Parent[reLeft],   BaseSize, Default[reLeft]  ));
-  Result[reTop]    := Round(Properties[Top].   GetLength(False, Parent[reTop],    BaseSize, Default[reTop]   ));
-  Result[reRight]  := Round(Properties[Right]. GetLength(False, Parent[reRight],  BaseSize, Default[reRight] ));
-  Result[reBottom] := Round(Properties[Bottom].GetLength(False, Parent[reBottom], BaseSize, Default[reBottom]));
+  PercentBase := Parent[reRight] - Parent[reLeft];
+  Result[reLeft]   := Round(Properties[Left].  GetLength(Parent[reLeft],   PercentBase, BaseSize, Default[reLeft]  ));
+  Result[reRight]  := Round(Properties[Right]. GetLength(Parent[reRight],  PercentBase, BaseSize, Default[reRight] ));
+  PercentBase := Parent[reBottom] - Parent[reTop];
+  Result[reTop]    := Round(Properties[Top].   GetLength(Parent[reTop],    PercentBase, BaseSize, Default[reTop]   ));
+  Result[reBottom] := Round(Properties[Bottom].GetLength(Parent[reBottom], PercentBase, BaseSize, Default[reBottom]));
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
