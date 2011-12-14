@@ -35,7 +35,7 @@ uses
 type
 
 //------------------------------------------------------------------------------
-// TScrollCanvas implements a canvas for scaleable and scrollable content
+// TScalingCanvas implements a canvas for scaleable and scrollable content
 //------------------------------------------------------------------------------
 // ... and offers adequate transformation methods.
 //
