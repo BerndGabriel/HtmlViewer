@@ -490,7 +490,7 @@ var
   var
     S, Name, Value: ThtString;
     Include: TBuffer;
-    SL: ThtStringList;
+    Params: ThtStringList;
     SaveLCToken: TokenObj;
   begin
     S := '';
@@ -499,12 +499,19 @@ var
     try
       GetChBasic;
       GetIdentifier(S);
-      SL := ThtStringList.Create;
-      while GetNameValueParameter(Name, Value) do
-        SL.Add(Name + '=' + Value);
-      DoDashDash;
-      Include := nil;
-      IncludeEvent(CallingObject, S, SL, Include);
+      // BG, 15.12.2011: Issue 88: DoInclude and FreeAndNil of SL
+      // Now freeing SL (renamed to Params) here and not
+      // relying on cooperative event doing it for us.
+      Params := ThtStringList.Create;
+      try
+        while GetNameValueParameter(Name, Value) do
+          Params.Add(Name + '=' + Value);
+        DoDashDash;
+        Include := nil;
+        IncludeEvent(CallingObject, S, Params, Include);
+      finally
+        Params.Free;
+      end;
       if Include <> nil then
       begin
         DocStack.Push(Doc);

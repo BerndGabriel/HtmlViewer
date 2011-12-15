@@ -786,7 +786,6 @@ begin
       end;
     end;
   end;
-  Params.Free;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
