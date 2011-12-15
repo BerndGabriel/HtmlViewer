@@ -2604,6 +2604,17 @@ var
         Section.AddTokenObj(S);
         SectionList.Add(Section, TagIndex);
       end;
+
+      // BG, 15.12.2011: Issue 103: Extra whitespace in preformatted blocks
+      // In case <pre> and </pre> are written in separate lines, the first and
+      // last lines are empty and should not be shown. Thus remove them:
+      // (Don't use Trim(), anything else than newline shows the lines.)
+      if SectionList[0].Len = 0 then
+        SectionList.Delete(0);
+      I := SectionList.Count - 1;
+      if (I >= 0) and (SectionList[I].Len = 0) then
+        SectionList.Delete(I);
+
       Section := nil;
       while PropStackIndex >= InitialStackIndex do
         PopProp;
