@@ -254,7 +254,9 @@ type
 
   TFontObj = class(TFontObjBase) {font information}
   private
+{$IFNDEF NoTabLink}
     FSection: TSection; // only used if NoTabLink is not defined.
+{$ENDIF}
     FVisited, FHover: boolean;
     Title: ThtString;
     FYValue: Integer;
@@ -309,16 +311,11 @@ type
 //------------------------------------------------------------------------------
 // TFloatingObj, an inline block for floating images and panels resp. iframes.
 //------------------------------------------------------------------------------
-// TFloatingObj is base class for floating objects like TImageObj and TPanelObj.
+// TFloatingObj is base class for floating objects TImageObj, TFrameOBj and TPanelObj.
 //
 // These objects may appear in text flow or attribute ALIGN or style FLOAT may
 // push them out of the flow floating to the left or right side in the
 // containing block.
-//
-// BG, 06.03.2011: PANEL is not HTML standard, but its implementation could be
-//     the base for HTML tag IFRAME, which is not yet supported by THtmlViewer.
-//
-// Base class for TImageObj and TPanelObj
 //------------------------------------------------------------------------------
 
   TFloatingObj = class(THtmlNode)
@@ -364,20 +361,24 @@ type
   TFloatingObjClass = class of TFloatingObj;
 
 
-  // base class for inline panel and frame info
+  // base class for inline panel and frame node
   TControlObj = class(TFloatingObj)
   protected
     SetWidth, SetHeight: Integer;
+    function GetBackgroundColor: TColor; virtual;
     function GetControl: TWinControl; virtual; abstract;
     property ClientControl: TWinControl read GetControl;
+    property BackgroundColor: TColor read GetBackgroundColor;
   public
     procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
+    procedure Draw(Canvas: TCanvas; X: Integer; TopY: Integer; YBaseline: Integer; FO: TFontObj); override;
   end;
 
 
-  // inline panel (object) info
+  // inline panel (object) node
   TPanelObj = class(TControlObj)
   protected
+    function GetBackgroundColor: TColor; override;
     function GetControl: TWinControl; override;
   public
     ShowIt: boolean;
@@ -393,7 +394,7 @@ type
   end;
 
 
-  // inline frame info
+  // inline frame node
   TFrameObj = class(TControlObj)
   private
     FViewer: TViewerBase;
@@ -404,6 +405,7 @@ type
     procedure CreateFrame;
     procedure UpdateFrame;
   protected
+    function GetBackgroundColor: TColor; override;
     function GetControl: TWinControl; override;
   public
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList);
@@ -417,7 +419,7 @@ type
 
   TImageFormControlObj = class;
 
-  // inline image info
+  // inline image node
   TImageObj = class(TFloatingObj)
   private
     FSource: ThtString;
@@ -1453,9 +1455,7 @@ uses
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
-{$IFNDEF NoTabLink}
   HtmlView,
-{$endif}
   HtmlSbs1,
   ReadHtml;
 
@@ -1703,14 +1703,16 @@ type
 constructor TFontObj.Create(ASection: TSection; F: ThtFont; Position: Integer);
 begin
   inherited Create;
+{$ifndef NoTabLink}
   FSection := ASection;
+{$endif}
   TheFont := F;
   Pos := Position;
   UrlTarget := TUrlTarget.Create;
   FontChanged;
 end;
 
-{$IFNDEF NoTabLink}
+{$ifndef NoTabLink}
 
 procedure TFontObj.EnterEvent(Sender: TObject);
 var
@@ -1851,7 +1853,9 @@ end;
 constructor TFontObj.CreateCopy(ASection: TSection; T: TFontObj);
 begin
   inherited Create;
+{$ifndef NoTabLink}
   FSection := ASection;
+{$endif}
   Pos := T.Pos;
   SScript := T.SScript;
   TheFont := ThtFont.Create;
@@ -12721,61 +12725,36 @@ end;
 
 procedure TPanelObj.Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj);
 var
-  OldBrushStyle: TBrushStyle;
-  OldBrushColor: TColor;
-  OldPenColor: TColor;
   Bitmap: TBitmap;
   OldHeight, OldWidth: Integer;
-  SaveFont: TFont;
 begin
   if Panel.FVisible then
-    with Canvas do
-      if Assigned(PanelPrintEvent) then
-      begin
-        Bitmap := TBitmap.Create;
-        OldHeight := Opanel.Height;
-        OldWidth := Opanel.Width;
-        try
-          Bitmap.Height := ClientHeight;
-          Bitmap.Width := ClientWidth;
-          with Opanel do
-            SetBounds(Left, Top, ClientWidth, ClientHeight);
-          PanelPrintEvent(OSender, OPanel, Bitmap);
-          PrintBitmap(Canvas, X, TopY, ClientWidth, ClientHeight, Bitmap);
-        finally
-          with Opanel do
-            SetBounds(Left, Top, OldWidth, OldHeight);
-          Bitmap.Free;
-        end;
-      end
-      else
-      begin
-        OldBrushStyle := Brush.Style; {save style first}
-        OldBrushColor := Brush.Color;
-        OldPenColor := Pen.Color;
-        Pen.Color := clBlack;
-        Brush.Color := Panel.Color;
-        Brush.Style := bsSolid;
-
-        Canvas.Rectangle(X, TopY, X + ClientWidth, TopY + ClientHeight);
-        SaveFont := TFont.Create;
-        try
-          SaveFont.Assign(Canvas.Font);
-          with Canvas.Font do
-          begin
-            Size := 8;
-            Name := 'Arial';
-          end;
-          if FAlt <> '' then
-            WrapTextW(Canvas, X + 5, TopY + 5, X + ClientWidth - 5, TopY + ClientHeight - 5, FAlt);
-        finally
-          Canvas.Font := SaveFont;
-          SaveFont.Free;
-          Brush.Color := OldBrushColor;
-          Brush.Style := OldBrushStyle; {style after color as color changes style}
-          Pen.Color := OldPenColor;
-        end;
+    if Assigned(PanelPrintEvent) then
+    begin
+      Bitmap := TBitmap.Create;
+      OldHeight := Opanel.Height;
+      OldWidth := Opanel.Width;
+      try
+        Bitmap.Height := ClientHeight;
+        Bitmap.Width := ClientWidth;
+        OPanel.SetBounds(OPanel.Left, OPanel.Top, ClientWidth, ClientHeight);
+        PanelPrintEvent(OSender, OPanel, Bitmap);
+        PrintBitmap(Canvas, X, TopY, ClientWidth, ClientHeight, Bitmap);
+      finally
+        OPanel.SetBounds(OPanel.Left, OPanel.Top, OldWidth, OldHeight);
       end;
+    end
+    else
+      inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 15.12.2011 --
+function TPanelObj.GetBackgroundColor: TColor;
+begin
+  if Panel <> nil then
+    Result := Panel.Color
+  else
+    Result := inherited GetBackgroundColor;
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
@@ -14104,6 +14083,70 @@ begin
     Result := 0;
 end;
 
+{ TControlObj }
+
+//-- BG ---------------------------------------------------------- 12.11.2011 --
+procedure TControlObj.Draw(Canvas: TCanvas; X, TopY, YBaseline: Integer; FO: TFontObj);
+var
+  OldBrushStyle: TBrushStyle;
+  OldBrushColor: TColor;
+  OldPenColor: TColor;
+  SaveFont: TFont;
+begin
+  OldBrushStyle := Canvas.Brush.Style; {save style first}
+  OldBrushColor := Canvas.Brush.Color;
+  OldPenColor := Canvas.Pen.Color;
+  Canvas.Pen.Color := FO.TheFont.Color;
+  Canvas.Brush.Color := BackgroundColor;
+  Canvas.Brush.Style := bsSolid;
+  try
+    // paint a rectangular placeholder
+    Canvas.Rectangle(X, TopY, X + ClientWidth, TopY + ClientHeight);
+    if FAlt <> '' then
+    begin
+      // show the alternative text.
+      SaveFont := TFont.Create;
+      try
+        SaveFont.Assign(Canvas.Font);
+        Canvas.Font.Size := 8;
+        Canvas.Font.Name := 'Arial';
+        WrapTextW(Canvas, X + 5, TopY + 5, X + ClientWidth - 5, TopY + ClientHeight - 5, FAlt);
+      finally
+        Canvas.Font := SaveFont;
+        SaveFont.Free;
+      end;
+    end;
+  finally
+    Canvas.Brush.Color := OldBrushColor;
+    Canvas.Brush.Style := OldBrushStyle; {style after color as color changes style}
+    Canvas.Pen.Color := OldPenColor;
+  end;
+end;
+
+procedure TControlObj.DrawLogic(SectionList: ThtDocument; Canvas: TCanvas;
+  FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
+var
+  Control: TControl;
+begin
+  if not ClientSizeKnown or PercentWidth or PercentHeight then
+  begin
+    CalcSize(AvailableWidth, AvailableHeight, SetWidth, SetHeight, True);
+    if not IsCopy then
+      if (ClientWidth > 0) and (ClientHeight > 0) then
+      begin
+        Control := ClientControl;
+        if  Control <> nil then
+          Control.SetBounds(Control.Left, Control.Top, ClientWidth, ClientHeight);
+      end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 15.12.2011 --
+function TControlObj.GetBackgroundColor: TColor;
+begin
+  Result := clNone;
+end;
+
 { TFrameObj }
 
 //-- BG ---------------------------------------------------------- 12.11.2011 --
@@ -14117,6 +14160,9 @@ begin
       case Which of
         SrcSy:
           FSource := htTrim(Name);
+
+        AltSy:
+          SetAlt(CodePage, Name);
 
         FrameBorderSy:
           NoBorder := Value = 0;
@@ -14176,8 +14222,44 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
 procedure TFrameObj.Draw(Canvas: TCanvas; X, TopY, YBaseline: Integer; FO: TFontObj);
+var
+  HtmlViewer: THtmlViewer;
+  Bitmap: TBitmap;
 begin
-  //TODO -oBG, 16.11.2011: implement TFrameObj.Draw.
+  // BG, 11.12.2011: frames aren't printable.
+  if FViewer is THtmlViewer then
+  begin
+    HtmlViewer := THtmlViewer(FViewer);
+    Bitmap := TBitmap.Create;
+    try
+      Bitmap.HandleType := bmDIB;
+      Bitmap.PixelFormat := pf24Bit;
+      Bitmap.Width := ClientWidth;
+      Bitmap.Height := ClientHeight;
+      HtmlViewer.Draw(
+        Bitmap.Canvas,
+        HtmlViewer.VScrollBar.Position,
+        HtmlViewer.Width,
+        ClientWidth,
+        ClientHeight);
+      PrintBitmap(Canvas, X, TopY, ClientWidth, ClientHeight, Bitmap);
+      //Bitmap.SaveToFile(Format('C:\temp\%x.bmp', [Integer(Self)]));
+    except
+      Bitmap.Free;
+      raise;
+    end;
+  end
+  else
+    inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 15.12.2011 --
+function TFrameObj.GetBackgroundColor: TColor;
+begin
+  if FViewer <> nil then
+    Result := FViewer.DefBackground
+  else
+    Result := inherited GetBackgroundColor;
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
@@ -14207,27 +14289,6 @@ begin
     CurrentForm := LCurrentForm;
     CurrentStyle := LCurrentStyle;
     NoBreak := LNoBreak;
-  end;
-end;
-
-{ TComponentObj }
-
-//-- BG ---------------------------------------------------------- 12.11.2011 --
-procedure TControlObj.DrawLogic(SectionList: ThtDocument; Canvas: TCanvas;
-  FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
-var
-  Control: TControl;
-begin
-  if not ClientSizeKnown or PercentWidth or PercentHeight then
-  begin
-    CalcSize(AvailableWidth, AvailableHeight, SetWidth, SetHeight, True);
-    if not IsCopy then
-      if (ClientWidth > 0) and (ClientHeight > 0) then
-      begin
-        Control := ClientControl;
-        if  Control <> nil then
-          Control.SetBounds(Control.Left, Control.Top, ClientWidth, ClientHeight);
-      end;
   end;
 end;
 
