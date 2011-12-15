@@ -104,7 +104,7 @@ type
     DrawBot: Integer;       // where the border ends.    In case of a block this is Max(Block.ClientContentBot, MyCell.tcDrawBot) + PaddingBottom + BorderBottomWidth
     SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
-    // X coordinates calulated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
+    // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
 
     constructor Create(AMasterList: ThtDocument; ADisplay: TPropDisplay); overload;
     constructor Create(AMasterList: ThtDocument; AProp: TProperties); overload;
