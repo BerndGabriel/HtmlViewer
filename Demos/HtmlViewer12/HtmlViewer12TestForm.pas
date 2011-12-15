@@ -173,7 +173,10 @@ procedure TFormHtmlViewer12Test.FormCreate(Sender: TObject);
   // simple test example with parsing a document:
   procedure InitTest;
   begin
-    Load('HtmlViewer12Test.html');
+    if ParamCount > 0 then
+      Load(ParamStr(1))
+    else
+      Load('HtmlViewer12Test.html');
   end;
 
 begin

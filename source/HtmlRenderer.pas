@@ -36,6 +36,7 @@ uses
   BegaClasses,
   HtmlBoxes,
   HtmlBuffer,
+  HtmlCaches,
   HtmlDocument,
   HtmlDraw,
   HtmlElements,
@@ -158,6 +159,7 @@ type
       const Info: THtmlElementBoxingInfo);
     //
     procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
+    procedure RenderChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
   protected
     procedure RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
     procedure RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
@@ -380,7 +382,7 @@ begin
       Result := Parent
     else
     begin
-      ImageName := Prop.Prop.Value;
+      ImageName := RemoveQuotes(Prop.Prop.Value);
       if FImages.Find(ImageName, ImageIndex) then
         Result := FImages.GetImage(ImageIndex)
       else
@@ -425,10 +427,27 @@ end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 procedure THtmlVisualRenderer.RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
+
+  function CreateBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBodyBox;
+  var
+    Control: THtmlBodyControl;
+  begin
+    // get or create the body control
+    Control := GetControl(Element) as THtmlBodyControl;
+    if Control = nil then
+    begin
+      Control := THtmlBodyControl.Create(Owner);
+      ControlOfElementMap.Put(Element, Control);
+    end;
+
+    // create the body box
+    Result := THtmlBodyBox.Create(ParentBox, Control);
+    Result.BoundsRect := ParentBox.BoundsRect;
+    Result.Tiled := True;
+  end;
+
 var
   Box: THtmlBodyBox;
-  Control: THtmlBodyControl;
-  Child: THtmlElement;
   Properties: TResultingPropertyMap;
   Info: THtmlElementBoxingInfo;
 begin
@@ -444,29 +463,12 @@ begin
     if Info.Display = pdNone then
       exit;
 
-    // get or create the body control
-    Control := GetControl(Element) as THtmlBodyControl;
-    if Control = nil then
-    begin
-      Control := THtmlBodyControl.Create(Owner);
-      ControlOfElementMap.Put(Element, Control);
-    end;
-    Box := THtmlBodyBox.Create(ParentBox, Control);
-    Box.BoundsRect := ParentBox.BoundsRect;
-    Box.Tiled := True;
-
-    // set properties
+    // create the body box
+    Box := CreateBox(Owner, ParentBox, Element);
     SetPropertiesToBox(Element, Box, Properties, Info);
 
-    // render children
-
-    // pass 1: create the boxes
-    Child := Element.FirstChild;
-    while Child <> nil do
-    begin
-      Render(Control, Box, Child);
-      Child := Child.Next;
-    end;
+    // create children
+    RenderChildren(Box.Control, Box, Element);
 
     // pass 2: convert the boxes, if necessary
     // - A block container box either contains only block-level boxes or only inline-level boxes.
@@ -480,7 +482,6 @@ end;
 procedure THtmlVisualRenderer.RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
 var
   Box: THtmlElementBox;
-  Child: THtmlElement;
   Properties: TResultingPropertyMap;
   Info: THtmlElementBoxingInfo;
 begin
@@ -537,16 +538,31 @@ begin
     // set properties
     SetPropertiesToBox(Element, Box, Properties, Info);
 
-    // render children
-    Child := Element.FirstChild;
-    while Child <> nil do
-    begin
-      Render(Owner, Box, Child);
-      Child := Child.Next;
-    end;
+    // create children
+    RenderChildren(Owner, Box, Element);
   finally
     Properties.Free;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2011 --
+procedure THtmlVisualRenderer.RenderChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
+{
+ Render the children of the given box/element.
+ Owner is the owner control of the box.
+ Box is the box rendered from Element.
+ Element is the element, whose children to be rendered.
+}
+var
+  Child: THtmlElement;
+begin
+  Child := Element.FirstChild;
+  while Child <> nil do
+  begin
+    Render(Owner, Box, Child);
+    Child := Child.Next;
+  end;
+  Box.SortChildren;
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
@@ -561,11 +577,68 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(
   Box: THtmlBox;
   Properties: TResultingPropertyMap;
   const Info: THtmlElementBoxingInfo);
+
+  procedure GetStaticBounds(psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
+  begin
+    Left := 0;
+    if Properties[psWidth].HasValue then
+      Right := Left + Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+    else
+      Right := Left;
+  end;
+
+  procedure GetAbsoluteBounds(psLeft, psRight, psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
+  begin
+    // Prefer left over right
+    if Properties[psLeft].HasValue then
+    begin
+      Left := Trunc(Properties[psLeft].GetLength(0.0, ParentWidth, EmBase, 0.0));
+      // prefer width over right
+      if Properties[psWidth].HasValue then
+        Right := Left + Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+      else if Properties[psRight].HasValue then
+        // right is relative to parent width
+        Right := Trunc(ParentWidth - Properties[psRight].GetLength(0.0, ParentWidth, EmBase, 0.0))
+      else
+        Right := Left;
+    end
+    else if Properties[psRight].HasValue then
+    begin
+      Right := Trunc(ParentWidth - Properties[psRight].GetLength(0.0, ParentWidth, EmBase, 0.0));
+      if Properties[psWidth].HasValue then
+        Left := Right - Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+      else
+        Left := Right;
+    end
+    else
+    begin
+      Left := 0;
+      if Properties[psWidth].HasValue then
+        Right := Left + Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+      else
+        Right := Left;
+    end;
+  end;
+
+  procedure GetRelativeOffset(psLeft, psRight: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
+  begin
+    if Properties[psLeft].HasValue then
+      Left := Trunc(Properties[psLeft].GetLength(0.0, ParentWidth, EmBase, 0.0))
+    else
+      Left := 0;
+
+    if Properties[psRight].HasValue then
+      Right := Trunc(Properties[psRight].GetLength(0.0, ParentWidth, EmBase, 0.0))
+    else
+      Right := 0;
+  end;
+
 var
   ParentBox: THtmlBox;
   FontInfo: ThtFontInfo;
   EmBase: Integer;
   Font: ThtFont;
+  ParentWidth, ParentHeight: Integer;
   Rect: TRect;
 begin
   ParentBox := Box.Parent;
@@ -592,27 +665,36 @@ begin
   Box.Display := Info.Display;
   Box.Float := Info.Float;
   Box.Position := Info.Position;
-  case Box.Display of
-    pdUnassigned,
-    pdNone:
-      raise EHtmlRendererException.Create('A box having "Display:' + CDisplayStyle[Box.Display] + '" is not supported.');
-  else
-    Rect := ParentBox.BoundsRect;
-    case Box.Position of
-      posStatic:
-      begin
-        Rect.Right  := Round(Properties[psWidth] .GetLength(False, Rect.Right - Rect.Left, EmBase, 0.0));
-        Rect.Bottom := Round(Properties[psHeight].GetLength(False, Rect.Bottom - Rect.Top, EmBase, 0.0));
-        Rect.Top    := 0;
-        Rect.Left   := 0;
-      end;
+  if Element.Symbol <> BodySy then
+    case Box.Display of
+      pdUnassigned,
+      pdNone:
+        raise EHtmlRendererException.Create('A box having "Display:' + CDisplayStyle[Box.Display] + '" is not supported.');
     else
-      Rect.Top    := Round(Properties[psTop]   .GetLength(False, Rect.Top   , EmBase, 0.0));
-      Rect.Left   := Round(Properties[psLeft]  .GetLength(False, Rect.Left  , EmBase, 0.0));
-      Rect.Right  := Round(Properties[psRight] .GetLength(False, Rect.Right , EmBase, 0.0));
-      Rect.Bottom := Round(Properties[psBottom].GetLength(False, Rect.Bottom, EmBase, 0.0));
+      ParentWidth := ParentBox.ContentRect.Right - ParentBox.ContentRect.Left;
+      ParentHeight := ParentBox.ContentRect.Bottom - ParentBox.ContentRect.Top;
+      case Box.Position of
+
+        posStatic:
+        begin
+          GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
+          GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        end;
+
+        posRelative:
+        begin
+          GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
+          GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+          GetRelativeOffset(psLeft, psRight, ParentWidth,  EmBase, Rect.Left, Rect.Right);
+          GetRelativeOffset(psTop, psBottom, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        end;
+
+      else
+        GetAbsoluteBounds(psLeft, psRight, psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
+        GetAbsoluteBounds(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+      end;
+      Box.BoundsRect := Rect;
     end;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 04.09.2011 --

@@ -349,20 +349,21 @@ function GetPositionInRange(Which: TBackgroundPosition; Where, Range: Integer): 
 procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
   var Pos: Integer; out TiledEnd: Integer);
 {
-  Returns the start and end value for tiling an object of given size.
-  Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
-    process and depending on the visibility of the object in the cliparea the untiled object is
-    processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
-    ClipMin so that the tiling process will put one of the tiles to original Pos.
-  TileAreaMin, TileAreaMax: the area in with the object is to tile.
-  TileSize: the size of the tile.
-  Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
-    of the object size to where the object covers the tile area minimum.
-  TiledEnd: a position on and after which no more tiles are processed.
+ Returns the start and end value for tiling an object of given size.
+ Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
+   process and depending on the visibility of the object in the cliparea the untiled object is
+   processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
+   ClipMin so that the tiling process will put one of the tiles to original Pos.
+ TileAreaMin, TileAreaMax: the area in with the object is to tile.
+ TileSize: the size of the tile.
+ Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
+   of the object size to where the object covers the tile area minimum.
+ TiledEnd: a position on and after which no more tiles are processed.
 }
 procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
   XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
-{PRec has the CSS information on the background image, it's starting location and
+{
+ PRec has the CSS information on the background image, it's starting location and
  whether it is tiled in x, y, neither, or both.
  ARect is the cliprect, no point in drawing tiled images outside it.
  XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.
@@ -664,6 +665,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.07.2010 --
 function DecodeSize(const Str: ThtString; out V: Double; out U: ThtString): Boolean;
+{
+ Get a mandatory numerical value and an optional unit string from given Str.
+ Returns true, if at least the numerical value has been parsed from Str.
+ Str is the string to parse.
+ V returns the parsed numerical value.
+ U returns the parsed unit string or an empty string;
+}
 var
   I, J, L: Integer;
 begin
@@ -770,7 +778,8 @@ end;
 
 //------------------------------------------------------------------------------
 function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
-{given a length ThtString, return the appropriate pixel value.
+{
+ Given a length string, return the appropriate pixel value.
  Base is the base value for a relative value without unit or with percentage.
  EmBase is the base value for units relative to the font.
  Default returned if no match.
@@ -787,7 +796,7 @@ begin
     if U = '' then
     begin
       if Relative then
-        Result := Round(V * Base);
+        Result := V * Base;
     end
     else if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
@@ -1018,16 +1027,16 @@ end;
 procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
   var Pos: Integer; out TiledEnd: Integer);
 {
-  Returns the start and end value for tiling a tile of given size.
-  Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
-    process and depending on the visibility of the object in the cliparea the untiled object is
-    processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
-    ClipMin so that the tiling process will put one of the tiles to original Pos.
-  TileAreaMin, TileAreaMax: the area in with the object is to tile.
-  TileSize: the size of the tile.
-  Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
-    of the object size to where the object covers the tile area minimum.
-  TiledEnd: a position on and after which no more tiles are processed.
+ Returns the start and end value for tiling a tile of given size.
+ Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
+   process and depending on the visibility of the object in the cliparea the untiled object is
+   processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
+   ClipMin so that the tiling process will put one of the tiles to original Pos.
+ TileAreaMin, TileAreaMax: the area in which the object is to tile.
+ TileSize: the size of the tile.
+ Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
+   of the object size to where the object covers the tile area minimum.
+ TiledEnd: a position on and after which no more tiles are processed.
 }
 var
   TileAreaMinPos: Integer;
@@ -1053,8 +1062,8 @@ end;
 //-- BG ---------------------------------------------------------- 07.04.2011 --
 procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
   XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
-
-{PRec has the CSS information on the background image, it's starting location and
+{
+ PRec has the CSS information on the background image, it's starting location and
  whether it is tiled in x, y, neither, or both.
  ARect is the cliprect, no point in drawing tiled images outside it.
  XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.

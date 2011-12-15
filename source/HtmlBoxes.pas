@@ -58,6 +58,7 @@ type
     procedure Init;
     procedure Clear;
     procedure Remove(View: THtmlBox);
+    procedure Sort;
     property First: THtmlBox read FFirst;
     property Last: THtmlBox read FLast;
   end;
@@ -65,15 +66,21 @@ type
   THtmlBox = class
   private
     // structure
-    FParent: THtmlBox;                    // parent view or nil if this is the root view.
-    FPrev: THtmlBox;                      // previous sibling in parent's content.
-    FNext: THtmlBox;                      // next sibling in parent's content.
-    FChildren: THtmlBoxList;              // the content.
+    FParent: THtmlBox;       // parent view or nil if this is the root view.
+    FPrev: THtmlBox;         // previous sibling in parent's content.
+    FNext: THtmlBox;         // next sibling in parent's content.
+    FChildren: THtmlBoxList; // the content.
     // position
-    FBounds: TRect;
+    FBounds: TRect;          // outer bounds of box relative to FParent (but without FRelativeOffset).
+    FRelativeOffset: TRect;  // offset of position:relative
     FDisplay: TDisplayStyle;
     FFloat: TBoxFloatStyle;
     FPosition: TBoxPositionStyle;
+    // background image
+    FImage: ThtImage;
+    FTiled: Boolean;
+    FTileWidth: Integer;
+    FTileHeight: Integer;
     // border
     FMargins: TRectIntegers;
     FBorderWidths: TRectIntegers;
@@ -82,15 +89,10 @@ type
     FBackgroundColor: TColor;
     // content
     FPadding: TRectIntegers;
-    FAlignment: TAlignment;
     // content: text
     FText: ThtString;
     FFont: ThtFont;
-    // content: image
-    FImage: ThtImage;
-    FTiled: Boolean;
-    FTileWidth: Integer;
-    FTileHeight: Integer;
+    FAlignment: TAlignment;
     procedure SetImage(const Value: ThtImage);
     function GetContentRect: TRect;
     function GetHeight: Integer;
@@ -109,6 +111,7 @@ type
     constructor Create(ParentBox: THtmlBox);
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
+    procedure SortChildren;
     // change events sent by THtmlViewer
     procedure Resized; virtual;
     procedure Rescaled(const NewScale: Double); virtual;
@@ -120,6 +123,7 @@ type
     property Display: TDisplayStyle read FDisplay write FDisplay;
     property Float: TBoxFloatStyle read FFloat write FFloat;
     property Position: TBoxPositionStyle read FPosition write FPosition;
+    property RelativeOffset: TRect read FRelativeOffset write FRelativeOffset;
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
     property Visible: Boolean read IsVisible;
@@ -324,6 +328,32 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 14.12.2011 --
+procedure THtmlBoxList.Sort;
+{
+ Move boxes with relative position to the end as they may overlap and hide other
+ boxes.
+}
+var
+  View, Next: THtmlBox;
+begin
+  if First <> Last then
+  begin
+    // at least 2 entries, thus sorting required:
+    View := First;
+    while View <> nil do
+    begin
+      Next := View.Next;
+      if View.Position = posRelative then
+      begin
+        Remove(View);
+        Add(View);
+      end;
+      View := Next;
+    end;
+  end;
+end;
+
 { THtmlBox }
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -414,46 +444,47 @@ procedure THtmlBox.Paint(Canvas: TScalingCanvas);
     Canvas.FrameRect(Rect);
   end;
 
-var
-  Rect, ScrRect: TRect;
-  ContentWidth, ContentHeight: Integer;
-  Child: THtmlBox;
-  Org, Tile, TiledEnd: TPoint;
-  Flags, ContentRegion, ExistingRegion, CombinedRegionResult: Integer;
-begin
-  if not Visible then
-    exit;
-
-  DrawTestOutline(BoundsRect);
-  DeflateRect(Rect, BoundsRect, Margins);
-
-  // border
-  DrawBorder(Canvas, Rect, BorderWidths, BorderColors, BorderStyles, Color);
-  DeflateRect(Rect, BorderWidths);
-
-  // content
-  DeflateRect(Rect, Paddings);
-  CombinedRegionResult := SIMPLEREGION;
-  ContentRegion := 0;
-  ExistingRegion := 0;
-  if Clipping or Tiled then
+  function CreateClipRegion(Clipping: Boolean; const Rect: TRect; out ExistingRegion, ClippingRegion: Integer): Boolean;
+  {
+   Returns True, if there is a draw area because either Clipping is false or clip region is not empty.
+  }
+  var
+    ScrRect: TRect;
   begin
-    ScrRect.TopLeft := Canvas.ToWindowUnits(Rect.TopLeft);
-    ScrRect.BottomRight := Canvas.ToWindowUnits(Rect.BottomRight);
-    ContentRegion := CreateRectRgnIndirect(ScrRect);
-    ExistingRegion := GetClipRegion(Canvas);
-    if ExistingRegion <> 0 then
-      CombinedRegionResult := CombineRgn(ContentRegion, ContentRegion, ExistingRegion, RGN_AND);
-  end;
-  try
-    if CombinedRegionResult in [SIMPLEREGION, COMPLEXREGION] then
+    ClippingRegion := 0;
+    ExistingRegion := 0;
+    Result := True;
+    if Clipping then
     begin
-      ContentWidth := Rect.Right - Rect.Left;
-      ContentHeight := Rect.Bottom - Rect.Top;
+      ScrRect.TopLeft := Canvas.ToWindowUnits(Rect.TopLeft);
+      ScrRect.BottomRight := Canvas.ToWindowUnits(Rect.BottomRight);
+      ClippingRegion := CreateRectRgnIndirect(ScrRect);
+      ExistingRegion := GetClipRegion(Canvas);
+      if ExistingRegion <> 0 then
+        Result := CombineRgn(ClippingRegion, ClippingRegion, ExistingRegion, RGN_AND) in [SIMPLEREGION, COMPLEXREGION];
+      if Result then
+        SelectClipRgn(Canvas.Handle, ClippingRegion);
+    end;
+  end;
 
-      if Image <> nil then
-      begin
-        // image
+  procedure DeleteClipRegion(ExistingRegion, ClippingRegion: Integer);
+  begin
+    if ClippingRegion <> 0 then
+    begin
+      SelectClipRgn(Canvas.Handle, ExistingRegion);
+      DeleteObject(ClippingRegion);
+      if ExistingRegion <> 0 then
+        DeleteObject(ExistingRegion);
+    end;
+  end;
+
+  procedure DrawImage(const Rect: TRect);
+  var
+    ClippingRegion, ExistingRegion: Integer;
+    Tile, TiledEnd: TPoint;
+  begin
+    if CreateClipRegion(True, Rect, ExistingRegion, ClippingRegion) then
+      try
         if (Image = ErrorImage) or (Image = DefImage) then
         begin
           Image.Draw(Canvas, Rect.Left + 4, Rect.Top + 4, Image.Width, Image.Height);
@@ -463,27 +494,59 @@ begin
           // prepare horizontal tiling
           if TileWidth = 0 then
             TileWidth := Image.Width;
-          Tile.X := GetPositionInRange(bpCenter, 0, Rect.Right - Rect.Left - TileWidth) + Rect.Left;
+          Tile.X := 0; // GetPositionInRange(bpCenter, 0, Rect.Right - Rect.Left - TileWidth) + Rect.Left;
           AdjustForTiling(Tiled, Rect.Left, Rect.Right, TileWidth, Tile.X, TiledEnd.X);
 
           // prepare vertical tiling
           if TileHeight = 0 then
             TileHeight := Image.Height;
-          Tile.Y := GetPositionInRange(bpCenter, 0, Rect.Bottom - Rect.Top - TileHeight) + Rect.Top;
+          Tile.Y := 0; // GetPositionInRange(bpCenter, 0, Rect.Bottom - Rect.Top - TileHeight) + Rect.Top;
           AdjustForTiling(Tiled, Rect.Top, Rect.Bottom, TileHeight, Tile.Y, TiledEnd.Y);
 
           // clip'n'paint
-          SelectClipRgn(Canvas.Handle, ContentRegion);
           Image.DrawTiled(Canvas, Tile.X, Tile.Y, TiledEnd.X, TiledEnd.Y, TileWidth, TileHeight);
-          SelectClipRgn(Canvas.Handle, ExistingRegion);
         end
         else
-          Image.Draw(Canvas, Rect.Left, Rect.Top, ContentWidth, ContentHeight);
+          Image.Draw(Canvas, Rect.Left, Rect.Top, Rect.Right - Rect.Left, Rect.Bottom - Rect.Top);
+      finally
+        DeleteClipRegion(ExistingRegion, ClippingRegion);
       end;
+  end;
 
-      if Clipping then
-        SelectClipRgn(Canvas.Handle, ContentRegion);
+var
+  Rect: TRect;
+  Child: THtmlBox;
+  Org: TPoint;
+  Flags, ContentRegion, ExistingRegion: Integer;
+begin
+  if not Visible then
+    exit;
+  Rect := BoundsRect;
+  if Position = posRelative then
+    OffsetRect(Rect, RelativeOffset);
 
+  // background
+  if Color <> clNone then
+  begin
+    Canvas.Brush.Color := Color;
+    Canvas.Brush.Style := bsSolid;
+    Canvas.FillRect(Rect);
+  end;
+{$ifdef DEBUG}
+  DrawTestOutline(Rect);
+{$endif}
+  if Image <> nil then
+    DrawImage(Rect);
+  DeflateRect(Rect, Margins);
+
+  // border
+  DrawBorder(Canvas, Rect, BorderWidths, BorderColors, BorderStyles, clNone);
+  DeflateRect(Rect, BorderWidths);
+
+  // content
+  DeflateRect(Rect, Paddings);
+  if CreateClipRegion(Clipping, Rect, ExistingRegion, ContentRegion) then
+    try
       if Length(Text) > 0 then
       begin
         // text
@@ -500,28 +563,21 @@ begin
         DrawTextW(Canvas.Handle, PhtChar(Text), Length(Text), Rect, Flags + DT_NOCLIP + DT_VCENTER + DT_SINGLELINE);
       end;
 
-      // structure
+      // children
       if Children.First <> nil then
       begin
-        GetWindowOrgEx(Canvas.Handle, Org);
-        SetWindowOrgEx(Canvas.Handle, Org.X + Rect.Left, Org.Y + Rect.Top, nil);
+        GetViewportOrgEx(Canvas.Handle, Org);
+        SetViewportOrgEx(Canvas.Handle, Org.X + Rect.Left, Org.Y + Rect.Top, nil);
         Child := Children.First;
         repeat
           Child.Paint(Canvas);
           Child := Child.Next;
         until Child = nil;
-        SetWindowOrgEx(Canvas.Handle, Org.X, Org.Y, nil);
+        SetViewportOrgEx(Canvas.Handle, Org.X, Org.Y, nil);
       end;
+    finally
+      DeleteClipRegion(ExistingRegion, ContentRegion);
     end;
-  finally
-    if ContentRegion <> 0 then
-    begin
-      SelectClipRgn(Canvas.Handle, ExistingRegion);
-      DeleteObject(ContentRegion);
-      if ExistingRegion <> 0 then
-        DeleteObject(ExistingRegion);
-    end;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
@@ -580,6 +636,12 @@ begin
     if FParent <> nil then
       FParent.AddChild(Self);
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2011 --
+procedure THtmlBox.SortChildren;
+begin
+  Children.Sort;
 end;
 
 { THtmlControlBox }

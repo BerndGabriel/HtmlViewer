@@ -40,6 +40,7 @@ uses
 procedure DeflateRect(var Rect: TRect; const Delta: TRectIntegers); overload;
 procedure DeflateRect(var Rect: TRect; const Source: TRect; const Delta: TRectIntegers); overload;
 procedure InflateRect(var Rect: TRect; const Source: TRect; const Delta: TRectIntegers); overload;
+procedure OffsetRect(var Rect: TRect; const Delta: TRect); overload;
 
 procedure DrawBorder(Canvas: TCanvas; ORect: TRect; const W: TRectIntegers; const C: TRectColors; const S: TRectStyles; BGround: TColor);
 
@@ -70,6 +71,15 @@ begin
   Rect.Left := Source.Left - Delta[reLeft];
   Rect.Right := Source.Right + Delta[reRight];
   Rect.Bottom := Source.Bottom + Delta[reBottom];
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2011 --
+procedure OffsetRect(var Rect: TRect; const Delta: TRect); overload;
+begin
+  Inc(Rect.Top, Delta.Top);
+  Inc(Rect.Left, Delta.Left);
+  Inc(Rect.Right, Delta.Right);
+  Inc(Rect.Bottom, Delta.Bottom);
 end;
 
 {----------------DrawBorder}
