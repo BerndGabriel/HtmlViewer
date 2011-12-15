@@ -799,7 +799,6 @@ begin
       end;
     end;
   end;
-  Params.Free;
 end;
 
 procedure TForm1.FrameViewerRightClick(Sender: TObject; Parameters: TRightClickParameters);
