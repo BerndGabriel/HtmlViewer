@@ -4605,7 +4605,7 @@ begin
   else
     with OwnerCell do
     begin
-      I := OwnerCell.Count - 2; {find the preceding block that isn't absolute positioning}
+      I := OwnerCell.Count - 1; {find the preceding block that isn't absolute positioning}
       while I >= 0 do
       begin
         TB := OwnerCell[I];
