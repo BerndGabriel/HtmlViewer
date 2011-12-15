@@ -3123,7 +3123,7 @@ begin
       V := V * ExSize
     else
       V := Default;
-    Result := Round(V);
+    Result := Trunc(V); // BG, 14.12.2011: issue 104: avoid too wide "50%". Replace Round() with Trunc().
   end
   else
     // anything else but a number, maybe 'auto'
