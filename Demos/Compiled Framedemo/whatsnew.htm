@@ -19,13 +19,23 @@
 
 <h2 align="center"><font color="#a00000">What's New</font></h2>
 
+<p class="heading">Version 11.1</p>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Changed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=1">Issue 1</a>: Remove known compile time warnings.<br>All Delphi warnings and lots of Lazarus warnings removed.
+  <li>Changed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=88">Issue 88</a>: DoInclude now frees the parameter list.<br><b>NOTICE:</b> OnInclude event handlers must no longer free the Params:ThtStrings!
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=102">Issue 102</a>: Incorrect margins on adjacent elements. 
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=103">Issue 103</a>: Extra whitespace in preformatted blocks.<br>Now skipping empty first and last lines.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=104">Issue 104</a>: Percentage width calculation issues.<br>Rounding up 50% of an odd-numbered width two times exceeded width.
+  <li>Fixed: Occasional endless loop in GetCollection of style parsing.
+</ul>
 
 <p class="heading">Version 11</p>
 <h5>Added</h5>
 <ul>
   <li>HtmlViewer/FrameViewer developement available at <a href="http://github.com/BerndGabriel/HtmlViewer">http://github.com/BerndGabriel/HtmlViewer</a>.
-  <li>Support Lazarus 0.9.31
-  <li>Thoroughgoing unicode support in Delphi 6..2010 and Lazarus 0.9.31
+  <li>Support Lazarus 0.9.30
+  <li>Thoroughgoing unicode support in Delphi 6..2010 and Lazarus 0.9.30
   <li>Enhanced support for styles <b>float</b> and <b>clear</b> 
 </ul>
 <h5>Fixed and Changed</h5>
