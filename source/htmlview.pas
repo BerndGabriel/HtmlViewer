@@ -266,7 +266,7 @@ type
     function GetTitle: ThtString;
     //function GetViewerStateBit(Index: THtmlViewerStateBit): Boolean;
     function GetViewImages: Boolean;
-    function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: WideString): Boolean;
+    function GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
     procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
@@ -376,7 +376,7 @@ type
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTextByIndices(AStart, ALast: Integer): WideString;
-    function GetURL(X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
+    function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
@@ -1920,7 +1920,7 @@ end;
 
 {----------------THtmlViewer.GetWordAtCursor}
 
-function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: WideString): Boolean;
+function THtmlViewer.GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
 var
   XR, X1, CaretHt: Integer;
   YR, Y1: Integer;
@@ -2144,8 +2144,8 @@ begin
   end;
 end;
 
-function THtmlViewer.GetURL(X, Y: Integer; var UrlTarg: TUrlTarget;
-  var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
+function THtmlViewer.GetURL(X, Y: Integer; out UrlTarg: TUrlTarget;
+  out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
 begin
   Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff,
     UrlTarg, FormControl, ATitle);

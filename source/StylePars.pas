@@ -254,7 +254,7 @@ begin
   Result := 'url(' + Result + ')';
 end;
 
-function FindShortHand(S: ThtString; var Index: TShortHand): boolean;
+function FindShortHand(S: ThtString; out Index: TShortHand): boolean;
 var
   I: TShortHand;
 begin
@@ -268,7 +268,7 @@ begin
   Result := False;
 end;
 
-procedure SplitString(Src: ThtString; var Dest: array of ThtString; var Count: integer);
+procedure SplitString(Src: ThtString; out Dest: array of ThtString; out Count: integer);
 {Split a Src ThtString into pieces returned in the Dest ThtString array.  Splitting
  is on spaces with spaces within quotes being ignored.  ThtString containing a '/'
  are also split to allow for the "size/line-height" Font construct. }
@@ -391,7 +391,7 @@ var
   Count, I: integer;
   Index: FontEnum;
 
-  function FindWord(const S: ThtString; var Index: FontEnum): boolean;
+  function FindWord(const S: ThtString; out Index: FontEnum): boolean;
   var
     I: FontEnum;
   begin
@@ -672,11 +672,9 @@ begin
     SL.Sorted := True;
     I := 1;
     GetCh;
-    while True do
+    while Ch <> Eos do
     begin
       case Ch of {add digit to sort item}
-        Eos: break;
-
         '.': C := '1';
         ':': C := '2';
         '#': C := '3';
@@ -691,7 +689,7 @@ begin
         case Ch of
           'a'..'z', '0'..'9', '_', '-':
           begin
-            SS := SS + Ch;
+            htAppendChr(SS, Ch);
             GetCh;
           end;
         else

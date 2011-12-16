@@ -137,7 +137,7 @@ type
     procedure GetCh;
 
     function DoCharSet(Content: ThtString): Boolean;
-    function DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
+    function DoObjectTag(out C: ThtChar; out N, IX: Integer): Boolean;
     function FindAlignment: ThtString;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
@@ -170,7 +170,7 @@ type
     procedure ParseHtml(Doc: TBuffer; ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
     procedure ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
     procedure ParseText(Doc: TBuffer; ASectionList: ThtDocument);
-    procedure SkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
+    procedure SkipWhiteSpace;
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
@@ -428,7 +428,7 @@ var
 
   procedure DoInclude;
 
-    function GetNameValueParameter(var Name, Value: ThtString): Boolean;
+    function GetNameValueParameter(out Name, Value: ThtString): Boolean;
 
       function GetQuotedValue(var S: ThtString): Boolean;
       {get a quoted ThtString but strip the quotes}
@@ -1442,7 +1442,10 @@ begin
   if Sy = ColGroupSy then
   begin
     if ColOk then
+    begin
+      Span := 1;
       ReadColAttributes(xWidth, xAsPercent, xVAlign, xAlign, Span);
+    end;
     SkipWhiteSpace;
     Next;
   end;
@@ -2054,7 +2057,7 @@ begin
   end;
 end;
 
-function THtmlParser.DoObjectTag(var C: ThtChar; var N, IX: Integer): Boolean;
+function THtmlParser.DoObjectTag(out C: ThtChar; out N, IX: Integer): Boolean;
 var
   WantPanel: Boolean;
   SL, Params: ThtStringList;

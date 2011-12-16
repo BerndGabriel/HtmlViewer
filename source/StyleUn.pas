@@ -201,16 +201,16 @@ type
     function GetFont: TMyFont;
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetVMarginArray(var MArray: TVMarginArray);
-    function GetBackgroundImage(var Image: ThtString): boolean;
-    procedure GetBackgroundPos(EmSize, ExSize: integer; var P: PtPositionRec);
+    function GetBackgroundImage(out Image: ThtString): boolean;
+    procedure GetBackgroundPos(EmSize, ExSize: integer; out P: PtPositionRec);
     function GetLineHeight(NewHeight: integer): integer;
-    function GetTextIndent(var PC: boolean): integer;
+    function GetTextIndent(out PC: boolean): integer;
     function GetTextTransform: TextTransformType;
     function GetFontVariant: ThtString;
-    procedure GetPageBreaks(var Before, After, Intact: boolean);
-    function GetVertAlign(var Align: AlignmentType): boolean;
-    function GetFloat(var Align: AlignmentType): boolean;
-    function GetClear(var Clr: ClearAttrType): boolean;
+    procedure GetPageBreaks(out Before, After, Intact: boolean);
+    function GetVertAlign(out Align: AlignmentType): boolean;
+    function GetFloat(out Align: AlignmentType): boolean;
+    function GetClear(out Clr: ClearAttrType): boolean;
     function GetOriginalForegroundColor: TColor;
     function GetBackgroundColor: TColor;
     function GetBorderStyle: BorderStyleType;
@@ -296,16 +296,16 @@ procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, 
 
 procedure ConvVertMargins(const VM: TVMarginArray;
   BaseHeight, EmSize, ExSize: Integer;
-  var M: TMarginArray; var TopAuto, BottomAuto: boolean);
+  var M: TMarginArray; out TopAuto, BottomAuto: boolean);
 
 procedure ConvMargArrayForCellPadding(const VM: TVMarginArray; EmSize,
   ExSize: Integer; var M: TMarginArray);
 
 procedure ConvInlineMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize,
-  ExSize: Integer; {BStyle: BorderStyleType;} var M: TMarginArray);
+  ExSize: Integer; {BStyle: BorderStyleType;} out M: TMarginArray);
 
 function SortedColors: ThtStringList;
-function ColorFromString(S: ThtString; NeedPound: boolean; var Color: TColor): boolean;
+function ColorFromString(S: ThtString; NeedPound: boolean; out Color: TColor): boolean;
 
 function ReadURL(Item: Variant): ThtString;
 
@@ -358,7 +358,7 @@ end;
 function FontSizeConv(const Str: ThtString; OldSize: double): double; forward;
 function LengthConv(const Str: ThtString; Relative: boolean; Base, EmSize, ExSize, Default: integer): integer; forward;
 
-function FindPropIndex(const PropWord: ThtString; var PropIndex: PropIndices): boolean;
+function FindPropIndex(const PropWord: ThtString; out PropIndex: PropIndices): boolean;
 var
   I: PropIndices;
 begin
@@ -675,7 +675,7 @@ begin
   end;
 end;
 
-function TProperties.GetBackgroundImage(var Image: ThtString): boolean;
+function TProperties.GetBackgroundImage(out Image: ThtString): boolean;
 begin
   if (VarIsStr(Props[BackgroundImage])) then
     if (Props[BackgroundImage] = 'none') then
@@ -773,7 +773,7 @@ end;
 
 {----------------TProperties.GetBackgroundPos}
 
-procedure TProperties.GetBackgroundPos(EmSize, ExSize: integer; var P: PtPositionRec);
+procedure TProperties.GetBackgroundPos(EmSize, ExSize: integer; out P: PtPositionRec);
 var
   S: array[1..2] of ThtString;
   Tmp: ThtString;
@@ -869,7 +869,7 @@ begin
   P[2].Fixed := P[1].Fixed;
 end;
 
-function TProperties.GetVertAlign(var Align: AlignmentType): boolean;
+function TProperties.GetVertAlign(out Align: AlignmentType): boolean;
 {note:  'top' should have a catagory of its own}
 var
   S: ThtString;
@@ -902,7 +902,7 @@ begin
   Result := (VarIsStr(Props[OverFlow])) and (Props[OverFlow] = 'hidden');
 end;
 
-function TProperties.GetFloat(var Align: AlignmentType): boolean;
+function TProperties.GetFloat(out Align: AlignmentType): boolean;
 var
   S: ThtString;
 begin
@@ -923,7 +923,7 @@ begin
     Result := False;
 end;
 
-function TProperties.GetClear(var Clr: ClearAttrType): boolean;
+function TProperties.GetClear(out Clr: ClearAttrType): boolean;
 var
   S: ThtString;
 begin
@@ -1059,7 +1059,7 @@ begin
     Result := -1;
 end;
 
-function TProperties.GetTextIndent(var PC: boolean): integer;
+function TProperties.GetTextIndent(out PC: boolean): integer;
 var
   I: integer;
 begin
@@ -1103,7 +1103,7 @@ begin
   end;
 end;
 
-procedure TProperties.GetPageBreaks(var Before, After, Intact: boolean);
+procedure TProperties.GetPageBreaks(out Before, After, Intact: boolean);
 begin
   Before := (VarIsStr(Props[PageBreakBefore])) and (Props[PageBreakBefore] = 'always');
   After := (VarIsStr(Props[PageBreakAfter])) and (Props[PageBreakAfter] = 'always');
@@ -1173,9 +1173,9 @@ end;
 
 procedure ConvVertMargins(const VM: TVMarginArray;
   BaseHeight, EmSize, ExSize: Integer;
-  var M: TMarginArray; var TopAuto, BottomAuto: boolean);
+  var M: TMarginArray; out TopAuto, BottomAuto: boolean);
 
-  function Convert(V: Variant; var IsAutoParagraph: boolean): integer;
+  function Convert(V: Variant; out IsAutoParagraph: boolean): integer;
   begin
     IsAutoParagraph := False;
     if VarIsStr(V) then
@@ -1427,7 +1427,7 @@ end;
 {----------------ConvInlineMargArray}
 
 procedure ConvInlineMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize,
-  ExSize: Integer; {BStyle: BorderStyleType;} var M: TMarginArray);
+  ExSize: Integer; {BStyle: BorderStyleType;} out M: TMarginArray);
 {currently for images, form controls.  BaseWidth/Height and BStyle currently not supported}
 var
   I: PropIndices;
@@ -2755,13 +2755,13 @@ begin
   begin
     ColorStrings := ThtStringList.Create;
     for I := 1 to NumColors do
-      ColorStrings.AddObject(Colors[I], Pointer(ColorValues[I]));
+      ColorStrings.AddObject(Colors[I], @ColorValues[I]);
     ColorStrings.Sort;
   end;
   Result := ColorStrings;
 end;
 
-function ColorFromString(S: ThtString; NeedPound: boolean; var Color: TColor): boolean;
+function ColorFromString(S: ThtString; NeedPound: boolean; out Color: TColor): boolean;
 {Translate StyleSheet color ThtString to Color.  If NeedPound is true, a '#' sign
  is required to preceed a hexidecimal value.}
 const
@@ -2839,7 +2839,7 @@ begin
   begin
     if SortedColors.Find(S, Idx) then
     begin
-      Color := TColor(SortedColors.Objects[Idx]);
+      Color := PColor(SortedColors.Objects[Idx])^;
       Result := True;
       LastS := S;
       LastColor := Color;

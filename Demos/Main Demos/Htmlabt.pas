@@ -38,9 +38,6 @@ uses
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Buttons, ExtCtrls,
   HtmlGlobals, Htmlview, StdCtrls, HTMLUn2;
 
-const
-  Version = '11';
-
 type
 
   { TAboutBox }
@@ -155,7 +152,7 @@ begin
     '<center>'+
     '<h1>'+ProgName+'</h1>'+
     '<font color="Maroon">A demo program for the '+CompName+' component</font>'+
-    '<h3>Version '+Version+'</h3>'+
+    '<h3>Version '+ VersionNo +'</h3>'+
     '</center>'+
     ConfigInfo +
     '</body>';

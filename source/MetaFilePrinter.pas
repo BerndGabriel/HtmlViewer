@@ -74,7 +74,7 @@ type
 
     procedure Assign(Source: TPersistent); override;
 
-    procedure Clear;
+    procedure Clear; {$ifdef LCL} override; {$endif}
     procedure LoadFromFile(const Filename: String); override;
     procedure LoadFromStream(Stream: TStream); override;
     procedure SaveToFile(const Filename: String); override;
@@ -373,6 +373,9 @@ end;
 
 procedure TMetafile.Clear;
 begin
+{$ifdef LCL}
+  inherited Clear;
+{$endif}
   DeleteImage;
 end;
 

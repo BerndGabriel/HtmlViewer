@@ -44,7 +44,7 @@ uses
   StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
-  VersionNo = '11';
+  VersionNo = '11.1';
   MaxHScroll = 6000; {max horizontal display in pixels}
   HandCursor = 10101;
   OldThickIBeamCursor = 2;
@@ -140,7 +140,7 @@ type
   public
     destructor Destroy; override;
     procedure Clear; override;
-    function Find(Sy: Symb; var T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
+    function Find(Sy: Symb; out T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
@@ -252,7 +252,7 @@ type
     AreaTitles: ThtStringList; {the Title strings}
     constructor Create;
     destructor Destroy; override;
-    function GetURL(X, Y: Integer; var URLTarg: TURLTarget; var ATitle: ThtString): boolean;
+    function GetURL(X, Y: Integer; out URLTarg: TURLTarget; out ATitle: ThtString): boolean;
     procedure AddArea(Attrib: TAttributeList);
   end;
 
@@ -322,7 +322,7 @@ type
     function SetRightIndent(XRight, Y: Integer): Integer;
     procedure FreeLeftIndentRec(I: Integer);
     procedure FreeRightIndentRec(I: Integer);
-    procedure GetClearY(var CL, CR: Integer);
+    procedure GetClearY(out CL, CR: Integer);
     procedure Init(Lf, Wd: Integer);
     procedure Reset(Lf: Integer);
   end;
@@ -1290,7 +1290,7 @@ begin
   inherited;
 end;
 
-function TAttributeList.Find(Sy: Symb; var T: TAttribute): boolean;
+function TAttributeList.Find(Sy: Symb; out T: TAttribute): boolean;
 var
   I: Integer;
 begin
@@ -1576,7 +1576,7 @@ begin
   inherited Destroy;
 end;
 
-function TMapItem.GetURL(X, Y: Integer; var URLTarg: TUrlTarget; var ATitle: ThtString): boolean;
+function TMapItem.GetURL(X, Y: Integer; out URLTarg: TUrlTarget; out ATitle: ThtString): boolean;
 var
   I: Integer;
 begin
@@ -2467,7 +2467,7 @@ begin
         Result := YB;
 end;
 
-procedure TIndentManager.GetClearY(var CL, CR: Integer);
+procedure TIndentManager.GetClearY(out CL, CR: Integer);
 {returns the left and right Y values which will clear image margins}
 var
   I: Integer;
