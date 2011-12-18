@@ -402,7 +402,6 @@ type
   // Using reverse order minimizes comparing and update effort.
   TResultingPropertyMap = class
   private
-    FStyle: TStyleSelector; // the selector for updating from style attributes
     FProps: TResultingProperties; // the resulting properties
     procedure Update(const AProperty: TStyleProperty; const ASelector: TStyleSelector);
   public
@@ -424,6 +423,10 @@ type
 function GetCssDefaults: TStream;
 
 implementation
+
+var
+  StyleAttributeSelector: TStyleSelector;
+  StyleTagSelector: TStyleSelector;
 
 {$R css_defaults.res}
 
@@ -1374,7 +1377,6 @@ destructor TResultingPropertyMap.Destroy;
 var
   I: TStylePropertySymbol;
 begin
-  FStyle.Free;
   for I := Low(I) to High(I) do
     FProps[I].Free;
   inherited;
@@ -1388,8 +1390,12 @@ end;
 
 //-- BG ---------------------------------------------------------- 03.09.2011 --
 procedure TResultingPropertyMap.GetElementBoxingInfo(var Info: THtmlElementBoxingInfo);
+{
+ Get the calculated values of the boxing properties.
+ On enter Info must contain the parent's properties.
+ On exit Info returns the calculated values of this property map.
+}
 begin
-  //compute display, position and float according to CSS3 (http://www.w3.org/TR/css3-box/)
   Info.Display := Properties[psDisplay].GetDisplay(Info.Display, pdInline);
   case Info.Display of
     pdNone:
@@ -1477,10 +1483,17 @@ end;
 //-- BG ---------------------------------------------------------- 22.03.2011 --
 procedure TResultingPropertyMap.UpdateFromAttributes(const Properties: TStylePropertyList; IsFromStyleAttr: Boolean);
 begin
-  if FStyle = nil then
-    FStyle := TStyleSelector.Create;
-  FStyle.FIsFromStyleAttr := IsFromStyleAttr;
-  UpdateFromProperties(Properties, FStyle);
+  if IsFromStyleAttr then
+    UpdateFromProperties(Properties, StyleAttributeSelector)
+  else
+    UpdateFromProperties(Properties, StyleTagSelector);
 end;
 
+initialization
+  StyleAttributeSelector := TStyleSelector.Create;
+  StyleAttributeSelector.FIsFromStyleAttr := True;
+  StyleTagSelector := TStyleSelector.Create;
+finalization
+  FreeAndNil(StyleAttributeSelector);
+  FreeAndNil(StyleTagSelector);
 end.
