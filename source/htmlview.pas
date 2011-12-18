@@ -1376,16 +1376,15 @@ end;
 //-- BG ---------------------------------------------------------- 19.02.2011 --
 // thanks to Alex at grundis.de
 procedure THtmlViewer.ScrollVert(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
-var
-  TheChange: Integer;
 begin
+  // BG, 18.12.2011: Added: reduce scroll position to avoid scrolling beyond end of document:
+  ScrollPos := Min(ScrollPos, VScrollBar.Max - PaintPanel.Height);
   FSectionList.SetYOffset(ScrollPos);
   if vsBGFixed in FViewerState then
     PaintPanel.Invalidate
   else
-  begin {scroll background}
-    TheChange := VScrollBar.Position - ScrollPos;
-    ScrollWindow(PaintPanel.Handle, 0, TheChange, nil, nil);
+  begin {scroll background into opposite direction to keep it in a fixed position in the viewport.}
+    ScrollWindow(PaintPanel.Handle, 0, VScrollBar.Position - ScrollPos, nil, nil);
     PaintPanel.Update;
   end;
 end;
