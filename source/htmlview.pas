@@ -4914,12 +4914,12 @@ begin
   if FCurrentFile <> '' then
   begin
     Pos := Position;
-    if FCurrentFileType = HTMLType then
-      LoadFromFile(FCurrentFile)
-    else if FCurrentFileType = TextType then
-      LoadTextFile(FCurrentFile)
+    case FCurrentFileType of
+      HTMLType: LoadFromFile(FCurrentFile);
+      TextType: LoadTextFile(FCurrentFile);
     else
       LoadImageFile(FCurrentFile);
+    end;
     Position := Pos;
   end;
 end;
