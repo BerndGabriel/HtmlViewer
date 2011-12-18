@@ -1444,14 +1444,16 @@ type
 constructor TFontObj.Create(ASection: TSection; F: TMyFont; Position: Integer);
 begin
   inherited Create;
+{$ifndef NoTabLink}
   FSection := ASection;
+{$endif}
   TheFont := F;
   Pos := Position;
   UrlTarget := TUrlTarget.Create;
   FontChanged;
 end;
 
-{$IFNDEF NoTabLink}
+{$ifndef NoTabLink}
 
 procedure TFontObj.EnterEvent(Sender: TObject);
 var
@@ -5445,7 +5447,7 @@ begin
     if Assigned(BGImage) and Document.ShowImages then
     begin
       BGImage.DrawLogic(Document, Canvas, nil, 100, 0);
-      if (BGImage.Image = ErrorBitmap) then
+      if BGImage.Image = ErrorBitmap then
       begin
         FreeAndNil(BGImage);
         NeedDoImageStuff := False;
@@ -7404,6 +7406,8 @@ begin
         GetImage(TheOwner, BMName, Stream);
         if Stream = WaitStream then
           Delay := True
+        else if Stream = ErrorStream then
+          Result := nil
         else if Assigned(Stream) then
           try
             Result := LoadImageFromStream(Stream, Transparent, AMask);
@@ -11243,11 +11247,24 @@ var
 
     SB := 0; {if there are images, then maybe they add extra space}
     SA := 0; {space before and after}
-    if LineHeight >= 0 then
-    begin
-      SB := (LineHeight - DHt) div 2;
-      SA := (LineHeight - DHt) - SB;
-    end;
+      if LineHeight > 0 then
+      begin
+        // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
+        case Align of
+          aTop:
+            SA := LineHeight;
+
+          aMiddle:
+            begin
+              SB := (LineHeight - DHt) div 2;
+              SA := (LineHeight - DHt) - SB;
+            end;
+
+          aBaseline,
+          aBottom:
+            SB := LineHeight;
+        end;
+      end;
     Cnt := 0;
     repeat
       Cnt := Cnt + Images.GetImageCountAt(PStart - Buff + Cnt);
@@ -11260,8 +11277,10 @@ var
           if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
             TImageObj(FLObj).MyFormControl.FYValue := Y;
           case Align of
-            ATop: SA := Max(SA, H - DHt);
-            AMiddle:
+            aTop: 
+              SA := Max(SA, H - DHt);
+
+            aMiddle:
               begin
                 if DHt = 0 then
                 begin
@@ -11272,7 +11291,10 @@ var
                 SA := Max(SA, Tmp);
                 SB := Max(SB, (H - DHt - Tmp));
               end;
-            ABottom, ABaseline: SB := Max(SB, H - (DHt - LR.Descent));
+
+              aBaseline,
+              aBottom:
+                SB := Max(SB, H - (DHt - LR.Descent));
           end;
         end;
       end;
@@ -11414,7 +11436,7 @@ begin {TSection.DrawLogic}
     Ctrl := FormControls[I];
     if Ctrl.PercentWidth then
       Ctrl.Width := Max(10, Min(MulDiv(Ctrl.FWidth, Width, 100), Width - Ctrl.HSpaceL - Ctrl.HSpaceR));
-    MaxWidth := Max(MaxWidth, Ctrl.Width);
+  	MaxWidth := Max(MaxWidth, Ctrl.Width);
   end;
 
   YDoneFlObj := Y;
@@ -11788,7 +11810,7 @@ var
             //  relative to the containing block, the document coordinates of an inner
             //  block were the sum of all LfEdges of the containing blocks.
             Document.DrawList.AddImage(TImageObj(Obj), Canvas,
-              {IMgr.LfEdge +} Obj.Indent, Obj.DrawYY, Y - Descent, FO);
+              IMgr.LfEdge + Obj.Indent, Obj.DrawYY, Y - Descent, FO);
 
           {if a boundary is on a floating image, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then

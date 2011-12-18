@@ -509,6 +509,7 @@ type
 var
   DefBitMap, ErrorBitMap, ErrorBitmapMask: TBitMap;
   WaitStream: TMemoryStream;
+  ErrorStream: TMemoryStream;
 
 //------------------------------------------------------------------------------
 // string methods
@@ -4249,11 +4250,13 @@ initialization
   Screen.Cursors[DownOnlyCursor] := LoadCursor(HInstance, 'DOWNONLYCURSOR');
 {$endif}
   WaitStream := TMemoryStream.Create;
+  ErrorStream := TMemoryStream.Create;
 
 finalization
   DefBitMap.Free;
   ErrorBitMap.Free;
   ErrorBitMapMask.Free;
   WaitStream.Free;
+  ErrorStream.Free;
 end.
 

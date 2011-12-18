@@ -115,6 +115,7 @@ type
     procedure SetCodePage(const Value: TBuffCodePage);
   protected
   public
+    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; static;
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
@@ -527,6 +528,20 @@ begin
   FCharSet := CharSet;
   FCodePage := CharSetToCodePage(FCharSet);
   FInitalCodePage := FCodePage;
+end;
+
+//-- BG ---------------------------------------------------------- 06.12.2011 --
+class function TBuffer.Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString;
+var
+  Buffer: TBuffer;
+begin
+  Buffer := TBuffer.Create(Text);
+  try
+    Buffer.FCodePage := CodePage;
+    Result := Buffer.AsString;
+  finally
+    Buffer.Free;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
