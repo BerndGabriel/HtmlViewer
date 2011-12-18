@@ -106,18 +106,23 @@ type
 
   TMediaCapabilities = set of (mcFrames, mcScript, mcEmbed);
 
+  THtmlRendererLog = class(TStringList);
+
   THtmlRenderer = class
   private
     FDocument: THtmlDocument; // the source to render to destination
     FMediaType: TMediaType;   // media type of destination
     FCapabilities: TMediaCapabilities;
     FOnGetBuffer: TGetBufferEvent;
+    FLog: THtmlRendererLog;
+
     function GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
     function GetBaseUrl: ThtString;
   protected
     function GetBuffer(const Url: ThtString): ThtBuffer;
   public
     constructor Create(Document: THtmlDocument; MediaType: TMediaType);
+    destructor Destroy; override;
     property BaseUrl: ThtString read GetBaseUrl;
     property MediaCapabilities: TMediaCapabilities read FCapabilities write FCapabilities;
     property MediaType: TMediaType read FMediaType;
@@ -155,15 +160,13 @@ type
     procedure SetPropertiesToBox(
       Element: THtmlElement;
       Box: THtmlBox;
-      Properties: TResultingPropertyMap;
-      const Info: THtmlElementBoxingInfo);
+      Properties: TResultingPropertyMap);
     //
-    procedure Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
-    procedure RenderChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
+    function CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+    procedure CreateChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
   protected
-    procedure RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
-    procedure RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
-    procedure RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement); virtual;
+    function CreateBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+    function CreateFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlFramesetBox;
   public
     constructor Create(
       Document: THtmlDocument;
@@ -173,6 +176,8 @@ type
       DefaultFont: ThtFont;
       Width, Height: Integer);
     destructor Destroy; override;
+    procedure RenderBox(Box: THtmlBox);
+    procedure RenderChildren(ParentBox: THtmlBox);
     procedure RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
     property ControlOfElementMap: THtmlControlOfElementMap read FControls;
     property OnGetImage: TGetImageEvent read FOnGetImage write FOnGetImage;
@@ -225,6 +230,14 @@ begin
   inherited Create;
   FDocument := Document;
   FMediaType := MediaType;
+  FLog := THtmlRendererLog.Create;
+end;
+
+//-- BG ---------------------------------------------------------- 18.12.2011 --
+destructor THtmlRenderer.Destroy;
+begin
+  FLog.Free;
+  inherited;
 end;
 
 //-- BG ---------------------------------------------------------- 21.08.2011 --
@@ -315,6 +328,169 @@ begin
   FImages := ImageCache;
   FDefaultFont := DefaultFont;
   FHeight := Height;
+end;
+
+//-- BG ---------------------------------------------------------- 29.08.2011 --
+function THtmlVisualRenderer.CreateBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+var
+  Properties: TResultingPropertyMap;
+  Info: THtmlElementBoxingInfo;
+  Control: THtmlBodyControl;
+begin
+  if ParentBox = nil then
+    raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil.');
+
+  Properties := GetResultingProperties(Element);
+  try
+    case Element.Symbol of
+      BodySy:
+      begin
+        Info.Display := pdBlock;
+        Info.Position := posStatic;
+        Info.Float := flNone;
+      end;
+    else
+      Info.Display := ParentBox.Display;
+      Info.Position := ParentBox.Position;
+      Info.Float := ParentBox.Float;
+    end;
+    Properties.GetElementBoxingInfo(Info);
+    case Info.Display of
+      pdUnassigned:
+        raise EHtmlRendererException.CreateFmt(
+          'No "Display" assigned for element "%s" at document position %d.',
+          [ElementSymbolToStr(Element.Symbol), Element.DocPos]);
+
+      pdNone:
+      begin
+        Result := nil;
+        Exit; // do not create a Result at all for display:none
+      end;
+    end;
+
+    case Element.Symbol of
+      BodySy:
+      begin
+        // get or create the body control
+        Info.Display := ToRootDisplayStyle(Info.Display);
+        Control := GetControl(Element) as THtmlBodyControl;
+        if Control = nil then
+        begin
+          Control := THtmlBodyControl.Create(Owner);
+          ControlOfElementMap.Put(Element, Control);
+        end;
+
+        // create the body Result
+        Result := THtmlBodyBox.Create(Control);
+        Result.Tiled := True;
+      end;
+
+    else
+      // create an ordinary Result
+      Result := THtmlElementBox.Create;
+    end;
+
+    try
+      Result.Display := Info.Display;
+      Result.Float := Info.Float;
+      Result.Position := Info.Position;
+      Result.Element := Element;
+      Result.Properties := Properties;
+      Properties := nil; // now Result owns the properties. Don't free on exception, as Result will do it.
+      CreateChildren(Owner, Result, Element);
+    except
+      Result.Free;
+      raise;
+    end;
+  except
+    on E: Exception do
+    begin
+      FLog.AddObject(E.Message, Element);
+      Properties.Free;
+      raise;
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2011 --
+procedure THtmlVisualRenderer.CreateChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
+
+  function GetFirstBlockBox(Box: THtmlBox): THtmlBox;
+  begin
+    Result := Box;
+    while (Box <> nil) and (Box.Display <> pdBlock) do
+      Box := Box.Next;
+  end;
+
+  function CanRunInto(Box: THtmlBox): Boolean;
+  begin
+    Result := (Box.Display = pdBlock) and not (Box.Position in [posAbsolute, posFixed]) and (Box.Float = flNone);
+  end;
+
+{
+ Create the children of the given box/element.
+ Owner is the owner control of the box.
+ Box is the box created from Element.
+ Element is the element, whose child boxes to be created.
+}
+var
+  Child: THtmlElement;
+  ChildBox, NextBox: THtmlBox;
+begin
+  Child := Element.FirstChild;
+  while Child <> nil do
+  begin
+    try
+      ChildBox := CreateElement(Owner, Box, Child);
+      if ChildBox <> nil then
+        Box.AppendChild(ChildBox);
+    except
+      on E: Exception do
+        FLog.AddObject(E.Message, Element); 
+    end;
+    Child := Child.Next;
+  end;
+
+  // calculate Display for pdRunIn
+  ChildBox := Box.Children.First;
+  while ChildBox <> nil do
+  begin
+    NextBox := ChildBox.Next;
+    if ChildBox.Display = pdRunIn then
+    begin
+      // http://www.w3.org/TR/css3-box/#run-in-boxes:
+      // If the run-in box contains a block box, the run-in box becomes a block box.
+      // If a sibling block box (that does not float and is not absolutely positioned) follows
+      //  the run-in box, the run-in box becomes the first inline box of the block box. A run-in
+      //  cannot run in to a block that already starts with a run-in or that itself is a run-in.
+      // Otherwise, the run-in box becomes a block box.
+      if (GetFirstBlockBox(ChildBox.Children.First) = nil) and CanRunInto(NextBox) then
+      begin
+        Box.ExtractChild(ChildBox);
+        NextBox.InsertChild(ChildBox, NextBox.Children.First);
+      end
+      else
+        ChildBox.Display := pdBlock;
+    end;
+    ChildBox := NextBox;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+function THtmlVisualRenderer.CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+begin
+  case Element.Symbol of
+    FrameSetSy:
+      Result := CreateFrameset(Owner, ParentBox, Element);
+  else
+    Result := CreateBox(Owner, ParentBox, Element);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2011 --
+function THtmlVisualRenderer.CreateFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlFramesetBox;
+begin
+  raise EHtmlRendererException.Create('CreateFrameset not yet implemented.');
 end;
 
 //-- BG ---------------------------------------------------------- 03.05.2011 --
@@ -408,175 +584,45 @@ begin
     end;
 end;
 
+//-- BG ---------------------------------------------------------- 18.12.2011 --
+procedure THtmlVisualRenderer.RenderBox(Box: THtmlBox);
+begin
+  SetPropertiesToBox(Box.Element, Box, Box.Properties);
+  RenderChildren(Box);
+end;
+
+//-- BG ---------------------------------------------------------- 18.12.2011 --
+procedure THtmlVisualRenderer.RenderChildren(ParentBox: THtmlBox);
+var
+  Box: THtmlBox;
+begin
+  Box := ParentBox.Children.First;
+  while Box <> nil do
+  begin
+    RenderBox(Box);
+    Box := Box.Next;
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 17.04.2011 --
 procedure THtmlVisualRenderer.RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
+var
+  Box: THtmlBox;
 begin
-  Render(Owner, ParentBox, FDocument.Tree);
-end;
-
-//-- BG ---------------------------------------------------------- 25.04.2011 --
-procedure THtmlVisualRenderer.Render(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
-begin
-  case Element.Symbol of
-    FrameSetSy: RenderFrameset(Owner, ParentBox, Element);
-    BodySy: RenderBody(Owner, ParentBox, Element);
-  else
-    RenderBox(Owner, ParentBox, Element);
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 25.04.2011 --
-procedure THtmlVisualRenderer.RenderBody(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
-
-  function CreateBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBodyBox;
-  var
-    Control: THtmlBodyControl;
+  Box := CreateElement(Owner, ParentBox, FDocument.Tree);
+  if Box <> nil then
   begin
-    // get or create the body control
-    Control := GetControl(Element) as THtmlBodyControl;
-    if Control = nil then
-    begin
-      Control := THtmlBodyControl.Create(Owner);
-      ControlOfElementMap.Put(Element, Control);
-    end;
-
-    // create the body box
-    Result := THtmlBodyBox.Create(ParentBox, Control);
-    Result.BoundsRect := ParentBox.BoundsRect;
-    Result.Tiled := True;
+    ParentBox.AppendChild(Box);
+    Box.BoundsRect := ParentBox.BoundsRect;
+    RenderChildren(ParentBox);
   end;
-
-var
-  Box: THtmlBodyBox;
-  Properties: TResultingPropertyMap;
-  Info: THtmlElementBoxingInfo;
-begin
-  if ParentBox = nil then
-    raise EHtmlRendererException.Create('RenderBody() requires a parent box <> nil');
-  Properties := GetResultingProperties(Element);
-  try
-    Info.Display := pdBlock;
-    Info.Position := posStatic;
-    Info.Float := flNone;
-    Properties.GetElementBoxingInfo(Info);
-    Info.Display := ToRootDisplayStyle(Info.Display);
-    if Info.Display = pdNone then
-      exit;
-
-    // create the body box
-    Box := CreateBox(Owner, ParentBox, Element);
-    SetPropertiesToBox(Element, Box, Properties, Info);
-
-    // create children
-    RenderChildren(Box.Control, Box, Element);
-
-    // pass 2: convert the boxes, if necessary
-    // - A block container box either contains only block-level boxes or only inline-level boxes.
-    // - An inline container ...
-  finally
-    Properties.Free;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 29.08.2011 --
-procedure THtmlVisualRenderer.RenderBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
-var
-  Box: THtmlElementBox;
-  Properties: TResultingPropertyMap;
-  Info: THtmlElementBoxingInfo;
-begin
-  if ParentBox = nil then
-    raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil');
-  Properties := GetResultingProperties(Element);
-  try
-    Info.Display := ParentBox.Display;
-    Info.Position := ParentBox.Position;
-    Info.Float := ParentBox.Float;
-    Properties.GetElementBoxingInfo(Info);
-    case Info.Display of
-      // block level elements
-      pdBlock:
-        Box := THtmlElementBox.Create(ParentBox);
-//      pdListItem: ;
-//      pdTable: ;
-
-      // inline level elements
-      pdInline:
-        Box := THtmlElementBox.Create(ParentBox);
-//      pdInlineBlock: ;
-//      pdInlineTable: ;
-
-//      pdRunIn:
-//        // http://www.w3.org/TR/css3-box/#run-in-boxes:
-//        // If the run-in box contains a block box, the run-in box becomes a block box.
-//        // If a sibling block box (that does not float and is not absolutely positioned) follows
-//        //  the run-in box, the run-in box becomes the first inline box of the block box. A run-in
-//        //  cannot run in to a block that already starts with a run-in or that itself is a run-in.
-//        // Otherwise, the run-in box becomes a block box.
-//        // TODO -oBG, 04.09.2011: pdRunIn --> pdBlock or pdInline
-//        ;
-//
-//      pdTableRowGroup: ;
-//      pdTableHeaderGroup: ;
-//      pdTableFooterGroup: ;
-//      pdTableRow: ;
-//      pdTableColumnGroup: ;
-//      pdTableColumn: ;
-//      pdTableCell: ;
-//      pdTableCaption: ;
-//
-      pdUnassigned:
-        raise EHtmlRendererException.Create('No "Display" assigned.');
-
-      pdNone:
-        exit;
-    else
-      //raise EHtmlRendererException.Create('"Display:' + CDisplayStyle[Info.Display] + '" not yet supported.');
-      Box := THtmlElementBox.Create(ParentBox);
-    end;
-
-    // set properties
-    SetPropertiesToBox(Element, Box, Properties, Info);
-
-    // create children
-    RenderChildren(Owner, Box, Element);
-  finally
-    Properties.Free;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 14.12.2011 --
-procedure THtmlVisualRenderer.RenderChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
-{
- Render the children of the given box/element.
- Owner is the owner control of the box.
- Box is the box rendered from Element.
- Element is the element, whose children to be rendered.
-}
-var
-  Child: THtmlElement;
-begin
-  Child := Element.FirstChild;
-  while Child <> nil do
-  begin
-    Render(Owner, Box, Child);
-    Child := Child.Next;
-  end;
-  Box.SortChildren;
-end;
-
-//-- BG ---------------------------------------------------------- 25.04.2011 --
-procedure THtmlVisualRenderer.RenderFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement);
-begin
-
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
 procedure THtmlVisualRenderer.SetPropertiesToBox(
   Element: THtmlElement;
   Box: THtmlBox;
-  Properties: TResultingPropertyMap;
-  const Info: THtmlElementBoxingInfo);
+  Properties: TResultingPropertyMap);
 
   procedure GetStaticBounds(psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
   begin
@@ -618,6 +664,8 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(
       else
         Right := Left;
     end;
+    if Right < Left then
+      Right := Left;
   end;
 
   procedure GetRelativeOffset(psLeft, psRight: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
@@ -662,9 +710,6 @@ begin
   Box.BorderColors  := Properties.GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
   Box.BorderStyles  := Properties.GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
 
-  Box.Display := Info.Display;
-  Box.Float := Info.Float;
-  Box.Position := Info.Position;
   if Element.Symbol <> BodySy then
     case Box.Display of
       pdUnassigned,
@@ -704,7 +749,7 @@ begin
 end;
 
 initialization
-  DefaultBox := THtmlBox.Create(nil);
+  DefaultBox := THtmlBox.Create;
 finalization
   DefaultBox.Free;
 end.

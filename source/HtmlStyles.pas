@@ -411,7 +411,7 @@ type
     function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
     function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectStyles): TRectStyles;
     procedure GetElementBoxingInfo(var Info: THtmlElementBoxingInfo);
-    procedure UpdateFromAttributes(const Properties: TStylePropertyList; IsFromStyleAttr: Boolean); {$ifdef UseInline} inline; {$endif}
+    procedure UpdateFromAttributes(const Properties: TStylePropertyList; IsFromStyleAttr: Boolean); 
     procedure UpdateFromProperties(const Properties: TStylePropertyList; const ASelector: TStyleSelector); {$ifdef UseInline} inline; {$endif}
     property Properties[Index: TStylePropertySymbol]: TResultingProperty read Get; default;
   end;

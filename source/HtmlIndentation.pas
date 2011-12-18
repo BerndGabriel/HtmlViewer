@@ -54,7 +54,7 @@ type
   private
     // all coordinates relative to the containing box: (x=0, y=0) is the upper left edge of the containing box.
     FX: Integer;   // if left indentation: the first available x-coordinate to the right of this indentation.
-                  // if right indentation: the first unavailable x-coordinate due to this indentation.
+                   // if right indentation: the first unavailable x-coordinate due to this indentation.
     FYT: Integer;  // top Y inclusive coordinate of this indentation.
     FYB: Integer;  // bottom Y exclusive coordinate of this indentation.
   public
@@ -76,10 +76,8 @@ type
   // BG, 27.08.2011: copied and modified TIndentManager of HtmlViewer11
   TSketchMap = class
   private
-    FPrev: TSketchMap;
-
-    L: TIndentationList;  // list of left side indentations.
-    R: TIndentationList;  // list of right side indentations.
+    L: TIndentationList;  // list of left/top hand indentations.
+    R: TIndentationList;  // list of right/bottom hand indentations.
     Width: Integer;       // width of the managed box.
     function LeftEdge(Y: Integer): Integer;
     function RightEdge(Y: Integer): Integer;
@@ -94,20 +92,21 @@ type
     function GetClearY: Integer; overload;
     function GetClearLeftY: Integer; overload;
     function GetClearRightY: Integer; overload;
-    //procedure Init(Width: Integer);
   end;
 
-  EIndentationManagerStackException = class(EIndentationException);
+  ESketchMapStackException = class(EIndentationException);
 
   // BG, 28.08.2011:
   TSketchMapStack = class
   private
-    FTop: TSketchMap;
+    FStack: TStack;
+    function getTop: TSketchMap;
   public
+    constructor Create;
     destructor Destroy; override;
     procedure Push(IM: TSketchMap);
     function Pop: TSketchMap;
-    property Top: TSketchMap read FTop;
+    property Top: TSketchMap read getTop;
   end;
 
 implementation
@@ -481,29 +480,44 @@ end;
 
 { TIndentationManagerStack }
 
+//-- BG ---------------------------------------------------------- 17.12.2011 --
+constructor TSketchMapStack.Create;
+begin
+  inherited Create;
+  FStack := TStack.Create;
+end;
+
 //-- BG ---------------------------------------------------------- 28.08.2011 --
 destructor TSketchMapStack.Destroy;
 begin
   while Top <> nil do
     Pop.Free;
+  FStack.Free;
+end;
+
+//-- BG ---------------------------------------------------------- 17.12.2011 --
+function TSketchMapStack.getTop: TSketchMap;
+begin
+  if FStack.AtLeast(1) then
+    Result := FStack.Peek
+  else
+    Result := nil;
 end;
 
 //-- BG ---------------------------------------------------------- 28.08.2011 --
 function TSketchMapStack.Pop: TSketchMap;
 begin
   if Top = nil then
-    raise EIndentationManagerStackException.Create('Cannot pop from empty stack.');
-  Result := Top;
-  FTop := Result.FPrev;
+    raise ESketchMapStackException.Create('Cannot pop from empty stack.');
+  Result := FStack.Pop;
 end;
 
 //-- BG ---------------------------------------------------------- 28.08.2011 --
 procedure TSketchMapStack.Push(IM: TSketchMap);
 begin
   if IM = nil then
-    raise EIndentationManagerStackException.Create('Must not push nil onto the stack.');
-  IM.FPrev := Top;
-  FTop := IM;
+    raise ESketchMapStackException.Create('Must not push nil onto the stack.');
+  FStack.Push(IM);
 end;
 
 end.

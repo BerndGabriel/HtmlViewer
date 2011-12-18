@@ -2,7 +2,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
   Left = 0
   Top = 0
   Caption = 'HtmlViewer 12 Test'
-  ClientHeight = 673
+  ClientHeight = 693
   ClientWidth = 1083
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -21,7 +21,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Left = 395
     Top = 21
     Width = 8
-    Height = 652
+    Height = 672
     ResizeStyle = rsUpdate
     ExplicitHeight = 632
   end
@@ -42,29 +42,32 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Left = 403
     Top = 21
     Width = 680
-    Height = 652
+    Height = 672
     Align = alClient
     Color = clBtnFace
     DoubleBuffered = False
     ParentColor = False
     TabOrder = 1
     ViewerOptions = []
+    ExplicitHeight = 652
   end
   object PageControl: TPageControl
     Left = 0
     Top = 21
     Width = 395
-    Height = 652
+    Height = 672
     ActivePage = HtmlTab
     Align = alLeft
     TabOrder = 2
+    ExplicitHeight = 652
     object HtmlTab: TTabSheet
       Caption = 'Html'
+      ExplicitHeight = 624
       object vtDocument: TBegaVirtualStringTree
         Left = 0
         Top = 0
         Width = 387
-        Height = 624
+        Height = 644
         Align = alClient
         Header.AutoSizeIndex = -1
         Header.DefaultHeight = 17
@@ -80,6 +83,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
         OnGetText = vtDocumentGetText
         OnInitChildren = vtDocumentInitChildren
         OnInitNode = vtDocumentInitNode
+        ExplicitHeight = 624
         Columns = <
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
@@ -127,14 +131,16 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     object CssTab: TTabSheet
       Caption = 'Css'
       ImageIndex = 1
+      ExplicitHeight = 624
       object CssMemo: TMemo
         Left = 0
         Top = 0
         Width = 387
-        Height = 624
+        Height = 644
         Align = alClient
         ScrollBars = ssBoth
         TabOrder = 0
+        ExplicitHeight = 624
       end
     end
   end
@@ -146,6 +152,11 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
       object menuFileOpen: TMenuItem
         Caption = 'Open...'
         OnClick = menuFileOpenClick
+      end
+      object menuFileReload: TMenuItem
+        Caption = 'Reload'
+        ShortCut = 116
+        OnClick = menuFileReloadClick
       end
     end
   end

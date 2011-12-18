@@ -38,6 +38,7 @@ uses
   HtmlFonts,
   HtmlGlobals,
   HtmlImages,
+  HtmlStyles,
   StyleTypes;
 
 type
@@ -54,9 +55,10 @@ type
     FLast: THtmlBox;
   public
     function IsEmpty: Boolean;
-    procedure Add(View: THtmlBox);
-    procedure Init;
+    function Contains(View: THtmlBox): Boolean;
+    procedure Add(View: THtmlBox; Before: THtmlBox = nil);
     procedure Clear;
+    procedure Init;
     procedure Remove(View: THtmlBox);
     procedure Sort;
     property First: THtmlBox read FFirst;
@@ -93,24 +95,26 @@ type
     FText: ThtString;
     FFont: ThtFont;
     FAlignment: TAlignment;
+    FElement: THtmlElement; // referenced, don't free
+    FProperties: TResultingPropertyMap; // owned
     procedure SetImage(const Value: ThtImage);
     function GetContentRect: TRect;
     function GetHeight: Integer;
     function GetWidth: Integer;
     procedure SetFont(const Value: ThtFont);
+    procedure SetProperties(const Value: TResultingPropertyMap);
   protected
     function Clipping: Boolean;
     function IsVisible: Boolean; virtual;
-    procedure AddChild(Child: THtmlBox);
-    procedure ExtractChild(Child: THtmlBox);
-    procedure SetParent(const Value: THtmlBox);
-    property Prev: THtmlBox read FPrev;
-    property Next: THtmlBox read FNext;
   public
     // construction / destruction
-    constructor Create(ParentBox: THtmlBox);
+    constructor Create;
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
+    // children
+    procedure AppendChild(Child: THtmlBox);
+    procedure InsertChild(Child, Before: THtmlBox);
+    procedure ExtractChild(Child: THtmlBox);
     procedure SortChildren;
     // change events sent by THtmlViewer
     procedure Resized; virtual;
@@ -118,7 +122,11 @@ type
     //
     procedure Paint(Canvas: TScalingCanvas); virtual;
     //
-    property Parent: THtmlBox read FParent write SetParent;
+    property Parent: THtmlBox read FParent;
+    property Prev: THtmlBox read FPrev;
+    property Next: THtmlBox read FNext;
+    property Element: THtmlElement read FElement write FElement;
+    property Properties: TResultingPropertyMap read FProperties write SetProperties;
     property BoundsRect: TRect read FBounds write FBounds;
     property Display: TDisplayStyle read FDisplay write FDisplay;
     property Float: TBoxFloatStyle read FFloat write FFloat;
@@ -197,7 +205,7 @@ type
   protected
     function GetControl: TControl; override;
   public
-    constructor Create(ParentBox: THtmlBox; Control: THtmlFramesetControl);
+    constructor Create(Control: THtmlFramesetControl);
     procedure Rescaled(const NewScale: Double); override;
     property Control: THtmlFramesetControl read FControl;
   end;
@@ -215,7 +223,7 @@ type
   protected
     function GetControl: TControl; override;
   public
-    constructor Create(ParentBox: THtmlBox; Control: THtmlBodyControl); overload;
+    constructor Create(Control: THtmlBodyControl);
     procedure Rescaled(const NewScale: Double); override;
     property Control: THtmlBodyControl read FControl;
   end;
@@ -246,29 +254,6 @@ implementation
 
 { THtmlBoxList }
 
-//-- BG ---------------------------------------------------------- 04.04.2011 --
-procedure THtmlBoxList.Add(View: THtmlBox);
-// append View
-var
-  Prev: THtmlBox;
-begin
-  assert(View.Next = nil, 'Don''t add chained links twice. View.Next is not nil.');
-  assert(View.Prev = nil, 'Don''t add chained links twice. View.Prev is not nil.');
-
-  Prev := Last;
-
-  // link to prev
-  if Prev = nil then
-    FFirst := View
-  else
-    Prev.FNext := View;
-  View.FPrev := Prev;
-
-  // link to next
-  FLast := View;
-  View.FNext := nil;
-end;
-
 //-- BG ---------------------------------------------------------- 03.04.2011 --
 procedure THtmlBoxList.Clear;
 var
@@ -283,11 +268,98 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 18.12.2011 --
+function THtmlBoxList.Contains(View: THtmlBox): Boolean;
+var
+  Box: THtmlBox;
+begin
+  Box := First;
+  while Box <> nil do
+  begin
+    if Box = View then
+    begin
+      Result := True;
+      Exit;
+    end;
+    Box := Box.Next;
+  end;
+  Result := False;
+end;
+
 //-- BG ---------------------------------------------------------- 03.04.2011 --
 procedure THtmlBoxList.Init;
 begin
   FFirst := nil;
   FLast := nil;
+end;
+
+
+{
+//-- BG ---------------------------------------------------------- 04.04.2011 --
+procedure THtmlBoxList.Append(View: THtmlBox);
+// append View
+var
+  Prev: THtmlBox;
+begin
+  assert(View.Next = nil, 'Don''t add chained links twice. View.Next is not nil.');
+  assert(View.Prev = nil, 'Don''t add chained links twice. View.Prev is not nil.');
+
+end;
+}
+
+
+//-- BG ---------------------------------------------------------- 18.12.2011 --
+procedure THtmlBoxList.Add(View, Before: THtmlBox);
+{
+ Insert View before Before. If Before is nil, append after last box.
+}
+begin
+  assert(View.Next = nil, 'Don''t insert chained links twice. View.Next is not nil.');
+  assert(View.Prev = nil, 'Don''t insert chained links twice. View.Prev is not nil.');
+
+  if Before = nil then
+  begin
+    // append after last
+
+    // link to prev
+    if Last = nil then
+      FFirst := View
+    else
+      Last.FNext := View;
+    View.FPrev := Last;
+
+    // link to next
+    FLast := View;
+  end
+  else if Before = First then
+  begin
+    // insert before first
+
+    // link to next
+    if First = nil then
+      FLast := View
+    else
+      First.FPrev := View;
+    View.FNext := First;
+
+    // link to prev
+    FFirst := View;
+  end
+  else
+  begin
+    // link between Before.Prev and Before.
+
+    assert(Contains(Before), 'Box to insert before is not mine.');
+    assert(Before.Prev <> nil, 'Illegal link status: ''Before'' is not first link, but has no previous link.');
+
+    // link to prev
+    Before.Prev.FNext := View;
+    View.FPrev := Before.Prev;
+
+    // link to next
+    Before.FPrev := View;
+    View.FNext := Before;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 03.04.2011 --
@@ -335,19 +407,22 @@ procedure THtmlBoxList.Sort;
  boxes.
 }
 var
-  View, Next: THtmlBox;
+  View, Next, FirstMoved: THtmlBox;
 begin
   if First <> Last then
   begin
     // at least 2 entries, thus sorting required:
+    FirstMoved := nil; // stop at end of list (still nil) or at first relocated box.
     View := First;
-    while View <> nil do
+    while View <> FirstMoved do
     begin
       Next := View.Next;
       if View.Position = posRelative then
       begin
         Remove(View);
         Add(View);
+        if FirstMoved = nil then
+          FirstMoved := View;
       end;
       View := Next;
     end;
@@ -355,12 +430,6 @@ begin
 end;
 
 { THtmlBox }
-
-//-- BG ---------------------------------------------------------- 24.04.2011 --
-procedure THtmlBox.AddChild(Child: THtmlBox);
-begin
-  FChildren.Add(Child);
-end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 procedure THtmlBox.AfterConstruction;
@@ -373,6 +442,12 @@ begin
 {$endif}
 end;
 
+//-- BG ---------------------------------------------------------- 18.12.2011 --
+procedure THtmlBox.AppendChild(Child: THtmlBox);
+begin
+  InsertChild(Child, nil);
+end;
+
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 procedure THtmlBox.BeforeDestruction;
 begin
@@ -382,7 +457,9 @@ begin
   FChildren.Free;
 {$endif}
   FFont.Free;
-  Parent := nil;
+  FProperties.Free;
+  if Parent <> nil then
+    Parent.ExtractChild(Self);
   Image := nil;
   inherited;
 end;
@@ -394,10 +471,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-constructor THtmlBox.Create(ParentBox: THtmlBox);
+constructor THtmlBox.Create;
 begin
   inherited Create;
-  Parent := ParentBox;
   FBackgroundColor := clNone;
   FBorderColors := NoneColors;
 end;
@@ -406,6 +482,7 @@ end;
 procedure THtmlBox.ExtractChild(Child: THtmlBox);
 begin
   FChildren.Remove(Child);
+  Child.FParent := nil;
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -426,6 +503,13 @@ end;
 function THtmlBox.GetWidth: Integer;
 begin
   Result := FBounds.Right- FBounds.Left;
+end;
+
+//-- BG ---------------------------------------------------------- 24.04.2011 --
+procedure THtmlBox.InsertChild(Child: THtmlBox; Before: THtmlBox);
+begin
+  FChildren.Add(Child, Before);
+  Child.FParent := Self;
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -625,16 +709,13 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 24.04.2011 --
-procedure THtmlBox.SetParent(const Value: THtmlBox);
+procedure THtmlBox.SetProperties(const Value: TResultingPropertyMap);
 begin
-  if FParent <> Value then
+  if FProperties <> Value then
   begin
-    if FParent <> nil then
-      FParent.ExtractChild(Self);
-    FParent := Value;
-    if FParent <> nil then
-      FParent.AddChild(Self);
+    if FProperties <> nil then
+      FProperties.Free;
+    FProperties := Value;
   end;
 end;
 
@@ -707,9 +788,9 @@ end;
 { THtmlFramesetBox }
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-constructor THtmlFramesetBox.Create(ParentBox: THtmlBox; Control: THtmlFramesetControl);
+constructor THtmlFramesetBox.Create(Control: THtmlFramesetControl);
 begin
-  inherited Create(ParentBox);
+  inherited Create;
   FControl := Control;
   FControl.Init(Self);
 end;
@@ -730,9 +811,9 @@ end;
 { THtmlBodyBox }
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-constructor THtmlBodyBox.Create(ParentBox: THtmlBox; Control: THtmlBodyControl);
+constructor THtmlBodyBox.Create(Control: THtmlBodyControl);
 begin
-  inherited Create(ParentBox);
+  inherited Create;
   FControl := Control;
   FControl.Init(Self);
 end;

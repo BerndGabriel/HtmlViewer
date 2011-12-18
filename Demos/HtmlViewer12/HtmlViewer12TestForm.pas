@@ -48,6 +48,7 @@ type
     vtDocument: TBegaVirtualStringTree;
     CssMemo: TMemo;
     BegaSplitter1: TSplitter;
+    menuFileReload: TMenuItem;
     procedure cbFilesKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -55,6 +56,7 @@ type
     procedure vtDocumentGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: WideString);
     procedure vtDocumentInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
     procedure vtDocumentInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure menuFileReloadClick(Sender: TObject);
   private
     FName: ThtString;
     FStream: TStream;
@@ -84,6 +86,12 @@ begin
     Load(dlgFileOpen.FileName);
     cbFiles.AddItem(FName, nil);
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 17.12.2011 --
+procedure TFormHtmlViewer12Test.menuFileReloadClick(Sender: TObject);
+begin
+  Load(FName);
 end;
 
 //-- BG ---------------------------------------------------------- 30.03.2011 --

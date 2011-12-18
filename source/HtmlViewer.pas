@@ -135,7 +135,7 @@ begin
   inherited;
   FControlMap := THtmlControlOfElementMap.Create;
   FImageCache := ThtImageCache.Create;
-  FView := THtmlBox.Create(nil);
+  FView := THtmlBox.Create;
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --

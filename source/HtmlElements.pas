@@ -818,8 +818,10 @@ function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
         exit;
       for I := Low(S) to High(S) do
         if IndexOfString(F, S[I]) < 0 then
-          exit;
-      Result := True;
+        begin
+          Result := False;
+          Break;
+        end;
     end;
 
   var
@@ -833,9 +835,8 @@ function THtmlElement.IsMatching(Selector: TStyleSelector): Boolean;
     // http://www.w3.org/TR/2010/WD-CSS2-20101207/selector.html
     // If all conditions in the selector are true for a certain element, the selector matches the element.
 
-    if Selector.Pseudos <> [] then
-      if not (Selector.Pseudos >= GetPseudos) then
-        exit;
+    if Selector.Pseudos <> GetPseudos then
+      exit;
 
     // a loop about tags? there is one or none tag in the selector.
     for Index := Low(Selector.Tags) to High(Selector.Tags) do
