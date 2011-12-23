@@ -370,6 +370,7 @@ type
     property ClientControl: TWinControl read GetControl;
     property BackgroundColor: TColor read GetBackgroundColor;
   public
+    ShowIt: boolean;
     procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
     procedure Draw(Canvas: TCanvas; X: Integer; TopY: Integer; YBaseline: Integer; FO: TFontObj); override;
   end;
@@ -381,7 +382,6 @@ type
     function GetBackgroundColor: TColor; override;
     function GetControl: TWinControl; override;
   public
-    ShowIt: boolean;
     Panel, OPanel: ThvPanel;
     OSender: TObject;
     PanelPrintEvent: TPanelPrintEvent;
@@ -11572,17 +11572,16 @@ end;
 function TSection.Draw1(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
-  I: Integer;
   MySelB, MySelE: Integer;
-  DC: HDC;
-  Ctrl: TFormControlObj;
   YOffset, Y, Desc: Integer;
 
   procedure DrawTheText(LineNo: Integer);
   var
     I, J, J1, J2, J3, J4, Index, Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
+    Ctrl: TFormControlObj;
     Obj: TFloatingObj;
     FO: TFontObj;
+    DC: HDC;
     ARect: TRect;
     Inverted, NewCP: boolean;
     Color: TColor;
@@ -11750,8 +11749,8 @@ var
         end
         else
         begin {it's a Panel or Frame}
-          if Obj is TPanelObj then
-            TPanelObj(Obj).ShowIt := True;
+          if Obj is TControlObj then
+            TControlObj(Obj).ShowIt := True;
           if Obj.Floating in [ALeft, ARight] then
           begin
             LeftT := IMgr.LfEdge + Obj.Indent;
@@ -12114,6 +12113,9 @@ var
     Document.FirstPageItem := False;
   end;
 
+var
+  I: Integer;
+  DC: HDC;
 begin {TSection.Draw}
   Y := YDraw;
   Result := Y + SectionHeight;
@@ -12129,33 +12131,32 @@ begin {TSection.Draw}
     MySelB := Document.SelB - StartCurs;
     MySelE := Document.SelE - StartCurs;
     for I := 0 to Lines.Count - 1 do
-      with Document do
-        if Printing then
-          with LineRec(Lines[I]) do
+      if Document.Printing then
+        with LineRec(Lines[I]) do
+        begin
+          if (Y + LineImgHt <= Document.PageBottom) then
           begin
-            if (Y + LineImgHt <= PageBottom) then
-            begin
-              if (Y - YOffSet + LineImgHt - 1 > ARect.Top) then
-                DoDraw(I)
-              else
-                Inc(Y, SpaceBefore + LineHt + SpaceAfter);
-            end
-            else if (LineImgHt >= ARect.Bottom - ARect.Top) or PageShortened then
+            if (Y - YOffSet + LineImgHt - 1 > ARect.Top) then
               DoDraw(I)
             else
-            begin
-              if (OwnerBlock <> nil) and (OwnerBlock.Positioning = PosAbsolute) then
-                DoDraw(I)
-              else if Y < PageBottom then
-                PageBottom := Y; {Dont' print, don't want partial line}
-            end;
-          end
-        else
-          with LineRec(Lines[I]) do
-            if ((Y - YOffset + LineImgHt + 40 >= ARect.Top) and (Y - YOffset - 40 < ARect.Bottom)) then
-              DoDraw(I)
-            else {do not completely draw extremely long paragraphs}
               Inc(Y, SpaceBefore + LineHt + SpaceAfter);
+          end
+          else if (LineImgHt >= ARect.Bottom - ARect.Top) or Document.PageShortened then
+            DoDraw(I)
+          else
+          begin
+            if (OwnerBlock <> nil) and (OwnerBlock.Positioning = PosAbsolute) then
+              DoDraw(I)
+            else if Y < Document.PageBottom then
+              Document.PageBottom := Y; {Dont' print, don't want partial line}
+          end;
+        end
+      else
+        with LineRec(Lines[I]) do
+          if ((Y - YOffset + LineImgHt + 40 >= ARect.Top) and (Y - YOffset - 40 < ARect.Bottom)) then
+            DoDraw(I)
+          else {do not completely draw extremely long paragraphs}
+            Inc(Y, SpaceBefore + LineHt + SpaceAfter);
   end;
 end;
 
@@ -14136,7 +14137,10 @@ begin
       begin
         Control := ClientControl;
         if  Control <> nil then
+        begin
           Control.SetBounds(Control.Left, Control.Top, ClientWidth, ClientHeight);
+          //Control.Invalidate;
+        end;
       end;
   end;
 end;

@@ -4816,7 +4816,7 @@ begin
     begin
       FSectionList.SelB := -1;
       FSectionList.SelE := -1;
-      RePaint;
+      Invalidate; //RePaint;
     end;
   end;
 end;

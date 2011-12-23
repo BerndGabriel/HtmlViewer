@@ -1286,7 +1286,7 @@ begin
         OldFrameSet.Visible := False;
         OldFrameSet.DestroyHandle;
       end;
-      RePaint;
+      Invalidate; //RePaint;
     end;
   except
     Source := OldName;
@@ -2717,7 +2717,7 @@ begin
   finally
     SendMessage(Handle, wm_SetRedraw, 1, 0);
     EndProcessing;
-    Repaint;
+    Invalidate; //Repaint;
   end;
 end;
 
@@ -3315,7 +3315,7 @@ begin
         SendMessage(Self.handle, wm_SetRedraw, 0, 0);
         CurFrameSet.Visible := True;
         SendMessage(Self.handle, wm_SetRedraw, 1, 0);
-        CurFrameSet.Repaint;
+        Invalidate; //CurFrameSet.Repaint;
         FrameSet1.Unloadfiles;
         Self.RemoveControl(FrameSet1);
       end
@@ -4056,7 +4056,7 @@ begin
           with CurViewer[I] do
             for J := 0 to SectionList.LinkList.Count - 1 do
               TFontObj(LinkList[J]).Visited := False;
-        RePaint;
+        Invalidate; //RePaint;
       end
       else
       begin
@@ -4632,9 +4632,9 @@ begin
           CurFrameSet.BringToFront;
         finally
           SendMessage(Handle, wm_SetRedraw, 1, 0);
-          Repaint;
+          Invalidate; //Repaint;
         end;
-        CurFrameSet.Repaint;
+        //CurFrameSet.Repaint;
       end;
       BumpHistory(OldFrameSet, OldPos);
     end
@@ -4652,7 +4652,7 @@ begin
         CurFrameSet.LoadFromString(Text, Name, Dest);
       finally
         SendMessage(Handle, wm_SetRedraw, 1, 0);
-        Repaint;
+        Invalidate; //Repaint;
       end;
       BumpHistory2(OldPos); {not executed if exception occurs}
     end;

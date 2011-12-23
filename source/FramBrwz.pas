@@ -560,7 +560,7 @@ begin
         OldFrameSet.UnloadFiles;
         OldFrameSet.Visible := False;
       end;
-      RePaint;
+      Invalidate; //RePaint;
     end;
   except
     Source := OldName;
@@ -875,9 +875,9 @@ begin
           CurbrFrameSet.BringToFront;
         finally
           SendMessage(Handle, wm_SetRedraw, 1, 0);
-          Repaint;
+          Invalidate; //Repaint;
         end;
-        CurbrFrameSet.Repaint;
+        //CurbrFrameSet.Repaint;
       end;
 
       BumpHistory(OldFrameSet, OldPos);
