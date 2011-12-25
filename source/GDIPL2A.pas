@@ -213,7 +213,6 @@ var
   g1, g2: TGpGraphics;
   BM1, BM2: TGpBitmap;
   W, H: integer;
-  Pixel: DWord;
 begin
   W := Image.Width + 1; {new dimensions}
   H := Image.Height + 1;
@@ -221,21 +220,27 @@ begin
   try
     g1 := TGpGraphics.Create(BM1);
     try
-      g1.DrawImage(Image, 0, 0); {draw the original image}
-      g1.DrawImage(Image, W - 1, 0, 1, H, {copy the column, then the row}
-        W - 2, 0, 1, H);
-      g1.DrawImage(Image, 0, H - 1, W, 1,
-        0, H - 2, W, 1);
-      Pixel := BM1.GetPixel(W - 2, H - 2); {for some reason also need to set the lower right pixel}
-      BM1.SetPixel(W - 1, H - 1, Pixel);
+      {draw the original image to BM1}
+      g1.DrawImage(Image, 0, 0);
+
+      {copy the additional column inside BM1}
+      g1.DrawImage(BM1, W - 1,     0, 1, H - 1,  W - 2,     0, 1, H - 1);
+
+      {copy the additional row incl. additional pixel inside BM1}
+      g1.DrawImage(BM1,     0, H - 1, W,     1,      0, H - 2, W,     1);
+
       BM2 := TGpBitmap.Create(Width, Height);
       try
         g2 := TGpGraphics.Create(BM2);
         try
-          GdipSetInterpolationMode(g2.fGraphics, NearestNeighbor);
-          g2.DrawImage(BM1, 0, 0, Width, Height, {now draw the image stretched where needed}
-            0, 0, Image.Width, Image.Height);
-          DrawImage(BM2, X, Y); {now draw the image stretched where needed}
+          // BG, 25.12.2011: Issue 59: Image scaling error
+          // - With InterpolationMode = NearestNeighbor only 50% of the stretch is visible.
+          // - Not setting it stretches the small image to the full width/height.
+
+          // GdipSetInterpolationMode(g2.fGraphics, NearestNeighbor);
+          {now draw the image stretched where needed}
+          g2.DrawImage(BM1, 0, 0, Width, Height, 0, 0, Image.Width, Image.Height);
+          DrawImage(BM2, X, Y); {now draw the stretched image}
         finally
           g2.Free;
         end;
