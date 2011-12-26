@@ -129,7 +129,6 @@ type
 
   TProperties = class
   private
-
     PropStack: TPropStack; // owner
     TheFont: ThtFont;
     InLink: Boolean;
