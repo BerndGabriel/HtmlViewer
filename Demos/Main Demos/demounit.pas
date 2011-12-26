@@ -349,7 +349,7 @@ if (I <= 2) or (J > 0) then
     setLength(S, K-1);            {truncate S}
     end
   else Params := '';
-  S := (Sender as TFrameViewer).HTMLExpandFileName(S);
+  S := (Sender as THtmlViewer).HTMLExpandFileName(S);
   Ext := Uppercase(ExtractFileExt(S));
   if Ext = '.WAV' then
     begin
