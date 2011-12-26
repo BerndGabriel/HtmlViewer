@@ -454,8 +454,7 @@ begin
       try
         Viewer.Base := MasterSet.FBase;
         Viewer.LoadStream(Source, TheStream, TheStreamType);
-        if (Dest <> '') then
-          Viewer.PositionTo(Dest);
+        Viewer.PositionTo(Dest);
         MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
         if not samename then
         begin {don't bump history on a forced reload}
