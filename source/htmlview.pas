@@ -776,7 +776,7 @@ begin
     raise EInOutError.Create('Can''t locate file: ' + FName);
   Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
   try
-    LoadStream(FName, Stream, ft);
+    LoadStream(FName + Dest, Stream, ft);
   finally
     Stream.Free;
   end;
@@ -967,13 +967,12 @@ begin
     else
       ParseText(Self, FDocument);
     CheckVisitedLinks;
-    if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
-    else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
+    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
     begin
+      {if neither destination specified nor same file, move to top}
       ScrollTo(0);
       HScrollBar.Position := 0;
     end;
-  {else if same file leave position alone}
     PaintPanel.Invalidate;
   finally
     htProgressEnd;
@@ -1023,13 +1022,12 @@ begin
     else
       ParseText(Self, FDocument);
     CheckVisitedLinks;
-    if (Dest <> '') and PositionTo(Dest) then {change position, if applicable}
-    else if (FCurrentFile = '') or (FCurrentFile <> OldFile) then
+    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
     begin
+      {if neither destination specified nor same file, move to top}
       ScrollTo(0);
       HScrollBar.Position := 0;
     end;
-  {else if same file leave position alone}
     PaintPanel.Invalidate;
   finally
     htProgressEnd;
@@ -1054,16 +1052,25 @@ end;
 
 procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
 var
-  OldCursor: TCursor;
-  SaveOnImageRequest: TGetImageEvent;
+  I: Integer;   OldCursor: TCursor;  SaveOnImageRequest: TGetImageEvent;
+  Dest, FName, OldFile: ThtString;
 begin
   if (vsProcessing in FViewerState) or not Assigned(AStream) then
     Exit;
   SetProcessing(True);
+  FRefreshDelay := 0;
+  FName := URL;
+  I := Pos('#', FName);
+  if I > 0 then
+  begin
+    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
+    FName := Copy(FName, 1, I - 1);
+  end
+  else
+    Dest := '';
+  Include(FViewerState, vsDontDraw);
   OldCursor := Screen.Cursor;
   Screen.Cursor := crHourGlass;
-  FRefreshDelay := 0;
-  Include(FViewerState, vsDontDraw);
   try
     FSectionList.ProgressStart := 75;
     htProgressInit;
@@ -1074,13 +1081,15 @@ begin
     AStream.Position := 0;
     FreeAndNil(FDocument);
     if ft in [HTMLType, TextType] then
-      FDocument := TBuffer.Create(AStream, URL)
+      FDocument := TBuffer.Create(AStream, FName)
     else
-      FDocument := TBuffer.Create('<img src="' + URL + '">');
+      FDocument := TBuffer.Create('<img src="' + FName + '">');
 
     if Assigned(FOnParseBegin) then
       FOnParseBegin(Self, FDocument);
 
+    OldFile := FCurrentFile;
+    FCurrentFile := ExpandFileName(FName);
     case ft of
       HTMLType:
       begin
@@ -1103,8 +1112,12 @@ begin
         SetOnImageRequest(SaveOnImageRequest);
       end;
     end;
-    ScrollTo(0);
-    HScrollBar.Position := 0;
+    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
+    begin
+      {if neither destination specified nor same file, move to top}
+      ScrollTo(0);
+      HScrollBar.Position := 0;
+    end;
     PaintPanel.Invalidate;
     FCurrentFile := URL;
   finally
@@ -1447,7 +1460,7 @@ begin
     end
     else
     begin
-      if I >= 1 then
+      if I > 1 then
       begin
         Dest := System.Copy(S, I, Length(S) - I + 1); {local destination}
         S := System.Copy(S, 1, I - 1); {the file name}
@@ -1491,8 +1504,8 @@ begin
     Exit; {TFrameViewer will take care of visited links}
   I := Visited.IndexOf(S);
   if I = 0 then
-    Exit
-  else if I < 0 then
+    Exit;
+  if I < 0 then
   begin
     for J := 0 to SectionList.LinkList.Count - 1 do
       with TFontObj(SectionList.LinkList[J]) do
@@ -2506,7 +2519,6 @@ begin
         begin
           Delete(0);
           FTitleHistory.Delete(0);
-          PositionObj(FPositionHistory[0]).Free;
           FPositionHistory.Delete(0);
         end;
       end;
@@ -2519,10 +2531,9 @@ begin
       FTitleHistory.Insert(0, FTitle);
       if Count > FHistoryMaxCount then
       begin
-        Delete(FHistoryMaxCount);
-        FTitleHistory.Delete(FHistoryMaxCount);
-        PositionObj(FPositionHistory[FHistoryMaxCount]).Free;
-        FPositionHistory.Delete(FHistoryMaxCount);
+        Delete(HistoryMaxCount);
+        FTitleHistory.Delete(HistoryMaxCount);
+        FPositionHistory.Delete(HistoryMaxCount);
       end;
       if Assigned(FOnHistoryChange) then
         FOnHistoryChange(Self);
