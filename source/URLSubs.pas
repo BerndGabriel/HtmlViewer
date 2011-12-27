@@ -189,7 +189,7 @@ begin
 
   if (APath <> '') and (APath[1] = '/') then
   begin {remove path from base and use host only}
-    if Pos('//', APath) = 1 then {UNC filename}
+    if APath[2] = '/' then {UNC filename}
       if Proto = 'file' then
         Result := 'file:///' + APath
       else

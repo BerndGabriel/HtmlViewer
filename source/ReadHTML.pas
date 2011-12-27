@@ -1332,7 +1332,7 @@ function TCellManager.FindColNum(Row: Integer): Integer;
  go or -1 if out of range.  Columns beyond any <col> definitions are ignored}
 begin
   if Row = Count then
-    Add(StringOfChar('o', Table.ColInfo.Count));
+    Add(StringOfChar('o', Table.Cols.Count));
   Result := Pos('o', Strings[Row]) - 1;
 end;
 
@@ -1344,7 +1344,7 @@ var
 begin
 {make sure there's enough rows to handle any RowSpan for this cell}
   while Count < Row + CellObj.RowSpan do
-    Add(StringOfChar('o', Table.ColInfo.Count));
+    Add(StringOfChar('o', Table.Cols.Count));
   I := Pos('o', Strings[Row]); {where we want to enter this cell}
   K := I;
   if I > 0 then {else it's beyond the ColInfo and we're not interested}
@@ -1365,7 +1365,7 @@ begin
       until Span = 0;
       Strings[J] := S1;
       if Span > 0 then {there's a conflict, adjust ColSpan to a practical value}
-        Dec(CellObj.ColSpan, Span);
+        CellObj.ColSpan := CellObj.ColSpan - Span;
     end;
 end;
 
@@ -1392,79 +1392,84 @@ end;
 
 procedure THtmlParser.DoColGroup(Table: ThtmlTable; ColOK: Boolean);
 {reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's ConInfo list}
-var
-  I, Span: Integer;
-  xWidth, cWidth: Integer;
-  xAsPercent, cAsPercent: Boolean;
-  xVAlign, cVAlign: AlignmentType;
-  xAlign, cAlign: ThtString;
-  Algn: AlignmentType;
 
-  procedure ReadColAttributes(var Width: Integer; var AsPercent: Boolean;
-    var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
+  procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
   var
     I: Integer;
+    Algn: AlignmentType;
   begin
     for I := 0 to Attributes.Count - 1 do
       with TAttribute(Attributes[I]) do
         case Which of
           WidthSy:
             if Pos('%', Name) > 0 then
-            begin
-              if (Value > 0) and (Value <= 100) then
-                Width := Value * 10;
-              AsPercent := True;
-            end
+              Spec := SpecWidth(Max(0, Min(100, Value)) * 10, wtPercent)
+            else if Pos('*', Name) > 0 then
+              Spec := SpecWidth(Value, wtRelative)
             else
-              Width := Value;
+              Spec := SpecWidth(Value, wtAbsolute);
+
           AlignSy:
             begin
               Algn := AlignmentFromString(Name);
               if Algn in [ALeft, AMiddle, ARight, AJustify] then
                 Align := Lowercase(Name);
             end;
+
           VAlignSy:
             begin
               Algn := AlignmentFromString(Name);
               if Algn in [ATop, AMiddle, ABottom, ABaseLine] then
                 VAlign := Algn;
             end;
+
           SpanSy:
             Span := Max(1, Value);
         end;
   end;
 
+var
+  I: Integer;
+  xSpan, cSpan: Integer;
+  xWidth, cWidth: TSpecWidth;
+  xVAlign, cVAlign: AlignmentType;
+  xAlign, cAlign: ThtString;
 begin
-  xWidth := 0;
-  xAsPercent := False;
+  xWidth := SpecWidth(0, wtNone);
   xVAlign := ANone;
   xAlign := '';
+  xSpan := 1;
   if Sy = ColGroupSy then
   begin
     if ColOk then
-    begin
-      Span := 1;
-      ReadColAttributes(xWidth, xAsPercent, xVAlign, xAlign, Span);
-    end;
+      ReadColAttributes(xWidth, xVAlign, xAlign, xSpan);
     SkipWhiteSpace;
     Next;
   end;
-  while Sy = ColSy do
+  if Sy = ColSy then
+  begin
+    while Sy = ColSy do
+    begin
+      if ColOK then
+      begin
+      {any new attributes in <col> will have priority over the <colgroup> items just read}
+        cWidth := xWidth; {the default values}
+        cVAlign := xVAlign;
+        cAlign := xAlign;
+        cSpan := 1; // ignore xSpan, if there is at least 1 <col> tag.
+        ReadColAttributes(cWidth, cVAlign, cAlign, cSpan);
+        for I := 1 to Min(cSpan, 10000) do
+          Table.DoColumns(cWidth, cVAlign, cAlign);
+      end;
+      SkipWhiteSpace;
+      Next;
+    end
+  end
+  else
   begin
     if ColOK then
-    begin
-    {any new attributes in <col> will have priority over the <colgroup> items just read}
-      cWidth := xWidth; {the default values}
-      cAsPercent := xAsPercent;
-      cVAlign := xVAlign;
-      cAlign := xAlign;
-      Span := 1;
-      ReadColAttributes(cWidth, cAsPercent, cVAlign, cAlign, Span);
-      for I := 1 to Min(Span, 100) do
-        Table.DoColumns(cWidth, cAsPercent, cVAlign, cAlign);
-    end;
-    SkipWhiteSpace;
-    Next;
+      for I := 1 to Min(xSpan, 10000) do
+        Table.DoColumns(xWidth, xVAlign, xAlign);
   end;
   if Sy = ColGroupEndSy then
     Next;
@@ -1640,7 +1645,7 @@ begin
             begin
               CellNum := CM.FindColNum(Table.Rows.Count);
               if CellNum >= 0 then
-                with TColObj(Table.ColInfo[CellNum]) do
+                with TColObj(Table.Cols[CellNum]) do
                 begin
                   if colAlign <> '' then {<col> alignments added here}
                     PropStack.Last.Assign(colAlign, TextAlign);
@@ -1684,7 +1689,7 @@ begin
             end;
             CellObj := TCellObj.Create(PropStack.MasterList, VAlign, Attributes, PropStack.Last);
             SectionList := CellObj.Cell;
-            if ((CellObj.WidthAttr = 0) or CellObj.AsPercent) and Attributes.Find(NoWrapSy, T) then
+            if ((CellObj.SpecWdValue = 0) or (CellObj.SpecWdType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then
               NoBreak := True {this seems to be what IExplorer does}
             else
               NoBreak := False;
@@ -1770,7 +1775,7 @@ begin
         ColSy, ColGroupSy:
           begin
             DoColGroup(Table, ColOK);
-            if not Assigned(CM) and Assigned(Table.ColInfo) then
+            if not Assigned(CM) and Assigned(Table.Cols) then
               CM := TCellManager.Create(Table);
           end;
       else
@@ -1795,7 +1800,7 @@ begin
     while PropStackIndex > HFStack do
       PopProp;
     for I := 0 to FootList.Count - 1 do {put TFoot on end of table}
-      Table.Rows.Add(TCellList(FootList[I]));
+      Table.Rows.Add(FootList[I]);
   finally
     FootList.Free;
     SectionList := SaveSectionList;

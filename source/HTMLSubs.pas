@@ -957,30 +957,33 @@ type
   end;
 
   IntArray = array of Integer;
+  DblArray = array of Double;
 
   TCellObj = class(TObject)
   {holds one cell of the table and some other information}
-  public
+  private
     // BEGIN: this area is copied by move() in CreateCopy() - NO string types allowed!
-    ColSpan, RowSpan, {column and row spans for this cell}
-      Wd: Integer; {total width (may cover more than one column)}
-    Ht, {total height (may cover more than one row)}
-      VSize: Integer; {Actual vertical size of contents}
-    SpecHt: Integer; {Height as specified}
-    SpecHtPercent: Integer;
-    YIndent: Integer; {Vertical indent}
-    VAlign: AlignmentType; {Top, Middle, or Bottom}
-    WidthAttr: Integer; {Width attribute (percentage or absolute)}
-    AsPercent: boolean; {it's a percent}
-    EmSize, ExSize: Integer;
-    PRec: PtPositionRec;
-    PadTop, PadRight, PadBottom, PadLeft: Integer;
-    BrdTop, BrdRight, BrdBottom, BrdLeft: Integer;
-    HzSpace, VrSpace: Integer;
-    BorderStyle: BorderStyleType;
-    ShowEmptyCells: Boolean;
+    FColSpan, FRowSpan: Integer; {column and row spans for this cell}
+    FWd: Integer; {total width (may cover more than one column)}
+    FHt: Integer; {total height (may cover more than one row)}
+    FVSize: Integer; {Actual vertical size of contents}
+    FSpecWd: TSpecWidth; {Width attribute (percentage or absolute)}
+    FSpecHt: TSpecWidth; {Height as specified}
+    FYIndent: Integer; {Vertical indent}
+    FVAlign: AlignmentType; {Top, Middle, or Bottom}
+    FEmSize, FExSize: Integer;
+    FPRec: PtPositionRec;
+    FPad: TRect;
+    FBrd: TRect;
+    FHzSpace, FVrSpace: Integer;
+    FBorderStyle: BorderStyleType;
+    FShowEmptyCells: Boolean;
     // END: this area is copied by move() in CreateCopy()
-    Cell: TCellObjCell;
+    FCell: TCellObjCell;
+    procedure Initialize(TablePadding: Integer; const BkImageName: ThtString; const APRec: PtPositionRec; Border: Boolean);
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor);
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+  public
 
     NeedDoImageStuff: boolean;
     BGImage: TImageObj;
@@ -994,12 +997,41 @@ type
     constructor Create(Master: ThtDocument; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: ThtDocument; T: TCellObj);
     destructor Destroy; override;
-  private
-    procedure InitializeCell(TablePadding: Integer; const BkImageName: ThtString;
-      const APRec: PtPositionRec; Border: boolean);
-    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer;
-      Border: boolean; Light, Dark: TColor);
-    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+
+    //property AsPercent: TWidthType read  write ; {it's a percent}
+    //property SpecHtPercent: Integer read  write ;
+    //property WidthAttr: Integer read  write ; {Width attribute (percentage or absolute)}
+    property Brd: TRect read FBrd write FBrd; //Top, BrdRight, BrdBottom, BrdLeft: Integer;
+    property BrdBottom: Integer read FBrd.Bottom write FBrd.Bottom;
+    property BrdLeft: Integer read FBrd.Left write FBrd.Left;
+    property BrdRight: Integer read FBrd.Right write FBrd.Right;
+    property BrdTop: Integer read FBrd.Top write FBrd.Top;
+    property Cell: TCellObjCell read FCell;
+    property ColSpan: Integer read FColSpan write FColSpan; {column and row spans for this cell}
+    property EmSize: Integer read FEmSize write FEmSize;
+    property ExSize: Integer read FExSize write FExSize;
+    property BorderStyle: BorderStyleType read FBorderStyle write FBorderStyle;
+    property Ht: Integer read FHt write FHt; {total height (may cover more than one row)}
+    property HzSpace: Integer read FHzSpace write FHzSpace;
+    property Pad: TRect read FPad write FPad; //Top, PadRight, PadBottom, PadLeft: Integer;
+    property PadBottom: Integer read FPad.Bottom write FPad.Bottom;
+    property PadLeft: Integer read FPad.Left write FPad.Left;
+    property PadRight: Integer read FPad.Right write FPad.Right;
+    property PadTop: Integer read FPad.Top write FPad.Top;
+    property PRec: PtPositionRec read FPRec write FPRec;
+    property RowSpan: Integer read FRowSpan write FRowSpan; {column and row spans for this cell}
+    property ShowEmptyCells: Boolean read FShowEmptyCells write FShowEmptyCells;
+    property SpecHt: TSpecWidth read FSpecHt write FSpecHt; {Height as specified}
+    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
+    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
+    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Height as specified}
+    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
+    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
+    property VAlign: AlignmentType read FVAlign write FVAlign; {Top, Middle, or Bottom}
+    property VrSpace: Integer read FVrSpace write FVrSpace;
+    property VSize: Integer read FVSize write FVSize; {Actual vertical size of contents}
+    property Wd: Integer read FWd write FWd; {total width (may cover more than one column)}
+    property YIndent: Integer read FYIndent write FYIndent; {Vertical indent}
   end;
 
   TCellList = class(TFreeList)
@@ -1008,7 +1040,7 @@ type
     function getCellObj(Index: Integer): TCellObj;
   public
     RowHeight: Integer;
-    SpecRowHeight, SpecRowHeightPercent: Integer;
+    SpecRowHeight: TSpecWidth;
     RowSpanHeight: Integer; {height of largest rowspan}
     BkGnd: boolean;
     BkColor: TColor;
@@ -1019,21 +1051,37 @@ type
 
     constructor Create(Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: ThtDocument; T: TCellList);
-    procedure InitializeRow;
+//    constructor CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellList);
+    procedure Initialize;
     function DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span, CellSpacing, AHeight, Rows: Integer;
       out Desired: Integer; out Spec, More: boolean): Integer;
     procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
     function Draw(Canvas: TCanvas; MasterList: ThtDocument; const ARect: TRect; const Widths: IntArray;
       X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
     procedure Add(CellObj: TCellObj);
-    property Items[Index: Integer]: TCellObj read getCellObj;
+    property Items[Index: Integer]: TCellObj read getCellObj; default;
+  end;
+
+  // BG, 26.12.2011:
+  TRowList = class(TFreeList)
+  private
+    function GetItem(Index: Integer): TCellList;
+  public
+    property Items[Index: Integer]: TCellList read GetItem; default;
   end;
 
   TColObj = class
-    colWidth: Integer;
-    colAsPercent: boolean;
-    colAlign: ThtString;
-    colVAlign: AlignmentType;
+    ColWidth: TSpecWidth;
+    ColAlign: ThtString;
+    ColVAlign: AlignmentType;
+  end;
+
+  // BG, 26.12.2011:
+  TColList = class(TFreeList)
+  private
+    function GetItem(Index: Integer): TColObj;
+  public
+    property Items[Index: Integer]: TColObj read GetItem; default;
   end;
 
   THtmlTable = class;
@@ -1095,7 +1143,9 @@ type
     procedure DrawTableP(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
     procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
   public
-    Rows: TFreeList;        {a list of TCellLists}
+    Rows: TRowList;        {a list of TCellLists}
+    Cols: TColList;
+    // these fields are copied via Move() in CreateCopy. Don't add reference counted data like strings and arrays.
     ListsProcessed: Boolean;
     Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
@@ -1112,12 +1162,13 @@ type
     BorderColorLight: TColor;
     BorderColorDark: TColor;
     EndList: boolean;        {marker for copy}
+    // end of Move()d fields
     DrawX: Integer;
     DrawY: Integer;
     BkGnd: boolean;
     BkColor: TColor;
-    ColInfo: TFreeList;
-    Percents: IntArray;     {percent widths of columns}
+    Percents: DblArray;     {percent widths of columns}
+    Multis: DblArray;       {multi widths of columns}
     Widths: IntArray;       {holds column widths}
     MaxWidths: IntArray;
     MinWidths: IntArray;
@@ -1126,7 +1177,7 @@ type
     constructor Create(Master: ThtDocument; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: ThtDocument; T: TSectionBase); override;
     destructor Destroy; override;
-    procedure DoColumns(Width: Integer; AsPercent: boolean; VAlign: AlignmentType; const Align: ThtString);
+    procedure DoColumns(const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     procedure AddDummyCells;
     procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
@@ -4326,17 +4377,19 @@ function TCellBasic.FindCursor(Canvas: TCanvas; X, Y: Integer;
 var
   I: Integer;
 begin
-  Result := -1;
   for I := 0 to Count - 1 do
   begin
     with Items[I] do
     begin
       if (Y >= DrawTop) and (Y < DrawBot) then
+      begin
         Result := Items[I].FindCursor(Canvas, X, Y, XR, YR, Ht, InText);
-      if Result >= 0 then
-        Break;
+        if Result >= 0 then
+          Exit;
+      end;
     end;
   end;
+  Result := -1;
 end;
 
 procedure TCellBasic.AddSectionsToList;
@@ -5616,8 +5669,7 @@ begin
                 (Document.PrintingTable = TTableBlock(Self).Table)) then
               begin
                 Spacing := CellSpacing div 2;
-                HeightNeeded := HeaderHeight + FootHeight +
-                  TCellList(Rows.Items[HeaderRowCount]).RowHeight;
+                HeightNeeded := HeaderHeight + FootHeight + Rows.Items[HeaderRowCount].RowHeight;
                 if (YO > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
                   (HeightNeeded < ARect.Bottom - ARect.Top) then
                 begin {will go on next page}
@@ -7659,13 +7711,13 @@ var
   I, AutoCount: Integer;
   Color: TColor;
   BackgroundImage: ThtString;
-  Percent: boolean;
+  //Percent: boolean;
   Algn: AlignmentType;
   J: PropIndices;
   Border: Boolean;
 begin
   inherited Create;
-  Cell := TCellObjCell.Create(Master);
+  FCell := TCellObjCell.Create(Master);
   if Assigned(Prop) then
     Cell.Title := Prop.PropTitle;
   ColSpan := 1;
@@ -7678,30 +7730,31 @@ begin
           ColSpanSy:
             if Value > 1 then
               ColSpan := Value;
+
           RowSpanSy:
             if Value > 1 then
               RowSpan := Value;
+
           WidthSy:
-            if Pos('%', Name) > 0 then
-            begin
-              if (Value > 0) and (Value <= 100) then
-              begin
-                WidthAttr := Value * 10;
-                AsPercent := True;
-              end;
-            end
-            else if (Value > 0) then
-              WidthAttr := Value;
+            if Value >= 0 then
+              FSpecWd := ToSpecWidth(Value, Name);
+
           HeightSy:
-            if Pos('%', Name) = 0 then
-              SpecHt := Value
-            else
-              SpecHtPercent := Max(0, Min(Value, 100));
+            if Value >= 0 then
+              FSpecHt := ToSpecWidth(Value, Name);
+
           BGColorSy:
             Cell.BkGnd := ColorFromString(Name, False, Cell.BkColor);
-          BackgroundSy: BackgroundImage := Name;
-          HRefSy: Cell.Url := Name;
-          TargetSy: Cell.Target := Name;
+
+          BackgroundSy:
+            BackgroundImage := Name;
+
+          HRefSy:
+            Cell.Url := Name;
+
+          TargetSy:
+            Cell.Target := Name;
+
         end;
 
   if Assigned(Prop) then
@@ -7711,24 +7764,34 @@ begin
     Prop.GetVMarginArray(MargArrayO);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
-    Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
+//<<<<<<< HEAD
+//    Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
+//    ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, bssNone, 0, AutoCount, MargArray);
+//    if MargArray[piWidth] > 0 then
+//      if Percent then
+//      begin
+//        if MargArray[piWidth] < 100 then
+//        begin
+//          AsPercent := True;
+//          WidthAttr := MargArray[piWidth] * 10;
+//        end;
+//      end
+//      else
+//      begin
+//        WidthAttr := MargArray[piWidth];
+//        AsPercent := False;
+//      end;
+//    if MargArray[piHeight] > 0 then
+//      SpecHt := MargArray[piHeight];
+//=======
+    //Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
     ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, bssNone, 0, AutoCount, MargArray);
-    if MargArray[piWidth] > 0 then
-      if Percent then
-      begin
-        if MargArray[piWidth] < 100 then
-        begin
-          AsPercent := True;
-          WidthAttr := MargArray[piWidth] * 10;
-        end;
-      end
-      else
-      begin
-        WidthAttr := MargArray[piWidth];
-        AsPercent := False;
-      end;
-    if MargArray[piHeight] > 0 then
-      SpecHt := MargArray[piHeight];
+    if VarIsStr(MargArrayO[piWidth]) and (MargArray[piWidth] >= 0) then
+      FSpecWd := ToSpecWidth(MargArray[piWidth], MargArrayO[piWidth]);
+    if VarIsStr(MargArrayO[piHeight]) and (MargArray[piHeight] >= 0) then
+      FSpecHt := ToSpecWidth(MargArray[piHeight], MargArrayO[piHeight]);
+
+//>>>>>>> 9cc0557... Fixed: Issue 40: Optical bug in tables with columns with relative widths.
     Color := Prop.GetBackgroundColor;
     if Color <> clNone then
     begin
@@ -7739,7 +7802,7 @@ begin
     if BackgroundImage <> '' then
     begin
       BGImage := TImageObj.SimpleCreate(Master, BackgroundImage);
-      Prop.GetBackgroundPos(EmSize, ExSize, PRec);
+      Prop.GetBackgroundPos(EmSize, ExSize, FPRec);
     end;
 
   {In the following, Padding widths in percent aren't accepted}
@@ -7787,8 +7850,8 @@ end;
 constructor TCellObj.CreateCopy(AMasterList: ThtDocument; T: TCellObj);
 begin
   inherited create;
-  Cell := TCellObjCell.CreateCopy(AMasterList, T.Cell);
-  Move(T.ColSpan, ColSpan, PtrSub(@Cell, @ColSpan));
+  FCell := TCellObjCell.CreateCopy(AMasterList, T.Cell);
+  Move(T.ColSpan, FColSpan, PtrSub(@Cell, @FColSpan));
 
   if Cell.MasterList.PrintTableBackground then
   begin
@@ -7815,7 +7878,7 @@ end;
 
 {----------------TCellObj.InitializeCell}
 
-procedure TCellObj.InitializeCell(TablePadding: Integer; const BkImageName: ThtString;
+procedure TCellObj.Initialize(TablePadding: Integer; const BkImageName: ThtString;
   const APRec: PtPositionRec; Border: boolean);
 begin
   if PadTop < 0 then
@@ -8003,11 +8066,11 @@ begin
         else
         begin
           InitFullBG(PR - PL, IH);
-          BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
-          BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
-          BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
-          BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
-          BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, FullBG.Canvas.Handle, 0, 0, SRCCOPY);
+          BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
+          BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
+          BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
+          BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
+          BitBlt(       Canvas.Handle, PL, FT, PR - PL, IH, FullBG.Canvas.Handle, 0, 0, SRCCOPY);
         end
       else
       {$IFNDEF NoGDIPlus}
@@ -8113,10 +8176,7 @@ begin
           BackgroundSy:
             BkImage := Name;
           HeightSy:
-            if Pos('%', Name) = 0 then
-              SpecRowHeight := Value
-            else
-              SpecRowHeightPercent := Max(0, Min(Value, 100));
+            SpecRowHeight := ToSpecWidth(Max(0, Min(Value, 100)), Name);
         end;
   if Assigned(Prop) then
   begin
@@ -8159,22 +8219,52 @@ begin
     BreakBefore := BreakBefore or CellObj.BreakBefore;
     BreakAfter := BreakAfter or CellObj.BreakAfter;
     KeepIntact := KeepIntact or CellObj.KeepIntact;
-    if SpecRowHeight > 0 then
-      CellObj.SpecHt := Max(SpecRowHeight, CellObj.SpecHt)
-    else if SpecRowHeightPercent > 0 then
-      CellObj.SpecHtPercent := Max(SpecRowHeightPercent, CellObj.SpecHt);
+    case SpecRowHeight.VType of
+      wtPercent:
+        case CellObj.SpecHt.VType of
+          wtPercent:
+            if CellObj.SpecHtValue < SpecRowHeight.Value then
+              CellObj.SpecHtValue := SpecRowHeight.Value;
+
+          wtRelative: // percentage is stronger
+            CellObj.SpecHt := SpecRowHeight;
+        else
+          // keep specified absolute value
+        end;
+
+      wtRelative:
+        case CellObj.SpecHt.VType of
+          wtPercent: ; // percentage is stronger
+
+          wtRelative:
+            if CellObj.SpecHtValue < SpecRowHeight.Value then
+              CellObj.SpecHtValue := SpecRowHeight.Value;
+        else
+          // keep specified absolute value
+        end;
+
+    else
+      case CellObj.SpecHt.VType of
+        wtAbsolute:
+          if CellObj.SpecHtValue < SpecRowHeight.Value then
+            CellObj.SpecHtValue := SpecRowHeight.Value;
+      else
+        // absolute value is stronger
+        CellObj.SpecHt := SpecRowHeight;
+      end;
+    end;
   end;
 end;
 
-{----------------TCellList.InitializeRow}
+{----------------TCellList.Initialize}
 
-procedure TCellList.InitializeRow;
+procedure TCellList.Initialize;
 var
   I: Integer;
 begin
   if BkGnd then
     for I := 0 to Count - 1 do
-      with TCellObj(Items[I]).Cell do
+      with Items[I].Cell do
         if not BkGnd then
         begin
           BkGnd := True;
@@ -8209,30 +8299,38 @@ begin
         begin
           Wd := 0;
           for J := I to ColSpan + I - 1 do
-            Inc(Wd, Widths[J]); {accumulate column widths}
+            Inc(FWd, Widths[J]); {accumulate column widths}
           if Span = RowSpan then
           begin
             Dummy := 0;
-            if SpecHt > 0 then
-              GuessHt := SpecHt
-            else if SpecHtPercent > 0 then
-              GuessHt := MulDiv(SpecHtPercent, AHeight, 100)
-            else if Rows = 1 then
-              GuessHt := AHeight
+            case SpecHt.VType of
+              wtAbsolute:
+                GuessHt := Trunc(SpecHt.Value);
+
+              wtPercent:
+                GuessHt := Trunc(SpecHt.Value * AHeight / 100.0);
             else
               GuessHt := 0;
-            VSize := Cell.DoLogic(Canvas, 0, Wd - HzSpace - CellSpacing, Max(0, GuessHt - VrSpace), 0,
-              Dummy, DummyCurs);
+            end;
+
+            if (GuessHt = 0) and (Rows = 1) then
+              GuessHt := AHeight;
+
+            VSize := Cell.DoLogic(Canvas, 0, Wd - HzSpace - CellSpacing, Max(0, GuessHt - VrSpace), 0, Dummy, DummyCurs);
             Result := Max(Result, VSize + VrSpace);
-            if SpecHt > 0 then
-            begin
-              Result := Max(Result, Max(VSize, SpecHt));
-              Spec := True;
-            end
-            else if SpecHtPercent > 0 then
-            begin
-              Desired := Max(Desired, GuessHt);
-              Spec := True;
+
+            case SpecHt.VType of
+              wtAbsolute:
+              begin
+                Result := Max(Result, Max(VSize, Trunc(SpecHt.Value)));
+                Spec := True;
+              end;
+
+              wtPercent:
+              begin
+                Desired := Max(Desired, GuessHt);
+                Spec := True;
+              end;
             end;
           end
           else if RowSpan > Span then
@@ -8357,7 +8455,7 @@ begin
   //BG, 08.06.2010: TODO:  Issue 5: Table border versus stylesheets:
   //  Added: BorderColor
   inherited Create(Master, Prop);
-  Rows := TFreeList.Create;
+  Rows := TRowList.Create;
   CellPadding := 1;
   CellSpacing := 2;
   BorderColor := clNone;
@@ -8401,10 +8499,10 @@ var
   HtmlTable: THtmlTable absolute T;
 begin
   assert(T is THtmlTable);
-  inherited CreateCopy(AMasterList, T);
-  Rows := TFreeList.Create;
+  inherited;
+  Rows := TRowList.Create;
   for I := 0 to HtmlTable.Rows.Count - 1 do
-    Rows.Add(TCellList.CreateCopy(Document, TCellList(HtmlTable.Rows.Items[I])));
+    Rows.Add(TCellList.CreateCopy(Document, {OwnerCell.OwnerBlock,} HtmlTable.Rows[I]));
 
   Move(HtmlTable.ListsProcessed, ListsProcessed, PtrSub(@EndList, @ListsProcessed));
 
@@ -8412,6 +8510,7 @@ begin
   SetLength(MaxWidths, NumCols);
   SetLength(MinWidths, NumCols);
   SetLength(Percents, NumCols);
+  SetLength(Multis, NumCols);
 
   if Document.PrintTableBackground then
   begin
@@ -8430,14 +8529,13 @@ destructor THtmlTable.Destroy;
 begin
   Rows.Free;
   TablePartRec.Free;
-  FreeAndNil(ColInfo);
+  FreeAndNil(Cols);
   inherited Destroy;
 end;
 
 {----------------THtmlTable.DoColumns}
 
-procedure THtmlTable.DoColumns(Width: Integer; AsPercent: boolean;
-  VAlign: AlignmentType; const Align: ThtString);
+procedure THtmlTable.DoColumns(const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
 {add the <col> info to the ColInfo list}
 var
   Col: TColObj;
@@ -8445,162 +8543,192 @@ begin
   Col := TColObj.Create;
   with Col do
   begin
-    ColWidth := Width;
-    ColAsPercent := AsPercent;
+    ColWidth := SpecWidth;
     colVAlign := VAlign;
     colAlign := Align;
   end;
-  if not Assigned(colInfo) then
-    colInfo := TFreeList.Create;
-  ColInfo.Add(Col);
+  if Cols = nil then
+    Cols := TColList.Create;
+  Cols.Add(Col);
 end;
 
 {----------------THtmlTable.AddDummyCells}
 
 procedure THtmlTable.AddDummyCells;
-var
-  Cl, Rw, K, RowCount: Integer;
-  AnyAbsolute: boolean;
-  Row: TCellList;
-  CellObj: TCellObj;
-  SpanEq0: boolean;
 
-  function DummyCell(RSpan: Integer): TCellObj;
+  procedure Initialize(out AnyAbsolute: Boolean);
+
+    function DummyCell(RSpan: Integer): TCellObj;
+    begin
+      Result := TCellObj.Create(Document, {nil,} ATop, nil, nil);
+      Result.ColSpan := 0;
+      Result.RowSpan := RSpan;
+    end;
+
+    procedure AddDummyCellsForColSpansAndInitialize;
+    var
+      Cl, Rw, RowCount, K: Integer;
+      Row: TCellList;
+      CellObj: TCellObj;
+    begin
+      {initialize cells and put dummy cells in rows to make up for ColSpan > 1}
+      NumCols := 0;
+      AnyAbsolute := False;
+      RowCount := Rows.Count;
+      for Rw := 0 to RowCount - 1 do
+      begin
+        Row := Rows[Rw];
+        Row.Initialize;
+        for Cl := Row.Count - 1 downto 0 do
+        begin
+          CellObj := Row[Cl];
+          CellObj.Initialize(CellPadding, Row.BkImage, Row.APRec, Self.BorderWidth > 0);
+          if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
+            AnyAbsolute := True;
+          if Self.BkGnd and not CellObj.Cell.BkGnd then {transfer bgcolor to cells if no Table image}
+          begin
+            CellObj.Cell.BkGnd := True;
+            CellObj.Cell.BkColor := Self.BkColor;
+          end;
+          CellObj.RowSpan := Min(CellObj.RowSpan, RowCount - Rw); {So can't extend beyond table}
+          for K := Cl + 1 to Cl + CellObj.ColSpan - 1 do
+            if CellObj.RowSpan > 1 then
+              Row.Insert(K, DummyCell(CellObj.RowSpan)) {these could be
+              Nil also except they're needed for expansion in the next section}
+            else
+              Row.Insert(K, DummyCell(1));
+        end;
+        NumCols := Max(NumCols, Row.Count); {temporary # cols}
+      end;
+
+    end;
+
+    procedure AddDummyCellsForRowSpans;
+    var
+      Cl, Rw, RowCount, K: Integer;
+      Row: TCellList;
+      CellObj: TCellObj;
+    begin
+      RowCount := Rows.Count;
+      for Cl := 0 to NumCols - 1 do
+        for Rw := 0 to RowCount - 1 do
+        begin
+          Row := Rows[Rw];
+          if Row.Count > Cl then
+          begin
+            CellObj := Row[Cl];
+            if CellObj <> nil then
+            begin
+              CellObj.RowSpan := Min(CellObj.RowSpan, RowCount - Rw); {practical limit}
+              if CellObj.RowSpan > 1 then
+                for K := Rw + 1 to Rw + CellObj.RowSpan - 1 do
+                begin {insert dummy cells in following rows if RowSpan > 1}
+                  while Rows[K].Count < Cl do {add padding if row is short}
+                    Rows[K].Add(DummyCell(0));
+                  Rows[K].Insert(Cl, DummyCell(0));
+                end;
+            end;
+          end;
+        end;
+    end;
+
+// BG, 26.12.2011: Issue 40: Optical bug in tables with columns with relative widths
+//  These "excessive Colspans" are important for relative width formatting.
+//  At least we must accumulate the width info in the last non-dummy-column,
+//  but for now we skip this code:
+//
+//    procedure TrimDummyCells;
+//    var
+//      Cl, Rw, RowCount, K: Integer;
+//      Row: TCellList;
+//      CellObj: TCellObj;
+//      SpanEq0: boolean;
+//    begin
+//    {look for excessive Colspans on last cells in each row. These would be dummy cells added above with Colspan = 0}
+//      RowCount := Rows.Count;
+//      if (RowCount > 0) and (NumCols > 0) then
+//        repeat
+//          SpanEq0 := True; {assume there are some}
+//          for Rw := 0 to RowCount - 1 do
+//            with Rows[Rw] do
+//              if (Count = NumCols) and (Items[NumCols - 1].ColSpan <> 0) then
+//                SpanEq0 := False; {at least one last cell is not a dummy}
+//          if SpanEq0 then
+//          begin {trim off the dummy cells on end and fixup the Colspan value which was to blame}
+//            for Rw := 0 to RowCount - 1 do
+//              with Rows[Rw] do
+//                if (Count = NumCols) and (Items[NumCols - 1].ColSpan = 0) then
+//                begin
+//                  Delete(NumCols - 1); {trim cell on end}
+//                  K := NumCols - 2;
+//                  while K >= 0 do {find the Colspan value}
+//                  begin
+//                    if Items[K].ColSpan > 1 then
+//                    begin
+//                      Dec(Items[K].FColSpan); {fix it}
+//                      Break;
+//                    end;
+//                    Dec(K);
+//                  end;
+//                end;
+//            Dec(NumCols);
+//          end;
+//        until not SpanEq0;
+//    end;
+
   begin
-    Result := TCellObj.Create(Document, ATop, nil, nil);
-    Result.ColSpan := 0;
-    Result.RowSpan := RSpan;
+    AddDummyCellsForColSpansAndInitialize;
+    AddDummyCellsForRowSpans;
+
+//    TrimDummyCells;
   end;
 
+var
+  Cl, Rw: Integer;
+  AnyAbsolute: boolean;
+  Row: TCellList;
+  Col: TColObj;
+  CellObj: TCellObj;
 begin
-  RowCount := Rows.Count;
   if not ListsProcessed then
-  begin {put dummy cells in rows to make up for ColSpan > 1}
+  begin
+    {Absolute calc only if  some absolute widths entered}
+    Initialize(UseAbsolute);
+
+    {find the number of columns}
     NumCols := 0;
-    AnyAbsolute := False;
-    for Rw := 0 to RowCount - 1 do
-    begin
-      with TCellList(Rows[Rw]) do
-      begin
-        InitializeRow;
-        for Cl := Count - 1 downto 0 do
-          with TCellObj(Items[Cl]) do
-          begin
-            InitializeCell(CellPadding, BkImage, APRec, Self.BorderWidth > 0);
-            if WidthAttr > 0 then
-            begin
-              if not AsPercent then
-                AnyAbsolute := True;
-            end;
-            if Self.BkGnd and not Cell.BkGnd then {transfer bgcolor to cells if no Table image}
-            begin
-              Cell.BkGnd := True;
-              Cell.BkColor := Self.BkColor;
-            end;
-            RowSpan := Min(RowSpan, RowCount - Rw); {So can't extend beyond table}
-            for K := 1 to ColSpan - 1 do
-              if RowSpan > 1 then
-                TCellList(Rows[Rw]).Insert(Cl + K, DummyCell(RowSpan)) {these could be
-                Nil also except they're needed for expansion in the next section}
-              else
-                TCellList(Rows[Rw]).Insert(Cl + K, DummyCell(1));
-          end;
-      end;
-      NumCols := Max(NumCols, TCellList(Rows[Rw]).Count); {temporary # cols}
-    end;
+    for Rw := 0 to Rows.Count - 1 do
+      NumCols := Max(NumCols, Rows[Rw].Count);
 
-  {Absolute calc only if  some absolute widths entered}
-    UseAbsolute := AnyAbsolute;
-
-  {put dummy cells in cols to make up for RowSpan > 1}
-    for Cl := 0 to NumCols - 1 do
-      for Rw := 0 to RowCount - 1 do
-        with TCellList(Rows[Rw]) do
-          if Count > Cl then
-            if Assigned(Items[Cl]) then
-              with TCellObj(Items[Cl]) do
-              begin
-                RowSpan := Min(RowSpan, RowCount - Rw); {practical limit}
-                if RowSpan > 1 then
-                  for K := Rw + 1 to Rw + RowSpan - 1 do
-                  begin {insert dummy cells in following rows if RowSpan > 1}
-                    while TCellList(Rows[K]).Count < Cl do {add padding if row is short}
-                      TCellList(Rows[K]).Add(DummyCell(0));
-                    TCellList(Rows[K]).Insert(Cl, DummyCell(0));
-                  end;
-              end;
-
-  {look for excessive Colspans on last cells in each row.  These would be dummy
-   cells added above with Colspan = 0}
-    if (RowCount > 0) and (NumCols > 0) then
-      repeat
-        SpanEq0 := True; {assume there are some}
-        for Rw := 0 to RowCount - 1 do
-          with TCellList(Rows[Rw]) do
-            if (Count = NumCols) and (TCellObj(Items[NumCols - 1]).ColSpan <> 0) then
-              SpanEq0 := False; {at least one last cell is not a dummy}
-        if SpanEq0 then
-        begin {trim off the dummy cells on end and fixup the Colspan value which was to blame}
-          for Rw := 0 to RowCount - 1 do
-            with TCellList(Rows[Rw]) do
-              if (Count = NumCols) and (TCellObj(Items[NumCols - 1]).ColSpan = 0) then
-              begin
-                Delete(NumCols - 1); {trim cell on end}
-                K := NumCols - 2;
-                while K >= 0 do {find the Colspan value}
-                begin
-                  if TCellObj(Items[K]).ColSpan > 1 then
-                  begin
-                    Dec(TCellObj(Items[K]).ColSpan); {fix it}
-                    Break;
-                  end;
-                  Dec(K);
-                end;
-              end;
-          Dec(NumCols);
-        end;
-      until not SpanEq0;
-
-    NumCols := 0; {find the number of columns}
-    for Rw := 0 to RowCount - 1 do
-    begin
-      NumCols := Max(NumCols, TCellList(Rows[Rw]).Count);
-    end;
-
-  {add the width info from the <col> tags to the cells}
-    if Assigned(colInfo) then
+    {add the width info from the <col> tags to the cells}
+    if Cols <> nil then
     begin
       AnyAbsolute := False;
-      for Rw := 0 to RowCount - 1 do
+      for Rw := 0 to Rows.Count - 1 do
       begin
-        Row := TCellList(Rows[Rw]);
+        Row := Rows[Rw];
         for Cl := 0 to Min(Row.Count - 1, NumCols - 1) do
         begin
-          CellObj := TCellObj(Row[Cl]);
-          with CellObj do
+          CellObj := Row[Cl];
+          if Cl < Cols.Count then
           begin
-            if Cl < colInfo.Count then
-              with TColObj(colInfo[Cl]) do
-              begin
-                if colWidth > 0 then
-                begin
-                  WidthAttr := colWidth;
-                  AsPercent := colAsPercent;
-                end;
-              end;
-            if not AsPercent then
-              AnyAbsolute := True;
+            Col := Cols[Cl];
+            if Col.ColWidth.VType <> wtNone then
+              CellObj.SpecWd := Col.ColWidth;
           end;
+          if CellObj.SpecWd.VType = wtAbsolute then
+            AnyAbsolute := True;
         end;
       end;
       UseAbsolute := AnyAbsolute;
-      FreeAndNil(colInfo); {no longer needed}
+      FreeAndNil(Cols); {no longer needed}
     end;
 
     SetLength(Widths, NumCols);
     SetLength(MaxWidths, NumCols);
     SetLength(MinWidths, NumCols);
     SetLength(Percents, NumCols);
+    SetLength(Multis, NumCols);
 
     ListsProcessed := True;
   end; {if not ListsProcessed}
@@ -8613,9 +8741,10 @@ procedure THtmlTable.GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth,
 var
   I, J, Min, Max, N, Span, Addon, D: Integer;
   More: boolean;
+  Row: TCellList;
   CellObj: TCellObj;
 
-label Two;
+//label Two;
 
 begin
   for I := 0 to NumCols - 1 do
@@ -8630,79 +8759,76 @@ begin
   begin
     More := False;
     for J := 0 to Rows.Count - 1 do
-      with TCellList(Rows[J]) do
+    begin
+      Row := Rows[J];
+      for I := 0 to Row.Count - 1 do
       begin
-        for I := 0 to Count - 1 do
-          if Assigned(Items[I]) then
+        CellObj := Row[I];
+        if CellObj <> nil then
+        begin
+          More := More or (CellObj.ColSpan > Span); {set if need another iteration}
+          if CellObj.ColSpan = Span then
           begin
-            CellObj := TCellObj(Items[I]);
-            with CellObj do
+            CellObj.Cell.MinMaxWidth(Canvas, Min, Max);
+            Addon := CellSpacing + CellObj.HzSpace;
+            Inc(Min, Addon);
+            Inc(Max, Addon);
+            if Span = 1 then
             begin
-              More := More or (CellObj.ColSpan > Span); {set if need another iteration}
-              if ColSpan = Span then
+              if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
               begin
-                Cell.MinMaxWidth(Canvas, Min, Max);
-                Addon := CellSpacing + CellObj.HzSpace;
-                Inc(Min, Addon);
-                Inc(Max, Addon);
-                if Span = 1 then
+                Max := Math.Max(Min, Trunc(CellObj.SpecWd.Value + Addon));
+                Min := Max;
+              end;
+              MinWidths[I] := Math.Max(MinWidths[I], Min);
+              MaxWidths[I] := Math.Max(MaxWidths[I], Max);
+            end
+            else
+            begin
+              TotalMinWidth := 0; TotalMaxWidth := 0;
+              for N := I to I + CellObj.ColSpan - 1 do
+              begin {find the current totals for the span}
+                Inc(TotalMaxWidth, MaxWidths[N]);
+                Inc(TotalMinWidth, MinWidths[N]);
+              end;
+              if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
+              begin
+                Min := Math.Max(Min, Trunc(CellObj.SpecWd.Value) {+Cellspacing});
+                Max := Math.Max(Min, Trunc(CellObj.SpecWd.Value) {+Cellspacing});
+              end;
+              if (TotalMinWidth < Min) then
+                if TotalMinWidth > 0 then
                 begin
-                  if not AsPercent and (CellObj.WidthAttr > 0) then
-                  begin
-                    Max := Math.Max(Min, WidthAttr + Addon);
-                    Min := Max;
-                  end;
-                  MinWidths[I] := Math.Max(MinWidths[I], Min);
-                  MaxWidths[I] := Math.Max(MaxWidths[I], Max);
+                  D := Min - TotalMinWidth;
+                  for N := I to I + CellObj.ColSpan - 1 do {increase the sub widths to match the span}
+                    MinWidths[N] := MinWidths[N] + MulDiv(MinWidths[N], D, TotalMinWidth);
                 end
                 else
-                begin
-                  TotalMinWidth := 0; TotalMaxWidth := 0;
-                  for N := I to I + ColSpan - 1 do
-                  begin {find the current totals for the span}
-                    Inc(TotalMaxWidth, MaxWidths[N]);
-                    Inc(TotalMinWidth, MinWidths[N]);
-                  end;
-                  if not AsPercent and (WidthAttr > 0) then
-                  begin
-                    Min := Math.Max(Min, WidthAttr {+Cellspacing});
-                    Max := Math.Max(Min, WidthAttr {+Cellspacing});
-                  end;
-                  if (TotalMinWidth < Min) then
-                    if TotalMinWidth > 0 then
-                    begin
-                      D := Min - TotalMinWidth;
-                      for N := I to I + ColSpan - 1 do {increase the sub widths to match the span}
-                        MinWidths[N] := MinWidths[N] + MulDiv(MinWidths[N], D, TotalMinWidth);
-                    end
-                    else
-                      MinWidths[I] := Min; {this for multiple empty cols}
-                  if (TotalMaxWidth < Max) then
-                    if TotalMaxWidth > 0 then
-                    begin {increase the sub widths to match the span}
-                      D := Max - TotalMaxWidth;
-                      for N := I to I + ColSpan - 1 do {increase the sub widths to match the span}
-                        MaxWidths[N] := MaxWidths[N] + MulDiv(MaxWidths[N], D, TotalMaxWidth);
-                    end
-                    else
-                      MaxWidths[I] := Max;
-                end;
-              end;
+                  MinWidths[I] := Min; {this for multiple empty cols}
+              if (TotalMaxWidth < Max) then
+                if TotalMaxWidth > 0 then
+                begin {increase the sub widths to match the span}
+                  D := Max - TotalMaxWidth;
+                  for N := I to I + CellObj.ColSpan - 1 do {increase the sub widths to match the span}
+                    MaxWidths[N] := MaxWidths[N] + MulDiv(MaxWidths[N], D, TotalMaxWidth);
+                end
+                else
+                  MaxWidths[I] := Max;
             end;
           end;
+        end;
       end;
+    end;
     Inc(Span);
   end;
 
 {Find the total min and max width}
-  Two:
   TotalMaxWidth := 0; TotalMinWidth := 0;
   for I := 0 to NumCols - 1 do
   begin
     Inc(TotalMaxWidth, MaxWidths[I]);
     Inc(TotalMinWidth, MinWidths[I]);
   end;
-
 end;
 
 {----------------THtmlTable.GetWidthsAbs}
@@ -8767,10 +8893,13 @@ end;
 procedure THtmlTable.GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer;
   TheWidth: Integer);
 var
-  I, J, Min, Max, N, Span, Addon, Distributable, TotalPC, Accum,
-    ExcessMin, ExcessMax, NonPC, PCWidth, NewTotalPC: Integer;
+  I, J, Min, Max, N, Span, Addon, Accum, ExcessMin, ExcessMax, NonPc: Integer;
+  Distributable, NewTotalPC: Double;
+  CellWidth: array [wtPercent..wtRelative] of Double;
   Cells: TCellList;
   CellObj: TCellObj;
+  TotalWidth: array [wtPercent..wtRelative] of Double;
+  WI: TWidthType;
   MaxSpans: array of Integer;
   MaxSpan: Integer;
 begin
@@ -8780,6 +8909,7 @@ begin
     MaxWidths[I] := 0;
     MinWidths[I] := 0;
     Percents[I] := 0;
+    Multis[i] := 0;
   end;
 
   SetLength(Heights, 0);
@@ -8806,87 +8936,101 @@ begin
         CellObj := Cells[I];
         if CellObj <> nil then
           if CellObj.ColSpan = Span then
-            with CellObj do
+            //with CellObj do
             begin
-              PCWidth := 0;
-              if CellObj.WidthAttr > 0 then
-                if CellObj.AsPercent then
-                  PCWidth := CellObj.WidthAttr
-                else if TheWidth > 0 then
-                  PCWidth := Math.Min(1000, MulDiv(WidthAttr, 1000, TheWidth));
+              CellWidth[wtPercent] := 0;
+              CellWidth[wtRelative] := 0;
+              if CellObj.SpecWd.Value > 0 then
+                // BG, 26.12.2011: TODO: issue 40: multi-width
+                case CellObj.SpecWd.VType of
+                  wtPercent,
+                  wtRelative:
+                    CellWidth[CellObj.SpecWd.VType] := CellObj.SpecWd.Value;
+                else
+//                  if TheWidth > 0 then
+//                    CellWidth[wtPercent] := Math.Min(1000.0, CellObj.SpecWd.Value / TheWidth * 1000.0);
+                end;
 
-              Cell.MinMaxWidth(Canvas, Min, Max);
-              Addon := CellSpacing + HzSpace;
+              CellObj.Cell.MinMaxWidth(Canvas, Min, Max);
+              Addon := CellSpacing + CellObj.HzSpace;
               Inc(Min, Addon);
               Inc(Max, Addon);
               if Span = 1 then
               begin
                 MaxWidths[I] := Math.Max(MaxWidths[I], Max);
                 MinWidths[I] := Math.Max(MinWidths[I], Min);
-                Percents[I] := Math.Max(Percents[I], PCWidth); {collect percents}
+                Percents[I] := Math.Max(Percents[I], CellWidth[wtPercent]); {collect percents}
+                Multis[i] := Math.Max(Multis[I], CellWidth[wtRelative]); { collect multis}
               end
               else
               begin
-                TotalMaxWidth := 0; TotalMinWidth := 0;
-                TotalPC := 0; NonPC := 0;
-                for N := I to I + ColSpan - 1 do
+                TotalMaxWidth := 0;
+                TotalMinWidth := 0;
+                NonPC := 0;
+                for WI := low(TotalWidth) to high(TotalWidth) do
+                  TotalWidth[WI] := 0;
+                for N := I to I + CellObj.ColSpan - 1 do
                 begin {Total up the pertinant column widths}
                   Inc(TotalMaxWidth, MaxWidths[N]);
                   Inc(TotalMinWidth, MinWidths[N]);
+
                   if Percents[N] > 0 then
-                    Inc(TotalPC, Percents[N]) {total percents}
+                    TotalWidth[wtPercent] := TotalWidth[wtPercent] + Percents[N] {total percents}
+                  else if Multis[N] > 0 then
+                    TotalWidth[wtRelative] := TotalWidth[wtRelative] + Multis[N] {total percents}
                   else
                     Inc(NonPC); {count of cell with no percent}
                 end;
-                if Colspan = NumCols then
+                if CellObj.Colspan = NumCols then
                 begin
                   TotalMinWidth := Math.Max(TotalMinWidth, TheWidth);
                   TotalMaxWidth := Math.Max(TotalMaxWidth, TheWidth);
                 end;
                 ExcessMin := Min - TotalMinWidth;
                 ExcessMax := Max - TotalMaxWidth;
-                if (PCWidth > 0) or (TotalPC > 0) then
+                if (CellWidth[wtPercent] > 0) or (TotalWidth[wtPercent] > 0) then
                 begin {manipulate for percentages}
                   if NonPC > 0 then
                   {find the extra percentages to divvy up}
-                    Distributable := Math.Max(0, (PCWidth - TotalPC) div NonPC)
+                    Distributable := Math.Max(0, (CellWidth[wtPercent] - TotalWidth[wtPercent]) / NonPC)
                   else
                     Distributable := 0;
-                  if (NonPC = 0) and (PCWidth > TotalPC + 1) then
+
+                  if (NonPC = 0) and (CellWidth[wtPercent] > TotalWidth[wtPercent] + 1) then
                   begin
-                    for N := I to I + ColSpan - 1 do {stretch percentages to fit}
-                      Percents[N] := MulDiv(Percents[N], PCWidth, TotalPC);
+                    for N := I to I + CellObj.ColSpan - 1 do {stretch percentages to fit}
+                      Percents[N] := Percents[N] * CellWidth[wtPercent] / TotalWidth[wtPercent];
                   end
                   else if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
-                    for N := I to I + ColSpan - 1 do
+                    for N := I to I + CellObj.ColSpan - 1 do
                       if Percents[N] = 0 then
                         Percents[N] := Distributable;
-                  NewTotalPC := Math.Max(TotalPC, PCWidth);
+                  NewTotalPC := Math.Max(CellWidth[wtPercent], TotalWidth[wtPercent]);
                   if ExcessMin > 0 then
                   begin
                     if (NonPC > 0) and (TotalMaxWidth > 0) then {split excess over all cells}
                     begin
                     {proportion the distribution so cells with large MaxWidth get more}
-                      for N := I to I + ColSpan - 1 do
+                      for N := I to I + CellObj.ColSpan - 1 do
                         Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], TotalMaxWidth));
                     end
                     else
-                      for N := I to I + ColSpan - 1 do
-                        Inc(MinWidths[N], (MulDiv(ExcessMin, Percents[N], NewTotalPC)));
+                      for N := I to I + CellObj.ColSpan - 1 do
+                        Inc(MinWidths[N], Trunc(ExcessMin * Percents[N] / NewTotalPC));
                   end;
                   if ExcessMax > 0 then
-                    for N := I to I + ColSpan - 1 do
-                      Inc(MaxWidths[N], (MulDiv(ExcessMax, Percents[N], NewTotalPC)));
+                    for N := I to I + CellObj.ColSpan - 1 do
+                      Inc(MaxWidths[N], Trunc(ExcessMax * Percents[N] / NewTotalPC));
                 end
                 else
                 begin {no width dimensions entered}
                   if ExcessMin > 0 then
                   begin
                     Accum := 0;
-                    for N := I to I + ColSpan - 1 do
+                    for N := I to I + CellObj.ColSpan - 1 do
                     begin
                       if TotalMinWidth = 0 then
-                        MinWidths[N] := Min div ColSpan
+                        MinWidths[N] := Min div CellObj.ColSpan
                       else {split up the widths in proportion to widths already there}
                         MinWidths[N] := MulDiv(Min, MinWidths[N], TotalMinWidth);
                       Inc(Accum, MinWidths[N]);
@@ -8897,10 +9041,10 @@ begin
                   if ExcessMax > 0 then
                   begin
                     Accum := 0;
-                    for N := I to I + ColSpan - 1 do
+                    for N := I to I + CellObj.ColSpan - 1 do
                     begin
                       if TotalMaxWidth = 0 then
-                        MaxWidths[N] := Max div ColSpan
+                        MaxWidths[N] := Max div CellObj.ColSpan
                       else {split up the widths in proportion to widths already there}
                         MaxWidths[N] := MulDiv(Max, MaxWidths[N], TotalMaxWidth);
                       Inc(Accum, MaxWidths[N]);
@@ -8964,27 +9108,52 @@ procedure THtmlTable.TableSpecifiedAndWillFit(TheWidth: Integer);
  At this point, it is known that everything will fit into TheWidth. Percents are
  being used}
 var
-  I, W, PCNotMinWid, TotalWid, Unsp, UnspDiff, Delta, Addon, Count, d: Integer;
   UseMin: array of boolean;
+  Speced: array of boolean;
+
+  procedure ShrinkColumnWidths(var Delta: Integer; Step: Integer);
+  var
+    I, W: Integer;
+  begin
+    for I := 0 to NumCols - 1 do
+      if not UseMin[I] and not Speced[I] then
+      begin
+        W := Max(Widths[I] - Step, MinWidths[I]);
+        Dec(Delta, Widths[I] - W);
+        Widths[I] := W;
+        if Delta <= 0 then
+          Break;
+      end;
+  end;
+
+var
+  J, I, W, TotalWid, Unsp, UnspDiff, Delta, {Addon,} Count, d: Integer;
+  PCNotMinWid: Double;
+  W1, W2: Double;
   NoChange: boolean;
   UnspCol: Integer;
 begin
   if NumCols = 0 then
     Exit;
   SetLength(UseMin, NumCols);
-  for I := 0 to NumCols - 1 do
-    UseMin[I] := False;
-  PCNotMinWid := 0; TotalWid := 0; Unsp := 0; UnspDiff := 0; UnspCol := -1;
+  SetLength(Speced, NumCols);
+  PCNotMinWid := 0;
+  TotalWid := 0;
+  Unsp := 0;
+  UnspDiff := 0;
+  UnspCol := -1;
 {First calculate everything assuming the data entered is perfectly correct}
   for I := 0 to NumCols - 1 do
   begin
+    UseMin[I] := False;
     if Percents[I] > 0 then
     begin
-      W := MulDiv(TheWidth, Percents[I], 1000); {width based on percentage}
+      Speced[I] := True;
+      W := Trunc(TheWidth * Percents[I] / 1000); {width based on percentage}
       if W > MinWidths[I] then
       begin
         Widths[I] := W;
-        Inc(PCNotMinWid, Percents[I]);
+        PCNotMinWid := PCNotMinWid + Percents[I];
       end
       else
       begin {percent is too small, use Min width}
@@ -8994,9 +9163,10 @@ begin
     end
     else
     begin {no percent}
+      Speced[I] := False;
       Widths[I] := MinWidths[I];
       Inc(Unsp); {an unspecified column}
-      UnspCol := I; {save location of unspedified column}
+      UnspCol := I; {save location of unspecified column}
       Inc(UnspDiff, Max(0, MaxWidths[I] - MinWidths[I])); {total max-min for unspecified cols}
     end;
     Inc(TotalWid, Widths[I]);
@@ -9016,17 +9186,29 @@ begin
       end
       else
       begin {increase the unspecified columns widths uniformly}
-        Addon := -Delta div Unsp;
+        // BG, 26.12.2011: if Delta is small and Unsp is large the simple "div" produces too unlike wide cells.
+        // The last cell becomes unexpectedly wide.
+        {Addon := -Delta div Unsp;
         for I := 0 to NumCols - 1 do
-          if (Percents[I] = 0) then
-            Inc(Widths[I], Addon);
+          if Percents[I] = 0 then
+            Inc(Widths[I], Addon);}
+        W1 := 0;
+        J := 0;
+        for I := 0 to NumCols - 1 do
+          if Percents[I] = 0 then
+          begin
+            Inc(J);
+            W2 := -Delta * J / Unsp;
+            Inc(Widths[I], Trunc(W2 - W1));
+            W1 := W2;
+          end;
       end;
     end
     else
     begin {no unspecified widths, increase the specified columns which are not minimum}
       for I := 0 to NumCols - 1 do
         if (Percents[I] > 0) and not UseMin[I] then
-          Inc(Widths[I], MulDiv(-Delta, Percents[I], PCNotMinWid));
+          Inc(Widths[I], Trunc(-Delta * Percents[I] / PCNotMinWid));
     end;
   end
   else if Delta > 0 then {calculated table is too large}
@@ -9039,12 +9221,12 @@ begin
       for I := 0 to NumCols - 1 do
         if (Percents[I] > 0) and not UseMin[I] then
         begin
-          W := Widths[I] - MulDiv(Delta, Percents[I], PCNotMinWid);
+          W := Widths[I] - Trunc(Delta * Percents[I] / PCNotMinWid);
           if W < MinWidths[I] then
           begin {new width is smaller than MinWidth, make adustments}
             UseMin[I] := True;
             NoChange := False;
-            Dec(PCNotMinWid, Percents[I]);
+            PCNotMinWid := PCNotMinWid - Percents[I];
             Dec(Delta, Widths[I] - MinWidths[I]);
             Widths[I] := MinWidths[I];
           end;
@@ -9053,7 +9235,7 @@ begin
     until NoChange or (Count >= 4); {count guards against endless loop}
     for I := 0 to NumCols - 1 do {now actually change the widths}
       if (Percents[I] > 0) and not UseMin[I] then
-        Dec(Widths[I], MulDiv(Delta, Percents[I], PCNotMinWid));
+        Dec(Widths[I], Trunc(Delta * Percents[I] / PCNotMinWid));
   end;
 
   TotalWid := 0; {fix up any round off errors}
@@ -9062,19 +9244,45 @@ begin
   Delta := TotalWid - TheWidth; {round off error}
   if Delta > 0 then
   begin
-    for I := 0 to NumCols - 1 do
-      if not UseMin[I] then
-      begin
-        Dec(Widths[I], Delta); {remove extra from first non minimum}
-        Break;
-      end;
+    // first remove single pixels from unspecified non-minimum columns
+    if Unsp > 0 then
+    begin
+      d := 0;
+      for I := 0 to NumCols - 1 do
+        if not UseMin[I] and not Speced[I] then
+          Inc(d);
+      if d > 0 then
+        ShrinkColumnWidths(Delta, Delta div d);
+    end;
+    if Delta > 0 then
+      ShrinkColumnWidths(Delta, 1);
+    if Delta > 0 then
+      for I := 0 to NumCols - 1 do
+        if not UseMin[I] then
+        begin
+          Dec(Widths[I], Delta); {remove extra from first non minimum}
+          Break;
+        end;
   end
-  else if Length(Widths) > 0 then
+  else if Delta < 0 then
+  begin
+    Delta := -Delta; {Delta is now positive}
+    if Unsp >= Delta then
+    begin
+      // insert single pixels into unspecified, non-minimum column
+      for I := 0 to NumCols - 1 do
+        if not UseMin[I] and not Speced[I] then
+        begin
+          Inc(Widths[I]); 
+          Dec(Delta);
+          if Delta <= 0 then
+            Break;
+        end;
+    end;
     if UnspCol >= 0 then
-      Inc(Widths[UnspCol], -Delta) {put it into an unspecified column}
+      Inc(Widths[UnspCol], Delta) {put it into an unspecified column}
     else
     begin
-      Delta := -Delta; {Delta is now positive}
       while Delta > NumCols do
       begin
         d := Delta div NumCols;
@@ -9096,6 +9304,7 @@ begin
         else
           Break;
     end;
+  end;
 end;
 
 {----------------THtmlTable.TableNotSpecifiedAndWillFit}
@@ -9104,28 +9313,30 @@ procedure THtmlTable.TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, T
 {Find column widths.  Table known to fit within allowed space and its width hasn't
  been specified}
 var
-  D, W, DS, MaxDS, MaxI, I, Addon,
-    Total, TotalPC, Residual, NewResidual, W1, W2, NewTotal, LastNewTotal: Integer;
+  D, W, DS, MaxDS, MaxI, I, Addon, Total, Residual, NewResidual, NewTotal, LastNewTotal: Integer;
+  W1, W2: Integer;
+  TotalPC: Double;
   HasPercents, UsesPercents, Done: boolean;
 begin
   if NumCols = 0 then
     Exit;
   TotalPC := 0; {see if any percentage widths entered}
   for I := 0 to NumCols - 1 do
-    Inc(TotalPC, Percents[I]);
+    TotalPC := TotalPC + Percents[I];
   UsesPercents := (TotalPc > 0) and (TotalPc <= 1000) {ignore ridiculous values}
     or (tblWidthAttr > 0);
 
   if UsesPercents then
   begin {find the largest width that will accomodate the %'s}
-    Residual := 0; W1 := 0;
+    Residual := 0;
+    W1 := 0;
     for I := 0 to NumCols - 1 do
       if Percents[I] > 0 then {a percent has been entered}
-        W1 := Max(W1, MulDiv(MaxWidths[I], 1000, Percents[I])) {look for maximum}
+        W1 := Max(W1, Trunc(MaxWidths[I] * 1000 / Percents[I])) {look for maximum}
       else
         Inc(Residual, MaxWidths[I]); {accumlate the cols which have no percent}
     if TotalPC < 1000 then
-      W2 := MulDiv(Residual, 1000, 1000 - TotalPC)
+      W2 := Trunc(Residual * 1000 / (1000 - TotalPC))
     else if Residual > 0 then
       W2 := 30000
     else
@@ -9135,10 +9346,10 @@ begin
     begin {a fit is found using percents and maxwidths}
       if tblWidthAttr > 0 then
         Total := TheWidth; {don't try to make it smaller than TheWidth}
-      NewResidual := MulDiv(Total, 1000 - TotalPC, 1000);
+      NewResidual := Trunc(Total * (1000 - TotalPC) / 1000);
       for I := 0 to NumCols - 1 do
         if Percents[I] > 0 then {figure widths to fit this situation}
-          Widths[I] := MulDiv(Total, Percents[I], 1000)
+          Widths[I] := Trunc(Total * Percents[I] / 1000)
         else if Residual > 0 then
           Widths[I] := MulDiv(MaxWidths[I], NewResidual, Residual)
         else
@@ -9156,7 +9367,7 @@ begin
       begin
         if Percents[I] > 0 then
         begin
-          W := MulDiv(TheWidth, Percents[I], 1000); {a Percent's width based on TheWidth}
+          W := Trunc(TheWidth * Percents[I] / 1000); {a Percent's width based on TheWidth}
           if W < MinWidths[I] then {but it must be > MinWidth}
           begin {eliminate the percentage value as not achievable}
             Percents[I] := 0;
@@ -9181,7 +9392,7 @@ begin
         begin
           if Percents[I] > 0 then
           begin
-            MinWidths[I] := MulDiv(TheWidth, Percents[I], 1000);
+            MinWidths[I] := Trunc(TheWidth * Percents[I] / 1000);
             MaxWidths[I] := MinWidths[I]; {this fixes the width thru later calculations}
           end;
           Inc(TotalMaxWidth, MaxWidths[I]);
@@ -9196,7 +9407,7 @@ begin
         LastNewTotal := NewTotal;
         for I := 0 to NumCols - 1 do
           if Percents[I] > 0 then
-            Percents[I] := MulDiv(Percents[I], NewTotal, Total);
+            Percents[I] := Trunc(Percents[I] * NewTotal / Total);
       end;
     until Done;
   end;
@@ -9268,7 +9479,7 @@ begin
   begin
     More := False;
     for J := 0 to Rows.Count - 1 do
-      with TCellList(Rows[J]) do
+      with Rows[J] do
       begin
         if J + Span > Rows.Count then
           Break; {otherwise will overlap}
@@ -9462,7 +9673,7 @@ begin
     FootStartRow := -1;
     HasBody := False;
     for J := 0 to Rows.Count - 1 do
-      with TCellList(Rows[J]) do
+      with Rows[J] do
       begin
         RowHeight := Heights[J];
         if RowType = THead then
@@ -9491,7 +9702,7 @@ begin
             begin {find the actual height, Ht, of each cell}
               Ht := 0;
               for K := J to Min(J + RowSpan - 1, Rows.Count - 1) do
-                Inc(Ht, Heights[K]);
+                Inc(FHt, Heights[K]);
               if RowSpanHeight < Ht then
                 RowSpanHeight := Ht;
             end;
@@ -9568,7 +9779,7 @@ begin
   DrawX := XX;
   DrawY := YY;
   for I := 0 to Rows.Count - 1 do
-    YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+    YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
       XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
       BorderColorDark, I);
 end;
@@ -9606,7 +9817,7 @@ begin
         if Document.PageBottom - Y >= TableHeight + BottomBorder then
         begin
           for I := 0 to Rows.Count - 1 do {do whole table now}
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
           Document.PrintingTable := nil;
@@ -9616,8 +9827,7 @@ begin
           if HeadOrFoot then
           begin
             Spacing := CellSpacing div 2;
-            HeightNeeded := HeaderHeight + FootHeight +
-              TCellList(Rows.Items[HeaderRowCount]).RowHeight;
+            HeightNeeded := HeaderHeight + FootHeight + Rows[HeaderRowCount].RowHeight;
             if (Y - YOffset > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
               (HeightNeeded < ARect.Bottom - ARect.Top) then
             begin {not enough room, start table on next page}
@@ -9633,7 +9843,7 @@ begin
           SavePageBottom := Document.PageBottom;
           Document.PageBottom := SavePageBottom - FootHeight - Cellspacing - BottomBorder - 5; {a little to spare}
           for I := 0 to Rows.Count - 1 do {do part of table}
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
           BodyBreak := Document.PageBottom;
@@ -9662,7 +9872,7 @@ begin
         if Document.PageBottom > Y + TableHeight + BottomBorder then
         begin {can complete table now}
           for I := 0 to Rows.Count - 1 do {do remainder of table now}
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
           Document.TheOwner.TablePartRec.TablePart := Normal;
@@ -9673,7 +9883,7 @@ begin
           Document.PageBottom := Document.PageBottom
             - FootHeight + Max(Cellspacing, 1) - BottomBorder;
           for I := 0 to Rows.Count - 1 do
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
           BodyBreak := Document.PageBottom;
@@ -9701,7 +9911,7 @@ begin
         if Document.PageBottom > Y + TableHeight + BottomBorder then
         begin
           for I := 0 to Rows.Count - 1 do {do remainder of table now}
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
           Document.TheOwner.TablePartRec.TablePart := Normal;
@@ -9711,7 +9921,7 @@ begin
         begin
           SavePageBottom := Document.PageBottom;
           for I := 0 to Rows.Count - 1 do {do part of table}
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
           BodyBreak := Document.PageBottom;
@@ -9740,7 +9950,7 @@ begin
         YY := TablePartRec.PartStart;
         if FootStartRow >= 0 then
           for I := FootStartRow to Rows.Count - 1 do
-            YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
               XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
               BorderColorDark, I);
         if HeaderHeight > 0 then
@@ -9762,7 +9972,7 @@ begin
     DoHead:
       begin
         for I := 0 to HeaderRowCount - 1 do
-          YY := TCellList(Rows.Items[I]).Draw(Canvas, Document, ARect, Widths,
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
             XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         TablePartRec.TablePart := DoBody1;
@@ -9779,123 +9989,106 @@ end;
 function THtmlTable.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
   out ATitle: ThtString): guResultType;
-var
-  TableOK: boolean;
 
   function GetTableURL(X: Integer; Y: Integer): guResultType;
   var
     I, J, XX: Integer;
+    Row: TCellList;
     CellObj: TCellObj;
   begin
     for J := 0 to Rows.Count - 1 do
     begin
+      Row := Rows[J];
       XX := DrawX;
-      with TCellList(Rows[J]) do
+      for I := 0 to Row.Count - 1 do
       begin
-        for I := 0 to Count - 1 do
+        CellObj := Row[I];
+        if CellObj <> nil then
         begin
-          CellObj := TCellObj(Items[I]);
-          if Assigned(CellObj) then
-            with CellObj do
-            begin
-              if (X >= XX) and (X < XX + Wd)
-                and (Y >= Cell.DrawYY) and (Y < Cell.DrawYY + Ht) then
-              begin
-                Result := Cell.GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
-                Exit;
-              end;
-            end;
-          Inc(XX, Widths[I]);
+          if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
+          begin
+            Result := CellObj.Cell.GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
+            Exit;
+          end;
         end;
+        Inc(XX, Widths[I]);
       end;
     end;
     Result := [];
   end;
 
 begin
-  Result := [];
-  if (Y >= ContentTop) and (Y < ContentBot) then
-  begin
-    TableOK := (X >= DrawX) and (X <= TableWidth + DrawX);
-    if TableOK then
-      Result := GetTableURL(X, Y);
-  end;
+  if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) then
+    Result := GetTableURL(X, Y)
+  else
+    Result := [];
 end;
 
 {----------------THtmlTable.PtInObject}
 
 function THtmlTable.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
-var
-  TableOK: boolean;
 
   function GetTableObj(X: Integer; Y: Integer): boolean;
   var
     I, J, XX: Integer;
+    Row: TCellList;
+    CellObj: TCellObj;
   begin
     for J := 0 to Rows.Count - 1 do
     begin
+      Row := Rows[J];
       XX := DrawX;
-      with TCellList(Rows[J]) do
+      for I := 0 to Row.Count - 1 do
       begin
-        for I := 0 to Count - 1 do
+        CellObj := Row[I];
+        if CellObj <> nil then
         begin
-          if Assigned(Items[I]) then
-            with TCellObj(Items[I]) do
-            begin
-              if (X >= XX) and (X < XX + Wd)
-                and (Y >= Cell.DrawYY) and (Y < Cell.DrawYY + Ht) then
-              begin
-                Result := Cell.PtInObject(X, Y, Obj, IX, IY);
-                Exit;
-              end;
-            end;
-          Inc(XX, Widths[I]);
+          if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
+          begin
+            Result := CellObj.Cell.PtInObject(X, Y, Obj, IX, IY);
+            Exit;
+          end;
         end;
+        Inc(XX, Widths[I]);
       end;
     end;
     Result := False;
   end;
 
 begin
-  Result := False;
-  if (Y >= ContentTop) and (Y < ContentBot) then
-  begin
-    TableOK := (X >= DrawX) and (X <= TableWidth + DrawX);
-    if TableOK then
-      Result := GetTableObj(X, Y);
-  end;
+  if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) then
+    Result := GetTableObj(X, Y)
+  else
+    Result := False;
 end;
 
 {----------------THtmlTable.FindCursor}
 
 function THtmlTable.FindCursor(Canvas: TCanvas; X, Y: Integer;
   out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
-var
-  TableOK: boolean;
 
   function GetTableCursor(X, Y: Integer;
     out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
   var
     I, J, XX: Integer;
+    Row: TCellList;
+    CellObj: TCellObj;
   begin
     for J := 0 to Rows.Count - 1 do
     begin
+      Row := Rows[J];
       XX := DrawX;
-      with TCellList(Rows[J]) do
+      for I := 0 to Row.Count - 1 do
       begin
-        for I := 0 to Count - 1 do
+        CellObj := Row[I];
+        if CellObj <> nil then
         begin
-          if Assigned(Items[I]) then
-            with TCellObj(Items[I]) do
-            begin
-              if (X >= XX) and (X < XX + Wd)
-                and (Y >= Cell.DrawYY) and (Y < Cell.DrawYY + Ht) then
-              begin
-                Result := Cell.FindCursor(Canvas, X, Y, XR, YR, CaretHt, InText);
-                if Result >= 0 then
-                  Exit;
-              end;
-            end;
+          if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
+          begin
+            Result := CellObj.Cell.FindCursor(Canvas, X, Y, XR, YR, CaretHt, InText);
+            if Result >= 0 then
+              Exit;
+          end;
           Inc(XX, Widths[I]);
         end;
       end;
@@ -9904,13 +10097,10 @@ var
   end;
 
 begin
-  Result := -1;
-  if (Y >= ContentTop) and (Y < ContentBot) then
-  begin
-    TableOK := (X >= DrawX) and (X <= TableWidth + DrawX);
-    if TableOK then
-      Result := GetTableCursor(X, Y, XR, YR, CaretHt, InText);
-  end;
+  if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) then
+    Result := GetTableCursor(X, Y, XR, YR, CaretHt, InText)
+  else
+    Result := -1;
 end;
 
 {----------------THtmlTable.CursorToXY}
@@ -9919,20 +10109,26 @@ function THtmlTable.CursorToXY(Canvas: TCanvas; Cursor: Integer; out X, Y: Integ
 {note: returned X value is not correct here but it isn't used}
 var
   I, J: Integer;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
+  if (len > 0) and (Cursor >= StartCurs) and (Cursor < StartCurs + Len) then
+    for J := 0 to Rows.Count - 1 do
+    begin
+      Row := Rows[J];
+      for I := 0 to Row.Count - 1 do
+      begin
+        CellObj := Row[I];
+        if CellObj <> nil then
+        begin
+          Result := CellObj.Cell.CursorToXy(Canvas, Cursor, X, Y);
+          if Result then
+            Exit;
+        end;
+      end;
+    end;
+    
   Result := False;
-  if (Len = 0) or (Cursor > StartCurs + Len) then
-    Exit;
-  for J := 0 to Rows.Count - 1 do
-    with TCellList(Rows[J]) do
-      for I := 0 to Count - 1 do
-        if Assigned(Items[I]) then
-          with TCellObj(Items[I]) do
-          begin
-            Result := Cell.CursorToXy(Canvas, Cursor, X, Y);
-            if Result then
-              Exit;
-          end;
 end;
 
 {----------------THtmlTable.GetChAtPos}
@@ -9940,61 +10136,76 @@ end;
 function THtmlTable.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 var
   I, J: Integer;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
-  Result := False;
-  if (Len = 0) or (Pos < StartCurs) or (Pos > StartCurs + Len) then
-    Exit;
+  if (len > 0) and (Pos >= StartCurs) and (Pos < StartCurs + Len) then
+    for J := 0 to Rows.Count - 1 do
+    begin
+      Row := Rows[J];
+      for I := 0 to Row.Count - 1 do
+      begin
+        CellObj := Row[I];
+        if CellObj <> nil then
+        begin
+          Result := CellObj.Cell.GetChAtPos(Pos, Ch, Obj);
+          if Result then
+            Exit;
+        end;
+      end;
+    end;
 
-  for J := 0 to Rows.Count - 1 do
-    with TCellList(Rows[J]) do
-      for I := 0 to Count - 1 do
-        if Assigned(Items[I]) then
-          with TCellObj(Items[I]) do
-          begin
-            Result := Cell.GetChAtPos(Pos, Ch, Obj);
-            if Result then
-              Exit;
-          end;
+  Result := False;
 end;
 
 {----------------THtmlTable.FindString}
 
 function THtmlTable.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
-
 var
   I, J: Integer;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
-  Result := -1;
   for J := 0 to Rows.Count - 1 do
-    with TCellList(Rows[J]) do
-      for I := 0 to Count - 1 do
-        if Assigned(Items[I]) then
-          with TCellObj(Items[I]) do
-          begin
-            Result := Cell.FindString(From, ToFind, MatchCase);
-            if Result >= 0 then
-              Exit;
-          end;
+  begin
+    Row := Rows[J];
+    for I := 0 to Row.Count - 1 do
+    begin
+      CellObj := Row[I];
+      if CellObj <> nil then
+      begin
+        Result := CellObj.Cell.FindString(From, ToFind, MatchCase);
+        if Result >= 0 then
+          Exit;
+      end;
+    end;
+  end;
+  Result := -1;
 end;
 
 {----------------THtmlTable.FindStringR}
 
 function THtmlTable.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
-
 var
   I, J: Integer;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
-  Result := -1;
   for J := Rows.Count - 1 downto 0 do
-    with TCellList(Rows[J]) do
-      for I := Count - 1 downto 0 do
-        if Assigned(Items[I]) then
-          with TCellObj(Items[I]) do
-          begin
-            Result := Cell.FindStringR(From, ToFind, MatchCase);
-            if Result >= 0 then
-              Exit;
-          end;
+  begin
+    Row := Rows[J];
+    for I := Row.Count - 1 downto 0 do
+    begin
+      CellObj := Row[I];
+      if CellObj <> nil then
+      begin
+        Result := CellObj.Cell.FindStringR(From, ToFind, MatchCase);
+        if Result >= 0 then
+          Exit;
+      end;
+    end;
+  end;
+  Result := -1;
 end;
 
 {----------------THtmlTable.FindSourcePos}
@@ -10002,18 +10213,24 @@ end;
 function THtmlTable.FindSourcePos(DocPos: Integer): Integer;
 var
   I, J: Integer;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
-  Result := -1;
   for J := 0 to Rows.Count - 1 do
-    with TCellList(Rows[J]) do
-      for I := 0 to Count - 1 do
-        if Assigned(Items[I]) then
-          with TCellObj(Items[I]) do
-          begin
-            Result := Cell.FindSourcePos(DocPos);
-            if Result >= 0 then
-              Exit;
-          end;
+  begin
+    Row := Rows[J];
+    for I := 0 to Row.Count - 1 do
+    begin
+      CellObj := Row[I];
+      if CellObj <> nil then
+      begin
+        Result := CellObj.Cell.FindSourcePos(DocPos);
+        if Result >= 0 then
+          Exit;
+      end;
+    end;
+  end;
+  Result := -1;
 end;
 
 {----------------THtmlTable.FindDocPos}
@@ -10063,13 +10280,19 @@ end;
 procedure THtmlTable.CopyToClipboard;
 var
   I, J: Integer;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
   for J := 0 to Rows.Count - 1 do
-    with TCellList(Rows[J]) do
-      for I := 0 to Count - 1 do
-        if Assigned(Items[I]) then
-          with TCellObj(Items[I]) do
-            Cell.CopyToClipboard;
+  begin
+    Row := Rows[J];
+    for I := 0 to Row.Count - 1 do
+    begin
+      CellObj := Row[I];
+      if CellObj <> nil then
+        CellObj.Cell.CopyToClipboard;
+    end;
+  end;
 end;
 
 {----------------TSection.Create}
@@ -11112,6 +11335,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         end
         else
         begin
+          ImgHt := Max(ImgHt, FlObj.TotalHeight);
           Inc(XX, FlObj.TotalWidth);
           if XX > Width then
             break;
@@ -11828,7 +12052,7 @@ var
               TImageObj(Obj).Positioning := Owner.Positioning
             else
               TImageObj(Obj).Positioning := posStatic;
-            TImageObj(Obj).Draw(Canvas, CPx + Obj.HSpaceL, Y - LR.LineHt, Y - Descent, FO);
+            TImageObj(Obj).Draw(Canvas, CPx + Obj.HSpaceL, LR.DrawY, Y - Descent, FO);
           {see if there's an inline border for the image}
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
@@ -14178,6 +14402,22 @@ begin
     Result := Y
   else
     Result := 0;
+end;
+
+{ TRowList }
+
+//-- BG ---------------------------------------------------------- 26.12.2011 --
+function TRowList.GetItem(Index: Integer): TCellList;
+begin
+  Result := Get(Index);
+end;
+
+{ TColList }
+
+//-- BG ---------------------------------------------------------- 26.12.2011 --
+function TColList.GetItem(Index: Integer): TColObj;
+begin
+  Result := Get(Index);
 end;
 
 initialization

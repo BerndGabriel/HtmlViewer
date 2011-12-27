@@ -167,9 +167,9 @@ type
 
   TProperties = class(TObject)
   private
-    PropStack: TPropStack;
+    PropStack: TPropStack; // owner
     TheFont: TMyFont;
-    InLink: boolean;
+    InLink: Boolean;
     DefFontname: ThtString;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
     procedure AssignCharSet(CS: TFontCharset);

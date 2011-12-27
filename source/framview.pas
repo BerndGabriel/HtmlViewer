@@ -1628,18 +1628,23 @@ var
               else
                 GetCh;
               end;
-            if Ch = '*' then
-            begin
-              Dim[DimCount] := -Min(99, N); {store '*' relatives as negative, -1..-99}
-              GetCh;
-            end
-            else if Ch = '%' then
-            begin {%'s stored as -(100 + %),  i.e. -110 is 10% }
-              Dim[DimCount] := -Min(1000, N + 100); {limit to 900%}
-              GetCh;
-            end
+
+            case Ch of
+              '*':
+              begin
+                Dim[DimCount] := -Min(99, N); {store '*' relatives as negative, -1..-99}
+                GetCh;
+              end;
+
+              '%':
+              begin {%'s stored as -(100 + %),  i.e. -110 is 10% }
+                Dim[DimCount] := -Min(1000, N + 100); {limit to 900%}
+                GetCh;
+              end;
+
             else
               Dim[DimCount] := Min(N, 5000); {limit absolute to 5000}
+            end;
           end;
 
         '*', ',', EOL:

@@ -59,6 +59,18 @@ const
   BrkCh = #8;
 
 type
+  // BG, 26.12.2011:
+  TWidthType = (
+    wtNone,
+    wtAbsolute,
+    wtPercent,
+    wtRelative);
+
+  // BG, 26.12.2011:
+  TSpecWidth = record
+    Value: Double;
+    VType: TWidthType;
+  end;
 
   //BG, 09.09.2009: renamed TGif and TPng to TrGif and TrPng
   //  TGif interfered with same named class.
@@ -122,10 +134,14 @@ type
     Which: Symb; {symbol of attribute such as HrefSy}
     WhichName: ThtString;
     Value: Integer; {numeric value if appropriate}
-    Percent: boolean; {if value is in percent}
+    DblValue: Double; {numeric value if appropriate}
+    xPercent: boolean; {if value is in percent}
     Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
-    constructor Create(ASym: Symb; AValue: Integer; const NameStr, ValueStr: ThtString; ACodePage: Integer);
+    constructor Create(ASym: Symb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
+    property AsString: ThtString read Name;
+    property AsInteger: Integer read Value;
+    property AsDouble: Double read DblValue;
   end;
 
   TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
@@ -564,6 +580,14 @@ procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage;
 procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
   DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 {$ENDIF NoGDIPlus}
+
+//------------------------------------------------------------------------------
+// misc. methods
+//------------------------------------------------------------------------------
+
+// BG, 26.12.2011: new type TSpecWidth
+function SpecWidth(Value: Double; VType: TWidthType): TSpecWidth;
+function ToSpecWidth(AsDouble: Double; AsString: string): TSpecWidth;
 
 //------------------------------------------------------------------------------
 // canvas methods
@@ -1108,6 +1132,37 @@ begin {dummy Assert for Delphi 2}
 end;
 {$ENDIF}
 
+//-- BG ---------------------------------------------------------- 26.12.2011 --
+function SpecWidth(Value: Double; VType: TWidthType): TSpecWidth;
+begin
+  Result.Value := Value;
+  Result.VType := VType;
+end;
+
+//-- BG ---------------------------------------------------------- 26.12.2011 --
+function ToSpecWidth(AsDouble: Double; AsString: string): TSpecWidth;
+// Return a TSpecWidth prepared with values given in AsDouble *and* AsString.
+// AsString is used to evaluate the type while AsDouble is used to evaluate the value.
+// BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Double.
+begin
+  if Pos('%', AsString) > 0 then
+  begin
+    Result.Value := Min(100, AsDouble) * 10;
+    Result.VType := wtPercent;
+  end
+  else if Pos('*', AsString) > 0 then // this is not specified for <td>, <th>. Only <col> and <colgroup> support it officially.
+  begin
+    Result.Value := AsDouble;
+    Result.VType := wtRelative;
+  end
+  else
+  begin
+    Result.Value := AsDouble;
+    Result.VType := wtAbsolute;
+  end;
+end;
+
+
 procedure TFreeList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   if Action = lnDeleted then
@@ -1256,12 +1311,12 @@ end;
 
 { TAttribute }
 
-constructor TAttribute.Create(ASym: Symb; AValue: Integer;
-  const NameStr, ValueStr: ThtString; ACodePage: Integer);
+constructor TAttribute.Create(ASym: Symb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
 begin
   inherited Create;
   Which := ASym;
-  Value := AValue;
+  DblValue := AValue;
+  Value := Trunc(AValue);
   WhichName := NameStr;
   Name := ValueStr;
   CodePage := ACodePage;
