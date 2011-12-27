@@ -115,7 +115,7 @@ type
     procedure SetCodePage(const Value: TBuffCodePage);
   protected
   public
-    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; static;
+    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; 
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
