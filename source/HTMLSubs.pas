@@ -2568,13 +2568,8 @@ procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, 
 var
   White, BlackBorder: boolean;
 begin
-  with SectionList, Canvas do
-  begin
-    White := SectionList.Printing or ((Background and $FFFFFF = clWhite) or
-      ((Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF)));
-    BlackBorder := Printing and PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
-      (GetDeviceCaps(Handle, PLANES) = 1);
-  end;
+  BlackBorder := SectionList.Printing and SectionList.PrintMonoBlack and
+    (GetDeviceCaps(Canvas.Handle, BITSPIXEL) = 1) and (GetDeviceCaps(Canvas.Handle, PLANES) = 1);
   if BlackBorder then
   begin
     Light := clBlack;
@@ -2582,6 +2577,8 @@ begin
   end
   else
   begin
+    White := SectionList.Printing or (SectionList.Background and $FFFFFF = clWhite) or
+      ((SectionList.Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF));
     Dark := clBtnShadow;
     if White then
       Light := clSilver
@@ -8282,7 +8279,7 @@ end;
 {----------------THtmlTable.DoColumns}
 
 procedure THtmlTable.DoColumns(const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
-{add the <col> info to the ColInfo list}
+{add the <col> info to the Cols list}
 var
   Col: TColObj;
 begin
@@ -9418,24 +9415,28 @@ begin
       with Rows[J] do
       begin
         RowHeight := Heights[J];
-        if RowType = THead then
-        begin
-          Inc(HeaderRowCount);
-          Inc(HeaderHeight, RowHeight);
-        end
-        else if RowType = TFoot then
-        begin
-          if FootStartRow = -1 then
+        case RowType of
+          THead:
           begin
-            FootStartRow := J;
-            FootOffset := SectionHeight;
+            Inc(HeaderRowCount);
+            Inc(HeaderHeight, RowHeight);
           end;
-          Inc(FootHeight, RowHeight);
-        end
-        else if Rowtype = TBody then
-          HasBody := True;
+
+          TFoot:
+          begin
+            if FootStartRow = -1 then
+            begin
+              FootStartRow := J;
+              FootOffset := SectionHeight;
+            end;
+            Inc(FootHeight, RowHeight);
+          end;
+
+          TBody:
+            HasBody := True;
+        end;
         RowSpanHeight := 0;
-        Inc(SectionHeight, Heights[J]);
+        Inc(SectionHeight, RowHeight);
         for I := 0 to Count - 1 do
           if Assigned(Items[I]) then
           begin

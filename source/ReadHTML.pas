@@ -147,7 +147,6 @@ type
     procedure DoBase;
     procedure DoBody(const TermSet: SymbSet);
     procedure DoBr(const TermSet: SymbSet);
-    procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
     procedure DoCommonSy;
     procedure DoDivEtc(Sym: Symb; const TermSet: SymbSet);
     procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
@@ -193,6 +192,18 @@ implementation
 
 uses
   HtmlView, FramView, StylePars, UrlSubs;
+
+const
+  TableTermSet = [
+    TableEndSy,
+    TBodySy, TBodyEndSy,
+    TFootSy, TFootEndSy,
+    THeadSy, THeadEndSy,
+    TDSy, TDEndSy,
+    THSy, THEndSy,
+    TRSy, TREndSy,
+    CaptionSy, CaptionEndSy,
+    ColgroupSy, ColSy];
 
 type
   PEntity = ^TEntity;
@@ -1126,10 +1137,6 @@ begin
     PropStack.Last.Assign(S, TextAlign);
 end;
 
-const
-  TableTermSet = [TableEndSy, TDSy, TRSy, TREndSy, THSy, THEndSy, TDEndSy,
-    CaptionSy, CaptionEndSy, ColSy, ColgroupSy];
-
 procedure THtmlParser.DoAEnd; {do the </a>}
 begin
   if InHref then {see if we're in an href}
@@ -1370,107 +1377,108 @@ begin
   end;
 end;
 
-procedure THtmlParser.DoColGroup(Table: ThtmlTable; ColOK: Boolean);
-{reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's ConInfo list}
+{----------------DoTable}
 
-  procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
+procedure THtmlParser.DoTable;
 
-    function AlignmentFromString(S: ThtString): AlignmentType;
+  procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
+  {reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's Cols list}
+
+    procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
+
+      function AlignmentFromString(S: ThtString): AlignmentType;
+      begin
+        S := LowerCase(S);
+        if TryStrToAlignmentStyle(S, Result) then
+          exit;
+
+        if (S = 'absmiddle') or (S = 'center') then
+          Result := AMiddle
+        else
+          Result := ANone;
+      end;
+
+    var
+      I: Integer;
+      Algn: AlignmentType;
     begin
-      S := LowerCase(S);
-      if TryStrToAlignmentStyle(S, Result) then
-        exit;
+      for I := 0 to Attributes.Count - 1 do
+        with Attributes[I] do
+          case Which of
+            WidthSy:
+              if Pos('%', Name) > 0 then
+                Spec := SpecWidth(Max(0, Min(100, Value)) * 10, wtPercent)
+              else if Pos('*', Name) > 0 then
+                Spec := SpecWidth(Value, wtRelative)
+              else
+                Spec := SpecWidth(Value, wtAbsolute);
 
-      if (S = 'absmiddle') or (S = 'center') then
-        Result := AMiddle
-      else
-        Result := ANone;
+            AlignSy:
+              begin
+                Algn := AlignmentFromString(Name);
+                if Algn in [ALeft, AMiddle, ARight, AJustify] then
+                  Align := Lowercase(Name);
+              end;
+
+            VAlignSy:
+              begin
+                Algn := AlignmentFromString(Name);
+                if Algn in [ATop, AMiddle, ABottom, ABaseLine] then
+                  VAlign := Algn;
+              end;
+
+            SpanSy:
+              Span := Max(1, Value);
+          end;
     end;
 
   var
     I: Integer;
-    Algn: AlignmentType;
+    xSpan, cSpan: Integer;
+    xWidth, cWidth: TSpecWidth;
+    xVAlign, cVAlign: AlignmentType;
+    xAlign, cAlign: ThtString;
   begin
-    for I := 0 to Attributes.Count - 1 do
-      with Attributes[I] do
-        case Which of
-          WidthSy:
-            if Pos('%', Name) > 0 then
-              Spec := SpecWidth(Max(0, Min(100, Value)) * 10, wtPercent)
-            else if Pos('*', Name) > 0 then
-              Spec := SpecWidth(Value, wtRelative)
-            else
-              Spec := SpecWidth(Value, wtAbsolute);
-
-          AlignSy:
-            begin
-              Algn := AlignmentFromString(Name);
-              if Algn in [ALeft, AMiddle, ARight, AJustify] then
-                Align := Lowercase(Name);
-            end;
-
-          VAlignSy:
-            begin
-              Algn := AlignmentFromString(Name);
-              if Algn in [ATop, AMiddle, ABottom, ABaseLine] then
-                VAlign := Algn;
-            end;
-
-          SpanSy:
-            Span := Max(1, Value);
-        end;
-  end;
-
-var
-  I: Integer;
-  xSpan, cSpan: Integer;
-  xWidth, cWidth: TSpecWidth;
-  xVAlign, cVAlign: AlignmentType;
-  xAlign, cAlign: ThtString;
-begin
-  xWidth := SpecWidth(0, wtNone);
-  xVAlign := ANone;
-  xAlign := '';
-  xSpan := 1;
-  if Sy = ColGroupSy then
-  begin
-    if ColOk then
-      ReadColAttributes(xWidth, xVAlign, xAlign, xSpan);
-    SkipWhiteSpace;
-    Next;
-  end;
-  if Sy = ColSy then
-  begin
-    while Sy = ColSy do
+    xWidth := SpecWidth(0, wtNone);
+    xVAlign := ANone;
+    xAlign := '';
+    xSpan := 1;
+    if Sy = ColGroupSy then
     begin
-      if ColOK then
-      begin
-      {any new attributes in <col> will have priority over the <colgroup> items just read}
-        cWidth := xWidth; {the default values}
-        cVAlign := xVAlign;
-        cAlign := xAlign;
-        cSpan := 1; // ignore xSpan, if there is at least 1 <col> tag.
-        ReadColAttributes(cWidth, cVAlign, cAlign, cSpan);
-        for I := 1 to Min(cSpan, 10000) do
-          Table.DoColumns(cWidth, cVAlign, cAlign);
-      end;
+      if ColOk then
+        ReadColAttributes(xWidth, xVAlign, xAlign, xSpan);
       SkipWhiteSpace;
       Next;
+    end;
+    if Sy = ColSy then
+    begin
+      while Sy = ColSy do
+      begin
+        if ColOK then
+        begin
+        {any new attributes in <col> will have priority over the <colgroup> items just read}
+          cWidth := xWidth; {the default values}
+          cVAlign := xVAlign;
+          cAlign := xAlign;
+          cSpan := 1; // ignore xSpan, if there is at least 1 <col> tag.
+          ReadColAttributes(cWidth, cVAlign, cAlign, cSpan);
+          for I := 1 to Min(cSpan, 10000) do
+            Table.DoColumns(cWidth, cVAlign, cAlign);
+        end;
+        SkipWhiteSpace;
+        Next;
+      end
     end
-  end
-  else
-  begin
-    if ColOK then
-      for I := 1 to Min(xSpan, 10000) do
-        Table.DoColumns(xWidth, xVAlign, xAlign);
+    else
+    begin
+      if ColOK then
+        for I := 1 to Min(xSpan, 10000) do
+          Table.DoColumns(xWidth, xVAlign, xAlign);
+    end;
+    if Sy = ColGroupEndSy then
+      Next;
   end;
-  if Sy = ColGroupEndSy then
-    Next;
-end;
 
-{----------------DoTable}
-
-procedure THtmlParser.DoTable;
 var
   Table: ThtmlTable;
   SaveSectionList, JunkSaveSectionList: TCellBasic;
@@ -1498,7 +1506,6 @@ var
   TrDisplay: TPropDisplay; // Yunqa.de.
   S: PropIndices;
   V: Variant;
-//  CellBorderStyle: BorderStyleType;
 
   function GetVAlign(Default: AlignmentType): AlignmentType;
   var
@@ -1531,11 +1538,11 @@ var
         if Assigned(CM) then
           CM.AddCell(Table.Rows.Count, CellObj);
       end
-      else
 {$IFDEF DebugIt}
+      else
         //ShowMessage('Table cell error, ReadHTML.pas, DoTable')
 {$ENDIF}
-        ;
+      ;
       SectionList := nil;
     end;
   end;
@@ -1549,11 +1556,11 @@ var
       AddSection;
       if TrDisplay <> pdNone then
       begin
-        if RowType <> TFoot then
-          Table.Rows.Add(Row)
-        else
-          FootList.Add(Row);
         Row.RowType := RowType;
+        if RowType = TFoot then
+          FootList.Add(Row)
+        else
+          Table.Rows.Add(Row);
       end
       else
         Row.Free;
@@ -1582,7 +1589,7 @@ begin
   CaptionBlock := nil;
   TopCaption := True;
   if PropStack.Last.Props[TextAlign] = 'center' then
-    SetJustify := centered
+    SetJustify := Centered
   else if PropStack.Last.Props[TextAlign] = 'right' then
     SetJustify := Right
   else
@@ -1608,7 +1615,7 @@ begin
       case Sy of
         TDSy, THSy:
           begin
-            ColOK := False; {no more <col> tags processed}
+            ColOK := False; {no more <colgroup> and <col> tags processed}
             if InHref then
               DoAEnd;
             CurrentStyle := SaveStyle;
@@ -1652,20 +1659,17 @@ begin
                 PropStack.Last.Assign('left', TextAlign); {td}
             if (Attributes.TheStyle = nil) and (Table.BorderWidth > 0) then
             begin
-//TODO -oBG, 12.03.2011: cell border default
-//              if NewBlock.BorderStyle = bssOutset then
-//                CellBorderStyle := bssInset
-//              else if NewBlock.BorderStyle = bssInset then
-//                CellBorderStyle := bssOutset
-//              else
-//                CellBorderStyle := NewBlock.BorderStyle;
-
               for S := BorderTopStyle to BorderLeftStyle do
               begin
                 V := PropStack.Last.Props[S];
-//TODO -oBG, 12.03.2011: cell border default
-//                if (VarType(V) in varInt) and (V = IntNull) then
-//                  PropStack.Last.Props[S] := CellBorderStyle;
+                if (VarType(V) in varInt) and (V = IntNull) then
+                  if VarType(NewBlock.MargArrayO[S]) in varInt then
+                    case BorderStyleType(NewBlock.MargArrayO[S]) of
+                      bssInset:   PropStack.Last.Props[S] := bssOutset;
+                      bssOutset:  PropStack.Last.Props[S] := bssInset;
+                    else
+                      PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
+                    end;
               end;
               for S := BorderTopWidth to BorderLeftWidth do
               begin
@@ -1690,6 +1694,7 @@ begin
             Next;
             DoBody(TableTermSet);
           end;
+          
         CaptionSy:
           begin
             if InHref then
@@ -1713,6 +1718,7 @@ begin
             if Sy = CaptionEndSy then
               Next; {else it's TDSy, THSy, etc}
           end;
+
         THeadSy, TBodySy, TFootSy, THeadEndSy, TBodyEndSy, TFootEndSy:
           begin
             AddRow; {if it hasn't been added already}
@@ -1729,16 +1735,19 @@ begin
                 end
                 else
                   RowType := TBody;
+
               TBodySy:
                 begin
                   RowType := TBody;
                   TdTh := 'tbody';
                 end;
+
               TFootSy:
                 begin
                   RowType := TFoot;
                   TdTh := 'tfoot';
                 end;
+
               THeadEndSy, TBodyEndSy, TFootEndSy:
                 RowType := TBody;
             end;
@@ -1746,11 +1755,13 @@ begin
               PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
             Next;
           end;
+
         TREndSy:
           begin
             AddRow;
             Next;
           end;
+
         TRSy:
           begin
             AddRow; {if it is still assigned}
@@ -1762,8 +1773,13 @@ begin
             RowVAlign := GetVAlign(AMiddle);
             Next;
           end;
+
         TDEndSy, THEndSy:
-          begin AddSection; Next; end;
+          begin
+            AddSection;
+            Next;
+          end;
+
         ColSy, ColGroupSy:
           begin
             DoColGroup(Table, ColOK);
