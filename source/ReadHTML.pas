@@ -192,6 +192,18 @@ implementation
 uses
   HtmlView, FramView, StylePars, UrlSubs;
 
+const
+  TableTermSet = [
+    TableEndSy,
+    TBodySy, TBodyEndSy,
+    TFootSy, TFootEndSy,
+    THeadSy, THeadEndSy,
+    TDSy, TDEndSy,
+    THSy, THEndSy,
+    TRSy, TREndSy,
+    CaptionSy, CaptionEndSy,
+    ColgroupSy, ColSy];
+
 type
   PEntity = ^TEntity;
   TEntity = record
@@ -1143,10 +1155,6 @@ begin
   if S <> '' then
     PropStack.Last.Assign(S, TextAlign);
 end;
-
-const
-  TableTermSet = [TableEndSy, TDSy, TRSy, TREndSy, THSy, THEndSy, TDEndSy,
-    CaptionSy, CaptionEndSy, ColSy, ColgroupSy];
 
 procedure THtmlParser.DoAEnd; {do the </a>}
 begin
