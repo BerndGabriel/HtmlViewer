@@ -187,7 +187,7 @@ type
   TCellBasic = class(TSectionBaseList) {a list of sections and blocks}
   private
     FDocument: ThtDocument; // the document it belongs to
-    FOwnerBlock: TBlock;         // the parental block it is placed in
+    FOwnerBlock: TBlock;    // the parental block it is placed in
   public
     // source buffer reference
     StartCurs: Integer;     // where the section starts in the source buffer.
@@ -617,7 +617,6 @@ type
   public
     MyCell: TBlockCell; // the block content
     MargArrayO: TVMarginArray;
-    //OwnerCell: TCellBasic; //TODO -oBG, 10.03.2011: should be in TSectionBase instead of FDocument and FOwnerBlock
     BGImage: TImageObj;    //TODO -oBG, 10.03.2011: see also bkGnd and bkColor in TCellBasic one background should be enough.
     BlockTitle: ThtString;
     TagClass: ThtString; {debugging aid} //BG, 10.03.2011: see also TCellBasic.OwnersTag
@@ -1213,15 +1212,23 @@ type
     HeaderHeight, HeaderRowCount, FootHeight, FootStartRow, FootOffset: Integer;
     BodyBreak: Integer;
     HeadOrFoot: Boolean;
-    procedure DrawTable(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
-    procedure DrawTableP(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
+    Percents: DblArray;     {percent widths of columns}
+    Multis: DblArray;       {multi widths of columns}
+    MaxWidths: IntArray;
+    MinWidths: IntArray;
+    FCols: TColList;
+    procedure AddDummyCells;
     procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
+    procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
+    procedure GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer; TheWidth: Integer);
+    procedure GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer; Specified: boolean);
+    procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
+    procedure TableSpecifiedAndWillFit(TheWidth: Integer);
   public
     Rows: TRowList;        {a list of TCellLists}
-    Cols: TColList;
     // these fields are copied via Move() in CreateCopy. Don't add reference counted data like strings and arrays.
     ListsProcessed: Boolean;
-    Indent: Integer;        {table indent}
+    //Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
     Float: Boolean;         {if floating}
     NumCols: Integer;       {Number columns in table}
@@ -1238,27 +1245,17 @@ type
     EndList: boolean;        {marker for copy}
     // end of Move()d fields
     DrawX: Integer;
-    DrawY: Integer;
+    //DrawY: Integer;
     BkGnd: boolean;
     BkColor: TColor;
-    Percents: DblArray;     {percent widths of columns}
-    Multis: DblArray;       {multi widths of columns}
-    Widths: IntArray;       {holds column widths}
-    MaxWidths: IntArray;
-    MinWidths: IntArray;
-    Heights: IntArray;
+    Widths: IntArray;       {holds calculated column widths}
+    Heights: IntArray;      {holds calculated column heights}
 
     constructor Create(OwnerCell: TCellBasic; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); override;
     destructor Destroy; override;
     procedure DoColumns(const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
-    procedure AddDummyCells;
-    procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
-    procedure GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer; Specified: boolean);
-    procedure GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer; TheWidth: Integer);
-    procedure TableSpecifiedAndWillFit(TheWidth: Integer);
-    procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -1274,6 +1271,7 @@ type
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     procedure CopyToClipboard; override;
+    property Cols: TColList read FCols;
   end;
 
 //------------------------------------------------------------------------------
@@ -6220,16 +6218,23 @@ begin
   MargArray[piWidth] := Result;
 
   if (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) and (Result + LeftSide + RightSide < AWidth) then
+  begin
+     M := AWidth - LeftSide - Result - RightSide;
     case Justify of
       Centered:
       begin
-        M := AWidth - LeftSide - Result - RightSide;
         MargArray[MarginLeft]  := M div 2;
         MargArray[MarginRight] := M - MargArray[MarginLeft];
       end;
+
       Right:
-        MargArray[MarginLeft] := AWidth - (Result + LeftSide + RightSide);
+        MargArray[MarginLeft] := M;
+
+      Left:
+        MargArray[MarginRight] := M;
+
     end;
+  end;
 end;
 
 function TTableBlock.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer;
@@ -8270,7 +8275,7 @@ destructor THtmlTable.Destroy;
 begin
   Rows.Free;
   TablePartRec.Free;
-  FreeAndNil(Cols);
+  FreeAndNil(FCols);
   inherited Destroy;
 end;
 
@@ -8288,9 +8293,9 @@ begin
     colVAlign := VAlign;
     colAlign := Align;
   end;
-  if Cols = nil then
-    Cols := TColList.Create;
-  Cols.Add(Col);
+  if FCols = nil then
+    FCols := TColList.Create;
+  FCols.Add(Col);
 end;
 
 {----------------THtmlTable.AddDummyCells}
@@ -8462,7 +8467,7 @@ begin
         end;
       end;
       UseAbsolute := AnyAbsolute;
-      FreeAndNil(Cols); {no longer needed}
+      FreeAndNil(FCols); {no longer needed}
     end;
 
     SetLength(Widths, NumCols);
@@ -8475,18 +8480,42 @@ begin
   end; {if not ListsProcessed}
 end;
 
+//-- BG ---------------------------------------------------------- 28.12.2011 --
+procedure IncreaseWidths(var Widths: IntArray; StartIndex, ColSpan, RequiredWidth: Integer);
+// Increases width of spanned columns
+// extracted from GetMinMaxAbs and enhanced.
+var
+  Spanned, Excess, Remainder, N, Add: Integer;
+begin
+  Spanned := 0;
+  for N := StartIndex to StartIndex + ColSpan - 1 do
+    Inc(Spanned, Widths[N]);
+  Excess := RequiredWidth - Spanned;
+  if Excess > 0 then
+  begin
+    Remainder := Excess;
+    Add := RequiredWidth div ColSpan;
+    // increase the width of the spanned columns
+    for N := StartIndex + 1 to StartIndex + ColSpan - 1 do
+    begin
+      if Spanned > 0 then
+        Add := MulDiv(Widths[N], Excess, Spanned);
+      Inc(Widths[N], Add);
+      Dec(Remainder, Add);
+    end;
+    // add the remaining pixels (incl. round-off errors) to the first column's width.
+    Inc(Widths[StartIndex], Remainder);
+  end;
+end;
+
 {----------------THtmlTable.GetMinMaxAbs}
 
-procedure THtmlTable.GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth,
-  TotalMaxWidth: Integer);
+procedure THtmlTable.GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
 var
-  I, J, Min, Max, N, Span, Addon, D: Integer;
-  More: boolean;
+  I, J, CellMin, CellMax, Span, Addon: Integer;
+  Done: boolean;
   Row: TCellList;
   CellObj: TCellObj;
-
-//label Two;
-
 begin
   for I := 0 to NumCols - 1 do
   begin
@@ -8494,11 +8523,10 @@ begin
     MinWidths[I] := 0;
   end;
   SetLength(Heights, 0);
-  Span := 1;
-  More := True;
-  while More do
-  begin
-    More := False;
+  Span := 0;
+  repeat
+    Done := True;
+    Inc(Span);
     for J := 0 to Rows.Count - 1 do
     begin
       Row := Rows[J];
@@ -8507,64 +8535,38 @@ begin
         CellObj := Row[I];
         if CellObj <> nil then
         begin
-          More := More or (CellObj.ColSpan > Span); {set if need another iteration}
           if CellObj.ColSpan = Span then
           begin
-            CellObj.Cell.MinMaxWidth(Canvas, Min, Max);
+            CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
             Addon := CellSpacing + CellObj.HzSpace;
-            Inc(Min, Addon);
-            Inc(Max, Addon);
+            Inc(CellMin, Addon);
+            Inc(CellMax, Addon);
+            if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
+            begin
+              CellMin := Max(CellMin, Trunc(CellObj.SpecWd.Value) + Addon);
+              CellMax := CellMin;
+            end;
             if Span = 1 then
             begin
-              if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
-              begin
-                Max := Math.Max(Min, Trunc(CellObj.SpecWd.Value + Addon));
-                Min := Max;
-              end;
-              MinWidths[I] := Math.Max(MinWidths[I], Min);
-              MaxWidths[I] := Math.Max(MaxWidths[I], Max);
+              MinWidths[I] := Max(MinWidths[I], CellMin);
+              MaxWidths[I] := Max(MaxWidths[I], CellMax);
             end
             else
             begin
-              TotalMinWidth := 0; TotalMaxWidth := 0;
-              for N := I to I + CellObj.ColSpan - 1 do
-              begin {find the current totals for the span}
-                Inc(TotalMaxWidth, MaxWidths[N]);
-                Inc(TotalMinWidth, MinWidths[N]);
-              end;
-              if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
-              begin
-                Min := Math.Max(Min, Trunc(CellObj.SpecWd.Value) {+Cellspacing});
-                Max := Math.Max(Min, Trunc(CellObj.SpecWd.Value) {+Cellspacing});
-              end;
-              if (TotalMinWidth < Min) then
-                if TotalMinWidth > 0 then
-                begin
-                  D := Min - TotalMinWidth;
-                  for N := I to I + CellObj.ColSpan - 1 do {increase the sub widths to match the span}
-                    MinWidths[N] := MinWidths[N] + MulDiv(MinWidths[N], D, TotalMinWidth);
-                end
-                else
-                  MinWidths[I] := Min; {this for multiple empty cols}
-              if (TotalMaxWidth < Max) then
-                if TotalMaxWidth > 0 then
-                begin {increase the sub widths to match the span}
-                  D := Max - TotalMaxWidth;
-                  for N := I to I + CellObj.ColSpan - 1 do {increase the sub widths to match the span}
-                    MaxWidths[N] := MaxWidths[N] + MulDiv(MaxWidths[N], D, TotalMaxWidth);
-                end
-                else
-                  MaxWidths[I] := Max;
+              IncreaseWidths(MinWidths, I, CellObj.ColSpan, CellMin);
+              IncreaseWidths(MaxWidths, I, CellObj.ColSpan, CellMax);
             end;
-          end;
+          end
+          else if CellObj.ColSpan > Span then
+            Done := False; {set if need another iteration}
         end;
       end;
     end;
-    Inc(Span);
-  end;
+  until Done;
 
 {Find the total min and max width}
-  TotalMaxWidth := 0; TotalMinWidth := 0;
+  TotalMaxWidth := 0;
+  TotalMinWidth := 0;
   for I := 0 to NumCols - 1 do
   begin
     Inc(TotalMaxWidth, MaxWidths[I]);
@@ -8574,8 +8576,7 @@ end;
 
 {----------------THtmlTable.GetWidthsAbs}
 
-procedure THtmlTable.GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer;
-  Specified: boolean);
+procedure THtmlTable.GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer; Specified: boolean);
 var
   N, D, W, dd, TotalMinWidth, TotalMaxWidth: Integer;
   Accum: Integer;
@@ -8634,7 +8635,7 @@ end;
 procedure THtmlTable.GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer;
   TheWidth: Integer);
 var
-  I, J, Min, Max, N, Span, Addon, Accum, ExcessMin, ExcessMax, NonPc: Integer;
+  I, J, CellMin, CellMax, SpannedMin, SpannedMax, N, Span, Addon, Accum, ExcessMin, ExcessMax, NonPc: Integer;
   Distributable, NewTotalPC: Double;
   CellWidth: array [wtPercent..wtRelative] of Double;
   Cells: TCellList;
@@ -8689,31 +8690,31 @@ begin
                     CellWidth[CellObj.SpecWd.VType] := CellObj.SpecWd.Value;
                 else
 //                  if TheWidth > 0 then
-//                    CellWidth[wtPercent] := Math.Min(1000.0, CellObj.SpecWd.Value / TheWidth * 1000.0);
+//                    CellWidth[wtPercent] := Min(1000.0, CellObj.SpecWd.Value / TheWidth * 1000.0);
                 end;
 
-              CellObj.Cell.MinMaxWidth(Canvas, Min, Max);
+              CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
               Addon := CellSpacing + CellObj.HzSpace;
-              Inc(Min, Addon);
-              Inc(Max, Addon);
+              Inc(CellMin, Addon);
+              Inc(CellMax, Addon);
               if Span = 1 then
               begin
-                MaxWidths[I] := Math.Max(MaxWidths[I], Max);
-                MinWidths[I] := Math.Max(MinWidths[I], Min);
-                Percents[I] := Math.Max(Percents[I], CellWidth[wtPercent]); {collect percents}
-                Multis[i] := Math.Max(Multis[I], CellWidth[wtRelative]); { collect multis}
+                MaxWidths[I] := Max(MaxWidths[I], CellMax);
+                MinWidths[I] := Max(MinWidths[I], CellMin);
+                Percents[I] := Max(Percents[I], CellWidth[wtPercent]); {collect percents}
+                Multis[i] := Max(Multis[I], CellWidth[wtRelative]); { collect multis}
               end
               else
               begin
-                TotalMaxWidth := 0;
-                TotalMinWidth := 0;
+                SpannedMax := 0;
+                SpannedMin := 0;
                 NonPC := 0;
                 for WI := low(TotalWidth) to high(TotalWidth) do
                   TotalWidth[WI] := 0;
                 for N := I to I + CellObj.ColSpan - 1 do
                 begin {Total up the pertinant column widths}
-                  Inc(TotalMaxWidth, MaxWidths[N]);
-                  Inc(TotalMinWidth, MinWidths[N]);
+                  Inc(SpannedMax, MaxWidths[N]);
+                  Inc(SpannedMin, MinWidths[N]);
 
                   if Percents[N] > 0 then
                     TotalWidth[wtPercent] := TotalWidth[wtPercent] + Percents[N] {total percents}
@@ -8724,16 +8725,16 @@ begin
                 end;
                 if CellObj.Colspan = NumCols then
                 begin
-                  TotalMinWidth := Math.Max(TotalMinWidth, TheWidth);
-                  TotalMaxWidth := Math.Max(TotalMaxWidth, TheWidth);
+                  SpannedMin := Max(SpannedMin, TheWidth);
+                  SpannedMax := Max(SpannedMax, TheWidth);
                 end;
-                ExcessMin := Min - TotalMinWidth;
-                ExcessMax := Max - TotalMaxWidth;
+                ExcessMin := CellMin - SpannedMin;
+                ExcessMax := CellMax - SpannedMax;
                 if (CellWidth[wtPercent] > 0) or (TotalWidth[wtPercent] > 0) then
                 begin {manipulate for percentages}
                   if NonPC > 0 then
                   {find the extra percentages to divvy up}
-                    Distributable := Math.Max(0, (CellWidth[wtPercent] - TotalWidth[wtPercent]) / NonPC)
+                    Distributable := Max(0, (CellWidth[wtPercent] - TotalWidth[wtPercent]) / NonPC)
                   else
                     Distributable := 0;
 
@@ -8746,14 +8747,14 @@ begin
                     for N := I to I + CellObj.ColSpan - 1 do
                       if Percents[N] = 0 then
                         Percents[N] := Distributable;
-                  NewTotalPC := Math.Max(CellWidth[wtPercent], TotalWidth[wtPercent]);
+                  NewTotalPC := Max(CellWidth[wtPercent], TotalWidth[wtPercent]);
                   if ExcessMin > 0 then
                   begin
-                    if (NonPC > 0) and (TotalMaxWidth > 0) then {split excess over all cells}
+                    if (NonPC > 0) and (SpannedMax > 0) then {split excess over all cells}
                     begin
                     {proportion the distribution so cells with large MaxWidth get more}
                       for N := I to I + CellObj.ColSpan - 1 do
-                        Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], TotalMaxWidth));
+                        Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], SpannedMax));
                     end
                     else
                       for N := I to I + CellObj.ColSpan - 1 do
@@ -8770,28 +8771,28 @@ begin
                     Accum := 0;
                     for N := I to I + CellObj.ColSpan - 1 do
                     begin
-                      if TotalMinWidth = 0 then
-                        MinWidths[N] := Min div CellObj.ColSpan
+                      if SpannedMin = 0 then
+                        MinWidths[N] := CellMin div CellObj.ColSpan
                       else {split up the widths in proportion to widths already there}
-                        MinWidths[N] := MulDiv(Min, MinWidths[N], TotalMinWidth);
+                        MinWidths[N] := MulDiv(CellMin, MinWidths[N], SpannedMin);
                       Inc(Accum, MinWidths[N]);
                     end;
-                    if Accum < Min then {might be a roundoff pixel or two left over}
-                      Inc(MinWidths[I], Min - Accum);
+                    if Accum < CellMin then {might be a roundoff pixel or two left over}
+                      Inc(MinWidths[I], CellMin - Accum);
                   end;
                   if ExcessMax > 0 then
                   begin
                     Accum := 0;
                     for N := I to I + CellObj.ColSpan - 1 do
                     begin
-                      if TotalMaxWidth = 0 then
-                        MaxWidths[N] := Max div CellObj.ColSpan
+                      if SpannedMax = 0 then
+                        MaxWidths[N] := CellMax div CellObj.ColSpan
                       else {split up the widths in proportion to widths already there}
-                        MaxWidths[N] := MulDiv(Max, MaxWidths[N], TotalMaxWidth);
+                        MaxWidths[N] := MulDiv(CellMax, MaxWidths[N], SpannedMax);
                       Inc(Accum, MaxWidths[N]);
                     end;
-                    if Accum < Max then {might be a roundoff pixel or two left over}
-                      Inc(MaxWidths[I], Max - Accum);
+                    if Accum < CellMax then {might be a roundoff pixel or two left over}
+                      Inc(MaxWidths[I], CellMax - Accum);
                   end;
                 end;
               end;
@@ -9484,8 +9485,226 @@ end;
 {----------------THtmlTable.Draw}
 
 function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
+
+  procedure DrawTable(XX, YY, YOffset: Integer);
+  var
+    I: Integer;
+  begin
+    for I := 0 to Rows.Count - 1 do
+      YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+        XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+        BorderColorDark, I);
+  end;
+
+  procedure DrawTableP(XX, YY, YOffset: Integer);
+  {Printing table with thead and/or tfoot}
+  var
+    TopBorder, BottomBorder: Integer;
+    SavePageBottom: Integer;
+    Spacing, HeightNeeded: Integer;
+
+    procedure DrawNormal;
+    var
+      Y, I: Integer;
+    begin
+      Y := YY;
+      Document.PrintingTable := Self;
+      if Document.PageBottom - Y >= TableHeight + BottomBorder then
+      begin
+        for I := 0 to Rows.Count - 1 do {do whole table now}
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+        Document.PrintingTable := nil;
+      end
+      else
+      begin {see if enough room on this page for header, 1 row, footer}
+        if HeadOrFoot then
+        begin
+          Spacing := CellSpacing div 2;
+          HeightNeeded := HeaderHeight + FootHeight + Rows[HeaderRowCount].RowHeight;
+          if (Y - YOffset > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
+            (HeightNeeded < ARect.Bottom - ARect.Top) then
+          begin {not enough room, start table on next page}
+            if YY + Spacing < Document.PageBottom then
+            begin
+              Document.PageShortened := True;
+              Document.PageBottom := YY + Spacing;
+            end;
+            exit;
+          end;
+        end;
+        {start table. it will not be complete and will go to next page}
+        SavePageBottom := Document.PageBottom;
+        Document.PageBottom := SavePageBottom - FootHeight - Cellspacing - BottomBorder - 5; {a little to spare}
+        for I := 0 to Rows.Count - 1 do {do part of table}
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+        BodyBreak := Document.PageBottom;
+        if FootStartRow >= 0 then
+        begin
+          TablePartRec.TablePart := DoFoot;
+          TablePartRec.PartStart := Y + FootOffset;
+          TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder;
+          Document.TheOwner.TablePartRec := TablePartRec;
+        end
+        else if HeaderHeight > 0 then
+        begin {will do header next}
+          //Document.PageBottom := SavePageBottom;
+          TablePartRec.TablePart := DoHead;
+          TablePartRec.PartStart := Y - TopBorder;
+          TablePartRec.PartHeight := HeaderHeight + TopBorder;
+          Document.TheOwner.TablePartRec := TablePartRec;
+        end;
+        Document.TheOwner.TablePartRec := TablePartRec;
+      end;
+    end;
+
+    procedure DrawBody1;
+    var
+      Y, I: Integer;
+    begin
+      Y := YY;
+      if Document.PageBottom > Y + TableHeight + BottomBorder then
+      begin {can complete table now}
+        for I := 0 to Rows.Count - 1 do {do remainder of table now}
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+        Document.TheOwner.TablePartRec.TablePart := Normal;
+      end
+      else
+      begin {will do part of the table now}
+    {Leave room for foot later}
+        Document.PageBottom := Document.PageBottom - FootHeight + Max(Cellspacing, 1) - BottomBorder;
+        for I := 0 to Rows.Count - 1 do
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+        BodyBreak := Document.PageBottom;
+        if FootStartRow >= 0 then
+        begin
+          TablePartRec.TablePart := DoFoot;
+          TablePartRec.PartStart := Y + FootOffset;
+          TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
+          Document.TheOwner.TablePartRec := TablePartRec;
+        end
+        else if HeaderHeight > 0 then
+        begin
+          TablePartRec.TablePart := DoHead;
+          TablePartRec.PartStart := Y - TopBorder;
+          TablePartRec.PartHeight := HeaderHeight + TopBorder;
+          Document.TheOwner.TablePartRec := TablePartRec;
+        end;
+        Document.TheOwner.TablePartRec := TablePartRec;
+      end;
+    end;
+
+    procedure DrawBody2;
+    var
+      Y, I: Integer;
+    begin
+      Y := YY;
+      if Document.PageBottom > Y + TableHeight + BottomBorder then
+      begin
+        for I := 0 to Rows.Count - 1 do {do remainder of table now}
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+        Document.TheOwner.TablePartRec.TablePart := Normal;
+        Document.PrintingTable := nil;
+      end
+      else
+      begin
+        SavePageBottom := Document.PageBottom;
+        for I := 0 to Rows.Count - 1 do {do part of table}
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+        BodyBreak := Document.PageBottom;
+        if FootStartRow >= 0 then
+        begin
+          TablePartRec.TablePart := DoFoot;
+          TablePartRec.PartStart := Y + FootOffset;
+          TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
+          Document.TheOwner.TablePartRec := TablePartRec;
+        end
+        else if HeaderHeight > 0 then
+        begin
+          Document.PageBottom := SavePageBottom;
+          TablePartRec.TablePart := DoHead;
+          TablePartRec.PartStart := Y - TopBorder;
+          TablePartRec.PartHeight := HeaderHeight + TopBorder;
+          Document.TheOwner.TablePartRec := TablePartRec;
+        end;
+        Document.TheOwner.TablePartRec := TablePartRec;
+      end;
+    end;
+
+    procedure DrawFoot;
+    var
+      Y, I: Integer;
+    begin
+      Y := YY;
+      YY := TablePartRec.PartStart;
+      if FootStartRow >= 0 then
+        for I := FootStartRow to Rows.Count - 1 do
+          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            BorderColorDark, I);
+      if HeaderHeight > 0 then
+      begin
+        TablePartRec.TablePart := DoHead;
+        TablePartRec.PartStart := Y - TopBorder;
+        TablePartRec.PartHeight := HeaderHeight + TopBorder;
+      end
+      else
+      begin {No THead}
+        TablePartRec.TablePart := DoBody3;
+        TablePartRec.PartStart := BodyBreak - 1;
+        TablePartRec.FootHeight := FootHeight + Max(Cellspacing, 1);
+      end;
+      Document.TheOwner.TablePartRec := TablePartRec;
+    end;
+
+    procedure DrawHead;
+    var
+      I: Integer;
+    begin
+      for I := 0 to HeaderRowCount - 1 do
+        YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
+          XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+          BorderColorDark, I);
+      TablePartRec.TablePart := DoBody1;
+      TablePartRec.PartStart := BodyBreak - 1;
+      TablePartRec.FootHeight := FootHeight + Max(Cellspacing, 1) + BottomBorder;
+      Document.TheOwner.TablePartRec := TablePartRec;
+    end;
+
+  begin
+    if TTableBlock(OwnerBlock).TableBorder then
+    begin
+      TopBorder := BorderWidth;
+      BottomBorder := BorderWidth;
+    end
+    else
+    begin
+      TopBorder := OwnerBlock.MargArray[BorderTopWidth];
+      BottomBorder := OwnerBlock.MargArray[BorderBottomWidth];
+    end;
+
+    case TablePartRec.TablePart of
+      Normal:   DrawNormal;
+      DoBody1:  DrawBody1;
+      DoBody2:  DrawBody2;
+      DoFoot:   DrawFoot;
+      DoHead:   DrawHead;
+    end;
+  end;
+
 var
-  YO, YOffset, Y: Integer;
+  Y, YO, YOffset: Integer;
 begin
   Inc(Document.TableNestLevel);
   try
@@ -9496,232 +9715,19 @@ begin
     YOffset := Document.YOff;
     YO := Y - YOffset;
 
+    DrawX := X;
+    //DrawY := Y;
+
     if (YO + DrawHeight >= ARect.Top) and (YO < ARect.Bottom) or Document.Printing then
       if Document.Printing and (Document.TableNestLevel = 1)
         and HeadOrFoot and (Y < Document.PageBottom)
         and ((Document.PrintingTable = nil) or (Document.PrintingTable = Self))
       then
-        DrawTableP(Canvas, ARect, IMgr, X, Y)
+        DrawTableP(X, Y, YOffset)
       else
-        DrawTable(Canvas, ARect, IMgr, X, Y);
+        DrawTable(X, Y, YOffset);
   finally
     Dec(Document.TableNestLevel);
-  end;
-end;
-
-procedure THtmlTable.DrawTable(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
-var
-  I, XX: Integer;
-  YY, YOffset: Integer;
-begin
-  YOffset := Document.YOff;
-  XX := X + Indent; {for the table}
-  YY := Y;
-  DrawX := XX;
-  DrawY := YY;
-  for I := 0 to Rows.Count - 1 do
-    YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-      XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-      BorderColorDark, I);
-end;
-
-procedure THtmlTable.DrawTableP(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y: Integer);
-{Printing table with thead and/or tfoot}
-var
-  I, XX, TopBorder, BottomBorder: Integer;
-  YY, YOffset: Integer;
-  SavePageBottom: Integer;
-  Spacing, HeightNeeded: Integer;
-begin
-  YOffset := Document.YOff;
-  XX := X + Indent; {for the table}
-  YY := Y;
-  DrawX := XX;
-  DrawY := YY;
-
-  if TTableBlock(OwnerBlock).TableBorder then
-  begin
-    TopBorder := BorderWidth;
-    BottomBorder := BorderWidth;
-  end
-  else
-  begin
-    TopBorder := OwnerBlock.MargArray[BorderTopWidth];
-    BottomBorder := OwnerBlock.MargArray[BorderBottomWidth];
-  end;
-
-  case TablePartRec.TablePart of
-  {.$Region 'Normal'}
-    Normal:
-      begin
-        Document.PrintingTable := Self;
-        if Document.PageBottom - Y >= TableHeight + BottomBorder then
-        begin
-          for I := 0 to Rows.Count - 1 do {do whole table now}
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-          Document.PrintingTable := nil;
-        end
-        else
-        begin {see if enough room on this page for header, 1 row, footer}
-          if HeadOrFoot then
-          begin
-            Spacing := CellSpacing div 2;
-            HeightNeeded := HeaderHeight + FootHeight + Rows[HeaderRowCount].RowHeight;
-            if (Y - YOffset > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
-              (HeightNeeded < ARect.Bottom - ARect.Top) then
-            begin {not enough room, start table on next page}
-              if Y + Spacing < Document.PageBottom then
-              begin
-                Document.PageShortened := True;
-                Document.PageBottom := Y + Spacing;
-              end;
-              exit;
-            end;
-          end;
-          {start table. it will not be complete and will go to next page}
-          SavePageBottom := Document.PageBottom;
-          Document.PageBottom := SavePageBottom - FootHeight - Cellspacing - BottomBorder - 5; {a little to spare}
-          for I := 0 to Rows.Count - 1 do {do part of table}
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-          BodyBreak := Document.PageBottom;
-          if FootStartRow >= 0 then
-          begin
-            TablePartRec.TablePart := DoFoot;
-            TablePartRec.PartStart := Y + FootOffset;
-            TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder;
-            Document.TheOwner.TablePartRec := TablePartRec;
-          end
-          else if HeaderHeight > 0 then
-          begin {will do header next}
-            //Document.PageBottom := SavePageBottom;
-            TablePartRec.TablePart := DoHead;
-            TablePartRec.PartStart := DrawY - TopBorder;
-            TablePartRec.PartHeight := HeaderHeight + TopBorder;
-            Document.TheOwner.TablePartRec := TablePartRec;
-          end;
-          Document.TheOwner.TablePartRec := TablePartRec;
-        end;
-      end;
-  {.$EndRegion}
-  {.$Region 'DoBody1'}
-    DoBody1:
-      begin
-        if Document.PageBottom > Y + TableHeight + BottomBorder then
-        begin {can complete table now}
-          for I := 0 to Rows.Count - 1 do {do remainder of table now}
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-          Document.TheOwner.TablePartRec.TablePart := Normal;
-        end
-        else
-        begin {will do part of the table now}
-      {Leave room for foot later}
-          Document.PageBottom := Document.PageBottom
-            - FootHeight + Max(Cellspacing, 1) - BottomBorder;
-          for I := 0 to Rows.Count - 1 do
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-          BodyBreak := Document.PageBottom;
-          if FootStartRow >= 0 then
-          begin
-            TablePartRec.TablePart := DoFoot;
-            TablePartRec.PartStart := Y + FootOffset;
-            TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
-            Document.TheOwner.TablePartRec := TablePartRec;
-          end
-          else if HeaderHeight > 0 then
-          begin
-            TablePartRec.TablePart := DoHead;
-            TablePartRec.PartStart := DrawY - TopBorder;
-            TablePartRec.PartHeight := HeaderHeight + TopBorder;
-            Document.TheOwner.TablePartRec := TablePartRec;
-          end;
-          Document.TheOwner.TablePartRec := TablePartRec;
-        end;
-      end;
-  {.$EndRegion}
-  {.$Region 'DoBody2'}
-    DoBody2:
-      begin
-        if Document.PageBottom > Y + TableHeight + BottomBorder then
-        begin
-          for I := 0 to Rows.Count - 1 do {do remainder of table now}
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-          Document.TheOwner.TablePartRec.TablePart := Normal;
-          Document.PrintingTable := nil;
-        end
-        else
-        begin
-          SavePageBottom := Document.PageBottom;
-          for I := 0 to Rows.Count - 1 do {do part of table}
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-          BodyBreak := Document.PageBottom;
-          if FootStartRow >= 0 then
-          begin
-            TablePartRec.TablePart := DoFoot;
-            TablePartRec.PartStart := Y + FootOffset;
-            TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
-            Document.TheOwner.TablePartRec := TablePartRec;
-          end
-          else if HeaderHeight > 0 then
-          begin
-            Document.PageBottom := SavePageBottom;
-            TablePartRec.TablePart := DoHead;
-            TablePartRec.PartStart := DrawY - TopBorder;
-            TablePartRec.PartHeight := HeaderHeight + TopBorder;
-            Document.TheOwner.TablePartRec := TablePartRec;
-          end;
-          Document.TheOwner.TablePartRec := TablePartRec;
-        end;
-      end;
-  {.$EndRegion}
-  {.$Region 'DoFoot'}
-    DoFoot:
-      begin
-        YY := TablePartRec.PartStart;
-        if FootStartRow >= 0 then
-          for I := FootStartRow to Rows.Count - 1 do
-            YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-              XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-              BorderColorDark, I);
-        if HeaderHeight > 0 then
-        begin
-          TablePartRec.TablePart := DoHead;
-          TablePartRec.PartStart := DrawY - TopBorder;
-          TablePartRec.PartHeight := HeaderHeight + TopBorder;
-        end
-        else
-        begin {No THead}
-          TablePartRec.TablePart := DoBody3;
-          TablePartRec.PartStart := BodyBreak - 1;
-          TablePartRec.FootHeight := FootHeight + Max(Cellspacing, 1);
-        end;
-        Document.TheOwner.TablePartRec := TablePartRec;
-      end;
-  {.$EndRegion}
-  {.$Region 'DoHead'}
-    DoHead:
-      begin
-        for I := 0 to HeaderRowCount - 1 do
-          YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
-            BorderColorDark, I);
-        TablePartRec.TablePart := DoBody1;
-        TablePartRec.PartStart := BodyBreak - 1;
-        TablePartRec.FootHeight := FootHeight + Max(Cellspacing, 1) + BottomBorder;
-        Document.TheOwner.TablePartRec := TablePartRec;
-      end;
-  {.$$EndRegion}
   end;
 end;
 
