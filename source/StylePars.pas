@@ -501,28 +501,34 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
       Result := False;
     end;
 
+    procedure ProcessBorderProperty(const Erty, Value: ThtString);
+    begin
+      if Prop = 'border' then
+      begin
+        ProcessProperty(Prop + '-top' + Erty, Value);
+        ProcessProperty(Prop + '-right' + Erty, Value);
+        ProcessProperty(Prop + '-bottom' + Erty, Value);
+        ProcessProperty(Prop + '-left' + Erty, Value);
+      end
+      else
+        ProcessProperty(Prop + Erty, Value);
+    end;
+
   begin
     ExtractParn(Value, S, Count);
     for I := 0 to Count - 1 do
       if TryStrToColor(S[I], NeedPound, Dummy) then
-        ProcessProperty(Prop + '-color', S[I]);
+        ProcessBorderProperty('-color', S[I]);
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
       if TryStrToColor(S[I], NeedPound, Dummy) then
-        ProcessProperty(Prop + '-color', S[I])
+        ProcessBorderProperty('-color', S[I])
       else if FindStyle(S[I]) then
-        ProcessProperty(Prop + '-style', S[I]) {Border-Style will change all four sides}
-      else if Prop = 'border' then
-      begin
-        ProcessProperty('border-top-width', S[I]);
-        ProcessProperty('border-right-width', S[I]);
-        ProcessProperty('border-bottom-width', S[I]);
-        ProcessProperty('border-left-width', S[I]);
-      end
+        ProcessBorderProperty('-style', S[I]) 
       else
-        ProcessProperty(Prop + '-width', S[I]);
+        ProcessBorderProperty('-width', S[I]);
     end;
   end;
 
@@ -666,12 +672,16 @@ begin
   case Index of
     MarginX, BorderWidthX, PaddingX, BorderColorX, BorderStyleX:
       DoMarginItems(Index, StrippedValue);
+
     FontX:
       DoFont(OrigValue);
+
     BackgroundX:
       DoBackground(StrippedValue);
+
     BorderX..BorderLX:
       DoBorder(Prop, StrippedValue);
+
     ListStyleX:
       DoListStyle(StrippedValue);
   end;
