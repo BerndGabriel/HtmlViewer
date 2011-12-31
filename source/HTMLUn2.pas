@@ -1719,7 +1719,8 @@ begin
         begin
           if Cnt < 6 then
             Exit;
-{$ifdef LCL}        // ToDo: Find LCL replacement for CreatePolygonRgn(
+{$ifdef LCL}
+          Area.FRegion := CreatePolygonRgn(PPoint(@Coords[0]), Cnt div 2, Winding);
 {$else}
           Area.FRegion := CreatePolygonRgn(Coords, Cnt div 2, Winding);
 {$endif}
