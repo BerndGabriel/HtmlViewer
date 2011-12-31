@@ -34,7 +34,7 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Classes, Graphics, ClipBrd, Controls, Messages, Variants, Types,
+  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, Messages, Variants, Types,
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
@@ -261,11 +261,33 @@ type
     property Last: Integer read utText.Last;
   end;
 
+  // BG, 31.12.2011:
+  TMapArea = class(TObject)
+  private
+    FHRef: ThtString;
+    FRegion: THandle;
+    FTarget: ThtString;
+    FTitle: ThtString;
+  public
+    function PtInArea(X, Y: Integer): Boolean;
+    property HRef: ThtString read FHRef;
+    property Target: ThtString read FTarget;
+    property Title: ThtString read FTitle;
+  end;
+
+  // BG, 31.12.2011: 
+  TMapAreaList = class(TObjectList)
+  private
+    function getArea(Index: Integer): TMapArea;
+  public
+    property Items[Index: Integer]: TMapArea read getArea; default;
+  end;
+
   TMapItem = class(TObject) {holds a client map info}
+  private
+    FAreas: TMapAreaList;
+  public
     MapName: ThtString;
-    Areas: ThtStringList; {holds the URL and region handle}
-    AreaTargets: ThtStringList; {holds the target window}
-    AreaTitles: ThtStringList; {the Title strings}
     constructor Create;
     destructor Destroy; override;
     function GetURL(X, Y: Integer; out URLTarg: TURLTarget; out ATitle: ThtString): boolean;
@@ -1610,62 +1632,65 @@ begin
     CopyToClipboard;
 end;
 
-{----------------TMapItem.Create}
+{ TMapArea }
+
+//-- BG ---------------------------------------------------------- 31.12.2011 --
+function TMapArea.PtInArea(X, Y: Integer): Boolean;
+begin
+  Result := PtInRegion(FRegion, X, Y);
+end;
+
+{ TMapAreaList }
+
+//-- BG ---------------------------------------------------------- 31.12.2011 --
+function TMapAreaList.getArea(Index: Integer): TMapArea;
+begin
+  Result := get(Index);
+end;
+
+{ TMapItem }
 
 constructor TMapItem.Create;
 begin
   inherited Create;
-  Areas := ThtStringList.Create;
-  AreaTargets := ThtStringList.Create;
-  AreaTitles := ThtStringList.Create;
+  FAreas := TMapAreaList.Create;
 end;
 
 destructor TMapItem.Destroy;
-var
-  I: Integer;
 begin
-  for I := 0 to Areas.Count - 1 do
-    DeleteObject(THandle(Areas.Objects[I]));
-  Areas.Free;
-  AreaTargets.Free;
-  AreaTitles.Free;
+  FAreas.Free;
   inherited Destroy;
 end;
 
 function TMapItem.GetURL(X, Y: Integer; out URLTarg: TUrlTarget; out ATitle: ThtString): boolean;
 var
   I: Integer;
+  Area: TMapArea;
 begin
   Result := False;
-  with Areas do
-    for I := 0 to Count - 1 do
-      if PtInRegion(THandle(Objects[I]), X, Y) then
+  for I := 0 to FAreas.Count - 1 do
+  begin
+    Area := FAreas[I];
+    if Area.PtInArea(X, Y) then
+    begin
+      if Area.HRef <> '' then {could be NoHRef}
       begin
-        if Strings[I] <> '' then {could be NoHRef}
-        begin
-          URLTarg := TUrlTarget.Create;
-          URLTarg.URL := Strings[I];
-          URLTarg.Target := AreaTargets[I];
-          ATitle := AreaTitles[I];
-          Result := True;
-        end;
-        Exit;
+        URLTarg := TUrlTarget.Create;
+        URLTarg.URL := Area.HRef;
+        URLTarg.Target := Area.Target;
+        ATitle := Area.Title;
+        Result := True;
       end;
+      Exit;
+    end;
+  end;
 end;
 
 procedure TMapItem.AddArea(Attrib: TAttributeList);
 const
   MAXCNT = 300;
-var
-  I, Cnt, Rad: Integer;
-  HRef, S, Target, Title: ThtString;
-  S1, Nm: ThtString;
-  Coords: array[0..MAXCNT] of Integer;
-  Rect: TRect absolute Coords;
-  Handle: THandle;
-  Shape: (Rec, Circle, Poly);
 
-  procedure GetSubStr;
+  function GetSubStr(var S: ThtString): ThtString;
   var
     J, K: Integer;
   begin
@@ -1673,95 +1698,118 @@ var
     K := Pos(' ', S); {for non comma situations (bad syntax)}
     if (J > 0) and ((K = 0) or (K > J)) then
     begin
-      S1 := copy(S, 1, J - 1);
+      Result := copy(S, 1, J - 1);
       Delete(S, 1, J);
     end
     else if K > 0 then
     begin
-      S1 := copy(S, 1, K - 1);
+      Result := copy(S, 1, K - 1);
       Delete(S, 1, K);
     end
     else
     begin
-      S1 := Trim(S);
+      Result := Trim(S);
       S := '';
     end;
     while (Length(S) > 0) and ((S[1] = ',') or (S[1] = ' ')) do
       Delete(S, 1, 1);
   end;
 
+var
+  S, S1: ThtString;
+  I, Cnt, Rad: Integer;
+  Nm: ThtString;
+  Coords: array[0..MAXCNT] of Integer;
+  Rect: TRect absolute Coords;
+  Shape: (shRect, shCircle, shPoly, shDefault);
+  Area: TMapArea;
 begin
-  if Areas.Count >= 1000 then
+  if FAreas.Count >= 1000 then
     Exit;
-  HRef := '';
-  Target := '';
-  Title := '';
-  Shape := Rec;
-  Cnt := 0;
-  Handle := 0;
-  for I := 0 to Attrib.Count - 1 do
-    with TAttribute(Attrib[I]) do
-      case Which of
-        HRefSy: HRef := Name;
-        TargetSy: Target := Name;
-        TitleSy: Title := Name;
-        NoHrefSy: HRef := '';
-        CoordsSy:
-          begin
-            S := Trim(Name);
-            Cnt := 0;
-            GetSubStr;
-            while (S1 <> '') and (Cnt <= MAXCNT) do
+  Area := TMapArea.Create;
+  try
+    Shape := shRect;
+    Cnt := 0;
+    for I := 0 to Attrib.Count - 1 do
+      with Attrib[I] do
+        case Which of
+          HRefSy:
+            Area.FHRef := Name;
+
+          TargetSy:
+            Area.FTarget := Name;
+
+          TitleSy:
+            Area.FTitle := Name;
+
+          NoHrefSy:
+            Area.FHRef := '';
+
+          CoordsSy:
             begin
-              Coords[Cnt] := StrToIntDef(S1, 0);
-              GetSubStr;
-              Inc(Cnt);
+              Cnt := 0;
+              S := Trim(Name);
+              S1 := GetSubStr(S);
+              while (S1 <> '') and (Cnt <= MAXCNT) do
+              begin
+                Coords[Cnt] := StrToIntDef(S1, 0);
+                S1 := GetSubStr(S);
+                Inc(Cnt);
+              end;
             end;
-          end;
-        ShapeSy:
-          begin
-            Nm := copy(Lowercase(Name), 1, 4);
-            if Nm = 'circ' then
-              Shape := Circle
-            else if (Nm = 'poly') then
-              Shape := Poly;
-          end;
-      end;
-  case Shape of
-    Rec:
-      begin
-        if Cnt < 4 then
-          Exit;
-        Inc(Coords[2]);
-        Inc(Coords[3]);
-        Handle := CreateRectRgnIndirect(Rect);
-      end;
-    Circle:
-      begin
-        if Cnt < 3 then
-          Exit;
-        Rad := Coords[2];
-        Dec(Coords[0], Rad);
-        Dec(Coords[1], Rad);
-        Coords[2] := Coords[0] + 2 * Rad + 1;
-        Coords[3] := Coords[1] + 2 * Rad + 1;
-        Handle := CreateEllipticRgnIndirect(Rect);
-      end;
-    Poly:
-      begin
-        if Cnt < 6 then
-          Exit;
-{$ifdef LCL}        // ToDo: Find LCL replacement for CreatePolygonRgn(
+
+          ShapeSy:
+            begin
+              Nm := copy(Lowercase(Name), 1, 4);
+              if (Nm = 'circ') or (Nm = 'circle') then
+                Shape := shCircle
+              else if (Nm = 'poly') or (Nm = 'polygon') then
+                Shape := shPoly
+              else if (Nm = 'rect') or (Nm = 'rectangle') then
+                Shape := shRect;
+            end;
+        end;
+
+    case Shape of
+      shRect:
+        begin
+          if Cnt < 4 then
+            Exit;
+          Inc(Coords[2]);
+          Inc(Coords[3]);
+          Area.FRegion := CreateRectRgnIndirect(Rect);
+        end;
+
+      shCircle:
+        begin
+          if Cnt < 3 then
+            Exit;
+          Rad := Coords[2];
+          Dec(Coords[0], Rad);
+          Dec(Coords[1], Rad);
+          Coords[2] := Coords[0] + 2 * Rad + 1;
+          Coords[3] := Coords[1] + 2 * Rad + 1;
+          Area.FRegion := CreateEllipticRgnIndirect(Rect);
+        end;
+
+      shPoly:
+        begin
+          if Cnt < 6 then
+            Exit;
+{$ifdef LCL}
+          Area.FRegion := CreatePolygonRgn(PPoint(@Coords[0]), Cnt div 2, Winding);
 {$else}
-        Handle := CreatePolygonRgn(Coords, Cnt div 2, Winding);
+          Area.FRegion := CreatePolygonRgn(Coords, Cnt div 2, Winding);
 {$endif}
-      end;
-  end;
-  if Handle <> 0 then
-  begin
-    Areas.AddObject(HRef, TObject(Handle));
-    AreaTargets.Add(Target);
-    AreaTitles.Add(Title);
+        end;
+    end;
+    if Area.FRegion <> 0 then
+    begin
+      FAreas.Add(Area);
+      Area := nil;
+    end;
+  finally
+    Area.Free;
   end;
 end;
 
