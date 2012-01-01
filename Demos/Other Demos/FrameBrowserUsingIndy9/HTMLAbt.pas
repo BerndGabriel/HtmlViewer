@@ -29,21 +29,18 @@ implementation
 {$R *.DFM}
 
 constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName: string);
-var
-  S: string;
 begin
-inherited Create(Owner);
-Viewer.DefFontName := 'MS Sans Serif';
-Viewer.DefFontSize := 9;
-Viewer.DefFontColor := clNavy;
-S :='<body bgcolor="ffffeb" text="000080">'+
+  inherited Create(Owner);
+  Viewer.DefFontName := 'MS Sans Serif';
+  Viewer.DefFontSize := 9;
+  Viewer.DefFontColor := clNavy;
+  Viewer.LoadFromString('<body bgcolor="ffffeb" text="000080">'+
     '<center>'+
     '<h1>'+ProgName+'</h1>'+
     '<font color="Maroon">A demo program for the '+CompName+' component</font>'+
-    '<p>Version '+Version+ 
+    '<p>Version '+Version+
     '</center>'+
-    '</body>';
-Viewer.LoadFromBuffer(@S[1], Length(S));
+    '</body>');
 end;
 
 end.

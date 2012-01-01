@@ -237,7 +237,6 @@ var
   Item: TFrameBaseOpener;
   I: integer;
   Upper, Lower: boolean;
-  Msg: ThtString;
   NewURL: ThtString;
   Doc: TBuffer;
 begin
@@ -257,7 +256,7 @@ begin
         if TheStream <> nil then
         begin
           TheStream.Position := 0;
-          Doc := TBuffer.Create(TheStream);
+          Doc := TBuffer.Create(TheStream, Source);
         end
         else
           Doc := nil;
@@ -289,7 +288,7 @@ begin
           begin
             CreateViewer;
             Viewer.Base := MasterSet.FBase;
-            Viewer.LoadStream(Source, TheStream, TheStreamType);
+            Viewer.LoadFromStream(TheStream, Source, TheStreamType);
             Viewer.PositionTo(Destination);
             frBumpHistory1(Source, Viewer.Position);
           end;
@@ -300,8 +299,7 @@ begin
         if not Assigned(Viewer) then
           CreateViewer;
         FreeAndNil(FFrameSet);
-        Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source;
-        Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
+        Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
       end;
     finally
       Dec(MasterSet.NestLevel);
@@ -328,11 +326,8 @@ var
   Dummy: ThtString;
 
   procedure DoError;
-  var
-    Msg: ThtString;
   begin
-    Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source;
-    Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
+    Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
   end;
 
 begin
@@ -354,7 +349,7 @@ begin
       Viewer.Base := MasterSet.FBase; {only effective if no Base to be read}
       try
         MasterSet.FrameViewer.PostRequest(Self, True, Source, '', '', '', True, Dummy, TheStreamType, TheStream);
-        Viewer.LoadStream(Source, TheStream, TheStreamType);
+        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
         if APosition < 0 then
           Viewer.Position := ViewerPosition
         else
@@ -457,7 +452,7 @@ begin
         OldFormData := nil;
       try
         Viewer.Base := MasterSet.FBase;
-        Viewer.LoadStream(Source, TheStream, TheStreamType);
+        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
         Viewer.PositionTo(Dest);
         MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
         if not samename then
@@ -522,7 +517,7 @@ begin
       begin {not a frame file but needs a viewer}
         CreateViewer;
         Viewer.Base := MasterSet.FBase;
-        Viewer.LoadStream(Source, TheStream, TheStreamType);
+        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
         Viewer.PositionTo(Dest);
         MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
       {FrameSet to Viewer}

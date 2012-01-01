@@ -218,7 +218,7 @@ end;
 
 procedure TFontForm.LoadAgain;
 begin
-  FontViewer.LoadFromBuffer(@ViewText[1], Length(ViewText), '');
+  FontViewer.LoadFromString(ViewText, '');
 end;
 
 procedure TFontForm.ResetButtonClick(Sender: TObject);

@@ -52,7 +52,6 @@ type
 
   {for TFrameViewer}
 
-  EfvLoadError = class(Exception);
   TBufferRequestEvent = procedure(Sender: TObject; const SRC: ThtString; var Buffer: TBuffer) of object;
   TFileRequestEvent = procedure(Sender: TObject; const SRC: ThtString; var NewName: ThtString) of object;
   TStreamRequestEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
@@ -491,9 +490,7 @@ type
 
   PEventRec = ^EventRec;
   EventRec = record
-    //LStyle: LoadStyleType;
     NewName: ThtString;
-    //AString: ThtString;
     Doc: TBuffer;
   end;
 
@@ -544,7 +541,7 @@ type
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream); override;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
-    procedure LoadFromFileInternal(const S, Dest: ThtString);
+    procedure LoadFromFileInternal(const FileName, Dest: ThtString);
     procedure SetOnFormSubmit(Handler: TFormSubmitEvent);
   public
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
@@ -552,9 +549,9 @@ type
     function HTMLExpandFilename(const Filename: ThtString): ThtString; virtual;
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: boolean); override;
     procedure Load(const SRC: ThtString); override;
-    procedure LoadFromFile(const FName: ThtString); override;
-    procedure LoadImageFile(const FName: ThtString);
-    procedure LoadTargetFromFile(const Target, FName: ThtString);
+    procedure LoadFromFile(const FileName: ThtString); override;
+    //procedure LoadImageFile(const FName: ThtString); deprecated; // use LoadFromFile() instead
+    procedure LoadTargetFromFile(const Target, FileName: ThtString);
   published
     property OnBufferRequest: TBufferRequestEvent read FOnBufferRequest write FOnBufferRequest;
     property OnFileRequest: TFileRequestEvent read FOnFileRequest write FOnFileRequest;
@@ -578,16 +575,6 @@ type
     FormData: TFreeList;
     destructor Destroy; override;
   end;
-
-function HasImageFileExt(const S: ThtString): boolean;
-begin
-  Result := IsImageExt(Lowercase(ExtractFileExt(S)));
-end;
-
-function HasTextFileExt(const S: ThtString): boolean;
-begin
-  Result := IsTextExt(Lowercase(ExtractFileExt(S)));
-end;
 
 {----------------FileToString}
 
@@ -789,7 +776,6 @@ end;
 
 procedure TViewerFrameBase.CreateViewer;
 begin
-//  FViewer := THtmlViewer.Create(Self); {the Viewer for the frame}
   FViewer := MasterSet.FrameViewer.CreateViewer(Self); {the Viewer for the frame}
   Viewer.Width := ClientWidth;
   Viewer.Height := ClientHeight;
@@ -800,11 +786,7 @@ begin
   Viewer.OnHotspotCovered := LOwner.MasterSet.FrameViewer.HotSpotCovered;
   if NoScroll then
     Viewer.Scrollbars := ssNone;
-//  Viewer.DefBackground := MasterSet.FrameViewer.FBackground;
-//  Viewer.Visible := False;
   Viewer.Parent := Self;
-//  Viewer.SendToBack;
-//  Viewer.Visible := True;
   Viewer.Tabstop := True;
   Viewer.CharSet := LocalCharset;
   MasterSet.Viewers.Add(Viewer);
@@ -850,19 +832,20 @@ procedure TfvFrame.LoadFiles(PEV: PEventRec);
 var
   Item: TFrameBase;
   I: integer;
-  Upper, Lower, Image, Tex: boolean;
-  Msg: ThtString;
+  Upper, Lower: Boolean;
+  //Image, Tex: boolean;
   EV: EventRec;
   Src: ThtString;
   Stream: TStream;
+  ft: THtmlFileType;
 begin
   if ((Source <> '') or Assigned(PEV)) and (MasterSet.NestLevel < 4) then
   begin
-    Image := HasImageFileExt(Source) and not MasterSet.RequestEvent;
-    Tex := HasTextFileExt(Source) and not MasterSet.RequestEvent;
-    //EV.LStyle := lsFile;
+    ft := HTMLType;
+    if not MasterSet.RequestEvent then
+      ft := GetFileType(Source);
     EV.Doc := nil;
-    if Image or Tex then
+    if ft in [ImgType, TextType] then
       EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source)
     else
     begin
@@ -872,7 +855,6 @@ begin
       end
       else if copy(Source, 1, 9) = 'source://' then
       begin
-        //EV.LStyle := lsString;
         EV.NewName := Source;
         Src := copy(Source, 10, MaxInt);
         EV.Doc := TBuffer.Create(Src, EV.NewName);
@@ -896,7 +878,7 @@ begin
     end;
     Inc(MasterSet.NestLevel);
     try
-      if not Image and not Tex and MasterSet.FrameViewer.IsFrame(EV.Doc) then
+      if not (ft in [ImgType, TextType]) and MasterSet.FrameViewer.IsFrame(EV.Doc) then
       begin
         FFrameSet := GetSubFrameSetClass.CreateIt(Self, MasterSet);
         FrameSet.Align := alClient;
@@ -923,12 +905,11 @@ begin
       begin
         CreateViewer;
         Viewer.Base := MasterSet.FBase;
-        if Image then
-          Viewer.LoadImageFile(EV.NewName)
-        else if Tex then
-          Viewer.LoadTextFile(EV.NewName)
+        case ft of
+          ImgType,
+          TextType:
+            Viewer.LoadFromFile(EV.NewName, ft);
         else
-        begin
           if EV.Doc <> nil then
           begin
             Viewer.LoadFromDocument(EV.Doc, Source);
@@ -936,7 +917,7 @@ begin
           end
           else
           begin
-            Viewer.LoadFromFile(EV.NewName + Destination)
+            Viewer.LoadFromFile(EV.NewName + Destination, ft)
           end;
         end;
         frBumpHistory1(Source, Viewer.Position);
@@ -945,8 +926,7 @@ begin
       if not Assigned(Viewer) then
         CreateViewer;
       FreeAndNil(FFrameSet);
-      Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + EV.NewName;
-      Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
+      Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + EV.NewName); {load an error message}
     end;
     Dec(MasterSet.NestLevel);
   end
@@ -972,13 +952,11 @@ var
   I: integer;
   Upper, Lower: boolean;
   EV: EventRec;
+  ft: THtmlFileType;
 
   procedure DoError;
-  var
-    Msg: ThtString;
   begin
-    Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source;
-    Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
+    Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
   end;
 
 begin
@@ -998,24 +976,23 @@ begin
     else if Assigned(Viewer) then
     begin
       Viewer.Base := MasterSet.FBase;
-      if HasImageFileExt(Source) then
-      try
-        Viewer.LoadImageFile(Source)
-      except end {leave blank on error}
-      else if HasTextFileExt(Source) then
-      try
-        Viewer.LoadTextFile(Source)
-      except end
+      ft := GetFileType(Source);
+      case ft of
+        ImgType,
+        TextType:
+          try
+            Viewer.LoadFromFile(Source, ft)
+          except
+          end {leave blank on error}
       else
-      begin
         try
           if MasterSet.TriggerEvent(Source, EV.NewName, EV.Doc) then
             if EV.Doc <> nil then
               Viewer.LoadFromDocument(EV.Doc, '')
             else
-              Viewer.LoadFromFile(EV.NewName)
+              Viewer.LoadFromFile(EV.NewName, ft)
           else
-            Viewer.LoadFromFile(Source);
+            Viewer.LoadFromFile(Source, ft);
           if APosition < 0 then
             Viewer.Position := ViewerPosition
           else
@@ -1074,7 +1051,7 @@ var
   OldPos: integer;
   HS, OldTitle, OldName: ThtString;
   OldFormData: TFreeList;
-  SameName, Tex, Img: boolean;
+  SameName: boolean;
   OldViewer: THtmlViewer;
   OldFrameSet: TSubFrameSetBase;
   EV: EventRec;
@@ -1082,6 +1059,7 @@ var
   Item: TFrameBase;
   I: integer;
   Stream: TStream;
+  ft: THtmlFileType;
 begin
   if Assigned(RefreshTimer) then
     RefreshTimer.Enabled := False;
@@ -1093,9 +1071,10 @@ begin
   HS := EV.NewName;
   SameName := CompareText(Source, OldName) = 0;
 {if SameName, will not have to reload anything}
-  Img := HasImageFileExt(Source) and not MasterSet.RequestEvent;
-  Tex := HasTextFileExt(Source) and not MasterSet.RequestEvent;
-  if not Img and not Tex and not SameName then
+  ft := HTMLType;
+  if not MasterSet.RequestEvent then
+    ft := GetFileType(Source);
+  if not (ft in [ImgType, TextType]) and not SameName then
     if not MasterSet.TriggerEvent(Source, EV.NewName, EV.Doc) then
     begin
       EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
@@ -1112,10 +1091,10 @@ begin
   try
     if not SameName then
       try
-        FrameFile := not Img and not Tex and
-          MasterSet.FrameViewer.IsFrame(EV.Doc);
+        FrameFile := not (ft in [ImgType, TextType]) and MasterSet.FrameViewer.IsFrame(EV.Doc);
       except
-        raise(EfvLoadError.Create('Can''t load: ' + EV.NewName));
+        on E: Exception do
+          raise EhtLoadError.CreateFmt('Can''t locate: ''%s'': %s', [EV.NewName, E.Message]);
       end
     else
       FrameFile := not Assigned(Viewer);
@@ -1163,17 +1142,16 @@ begin
       OldTitle := Viewer.DocumentTitle;
       OldFormData := Viewer.FormData;
       try
-        if Img then
-          Viewer.LoadImageFile(EV.NewName)
-        else if Tex then
-          Viewer.LoadTextFile(EV.NewName + Dest)
+        case ft of
+          ImgType,
+          TextType:
+            Viewer.LoadFromFile(EV.NewName + Dest, ft);
         else
-        begin
           Viewer.Base := MasterSet.FBase;
           if EV.Doc <> nil then
-            Viewer.LoadFromDocument(EV.Doc, Dest)
+            Viewer.LoadFromDocument(EV.Doc, Dest, ft)
           else
-            Viewer.LoadFromFile(EV.NewName + Dest);
+            Viewer.LoadFromFile(EV.NewName + Dest, ft);
         end;
         MasterSet.FrameViewer.AddVisitedLink(EV.NewName + Dest);
         if MasterSet.Viewers.Count > 1 then
@@ -1208,7 +1186,7 @@ begin
       OldFrameSet := FrameSet; FFrameSet := nil;
       if OldFrameSet <> nil then
         OldFrameSet.ClearFrameNames;
-      if not Img and not Tex and FrameFile then
+      if not (ft in [ImgType, TextType]) and FrameFile then
       begin {it's a frame file}
         FFrameSet := GetSubFrameSetClass.CreateIt(Self, MasterSet);
         FrameSet.Align := alClient;
@@ -1238,17 +1216,16 @@ begin
       else
       begin {not a frame file but needs a viewer}
         CreateViewer;
-        if Img then
-          Viewer.LoadImageFile(EV.NewName)
-        else if Tex then
-          Viewer.LoadTextFile(EV.NewName)
+        case ft of
+          ImgType,
+          TextType:
+            Viewer.LoadFromFile(EV.NewName, ft)
         else
-        begin
           Viewer.Base := MasterSet.FBase;
           if EV.Doc <> nil then
-            Viewer.LoadFromDocument(EV.Doc, Dest)
+            Viewer.LoadFromDocument(EV.Doc, Dest, ft)
           else
-            Viewer.LoadFromFile(EV.NewName + Dest);
+            Viewer.LoadFromFile(EV.NewName + Dest, ft);
         end;
         MasterSet.FrameViewer.AddVisitedLink(EV.NewName + Dest);
       {FrameSet to Viewer}
@@ -2357,14 +2334,15 @@ var
   Lower, Upper: boolean;
   EV: EventRec;
   EventPointer: PEventRec;
-  Img, Tex: boolean;
   Stream: TStream;
+  ft: ThtmlFileType;
 begin
   Clear;
   NestLevel := 0;
-  Img := HasImageFileExt(FName) and not RequestEvent;
-  Tex := HasTextFileExt(FName) and not RequestEvent;
-  if Img or Tex or not TriggerEvent(FName, EV.NewName, EV.Doc) then
+  ft := HTMLType;
+  if not MasterSet.RequestEvent then
+    ft := GetFileType(FName);
+  if (ft in [ImgType, TextType]) or not TriggerEvent(FName, EV.NewName, EV.Doc) then
   begin
     EV.NewName := ExpandFileName(FName);
     Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
@@ -2380,7 +2358,7 @@ begin
     FCurrentFile := FName;
   end;
   FRefreshDelay := 0;
-  if not Img and not Tex and MasterSet.FrameViewer.IsFrame(EV.Doc) then
+  if not (ft in [ImgType, TextType]) and MasterSet.FrameViewer.IsFrame(EV.Doc) then
   begin {it's a Frameset html file}
     MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
     for I := 0 to List.Count - 1 do
@@ -2393,7 +2371,7 @@ begin
   else
   begin {it's a non frame file}
     Frame := TfvFrame(AddFrame(nil, ''));
-    if not Img and not Tex and RequestEvent then
+    if not (ft in [ImgType, TextType]) and RequestEvent then
     begin
       Frame.Source := FName;
       EventPointer := @EV;
@@ -2658,21 +2636,21 @@ end;
 
 {----------------TFrameViewer.LoadFromFile}
 
-procedure TFrameViewer.LoadFromFile(const FName: ThtString);
+procedure TFrameViewer.LoadFromFile(const FileName: ThtString);
 var
-  S, D: ThtString;
+  Name, Dest: ThtString;
 begin
   if Processing then
     exit;
-  SplitDest(FName, S, D);
-  if not FileExists(S) then
-    raise(EfvLoadError.Create('Can''t locate file: ' + S));
-  LoadFromFileInternal(S, D);
+  SplitDest(FileName, Name, Dest);
+  if not FileExists(Name) then
+    raise EhtLoadError.CreateFmt('Can''t locate: ''%s''.', [Name]);
+  LoadFromFileInternal(Name, Dest);
 end;
 
 {----------------TFrameViewer.LoadFromFileInternal}
 
-procedure TFrameViewer.LoadFromFileInternal(const S, Dest: ThtString);
+procedure TFrameViewer.LoadFromFileInternal(const FileName, Dest: ThtString);
 var
   OldFrameSet: TFrameSet;
   OldPos: integer;
@@ -2692,7 +2670,7 @@ begin
       if Tmp is THtmlViewer then
         OldPos := THtmlViewer(Tmp).Position;
     end;
-    if CompareText(CurFrameSet.FCurrentFile, S) <> 0 then
+    if CompareText(CurFrameSet.FCurrentFile, FileName) <> 0 then
     begin
       OldFrameSet := CurFrameSet;
       FCurFrameSet := GetFrameSetClass.Create(Self);
@@ -2700,8 +2678,8 @@ begin
         CurFrameSet.Align := alClient;
         CurFrameSet.Parent := Self;
         CurFrameSet.SendToBack;
-        CurFrameSet.LoadFromFile(S, Dest);
-        CurFrameSet.FCurrentFile := S;
+        CurFrameSet.LoadFromFile(FileName, Dest);
+        CurFrameSet.FCurrentFile := FileName;
       except
         CurFrameSet.Free;
         FCurFrameSet := OldFrameSet;
@@ -2714,10 +2692,10 @@ begin
     end
     else
     begin {Same Name}
-      CurFrameSet.LoadFromFile(S, Dest);
+      CurFrameSet.LoadFromFile(FileName, Dest);
       BumpHistory2(OldPos); {not executed if exception occurs}
     end;
-    AddVisitedLink(S + Dest);
+    AddVisitedLink(FileName + Dest);
     CheckVisitedLinks;
   finally
     SendMessage(Handle, wm_SetRedraw, 1, 0);
@@ -2730,45 +2708,37 @@ end;
 
 procedure TFrameViewer.Load(const SRC: ThtString);
 var
-  S, D: ThtString;
+  Name, Dest: ThtString;
 begin
-//  if Assigned(FOnStringsRequest) or
-//     Assigned(FOnStreamRequest) or
-//     Assigned(FOnBufferRequest) or
-//     Assigned(FOnFileRequest)
-//  then
-//  begin
-    SplitDest(SRC, S, D);
-    LoadFromFileInternal(S, D);
-//  end;
+  SplitDest(SRC, Name, Dest);
+  LoadFromFileInternal(Name, Dest);
 end;
 
 {----------------TFrameViewer.LoadTargetFromFile}
 
-procedure TFrameViewer.LoadTargetFromFile(const Target, FName: ThtString);
+procedure TFrameViewer.LoadTargetFromFile(const Target, FileName: ThtString);
 var
   I: integer;
   FrameTarget: TFrameBase;
-  S, Dest: ThtString;
-
+  Name, Dest: ThtString;
 begin
   if Processing then
     Exit;
 
-  SplitDest(FName, S, Dest);
+  SplitDest(FileName, Name, Dest);
   if CurFrameSet.FrameNames.Find(Target, I) then
   begin
     FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase);
 
-    if not FileExists(S) and not Assigned(OnStreamRequest) then
-      raise(EfvLoadError.Create('Can''t locate file: ' + S));
+    if not FileExists(Name) and not Assigned(OnStreamRequest) then
+      raise EhtLoadError.CreateFmt('Can''t locate: ''%s''.', [Name]);
 
     BeginProcessing;
     try
       if FrameTarget is TViewerFrameBase then
-        TViewerFrameBase(FrameTarget).frLoadFromFile(S, Dest, True, False)
+        TViewerFrameBase(FrameTarget).frLoadFromFile(Name, Dest, True, False)
       else if FrameTarget is TSubFrameSetBase then
-        TSubFrameSetBase(FrameTarget).LoadFromFile(S, Dest);
+        TSubFrameSetBase(FrameTarget).LoadFromFile(Name, Dest);
     finally
       EndProcessing;
     end;
@@ -2778,18 +2748,10 @@ begin
     (CompareText(Target, '_parent') = 0) or
     (CompareText(Target, '_self') = 0)
   then
-    LoadFromFileInternal(S, Dest)
+    LoadFromFileInternal(Name, Dest)
   else {_blank or unknown target}
     if Assigned(OnBlankWindowRequest) then
-      OnBlankWindowRequest(Self, Target, FName);
-end;
-
-{----------------TFrameViewer.LoadImageFile}
-
-procedure TFrameViewer.LoadImageFile(const FName: ThtString);
-begin
-  if HasImageFileExt(FName) then
-    LoadFromFile(FName);
+      OnBlankWindowRequest(Self, Target, FileName);
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
@@ -2981,6 +2943,7 @@ begin
         Handled := FTarget <> ''; {true if can't find target window}
       Exit;
     end;
+
     BeginProcessing;
     if (FrameTarget is TViewerFrameBase) and (CurFrameSet.Viewers.Count = 1) and (S <> '')
       and (CompareText(S, CurFrameSet.FCurrentFile) <> 0) then

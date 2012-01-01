@@ -38,7 +38,7 @@ uses
 {$else}
   Windows,
 {$endif}
-  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Contnrs,
+  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Contnrs, SysUtils,
 {$ifndef NoMetafile}
   MetaFilePrinter, vwPrint,
 {$endif}
@@ -58,6 +58,10 @@ const
   wm_UrlAction = wm_User + 103;
 
 type
+  EhtException = class(Exception);
+  EhtLoadError = class(EhtException);
+
+
   THtmlViewer = class;
 
   THTMLBorderStyle = (htFocused, htNone, htSingle);
@@ -161,6 +165,7 @@ type
     FViewerState: THtmlViewerState;
     FHistory, FTitleHistory: ThtStrings;
     FHistoryIndex: Integer;
+    FPositionHistory: TFreeList;
 
     // document related stuff
     FSectionList: ThtDocument;
@@ -177,7 +182,6 @@ type
     FLinkText: UnicodeString;
     FMaxVertical: Integer;
     FNameList: ThtStringList;
-    FPositionHistory: TFreeList;
     FScrollWidth: Integer;
     // BG, 10.08.2011 speed up inserting images
     FInsertedImages: TStrings;
@@ -291,9 +295,10 @@ type
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
     procedure HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
-    procedure LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);
+    procedure LoadDocument(Document: TBuffer; const DocName: ThtString; DocType: THtmlFileType); 
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
+    procedure LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
     procedure PaintWindow(DC: HDC); override;
     procedure SetActiveColor(const Value: TColor); override;
     procedure SetCharset(const Value: TFontCharset); override;
@@ -370,17 +375,19 @@ type
     procedure htProgressInit;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure Load(const Url: ThtString); override;
-    procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = '');
-    procedure LoadFromDocument(Document: TBuffer; const Reference: ThtString);
-    procedure LoadFromFile(const FileName: ThtString);
-    procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = '');
-    procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''); overload;
-    procedure LoadImageFile(const FileName: ThtString);
-    procedure LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
-    procedure LoadStrings(const Strings: ThtStrings; const Reference: ThtString = '');
-    procedure LoadTextFile(const FileName: ThtString);
-    procedure LoadTextFromString(const S: ThtString);
-    procedure LoadTextStrings(Strings: ThtStrings);
+    //
+    procedure LoadFromDocument(Document: TBuffer; const Reference: ThtString; DocType: THtmlFileType = HtmlType);
+    procedure LoadFromFile(const FileName: ThtString; DocType: THtmlFileType = HtmlType);
+    procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = ''; DocType: THtmlFileType = HtmlType);
+    procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''; DocType: THtmlFileType = HtmlType);
+    // due to reduction of code duplications the following methods became obsolete:
+    procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = ''); deprecated; // use LoadFromString() instead
+    procedure LoadImageFile(const FileName: ThtString); deprecated; // use LoadFromFile() instead.
+    procedure LoadStrings(const Strings: ThtStrings; const Reference: ThtString = ''); deprecated; // use LoadFromString() instead.
+    procedure LoadTextFile(const FileName: ThtString); deprecated; // use LoadFromFile() instead.
+    procedure LoadTextFromString(const S: ThtString); deprecated; // use LoadFromString() instead.
+    procedure LoadTextStrings(Strings: ThtStrings); deprecated; // use LoadFromString() instead.
+    //
     procedure Reformat;
     procedure Reload;
     procedure Repaint; override;
@@ -539,7 +546,7 @@ function getFileType(const S: ThtString): THtmlFileType;
 implementation
 
 uses
-  SysUtils, Math, Clipbrd, Forms, Printers, {$IFDEF UNICODE}AnsiStrings, {$ENDIF}
+  Math, Clipbrd, Forms, Printers, {$IFDEF UNICODE}AnsiStrings, {$ENDIF}
   HTMLGif2 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
 
 const
@@ -779,25 +786,24 @@ end;
 
 procedure THtmlViewer.LoadFile(const FileName: ThtString; ft: ThtmlFileType);
 var
-  Dest, FName: ThtString;
+  Dest, Name: ThtString;
   Stream: TStream;
 begin
   IOResult; {eat up any pending errors}
-  SplitDest(FileName, FName, Dest);
-  if FName <> '' then
-    FName := ExpandFileName(FName);
-  FCurrentFile := FName; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
-  if not FileExists(FName) then
-    raise EInOutError.Create('Can''t locate file: ' + FName);
-  Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
+  SplitDest(FileName, Name, Dest);
+  if Name <> '' then
+    Name := ExpandFileName(Name);
+  if not FileExists(Name) then
+    raise EhtLoadError.CreateFmt('Can''t locate: ''%s''.', [Name]);
+  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
   try
-    LoadStream(FName + Dest, Stream, ft);
+    LoadStream(Name + Dest, Stream, ft);
   finally
     Stream.Free;
   end;
 end;
 
-procedure THtmlViewer.LoadFromFile(const FileName: ThtString);
+procedure THtmlViewer.LoadFromFile(const FileName: ThtString; DocType: ThtmlFileType);
 var
   OldFile, OldTitle: ThtString;
   OldPos: Integer;
@@ -814,8 +820,7 @@ begin
     OldType := FCurrentFileType;
     OldFormData := GetFormData;
     try
-      LoadFile(FileName, HTMLType);
-
+      LoadFile(FileName, DocType);
       if (OldFile <> FCurrentFile) or (OldType <> FCurrentFileType) then
         BumpHistory(OldFile, OldTitle, OldPos, OldFormData, OldType)
       else
@@ -830,64 +835,15 @@ end;
 {----------------THtmlViewer.LoadTextFile}
 
 procedure THtmlViewer.LoadTextFile(const FileName: ThtString);
-var
-  OldFile, OldTitle: ThtString;
-  OldPos: Integer;
-  OldType: ThtmlFileType;
-  OldFormData: TFreeList;
 begin
-  if IsProcessing then
-    Exit;
-  if Filename <> '' then
-  begin
-    OldFile := FCurrentFile;
-    OldTitle := FTitle;
-    OldPos := Position;
-    OldType := FCurrentFileType;
-    OldFormData := GetFormData;
-    try
-      LoadFile(FileName, TextType);
-      if (OldFile <> FCurrentFile) or (OldType <> FCurrentFileType) then
-        BumpHistory(OldFile, OldTitle, OldPos, OldFormData, OldType)
-      else
-        OldFormData.Free;
-    except
-      OldFormData.Free;
-      raise;
-    end;
-  end;
+  LoadFromFile(FileName, TextType);
 end;
 
 {----------------THtmlViewer.LoadImageFile}
 
 procedure THtmlViewer.LoadImageFile(const FileName: ThtString);
-var
-  OldFile, OldTitle: ThtString;
-  OldPos: Integer;
-  OldType: ThtmlFileType;
-  OldFormData: TFreeList;
-
 begin
-  if IsProcessing then
-    Exit;
-  if Filename <> '' then
-  begin
-    OldFile := FCurrentFile;
-    OldTitle := FTitle;
-    OldPos := Position;
-    OldType := FCurrentFileType;
-    OldFormData := GetFormData;
-    try
-      LoadFile(FileName, ImgType);
-      if (OldFile <> FCurrentFile) or (OldType <> FCurrentFileType) then
-        BumpHistory(OldFile, OldTitle, OldPos, OldFormData, OldType)
-      else
-        OldFormData.Free;
-    except
-      OldFormData.Free;
-      raise;
-    end;
-  end;
+  LoadFromFile(FileName, ImgType);
 end;
 
 {----------------THtmlViewer.LoadStrings}
@@ -895,8 +851,6 @@ end;
 procedure THtmlViewer.LoadStrings(const Strings: ThtStrings; const Reference: ThtString);
 begin
   LoadString(Strings.Text, Reference, HTMLType);
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
 {----------------THtmlViewer.LoadTextStrings}
@@ -913,32 +867,27 @@ var
   S: ThtString;
 begin
   SetString(S, Buffer, BufLenTChars); // Yunqa.de: SetString() is faster than SetLength().
-  LoadString(S, Reference, HTMLType);
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
+  LoadFromString(S, Reference, HtmlType);
 end;
 
 {----------------THtmlViewer.LoadTextFromString}
 
+// deprecated
 procedure THtmlViewer.LoadTextFromString(const S: ThtString);
 begin
   LoadString(S, '', TextType);
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
-procedure THtmlViewer.LoadFromDocument(Document: TBuffer; const Reference: ThtString);
+procedure THtmlViewer.LoadFromDocument(Document: TBuffer; const Reference: ThtString; DocType: THtmlFileType);
 begin
-  LoadDocument(Document, Reference, HTMLType);
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
+  LoadDocument(Document, Reference, DocType);
 end;
 
 {----------------THtmlViewer.LoadFromString}
-procedure THtmlViewer.LoadFromString(const S: ThtString; const Reference: ThtString);
+procedure THtmlViewer.LoadFromString(const S: ThtString; const Reference: ThtString; DocType: THtmlFileType);
 begin
-  LoadString(S, Reference, HTMLType);
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
+  LoadString(S, Reference, DocType);
 end;
 
 {----------------THtmlViewer.LoadString}
@@ -950,119 +899,92 @@ begin
   LoadFromFile(Url);
 end;
 
-procedure THtmlViewer.LoadDocument(Document: TBuffer; const Reference: ThtString; ft: ThtmlFileType);
+//-- BG ---------------------------------------------------------- 01.01.2012 --
+procedure THtmlViewer.LoadDocument(Document: TBuffer; const DocName: ThtString; DocType: THtmlFileType);
 var
-  I: Integer;
-  Dest, FName, OldFile: ThtString;
+  Dest, Name, OldFile: ThtString;
+  OldCursor: TCursor;
 begin
   if IsProcessing then
     Exit;
-  SetProcessing(True);
-  FRefreshDelay := 0;
-  FName := Reference;
-  I := Pos('#', FName);
-  if I > 0 then
-  begin
-    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
-    FName := Copy(FName, 1, I - 1);
-  end
+
+  SplitDest(DocName, Name, Dest);
+  case DocType of
+    ImgType:
+      raise EhtException.Create('LoadDocument with DocType = ''ImgType'' not supported.');
   else
-    Dest := '';
-  Include(FViewerState, vsDontDraw);
+    if Document = nil then
+      raise EhtException.Create('LoadDocument requires document to load. Parameter ''Document'' must not be nil.');
+  end;
+
+  SetProcessing(True);
   try
     OldFile := FCurrentFile;
-    FCurrentFile := ExpandFileName(FName);
-    FCurrentFileType := ft;
-    FSectionList.ProgressStart := 75;
-    htProgressInit;
-    InitLoad;
-    CaretPos := 0;
-    Sel1 := -1;
-    if Assigned(OnSoundRequest) then
-      OnSoundRequest(Self, '', 0, True);
-    FreeAndNil(FDocument);
-    FDocument := Document;
-    if Assigned(OnParseBegin) then
-      OnParseBegin(Self, FDocument);
-    if Ft = HTMLType then
-      ParseHtml
-    else
-      ParseText;
-    CheckVisitedLinks;
-    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
-    begin
-      {if neither destination specified nor same file, move to top}
-      ScrollTo(0);
-      HScrollBar.Position := 0;
+    OldCursor := Screen.Cursor;
+    Screen.Cursor := crHourGlass;
+    Include(FViewerState, vsDontDraw);
+    try
+      FRefreshDelay := 0;
+      FSectionList.ProgressStart := 75;
+      htProgressInit;
+      try
+        // terminate old document
+        InitLoad;
+        CaretPos := 0;
+        Sel1 := -1;
+        if Assigned(OnSoundRequest) then
+          OnSoundRequest(Self, '', 0, True);
+        FreeAndNil(FDocument);
+
+        // load new document
+        FDocument := Document;
+        FCurrentFile := ExpandFileName(Name);
+        FCurrentFileType := DocType;
+        if Assigned(OnParseBegin) then
+          OnParseBegin(Self, FDocument);
+
+        case DocType of
+          HTMLType:
+            ParseHtml;
+        else
+          ParseText;
+        end;
+        CheckVisitedLinks;
+        if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
+        begin
+          {if neither destination specified nor same file, move to top}
+          ScrollTo(0);
+          HScrollBar.Position := 0;
+        end;
+      finally
+        PaintPanel.Invalidate;
+        htProgressEnd;
+      end;
+    finally
+      Exclude(FViewerState, vsDontDraw);
+      Screen.Cursor := OldCursor;
     end;
-    PaintPanel.Invalidate;
   finally
-    htProgressEnd;
     SetProcessing(False);
-    Exclude(FViewerState, vsDontDraw);
   end;
+  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
+    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
 {----------------THtmlViewer.LoadString}
 
 procedure THtmlViewer.LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
-var
-  I: Integer;
-  Dest, FName, OldFile: ThtString;
 begin
   if IsProcessing then
     Exit;
-  SetProcessing(True);
-  FRefreshDelay := 0;
-  FName := Reference;
-  I := Pos('#', FName);
-  if I > 0 then
-  begin
-    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
-    FName := Copy(FName, 1, I - 1);
-  end
-  else
-    Dest := '';
-  Include(FViewerState, vsDontDraw);
-  try
-    OldFile := FCurrentFile;
-    FCurrentFile := ExpandFileName(FName);
-    FCurrentFileType := ft;
-    FSectionList.ProgressStart := 75;
-    htProgressInit;
-    InitLoad;
-    CaretPos := 0;
-    Sel1 := -1;
-    if Assigned(OnSoundRequest) then
-      OnSoundRequest(Self, '', 0, True);
-    FreeAndNil(FDocument);
-    FDocument := TBuffer.Create(Source, FName);
-    if Assigned(OnParseBegin) then
-      OnParseBegin(Self, FDocument);
-    if Ft = HTMLType then
-      ParseHtml
-    else
-      ParseText;
-    CheckVisitedLinks;
-    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
-    begin
-      {if neither destination specified nor same file, move to top}
-      ScrollTo(0);
-      HScrollBar.Position := 0;
-    end;
-    PaintPanel.Invalidate;
-  finally
-    htProgressEnd;
-    SetProcessing(False);
-    Exclude(FViewerState, vsDontDraw);
-  end;
+  LoadDocument(TBuffer.Create(Source, Reference), Reference, ft);
 end;
 
 {----------------THtmlViewer.LoadFromStream}
 
-procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString);
+procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString; DocType: ThtmlFileType);
 begin
-  LoadStream(Reference, AStream, HTMLType);
+  LoadStream(Reference, AStream, DocType);
 end;
 
 procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
@@ -1074,82 +996,23 @@ end;
 
 procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
 var
-  I: Integer;   OldCursor: TCursor;  SaveOnImageRequest: TGetImageEvent;
-  Dest, FName, OldFile: ThtString;
+  SaveOnImageRequest: TGetImageEvent;
 begin
-  if IsProcessing or not Assigned(AStream) then
-    Exit;
-  SetProcessing(True);
-  FRefreshDelay := 0;
-  FName := URL;
-  I := Pos('#', FName);
-  if I > 0 then
-  begin
-    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
-    FName := Copy(FName, 1, I - 1);
-  end
+  AStream.Position := 0;
+  if ft in [HTMLType, TextType] then
+    LoadDocument(TBuffer.Create(AStream, URL), URL, ft)
   else
-    Dest := '';
-  Include(FViewerState, vsDontDraw);
-  OldCursor := Screen.Cursor;
-  Screen.Cursor := crHourGlass;
-  try
-    FSectionList.ProgressStart := 75;
-    htProgressInit;
-    InitLoad;
-    CaretPos := 0;
-    Sel1 := -1;
-
-    AStream.Position := 0;
-    FreeAndNil(FDocument);
-    if ft in [HTMLType, TextType] then
-      FDocument := TBuffer.Create(AStream, FName)
-    else
-      FDocument := TBuffer.Create('<img src="' + FName + '">');
-
-    if Assigned(OnParseBegin) then
-      OnParseBegin(Self, FDocument);
-
-    OldFile := FCurrentFile;
-    FCurrentFile := ExpandFileName(FName);
-    case ft of
-      HTMLType:
-      begin
-        if Assigned(OnSoundRequest) then
-          OnSoundRequest(Self, '', 0, True);
-        ParseHtml;
-      end;
-
-      TextType:
-      begin
-        ParseText;
-      end;
-    else
-      SaveOnImageRequest := OnImageRequest;
-      try
-        FImageStream := AStream;
-        OnImageRequest := DoImage;
-        ParseHtml;
-      finally
-        FImageStream := nil;
-        OnImageRequest := SaveOnImageRequest;
-      end;
+  begin
+    SaveOnImageRequest := OnImageRequest;
+    try
+      FImageStream := AStream;
+      OnImageRequest := DoImage;
+      LoadDocument(TBuffer.Create('<img src="' + URL + '">'), URL, HTMLType)
+    finally
+      FImageStream := nil;
+      OnImageRequest := SaveOnImageRequest;
     end;
-    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
-    begin
-      {if neither destination specified nor same file, move to top}
-      ScrollTo(0);
-      HScrollBar.Position := 0;
-    end;
-    PaintPanel.Invalidate;
-  finally
-    Screen.Cursor := OldCursor;
-    htProgressEnd;
-    Exclude(FViewerState, vsDontDraw);
-    SetProcessing(False);
   end;
-  if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
-    FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
 //-- BG ---------------------------------------------------------- 20.02.2011 --
@@ -1463,34 +1326,24 @@ end;
 procedure THtmlViewer.URLAction;
 var
   S, Dest: ThtString;
-  I: Integer;
   OldPos: Integer;
-
+  ft: THtmlFileType;
 begin
   if not HotSpotClickHandled then
   begin
     OldPos := Position;
-    S := URL;
-    I := Pos('#', S); {# indicates a position within the document}
-    if I = 1 then
+    SplitDest(Url, S, Dest);
+    if S = '' then
     begin
-      if PositionTo(S) then {no filename with this one}
-      begin
+      {no filename with this one}
+      if PositionTo(Dest) then
         BumpHistory(FCurrentFile, FTitle, OldPos, nil, FCurrentFileType);
-        AddVisitedLink(FCurrentFile + S);
-      end;
     end
     else
     begin
-      if I > 1 then
-      begin
-        Dest := System.Copy(S, I, Length(S) - I + 1); {local destination}
-        S := System.Copy(S, 1, I - 1); {the file name}
-      end
-      else
-        Dest := ''; {no local destination}
       S := HTMLExpandFileName(S);
-      case GetFileType(S) of
+      ft := GetFileType(S);
+      case ft of
 
         HTMLType:
           if S <> FCurrentFile then
@@ -1499,16 +1352,11 @@ begin
             AddVisitedLink(S + Dest);
           end
           else if PositionTo(Dest) then {file already loaded, change position}
-          begin
             BumpHistory(FCurrentFile, FTitle, OldPos, nil, HTMLType);
-            AddVisitedLink(S + Dest);
-          end;
 
-        ImgType:
-          LoadImageFile(S);
-
+        ImgType,
         TextType:
-          LoadTextFile(S);
+          LoadFromFile(S + Dest, ft);
       end;
     end;
     {Note: Self may not be valid here}
@@ -2186,8 +2034,8 @@ begin
       ScrollTo(TIDObject(Obj).YPosition);
 
     HScrollBar.Position := 0;
-    Result := True;
     AddVisitedLink(FCurrentFile + '#' + Dest);
+    Result := True;
   end;
 end;
 
@@ -4923,12 +4771,7 @@ begin
   if FCurrentFile <> '' then
   begin
     Pos := Position;
-    case FCurrentFileType of
-      HTMLType: LoadFromFile(FCurrentFile);
-      TextType: LoadTextFile(FCurrentFile);
-    else
-      LoadImageFile(FCurrentFile);
-    end;
+    LoadFromFile(FCurrentFile, FCurrentFileType);
     Position := Pos;
   end;
 end;
