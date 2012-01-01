@@ -3778,6 +3778,7 @@ end;
 //-- BG ---------------------------------------------------------- 27.12.2010 --
 procedure THtmlParser.ParseText(Doc: TBuffer; ASectionList: ThtDocument);
 begin
+  Self.Doc := Doc;
   ParseInit(ASectionList, nil);
   InScript := True;
 
