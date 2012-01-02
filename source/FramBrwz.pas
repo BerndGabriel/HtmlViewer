@@ -833,7 +833,7 @@ begin
         S1 := '';
         PostRequest(Self, IsGet, S, Query, EncType, Referer, Reload, S1, StreamType, Stream);
         if not Assigned(Stream) then
-          raise(EfvLoadError.Create('Can''t load: ' + S));
+          raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [S]);
         if S1 <> '' then
           S := S1;
 
@@ -887,7 +887,7 @@ begin
       end;
       PostRequest(Self, IsGet, S, Query, EncType, Referer, Reload, S1, StreamType, Stream);
       if not Assigned(Stream) then
-        raise(EfvLoadError.Create('Can''t locate cache file: ' + S));
+        raise EhtLoadError.CreateFmt('Can''t locate cache file ''%s''.', [S]);
 
       if S1 <> '' then
       begin

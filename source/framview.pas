@@ -1094,7 +1094,7 @@ begin
         FrameFile := not (ft in [ImgType, TextType]) and MasterSet.FrameViewer.IsFrame(EV.Doc);
       except
         on E: Exception do
-          raise EhtLoadError.CreateFmt('Can''t locate: ''%s'': %s', [EV.NewName, E.Message]);
+          raise EhtLoadError.CreateFmt('Can''t locate ''%s'': %s', [EV.NewName, E.Message]);
       end
     else
       FrameFile := not Assigned(Viewer);
@@ -2644,7 +2644,7 @@ begin
     exit;
   SplitDest(FileName, Name, Dest);
   if not FileExists(Name) then
-    raise EhtLoadError.CreateFmt('Can''t locate: ''%s''.', [Name]);
+    raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
   LoadFromFileInternal(Name, Dest);
 end;
 
@@ -2731,7 +2731,7 @@ begin
     FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase);
 
     if not FileExists(Name) and not Assigned(OnStreamRequest) then
-      raise EhtLoadError.CreateFmt('Can''t locate: ''%s''.', [Name]);
+      raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
 
     BeginProcessing;
     try
