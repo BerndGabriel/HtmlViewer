@@ -127,6 +127,52 @@ type
     vsHiliting);
   THtmlViewerState = set of THtmlViewerStateBit;
 
+  THistoryItem = class(TObject)
+  private
+    FUrl: ThtString;
+    FTitle: ThtString;
+    FPosition: Integer;
+    FFileType: THtmlFileType;
+  public
+    property FileType: THtmlFileType read FFileType write FFileType;
+    property Position: Integer read FPosition write FPosition;
+    property Title: ThtString read FTitle write FTitle;
+    property Url: ThtString read FUrl write FUrl;
+  end;
+
+  THistory = class(TObject)
+  private
+    FHistory: TObjectList;
+    FIndex: Integer;
+    function GetItem(Index: Integer): THistoryItem;
+    function GetCount: Integer;
+    function GetLowestIndexOfUrl(const Url: ThtString; Start: Integer): Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure Delete(Index: Integer);
+    procedure Insert(Index: Integer; Item: THistoryItem);
+    property Index: Integer read FIndex write FIndex;
+    property Items[Index: Integer]: THistoryItem read GetItem; default;
+    property Count: Integer read GetCount;
+  end;
+
+  ThvHistoryItem = class(THistoryItem)
+  private
+    FFormData: TFreeList;
+  public
+    destructor Destroy; override;
+    property FormData: TFreeList read FFormData write FFormData;
+  end;
+
+  ThvHistory = class(THistory)
+  private
+    function GetItem(Index: Integer): ThvHistoryItem;
+  public
+    property Items[Index: Integer]: ThvHistoryItem read GetItem; default;
+  end;
+
   THtmlViewer = class(THtmlViewerBase)
   private
     // child components
@@ -163,9 +209,7 @@ type
 
     // status info
     FViewerState: THtmlViewerState;
-    FHistory, FTitleHistory: ThtStrings;
-    FHistoryIndex: Integer;
-    FPositionHistory: TFreeList;
+    FHistory: ThvHistory;
 
     // document related stuff
     FSectionList: ThtDocument;
@@ -279,6 +323,7 @@ type
     procedure WMMouseScroll(var Message: TMessage); message WM_MouseScroll;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure WMUrlAction(var Message: TMessage); message WM_UrlAction;
+    function GetHistoryIndex: Integer;
     property HTMLTimer: TTimer read FHTMLTimer;
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
@@ -361,7 +406,7 @@ type
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
     procedure AddVisitedLink(const S: ThtString);
-    procedure BumpHistory(const FileName, Title: ThtString; OldPos: Integer; OldFormData: TFreeList; ft: ThtmlFileType);
+    procedure BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
     procedure CheckVisitedLinks;
     procedure Clear; virtual;
     procedure ClearHistory;
@@ -406,8 +451,8 @@ type
     property DocumentTitle: ThtString read FTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
     property FormData: TFreeList read GetFormData write SetFormData;
-    property History: ThtStrings read FHistory;
-    property HistoryIndex: Integer read FHistoryIndex write SetHistoryIndex;
+    property History: ThvHistory read FHistory;
+    property HistoryIndex: Integer read GetHistoryIndex write SetHistoryIndex;
     property HScrollBarPosition: Integer read GetHScrollPos write SetHScrollPos;
     property HScrollBarRange: Integer read GetHScrollBarRange;
     property IDControl[const ID: ThtString]: TIDObject read GetIDControl;
@@ -431,7 +476,7 @@ type
     property SelText: UnicodeString read GetSelText;
     property Target: ThtString read FTarget write FTarget;
     property TitleAttr: ThtString read FTitleAttr;
-    property TitleHistory: ThtStrings read FTitleHistory;
+    //property TitleHistory: ThtStrings read FTitleHistory;
     property URL: ThtString read FURL write FURL;
     property ViewerState: THtmlViewerState read FViewerState;
     property VScrollBarPosition: Integer read GetScrollPos write SetScrollPos;
@@ -657,9 +702,7 @@ begin
 
   SetOptions([htPrintTableBackground, htPrintMonochromeBlack]);
 
-  FHistory := ThtStringList.Create;
-  FPositionHistory := TFreeList.Create;
-  FTitleHistory := ThtStringList.Create;
+  FHistory := ThvHistory.Create;
   FVisited := ThtStringList.Create;
 
   FHTMLTimer := TTimer.Create(Self);
@@ -728,8 +771,6 @@ begin
   end;
   FSectionList.Free;
   FHistory.Free;
-  FPositionHistory.Free;
-  FTitleHistory.Free;
   Visited.Free;
   FLinkAttributes.Free;
   FDocument.Free;
@@ -794,7 +835,7 @@ begin
   if Name <> '' then
     Name := ExpandFileName(Name);
   if not FileExists(Name) then
-    raise EhtLoadError.CreateFmt('Can''t locate: ''%s''.', [Name]);
+    raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
   Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
   try
     LoadStream(Name + Dest, Stream, ft);
@@ -2327,6 +2368,12 @@ begin
   Invalidate;
 end;
 
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THtmlViewer.GetHistoryIndex: Integer;
+begin
+  Result := History.Index;
+end;
+
 function THtmlViewer.GetHScrollBarRange: Integer;
 begin
   Result := HScrollBar.Max - PaintPanel.Width;
@@ -2367,103 +2414,88 @@ end;
 
 {----------------THtmlViewer.BumpHistory}
 
-procedure THtmlViewer.BumpHistory(const FileName, Title: ThtString;
-  OldPos: Integer; OldFormData: TFreeList; ft: ThtmlFileType);
+procedure THtmlViewer.BumpHistory(const OldFileName, OldTitle: ThtString;
+  OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
 var
   I: Integer;
-  PO: PositionObj;
   SameName: Boolean;
+  HI: ThvHistoryItem;
 begin
-  SameName := FileName = FCurrentFile;
-  if (HistoryMaxCount > 0) and (FCurrentFile <> '') and ((not SameName) or (FCurrentFileType <> ft) or (OldPos <> Position)) then
-    with FHistory do
+  SameName := OldFileName = FCurrentFile;
+  if (HistoryMaxCount > 0) and (FCurrentFile <> '') and ((not SameName) or (FCurrentFileType <> OldDocType) or (OldPos <> Position)) then
+  begin
+    // update current history item
+    HI := FHistory[FHistory.Index];
+    if (HI <> nil) and (OldFilename <> '') then
     begin
-      if (Count > 0) and (Filename <> '') then
-      begin
-        Strings[FHistoryIndex] := Filename;
-        with PositionObj(FPositionHistory[FHistoryIndex]) do
-        begin
-          Pos := OldPos;
-          FileType := ft;
-          if not SameName then {only stored when documents changed}
-            FormData := OldFormData
-          else
-            OldFormData.Free;
-        end;
-        FTitleHistory[FHistoryIndex] := Title;
-        for I := 0 to FHistoryIndex - 1 do
-        begin
-          Delete(0);
-          FTitleHistory.Delete(0);
-          FPositionHistory.Delete(0);
-        end;
-      end;
-      FHistoryIndex := 0;
-      Insert(0, FCurrentFile);
-      PO := PositionObj.Create;
-      PO.Pos := Position;
-      PO.FileType := FCurrentFileType;
-      FPositionHistory.Insert(0, PO);
-      FTitleHistory.Insert(0, FTitle);
-      if Count > HistoryMaxCount then
-      begin
-        Delete(HistoryMaxCount);
-        FTitleHistory.Delete(HistoryMaxCount);
-        FPositionHistory.Delete(HistoryMaxCount);
-      end;
-      if Assigned(OnHistoryChange) then
-        OnHistoryChange(Self);
-    end
+      HI.Url := OldFilename;
+      HI.Title := OldTitle;
+      HI.Position := OldPos;
+      HI.FileType := OldDocType;
+      if not SameName then {only stored when documents changed}
+        HI.FormData := OldFormData
+      else
+        OldFormData.Free;
+      // remove items up to the top item (which is at index 0)
+      for I := 0 to FHistory.Index - 1 do
+        FHistory.Delete(0);
+    end;
+
+    // insert new history item
+    FHistory.Index := 0;
+    HI := ThvHistoryItem.Create;
+    HI.Url := FCurrentFile;
+    HI.Title := FTitle;
+    HI.Position := Position;
+    HI.FileType := FCurrentFileType;
+    FHistory.Insert(0, HI);
+
+    // delete excessive history items
+    while FHistory.Count > HistoryMaxCount do
+      FHistory.Delete(HistoryMaxCount);
+
+    // notify
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end
   else
     OldFormData.Free;
 end;
 
 procedure THtmlViewer.SetHistoryIndex(Value: Integer);
 var
-  I: Integer;
-
-  function GetLowestSameFileIndex(Start: Integer): Integer;
-  begin
-    Result := Start;
-    while (Result > 0) and (FHistory[Result - 1] = FCurrentFile) do
-      Dec(Result);
-  end;
-
+  HI: ThvHistoryItem;
 begin
   if IsProcessing then
     Exit;
-  with FHistory do
-    if (Value <> FHistoryIndex) and (Value >= 0) and (Value < Count) then
-    begin
-      if FCurrentFile <> '' then
-      begin {save the current information}
-        Strings[FHistoryIndex] := FCurrentFile;
-        with PositionObj(FPositionHistory[FHistoryIndex]) do
-        begin
-          Pos := Position;
-          FileType := FCurrentFileType;
-          I := GetLowestSameFileIndex(FHistoryIndex);
-          PositionObj(FPositionHistory[I]).FormData := GetFormData;
-        end;
-        FTitleHistory[FHistoryIndex] := FTitle;
-      end;
-      with PositionObj(FPositionHistory[Value]) do
-      begin {reestablish the new desired history position}
-        if (FCurrentFile <> Strings[Value]) or (FCurrentFileType <> FileType) then
-          Self.LoadFile(Strings[Value], FileType);
-        Position := Pos;
-        I := GetLowestSameFileIndex(Value);
-        with PositionObj(FPositionHistory[I]) do
-        begin
-          SetFormData(FormData); {reload the forms if any}
-          FormData.Free;
-          FormData := nil;
-        end;
-      end;
-      FHistoryIndex := Value;
-      if Assigned(OnHistoryChange) then
-        OnHistoryChange(Self);
+  if (Value <> FHistory.Index) and (Value >= 0) and (Value < FHistory.Count) then
+  begin
+    // update current history item
+    if FCurrentFile <> '' then
+    begin {save the current information}
+      HI := FHistory[FHistory.Index];
+      HI.Url := FCurrentFile;
+      HI.Title := FTitle;
+      HI.Position := Position;
+      HI.FileType := FCurrentFileType;
+      FHistory[FHistory.GetLowestIndexOfUrl(FCurrentFile, FHistory.Index)].FormData := GetFormData;
     end;
+
+    {reestablish the new desired history position}
+    HI := FHistory[Value];
+    if (FCurrentFile <> HI.Url) or (FCurrentFileType <> HI.FileType) then
+      LoadFile(HI.Url, HI.FileType);
+    Position := HI.Position;
+    HI := FHistory[FHistory.GetLowestIndexOfUrl(HI.Url, Value)];
+    SetFormData(HI.FormData); {reload the forms if any}
+    HI.FormData.Free;
+    HI.FormData := nil;
+    FHistory.Index := Value;
+
+    // notify
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end;
 end;
 
 procedure THtmlViewer.SetHistoryMaxCount(const Value: Integer);
@@ -2481,9 +2513,6 @@ var
 begin
   CountWas := FHistory.Count;
   FHistory.Clear;
-  FTitleHistory.Clear;
-  FPositionHistory.Clear;
-  FHistoryIndex := 0;
   FCurrentFile := '';
   if (CountWas > 0) and Assigned(OnHistoryChange) then
     OnHistoryChange(Self);
@@ -5144,6 +5173,83 @@ destructor PositionObj.Destroy;
 begin
   FormData.Free;
   inherited;
+end;
+
+{ ThvHistoryItem }
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+destructor ThvHistoryItem.Destroy;
+begin
+  FFormData.Free;
+  inherited;
+end;
+
+{ THistoryBase }
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+procedure THistory.Clear;
+begin
+  FIndex := 0;
+  FHistory.Clear;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+constructor THistory.Create;
+begin
+  inherited Create;
+  FHistory := TObjectList.Create;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+procedure THistory.Delete(Index: Integer);
+begin
+  FHistory.Delete(Index);
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+destructor THistory.Destroy;
+begin
+  FHistory.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THistory.GetCount: Integer;
+begin
+  Result := FHistory.Count;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THistory.GetItem(Index: Integer): THistoryItem;
+begin
+  if Count = 0 then
+    Result := nil
+  else
+    Result := THistoryItem(FHistory[Index]);
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THistory.GetLowestIndexOfUrl(const Url: ThtString; Start: Integer): Integer;
+// extracted from THtmlViewer.SetHistoryIndex
+begin
+  Result := Start;
+  while (Result > 0) and (Items[Result - 1].Url = Url) do
+    Dec(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+procedure THistory.Insert(Index: Integer; Item: THistoryItem);
+begin
+  FHistory.Insert(Index, Item);
+end;
+
+
+{ ThvHistory }
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function ThvHistory.GetItem(Index: Integer): ThvHistoryItem;
+begin
+  Result := ThvHistoryItem(inherited getItem(Index));
 end;
 
 end.

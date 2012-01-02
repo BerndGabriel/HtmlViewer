@@ -427,7 +427,8 @@ procedure TForm1.HistoryChange(Sender: TObject);
 {This event occurs when something changes history list}
 var
   I: integer;
-  Cap: string[80];
+  Cap: ThtString;
+  HI: THistoryItem;
 begin
 with Sender as ThtmlViewer do
   begin
@@ -441,9 +442,10 @@ with Sender as ThtmlViewer do
     with Histories[I] do
       if I < History.Count then
         Begin
-        Cap := History.Strings[I];
-        if TitleHistory[I] <> '' then
-          Cap := Cap + '--' + TitleHistory[I];
+        HI := History[I];
+        Cap := HI.Url;
+        if HI.Title <> '' then
+          Cap := Cap + '--' + HI.Title;
         Caption := Cap;    {Cap limits string to 80 char}
         Visible := True;
         Checked := I = HistoryIndex;
@@ -605,7 +607,7 @@ if OpenDialog.Execute then
   begin
   ReloadButton.Enabled := False;
   Update;
-  Viewer.LoadTextFile(OpenDialog.Filename);
+  Viewer.LoadFromFile(OpenDialog.Filename, TextType);
   if Viewer.CurrentFile  <> '' then
     begin
     Caption := Viewer.DocumentTitle;
@@ -624,7 +626,7 @@ OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
 if OpenDialog.Execute then
   begin
   ReloadButton.Enabled := False;
-  Viewer.LoadImageFile(OpenDialog.Filename);
+  Viewer.LoadFromFile(OpenDialog.Filename, ImgType);
   if Viewer.CurrentFile  <> '' then
     begin
     Caption := Viewer.DocumentTitle;
@@ -635,27 +637,17 @@ end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
 var
-  S: string[200];
-  Ext: string;
-  Count: integer;
+  S: string;
 begin
-{$ifndef LCL}
-Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-Length(S) := Count;
-DragFinish(Message.WParam);
-if Count >0 then
-  begin
-  Ext := LowerCase(ExtractFileExt(S));
-  if (Ext = '.htm') or (Ext = '.html') then
-    Viewer.LoadFromFile(S)
-  else if (Ext = '.txt') then
-    Viewer.LoadTextFile(S)
-  else if (Ext = '.bmp') or (Ext = '.gif') or (Ext = '.jpg')
-        or (Ext = '.jpeg') or (Ext = '.png') then
-    Viewer.LoadImageFile(S);
-  end;
+{$ifdef LCL}
+{$else}
+  SetLength(S, 1024);
+  SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
+  DragFinish(Message.WParam);
+  if Length(S) > 0 then
+    Viewer.LoadFromFile(S);
 {$endif}
-Message.Result := 0;
+  Message.Result := 0;
 end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
