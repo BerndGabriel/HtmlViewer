@@ -590,7 +590,7 @@ type
 //-- BG ---------------------------------------------------------- 23.09.2010 --
 function IsHtmlExt(const Ext: ThtString): Boolean;
 begin
-  Result := (Ext = '.html') or (Ext = '.css') or (Ext = '.htm') or (Ext = '.php');
+  Result := (Ext = '.html') or (Ext = '.css') or (Ext = '.htm') or (Ext = '.php') or (Ext = '.xhtml') or (Ext = '.xht');
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
