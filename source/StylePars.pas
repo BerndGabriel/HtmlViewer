@@ -449,6 +449,12 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
       else if S[I] = 'none' then
       begin
         ProcessProperty('background-image', S[I]);
+//        ProcessProperty('background-color', 'transparent'); {9.41}
+        S[I] := '';
+      end
+      else if S[I] = 'inherit' then
+      begin
+        ProcessProperty('background-image', S[I]);
         ProcessProperty('background-color', 'transparent'); {9.41}
         S[I] := '';
       end;
