@@ -613,8 +613,8 @@ begin
   if Box <> nil then
   begin
     ParentBox.AppendChild(Box);
-    Box.BoundsRect := ParentBox.BoundsRect;
     RenderChildren(ParentBox);
+    //ParentBox.BoundsRect := Box.BoundsRect;
   end;
 end;
 
@@ -710,36 +710,51 @@ begin
   Box.BorderColors  := Properties.GetColors(BorderLeftColor, BorderTopColor, BorderRightColor, BorderBottomColor, ParentBox.BorderColors, NoneColors);
   Box.BorderStyles  := Properties.GetStyles(BorderLeftStyle, BorderTopStyle, BorderRightStyle, BorderBottomStyle, ParentBox.BorderStyles, NoneStyles);
 
-  if Element.Symbol <> BodySy then
-    case Box.Display of
-      pdUnassigned,
-      pdNone:
-        raise EHtmlRendererException.Create('A box having "Display:' + CDisplayStyle[Box.Display] + '" is not supported.');
-    else
-      ParentWidth := ParentBox.ContentRect.Right - ParentBox.ContentRect.Left;
-      ParentHeight := ParentBox.ContentRect.Bottom - ParentBox.ContentRect.Top;
-      case Box.Position of
+  case Box.Display of
+    pdUnassigned,
+    pdNone:
+      raise EHtmlRendererException.Create('A box having "Display:' + CDisplayStyle[Box.Display] + '" is not supported.');
+  else
+    ParentWidth := ParentBox.ContentRect.Right - ParentBox.ContentRect.Left;
+    ParentHeight := ParentBox.ContentRect.Bottom - ParentBox.ContentRect.Top;
+    case Box.Position of
 
-        posStatic:
-        begin
-          GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
-          GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+      posStatic:
+      begin
+        GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
+        GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        case Element.Symbol of
+          BodySy:
+          begin
+            if Rect.Right < ParentWidth then
+              Rect.Right := ParentWidth;
+            if Rect.Bottom < ParentHeight then
+              Rect.Bottom := ParentHeight;
+          end;
         end;
+      end;
 
-        posRelative:
-        begin
-          GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
-          GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-          GetRelativeOffset(psLeft, psRight, ParentWidth,  EmBase, Rect.Left, Rect.Right);
-          GetRelativeOffset(psTop, psBottom, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        end;
+      posRelative:
+      begin
+        GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
+        GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        GetRelativeOffset(psLeft, psRight, ParentWidth,  EmBase, Rect.Left, Rect.Right);
+        GetRelativeOffset(psTop, psBottom, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+      end;
 
-      else
+      posFixed:
+      begin
         GetAbsoluteBounds(psLeft, psRight, psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetAbsoluteBounds(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        //TODO: add viewport origin to keep it at a scroll indeendent position:
       end;
-      Box.BoundsRect := Rect;
+    else
+      //posAbsolute:
+      GetAbsoluteBounds(psLeft, psRight, psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
+      GetAbsoluteBounds(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
     end;
+    Box.BoundsRect := Rect;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 04.09.2011 --
