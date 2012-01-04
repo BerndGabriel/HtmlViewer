@@ -652,14 +652,13 @@ end;
 procedure TForm1.wmDropFiles(var Message: TMessage);
 var
   S: string;
-  Count: integer;
 begin
 {$ifdef LCL}
 {$else}
-  Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-  SetLength(S, Count);
+  SetLength(S, 1024);
+  SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
-  if Count >0 then
+  if Length(S) > 0 then
     FrameViewer.LoadFromFile(S);
 {$endif}
   Message.Result := 0;
