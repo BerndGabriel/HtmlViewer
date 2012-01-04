@@ -420,57 +420,75 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
 
   procedure DoBackground(Value: ThtString);
   { do the Background shorthand property specifier }
+  type
+    TShortHandedProps = (shColor, shImage, shRepeat, shAttachment, shPosition);
   var
     S: array[0..6] of ThtString;
     S1: ThtString;
     Count, I, N: integer;
     Dummy: TColor;
-
+    Values: array [TShortHandedProps] of ThtString;
   begin
+    // http://www.w3.org/TR/CSS21/colors.html#propdef-background :
+    // Given a valid declaration, the 'background' property first sets all the individual background
+    // properties to their initial values, then assigns explicit values given in the declaration.
+    Values[shColor] := 'transparent';
+    Values[shImage] := 'none';
+    Values[shRepeat] := 'repeat';
+    Values[shAttachment] := 'scroll';
+    Values[shPosition] := '0% 0%';
+
+    // process color and image
     ExtractParn(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
       if Pos('rgb(', S[I]) > 0 then
-        ProcessProperty('background-color', S[I])
+        Values[shColor] := S[I]
       else if (Pos('url(', S[I]) > 0) then
       begin
         if LinkPath <> '' then {path added now only for <link...>}
           S[I] := AddPath(S[I]);
-        ProcessProperty('background-image', S[I]);
+        Values[shImage] := S[I];
       end;
     end;
+
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
       if TryStrToColor(S[I], NeedPound, Dummy) then
       begin
-        ProcessProperty('background-color', S[I]);
+        Values[shColor] := S[I];
         S[I] := '';
       end
       else if S[I] = 'none' then
       begin
-        ProcessProperty('background-image', S[I]);
-//        ProcessProperty('background-color', 'transparent'); {9.41}
-        S[I] := '';
-      end
-      else if S[I] = 'inherit' then
-      begin
-        ProcessProperty('background-image', S[I]);
-        ProcessProperty('background-color', 'transparent'); {9.41}
+        Values[shImage] := S[I];
         S[I] := '';
       end;
+
+    ProcessProperty('background-color', Values[shColor]);
+    ProcessProperty('background-image', Values[shImage]);
+
+    // process repeat
     for I := 0 to Count - 1 do
       if Pos('repeat', S[I]) > 0 then
       begin
-        ProcessProperty('background-repeat', S[I]);
+        Values[shRepeat] := S[I];
         S[I] := '';
       end;
+    ProcessProperty('background-repeat', Values[shRepeat]);
+
+    // process attachment
     for I := 0 to Count - 1 do
       if (S[I] = 'fixed') or (S[I] = 'scroll') then
       begin
-        ProcessProperty('background-attachment', S[I]);
+        Values[shAttachment] := S[I];
         S[I] := '';
       end;
-    N := 0; S1 := ''; {any remaining are assumed to be position info}
+    ProcessProperty('background-attachment', Values[shAttachment]);
+
+    // process position
+    N := 0;
+    S1 := ''; {any remaining are assumed to be position info}
     for I := Count - 1 downto 0 do
       if S[I] <> '' then
       begin
@@ -480,16 +498,20 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
           Break; {take only last two}
       end;
     if S1 <> '' then
-      ProcessProperty('background-position', S1);
+      Values[shPosition] := S1;
+    ProcessProperty('background-position', Values[shPosition]);
   end;
 
   procedure DoBorder(Prop, Value: ThtString);
   { do the Border, Border-Top/Right/Bottom/Left shorthand properties.  However, there
     currently is only one style and color supported for all border sides }
+  type
+    TShortHandedProps = (shWidth, shStyle, shColor);
   var
     S: array[0..6] of ThtString;
     Count, I: integer;
     Dummy: TColor;
+    Values: array [TShortHandedProps] of ThtString;
 
     function FindStyle(const S: ThtString): boolean;
     const
@@ -521,39 +543,59 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     end;
 
   begin
+    Values[shWidth] := 'medium';
+    Values[shStyle] := 'none';
+    // TODO: BG, 04.01.2012: set default color from 'color' property
+    Values[shColor] := '';
+
     ExtractParn(Value, S, Count);
     for I := 0 to Count - 1 do
       if TryStrToColor(S[I], NeedPound, Dummy) then
-        ProcessBorderProperty('-color', S[I]);
+        Values[shColor] := S[I];
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
       if TryStrToColor(S[I], NeedPound, Dummy) then
-        ProcessBorderProperty('-color', S[I])
+        Values[shColor] := S[I]
       else if FindStyle(S[I]) then
-        ProcessBorderProperty('-style', S[I]) 
+        Values[shStyle] := S[I]
       else
-        ProcessBorderProperty('-width', S[I]);
+        Values[shWidth] := S[I];
     end;
+
+    if Values[shColor] <> '' then
+      ProcessBorderProperty('-color', Values[shColor]);
+    ProcessBorderProperty('-width',  Values[shWidth]);
+    ProcessBorderProperty('-style',  Values[shStyle]);
   end;
 
   procedure DoFont(const Value: ThtString);
   { do the Font shorthand property specifier }
   type
-    FontEnum =
-      (italic, oblique, normal, bolder, lighter, bold, smallcaps,
-      larger, smaller, xxsmall, xsmall, small, medium, large,
-      xlarge, xxlarge);
+    TShortHandedProps = (shStyle, shVariant, shWeight, shSize, shHeight, shFamily);
+    FontEnum = (
+      // font-style
+      italic, oblique,
+      // font-weight
+      normal, bolder, lighter, bold,
+      // font-variant
+      smallcaps,
+      // font-size
+      larger, smaller, xxsmall, xsmall, small, medium, large, xlarge, xxlarge
+    );
   const
-    FontWords: array[italic..xxlarge] of ThtString =
-    ('italic', 'oblique', 'normal', 'bolder', 'lighter', 'bold', 'small-caps',
-      'larger', 'smaller', 'xx-small', 'x-small', 'small', 'medium', 'large',
-      'x-large', 'xx-large');
+    FontWords: array[italic..xxlarge] of ThtString = (
+      'italic', 'oblique',
+      'normal', 'bolder', 'lighter', 'bold',
+      'small-caps',
+      'larger', 'smaller', 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'
+    );
   var
     S: array[0..6] of ThtString;
-    Count, I: integer;
+    Count, I, J: integer;
     Index: FontEnum;
+    Values: array [TShortHandedProps] of ThtString;
 
     function FindWord(const S: ThtString; var Index: FontEnum): boolean;
     var
@@ -570,59 +612,102 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     end;
 
   begin
+    // initial values
+    Values[shStyle] := 'normal';
+    Values[shVariant] := 'normal';
+    Values[shWeight] := 'normal';
+    Values[shSize] := 'medium';
+    Values[shHeight] := 'normal';
+    // TODO: BG, 04.01.2012: set default font as set in THtmlViewer:
+    Values[shFamily] := '';
+
+    // specified values
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
-      if S[I, 1] = '/' then
-      begin
-        ProcessProperty('line-height', Copy(S[I], 2, Length(S[I]) - 1));
-        Continue;
-      end;
-      if FindWord(S[I], Index) then
-      begin
-        case Index of
-          italic, oblique:
-            ProcessProperty('font-style', S[I]);
-          normal..bold:
-            ProcessProperty('font-weight', S[I]);
-          smallcaps:
-            ProcessProperty('font-variant', S[I]);
-          larger..xxlarge:
-            ProcessProperty('font-size', S[I]);
-        end;
-        continue;
-      end;
-      if IsDigit(S[I, 1]) then
-      begin
-      {the following will pass 100pt, 100px, but not 100 or larger}
-        if StrToIntDef(S[I], -1) < 100 then
-          ProcessProperty('font-size', S[I]);
-      end
+      case S[I, 1] of
+        '/':
+          Values[shHeight] := Copy(S[I], 2, Length(S[I]) - 1);
+
+        '0'..'9':
+          begin
+            // BG, 04.01.2012: syntax is <font-size>[/<line-height>]?
+            // Therefore find '/' at the end of font-size:
+            J := pos('/', S[I]);
+            if J > 1 then
+            begin
+              Values[shSize] := Copy(S[I], 1, J - 1);
+              Values[shHeight] := Copy(S[I], J + 1, Length(S[I]) - J);
+            end
+            else
+            {the following will pass 100pt, 100px, but not 100 or larger}
+              if StrToIntDef(S[I], -1) < 100 then
+                Values[shSize] := S[I];
+          end;
       else
-        ProcessProperty('font-family', S[I])
+        if FindWord(S[I], Index) then
+        begin
+          case Index of
+            italic, oblique:  Values[shStyle] := S[I];
+            normal..bold:     Values[shWeight] := S[I];
+            smallcaps:        Values[shVariant] := S[I];
+            larger..xxlarge:  Values[shSize] := S[I];
+          end;
+        end
+        else
+          Values[shFamily] := S[I];
+      end;
     end;
+
+    // set values to properties
+    ProcessProperty('font-style', Values[shStyle]);
+    ProcessProperty('font-variant', Values[shVariant]);
+    ProcessProperty('font-weight', Values[shWeight]);
+    ProcessProperty('font-size', Values[shSize]);
+    ProcessProperty('line-height', Values[shHeight]);
+    // TODO: BG, 04.01.2012: set default font as set in THtmlViewer:
+    if Values[shFamily] <> '' then
+      ProcessProperty('font-family', Values[shFamily]);
   end;
 
   procedure DoListStyle(const Value: ThtString);
   { do the List-Style shorthand property specifier }
+  type
+    TShortHandedProps = (shType, shPosition, shImage);
   var
     S: array[0..6] of ThtString;
     Count, I: integer;
-
+    Values: array [TShortHandedProps] of ThtString;
   begin
+    Values[shType] := 'disc';
+    Values[shPosition] := 'outside';
+    Values[shImage] := 'none';
+
     SplitString(Value, S, Count);
+    for I := 0 to Count - 1 do
+      if S[I] = 'none' then
+      begin
+        Values[shType] := S[I];
+        S[I] := '';
+      end;
+
     for I := 0 to Count - 1 do
     begin
       if Pos('url(', S[I]) > 0 then
       begin
         if LinkPath <> '' then {path added now only for <link...>}
           S[I] := AddPath(S[I]);
-        ProcessProperty('list-style-image', S[I])
+        Values[shImage] := S[I];
       end
-      else
-        ProcessProperty('list-style-type', S[I]);
-    {should also do List-Style-Position }
+      else if (S[I] = 'inside') or (S[I] = 'outside') then
+        Values[shPosition] := S[I]
+      else if S[I] <> '' then
+        Values[shType] := S[I];
     end;
+
+    ProcessProperty('list-style-type', Values[shType]);
+    ProcessProperty('list-style-position', Values[shPosition]);
+    ProcessProperty('list-style-image', Values[shImage]);
   end;
 
   procedure DoMarginItems(X: TShortHand; const Value: ThtString);
