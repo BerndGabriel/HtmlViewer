@@ -289,7 +289,7 @@ begin
     else
       Result := S;
   end;
-  Result := 'url(' + Result + ')';
+  Result := 'url("' + Result + '")';
 end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
