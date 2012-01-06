@@ -869,6 +869,14 @@ var
   procedure ReadAt;
   {read @import and @media}
 
+    function IsAdvMediaQuery : Boolean;
+    var
+      Identifier: ThtString;
+    begin
+      Result := GetIdentifier(Identifier) and
+         (Identifier = 'and');
+    end;
+
     function GetMediaTypes: TMediaTypes;
     var
       Identifier: ThtString;
@@ -891,6 +899,20 @@ var
       until False;
     end;
 
+    procedure SkipLevels;
+    var Depth : Integer;
+    begin
+        Depth := 0;
+        repeat
+          GetCh;
+          case LCh of
+            '{': Inc(Depth);
+            '}': Dec(Depth);
+          end;
+        until (LCh = '}') and (Depth = 0);
+        GetCh;
+    end;
+
     procedure DoMedia;
     var
       Media: TMediaTypes;
@@ -899,6 +921,20 @@ var
       Media := GetMediaTypes;
       if Media = [] then
         Include(Media, mtAll);
+      {Important!!!
+      You may see media queries defined by:
+
+      http://www.w3.org/TR/css3-mediaqueries/
+
+      If those are not supported, they really should be
+      ignored.  They are part of the CSS 3.0 specification
+      and are supported in many modern web-browsers.
+      }
+      if IsAdvMediaQuery then
+      begin
+        SkipLevels;
+        exit;
+      end;
       case LCh of
         '{':
         begin
@@ -941,6 +977,11 @@ var
     begin
       Result := False;
       SkipWhiteSpace;
+      if IsAdvMediaQuery then
+      begin
+        SkipLevels;
+        exit;
+      end;
       case LCh of
         '"':
           Result := GetString(URL);
