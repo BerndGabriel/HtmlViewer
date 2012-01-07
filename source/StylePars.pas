@@ -869,14 +869,6 @@ var
   procedure ReadAt;
   {read @import and @media}
 
-    function IsAdvMediaQuery : Boolean;
-    var
-      Identifier: ThtString;
-    begin
-      Result := GetIdentifier(Identifier) and
-         (Identifier = 'and');
-    end;
-
     function GetMediaTypes: TMediaTypes;
     var
       Identifier: ThtString;
@@ -899,42 +891,37 @@ var
       until False;
     end;
 
-    procedure SkipLevels;
-    var Depth : Integer;
+    procedure SkipRule(Depth: Integer);
     begin
-        Depth := 0;
-        repeat
-          GetCh;
-          case LCh of
-            '{': Inc(Depth);
-            '}': Dec(Depth);
-          end;
-        until (LCh = '}') and (Depth = 0);
+      repeat
         GetCh;
+        case LCh of
+          '{':
+            Inc(Depth);
+
+          '}':
+            begin
+              Dec(Depth);
+              if Depth = 0 then
+              begin
+                GetCh;
+                break;
+              end;
+            end;
+
+          #0, '<':
+            break;
+        end;
+      until False;
     end;
 
     procedure DoMedia;
     var
       Media: TMediaTypes;
-      Depth: Integer;
     begin
       Media := GetMediaTypes;
       if Media = [] then
         Include(Media, mtAll);
-      {Important!!!
-      You may see media queries defined by:
-
-      http://www.w3.org/TR/css3-mediaqueries/
-
-      If those are not supported, they really should be
-      ignored.  They are part of the CSS 3.0 specification
-      and are supported in many modern web-browsers.
-      }
-      if IsAdvMediaQuery then
-      begin
-        SkipLevels;
-        exit;
-      end;
       case LCh of
         '{':
         begin
@@ -949,23 +936,16 @@ var
             until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
           end
           else
-          begin
-            Depth := 1;
-            repeat // read thru nested '{...}' pairs
-              GetCh;
-              case LCh of
-                '{': Inc(Depth);
-                '}': Dec(Depth);
-                #0, '<': break;
-              end;
-            until Depth = 0;
-          end;
-          if LCh = '}' then
-            GetCh;
+            SkipRule(1);
         end;
 
         ';':
           GetCh;
+      else
+        // BG, 07.01.2012: following J. Peter Mugaas' fix.
+        // CSS 2.1 skips unknown or malformed entries.
+        // I.e. you may see media queries defined by http://www.w3.org/TR/css3-mediaqueries/
+        SkipRule(0);
       end;
     end;
 
@@ -977,11 +957,6 @@ var
     begin
       Result := False;
       SkipWhiteSpace;
-      if IsAdvMediaQuery then
-      begin
-        SkipLevels;
-        exit;
-      end;
       case LCh of
         '"':
           Result := GetString(URL);
@@ -1014,8 +989,15 @@ var
           // I must insert the imported rulesets at the beginning of my list of rulesets
           // to gain a lower precedence than my rulesets of the same selectors.
           ;
-        if LCh = ';' then
+      end;
+      case LCh of
+        ';':
           GetCh;
+      else
+        // BG, 07.01.2012: following J. Peter Mugaas' fix.
+        // CSS 2.1 skips unknown or malformed entries.
+        // I.e. you may see media queries defined by http://www.w3.org/TR/css3-mediaqueries/
+        SkipRule(0);
       end;
     end;
 
