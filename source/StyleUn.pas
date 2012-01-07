@@ -598,10 +598,10 @@ begin
     XY := 1; {X}
     while I <= N do
     begin
-      case XY of
-        1: PXY := @P.X;
-        2: PXY := @P.Y;
-      end;
+      if XY = 1 then
+        PXY := @P.X
+      else
+        PXY := @P.Y;
       PXY.PosType := bpDim;
       if S[I] = 'center' then
         PXY.PosType := bpCenter
