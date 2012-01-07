@@ -191,8 +191,11 @@ type
     FoundObject: TImageObj;
     NewWindowFile: string;
 {$ifdef MsWindows}
+  {$ifdef LCL}
+  {$else}
     MediaCount: integer;
     ThePlayer: TOBject;
+  {$endif}
 {$endif}
     TimerCount: integer;
     OldTitle: ThtString;
@@ -281,8 +284,10 @@ procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtStrin
 
  If the URL is handled here, set Handled to True.  If not handled here, set it
  to False and ThtmlViewer will handle it.}
+{$ifndef MultiMediaMissing}
 const
   snd_Async = $0001;  { play asynchronously }
+{$endif}
 var
   PC: array[0..255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
   S, Params: ThtString;
@@ -648,12 +653,13 @@ if FileExists(S) then
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
+{$ifdef LCL}
+begin
+{$else}
 var
   S: string;
   Count: integer;
 begin
-{$ifdef LCL}
-{$else}
   Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
   SetLength(S, Count);
   DragFinish(Message.WParam);
