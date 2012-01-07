@@ -183,7 +183,7 @@ type
     procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
     procedure Copy(Source: TProperties);
     procedure CopyDefault(Source: TProperties);
-    procedure GetBackgroundPos(EmSize, ExSize: Integer; var P: PtPositionRec);
+    procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(var Before, After, Intact: Boolean);
     procedure GetVMarginArray(var MArray: TVMarginArray);
@@ -565,7 +565,7 @@ end;
 
 {----------------TProperties.GetBackgroundPos}
 
-procedure TProperties.GetBackgroundPos(EmSize, ExSize: Integer; var P: PtPositionRec);
+procedure TProperties.GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
 var
   S: array[1..2] of ThtString;
   Tmp: ThtString;
