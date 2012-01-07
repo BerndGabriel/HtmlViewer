@@ -5097,8 +5097,7 @@ procedure DoImageStuff(Canvas: TCanvas; IW, IH: Integer; BGImage: TImageObj; PRe
   IW, IH, the width and height of the background
 }
 var
-  I, OW, OH, X, XX, Y, X2, Y2: Integer;
-  P: array[1..2] of Integer;
+  OW, OH, X, XX, Y, X2, Y2: Integer;
   TheMask, NewBitmap, NewMask: TBitmap;
   TheGpObj: TGpObject;
   {$IFNDEF NoGDIPlus}
@@ -5174,7 +5173,7 @@ begin
     TheMask := nil;
   end;
 
-  NoMask := not Assigned(TheMask) and PRec[1].RepeatD and PRec[2].RepeatD;
+  NoMask := not Assigned(TheMask) and PRec.X.RepeatD and PRec.Y.RepeatD;
 
   OW := GetImageWidth(BGImage.Image);
   OH := GetImageHeight(BGImage.Image);
@@ -5223,57 +5222,16 @@ begin
       PatBlt(TiledMask.Canvas.Handle, 0, 0, IW, IH, Whiteness);
   end;
 
-{compute the location and tiling of BGImage in the background}
-  P[1] := 0; P[2] := 0;
-  for I := 1 to 2 do
-    with PRec[I] do
-    begin
-      case PosType of
-        pTop:
-          P[I] := 0;
-        pCenter:
-          if I = 1 then
-            P[1] := IW div 2 - OW div 2
-          else
-            P[2] := IH div 2 - OH div 2;
-        pBottom:
-          P[I] := IH - OH;
-        pLeft:
-          P[I] := 0;
-        pRight:
-          P[I] := IW - OW;
-        PPercent:
-          if I = 1 then
-            P[1] := ((IW - OW) * Value) div 100
-          else
-            P[2] := ((IH - OH) * Value) div 100;
-        pDim:
-          P[I] := Value;
-      end;
-      if I = 1 then
-        P[1] := Min(Max(P[1], -OW), IW)
-      else
-        P[2] := Min(Max(P[2], -OH), IH);
-    end;
-
-  X := P[1];
-  Y := P[2];
-  if PRec[2].RepeatD then
+  with PRec.X do
   begin
-    while Y > 0 do
-      Dec(Y, OH);
-    Y2 := IH;
-  end
-  else
-    Y2 := Y;
-  if PRec[1].RepeatD then
+    X := GetPositionInRange(PosType, Value, IW - OW);
+    AdjustForTiling(RepeatD, 0, IW, OW, X, X2);
+  end;
+  with PRec.Y do
   begin
-    while X > 0 do
-      Dec(X, OW);
-    X2 := IW;
-  end
-  else
-    X2 := X;
+    Y := GetPositionInRange(PosType, Value, IH - OH);
+    AdjustForTiling(RepeatD, 0, IH, OH, Y, Y2);
+  end;
 
   if ((OW = 1) or (OH = 1)) then
   begin {in case a 1 pixel bitmap is being tiled.  EnlargeImage returns a
@@ -6136,10 +6094,10 @@ begin
           if not Assigned(BGImage) then
           begin
             BGImage := TImageObj.SimpleCreate(Master, Name);
-            PRec[1].PosType := pDim;
-            PRec[1].Value := 0;
-            PRec[1].RepeatD := True;
-            PRec[2] := PRec[1];
+            PRec.X.PosType := bpDim;
+            PRec.X.Value := 0;
+            PRec.X.RepeatD := True;
+            PRec.Y := PRec.X;
           end;
         HSpaceSy: HSpace := Min(40, Abs(Value));
         VSpaceSy: VSpace := Min(200, Abs(Value));

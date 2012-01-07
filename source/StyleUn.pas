@@ -73,13 +73,17 @@ type
   PositionType = (posStatic, posRelative, posAbsolute, posFixed);
   VisibilityType = (viInherit, viHidden, viVisible);
   TextTransformType = (txNone, txUpper, txLower, txCaps);
+  TBackgroundPosition = (bpTop, bpCenter, bpBottom, bpLeft, bpRight, bpPercent, bpDim);
   PositionRec = record
-    PosType: (pTop, pCenter, pBottom, pLeft, pRight, PPercent, pDim);
+    PosType: TBackgroundPosition;
     Value: integer;
     RepeatD: boolean;
     Fixed: boolean;
   end;
-  PtPositionRec = array[1..2] of PositionRec;
+  PPositionRec = ^PositionRec;
+  PtPositionRec = record
+    X, Y: PositionRec;
+  end;
 
 {$IFDEF Ver90}
   TFontCharSet = integer; {dummy for Delphi 2}
@@ -314,6 +318,43 @@ function ReadFontName(S: ThtString): ThtString;
 
 function AlignmentFromString(S: ThtString): AlignmentType;
 
+function GetPositionInRange(Which: TBackgroundPosition; Where, Range: Integer): Integer;
+{
+ Returns a positon according to the given settings.
+ Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.
+ Where: percentage or pixels for Which = pPercentage resp. pDim.
+ Range: the range in which the result can vary.
+ In the usual alignment calculations the range is outer size - inner size.
+ If you have to consider an offset to outer's parent, add it to the function result afterwards.
+}
+procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
+  var Pos: Integer; out TiledEnd: Integer);
+{
+ Returns the start and end value for tiling an object of given size.
+ Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
+   process and depending on the visibility of the object in the cliparea the untiled object is
+   processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
+   ClipMin so that the tiling process will put one of the tiles to original Pos.
+ TileAreaMin, TileAreaMax: the area in with the object is to tile.
+ TileSize: the size of the tile.
+ Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
+   of the object size to where the object covers the tile area minimum.
+ TiledEnd: a position on and after which no more tiles are processed.
+}
+procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
+  XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
+{
+ PRec has the CSS information on the background image, it's starting location and
+ whether it is tiled in x, y, neither, or both.
+ ARect is the cliprect, no point in drawing tiled images outside it.
+ XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.
+ IW, IH are the total width and height of the document if you could see it all at once.
+ BW, BH are bitmap dimensions used to calc tiling.
+ X, Y are the position (window coordinates) where the first background iamge will be drawn.
+ X2, Y2 are tiling limits.  X2 and Y2 may be such that 0, 1, or many images will
+   get drawn.  They're calculated so that only images within ARect are drawn.
+}
+
 implementation
 
 type
@@ -478,6 +519,102 @@ begin
 
       // ignore the rest: optional whitespaces and ')'
     end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.04.2011 --
+function GetPositionInRange(Which: TBackgroundPosition; Where, Range: Integer): Integer;
+{
+ Returns a positon according to the given settings.
+ Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.
+ Where: percentage or pixels for Which = pPercentage resp. pDim.
+ Range: the range in which the result can vary.
+ In the usual alignment calculations the range is outer size - inner size.
+ If you have to consider an offset to outer's parent, add it to the function result afterwards.
+}
+begin
+  case Which of
+    bpTop,
+    bpLeft:
+      Result := 0;
+
+    bpCenter:
+      Result := Range div 2;
+
+    bpBottom,
+    bpRight:
+      Result := Range;
+
+    bpPercent:
+      Result := (Range * Where) div 100;
+
+    bpDim:
+      Result := Where;
+  else
+    Result := 0;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.04.2011 --
+procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
+  var Pos: Integer; out TiledEnd: Integer);
+{
+ Returns the start and end value for tiling a tile of given size.
+ Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
+   process and depending on the visibility of the object in the cliparea the untiled object is
+   processes at most once. If true, Pos is moved to a position between ClipMin - ObjectSize and
+   ClipMin so that the tiling process will put one of the tiles to original Pos.
+ TileAreaMin, TileAreaMax: the area in which the object is to tile.
+ TileSize: the size of the tile.
+ Pos: on input: the position to consider for tiling. on output the new position shifted by multiples
+   of the object size to where the object covers the tile area minimum.
+ TiledEnd: a position on and after which no more tiles are processed.
+}
+var
+  TileAreaMinPos: Integer;
+begin
+  if Tiled then
+  begin
+    TileAreaMinPos := TileAreaMin - Pos;
+    {figure a starting point for tiling.  This will be less that one object size less than the tile area min}
+    if TileSize <= TileAreaMinPos then
+      Pos := TileAreaMin - TileAreaMinPos mod TileSize
+    else if TileAreaMinPos < 0 then
+      Pos := TileAreaMin - (TileSize - -TileAreaMinPos mod TileSize);
+    TiledEnd := TileAreaMax;
+  end
+  else
+  begin {a single image or row}
+    TiledEnd := Pos; {assume it's not in the tile area and won't be output}
+    if (TileAreaMin < Pos + TileSize) and (Pos < TileAreaMax) then
+      Inc(TiledEnd); {it is in the tile area, show it}
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.04.2011 --
+procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
+  XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
+{
+ PRec has the CSS information on the background image, it's starting location and
+ whether it is tiled in x, y, neither, or both.
+ ARect is the cliprect, no point in drawing tiled images outside it.
+ XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.
+ IW, IH are the total width and height of the document if you could see it all at once.
+ BW, BH are bitmap dimensions used to calc tiling.
+ X, Y are the position (window coordinates) where the first background iamge will be drawn.
+ X2, Y2 are tiling limits.  X2 and Y2 may be such that 0, 1, or many images will
+   get drawn.  They're calculated so that only images within ARect are drawn.
+}
+begin
+  with PRec.X do
+  begin
+    X := GetPositionInRange(PosType, Value, IW - BW) - XOff;
+    AdjustForTiling(RepeatD, ARect.Left, ARect.Right, BW, X, X2);
+  end;
+  with PRec.Y do
+  begin
+    Y := GetPositionInRange(PosType, Value, IH - BH) - YOff;
+    AdjustForTiling(RepeatD, ARect.Top, ARect.Bottom, BH, Y, Y2);
   end;
 end;
 
@@ -773,18 +910,19 @@ end;
 
 {----------------TProperties.GetBackgroundPos}
 
-procedure TProperties.GetBackgroundPos(EmSize, ExSize: integer; out P: PtPositionRec);
+procedure TProperties.GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
 var
   S: array[1..2] of ThtString;
   Tmp: ThtString;
-  I, N, XY: integer;
+  I, N, XY: Integer;
+  PXY: PPositionRec;
 begin
 //BG, 29.08.2009: thanks to SourceForge user 'bolex': 'not' was missing.
   if (not VarIsStr(Props[BackgroundPosition])) then
   begin
-    P[1].PosType := pDim;
-    P[1].Value := 0;
-    P[2] := P[1];
+    P.X.PosType := bpDim;
+    P.X.Value := 0;
+    P.Y := P.X;
   end
   else
   begin
@@ -805,68 +943,72 @@ begin
     XY := 1; {X}
     while I <= N do
     begin
-      P[XY].PosType := pDim;
+      if XY = 1 then
+        PXY := @P.X
+      else
+        PXY := @P.Y;
+      PXY.PosType := bpDim;
       if S[I] = 'center' then
-        P[XY].PosType := pCenter
+        PXY.PosType := bpCenter
       else if Pos('%', S[I]) > 0 then
-        P[XY].PosType := pPercent
+        PXY.PosType := bpPercent
       else if S[I] = 'left' then
       begin
         if XY = 2 then {entered in reverse direction}
-          P[2] := P[1];
-        P[1].PosType := pLeft;
+          P.Y := P.X;
+        P.X.PosType := bpLeft;
       end
       else if S[I] = 'right' then
       begin
         if XY = 2 then
-          P[2] := P[1];
-        P[1].PosType := pRight;
+          P.Y := P.X;
+        P.X.PosType := bpRight;
       end
       else if S[I] = 'top' then
       begin
-        P[2].PosType := pTop;
+        P.Y.PosType := bpTop;
         if XY = 1 then
           Dec(XY); {read next one into X}
       end
       else if S[I] = 'bottom' then
       begin
-        P[2].PosType := pBottom;
+        P.Y.PosType := bpBottom;
         if XY = 1 then
           Dec(XY);
       end;
-      if P[XY].PosType in [pDim, pPercent] then
+      if PXY.PosType in [bpDim, bpPercent] then
       begin
-        P[XY].Value := LengthConv(S[I], False, 100, EmSize, ExSize, 0);
+        PXY.Value := LengthConv(S[I], False, 100, EmSize, ExSize, 0);
       end;
       Inc(I);
       Inc(XY);
     end;
     if N = 1 then
       if XY = 2 then
-        P[2].PosType := pCenter
+        P.Y.PosType := bpCenter
       else
-        P[1].PosType := pCenter; {single entry but it was a Y}
+        P.X.PosType := bpCenter; {single entry but it was a Y}
   end;
-  P[1].RepeatD := True;
-  P[2].RepeatD := True;
+  P.X.RepeatD := True;
+  P.Y.RepeatD := True;
   if (VarIsStr(Props[BackgroundRepeat])) then
   begin
     Tmp := Trim(Props[BackgroundRepeat]);
     if Tmp = 'no-repeat' then
     begin
-      P[1].RepeatD := False;
-      P[2].RepeatD := False;
+      P.X.RepeatD := False;
+      P.Y.RepeatD := False;
     end
     else if Tmp = 'repeat-x' then
-      P[2].RepeatD := False
+      P.Y.RepeatD := False
     else if Tmp = 'repeat-y' then
-      P[1].RepeatD := False;
+      P.X.RepeatD := False;
   end;
-  P[1].Fixed := False;
+  P.X.Fixed := False;
   if (VarIsStr(Props[BackgroundAttachment])) and
     (Trim(Props[BackgroundAttachment]) = 'fixed') then
-    P[1].Fixed := True;
-  P[2].Fixed := P[1].Fixed;
+    P.X.Fixed := True;
+  P.Y.Fixed := P.X.Fixed;
 end;
 
 function TProperties.GetVertAlign(out Align: AlignmentType): boolean;

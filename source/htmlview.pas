@@ -2751,95 +2751,6 @@ begin
   end;
 end;
 
-{----------------CalcBackgroundLocationAndTiling}
-
-procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
-  XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
-
-{PRec has the CSS information on the background image, it's starting location and
- whether it is tiled in x, y, neither, or both.
- ARect is the cliprect, no point in drawing tiled images outside it.
- XOff, YOff are offsets which allow for the fact that the viewable area may not be at 0,0.
- IW, IH are the total width and height of the document if you could see it all at once.
- BW, BH are bitmap dimensions used to calc tiling.
- X, Y are the position (window coordinates) where the first background iamge will be drawn.
- X2, Y2 are tiling limits.  X2 and Y2 may be such that 0, 1, or many images will
-   get drawn.  They're calculated so that only images within ARect are drawn.
-}
-var
-  I: Integer;
-  P: array[1..2] of Integer;
-begin
-{compute the location of the prime background image. Tiling can go either way
- from this image}
-  P[1] := 0; P[2] := 0;
-  for I := 1 to 2 do {I = 1 is X info, I = 2 is Y info}
-    with PRec[I] do
-    begin
-      case PosType of
-        pTop:
-          P[I] := -YOff;
-        pCenter:
-          if I = 1 then
-            P[1] := IW div 2 - BW div 2 - XOff
-          else
-            P[2] := IH div 2 - BH div 2 - YOff;
-        pBottom:
-          P[I] := IH - BH - YOff;
-        pLeft:
-          P[I] := -XOff;
-        pRight:
-          P[I] := IW - BW - XOff;
-        PPercent:
-          if I = 1 then
-            P[1] := ((IW - BW) * Value) div 100 - XOff
-          else
-            P[2] := ((IH - BH) * Value div 100) - YOff;
-        pDim:
-          if I = 1 then
-            P[I] := Value - XOff
-          else
-            P[I] := Value - YOff;
-      end;
-    end;
-
-{Calculate the tiling keeping it within the cliprect boundaries}
-  X := P[1];
-  Y := P[2];
-  if PRec[2].RepeatD then
-  begin {y repeat}
-  {figure a starting point for tiling.  This will be less that one image height
-   outside the cliprect}
-    if Y < ARect.Top then
-      Y := Y + ((ARect.Top - Y) div BH) * BH
-    else if Y > ARect.Top then
-      Y := Y - ((Y - ARect.Top) div BH) * BH - BH;
-    Y2 := ARect.Bottom;
-  end
-  else
-  begin {a single image or row}
-    Y2 := Y; {assume it's not in the cliprect and won't be output}
-    if not ((Y > ARect.Bottom) or (Y + BH < ARect.Top)) then
-      Inc(Y2); {it is in the clip rect, show it}
-  end;
-  if PRec[1].RepeatD then
-  begin {x repeat}
-  {figure a starting point for tiling.  This will be less that one image width
-   outside the cliprect}
-    if X < ARect.Left then
-      X := X + ((ARect.Left - X) div BW) * BW
-    else if X > ARect.Left then
-      X := X - ((X - ARect.Left) div BW) * BW - BW;
-    X2 := ARect.Right;
-  end
-  else
-  begin {single image or column}
-    X2 := X; {assume it's not in the cliprect and won't be output}
-    if not ((X > ARect.Right) or (X + BW < ARect.Left)) then
-      Inc(X2); {it is in the clip rect, show it}
-  end;
-end;
-
 {----------------DrawBackground}
 
 procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
@@ -3076,7 +2987,7 @@ begin
     BW := GetImageWidth(Image);
     BH := GetImageHeight(Image);
     PRec := FSectionList.BackgroundPRec;
-    Fixed := PRec[1].Fixed;
+    Fixed := PRec.X.Fixed;
     if Fixed then
     begin {fixed background}
       XOff := 0;
@@ -3201,7 +3112,7 @@ begin
     BW := GetImageWidth(Image);
     BH := GetImageHeight(Image);
     PRec := FSectionList.BackgroundPRec;
-    SetViewerStateBit(vsBGFixed, PRec[1].Fixed);
+    SetViewerStateBit(vsBGFixed, PRec.X.Fixed);
     if vsBGFixed in FViewerState then
     begin {fixed background}
       XOff := 0;
