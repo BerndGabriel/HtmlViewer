@@ -5952,10 +5952,10 @@ begin
           if not Assigned(BGImage) then
           begin
             BGImage := TImageObj.SimpleCreate(Document, MyCell, Name);
-            PRec[1].PosType := bpDim;
-            PRec[1].Value := 0;
-            PRec[1].RepeatD := True;
-            PRec[2] := PRec[1];
+            PRec.X.PosType := bpDim;
+            PRec.X.Value := 0;
+            PRec.X.RepeatD := True;
+            PRec.Y := PRec.X;
           end;
         HSpaceSy: HSpace := Min(40, Abs(Value));
         VSpaceSy: VSpace := Min(200, Abs(Value));

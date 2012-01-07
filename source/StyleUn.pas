@@ -570,13 +570,14 @@ var
   S: array[1..2] of ThtString;
   Tmp: ThtString;
   I, N, XY: Integer;
+  PXY: PPositionRec;
 begin
 //BG, 29.08.2009: thanks to SourceForge user 'bolex': 'not' was missing.
   if (not VarIsStr(Props[BackgroundPosition])) then
   begin
-    P[1].PosType := bpDim;
-    P[1].Value := 0;
-    P[2] := P[1];
+    P.X.PosType := bpDim;
+    P.X.Value := 0;
+    P.Y := P.X;
   end
   else
   begin
@@ -597,68 +598,72 @@ begin
     XY := 1; {X}
     while I <= N do
     begin
-      P[XY].PosType := bpDim;
+      case XY of
+        1: PXY := @P.X;
+        2: PXY := @P.Y;
+      end;
+      PXY.PosType := bpDim;
       if S[I] = 'center' then
-        P[XY].PosType := bpCenter
+        PXY.PosType := bpCenter
       else if Pos('%', S[I]) > 0 then
-        P[XY].PosType := bpPercent
+        PXY.PosType := bpPercent
       else if S[I] = 'left' then
       begin
         if XY = 2 then {entered in reverse direction}
-          P[2] := P[1];
-        P[1].PosType := bpLeft;
+          P.Y := P.X;
+        P.X.PosType := bpLeft;
       end
       else if S[I] = 'right' then
       begin
         if XY = 2 then
-          P[2] := P[1];
-        P[1].PosType := bpRight;
+          P.Y := P.X;
+        P.X.PosType := bpRight;
       end
       else if S[I] = 'top' then
       begin
-        P[2].PosType := bpTop;
+        P.Y.PosType := bpTop;
         if XY = 1 then
           Dec(XY); {read next one into X}
       end
       else if S[I] = 'bottom' then
       begin
-        P[2].PosType := bpBottom;
+        P.Y.PosType := bpBottom;
         if XY = 1 then
           Dec(XY);
       end;
-      if P[XY].PosType in [bpDim, bpPercent] then
+      if PXY.PosType in [bpDim, bpPercent] then
       begin
-        P[XY].Value := LengthConv(S[I], False, 100, EmSize, ExSize, 0);
+        PXY.Value := LengthConv(S[I], False, 100, EmSize, ExSize, 0);
       end;
       Inc(I);
       Inc(XY);
     end;
     if N = 1 then
       if XY = 2 then
-        P[2].PosType := bpCenter
+        P.Y.PosType := bpCenter
       else
-        P[1].PosType := bpCenter; {single entry but it was a Y}
+        P.X.PosType := bpCenter; {single entry but it was a Y}
   end;
-  P[1].RepeatD := True;
-  P[2].RepeatD := True;
+  P.X.RepeatD := True;
+  P.Y.RepeatD := True;
   if (VarIsStr(Props[BackgroundRepeat])) then
   begin
     Tmp := Trim(Props[BackgroundRepeat]);
     if Tmp = 'no-repeat' then
     begin
-      P[1].RepeatD := False;
-      P[2].RepeatD := False;
+      P.X.RepeatD := False;
+      P.Y.RepeatD := False;
     end
     else if Tmp = 'repeat-x' then
-      P[2].RepeatD := False
+      P.Y.RepeatD := False
     else if Tmp = 'repeat-y' then
-      P[1].RepeatD := False;
+      P.X.RepeatD := False;
   end;
-  P[1].Fixed := False;
+  P.X.Fixed := False;
   if (VarIsStr(Props[BackgroundAttachment])) and
     (Trim(Props[BackgroundAttachment]) = 'fixed') then
-    P[1].Fixed := True;
-  P[2].Fixed := P[1].Fixed;
+    P.X.Fixed := True;
+  P.Y.Fixed := P.X.Fixed;
 end;
 
 function TProperties.GetVertAlign(var Align: AlignmentType): Boolean;

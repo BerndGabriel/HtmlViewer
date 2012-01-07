@@ -2668,7 +2668,7 @@ begin
     BW := Image.Width;
     BH := Image.Height;
     PRec := FSectionList.BackgroundPRec;
-    Fixed := PRec[1].Fixed;
+    Fixed := PRec.X.Fixed;
     if Fixed then
     begin {fixed background}
       XOff := 0;
@@ -2832,7 +2832,7 @@ begin
     BW := Image.Width;
     BH := Image.Height;
     PRec := FSectionList.BackgroundPRec;
-    SetViewerStateBit(vsBGFixed, PRec[1].Fixed);
+    SetViewerStateBit(vsBGFixed, PRec.X.Fixed);
     if vsBGFixed in FViewerState then
     begin {fixed background}
       XOff := 0;

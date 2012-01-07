@@ -1316,7 +1316,7 @@ var
 begin
   TheGpObj := BGImage.Bitmap;
   TheMask  := BGImage.Mask;
-  NoMask := not Assigned(TheMask) and PRec[1].RepeatD and PRec[2].RepeatD;
+  NoMask := not Assigned(TheMask) and PRec.X.RepeatD and PRec.Y.RepeatD;
 
   OW := BGImage.Width;
   OH := BGImage.Height;
@@ -1357,12 +1357,12 @@ begin
   end;
 
 {compute the location and tiling of BGImage in the background}
-  with PRec[1] do
+  with PRec.X do
   begin
     X := GetPositionInRange(PosType, Value, IW - OW);
     AdjustForTiling(RepeatD, 0, IW, OW, X, X2);
   end;
-  with PRec[2] do
+  with PRec.Y do
   begin
     Y := GetPositionInRange(PosType, Value, IH - OH);
     AdjustForTiling(RepeatD, 0, IH, OH, Y, Y2);

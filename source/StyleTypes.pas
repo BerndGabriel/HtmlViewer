@@ -82,7 +82,10 @@ type
     RepeatD: Boolean;
     Fixed: Boolean;
   end;
-  PtPositionRec = array[1..2] of PositionRec;
+  PPositionRec = ^PositionRec;
+  PtPositionRec = record
+    X, Y: PositionRec;
+  end;
 
 type
   TBoxFloatStyle = (
@@ -1074,12 +1077,12 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
    get drawn.  They're calculated so that only images within ARect are drawn.
 }
 begin
-  with PRec[1] do
+  with PRec.X do
   begin
     X := GetPositionInRange(PosType, Value, IW - BW) - XOff;
     AdjustForTiling(RepeatD, ARect.Left, ARect.Right, BW, X, X2);
   end;
-  with PRec[2] do
+  with PRec.Y do
   begin
     Y := GetPositionInRange(PosType, Value, IH - BH) - YOff;
     AdjustForTiling(RepeatD, ARect.Top, ARect.Bottom, BH, Y, Y2);
