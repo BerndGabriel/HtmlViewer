@@ -1074,14 +1074,7 @@ type
     constructor CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellObj);
     destructor Destroy; override;
 
-    //property AsPercent: TWidthType read  write ; {it's a percent}
-    //property SpecHtPercent: Integer read  write ;
-    //property WidthAttr: Integer read  write ; {Width attribute (percentage or absolute)}
-    property Brd: TRect read FBrd write FBrd; //Top, BrdRight, BrdBottom, BrdLeft: Integer;
-    property BrdBottom: Integer read FBrd.Bottom write FBrd.Bottom;
-    property BrdLeft: Integer read FBrd.Left write FBrd.Left;
-    property BrdRight: Integer read FBrd.Right write FBrd.Right;
-    property BrdTop: Integer read FBrd.Top write FBrd.Top;
+    property Border: TRect read FBrd write FBrd; //was: BrdTop, BrdRight, BrdBottom, BrdLeft: Integer;
     property Cell: TCellObjCell read FCell;
     property ColSpan: Integer read FColSpan write FColSpan; {column and row spans for this cell}
     property EmSize: Integer read FEmSize write FEmSize;
@@ -1089,11 +1082,7 @@ type
     property HasBorderStyle: Boolean read FHasBorderStyle write FHasBorderStyle;
     property Ht: Integer read FHt write FHt; {total height (may cover more than one row)}
     property HzSpace: Integer read FHzSpace write FHzSpace;
-    property Pad: TRect read FPad write FPad; //Top, PadRight, PadBottom, PadLeft: Integer;
-    property PadBottom: Integer read FPad.Bottom write FPad.Bottom;
-    property PadLeft: Integer read FPad.Left write FPad.Left;
-    property PadRight: Integer read FPad.Right write FPad.Right;
-    property PadTop: Integer read FPad.Top write FPad.Top;
+    property Padding: TRect read FPad write FPad; //was: PadTop, PadRight, PadBottom, PadLeft: Integer;
     property PRec: PtPositionRec read FPRec write FPRec;
     property RowSpan: Integer read FRowSpan write FRowSpan; {column and row spans for this cell}
     property ShowEmptyCells: Boolean read FShowEmptyCells write FShowEmptyCells;
@@ -7554,31 +7543,31 @@ begin
 
   {In the following, Padding widths in percent aren't accepted}
     ConvMargArrayForCellPadding(MargArrayO, EmSize, ExSize, MargArray);
-    PadTop := MargArray[PaddingTop];
-    PadRight := MargArray[PaddingRight];
-    PadBottom := MargArray[PaddingBottom];
-    PadLeft := MargArray[PaddingLeft];
+    FPad.Top := MargArray[PaddingTop];
+    FPad.Right := MargArray[PaddingRight];
+    FPad.Bottom := MargArray[PaddingBottom];
+    FPad.Left := MargArray[PaddingLeft];
 
     HasBorderStyle := False;
     if BorderStyleType(MargArray[BorderTopStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
-      BrdTop := MargArray[BorderTopWidth];
+      FBrd.Top := MargArray[BorderTopWidth];
     end;
     if BorderStyleType(MargArray[BorderRightStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
-      BrdRight := MargArray[BorderRightWidth];
+      FBrd.Right := MargArray[BorderRightWidth];
     end;
     if BorderStyleType(MargArray[BorderBottomStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
-      BrdBottom := MargArray[BorderBottomWidth];
+      FBrd.Bottom := MargArray[BorderBottomWidth];
     end;
     if BorderStyleType(MargArray[BorderLeftStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
-      BrdLeft := MargArray[BorderLeftWidth];
+      FBrd.Left := MargArray[BorderLeftWidth];
     end;
 //    if Border then
 //      BorderStyle := Prop.GetBorderStyle
@@ -7628,23 +7617,23 @@ end;
 procedure TCellObj.Initialize(TablePadding: Integer; const BkImageName: ThtString;
   const APRec: PtPositionRec; Border: boolean);
 begin
-  if PadTop < 0 then
-    PadTop := TablePadding;
-  if PadRight < 0 then
-    PadRight := TablePadding;
-  if PadBottom < 0 then
-    PadBottom := TablePadding;
-  if PadLeft < 0 then
-    PadLeft := TablePadding;
+  if FPad.Top < 0 then
+    FPad.Top := TablePadding;
+  if FPad.Right < 0 then
+    FPad.Right := TablePadding;
+  if FPad.Bottom < 0 then
+    FPad.Bottom := TablePadding;
+  if FPad.Left < 0 then
+    FPad.Left := TablePadding;
   if Border and not HasBorderStyle then // (BorderStyle = bssNone) then
   begin
-    BrdLeft := Max(1, BrdLeft);
-    BrdRight := Max(1, BrdRight);
-    BrdTop := Max(1, BrdTop);
-    BrdBottom := Max(1, BrdBottom);
+    FBrd.Left := Max(1, FBrd.Left);
+    FBrd.Right := Max(1, FBrd.Right);
+    FBrd.Top := Max(1, FBrd.Top);
+    FBrd.Bottom := Max(1, FBrd.Bottom);
   end;
-  HzSpace := PadLeft + BrdLeft + BrdRight + PadRight;
-  VrSpace := PadTop + BrdTop + BrdBottom + PadBottom;
+  HzSpace := FPad.Left + FBrd.Left + FBrd.Right + FPad.Right;
+  VrSpace := FPad.Top + FBrd.Top + FBrd.Bottom + FPad.Bottom;
 
   if (BkImageName <> '') and not Assigned(BGImage) then
   begin
@@ -7669,7 +7658,7 @@ begin
       ABottom, ABaseline: YIndent := Tmp;
     end;
     Dummy := 0;
-    Cell.DoLogic(Canvas, Y + PadTop + BrdTop + CellSpacing + YIndent, Wd - (HzSpace + CellSpacing),
+    Cell.DoLogic(Canvas, Y + FPad.Top + FBrd.Top + CellSpacing + YIndent, Wd - (HzSpace + CellSpacing),
       Ht - VrSpace - CellSpacing, 0, Dummy, Curs);
   end;
   if Assigned(BGImage) and Cell.Document.ShowImages then
@@ -7722,13 +7711,13 @@ begin
 
   BL := X + CellSpacing; {Border left and right}
   BR := X + Wd;
-  PL := BL + BrdLeft; {Padding left and right}
-  PR := BR - BrdRight;
+  PL := BL + FBrd.Left; {Padding left and right}
+  PR := BR - FBrd.Right;
 
   BT := YO + CellSpacing; {Border Top and Bottom}
   BB := YO + Ht;
-  PT := BT + BrdTop; {Padding Top and Bottom}
-  PB := BB - BrdBottom;
+  PT := BT + FBrd.Top; {Padding Top and Bottom}
+  PB := BB - FBrd.Bottom;
 
   IT := Max(0, Arect.Top - 2 - PT);
   FT := Max(PT, ARect.Top - 2); {top of area drawn, screen coordinates}
@@ -7878,8 +7867,8 @@ begin
       SelectClipRgn(Canvas.Handle, Rgn);
       try
         Cell.Draw(Canvas, ARect, Wd - HzSpace - CellSpacing,
-          X + PadLeft + BrdLeft + CellSpacing,
-          Y + PadTop + BrdTop + YIndent, ARect.Left, 0); {possibly should be IRgn.LfEdge}
+          X + FPad.Left + FBrd.Left + CellSpacing,
+          Y + FPad.Top + FBrd.Top + YIndent, ARect.Left, 0); {possibly should be IRgn.LfEdge}
       finally
         if Rslt = 1 then {restore any previous clip region}
           SelectClipRgn(Canvas.Handle, SaveRgn)
