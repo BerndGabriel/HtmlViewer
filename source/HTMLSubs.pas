@@ -8705,7 +8705,7 @@ begin
                   if Percents[N] > 0 then
                     TotalWidth[wtPercent] := TotalWidth[wtPercent] + Percents[N] {total percents}
                   else if Multis[N] > 0 then
-                    TotalWidth[wtRelative] := TotalWidth[wtRelative] + Multis[N] {total percents}
+                    TotalWidth[wtRelative] := TotalWidth[wtRelative] + Multis[N] {total multis}
                   else
                     Inc(NonPC); {count of cell with no percent}
                 end;
@@ -8855,7 +8855,7 @@ var
   end;
 
 var
-  J, I, W, TotalWid, Unsp, UnspDiff, Delta, {Addon,} Count, d: Integer;
+  J, I, W, TotalWid, Unsp, {UnspDiff,} Delta, {Addon,} Count, d: Integer;
   PCNotMinWid: Double;
   W1, W2: Double;
   NoChange: boolean;
@@ -8868,7 +8868,7 @@ begin
   PCNotMinWid := 0;
   TotalWid := 0;
   Unsp := 0;
-  UnspDiff := 0;
+//  UnspDiff := 0;
   UnspCol := -1;
 {First calculate everything assuming the data entered is perfectly correct}
   for I := 0 to NumCols - 1 do
@@ -8894,8 +8894,9 @@ begin
       Speced[I] := False;
       Widths[I] := MinWidths[I];
       Inc(Unsp); {an unspecified column}
-      UnspCol := I; {save location of unspecified column}
-      Inc(UnspDiff, Max(0, MaxWidths[I] - MinWidths[I])); {total max-min for unspecified cols}
+      if Widths[I] > 0 then
+        UnspCol := I; {save location of unspecified column}
+//      Inc(UnspDiff, Max(0, MaxWidths[I] - MinWidths[I])); {total max-min for unspecified cols}
     end;
     Inc(TotalWid, Widths[I]);
   end;
@@ -8905,14 +8906,14 @@ begin
   begin
     if Unsp > 0 then
     begin
-      if (UnspDiff > 0) and (UnspDiff >= Abs(Delta) div 4) then
-      {increase the unspecified columns widths prop to Max, Min unless the difference is trivial}
-      begin
-        for I := 0 to NumCols - 1 do
-          if (Percents[I] = 0) then
-            Inc(Widths[I], MulDiv(-Delta, Max(0, MaxWidths[I] - MinWidths[I]), UnspDiff));
-      end
-      else
+//      if (UnspDiff > 0) and (UnspDiff >= Abs(Delta) div 4) then
+//      {increase the unspecified columns widths prop to Max - Min unless the difference is trivial}
+//      begin
+//        for I := 0 to NumCols - 1 do
+//          if (Percents[I] = 0) then
+//            Inc(Widths[I], MulDiv(-Delta, Max(0, MaxWidths[I] - MinWidths[I]), UnspDiff));
+//      end
+//      else
       begin {increase the unspecified columns widths uniformly}
         // BG, 26.12.2011: if Delta is small and Unsp is large the simple "div" produces too unlike wide cells.
         // The last cell becomes unexpectedly wide.
@@ -8995,19 +8996,20 @@ begin
   else if Delta < 0 then
   begin
     Delta := -Delta; {Delta is now positive}
-    if Unsp >= Delta then
+    if Unsp > 0 then
     begin
+      d := Max(Delta div Unsp, 1);
       // insert single pixels into unspecified, non-minimum column
       for I := 0 to NumCols - 1 do
         if not UseMin[I] and not Speced[I] then
         begin
-          Inc(Widths[I]); 
-          Dec(Delta);
+          Inc(Widths[I], d);
+          Dec(Delta, d);
           if Delta <= 0 then
             Break;
         end;
     end;
-    if UnspCol >= 0 then
+    if (UnspCol >= 0) and (Delta > 0) then
       Inc(Widths[UnspCol], Delta) {put it into an unspecified column}
     else
     begin
