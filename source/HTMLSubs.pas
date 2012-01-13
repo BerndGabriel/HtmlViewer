@@ -1021,6 +1021,8 @@ type
 // THtmlTable, a block that represents a html table
 //------------------------------------------------------------------------------
 
+  TTableBlock = class;
+  
   TCellObjCell = class(TCell)
   private
     MyRect: TRect;
@@ -1048,7 +1050,7 @@ type
     FYIndent: Integer; {Vertical indent}
     FVAlign: AlignmentType; {Top, Middle, or Bottom}
     FEmSize, FExSize: Integer;
-    FPRec: PtPositionRec;
+    FPRec: PtPositionRec; // background image position info
     FPad: TRect;
     FBrd: TRect;
     FHzSpace, FVrSpace: Integer;
@@ -1060,7 +1062,6 @@ type
     procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor);
     procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
   public
-
     NeedDoImageStuff: boolean;
     BGImage: TImageObj;
     TiledImage: TGpObject;
@@ -1070,7 +1071,7 @@ type
     NoMask: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
 
-    constructor Create(Master: ThtDocument; Parent: TBlock; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
+    constructor Create(Master: ThtDocument; Parent: TTableBlock; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellObj);
     destructor Destroy; override;
 
@@ -1087,11 +1088,13 @@ type
     property RowSpan: Integer read FRowSpan write FRowSpan; {column and row spans for this cell}
     property ShowEmptyCells: Boolean read FShowEmptyCells write FShowEmptyCells;
     property SpecHt: TSpecWidth read FSpecHt write FSpecHt; {Height as specified}
-    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
-    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
+// BG, 12.01.2012: not C++-Builder compatible
+//    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
+//    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
     property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Height as specified}
-    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
-    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
+// BG, 12.01.2012: not C++-Builder compatible
+//    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
+//    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
     property VAlign: AlignmentType read FVAlign write FVAlign; {Top, Middle, or Bottom}
     property VrSpace: Integer read FVrSpace write FVrSpace;
     property VSize: Integer read FVSize write FVSize; {Actual vertical size of contents}
@@ -1134,18 +1137,24 @@ type
     property Items[Index: Integer]: TCellList read GetItem; default;
   end;
 
-  TColObj = class
-    ColWidth: TSpecWidth;
-    ColAlign: ThtString;
-    ColVAlign: AlignmentType;
+  TColSpec = class
+  private
+    FWidth: TSpecWidth;
+    FAlign: ThtString;
+    FVAlign: AlignmentType;
+  public
+    constructor Create(const Width: TSpecWidth; Align: ThtString; VAlign: AlignmentType);
+    property ColWidth: TSpecWidth read FWidth;
+    property ColAlign: ThtString read FAlign;
+    property ColVAlign: AlignmentType read FVAlign;
   end;
 
   // BG, 26.12.2011:
-  TColList = class(TFreeList)
+  TColSpecList = class(TFreeList)
   private
-    function GetItem(Index: Integer): TColObj;
+    function GetItem(Index: Integer): TColSpec;
   public
-    property Items[Index: Integer]: TColObj read GetItem; default;
+    property Items[Index: Integer]: TColSpec read GetItem; default;
   end;
 
   THtmlTable = class;
@@ -1201,29 +1210,28 @@ type
     HeaderHeight, HeaderRowCount, FootHeight, FootStartRow, FootOffset: Integer;
     BodyBreak: Integer;
     HeadOrFoot: Boolean;
+    FColSpecs: TColSpecList; // Column width specifications
     Percents: DblArray;     {percent widths of columns}
     Multis: DblArray;       {multi widths of columns}
     MaxWidths: IntArray;
     MinWidths: IntArray;
-    FCols: TColList;
-    procedure AddDummyCells;
+    procedure Initialize; // add dummy cells, initialize cells, prepare arrays
     procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
     procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
     procedure GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer; TheWidth: Integer);
-    procedure GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer; Specified: boolean);
     procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
     procedure TableSpecifiedAndWillFit(TheWidth: Integer);
   public
     Rows: TRowList;        {a list of TCellLists}
     // these fields are copied via Move() in CreateCopy. Don't add reference counted data like strings and arrays.
-    ListsProcessed: Boolean;
+    Initialized: Boolean;
     //Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
     Float: Boolean;         {if floating}
     NumCols: Integer;       {Number columns in table}
     TableWidth: Integer;    {width of table}
     tblWidthAttr: Integer;  {Width attribute as entered}
-    UseAbsolute: boolean;   {width entries are considered absolute}
+    UseAbsolute: Boolean;   {width entries are considered absolute}
     TableHeight: Integer;   {height of table itself, not incl caption}
     CellPadding: Integer;
     CellSpacing: Integer;
@@ -1235,15 +1243,15 @@ type
     // end of Move()d fields
     DrawX: Integer;
     //DrawY: Integer;
-    BkGnd: boolean;
+    BkGnd: Boolean;
     BkColor: TColor;
     Widths: IntArray;       {holds calculated column widths}
-    Heights: IntArray;      {holds calculated column heights}
+    Heights: IntArray;      {holds calculated row heights}
 
     constructor Create(OwnerCell: TCellBasic; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); override;
     destructor Destroy; override;
-    procedure DoColumns(const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
+    procedure DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
@@ -1260,7 +1268,7 @@ type
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     procedure CopyToClipboard; override;
-    property Cols: TColList read FCols;
+    property ColSpecs: TColSpecList read FColSpecs;
   end;
 
 //------------------------------------------------------------------------------
@@ -7463,13 +7471,12 @@ end;
 
 {----------------TCellObj.Create}
 
-constructor TCellObj.Create(Master: ThtDocument; Parent: TBlock; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
+constructor TCellObj.Create(Master: ThtDocument; Parent: TTableBlock; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
 {Note: on entry Attr and Prop may be Nil when dummy cells are being created}
 var
   I, AutoCount: Integer;
   Color: TColor;
   BackgroundImage: ThtString;
-  //Percent: boolean;
   Algn: AlignmentType;
   J: PropIndices;
 //  Border: Boolean;
@@ -7480,6 +7487,7 @@ begin
     Cell.Title := Prop.PropTitle;
   ColSpan := 1;
   RowSpan := 1;
+
   VAlign := AVAlign;
   if Assigned(Attr) then
     for I := 0 to Attr.Count - 1 do
@@ -7952,12 +7960,15 @@ begin
     BreakBefore := BreakBefore or CellObj.BreakBefore;
     BreakAfter := BreakAfter or CellObj.BreakAfter;
     KeepIntact := KeepIntact or CellObj.KeepIntact;
+
+    // Override cell height with stronger row height specification:
+    // BG, 13.01.2012: Is that okay even if RowSpan > 1?
     case SpecRowHeight.VType of
       wtPercent:
         case CellObj.SpecHt.VType of
           wtPercent:
-            if CellObj.SpecHtValue < SpecRowHeight.Value then
-              CellObj.SpecHtValue := SpecRowHeight.Value;
+            if CellObj.SpecHt.Value < SpecRowHeight.Value then
+              CellObj.SpecHt := SpecRowHeight;
 
           wtRelative: // percentage is stronger
             CellObj.SpecHt := SpecRowHeight;
@@ -7970,17 +7981,20 @@ begin
           wtPercent: ; // percentage is stronger
 
           wtRelative:
-            if CellObj.SpecHtValue < SpecRowHeight.Value then
-              CellObj.SpecHtValue := SpecRowHeight.Value;
+            if CellObj.SpecHt.Value < SpecRowHeight.Value then
+              CellObj.SpecHt := SpecRowHeight;
         else
           // keep specified absolute value
         end;
 
+      wtNone:
+        ; // anything is stonger than none.
+
     else
       case CellObj.SpecHt.VType of
         wtAbsolute:
-          if CellObj.SpecHtValue < SpecRowHeight.Value then
-            CellObj.SpecHtValue := SpecRowHeight.Value;
+          if CellObj.SpecHt.Value < SpecRowHeight.Value then
+            CellObj.SpecHt := SpecRowHeight;
       else
         // absolute value is stronger
         CellObj.SpecHt := SpecRowHeight;
@@ -8236,7 +8250,7 @@ begin
   for I := 0 to HtmlTable.Rows.Count - 1 do
     Rows.Add(TCellList.CreateCopy(Document, OwnerCell.OwnerBlock, HtmlTable.Rows[I]));
 
-  Move(HtmlTable.ListsProcessed, ListsProcessed, PtrSub(@EndList, @ListsProcessed));
+  Move(HtmlTable.Initialized, Initialized, PtrSub(@EndList, @Initialized));
 
   SetLength(Widths, NumCols);
   SetLength(MaxWidths, NumCols);
@@ -8261,200 +8275,228 @@ destructor THtmlTable.Destroy;
 begin
   Rows.Free;
   TablePartRec.Free;
-  FreeAndNil(FCols);
+  FreeAndNil(FColSpecs);
   inherited Destroy;
 end;
 
 {----------------THtmlTable.DoColumns}
 
-procedure THtmlTable.DoColumns(const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
-{add the <col> info to the Cols list}
+procedure THtmlTable.DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
+{add the <col> / <colgroup> info to the Cols list}
 var
-  Col: TColObj;
+  I: Integer;
 begin
-  Col := TColObj.Create;
-  with Col do
-  begin
-    ColWidth := SpecWidth;
-    colVAlign := VAlign;
-    colAlign := Align;
-  end;
-  if FCols = nil then
-    FCols := TColList.Create;
-  FCols.Add(Col);
+  if FColSpecs = nil then
+    FColSpecs := TColSpecList.Create;
+  Count := Min(Count, 10000);
+  for I := 0 to Count - 1 do
+    FColSpecs.Add(TColSpec.Create(SpecWidth, Align, VAlign));
 end;
 
 {----------------THtmlTable.AddDummyCells}
 
-procedure THtmlTable.AddDummyCells;
+procedure THtmlTable.Initialize;
 
-  procedure Initialize(out AnyAbsolute: Boolean);
-
-    function DummyCell(RSpan: Integer): TCellObj;
+  function DummyCell(RSpan: Integer): TCellObj;
+  begin
+    Result := TCellObj.Create(Document, nil, ATop, nil, nil);
+    Result.ColSpan := 0;
+    Result.RowSpan := RSpan;
+    if BkGnd then {transfer bgcolor to cell if no Table image}
     begin
-      Result := TCellObj.Create(Document, nil, ATop, nil, nil);
-      Result.ColSpan := 0;
-      Result.RowSpan := RSpan;
+      Result.Cell.BkGnd := True;
+      Result.Cell.BkColor := BkColor;
     end;
+  end;
 
-    procedure AddDummyCellsForColSpansAndInitialize;
-    var
-      Cl, Rw, RowCount, K: Integer;
-      Row: TCellList;
-      CellObj: TCellObj;
+  procedure AddDummyCellsForColSpansAndInitializeCells;
+  var
+    Cl, Rw, RowCount, K: Integer;
+    Row: TCellList;
+    CellObj: TCellObj;
+  begin
+    {initialize cells and put dummy cells in rows to make up for ColSpan > 1}
+    NumCols := 0;
+    RowCount := Rows.Count;
+    for Rw := 0 to RowCount - 1 do
     begin
-      {initialize cells and put dummy cells in rows to make up for ColSpan > 1}
-      NumCols := 0;
-      AnyAbsolute := False;
-      RowCount := Rows.Count;
+      Row := Rows[Rw];
+      Row.Initialize;
+      for Cl := Row.Count - 1 downto 0 do
+      begin
+        CellObj := Row[Cl];
+        CellObj.Initialize(CellPadding, Row.BkImage, Row.APRec, Self.BorderWidth > 0);
+        if BkGnd and not CellObj.Cell.BkGnd then {transfer bgcolor to cells if no Table image}
+        begin
+          CellObj.Cell.BkGnd := True;
+          CellObj.Cell.BkColor := BkColor;
+        end;
+        CellObj.RowSpan := Min(CellObj.RowSpan, RowCount - Rw); {So can't extend beyond table}
+        for K := Cl + 1 to Cl + CellObj.ColSpan - 1 do
+          if CellObj.RowSpan > 1 then
+            Row.Insert(K, DummyCell(CellObj.RowSpan)) {these could be
+            Nil also except they're needed for expansion in the next section}
+          else
+            Row.Insert(K, DummyCell(1));
+      end;
+      NumCols := Max(NumCols, Row.Count); {temporary # cols}
+    end;
+  end;
+
+  procedure AddDummyCellsForRowSpans;
+  var
+    Cl, Rw, RowCount, K: Integer;
+    Row: TCellList;
+    CellObj: TCellObj;
+  begin
+    RowCount := Rows.Count;
+    for Cl := 0 to NumCols - 1 do
       for Rw := 0 to RowCount - 1 do
       begin
         Row := Rows[Rw];
-        Row.Initialize;
-        for Cl := Row.Count - 1 downto 0 do
+        if Row.Count > Cl then
         begin
           CellObj := Row[Cl];
-          CellObj.Initialize(CellPadding, Row.BkImage, Row.APRec, Self.BorderWidth > 0);
-          if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
-            AnyAbsolute := True;
-          if Self.BkGnd and not CellObj.Cell.BkGnd then {transfer bgcolor to cells if no Table image}
+          if CellObj <> nil then
           begin
-            CellObj.Cell.BkGnd := True;
-            CellObj.Cell.BkColor := Self.BkColor;
-          end;
-          CellObj.RowSpan := Min(CellObj.RowSpan, RowCount - Rw); {So can't extend beyond table}
-          for K := Cl + 1 to Cl + CellObj.ColSpan - 1 do
+            CellObj.RowSpan := Min(CellObj.RowSpan, RowCount - Rw); {practical limit}
             if CellObj.RowSpan > 1 then
-              Row.Insert(K, DummyCell(CellObj.RowSpan)) {these could be
-              Nil also except they're needed for expansion in the next section}
-            else
-              Row.Insert(K, DummyCell(1));
-        end;
-        NumCols := Max(NumCols, Row.Count); {temporary # cols}
-      end;
-
-    end;
-
-    procedure AddDummyCellsForRowSpans;
-    var
-      Cl, Rw, RowCount, K: Integer;
-      Row: TCellList;
-      CellObj: TCellObj;
-    begin
-      RowCount := Rows.Count;
-      for Cl := 0 to NumCols - 1 do
-        for Rw := 0 to RowCount - 1 do
-        begin
-          Row := Rows[Rw];
-          if Row.Count > Cl then
-          begin
-            CellObj := Row[Cl];
-            if CellObj <> nil then
-            begin
-              CellObj.RowSpan := Min(CellObj.RowSpan, RowCount - Rw); {practical limit}
-              if CellObj.RowSpan > 1 then
-                for K := Rw + 1 to Rw + CellObj.RowSpan - 1 do
-                begin {insert dummy cells in following rows if RowSpan > 1}
-                  while Rows[K].Count < Cl do {add padding if row is short}
-                    Rows[K].Add(DummyCell(0));
-                  Rows[K].Insert(Cl, DummyCell(0));
-                end;
-            end;
+              for K := Rw + 1 to Rw + CellObj.RowSpan - 1 do
+              begin {insert dummy cells in following rows if RowSpan > 1}
+                while Rows[K].Count < Cl do {add padding if row is short}
+                  Rows[K].Add(DummyCell(0));
+                Rows[K].Insert(Cl, DummyCell(0));
+              end;
           end;
         end;
-    end;
+      end;
+  end;
 
 // BG, 26.12.2011: Issue 40: Optical bug in tables with columns with relative widths
 //  These "excessive Colspans" are important for relative width formatting.
 //  At least we must accumulate the width info in the last non-dummy-column,
 //  but for now we skip this code:
 //
-//    procedure TrimDummyCells;
-//    var
-//      Cl, Rw, RowCount, K: Integer;
-//      Row: TCellList;
-//      CellObj: TCellObj;
-//      SpanEq0: boolean;
-//    begin
-//    {look for excessive Colspans on last cells in each row. These would be dummy cells added above with Colspan = 0}
-//      RowCount := Rows.Count;
-//      if (RowCount > 0) and (NumCols > 0) then
-//        repeat
-//          SpanEq0 := True; {assume there are some}
+//  procedure TrimDummyCells;
+//  var
+//    Cl, Rw, RowCount, K: Integer;
+//    Row: TCellList;
+//    CellObj: TCellObj;
+//    SpanEq0: boolean;
+//  begin
+//  {look for excessive Colspans on last cells in each row. These would be dummy cells added above with Colspan = 0}
+//    RowCount := Rows.Count;
+//    if (RowCount > 0) and (NumCols > 0) then
+//      repeat
+//        SpanEq0 := True; {assume there are some}
+//        for Rw := 0 to RowCount - 1 do
+//          with Rows[Rw] do
+//            if (Count = NumCols) and (Items[NumCols - 1].ColSpan <> 0) then
+//              SpanEq0 := False; {at least one last cell is not a dummy}
+//        if SpanEq0 then
+//        begin {trim off the dummy cells on end and fixup the Colspan value which was to blame}
 //          for Rw := 0 to RowCount - 1 do
 //            with Rows[Rw] do
-//              if (Count = NumCols) and (Items[NumCols - 1].ColSpan <> 0) then
-//                SpanEq0 := False; {at least one last cell is not a dummy}
-//          if SpanEq0 then
-//          begin {trim off the dummy cells on end and fixup the Colspan value which was to blame}
-//            for Rw := 0 to RowCount - 1 do
-//              with Rows[Rw] do
-//                if (Count = NumCols) and (Items[NumCols - 1].ColSpan = 0) then
+//              if (Count = NumCols) and (Items[NumCols - 1].ColSpan = 0) then
+//              begin
+//                Delete(NumCols - 1); {trim cell on end}
+//                K := NumCols - 2;
+//                while K >= 0 do {find the Colspan value}
 //                begin
-//                  Delete(NumCols - 1); {trim cell on end}
-//                  K := NumCols - 2;
-//                  while K >= 0 do {find the Colspan value}
+//                  if Items[K].ColSpan > 1 then
 //                  begin
-//                    if Items[K].ColSpan > 1 then
-//                    begin
-//                      Dec(Items[K].FColSpan); {fix it}
-//                      Break;
-//                    end;
-//                    Dec(K);
+//                    Dec(Items[K].FColSpan); {fix it}
+//                    Break;
 //                  end;
+//                  Dec(K);
 //                end;
-//            Dec(NumCols);
-//          end;
-//        until not SpanEq0;
-//    end;
-
-  begin
-    AddDummyCellsForColSpansAndInitialize;
-    AddDummyCellsForRowSpans;
-
-//    TrimDummyCells;
-  end;
+//              end;
+//          Dec(NumCols);
+//        end;
+//      until not SpanEq0;
+//  end;
 
 var
-  Cl, Rw: Integer;
-  AnyAbsolute: boolean;
+  Cl, Rw, I, J: Integer;
+  AnyAbsolute: Boolean;
   Row: TCellList;
-  Col: TColObj;
+//  Col: TColSpec;
   CellObj: TCellObj;
 begin
-  if not ListsProcessed then
+  if not Initialized then
   begin
-    {Absolute calc only if  some absolute widths entered}
-    Initialize(UseAbsolute);
 
-    {find the number of columns}
-    NumCols := 0;
-    for Rw := 0 to Rows.Count - 1 do
-      NumCols := Max(NumCols, Rows[Rw].Count);
+    {Use absolute calculation method only if some absolute widths entered}
+    AddDummyCellsForColSpansAndInitializeCells;
+    AddDummyCellsForRowSpans;
+//    TrimDummyCells;
 
-    {add the width info from the <col> tags to the cells}
-    if Cols <> nil then
+    if FColSpecs <> nil then
     begin
-      AnyAbsolute := False;
-      for Rw := 0 to Rows.Count - 1 do
-      begin
-        Row := Rows[Rw];
-        for Cl := 0 to Min(Row.Count - 1, NumCols - 1) do
-        begin
-          CellObj := Row[Cl];
-          if Cl < Cols.Count then
-          begin
-            Col := Cols[Cl];
-            if Col.ColWidth.VType <> wtNone then
-              CellObj.SpecWd := Col.ColWidth;
-          end;
-          if CellObj.SpecWd.VType = wtAbsolute then
-            AnyAbsolute := True;
-        end;
-      end;
-      UseAbsolute := AnyAbsolute;
-      FreeAndNil(FCols); {no longer needed}
+//      // Number of columns is specified in <colgroup>/<col> tag.
+//      // Remove excessive columns and colspans given by <th>/<td> tags.
+//      // Notice: at least Firefox 9 and IE 8 do not remove excessive columns.
+//      NumCols := FColSpecs.Count;
+//      for Rw := 0 to Rows.Count - 1 do
+//      begin
+//        Row := Rows[Rw];
+//        for Cl := Row.Count - 1 downto NumCols do
+//          Row.Delete(Cl);
+//        for Cl := 0 to Row.Count - 1 do
+//        begin
+//          CellObj := Row[Cl];
+//          if (CellObj <> nil) and (CellObj.FColspan > NumCols - Cl) then
+//            CellObj.FColspan := NumCols - Cl;
+//        end;
+//      end;
+
+//      {add the width info from the <col> tags to the cells}
+//      for Rw := 0 to Rows.Count - 1 do
+//      begin
+//        Row := Rows[Rw];
+//        for Cl := 0 to Min(Row.Count, FColSpecs.Count) - 1 do
+//        begin
+//          CellObj := Row[Cl];
+//          Col := FColSpecs[Cl];
+//          if Col.ColWidth.VType <> wtNone then
+//            CellObj.SpecWd := Col.ColWidth;
+//        end;
+//      end;
+//      FreeAndNil(FColSpecs); {no longer needed}
     end;
+//    else
+    begin
+      {find implicit number of columns}
+      NumCols := 0;
+      for Rw := 0 to Rows.Count - 1 do
+        NumCols := Max(NumCols, Rows[Rw].Count);
+    end;
+
+    // TODO -oBG, 12.01.2012 Add missing cells. Actual number of cells may be less than NumCols in some rows due to erroneous / inconsistent html document.
+
+    // See whether there is a cell with an absolutely specified width.
+    // Reduce excessive rowspans.
+    AnyAbsolute := False;
+    if FColSpecs <> nil then
+      for Cl := 0 to FColSpecs.Count - 1 do
+        if FColSpecs[Cl].ColWidth.VType = wtAbsolute then
+          AnyAbsolute := True;
+
+    for Rw := 0 to Rows.Count - 1 do
+    begin
+      Row := Rows[Rw];
+      for Cl := 0 to Row.Count - 1 do
+      begin
+        CellObj := Row[Cl];
+        // Is width specified in absolute Pixels?
+        if CellObj.SpecWd.VType = wtAbsolute then
+          AnyAbsolute := True;
+        // Reduce excessive rowspans.
+        if CellObj.RowSpan > Rows.Count - Rw then
+          CellObj.RowSpan := Rows.Count - Rw;
+      end;
+    end;
+    UseAbsolute := AnyAbsolute;
 
     SetLength(Widths, NumCols);
     SetLength(MaxWidths, NumCols);
@@ -8462,8 +8504,42 @@ begin
     SetLength(Percents, NumCols);
     SetLength(Multis, NumCols);
 
-    ListsProcessed := True;
+    Initialized := True;
   end; {if not ListsProcessed}
+
+  // initialize default widths
+  J := NumCols;
+  if (FColSpecs <> nil) and (FColSpecs.Count < J) then
+    J := FColSpecs.Count;
+  for I := 0 to J - 1 do
+  begin
+    MaxWidths[I] := 0;
+    MinWidths[I] := 0;
+    Percents[I] := 0;
+    Multis[I] := 0;
+    with FColSpecs[I].FWidth do
+      case VType of
+        wtAbsolute:
+        begin
+          MinWidths[I] := Trunc(Value);
+          MaxWidths[I] := MinWidths[I];
+        end;
+
+        wtPercent:
+          Percents[I] := Trunc(Value);
+
+        wtRelative:
+          Multis[I] := Trunc(Value);
+      end;
+  end;
+  for I := J to NumCols - 1 do
+  begin
+    MaxWidths[I] := 0;
+    MinWidths[I] := 0;
+    Percents[I] := 0;
+    Multis[I] := 0;
+  end;
+
 end;
 
 //-- BG ---------------------------------------------------------- 28.12.2011 --
@@ -8503,11 +8579,6 @@ var
   Row: TCellList;
   CellObj: TCellObj;
 begin
-  for I := 0 to NumCols - 1 do
-  begin
-    MaxWidths[I] := 0;
-    MinWidths[I] := 0;
-  end;
   SetLength(Heights, 0);
   Span := 0;
   repeat
@@ -8560,62 +8631,6 @@ begin
   end;
 end;
 
-{----------------THtmlTable.GetWidthsAbs}
-
-procedure THtmlTable.GetWidthsAbs(Canvas: TCanvas; TablWidth: Integer; Specified: boolean);
-var
-  N, D, W, dd, TotalMinWidth, TotalMaxWidth: Integer;
-  Accum: Integer;
-begin
-  GetMinMaxAbs(Canvas, TotalMinWidth, TotalMaxWidth);
-
-  if TotalMinWidth > TablWidth then {use the minimum column widths, table will expand}
-    Widths := Copy(MinWidths)
-  else if (TotalMaxWidth <= TablWidth) and not Specified then
-  {use the max column widths, table will be smaller}
-    Widths := Copy(MaxWidths)
-  else {make table fit}
-  begin
-    D := TotalMaxWidth - TotalMinWidth;
-    W := TablWidth - TotalMinWidth;
-    if D > 0 then {expand only those columns with some slop in them}
-    begin
-      Accum := 0;
-      for N := 0 to NumCols - 1 do
-      begin
-        dd := MaxWidths[N] - MinWidths[N]; {some dd's may be 0}
-        Widths[N] := MinWidths[N] + MulDiv(dd, W, D);
-        Inc(Accum, Widths[N]);
-      end;
-      dd := Accum - TablWidth; {check for Roundoff error}
-      if dd <> 0 then
-      begin
-        for N := 0 to NumCols - 1 do
-        begin
-          if dd > 0 then
-          begin
-            if MaxWidths[N] > MinWidths[N] then
-            begin
-              Dec(Widths[N]);
-              Dec(dd);
-            end;
-          end
-          else
-          begin
-            Inc(Widths[N]);
-            Inc(dd);
-          end;
-          if dd = 0 then
-            break;
-        end;
-      end;
-    end
-    else {no adjustable columns, will have to expand them all}
-      for N := 0 to NumCols - 1 do
-        Widths[N] := MinWidths[N] + MulDiv(MinWidths[N], W, TotalMinWidth);
-  end;
-end;
-
 {----------------THtmlTable.GetWidths}
 
 procedure THtmlTable.GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer;
@@ -8632,14 +8647,6 @@ var
   MaxSpan: Integer;
 begin
 {Find the max and min widths of each column}
-  for I := 0 to NumCols - 1 do
-  begin
-    MaxWidths[I] := 0;
-    MinWidths[I] := 0;
-    Percents[I] := 0;
-    Multis[i] := 0;
-  end;
-
   SetLength(Heights, 0);
   Span := 1;
 
@@ -8819,7 +8826,7 @@ end;
 
 procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
-  AddDummyCells; {in case it hasn't been done}
+  Initialize; {in case it hasn't been done}
   if UseAbsolute and (tblWidthAttr = 0) then
     GetMinMaxAbs(Canvas, Min, Max)
   else
@@ -9323,9 +9330,63 @@ end;
 
 function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
+
+  procedure GetWidthsAbs(TotalMaxWidth, TotalMinWidth, TablWidth: Integer);
+  var
+    N, D, W, dd: Integer;
+    Accum: Integer;
+  begin
+    if TotalMinWidth > TablWidth then
+      {use the minimum column widths, table will expand}
+      Widths := Copy(MinWidths)
+    else if TotalMaxWidth <= TablWidth then
+      {use the max column widths, table will be smaller}
+      Widths := Copy(MaxWidths)
+    else
+    begin
+      {make table fit}
+      D := TotalMaxWidth - TotalMinWidth;
+      W := TablWidth - TotalMinWidth;
+      if D > 0 then {expand only those columns with some slop in them}
+      begin
+        Accum := 0;
+        for N := 0 to NumCols - 1 do
+        begin
+          dd := MaxWidths[N] - MinWidths[N]; {some dd's may be 0}
+          Widths[N] := MinWidths[N] + MulDiv(dd, W, D);
+          Inc(Accum, Widths[N]);
+        end;
+        dd := Accum - TablWidth; {check for Roundoff error}
+        if dd <> 0 then
+        begin
+          for N := 0 to NumCols - 1 do
+          begin
+            if dd > 0 then
+            begin
+              if MaxWidths[N] > MinWidths[N] then
+              begin
+                Dec(Widths[N]);
+                Dec(dd);
+              end;
+            end
+            else
+            begin
+              Inc(Widths[N]);
+              Inc(dd);
+            end;
+            if dd = 0 then
+              break;
+          end;
+        end;
+      end
+      else {no adjustable columns, will have to expand them all}
+        for N := 0 to NumCols - 1 do
+          Widths[N] := MinWidths[N] + MulDiv(MinWidths[N], W, TotalMinWidth);
+    end;
+  end;
+
 var
-  I, J, K,
-    TotalMaxWidth, TotalMinWidth: Integer;
+  I, J, K, TotalMaxWidth, TotalMinWidth: Integer;
   NewWidth: Integer;
   OwnerWidth: Integer;
   Specified: boolean;
@@ -9350,30 +9411,26 @@ begin
       FirstLinePtr := nil;
 
     OwnerWidth := IMgr.RightSide(Y) - IMgr.LeftIndent(Y);
-    if tblWidthAttr > 0 then
-    begin
-      Specified := True;
-      NewWidth := tblWidthAttr;
-    end
+    Specified := tblWidthAttr > 0;
+    if Specified then
+      NewWidth := tblWidthAttr
     else
-    begin
-      Specified := False;
       NewWidth := OwnerWidth;
-    end;
-    Dec(NewWidth, (CellSpacing));
+    Dec(NewWidth, CellSpacing);
 
-    AddDummyCells;
+    Initialize;
 
   {Figure the width of each column}
     if UseAbsolute and not Specified then
     begin {Table width not specified and at least one column has absolute width specified}
-      GetWidthsAbs(Canvas, NewWidth, Specified); {fills in the Widths array}
+      GetMinMaxAbs(Canvas, TotalMinWidth, TotalMaxWidth);
+      GetWidthsAbs(TotalMinWidth, TotalMaxWidth, NewWidth); {fills in the Widths array}
     end
     else
     begin
-      GetWidths(Canvas, TotalMinWidth, TotalMaxWidth, NewWidth);
+      GetWidths(Canvas, TotalMinWidth, TotalMaxWidth, NewWidth);{fills in the Widths array}
 
-      if (TotalMinWidth >= NewWidth) then
+      if TotalMinWidth > NewWidth then
       begin {table won't fit, use minimun widths}
         if Assigned(MinWidths) then {Delphi 4 needs this check}
           Widths := Copy(MinWidths);
@@ -14502,9 +14559,20 @@ end;
 { TColList }
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
-function TColList.GetItem(Index: Integer): TColObj;
+function TColSpecList.GetItem(Index: Integer): TColSpec;
 begin
   Result := Get(Index);
+end;
+
+{ TColSpec }
+
+//-- BG ---------------------------------------------------------- 12.01.2012 --
+constructor TColSpec.Create(const Width: TSpecWidth; Align: ThtString; VAlign: AlignmentType);
+begin
+  inherited Create;
+  FWidth := Width;
+  FAlign := Align;
+  FVAlign := VAlign;
 end;
 
 initialization

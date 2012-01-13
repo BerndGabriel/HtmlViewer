@@ -74,6 +74,7 @@ type
     Value: Double;
     VType: TWidthType;
   end;
+  TSpecWidthArray = array of TSpecWidth;
 
   //BG, 09.09.2009: renamed TGif and TPng to TrGif and TrPng
   //  TGif interfered with same named class.

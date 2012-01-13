@@ -1319,7 +1319,7 @@ function TCellManager.FindColNum(Row: Integer): Integer;
  go or -1 if out of range.  Columns beyond any <col> definitions are ignored}
 begin
   if Row = Count then
-    Add(StringOfChar('o', Table.Cols.Count));
+    Add(StringOfChar('o', Table.ColSpecs.Count));
   Result := Pos('o', Strings[Row]) - 1;
 end;
 
@@ -1331,7 +1331,7 @@ var
 begin
 {make sure there's enough rows to handle any RowSpan for this cell}
   while Count < Row + CellObj.RowSpan do
-    Add(StringOfChar('o', Table.Cols.Count));
+    Add(StringOfChar('o', Table.ColSpecs.Count));
   I := Pos('o', Strings[Row]); {where we want to enter this cell}
   K := I;
   if I > 0 then {else it's beyond the ColInfo and we're not interested}
@@ -1433,7 +1433,6 @@ procedure THtmlParser.DoTable;
     end;
 
   var
-    I: Integer;
     xSpan, cSpan: Integer;
     xWidth, cWidth: TSpecWidth;
     xVAlign, cVAlign: AlignmentType;
@@ -1462,8 +1461,7 @@ procedure THtmlParser.DoTable;
           cAlign := xAlign;
           cSpan := 1; // ignore xSpan, if there is at least 1 <col> tag.
           ReadColAttributes(cWidth, cVAlign, cAlign, cSpan);
-          for I := 1 to Min(cSpan, 10000) do
-            Table.DoColumns(cWidth, cVAlign, cAlign);
+          Table.DoColumns(cSpan, cWidth, cVAlign, cAlign);
         end;
         SkipWhiteSpace;
         Next;
@@ -1472,8 +1470,7 @@ procedure THtmlParser.DoTable;
     else
     begin
       if ColOK then
-        for I := 1 to Min(xSpan, 10000) do
-          Table.DoColumns(xWidth, xVAlign, xAlign);
+        Table.DoColumns(xSpan, xWidth, xVAlign, xAlign);
     end;
     if Sy = ColGroupEndSy then
       Next;
@@ -1643,7 +1640,7 @@ begin
             begin
               CellNum := CM.FindColNum(Table.Rows.Count);
               if CellNum >= 0 then
-                with TColObj(Table.Cols[CellNum]) do
+                with Table.ColSpecs[CellNum] do
                 begin
                   if colAlign <> '' then {<col> alignments added here}
                     PropStack.Last.Assign(colAlign, TextAlign);
@@ -1684,9 +1681,12 @@ begin
                   PropStack.Last.Props[S] := Table.BorderColor;
               end;
             end;
-            CellObj := TCellObj.Create(PropStack.Document, SaveSectionList.OwnerBlock, VAlign, Attributes, PropStack.Last);
+            // BG, 13.01.2012: parent block should be the TableBlock, shouldn't it?
+            // BTW: In CreateCopy() the TableBlock becomes parent of the TCellObj anyway. 
+            //CellObj := TCellObj.Create(PropStack.Document, SaveSectionList.OwnerBlock, VAlign, Attributes, PropStack.Last);
+            CellObj := TCellObj.Create(PropStack.Document, NewBlock, VAlign, Attributes, PropStack.Last);
             SectionList := CellObj.Cell;
-            if ((CellObj.SpecWdValue = 0) or (CellObj.SpecWdType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then
+            if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then
               NoBreak := True {this seems to be what IExplorer does}
             else
               NoBreak := False;
@@ -1783,7 +1783,7 @@ begin
         ColSy, ColGroupSy:
           begin
             DoColGroup(Table, ColOK);
-            if not Assigned(CM) and Assigned(Table.Cols) then
+            if not Assigned(CM) and Assigned(Table.ColSpecs) then
               CM := TCellManager.Create(Table);
           end;
       else
