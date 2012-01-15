@@ -1217,8 +1217,7 @@ type
     MinWidths: IntArray;
     procedure Initialize; // add dummy cells, initialize cells, prepare arrays
     procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
-    procedure GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
-    procedure GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer; TheWidth: Integer);
+    procedure GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
     procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
     procedure TableSpecifiedAndWillFit(TheWidth: Integer);
   public
@@ -8372,110 +8371,22 @@ procedure THtmlTable.Initialize;
       end;
   end;
 
-// BG, 26.12.2011: Issue 40: Optical bug in tables with columns with relative widths
-//  These "excessive Colspans" are important for relative width formatting.
-//  At least we must accumulate the width info in the last non-dummy-column,
-//  but for now we skip this code:
-//
-//  procedure TrimDummyCells;
-//  var
-//    Cl, Rw, RowCount, K: Integer;
-//    Row: TCellList;
-//    CellObj: TCellObj;
-//    SpanEq0: boolean;
-//  begin
-//  {look for excessive Colspans on last cells in each row. These would be dummy cells added above with Colspan = 0}
-//    RowCount := Rows.Count;
-//    if (RowCount > 0) and (NumCols > 0) then
-//      repeat
-//        SpanEq0 := True; {assume there are some}
-//        for Rw := 0 to RowCount - 1 do
-//          with Rows[Rw] do
-//            if (Count = NumCols) and (Items[NumCols - 1].ColSpan <> 0) then
-//              SpanEq0 := False; {at least one last cell is not a dummy}
-//        if SpanEq0 then
-//        begin {trim off the dummy cells on end and fixup the Colspan value which was to blame}
-//          for Rw := 0 to RowCount - 1 do
-//            with Rows[Rw] do
-//              if (Count = NumCols) and (Items[NumCols - 1].ColSpan = 0) then
-//              begin
-//                Delete(NumCols - 1); {trim cell on end}
-//                K := NumCols - 2;
-//                while K >= 0 do {find the Colspan value}
-//                begin
-//                  if Items[K].ColSpan > 1 then
-//                  begin
-//                    Dec(Items[K].FColSpan); {fix it}
-//                    Break;
-//                  end;
-//                  Dec(K);
-//                end;
-//              end;
-//          Dec(NumCols);
-//        end;
-//      until not SpanEq0;
-//  end;
-
 var
-  Cl, Rw, I, J: Integer;
+  Cl, Rw, MaxColSpan, MaxRowSpan: Integer;
   AnyAbsolute: Boolean;
   Row: TCellList;
-//  Col: TColSpec;
   CellObj: TCellObj;
 begin
   if not Initialized then
   begin
-
-    {Use absolute calculation method only if some absolute widths entered}
     AddDummyCellsForColSpansAndInitializeCells;
     AddDummyCellsForRowSpans;
-//    TrimDummyCells;
 
-    if FColSpecs <> nil then
-    begin
-//      // Number of columns is specified in <colgroup>/<col> tag.
-//      // Remove excessive columns and colspans given by <th>/<td> tags.
-//      // Notice: at least Firefox 9 and IE 8 do not remove excessive columns.
-//      NumCols := FColSpecs.Count;
-//      for Rw := 0 to Rows.Count - 1 do
-//      begin
-//        Row := Rows[Rw];
-//        for Cl := Row.Count - 1 downto NumCols do
-//          Row.Delete(Cl);
-//        for Cl := 0 to Row.Count - 1 do
-//        begin
-//          CellObj := Row[Cl];
-//          if (CellObj <> nil) and (CellObj.FColspan > NumCols - Cl) then
-//            CellObj.FColspan := NumCols - Cl;
-//        end;
-//      end;
+    NumCols := 0;
+    for Rw := 0 to Rows.Count - 1 do
+      NumCols := Max(NumCols, Rows[Rw].Count);
 
-//      {add the width info from the <col> tags to the cells}
-//      for Rw := 0 to Rows.Count - 1 do
-//      begin
-//        Row := Rows[Rw];
-//        for Cl := 0 to Min(Row.Count, FColSpecs.Count) - 1 do
-//        begin
-//          CellObj := Row[Cl];
-//          Col := FColSpecs[Cl];
-//          if Col.ColWidth.VType <> wtNone then
-//            CellObj.SpecWd := Col.ColWidth;
-//        end;
-//      end;
-//      FreeAndNil(FColSpecs); {no longer needed}
-    end;
-//    else
-    begin
-      {find implicit number of columns}
-      NumCols := 0;
-      for Rw := 0 to Rows.Count - 1 do
-        NumCols := Max(NumCols, Rows[Rw].Count);
-    end;
-
-    // TODO -oBG, 12.01.2012 Add missing cells. Actual number of cells may be less than NumCols in some rows due to erroneous / inconsistent html document.
-
-    // See whether there is a cell with an absolutely specified width.
-    // Reduce excessive rowspans.
+    // See whether there is a cell with a width specified in absolute Pixels.
     AnyAbsolute := False;
     if FColSpecs <> nil then
       for Cl := 0 to FColSpecs.Count - 1 do
@@ -8484,16 +8395,24 @@ begin
 
     for Rw := 0 to Rows.Count - 1 do
     begin
+      MaxRowSpan := Rows.Count - Rw;
       Row := Rows[Rw];
       for Cl := 0 to Row.Count - 1 do
       begin
+        MaxColSpan := NumCols - Cl;
         CellObj := Row[Cl];
+
         // Is width specified in absolute Pixels?
         if CellObj.SpecWd.VType = wtAbsolute then
           AnyAbsolute := True;
+
+        // Reduce excessive colspans.
+        if CellObj.ColSpan > MaxColSpan then
+          CellObj.ColSpan := MaxColSpan;
+
         // Reduce excessive rowspans.
-        if CellObj.RowSpan > Rows.Count - Rw then
-          CellObj.RowSpan := Rows.Count - Rw;
+        if CellObj.RowSpan > MaxRowSpan then
+          CellObj.RowSpan := MaxRowSpan;
       end;
     end;
     UseAbsolute := AnyAbsolute;
@@ -8506,137 +8425,57 @@ begin
 
     Initialized := True;
   end; {if not ListsProcessed}
-
-  // initialize default widths
-  J := NumCols;
-  if (FColSpecs <> nil) and (FColSpecs.Count < J) then
-    J := FColSpecs.Count;
-  for I := 0 to J - 1 do
-  begin
-    MaxWidths[I] := 0;
-    MinWidths[I] := 0;
-    Percents[I] := 0;
-    Multis[I] := 0;
-    with FColSpecs[I].FWidth do
-      case VType of
-        wtAbsolute:
-        begin
-          MinWidths[I] := Trunc(Value);
-          MaxWidths[I] := MinWidths[I];
-        end;
-
-        wtPercent:
-          Percents[I] := Trunc(Value);
-
-        wtRelative:
-          Multis[I] := Trunc(Value);
-      end;
-  end;
-  for I := J to NumCols - 1 do
-  begin
-    MaxWidths[I] := 0;
-    MinWidths[I] := 0;
-    Percents[I] := 0;
-    Multis[I] := 0;
-  end;
-
 end;
 
-//-- BG ---------------------------------------------------------- 28.12.2011 --
-procedure IncreaseWidths(var Widths: IntArray; StartIndex, ColSpan, RequiredWidth: Integer);
-// Increases width of spanned columns
-// extracted from GetMinMaxAbs and enhanced.
+//-- BG ---------------------------------------------------------- 14.01.2012 --
+procedure GetMinMaxTotal(const MinWidths, MaxWidths: IntArray; out TotalMinWidth, TotalMaxWidth: Integer);
+// Extracted from GetMinMaxAbs and GetWidths.
 var
-  Spanned, Excess, Remainder, N, Add: Integer;
+  I: Integer;
 begin
-  Spanned := 0;
-  for N := StartIndex to StartIndex + ColSpan - 1 do
-    Inc(Spanned, Widths[N]);
-  Excess := RequiredWidth - Spanned;
-  if Excess > 0 then
-  begin
-    Remainder := Excess;
-    Add := RequiredWidth div ColSpan;
-    // increase the width of the spanned columns
-    for N := StartIndex + 1 to StartIndex + ColSpan - 1 do
-    begin
-      if Spanned > 0 then
-        Add := MulDiv(Widths[N], Excess, Spanned);
-      Inc(Widths[N], Add);
-      Dec(Remainder, Add);
-    end;
-    // add the remaining pixels (incl. round-off errors) to the first column's width.
-    Inc(Widths[StartIndex], Remainder);
-  end;
-end;
-
-{----------------THtmlTable.GetMinMaxAbs}
-
-procedure THtmlTable.GetMinMaxAbs(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer);
-var
-  I, J, CellMin, CellMax, Span, Addon: Integer;
-  Done: boolean;
-  Row: TCellList;
-  CellObj: TCellObj;
-begin
-  SetLength(Heights, 0);
-  Span := 0;
-  repeat
-    Done := True;
-    Inc(Span);
-    for J := 0 to Rows.Count - 1 do
-    begin
-      Row := Rows[J];
-      for I := 0 to Row.Count - 1 do
-      begin
-        CellObj := Row[I];
-        if CellObj <> nil then
-        begin
-          if CellObj.ColSpan = Span then
-          begin
-            CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
-            Addon := CellSpacing + CellObj.HzSpace;
-            Inc(CellMin, Addon);
-            Inc(CellMax, Addon);
-            if (CellObj.SpecWd.VType = wtAbsolute) and (CellObj.SpecWd.Value > 0) then
-            begin
-              CellMin := Max(CellMin, Trunc(CellObj.SpecWd.Value) + Addon);
-              CellMax := CellMin;
-            end;
-            if Span = 1 then
-            begin
-              MinWidths[I] := Max(MinWidths[I], CellMin);
-              MaxWidths[I] := Max(MaxWidths[I], CellMax);
-            end
-            else
-            begin
-              IncreaseWidths(MinWidths, I, CellObj.ColSpan, CellMin);
-              IncreaseWidths(MaxWidths, I, CellObj.ColSpan, CellMax);
-            end;
-          end
-          else if CellObj.ColSpan > Span then
-            Done := False; {set if need another iteration}
-        end;
-      end;
-    end;
-  until Done;
-
 {Find the total min and max width}
-  TotalMaxWidth := 0;
   TotalMinWidth := 0;
-  for I := 0 to NumCols - 1 do
+  TotalMaxWidth := 0;
+  for I := 0 to Length(MinWidths) - 1 do
   begin
-    Inc(TotalMaxWidth, MaxWidths[I]);
     Inc(TotalMinWidth, MinWidths[I]);
+    Inc(TotalMaxWidth, MaxWidths[I]);
   end;
 end;
 
 {----------------THtmlTable.GetWidths}
 
-procedure THtmlTable.GetWidths(Canvas: TCanvas; out TotalMinWidth, TotalMaxWidth: Integer;
-  TheWidth: Integer);
+procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
+// calculate MaxWidths and MinWidths of all columns.
+
+  procedure IncreaseWidths(var Widths: IntArray; StartIndex, ColSpan, RequiredWidth: Integer);
+  // Increases width of spanned columns
+  var
+    Spanned, Excess, Remainder, N, Add: Integer;
+  begin
+    Spanned := 0;
+    for N := StartIndex to StartIndex + ColSpan - 1 do
+      Inc(Spanned, Widths[N]);
+    Excess := RequiredWidth - Spanned;
+    if Excess > 0 then
+    begin
+      Remainder := Excess;
+      Add := RequiredWidth div ColSpan;
+      // increase the width of the spanned columns
+      for N := StartIndex + 1 to StartIndex + ColSpan - 1 do
+      begin
+        if Spanned > 0 then
+          Add := MulDiv(Widths[N], Excess, Spanned);
+        Inc(Widths[N], Add);
+        Dec(Remainder, Add);
+      end;
+      // add the remaining pixels (incl. round-off errors) to the first column's width.
+      Inc(Widths[StartIndex], Remainder);
+    end;
+  end;
+
 var
-  I, J, CellMin, CellMax, SpannedMin, SpannedMax, N, Span, Addon, Accum, ExcessMin, ExcessMax, NonPc: Integer;
+  I, J, CellMin, CellMax, SpannedMin, SpannedMax, N, Span, Addon, Accum, ExcessMin, ExcessMax, NonPc, SpecWidth: Integer;
   Distributable, NewTotalPC: Double;
   CellWidth: array [wtPercent..wtRelative] of Double;
   Cells: TCellList;
@@ -8645,8 +8484,37 @@ var
   WI: TWidthType;
   MaxSpans: array of Integer;
   MaxSpan: Integer;
+  AbsoluteLayout: Boolean;
 begin
-{Find the max and min widths of each column}
+  // initialize default widths
+  if FColSpecs <> nil then
+    J := FColSpecs.Count
+  else
+    J := 0;
+  for I := 0 to NumCols - 1 do
+  begin
+    MaxWidths[I] := 0;
+    MinWidths[I] := 0;
+    Percents[I] := 0;
+    Multis[I] := 0;
+    if I < J then
+      with FColSpecs[I].FWidth do
+        case VType of
+          wtAbsolute:
+          begin
+            MinWidths[I] := Trunc(Value);
+            MaxWidths[I] := MinWidths[I];
+          end;
+
+          wtPercent:
+            Percents[I] := Trunc(Value);
+
+          wtRelative:
+            Multis[I] := Trunc(Value);
+        end;
+  end;
+
+  AbsoluteLayout := UseAbsolute and (tblWidthAttr = 0);
   SetLength(Heights, 0);
   Span := 1;
 
@@ -8671,134 +8539,139 @@ begin
         CellObj := Cells[I];
         if CellObj <> nil then
           if CellObj.ColSpan = Span then
-            //with CellObj do
-            begin
-              CellWidth[wtPercent] := 0;
-              CellWidth[wtRelative] := 0;
-              if CellObj.SpecWd.Value > 0 then
-                // BG, 26.12.2011: TODO: issue 40: multi-width
-                case CellObj.SpecWd.VType of
-                  wtPercent,
-                  wtRelative:
-                    CellWidth[CellObj.SpecWd.VType] := CellObj.SpecWd.Value;
-                else
-//                  if TheWidth > 0 then
-//                    CellWidth[wtPercent] := Min(1000.0, CellObj.SpecWd.Value / TheWidth * 1000.0);
-                end;
+          begin
+            // get min and max width of this cell:
+            CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
+            CellWidth[wtPercent] := 0;
+            CellWidth[wtRelative] := 0;
+            if CellObj.SpecWd.Value > 0 then
+              // BG, 26.12.2011: TODO: issue 40: multi-width
+              case CellObj.SpecWd.VType of
+                wtPercent,
+                wtRelative:
+                  CellWidth[CellObj.SpecWd.VType] := CellObj.SpecWd.Value;
 
-              CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
-              Addon := CellSpacing + CellObj.HzSpace;
-              Inc(CellMin, Addon);
-              Inc(CellMax, Addon);
-              if Span = 1 then
-              begin
-                MaxWidths[I] := Max(MaxWidths[I], CellMax);
-                MinWidths[I] := Max(MinWidths[I], CellMin);
-                Percents[I] := Max(Percents[I], CellWidth[wtPercent]); {collect percents}
-                Multis[i] := Max(Multis[I], CellWidth[wtRelative]); { collect multis}
-              end
-              else
-              begin
-                SpannedMax := 0;
-                SpannedMin := 0;
-                NonPC := 0;
-                for WI := low(TotalWidth) to high(TotalWidth) do
-                  TotalWidth[WI] := 0;
-                for N := I to I + CellObj.ColSpan - 1 do
-                begin {Total up the pertinant column widths}
-                  Inc(SpannedMax, MaxWidths[N]);
-                  Inc(SpannedMin, MinWidths[N]);
-
-                  if Percents[N] > 0 then
-                    TotalWidth[wtPercent] := TotalWidth[wtPercent] + Percents[N] {total percents}
-                  else if Multis[N] > 0 then
-                    TotalWidth[wtRelative] := TotalWidth[wtRelative] + Multis[N] {total multis}
-                  else
-                    Inc(NonPC); {count of cell with no percent}
-                end;
-                if CellObj.Colspan = NumCols then
+                wtAbsolute:
                 begin
-                  SpannedMin := Max(SpannedMin, TheWidth);
-                  SpannedMax := Max(SpannedMax, TheWidth);
-                end;
-                ExcessMin := CellMin - SpannedMin;
-                ExcessMax := CellMax - SpannedMax;
-                if (CellWidth[wtPercent] > 0) or (TotalWidth[wtPercent] > 0) then
-                begin {manipulate for percentages}
-                  if NonPC > 0 then
-                  {find the extra percentages to divvy up}
-                    Distributable := Max(0, (CellWidth[wtPercent] - TotalWidth[wtPercent]) / NonPC)
-                  else
-                    Distributable := 0;
-
-                  if (NonPC = 0) and (CellWidth[wtPercent] > TotalWidth[wtPercent] + 1) then
-                  begin
-                    for N := I to I + CellObj.ColSpan - 1 do {stretch percentages to fit}
-                      Percents[N] := Percents[N] * CellWidth[wtPercent] / TotalWidth[wtPercent];
-                  end
-                  else if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
-                    for N := I to I + CellObj.ColSpan - 1 do
-                      if Percents[N] = 0 then
-                        Percents[N] := Distributable;
-                  NewTotalPC := Max(CellWidth[wtPercent], TotalWidth[wtPercent]);
-                  if ExcessMin > 0 then
-                  begin
-                    if (NonPC > 0) and (SpannedMax > 0) then {split excess over all cells}
-                    begin
-                    {proportion the distribution so cells with large MaxWidth get more}
-                      for N := I to I + CellObj.ColSpan - 1 do
-                        Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], SpannedMax));
-                    end
-                    else
-                      for N := I to I + CellObj.ColSpan - 1 do
-                        Inc(MinWidths[N], Trunc(ExcessMin * Percents[N] / NewTotalPC));
-                  end;
-                  if ExcessMax > 0 then
-                    for N := I to I + CellObj.ColSpan - 1 do
-                      Inc(MaxWidths[N], Trunc(ExcessMax * Percents[N] / NewTotalPC));
-                end
-                else
-                begin {no width dimensions entered}
-                  if ExcessMin > 0 then
-                  begin
-                    Accum := 0;
-                    for N := I to I + CellObj.ColSpan - 1 do
-                    begin
-                      if SpannedMin = 0 then
-                        MinWidths[N] := CellMin div CellObj.ColSpan
-                      else {split up the widths in proportion to widths already there}
-                        MinWidths[N] := MulDiv(CellMin, MinWidths[N], SpannedMin);
-                      Inc(Accum, MinWidths[N]);
-                    end;
-                    if Accum < CellMin then {might be a roundoff pixel or two left over}
-                      Inc(MinWidths[I], CellMin - Accum);
-                  end;
-                  if ExcessMax > 0 then
-                  begin
-                    Accum := 0;
-                    for N := I to I + CellObj.ColSpan - 1 do
-                    begin
-                      if SpannedMax = 0 then
-                        MaxWidths[N] := CellMax div CellObj.ColSpan
-                      else {split up the widths in proportion to widths already there}
-                        MaxWidths[N] := MulDiv(CellMax, MaxWidths[N], SpannedMax);
-                      Inc(Accum, MaxWidths[N]);
-                    end;
-                    if Accum < CellMax then {might be a roundoff pixel or two left over}
-                      Inc(MaxWidths[I], CellMax - Accum);
-                  end;
+                  SpecWidth := Trunc(CellObj.SpecWd.Value);
+                  CellMin := Max(CellMin, SpecWidth);
+                  CellMax := Max(CellMax, SpecWidth);
                 end;
               end;
+            Addon := CellSpacing + CellObj.HzSpace;
+            Inc(CellMin, Addon);
+            Inc(CellMax, Addon);
+
+            if Span = 1 then
+            begin
+              MinWidths[I] := Max(MinWidths[I], CellMin);
+              MaxWidths[I] := Max(MaxWidths[I], CellMax);
+              Percents[I] := Max(Percents[I], CellWidth[wtPercent]); {collect percents}
             end
+            else if AbsoluteLayout then
+            begin
+              IncreaseWidths(MinWidths, I, CellObj.ColSpan, CellMin);
+              IncreaseWidths(MaxWidths, I, CellObj.ColSpan, CellMax);
+            end
+            else
+            begin
+              SpannedMax := 0;
+              SpannedMin := 0;
+              NonPC := 0;
+              for WI := low(TotalWidth) to high(TotalWidth) do
+                TotalWidth[WI] := 0;
+              for N := I to I + CellObj.ColSpan - 1 do
+              begin {Total up the pertinant column widths}
+                Inc(SpannedMax, MaxWidths[N]);
+                Inc(SpannedMin, MinWidths[N]);
+
+                if Percents[N] > 0 then
+                  TotalWidth[wtPercent] := TotalWidth[wtPercent] + Percents[N] {total percents}
+                else if Multis[N] > 0 then
+                  TotalWidth[wtRelative] := TotalWidth[wtRelative] + Multis[N] {total multis}
+                else
+                  Inc(NonPC); {count of cell with no percent}
+              end;
+              if CellObj.Colspan = NumCols then
+              begin
+                SpannedMin := Max(SpannedMin, TheWidth);
+                SpannedMax := Max(SpannedMax, TheWidth);
+              end;
+              ExcessMin := CellMin - SpannedMin;
+              ExcessMax := CellMax - SpannedMax;
+              if (CellWidth[wtPercent] > 0) or (TotalWidth[wtPercent] > 0) then
+              begin {manipulate for percentages}
+                if NonPC > 0 then
+                {find the extra percentages to divvy up}
+                  Distributable := Max(0, (CellWidth[wtPercent] - TotalWidth[wtPercent]) / NonPC)
+                else
+                  Distributable := 0;
+
+                if (NonPC = 0) and (CellWidth[wtPercent] > TotalWidth[wtPercent] + 1) then
+                begin
+                  for N := I to I + CellObj.ColSpan - 1 do {stretch percentages to fit}
+                    Percents[N] := Percents[N] * CellWidth[wtPercent] / TotalWidth[wtPercent];
+                end
+                else if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
+                  for N := I to I + CellObj.ColSpan - 1 do
+                    if Percents[N] = 0 then
+                      Percents[N] := Distributable;
+                NewTotalPC := Max(CellWidth[wtPercent], TotalWidth[wtPercent]);
+                if ExcessMin > 0 then
+                begin
+                  if (NonPC > 0) and (SpannedMax > 0) then {split excess over all cells}
+                  begin
+                  {proportion the distribution so cells with large MaxWidth get more}
+                    for N := I to I + CellObj.ColSpan - 1 do
+                      Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], SpannedMax));
+                  end
+                  else
+                    for N := I to I + CellObj.ColSpan - 1 do
+                      Inc(MinWidths[N], Trunc(ExcessMin * Percents[N] / NewTotalPC));
+                end;
+                if ExcessMax > 0 then
+                  for N := I to I + CellObj.ColSpan - 1 do
+                    Inc(MaxWidths[N], Trunc(ExcessMax * Percents[N] / NewTotalPC));
+              end
+              else
+              begin {no width dimensions entered}
+                if ExcessMin > 0 then
+                begin
+                  Accum := 0;
+                  for N := I to I + CellObj.ColSpan - 1 do
+                  begin
+                    if SpannedMin = 0 then
+                      MinWidths[N] := CellMin div CellObj.ColSpan
+                    else {split up the widths in proportion to widths already there}
+                      MinWidths[N] := MulDiv(CellMin, MinWidths[N], SpannedMin);
+                    Inc(Accum, MinWidths[N]);
+                  end;
+                  if Accum < CellMin then {might be a roundoff pixel or two left over}
+                    Inc(MinWidths[I], CellMin - Accum);
+                end;
+                if ExcessMax > 0 then
+                begin
+                  Accum := 0;
+                  for N := I to I + CellObj.ColSpan - 1 do
+                  begin
+                    if SpannedMax = 0 then
+                      MaxWidths[N] := CellMax div CellObj.ColSpan
+                    else {split up the widths in proportion to widths already there}
+                      MaxWidths[N] := MulDiv(CellMax, MaxWidths[N], SpannedMax);
+                    Inc(Accum, MaxWidths[N]);
+                  end;
+                  if Accum < CellMax then {might be a roundoff pixel or two left over}
+                    Inc(MaxWidths[I], CellMax - Accum);
+                end;
+              end;
+            end;
+          end
           else
+          begin
             //BG, 29.01.2011: at this point: CellObj.ColSpan <> Span
             if Span = 1 then
             begin
               //BG, 29.01.2011: at this point: in the first loop with a CellObj.ColSpan > 1.
-
-              // Reduce too large ColSpans, or the column loop tuning will not process all cells.
-              if CellObj.ColSpan > NumCols - I then
-                CellObj.ColSpan := NumCols - I;
 
               // Collect data for termination and tuning.
               if MaxSpans[J] < CellObj.ColSpan then
@@ -8808,18 +8681,11 @@ begin
                   MaxSpan := MaxSpans[J]; // data for termination
               end;
             end;
+          end;
       end;
     end;
     Inc(Span);
   until Span > MaxSpan;
-
-  TotalMaxWidth := 0;
-  TotalMinWidth := 0;
-  for I := 0 to NumCols - 1 do
-  begin
-    Inc(TotalMaxWidth, MaxWidths[I]);
-    Inc(TotalMinWidth, MinWidths[I]);
-  end;
 end;
 
 {----------------THtmlTable.MinMaxWidth}
@@ -8827,10 +8693,8 @@ end;
 procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   Initialize; {in case it hasn't been done}
-  if UseAbsolute and (tblWidthAttr = 0) then
-    GetMinMaxAbs(Canvas, Min, Max)
-  else
-    GetWidths(Canvas, Min, Max, tblWidthAttr);
+  GetMinMaxWidths(Canvas, tblWidthAttr);
+  GetMinMaxTotal(MinWidths, MaxWidths, Min, Max);
 
   Inc(Min, CellSpacing);
   Inc(Max, CellSpacing);
@@ -9421,15 +9285,14 @@ begin
     Initialize;
 
   {Figure the width of each column}
+    GetMinMaxWidths(Canvas, NewWidth);
+    GetMinMaxTotal(MinWidths, MaxWidths, TotalMinWidth, TotalMaxWidth);
     if UseAbsolute and not Specified then
     begin {Table width not specified and at least one column has absolute width specified}
-      GetMinMaxAbs(Canvas, TotalMinWidth, TotalMaxWidth);
       GetWidthsAbs(TotalMinWidth, TotalMaxWidth, NewWidth); {fills in the Widths array}
     end
     else
     begin
-      GetWidths(Canvas, TotalMinWidth, TotalMaxWidth, NewWidth);{fills in the Widths array}
-
       if TotalMinWidth > NewWidth then
       begin {table won't fit, use minimun widths}
         if Assigned(MinWidths) then {Delphi 4 needs this check}
