@@ -1035,7 +1035,6 @@ type
   end;
 
   IntArray = array of Integer;
-  DblArray = array of Double;
 
   TCellObj = class(TObject)
   {holds one cell of the table and some other information}
@@ -1211,15 +1210,12 @@ type
     BodyBreak: Integer;
     HeadOrFoot: Boolean;
     FColSpecs: TColSpecList; // Column width specifications
-    Percents: DblArray;     {percent widths of columns}
-    Multis: DblArray;       {multi widths of columns}
+    Percents: IntArray;     {percent widths of columns}
+    Multis: IntArray;       {multi widths of columns}
     MaxWidths: IntArray;
     MinWidths: IntArray;
     procedure Initialize; // add dummy cells, initialize cells, prepare arrays
-    procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
     procedure GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
-    procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
-    procedure TableSpecifiedAndWillFit(TheWidth: Integer);
   public
     Rows: TRowList;        {a list of TCellLists}
     // these fields are copied via Move() in CreateCopy. Don't add reference counted data like strings and arrays.
@@ -1231,7 +1227,6 @@ type
     TableWidth: Integer;    {width of table}
     tblWidthAttr: Integer;  {Width attribute as entered}
     UseAbsolute: Boolean;   {width entries are considered absolute}
-    TableHeight: Integer;   {height of table itself, not incl caption}
     CellPadding: Integer;
     CellSpacing: Integer;
     HSpace, VSpace: Integer; {horizontal, vertical extra space}
@@ -1268,6 +1263,7 @@ type
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     procedure CopyToClipboard; override;
     property ColSpecs: TColSpecList read FColSpecs;
+    property TableHeight: Integer read SectionHeight write SectionHeight;   {height of table itself, not incl caption}
   end;
 
 //------------------------------------------------------------------------------
@@ -1501,6 +1497,34 @@ uses
   HtmlSbs1,
   ReadHtml;
 
+//-- BG ---------------------------------------------------------- 14.01.2012 --
+procedure Mul(var Arr: IntArray; Factor: Double; StartIndex, EndIndex: Integer); overload;
+// Multiply each array element from StartIndex to EndIndex with given factor.
+var
+  I: Integer;
+begin
+  for I := StartIndex to EndIndex do
+    Arr[I] := Trunc(Arr[I] * Factor);
+end;
+
+//-- BG ---------------------------------------------------------- 14.01.2012 --
+function Sum(const Arr: IntArray; StartIndex, EndIndex: Integer): Integer; overload;
+// Return sum of array elements from StartIndex to EndIndex.
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := StartIndex to EndIndex do
+    Inc(Result, Arr[I]);
+end;
+
+//-- BG ---------------------------------------------------------- 14.01.2012 --
+function Sum(const Arr: IntArray): Integer; overload;
+// Return sum of all array elements.
+begin
+  Result := Sum(Arr, low(Arr), High(Arr));
+end;
+
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
 begin
@@ -1704,9 +1728,6 @@ end;
 
 
 { TFontObj }
-
-var
-  NLevel: Integer; {for debugging}
 
 type
   TSectionClass = class of TSectionBase;
@@ -6093,7 +6114,7 @@ function TTableBlock.FindWidth1(Canvas: TCanvas; AWidth, ExtMarg: Integer): Inte
  is a caption on the table.  AWidth is the full width available to the
  TTableAndCaptionBlock.}
 var
-  LeftSide, RightSide: Integer;
+  PaddingAndBorder: Integer;
   Min, Max, Allow: Integer;
 begin
   MargArray[MarginLeft] := 0;
@@ -6101,9 +6122,9 @@ begin
   MargArray[MarginTop] := 0;
   MargArray[MarginBottom] := 0;
 
-  LeftSide := MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
-  RightSide := MargArray[PaddingRight] + MargArray[BorderRightWidth];
-
+  PaddingAndBorder :=
+    MargArray[BorderLeftWidth] + MargArray[PaddingLeft] +
+    MargArray[BorderRightWidth] + MargArray[PaddingRight];
   Table.tblWidthAttr := 0;
   if WidthAttr > 0 then
   begin
@@ -6111,7 +6132,7 @@ begin
       Result := Math.Min(MulDiv(AWidth, WidthAttr, 1000), AWidth - ExtMarg)
     else
       Result := WidthAttr;
-    Result := Result - (LeftSide + RightSide);
+    Result := Result - PaddingAndBorder;
     Table.tblWidthAttr := Result;
     Table.MinMaxWidth(Canvas, Min, Max);
     Result := Math.Max(Min, Result);
@@ -6120,7 +6141,7 @@ begin
   else
   begin
     Table.MinMaxWidth(Canvas, Min, Max);
-    Allow := AWidth - LeftSide - RightSide;
+    Allow := AWidth - PaddingAndBorder;
     if Max <= Allow then
       Result := Max
     else if Min >= Allow then
@@ -6128,7 +6149,7 @@ begin
     else
       Result := Allow;
   end;
-  Result := Result + LeftSide + RightSide;
+  Result := Result + PaddingAndBorder;
 end;
 
 //-- BG ---------------------------------------------------------- 24.08.2010 --
@@ -6954,7 +6975,6 @@ var
 begin
   Inc(CycleNumber);
   TableNestLevel := 0;
-  NLevel := 0;
   InLogic2 := False;
   if Assigned(Timer) then
     Timer.Enabled := False;
@@ -8427,64 +8447,44 @@ begin
   end; {if not ListsProcessed}
 end;
 
-//-- BG ---------------------------------------------------------- 14.01.2012 --
-procedure GetMinMaxTotal(const MinWidths, MaxWidths: IntArray; out TotalMinWidth, TotalMaxWidth: Integer);
-// Extracted from GetMinMaxAbs and GetWidths.
-var
-  I: Integer;
-begin
-{Find the total min and max width}
-  TotalMinWidth := 0;
-  TotalMaxWidth := 0;
-  for I := 0 to Length(MinWidths) - 1 do
-  begin
-    Inc(TotalMinWidth, MinWidths[I]);
-    Inc(TotalMaxWidth, MaxWidths[I]);
-  end;
-end;
-
 {----------------THtmlTable.GetWidths}
 
 procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
 // calculate MaxWidths and MinWidths of all columns.
 
-  procedure IncreaseWidths(var Widths: IntArray; StartIndex, ColSpan, RequiredWidth: Integer);
-  // Increases width of spanned columns
+  procedure IncreaseWidths(var Widths: IntArray; const Multis: IntArray; StartIndex, ColSpan, Required, Spanned: Integer); overload;
+  // Increases width of spanned columns relative to given widths.
   var
-    Spanned, Excess, Remainder, N, Add: Integer;
+    Remainder, Add, I: Integer;
   begin
-    Spanned := 0;
-    for N := StartIndex to StartIndex + ColSpan - 1 do
-      Inc(Spanned, Widths[N]);
-    Excess := RequiredWidth - Spanned;
-    if Excess > 0 then
+    Remainder := Required;
+    Add := Required div ColSpan;
+    for I := StartIndex + 1 to StartIndex + ColSpan - 1 do
     begin
-      Remainder := Excess;
-      Add := RequiredWidth div ColSpan;
-      // increase the width of the spanned columns
-      for N := StartIndex + 1 to StartIndex + ColSpan - 1 do
-      begin
-        if Spanned > 0 then
-          Add := MulDiv(Widths[N], Excess, Spanned);
-        Inc(Widths[N], Add);
-        Dec(Remainder, Add);
-      end;
-      // add the remaining pixels (incl. round-off errors) to the first column's width.
-      Inc(Widths[StartIndex], Remainder);
+      // increase width of spanned column relative to current width
+      if Spanned > 0 then
+        Widths[I] := MulDiv(Widths[I], Required, Spanned)
+      else
+        // in case no column has a width yet, spread required width equally to all spanned columns
+        Widths[I] := Add;
+      Dec(Remainder, Widths[I]);
     end;
+
+    // add the remaining pixels (incl. round-off errors) to the first column's width.
+    Inc(Widths[StartIndex], Remainder);
   end;
 
 var
-  I, J, CellMin, CellMax, SpannedMin, SpannedMax, N, Span, Addon, Accum, ExcessMin, ExcessMax, NonPc, SpecWidth: Integer;
-  Distributable, NewTotalPC: Double;
-  CellWidth: array [wtPercent..wtRelative] of Double;
+  I, J, N, Span,
+  CellMin, CellMax, CellPercent: Integer;
+  SpannedMin, SpannedMax, SpannedPercent: Integer;
+  ExcessMin, ExcessMax: Integer;
+  EndIndex, Addon, Accum, NonPc, SpecWidth: Integer;
+  Distributable, NewTotalPC: Integer;
   Cells: TCellList;
   CellObj: TCellObj;
-  TotalWidth: array [wtPercent..wtRelative] of Double;
-  WI: TWidthType;
   MaxSpans: array of Integer;
   MaxSpan: Integer;
-  AbsoluteLayout: Boolean;
 begin
   // initialize default widths
   if FColSpecs <> nil then
@@ -8496,7 +8496,7 @@ begin
     MaxWidths[I] := 0;
     MinWidths[I] := 0;
     Percents[I] := 0;
-    Multis[I] := 0;
+    Multis[I] := -1;
     if I < J then
       with FColSpecs[I].FWidth do
         case VType of
@@ -8514,7 +8514,6 @@ begin
         end;
   end;
 
-  AbsoluteLayout := UseAbsolute and (tblWidthAttr = 0);
   SetLength(Heights, 0);
   Span := 1;
 
@@ -8542,14 +8541,12 @@ begin
           begin
             // get min and max width of this cell:
             CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
-            CellWidth[wtPercent] := 0;
-            CellWidth[wtRelative] := 0;
+            CellPercent := 0;
             if CellObj.SpecWd.Value > 0 then
               // BG, 26.12.2011: TODO: issue 40: multi-width
               case CellObj.SpecWd.VType of
-                wtPercent,
-                wtRelative:
-                  CellWidth[CellObj.SpecWd.VType] := CellObj.SpecWd.Value;
+                wtPercent:
+                  CellPercent := Trunc(CellObj.SpecWd.Value);
 
                 wtAbsolute:
                 begin
@@ -8566,103 +8563,79 @@ begin
             begin
               MinWidths[I] := Max(MinWidths[I], CellMin);
               MaxWidths[I] := Max(MaxWidths[I], CellMax);
-              Percents[I] := Max(Percents[I], CellWidth[wtPercent]); {collect percents}
-            end
-            else if AbsoluteLayout then
-            begin
-              IncreaseWidths(MinWidths, I, CellObj.ColSpan, CellMin);
-              IncreaseWidths(MaxWidths, I, CellObj.ColSpan, CellMax);
+              Percents[I] := Max(Percents[I], CellPercent); {collect percents}
             end
             else
             begin
-              SpannedMax := 0;
-              SpannedMin := 0;
-              NonPC := 0;
-              for WI := low(TotalWidth) to high(TotalWidth) do
-                TotalWidth[WI] := 0;
-              for N := I to I + CellObj.ColSpan - 1 do
-              begin {Total up the pertinant column widths}
-                Inc(SpannedMax, MaxWidths[N]);
-                Inc(SpannedMin, MinWidths[N]);
+              // if cell is wider than sum of spanned columns, then widen columns.
+              EndIndex := I + Span - 1;
 
-                if Percents[N] > 0 then
-                  TotalWidth[wtPercent] := TotalWidth[wtPercent] + Percents[N] {total percents}
-                else if Multis[N] > 0 then
-                  TotalWidth[wtRelative] := TotalWidth[wtRelative] + Multis[N] {total multis}
-                else
-                  Inc(NonPC); {count of cell with no percent}
-              end;
-              if CellObj.Colspan = NumCols then
+              // get current min and max width of spanned columns
+              SpannedMax := Sum(MaxWidths, I, EndIndex);
+              SpannedMin := Sum(MinWidths, I, EndIndex);
+              if Span = NumCols then
               begin
                 SpannedMin := Max(SpannedMin, TheWidth);
                 SpannedMax := Max(SpannedMax, TheWidth);
               end;
-              ExcessMin := CellMin - SpannedMin;
-              ExcessMax := CellMax - SpannedMax;
-              if (CellWidth[wtPercent] > 0) or (TotalWidth[wtPercent] > 0) then
-              begin {manipulate for percentages}
-                if NonPC > 0 then
-                {find the extra percentages to divvy up}
-                  Distributable := Max(0, (CellWidth[wtPercent] - TotalWidth[wtPercent]) / NonPC)
-                else
-                  Distributable := 0;
+              SpannedPercent := Sum(Percents, I, EndIndex);
 
-                if (NonPC = 0) and (CellWidth[wtPercent] > TotalWidth[wtPercent] + 1) then
+              if (CellPercent = 0) and (SpannedPercent = 0) then
+              begin
+                {no percentages in spanned columns}
+                if CellMin > SpannedMin then
+                  IncreaseWidths(MinWidths, Multis, I, Span, CellMin, SpannedMin);
+                if CellMax > SpannedMax then
+                  IncreaseWidths(MaxWidths, Multis, I, Span, CellMax, SpannedMax);
+              end
+              else
+              begin
+              {manipulate for percentages}
+
+                {count of cell with no percent}
+                NonPC := 0;
+                for N := I to EndIndex do
+                  if Percents[N] = 0 then
+                    Inc(NonPC);
+
+                if NonPC > 0 then
                 begin
-                  for N := I to I + CellObj.ColSpan - 1 do {stretch percentages to fit}
-                    Percents[N] := Percents[N] * CellWidth[wtPercent] / TotalWidth[wtPercent];
+                  {find the extra percentages to divvy up}
+                  if CellPercent > SpannedPercent then
+                  begin
+                    Distributable := (CellPercent - SpannedPercent) div NonPC;
+                    if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
+                      for N := I to EndIndex do
+                        if Percents[N] = 0 then
+                          Percents[N] := Distributable;
+                  end;
                 end
-                else if Distributable > 0 then {spread colspan percentage excess over the unspecified cols}
-                  for N := I to I + CellObj.ColSpan - 1 do
-                    if Percents[N] = 0 then
-                      Percents[N] := Distributable;
-                NewTotalPC := Max(CellWidth[wtPercent], TotalWidth[wtPercent]);
+                else
+                begin
+                  if CellPercent > SpannedPercent + 1 then
+                    Mul(Percents, CellPercent / SpannedPercent, I, EndIndex); {stretch percentages to fit}
+                end;
+
+                NewTotalPC := Max(CellPercent, SpannedPercent);
+
+                ExcessMin := CellMin - SpannedMin;
                 if ExcessMin > 0 then
                 begin
                   if (NonPC > 0) and (SpannedMax > 0) then {split excess over all cells}
                   begin
                   {proportion the distribution so cells with large MaxWidth get more}
-                    for N := I to I + CellObj.ColSpan - 1 do
+                    for N := I to EndIndex do
                       Inc(MinWidths[N], MulDiv(ExcessMin, MaxWidths[N], SpannedMax));
                   end
                   else
-                    for N := I to I + CellObj.ColSpan - 1 do
-                      Inc(MinWidths[N], Trunc(ExcessMin * Percents[N] / NewTotalPC));
+                    for N := I to EndIndex do
+                      Inc(MinWidths[N], MulDiv(ExcessMin, Percents[N], NewTotalPC));
                 end;
+
+                ExcessMax := CellMax - SpannedMax;
                 if ExcessMax > 0 then
-                  for N := I to I + CellObj.ColSpan - 1 do
-                    Inc(MaxWidths[N], Trunc(ExcessMax * Percents[N] / NewTotalPC));
-              end
-              else
-              begin {no width dimensions entered}
-                if ExcessMin > 0 then
-                begin
-                  Accum := 0;
-                  for N := I to I + CellObj.ColSpan - 1 do
-                  begin
-                    if SpannedMin = 0 then
-                      MinWidths[N] := CellMin div CellObj.ColSpan
-                    else {split up the widths in proportion to widths already there}
-                      MinWidths[N] := MulDiv(CellMin, MinWidths[N], SpannedMin);
-                    Inc(Accum, MinWidths[N]);
-                  end;
-                  if Accum < CellMin then {might be a roundoff pixel or two left over}
-                    Inc(MinWidths[I], CellMin - Accum);
-                end;
-                if ExcessMax > 0 then
-                begin
-                  Accum := 0;
-                  for N := I to I + CellObj.ColSpan - 1 do
-                  begin
-                    if SpannedMax = 0 then
-                      MaxWidths[N] := CellMax div CellObj.ColSpan
-                    else {split up the widths in proportion to widths already there}
-                      MaxWidths[N] := MulDiv(CellMax, MaxWidths[N], SpannedMax);
-                    Inc(Accum, MaxWidths[N]);
-                  end;
-                  if Accum < CellMax then {might be a roundoff pixel or two left over}
-                    Inc(MaxWidths[I], CellMax - Accum);
-                end;
+                  for N := I to EndIndex do
+                    Inc(MaxWidths[N], MulDiv(ExcessMax, Percents[N], NewTotalPC));
               end;
             end;
           end
@@ -8694,523 +8667,26 @@ procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   Initialize; {in case it hasn't been done}
   GetMinMaxWidths(Canvas, tblWidthAttr);
-  GetMinMaxTotal(MinWidths, MaxWidths, Min, Max);
-
-  Inc(Min, CellSpacing);
-  Inc(Max, CellSpacing);
-  Min := Math.Max(Min, tblWidthAttr);
-  Max := Math.Max(Max, tblWidthAttr);
+  Min := Math.Max(Sum(MinWidths) + CellSpacing, tblWidthAttr);
+  Max := Math.Max(Sum(MaxWidths) + CellSpacing, tblWidthAttr);
 end;
 
-procedure THtmlTable.TableSpecifiedAndWillFit(TheWidth: Integer);
-{Divide up the table into columns.  TheWidth is the specified width of the table.
- At this point, it is known that everything will fit into TheWidth. Percents are
- being used}
-var
-  UseMin: array of boolean;
-  Speced: array of boolean;
-
-  procedure ShrinkColumnWidths(var Delta: Integer; Step: Integer);
-  var
-    I, W: Integer;
-  begin
-    for I := 0 to NumCols - 1 do
-      if not UseMin[I] and not Speced[I] then
-      begin
-        W := Max(Widths[I] - Step, MinWidths[I]);
-        Dec(Delta, Widths[I] - W);
-        Widths[I] := W;
-        if Delta <= 0 then
-          Break;
-      end;
-  end;
-
-var
-  J, I, W, TotalWid, Unsp, {UnspDiff,} Delta, {Addon,} Count, d: Integer;
-  PCNotMinWid: Double;
-  W1, W2: Double;
-  NoChange: boolean;
-  UnspCol: Integer;
-begin
-  if NumCols = 0 then
-    Exit;
-  SetLength(UseMin, NumCols);
-  SetLength(Speced, NumCols);
-  PCNotMinWid := 0;
-  TotalWid := 0;
-  Unsp := 0;
-//  UnspDiff := 0;
-  UnspCol := -1;
-{First calculate everything assuming the data entered is perfectly correct}
-  for I := 0 to NumCols - 1 do
-  begin
-    UseMin[I] := False;
-    if Percents[I] > 0 then
-    begin
-      Speced[I] := True;
-      W := Trunc(TheWidth * Percents[I] / 1000); {width based on percentage}
-      if W > MinWidths[I] then
-      begin
-        Widths[I] := W;
-        PCNotMinWid := PCNotMinWid + Percents[I];
-      end
-      else
-      begin {percent is too small, use Min width}
-        Widths[I] := MinWidths[I];
-        UseMin[I] := True;
-      end;
-    end
-    else
-    begin {no percent}
-      Speced[I] := False;
-      Widths[I] := MinWidths[I];
-      Inc(Unsp); {an unspecified column}
-      if Widths[I] > 0 then
-        UnspCol := I; {save location of unspecified column}
-//      Inc(UnspDiff, Max(0, MaxWidths[I] - MinWidths[I])); {total max-min for unspecified cols}
-    end;
-    Inc(TotalWid, Widths[I]);
-  end;
-
-  Delta := TotalWid - TheWidth; {see what the error is}
-  if Delta < 0 then {table is too small}
-  begin
-    if Unsp > 0 then
-    begin
-//      if (UnspDiff > 0) and (UnspDiff >= Abs(Delta) div 4) then
-//      {increase the unspecified columns widths prop to Max - Min unless the difference is trivial}
-//      begin
-//        for I := 0 to NumCols - 1 do
-//          if (Percents[I] = 0) then
-//            Inc(Widths[I], MulDiv(-Delta, Max(0, MaxWidths[I] - MinWidths[I]), UnspDiff));
-//      end
-//      else
-      begin {increase the unspecified columns widths uniformly}
-        // BG, 26.12.2011: if Delta is small and Unsp is large the simple "div" produces too unlike wide cells.
-        // The last cell becomes unexpectedly wide.
-        {Addon := -Delta div Unsp;
-        for I := 0 to NumCols - 1 do
-          if Percents[I] = 0 then
-            Inc(Widths[I], Addon);}
-        W1 := 0;
-        J := 0;
-        for I := 0 to NumCols - 1 do
-          if Percents[I] = 0 then
-          begin
-            Inc(J);
-            W2 := -Delta * J / Unsp;
-            Inc(Widths[I], Trunc(W2 - W1));
-            W1 := W2;
-          end;
-      end;
-    end
-    else
-    begin {no unspecified widths, increase the specified columns which are not minimum}
-      for I := 0 to NumCols - 1 do
-        if (Percents[I] > 0) and not UseMin[I] then
-          Inc(Widths[I], Trunc(-Delta * Percents[I] / PCNotMinWid));
-    end;
-  end
-  else if Delta > 0 then {calculated table is too large}
-  begin
-    Count := 0;
-  {make one or more trial run to see what happens when shrinking the columns
-   that can be shrunck.  May hit another MinWidth situation}
-    repeat
-      NoChange := True;
-      for I := 0 to NumCols - 1 do
-        if (Percents[I] > 0) and not UseMin[I] then
-        begin
-          W := Widths[I] - Trunc(Delta * Percents[I] / PCNotMinWid);
-          if W < MinWidths[I] then
-          begin {new width is smaller than MinWidth, make adustments}
-            UseMin[I] := True;
-            NoChange := False;
-            PCNotMinWid := PCNotMinWid - Percents[I];
-            Dec(Delta, Widths[I] - MinWidths[I]);
-            Widths[I] := MinWidths[I];
-          end;
-        end;
-      Inc(Count);
-    until NoChange or (Count >= 4); {count guards against endless loop}
-    for I := 0 to NumCols - 1 do {now actually change the widths}
-      if (Percents[I] > 0) and not UseMin[I] then
-        Dec(Widths[I], Trunc(Delta * Percents[I] / PCNotMinWid));
-  end;
-
-  TotalWid := 0; {fix up any round off errors}
-  for I := 0 to NumCols - 1 do
-    Inc(TotalWid, Widths[I]);
-  Delta := TotalWid - TheWidth; {round off error}
-  if Delta > 0 then
-  begin
-    // first remove single pixels from unspecified non-minimum columns
-    if Unsp > 0 then
-    begin
-      d := 0;
-      for I := 0 to NumCols - 1 do
-        if not UseMin[I] and not Speced[I] then
-          Inc(d);
-      if d > 0 then
-        ShrinkColumnWidths(Delta, Delta div d);
-    end;
-    if Delta > 0 then
-      ShrinkColumnWidths(Delta, 1);
-    if Delta > 0 then
-      for I := 0 to NumCols - 1 do
-        if not UseMin[I] then
-        begin
-          Dec(Widths[I], Delta); {remove extra from first non minimum}
-          Break;
-        end;
-  end
-  else if Delta < 0 then
-  begin
-    Delta := -Delta; {Delta is now positive}
-    if Unsp > 0 then
-    begin
-      d := Max(Delta div Unsp, 1);
-      // insert single pixels into unspecified, non-minimum column
-      for I := 0 to NumCols - 1 do
-        if not UseMin[I] and not Speced[I] then
-        begin
-          Inc(Widths[I], d);
-          Dec(Delta, d);
-          if Delta <= 0 then
-            Break;
-        end;
-    end;
-    if (UnspCol >= 0) and (Delta > 0) then
-      Inc(Widths[UnspCol], Delta) {put it into an unspecified column}
-    else
-    begin
-      while Delta > NumCols do
-      begin
-        d := Delta div NumCols;
-        if d > 0 then
-          for I := 0 to NumCols - 1 do
-          begin
-            Dec(Delta, d);
-            Inc(Widths[I], d);
-          end
-      end;
-    {remainder should be less than NumCols here, so tack on 1 each column
-     until it's gone}
-      for I := 0 to NumCols - 1 do
-        if Delta > 0 then
-        begin
-          Inc(Widths[I]);
-          Dec(Delta);
-        end
-        else
-          Break;
-    end;
-  end;
-end;
-
-{----------------THtmlTable.TableNotSpecifiedAndWillFit}
-
-procedure THtmlTable.TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, TheWidth: Integer);
-{Find column widths.  Table known to fit within allowed space and its width hasn't
- been specified}
-var
-  D, W, DS, MaxDS, MaxI, I, Addon, Total, Residual, NewResidual, NewTotal, LastNewTotal: Integer;
-  W1, W2: Integer;
-  TotalPC: Double;
-  HasPercents, UsesPercents, Done: boolean;
-begin
-  if NumCols = 0 then
-    Exit;
-  TotalPC := 0; {see if any percentage widths entered}
-  for I := 0 to NumCols - 1 do
-    TotalPC := TotalPC + Percents[I];
-  UsesPercents := (TotalPc > 0) and (TotalPc <= 1000) {ignore ridiculous values}
-    or (tblWidthAttr > 0);
-
-  if UsesPercents then
-  begin {find the largest width that will accomodate the %'s}
-    Residual := 0;
-    W1 := 0;
-    for I := 0 to NumCols - 1 do
-      if Percents[I] > 0 then {a percent has been entered}
-        W1 := Max(W1, Trunc(MaxWidths[I] * 1000 / Percents[I])) {look for maximum}
-      else
-        Inc(Residual, MaxWidths[I]); {accumlate the cols which have no percent}
-    if TotalPC < 1000 then
-      W2 := Trunc(Residual * 1000 / (1000 - TotalPC))
-    else if Residual > 0 then
-      W2 := 30000
-    else
-      W2 := 0;
-    Total := Max(W1, W2);
-    if Total <= TheWidth then
-    begin {a fit is found using percents and maxwidths}
-      if tblWidthAttr > 0 then
-        Total := TheWidth; {don't try to make it smaller than TheWidth}
-      NewResidual := Trunc(Total * (1000 - TotalPC) / 1000);
-      for I := 0 to NumCols - 1 do
-        if Percents[I] > 0 then {figure widths to fit this situation}
-          Widths[I] := Trunc(Total * Percents[I] / 1000)
-        else if Residual > 0 then
-          Widths[I] := MulDiv(MaxWidths[I], NewResidual, Residual)
-        else
-          Widths[I] := 0; {this is an table syntax error condition}
-      Exit;
-    end;
-
-    Done := False;
-    LastNewTotal := $FFFFFFF;
-    repeat {with the above possibilites taken care of, we can assume the final
-           width will = NewWidth}
-      HasPercents := False;
-      Total := 0; Residual := 0;
-      for I := 0 to NumCols - 1 do
-      begin
-        if Percents[I] > 0 then
-        begin
-          W := Trunc(TheWidth * Percents[I] / 1000); {a Percent's width based on TheWidth}
-          if W < MinWidths[I] then {but it must be > MinWidth}
-          begin {eliminate the percentage value as not achievable}
-            Percents[I] := 0;
-            Inc(Residual, MinWidths[I]); {and put it in the residuals}
-          end
-          else
-          begin
-            HasPercents := True; {still valid percents}
-            Inc(Total, W);
-          end;
-        end
-        else
-          Inc(Residual, MinWidths[I]);
-      end;
-      if not HasPercents then
-        Break; {no percents are achievable}
-      if Total + Residual <= TheWidth then
-      begin {a solution with at least some percentages can be found}
-        Done := True;
-        TotalMaxWidth := 0; TotalMinWidth := 0; {recalc these}
-        for I := 0 to NumCols - 1 do
-        begin
-          if Percents[I] > 0 then
-          begin
-            MinWidths[I] := Trunc(TheWidth * Percents[I] / 1000);
-            MaxWidths[I] := MinWidths[I]; {this fixes the width thru later calculations}
-          end;
-          Inc(TotalMaxWidth, MaxWidths[I]);
-          Inc(TotalMinWidth, MinWidths[I]);
-        end;
-      end
-      else {it doesn't fit screen, reduce percentages and try again}
-      begin
-        NewTotal := TheWidth - Residual; {percent items must fit this}
-        while LastNewTotal <= NewTotal do
-          Dec(NewTotal);
-        LastNewTotal := NewTotal;
-        for I := 0 to NumCols - 1 do
-          if Percents[I] > 0 then
-            Percents[I] := Trunc(Percents[I] * NewTotal / Total);
-      end;
-    until Done;
-  end;
-
-  D := TotalMaxWidth - TotalMinWidth;
-
-  MaxI := 0;
-  Total := 0;
-  W := TheWidth - TotalMinWidth;
-  if (D = 0) and (NumCols > 0) then
-  begin
-    Addon := W div NumCols;
-    for I := 0 to NumCols - 1 do
-    begin
-      Widths[I] := MinWidths[I] + Addon;
-      Inc(Total, Widths[I]);
-    end;
-  end
-  else
-  begin
-    MaxDS := 0;
-    for I := 0 to NumCols - 1 do
-    begin
-      ds := MaxWidths[I] - MinWidths[I];
-      Widths[I] := MinWidths[I] + MulDiv(ds, W, D);
-      Inc(Total, Widths[I]);
-      if ds > MaxDS then
-      begin
-        MaxDS := ds;
-        MaxI := I;
-      end
-    end;
-  end;
-  if Total <> TheWidth then {a round off error}
-    Inc(Widths[MaxI], TheWidth - Total); {adjust column with largest variation}
-end;
-
-{----------------THtmlTable.FindRowHeights}
-
-procedure THtmlTable.FindRowHeights(Canvas: TCanvas; AHeight: Integer);
-var
-  I, J, K, H, Span, TotalMinHt, TotalDesHt, AddOn,
-    Sum, AddedOn, Desired, UnSpec: Integer;
-  More, Mr, IsSpeced: boolean;
-  MinHts, DesiredHts: IntArray;
-  SpecHts: array of boolean;
-  F: double;
-begin
-  if Rows.Count = 0 then
-    Exit;
-  Dec(AHeight, CellSpacing); {calculated heights will include one cellspacing each,
-  this removes that last odd cellspacing}
-  if Length(Heights) = 0 then
-    SetLength(Heights, Rows.Count);
-  SetLength(DesiredHts, Rows.Count);
-  SetLength(MinHts, Rows.Count);
-  SetLength(SpecHts, Rows.Count);
-  for I := 0 to Rows.Count - 1 do
-  begin
-    Heights[I] := 0;
-    DesiredHts[I] := 0;
-    MinHts[I] := 0;
-    SpecHts[I] := False;
-  end;
-{Find the height of each row allowing for RowSpans}
-  Span := 1;
-  More := True;
-  while More do
-  begin
-    More := False;
-    for J := 0 to Rows.Count - 1 do
-      with Rows[J] do
-      begin
-        if J + Span > Rows.Count then
-          Break; {otherwise will overlap}
-        H := DrawLogic1(Canvas, Widths, Span, CellSpacing, Max(0, AHeight - Rows.Count * CellSpacing),
-          Rows.Count, Desired, IsSpeced, Mr) + CellSpacing;
-        Inc(Desired, Cellspacing);
-        More := More or Mr;
-        if Span = 1 then
-        begin
-          MinHts[J] := H;
-          DesiredHts[J] := Desired;
-          SpecHts[J] := SpecHts[J] or IsSpeced;
-        end
-        else if H > Cellspacing then {if H=Cellspacing then no rowspan for this span}
-        begin
-          TotalMinHt := 0; {sum up the heights so far for the rows involved}
-          TotalDesHt := 0;
-          for K := J to J + Span - 1 do
-          begin
-            Inc(TotalMinHt, MinHts[K]);
-            Inc(TotalDesHt, DesiredHts[K]);
-            SpecHts[K] := SpecHts[K] or IsSpeced;
-          end;
-          if H > TotalMinHt then {apportion the excess over the rows}
-          begin
-            Addon := ((H - TotalMinHt) div Span);
-            AddedOn := 0;
-            for K := J to J + Span - 1 do
-            begin
-              Inc(MinHts[K], Addon);
-              Inc(AddedOn, Addon);
-            end;
-            Inc(MinHts[J + Span - 1], (H - TotalMinHt) - AddedOn); {make up for round off error}
-          end;
-          if Desired > TotalDesHt then {apportion the excess over the rows}
-          begin
-            Addon := ((Desired - TotalDesHt) div Span);
-            AddedOn := 0;
-            for K := J to J + Span - 1 do
-            begin
-              Inc(DesiredHts[K], Addon);
-              Inc(AddedOn, Addon);
-            end;
-            Inc(DesiredHts[J + Span - 1], (Desired - TotalDesHt) - AddedOn); {make up for round off error}
-          end;
-        end;
-      end;
-    Inc(Span);
-  end;
-
-  TotalMinHt := 0;
-  TotalDesHt := 0;
-  UnSpec := 0;
-  for I := 0 to Rows.Count - 1 do
-  begin
-    Inc(TotalMinHt, MinHts[I]);
-    Inc(TotalDesHt, DesiredHts[I]);
-    if not SpecHts[I] then
-      Inc(UnSpec);
-  end;
-
-  if TotalMinHt >= AHeight then
-    Heights := Copy(MinHts)
-  else if TotalDesHt < AHeight then
-    if UnSpec > 0 then
-    begin {expand the unspeced rows to fit}
-      Heights := Copy(DesiredHts);
-      Addon := (AHeight - TotalDesHt) div UnSpec;
-      Sum := 0;
-      for I := 0 to Rows.Count - 1 do
-        if not SpecHts[I] then
-        begin
-          Dec(UnSpec);
-          if UnSpec > 0 then
-          begin
-            Inc(Heights[I], AddOn);
-            Inc(Sum, Addon);
-          end
-          else
-          begin {last item, complete everything}
-            Inc(Heights[I], AHeight - TotalDesHt - Sum);
-            Break;
-          end;
-        end;
-    end
-    else
-    begin {expand desired hts to fit}
-      Sum := 0;
-      F := AHeight / TotalDesHt;
-      for I := 0 to Rows.Count - 2 do
-      begin
-        Heights[I] := Round(F * DesiredHts[I]);
-        Inc(Sum, Heights[I]);
-      end;
-      Heights[Rows.Count - 1] := AHeight - Sum; {last row is the difference}
-    end
-  else
-  begin
-    Sum := 0;
-    F := (AHeight - TotalMinHt) / (TotalDesHt - TotalMinHt);
-    for I := 0 to Rows.Count - 2 do
-    begin
-      Heights[I] := MinHts[I] + Round(F * (DesiredHts[I] - MinHts[I]));
-      Inc(Sum, Heights[I]);
-    end;
-    Heights[Rows.Count - 1] := AHeight - Sum;
-  end;
-end;
 
 {----------------THtmlTable.DrawLogic}
 
 function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 
-  procedure GetWidthsAbs(TotalMaxWidth, TotalMinWidth, TablWidth: Integer);
-  var
-    N, D, W, dd: Integer;
-    Accum: Integer;
-  begin
-    if TotalMinWidth > TablWidth then
-      {use the minimum column widths, table will expand}
-      Widths := Copy(MinWidths)
-    else if TotalMaxWidth <= TablWidth then
-      {use the max column widths, table will be smaller}
-      Widths := Copy(MaxWidths)
-    else
+  function FindTableWidth: Integer;
+
+    procedure GetWidthsAbs(TotalMaxWidth, TotalMinWidth, NewWidth: Integer);
+    var
+      N, D, W, dd: Integer;
+      Accum: Integer;
     begin
       {make table fit}
       D := TotalMaxWidth - TotalMinWidth;
-      W := TablWidth - TotalMinWidth;
+      W := NewWidth - TotalMinWidth;
       if D > 0 then {expand only those columns with some slop in them}
       begin
         Accum := 0;
@@ -9220,7 +8696,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           Widths[N] := MinWidths[N] + MulDiv(dd, W, D);
           Inc(Accum, Widths[N]);
         end;
-        dd := Accum - TablWidth; {check for Roundoff error}
+        dd := Accum - NewWidth; {check for Roundoff error}
         if dd <> 0 then
         begin
           for N := 0 to NumCols - 1 do
@@ -9247,76 +8723,540 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
         for N := 0 to NumCols - 1 do
           Widths[N] := MinWidths[N] + MulDiv(MinWidths[N], W, TotalMinWidth);
     end;
-  end;
 
-var
-  I, J, K, TotalMaxWidth, TotalMinWidth: Integer;
-  NewWidth: Integer;
-  OwnerWidth: Integer;
-  Specified: boolean;
-  TopY: Integer;
-  FirstLinePtr: PInteger;
-  CellObj: TCellObj;
-  HasBody: Boolean;
+    procedure TableSpecifiedAndWillFit(NewWidth: Integer);
+    {Divide up the table into columns.  NewWidth is the specified width of the table.
+     At this point, it is known that everything will fit into NewWidth. Percents are
+     being used}
+    var
+      UseMin: array of boolean;
+      Speced: array of boolean;
 
-begin
-  Inc(Document.TableNestLevel);
-  Inc(NLevel);
-  try
-    YDraw := Y;
-    TopY := Y;
-    ContentTop := Y;
-    DrawTop := Y;
-    StartCurs := Curs;
-    if Assigned(Document.FirstLineHtPtr) and {used for List items}
-      (Document.FirstLineHtPtr^ = 0) then
-      FirstLinePtr := Document.FirstLineHtPtr {save for later}
-    else
-      FirstLinePtr := nil;
+      procedure ShrinkColumnWidths(var Delta: Integer; Step: Integer);
+      var
+        I, W: Integer;
+      begin
+        for I := 0 to NumCols - 1 do
+          if not UseMin[I] and not Speced[I] then
+          begin
+            W := Max(Widths[I] - Step, MinWidths[I]);
+            Dec(Delta, Widths[I] - W);
+            Widths[I] := W;
+            if Delta <= 0 then
+              Break;
+          end;
+      end;
 
-    OwnerWidth := IMgr.RightSide(Y) - IMgr.LeftIndent(Y);
+    var
+      J, I, W, TotalWid, Unsp, {UnspDiff,} Delta, {Addon,} Count, d: Integer;
+      PCNotMinWid: Double;
+      W1, W2: Double;
+      NoChange: boolean;
+      UnspCol: Integer;
+    begin
+      if NumCols = 0 then
+        Exit;
+      SetLength(UseMin, NumCols);
+      SetLength(Speced, NumCols);
+      PCNotMinWid := 0;
+      TotalWid := 0;
+      Unsp := 0;
+    //  UnspDiff := 0;
+      UnspCol := -1;
+    {First calculate everything assuming the data entered is perfectly correct}
+      for I := 0 to NumCols - 1 do
+      begin
+        UseMin[I] := False;
+        if Percents[I] > 0 then
+        begin
+          Speced[I] := True;
+          W := Trunc(NewWidth * Percents[I] / 1000); {width based on percentage}
+          if W > MinWidths[I] then
+          begin
+            Widths[I] := W;
+            PCNotMinWid := PCNotMinWid + Percents[I];
+          end
+          else
+          begin {percent is too small, use Min width}
+            Widths[I] := MinWidths[I];
+            UseMin[I] := True;
+          end;
+        end
+        else
+        begin {no percent}
+          Speced[I] := False;
+          Widths[I] := MinWidths[I];
+          Inc(Unsp); {an unspecified column}
+          if Widths[I] > 0 then
+            UnspCol := I; {save location of unspecified column}
+    //      Inc(UnspDiff, Max(0, MaxWidths[I] - MinWidths[I])); {total max-min for unspecified cols}
+        end;
+        Inc(TotalWid, Widths[I]);
+      end;
+
+      Delta := TotalWid - NewWidth; {see what the error is}
+      if Delta < 0 then {table is too small}
+      begin
+        if Unsp > 0 then
+        begin
+    //      if (UnspDiff > 0) and (UnspDiff >= Abs(Delta) div 4) then
+    //      {increase the unspecified columns widths prop to Max - Min unless the difference is trivial}
+    //      begin
+    //        for I := 0 to NumCols - 1 do
+    //          if (Percents[I] = 0) then
+    //            Inc(Widths[I], MulDiv(-Delta, Max(0, MaxWidths[I] - MinWidths[I]), UnspDiff));
+    //      end
+    //      else
+          begin {increase the unspecified columns widths uniformly}
+            // BG, 26.12.2011: if Delta is small and Unsp is large the simple "div" produces too unlike wide cells.
+            // The last cell becomes unexpectedly wide.
+            {Addon := -Delta div Unsp;
+            for I := 0 to NumCols - 1 do
+              if Percents[I] = 0 then
+                Inc(Widths[I], Addon);}
+            W1 := 0;
+            J := 0;
+            for I := 0 to NumCols - 1 do
+              if Percents[I] = 0 then
+              begin
+                Inc(J);
+                W2 := -Delta * J / Unsp;
+                Inc(Widths[I], Trunc(W2 - W1));
+                W1 := W2;
+              end;
+          end;
+        end
+        else
+        begin {no unspecified widths, increase the specified columns which are not minimum}
+          for I := 0 to NumCols - 1 do
+            if (Percents[I] > 0) and not UseMin[I] then
+              Inc(Widths[I], Trunc(-Delta * Percents[I] / PCNotMinWid));
+        end;
+      end
+      else if Delta > 0 then {calculated table is too large}
+      begin
+        Count := 0;
+      {make one or more trial run to see what happens when shrinking the columns
+       that can be shrunck.  May hit another MinWidth situation}
+        repeat
+          NoChange := True;
+          for I := 0 to NumCols - 1 do
+            if (Percents[I] > 0) and not UseMin[I] then
+            begin
+              W := Widths[I] - Trunc(Delta * Percents[I] / PCNotMinWid);
+              if W < MinWidths[I] then
+              begin {new width is smaller than MinWidth, make adustments}
+                UseMin[I] := True;
+                NoChange := False;
+                PCNotMinWid := PCNotMinWid - Percents[I];
+                Dec(Delta, Widths[I] - MinWidths[I]);
+                Widths[I] := MinWidths[I];
+              end;
+            end;
+          Inc(Count);
+        until NoChange or (Count >= 4); {count guards against endless loop}
+        for I := 0 to NumCols - 1 do {now actually change the widths}
+          if (Percents[I] > 0) and not UseMin[I] then
+            Dec(Widths[I], Trunc(Delta * Percents[I] / PCNotMinWid));
+      end;
+
+      TotalWid := 0; {fix up any round off errors}
+      for I := 0 to NumCols - 1 do
+        Inc(TotalWid, Widths[I]);
+      Delta := TotalWid - NewWidth; {round off error}
+      if Delta > 0 then
+      begin
+        // first remove single pixels from unspecified non-minimum columns
+        if Unsp > 0 then
+        begin
+          d := 0;
+          for I := 0 to NumCols - 1 do
+            if not UseMin[I] and not Speced[I] then
+              Inc(d);
+          if d > 0 then
+            ShrinkColumnWidths(Delta, Delta div d);
+        end;
+        if Delta > 0 then
+          ShrinkColumnWidths(Delta, 1);
+        if Delta > 0 then
+          for I := 0 to NumCols - 1 do
+            if not UseMin[I] then
+            begin
+              Dec(Widths[I], Delta); {remove extra from first non minimum}
+              Break;
+            end;
+      end
+      else if Delta < 0 then
+      begin
+        Delta := -Delta; {Delta is now positive}
+        if Unsp > 0 then
+        begin
+          d := Max(Delta div Unsp, 1);
+          // insert single pixels into unspecified, non-minimum column
+          for I := 0 to NumCols - 1 do
+            if not UseMin[I] and not Speced[I] then
+            begin
+              Inc(Widths[I], d);
+              Dec(Delta, d);
+              if Delta <= 0 then
+                Break;
+            end;
+        end;
+        if (UnspCol >= 0) and (Delta > 0) then
+          Inc(Widths[UnspCol], Delta) {put it into an unspecified column}
+        else
+        begin
+          while Delta > NumCols do
+          begin
+            d := Delta div NumCols;
+            if d > 0 then
+              for I := 0 to NumCols - 1 do
+              begin
+                Dec(Delta, d);
+                Inc(Widths[I], d);
+              end
+          end;
+        {remainder should be less than NumCols here, so tack on 1 each column
+         until it's gone}
+          for I := 0 to NumCols - 1 do
+            if Delta > 0 then
+            begin
+              Inc(Widths[I]);
+              Dec(Delta);
+            end
+            else
+              Break;
+        end;
+      end;
+    end;
+
+    procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, NewWidth: Integer);
+    {Find column widths.  Table known to fit within allowed space and its width hasn't
+     been specified}
+    var
+      D, W, DS, MaxDS, MaxI, I, Addon, Total, Residual, NewResidual, NewTotal, LastNewTotal: Integer;
+      W1, W2: Integer;
+      TotalPC: Double;
+      HasPercents, Done: boolean;
+    begin
+      if NumCols = 0 then
+        Exit;
+      TotalPC := Sum(Percents);
+      if (TotalPc > 0) and (TotalPc <= 1000) {ignore ridiculous values} or (tblWidthAttr > 0) then
+      begin
+      {use percents. find the largest width that will accomodate the %'s}
+        Residual := 0;
+        W1 := 0;
+        for I := 0 to NumCols - 1 do
+          if Percents[I] > 0 then {a percent has been entered}
+            W1 := Max(W1, Trunc(MaxWidths[I] * 1000 / Percents[I])) {look for maximum}
+          else
+            Inc(Residual, MaxWidths[I]); {accumlate the cols which have no percent}
+        if TotalPC < 1000 then
+          W2 := Trunc(Residual * 1000 / (1000 - TotalPC))
+        else if Residual > 0 then
+          W2 := 30000
+        else
+          W2 := 0;
+        Total := Max(W1, W2);
+        if Total <= NewWidth then
+        begin {a fit is found using percents and maxwidths}
+          if tblWidthAttr > 0 then
+            Total := NewWidth; {don't try to make it smaller than NewWidth}
+          NewResidual := Trunc(Total * (1000 - TotalPC) / 1000);
+          for I := 0 to NumCols - 1 do
+            if Percents[I] > 0 then {figure widths to fit this situation}
+              Widths[I] := Trunc(Total * Percents[I] / 1000)
+            else if Residual > 0 then
+              Widths[I] := MulDiv(MaxWidths[I], NewResidual, Residual)
+            else
+              Widths[I] := 0; {this is a table syntax error condition}
+          Exit;
+        end;
+
+        Done := False;
+        LastNewTotal := $FFFFFFF;
+        repeat {with the above possibilites taken care of, we can assume the final
+               width will = NewWidth}
+          HasPercents := False;
+          Total := 0; Residual := 0;
+          for I := 0 to NumCols - 1 do
+          begin
+            if Percents[I] > 0 then
+            begin
+              W := Trunc(NewWidth * Percents[I] / 1000); {a Percent's width based on NewWidth}
+              if W < MinWidths[I] then {but it must be > MinWidth}
+              begin {eliminate the percentage value as not achievable}
+                Percents[I] := 0;
+                Inc(Residual, MinWidths[I]); {and put it in the residuals}
+              end
+              else
+              begin
+                HasPercents := True; {still valid percents}
+                Inc(Total, W);
+              end;
+            end
+            else
+              Inc(Residual, MinWidths[I]);
+          end;
+          if not HasPercents then
+            Break; {no percents are achievable}
+          if Total + Residual <= NewWidth then
+          begin {a solution with at least some percentages can be found}
+            Done := True;
+            TotalMaxWidth := 0; TotalMinWidth := 0; {recalc these}
+            for I := 0 to NumCols - 1 do
+            begin
+              if Percents[I] > 0 then
+              begin
+                MinWidths[I] := Trunc(NewWidth * Percents[I] / 1000);
+                MaxWidths[I] := MinWidths[I]; {this fixes the width thru later calculations}
+              end;
+              Inc(TotalMaxWidth, MaxWidths[I]);
+              Inc(TotalMinWidth, MinWidths[I]);
+            end;
+          end
+          else {it doesn't fit screen, reduce percentages and try again}
+          begin
+            NewTotal := NewWidth - Residual; {percent items must fit this}
+            while LastNewTotal <= NewTotal do
+              Dec(NewTotal);
+            LastNewTotal := NewTotal;
+            for I := 0 to NumCols - 1 do
+              if Percents[I] > 0 then
+                Percents[I] := Trunc(Percents[I] * NewTotal / Total);
+          end;
+        until Done;
+      end;
+
+      D := TotalMaxWidth - TotalMinWidth;
+
+      MaxI := 0;
+      Total := 0;
+      W := NewWidth - TotalMinWidth;
+      if (D = 0) and (NumCols > 0) then
+      begin
+        Addon := W div NumCols;
+        for I := 0 to NumCols - 1 do
+        begin
+          Widths[I] := MinWidths[I] + Addon;
+          Inc(Total, Widths[I]);
+        end;
+      end
+      else
+      begin
+        MaxDS := 0;
+        for I := 0 to NumCols - 1 do
+        begin
+          ds := MaxWidths[I] - MinWidths[I];
+          Widths[I] := MinWidths[I] + MulDiv(ds, W, D);
+          Inc(Total, Widths[I]);
+          if ds > MaxDS then
+          begin
+            MaxDS := ds;
+            MaxI := I;
+          end
+        end;
+      end;
+      if Total <> NewWidth then {a round off error}
+        Inc(Widths[MaxI], NewWidth - Total); {adjust column with largest variation}
+    end;
+
+  var
+    Specified: boolean;
+    NewWidth: Integer;
+    TotalMaxWidth, TotalMinWidth: Integer;
+  begin
     Specified := tblWidthAttr > 0;
     if Specified then
       NewWidth := tblWidthAttr
     else
-      NewWidth := OwnerWidth;
+      NewWidth := IMgr.RightSide(Y) - IMgr.LeftIndent(Y);
     Dec(NewWidth, CellSpacing);
 
     Initialize;
 
   {Figure the width of each column}
     GetMinMaxWidths(Canvas, NewWidth);
-    GetMinMaxTotal(MinWidths, MaxWidths, TotalMinWidth, TotalMaxWidth);
-    if UseAbsolute and not Specified then
-    begin {Table width not specified and at least one column has absolute width specified}
-      GetWidthsAbs(TotalMinWidth, TotalMaxWidth, NewWidth); {fills in the Widths array}
-    end
+    TotalMinWidth := Sum(MinWidths);
+    TotalMaxWidth := Sum(MaxWidths);
+
+  {fill in the Widths array}
+    if TotalMinWidth >= NewWidth then
+      {table won't fit, use minimum widths, table will expand}
+      Widths := Copy(MinWidths)
+    else if Specified then
+      {table width specified and table fits into NewWidth}
+      TableSpecifiedAndWillFit(NewWidth)
+    else if TotalMaxWidth <= NewWidth then
+      {table width not specified and maximum widths fits into available width, table will be smaller than NewWidth}
+      Widths := Copy(MaxWidths)
+    else if UseAbsolute then
+      {table width not specified and at least one column has absolute width specified}
+      GetWidthsAbs(TotalMinWidth, TotalMaxWidth, NewWidth)
     else
-    begin
-      if TotalMinWidth > NewWidth then
-      begin {table won't fit, use minimun widths}
-        if Assigned(MinWidths) then {Delphi 4 needs this check}
-          Widths := Copy(MinWidths);
-      end
-      else if Specified then
-      begin
-        TableSpecifiedAndWillFit(NewWidth);
-      end
-      else
-        TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, NewWidth);
-    end;
+      TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, NewWidth);
 
   {Find Table Width}
-    TableWidth := CellSpacing;
-    for I := 0 to NumCols - 1 do
-      Inc(TableWidth, Widths[I]);
+    Result := CellSpacing + Sum(Widths);
+  end;
 
-    if (Length(Heights) = 0) then
+  function FindTableHeight: Integer;
+
+    procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
+    var
+      I, J, K, H, Span, TotalMinHt, TotalDesHt, AddOn,
+        Sum, AddedOn, Desired, UnSpec: Integer;
+      More, Mr, IsSpeced: boolean;
+      MinHts, DesiredHts: IntArray;
+      SpecHts: array of boolean;
+      F: double;
+    begin
+      if Rows.Count = 0 then
+        Exit;
+      Dec(AHeight, CellSpacing); {calculated heights will include one cellspacing each,
+      this removes that last odd cellspacing}
+      if Length(Heights) = 0 then
+        SetLength(Heights, Rows.Count);
+      SetLength(DesiredHts, Rows.Count);
+      SetLength(MinHts, Rows.Count);
+      SetLength(SpecHts, Rows.Count);
+      for I := 0 to Rows.Count - 1 do
+      begin
+        Heights[I] := 0;
+        DesiredHts[I] := 0;
+        MinHts[I] := 0;
+        SpecHts[I] := False;
+      end;
+    {Find the height of each row allowing for RowSpans}
+      Span := 1;
+      More := True;
+      while More do
+      begin
+        More := False;
+        for J := 0 to Rows.Count - 1 do
+          with Rows[J] do
+          begin
+            if J + Span > Rows.Count then
+              Break; {otherwise will overlap}
+            H := DrawLogic1(Canvas, Widths, Span, CellSpacing, Max(0, AHeight - Rows.Count * CellSpacing),
+              Rows.Count, Desired, IsSpeced, Mr) + CellSpacing;
+            Inc(Desired, Cellspacing);
+            More := More or Mr;
+            if Span = 1 then
+            begin
+              MinHts[J] := H;
+              DesiredHts[J] := Desired;
+              SpecHts[J] := SpecHts[J] or IsSpeced;
+            end
+            else if H > Cellspacing then {if H=Cellspacing then no rowspan for this span}
+            begin
+              TotalMinHt := 0; {sum up the heights so far for the rows involved}
+              TotalDesHt := 0;
+              for K := J to J + Span - 1 do
+              begin
+                Inc(TotalMinHt, MinHts[K]);
+                Inc(TotalDesHt, DesiredHts[K]);
+                SpecHts[K] := SpecHts[K] or IsSpeced;
+              end;
+              if H > TotalMinHt then {apportion the excess over the rows}
+              begin
+                Addon := ((H - TotalMinHt) div Span);
+                AddedOn := 0;
+                for K := J to J + Span - 1 do
+                begin
+                  Inc(MinHts[K], Addon);
+                  Inc(AddedOn, Addon);
+                end;
+                Inc(MinHts[J + Span - 1], (H - TotalMinHt) - AddedOn); {make up for round off error}
+              end;
+              if Desired > TotalDesHt then {apportion the excess over the rows}
+              begin
+                Addon := ((Desired - TotalDesHt) div Span);
+                AddedOn := 0;
+                for K := J to J + Span - 1 do
+                begin
+                  Inc(DesiredHts[K], Addon);
+                  Inc(AddedOn, Addon);
+                end;
+                Inc(DesiredHts[J + Span - 1], (Desired - TotalDesHt) - AddedOn); {make up for round off error}
+              end;
+            end;
+          end;
+        Inc(Span);
+      end;
+
+      TotalMinHt := 0;
+      TotalDesHt := 0;
+      UnSpec := 0;
+      for I := 0 to Rows.Count - 1 do
+      begin
+        Inc(TotalMinHt, MinHts[I]);
+        Inc(TotalDesHt, DesiredHts[I]);
+        if not SpecHts[I] then
+          Inc(UnSpec);
+      end;
+
+      if TotalMinHt >= AHeight then
+        Heights := Copy(MinHts)
+      else if TotalDesHt < AHeight then
+        if UnSpec > 0 then
+        begin {expand the unspeced rows to fit}
+          Heights := Copy(DesiredHts);
+          Addon := (AHeight - TotalDesHt) div UnSpec;
+          Sum := 0;
+          for I := 0 to Rows.Count - 1 do
+            if not SpecHts[I] then
+            begin
+              Dec(UnSpec);
+              if UnSpec > 0 then
+              begin
+                Inc(Heights[I], AddOn);
+                Inc(Sum, Addon);
+              end
+              else
+              begin {last item, complete everything}
+                Inc(Heights[I], AHeight - TotalDesHt - Sum);
+                Break;
+              end;
+            end;
+        end
+        else
+        begin {expand desired hts to fit}
+          Sum := 0;
+          F := AHeight / TotalDesHt;
+          for I := 0 to Rows.Count - 2 do
+          begin
+            Heights[I] := Round(F * DesiredHts[I]);
+            Inc(Sum, Heights[I]);
+          end;
+          Heights[Rows.Count - 1] := AHeight - Sum; {last row is the difference}
+        end
+      else
+      begin
+        Sum := 0;
+        F := (AHeight - TotalMinHt) / (TotalDesHt - TotalMinHt);
+        for I := 0 to Rows.Count - 2 do
+        begin
+          Heights[I] := MinHts[I] + Round(F * (DesiredHts[I] - MinHts[I]));
+          Inc(Sum, Heights[I]);
+        end;
+        Heights[Rows.Count - 1] := AHeight - Sum;
+      end;
+    end;
+
+  var
+    I, J, K: Integer;
+    CellObj: TCellObj;
+    HasBody: Boolean;
+  begin
+  // Find Row Heights
+    if Length(Heights) = 0 then
       FindRowHeights(Canvas, AHeight)
     else if Document.InLogic2 and (Document.TableNestLevel <= 5) then
       FindRowHeights(Canvas, AHeight);
 
-    SectionHeight := 0;
+    Result := 0;
     HeaderHeight := 0;
     HeaderRowCount := 0;
     FootHeight := 0;
@@ -9338,7 +9278,7 @@ begin
             if FootStartRow = -1 then
             begin
               FootStartRow := J;
-              FootOffset := SectionHeight;
+              FootOffset := Result;
             end;
             Inc(FootHeight, RowHeight);
           end;
@@ -9347,7 +9287,7 @@ begin
             HasBody := True;
         end;
         RowSpanHeight := 0;
-        Inc(SectionHeight, RowHeight);
+        Inc(Result, RowHeight);
         for I := 0 to Count - 1 do
           if Assigned(Items[I]) then
           begin
@@ -9374,15 +9314,36 @@ begin
         Inc(Y, RowHeight);
       end;
     HeadOrFoot := ((HeaderHeight > 0) or (FootHeight > 0)) and HasBody;
-    Inc(SectionHeight, CellSpacing);
-    TableHeight := SectionHeight;
+    Inc(Result, CellSpacing);
+  end;
 
+var
+  TopY: Integer;
+  FirstLinePtr: PInteger;
+begin
+  Inc(Document.TableNestLevel);
+  try
+    YDraw := Y;
+    TopY := Y;
+    ContentTop := Y;
+    DrawTop := Y;
+    StartCurs := Curs;
+    if Assigned(Document.FirstLineHtPtr) and {used for List items}
+      (Document.FirstLineHtPtr^ = 0) then
+      FirstLinePtr := Document.FirstLineHtPtr {save for later}
+    else
+      FirstLinePtr := nil;
+
+    TableWidth := FindTableWidth;
+    TableHeight := FindTableHeight;
+    // Notice: SectionHeight = TableHeight
     Len := Curs - StartCurs;
     MaxWidth := TableWidth;
-    Result := SectionHeight;
+    Result := TableHeight;
     DrawHeight := Result;
-    ContentBot := TopY + SectionHeight;
+    ContentBot := TopY + TableHeight;
     DrawBot := TopY + DrawHeight;
+
     try
       if Assigned(FirstLinePtr) then
         FirstLinePtr^ := YDraw + SectionHeight;
@@ -9390,7 +9351,6 @@ begin
     end;
   finally
     Dec(Document.TableNestLevel);
-    Dec(NLevel);
   end;
 end;
 

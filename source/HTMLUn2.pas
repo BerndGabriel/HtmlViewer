@@ -71,10 +71,9 @@ type
 
   // BG, 26.12.2011:
   TSpecWidth = record
-    Value: Double;
-    VType: TWidthType;
+    Value: Integer;
+    VType: TWidthType; // treat wtNone like "0*" (Value = 0.0, CType = wtRelative)
   end;
-  TSpecWidthArray = array of TSpecWidth;
 
   //BG, 09.09.2009: renamed TGif and TPng to TrGif and TrPng
   //  TGif interfered with same named class.
@@ -678,8 +677,8 @@ procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 //------------------------------------------------------------------------------
 
 // BG, 26.12.2011: new type TSpecWidth
-function SpecWidth(Value: Double; VType: TWidthType): TSpecWidth;
-function ToSpecWidth(AsDouble: Double; AsString: string): TSpecWidth;
+function SpecWidth(Value: Integer; VType: TWidthType): TSpecWidth;
+function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
 
 //------------------------------------------------------------------------------
 // canvas methods
@@ -1205,31 +1204,31 @@ end;
 {$ENDIF}
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
-function SpecWidth(Value: Double; VType: TWidthType): TSpecWidth;
+function SpecWidth(Value: Integer; VType: TWidthType): TSpecWidth;
 begin
   Result.Value := Value;
   Result.VType := VType;
 end;
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
-function ToSpecWidth(AsDouble: Double; AsString: string): TSpecWidth;
+function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
 // Return a TSpecWidth prepared with values given in AsDouble *and* AsString.
 // AsString is used to evaluate the type while AsDouble is used to evaluate the value.
 // BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Double.
 begin
   if Pos('%', AsString) > 0 then
   begin
-    Result.Value := Min(100, AsDouble) * 10;
+    Result.Value := Min(100, AsInteger) * 10;
     Result.VType := wtPercent;
   end
   else if Pos('*', AsString) > 0 then // this is not specified for <td>, <th>. Only <col> and <colgroup> support it officially.
   begin
-    Result.Value := AsDouble;
+    Result.Value := AsInteger;
     Result.VType := wtRelative;
   end
   else
   begin
-    Result.Value := AsDouble;
+    Result.Value := AsInteger;
     Result.VType := wtAbsolute;
   end;
 end;
