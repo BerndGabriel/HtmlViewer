@@ -336,6 +336,9 @@ type
   protected
     UnLoaded: boolean;
     LocalCharSet: TFontCharset;
+    FQuirksMode : THtQuirksMode;
+    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
+
     procedure FVMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
@@ -349,6 +352,7 @@ type
     procedure InitializeDimensions(X, Y, Wid, Ht: integer); virtual; abstract;
     property LOwner: TSubFrameSetBase read FOwner;
     property MasterSet: TFrameSetBase read FMasterSet; {Points to top (master) TFrameSetBase}
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
   end;
 
   TViewerFrameBase = class(TFrameBase) {TViewerFrameBase holds a THtmlViewer or TSubFrameSetBase}
@@ -608,6 +612,7 @@ begin
   FOwner := AOwner as TSubFrameSetBase;
   FMasterSet := Master;
   BevelInner := bvNone;
+  QuirksMode := MasterSet.FrameViewer.QuirksMode;
   frMarginWidth := MasterSet.FrameViewer.MarginWidth;
   frMarginHeight := MasterSet.FrameViewer.MarginHeight;
   if LOwner.BorderSize = 0 then
@@ -780,6 +785,7 @@ begin
   Viewer.Width := ClientWidth;
   Viewer.Height := ClientHeight;
   Viewer.Align := alClient;
+  Viewer.QuirksMode := QuirksMode;
   if (MasterSet.BorderSize = 0) or (fvNoFocusRect in MasterSet.FrameViewer.fvOptions) then
     Viewer.BorderStyle := htNone;
   Viewer.OnHotspotClick := LOwner.MasterSet.FrameViewer.HotSpotClick;
@@ -1422,6 +1428,7 @@ end;
 constructor TSubFrameSetBase.CreateIt(AOwner: TComponent; Master: TFrameSetBase);
 begin
   inherited Create(AOwner);
+  QuirksMode := detect;
   FMasterSet := Master;
   if AOwner is TFrameBase then
     LocalCharSet := TSubFrameSetBase(AOwner).LocalCharSet;
@@ -4645,6 +4652,13 @@ end;
 function TSubFrameSet.GetFrameClass: TViewerFrameClass;
 begin
   Result := TfvFrame;
+end;
+
+{ TFrameBase }
+
+procedure TFrameBase.SetQuirksMode(const AValue: THtQuirksMode);
+begin
+  Self.FQuirksMode := AValue;
 end;
 
 end.

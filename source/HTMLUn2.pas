@@ -62,6 +62,7 @@ const
   BrkCh = WideChar(#8);
 
 type
+  THtQuirksMode = (detect, standards, quirks);
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -501,7 +502,9 @@ type
     FOnProgress: ThtProgressEvent;
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
+    FQuirksMode : THtQuirksMode;
   protected
+    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
     procedure SetActiveColor(const Value: TColor); virtual;
     procedure SetCharset(const Value: TFontCharset); virtual;
     procedure SetCodePage(const Value: Integer); virtual;
@@ -564,6 +567,7 @@ type
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
     // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
     procedure Load(const Url: ThtString); virtual; abstract;
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
     property CodePage: Integer read FCodePage write SetCodePage;
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
@@ -2972,6 +2976,7 @@ begin
   DefFontName := 'Times New Roman';
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
+  FQuirksMode := detect;
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
@@ -3000,7 +3005,7 @@ begin
   PrintMarginTop := Source.PrintMarginTop;
   PrintMaxHPages := Source.PrintMaxHPages;
   PrintScale := Source.PrintScale;
-
+  FQuirksMode := Source.QuirksMode;
   HistoryMaxCount := Source.HistoryMaxCount;
   ImageCacheCount := Source.ImageCacheCount;
   VisitedMaxCount := Source.VisitedMaxCount;
@@ -3310,6 +3315,11 @@ end;
 procedure TViewerBase.SetPrintScale(const Value: Double);
 begin
   FPrintScale := Value;
+end;
+
+procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
+begin
+  FQuirksMode := AValue;
 end;
 
 procedure TViewerBase.SetServerRoot(const Value: ThtString);

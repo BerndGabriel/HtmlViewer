@@ -1387,6 +1387,7 @@ type
     ScaleX, ScaleY: single;
     SkipDraw: boolean;
 
+    QuirksMode : Boolean;
     constructor Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
     constructor CreateCopy(T: ThtDocument);
     destructor Destroy; override;
@@ -6665,6 +6666,7 @@ end;
 constructor ThtDocument.Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
 begin
   inherited Create(Self, nil);
+  QuirksMode := False;
   TheOwner := Owner;
   PPanel := APaintPanel;
   IDNameList := TIDObjectList.Create; //(Self);
@@ -6711,6 +6713,8 @@ begin
   // re-introduce Move() after moving ThtString out of the moved area between ShowImages and Background.
   ScaleX := 1.0;
   ScaleY := 1.0;
+
+  QuirksMode := T.QuirksMode;
 end;
 
 destructor ThtDocument.Destroy;
@@ -7135,6 +7139,7 @@ procedure ThtDocument.SetFonts(const Name, PreName: ThtString; ASize: Integer;
   LnksActive: boolean; LinkUnderLine: boolean; ACharSet: TFontCharSet;
   MarginHeight, MarginWidth: Integer);
 begin
+  Styles.QuirksMode := Self.QuirksMode;
   Styles.Initialize(Name, PreName, ASize, AColor, AHotspot, AVisitedColor,
     AActiveColor, LinkUnderLine, ACharSet, MarginHeight, MarginWidth);
   InitializeFontSizes(ASize);
@@ -13352,6 +13357,9 @@ var
   NewProp: TProperties;
 begin
   NewProp := TProperties.Create(self);
+  if Assigned(Document) then begin
+    NewProp.QuirksMode := Document.QuirksMode;
+  end;
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
   NewProp.Combine(Document.Styles, Tag, AClass, AnID, APseudo, ATitle, AProps, Count - 1);

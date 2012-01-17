@@ -255,6 +255,8 @@ type
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 
+    // set to determine if child objects should be in "quirks" mode
+    FUseQuirksMode : Boolean;
     function CreateHeaderFooter: THtmlViewer;
     function GetBaseTarget: ThtString;
     function GetCursor: TCursor;
@@ -328,6 +330,7 @@ type
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
   protected
+    FQuirksMode : THtQuirksMode;
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     function GetPalette: HPALETTE; override;
     function HotSpotClickHandled: Boolean; dynamic;
@@ -717,6 +720,7 @@ begin
   FImagesInserted.Interval := 100;
   FImagesInserted.OnTimer := ImagesInsertedTimer;
 
+  FQuirksMode := Detect;
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
   DoScrollBars;
@@ -945,6 +949,7 @@ procedure THtmlViewer.LoadDocument(Document: TBuffer; const DocName: ThtString; 
 var
   Dest, Name, OldFile: ThtString;
   OldCursor: TCursor;
+
 begin
   if IsProcessing then
     Exit;
@@ -969,6 +974,31 @@ begin
       FSectionList.ProgressStart := 75;
       htProgressInit;
       try
+        //handle quirks mode settings
+        if (DocType = HTMLType) then begin
+          case FQuirksMode of
+            detect :
+              begin
+                with THtmlParser.Create(Document) do
+                try
+                  FUseQuirksMode := ShouldUseQuirksMode;
+                finally
+                  Free;
+                end;
+              end;
+            standards :
+              begin
+                FUseQuirksMode := False;
+              end;
+            quirks :
+              begin
+                FUseQuirksMode := True;
+              end;
+          end;
+        end else begin
+          FUseQuirksMode := False;
+        end;
+
         // terminate old document
         InitLoad;
         CaretPos := 0;
@@ -3086,6 +3116,7 @@ begin
   Result.DefFontColor := DefFontColor;
   Result.CharSet := Charset;
   Result.MarginHeight := 0;
+
   with Result.FSectionList do
   begin
     PrintBackground := True;
@@ -4346,6 +4377,7 @@ begin
     Include(FViewerState, vsLocalImageCache);
   end;
   FSectionList.Clear;
+  FSectionList.QuirksMode := FUseQuirksMode;
   UpdateImageCache;
   FSectionList.SetFonts(
     DefFontName, DefPreFontName, DefFontSize, DefFontColor,
@@ -4362,9 +4394,11 @@ begin
   if IsProcessing then
     Exit;
   HTMLTimer.Enabled := False;
+  FSectionList.QuirksMode := FUseQuirksMode;
   FSectionList.Clear;
   if vsLocalImageCache in FViewerState then
     FSectionList.ImageCache.Clear;
+
   FSectionList.SetFonts(
     DefFontName, DefPreFontName, DefFontSize, DefFontColor,
     DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
