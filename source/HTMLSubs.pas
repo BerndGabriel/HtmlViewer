@@ -8574,14 +8574,14 @@ procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
 
   procedure IncreaseRelativeWidths(
     var Widths: IntArray; const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex, Required, Spanned, SpannedRel: Integer);
+    StartIndex, EndIndex, Required, Spanned, SpannedMultis: Integer);
   // Increases width of spanned columns according to relative columns specification.
   // Does not touch columns specified by percentage or absolutely.
   var
     RequiredWidthFactor, Count, I, AddedWidth, AddedMulti: Integer;
   begin
     // Some columns might be wider than required. Widen all columns to preserve the relations.
-    RequiredWidthFactor := MulDiv(Required, 100, SpannedRel); // 100 times width of 1*.
+    RequiredWidthFactor := MulDiv(Required, 100, SpannedMultis); // 100 times width of 1*.
     Count := 0;
     for I := EndIndex downto StartIndex do
       if (ColumnSpecs[I] = wtRelative) and (Multis[I] > 0) then
@@ -8590,7 +8590,7 @@ procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
         RequiredWidthFactor := Max(RequiredWidthFactor, MulDiv(Widths[I], 100, Multis[I]));
       end;
 
-    Required := MulDiv(RequiredWidthFactor, Count, 100);
+    Required := MulDiv(RequiredWidthFactor, SpannedMultis, 100);
     // building sum of all processed columns to reduce rounding errors.
     AddedWidth := 0;
     AddedMulti := 0;
