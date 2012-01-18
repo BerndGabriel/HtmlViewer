@@ -11460,12 +11460,12 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
 
       SB := 0; {if there are images, then maybe they add extra space}
       SA := 0; {space before and after}
-      if LineHeight > 0 then
+      if LineHeight > DHt then
       begin
         // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
         case Align of
           aTop:
-            SA := LineHeight;
+            SA := LineHeight - DHt;
 
           aMiddle:
             begin
@@ -11473,9 +11473,11 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
               SA := (LineHeight - DHt) - SB;
             end;
 
-          aBaseline,
-          aBottom:
-            SB := LineHeight;
+        else
+//          aNone,
+//          aBaseline,
+//          aBottom:
+            SB := LineHeight - DHt;
         end;
       end;
       Cnt := 0;
