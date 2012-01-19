@@ -117,7 +117,13 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy);
+    ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy,
+    {HTML5 elements}
+    HeaderSy, HeaderEndSy,
+    NavSy, NavEndSy,
+    ArticleSy, ArticleEndSy,
+    AsideSy, AsideEndSy,
+    FooterSy, FooterEndSy);
 
 //------------------------------------------------------------------------------
 

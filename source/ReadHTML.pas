@@ -1340,10 +1340,10 @@ var
   IsFieldsetLegend: Boolean;
 begin
   case Sym of
-    DivSy:
+    DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy :
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp('div', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         CheckForAlign;
 
         DivBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
@@ -1352,9 +1352,9 @@ begin
 
         Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
         Next;
-        DoBody([DivEndSy] + TermSet);
+        DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
-        PopAProp('div');
+        PopAProp(SymbToStr(Sym));
         if SectionList.CheckLastBottomMargin then
         begin
           DivBlock.MargArray[MarginBottom] := ParagraphSpace;
@@ -1363,7 +1363,7 @@ begin
         SectionList := DivBlock.OwnerCell;
 
         Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
-        if Sy = DivEndSy then
+        if Sy = EndSymbFromSymb(Sym) then
           Next;
       end;
 
@@ -3074,8 +3074,8 @@ begin
             PSy:
               DoP([]);
 
-            DivSy:
-              DoDivEtc(DivSy, [HeadingEndSy]);
+            DivSy, HeaderSy, NavSy, ArticleSy,AsideSy,FooterSy:
+              DoDivEtc(Sy, [HeadingEndSy]);
           else
             Done := True;
           end;
@@ -3297,7 +3297,8 @@ begin
         else
           Done := True; {else terminate lone <li>s on <p>}
       PEndSy: Next;
-      DivSy, CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy,
+      CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
@@ -3396,7 +3397,8 @@ begin
       PSy: DoP(TermSet);
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
-      DivSy, CenterSy, FormSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy,
+      CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy,
           LISy, DDSy, DTSy, EofSy] + TermSet);
 
@@ -3730,7 +3732,8 @@ begin
           Next;
         end;
 
-      DivSy, CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy,
+      CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
         DoDivEtc(Sy, TermSet);
 
       TitleSy:
@@ -4569,7 +4572,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..83] of TResWord = (
+  ResWordDefinitions: array[1..88] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4652,8 +4655,13 @@ const
     (Name: 'COL';         Symbol: ColSy;        EndSym: CommandSy),
     (Name: 'PARAM';       Symbol: ParamSy;      EndSym: CommandSy),
     (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy),
-    (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy)
-    );
+    (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy),
+    {HTML5 }
+    (Name: 'HEADER';      Symbol: HeaderSy;     EndSym: HeaderEndSy),
+    (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),
+    (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
+    (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
+    (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin
