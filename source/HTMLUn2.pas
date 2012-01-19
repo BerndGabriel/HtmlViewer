@@ -53,7 +53,7 @@ uses
 
 const
   VersionNo = '11';
-  MaxHScroll = 6000; {max horizontal display in pixels}
+  MaxHScroll = 100000; {max horizontal display in pixels}
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
   BotLim = 5000;

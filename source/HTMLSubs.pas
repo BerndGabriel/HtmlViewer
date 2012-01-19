@@ -1212,10 +1212,19 @@ type
     BodyBreak: Integer;
     HeadOrFoot: Boolean;
     FColSpecs: TColSpecList; // Column width specifications
+    // calculated in GetMinMaxWidths
     Percents: IntArray;     {percent widths of columns}
     Multis: IntArray;       {multi widths of columns}
     MaxWidths: IntArray;
     MinWidths: IntArray;
+    ColumnCounts: TIntegerPerWidthType;
+    ColumnSpecs: TWidthTypeArray;
+    //
+    procedure IncreaseWidthsByWidth(WidthType: TWidthType; var Widths: IntArray; StartIndex, EndIndex, Required, Spanned, Count: Integer);
+    procedure IncreaseWidthsByPercentage(var Widths: IntArray; StartIndex, EndIndex, Required, Spanned, Percent, Count: Integer);
+    procedure IncreaseWidthsByMinMaxDelta(WidthType: TWidthType; var Widths: IntArray; StartIndex, EndIndex, Excess, DeltaWidth, Count: Integer; const Deltas: IntArray);
+    procedure IncreaseWidthsRelatively(var Widths: IntArray; StartIndex, EndIndex, Required, SpannedMultis: Integer; ExactRelation: Boolean);
+    procedure IncreaseWidthsEvenly(WidthType: TWidthType; var Widths: IntArray; StartIndex, EndIndex, Required, Spanned, Count: Integer);
     procedure Initialize; // add dummy cells, initialize cells, prepare arrays
     procedure GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
   public
@@ -1228,7 +1237,6 @@ type
     NumCols: Integer;       {Number columns in table}
     TableWidth: Integer;    {width of table}
     tblWidthAttr: Integer;  {Width attribute as entered}
-    UseAbsolute: Boolean;   {width entries are considered absolute}
     CellPadding: Integer;
     CellSpacing: Integer;
     HSpace, VSpace: Integer; {horizontal, vertical extra space}
@@ -1500,15 +1508,6 @@ uses
   HtmlSbs1,
   ReadHtml;
 
-//-- BG ---------------------------------------------------------- 14.01.2012 --
-procedure Mul(var Arr: IntArray; Factor: Double; StartIndex, EndIndex: Integer); overload;
-// Multiply each array element from StartIndex to EndIndex with given factor.
-var
-  I: Integer;
-begin
-  for I := StartIndex to EndIndex do
-    Arr[I] := Trunc(Arr[I] * Factor);
-end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: IntArray; StartIndex, EndIndex: Integer): Integer; overload;
@@ -1568,6 +1567,34 @@ var
 begin
   for I := Low(TWidthType) to High(TWidthType) do
     Arr[I] := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 18.01.2012 --
+procedure SummarizeCountsPerType(
+  var CountsPerType: TIntegerPerWidthType;
+  const ColumnSpecs: TWidthTypeArray;
+  StartIndex, EndIndex: Integer);
+var
+  I: Integer;
+begin
+  SetArray(CountsPerType, 0);
+  for I := StartIndex to EndIndex do
+    Inc(CountsPerType[ColumnSpecs[I]]);
+end;
+
+//-- BG ---------------------------------------------------------- 19.01.2012 --
+function SumOfType(
+  WidthType: TWidthType;
+  const ColumnSpecs: TWidthTypeArray;
+  const Widths: IntArray;
+  StartIndex, EndIndex: Integer): Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := StartIndex to EndIndex do
+    if ColumnSpecs[I] = WidthType then
+      Inc(Result, Widths[I]);
 end;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
@@ -6134,15 +6161,12 @@ procedure TTableBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   TmpWidth: Integer;
 begin
-  TmpWidth := 0;
   if AsPercent then
-    Table.tblWidthAttr := 0
+    TmpWidth := 0
   else
-  begin
     TmpWidth := Math.Max(0, WidthAttr - MargArray[BorderLeftWidth] - MargArray[BorderRightWidth]
       - MargArray[PaddingLeft] - MargArray[PaddingRight]);
-    Table.tblWidthAttr := TmpWidth;
-  end;
+  Table.tblWidthAttr := TmpWidth;
   inherited MinMaxWidth(Canvas, Min, Max);
   if TmpWidth > 0 then
   begin
@@ -8325,6 +8349,7 @@ begin
   SetLength(MinWidths, NumCols);
   SetLength(Percents, NumCols);
   SetLength(Multis, NumCols);
+  SetLength(ColumnSpecs, NumCols);
 
   if Document.PrintTableBackground then
   begin
@@ -8442,7 +8467,6 @@ procedure THtmlTable.Initialize;
 
 var
   Cl, Rw, MaxColSpan, MaxRowSpan: Integer;
-  AnyAbsolute: Boolean;
   Row: TCellList;
   CellObj: TCellObj;
 begin
@@ -8455,13 +8479,6 @@ begin
     for Rw := 0 to Rows.Count - 1 do
       NumCols := Max(NumCols, Rows[Rw].Count);
 
-    // See whether there is a cell with a width specified in absolute Pixels.
-    AnyAbsolute := False;
-    if FColSpecs <> nil then
-      for Cl := 0 to FColSpecs.Count - 1 do
-        if FColSpecs[Cl].ColWidth.VType = wtAbsolute then
-          AnyAbsolute := True;
-
     for Rw := 0 to Rows.Count - 1 do
     begin
       MaxRowSpan := Rows.Count - Rw;
@@ -8470,10 +8487,6 @@ begin
       begin
         MaxColSpan := NumCols - Cl;
         CellObj := Row[Cl];
-
-        // Is width specified in absolute Pixels?
-        if CellObj.SpecWd.VType = wtAbsolute then
-          AnyAbsolute := True;
 
         // Reduce excessive colspans.
         if CellObj.ColSpan > MaxColSpan then
@@ -8484,191 +8497,173 @@ begin
           CellObj.RowSpan := MaxRowSpan;
       end;
     end;
-    UseAbsolute := AnyAbsolute;
 
     SetLength(Widths, NumCols);
     SetLength(MaxWidths, NumCols);
     SetLength(MinWidths, NumCols);
     SetLength(Percents, NumCols);
     SetLength(Multis, NumCols);
+    SetLength(ColumnSpecs, NumCols);
 
     Initialized := True;
   end; {if not ListsProcessed}
+end;
+
+procedure THtmlTable.IncreaseWidthsByWidth(WidthType: TWidthType; var Widths: IntArray;
+  StartIndex, EndIndex, Required, Spanned, Count: Integer);
+// Increases width of spanned columns relative to given widths.
+var
+  I, OldWidth, NewWidth: Integer;
+begin
+  OldWidth := 0;
+  NewWidth := 0;
+  for I := EndIndex downto StartIndex do
+    if ColumnSpecs[I] = WidthType then
+      if Count > 1 then
+      begin
+        // building sum of all processed columns avoids rounding errors.
+        Inc(OldWidth, Widths[I]);
+        Widths[I] := MulDiv(OldWidth, Required, Spanned) - NewWidth;
+        Inc(NewWidth, Widths[I]);
+        Dec(Count);
+      end
+      else
+      begin
+        // The remaining pixels are the new first column's width.
+        Widths[I] := Required - NewWidth;
+        break;
+      end;
+end;
+
+procedure THtmlTable.IncreaseWidthsByPercentage(var Widths: IntArray;
+  StartIndex, EndIndex, Required, Spanned, Percent, Count: Integer);
+// Increases width of spanned columns relative to given percentage.
+var
+  Excess, AddedExcess, AddedPercent, I, Add: Integer;
+begin
+  Excess := Required - Spanned;
+  AddedExcess := 0;
+  AddedPercent := 0;
+  for I := EndIndex downto StartIndex do
+    if ColumnSpecs[I] = wtPercent then
+      if Count > 1 then
+      begin
+        Inc(AddedPercent, Percents[I]);
+        Add := MulDiv(Excess, AddedPercent, Percent) - AddedExcess;
+        Inc(Widths[I], Add);
+        Inc(AddedExcess, Add);
+        Dec(Count);
+      end
+      else
+      begin
+        // add the remaining pixels to the first column's width.
+        Inc(Widths[I], Required - AddedExcess);
+        break;
+      end;
+end;
+
+procedure THtmlTable.IncreaseWidthsByMinMaxDelta(WidthType: TWidthType; var Widths: IntArray;
+  StartIndex, EndIndex, Excess, DeltaWidth, Count: Integer; const Deltas: IntArray);
+// Increases width of spanned columns relative to difference between min and max widths.
+var
+  AddedExcess, AddedDelta, I, Add: Integer;
+begin
+  AddedExcess := 0;
+  AddedDelta := 0;
+  for I := EndIndex downto StartIndex do
+    if ColumnSpecs[I] = WidthType then
+      if Count > 1 then
+      begin
+        Inc(AddedDelta, Deltas[I]);
+        Add := MulDiv(Excess, AddedDelta, DeltaWidth) - AddedExcess;
+        Inc(Widths[I], Add);
+        Inc(AddedExcess, Add);
+        Dec(Count);
+      end
+      else
+      begin
+        // add the remaining pixels to the first column's width.
+        Inc(Widths[I], Excess - AddedExcess);
+        break;
+      end;
+end;
+
+procedure THtmlTable.IncreaseWidthsRelatively(
+  var Widths: IntArray;
+  StartIndex, EndIndex, Required, SpannedMultis: Integer; ExactRelation: Boolean);
+// Increases width of spanned columns according to relative columns specification.
+// Does not touch columns specified by percentage or absolutely.
+var
+  RequiredWidthFactor, Count, I, AddedWidth, AddedMulti: Integer;
+begin
+  // Some columns might have Multi=0. Don't widen these. Thus remove their width from Required.
+  // Some columns might be wider than required. Widen all columns to preserve the relations.
+  RequiredWidthFactor := 0;
+  Count := 0;
+  for I := EndIndex downto StartIndex do
+    if ColumnSpecs[I] = wtRelative then
+      if Multis[I] > 0 then
+      begin
+        Inc(Count);
+        if ExactRelation then
+          RequiredWidthFactor := Max(RequiredWidthFactor, MulDiv(Widths[I], 100, Multis[I]));
+      end
+      else
+      begin
+        Dec(Required, Widths[I]);
+      end;
+
+  RequiredWidthFactor := Max(RequiredWidthFactor, MulDiv(Required, 100, SpannedMultis)); // 100 times width of 1*.
+  Required := MulDiv(RequiredWidthFactor, SpannedMultis, 100);
+  // building sum of all processed columns to reduce rounding errors.
+  AddedWidth := 0;
+  AddedMulti := 0;
+  for I := EndIndex downto StartIndex do
+    if (ColumnSpecs[I] = wtRelative) and (Multis[I] > 0) then
+      if Count > 1 then
+      begin
+        Inc(AddedMulti, Multis[I]);
+        Widths[I] := MulDiv(AddedMulti, RequiredWidthFactor, 100) - AddedWidth;
+        Inc(AddedWidth, Widths[I]);
+        Dec(Count);
+      end
+      else
+      begin
+        // The remaining pixels are the new first column's width.
+        Widths[I] := Required - AddedWidth;
+        break;
+      end;
+end;
+
+procedure THtmlTable.IncreaseWidthsEvenly(WidthType: TWidthType; var Widths: IntArray;
+  StartIndex, EndIndex, Required, Spanned, Count: Integer);
+// Increases width of spanned columns of given type evenly.
+var
+  Divisor, RemainingWidth, I: Integer;
+begin
+  Divisor := Count;
+  RemainingWidth := Required;
+  for I := EndIndex downto StartIndex do
+    if ColumnSpecs[I] = WidthType then
+      if Count > 1 then
+      begin
+        Dec(Count);
+        // MulDiv for each column instead of 1 precalculated width for all columns avoids round off errors.
+        Widths[I] := RemainingWidth - MulDiv(Required, Count, Divisor);
+        Dec(RemainingWidth, Widths[I]);
+      end
+      else
+      begin
+        // add the remaining pixels to the first column's width.
+        Widths[I] := RemainingWidth;
+        break;
+      end;
 end;
 
 {----------------THtmlTable.GetWidths}
 
 procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
 // calculate MaxWidths and MinWidths of all columns.
-
-  procedure IncreaseAbsoluteWidths(var Widths: IntArray; StartIndex, EndIndex, Required, Spanned: Integer);
-  // Increases width of spanned columns relative to given widths.
-  var
-    I, OldWidth, NewWidth: Integer;
-  begin
-    OldWidth := 0;
-    NewWidth := 0;
-    for I := StartIndex + 1 to EndIndex do
-    begin
-      // building sum of all processed columns to reduce rounding errors.
-      Inc(OldWidth, Widths[I]);
-      Widths[I] := MulDiv(OldWidth, Required, Spanned) - NewWidth;
-      Inc(NewWidth, Widths[I]);
-    end;
-
-    // The remaining pixels (incl. round-off errors) are the new first column's width.
-    Widths[StartIndex] := Required - NewWidth;
-  end;
-
-  procedure IncreasePercentageWidths(
-    var Widths: IntArray; const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex, Required, Spanned, Percent, Count: Integer); overload;
-  // Increases width of spanned columns relative to given percentage.
-  var
-    Excess, AddedExcess, AddedPercent, I, Add: Integer;
-  begin
-    Excess := Required - Spanned;
-    AddedExcess := 0;
-    AddedPercent := 0;
-    for I := EndIndex downto StartIndex do
-      if ColumnSpecs[I] = wtPercent then
-        if Count > 1 then
-        begin
-          Inc(AddedPercent, Percents[I]);
-          Add := MulDiv(Excess, AddedPercent, Percent) - AddedExcess;
-          Inc(Widths[I], Add);
-          Inc(AddedExcess, Add);
-          Dec(Count);
-        end
-        else
-        begin
-          // add the remaining pixels (incl. round-off errors) to the first column's width.
-          Inc(Widths[StartIndex], Required - AddedExcess);
-          break;
-        end;
-  end;
-
-  procedure IncreasePercentageWidths(
-    var Widths: IntArray; const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex, Required, Spanned, DeltaWidth, Count: Integer;
-    const Deltas: IntArray); overload;
-  // Increases width of spanned columns relative to difference between min and max widths.
-  var
-    Excess, AddedExcess, AddedDelta, I, Add: Integer;
-  begin
-    Excess := Required - Spanned;
-    AddedExcess := 0;
-    AddedDelta := 0;
-    for I := EndIndex downto StartIndex do
-      if ColumnSpecs[I] = wtPercent then
-        if Count > 1 then
-        begin
-          Inc(AddedDelta, Deltas[I]);
-          Add := MulDiv(Excess, AddedDelta, DeltaWidth) - AddedExcess;
-          Inc(Widths[I], Add);
-          Inc(AddedExcess, Add);
-          Dec(Count);
-        end
-        else
-        begin
-          // add the remaining pixels (incl. round-off errors) to the first column's width.
-          Inc(Widths[StartIndex], Excess - AddedExcess);
-          break;
-        end;
-  end;
-
-  procedure IncreaseRelativeWidths(
-    var Widths: IntArray; const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex, Required, Spanned, SpannedMultis: Integer);
-  // Increases width of spanned columns according to relative columns specification.
-  // Does not touch columns specified by percentage or absolutely.
-  var
-    RequiredWidthFactor, Count, I, AddedWidth, AddedMulti: Integer;
-  begin
-    // Some columns might be wider than required. Widen all columns to preserve the relations.
-    RequiredWidthFactor := MulDiv(Required, 100, SpannedMultis); // 100 times width of 1*.
-    Count := 0;
-    for I := EndIndex downto StartIndex do
-      if (ColumnSpecs[I] = wtRelative) and (Multis[I] > 0) then
-      begin
-        Inc(Count);
-        RequiredWidthFactor := Max(RequiredWidthFactor, MulDiv(Widths[I], 100, Multis[I]));
-      end;
-
-    Required := MulDiv(RequiredWidthFactor, SpannedMultis, 100);
-    // building sum of all processed columns to reduce rounding errors.
-    AddedWidth := 0;
-    AddedMulti := 0;
-    for I := EndIndex downto StartIndex do
-      if (ColumnSpecs[I] = wtRelative) and (Multis[I] > 0) then
-        if Count > 1 then
-        begin
-          Inc(AddedMulti, Multis[I]);
-          Widths[I] := MulDiv(AddedMulti, RequiredWidthFactor, 100) - AddedWidth;
-          Inc(AddedWidth, Widths[I]);
-          Dec(Count);
-        end
-        else
-        begin
-          // add the remaining pixels (incl. round-off errors) to the first column's width.
-          Inc(Widths[StartIndex], Required - AddedWidth);
-          break;
-        end;
-  end;
-
-  procedure IncreaseWidthsEvenly(WidthType: TWidthType;
-    var Widths: IntArray; const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex, Required, Spanned, Count: Integer);
-  // Increases width of spanned columns of given type evenly.
-  var
-    Divisor, RemainingWidth, I: Integer;
-  begin
-    Divisor := Count;
-    RemainingWidth := Required;
-    for I := EndIndex downto StartIndex do
-      if ColumnSpecs[I] = WidthType then
-        if Count > 1 then
-        begin
-          Dec(Count);
-          // MulDiv for each column instead of 1 precaclulated width for all columns avoids round off errors.
-          Widths[I] := RemainingWidth - MulDiv(Required, Count, Divisor);
-          Dec(RemainingWidth, Widths[I]);
-        end
-        else
-        begin
-          // add the remaining pixels.
-          Widths[StartIndex] := RemainingWidth;
-          break;
-        end;
-  end;
-
-  procedure SummarizeSpannedCounts(
-    var SpannedCounts: TIntegerPerWidthType;
-    const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex: Integer);
-  var
-    I: Integer;
-  begin
-    SetArray(SpannedCounts, 0);
-    for I := StartIndex to EndIndex do
-      Inc(SpannedCounts[ColumnSpecs[I]]);
-  end;
-
-  procedure SummarizeSpannedWidths(
-    var SpannedWidths: TIntegerPerWidthType;
-    const ColumnSpecs: TWidthTypeArray;
-    StartIndex, EndIndex: Integer);
-  var
-    I: Integer;
-  begin
-    SetArray(SpannedWidths, 0);
-    for I := StartIndex to EndIndex do
-      case ColumnSpecs[I] of
-        wtAbsolute: Inc(SpannedWidths[wtAbsolute], Widths[I]);
-        wtPercent:  Inc(SpannedWidths[wtPercent],  Percents[I]);
-        wtRelative: Inc(SpannedWidths[wtRelative], Multis[I]);
-      end;
-  end;
 
   procedure UpdateColumnSpec(var Counts: TIntegerPerWidthType; var OldType: TWidthType; NewType: TWidthType);
   begin
@@ -8721,8 +8716,8 @@ procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
         end
         else
         begin
-          // add the remaining pixels (incl. round-off errors) to the first column's width.
-          Inc(Widths[StartIndex], Required - AddedWidth);
+          // add the remaining pixels to the first column's width.
+          Widths[I] := Required - AddedWidth;
           break;
         end;
   end;
@@ -8731,27 +8726,43 @@ var
   // calculated values:
   CellSpec: TWidthType;
   CellMin, CellMax, CellPercent: Integer;
-  SpannedMin, SpannedMax: Integer;
-  ColumnCounts, SpannedCounts, SpannedWidths: TIntegerPerWidthType;
-  ColumnSpecs: TWidthTypeArray;
+  SpannedMin, SpannedMax, SpannedMultis, SpannedPercents: Integer;
+  SpannedCounts: TIntegerPerWidthType;
+
+  procedure IncreaseMinMaxWidthsEvenly(WidthType: TWidthType; StartIndex, EndIndex: Integer);
+  begin
+    if CellMin > SpannedMin then
+      IncreaseWidthsEvenly(WidthType, MinWidths, StartIndex, EndIndex, CellMin, SpannedMin, SpannedCounts[WidthType]);
+    if CellMax > SpannedMax then
+      IncreaseWidthsEvenly(WidthType, MaxWidths, StartIndex, EndIndex, CellMax, SpannedMax, SpannedCounts[WidthType]);
+  end;
+
+  procedure IncreaseMinMaxWidthsByMinMaxDelta(WidthType: TWidthType; StartIndex, EndIndex: Integer);
+  var
+    Deltas: IntArray;
+  begin
+    Deltas := SubArray(MaxWidths, MinWidths);
+    if CellMin > SpannedMin then
+      IncreaseWidthsByMinMaxDelta(WidthType, MinWidths, StartIndex, EndIndex, CellMin - SpannedMin, SpannedMax - SpannedMin, SpannedCounts[WidthType], Deltas);
+    if CellMax > SpannedMax then
+      IncreaseWidthsByMinMaxDelta(WidthType, MaxWidths, StartIndex, EndIndex, CellMax - SpannedMax, SpannedMax - SpannedMin, SpannedCounts[WidthType], Deltas);
+  end;
+
+var
   //
   I, J, Span, EndIndex: Integer;
   Cells: TCellList;
   CellObj: TCellObj;
   MaxSpans: IntArray;
   MaxSpan: Integer;
-  Deltas: IntArray;
-  MultiTotal: Integer;
   MultiCount: Integer;
 begin
   // initialize default widths
-  SetLength(ColumnSpecs, NumCols);
   SetArray(ColumnCounts, 0);
   if FColSpecs <> nil then
     J := FColSpecs.Count
   else
     J := 0;
-  MultiTotal := 0;
   MultiCount := 0;
   for I := 0 to NumCols - 1 do
   begin
@@ -8780,10 +8791,7 @@ begin
           begin
             Multis[I] := Value;
             if Value > 0 then
-            begin
-              Inc(MultiTotal, Value);
               Inc(MultiCount);
-            end;
           end;
         end;
       end;
@@ -8878,63 +8886,68 @@ begin
                 - Fixed Layout: experiments showed that IExplore and Firefox *do* respect width attributes of <td> and <th>
                   even if there was a <colgroup> definition although W3C specified differently.
               }
-              SummarizeSpannedCounts(SpannedCounts, ColumnSpecs, I, EndIndex);
+              SummarizeCountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
               if SpannedCounts[wtNone] > 0 then
               begin
                 // a) There is at least 1 column without any width constraint: Widen this/these.
-                if CellMin > SpannedMin then
-                  IncreaseWidthsEvenly(wtNone, MinWidths, ColumnSpecs, I, EndIndex, CellMin, SpannedMin, SpannedCounts[wtNone]);
-                if CellMax > SpannedMax then
-                  IncreaseWidthsEvenly(wtNone, MaxWidths, ColumnSpecs, I, EndIndex, CellMax, SpannedMax, SpannedCounts[wtNone]);
+                IncreaseMinMaxWidthsEvenly(wtNone, I, EndIndex);
               end
               else if SpannedCounts[wtRelative] > 0 then
               begin
                 // b) There is at least 1 column with relative width: Widen this/these.
-                SummarizeSpannedWidths(SpannedWidths, ColumnSpecs, I, EndIndex);
-                if CellMin > SpannedMin then
-                  IncreaseRelativeWidths(MinWidths, ColumnSpecs, I, EndIndex, CellMin, SpannedMin, SpannedWidths[wtRelative]);
-                if CellMax > SpannedMax then
-                  IncreaseRelativeWidths(MaxWidths, ColumnSpecs, I, EndIndex, CellMax, SpannedMax, SpannedWidths[wtRelative]);
+                SpannedMultis := SumOfType(wtRelative, ColumnSpecs, Multis, I, EndIndex);
+                if SpannedMultis > 0 then
+                begin
+                  if CellMin > SpannedMin then
+                    IncreaseWidthsRelatively(MinWidths, I, EndIndex, CellMin, SpannedMultis, True);
+                  if CellMax > SpannedMax then
+                    IncreaseWidthsRelatively(MaxWidths, I, EndIndex, CellMax, SpannedMultis, True);
+                end
+                else if SpannedMax > SpannedMin then
+                begin
+                  // All spanned columns are at 0*.
+                  // Widen columns proportional to difference between yet evaluated min and max width.
+                  // This ought to fill the table with least height requirements.
+                  IncreaseMinMaxWidthsByMinMaxDelta(wtRelative, I, EndIndex);
+                end
+                else
+                begin
+                  // All spanned columns are at 0* and minimum = maximum. Spread excess evenly.
+                  IncreaseMinMaxWidthsEvenly(wtRelative, I, EndIndex);
+                end;
               end
               else if SpannedCounts[wtPercent] > 0 then
               begin
                 // c) There is at least 1 column with percentage width: Widen this/these.
-                SummarizeSpannedWidths(SpannedWidths, ColumnSpecs, I, EndIndex);
                 if SpannedMax > SpannedMin then
                 begin
                   // Widen columns proportional to difference between yet evaluated min and max width.
                   // This ought to fill the table with least height requirements.
-                  Deltas := SubArray(MaxWidths, MinWidths);
-                  if CellMin > SpannedMin then
-                    IncreasePercentageWidths(MinWidths, ColumnSpecs, I, EndIndex, CellMin, SpannedMin, SpannedMax - SpannedMin, SpannedCounts[wtPercent], Deltas);
-                  if CellMax > SpannedMax then
-                    IncreasePercentageWidths(MaxWidths, ColumnSpecs, I, EndIndex, CellMax, SpannedMax, SpannedMax - SpannedMin, SpannedCounts[wtPercent], Deltas);
-                end
-                else if SpannedWidths[wtPercent] > 0 then
-                begin
-                  // Spread excess to columns proportionally to their percentages.
-                  // This ought to keep smaller columns small.
-                  if CellMin > SpannedMin then
-                    IncreasePercentageWidths(MinWidths, ColumnSpecs, I, EndIndex, CellMin, SpannedMin, SpannedWidths[wtPercent], SpannedCounts[wtPercent]);
-                  if CellMax > SpannedMax then
-                    IncreasePercentageWidths(MaxWidths, ColumnSpecs, I, EndIndex, CellMax, SpannedMax, SpannedWidths[wtPercent], SpannedCounts[wtPercent]);
+                  IncreaseMinMaxWidthsByMinMaxDelta(wtPercent, I, EndIndex);
                 end
                 else
                 begin
-                  // All spanned columns are at 0% and minimum = maximum. Spread excess evenly.
-                  if CellMin > SpannedMin then
-                    IncreaseWidthsEvenly(wtPercent, MinWidths, ColumnSpecs, I, EndIndex, CellMin, SpannedMin, SpannedCounts[wtPercent]);
-                  if CellMax > SpannedMax then
-                    IncreaseWidthsEvenly(wtPercent, MinWidths, ColumnSpecs, I, EndIndex, CellMax, SpannedMax, SpannedCounts[wtPercent]);
+                  SpannedPercents := SumOfType(wtPercent, ColumnSpecs, Percents, I, EndIndex);
+                  if SpannedPercents > 0 then
+                  begin
+                    // Spread excess to columns proportionally to their percentages.
+                    // This ought to keep smaller columns small.
+                    if CellMin > SpannedMin then
+                      IncreaseWidthsByPercentage(MinWidths, I, EndIndex, CellMin, SpannedMin, SpannedPercents, SpannedCounts[wtPercent]);
+                    if CellMax > SpannedMax then
+                      IncreaseWidthsByPercentage(MaxWidths, I, EndIndex, CellMax, SpannedMax, SpannedPercents, SpannedCounts[wtPercent]);
+                  end
+                  else
+                  begin
+                    // All spanned columns are at 0% and minimum = maximum. Spread excess evenly.
+                    IncreaseMinMaxWidthsEvenly(wtPercent, I, EndIndex);
+                  end;
                 end;
               end
               else
               begin
                 // d) All columns have absolute widths: Widen these.
-                if CellMin > SpannedMin then
-                  IncreaseAbsoluteWidths(MinWidths, I, EndIndex, CellMin, SpannedMin);
-                if CellMax > SpannedMax then
-                  IncreaseAbsoluteWidths(MaxWidths, I, EndIndex, CellMax, SpannedMax);
+                IncreaseMinMaxWidthsEvenly(wtAbsolute, I, EndIndex);
               end;
             end;
           end;
@@ -8977,7 +8990,6 @@ begin
   Max := Math.Max(Sum(MaxWidths) + CellSpacing, tblWidthAttr);
 end;
 
-
 {----------------THtmlTable.DrawLogic}
 
 function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
@@ -8985,392 +8997,26 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
 
   function FindTableWidth: Integer;
 
-    procedure GetWidthsAbs(TotalMaxWidth, TotalMinWidth, NewWidth: Integer);
+    procedure IncreaseWidths(WidthType: TWidthType; MinWidth, NewWidth, Count: Integer);
     var
-      N, D, W, dd: Integer;
-      Accum: Integer;
+      Deltas: IntArray;
+      D, W: Integer;
     begin
-      {make table fit}
-      D := TotalMaxWidth - TotalMinWidth;
-      W := NewWidth - TotalMinWidth;
-      if D > 0 then {expand only those columns with some slop in them}
-      begin
-        Accum := 0;
-        for N := 0 to NumCols - 1 do
-        begin
-          dd := MaxWidths[N] - MinWidths[N]; {some dd's may be 0}
-          Widths[N] := MinWidths[N] + MulDiv(dd, W, D);
-          Inc(Accum, Widths[N]);
-        end;
-        dd := Accum - NewWidth; {check for Roundoff error}
-        if dd <> 0 then
-        begin
-          for N := 0 to NumCols - 1 do
-          begin
-            if dd > 0 then
-            begin
-              if MaxWidths[N] > MinWidths[N] then
-              begin
-                Dec(Widths[N]);
-                Dec(dd);
-              end;
-            end
-            else
-            begin
-              Inc(Widths[N]);
-              Inc(dd);
-            end;
-            if dd = 0 then
-              break;
-          end;
-        end;
-      end
-      else {no adjustable columns, will have to expand them all}
-        for N := 0 to NumCols - 1 do
-          Widths[N] := MinWidths[N] + MulDiv(MinWidths[N], W, TotalMinWidth);
-    end;
-
-    procedure TableSpecifiedAndWillFit(NewWidth: Integer);
-    {Divide up the table into columns.  NewWidth is the specified width of the table.
-     At this point, it is known that everything will fit into NewWidth. Percents are
-     being used}
-    var
-      UseMin: array of boolean;
-      Speced: array of boolean;
-
-      procedure ShrinkColumnWidths(var Delta: Integer; Step: Integer);
-      var
-        I, W: Integer;
-      begin
-        for I := 0 to NumCols - 1 do
-          if not UseMin[I] and not Speced[I] then
-          begin
-            W := Max(Widths[I] - Step, MinWidths[I]);
-            Dec(Delta, Widths[I] - W);
-            Widths[I] := W;
-            if Delta <= 0 then
-              Break;
-          end;
-      end;
-
-    var
-      J, I, W, TotalWid, Unsp, {UnspDiff,} Delta, {Addon,} Count, d, PCNotMinWid: Integer;
-      W1, W2: Double;
-      NoChange: boolean;
-      UnspCol: Integer;
-    begin
-      if NumCols = 0 then
-        Exit;
-      SetLength(UseMin, NumCols);
-      SetLength(Speced, NumCols);
-      PCNotMinWid := 0;
-      TotalWid := 0;
-      Unsp := 0;
-    //  UnspDiff := 0;
-      UnspCol := -1;
-    {First calculate everything assuming the data entered is perfectly correct}
-      for I := 0 to NumCols - 1 do
-      begin
-        UseMin[I] := False;
-        if Percents[I] > 0 then
-        begin
-          Speced[I] := True;
-          W := MulDiv(NewWidth, Percents[I], 1000); {width based on percentage}
-          if W > MinWidths[I] then
-          begin
-            Widths[I] := W;
-            PCNotMinWid := PCNotMinWid + Percents[I];
-          end
-          else
-          begin {percent is too small, use Min width}
-            Widths[I] := MinWidths[I];
-            UseMin[I] := True;
-          end;
-        end
-        else
-        begin {no percent}
-          Speced[I] := False;
-          Widths[I] := MinWidths[I];
-          Inc(Unsp); {an unspecified column}
-          if Widths[I] > 0 then
-            UnspCol := I; {save location of unspecified column}
-    //      Inc(UnspDiff, Max(0, MaxWidths[I] - MinWidths[I])); {total max-min for unspecified cols}
-        end;
-        Inc(TotalWid, Widths[I]);
-      end;
-
-      Delta := TotalWid - NewWidth; {see what the error is}
-      if Delta < 0 then {table is too small}
-      begin
-        if Unsp > 0 then
-        begin
-    //      if (UnspDiff > 0) and (UnspDiff >= Abs(Delta) div 4) then
-    //      {increase the unspecified columns widths prop to Max - Min unless the difference is trivial}
-    //      begin
-    //        for I := 0 to NumCols - 1 do
-    //          if (Percents[I] = 0) then
-    //            Inc(Widths[I], MulDiv(-Delta, Max(0, MaxWidths[I] - MinWidths[I]), UnspDiff));
-    //      end
-    //      else
-          begin {increase the unspecified columns widths uniformly}
-            // BG, 26.12.2011: if Delta is small and Unsp is large the simple "div" produces too unlike wide cells.
-            // The last cell becomes unexpectedly wide.
-            {Addon := -Delta div Unsp;
-            for I := 0 to NumCols - 1 do
-              if Percents[I] = 0 then
-                Inc(Widths[I], Addon);}
-            W1 := 0;
-            J := 0;
-            for I := 0 to NumCols - 1 do
-              if Percents[I] = 0 then
-              begin
-                Inc(J);
-                W2 := -Delta * J / Unsp;
-                Inc(Widths[I], Trunc(W2 - W1));
-                W1 := W2;
-              end;
-          end;
-        end
-        else
-        begin {no unspecified widths, increase the specified columns which are not minimum}
-          for I := 0 to NumCols - 1 do
-            if (Percents[I] > 0) and not UseMin[I] then
-              Inc(Widths[I], MulDiv(-Delta, Percents[I], PCNotMinWid));
-        end;
-      end
-      else if Delta > 0 then {calculated table is too large}
-      begin
-        Count := 0;
-      {make one or more trial run to see what happens when shrinking the columns
-       that can be shrunck.  May hit another MinWidth situation}
-        repeat
-          NoChange := True;
-          for I := 0 to NumCols - 1 do
-            if (Percents[I] > 0) and not UseMin[I] then
-            begin
-              W := Widths[I] - MulDiv(Delta, Percents[I], PCNotMinWid);
-              if W < MinWidths[I] then
-              begin {new width is smaller than MinWidth, make adustments}
-                UseMin[I] := True;
-                NoChange := False;
-                PCNotMinWid := PCNotMinWid - Percents[I];
-                Dec(Delta, Widths[I] - MinWidths[I]);
-                Widths[I] := MinWidths[I];
-              end;
-            end;
-          Inc(Count);
-        until NoChange or (Count >= 4); {count guards against endless loop}
-        for I := 0 to NumCols - 1 do {now actually change the widths}
-          if (Percents[I] > 0) and not UseMin[I] then
-            Dec(Widths[I], MulDiv(Delta, Percents[I], PCNotMinWid));
-      end;
-
-      TotalWid := 0; {fix up any round off errors}
-      for I := 0 to NumCols - 1 do
-        Inc(TotalWid, Widths[I]);
-      Delta := TotalWid - NewWidth; {round off error}
-      if Delta > 0 then
-      begin
-        // first remove single pixels from unspecified non-minimum columns
-        if Unsp > 0 then
-        begin
-          d := 0;
-          for I := 0 to NumCols - 1 do
-            if not UseMin[I] and not Speced[I] then
-              Inc(d);
-          if d > 0 then
-            ShrinkColumnWidths(Delta, Delta div d);
-        end;
-        if Delta > 0 then
-          ShrinkColumnWidths(Delta, 1);
-        if Delta > 0 then
-          for I := 0 to NumCols - 1 do
-            if not UseMin[I] then
-            begin
-              Dec(Widths[I], Delta); {remove extra from first non minimum}
-              Break;
-            end;
-      end
-      else if Delta < 0 then
-      begin
-        Delta := -Delta; {Delta is now positive}
-        if Unsp > 0 then
-        begin
-          d := Max(Delta div Unsp, 1);
-          // insert single pixels into unspecified, non-minimum column
-          for I := 0 to NumCols - 1 do
-            if not UseMin[I] and not Speced[I] then
-            begin
-              Inc(Widths[I], d);
-              Dec(Delta, d);
-              if Delta <= 0 then
-                Break;
-            end;
-        end;
-        if (UnspCol >= 0) and (Delta > 0) then
-          Inc(Widths[UnspCol], Delta) {put it into an unspecified column}
-        else
-        begin
-          while Delta > NumCols do
-          begin
-            d := Delta div NumCols;
-            if d > 0 then
-              for I := 0 to NumCols - 1 do
-              begin
-                Dec(Delta, d);
-                Inc(Widths[I], d);
-              end
-          end;
-        {remainder should be less than NumCols here, so tack on 1 each column
-         until it's gone}
-          for I := 0 to NumCols - 1 do
-            if Delta > 0 then
-            begin
-              Inc(Widths[I]);
-              Dec(Delta);
-            end
-            else
-              Break;
-        end;
-      end;
-    end;
-
-    procedure TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, NewWidth: Integer);
-    {Find column widths.  Table known to fit within allowed space and its width hasn't
-     been specified}
-    var
-      D, W, DS, MaxDS, MaxI, I, Addon, Total, Residual, NewResidual, NewTotal, LastNewTotal: Integer;
-      W1, W2: Integer;
-      TotalPC: Integer;
-      HasPercents, Done: boolean;
-    begin
-      if NumCols = 0 then
-        Exit;
-      TotalPC := Sum(Percents);
-      if (TotalPc > 0) and (TotalPc <= 1000) {ignore ridiculous values} or (tblWidthAttr > 0) then
-      begin
-      {use percents. find the largest width that will accomodate the %'s}
-        Residual := 0;
-        W1 := 0;
-        for I := 0 to NumCols - 1 do
-          if Percents[I] > 0 then {a percent has been entered}
-            W1 := Max(W1, MulDiv(MaxWidths[I], 1000, Percents[I])) {look for maximum}
-          else
-            Inc(Residual, MaxWidths[I]); {accumlate the cols which have no percent}
-        if TotalPC < 1000 then
-          W2 := MulDiv(Residual, 1000, (1000 - TotalPC))
-        else if Residual > 0 then
-          W2 := 30000
-        else
-          W2 := 0;
-        Total := Max(W1, W2);
-        if Total <= NewWidth then
-        begin {a fit is found using percents and maxwidths}
-          if tblWidthAttr > 0 then
-            Total := NewWidth; {don't try to make it smaller than NewWidth}
-          NewResidual := MulDiv(Total, (1000 - TotalPC), 1000);
-          for I := 0 to NumCols - 1 do
-            if Percents[I] > 0 then {figure widths to fit this situation}
-              Widths[I] := MulDiv(Total, Percents[I], 1000)
-            else if Residual > 0 then
-              Widths[I] := MulDiv(MaxWidths[I], NewResidual, Residual)
-            else
-              Widths[I] := 0; {this is a table syntax error condition}
-          Exit;
-        end;
-
-        Done := False;
-        LastNewTotal := $FFFFFFF;
-        repeat {with the above possibilites taken care of, we can assume the final
-               width will = NewWidth}
-          HasPercents := False;
-          Total := 0; Residual := 0;
-          for I := 0 to NumCols - 1 do
-          begin
-            if Percents[I] > 0 then
-            begin
-              W := MulDiv(NewWidth, Percents[I], 1000); {a Percent's width based on NewWidth}
-              if W < MinWidths[I] then {but it must be > MinWidth}
-              begin {eliminate the percentage value as not achievable}
-                Percents[I] := 0;
-                Inc(Residual, MinWidths[I]); {and put it in the residuals}
-              end
-              else
-              begin
-                HasPercents := True; {still valid percents}
-                Inc(Total, W);
-              end;
-            end
-            else
-              Inc(Residual, MinWidths[I]);
-          end;
-          if not HasPercents then
-            Break; {no percents are achievable}
-          if Total + Residual <= NewWidth then
-          begin {a solution with at least some percentages can be found}
-            Done := True;
-            TotalMaxWidth := 0; TotalMinWidth := 0; {recalc these}
-            for I := 0 to NumCols - 1 do
-            begin
-              if Percents[I] > 0 then
-              begin
-                MinWidths[I] := MulDiv(NewWidth, Percents[I], 1000);
-                MaxWidths[I] := MinWidths[I]; {this fixes the width thru later calculations}
-              end;
-              Inc(TotalMaxWidth, MaxWidths[I]);
-              Inc(TotalMinWidth, MinWidths[I]);
-            end;
-          end
-          else {it doesn't fit screen, reduce percentages and try again}
-          begin
-            NewTotal := NewWidth - Residual; {percent items must fit this}
-            while LastNewTotal <= NewTotal do
-              Dec(NewTotal);
-            LastNewTotal := NewTotal;
-            for I := 0 to NumCols - 1 do
-              if Percents[I] > 0 then
-                Percents[I] := MulDiv(Percents[I], NewTotal, Total);
-          end;
-        until Done;
-      end;
-
-      D := TotalMaxWidth - TotalMinWidth;
-
-      MaxI := 0;
-      Total := 0;
-      W := NewWidth - TotalMinWidth;
-      if (D = 0) and (NumCols > 0) then
-      begin
-        Addon := W div NumCols;
-        for I := 0 to NumCols - 1 do
-        begin
-          Widths[I] := MinWidths[I] + Addon;
-          Inc(Total, Widths[I]);
-        end;
-      end
+      Deltas := SubArray(MaxWidths, MinWidths);
+      D := SumOfType(WidthType, ColumnSpecs, Deltas, 0, NumCols - 1);
+      if D <> 0 then
+        IncreaseWidthsByMinMaxDelta(WidthType, Widths, 0, NumCols - 1, NewWidth - MinWidth, D, Count, Deltas)
       else
       begin
-        MaxDS := 0;
-        for I := 0 to NumCols - 1 do
-        begin
-          ds := MaxWidths[I] - MinWidths[I];
-          Widths[I] := MinWidths[I] + MulDiv(ds, W, D);
-          Inc(Total, Widths[I]);
-          if ds > MaxDS then
-          begin
-            MaxDS := ds;
-            MaxI := I;
-          end
-        end;
+        W := SumOfType(WidthType, ColumnSpecs, Widths, 0, NumCols -1);
+        IncreaseWidthsByWidth(WidthType, Widths, 0, NumCols - 1, NewWidth - MinWidth + D, W, Count);
       end;
-      if Total <> NewWidth then {a round off error}
-        Inc(Widths[MaxI], NewWidth - Total); {adjust column with largest variation}
     end;
 
   var
     Specified: boolean;
-    NewWidth: Integer;
-    TotalMaxWidth, TotalMinWidth: Integer;
+    NewWidth, MaxWidth, MinWidth, D, W: Integer;
+    Counts: TIntegerPerWidthType;
   begin
     Specified := tblWidthAttr > 0;
     if Specified then
@@ -9381,27 +9027,49 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
 
     Initialize;
 
-  {Figure the width of each column}
+    {Figure the width of each column}
     GetMinMaxWidths(Canvas, NewWidth);
-    TotalMinWidth := Sum(MinWidths);
-    TotalMaxWidth := Sum(MaxWidths);
+    MinWidth := Sum(MinWidths);
+    MaxWidth := Sum(MaxWidths);
 
-  {fill in the Widths array}
-    if TotalMinWidth >= NewWidth then
-      {table won't fit, use minimum widths, table will expand}
+    {fill in the Widths array}
+    if MinWidth >= NewWidth then
+      // table fits exactly with minimum widths or is too wide, use minimum widths, table might expand.
       Widths := Copy(MinWidths)
-    else if Specified then
-      {table width specified and table fits into NewWidth}
-      TableSpecifiedAndWillFit(NewWidth)
-    else if TotalMaxWidth <= NewWidth then
-      {table width not specified and maximum widths fits into available width, table will be smaller than NewWidth}
+    else if not Specified and (MaxWidth <= NewWidth) then
+      // table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
       Widths := Copy(MaxWidths)
-    else if UseAbsolute then
-      {table width not specified and at least one column has absolute width specified}
-      GetWidthsAbs(TotalMinWidth, TotalMaxWidth, NewWidth)
     else
-      TableNotSpecifiedAndWillFit(TotalMinWidth, TotalMaxWidth, NewWidth);
-  {Return Table Width}
+    begin
+      // table fits into NewWidth. Shrink or expand columns to fit exactly into NewWidth.
+      Widths := Copy(MinWidths);
+      SummarizeCountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
+      W := NewWidth - MinWidth;
+
+      if Counts[wtNone] > 0 then
+      begin
+        // a) There is at least 1 column without any width constraint: modify this/these.
+        IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
+      end
+      else if Counts[wtRelative] > 0 then
+      begin
+        // b) There is at least 1 column with relative width: modify this/these.
+        D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
+        IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
+      end
+      else if Counts[wtPercent] > 0 then
+      begin
+        // c) There is at least 1 column with percentage width: modify this/these.
+        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
+      end
+      else
+      begin
+        // d) All columns have absolute widths: modify relative to current width.
+        IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+      end;
+    end;
+
+    {Return Table Width}
     Result := CellSpacing + Sum(Widths);
   end;
 
