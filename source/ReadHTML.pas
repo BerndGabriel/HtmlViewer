@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin,
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 *********************************************************
 *                                                       *
@@ -148,7 +150,6 @@ type
     procedure DoBase;
     procedure DoBody(const TermSet: SymbSet);
     procedure DoBr(const TermSet: SymbSet);
-    procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
     procedure DoCommonSy;
     procedure DoDivEtc(Sym: Symb; const TermSet: SymbSet);
     procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
@@ -174,11 +175,11 @@ type
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
-    function getTitle: ThtString;
+    function GetTitle: ThtString;
   public
     constructor Create;
     destructor Destroy; override;
-    property Title: ThtString read getTitle;
+    property Title: ThtString read GetTitle;
   end;
 
   procedure ParseHtml(Viewer: THtmlViewerBase; Doc: TBuffer; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
@@ -670,13 +671,10 @@ begin
       GetCh;
     end;
   SkipWhiteSpace;
-{see if a numerical value is appropriate.
- avoid the exception that happens when the likes of 'e1234' occurs}
-  try
-    TryStrToFloat(S, ValD);
+
+  {see if S evaluates to a numerical value.}
+  if TryStrToFloat(S, ValD) then
     Value := Round(ValD);
-  except
-  end;
 
   if LCh = '%' then
   begin
@@ -686,7 +684,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 31.01.2011 --
-function THtmlParser.getTitle: ThtString;
+function THtmlParser.GetTitle: ThtString;
 begin
   if TitleEnd > TitleStart then
     Result := Doc.GetString(TitleStart, TitleEnd)
@@ -727,6 +725,7 @@ procedure THtmlParser.Next;
       var
         Term: ThtChar;
         S1: ThtString;
+        Code: Integer;
         ValD: double;
         SaveSy: Symb;
       begin
@@ -770,16 +769,17 @@ procedure THtmlParser.Next;
         if LCh = Term then
           GetCh; {pass termination ThtChar}
         S1 := Trim(S);
-        if Pos('%', S1) = Length(S1) then
+        if (Pos('%', S1) = Length(S1)) or (Pos('*', S1) = Length(S1)) then
           SetLength(S1, Length(S1) - 1);
-      {see if S1 evaluates to a numerical value.  Note that something like
-       S1 = 'e8196' can give exception because of the 'e'}
+      {see if S1 evaluates to a numerical value.}
         Value := 0;
         if Length(S1) > 0 then
           case S1[1] of
             '0'..'9', '+', '-', '.':
+//              if TryStrToFloat(S1, ValD) then
+//                Value := Round(ValD);
               try
-                TryStrToFloat(S1, ValD);
+                System.Val(S1, ValD, Code);
                 Value := Round(ValD);
               except
               end;
@@ -1340,7 +1340,7 @@ function TCellManager.FindColNum(Row: Integer): Integer;
  go or -1 if out of range.  Columns beyond any <col> definitions are ignored}
 begin
   if Row = Count then
-    Add(StringOfChar('o', Table.Cols.Count));
+    Add(StringOfChar('o', Table.ColSpecs.Count));
   Result := Pos('o', Strings[Row]) - 1;
 end;
 
@@ -1352,7 +1352,7 @@ var
 begin
 {make sure there's enough rows to handle any RowSpan for this cell}
   while Count < Row + CellObj.RowSpan do
-    Add(StringOfChar('o', Table.Cols.Count));
+    Add(StringOfChar('o', Table.ColSpecs.Count));
   I := Pos('o', Strings[Row]); {where we want to enter this cell}
   K := I;
   if I > 0 then {else it's beyond the ColInfo and we're not interested}
@@ -1398,94 +1398,114 @@ begin
   end;
 end;
 
-procedure THtmlParser.DoColGroup(Table: ThtmlTable; ColOK: Boolean);
-{reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's ConInfo list}
-
-  procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
-  var
-    I: Integer;
-    Algn: AlignmentType;
-  begin
-    for I := 0 to Attributes.Count - 1 do
-      with TAttribute(Attributes[I]) do
-        case Which of
-          WidthSy:
-            if Pos('%', Name) > 0 then
-              Spec := SpecWidth(Max(0, Min(100, Value)) * 10, wtPercent)
-            else if Pos('*', Name) > 0 then
-              Spec := SpecWidth(Value, wtRelative)
-            else
-              Spec := SpecWidth(Value, wtAbsolute);
-
-          AlignSy:
-            begin
-              Algn := AlignmentFromString(Name);
-              if Algn in [ALeft, AMiddle, ARight, AJustify] then
-                Align := Lowercase(Name);
-            end;
-
-          VAlignSy:
-            begin
-              Algn := AlignmentFromString(Name);
-              if Algn in [ATop, AMiddle, ABottom, ABaseLine] then
-                VAlign := Algn;
-            end;
-
-          SpanSy:
-            Span := Max(1, Value);
-        end;
-  end;
-
-var
-  I: Integer;
-  xSpan, cSpan: Integer;
-  xWidth, cWidth: TSpecWidth;
-  xVAlign, cVAlign: AlignmentType;
-  xAlign, cAlign: ThtString;
-begin
-  xWidth := SpecWidth(0, wtNone);
-  xVAlign := ANone;
-  xAlign := '';
-  xSpan := 1;
-  if Sy = ColGroupSy then
-  begin
-    if ColOk then
-      ReadColAttributes(xWidth, xVAlign, xAlign, xSpan);
-    SkipWhiteSpace;
-    Next;
-  end;
-  if Sy = ColSy then
-  begin
-    while Sy = ColSy do
-    begin
-      if ColOK then
-      begin
-      {any new attributes in <col> will have priority over the <colgroup> items just read}
-        cWidth := xWidth; {the default values}
-        cVAlign := xVAlign;
-        cAlign := xAlign;
-        cSpan := 1; // ignore xSpan, if there is at least 1 <col> tag.
-        ReadColAttributes(cWidth, cVAlign, cAlign, cSpan);
-        for I := 1 to Min(cSpan, 10000) do
-          Table.DoColumns(cWidth, cVAlign, cAlign);
-      end;
-      SkipWhiteSpace;
-      Next;
-    end
-  end
-  else
-  begin
-    if ColOK then
-      for I := 1 to Min(xSpan, 10000) do
-        Table.DoColumns(xWidth, xVAlign, xAlign);
-  end;
-  if Sy = ColGroupEndSy then
-    Next;
-end;
-
 {----------------DoTable}
 
 procedure THtmlParser.DoTable;
+
+  procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
+  {reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's ConInfo list}
+
+    procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
+
+      function AlignmentFromString(S: ThtString): AlignmentType;
+      begin
+        S := LowerCase(S);
+        if S = 'top' then
+          Result := ATop
+        else if (S = 'middle') or (S = 'absmiddle') or (S = 'center') then
+          Result := AMiddle
+        else if S = 'left' then
+          Result := ALeft
+        else if S = 'right' then
+          Result := ARight
+        else if (S = 'bottom') then
+          Result := ABottom
+        else if (S = 'baseline') then
+          Result := ABaseline
+        else if (S = 'justify') then
+          Result := AJustify
+        else
+          Result := ANone;
+      end;
+
+    var
+      I: Integer;
+      Algn: AlignmentType;
+    begin
+      for I := 0 to Attributes.Count - 1 do
+        with Attributes[I] do
+          case Which of
+            WidthSy:
+              if Pos('%', Name) > 0 then
+                Spec := SpecWidth(Max(0, Min(100, Value)) * 10, wtPercent)
+              else if Pos('*', Name) > 0 then
+                Spec := SpecWidth(Value, wtRelative)
+              else
+                Spec := SpecWidth(Value, wtAbsolute);
+
+            AlignSy:
+              begin
+                Algn := AlignmentFromString(Name);
+                if Algn in [ALeft, AMiddle, ARight, AJustify] then
+                  Align := Lowercase(Name);
+              end;
+
+            VAlignSy:
+              begin
+                Algn := AlignmentFromString(Name);
+                if Algn in [ATop, AMiddle, ABottom, ABaseLine] then
+                  VAlign := Algn;
+              end;
+
+            SpanSy:
+              Span := Max(1, Value);
+          end;
+    end;
+
+  var
+    xSpan, cSpan: Integer;
+    xWidth, cWidth: TSpecWidth;
+    xVAlign, cVAlign: AlignmentType;
+    xAlign, cAlign: ThtString;
+  begin
+    xWidth := SpecWidth(0, wtNone);
+    xVAlign := ANone;
+    xAlign := '';
+    xSpan := 1;
+    if Sy = ColGroupSy then
+    begin
+      if ColOk then
+        ReadColAttributes(xWidth, xVAlign, xAlign, xSpan);
+      SkipWhiteSpace;
+      Next;
+    end;
+    if Sy = ColSy then
+    begin
+      while Sy = ColSy do
+      begin
+        if ColOK then
+        begin
+        {any new attributes in <col> will have priority over the <colgroup> items just read}
+          cWidth := xWidth; {the default values}
+          cVAlign := xVAlign;
+          cAlign := xAlign;
+          cSpan := 1; // ignore xSpan, if there is at least 1 <col> tag.
+          ReadColAttributes(cWidth, cVAlign, cAlign, cSpan);
+          Table.DoColumns(cSpan, cWidth, cVAlign, cAlign);
+        end;
+        SkipWhiteSpace;
+        Next;
+      end
+    end
+    else
+    begin
+      if ColOK then
+        Table.DoColumns(xSpan, xWidth, xVAlign, xAlign);
+    end;
+    if Sy = ColGroupEndSy then
+      Next;
+  end;
+
 var
   Table: ThtmlTable;
   SaveSectionList, JunkSaveSectionList: TCellBasic;
@@ -1513,7 +1533,6 @@ var
   TrDisplay: TPropDisplay; // Yunqa.de.
   S: PropIndices;
   V: Variant;
-  CellBorderStyle: BorderStyleType;
 
   function GetVAlign(Default: AlignmentType): AlignmentType;
   var
@@ -1546,9 +1565,9 @@ var
         if Assigned(CM) then
           CM.AddCell(Table.Rows.Count, CellObj);
       end
-      else
 {$IFDEF DebugIt}
-        ShowMessage('Table cell error, ReadHTML.pas, DoTable')
+      else
+        //ShowMessage('Table cell error, ReadHTML.pas, DoTable')
 {$ENDIF}
         ;
       SectionList := nil;
@@ -1564,11 +1583,11 @@ var
       AddSection;
       if TrDisplay <> pdNone then
       begin
-        if RowType <> TFoot then
-          Table.Rows.Add(Row)
-        else
-          FootList.Add(Row);
         Row.RowType := RowType;
+        if RowType = TFoot then
+          FootList.Add(Row)
+        else
+          Table.Rows.Add(Row);
       end
       else
         Row.Free;
@@ -1597,20 +1616,18 @@ begin
   CaptionBlock := nil;
   TopCaption := True;
   if PropStack.Last.Props[TextAlign] = 'center' then
-    SetJustify := centered
+    SetJustify := Centered
   else if PropStack.Last.Props[TextAlign] = 'right' then
     SetJustify := Right
   else
     SetJustify := NoJustify;
   PushNewProp('table', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
   Table := ThtmlTable.Create(PropStack.MasterList, Attributes, PropStack.Last);
-  NewBlock := TTableBlock.Create(PropStack.MasterList, PropStack.Last,
-    SaveSectionList, Table, Attributes, TableLevel);
+  NewBlock := TTableBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Table, Attributes, TableLevel);
   if (NewBlock.Justify <> Centered) and not (NewBlock.FloatLR in [ALeft, ARight]) then
     NewBlock.Justify := SetJustify;
   NewBlock.MyCell.Add(Table, TagIndex); {the only item in the cell}
-  CombineBlock := TTableAndCaptionBlock.Create(PropStack.MasterList, PropStack.Last,
-    SaveSectionList, Attributes, NewBlock); {will be needed if Caption found}
+  CombineBlock := TTableAndCaptionBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Attributes, NewBlock); {will be needed if Caption found}
   CM := nil;
   ColOK := True; {OK to add <col> info}
   FootList := TList.Create;
@@ -1625,7 +1642,7 @@ begin
       case Sy of
         TDSy, THSy:
           begin
-            ColOK := False; {no more <col> tags processed}
+            ColOK := False; {no more <colgroup> and <col> tags processed}
             if InHref then
               DoAEnd;
             CurrentStyle := SaveStyle;
@@ -1653,7 +1670,7 @@ begin
             begin
               CellNum := CM.FindColNum(Table.Rows.Count);
               if CellNum >= 0 then
-                with TColObj(Table.Cols[CellNum]) do
+                with Table.ColSpecs[CellNum] do
                 begin
                   if colAlign <> '' then {<col> alignments added here}
                     PropStack.Last.Assign(colAlign, TextAlign);
@@ -1669,18 +1686,17 @@ begin
                 PropStack.Last.Assign('left', TextAlign); {td}
             if (Attributes.TheStyle = nil) and (Table.BorderWidth > 0) then
             begin
-              if NewBlock.BorderStyle = bssOutset then
-                CellBorderStyle := bssInset
-              else if NewBlock.BorderStyle = bssInset then
-                CellBorderStyle := bssOutset
-              else
-                CellBorderStyle := NewBlock.BorderStyle;
-
               for S := BorderTopStyle to BorderLeftStyle do
               begin
                 V := PropStack.Last.Props[S];
                 if (VarType(V) in varInt) and (V = IntNull) then
-                  PropStack.Last.Props[S] := CellBorderStyle;
+                  if VarType(NewBlock.MargArrayO[S]) in varInt then
+                    case BorderStyleType(NewBlock.MargArrayO[S]) of
+                      bssInset:   PropStack.Last.Props[S] := bssOutset;
+                      bssOutset:  PropStack.Last.Props[S] := bssInset;
+                    else
+                      PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
+                    end;
               end;
               for S := BorderTopWidth to BorderLeftWidth do
               begin
@@ -1697,7 +1713,7 @@ begin
             end;
             CellObj := TCellObj.Create(PropStack.MasterList, VAlign, Attributes, PropStack.Last);
             SectionList := CellObj.Cell;
-            if ((CellObj.SpecWdValue = 0) or (CellObj.SpecWdType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then
+            if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then
               NoBreak := True {this seems to be what IExplorer does}
             else
               NoBreak := False;
@@ -1705,6 +1721,7 @@ begin
             Next;
             DoBody(TableTermSet);
           end;
+          
         CaptionSy:
           begin
             if InHref then
@@ -1716,8 +1733,7 @@ begin
               TopCaption := Lowercase(T.Name) <> 'bottom';
             PushNewProp('caption', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
             if not Assigned(CaptionBlock) then
-              CaptionBlock := TBlock.Create(PropStack.MasterList, PropStack.Last,
-                SaveSectionList, Attributes);
+              CaptionBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Attributes);
             SectionList := CaptionBlock.MyCell;
             Next;
             DoBody(TableTermSet);
@@ -1729,6 +1745,7 @@ begin
             if Sy = CaptionEndSy then
               Next; {else it's TDSy, THSy, etc}
           end;
+
         THeadSy, TBodySy, TFootSy, THeadEndSy, TBodyEndSy, TFootEndSy:
           begin
             AddRow; {if it hasn't been added already}
@@ -1745,16 +1762,19 @@ begin
                 end
                 else
                   RowType := TBody;
+
               TBodySy:
                 begin
                   RowType := TBody;
                   TdTh := 'tbody';
                 end;
+
               TFootSy:
                 begin
                   RowType := TFoot;
                   TdTh := 'tfoot';
                 end;
+
               THeadEndSy, TBodyEndSy, TFootEndSy:
                 RowType := TBody;
             end;
@@ -1762,11 +1782,13 @@ begin
               PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
             Next;
           end;
+
         TREndSy:
           begin
             AddRow;
             Next;
           end;
+
         TRSy:
           begin
             AddRow; {if it is still assigned}
@@ -1778,12 +1800,17 @@ begin
             RowVAlign := GetVAlign(AMiddle);
             Next;
           end;
+
         TDEndSy, THEndSy:
-          begin AddSection; Next; end;
+          begin
+            AddSection;
+            Next;
+          end;
+
         ColSy, ColGroupSy:
           begin
             DoColGroup(Table, ColOK);
-            if not Assigned(CM) and Assigned(Table.Cols) then
+            if not Assigned(CM) and Assigned(Table.ColSpecs) then
               CM := TCellManager.Create(Table);
           end;
       else
@@ -2071,13 +2098,6 @@ begin
 end;
 
 function THtmlParser.DoObjectTag(out C: ThtChar; out N, IX: Integer): Boolean;
-var
-  WantPanel: Boolean;
-  SL, Params: ThtStringList;
-  Prop: TProperties;
-  PO: TPanelObj;
-  S: ThtString;
-  T: TAttribute;
 
   procedure SavePosition;
   begin
@@ -2091,6 +2111,14 @@ var
     SavePosition;
     Next;
   end;
+
+var
+  WantPanel: Boolean;
+  SL, Params: ThtStringList;
+  Prop: TProperties;
+  PO: TPanelObj;
+  S: ThtString;
+  T: TAttribute;
 begin
   Result := False;
   if Assigned(CallingObject) then
@@ -2100,8 +2128,7 @@ begin
       SL := Attributes.CreateStringList;
       Result := True;
       if not Assigned(Section) then
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
-          CurrentUrlTarget, SectionList, True);
+        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
       PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
       Prop := PropStack.Last;
       PO := Section.CreatePanel(Attributes, SectionList);
@@ -2131,7 +2158,7 @@ begin
       end;
       if WantPanel then
       begin
-        if Prop.GetBorderStyle <> bssNone then {start of inline border}
+        if Prop.HasBorderStyle then {start of inline border}
           PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
         Section.AddPanel1(PO, TagIndex);
         PopAProp('object');
@@ -2221,7 +2248,7 @@ var
     PushNewProp('font', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
     Prop := TProperties(PropStack.Last);
     Prop.SetFontBG;
-    if Prop.GetBorderStyle <> bssNone then {start of inline border}
+    if Prop.HasBorderStyle then {start of inline border}
       PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
     if Colr in FontResults then
     begin
@@ -2428,7 +2455,7 @@ var
                           PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
                           Prop := TProperties(PropStack.Last);
                           Prop.SetFontBG;
-                          if Prop.GetBorderStyle <> bssNone then {start of inline border}
+                          if Prop.HasBorderStyle then {start of inline border}
                             PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                         end;
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
@@ -2483,7 +2510,7 @@ var
                       Attributes.TheTitle, Attributes.TheStyle);
                     Prop := TProperties(PropStack.Last);
                     Prop.SetFontBG;
-                    if Prop.GetBorderStyle <> bssNone then {start of inline border}
+                    if Prop.HasBorderStyle then {start of inline border}
                       PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                     Section.ChangeFont(PropStack.Last);
 
@@ -2673,7 +2700,7 @@ begin
             CurrentUrlTarget, SectionList, True);
         PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         Prop := PropStack.Last;
-        if Prop.GetBorderStyle <> bssNone then {start of inline border}
+        if Prop.HasBorderStyle then {start of inline border}
           PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
         if Sy = ImageSy then
           IO := Section.AddImage(Attributes, SectionList, TagIndex)
@@ -2755,7 +2782,7 @@ begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
               Prop := TProperties(PropStack.Last);
               Prop.SetFontBG;
-              if Prop.GetBorderStyle <> bssNone then {start of inline border}
+              if Prop.HasBorderStyle then {start of inline border}
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
           BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy:
@@ -2781,7 +2808,7 @@ begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
               Prop := TProperties(PropStack.Last);
               Prop.SetFontBG;
-              if Prop.GetBorderStyle <> bssNone then
+              if Prop.HasBorderStyle then
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
         end;
@@ -2799,7 +2826,7 @@ begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
               Prop := TProperties(PropStack.Last);
               Prop.SetFontBG;
-              if Prop.GetBorderStyle <> bssNone then
+              if Prop.HasBorderStyle then
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
           CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
@@ -2847,7 +2874,7 @@ begin
         PushNewProp('a', Attributes.TheClass, Attributes.TheID, Link, Attributes.TheTitle, Attributes.TheStyle);
         Prop := TProperties(PropStack.Last);
         Prop.SetFontBG;
-        if Prop.GetBorderStyle <> bssNone then {start of inline border}
+        if Prop.HasBorderStyle then {start of inline border}
           PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
         if not Assigned(Section) then
           Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last,
