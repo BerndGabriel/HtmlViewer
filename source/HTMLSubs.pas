@@ -5219,6 +5219,42 @@ begin
   Result := MargArray[piWidth];
 end;
 
+{This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
+model.  In those browsers, width and height include padding and border.}
+function GetContentHeight(AMargArray : TMarginArray; const AQuirksMode : Boolean) : Integer;
+begin
+  if AQuirksMode then begin
+    Result := AMargArray[piHeight] -
+        (AMargArray[BorderTopWidth] + AMargArray[BorderBottomWidth] +
+         AMargArray[PaddingTop] + AMargArray[PaddingBottom]);
+  end else begin
+    Result := AMargArray[piHeight];
+  end;
+end;
+
+function GetTotalWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
+  const AQuirksMode : Boolean) : Integer;
+begin
+  if AQuirksMode then begin
+    Result := AMargArray[MarginLeft] + ANewWidth + AMargArray[MarginRight];
+  end else begin
+    Result := ANewWidth +
+      AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
+      AMargArray[MarginRight] + AMargArray[PaddingRight] + AMargArray[BorderRightWidth];
+  end;
+end;
+
+function AdjustNewWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
+  const AQuirksMode : Boolean) : Integer;
+begin
+  if AQuirksMode then begin
+    Result := ANewWidth -
+      (AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
+       AMargArray[PaddingRight] + AMargArray[BorderRightWidth] )
+  end else begin
+    Result := ANewWidth;
+  end;
+end;
 
 {----------------TBlock.DrawLogic}
 
@@ -5250,11 +5286,13 @@ var
   end;
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
+  var LHeight : Integer;
   begin
-    if HideOverflow and (MargArray[piHeight] > 3) then
-      Result := ContentTop + MargArray[piHeight]
+    LHeight := GetContentHeight(MargArray, Document.QuirksMode);
+    if HideOverflow and (LHeight > 3) then
+      Result := ContentTop + LHeight
     else
-      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
+      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + LHeight);
   end;
 
 var
@@ -5288,7 +5326,8 @@ begin
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := MiscWidths + NewWidth;
+    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.QuirksMode);
+    NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.QuirksMode);
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
