@@ -1065,7 +1065,7 @@ end;
 procedure TWideStringList.CheckError(Index: integer);
 begin
   if (Index < 0) or (Index >= Fcount) then
-    raise Exception.Create(Format('Index %d out of range in TucStringList.', [Index]));
+    raise Exception.Create(Format('Index %d out of range in TWideStringList.', [Index]));
 end;
 
 function TWideStringList.Get(Index: integer): WideString;
@@ -1286,11 +1286,10 @@ end;
 procedure TWideStringList.Insert(Index: integer; const S: WideString);
 begin
   if Sorted then
-    raise Exception.Create('Operation not allowed on sorted list')
-  else begin
-    CheckError(Index);
-    InsertItem(Index, S);
-  end;
+    raise Exception.Create('Operation not allowed on sorted list');
+  if (Index < 0) or (Index > Fcount) then
+    raise Exception.Create(Format('Index %d out of range in TWideStringList.', [Index]));
+  InsertItem(Index, S);
 end;
 
 procedure TWideStringList.CustomSort(CompareFn: TWideStringListSortCompare);
