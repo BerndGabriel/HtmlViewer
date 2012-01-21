@@ -19,15 +19,40 @@
 
 <h2 align="center"><font color="#a00000">What's New</font></h2>
 
+<p class="heading">Version 11.2</p>
+<h5>Added</h5>
+<ul>
+  <li>Tags <b>&lt;col&gt;</b> and <b>&lt;colspan&gt;</b> support relative widths "n*".
+  <li>Added .xhtml and .xht file extensions for XHTML.  This will be rendered as HTML. (J. Peter Mugaas)
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Enhanced: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 40</a>: Optical bug in tables with columns with relative widths. Enhanced table formatting.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 59</a>: Image scaling error.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=101">Issue 101</a>: Floating images in tables appear in incorrect location.
+  <li>Fixed: Too much space below an image. Extra space distribution for inline image depends on image's vertical alignment.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=106">Issue 106</a>: Anchors are not working.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=107">Issue 107</a>: LoadTextFile produces an exception.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=108">Issue 108</a>: HTMLSubs.pas and C++Builder: E1025 Unsupported language feature: 'property of array type'.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=109">Issue 109</a>: C++Builder cannot handle properties that reference record members.<br>
+  <b style="color:blue">NOTICE: Properties BrdTop, BrdRight, BrdBottom, BrdLeft, PadTop, PadRight, PadBottom, PadLeft are provided for legacy support only and will be removed in a near future release. Please use properties Border and Padding instead.</b><br>
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=111">Issue 111</a>: CSS line-height BUG.
+  <li>Fixed: Access Violation in BumpHistory.
+  <li>Fixed: HtmlViewer vertically scrolls beyond end of document.
+  <li>Fixed: Html parser did not detect table sections (tfoot, tbody) after cells without end tag.
+</ul>
+
 <p class="heading">Version 11.1</p>
 <h5>Fixed and Changed</h5>
 <ul>
-  <li>Changed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=1">Issue 1</a>: Remove known compile time warnings.<br>All Delphi warnings and lots of Lazarus warnings removed.
-  <li>Changed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=88">Issue 88</a>: DoInclude now frees the parameter list.<br><b>NOTICE:</b> OnInclude event handlers must no longer free the Params:ThtStrings!
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=102">Issue 102</a>: Incorrect margins on adjacent elements. 
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=103">Issue 103</a>: Extra whitespace in preformatted blocks.<br>Now skipping empty first and last lines.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=104">Issue 104</a>: Percentage width calculation issues.<br>Rounding up 50% of an odd-numbered width two times exceeded width.
-  <li>Fixed: Occasional endless loop in GetCollection of style parsing.
+  <li>Fixed: Avoid endless loop in GetCollection.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=1">Issue 1</a>: Remove known compile time warnings. All Delphi warnings and lots of Lazarus warnings removed.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=88">Issue 88</a>: DoInclude and FreeAndNil of SL.<br>
+    Now freeing SL (renamed to Params) in DoInclude and not relying on cooperative IncludeEvent doing it for us.<br>
+    <b style="color:red">IMPORTANT: OnInclude event handler must no longer free the Params:ThtStrings!</b><br>
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=102">Issue 102</a>: Incorrect margins on adjacent elements.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=103">Issue 103</a>: Extra whitespace in preformatted blocks.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=104">Issue 104</a>: Percentage width calculation issuesPercentage width calculation issues.
 </ul>
 
 <p class="heading">Version 11</p>
@@ -36,7 +61,7 @@
   <li>HtmlViewer/FrameViewer developement available at <a href="http://github.com/BerndGabriel/HtmlViewer">http://github.com/BerndGabriel/HtmlViewer</a>.
   <li>Support Lazarus 0.9.30
   <li>Thoroughgoing unicode support in Delphi 6..2010 and Lazarus 0.9.30
-  <li>Enhanced support for styles <b>float</b> and <b>clear</b> 
+  <li>Enhanced support for styles <b>float</b> and <b>clear</b>  
 </ul>
 <h5>Fixed and Changed</h5>
 <ul>
