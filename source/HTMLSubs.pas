@@ -1526,6 +1526,24 @@ begin
   Result := Sum(Arr, Low(Arr), High(Arr));
 end;
 
+//-- BG ---------------------------------------------------------- 14.01.2012 --
+function Sum(const Arr: TIntegerPerWidthType; StartIndex, EndIndex: TWidthType): Integer; overload;
+// Return sum of array elements from StartIndex to EndIndex.
+var
+  I: TWidthType;
+begin
+  Result := 0;
+  for I := StartIndex to EndIndex do
+    Inc(Result, Arr[I]);
+end;
+
+//-- BG ---------------------------------------------------------- 14.01.2012 --
+function Sum(const Arr: TIntegerPerWidthType): Integer; overload;
+// Return sum of all array elements.
+begin
+  Result := Sum(Arr, Low(Arr), High(Arr));
+end;
+
 //-- BG ---------------------------------------------------------- 17.01.2012 --
 function SubArray(const Arr, Minus: IntArray; StartIndex, EndIndex: Integer): IntArray; overload;
 // Return sum of array elements from StartIndex to EndIndex.
@@ -9010,8 +9028,9 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
 
   var
     Specified: boolean;
-    NewWidth, MaxWidth, MinWidth, D, W: Integer;
-    Counts: TIntegerPerWidthType;
+    NewWidth, MaxWidth, MinWidth, D, W, I: Integer;
+    Counts, Minis: TIntegerPerWidthType;
+    wt: TWidthType;
   begin
     Specified := tblWidthAttr > 0;
     if Specified then
@@ -9037,30 +9056,57 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
     else
     begin
       // table fits into NewWidth. Shrink or expand columns to fit exactly into NewWidth.
-      Widths := Copy(MinWidths);
       SummarizeCountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
-      W := NewWidth - MinWidth;
 
-      if Counts[wtNone] > 0 then
+      SetArray(Minis, 0);
+      for I := 0 to NumCols - 1 do
       begin
-        // a) There is at least 1 column without any width constraint: modify this/these.
-        IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
-      end
-      else if Counts[wtRelative] > 0 then
+        wt := ColumnSpecs[I];
+        Inc(Minis[wt], MinWidths[I]);
+        case wt of
+          wtAbsolute:
+            Widths[I] := MinWidths[I];
+
+          wtPercent:
+            Widths[I] := MulDiv(NewWidth, Percents[I], 1000);
+        else
+          Widths[I] := MinWidths[I];
+        end;
+      end;
+      MinWidth := Sum(Widths);
+
+      if Sum(Minis) <= NewWidth then
       begin
-        // b) There is at least 1 column with relative width: modify this/these.
-        D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
-        IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
-      end
-      else if Counts[wtPercent] > 0 then
-      begin
-        // c) There is at least 1 column with percentage width: modify this/these.
-        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
+        // fill width by increasing columns.
+        // Prefer columns without or with relative specification.
+        if Counts[wtNone] > 0 then
+        begin
+          // a) There is at least 1 column without any width constraint: modify this/these.
+          IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
+        end
+        else if Counts[wtRelative] > 0 then
+        begin
+          // b) There is at least 1 column with relative width: modify this/these.
+          W := NewWidth - MinWidth;
+          D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
+          IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
+        end
+        else if Counts[wtPercent] > 0 then
+        begin
+          // c) There is at least 1 column with percentage width: modify this/these.
+          IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
+        end
+        else
+        begin
+          // d) All columns have absolute widths: modify relative to current width.
+          IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+        end;
       end
       else
       begin
-        // d) All columns have absolute widths: modify relative to current width.
-        IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+        // table is too small for given absolute and precentage specifications.
+        // Reduce percentages. All other columns are at minimum.
+        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
       end;
     end;
 
@@ -14348,7 +14394,7 @@ begin
   Result := Get(Index);
 end;
 
-{ TColList }
+{ TColSpecList }
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
 function TColSpecList.GetItem(Index: Integer): TColSpec;
