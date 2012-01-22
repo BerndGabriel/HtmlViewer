@@ -9073,7 +9073,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
   var
     Specified: boolean;
     NewWidth, MaxWidth, MinWidth, D, W, I: Integer;
-    Counts, Minis: TIntegerPerWidthType;
+    Counts: TIntegerPerWidthType;
     wt: TWidthType;
   begin
     Specified := tblWidthAttr > 0;
@@ -9092,37 +9092,37 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
 
     {fill in the Widths array}
     if MinWidth >= NewWidth then
-      // table fits exactly with minimum widths or is too wide, use minimum widths, table might expand.
+      // The minimum table width fits exactly or is too wide. Thus use minimum widths, table might expand.
       Widths := Copy(MinWidths)
-    else if not Specified and (MaxWidth <= NewWidth) then
-      // table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
-      Widths := Copy(MaxWidths)
     else
     begin
-      // table fits into NewWidth. Shrink or expand columns to fit exactly into NewWidth.
-      SummarizeCountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
+      // Table fits into NewWidth.
 
-      SetArray(Minis, 0);
+      // Calculate widths with respect to percentage specifications.
       for I := 0 to NumCols - 1 do
       begin
         wt := ColumnSpecs[I];
-        Inc(Minis[wt], MinWidths[I]);
         case wt of
-          wtAbsolute:
-            Widths[I] := MinWidths[I];
-
           wtPercent:
-            Widths[I] := MulDiv(NewWidth, Percents[I], 1000);
+            Widths[I] := Max(MinWidths[I], MulDiv(NewWidth, Percents[I], 1000));
         else
           Widths[I] := MinWidths[I];
         end;
       end;
       MinWidth := Sum(Widths);
 
-      if Sum(Minis) <= NewWidth then
+      if MinWidth > NewWidth then
+        // Table is too small for given precentage specifications.
+        // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
+        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
+      else if not Specified and (MaxWidth <= NewWidth) then
+        // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
+        Widths := Copy(MaxWidths)
+      else
       begin
-        // fill width by increasing columns.
-        // Prefer columns without or with relative specification.
+        // Expand columns to fit exactly into NewWidth.
+        // Prefer widening columns without or with relative specification.
+        SummarizeCountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
         if Counts[wtNone] > 0 then
         begin
           // a) There is at least 1 column without any width constraint: modify this/these.
@@ -9145,12 +9145,6 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           // d) All columns have absolute widths: modify relative to current width.
           IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
         end;
-      end
-      else
-      begin
-        // table is too small for given absolute and precentage specifications.
-        // Reduce percentages. All other columns are at minimum.
-        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
       end;
     end;
 
