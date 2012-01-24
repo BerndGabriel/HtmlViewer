@@ -1428,7 +1428,7 @@ end;
 constructor TSubFrameSetBase.CreateIt(AOwner: TComponent; Master: TFrameSetBase);
 begin
   inherited Create(AOwner);
-  QuirksMode := qmDetect;
+  QuirksMode := Master.QuirksMode;
   FMasterSet := Master;
   if AOwner is TFrameBase then
     LocalCharSet := TSubFrameSetBase(AOwner).LocalCharSet;

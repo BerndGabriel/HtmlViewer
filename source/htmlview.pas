@@ -329,7 +329,6 @@ type
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
   protected
-    FQuirksMode : THtQuirksMode;
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     function GetPalette: HPALETTE; override;
     function HotSpotClickHandled: Boolean; dynamic;
@@ -718,8 +717,6 @@ begin
   FImagesInserted.Enabled := False;
   FImagesInserted.Interval := 100;
   FImagesInserted.OnTimer := ImagesInsertedTimer;
-
-  FQuirksMode := qmDetect;
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
   DoScrollBars;
@@ -735,6 +732,7 @@ begin
   inherited CreateCopy(Owner, Viewer);
   if Source is THtmlViewer then
   begin
+    Self.QuirksMode := Viewer.QuirksMode;
     FBase := Viewer.FBase;
     FBaseEx := Viewer.FBaseEx;
     FBaseTarget := Viewer.FBaseTarget;
@@ -975,7 +973,7 @@ begin
       try
         //handle quirks mode settings
         if (DocType = HTMLType) then begin
-          case FQuirksMode of
+          case QuirksMode of
             qmDetect :
               begin
                 with THtmlParser.Create(Document) do
