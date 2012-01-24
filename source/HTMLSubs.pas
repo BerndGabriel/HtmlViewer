@@ -1315,6 +1315,7 @@ type
 
   ThtDocument = class(TCell) {a list of all the sections -- the html document}
   private
+    FUseQuirksMode : Boolean;
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
   public
@@ -1397,7 +1398,7 @@ type
     ScaleX, ScaleY: single;
     SkipDraw: boolean;
 
-    QuirksMode : Boolean;
+
     constructor Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
     constructor CreateCopy(T: ThtDocument);
     destructor Destroy; override;
@@ -1431,6 +1432,7 @@ type
       AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
       LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
       MarginHeight, MarginWidth: Integer);
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
   end;
 
 //------------------------------------------------------------------------------
@@ -5221,9 +5223,9 @@ end;
 
 {This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
 model.  In those browsers, width and height include padding and border.}
-function GetContentHeight(AMargArray : TMarginArray; const AQuirksMode : Boolean) : Integer;
+function GetContentHeight(AMargArray : TMarginArray; const AUseQuirksMode : Boolean) : Integer;
 begin
-  if AQuirksMode then begin
+  if AUseQuirksMode then begin
     Result := AMargArray[piHeight] -
         (AMargArray[BorderTopWidth] + AMargArray[BorderBottomWidth] +
          AMargArray[PaddingTop] + AMargArray[PaddingBottom]);
@@ -5233,9 +5235,9 @@ begin
 end;
 
 function GetTotalWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AQuirksMode : Boolean) : Integer;
+  const AUseQuirksMode : Boolean) : Integer;
 begin
-  if AQuirksMode then begin
+  if AUseQuirksMode then begin
     Result := AMargArray[MarginLeft] + ANewWidth + AMargArray[MarginRight];
   end else begin
     Result := ANewWidth +
@@ -5245,9 +5247,9 @@ begin
 end;
 
 function AdjustNewWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AQuirksMode : Boolean) : Integer;
+  const AUseQuirksMode : Boolean) : Integer;
 begin
-  if AQuirksMode then begin
+  if AUseQuirksMode then begin
     Result := ANewWidth -
       (AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
        AMargArray[PaddingRight] + AMargArray[BorderRightWidth] )
@@ -5288,7 +5290,7 @@ var
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   var LHeight : Integer;
   begin
-    LHeight := GetContentHeight(MargArray, Document.QuirksMode);
+    LHeight := GetContentHeight(MargArray, Document.UseQuirksMode);
     if HideOverflow and (LHeight > 3) then
       Result := ContentTop + LHeight
     else
@@ -5326,8 +5328,8 @@ begin
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.QuirksMode);
-    NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.QuirksMode);
+    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.UseQuirksMode);
+    NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -6791,7 +6793,7 @@ end;
 constructor ThtDocument.Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
 begin
   inherited Create(Self, nil);
-  QuirksMode := False;
+  UseQuirksMode := Owner.UseQuirksMode;
   TheOwner := Owner;
   PPanel := APaintPanel;
   IDNameList := TIDObjectList.Create; //(Self);
@@ -6839,7 +6841,7 @@ begin
   ScaleX := 1.0;
   ScaleY := 1.0;
 
-  QuirksMode := T.QuirksMode;
+  UseQuirksMode := T.UseQuirksMode;
 end;
 
 destructor ThtDocument.Destroy;
@@ -7264,7 +7266,7 @@ procedure ThtDocument.SetFonts(const Name, PreName: ThtString; ASize: Integer;
   LnksActive: boolean; LinkUnderLine: boolean; ACharSet: TFontCharSet;
   MarginHeight, MarginWidth: Integer);
 begin
-  Styles.QuirksMode := Self.QuirksMode;
+
   Styles.Initialize(Name, PreName, ASize, AColor, AHotspot, AVisitedColor,
     AActiveColor, LinkUnderLine, ACharSet, MarginHeight, MarginWidth);
   InitializeFontSizes(ASize);
@@ -13404,10 +13406,7 @@ procedure THtmlPropStack.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: T
 var
   NewProp: TProperties;
 begin
-  NewProp := TProperties.Create(self);
-  if Assigned(Document) then begin
-    NewProp.QuirksMode := Document.QuirksMode;
-  end;
+  NewProp := TProperties.Create(self, Document.UseQuirksMode);
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
   NewProp.Combine(Document.Styles, Tag, AClass, AnID, APseudo, ATitle, AProps, Count - 1);
@@ -13448,6 +13447,7 @@ constructor THtmlStyleList.Create(AMasterList: ThtDocument);
 begin
   inherited Create;
   Document := AMasterList;
+  Self.FUseQuirksMode := Document.UseQuirksMode;
 end;
 
 //-- BG ---------------------------------------------------------- 08.03.2011 --

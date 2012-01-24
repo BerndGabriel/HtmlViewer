@@ -255,7 +255,6 @@ type
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 
-    // set to determine if child objects should be in "quirks" mode
     FUseQuirksMode : Boolean;
     function CreateHeaderFooter: THtmlViewer;
     function GetBaseTarget: ThtString;
@@ -444,7 +443,7 @@ type
     procedure SetImageCache(ImageCache: ThtImageCache);
     procedure TriggerUrlAction;
     procedure UrlAction;
-
+    property UseQuirksMode : Boolean read FUseQuirksMode;
     property Base: ThtString read FBase write SetBase;
     property BaseEx: ThtString read FBaseEx write FBaseEx;
     property BaseTarget: ThtString read GetBaseTarget;
@@ -720,7 +719,7 @@ begin
   FImagesInserted.Interval := 100;
   FImagesInserted.OnTimer := ImagesInsertedTimer;
 
-  FQuirksMode := Detect;
+  FQuirksMode := qmDetect;
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
   DoScrollBars;
@@ -977,7 +976,7 @@ begin
         //handle quirks mode settings
         if (DocType = HTMLType) then begin
           case FQuirksMode of
-            detect :
+            qmDetect :
               begin
                 with THtmlParser.Create(Document) do
                 try
@@ -986,11 +985,11 @@ begin
                   Free;
                 end;
               end;
-            standards :
+            qmStandards :
               begin
                 FUseQuirksMode := False;
               end;
-            quirks :
+            qmQuirks :
               begin
                 FUseQuirksMode := True;
               end;
@@ -998,7 +997,7 @@ begin
         end else begin
           FUseQuirksMode := False;
         end;
-
+        Self.FSectionList.UseQuirksMode := FUseQuirksMode;
         // terminate old document
         InitLoad;
         CaretPos := 0;
@@ -4377,7 +4376,7 @@ begin
     Include(FViewerState, vsLocalImageCache);
   end;
   FSectionList.Clear;
-  FSectionList.QuirksMode := FUseQuirksMode;
+  FSectionList.UseQuirksMode := FUseQuirksMode;
   UpdateImageCache;
   FSectionList.SetFonts(
     DefFontName, DefPreFontName, DefFontSize, DefFontColor,
@@ -4394,7 +4393,7 @@ begin
   if IsProcessing then
     Exit;
   HTMLTimer.Enabled := False;
-  FSectionList.QuirksMode := FUseQuirksMode;
+  FSectionList.UseQuirksMode := FUseQuirksMode;
   FSectionList.Clear;
   if vsLocalImageCache in FViewerState then
     FSectionList.ImageCache.Clear;

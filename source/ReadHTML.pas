@@ -136,6 +136,7 @@ type
     MetaEvent: TMetaType;
     LinkEvent: TLinkType;
 
+    FUseQuirksMode : Boolean;
     procedure GetCh;
 
     function DoCharSet(Content: ThtString): Boolean;
@@ -1340,7 +1341,7 @@ var
   IsFieldsetLegend: Boolean;
 begin
   case Sym of
-    DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy :
+    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy :
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -3692,7 +3693,7 @@ begin
                       PropStack.Last.Assign('fixed', BackgroundAttachment);
                 end;
 {.$IFDEF Quirk}
-            if PropStack.Document.QuirksMode then begin
+            if PropStack.Document.UseQuirksMode then begin
               PropStack.Document.Styles.FixupTableColor(PropStack.Last);
             end;
 {.$ENDIF}
@@ -3799,18 +3800,13 @@ end;
 {----------------ParseInit}
 
 procedure THtmlParser.ParseInit(ASectionList: ThtDocument);
-var LProp : TProperties;
 begin
   SectionList := ASectionList;
-
+  FUseQuirksMode := ASectionList.UseQuirksMode;
   PropStack.Document := ASectionList;
   CallingObject := ASectionList.TheOwner;
   PropStack.Clear;
-  LProp := TProperties.Create(PropStack);
-  if Assigned(PropStack.Document) then begin
-    LProp.QuirksMode := PropStack.Document.QuirksMode;
-  end;
-  PropStack.Add(LProp);
+  PropStack.Add(TProperties.Create(PropStack,FUseQuirksMode));
   PropStack[0].CopyDefault(PropStack.Document.Styles.DefProp);
   PropStack.SIndex := -1;
 
@@ -3988,15 +3984,12 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   procedure Parse;
   var
     SetExit: Boolean;
-    LProp : TProperties;
   begin
     SetExit := False;
     PropStack.Clear;
-    LProp := TProperties.Create(PropStack);
-    if Assigned(PropStack.Document) then begin
-      LProp.QuirksMode := PropStack.Document.QuirksMode;
-    end;
-    PropStack.Add(LProp);
+
+    PropStack.Add(TProperties.Create(PropStack,FUseQuirksMode ));
+
     GetCh; {get the reading started}
     Next;
     repeat
@@ -4063,15 +4056,11 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
   function Parse: Boolean;
   var
     SetExit: Boolean;
-    LProp : TProperties;
+
   begin
     Result := False;
     PropStack.Clear;
-    LProp := TProperties.Create(PropStack);
-    if Assigned(PropStack.Document) then begin
-      LProp.QuirksMode := PropStack.Document.QuirksMode;
-    end;
-    PropStack.Add(LProp);
+    PropStack.Add(TProperties.Create(PropStack, FUseQuirksMode ));
     SetExit := False;
     GetCh; {get the reading started}
     Next;
@@ -4572,7 +4561,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..88] of TResWord = (
+  ResWordDefinitions: array[1..89] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4658,6 +4647,7 @@ const
     (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy),
     {HTML5 }
     (Name: 'HEADER';      Symbol: HeaderSy;     EndSym: HeaderEndSy),
+    (Name: 'SECTION';     Symbol: SectionSy;    EndSym: SectionEndSy),
     (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
     (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),

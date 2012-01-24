@@ -62,7 +62,7 @@ const
   BrkCh = WideChar(#8);
 
 type
-  THtQuirksMode = (detect, standards, quirks);
+  THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -120,6 +120,7 @@ type
     ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy,
     {HTML5 elements}
     HeaderSy, HeaderEndSy,
+    SectionSy, SectionEndSy,
     NavSy, NavEndSy,
     ArticleSy, ArticleEndSy,
     AsideSy, AsideEndSy,
@@ -643,6 +644,9 @@ type
   end;
 
   THtmlViewerBase = class(TViewerBase)
+  private
+    // set to determine if child objects should be in "quirks" mode
+    FUseQuirksMode : Boolean;
   public
     TablePartRec: TTablePartRec;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
@@ -650,6 +654,8 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    // set to determine if child objects should be in "quirks" mode
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -1377,7 +1383,7 @@ begin
   if Find(StyleSy, T) then
   begin
     Prop.Free;
-    Prop := TProperties.Create;
+    Prop := TProperties.Create(False);
     Result := Prop;
     ParsePropertyStr(T.Name, Result);
   end
@@ -2982,7 +2988,7 @@ begin
   DefFontName := 'Times New Roman';
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
-  FQuirksMode := detect;
+  FQuirksMode := qmDetect;
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --

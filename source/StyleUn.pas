@@ -132,6 +132,7 @@ type
     TheFont: ThtFont;
     InLink: Boolean;
     DefFontname: ThtString;
+    FUseQuirksMode : Boolean;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
     procedure AssignCharSet(CS: TFontCharset);
     procedure AssignCodePage(const CP: Integer);
@@ -148,10 +149,9 @@ type
     Originals: array[PropIndices] of Boolean;
     FIArray: TFontInfoArray;
     ID: Integer;
-
-    QuirksMode : Boolean;
-    constructor Create(APropStack: TPropStack); overload; // for use in property stack
-    constructor Create; overload; // for use in style list only
+    constructor Create; overload;
+    constructor Create(APropStack: TPropStack; const AUseQuirksMode : Boolean); overload; // for use in property stack
+    constructor Create(const AUseQuirksMode : Boolean); overload; // for use in style list only
     destructor Destroy; override;
     function BorderStyleNotBlank: Boolean;
     function Collapse: Boolean;
@@ -201,13 +201,18 @@ type
   TStyleList = class(ThtStringList)
   private
     SeqNo: Integer;
+
   protected
+    //this must be protected so that the property can be changed in
+    //a descendant while being read only.
+    FUseQuirksMode : Boolean;
     procedure setLinksActive(Value: Boolean); virtual; abstract;
     property LinksActive: Boolean write setLinksActive;
   public
     DefProp: TProperties;
-    QuirksMode : Boolean;
-    constructor Create;
+
+    constructor Create; overload;
+    constructor Create(const AUseQuirksMode : Boolean); overload;
     destructor Destroy; override;
     function AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
     function AddObject(const S: ThtString; AObject: TObject): Integer; override;
@@ -221,6 +226,7 @@ type
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TPropStack = class(TObjectList)
@@ -321,14 +327,21 @@ begin
   for I := MarginTop to LeftPos do
     Props[I] := IntNull;
   Props[ZIndex] := 0;
-  QuirksMode := False;
+  FUseQuirksMode := False;
+end;
+
+constructor TProperties.Create(const AUseQuirksMode : Boolean);
+begin
+  Create;
+  FUseQuirksMode := AUseQuirksMode;
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
-constructor TProperties.Create(APropStack: TPropStack);
+constructor TProperties.Create(APropStack: TPropStack; const AUseQuirksMode : Boolean);
 begin
   Create;
   self.PropStack := APropStack;
+  FUseQuirksMode := AUseQuirksMode;
 end;
 
 destructor TProperties.Destroy;
@@ -1568,14 +1581,15 @@ procedure TProperties.Combine(Styles: TStyleList;
 
   begin
   {.$IFDEF Quirk}
-    if QuirksMode then begin
-        if (Tag = 'td') or (Tag = 'th') then
-          OldSize := DefPointSize
-       else
+    if FUseQuirksMode then begin
+       if (Tag = 'td') or (Tag = 'th') then begin
+          OldSize := DefPointSize;
+       end else begin
           if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
             OldSize := Props[FontSize]
           else
             OldSize := DefPointSize;
+       end;
     end else begin
       if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
         OldSize := Props[FontSize]
@@ -1826,11 +1840,8 @@ procedure TProperties.CalcLinkFontInfo(Styles: TStyleList; I: Integer);
 {I is index in PropStack for this item}
 
   procedure InsertNewProp(N: Integer; const Pseudo: ThtString);
-  var LProp : TProperties;
   begin
-    LProp := TProperties.Create(PropStack);
-    LProp.QuirksMode := QuirksMode;
-    PropStack.Insert(N, LProp);
+    PropStack.Insert(N, TProperties.Create(PropStack,FUseQuirksMode));
     PropStack[N].Inherit('', PropStack[N - 1]);
     PropStack[N].Combine(Styles, PropTag, PropClass, PropID, Pseudo, PropTitle, PropStyle, N - 1);
   end;
@@ -1964,6 +1975,13 @@ begin
   Sorted := True;
   Duplicates := dupAccept;
   SeqNo := 10;
+  FUseQuirksMode := False;
+end;
+
+constructor TStyleList.Create(const AUseQuirksMode: Boolean);
+begin
+  Create;
+  FUseQuirksMode := AUseQuirksMode;
 end;
 
 destructor TStyleList.Destroy;
@@ -1997,15 +2015,18 @@ var
   Propty1: TProperties;
   I: Integer;
 begin
-  if Find('td', I) then
-  begin
-    Propty1 := TProperties(Objects[I]);
-    Propty1.Props[Color] := BodyProp.Props[Color];
-  end;
-  if Find('th', I) then
-  begin
-    Propty1 := TProperties(Objects[I]);
-    Propty1.Props[Color] := BodyProp.Props[Color];
+  if Self.UseQuirksMode then begin
+
+    if Find('td', I) then
+    begin
+      Propty1 := TProperties(Objects[I]);
+      Propty1.Props[Color] := BodyProp.Props[Color];
+    end;
+    if Find('th', I) then
+    begin
+      Propty1 := TProperties(Objects[I]);
+      Propty1.Props[Color] := BodyProp.Props[Color];
+    end;
   end;
 end;
 {.$ENDIF}
@@ -2024,8 +2045,7 @@ begin
     if not Find(Selector, I) then
     begin
       NewProp := True;
-      Propty := TProperties.Create(); {newly created property}
-      Propty.QuirksMode := QuirksMode;
+      Propty := TProperties.Create(FUseQuirksMode); {newly created property}
     end
     else
     begin
@@ -2116,9 +2136,10 @@ begin
       AddModifyProp('::link', Prop, Value); {also applies to ::link}
     end;
 {/$IFDEF Quirk}
-    if QuirksMode then begin
-      if (Selector = 'body') and (PropIndex = Color) then
+    if UseQuirksMode then begin
+      if (Selector = 'body') and (PropIndex = Color) then begin
         FixupTableColor(Propty);
+      end;
     end;
 {/$ENDIF}
   end;
@@ -2132,8 +2153,7 @@ end;
 
 function TStyleList.AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
 begin
-  Result := TProperties.Create(Prop.PropStack);
-  Result.QuirksMode := QuirksMode;
+  Result := TProperties.Create(Prop.PropStack,FUseQuirksMode);
   Result.Copy(Prop);
   AddObject(Tag, Result);
 end;
@@ -2165,8 +2185,7 @@ begin
   Clear;
   DefPointSize := PointSize;
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.DefFontname := FontName;
   Properties.Props[FontFamily] := FontName;
   Properties.Props[FontSize] := PointSize;
@@ -2189,10 +2208,8 @@ begin
   DefProp := Properties;
 
 {/$IFDEF Quirk}
-  if QuirksMode then begin
-
-    Properties := TProperties.Create;
-    Properties.QuirksMode := QuirksMode;
+  if UseQuirksMode then begin
+    Properties := TProperties.Create(UseQuirksMode);
     Properties.Props[FontSize] := PointSize * 1.0;
     Properties.Props[FontStyle] := 'none';
     Properties.Props[FontWeight] := 'normal';
@@ -2203,8 +2220,7 @@ begin
   end;
 {/$ENDIF}
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AHotSpot or PalRelative;
   if LinkUnderline then
     Properties.Props[TextDecoration] := 'underline'
@@ -2212,23 +2228,19 @@ begin
     Properties.Props[TextDecoration] := 'none';
   AddObject('::link', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AVisitedColor or PalRelative;
   AddObject('::visited', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AActiveColor or PalRelative;
   AddObject('::hover', Properties);
   AddDuplicate(':hover', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   AddObject('null', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontFamily] := PreFontName;
   Properties.Props[FontSize] := PointSize * 10.0 / 12.0;
   Properties.Props[FontStyle] := 'none';
@@ -2236,21 +2248,18 @@ begin
   Properties.Props[TextDecoration] := 'none';
   AddObject('pre', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[MarginTop] := AutoParagraph;
   Properties.Props[MarginBottom] := AutoParagraph;
   AddObject('p', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[MarginTop] := 0;
   AddObject('p 11pre', Properties);
 
   for J := Low(ListTypes) to High(ListTypes) do
   begin
-    Properties := TProperties.Create;
-    Properties.QuirksMode := QuirksMode;
+    Properties := TProperties.Create(UseQuirksMode);
     case J of
       ol, ul, menu, dir:
       begin
@@ -2286,8 +2295,7 @@ begin
     AddObject(ListStr[J], Properties);
   end;
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontFamily] := PrefontName;
   Properties.Props[FontSize] := '0.83em'; {10.0 / 12.0;}
   AddObject('code', Properties);
@@ -2295,46 +2303,40 @@ begin
   AddDuplicate('kbd', Properties);
   AddDuplicate('samp', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontWeight] := 'bold';
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
 {.$IFNDEF Quirk}
-  if QuirksMode = False then begin
+  if UseQuirksMode = False then begin
+
     AddDuplicate('th', Properties);
   end;
 {.$ENDIF}
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   Properties.Props[VerticalAlign] := 'super';
   AddObject('sup', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   Properties.Props[VerticalAlign] := 'sub';
   AddObject('sub', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '1.17em';
   AddObject('big', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextAlign] := 'none';
   AddObject('table', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontStyle] := 'italic';
   AddObject('i', Properties);
   AddDuplicate('em', Properties);
@@ -2343,25 +2345,21 @@ begin
 
   AddDuplicate('address', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'underline';
   AddObject('u', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'line-through';
   AddObject('s', Properties);
   AddDuplicate('strike', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextAlign] := 'center';
   AddObject('center', Properties);
   AddDuplicate('caption', Properties);
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontFamily] := 'Arial Unicode MS, Arial';
   Properties.Props[FontSize] := '10pt';
   Properties.Props[FontStyle] := 'none';
@@ -2378,8 +2376,7 @@ begin
   else
     Properties.Props[FontFamily] := PreFontName;
 
-  Properties := TProperties.Create;
-  Properties.QuirksMode := QuirksMode;
+  Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[MarginLeft] := 0;
   Properties.Props[MarginRight] := 0;
   Properties.Props[MarginTop] := 10;
@@ -2388,8 +2385,7 @@ begin
 
   for HIndex := 1 to 6 do
   begin
-    Properties := TProperties.Create;
-    Properties.QuirksMode := QuirksMode;
+    Properties := TProperties.Create(UseQuirksMode);
     F := PointSize / 12.0;
     case HIndex of
       1: Properties.Props[FontSize] := 24.0 * F;
