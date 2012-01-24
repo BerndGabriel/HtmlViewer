@@ -255,7 +255,6 @@ type
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 
-    FUseQuirksMode : Boolean;
     function CreateHeaderFooter: THtmlViewer;
     function GetBaseTarget: ThtString;
     function GetCursor: TCursor;
@@ -442,7 +441,6 @@ type
     procedure SetImageCache(ImageCache: ThtImageCache);
     procedure TriggerUrlAction;
     procedure UrlAction;
-    property UseQuirksMode : Boolean read FUseQuirksMode;
     property Base: ThtString read FBase write SetBase;
     property BaseEx: ThtString read FBaseEx write FBaseEx;
     property BaseTarget: ThtString read GetBaseTarget;

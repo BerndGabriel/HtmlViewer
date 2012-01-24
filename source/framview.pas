@@ -333,10 +333,10 @@ type
   private
     FMasterSet: TFrameSetBase; {Points to top (master) TFrameSetBase}
     FOwner: TSubFrameSetBase;
+    FQuirksMode : THtQuirksMode;
   protected
     UnLoaded: boolean;
     LocalCharSet: TFontCharset;
-    FQuirksMode : THtQuirksMode;
     procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
 
     procedure FVMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;

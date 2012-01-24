@@ -644,8 +644,9 @@ type
   end;
 
   THtmlViewerBase = class(TViewerBase)
-  private
+  protected
     // set to determine if child objects should be in "quirks" mode
+    //This must be protected because it's set directly in a descendant
     FUseQuirksMode : Boolean;
   public
     TablePartRec: TTablePartRec;

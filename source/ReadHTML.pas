@@ -184,6 +184,7 @@ type
     property Base: ThtString read FBase;
     property BaseTarget: ThtString read FBaseTarget;
     property Title: ThtString read getTitle;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
 function TryStrToReservedWord(const Str: ThtString; out Sy: Symb): Boolean;
@@ -3693,7 +3694,7 @@ begin
                       PropStack.Last.Assign('fixed', BackgroundAttachment);
                 end;
 {.$IFDEF Quirk}
-            if PropStack.Document.UseQuirksMode then begin
+            if FUseQuirksMode then begin
               PropStack.Document.Styles.FixupTableColor(PropStack.Last);
             end;
 {.$ENDIF}
