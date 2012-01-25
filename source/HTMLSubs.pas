@@ -4963,12 +4963,12 @@ begin
     pdInline: Result := inherited GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
 {$endif}
   else
+    Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
     if (BlockTitle <> '') and PtInRect(MyRect, Point(X, Y - Document.YOFF)) then
     begin
       ATitle := BlockTitle;
       Include(Result, guTitle);
     end;
-    Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
   end;
 end;
 
@@ -6842,12 +6842,12 @@ function TBodyBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
   out ATitle: ThtString): guResultType;
 begin
+  Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
   if (BlockTitle <> '') then
   begin
     ATitle := BlockTitle;
-    Result := [guTitle];
+    Include(Result, guTitle);
   end;
-  Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
 end;
 
 {----------------TBodyBlock.DrawLogic}
