@@ -62,6 +62,7 @@ const
   BrkCh = WideChar(#8);
 
 type
+  THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -116,7 +117,14 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy);
+    ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy,
+    {HTML5 elements}
+    HeaderSy, HeaderEndSy,
+    SectionSy, SectionEndSy,
+    NavSy, NavEndSy,
+    ArticleSy, ArticleEndSy,
+    AsideSy, AsideEndSy,
+    FooterSy, FooterEndSy);
 
 //------------------------------------------------------------------------------
 
@@ -501,7 +509,9 @@ type
     FOnProgress: ThtProgressEvent;
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
+    FQuirksMode : THtQuirksMode;
   protected
+    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
     procedure SetActiveColor(const Value: TColor); virtual;
     procedure SetCharset(const Value: TFontCharset); virtual;
     procedure SetCodePage(const Value: Integer); virtual;
@@ -564,6 +574,7 @@ type
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
     // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
     procedure Load(const Url: ThtString); virtual; abstract;
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
     property CodePage: Integer read FCodePage write SetCodePage;
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
@@ -633,6 +644,10 @@ type
   end;
 
   THtmlViewerBase = class(TViewerBase)
+  protected
+    // set to determine if child objects should be in "quirks" mode
+    //This must be protected because it's set directly in a descendant
+    FUseQuirksMode : Boolean;
   public
     TablePartRec: TTablePartRec;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
@@ -640,6 +655,8 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    // set to determine if child objects should be in "quirks" mode
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -1367,7 +1384,7 @@ begin
   if Find(StyleSy, T) then
   begin
     Prop.Free;
-    Prop := TProperties.Create;
+    Prop := TProperties.Create(False);
     Result := Prop;
     ParsePropertyStr(T.Name, Result);
   end
@@ -2972,6 +2989,7 @@ begin
   DefFontName := 'Times New Roman';
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
+  FQuirksMode := qmDetect;
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
@@ -3000,7 +3018,7 @@ begin
   PrintMarginTop := Source.PrintMarginTop;
   PrintMaxHPages := Source.PrintMaxHPages;
   PrintScale := Source.PrintScale;
-
+  FQuirksMode := Source.QuirksMode;
   HistoryMaxCount := Source.HistoryMaxCount;
   ImageCacheCount := Source.ImageCacheCount;
   VisitedMaxCount := Source.VisitedMaxCount;
@@ -3310,6 +3328,11 @@ end;
 procedure TViewerBase.SetPrintScale(const Value: Double);
 begin
   FPrintScale := Value;
+end;
+
+procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
+begin
+  FQuirksMode := AValue;
 end;
 
 procedure TViewerBase.SetServerRoot(const Value: ThtString);
