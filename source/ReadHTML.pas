@@ -605,8 +605,6 @@ begin
   end;
 end;
 
-{-------------SkipWhiteSpace}
-
 function THtmlParser.ShouldUseQuirksMode: Boolean;
 {
 This is not in ParseHTML because quirks mode effects
@@ -692,102 +690,102 @@ var LId : ThtString;
   end;
 
   function ScanDTD : Boolean;
-  var LPart : ThtString;
+  var
+    LPart : ThtString;
   begin
     Result := False;
     SkipWhiteSpace;
 
     ScanDTDIdentifier(LPart);
-    if htUpperCase(LPart) = htUpperCase('HTML') then begin
+    if htUpperCase(LPart) = htUpperCase('HTML') then
+    begin
       GetChBasic;
-      if LCh = GreaterChar then begin
+      if LCh = GreaterChar then
+      begin
         //HTML5 - don't use quirks mode
         Result := True;
         exit;
       end;
       ScanDTDIdentifier(LPart);
-      if htUpperCase(LPart) <> htUpperCase('PUBLIC') then begin
+      if htUpperCase(LPart) <> htUpperCase('PUBLIC') then
         exit;
-      end;
       SkipWhiteSpace;
-      if LCh = '"' then begin
+      if LCh = '"' then
         GetChBasic;
-      end;
       SkipWhiteSpace;
       ScanDTDIdentifier(LPart);
-      if htUpperCase(LPart) <> htUpperCase('-//W3C//DTD') then begin
+      if htUpperCase(LPart) <> htUpperCase('-//W3C//DTD') then
         exit;
-      end;
       SkipWhiteSpace;
       ScanDTDIdentifier(LPart);
-      if (htUpperCase(LPart) = htUpperCase('HTML')) then begin
+      LPart := htUpperCase(LPart);
+      if LPart = htUpperCase('HTML') then
+      begin
         SkipWhiteSpace;
         ScanDTDIdentifier(LPart);
         Result := (LPart = '4.01');
         exit;
       end;
-      if (htUpperCase(LPart) = htUpperCase('XHTML')) then begin
+      if LPart = 'XHTML' then
+      begin
         SkipWhiteSpace;
         ScanDTDIdentifier(LPart);
-        if htUpperCase(LPart) = htUpperCase('BASIC') then begin
+        if htUpperCase(LPart) = htUpperCase('BASIC') then
+        begin
           SkipWhiteSpace;
           ScanDTDIdentifier(LPart);
-          if LPart = '1.1' then begin
+          if LPart = '1.1' then
             Result := True;
-          end;
-        end else begin
+        end
+        else
+        begin
           Result := (LPart = '1.0') or (LPart = '1.1')
         end;
       end;
     end;
   end;
 
+var
+  OldPos: Integer;
 begin
+  OldPos := Doc.Position;
   Result := True;
-  ReadToLT;
-  GetChBasic;
-  case LCh of
-    ThtChar('!') :
-    begin
-      GetChBasic;
-      GetIdentifier(LId);
-
-      if htUpperCase(LId) <> 'DOCTYPE' then begin
-        InComment := True;
-        ReadToGT;
-      end else begin
-        if ScanDTD then begin
-          Result := False;
-          exit;
-        end;
-      end;
-    end;
-  end;
   repeat
     ReadToLT;
     GetChBasic;
-    if LCh = '!' then begin
-      GetChBasic;
-      GetIdentifier(LId);
-      if htUpperCase(LId) <> 'DOCTYPE' then begin
-        InComment := True;
-        ReadToGT;
-      end else begin
-        if ScanDTD then begin
-          Result := False;
-          exit;
+    case LCh of
+      '!':
+      begin
+        GetChBasic;
+        GetIdentifier(LId);
+        if htUpperCase(LId) <> 'DOCTYPE' then
+        begin
+          InComment := True;
+          ReadToGT;
+        end
+        else
+        begin
+          if ScanDTD then
+          begin
+            Result := False;
+            break;
+          end;
         end;
       end;
+
+      EofChar:
+        break;
     end;
     GetIdentifier(LId);
     SkipWhiteSpace;
-    if (htUpperCase(LId) = 'HTML') or (htUpperCase(LId) = 'HEAD') or
-      (htUpperCase(LId) = 'BODY') then
-    begin
-      exit;
-    end;
+    LId := htUpperCase(LId);
+    if (LId = 'HTML') or (LId = 'HEAD') or (LId = 'BODY') then
+      break;
   until False;
+  Doc.Position := OldPos;
 end;
+
+{-------------SkipWhiteSpace}
 
 procedure THtmlParser.SkipWhiteSpace;
 begin
