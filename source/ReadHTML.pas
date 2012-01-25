@@ -414,7 +414,7 @@ var
 
   procedure ReadToGT; {read to the next GreaterChar }
   begin
-    while LCh <> GreaterChar do
+    while (LCh <> GreaterChar) and (LCh <> EofChar) do
       GetChBasic;
     InComment := False;
   end;
@@ -653,7 +653,7 @@ var LId : ThtString;
 
   procedure ReadToGT; {read to the next GreaterChar }
   begin
-    while LCh <> GreaterChar do
+    while (LCh <> GreaterChar) and (LCh <> EofChar) do
       GetChBasic;
     InComment := False;
   end;
@@ -661,7 +661,7 @@ var LId : ThtString;
   procedure ReadToLT;  {read to the next LessChar }
   begin
     if not InComment then begin
-      while LCh <> LessChar do
+      while (LCh <> LessChar) and (LCh <> EofChar) do
         GetChBasic;
     end;
   end;
