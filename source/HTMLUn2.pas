@@ -52,7 +52,7 @@ uses
   UrlSubs;
 
 const
-  VersionNo = '11';
+  VersionNo = '11.5';
   MaxHScroll = 100000; {max horizontal display in pixels}
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
