@@ -8679,6 +8679,7 @@ begin
   SetLength(MinWidths, NumCols);
   SetLength(Percents, NumCols);
   SetLength(Multis, NumCols);
+  SetLength(ColumnSpecs, NumCols);
 
   if Document.PrintTableBackground then
   begin
