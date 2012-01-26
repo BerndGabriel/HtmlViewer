@@ -1145,6 +1145,7 @@ type
     FVAlign: AlignmentType;
   public
     constructor Create(const Width: TSpecWidth; Align: ThtString; VAlign: AlignmentType);
+    constructor CreateCopy(const ColSpec: TColSpec);
     property ColWidth: TSpecWidth read FWidth;
     property ColAlign: ThtString read FAlign;
     property ColVAlign: AlignmentType read FVAlign;
@@ -8410,6 +8411,13 @@ begin
   SetLength(Multis, NumCols);
   SetLength(ColumnSpecs, NumCols);
 
+  if HtmlTable.FColSpecs <> nil then
+  begin
+    FColSpecs := TColSpecList.Create;
+    for I := 0 to HtmlTable.FColSpecs.Count - 1 do
+      FColSpecs.Add(TColSpec.CreateCopy(HtmlTable.FColSpecs[I]));
+  end;
+
   if Document.PrintTableBackground then
   begin
     BkGnd := HtmlTable.BkGnd;
@@ -10689,11 +10697,22 @@ begin
   Result := Ord(C) >= $3000;
 end;
 
-//BG, 20.09.2010:
+//-- BG ---------------------------------------------------------- 27.01.2012 --
+function CanWrapAfter(C: WideChar): Boolean;
+begin
+  case C of
+    WideChar('-'), WideChar('/'), WideChar('?'):
+      Result := True
+  else
+    Result := False;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.09.2010 --
 function CanWrap(C: WideChar): Boolean;
 begin
   case C of
-    WideChar(' '), WideChar('-'), WideChar('?'), ImgPan, FmCtl, BrkCh:
+    WideChar(' '), WideChar('-'), WideChar('/'), WideChar('?'), ImgPan, FmCtl, BrkCh:
       Result := True
   else
     Result := WrapChar(C);
@@ -11505,8 +11524,8 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         else if (N < MaxChars) and ((P + 1)^ = ' ') and (Brk[P - Buff + 1] <> twNo) then
         begin
           repeat
+            Inc(P);
             Inc(N); {pass the space}
-            Inc(p);
           until (N >= MaxChars) or ((P + 1)^ <> ' ');
           Finished := N >= MaxChars;
           LineComplete(N);
@@ -11517,14 +11536,27 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           LineComplete(N);
         end
         else
-        begin {non space, wrap it by backing off to previous space or image}
-          while ((not ((P^ in [WideChar(' '), WideChar('-'), WideChar('?'), FmCtl, ImgPan])
-            or WrapChar(P^) or WrapChar((P + 1)^)) and not (Brk[P - Buff] in [twSoft, twOptional]))
-            or ((Brk[P - Buff] = twNo))) and (P > PStart) do
+        begin
+          {non space, wrap it by backing off to previous wrappable char}
+          while P > PStart do
+          begin
+            case Brk[P - Buff] of
+              twNo: ;
+
+              twSoft,
+              twOptional:
+                break;
+
+            else
+              if CanWrap(P^) or WrapChar((P + 1)^) then
+                break;
+            end;
             Dec(P);
+          end;
+
           if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff] = twNo)) then
-          begin {no space found, forget the wrap, write the whole word and any
-                 spaces found after it}
+          begin
+            {no space found, forget the wrap, write the whole word and any spaces found after it}
             if BreakWord then
               LineComplete(N)
             else
@@ -11532,13 +11564,15 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
               P := PStart + N - 1;
 
               while (P <> Last)
-                and not (P^ in [WideChar('-'), WideChar('?')])
+                and not CanWrapAfter(P^)
                 and not (Brk[P - Buff] in [twSoft, twOptional])
                 and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
-              or (Brk[P - Buff + 1] = twNo) do
+                or (Brk[P - Buff + 1] = twNo)
+              do
               begin
                 Inc(P);
               end;
+
               while (P <> Last) and ((P + 1)^ = ' ') do
               begin
                 Inc(P);
@@ -14451,6 +14485,12 @@ begin
   FWidth := Width;
   FAlign := Align;
   FVAlign := VAlign;
+end;
+
+//-- BG ---------------------------------------------------------- 27.01.2012 --
+constructor TColSpec.CreateCopy(const ColSpec: TColSpec);
+begin
+  Create(ColSpec.FWidth, ColSpec.FAlign, ColSpec.FVAlign);
 end;
 
 initialization
