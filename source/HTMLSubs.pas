@@ -12252,8 +12252,7 @@ begin {TSection.Draw}
   YOffset := Document.YOff;
 
 {Only draw if will be in display rectangle}
-  if (Len > 0) and (Y - YOffset + DrawHeight + 40 >= ARect.Top)
-    and (Y - YOffset - 40 < ARect.Bottom) then
+  if (Len > 0) and (Y - YOffset + DrawHeight + 40 >= ARect.Top) and (Y - YOffset - 40 < ARect.Bottom) then
   begin
     DC := Canvas.Handle;
     SetTextAlign(DC, TA_BaseLine);
@@ -13188,8 +13187,8 @@ begin
   begin
     Y := YDraw;
     YOffset := Document.YOff;
-    if (Y - YOffset > ARect.Top + 5) and (Y - YOffset < ARect.Bottom) and (Y + ARect.Top - 1 < Document.PageBottom) then
-      Document.PageBottom := Y + ARect.Top - 1;
+    if (Y - YOffset > ARect.Top + 5) and (Y - YOffset < ARect.Bottom) and (Y < Document.PageBottom) then
+      Document.PageBottom := Y;
   end;
 end;
 
