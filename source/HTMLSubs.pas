@@ -10838,12 +10838,10 @@ begin
           end;
         until (P1^ = #0) or (CanWrap(P1^) and (Brk[I - 1] = twYes));
         SoftHyphen := Brk[I - 2] = twSoft;
-        case P1^ of
-          WideChar('-'), WideChar('?'):
-            begin
-              Inc(P1);
-              Inc(I);
-            end;
+        if CanWrapAfter(P1^) then
+        begin
+          Inc(P1);
+          Inc(I);
         end;
       end;
       Min := Math.Max(Min, FindTextWidthB(Canvas, P, P1 - P, True));
