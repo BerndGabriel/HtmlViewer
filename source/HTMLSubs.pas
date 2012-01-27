@@ -1099,6 +1099,7 @@ type
     FVAlign: AlignmentType;
   public
     constructor Create(const Width: TSpecWidth; Align: ThtString; VAlign: AlignmentType);
+    constructor CreateCopy(const ColSpec: TColSpec);
     property ColWidth: TSpecWidth read FWidth;
     property ColAlign: ThtString read FAlign;
     property ColVAlign: AlignmentType read FVAlign;
@@ -8681,6 +8682,13 @@ begin
   SetLength(Multis, NumCols);
   SetLength(ColumnSpecs, NumCols);
 
+  if HtmlTable.FColSpecs <> nil then
+  begin
+    FColSpecs := TColSpecList.Create;
+    for I := 0 to HtmlTable.FColSpecs.Count - 1 do
+      FColSpecs.Add(TColSpec.CreateCopy(HtmlTable.FColSpecs[I]));
+  end;
+
   if Document.PrintTableBackground then
   begin
     BkGnd := HtmlTable.BkGnd;
@@ -10904,11 +10912,22 @@ begin
   Result := Ord(C) >= $3000;
 end;
 
-//BG, 20.09.2010:
+//-- BG ---------------------------------------------------------- 27.01.2012 --
+function CanWrapAfter(C: WideChar): Boolean;
+begin
+  case C of
+    WideChar('-'), WideChar('/'), WideChar('?'):
+      Result := True
+  else
+    Result := False;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.09.2010 --
 function CanWrap(C: WideChar): Boolean;
 begin
   case C of
-    WideChar(' '), WideChar('-'), WideChar('?'), ImgPan, FmCtl, BrkCh:
+    WideChar(' '), WideChar('-'), WideChar('/'), WideChar('?'), ImgPan, FmCtl, BrkCh:
       Result := True
   else
     Result := WrapChar(C);
@@ -11016,12 +11035,10 @@ begin
           end;
         until (P1^ = #0) or (CanWrap(P1^) and (Brk[I] = 'y'));
         SoftHyphen := Brk[I - 1] = 's';
-        case P1^ of
-          WideChar('-'), WideChar('?'):
-            begin
-              Inc(P1);
-              Inc(I);
-            end;
+        if CanWrapAfter(P1^) then
+        begin
+          Inc(P1);
+          Inc(I);
         end;
       end;
       Min := Math.Max(Min, FindTextWidthB(Canvas, P, P1 - P, True));
@@ -11720,7 +11737,7 @@ begin {TSection.DrawLogic}
           begin
             P := PStart + N - 1;
 
-            while (P <> Last) and not ((P^ = '-') or (P^ = '?')) and not (Brk[P - Buff + 1] in ['a', 's'])
+            while (P <> Last) and not CanWrapAfter(P^) and not (Brk[P - Buff + 1] in ['a', 's'])
             do
             begin
               case Brk[P - Buff + 2] of
@@ -14368,6 +14385,12 @@ begin
   FWidth := Width;
   FAlign := Align;
   FVAlign := VAlign;
+end;
+
+//-- BG ---------------------------------------------------------- 27.01.2012 --
+constructor TColSpec.CreateCopy(const ColSpec: TColSpec);
+begin
+  Create(ColSpec.FWidth, ColSpec.FAlign, ColSpec.FVAlign);
 end;
 
 initialization
