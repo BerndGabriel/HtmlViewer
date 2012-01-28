@@ -1512,21 +1512,14 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.01.2012 --
-function SubArray(const Arr, Minus: IntArray; StartIndex, EndIndex: Integer): IntArray; overload;
-// Return sum of array elements from StartIndex to EndIndex.
+function SubArray(const Arr, Minus: IntArray): IntArray; overload;
+// Return array with differences per index.
 var
   I: Integer;
 begin
   Result := Copy(Arr);
-  for I := 0 to Min(Low(Arr), Low(Minus)) do
-    Dec(Arr[I], Minus[I]);
-end;
-
-//-- BG ---------------------------------------------------------- 17.01.2012 --
-function SubArray(const Arr, Minus: IntArray): IntArray; overload;
-// Return sum of all array elements.
-begin
-  Result := SubArray(Arr, Minus, Low(Arr), High(Arr));
+  for I := 0 to Min(High(Result), High(Minus)) do
+    Dec(Result[I], Minus[I]);
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
