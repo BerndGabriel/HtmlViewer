@@ -8443,7 +8443,7 @@ function TCellList.DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span,
  Rows is number rows in table.
  AHeight is for calculating percentage heights}
 var
-  I, J, Dummy: Integer;
+  I, Dummy: Integer;
   DummyCurs, GuessHt: Integer;
   CellObj: TCellObj;
 begin
@@ -8459,9 +8459,7 @@ begin
       with CellObj do
         if ColSpan > 0 then {skip the dummy cells}
         begin
-          Wd := 0;
-          for J := I to ColSpan + I - 1 do
-            Inc(FWd, Widths[J]); {accumulate column widths}
+          Wd := Sum(Widths, I, I + ColSpan - 1); {accumulate column widths}
           if Span = RowSpan then
           begin
             Dummy := 0;
@@ -9369,12 +9367,16 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       // Table fits into NewWidth.
 
       // Calculate widths with respect to percentage specifications.
+      Counts[wtPercent] := 0;
       for I := 0 to NumCols - 1 do
       begin
         wt := ColumnSpecs[I];
         case wt of
           wtPercent:
+          begin
             Widths[I] := Max(MinWidths[I], MulDiv(NewWidth, Percents[I], 1000));
+            Inc(Counts[wtPercent]);
+          end;
         else
           Widths[I] := MinWidths[I];
         end;
