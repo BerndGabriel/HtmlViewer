@@ -41,40 +41,71 @@ uses
   Windows, Classes, Graphics, Printers;
 
 type
+
+  ThtPrinter = class(TComponent)
+  private
+    FOffsetX: Integer;      // Physical Printable Area x margin
+    FOffsetY: Integer;      // Physical Printable Area y margin
+    FPaperHeight: Integer;  // Physical Height in device units
+    FPaperWidth: Integer;   // Physical Width in device units
+    FPgHeight: Integer;     // Vertical height in pixels
+    FPgWidth: Integer;      // Horizontal width in pixels
+    FPPIX: Integer;         // Logical pixelsinch in X
+    FPPIY: Integer;         // Logical pixelsinch in Y
+    FPrinting: Boolean;
+    FTitle: string;
+    function getWorkRect: TRect;
+  protected
+    function GetCanvas: TCanvas; virtual; abstract;
+    function GetPageNum: Integer; virtual; abstract;
+    procedure CheckPrinting(Value: Boolean);
+    procedure GetPrinterCapsOf(Printer: TPrinter);
+    procedure SetPrinting(Value: Boolean);
+  public
+    procedure BeginDoc; virtual; abstract;
+    procedure NewPage; virtual; abstract;
+    procedure EndDoc; virtual; abstract;
+    procedure Abort; virtual; abstract;
+    property Canvas: TCanvas read GetCanvas;
+    property OffsetX: Integer read FOffsetX;
+    property OffsetY: Integer read FOffsetY;
+    property PageNumber: Integer read GetPageNum;
+    property PageHeight: Integer read FPgHeight;
+    property PageWidth: Integer read FPgWidth;
+    property PaperHeight: Integer read FPaperHeight;
+    property PaperWidth: Integer read FPaperWidth;
+    property PixelsPerInchX: Integer read FPPIX;
+    property PixelsPerInchY: Integer read FPPIY;
+    property Printing: Boolean read FPrinting;
+    property Title: string read FTitle write FTitle;
+    property WorkRect: TRect read getWorkRect;
+  end;
+
   TvwPrinterState = (psNoHandle, psHandleIC, psHandleDC);
 
-  TvwPrinter = class(TObject)
+  TvwPrinter = class(ThtPrinter)
   private
     FCanvas: TCanvas;
     FPageNumber: Integer;
-    FTitle: string;
-    FPrinting: Boolean;
     FAborted: Boolean;
     State: TvwPrinterState;
     DC: HDC;
     DevMode: PDeviceMode;
     DeviceMode: THandle;
     procedure SetState(Value: TvwPrinterState);
-    function GetCanvas: TCanvas;
     function GetHandle: HDC;
-    function GetPageHeight: Integer;
-    function GetPageWidth: Integer;
-    procedure CheckPrinting(Value: Boolean);
+  protected
+    function GetCanvas: TCanvas; override;
+    function GetPageNum: Integer; override;
   public
-    constructor Create;
+    constructor Create; reintroduce; overload;
     destructor Destroy; override;
-    procedure Abort;
-    procedure BeginDoc;
-    procedure EndDoc;
-    procedure NewPage;
+    procedure Abort; override;
+    procedure BeginDoc; override;
+    procedure EndDoc; override;
+    procedure NewPage; override;
     property Aborted: Boolean read FAborted;
-    property Canvas: TCanvas read GetCanvas;
     property Handle: HDC read GetHandle;
-    property PageHeight: Integer read GetPageHeight;
-    property PageWidth: Integer read GetPageWidth;
-    property PageNumber: Integer read FPageNumber;
-    property Printing: Boolean read FPrinting;
-    property Title: string read FTitle write FTitle;
   end;
 
 { vwPrinter function - Replaces the Printer global variable of previous versions,
@@ -86,9 +117,6 @@ type
   toggling between different printer objects without destroying configuration
   settings.) }
 
-function vwPrinter: TvwPrinter;
-function vwSetPrinter(NewPrinter: TvwPrinter): TvwPrinter;
-
 implementation
 
 uses
@@ -99,8 +127,22 @@ uses
 {$endif}
   SysUtils, Forms;
 
+type
+  // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
+  TMap = class(TObject)
+  private
+    FKeys: TList;
+    FValues: TList;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Get(Key: Pointer): Pointer;
+    function Put(Key, Value: Pointer): Pointer;
+    function Remove(Key: Pointer): Pointer;
+  end;
+
 var
-  FPrinter: TvwPrinter;
+  FPrinters: TMap;
 
 procedure RaiseError(const Msg: string);
 begin
@@ -108,9 +150,129 @@ begin
 end;
 
 function AbortProc(Prn: HDC; Error: Integer): Bool; stdcall;
+var
+  Printer: TvwPrinter;
 begin
   Application.ProcessMessages;
-  Result := not FPrinter.Aborted;
+  if FPrinters <> nil then
+  begin
+    Printer := FPrinters.Get(Ptr(Prn));
+    Result := (Printer <> nil) and not Printer.Aborted;
+  end
+  else
+    Result := False;
+end;
+
+{ TMap }
+
+constructor TMap.Create;
+begin
+  inherited Create;
+  FKeys := TList.Create;
+  FValues := TList.Create;
+end;
+
+destructor TMap.Destroy;
+begin
+  FKeys.Free;
+  FValues.Free;
+  inherited;
+end;
+
+function TMap.Get(Key: Pointer): Pointer;
+var
+  I: Integer;
+begin
+  I := FKeys.IndexOf(Key);
+  if I >= 0 then
+    Result := FValues[I]
+  else
+    Result := nil;
+end;
+
+function TMap.Put(Key, Value: Pointer): Pointer;
+var
+  I: Integer;
+begin
+  I := FKeys.IndexOf(Key);
+  if I >= 0 then
+  begin
+    Result := FValues[I];
+    FValues[I] := Value;
+  end
+  else
+  begin
+    Result := nil;
+    FKeys.add(Key);
+    FValues.add(Value);
+  end;
+end;
+
+function TMap.Remove(Key: Pointer): Pointer;
+var
+  I: Integer;
+begin
+  I := FKeys.IndexOf(Key);
+  if I >= 0 then
+  begin
+    Result := FValues[I];
+    FKeys.Delete(I);
+    FValues.Delete(I);
+  end
+  else
+    Result := nil;
+end;
+
+{ ThtPrinter }
+
+procedure ThtPrinter.CheckPrinting(Value: Boolean);
+begin
+  if Printing <> Value then
+    if Value then
+      RaiseError(SNotPrinting)
+    else
+      RaiseError(SPrinting);
+end;
+
+procedure ThtPrinter.GetPrinterCapsOf(Printer: TPrinter);
+begin
+  if Printer.Printers.Count = 0 then
+    raise Exception.Create('Printer not available');
+
+{$ifdef LCL}
+  FPPIX := Printer.XDPI;
+  FPPIY := Printer.YDPI;
+  FPaperWidth := Printer.PaperSize.PaperRect.PhysicalRect.Right;
+  FPaperHeight := Printer.PaperSize.PaperRect.PhysicalRect.Bottom;
+  FOffsetX := Printer.PaperSize.PaperRect.WorkRect.Left;
+  FOffsetY := Printer.PaperSize.PaperRect.WorkRect.Top;
+  FPgHeight := Printer.PageHeight;
+  FPgWidth := Printer.PageWidth;
+{$else}
+  FPPIX := GetDeviceCaps(Printer.Handle, LOGPIXELSX);
+  FPPIY := GetDeviceCaps(Printer.Handle, LOGPIXELSY);
+  FPaperWidth := GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
+  FPaperHeight := GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
+  FOffsetX := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);
+  FOffsetY := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);
+  FPgHeight := Printer.PageHeight;
+  FPgWidth := Printer.PageWidth;
+{$endif}
+end;
+
+function ThtPrinter.getWorkRect: TRect;
+{$ifdef LCL}
+begin
+  Result := Printer.PaperSize.PaperRect.WorkRect;
+{$else}
+begin
+
+{$endif}
+end;
+
+procedure ThtPrinter.SetPrinting(Value: Boolean);
+begin
+  FPrinting := Value;
 end;
 
 { TPrinterCanvas }
@@ -145,7 +307,7 @@ end;
 
 constructor TvwPrinter.Create;
 begin
-  inherited Create;
+  inherited Create(nil);
 end;
 
 destructor TvwPrinter.Destroy;
@@ -183,8 +345,7 @@ end;
 
 procedure TvwPrinter.SetState(Value: TvwPrinterState);
 type
-  TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar;
-    InitData: PDeviceMode): HDC stdcall;
+  TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar; InitData: PDeviceMode): HDC stdcall;
 var
   CreateHandleFunc: TCreateHandleFunc;
 {$ifndef FPC_TODO_PRINTING}
@@ -240,19 +401,11 @@ begin
         RaiseError(SInvalidPrinter);
       if FCanvas <> nil then
         FCanvas.Handle := DC;
+
 {$endif}
     end;
     State := Value;
   end;
-end;
-
-procedure TvwPrinter.CheckPrinting(Value: Boolean);
-begin
-  if Printing <> Value then
-    if Value then
-      RaiseError(SNotPrinting)
-    else
-      RaiseError(SPrinting);
 end;
 
 procedure TvwPrinter.Abort;
@@ -270,10 +423,11 @@ var
 begin
   CheckPrinting(False);
   SetState(psHandleDC);
+  getPrinterCapsOf(Printer);
   Canvas.Refresh;
-  FPrinting := True;
   FAborted := False;
   FPageNumber := 1;
+
   StrPLCopy(CTitle, Title, Length(CTitle) - 1);
   FillChar(DocInfo, SizeOf(DocInfo), 0);
   with DocInfo do
@@ -282,8 +436,10 @@ begin
     lpszDocName := CTitle;
     lpszOutput := nil;
   end;
+  FPrinters.Put(Ptr(DC), Self);
   SetAbortProc(DC, AbortProc);
   StartDoc(DC, DocInfo);
+  SetPrinting(True);
   StartPage(DC);
 end;
 
@@ -291,9 +447,10 @@ procedure TvwPrinter.EndDoc;
 begin
   CheckPrinting(True);
   EndPage(DC);
+  FPrinters.Remove(Ptr(DC));
   if not Aborted then
     Windows.EndDoc(DC);
-  FPrinting := False;
+  SetPrinting(False);
   FAborted := False;
   FPageNumber := 0;
   if DeviceMode <> 0 then
@@ -325,34 +482,13 @@ begin
   Result := DC;
 end;
 
-
-function TvwPrinter.GetPageHeight: Integer;
+function TvwPrinter.GetPageNum: Integer;
 begin
-  SetState(psHandleIC);
-  Result := GetDeviceCaps(DC, VertRes);
-end;
-
-function TvwPrinter.GetPageWidth: Integer;
-begin
-  SetState(psHandleIC);
-  Result := GetDeviceCaps(DC, HorzRes);
-end;
-
-function vwPrinter: TvwPrinter;
-begin
-  if FPrinter = nil then
-    FPrinter := TvwPrinter.Create;
-  Result := FPrinter;
-end;
-
-function vwSetPrinter(NewPrinter: TvwPrinter): TvwPrinter;
-begin
-  Result := FPrinter;
-  FPrinter := NewPrinter;
+  Result := FPageNumber;
 end;
 
 initialization
-  FPrinter := nil;
+  FPrinters := TMap.Create;
 finalization
-  FPrinter.Free;
+  FreeAndNil(FPrinters);
 end.

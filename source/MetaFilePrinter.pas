@@ -37,7 +37,8 @@ unit MetaFilePrinter;
 interface
 
 uses
-  Windows, Classes, Graphics, Printers;
+  Windows, Classes, Graphics, Printers,
+  vwPrint;
 
 type
 
@@ -109,65 +110,37 @@ type
   TPageEvent = procedure(Sender: TObject; NumPage: Integer;
     var StopPrinting: Boolean) of object;
 
-  TMetaFilePrinter = class(TComponent)
-  private
-    { Private declarations }
+  TMetaFilePrinter = class(ThtPrinter)
   protected
-    { Protected declarations }
     FPrinting: boolean;
     FMFList: TList;
     FCurCanvas: TCanvas;
-    FPPIX: integer;
-    FPPIY: integer;
-    FPaperWidth: integer;
-    FPaperHeight: integer;
-    FOffsetX: integer;
-    FOffsetY: integer;
-    FPgHeight: integer;
-    FPgWidth: integer;
     FUnits: TUnits;
     FConvFac: double;
     FUsedPage: boolean;
-    FPrinterDC: THandle;
     FOnPageEvent: TPageEvent;
 
-    function GetCanvas: TCanvas;
-    function GetPageNum: integer;
     procedure FreeMetaFiles;
     function GetMetaFile(I: integer): TMetaFile;
     procedure SetUnits(Val: TUnits);
     function GetLastAvailPage: integer;
 
+    function GetCanvas: TCanvas; override;
+    function GetPageNum: integer; override;
   public
-    { Public declarations }
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
       // Printer Methods
-    procedure BeginDoc; virtual;
-    procedure NewPage; virtual;
-    procedure EndDoc;
-    procedure Abort;
-//BG, 01.12.2006: beg of modification
-    procedure getPrinterCapsOf(Printer: TPrinter);
-//BG, 01.12.2006: end of modification
+    procedure BeginDoc; override;
+    procedure NewPage; override;
+    procedure EndDoc; override;
+    procedure Abort; override;
 
     property MetaFiles[I: integer]: TMetaFile read GetMetaFile;
-    property PixelsPerInchX: integer read FPPIX;
-    property PixelsPerInchY: integer read FPPIY;
-    property PaperWidth: integer read FPaperWidth;
-    property PaperHeight: integer read FPaperHeight;
-    property PageHeight: integer read FPgHeight;
-    property PageWidth: integer read FPgWidth;
-    property OffsetX: integer read FOffsetX;
-    property OffsetY: integer read FOffsetY;
-    property Canvas: TCanvas read GetCanvas;
-    property PageNumber: integer read GetPageNum;
     property Printing: boolean read FPrinting;
     property LastAvailablePage: integer read GetLastAvailPage;
-//BG, 29.08.2010: no longer used:    property PrinterDC: THandle read FPrinterDC;
   published
-    { Published declarations }
     property Units: TUnits read FUnits write SetUnits;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
   end;
@@ -507,35 +480,6 @@ begin
   end;
 end;
 
-//BG, 01.12.2006: beg of modification: extracted getPrinterCapsOf from BeginDoc
-
-procedure TMetaFilePrinter.getPrinterCapsOf(Printer: TPrinter);
-begin
-  if Printer.Printers.Count = 0 then
-    raise Exception.Create('Printer not available');
-
-{$ifdef LCL}
-  FPPIX := Printer.XDPI;
-  FPPIY := Printer.YDPI;
-  FPaperWidth := Printer.PageWidth;
-  FPaperHeight := Printer.PageHeight;
-  FOffsetX := Printer.PaperSize.PaperRect.WorkRect.Left;
-  FOffsetY := Printer.PaperSize.PaperRect.WorkRect.Top;
-  FPgHeight := Printer.PageHeight;
-  FPgWidth := Printer.PageWidth;
-{$else}
-//  FPrinterDC := Printer.Handle;
-  FPPIX := GetDeviceCaps(Printer.Handle, LOGPIXELSX);
-  FPPIY := GetDeviceCaps(Printer.Handle, LOGPIXELSY);
-  FPaperWidth := GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
-  FPaperHeight := GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
-  FOffsetX := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);
-  FOffsetY := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);
-  FPgHeight := Printer.PageHeight;
-  FPgWidth := Printer.PageWidth;
-{$endif}
-end;
-
 procedure TMetaFilePrinter.BeginDoc;
 begin
   FPrinting := True;
@@ -545,7 +489,6 @@ begin
 
   NewPage;
 end;
-//BG, 01.12.2006: end of modification
 
 procedure TMetaFilePrinter.EndDoc;
 var
@@ -554,7 +497,6 @@ begin
   FPrinting := False;
   FCurCanvas.Free;
   FCurCanvas := nil;
-  FPrinterDC := 0;
 
    // in case NewPage was called but nothing drawn on it
   if not FUsedPage then
@@ -569,8 +511,7 @@ end;
 procedure TMetaFilePrinter.Abort;
 begin
   FPrinting := False;
-  FCurCanvas.Free;
-  FCurCanvas := nil;
+  FreeAndNil(FCurCanvas);
   FreeMetaFiles;
 end;
 
@@ -595,7 +536,7 @@ begin
   NewCanvas.Brush.Color := clWhite;
   NewCanvas.Pen.Color := clWhite;
   NewCanvas.Brush.Style := bsSolid;
-  NewCanvas.Rectangle(0, 0, FPaperWidth, FPaperHeight);
+  NewCanvas.Rectangle(0, 0, PaperWidth, PaperHeight);
 
   if FCurCanvas = nil then
   begin
