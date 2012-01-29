@@ -84,7 +84,7 @@ type
   ThtDocument = class;
   TBlock = class;
   TCellBasic = class;
-
+  THtmlPropStack = class;
 //------------------------------------------------------------------------------
 // THtmlNode is base class for all objects in the HTML document tree.
 //------------------------------------------------------------------------------
@@ -1317,6 +1317,7 @@ type
   ThtDocument = class(TCell) {a list of all the sections -- the html document}
   private
     FUseQuirksMode : Boolean;
+    FPropStack: THtmlPropStack;
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
   public
@@ -1398,8 +1399,9 @@ type
     PrintingTable: THtmlTable;
     ScaleX, ScaleY: single;
     SkipDraw: boolean;
-
-
+    FNoBreak : Boolean;
+    FCurrentStyle: TFontStyles;
+    FCurrentForm : ThtmlForm;
     constructor Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
     constructor CreateCopy(T: ThtDocument);
     destructor Destroy; override;
@@ -1434,6 +1436,11 @@ type
       LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
       MarginHeight, MarginWidth: Integer);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
+    property PropStack : THtmlPropStack read FPropStack write FPropStack;
+
+    property NoBreak : Boolean read FNoBreak write FNoBreak;  {set when in <NoBr>}
+    property CurrentStyle: TFontStyles read FCurrentStyle write FCurrentStyle;  {as set by <b>, <i>, etc.}
+    property CurrentForm : ThtmlForm read FCurrentForm write FCurrentForm;
   end;
 
 //------------------------------------------------------------------------------
@@ -1493,13 +1500,13 @@ var
   UnicodeControls: boolean;
 {$endif}
 
-var
+//var
   // OOPS, these variables are parsing states:
   // TODO: must be part of the THtmlParser or the ThtDocument.
-  CurrentStyle: TFontStyles; {as set by <b>, <i>, etc.}
-  CurrentForm: ThtmlForm;
-  PropStack: THtmlPropStack;
-  NoBreak: boolean; {set when in <NoBr>}
+ // CurrentStyle: TFontStyles; {as set by <b>, <i>, etc.}
+ // CurrentForm: ThtmlForm;
+//  PropStack: THtmlPropStack;
+//  NoBreak: boolean; {set when in <NoBr>}
 
 implementation
 
@@ -3293,10 +3300,10 @@ var
 begin
   inherited Create(Parent, L, Prop);
   Pos := Position;
-  if not Assigned(CurrentForm) then {maybe someone forgot the <form> tag}
-    CurrentForm := ThtmlForm.Create(Document, nil);
+  if not Assigned(Document.CurrentForm) then {maybe someone forgot the <form> tag}
+    Document.CurrentForm := ThtmlForm.Create(Document, nil);
   Document.FormControlList.Add(Self);
-  MyForm := CurrentForm;
+  MyForm := Document.CurrentForm;
   for I := 0 to L.Count - 1 do
     with L[I] do
       case Which of
@@ -6787,6 +6794,7 @@ end;
 constructor ThtDocument.Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
 begin
   inherited Create(Self, nil);
+  FPropStack := THtmlPropStack.Create;
   UseQuirksMode := Owner.UseQuirksMode;
   TheOwner := Owner;
   PPanel := APaintPanel;
@@ -6856,6 +6864,7 @@ begin
   TabOrderList.Free;
   if not IsCopy then
     TInlineList(InlineList).Free;
+  FPropStack.Free;
 end;
 
 function ThtDocument.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
@@ -10047,7 +10056,7 @@ begin
 
   if Self is TPreFormated then
     WhiteSpaceStyle := wsPre
-  else if NoBreak then
+  else if Document.NoBreak then
     WhiteSpaceStyle := wsNoWrap
   else
     WhiteSpaceStyle := wsNormal;
@@ -10187,13 +10196,13 @@ begin
   if T.Count = 0 then
     Exit;
   { Yunqa.de: Simple hack to support <span style="display:none"> }
-  if PropStack.Last.Display = pdNone then
+  if Document.PropStack.Last.Display = pdNone then
     Exit;
 
   L := Len + T.Count;
   if BuffSize < L + 3 then
     Allocate(L + 500); {L+3 to permit additions later}
-  case PropStack.Last.GetTextTransform of
+  case Document.PropStack.Last.GetTextTransform of
     txUpper:
       St := htUpperCase(T.S);
     txLower:
@@ -10203,7 +10212,7 @@ begin
   end;
   Move(T.I[1], XP^[Len], T.Count * Sizeof(Integer));
   // BG, 31.08.2011: added: WhiteSpaceStyle
-  if NoBreak or (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) then
+  if Document.NoBreak or (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) then
     C := twNo
   else
     C := twYes;
@@ -10212,7 +10221,7 @@ begin
   for I := J to J + T.Count - 1 do
     Brk[I] := C;
 
-  if PropStack.Last.GetFontVariant = 'small-caps' then
+  if Document.PropStack.Last.GetFontVariant = 'small-caps' then
   begin
     StU := htUpperCase(St);
     BuffS := BuffS + StU;
@@ -10228,15 +10237,15 @@ begin
         begin
           if StU[I] <> St[I] then
           begin {St[I] was lower case}
-            PropStack.PushNewProp('small', '', '', '', '', nil); {change to smaller font}
-            ChangeFont(PropStack.Last);
+            Document.PropStack.PushNewProp('small', '', '', '', '', nil); {change to smaller font}
+            ChangeFont(Document.PropStack.Last);
             Small := True;
           end;
         end
         else if StU[I] = St[I] then
         begin {St[I] was uppercase and Small is set}
-          PropStack.PopAProp('small');
-          ChangeFont(PropStack.Last);
+          Document.PropStack.PopAProp('small');
+          ChangeFont(Document.PropStack.Last);
           Small := False;
         end;
       end;
@@ -10244,8 +10253,8 @@ begin
     end;
     if Small then {change back to regular font}
     begin
-      PropStack.PopAProp('small');
-      ChangeFont(PropStack.Last);
+      Document.PropStack.PopAProp('small');
+      ChangeFont(Document.PropStack.Last);
     end;
   end
   else
@@ -14437,19 +14446,19 @@ var
   LPropStack: THtmlPropStack;
   LNoBreak: boolean; {set when in <NoBr>}
 begin
-  LCurrentForm := CurrentForm;
-  LCurrentStyle := CurrentStyle;
-  LNoBreak := NoBreak;
-  LPropStack := PropStack;
-  PropStack := THtmlPropStack.Create;
+  LCurrentForm := Document.CurrentForm;
+  LCurrentStyle := Document.CurrentStyle;
+  LNoBreak := Document.NoBreak;
+  LPropStack := Document.PropStack;
+  Document.PropStack := THtmlPropStack.Create;
   try
     FViewer.Load(FUrl);
   finally
-    PropStack.Free;
-    PropStack := LPropStack;
-    CurrentForm := LCurrentForm;
-    CurrentStyle := LCurrentStyle;
-    NoBreak := LNoBreak;
+    Document.PropStack.Free;
+    Document.PropStack := LPropStack;
+    Document.CurrentForm := LCurrentForm;
+    Document.CurrentStyle := LCurrentStyle;
+    Document.NoBreak := LNoBreak;
   end;
 end;
 
