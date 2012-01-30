@@ -196,12 +196,13 @@ type
     property CodePage: Integer read FCodePage write AssignCodePage;
     property EmSize: Integer read FEmSize;
     property ExSize: Integer read FExSize;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TStyleList = class(ThtStringList)
   private
     SeqNo: Integer;
-
+    FDefProp: TProperties;
   protected
     //this must be protected so that the property can be changed in
     //a descendant while being read only.
@@ -209,8 +210,6 @@ type
     procedure setLinksActive(Value: Boolean); virtual; abstract;
     property LinksActive: Boolean write setLinksActive;
   public
-    DefProp: TProperties;
-
     constructor Create; overload;
     constructor Create(const AUseQuirksMode : Boolean); overload;
     destructor Destroy; override;
@@ -227,6 +226,7 @@ type
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
     property UseQuirksMode : Boolean read FUseQuirksMode;
+    property DefProp: TProperties read FDefProp;
   end;
 
   TPropStack = class(TObjectList)
@@ -1981,6 +1981,7 @@ end;
 constructor TStyleList.Create(const AUseQuirksMode: Boolean);
 begin
   Create;
+  FDefProp := nil;
   FUseQuirksMode := AUseQuirksMode;
 end;
 
@@ -2205,7 +2206,7 @@ begin
   Properties.Props[LetterSpacing] := 0;
   Properties.CharSet := ACharSet;
   AddObject('default', Properties);
-  DefProp := Properties;
+  FDefProp := Properties;
 
 {/$IFDEF Quirk}
   if UseQuirksMode then begin

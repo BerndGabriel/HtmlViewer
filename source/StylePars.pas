@@ -50,6 +50,7 @@ type
     Doc: TBuffer;
     LCh: ThtChar;
     LinkPath: ThtString;
+    FUseQuirksMode : Boolean;
     // parser methods
     procedure GetCh;
     function GetIdentifier(out Identifier: ThtString): Boolean;
@@ -60,6 +61,8 @@ type
     procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString);
   protected
     procedure ProcessProperty(const Prop, Value: ThtString); virtual; abstract;
+  public
+    constructor Create(const AUseQuirksMode : Boolean);
   end;
 
   THtmlStyleTagParser = class(THtmlStyleParser)
@@ -71,7 +74,7 @@ type
   protected
     procedure ProcessProperty(const Prop, Value: ThtString); override;
   public
-    constructor Create;
+    constructor Create(const AUseQuirksMode : Boolean);
     destructor Destroy; override;
     procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
   end;
@@ -86,7 +89,7 @@ type
   end;
 
 
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
 procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(S: ThtString): ThtString;
 
@@ -96,11 +99,11 @@ const
   NeedPound = True;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
 var
   Parser: THtmlStyleTagParser;
 begin
-  Parser := THtmlStyleTagParser.Create;
+  Parser := THtmlStyleTagParser.Create(AUseQuirksMode);
   try
     Parser.DoStyle(Styles, C, Doc, APath, FromLink);
   finally
@@ -113,7 +116,7 @@ procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
 var
   Parser: THtmlStyleAttrParser;
 begin
-  Parser := THtmlStyleAttrParser.Create;
+  Parser := THtmlStyleAttrParser.Create( Propty.UseQuirksMode );
   try
     Parser.ParseProperties(Doc, Propty);
   finally
@@ -132,6 +135,12 @@ begin
   finally
     Doc.Free;
   end;
+end;
+
+constructor THtmlStyleParser.Create(const AUseQuirksMode: Boolean);
+begin
+  inherited Create;
+  FUseQuirksMode := AUseQuirksMode;
 end;
 
 procedure THtmlStyleParser.GetCh;
@@ -616,7 +625,13 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values[shStyle] := 'normal';
     Values[shVariant] := 'normal';
     Values[shWeight] := 'normal';
-    Values[shSize] := 'medium';
+
+    if Self.FUseQuirksMode then begin
+
+      Values[shSize] := 'small';
+    end else begin
+      Values[shSize] := 'medium';
+    end;
     Values[shHeight] := 'normal';
     // TODO: BG, 04.01.2012: set default font as set in THtmlViewer:
     Values[shFamily] := '';
@@ -848,9 +863,9 @@ end;
 { THtmlStyleTagParser }
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
-constructor THtmlStyleTagParser.Create;
+constructor THtmlStyleTagParser.Create(const AUseQuirksMode: Boolean);
 begin
-  inherited Create;
+  inherited Create(AUseQuirksMode);
   Selectors := ThtStringList.Create;
 end;
 
