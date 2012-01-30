@@ -9335,7 +9335,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       else
       begin
         W := SumOfType(WidthType, ColumnSpecs, Widths, 0, NumCols -1);
-        IncreaseWidthsByWidth(WidthType, Widths, 0, NumCols - 1, NewWidth - MinWidth + D, W, Count);
+        IncreaseWidthsByWidth(WidthType, Widths, 0, NumCols - 1, NewWidth - MinWidth + W, W, Count);
       end;
     end;
 
@@ -9391,7 +9391,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       else if not Specified and (MaxWidth <= NewWidth) then
         // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
         Widths := Copy(MaxWidths)
-      else
+      else if MinWidth < NewWidth then
       begin
         // Expand columns to fit exactly into NewWidth.
         // Prefer widening columns without or with relative specification.
