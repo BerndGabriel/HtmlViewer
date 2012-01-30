@@ -1364,7 +1364,7 @@ var
   IsFieldsetLegend: Boolean;
 begin
   case Sym of
-    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy :
+    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -1777,6 +1777,7 @@ var
   end;
 
 begin
+  SaveNoBreak := False;
   Inc(TableLevel);
   if TableLevel > 10 then
   begin
@@ -3114,7 +3115,7 @@ begin
             PSy:
               DoP([]);
 
-            DivSy, HeaderSy, NavSy, ArticleSy,AsideSy,FooterSy:
+            DivSy, HeaderSy, NavSy, ArticleSy,AsideSy,FooterSy, HGroupSy:
               DoDivEtc(Sy, [HeadingEndSy]);
           else
             Done := True;
@@ -3337,7 +3338,7 @@ begin
         else
           Done := True; {else terminate lone <li>s on <p>}
       PEndSy: Next;
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy,
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
       OLSy, ULSy, DirSy, MenuSy, DLSy:
@@ -3437,7 +3438,7 @@ begin
       PSy: DoP(TermSet);
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy,
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy,
           LISy, DDSy, DTSy, EofSy] + TermSet);
@@ -3774,7 +3775,7 @@ begin
           Next;
         end;
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy,
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
         DoDivEtc(Sy, TermSet);
 
@@ -4611,7 +4612,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..89] of TResWord = (
+  ResWordDefinitions: array[1..90] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4701,7 +4702,8 @@ const
     (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
     (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
-    (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy));
+    (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin

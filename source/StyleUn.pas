@@ -272,7 +272,7 @@ var
   DefPointSize: Double;
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
 
-function FontSizeConv(const Str: ThtString; OldSize: Double): Double; forward;
+function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double; forward;
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
@@ -1349,7 +1349,7 @@ procedure TProperties.Combine(Styles: TStyleList;
                           end;
 
                         FontSize:
-                          iSize := FontSizeConv(Props[FontSize], iSize);
+                          iSize := FontSizeConv(Props[FontSize], iSize, FUseQuirksMode);
 
                         Color:
                           iColor := Props[Color];
@@ -1698,7 +1698,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       Merge(AProp);
 
     if not (VarType(Props[FontSize]) in varNum) then {if still a ThtString, hasn't been converted}
-      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize);
+      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FUseQuirksMode);
   end;
 
 var
@@ -2504,11 +2504,12 @@ begin
     Result := OldSize * FontConv[NewIndex] / FontConv[OldIndex];
 end;
 
-function FontSizeConv(const Str: ThtString; OldSize: Double): Double;
+function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double;
 {given a font-size ThtString, return the point size}
 var
   V: extended;
   U: ThtString;
+  i : Integer;
 begin
   if decodeSize(Str, V, U) then
   begin
@@ -2538,22 +2539,27 @@ begin
   else
   begin
     U := Str;
+    if AUseQuirksMode then begin
+      i := 1;
+    end else begin
+      i := 0;
+    end;
     if U = 'smaller' then
       Result := IncFontSize(OldSize, -1) // 0.75 * OldSize
     else if U = 'larger' then
       Result := IncFontSize(OldSize,  1) // 1.25 * OldSize
     else if U = 'xx-small' then
-      Result := FontConv[1]
+      Result := FontConv[1 + i]
     else if U = 'x-small' then
-      Result := FontConv[2]
+      Result := FontConv[2 + i]
     else if U = 'small' then
-      Result := FontConv[3]
+      Result := FontConv[3 + i]
     else if U = 'medium' then
-      Result := FontConv[4]
+      Result := FontConv[4 + i]
     else if U = 'large' then
-      Result := FontConv[5]
+      Result := FontConv[5 + i]
     else if U = 'x-large' then
-      Result := FontConv[6]
+      Result := FontConv[6 + i]
     else if U = 'xx-large' then
       Result := FontConv[7]
     else
