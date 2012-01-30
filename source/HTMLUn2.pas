@@ -124,7 +124,8 @@ type
     NavSy, NavEndSy,
     ArticleSy, ArticleEndSy,
     AsideSy, AsideEndSy,
-    FooterSy, FooterEndSy);
+    FooterSy, FooterEndSy,
+    HGroupSy, HGroupEndSy);
 
 //------------------------------------------------------------------------------
 
