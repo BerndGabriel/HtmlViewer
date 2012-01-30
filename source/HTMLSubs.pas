@@ -9183,13 +9183,15 @@ begin
           begin
             EndIndex := I + Span - 1;
 
-            // get current min and max width of spanned columns
+            // Get current min and max width of spanned columns.
             SpannedMin := Sum(MinWidths, I, EndIndex);
             SpannedMax := Sum(MaxWidths, I, EndIndex);
+
             if Span = NumCols then
             begin
-              SpannedMin := Max(SpannedMin, TheWidth);
-              SpannedMax := Max(SpannedMax, TheWidth);
+              // Spanning all columns spans at least the whole table width.
+              CellMin := Max(CellMin, TheWidth);
+              CellMax := Max(CellMax, TheWidth);
             end;
 
             if (CellMin > SpannedMin) or (CellMax > SpannedMax) then
