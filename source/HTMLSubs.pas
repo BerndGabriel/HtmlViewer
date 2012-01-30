@@ -8337,8 +8337,8 @@ begin
     (not Document.Printing or (Y < Document.PageBottom)) then
     for I := 0 to Count - 1 do
     begin
-      CellObj := TCellObj(Items[I]);
-      if Assigned(CellObj) then
+      CellObj := Items[I];
+      if (CellObj <> nil) and (CellObj.ColSpan > 0) and (CellObj.RowSpan > 0) then
         CellObj.Draw(Canvas, ARect, X, Y, CellSpacing, Border, Light, Dark);
       X := X + Widths[I];
     end;
