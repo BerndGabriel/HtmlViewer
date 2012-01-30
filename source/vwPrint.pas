@@ -125,20 +125,30 @@ uses
 {$else}
   Consts,
 {$endif}
-  SysUtils, Forms;
+  SysUtils, Forms, Contnrs;
 
 type
   // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
+  TMapItem = class(TObject)
+  private
+    FKey: Integer;
+    FValue: Pointer;
+  public
+    constructor Create(Key: Integer; Value: Pointer);
+  end;
+
+  // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
   TMap = class(TObject)
   private
-    FKeys: TList;
-    FValues: TList;
+    FItems: TObjectList;
+    function getItem(Index: Integer): TMapItem;
+    property Items[Index: Integer]: TMapItem read getItem;
   public
     constructor Create;
     destructor Destroy; override;
-    function Get(Key: Pointer): Pointer;
-    function Put(Key, Value: Pointer): Pointer;
-    function Remove(Key: Pointer): Pointer;
+    function Get(Key: Integer): Pointer;
+    function Put(Key: Integer; Value: Pointer): Pointer;
+    function Remove(Key: Integer): Pointer;
   end;
 
 var
@@ -156,11 +166,20 @@ begin
   Application.ProcessMessages;
   if FPrinters <> nil then
   begin
-    Printer := FPrinters.Get(Ptr(Prn));
+    Printer := FPrinters.Get(Prn);
     Result := (Printer <> nil) and not Printer.Aborted;
   end
   else
     Result := False;
+end;
+
+{ TMapItem }
+
+constructor TMapItem.Create(Key: Integer; Value: Pointer);
+begin
+  inherited Create;
+  FKey := Key;
+  FValue := Value;
 end;
 
 { TMap }
@@ -168,59 +187,60 @@ end;
 constructor TMap.Create;
 begin
   inherited Create;
-  FKeys := TList.Create;
-  FValues := TList.Create;
+  FItems := TObjectList.Create;
 end;
 
 destructor TMap.Destroy;
 begin
-  FKeys.Free;
-  FValues.Free;
+  FItems.Free;
   inherited;
 end;
 
-function TMap.Get(Key: Pointer): Pointer;
+function TMap.Get(Key: Integer): Pointer;
 var
   I: Integer;
 begin
-  I := FKeys.IndexOf(Key);
-  if I >= 0 then
-    Result := FValues[I]
-  else
-    Result := nil;
+  for I := 0 to FItems.Count - 1 do
+    if Items[I].FKey = Key then
+    begin
+      Result := Items[I].FValue;
+      exit;
+    end;
+  Result := nil;
 end;
 
-function TMap.Put(Key, Value: Pointer): Pointer;
-var
-  I: Integer;
+function TMap.getItem(Index: Integer): TMapItem;
 begin
-  I := FKeys.IndexOf(Key);
-  if I >= 0 then
-  begin
-    Result := FValues[I];
-    FValues[I] := Value;
-  end
-  else
-  begin
-    Result := nil;
-    FKeys.add(Key);
-    FValues.add(Value);
-  end;
+  Result := TMapItem(FItems[Index]);
 end;
 
-function TMap.Remove(Key: Pointer): Pointer;
+function TMap.Put(Key: Integer; Value: Pointer): Pointer;
 var
   I: Integer;
 begin
-  I := FKeys.IndexOf(Key);
-  if I >= 0 then
-  begin
-    Result := FValues[I];
-    FKeys.Delete(I);
-    FValues.Delete(I);
-  end
-  else
-    Result := nil;
+  for I := 0 to FItems.Count - 1 do
+    if Items[I].FKey = Key then
+    begin
+      Result := Items[I].FValue;
+      Items[I].FValue := Value;
+      exit;
+    end;
+
+  Result := nil;
+  FItems.add(TMapItem.Create(Key, Value));
+end;
+
+function TMap.Remove(Key: Integer): Pointer;
+var
+  I: Integer;
+begin
+  for I := 0 to FItems.Count - 1 do
+    if Items[I].FKey = Key then
+    begin
+      FItems.Delete(I);
+      exit;
+    end;
+  Result := nil;
 end;
 
 { ThtPrinter }
@@ -436,7 +456,7 @@ begin
     lpszDocName := CTitle;
     lpszOutput := nil;
   end;
-  FPrinters.Put(Ptr(DC), Self);
+  FPrinters.Put(DC, Self);
   SetAbortProc(DC, AbortProc);
   StartDoc(DC, DocInfo);
   SetPrinting(True);
@@ -447,7 +467,7 @@ procedure TvwPrinter.EndDoc;
 begin
   CheckPrinting(True);
   EndPage(DC);
-  FPrinters.Remove(Ptr(DC));
+  FPrinters.Remove(DC);
   if not Aborted then
     Windows.EndDoc(DC);
   SetPrinting(False);
