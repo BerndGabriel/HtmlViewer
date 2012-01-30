@@ -3643,7 +3643,7 @@ begin
           Style := TBuffer.Create(DStream, Url);
           try
             C := SpcChar;
-            DoStyle(FPropStack.Document.Styles, C, Style, Path, True);
+            DoStyle(FPropStack.Document.Styles, C, Style, Path, True,FUseQuirksMode);
           finally
             Style.Free;
           end;
@@ -3787,7 +3787,7 @@ begin
 
       StyleSy:
         begin
-          DoStyle(FPropStack.Document.Styles, LCh, Doc, '', False);
+          DoStyle(FPropStack.Document.Styles, LCh, Doc, '', False,FUseQuirksMode);
           Next;
         end;
 
