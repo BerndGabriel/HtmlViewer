@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -38,10 +40,14 @@ unit vwPrint;
 interface
 
 uses
-  Windows, Classes, Graphics, Printers;
+  Windows, Classes, Graphics, Printers,
+  HtmlGlobals;
 
 type
 
+  // BG, 30.01.2012: base class for TvwPrinter and TMetaFilePrinter
+  // Allows merging the lengthy duplicate methods THtmlViewer.Print()
+  // and THtmlViewer.PrintPreview() at last.
   ThtPrinter = class(TComponent)
   private
     FOffsetX: Integer;      // Physical Printable Area x margin
@@ -50,11 +56,10 @@ type
     FPaperWidth: Integer;   // Physical Width in device units
     FPgHeight: Integer;     // Vertical height in pixels
     FPgWidth: Integer;      // Horizontal width in pixels
-    FPPIX: Integer;         // Logical pixelsinch in X
-    FPPIY: Integer;         // Logical pixelsinch in Y
+    FPPIX: Integer;         // Logical pixels per inch in X
+    FPPIY: Integer;         // Logical pixels per inch in Y
     FPrinting: Boolean;
-    FTitle: string;
-    function getWorkRect: TRect;
+    FTitle: ThtString;         // Printed Document's Title
   protected
     function GetCanvas: TCanvas; virtual; abstract;
     function GetPageNum: Integer; virtual; abstract;
@@ -77,8 +82,7 @@ type
     property PixelsPerInchX: Integer read FPPIX;
     property PixelsPerInchY: Integer read FPPIY;
     property Printing: Boolean read FPrinting;
-    property Title: string read FTitle write FTitle;
-    property WorkRect: TRect read getWorkRect;
+    property Title: ThtString read FTitle write FTitle;
   end;
 
   TvwPrinterState = (psNoHandle, psHandleIC, psHandleDC);
@@ -107,15 +111,6 @@ type
     property Aborted: Boolean read FAborted;
     property Handle: HDC read GetHandle;
   end;
-
-{ vwPrinter function - Replaces the Printer global variable of previous versions,
-  to improve smart linking (reduce exe size by 2.5k in projects that don't use
-  the printer).  Code which assigned to the Printer global variable
-  must call SetPrinter instead.  SetPrinter returns current printer object
-  and makes the new printer object the current printer.  It is the caller's
-  responsibility to free the old printer, if appropriate.  (This allows
-  toggling between different printer objects without destroying configuration
-  settings.) }
 
 implementation
 
@@ -175,6 +170,7 @@ end;
 
 { TMapItem }
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 constructor TMapItem.Create(Key: Integer; Value: Pointer);
 begin
   inherited Create;
@@ -184,18 +180,21 @@ end;
 
 { TMap }
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 constructor TMap.Create;
 begin
   inherited Create;
   FItems := TObjectList.Create;
 end;
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 destructor TMap.Destroy;
 begin
   FItems.Free;
   inherited;
 end;
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 function TMap.Get(Key: Integer): Pointer;
 var
   I: Integer;
@@ -209,11 +208,13 @@ begin
   Result := nil;
 end;
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 function TMap.getItem(Index: Integer): TMapItem;
 begin
   Result := TMapItem(FItems[Index]);
 end;
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 function TMap.Put(Key: Integer; Value: Pointer): Pointer;
 var
   I: Integer;
@@ -230,6 +231,7 @@ begin
   FItems.add(TMapItem.Create(Key, Value));
 end;
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 function TMap.Remove(Key: Integer): Pointer;
 var
   I: Integer;
@@ -237,6 +239,7 @@ begin
   for I := 0 to FItems.Count - 1 do
     if Items[I].FKey = Key then
     begin
+      Result := Items[I].FValue;
       FItems.Delete(I);
       exit;
     end;
@@ -245,6 +248,7 @@ end;
 
 { ThtPrinter }
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 procedure ThtPrinter.CheckPrinting(Value: Boolean);
 begin
   if Printing <> Value then
@@ -254,6 +258,7 @@ begin
       RaiseError(SPrinting);
 end;
 
+//-- BG ---------------------------------------------------------- 29.01.2012 --
 procedure ThtPrinter.GetPrinterCapsOf(Printer: TPrinter);
 begin
   if Printer.Printers.Count = 0 then
@@ -277,16 +282,6 @@ begin
   FOffsetY := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);
   FPgHeight := Printer.PageHeight;
   FPgWidth := Printer.PageWidth;
-{$endif}
-end;
-
-function ThtPrinter.getWorkRect: TRect;
-{$ifdef LCL}
-begin
-  Result := Printer.PaperSize.PaperRect.WorkRect;
-{$else}
-begin
-
 {$endif}
 end;
 
