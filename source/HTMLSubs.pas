@@ -8923,7 +8923,8 @@ procedure THtmlTable.IncreaseWidthsRelatively(
 // Increases width of spanned columns according to relative columns specification.
 // Does not touch columns specified by percentage or absolutely.
 var
-  RequiredWidthFactor, Count, I, AddedWidth, AddedMulti: Integer;
+  RequiredWidthFactor: Double;
+  Count, I, AddedWidth, AddedMulti: Integer;
 begin
   // Some columns might have Multi=0. Don't widen these. Thus remove their width from Required.
   // Some columns might be wider than required. Widen all columns to preserve the relations.
@@ -8935,15 +8936,15 @@ begin
       begin
         Inc(Count);
         if ExactRelation then
-          RequiredWidthFactor := Max(RequiredWidthFactor, MulDiv(Widths[I], 100, Multis[I]));
+          RequiredWidthFactor := Max(RequiredWidthFactor, Widths[I] / Multis[I]);
       end
       else
       begin
         Dec(Required, Widths[I]);
       end;
 
-  RequiredWidthFactor := Max(RequiredWidthFactor, MulDiv(Required, 100, SpannedMultis)); // 100 times width of 1*.
-  Required := MulDiv(RequiredWidthFactor, SpannedMultis, 100);
+  RequiredWidthFactor := Max(RequiredWidthFactor, Required / SpannedMultis); // 100 times width of 1*.
+  Required := Min(Required, Trunc(RequiredWidthFactor * SpannedMultis)); // don't exceed given requirement.
   // building sum of all processed columns to reduce rounding errors.
   AddedWidth := 0;
   AddedMulti := 0;
@@ -8952,7 +8953,7 @@ begin
       if Count > 1 then
       begin
         Inc(AddedMulti, Multis[I]);
-        Widths[I] := MulDiv(AddedMulti, RequiredWidthFactor, 100) - AddedWidth;
+        Widths[I] := Trunc(AddedMulti * RequiredWidthFactor) - AddedWidth;
         Inc(AddedWidth, Widths[I]);
         Dec(Count);
       end
