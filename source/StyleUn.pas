@@ -138,9 +138,11 @@ type
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
+    // BG, 31.01.2012: don't change the order of the border properties:
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
+    //
     piWidth, piHeight, TopPos, BottomPos, RightPos, LeftPos, 
 
     Visibility, LineHeight, BackgroundImage, BackgroundPosition,

@@ -1597,6 +1597,20 @@ var
     end;
   end;
 
+  function HasBorderProps(const P: TProperties): Boolean;
+  var
+    I: PropIndices;
+  begin
+    Result := False;
+    if P <> nil then
+      for I := BorderTopWidth to BorderLeftStyle do
+        if not ((VarType(P.Props[I]) in varInt) and (P.Props[I] = IntNull)) then
+        begin
+          Result := True;
+          break;
+        end;
+  end;
+
 begin
   Inc(TableLevel);
   if TableLevel > 10 then
@@ -1684,7 +1698,7 @@ begin
                 PropStack.Last.Assign('center', TextAlign) {th}
               else
                 PropStack.Last.Assign('left', TextAlign); {td}
-            if (Attributes.TheStyle = nil) and (Table.BorderWidth > 0) then
+            if not HasBorderProps(Attributes.TheStyle) and (Table.BorderWidth > 0) then
             begin
               for S := BorderTopStyle to BorderLeftStyle do
               begin
