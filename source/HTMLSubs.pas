@@ -1046,7 +1046,7 @@ type
 // BG, 12.01.2012: not C++-Builder compatible
 //    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
 //    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
-    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Height as specified}
+    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Width as specified}
 // BG, 12.01.2012: not C++-Builder compatible
 //    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
 //    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
@@ -9194,13 +9194,6 @@ begin
             // Get current min and max width of spanned columns.
             SpannedMin := Sum(MinWidths, I, EndIndex);
             SpannedMax := Sum(MaxWidths, I, EndIndex);
-
-            if Span = NumCols then
-            begin
-              // Spanning all columns spans at least the whole table width.
-              CellMin := Max(CellMin, TheWidth);
-              CellMax := Max(CellMax, TheWidth);
-            end;
 
             if (CellMin > SpannedMin) or (CellMax > SpannedMax) then
             begin
