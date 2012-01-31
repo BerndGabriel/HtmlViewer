@@ -71,6 +71,7 @@ type
     procedure NewPage; virtual; abstract;
     procedure EndDoc; virtual; abstract;
     procedure Abort; virtual; abstract;
+    procedure Assign(Source: TPersistent); override;
     property Canvas: TCanvas read GetCanvas;
     property OffsetX: Integer read FOffsetX;
     property OffsetY: Integer read FOffsetY;
@@ -249,6 +250,24 @@ end;
 { ThtPrinter }
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --
+procedure ThtPrinter.Assign(Source: TPersistent);
+var
+  Src: ThtPrinter absolute Source;
+begin
+  inherited;
+  if Source is ThtPrinter then
+  begin
+    FPPIX := Src.FPPIX;
+    FPPIY := Src.FPPIY;
+    FPaperWidth  := Src.FPaperWidth;
+    FPaperHeight := Src.FPaperHeight;
+    FOffsetX  := Src.FOffsetX;
+    FOffsetY  := Src.FOffsetY;
+    FPgHeight := Src.FPgHeight;
+    FPgWidth  := Src.FPgWidth;
+  end;
+end;
+
 procedure ThtPrinter.CheckPrinting(Value: Boolean);
 begin
   if Printing <> Value then

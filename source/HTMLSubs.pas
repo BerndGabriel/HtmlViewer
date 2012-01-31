@@ -1397,6 +1397,7 @@ type
       AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
       LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
       MarginHeight, MarginWidth: Integer);
+    property ImageCache: TStringBitmapList read BitmapList;
   end;
 
 //------------------------------------------------------------------------------
