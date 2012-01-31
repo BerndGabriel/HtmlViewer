@@ -902,6 +902,7 @@ type
     FListFont: TFont;
     Image: TImageObj;
     FirstLineHt: Integer;
+    procedure SetListFont(const Value: TFont);
   public
     constructor Create(Master: ThtDocument; Prop: TProperties; AnOwnerCell: TCellBasic;
       Sy: Symb; APlain: boolean; AIndexType: ThtChar;
@@ -911,10 +912,10 @@ type
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    property ListNumb: Integer read FListNumb;
-    property ListStyleType: ListBulletType read FListStyleType;
-    property ListType: ListTypeType read FListType;
-    property ListFont: TFont read FListFont;
+    property ListNumb: Integer read FListNumb write FListNumb;
+    property ListStyleType: ListBulletType read FListStyleType write FListStyleType;
+    property ListType: ListTypeType read FListType write FListType;
+    property ListFont: TFont read FListFont write SetListFont;
   end;
 
   TFieldsetBlock = class(TBlock)
@@ -1251,7 +1252,7 @@ type
     function FreeMe: Boolean; override;
   public
     constructor Create(MasterList: ThtDocument; Pos: Integer);
-    property ChPos: Integer read FChPos;
+    property ChPos: Integer read FChPos write FChPos;
     property MasterList: ThtDocument read FDocument;
   end;
 
@@ -6711,6 +6712,12 @@ begin
   finally
     Document.FirstLineHtPtr := nil;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 31.01.2012 --
+procedure TBlockLI.SetListFont(const Value: TFont);
+begin
+  FListFont.Assign(Value);
 end;
 
 ////-- BG ---------------------------------------------------------- 16.09.2009 --
