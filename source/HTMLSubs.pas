@@ -6426,7 +6426,7 @@ end;
 function TTableBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer;
 var
   LeftSide, RightSide: Integer;
-  Min, Max, M: Integer;
+  Min, Max, M, P: Integer;
 begin
   if not HasCaption then
   begin
@@ -6468,25 +6468,26 @@ begin
     if not HasCaption then {already done if HasCaption}
     begin
       if AsPercent then
-      begin
-        Result := MulDiv(AWidth, WidthAttr, 1000);
-        Dec(Result, (LeftSide + RightSide));
-      end
+        Result := MulDiv(AWidth, WidthAttr, 1000) - LeftSide - RightSide
       else
-        Result := WidthAttr - (MargArray[PaddingLeft] + MargArray[BorderLeftWidth]
-          + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
+        Result := WidthAttr - (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
       Table.tblWidthAttr := Result;
       Table.MinMaxWidth(Canvas, Min, Max);
-      Result := Math.Max(Min, Result);
-      Table.tblWidthAttr := Result;
-    end
-    else
-      Result := Table.tblWidthAttr;
+      Table.tblWidthAttr := Math.Max(Min, Result);
+    end;
+    Result := Table.tblWidthAttr;
   end
   else
   begin
-    Table.MinMaxWidth(Canvas, Min, Max);
     Result := AWidth - LeftSide - RightSide;
+    Table.MinMaxWidth(Canvas, Min, Max);
+    P := Math.Min(Sum(Table.Percents), 1000);
+    if P > 0 then
+    begin
+      P := MulDiv(Result, P, 1000);
+      Min := Math.Max(Min, P);
+      Max := Math.Max(Max, P);
+    end;
     if Result > Max then
       Result := Max
     else if Result < Min then
@@ -9388,7 +9389,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       MinWidth := Sum(Widths);
 
       if MinWidth > NewWidth then
-        // Table is too small for given precentage specifications.
+        // Table is too small for given percentage specifications.
         // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
         IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
       else if not Specified and (MaxWidth <= NewWidth) then
