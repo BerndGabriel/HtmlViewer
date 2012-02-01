@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -196,6 +198,7 @@ type
 
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
+    procedure UpdateCaption;
   public
     { Public declarations }
   end;
@@ -223,8 +226,6 @@ if Screen.Width <= 640 then
 
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 
-Caption := 'HTML Demo, Version '+HTMLAbt.Version;
-
 ShowImages.Checked := Viewer.ViewImages;
 Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
@@ -244,6 +245,7 @@ Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 {$endif}
   HintWindow := THintWindow.Create(Self);
   HintWindow.Color := $C0FFFF;
+  UpdateCaption;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -270,13 +272,13 @@ end;
 
 procedure TForm1.OpenFileClick(Sender: TObject);
 begin
-if Viewer.CurrentFile <> '' then
-  OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-if OpenDialog.Execute then
+  if Viewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  if OpenDialog.Execute then
   begin
-  Update;  
-  Viewer.LoadFromFile(OpenDialog.Filename);
-  Caption := Viewer.DocumentTitle;
+    Update;
+    Viewer.LoadFromFile(OpenDialog.Filename);
+    UpdateCaption;
   end;
 end;
 
@@ -285,12 +287,12 @@ procedure TForm1.HotSpotChange(Sender: TObject; const URL: ThtString);
 var
   Caption: string;
 begin
-Caption := '';
-if URL <> '' then
-  Caption := Caption+'URL: '+URL+'     ';
-if Viewer.TitleAttr <> '' then
-  Caption := Caption+'Title: '+Viewer.TitleAttr;
-Panel1.Caption := Caption;
+  Caption := '';
+  if URL <> '' then
+    Caption := Caption+'URL: '+URL+'     ';
+  if Viewer.TitleAttr <> '' then
+    Caption := Caption+'Title: '+Viewer.TitleAttr;
+  Panel1.Caption := Caption;
 end;
 
 procedure TForm1.HotSpotClick(Sender: TObject; const URL: ThtString; var Handled: boolean);
@@ -300,17 +302,16 @@ procedure TForm1.HotSpotClick(Sender: TObject; const URL: ThtString; var Handled
 
  If the URL is handled here, set Handled to True.  If not handled here, set it
  to False and ThtmlViewer will handle it.}
+{$ifndef MultiMediaMissing}
 const
   snd_Async = $0001;  { play asynchronously }
-var
-  PC: array[0..255] of char;
-{$ifdef LCL}
-  PC2: array[0..255] of char;
 {$endif}
-  S, Params: string[255];
-  Ext: string[5];
-  ID: string;
+var
+  PC: array[0..255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
+  S, Params: ThtString;
+  Ext: string;
   I, J, K: integer;
+  ID: string;
 
 begin
 Handled := False;
@@ -318,10 +319,12 @@ Handled := False;
 {The following looks for a link of the form, "IDExpand_XXX".  This is interpreted
  as meaning a block with an ID="XXXPlus" or ID="XXXMinus" attribute should
  have its Display property toggled.
-} 
+}
 I := Pos('IDEXPAND_', Uppercase(URL));
 if I=1 then
   begin
+  if Assigned(Viewer) then
+    begin
     ID := Copy(URL, 10, Length(URL)-9);
     if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
       Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
@@ -329,10 +332,12 @@ if I=1 then
       Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
     Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
     Viewer.Reformat;
-    Handled := True;
-    Exit;
+    end;
+  Handled := True;
+  Exit;
   end;
 
+{check for various file types}
 I := Pos(':', URL);
 J := Pos('FILE:', UpperCase(URL));
 if (I <= 2) or (J > 0) then
@@ -343,54 +348,46 @@ if (I <= 2) or (J > 0) then
   if K > 0 then
     begin
     Params := Copy(S, K+1, 255); {save any parameters}
-    S[0] := Ansichar(K-1);            {truncate S}
+    setLength(S, K-1);            {truncate S}
     end
   else Params := '';
-  S := Viewer.HTMLExpandFileName(S);
+  S := (Sender as TFrameViewer).HTMLExpandFileName(S);
   Ext := Uppercase(ExtractFileExt(S));
   if Ext = '.WAV' then
     begin
     Handled := True;
-{$ifndef LCL}
+{$ifndef MultiMediaMissing}
     sndPlaySound(StrPCopy(PC, S), snd_ASync);
 {$endif}
     end
   else if Ext = '.EXE' then
     begin
     Handled := True;
-{$ifdef LCL}
-    OpenDocument(s);
-{$else}
-    WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
-{$endif}
+    StartProcess(S + ' ' + Params, SW_SHOW);
     end
   else if (Ext = '.MID') or (Ext = '.AVI')  then
     begin
     Handled := True;
-{$ifdef LCL}
-    OpenDocument(s);
-{$else}
-    WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
-{$endif}
+    StartProcess('MPlayer.exe /play /close ' + S, SW_SHOW);
     end;
   {else ignore other extensions}
   Edit1.Text := URL;
   Exit;
   end;
-
-  I := Pos('MAILTO:', UpperCase(URL));
-  J := Pos('HTTP:', UpperCase(URL));
-  if (I > 0) or (J > 0) then
+I := Pos('MAILTO:', UpperCase(URL));
+J := Pos('HTTP://', UpperCase(URL));
+if (I > 0) or (J > 0) then
   begin
+  {Note: ShellExecute causes problems when run from Delphi 4 IDE}
 {$ifdef LCL}
-    OpenDocument(URL);
+  OpenDocument(StrPCopy(PC, URL));
 {$else}
-    ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
+  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
 {$endif}
-    Handled := True;
-    Exit;
+  Handled := True;
+  Exit;
   end;
-  Edit1.Text := URL;   {other protocall}
+Edit1.Text := URL;   {other protocall}
 end;
 
 procedure TForm1.ShowImagesClick(Sender: TObject);
@@ -406,56 +403,57 @@ end;
 procedure TForm1.ReloadButtonClick(Sender: TObject);
 {the Reload button was clicked}
 begin
-with Viewer do
+  with Viewer do
   begin
-  ReLoadButton.Enabled := False;
-  ReLoad;
-  ReLoadButton.Enabled := CurrentFile <> '';
-  Viewer.SetFocus;
+    ReLoadButton.Enabled := False;
+    ReLoad;
+    ReLoadButton.Enabled := CurrentFile <> '';
+    Viewer.SetFocus;
   end;
 end;
 
 procedure TForm1.FwdBackClick(Sender: TObject);
 {Either the Forward or Back button was clicked}
 begin
-with Viewer do
+  with Viewer do
   begin
-  if Sender = BackButton then
-    HistoryIndex := HistoryIndex +1
-  else
-    HistoryIndex := HistoryIndex -1;
-  Self.Caption := DocumentTitle;      
+    if Sender = BackButton then
+      HistoryIndex := HistoryIndex +1
+    else
+      HistoryIndex := HistoryIndex -1;
+    UpdateCaption;
   end;
 end;
 
 procedure TForm1.HistoryChange(Sender: TObject);
 {This event occurs when something changes history list}
 var
-  I: integer;
-  Cap: string[80];
+  I: Integer;
+  Cap: ThtString;
 begin
-with Sender as ThtmlViewer do
+  with Sender as ThtmlViewer do
   begin
-  {check to see which buttons are to be enabled}
-  FwdButton.Enabled := HistoryIndex > 0;
-  BackButton.Enabled := HistoryIndex < History.Count-1;
+    {check to see which buttons are to be enabled}
+    FwdButton.Enabled := HistoryIndex > 0;
+    BackButton.Enabled := HistoryIndex < History.Count-1;
 
-  {Enable and caption the appropriate history menuitems}
-  HistoryMenuItem.Visible := History.Count > 0;
-  for I := 0 to MaxHistories-1 do
-    with Histories[I] do
-      if I < History.Count then
+    {Enable and caption the appropriate history menuitems}
+    HistoryMenuItem.Visible := History.Count > 0;
+    for I := 0 to MaxHistories-1 do
+      with Histories[I] do
+        if I < History.Count then
         Begin
-        Cap := History.Strings[I];
-        if TitleHistory[I] <> '' then
-          Cap := Cap + '--' + TitleHistory[I];
-        Caption := Cap;    {Cap limits string to 80 char}
-        Visible := True;
-        Checked := I = HistoryIndex;
+          Cap := History.Strings[I];
+          if TitleHistory[I] <> '' then
+            Cap := Cap + '--' + TitleHistory[I];
+          Caption := Cap;    {Cap limits string to 80 char}
+          Visible := True;
+          Checked := I = HistoryIndex;
         end
-      else Histories[I].Visible := False;
-  Caption := DocumentTitle;    {keep the caption updated}
-  Viewer.SetFocus;  
+        else
+          Histories[I].Visible := False;
+    UpdateCaption;
+    Viewer.SetFocus;
   end;
 end;
 
@@ -601,66 +599,67 @@ end;
 
 procedure TForm1.OpenTextFileClick(Sender: TObject);
 begin
-if Viewer.CurrentFile <> '' then
-  OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html'+
+  if Viewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html'+
     '|Text Files (*.txt)|*.txt'+
     '|All Files (*.*)|*.*';
-if OpenDialog.Execute then
+  if OpenDialog.Execute then
   begin
-  ReloadButton.Enabled := False;
-  Update;
-  Viewer.LoadTextFile(OpenDialog.Filename);
-  if Viewer.CurrentFile  <> '' then
+    ReloadButton.Enabled := False;
+    Update;
+    Viewer.LoadTextFile(OpenDialog.Filename);
+    if Viewer.CurrentFile  <> '' then
     begin
-    Caption := Viewer.DocumentTitle;
-    ReLoadButton.Enabled := True;
+      UpdateCaption;
+      ReLoadButton.Enabled := True;
     end;
   end;
 end;
 
 procedure TForm1.OpenImageFileClick(Sender: TObject);
 begin
-if Viewer.CurrentFile <> '' then
-  OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
+  if Viewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
     '*.bmp;*.jpg;*.jpeg;*.gif;*.png|'+
     'All Files (*.*)|*.*';
-if OpenDialog.Execute then
+  if OpenDialog.Execute then
   begin
-  ReloadButton.Enabled := False;
-  Viewer.LoadImageFile(OpenDialog.Filename);
-  if Viewer.CurrentFile  <> '' then
+    ReloadButton.Enabled := False;
+    Viewer.LoadImageFile(OpenDialog.Filename);
+    if Viewer.CurrentFile  <> '' then
     begin
-    Caption := Viewer.DocumentTitle;
-    ReLoadButton.Enabled := True;
+      UpdateCaption;
+      ReLoadButton.Enabled := True;
     end;
   end;
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
 var
-  S: string[200];
+  S: String;
   Ext: string;
   Count: integer;
 begin
 {$ifndef LCL}
-Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-Length(S) := Count;
-DragFinish(Message.WParam);
-if Count >0 then
+  SetLength(S, 200);
+  Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
+  SetLength(S, Count);
+  DragFinish(Message.WParam);
+  if Count > 0 then
   begin
-  Ext := LowerCase(ExtractFileExt(S));
-  if (Ext = '.htm') or (Ext = '.html') then
-    Viewer.LoadFromFile(S)
-  else if (Ext = '.txt') then
-    Viewer.LoadTextFile(S)
-  else if (Ext = '.bmp') or (Ext = '.gif') or (Ext = '.jpg')
-        or (Ext = '.jpeg') or (Ext = '.png') then
-    Viewer.LoadImageFile(S);
+    Ext := LowerCase(ExtractFileExt(S));
+    if (Ext = '.htm') or (Ext = '.html') then
+      Viewer.LoadFromFile(S)
+    else if (Ext = '.txt') then
+      Viewer.LoadTextFile(S)
+    else if (Ext = '.bmp') or (Ext = '.gif') or (Ext = '.jpg')
+          or (Ext = '.jpeg') or (Ext = '.png') then
+      Viewer.LoadImageFile(S);
   end;
 {$endif}
-Message.Result := 0;
+  Message.Result := 0;
 end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
@@ -849,17 +848,17 @@ begin
 {$ifdef LCL}
   OpenDocument(ParamStr(0));
 {$else}
-  WinExec(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
+  StartProcess(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
 {$endif}
 end;
 
 procedure TForm1.MetaTimerTimer(Sender: TObject);
 begin
-MetaTimer.Enabled := False;
-if Viewer.CurrentFile = PresentFile then  {don't load if current file has changed}
+  MetaTimer.Enabled := False;
+  if Viewer.CurrentFile = PresentFile then  {don't load if current file has changed}
   begin
-  Viewer.LoadFromFile(NextFile);
-  Caption := Viewer.DocumentTitle;
+    Viewer.LoadFromFile(NextFile);
+    UpdateCaption;
   end;
 end;
 
@@ -1031,6 +1030,29 @@ end;
 procedure TForm1.RepaintButtonClick(Sender: TObject);
 begin
   Viewer.Repaint;
+end;
+
+procedure TForm1.UpdateCaption;
+var
+  Title, Cap: ThtString;
+begin
+  if Viewer.DocumentTitle <> '' then
+    Title := Viewer.DocumentTitle
+  else if Viewer.URL <> '' then
+    Title := Viewer.URL
+  else if Viewer.CurrentFile <> '' then
+    Title := Viewer.CurrentFile
+  else
+    Title := '';
+
+  Cap := 'HtmlViewer ' + VersionNo + ' Demo';
+  if Title <> '' then
+    Cap := Cap + ' - ' + Title;
+{$ifdef LCL}
+  Caption := UTF8Encode(Cap);
+{$else}
+  Caption := Cap;
+{$endif}
 end;
 
 end.

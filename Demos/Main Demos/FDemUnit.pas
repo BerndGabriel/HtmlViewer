@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -275,6 +277,7 @@ begin
     Edit2.Text := 'Program uses single byte characters.'
   else
     Edit2.Text := 'Program uses unicode characters.';
+  UpdateCaption;
 end;
 
 procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: boolean);
@@ -409,12 +412,12 @@ end;
 
 procedure TForm1.Exit1Click(Sender: TObject);
 begin
-Close;
+  Close;
 end;
 
 procedure TForm1.Find1Click(Sender: TObject);
 begin
-FindDialog.Execute;
+  FindDialog.Execute;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -660,6 +663,7 @@ var
   S: string;
   Count: integer;
 begin
+  SetLength(S, 200);
   Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
   SetLength(S, Count);
   DragFinish(Message.WParam);
@@ -1038,15 +1042,28 @@ begin
 end;
 
 procedure TForm1.UpdateCaption;
+var
+  Viewer: TFrameViewer;
+  Title, Cap: ThtString;
 begin
-  if FrameViewer.DocumentTitle <> '' then
-{$ifdef LCL}
-    Caption := 'FrameViewer Demo - ' + UTF8Encode(FrameViewer.DocumentTitle)
-{$else}
-    Caption := 'FrameViewer Demo - ' + FrameViewer.DocumentTitle
-{$endif}
+  Viewer := FrameViewer;
+  if Viewer.DocumentTitle <> '' then
+    Title := Viewer.DocumentTitle
+  else if Viewer.URL <> '' then
+    Title := Viewer.URL
+  else if Viewer.CurrentFile <> '' then
+    Title := Viewer.CurrentFile
   else
-    Caption := 'FrameViewer Demo - <untitled document>';
+    Title := '';
+
+  Cap := 'FrameViewer ' + VersionNo + ' Demo';
+  if Title <> '' then
+    Cap := Cap + ' - ' + Title;
+{$ifdef LCL}
+  Caption := UTF8Encode(Cap);
+{$else}
+  Caption := Cap;
+{$endif}
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
