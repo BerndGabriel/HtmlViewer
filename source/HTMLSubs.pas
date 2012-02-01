@@ -6863,7 +6863,7 @@ begin
   PositionList.Free;
   TabOrderList.Free;
   if not IsCopy then
-    TInlineList(InlineList).Free;
+    InlineList.Free;
   FPropStack.Free;
 end;
 

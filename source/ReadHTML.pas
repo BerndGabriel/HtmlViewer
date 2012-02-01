@@ -759,7 +759,6 @@ var
 begin
   FPropStack := THTMLPropStack.Create;
   try
-    FPropStack.Document := nil;
     OldPos := Doc.Position;
     Result := True;
     repeat
@@ -796,8 +795,7 @@ begin
     until False;
     Doc.Position := OldPos;
   finally
-    FPropStack.Free;
-    FPropStack := nil;
+    FreeAndNil(FPropStack);
   end;
 end;
 
@@ -923,13 +921,7 @@ procedure THtmlParser.Next;
           begin
             if LCh = AmperChar then
             begin
-      {$ifdef UNICODE}
-      {$else}
-              if (Sym = ValueSy) and UnicodeControls then
-                S := S + GetEntityStr(PropStack.Last.CodePage)
-              else
-      {$endif}
-                S := S + GetEntityStr(FPropStack.Last.CodePage); //CP_ACP);
+              S := S + GetEntityStr(FPropStack.Last.CodePage);
             end
             else
             begin
@@ -1270,13 +1262,7 @@ var
     begin GetTag1; Exit; end
     else if LCh = AmperChar then
     begin
-{$ifdef UNICODE}
-{$else}
-      if UnicodeControls then
-        Token := Token + GetEntityStr(PropStack.Last.CodePage)
-      else
-{$endif}
-        Token := Token + GetEntityStr(FPropStack.Last.CodePage); //CP_ACP);
+      Token := Token + GetEntityStr(FPropStack.Last.CodePage);
       Sy := CommandSy;
     end
     else if IsText1 then
@@ -3845,7 +3831,6 @@ procedure THtmlParser.ParseInit(ASectionList: ThtDocument);
 begin
   SectionList := ASectionList;
   FUseQuirksMode := ASectionList.UseQuirksMode;
-  FPropStack := ASectionList.PropStack;
   FPropStack.Document := ASectionList;
   CallingObject := ASectionList.TheOwner;
 
@@ -3870,9 +3855,7 @@ begin
   FBase := '';
   FBaseTarget := '';
   FPropStack.Document.CurrentStyle := [];
-  if Assigned(FPropStack.Document) then begin
-    FPropStack.Document.CurrentForm := nil;
-  end;
+  FPropStack.Document.CurrentForm := nil;
   Section := TSection.Create(SectionList, nil, FPropStack.Last, nil, True);
   Attributes := TAttributeList.Create;
   InScript := False;
@@ -3895,59 +3878,63 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
-  ParseInit(ASectionList);
-  IncludeEvent := AIncludeEvent;
-
+  FPropStack := ASectionList.PropStack;
   try
-{$IFNDEF NoTabLink}
-    SaveSIndex := FPropStack.SIndex;
-    SavePosition := Doc.Position;
-    LinkSearch := True;
-    SoundEvent := nil;
-    MetaEvent := nil;
-    LinkEvent := nil;
-    TabCount := 0;
+    ParseInit(ASectionList);
+    IncludeEvent := AIncludeEvent;
     try
-      GetCh; {get the reading started}
-      Next;
-      while Sy <> EofSy do
-      begin
-        if (Sy = ASy) and Attributes.Find(HrefSy, T) then
-        begin
-          Inc(TabCount);
-          if TabCount > MaxTab then
-            break;
-        end;
+  {$IFNDEF NoTabLink}
+      SaveSIndex := FPropStack.SIndex;
+      SavePosition := Doc.Position;
+      LinkSearch := True;
+      SoundEvent := nil;
+      MetaEvent := nil;
+      LinkEvent := nil;
+      TabCount := 0;
+      try
+        GetCh; {get the reading started}
         Next;
+        while Sy <> EofSy do
+        begin
+          if (Sy = ASy) and Attributes.Find(HrefSy, T) then
+          begin
+            Inc(TabCount);
+            if TabCount > MaxTab then
+              break;
+          end;
+          Next;
+        end;
+        ASectionList.StopTab := TabCount > MaxTab;
+      except
       end;
-      ASectionList.StopTab := TabCount > MaxTab;
-    except
-    end;
-  {reset a few things}
-    FPropStack.SIndex := SaveSIndex;
-    Doc.Position := SavePosition;
-{$ENDIF}
+    {reset a few things}
+      FPropStack.SIndex := SaveSIndex;
+      Doc.Position := SavePosition;
+  {$ENDIF}
 
-    LinkSearch := False;
-    SoundEvent := ASoundEvent;
-    MetaEvent := AMetaEvent;
-    LinkEvent := ALinkEvent;
-    try
-      GetCh; {get the reading started}
-      Next;
-      DoBody([]);
-    except
-      on E: Exception do
-        Assert(False, E.Message);
-    end;
+      LinkSearch := False;
+      SoundEvent := ASoundEvent;
+      MetaEvent := AMetaEvent;
+      LinkEvent := ALinkEvent;
+      try
+        GetCh; {get the reading started}
+        Next;
+        DoBody([]);
+      except
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
 
+    finally
+      Attributes.Free;
+      if Assigned(Section) then
+        SectionList.Add(Section, TagIndex);
+      FPropStack.Clear;
+      CurrentURLTarget.Free;
+    end; {finally}
   finally
-    Attributes.Free;
-    if Assigned(Section) then
-      SectionList.Add(Section, TagIndex);
-    FPropStack.Clear;
-    CurrentURLTarget.Free;
-  end; {finally}
+    FPropStack := nil;
+  end;
 end;
 
 {----------------DoText}
@@ -4005,21 +3992,26 @@ end;
 //-- BG ---------------------------------------------------------- 27.12.2010 --
 procedure THtmlParser.ParseText(ASectionList: ThtDocument);
 begin
-  Self.Doc := Doc;
-  ParseInit(ASectionList);
-  InScript := True;
-
+  FPropStack := ASectionList.PropStack;
   try
-    GetCh; {get the reading started}
-    DoText;
+    Self.Doc := Doc;
+    ParseInit(ASectionList);
+    InScript := True;
 
+    try
+      GetCh; {get the reading started}
+      DoText;
+
+    finally
+      Attributes.Free;
+      if Assigned(Section) then
+        SectionList.Add(Section, TagIndex);
+      FPropStack.Clear;
+      CurrentUrlTarget.Free;
+    end; {finally}
   finally
-    Attributes.Free;
-    if Assigned(Section) then
-      SectionList.Add(Section, TagIndex);
-    FPropStack.Clear;
-    CurrentUrlTarget.Free;
-  end; {finally}
+    FPropStack := nil;
+  end;
 end;
 
 {-------------FrameParseString}
@@ -4068,30 +4060,35 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   end;
 
 begin
-  FPropStack.Document := nil;
-  CallingObject := FrameViewer;
-  IncludeEvent := FrameViewer.OnInclude;
-  SoundEvent := FrameViewer.OnSoundRequest;
-  MetaEvent := AMetaEvent;
-  LinkEvent := FrameViewer.OnLink;
-
-  FBase := '';
-  FBaseTarget := '';
-  InScript := False;
-  NoBreak := False;
-  InComment := False;
-  ListLevel := 0;
-
-  Attributes := TAttributeList.Create;
+  FPropStack := THTMLPropStack.Create;
   try
+    FPropStack.Document := nil;
+    CallingObject := FrameViewer;
+    IncludeEvent := FrameViewer.OnInclude;
+    SoundEvent := FrameViewer.OnSoundRequest;
+    MetaEvent := AMetaEvent;
+    LinkEvent := FrameViewer.OnLink;
+
+    FBase := '';
+    FBaseTarget := '';
+    InScript := False;
+    NoBreak := False;
+    InComment := False;
+    ListLevel := 0;
+
+    Attributes := TAttributeList.Create;
     try
-      Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
+      try
+        Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
+    finally
+      Attributes.Free;
     end;
   finally
-    Attributes.Free;
+    FreeAndNil(FPropStack);
   end;
 end;
 
@@ -4135,32 +4132,31 @@ var
 begin
   FPropStack := THTMLPropStack.Create;
   try
-  FPropStack.Document := nil;
-  CallingObject := FrameViewer;
-  SoundEvent := nil;
+    CallingObject := FrameViewer;
+    SoundEvent := nil;
 
-  FBase := '';
-  FBaseTarget := '';
-  Result := False;
-  InScript := False;
-  NoBreak := False;
-  InComment := False;
+    FBase := '';
+    FBaseTarget := '';
+    Result := False;
+    InScript := False;
+    NoBreak := False;
+    InComment := False;
 
-  Pos := Doc.Position;
-  Attributes := TAttributeList.Create;
-  try
+    Pos := Doc.Position;
+    Attributes := TAttributeList.Create;
     try
-      Result := Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
+      try
+        Result := Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
+    finally
+      Attributes.Free;
+      Doc.Position := Pos;
     end;
   finally
-    Attributes.Free;
-    Doc.Position := Pos;
-  end;
-  finally
-    FPropStack.Free;
+    FreeAndNil(FPropStack);
   end;
 end;
 
