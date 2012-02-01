@@ -245,7 +245,7 @@ type
     property BackButtonEnabled: boolean read GetBackButtonEnabled;
   published
     property CharSet;
-    property CodePage;
+    property CodePage default 0;
     property Cursor: TCursor read FCursor write SetCursor default crIBeam;
     property DefBackground;
     property DefFontColor;
