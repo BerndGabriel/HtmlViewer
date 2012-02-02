@@ -1872,6 +1872,7 @@ procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
 var
   I: PropIndices;
   BS: BorderStyleType;
+  NewColor : TColor;
 begin
   for I := Low(Marray) to High(MArray) do
     case I of
@@ -1881,6 +1882,21 @@ begin
         GetBorderStyle(I, BS);
         MArray[I] := BS;
       end;
+      {From: http://www.w3.org/TR/CSS21/box.html#x49
+
+      If an element's border color is not specified with a
+      border property, user agents must use the value of the
+      element's 'color' property as the computed value for
+      the border color.
+      }
+      BorderTopColor..BorderLeftColor:
+      begin
+        if TryStrToColor(Props[I],False,NewColor) then begin
+          MArray[I] := Props[I]
+        end else begin
+          MArray[I] := Props[StyleUn.Color];
+        end;
+      end
     else
       MArray[I] := Props[I];
     end;
