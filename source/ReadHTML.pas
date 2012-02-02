@@ -1698,33 +1698,38 @@ begin
                 PropStack.Last.Assign('center', TextAlign) {th}
               else
                 PropStack.Last.Assign('left', TextAlign); {td}
-            if not HasBorderProps(Attributes.TheStyle) and (Table.BorderWidth > 0) then
+
+            // BG, 02.02.2012: border
+            for S := BorderTopStyle to BorderLeftStyle do
             begin
-              for S := BorderTopStyle to BorderLeftStyle do
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
+                if VarType(NewBlock.MargArrayO[S]) in varInt then
+                  case BorderStyleType(NewBlock.MargArrayO[S]) of
+                    bssInset:   PropStack.Last.Props[S] := bssOutset;
+                    bssOutset:  PropStack.Last.Props[S] := bssInset;
+                  else
+                    PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
+                  end;
+            end;
+            for S := BorderTopWidth to BorderLeftWidth do
+            begin
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
               begin
-                V := PropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  if VarType(NewBlock.MargArrayO[S]) in varInt then
-                    case BorderStyleType(NewBlock.MargArrayO[S]) of
-                      bssInset:   PropStack.Last.Props[S] := bssOutset;
-                      bssOutset:  PropStack.Last.Props[S] := bssInset;
-                    else
-                      PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
-                    end;
-              end;
-              for S := BorderTopWidth to BorderLeftWidth do
-              begin
-                V := PropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  PropStack.Last.Props[S] := 1;
-              end;
-              for S := BorderTopColor to BorderLeftColor do
-              begin
-                V := PropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  PropStack.Last.Props[S] := Table.BorderColor;
+                if Table.BorderWidth <= 0 then
+                  PropStack.Last.Props[S] := 3
+                else
+                  PropStack.Last.Props[S] := 1
               end;
             end;
+            for S := BorderTopColor to BorderLeftColor do
+            begin
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
+                PropStack.Last.Props[S] := Table.BorderColor;
+            end;
+
             CellObj := TCellObj.Create(PropStack.MasterList, VAlign, Attributes, PropStack.Last);
             SectionList := CellObj.Cell;
             if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then

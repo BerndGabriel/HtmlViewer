@@ -1191,6 +1191,7 @@ type
     Initialized: Boolean;
     //Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
+    HasBorderWidth: Boolean; {width of border has been set by attr or prop}
     Float: Boolean;         {if floating}
     NumCols: Integer;       {Number columns in table}
     TableWidth: Integer;    {width of table}
@@ -6202,7 +6203,7 @@ constructor TTableBlock.Create(Master: ThtDocument; Prop: TProperties;
   AnOwnerCell: TCellBasic; ATable: THtmlTable; TableAttr: TAttributeList;
   TableLevel: Integer);
 var
-  I, AutoCount, BorderColor: Integer;
+  I, AutoCount, BorderColor, BorderWidth: Integer;
   Percent: boolean;
   S,W,C: PropIndices;
 begin
@@ -6211,7 +6212,7 @@ begin
   Justify := NoJustify;
 
   for I := 0 to TableAttr.Count - 1 do
-    with TAttribute(TableAttr[I]) do
+    with TableAttr[I] do
       case Which of
         AlignSy:
           if CompareText(Name, 'CENTER') = 0 then
@@ -6255,54 +6256,68 @@ begin
       end;
 
   //BG, 13.06.2010: Issue 5: Table border versus stylesheets:
-  if Table.BorderWidth > 0 then
-  begin
-    S := BorderTopStyle;
-    for W := BorderTopWidth to BorderLeftWidth do
-    begin
-      if (MargArrayO[S] = Unassigned) or (MargArrayO[S] = bssNone) then
-      begin
-        if Table.BorderColor = clNone then
-          MargArrayO[S] := bssOutset
-        else
-          MargArrayO[S] := bssSolid;
-        if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
-          MargArrayO[W] := Table.BorderWidth;
-      end;
-      Inc(S);
-    end;
-    HasBorderStyle := True; //bssOutset;
-  end;
-
+  //BG, 02.02.2012: Issue 121: Cell border:
+  TableBorder := False;
   BorderColor := Table.BorderColor;
   if BorderColor = clNone then
     BorderColor := clSilver;
+  if Table.HasBorderWidth then
+    BorderWidth := Table.BorderWidth
+  else
+    BorderWidth := 3;
   C := BorderTopColor;
-  TableBorder := False;
+  W := BorderTopWidth;
   for S := BorderTopStyle to BorderLeftStyle do
   begin
-    if MargArrayO[S] <> bssNone then
+    if (MargArrayO[S] = Unassigned) or (MargArrayO[S] = bssNone) then
     begin
-      TableBorder := True;
-      if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
-        case BorderStyleType(MargArrayO[S]) of
-          bssOutset:
-            if S in [BorderLeftStyle, BorderTopStyle] then
-              MargArrayO[C] := Table.BorderColorLight
-            else
-              MargArrayO[C] := Table.BorderColorDark;
-          bssInset:
-            if S in [BorderLeftStyle, BorderTopStyle] then
-              MargArrayO[C] := Table.BorderColorDark
-            else
-              MargArrayO[C] := Table.BorderColorLight;
-        else
-          MargArrayO[C] := BorderColor;
-        end;
-    end;
-    Inc(C);
-  end;
+      // no style specified
+      if Table.BorderWidth > 0 then
+      begin
+        if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
+          // set default style
+          if Table.BorderColor = clNone then
+            MargArrayO[S] := bssOutset
+          else
+            MargArrayO[S] := bssSolid;
 
+        if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
+          // set default width
+          MargArrayO[W] := Table.BorderWidth;
+
+        HasBorderStyle := True;
+        TableBorder := True;
+      end;
+    end
+    else
+    begin
+      // style has been specified
+      TableBorder := not Table.HasBorderWidth or (Table.BorderWidth > 0);
+      if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
+        // set default width
+        MargArrayO[W] := BorderWidth;
+    end;
+
+    if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
+      // no color specified, set default color:
+      case BorderStyleType(MargArrayO[S]) of
+        bssOutset:
+          if S in [BorderLeftStyle, BorderTopStyle] then
+            MargArrayO[C] := Table.BorderColorLight
+          else
+            MargArrayO[C] := Table.BorderColorDark;
+        bssInset:
+          if S in [BorderLeftStyle, BorderTopStyle] then
+            MargArrayO[C] := Table.BorderColorDark
+          else
+            MargArrayO[C] := Table.BorderColorLight;
+      else
+        MargArrayO[C] := BorderColor;
+      end;
+
+    Inc(C);
+    Inc(W);
+  end;
 
 {need to see if width is defined in style}
   Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
@@ -8627,19 +8642,23 @@ begin
   Rows := TRowList.Create;
   CellPadding := 1;
   CellSpacing := 2;
+  HasBorderWidth := Prop.HasBorderWidth;
   BorderColor := clNone;
   BorderColorLight := clBtnHighLight;
   BorderColorDark := clBtnShadow;
   for I := 0 to Attr.Count - 1 do
-    with TAttribute(Attr[I]) do
+    with Attr[I] do
       case Which of
         BorderSy:
           //BG, 15.10.2010: issue 5: set border width only, if style does not set any border width:
-          if not Prop.HasBorderWidth then
+          if not HasBorderWidth then
+          begin
             if Name = '' then
               BorderWidth := 1
             else
               BorderWidth := Min(100, Max(0, Value)); {Border=0 is no border}
+            HasBorderWidth := True;
+          end;
 
         CellSpacingSy:
           CellSpacing := Min(40, Max(-1, Value));
