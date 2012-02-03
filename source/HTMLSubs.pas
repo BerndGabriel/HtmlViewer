@@ -6999,8 +6999,10 @@ begin
   ActiveLink := nil;
   ActiveImage := nil;
   PanelList.Clear;
-  if not IsCopy then
+  if not IsCopy then begin
     Styles.Clear;
+    Styles.UseQuirksMode := Self.UseQuirksMode;
+  end;
   if Assigned(TabOrderList) then
     TabOrderList.Clear;
   inherited Clear;

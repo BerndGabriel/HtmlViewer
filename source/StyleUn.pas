@@ -225,7 +225,7 @@ type
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
-    property UseQuirksMode : Boolean read FUseQuirksMode;
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
   end;
 
@@ -411,7 +411,9 @@ begin
         BorderCollapse,
         PageBreakBefore, PageBreakAfter, PageBreakInside,
         Clear, Float, Position, OverFlow, piDisplay:
-          ; {do nothing}
+        if Props[I] = 'inherit' then begin
+           Props[I] := Source.Props[I];
+        end; {do nothing}
       else
         Props[I] := Source.Props[I];
       end;
@@ -2025,6 +2027,13 @@ end;
 
 {.$IFDEF Quirk}
 
+procedure FixBordProps(AProp, BodyProp : TProperties);
+var i : TPropertyIndex;
+begin
+  for i := BorderTopColor to BorderLeftColor do
+    AProp.Props[I] := BodyProp.Props[I];
+end;
+
 procedure TStyleList.FixupTableColor(BodyProp: TProperties);
 {if Quirk is set, make sure that the table color is defined the same as the
  body color}
@@ -2038,11 +2047,13 @@ begin
     begin
       Propty1 := TProperties(Objects[I]);
       Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
     end;
     if Find('th', I) then
     begin
       Propty1 := TProperties(Objects[I]);
       Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
     end;
   end;
 end;
