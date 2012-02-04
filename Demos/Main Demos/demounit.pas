@@ -74,6 +74,7 @@ uses
   FramView,
   DemoSubs,
   Htmlabt,
+  PrintStatusForm,
   ImgForm;
 
 const
@@ -500,12 +501,7 @@ end;
 procedure TForm1.Print1Click(Sender: TObject);
 begin
 {$ifndef LCL}
-with PrintDialog do
-  if Execute then
-    if PrintRange = prAllPages then
-      viewer.Print(1, 9999)
-    else
-      Viewer.Print(FromPage, ToPage);
+  PrintWithDialog(Self, PrintDialog, Viewer);
 {$endif}
 end;
 

@@ -75,6 +75,7 @@ uses
   FramView,
   DemoSubs,
   Htmlabt,
+  PrintStatusForm,
   ImgForm;
 
 const
@@ -500,28 +501,28 @@ var
   I: integer;
   Cap: string;
 begin
-with Sender as TFrameViewer do
+  with Sender as TFrameViewer do
   begin
-  {check to see which buttons are to be enabled}
-  FwdButton.Enabled := FwdButtonEnabled;
-  BackButton.Enabled := BackButtonEnabled;
+    {check to see which buttons are to be enabled}
+    FwdButton.Enabled := FwdButtonEnabled;
+    BackButton.Enabled := BackButtonEnabled;
 
-  {Enable and caption the appropriate history menuitems}
-  HistoryMenuItem.Visible := History.Count > 0;
-  for I := 0 to MaxHistories-1 do
-    with Histories[I] do
-      if I < History.Count then
-        Begin
-        Cap := History.Strings[I];
-        if TitleHistory[I] <> '' then
-          Cap := Cap + '--' + TitleHistory[I];
-        Caption := Cap;    {Cap limits string to 80 char}
-        Visible := True;
-        Checked := I = HistoryIndex;
-        end
-      else Histories[I].Visible := False;
-  UpdateCaption();    {keep the caption updated}
-  FrameViewer.SetFocus;
+    {Enable and caption the appropriate history menuitems}
+    HistoryMenuItem.Visible := History.Count > 0;
+    for I := 0 to MaxHistories-1 do
+      with Histories[I] do
+        if I < History.Count then
+          Begin
+          Cap := History.Strings[I];
+          if TitleHistory[I] <> '' then
+            Cap := Cap + '--' + TitleHistory[I];
+          Caption := Cap;    {Cap limits string to 80 char}
+          Visible := True;
+          Checked := I = HistoryIndex;
+          end
+        else Histories[I].Visible := False;
+    UpdateCaption();    {keep the caption updated}
+    FrameViewer.SetFocus;
   end;
 end;
 
@@ -543,47 +544,46 @@ begin
 end;
 
 procedure TForm1.Print1Click(Sender: TObject);
+var
+  Viewer: THtmlViewer;
 begin
-  with PrintDialog do
-    if Execute then
-      if PrintRange = prAllPages then
-        FrameViewer.Print(1, 9999)
-      else
-        FrameViewer.Print(FromPage, ToPage);
+  Viewer := FrameViewer.ActiveViewer;
+  if Viewer <> nil then
+    PrintWithDialog(Self, PrintDialog, Viewer);
 end;
 
 procedure TForm1.File1Click(Sender: TObject);
 begin
-Print1.Enabled := FrameViewer.ActiveViewer <> Nil;
-PrintPreview1.Enabled := Print1.Enabled;
+  Print1.Enabled := FrameViewer.ActiveViewer <> Nil;
+  PrintPreview1.Enabled := Print1.Enabled;
 end;
 
 procedure TForm1.FontsClick(Sender: TObject);
 var
   FontForm: TFontForm;
 begin
-FontForm := TFontForm.Create(Self);
-try
-  with FontForm do
+  FontForm := TFontForm.Create(Self);
+  try
+    with FontForm do
     begin
-    FontName := FrameViewer.DefFontName;
-    FontColor := FrameViewer.DefFontColor;
-    FontSize := FrameViewer.DefFontSize;
-    HotSpotColor := FrameViewer.DefHotSpotColor;
-    Background := FrameViewer.DefBackground;
-    if ShowModal = mrOK then
+      FontName := FrameViewer.DefFontName;
+      FontColor := FrameViewer.DefFontColor;
+      FontSize := FrameViewer.DefFontSize;
+      HotSpotColor := FrameViewer.DefHotSpotColor;
+      Background := FrameViewer.DefBackground;
+      if ShowModal = mrOK then
       begin
-      FrameViewer.DefFontName := FontName;
-      FrameViewer.DefFontColor := FontColor;
-      FrameViewer.DefFontSize := FontSize;
-      FrameViewer.DefHotSpotColor := HotSpotColor;
-      FrameViewer.DefBackground := Background;
-      ReloadClick(Self);    {reload to see how it looks}
+        FrameViewer.DefFontName := FontName;
+        FrameViewer.DefFontColor := FontColor;
+        FrameViewer.DefFontSize := FontSize;
+        FrameViewer.DefHotSpotColor := HotSpotColor;
+        FrameViewer.DefBackground := Background;
+        ReloadClick(Self);    {reload to see how it looks}
       end;
     end;
-finally
-  FontForm.Free;
- end;
+  finally
+    FontForm.Free;
+  end;
 end;
 
 procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
@@ -880,7 +880,7 @@ var
   Abort: boolean;
 begin
   Viewer := FrameViewer.ActiveViewer;
-  if Assigned(Viewer) then
+  if Viewer <> nil then
   begin
     pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
     try
