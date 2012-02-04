@@ -411,9 +411,9 @@ begin
         BorderCollapse,
         PageBreakBefore, PageBreakAfter, PageBreakInside,
         Clear, Float, Position, OverFlow, piDisplay:
-        if Props[I] = 'inherit' then begin
-           Props[I] := Source.Props[I];
-        end; {do nothing}
+          if VarIsStr(Props[I]) and (Props[I]='inherit') then begin
+             Props[I] := Source.Props[I];
+          end; {do nothing}
       else
         Props[I] := Source.Props[I];
       end;
