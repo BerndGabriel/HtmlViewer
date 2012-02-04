@@ -54,7 +54,7 @@ contains
   HtmlGif1 in '..\source\htmlgif1.pas',
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
-  HtmlGlobals in '..\source\HtmlGlobals.pas'',
+  HtmlGlobals in '..\source\HtmlGlobals.pas',
   HtmlBuffer in '..\source\HtmlBuffer.pas';
 
 end.
