@@ -82,7 +82,7 @@ type
     property PaperWidth: Integer read FPaperWidth;
     property PixelsPerInchX: Integer read FPPIX;
     property PixelsPerInchY: Integer read FPPIY;
-    property Printing: Boolean read FPrinting;
+    property Printing: Boolean read FPrinting; // becomes True in BeginDoc and back to False in EndDoc.
     property Title: ThtString read FTitle write FTitle;
   end;
 

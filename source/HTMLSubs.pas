@@ -5715,69 +5715,68 @@ begin
         Exit;
       end;
 
-      //with Document do
-        if Document.Printing and (Positioning <> posAbsolute) then
-          if BreakBefore and not Document.FirstPageItem then
+      if Document.Printing and (Positioning <> posAbsolute) then
+        if BreakBefore and not Document.FirstPageItem then
+        begin
+          if ARect.Top + Document.YOff < YDraw + MargArray[MarginTop] then {page-break-before}
           begin
-            if ARect.Top + Document.YOff < YDraw + MargArray[MarginTop] then {page-break-before}
+            if YDraw + MargArray[MarginTop] < Document.PageBottom then
+              Document.PageBottom := YDraw + MargArray[MarginTop];
+            Document.SkipDraw := True; {prevents next block from drawing a line}
+            Exit;
+          end;
+        end
+        else if KeepIntact then
+        begin
+        {if we're printing and block won't fit on this page and block will fit on
+         next page, then don't do block now}
+          if (YO > ARect.Top) and (Y + DrawHeight > Document.PageBottom) and
+            (DrawHeight - MargArray[MarginTop] < ARect.Bottom - ARect.Top) then
+          begin
+            if Y + MargArray[MarginTop] < Document.PageBottom then
+              Document.PageBottom := Y + MargArray[MarginTop];
+            Exit;
+          end;
+        end
+        else if BreakAfter then
+        begin
+          if ARect.Top + Document.YOff < Result then {page-break-after}
+            if Result < Document.PageBottom then
+              Document.PageBottom := Result;
+        end
+        else if Self is TTableBlock and not TTableBlock(Self).Table.HeadOrFoot then {ordinary tables}
+        {if we're printing and
+         we're 2/3 down page and table won't fit on this page and table will fit on
+         next page, then don't do table now}
+        begin
+          if (YO > ARect.Top + ((ARect.Bottom - ARect.Top) * 2) div 3) and
+            (Y + DrawHeight > Document.PageBottom) and
+            (DrawHeight < ARect.Bottom - ARect.Top) then
+          begin
+            if Y + MargArray[MarginTop] < Document.PageBottom then
+              Document.PageBottom := Y + MargArray[MarginTop];
+            Exit;
+          end;
+        end
+        else if Self is TTableBlock then {try to avoid just a header and footer at page break}
+          with TTableBlock(Self).Table do
+            if HeadOrFoot and (Document.TableNestLevel = 0)
+              and ((Document.PrintingTable = nil) or
+              (Document.PrintingTable = TTableBlock(Self).Table)) then
             begin
-              if YDraw + MargArray[MarginTop] < Document.PageBottom then
-                Document.PageBottom := YDraw + MargArray[MarginTop];
-              Document.SkipDraw := True; {prevents next block from drawing a line}
-              Exit;
-            end;
-          end
-          else if KeepIntact then
-          begin
-          {if we're printing and block won't fit on this page and block will fit on
-           next page, then don't do block now}
-            if (YO > ARect.Top) and (Y + DrawHeight > Document.PageBottom) and
-              (DrawHeight - MargArray[MarginTop] < ARect.Bottom - ARect.Top) then
-            begin
-              if Y + MargArray[MarginTop] < Document.PageBottom then
-                Document.PageBottom := Y + MargArray[MarginTop];
-              Exit;
-            end;
-          end
-          else if BreakAfter then
-          begin
-            if ARect.Top + Document.YOff < Result then {page-break-after}
-              if Result < Document.PageBottom then
-                Document.PageBottom := Result;
-          end
-          else if Self is TTableBlock and not TTableBlock(Self).Table.HeadOrFoot then {ordinary tables}
-          {if we're printing and
-           we're 2/3 down page and table won't fit on this page and table will fit on
-           next page, then don't do table now}
-          begin
-            if (YO > ARect.Top + ((ARect.Bottom - ARect.Top) * 2) div 3) and
-              (Y + DrawHeight > Document.PageBottom) and
-              (DrawHeight < ARect.Bottom - ARect.Top) then
-            begin
-              if Y + MargArray[MarginTop] < Document.PageBottom then
-                Document.PageBottom := Y + MargArray[MarginTop];
-              Exit;
-            end;
-          end
-          else if Self is TTableBlock then {try to avoid just a header and footer at page break}
-            with TTableBlock(Self).Table do
-              if HeadOrFoot and (Document.TableNestLevel = 0)
-                and ((Document.PrintingTable = nil) or
-                (Document.PrintingTable = TTableBlock(Self).Table)) then
-              begin
-                Spacing := CellSpacing div 2;
-                HeightNeeded := HeaderHeight + FootHeight + Rows.Items[HeaderRowCount].RowHeight;
-                if (YO > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
-                  (HeightNeeded < ARect.Bottom - ARect.Top) then
-                begin {will go on next page}
-                  if Y + Spacing < Document.PageBottom then
-                  begin
-                    Document.PageShortened := True;
-                    Document.PageBottom := Y + Spacing;
-                  end;
-                  Exit;
+              Spacing := CellSpacing div 2;
+              HeightNeeded := HeaderHeight + FootHeight + Rows.Items[HeaderRowCount].RowHeight;
+              if (YO > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
+                (HeightNeeded < ARect.Bottom - ARect.Top) then
+              begin {will go on next page}
+                if Y + Spacing < Document.PageBottom then
+                begin
+                  Document.PageShortened := True;
+                  Document.PageBottom := Y + Spacing;
                 end;
+                Exit;
               end;
+            end;
 
         if Positioning = posRelative then {for debugging}
           DrawBlock(Canvas, ARect, IMgr, X + LeftP, Y + TopP, XRef, YRef)
