@@ -1,13 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
-
-*********************************************************
-*                                                       *
-*           Thanks to Mike Lischke for his              *
-*        assistance with the Unicode conversion         *
-*                                                       *
-*********************************************************
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -31,19 +26,20 @@ are covered by separate copyright notices located in those modules.
 }
 
 program FrameDem;
+
 {A program to demonstrate the TFrameViewer component}
 
 uses
   Forms,
-  SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
-  PRINTSTATUSFORM in 'PRINTSTATUSFORM.PAS' {PrnStatusForm},
-  GOPAGE in 'GOPAGE.PAS' {GoPageForm},
-  PREVIEWFORM in 'PREVIEWFORM.PAS' {PreviewForm},
-  FDemUnit in 'FDemUnit.pas' {Form1},
+  DemoSubs in 'DemoSubs.pas',
   Fontdlg in 'Fontdlg.pas' {FontForm},
+  Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
-  IMGFORM in 'IMGFORM.PAS' {ImageForm},
-  DemoSubs in 'DemoSubs.pas';
+  ImgForm in 'ImgForm.pas' {ImageForm},
+  PreviewForm in 'PreviewForm.pas' {PreviewForm},
+  PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
+  SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
+  FDemUnit in 'FDemUnit.PAS' {Form1};
 
 {$R *.res}
 begin

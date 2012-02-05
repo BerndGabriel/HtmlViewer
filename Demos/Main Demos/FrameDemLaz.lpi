@@ -40,7 +40,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="74">
+    <Units Count="76">
       <Unit0>
         <Filename Value="FrameDemLaz.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -48,7 +48,7 @@
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
-        <CursorPos X="32" Y="42"/>
+        <CursorPos X="38" Y="11"/>
         <UsageCount Value="207"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -60,7 +60,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="45" Y="26"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit1>
       <Unit2>
         <Filename Value="FDemUnit.pas"/>
@@ -69,12 +69,14 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FDemUnit"/>
-        <EditorIndex Value="10"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="28"/>
-        <CursorPos X="9" Y="78"/>
+        <TopLine Value="672"/>
+        <CursorPos X="1" Y="675"/>
         <UsageCount Value="206"/>
         <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="..\..\package\FrameViewer09.pas"/>
@@ -82,7 +84,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="12" Y="22"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
@@ -91,7 +93,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1104"/>
         <CursorPos X="62" Y="1160"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="6"/>
       </Unit4>
       <Unit5>
         <Filename Value="..\..\source\HTMLUn2.pas"/>
@@ -99,34 +101,30 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1758"/>
         <CursorPos X="62" Y="1800"/>
-        <UsageCount Value="85"/>
+        <UsageCount Value="84"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <UnitName Value="HTMLSubs"/>
-        <EditorIndex Value="7"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="717"/>
-        <CursorPos X="47" Y="720"/>
+        <TopLine Value="14388"/>
+        <CursorPos X="15" Y="14403"/>
         <UsageCount Value="102"/>
-        <Loaded Value="True"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\source\framview.pas"/>
         <UnitName Value="FramView"/>
-        <EditorIndex Value="8"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1019"/>
         <CursorPos X="24" Y="1061"/>
-        <UsageCount Value="67"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="70"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\source\htmlcons.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="4" Y="18"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="9"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\..\source\DitherUnit.pas"/>
@@ -134,7 +132,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="799"/>
         <CursorPos X="3" Y="827"/>
-        <UsageCount Value="41"/>
+        <UsageCount Value="40"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\..\source\HTMLGif2.pas"/>
@@ -142,14 +140,14 @@
         <WindowIndex Value="0"/>
         <TopLine Value="19"/>
         <CursorPos X="21" Y="39"/>
-        <UsageCount Value="33"/>
+        <UsageCount Value="32"/>
       </Unit10>
       <Unit11>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\control.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1648"/>
         <CursorPos X="1" Y="1685"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit11>
       <Unit12>
         <Filename Value="D:\source\pascal\lazarus\lcl\graphics.pp"/>
@@ -157,14 +155,14 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1362"/>
         <CursorPos X="15" Y="1395"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit12>
       <Unit13>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\graphic.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="22"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit13>
       <Unit14>
         <Filename Value="..\..\source\MetaFilePrinter.pas"/>
@@ -172,36 +170,34 @@
         <WindowIndex Value="0"/>
         <TopLine Value="44"/>
         <CursorPos X="24" Y="47"/>
-        <UsageCount Value="43"/>
+        <UsageCount Value="42"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\..\source\htmlview.pas"/>
         <UnitName Value="HtmlView"/>
-        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="4718"/>
         <CursorPos X="1" Y="4746"/>
-        <UsageCount Value="86"/>
+        <UsageCount Value="89"/>
         <Bookmarks Count="1">
           <Item0 X="1" Y="3162" ID="8"/>
         </Bookmarks>
-        <Loaded Value="True"/>
       </Unit15>
       <Unit16>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1436"/>
         <CursorPos X="1" Y="1471"/>
-        <UsageCount Value="28"/>
+        <UsageCount Value="27"/>
       </Unit16>
       <Unit17>
         <Filename Value="..\..\source\vwPrint.pas"/>
         <UnitName Value="vwPrint"/>
-        <EditorIndex Value="15"/>
+        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="301"/>
         <CursorPos X="38" Y="301"/>
-        <UsageCount Value="57"/>
+        <UsageCount Value="60"/>
         <Loaded Value="True"/>
       </Unit17>
       <Unit18>
@@ -209,7 +205,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="662"/>
         <CursorPos X="14" Y="695"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
@@ -217,7 +213,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="95"/>
         <CursorPos X="3" Y="139"/>
-        <UsageCount Value="14"/>
+        <UsageCount Value="13"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\..\source\Htmlsbs1.pas"/>
@@ -225,14 +221,14 @@
         <WindowIndex Value="0"/>
         <TopLine Value="69"/>
         <CursorPos X="14" Y="97"/>
-        <UsageCount Value="43"/>
+        <UsageCount Value="42"/>
       </Unit20>
       <Unit21>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\winapih.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="91"/>
         <CursorPos X="10" Y="124"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="10"/>
       </Unit21>
       <Unit22>
         <Filename Value="..\..\source\widestringslcl.pas"/>
@@ -240,47 +236,39 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1248"/>
         <CursorPos X="3" Y="1253"/>
-        <UsageCount Value="44"/>
+        <UsageCount Value="43"/>
       </Unit22>
       <Unit23>
         <Filename Value="..\..\source\StyleUn.pas"/>
         <UnitName Value="StyleUn"/>
-        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="207"/>
         <CursorPos X="32" Y="207"/>
-        <UsageCount Value="80"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="83"/>
       </Unit23>
       <Unit24>
         <Filename Value="..\..\source\htmlgif1.pas"/>
         <UnitName Value="HtmlGif1"/>
-        <EditorIndex Value="6"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1487"/>
         <CursorPos X="20" Y="1515"/>
-        <UsageCount Value="59"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="62"/>
       </Unit24>
       <Unit25>
         <Filename Value="..\..\source\HtmlBuffer.pas"/>
         <UnitName Value="HtmlBuffer"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="80"/>
         <CursorPos X="43" Y="108"/>
-        <UsageCount Value="57"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="60"/>
       </Unit25>
       <Unit26>
         <Filename Value="..\..\source\ReadHTML.pas"/>
         <UnitName Value="ReadHTML"/>
-        <EditorIndex Value="9"/>
         <WindowIndex Value="0"/>
         <TopLine Value="4582"/>
         <CursorPos X="59" Y="4590"/>
-        <UsageCount Value="79"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="82"/>
       </Unit26>
       <Unit27>
         <Filename Value="D:\source\pascal\lazarus\lcl\lcltype.pp"/>
@@ -288,7 +276,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1251"/>
         <CursorPos X="3" Y="1284"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit27>
       <Unit28>
         <Filename Value="..\..\source\GDIPL2A.pas"/>
@@ -296,7 +284,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="102"/>
         <CursorPos X="3" Y="121"/>
-        <UsageCount Value="72"/>
+        <UsageCount Value="71"/>
       </Unit28>
       <Unit29>
         <Filename Value="..\..\source\FramBrwz.pas"/>
@@ -304,28 +292,28 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1073"/>
         <CursorPos X="38" Y="1124"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit29>
       <Unit30>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\rasterimage.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="652"/>
         <CursorPos X="13" Y="656"/>
-        <UsageCount Value="25"/>
+        <UsageCount Value="24"/>
       </Unit30>
       <Unit31>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\winapi.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="848"/>
         <CursorPos X="1" Y="882"/>
-        <UsageCount Value="28"/>
+        <UsageCount Value="27"/>
       </Unit31>
       <Unit32>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\customcontrol.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="72"/>
         <CursorPos X="1" Y="134"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="10"/>
       </Unit32>
       <Unit33>
         <Filename Value="D:\source\pascal\lazarus\lcl\controls.pp"/>
@@ -333,7 +321,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="934"/>
         <CursorPos X="14" Y="967"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit33>
       <Unit34>
         <Filename Value="C:\FPC\2.4.2\source\rtl\objpas\types.pp"/>
@@ -341,49 +329,49 @@
         <WindowIndex Value="0"/>
         <TopLine Value="397"/>
         <CursorPos X="3" Y="434"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit34>
       <Unit35>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\customcombobox.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="893"/>
         <CursorPos X="1" Y="930"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit35>
       <Unit36>
         <Filename Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32listsl.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="137"/>
         <CursorPos X="1" Y="195"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit36>
       <Unit37>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\brush.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="11"/>
         <CursorPos X="1" Y="46"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="10"/>
       </Unit37>
       <Unit38>
         <Filename Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32winapi.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="2913"/>
         <CursorPos X="1" Y="2948"/>
-        <UsageCount Value="27"/>
+        <UsageCount Value="26"/>
       </Unit38>
       <Unit39>
         <Filename Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32winapih.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="175"/>
         <CursorPos X="10" Y="227"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="20"/>
       </Unit39>
       <Unit40>
         <Filename Value="bin\i386-win32\pengbrew-pyramids.html"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="16" Y="26"/>
-        <UsageCount Value="26"/>
+        <UsageCount Value="25"/>
         <DefaultSyntaxHighlighter Value="HTML"/>
       </Unit40>
       <Unit41>
@@ -392,21 +380,21 @@
         <WindowIndex Value="0"/>
         <TopLine Value="743"/>
         <CursorPos X="65" Y="776"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit41>
       <Unit42>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\lclintf.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="59"/>
         <CursorPos X="1" Y="94"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit42>
       <Unit43>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\wincontrol.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="5209"/>
         <CursorPos X="1" Y="5242"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit43>
       <Unit44>
         <Filename Value="D:\source\pascal\lazarus\lcl\lclmessageglue.pas"/>
@@ -414,21 +402,21 @@
         <WindowIndex Value="0"/>
         <TopLine Value="84"/>
         <CursorPos X="1" Y="121"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="10"/>
       </Unit44>
       <Unit45>
         <Filename Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32callback.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="180"/>
         <CursorPos X="1" Y="213"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="10"/>
       </Unit45>
       <Unit46>
         <Filename Value="bin\i386-win32\readme3.htm"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="50"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
         <DefaultSyntaxHighlighter Value="HTML"/>
       </Unit46>
       <Unit47>
@@ -436,35 +424,35 @@
         <WindowIndex Value="0"/>
         <TopLine Value="402"/>
         <CursorPos X="3" Y="404"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit47>
       <Unit48>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\sharedimage.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="22"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit48>
       <Unit49>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\bitmap.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="94"/>
         <CursorPos X="38" Y="128"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit49>
       <Unit50>
         <Filename Value="C:\FPC\2.4.2\source\rtl\objpas\sysutils\filutilh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="38"/>
         <CursorPos X="10" Y="74"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit50>
       <Unit51>
         <Filename Value="C:\FPC\2.4.2\source\rtl\objpas\classes\streams.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="459"/>
         <CursorPos X="19" Y="483"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit51>
       <Unit52>
         <Filename Value="C:\FPC\2.4.2\source\rtl\win\sysutils.pp"/>
@@ -472,7 +460,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="211"/>
         <CursorPos X="3" Y="229"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit52>
       <Unit53>
         <Filename Value="D:\source\pascal\lazarus\lcl\intfgraphics.pas"/>
@@ -480,7 +468,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="18" Y="27"/>
-        <UsageCount Value="1"/>
+        <UsageCount Value="10"/>
       </Unit53>
       <Unit54>
         <Filename Value="..\..\source\URLSubs.pas"/>
@@ -488,7 +476,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="379"/>
         <CursorPos X="6" Y="381"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit54>
       <Unit55>
         <Filename Value="D:\source\pascal\lazarus\lcl\clipbrd.pp"/>
@@ -496,21 +484,21 @@
         <WindowIndex Value="0"/>
         <TopLine Value="163"/>
         <CursorPos X="15" Y="184"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit55>
       <Unit56>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\clipbrd.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="113"/>
         <CursorPos X="1" Y="146"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit56>
       <Unit57>
         <Filename Value="C:\FPC\2.4.2\source\rtl\inc\wstringh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="10" Y="44"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit57>
       <Unit58>
         <Filename Value="C:\lazarus\components\printers\printersdlgs.pp"/>
@@ -518,14 +506,14 @@
         <WindowIndex Value="0"/>
         <TopLine Value="8"/>
         <CursorPos X="25" Y="12"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit58>
       <Unit59>
         <Filename Value="C:\lazarus\lcl\include\winapih.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="96"/>
         <CursorPos X="10" Y="124"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit59>
       <Unit60>
         <Filename Value="..\..\source\StylePars.pas"/>
@@ -533,7 +521,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="557"/>
         <CursorPos X="30" Y="585"/>
-        <UsageCount Value="40"/>
+        <UsageCount Value="39"/>
       </Unit60>
       <Unit61>
         <Filename Value="C:\lazarus\lcl\graphics.pp"/>
@@ -541,49 +529,49 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1249"/>
         <CursorPos X="15" Y="1277"/>
-        <UsageCount Value="40"/>
+        <UsageCount Value="39"/>
       </Unit61>
       <Unit62>
         <Filename Value="C:\lazarus\lcl\include\graphic.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="19"/>
         <CursorPos X="3" Y="21"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit62>
       <Unit63>
         <Filename Value="C:\lazarus\lcl\include\rasterimage.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="694"/>
         <CursorPos X="3" Y="696"/>
-        <UsageCount Value="40"/>
+        <UsageCount Value="39"/>
       </Unit63>
       <Unit64>
         <Filename Value="C:\lazarus\fpc\2.4.4\source\rtl\inc\systemh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="695"/>
         <CursorPos X="11" Y="723"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="7"/>
       </Unit64>
       <Unit65>
         <Filename Value="C:\lazarus\fpc\2.4.4\source\rtl\objpas\classes\classesh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="851"/>
         <CursorPos X="22" Y="879"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit65>
       <Unit66>
         <Filename Value="C:\lazarus\fpc\2.4.4\source\rtl\objpas\classes\streams.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="518"/>
         <CursorPos X="38" Y="518"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit66>
       <Unit67>
         <Filename Value="C:\lazarus\fpc\2.4.4\source\rtl\inc\system.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="566"/>
         <CursorPos X="40" Y="566"/>
-        <UsageCount Value="8"/>
+        <UsageCount Value="7"/>
       </Unit67>
       <Unit68>
         <Filename Value="PrintStatusForm.pas"/>
@@ -591,32 +579,28 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="PrintStatusForm"/>
-        <EditorIndex Value="11"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="46"/>
         <CursorPos X="1" Y="57"/>
-        <UsageCount Value="15"/>
+        <UsageCount Value="18"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit68>
       <Unit69>
         <Filename Value="C:\lazarus\lcl\printers.pas"/>
         <UnitName Value="Printers"/>
-        <EditorIndex Value="5"/>
         <WindowIndex Value="0"/>
         <TopLine Value="179"/>
         <CursorPos X="22" Y="181"/>
-        <UsageCount Value="15"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="18"/>
       </Unit69>
       <Unit70>
         <Filename Value="C:\lazarus\lcl\include\control.inc"/>
-        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="2760"/>
         <CursorPos X="17" Y="2788"/>
-        <UsageCount Value="15"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="14"/>
       </Unit70>
       <Unit71>
         <Filename Value="PreviewForm.pas"/>
@@ -624,148 +608,62 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="PreviewForm"/>
-        <EditorIndex Value="14"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="0"/>
         <TopLine Value="486"/>
         <CursorPos X="12" Y="489"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="13"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit71>
       <Unit72>
         <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <EditorIndex Value="12"/>
         <WindowIndex Value="0"/>
         <TopLine Value="228"/>
         <CursorPos X="17" Y="243"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="9"/>
       </Unit72>
       <Unit73>
         <Filename Value="C:\lazarus\components\printers\win32\winutilprn.pas"/>
         <UnitName Value="WinUtilPrn"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="13"/>
         <WindowIndex Value="0"/>
         <TopLine Value="292"/>
         <CursorPos X="10" Y="320"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="9"/>
       </Unit73>
+      <Unit74>
+        <Filename Value="SubmitTNT.PAS"/>
+        <UnitName Value="SubmitTnt"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="10"/>
+      </Unit74>
+      <Unit75>
+        <Filename Value="C:\lazarus\lcl\include\menuitem.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="10"/>
+      </Unit75>
     </Units>
-    <JumpHistory Count="28" HistoryIndex="27">
+    <JumpHistory Count="4" HistoryIndex="3">
       <Position1>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="209" Column="1" TopLine="178"/>
-      </Position1>
-      <Position2>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="210" Column="1" TopLine="178"/>
-      </Position2>
-      <Position3>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="215" Column="1" TopLine="178"/>
-      </Position3>
-      <Position4>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="216" Column="1" TopLine="178"/>
-      </Position4>
-      <Position5>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="217" Column="1" TopLine="178"/>
-      </Position5>
-      <Position6>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="218" Column="1" TopLine="178"/>
-      </Position6>
-      <Position7>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="219" Column="1" TopLine="187"/>
-      </Position7>
-      <Position8>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="220" Column="1" TopLine="187"/>
-      </Position8>
-      <Position9>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="221" Column="1" TopLine="187"/>
-      </Position9>
-      <Position10>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="223" Column="1" TopLine="187"/>
-      </Position10>
-      <Position11>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="224" Column="1" TopLine="187"/>
-      </Position11>
-      <Position12>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="226" Column="1" TopLine="187"/>
-      </Position12>
-      <Position13>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="227" Column="1" TopLine="211"/>
-      </Position13>
-      <Position14>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="228" Column="1" TopLine="211"/>
-      </Position14>
-      <Position15>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="229" Column="1" TopLine="211"/>
-      </Position15>
-      <Position16>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="230" Column="1" TopLine="211"/>
-      </Position16>
-      <Position17>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="232" Column="1" TopLine="211"/>
-      </Position17>
-      <Position18>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="235" Column="1" TopLine="211"/>
-      </Position18>
-      <Position19>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="236" Column="1" TopLine="211"/>
-      </Position19>
-      <Position20>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="237" Column="1" TopLine="211"/>
-      </Position20>
-      <Position21>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="238" Column="1" TopLine="211"/>
-      </Position21>
-      <Position22>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="239" Column="1" TopLine="211"/>
-      </Position22>
-      <Position23>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="240" Column="1" TopLine="211"/>
-      </Position23>
-      <Position24>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="241" Column="1" TopLine="211"/>
-      </Position24>
-      <Position25>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="243" Column="1" TopLine="211"/>
-      </Position25>
-      <Position26>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="302" Column="1" TopLine="237"/>
-      </Position26>
-      <Position27>
         <Filename Value="PrintStatusForm.pas"/>
         <Caret Line="57" Column="1" TopLine="46"/>
-      </Position27>
-      <Position28>
-        <Filename Value="C:\lazarus\components\printers\win32\winprndialogs.inc"/>
-        <Caret Line="243" Column="17" TopLine="228"/>
-      </Position28>
+      </Position1>
+      <Position2>
+        <Filename Value="FrameDemLaz.lpr"/>
+        <Caret Line="3" Column="56" TopLine="1"/>
+      </Position2>
+      <Position3>
+        <Filename Value="FrameDemLaz.lpr"/>
+        <Caret Line="11" Column="38" TopLine="1"/>
+      </Position3>
+      <Position4>
+        <Filename Value="FDemUnit.pas"/>
+        <Caret Line="106" Column="39" TopLine="86"/>
+      </Position4>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

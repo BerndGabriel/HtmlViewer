@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 449
-  Top = 189
+  Left = 705
+  Top = 161
   Width = 1195
   Height = 894
   Caption = 'Frame Demo'
@@ -10,7 +10,7 @@ object Form1: TForm1
   Font.Height = -13
   Font.Name = 'System'
   Font.Style = []
-  Menu = MainMenu1
+  Menu = MainMenu
   OldCreateOrder = True
   Position = poDesktopCenter
   ShowHint = True
@@ -151,16 +151,16 @@ object Form1: TForm1
       TabOrder = 1
     end
   end
-  object MainMenu1: TMainMenu
+  object MainMenu: TMainMenu
     Left = 360
     Top = 72
     object File1: TMenuItem
       Caption = '&File'
       OnClick = File1Click
-      object Open1: TMenuItem
+      object Open: TMenuItem
         Caption = '&Open'
         ShortCut = 114
-        OnClick = Open1Click
+        OnClick = OpenClick
       end
       object SetPrintScale: TMenuItem
         Caption = 'Set PrintScale'
@@ -170,10 +170,10 @@ object Form1: TForm1
         Caption = 'Printer Setup...'
         OnClick = PrinterSetupClick
       end
-      object PrintPreview1: TMenuItem
-        Caption = 'Print Pre&view'
+      object PrintPreview: TMenuItem
+        Caption = 'Print Pre&view...'
         Enabled = False
-        OnClick = PrintPreview1Click
+        OnClick = PrintPreviewClick
       end
       object Print1: TMenuItem
         Caption = '&Print...'
@@ -195,17 +195,17 @@ object Form1: TForm1
         ShortCut = 16454
         OnClick = Find1Click
       end
-      object Copy1: TMenuItem
+      object CopyItem: TMenuItem
         Caption = '&Copy'
         ShortCut = 16451
-        OnClick = Copy1Click
+        OnClick = CopyItemClick
       end
       object N2: TMenuItem
         Caption = '-'
       end
-      object SelectAll1: TMenuItem
+      object SelectAllItem: TMenuItem
         Caption = '&Select All'
-        OnClick = SelectAll1Click
+        OnClick = SelectAllItemClick
       end
     end
     object Options1: TMenuItem

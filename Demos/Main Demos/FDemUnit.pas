@@ -89,11 +89,13 @@ type
     TBaseForm = TForm;
 {$endif}
 
+  { TForm1 }
+
   TForm1 = class(TBaseForm)
     About1: TMenuItem;
     BackButton: TButton;
-    Copy1: TMenuItem;
     CopyImagetoclipboard: TMenuItem;
+    CopyItem: TMenuItem;
     Edit1: TMenuItem;
     Edit2: TEdit;
     Exit1: TMenuItem;
@@ -104,28 +106,28 @@ type
     FrameViewer: TFrameViewer;
     FwdButton: TButton;
     HistoryMenuItem: TMenuItem;
-    MainMenu1: TMainMenu;
+    InfoPanel: TPanel;
+    MainMenu: TMainMenu;
     N1: TMenuItem;
     N2: TMenuItem;
     N3: TMenuItem;
-    Open1: TMenuItem;
+    Open: TMenuItem;
     OpenDialog: TOpenDialog;
     OpenInNewWindow: TMenuItem;
     Options1: TMenuItem;
     Panel1: TPanel;
+    Panel3: TPanel;
     PopupMenu: TPopupMenu;
     Print1: TMenuItem;
     PrinterSetup: TMenuItem;
-    PrintPreview1: TMenuItem;
+    PrintPreview: TMenuItem;
+    ProgressBar: TProgressBar;
     ReloadButton: TButton;
-    SelectAll1: TMenuItem;
+    SelectAllItem: TMenuItem;
     SetPrintScale: TMenuItem;
     Showimages: TMenuItem;
     Timer1: TTimer;
     ViewImage: TMenuItem;
-    Panel3: TPanel;
-    ProgressBar: TProgressBar;
-    InfoPanel: TPanel;
 {$ifdef MsWindows}
   {$ifndef LCL}
     MediaPlayer: TMediaPlayer;
@@ -135,7 +137,7 @@ type
     PrinterSetupDialog: TPrinterSetupDialog;
     procedure About1Click(Sender: TObject);
     procedure BackButtonClick(Sender: TObject);
-    procedure Copy1Click(Sender: TObject);
+    procedure CopyItemClick(Sender: TObject);
     procedure CopyImagetoclipboardClick(Sender: TObject);
     procedure Edit1Click(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -153,14 +155,14 @@ type
     procedure HistoryChange(Sender: TObject);
     procedure HistoryClick(Sender: TObject);
     procedure MediaPlayerNotify(Sender: TObject);
-    procedure Open1Click(Sender: TObject);
+    procedure OpenClick(Sender: TObject);
     procedure OpenInNewWindowClick(Sender: TObject);
     procedure Print1Click(Sender: TObject);
     procedure PrinterSetupClick(Sender: TObject);
-    procedure PrintPreview1Click(Sender: TObject);
+    procedure PrintPreviewClick(Sender: TObject);
     procedure ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
     procedure ReloadClick(Sender: TObject);
-    procedure SelectAll1Click(Sender: TObject);
+    procedure SelectAllItemClick(Sender: TObject);
     procedure SetPrintScaleClick(Sender: TObject);
     procedure ShowimagesClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
@@ -237,16 +239,6 @@ begin
   Width := (Screen.Width * 8) div 10;
   Height := (Screen.Height * 6) div 8;
 
-  {//< Temporary fix, for as long as the TFrameViewer component isn't registered :
-    if Assigned(FrameViewer) then
-      ShowMessage('Remove debug code')
-    else
-    begin
-      FrameViewer := TFrameViewer.Create(Self);
-      FrameViewer.Parent := Self;
-      FrameViewer.Align := alClient;
-    end;
-  //>}
 
   FrameViewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
@@ -279,6 +271,44 @@ begin
   else
     Edit2.Text := 'Program uses unicode characters.';
   UpdateCaption;
+end;
+
+procedure TForm1.FormShow(Sender: TObject);
+var
+  S: string;
+  I: integer;
+begin
+if (ParamCount >= 1) then
+  begin            {Parameter is file to load}
+  S := CmdLine;
+  I := Pos('" ', S);
+  if I > 0 then
+    Delete(S, 1, I+1)  {delete EXE name in quotes}
+  else Delete(S, 1, Length(ParamStr(0)));  {in case no quote marks}
+  I := Pos('"', S);
+  while I > 0 do     {remove any quotes from parameter}
+    begin
+    Delete(S, I, 1);
+    I := Pos('"', S);
+    end;
+  FrameViewer.LoadFromFile(HtmlToDos(Trim(S)));
+  end
+else if FileExists(ExtractFilePath(ParamStr(0))+'demo.htm') then
+  FrameViewer.LoadFromFile(ExtractFilePath(ParamStr(0))+'demo.htm');
+end;
+
+procedure TForm1.OpenClick(Sender: TObject);
+begin
+  if FrameViewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(FrameViewer.CurrentFile)
+  else
+    OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
+  OpenDialog.FilterIndex := 1;
+  if OpenDialog.Execute then
+  begin
+    FrameViewer.LoadFromFile(OpenDialog.Filename);
+    UpdateCaption();
+  end;
 end;
 
 procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: boolean);
@@ -397,20 +427,6 @@ begin
 {$endif}
 end;
 
-procedure TForm1.Open1Click(Sender: TObject);
-begin
-  if FrameViewer.CurrentFile <> '' then
-    OpenDialog.InitialDir := ExtractFilePath(FrameViewer.CurrentFile)
-  else
-    OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
-  OpenDialog.FilterIndex := 1;
-  if OpenDialog.Execute then
-  begin
-    FrameViewer.LoadFromFile(OpenDialog.Filename);
-    UpdateCaption();
-  end;
-end;
-
 procedure TForm1.Exit1Click(Sender: TObject);
 begin
   Close;
@@ -419,30 +435,6 @@ end;
 procedure TForm1.Find1Click(Sender: TObject);
 begin
   FindDialog.Execute;
-end;
-
-procedure TForm1.FormShow(Sender: TObject);
-var
-  S: string;
-  I: integer;
-begin
-if (ParamCount >= 1) then
-  begin            {Parameter is file to load}
-  S := CmdLine;
-  I := Pos('" ', S);
-  if I > 0 then
-    Delete(S, 1, I+1)  {delete EXE name in quotes}
-  else Delete(S, 1, Length(ParamStr(0)));  {in case no quote marks}
-  I := Pos('"', S);
-  while I > 0 do     {remove any quotes from paramenter}
-    begin
-    Delete(S, I, 1);
-    I := Pos('"', S);
-    end;
-  FrameViewer.LoadFromFile(HtmlToDos(Trim(S)));
-  end
-else if FileExists(ExtractFilePath(ParamStr(0))+'demo.htm') then
-  FrameViewer.LoadFromFile(ExtractFilePath(ParamStr(0))+'demo.htm');
 end;
 
 procedure TForm1.ReloadClick(Sender: TObject);
@@ -457,7 +449,7 @@ with FrameViewer do
   end;
 end;
 
-procedure TForm1.Copy1Click(Sender: TObject);
+procedure TForm1.CopyItemClick(Sender: TObject);
 begin
 FrameViewer.CopyToClipboard;
 end;
@@ -466,13 +458,13 @@ procedure TForm1.Edit1Click(Sender: TObject);
 begin
 with FrameViewer do
   begin
-  Copy1.Enabled := SelLength <> 0;
-  SelectAll1.Enabled := (ActiveViewer <> Nil) and (ActiveViewer.CurrentFile <> '');
-  Find1.Enabled := SelectAll1.Enabled;
+  CopyItem.Enabled := SelLength <> 0;
+  SelectAllItem.Enabled := (ActiveViewer <> Nil) and (ActiveViewer.CurrentFile <> '');
+  Find1.Enabled := SelectAllItem.Enabled;
   end;
 end;
 
-procedure TForm1.SelectAll1Click(Sender: TObject);
+procedure TForm1.SelectAllItemClick(Sender: TObject);
 begin
 FrameViewer.SelectAll;
 end;
@@ -543,21 +535,6 @@ begin
   end;
 end;
 
-procedure TForm1.Print1Click(Sender: TObject);
-var
-  Viewer: THtmlViewer;
-begin
-  Viewer := FrameViewer.ActiveViewer;
-  if Viewer <> nil then
-    PrintWithDialog(Self, PrintDialog, Viewer);
-end;
-
-procedure TForm1.File1Click(Sender: TObject);
-begin
-  Print1.Enabled := FrameViewer.ActiveViewer <> Nil;
-  PrintPreview1.Enabled := Print1.Enabled;
-end;
-
 procedure TForm1.FontsClick(Sender: TObject);
 var
   FontForm: TFontForm;
@@ -586,6 +563,21 @@ begin
   end;
 end;
 
+procedure TForm1.Print1Click(Sender: TObject);
+var
+  Viewer: THtmlViewer;
+begin
+  Viewer := FrameViewer.ActiveViewer;
+  if Viewer <> nil then
+    PrintWithDialog(Self, PrintDialog, Viewer);
+end;
+
+procedure TForm1.File1Click(Sender: TObject);
+begin
+  Print1.Enabled := FrameViewer.ActiveViewer <> Nil;
+  PrintPreview.Enabled := Print1.Enabled;
+end;
+
 procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
 begin
   with SubmitForm do
@@ -599,30 +591,20 @@ begin
 end;
 
 procedure TForm1.ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
+var
+  Enabled: Boolean;
 begin
-if ProcessingOn then
-  begin    {disable various buttons and menuitems during processing}
-  FwdButton.Enabled := False;
-  BackButton.Enabled := False;
-  ReloadButton.Enabled := False;
-  Print1.Enabled := False;
-  PrintPreview1.Enabled := False;
-  Find1.Enabled := False;
-  SelectAll1.Enabled := False;
-  Open1.Enabled := False;
-  CloseAll;    {in case hint window is open}
-  end
-else
-  begin
-  FwdButton.Enabled := FrameViewer.FwdButtonEnabled;
-  BackButton.Enabled := FrameViewer.BackButtonEnabled; 
-  ReloadButton.Enabled := FrameViewer.CurrentFile <> '';
-  Print1.Enabled := (FrameViewer.CurrentFile <> '') and (FrameViewer.ActiveViewer <> Nil);
-  PrintPreview1.Enabled := Print1.Enabled;
+  Enabled := not ProcessingOn;
+  if ProcessingOn then
+    CloseAll;    {in case hint window is open}
+  FwdButton.Enabled := Enabled and FrameViewer.FwdButtonEnabled;
+  BackButton.Enabled := Enabled and FrameViewer.BackButtonEnabled;
+  ReloadButton.Enabled := Enabled and (FrameViewer.CurrentFile <> '');
+  Print1.Enabled := Enabled and (FrameViewer.CurrentFile <> '') and (FrameViewer.ActiveViewer <> Nil);
+  PrintPreview.Enabled := Print1.Enabled;
   Find1.Enabled := Print1.Enabled;
-  SelectAll1.Enabled := Print1.Enabled;
-  Open1.Enabled := True;
-  end;
+  SelectAllItem.Enabled := Print1.Enabled;
+  Open.Enabled := Enabled;
 end;
 
 procedure TForm1.FwdButtonClick(Sender: TObject);
@@ -873,7 +855,7 @@ begin
   PrinterSetupDialog.Execute;
 end;
 
-procedure TForm1.PrintPreview1Click(Sender: TObject);
+procedure TForm1.PrintPreviewClick(Sender: TObject);
 var
   pf: TPreviewForm;
   Viewer: ThtmlViewer;

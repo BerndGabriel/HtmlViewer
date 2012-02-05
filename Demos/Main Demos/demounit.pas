@@ -25,11 +25,11 @@ Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-unit demounit;
+unit DemoUnit;
 
 {$include ..\..\source\htmlcons.inc}
 
-{A program to demonstrate the ThtmlViewer component}
+{A program to demonstrate the THtmlViewer component}
 
 interface
 
@@ -58,6 +58,7 @@ uses
 {$endif}
   PreviewForm,
 {$ifdef UseTNT}
+  TntForms,
   TntStdCtrls,
   SubmitTnt,
 {$else UseTNT}
@@ -79,53 +80,64 @@ uses
 
 const
   MaxHistories = 6;  {size of History list}
+
 type
-  TForm1 = class(TForm)
-    OpenDialog: TOpenDialog;   
+// Delphi 6 form editor fails with conditionals in form declaration:
+{$ifdef UseTNT}
+    TBaseForm = TTntForm;
+{$else}
+    TBaseForm = TForm;
+{$endif}
+
+  { TForm1 }
+
+  TForm1 = class(TBaseForm)
+    About1: TMenuItem;
+    BackButton: TButton;
+    CopyImageToClipboard: TMenuItem;
+    CopyItem: TMenuItem;
+    Edit1: TEdit;
+    Edit2: TMenuItem;
+    Exit1: TMenuItem;
+    File1: TMenuItem;
+    Find1: TMenuItem;
+    FindDialog: TFindDialog;
+    Fonts: TMenuItem;
+    FwdButton: TButton;
+    HistoryMenuItem: TMenuItem;
     MainMenu: TMainMenu;
+    MetaTimer: TTimer;
+    N1: TMenuItem;
+    N2: TMenuItem;
+    N3: TMenuItem;
+    Open: TMenuItem;
+    OpenDialog: TOpenDialog;   
+    OpenImageFile: TMenuItem;
+    OpenInNewWindow: TMenuItem;
+    OpenTextFile: TMenuItem;
+    options1: TMenuItem;
     Panel1: TPanel;
     Panel2: TPanel;                       
     Panel3: TPanel;
-    File1: TMenuItem;
-    Open: TMenuItem;
-    options1: TMenuItem;
-    ShowImages: TMenuItem;
-    Fonts: TMenuItem;
-    Edit1: TEdit;
-    ReloadButton: TButton;
-    BackButton: TButton;
-    FwdButton: TButton;
-    HistoryMenuItem: TMenuItem;
-    Exit1: TMenuItem;
-    About1: TMenuItem;
-    Edit2: TMenuItem;
-    Find1: TMenuItem;
-    FindDialog: TFindDialog;
-    Viewer: THTMLViewer;
-    CopyItem: TMenuItem;
-    N2: TMenuItem;
-    SelectAllItem: TMenuItem;
-    OpenTextFile: TMenuItem;
-    OpenImageFile: TMenuItem;
     PopupMenu: TPopupMenu;
-    CopyImageToClipboard: TMenuItem;
-    Viewimage: TMenuItem;
-    N3: TMenuItem;
-    OpenInNewWindow: TMenuItem;
-    MetaTimer: TTimer;
     Print1: TMenuItem;
+    PrinterSetup: TMenuItem;
     Printpreview: TMenuItem;
-    Timer1: TTimer;
     ProgressBar: TProgressBar;
-    PrinterSetup1: TMenuItem;
+    ReloadButton: TButton;
     RepaintButton: TButton;
+    SelectAllItem: TMenuItem;
+    ShowImages: TMenuItem;
+    Timer1: TTimer;
+    Viewer: THTMLViewer;
+    Viewimage: TMenuItem;
 {$ifdef MsWindows}
+  {$ifndef LCL}
     MediaPlayer: TMediaPlayer;
+  {$endif}
 {$endif}
-{$ifndef LCL}
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
-{$endif}
     procedure About1Click(Sender: TObject);
     procedure CopyImageToClipboardClick(Sender: TObject);
     procedure CopyItemClick(Sender: TObject);
@@ -133,7 +145,7 @@ type
     procedure Exit1Click(Sender: TObject);
     procedure Find1Click(Sender: TObject);
     procedure FindDialogFind(Sender: TObject);
-    procedure FontColorsClick(Sender: TObject);
+    procedure FontsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -147,8 +159,8 @@ type
     procedure OpenInNewWindowClick(Sender: TObject);
     procedure OpenTextFileClick(Sender: TObject);
     procedure Print1Click(Sender: TObject);
-    procedure PrinterSetup1Click(Sender: TObject);
-    procedure PrintpreviewClick(Sender: TObject);
+    procedure PrinterSetupClick(Sender: TObject);
+    procedure PrintPreviewClick(Sender: TObject);
     procedure ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
     procedure ReloadButtonClick(Sender: TObject);
     procedure RepaintButtonClick(Sender: TObject);
@@ -232,20 +244,21 @@ Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
   for I := 0 to MaxHistories-1 do
   begin      {create the MenuItems for the history list}
-  Histories[I] := TMenuItem.Create(HistoryMenuItem);
-  HistoryMenuItem.Insert(I, Histories[I]);
-  with Histories[I] do
+    Histories[I] := TMenuItem.Create(HistoryMenuItem);
+    HistoryMenuItem.Insert(I, Histories[I]);
+    with Histories[I] do
     begin
-    Visible := False;
-    OnClick := HistoryClick;
-    Tag := I;
+      Visible := False;
+      OnClick := HistoryClick;
+      Tag := I;
     end;
   end;
-{$ifndef LCL}
+{$ifdef LCL}
+{$else}
   DragAcceptFiles(Handle, True);
 {$endif}
-  HintWindow := THintWindow.Create(Self);
-  HintWindow.Color := $C0FFFF;
+  HintWindow := ThtHintWindow.Create(Self);
+  HintWindow.Color := $CCFFFF;
   UpdateCaption;
 end;
 
@@ -465,12 +478,23 @@ begin
   Viewer.HistoryIndex := (Sender as TMenuItem).Tag;
 end;
 
+procedure TForm1.About1Click(Sender: TObject);
+begin
+  with TAboutBox.CreateIt(Self, 'HTMLDemo', 'THtmlViewer') do
+    try
+      ShowModal;
+    finally
+      Free;
+    end;
+end;
+
+
 procedure TForm1.Exit1Click(Sender: TObject);
 begin
 Close;
 end;
 
-procedure TForm1.FontColorsClick(Sender: TObject);
+procedure TForm1.FontsClick(Sender: TObject);
 var
   FontForm: TFontForm;
 begin
@@ -500,28 +524,13 @@ end;
 
 procedure TForm1.Print1Click(Sender: TObject);
 begin
-{$ifndef LCL}
   PrintWithDialog(Self, PrintDialog, Viewer);
-{$endif}
 end;
 
-procedure TForm1.PrinterSetup1Click(Sender: TObject);
+procedure TForm1.PrinterSetupClick(Sender: TObject);
 begin
-{$ifndef LCL}
   PrinterSetupDialog.Execute;
-{$endif}
 end;
-
-procedure TForm1.About1Click(Sender: TObject);
-begin
-  with TAboutBox.CreateIt(Self, 'HTMLDemo', 'ThtmlViewer') do
-    try
-      ShowModal;
-    finally
-      Free;
-    end;
-end;
-
 
 procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
 begin
@@ -550,32 +559,21 @@ with FindDialog do
 end;
 
 procedure TForm1.ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
+var
+  Enabled: Boolean;
 begin
-if ProcessingOn then
-  begin    {disable various buttons and menuitems during processing}
-  FwdButton.Enabled := False;
-  BackButton.Enabled := False;
-  RepaintButton.Enabled := False;
-  ReLoadButton.Enabled := False;
-  Print1.Enabled := False;
-  PrintPreview.Enabled := False;
-  Find1.Enabled := False;
-  SelectAllItem.Enabled := False;
-  Open.Enabled := False;
-  CloseAll;    {in case hint window is open}
-  end
-else
-  begin
-  FwdButton.Enabled := Viewer.HistoryIndex > 0;
-  BackButton.Enabled := Viewer.HistoryIndex < Viewer.History.Count-1;
-  RepaintButton.Enabled := Viewer.CurrentFile <> '';
-  ReLoadButton.Enabled := Viewer.CurrentFile <> '';
-  Print1.Enabled := Viewer.CurrentFile <> '';
-  PrintPreview.Enabled := Viewer.CurrentFile <> '';
-  Find1.Enabled := Viewer.CurrentFile <> '';
-  SelectAllItem.Enabled := Viewer.CurrentFile <> '';
-  Open.Enabled := True;
-  end;
+  Enabled := not ProcessingOn;
+  if ProcessingOn then
+    CloseAll;    {in case hint window is open}
+  FwdButton.Enabled := Enabled and (Viewer.HistoryIndex > 0);
+  BackButton.Enabled := Enabled and (Viewer.HistoryIndex < Viewer.History.Count - 1);
+  RepaintButton.Enabled := Enabled and (Viewer.CurrentFile <> '');
+  ReLoadButton.Enabled := Enabled and (Viewer.CurrentFile <> '');
+  Print1.Enabled := Enabled and (Viewer.CurrentFile <> '');
+  PrintPreview.Enabled := Print1.Enabled;
+  Find1.Enabled := Print1.Enabled;
+  SelectAllItem.Enabled := Print1.Enabled;
+  Open.Enabled := Enabled;
 end;
 
 procedure TForm1.CopyItemClick(Sender: TObject);
@@ -660,6 +658,7 @@ end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
 begin
+{$ifndef LCL}
 {$ifdef MsWindows}
 try
   With MediaPlayer do
@@ -676,10 +675,12 @@ try
 except
   end;
 {$endif}
+{$endif}
 end;
 
 procedure TForm1.SoundRequest(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: Boolean);
 begin
+{$ifndef LCL}
 {$ifdef MsWindows}
 try
   with MediaPlayer do
@@ -696,6 +697,7 @@ try
       end;
 except
   end;
+{$endif}
 {$endif}
 end;
 
@@ -869,14 +871,14 @@ if FileExists(NextFile) then
   end;
 end;
 
-procedure TForm1.PrintpreviewClick(Sender: TObject);
-{$ifndef LCL}
+procedure TForm1.PrintPreviewClick(Sender: TObject);
+{.$ifndef LCL}
 var
   pf: TPreviewForm;
   Abort: boolean;
-{$endif}
+{.$endif}
 begin
-{$ifndef LCL}
+{.$ifndef LCL}
 pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
 try
   if not Abort then
@@ -884,7 +886,7 @@ try
 finally
   pf.Free;
   end;
-{$endif}
+{.$endif}
 end;
 
 procedure TForm1.ViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
