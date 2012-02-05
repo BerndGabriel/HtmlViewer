@@ -609,6 +609,9 @@ type
 
   TBlock = class(TSectionBase)
   protected
+    function GetContentWidth : Integer; virtual;
+    function GetContentHeight : Integer; virtual;
+    function GetTotalWidthAndMarg : Integer; virtual;
     function getBorderWidth: Integer; virtual;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
@@ -1163,6 +1166,9 @@ type
 
   TTableBlock = class(TBlock)
   protected
+    function GetContentWidth : Integer; override;
+    function GetContentHeight : Integer; override;
+    function GetTotalWidthAndMarg : Integer; override;
     function getBorderWidth: Integer; override;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); override;
   public
@@ -5224,38 +5230,54 @@ end;
 
 {This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
 model.  In those browsers, width and height include padding and border.}
-function GetContentHeight(AMargArray : TMarginArray; const AUseQuirksMode : Boolean) : Integer;
+function TBlock.GetContentHeight : Integer;
 begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[piHeight] -
-        (AMargArray[BorderTopWidth] + AMargArray[BorderBottomWidth] +
-         AMargArray[PaddingTop] + AMargArray[PaddingBottom]);
+  if Document.UseQuirksMode then begin
+    Result := MargArray[piHeight] -
+        (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+         MargArray[PaddingTop] + MargArray[PaddingBottom]);
   end else begin
-    Result := AMargArray[piHeight];
+    if MargArray[BoxSizing] = 1 then begin
+      Result := MargArray[piHeight] -
+          (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+           MargArray[PaddingTop] + MargArray[PaddingBottom]);
+    end else begin
+      Result := MargArray[piHeight];
+    end;
   end;
 end;
 
-function GetTotalWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
+function TBlock.GetTotalWidthAndMarg : Integer;
 begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[MarginLeft] + ANewWidth + AMargArray[MarginRight];
+  if Document.UseQuirksMode then begin
+    Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
   end else begin
-    Result := ANewWidth +
-      AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-      AMargArray[MarginRight] + AMargArray[PaddingRight] + AMargArray[BorderRightWidth];
+    if MargArray[BoxSizing] = 1 then begin
+      Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
+    end else begin
+      Result := NewWidth +
+        MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+        MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+    end;
   end;
 end;
 
-function AdjustNewWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
+function TBlock.GetContentWidth : Integer;
 begin
-  if AUseQuirksMode then begin
-    Result := ANewWidth -
-      (AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-       AMargArray[PaddingRight] + AMargArray[BorderRightWidth] )
+  if Document.UseQuirksMode then begin
+    Result := NewWidth -
+      (//MargArray[MarginLeft] +
+       MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+       MargArray[PaddingRight] + MargArray[BorderRightWidth] )
   end else begin
-    Result := ANewWidth;
+    if MargArray[BoxSizing] = 1 then begin
+      Result := NewWidth -
+       (//MargArray[MarginLeft] +
+         MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+        MargArray[PaddingRight] + MargArray[BorderRightWidth] )
+    end else begin
+      Result := NewWidth;
+    end;
   end;
 end;
 
@@ -5291,7 +5313,7 @@ var
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   var LHeight : Integer;
   begin
-    LHeight := GetContentHeight(MargArray, Document.UseQuirksMode);
+    LHeight := GetContentHeight;
     if HideOverflow and (LHeight > 3) then
       Result := ContentTop + LHeight
     else
@@ -5329,8 +5351,8 @@ begin
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.UseQuirksMode);
-    NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
+    TotalWidth  := GetTotalWidthAndMarg;
+    NewWidth := GetContentWidth;
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -6285,6 +6307,26 @@ end;
 function TTableBlock.getBorderWidth: Integer;
 begin
   Result := Table.BorderWidth;
+end;
+
+function TTableBlock.GetContentHeight: Integer;
+begin
+      Result := MargArray[piHeight] -
+          (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+           MargArray[PaddingTop] + MargArray[PaddingBottom]);
+
+end;
+
+function TTableBlock.GetContentWidth: Integer;
+begin
+  Result := NewWidth;
+end;
+
+function TTableBlock.GetTotalWidthAndMarg: Integer;
+begin
+  Result := NewWidth +
+      MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+      MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
 end;
 
 {----------------TTableBlock.FindWidth}

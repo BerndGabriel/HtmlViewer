@@ -56,6 +56,7 @@ type
     BackgroundColor,
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
+    BoxSizing,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
@@ -93,6 +94,7 @@ const
     'color', 'background-color',
     //'border-color',
     'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'box-sizing',
     'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
@@ -161,6 +163,7 @@ type
     function GetClear(var Clr: ClearAttrType): Boolean;
     function GetDisplay: TPropDisplay; //BG, 15.09.2009
     function GetFloat(var Align: AlignmentType): Boolean;
+    function GetBoxSizing(var VBoxSizing : TBoxSizing) : Boolean;
     function GetFont: ThtFont;
     function GetFontVariant: ThtString;
     function GetLineHeight(NewHeight: Integer): Integer;
@@ -394,7 +397,7 @@ begin
     end
     else
       case I of
-        MarginTop..BorderLeftStyle,
+        MarginTop..MarginLeft, PaddingTop..BorderLeftStyle,
         piWidth, piHeight,
         TopPos..LeftPos:
           Props[I] := IntNull;
@@ -410,7 +413,8 @@ begin
         //BorderColor, BorderStyle,
         BorderCollapse,
         PageBreakBefore, PageBreakAfter, PageBreakInside,
-        Clear, Float, Position, OverFlow, piDisplay:
+        Clear, Float, Position, OverFlow, piDisplay,
+        BoxSizing:
           if VarIsStr(Props[I]) and (Props[I]='inherit') then begin
              Props[I] := Source.Props[I];
           end; {do nothing}
@@ -735,6 +739,11 @@ begin
   end
   else
     Result := False;
+end;
+
+function TProperties.GetBoxSizing(var VBoxSizing : TBoxSizing) : Boolean;
+begin
+  Result := TryStrToBoxSizing(Props[BoxSizing], VBoxSizing);
 end;
 
 function TProperties.GetClear(var Clr: ClearAttrType): Boolean;
@@ -1157,6 +1166,17 @@ begin
           end
           else
             M[I] := 0;
+        end;
+      BoxSizing :
+        begin
+          if VarIsStr(VM[I]) then begin
+            if VM[I] = CBoxSizing[BorderBox] then
+              M[I] := 1
+            else
+              M[I] := 0;
+          end else begin
+            M[I] := 0;
+          end;
         end;
       piWidth:
         begin
@@ -2231,6 +2251,7 @@ begin
   Properties.Props[MarginRight] := MarginWidth;
   Properties.Props[Visibility] := viVisible;
   Properties.Props[LetterSpacing] := 0;
+  Properties.Props[BoxSizing] := ContentBox;
   Properties.CharSet := ACharSet;
   AddObject('default', Properties);
   FDefProp := Properties;
