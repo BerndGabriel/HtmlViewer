@@ -9107,7 +9107,7 @@ var
 
 var
   //
-  I, J, Span, EndIndex: Integer;
+  I, J, K, Span, EndIndex: Integer;
   Cells: TCellList;
   CellObj: TCellObj;
   MaxSpans: IntArray;
@@ -9235,6 +9235,24 @@ begin
                   even if there was a <colgroup> definition although W3C specified differently.
               }
               SummarizeCountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
+
+              if CellPercent > 0 then
+              begin
+                SpannedPercents := SumOfType(wtPercent, ColumnSpecs, Percents, I, EndIndex);
+                if SpannedPercents > CellPercent then
+                  continue;
+
+                // BG, 05.02.2012: spread excessive percentage over unspecified columns:
+                if SpannedCounts[wtNone] > 0 then
+                begin
+                  // a) There is at least 1 column without any width constraint: Widen this/these.
+                  IncreaseWidthsEvenly(wtNone, Percents, I, EndIndex, CellPercent - SpannedPercents, 0, SpannedCounts[wtNone]);
+                  for K := I to EndIndex do
+                    ColumnSpecs[K] := wtPercent;
+                  continue;
+                end
+              end;
+
               if SpannedCounts[wtNone] > 0 then
               begin
                 // a) There is at least 1 column without any width constraint: Widen this/these.
