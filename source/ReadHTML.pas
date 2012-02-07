@@ -1712,17 +1712,21 @@ begin
                     PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
                   end;
             end;
+
             for S := BorderTopWidth to BorderLeftWidth do
             begin
               V := PropStack.Last.Props[S];
               if (VarType(V) in varInt) and (V = IntNull) then
               begin
-                if Table.BorderWidth <= 0 then
-                  PropStack.Last.Props[S] := 3
+                if Table.brdWidthAttr <= 0 then
+                  if Table.HasBorderWidth then
+                  else
+                    PropStack.Last.Props[S] := 3
                 else
                   PropStack.Last.Props[S] := 1
               end;
             end;
+
             for S := BorderTopColor to BorderLeftColor do
             begin
               V := PropStack.Last.Props[S];

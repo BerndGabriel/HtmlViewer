@@ -1191,6 +1191,7 @@ type
     Initialized: Boolean;
     //Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
+    brdWidthAttr: Integer;  {Width attribute as entered}
     HasBorderWidth: Boolean; {width of border has been set by attr or prop}
     Float: Boolean;         {if floating}
     NumCols: Integer;       {Number columns in table}
@@ -8657,6 +8658,7 @@ begin
             else
               BorderWidth := Min(100, Max(0, Value)); {Border=0 is no border}
             HasBorderWidth := True;
+            brdWidthAttr := BorderWidth;
           end;
 
         CellSpacingSy:
