@@ -902,55 +902,133 @@ procedure THtmlStyleTagParser.GetCollection;
 //Read a series of property, value pairs such as "Text-Align: Center;" between
 //  '{', '}'  brackets. Add these to the Styles list for the specified selectors
 var
+  Top: ThtChar;
+  MoreStack: ThtString;
+
+  procedure Push(Ch: ThtChar);
+  var
+    I: Integer;
+  begin
+    if Top <> EofChar then
+    begin
+      I := Length(MoreStack) + 1;
+      SetLength(MoreStack, I);
+      MoreStack[I] := Top;
+    end;
+    Top := Ch;
+  end;
+
+  procedure Pop;
+  var
+    I: Integer;
+  begin
+    I := Length(MoreStack);
+    if I > 0 then
+    begin
+      Top := MoreStack[I];
+      SetLength(MoreStack, I - 1);
+    end
+    else
+      Top := EofChar;
+  end;
+
+  function IsTermChar(LCh: ThtChar): Boolean;
+  begin
+    case LCh of
+      '}', '<', EofChar:
+        Result := True;
+    else
+      Result := False;
+    end;
+  end;
+
+var
   Prop, Value, Value1: ThtString;
   Index: TShortHand;
 begin
-  if LCh <> '{' then
-    Exit;
-  GetCh;
-  repeat
-    SkipWhiteSpace;
-    if not GetIdentifier(Prop) then
-      exit;
-    SkipWhiteSpace;
-    if (LCh = ':') or (LCh = '=') then
-    begin
-      GetCh;
-      SkipWhiteSpace;
-
-      SetLength(Value, 0);
-      while not ((LCh = ';') or (LCh = '}') or (LCh = '<') or (LCh = EofChar)) do
-      begin
-        SetLength(Value, Length(Value) + 1);
-        Value[Length(Value)] := LCh;
-        GetCh;
-      end;
-      Value1 := LowerCase(Trim(Value)); {leave quotes on for font:}
-      Value := RemoveQuotes(Value1);
-
-      Prop := LowerCase(Prop);
-      if FindShortHand(Prop, Index) then
-        ProcessShortHand(Index, Prop, Value, Value1)
-      else
-      begin
-        if (LinkPath <> '') and (Pos('url(', Value) > 0) then
-          Value := AddPath(Value);
-        ProcessProperty(Prop, Value);
-      end;
-    end;
-    if LCh = ';' then
-      GetCh;
-
-    while True do
-      case LCh of
-        'A'..'Z', 'a'..'z', '0'..'9', '-', '}', '<', EofChar:
-          break;
-      else
-        GetCh;
-      end;
-  until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
-  if LCh = '}' then
+  if LCh = '{' then
+  begin
     GetCh;
+    repeat
+      SkipWhiteSpace;
+      if GetIdentifier(Prop) then
+      begin
+        SkipWhiteSpace;
+        if (LCh = ':') or (LCh = '=') then
+        begin
+          GetCh;
+          SkipWhiteSpace;
+
+          SetLength(Value, 0);
+          while not ((LCh = ';') or IsTermChar(LCh)) do
+          begin
+            SetLength(Value, Length(Value) + 1);
+            Value[Length(Value)] := LCh;
+            GetCh;
+          end;
+          Value1 := LowerCase(Trim(Value)); {leave quotes on for font:}
+          Value := RemoveQuotes(Value1);
+
+          Prop := LowerCase(Prop);
+          if FindShortHand(Prop, Index) then
+            ProcessShortHand(Index, Prop, Value, Value1)
+          else
+          begin
+            if (LinkPath <> '') and (Pos('url(', Value) > 0) then
+              Value := AddPath(Value);
+            ProcessProperty(Prop, Value);
+          end;
+        end;
+      end;
+
+      // Skip trailing ';' or any erroneous/unknown syntax observing the rules
+      // for matching pairs of (), [], {}, "", and '' until and including next ';'
+      while True do
+      begin
+        case LCh of
+
+          ';':
+            if Top = EofChar then
+            begin
+              GetCh;
+              break;
+            end;
+
+          '{': Push('}');
+          '(': Push(')');
+          '[': Push(']');
+
+          '"', '''':
+            if LCh = Top then
+              Pop
+            else
+              Push(LCh);
+
+          '}':
+          begin
+            if LCh = Top then
+              Pop;
+            if Top = EofChar then
+              break;
+          end;
+
+          '<':
+            if Top = EofChar then
+              break;
+
+          EofChar:
+            break;
+
+        else
+          if LCh = Top then
+            Pop;
+        end;
+        GetCh;
+      end;
+    until IsTermChar(LCh);
+    if LCh = '}' then
+      GetCh;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
