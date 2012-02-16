@@ -208,14 +208,21 @@ var
     begin
       S := copy(S, 1, J - 1);
       S := Trim(Copy(S, I + 1, 255));
-      for K := hue to luminance do
+      for K := hue to saturation do
       begin
         I := Pos(',', S);
         A[K] := Trim(copy(S, 1, I - 1));
         S := Trim(Copy(S, I + 1, 255));
       end;
       I := Pos(',', S);
-      A[luminance] := Trim(Copy(S, I + 1, 255));
+      if I > 0 then begin
+        A[luminance] := Trim(copy(S, 1, I - 1));
+      end else begin
+        A[luminance] := S;
+      end;
+      S := Trim(Copy(S, I + 1, 255));
+      // Opacity (alpha) code would go here.
+      //
       C[hue] := StrToIntDef(A[hue],0);
       while C[hue] >= 360 do begin
         C[hue] := C[hue] - 360;
@@ -224,16 +231,16 @@ var
         C[hue] := C[hue] + 360;
       end;
       for K := saturation to luminance do begin
-        I := Pos('%', S);
+        I := Pos('%', A[K]);
         if I > 0 then begin
-          A[K] := Trim(copy(S, 1, I - 1));
-          C[K] := StrToIntDef(A[K],0);
-          if C[K] > 100 then begin
-            C[K] := 100;
-          end;
-          if C[K] < 0 then begin
-            C[K] := 0;
-          end;
+          Delete(A[K], I, 1);
+        end;
+        C[K] := StrToIntDef(A[K],0);
+        if C[K] > 100 then begin
+          C[K] := 100;
+        end;
+        if C[K] < 0 then begin
+          C[K] := 0;
         end;
       end;
       Color := HSLUtils.HSLtoRGB(C[hue],C[saturation],C[luminance]);
@@ -265,9 +272,13 @@ var
         S := Trim(Copy(S, I + 1, 255));
       end;
       I := Pos(',', S);
-      A[Blue] := Trim(copy(S, 1, I - 1));
+      if I > 0 then begin
+        A[blue] := Trim(copy(S, 1, I - 1));
+      end else begin
+        A[blue] := S;
+      end;
       S := Trim(Copy(S, I + 1, 255));
-     //
+     // Opacity (alpha) code would go here.
      //
       for K := Red to Blue do
       begin
