@@ -416,6 +416,10 @@ begin
     if I = 0 then
       I := Pos('rgba(', Src);
     if I = 0 then
+      I := Pos('hsla(', Src);
+    if I = 0 then
+      I := Pos('hsl(', Src);
+    if I = 0 then
       Exit;
     J := Pos(')', Src);
     if (J = 0) or (J < I) then
@@ -456,6 +460,10 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
       if Pos('rgb(', S[I]) > 0 then
         Values[shColor] := S[I]
       else if Pos('rgba(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsla(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsl(', S[I]) > 0 then
         Values[shColor] := S[I]
       else if (Pos('url(', S[I]) > 0) then
       begin

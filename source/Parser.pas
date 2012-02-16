@@ -64,6 +64,7 @@ function ReadURL(Item: Variant): ThtString;
 function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
 
 implementation
+uses HSLUtils;
 
 type
   TParserDocStackItem = class
@@ -191,6 +192,57 @@ var
   I, Rd, Bl: Integer;
   S1: ThtString;
 
+  function FindHSLColor(S: ThtString): Boolean;
+  type
+    Colors = (hue, saturation, luminance);
+  var
+    I, J: Integer;
+  var
+    A: array[hue..luminance] of ThtString;
+    C: array[hue..luminance] of Integer;
+    K: Colors;
+  begin
+    I := Pos('(', S);
+    J := Pos(')', S);
+    if (I > 0) and (J > 0) then
+    begin
+      S := copy(S, 1, J - 1);
+      S := Trim(Copy(S, I + 1, 255));
+      for K := hue to luminance do
+      begin
+        I := Pos(',', S);
+        A[K] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+      end;
+      I := Pos(',', S);
+      A[luminance] := Trim(Copy(S, I + 1, 255));
+      C[hue] := StrToIntDef(A[hue],0);
+      while C[hue] >= 360 do begin
+        C[hue] := C[hue] - 360;
+      end;
+      while C[hue] < 0 do begin
+        C[hue] := C[hue] + 360;
+      end;
+      for K := saturation to luminance do begin
+        I := Pos('%', S);
+        if I > 0 then begin
+          A[K] := Trim(copy(S, 1, I - 1));
+          C[K] := StrToIntDef(A[K],0);
+          if C[K] > 100 then begin
+            C[K] := 100;
+          end;
+          if C[K] < 0 then begin
+            C[K] := 0;
+          end;
+        end;
+      end;
+      Color := HSLUtils.HSLtoRGB(C[hue],C[saturation],C[luminance]);
+      Result := True;
+    end
+    else
+      Result := False;
+  end;
+
   function FindRGBColor(S: ThtString): Boolean;
   type
     Colors = (red, green, blue);
@@ -212,7 +264,11 @@ var
         A[K] := Trim(copy(S, 1, I - 1));
         S := Trim(Copy(S, I + 1, 255));
       end;
-      A[Blue] := S;
+      I := Pos(',', S);
+      A[Blue] := Trim(copy(S, 1, I - 1));
+      S := Trim(Copy(S, I + 1, 255));
+     //
+     //
       for K := Red to Blue do
       begin
         I := Pos('%', A[K]);
@@ -252,6 +308,11 @@ begin
     Color := LastColor;
     Result := True;
     Exit;
+  end;
+  I := Pos('hsl',S);
+  if I > 0 then begin
+    Result := FindHSLColor(Copy(S, I + 3, 255));
+    exit;
   end;
   I := Pos('rgb', S);
   if (I = 0) and (S[1] <> '#') then
