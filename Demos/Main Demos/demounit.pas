@@ -188,8 +188,8 @@ type
     Histories: array[0..MaxHistories-1] of TMenuItem;
     MediaCount: integer;
     FoundObject: TImageObj;
-    NewWindowFile: string;
-    NextFile, PresentFile: string;
+    NewWindowFile: ThtString;
+    NextFile, PresentFile: ThtString;
     TimerCount: integer;
     OldTitle: string;
     HintWindow: THintWindow;
@@ -198,6 +198,7 @@ type
 
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
+    procedure UpdateCaption;
   public
     { Public declarations }
   end;
@@ -225,8 +226,6 @@ if Screen.Width <= 640 then
 
 OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 
-Caption := 'HTML Demo, Version '+HTMLAbt.Version;
-
 ShowImages.Checked := Viewer.ViewImages;
 Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
@@ -246,6 +245,7 @@ Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 {$endif}
   HintWindow := THintWindow.Create(Self);
   HintWindow.Color := $C0FFFF;
+  UpdateCaption;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -266,19 +266,19 @@ if (ParamCount >= 1) then
     Delete(S, I, 1);
     I := Pos('"', S);
     end;
-  Viewer.LoadFromFile(Viewer.HtmlExpandFilename(S));
+  Viewer.LoadFromFile(Viewer.HtmlExpandFilename(S), GetFileType(S));
   end;
 end;
 
 procedure TForm1.OpenFileClick(Sender: TObject);
 begin
-if Viewer.CurrentFile <> '' then
-  OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-if OpenDialog.Execute then
+  if Viewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  if OpenDialog.Execute then
   begin
-  Update;  
-  Viewer.LoadFromFile(OpenDialog.Filename);
-  Caption := Viewer.DocumentTitle;
+    Update;
+    Viewer.LoadFromFile(OpenDialog.Filename, GetFileType(OpenDialog.Filename));
+    UpdateCaption;
   end;
 end;
 
@@ -287,12 +287,12 @@ procedure TForm1.HotSpotChange(Sender: TObject; const URL: ThtString);
 var
   Caption: string;
 begin
-Caption := '';
-if URL <> '' then
-  Caption := Caption+'URL: '+URL+'     ';
-if Viewer.TitleAttr <> '' then
-  Caption := Caption+'Title: '+Viewer.TitleAttr;
-Panel1.Caption := Caption;
+  Caption := '';
+  if URL <> '' then
+    Caption := Caption+'URL: '+URL+'     ';
+  if Viewer.TitleAttr <> '' then
+    Caption := Caption+'Title: '+Viewer.TitleAttr;
+  Panel1.Caption := Caption;
 end;
 
 procedure TForm1.HotSpotClick(Sender: TObject; const URL: ThtString; var Handled: boolean);
@@ -302,8 +302,10 @@ procedure TForm1.HotSpotClick(Sender: TObject; const URL: ThtString; var Handled
 
  If the URL is handled here, set Handled to True.  If not handled here, set it
  to False and ThtmlViewer will handle it.}
+{$ifndef MultiMediaMissing}
 const
   snd_Async = $0001;  { play asynchronously }
+{$endif}
 var
   PC: array[0..255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
   S, Params: ThtString;
@@ -401,25 +403,25 @@ end;
 procedure TForm1.ReloadButtonClick(Sender: TObject);
 {the Reload button was clicked}
 begin
-with Viewer do
+  with Viewer do
   begin
-  ReLoadButton.Enabled := False;
-  ReLoad;
-  ReLoadButton.Enabled := CurrentFile <> '';
-  Viewer.SetFocus;
+    ReLoadButton.Enabled := False;
+    ReLoad;
+    ReLoadButton.Enabled := CurrentFile <> '';
+    Viewer.SetFocus;
   end;
 end;
 
 procedure TForm1.FwdBackClick(Sender: TObject);
 {Either the Forward or Back button was clicked}
 begin
-with Viewer do
+  with Viewer do
   begin
-  if Sender = BackButton then
-    HistoryIndex := HistoryIndex +1
-  else
-    HistoryIndex := HistoryIndex -1;
-  Self.Caption := DocumentTitle;      
+    if Sender = BackButton then
+      HistoryIndex := HistoryIndex +1
+    else
+      HistoryIndex := HistoryIndex -1;
+    UpdateCaption;
   end;
 end;
 
@@ -430,29 +432,30 @@ var
   Cap: ThtString;
   HI: THistoryItem;
 begin
-with Sender as ThtmlViewer do
+  with Sender as THtmlViewer do
   begin
-  {check to see which buttons are to be enabled}
-  FwdButton.Enabled := HistoryIndex > 0;
-  BackButton.Enabled := HistoryIndex < History.Count-1;
+    {check to see which buttons are to be enabled}
+    FwdButton.Enabled := HistoryIndex > 0;
+    BackButton.Enabled := HistoryIndex < History.Count-1;
 
-  {Enable and caption the appropriate history menuitems}
-  HistoryMenuItem.Visible := History.Count > 0;
-  for I := 0 to MaxHistories-1 do
-    with Histories[I] do
-      if I < History.Count then
-        Begin
-        HI := History[I];
-        Cap := HI.Url;
-        if HI.Title <> '' then
-          Cap := Cap + '--' + HI.Title;
-        Caption := Cap;    {Cap limits string to 80 char}
-        Visible := True;
-        Checked := I = HistoryIndex;
+    {Enable and caption the appropriate history menuitems}
+    HistoryMenuItem.Visible := History.Count > 0;
+    for I := 0 to MaxHistories-1 do
+      with Histories[I] do
+        if I < History.Count then
+        begin
+          HI := History[I];
+          Cap := HI.Url;
+          if HI.Title <> '' then
+            Cap := Cap + '--' + HI.Title;
+          Caption := Cap;    {Cap limits string to 80 char}
+          Visible := True;
+          Checked := I = HistoryIndex;
         end
-      else Histories[I].Visible := False;
-  Caption := DocumentTitle;    {keep the caption updated}
-  Viewer.SetFocus;  
+        else
+          Histories[I].Visible := False;
+    UpdateCaption;
+    Viewer.SetFocus;
   end;
 end;
 
@@ -598,39 +601,39 @@ end;
 
 procedure TForm1.OpenTextFileClick(Sender: TObject);
 begin
-if Viewer.CurrentFile <> '' then
-  OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html'+
+  if Viewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html'+
     '|Text Files (*.txt)|*.txt'+
     '|All Files (*.*)|*.*';
-if OpenDialog.Execute then
+  if OpenDialog.Execute then
   begin
-  ReloadButton.Enabled := False;
-  Update;
-  Viewer.LoadFromFile(OpenDialog.Filename, TextType);
-  if Viewer.CurrentFile  <> '' then
+    ReloadButton.Enabled := False;
+    Update;
+    Viewer.LoadFromFile(OpenDialog.Filename, TextType);
+    if Viewer.CurrentFile  <> '' then
     begin
-    Caption := Viewer.DocumentTitle;
-    ReLoadButton.Enabled := True;
+      UpdateCaption;
+      ReLoadButton.Enabled := True;
     end;
   end;
 end;
 
 procedure TForm1.OpenImageFileClick(Sender: TObject);
 begin
-if Viewer.CurrentFile <> '' then
-  OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
+  if Viewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
     '*.bmp;*.jpg;*.jpeg;*.gif;*.png|'+
     'All Files (*.*)|*.*';
-if OpenDialog.Execute then
+  if OpenDialog.Execute then
   begin
-  ReloadButton.Enabled := False;
-  Viewer.LoadFromFile(OpenDialog.Filename, ImgType);
-  if Viewer.CurrentFile  <> '' then
+    ReloadButton.Enabled := False;
+    Viewer.LoadFromFile(OpenDialog.Filename, ImgType);
+    if Viewer.CurrentFile  <> '' then
     begin
-    Caption := Viewer.DocumentTitle;
-    ReLoadButton.Enabled := True;
+      UpdateCaption;
+      ReLoadButton.Enabled := True;
     end;
   end;
 end;
@@ -645,7 +648,7 @@ begin
   SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
   if Length(S) > 0 then
-    Viewer.LoadFromFile(S);
+    Viewer.LoadFromFile(S, GetFileType(S));
 {$endif}
   Message.Result := 0;
 end;
@@ -831,18 +834,22 @@ end;
 
 procedure TForm1.OpenInNewWindowClick(Sender: TObject);
 var
-  PC: array[0..255] of char;
+  PC: array[0..1023] of char;
 begin
+{$ifdef LCL}
+  OpenDocument(ParamStr(0));
+{$else}
   StartProcess(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
+{$endif}
 end;
 
 procedure TForm1.MetaTimerTimer(Sender: TObject);
 begin
-MetaTimer.Enabled := False;
-if Viewer.CurrentFile = PresentFile then  {don't load if current file has changed}
+  MetaTimer.Enabled := False;
+  if Viewer.CurrentFile = PresentFile then  {don't load if current file has changed}
   begin
-  Viewer.LoadFromFile(NextFile);
-  Caption := Viewer.DocumentTitle;
+    Viewer.LoadFromFile(NextFile);
+    UpdateCaption;
   end;
 end;
 
@@ -1016,4 +1023,28 @@ begin
   Viewer.Repaint;
 end;
 
+procedure TForm1.UpdateCaption;
+var
+  Title, Cap: ThtString;
+begin
+  if Viewer.DocumentTitle <> '' then
+    Title := Viewer.DocumentTitle
+  else if Viewer.URL <> '' then
+    Title := Viewer.URL
+  else if Viewer.CurrentFile <> '' then
+    Title := Viewer.CurrentFile
+  else
+    Title := '';
+
+  Cap := 'HtmlViewer ' + VersionNo + ' Demo';
+  if Title <> '' then
+    Cap := Cap + ' - ' + Title;
+{$ifdef LCL}
+  Caption := UTF8Encode(Cap);
+{$else}
+  Caption := Cap;
+{$endif}
+end;
+
 end.
+

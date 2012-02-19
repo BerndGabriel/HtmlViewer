@@ -274,6 +274,7 @@ begin
     Edit2.Text := 'Program uses single byte characters.'
   else
     Edit2.Text := 'Program uses unicode characters.';
+  UpdateCaption;
 end;
 
 procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: boolean);
@@ -406,12 +407,12 @@ end;
 
 procedure TForm1.Exit1Click(Sender: TObject);
 begin
-Close;
+  Close;
 end;
 
 procedure TForm1.Find1Click(Sender: TObject);
 begin
-FindDialog.Execute;
+  FindDialog.Execute;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -494,28 +495,29 @@ var
   I: integer;
   Cap: string;
 begin
-with Sender as TFrameViewer do
+  with FrameViewer do
   begin
-  {check to see which buttons are to be enabled}
-  FwdButton.Enabled := FwdButtonEnabled;
-  BackButton.Enabled := BackButtonEnabled;
+    {check to see which buttons are to be enabled}
+    FwdButton.Enabled := FwdButtonEnabled;
+    BackButton.Enabled := BackButtonEnabled;
 
-  {Enable and caption the appropriate history menuitems}
-  HistoryMenuItem.Visible := History.Count > 0;
-  for I := 0 to MaxHistories-1 do
-    with Histories[I] do
-      if I < History.Count then
-        Begin
-        Cap := History.Strings[I];
-        if TitleHistory[I] <> '' then
-          Cap := Cap + '--' + TitleHistory[I];
-        Caption := Cap;    {Cap limits string to 80 char}
-        Visible := True;
-        Checked := I = HistoryIndex;
+    {Enable and caption the appropriate history menuitems}
+    HistoryMenuItem.Visible := History.Count > 0;
+    for I := 0 to MaxHistories-1 do
+      with Histories[I] do
+        if I < History.Count then
+        begin
+          Cap := History.Strings[I];
+          if TitleHistory[I] <> '' then
+            Cap := Cap + '--' + TitleHistory[I];
+          Caption := Cap;    {Cap limits string to 80 char}
+          Visible := True;
+          Checked := I = HistoryIndex;
         end
-      else Histories[I].Visible := False;
-  UpdateCaption();    {keep the caption updated}
-  FrameViewer.SetFocus;
+        else
+          Histories[I].Visible := False;
+    UpdateCaption();    {keep the caption updated}
+    FrameViewer.SetFocus;
   end;
 end;
 
@@ -1033,15 +1035,28 @@ begin
 end;
 
 procedure TForm1.UpdateCaption;
+var
+  Viewer: TFrameViewer;
+  Title, Cap: ThtString;
 begin
-  if FrameViewer.DocumentTitle <> '' then
-{$ifdef LCL}
-    Caption := 'FrameViewer Demo - ' + UTF8Encode(FrameViewer.DocumentTitle)
-{$else}
-    Caption := 'FrameViewer Demo - ' + FrameViewer.DocumentTitle
-{$endif}
+  Viewer := FrameViewer;
+  if Viewer.DocumentTitle <> '' then
+    Title := Viewer.DocumentTitle
+  else if Viewer.URL <> '' then
+    Title := Viewer.URL
+  else if Viewer.CurrentFile <> '' then
+    Title := Viewer.CurrentFile
   else
-    Caption := 'FrameViewer Demo - <untitled document>';
+    Title := '';
+
+  Cap := 'FrameViewer ' + VersionNo + ' Demo';
+  if Title <> '' then
+    Cap := Cap + ' - ' + Title;
+{$ifdef LCL}
+  Caption := UTF8Encode(Cap);
+{$else}
+  Caption := Cap;
+{$endif}
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
