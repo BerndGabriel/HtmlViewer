@@ -8124,9 +8124,9 @@ begin
   PT := BT + FBrd.Top; {Padding Top and Bottom}
   PB := BB - FBrd.Bottom;
 
-  IT := Max(0, Arect.Top - 2 - PT);
+  IT := Max(0, ARect.Top - 2 - PT);
   FT := Max(PT, ARect.Top - 2); {top of area drawn, screen coordinates}
-  IH := Min(PB - FT, Arect.Bottom - FT); {height of area actually drawn}
+  IH := Min(PB - FT, ARect.Bottom - FT); {height of area actually drawn}
 
   Cell.MyRect := Rect(BL, BT, BR, BB);
   if not (BT <= ARect.Bottom) and (BB >= ARect.Top) then
@@ -8187,7 +8187,7 @@ begin
         end
         else
           if Border then
-            InflateRect(BRect, -1, -1);
+            InflateRect(BRect, 1, 1);
         Canvas.FillRect(BRect);
       end;
     end;
@@ -8253,9 +8253,9 @@ begin
       GetWindowOrgEx(Canvas.Handle, Point); {when scrolling or animated Gifs, canvas may not start at X=0, Y=0}
       if not Cell.MasterList.Printing then
         if IsWin95 then
-          Rgn := CreateRectRgn(BL - Point.X, Max(BT - Point.Y, -32000), X + Wd - Point.X, Min(YO + Ht - Point.Y, 32000))
+          Rgn := CreateRectRgn(BL - Point.X, Max(BT - Point.Y, -32000), BR - Point.X, Min(BB - Point.Y, 32000))
         else
-          Rgn := CreateRectRgn(BL - Point.X, BT - Point.Y, X + Wd - Point.X, YO + Ht - Point.Y)
+          Rgn := CreateRectRgn(BL - Point.X, BT - Point.Y, BR - Point.X, BB - Point.Y)
       else
       begin
         GetViewportExtEx(Canvas.Handle, SizeV);
