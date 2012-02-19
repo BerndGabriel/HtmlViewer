@@ -131,7 +131,7 @@ type
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: boolean); override;
     procedure Load(const SRC: ThtString); override;
     procedure LoadFromFile(const Name: ThtString); override;
-    procedure LoadURL(const URL: ThtString); 
+    procedure LoadURL(const URL: ThtString);
     property EncodePostArgs: boolean read FEncodePostArgs write FEncodePostArgs;
   published
     property OnGetPostRequest: TGetPostRequestEvent read FOnGetPostRequest write FOnGetPostRequest;

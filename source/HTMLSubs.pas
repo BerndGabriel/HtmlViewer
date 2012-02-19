@@ -759,7 +759,7 @@ type
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); virtual;
     constructor CreateCopy(Parent: TCellBasic; T: TFormControlObj); virtual;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; virtual;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; virtual;
     function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
     function TotalWidth: Integer; {$ifdef UseInline} inline; {$endif}
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); virtual;
@@ -824,7 +824,7 @@ type
     procedure SetTop(Value: Integer); override;
     procedure SetWidth(Value: Integer); override;
   public
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Hide; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
     procedure Show; override;
@@ -840,7 +840,7 @@ type
     XPos, YPos, XTmp, YTmp: Integer; {click position}
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure ImageClick(Sender: TObject);
     procedure ProcessProperties(Prop: TProperties); override;
   end;
@@ -861,7 +861,7 @@ type
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -918,7 +918,7 @@ type
     //xMyCell: TCellBasic;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure RadioClick(Sender: TObject);
     procedure ResetToValue; override;
@@ -946,7 +946,7 @@ type
     IsChecked: boolean;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ResetToValue; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
@@ -3469,7 +3469,7 @@ begin end;
 procedure TFormControlObj.ResetToValue;
 begin end;
 
-function TFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := False;
 end;
@@ -3616,7 +3616,7 @@ begin
   Result := FControl;
 end;
 
-function TImageFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TImageFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := (Index <= 1) and (XPos >= 0);
   if Result then
@@ -3655,7 +3655,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function THiddenFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -3840,7 +3840,7 @@ begin
   Result := FControl;
 end;
 
-function TEditFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TEditFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -4119,7 +4119,7 @@ begin
   Result := FControl;
 end;
 
-function TCheckBoxFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TCheckBoxFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := (Index = 0) and FControl.Checked;
   if Result then
@@ -4326,7 +4326,7 @@ begin
   Result := FControl.Checked;
 end;
 
-function TRadioButtonFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TRadioButtonFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := (Index = 0) and Checked;
   if Result then

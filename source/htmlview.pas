@@ -595,7 +595,7 @@ type
 function IsHtmlExt(const Ext: ThtString): Boolean;
 function IsImageExt(const Ext: ThtString): Boolean;
 function IsTextExt(const Ext: ThtString): Boolean;
-function getFileType(const S: ThtString): THtmlFileType;
+function GetFileType(const S: ThtString): THtmlFileType;
 
 implementation
 
@@ -633,7 +633,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
-function getFileType(const S: ThtString): THtmlFileType;
+function GetFileType(const S: ThtString): THtmlFileType;
 var
   Ext: ThtString;
 begin
@@ -843,6 +843,7 @@ begin
   SplitDest(FileName, Name, Dest);
   if Name <> '' then
     Name := ExpandFileName(Name);
+  FCurrentFile := Name; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
   if not FileExists(Name) then
     raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
   Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
@@ -954,7 +955,6 @@ procedure THtmlViewer.LoadDocument(Document: TBuffer; const DocName: ThtString; 
 var
   Dest, Name, OldFile: ThtString;
   OldCursor: TCursor;
-
 begin
   if IsProcessing then
     Exit;
@@ -1074,6 +1074,8 @@ procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: Tht
 var
   SaveOnImageRequest: TGetImageEvent;
 begin
+  if IsProcessing or not Assigned(AStream) then
+    Exit;
   AStream.Position := 0;
   if ft in [HTMLType, TextType] then
     LoadDocument(TBuffer.Create(AStream, URL), URL, ft)
@@ -1476,8 +1478,6 @@ begin
     Visited.Delete(I);
 end;
 
-{----------------THtmlViewer.CheckVisitedLinks}
-
 //-- BG ---------------------------------------------------------- 09.08.2011 --
 function THtmlViewer.IsProcessing: Boolean;
 begin
@@ -1485,6 +1485,8 @@ begin
 //  if Result then
 //    assert(False, 'Viewer processing. Data may get lost!');
 end;
+
+{----------------THtmlViewer.CheckVisitedLinks}
 
 procedure THtmlViewer.CheckVisitedLinks;
 var

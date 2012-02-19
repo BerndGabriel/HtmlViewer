@@ -289,17 +289,6 @@ begin
     Result := ''; // no match
 end;
 
-//-- BG ---------------------------------------------------------- 03.12.2011 --
-function IsIdChar(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
-begin
-  case Ch of
-    'a'..'z', 'A'..'Z', '0'..'9', '-', '$':
-      Result := True;
-  else
-    Result := False;
-  end;
-end;
-
 { THtmlParser }
 
 constructor THtmlParser.Create(Doc: TBuffer);
