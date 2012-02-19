@@ -40,10 +40,14 @@ unit vwPrint;
 interface
 
 uses
-  Windows, Classes, Graphics, Printers;
+  Windows, Classes, Graphics, Printers,
+  HtmlGlobals;
 
 type
 
+  // BG, 30.01.2012: base class for TvwPrinter and TMetaFilePrinter
+  // Allows merging the lengthy duplicate methods THtmlViewer.Print()
+  // and THtmlViewer.PrintPreview() at last.
   ThtPrinter = class(TComponent)
   private
     FOffsetX: Integer;      // Physical Printable Area x margin
@@ -55,8 +59,7 @@ type
     FPPIX: Integer;         // Logical pixelsinch in X
     FPPIY: Integer;         // Logical pixelsinch in Y
     FPrinting: Boolean;
-    FTitle: string;
-    function getWorkRect: TRect;
+    FTitle: ThtString;      // Printed Document's Title
   protected
     function GetCanvas: TCanvas; virtual; abstract;
     function GetPageNum: Integer; virtual; abstract;
@@ -78,9 +81,8 @@ type
     property PaperWidth: Integer read FPaperWidth;
     property PixelsPerInchX: Integer read FPPIX;
     property PixelsPerInchY: Integer read FPPIY;
-    property Printing: Boolean read FPrinting;
-    property Title: string read FTitle write FTitle;
-    property WorkRect: TRect read getWorkRect;
+    property Printing: Boolean read FPrinting; // becomes True in BeginDoc and back to False in EndDoc.
+    property Title: ThtString read FTitle write FTitle;
   end;
 
   TvwPrinterState = (psNoHandle, psHandleIC, psHandleDC);
@@ -259,16 +261,6 @@ begin
   FOffsetY := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);
   FPgHeight := Printer.PageHeight;
   FPgWidth := Printer.PageWidth;
-{$endif}
-end;
-
-function ThtPrinter.getWorkRect: TRect;
-{$ifdef LCL}
-begin
-  Result := Printer.PaperSize.PaperRect.WorkRect;
-{$else}
-begin
-
 {$endif}
 end;
 
