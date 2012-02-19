@@ -220,7 +220,6 @@ type
     FDocument: TBuffer;
     FRefreshDelay: Integer;
     FRefreshURL: ThtString;
-    FServerRoot: ThtString;
     FTitle: ThtString;
     // document related status stuff
     FCaretPos: Integer;
