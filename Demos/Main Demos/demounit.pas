@@ -365,7 +365,7 @@ if (I <= 2) or (J > 0) then
     setLength(S, K-1);            {truncate S}
     end
   else Params := '';
-  S := (Sender as TFrameViewer).HTMLExpandFileName(S);
+  S := (Sender as THtmlViewer).HTMLExpandFileName(S);
   Ext := Uppercase(ExtractFileExt(S));
   if Ext = '.WAV' then
     begin
@@ -445,7 +445,7 @@ var
   I: Integer;
   Cap: ThtString;
 begin
-  with Sender as ThtmlViewer do
+  with Sender as THtmlViewer do
   begin
     {check to see which buttons are to be enabled}
     FwdButton.Enabled := HistoryIndex > 0;
@@ -632,26 +632,15 @@ end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
 var
-  S: String;
-  Ext: string;
-  Count: integer;
+  S: string;
 begin
-{$ifndef LCL}
-  SetLength(S, 200);
-  Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-  SetLength(S, Count);
+{$ifdef LCL}
+{$else}
+  SetLength(S, 1024);
+  SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
-  if Count > 0 then
-  begin
-    Ext := LowerCase(ExtractFileExt(S));
-    if (Ext = '.htm') or (Ext = '.html') then
-      Viewer.LoadFromFile(S)
-    else if (Ext = '.txt') then
-      Viewer.LoadTextFile(S)
-    else if (Ext = '.bmp') or (Ext = '.gif') or (Ext = '.jpg')
-          or (Ext = '.jpeg') or (Ext = '.png') then
-      Viewer.LoadImageFile(S);
-  end;
+  if Length(S) > 0 then
+    Viewer.LoadFromFile(S);
 {$endif}
   Message.Result := 0;
 end;
@@ -841,7 +830,7 @@ end;
 
 procedure TForm1.OpenInNewWindowClick(Sender: TObject);
 var
-  PC: array[0..255] of char;
+  PC: array[0..1023] of char;
 begin
 {$ifdef LCL}
   OpenDocument(ParamStr(0));

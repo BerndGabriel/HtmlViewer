@@ -493,7 +493,7 @@ var
   I: integer;
   Cap: string;
 begin
-  with Sender as TFrameViewer do
+  with FrameViewer do
   begin
     {check to see which buttons are to be enabled}
     FwdButton.Enabled := FwdButtonEnabled;
@@ -504,15 +504,16 @@ begin
     for I := 0 to MaxHistories-1 do
       with Histories[I] do
         if I < History.Count then
-          Begin
+        begin
           Cap := History.Strings[I];
           if TitleHistory[I] <> '' then
             Cap := Cap + '--' + TitleHistory[I];
           Caption := Cap;    {Cap limits string to 80 char}
           Visible := True;
           Checked := I = HistoryIndex;
-          end
-        else Histories[I].Visible := False;
+        end
+        else
+          Histories[I].Visible := False;
     UpdateCaption();    {keep the caption updated}
     FrameViewer.SetFocus;
   end;
@@ -643,13 +644,11 @@ begin
 {$else}
 var
   S: string;
-  Count: integer;
 begin
-  SetLength(S, 200);
-  Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-  SetLength(S, Count);
+  SetLength(S, 1024);
+  SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
-  if Count >0 then
+  if Length(S) > 0 then
     FrameViewer.LoadFromFile(S);
 {$endif}
   Message.Result := 0;
@@ -1054,4 +1053,3 @@ begin
 end;
 
 end.
-

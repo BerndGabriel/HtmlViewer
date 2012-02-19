@@ -2217,7 +2217,7 @@ begin
       end
 {$IFNDEF NoGDIPlus}
       else {it's a TGpBitmap}
-        FBitmap := TGpBitmap(Image).GetTBitmap
+        FBitmap := TGpBitmap(Image).GetBitmap
 {$ENDIF NoGDIPlus}
         ;
     end;

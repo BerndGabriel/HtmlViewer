@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -233,7 +235,6 @@ var
   Item: TFrameBaseOpener;
   I: integer;
   Upper, Lower: boolean;
-  Msg: ThtString;
   NewURL: ThtString;
   Doc: TBuffer;
 begin
@@ -253,12 +254,12 @@ begin
         if TheStream <> nil then
         begin
           TheStream.Position := 0;
-          Doc := TBuffer.Create(TheStream);
+          Doc := TBuffer.Create(TheStream, Source);
         end
         else
           Doc := nil;
         try
-          if (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source) then
+          if (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc) then
           begin
             FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
             FrameSet.Align := alClient;
@@ -266,7 +267,7 @@ begin
             InsertControl(FrameSet);
             FrameSet.SendToBack;
             FrameSet.Visible := True;
-            ParseFrame(MasterSet.FrameViewer, FrameSet, Doc, Source, FrameSet.HandleMeta);
+            MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
             Self.BevelOuter := bvNone;
             frBumpHistory1(Source, 0);
             with FrameSet do
@@ -285,7 +286,7 @@ begin
           begin
             CreateViewer;
             Viewer.Base := MasterSet.FBase;
-            Viewer.LoadStream(Source, TheStream, TheStreamType);
+            Viewer.LoadFromStream(TheStream, Source, TheStreamType);
             Viewer.PositionTo(Destination);
             frBumpHistory1(Source, Viewer.Position);
           end;
@@ -296,8 +297,7 @@ begin
         if not Assigned(Viewer) then
           CreateViewer;
         FreeAndNil(FFrameSet);
-        Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source;
-        Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
+        Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
       end;
     finally
       Dec(MasterSet.NestLevel);
@@ -324,11 +324,8 @@ var
   Dummy: ThtString;
 
   procedure DoError;
-  var
-    Msg: ThtString;
   begin
-    Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source;
-    Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
+    Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
   end;
 
 begin
@@ -350,7 +347,7 @@ begin
       Viewer.Base := MasterSet.FBase; {only effective if no Base to be read}
       try
         MasterSet.FrameViewer.PostRequest(Self, True, Source, '', '', '', True, Dummy, TheStreamType, TheStream);
-        Viewer.LoadStream(Source, TheStream, TheStreamType);
+        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
         if APosition < 0 then
           Viewer.Position := ViewerPosition
         else
@@ -417,7 +414,7 @@ begin
     else
       Doc := nil;
     if not SameName then
-      FrameFile := (TheStreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Source)
+      FrameFile := (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc)
     else
       FrameFile := not Assigned(Viewer);
     if SameName and not Reload then
@@ -453,7 +450,7 @@ begin
         OldFormData := nil;
       try
         Viewer.Base := MasterSet.FBase;
-        Viewer.LoadStream(Source, TheStream, TheStreamType);
+        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
         Viewer.PositionTo(Dest);
         MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
         if not samename then
@@ -498,7 +495,7 @@ begin
         InsertControl(FrameSet);
         FrameSet.SendToBack; {to prevent blink}
         FrameSet.Visible := True;
-        ParseFrame(MasterSet.FrameViewer, FrameSet, Doc, Source, FrameSet.HandleMeta);
+        MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
         MasterSet.FrameViewer.AddVisitedLink(URL);
         Self.BevelOuter := bvNone;
         with FrameSet do
@@ -518,7 +515,7 @@ begin
       begin {not a frame file but needs a viewer}
         CreateViewer;
         Viewer.Base := MasterSet.FBase;
-        Viewer.LoadStream(Source, TheStream, TheStreamType);
+        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
         Viewer.PositionTo(Dest);
         MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
       {FrameSet to Viewer}
@@ -555,7 +552,7 @@ begin
         OldFrameSet.UnloadFiles;
         OldFrameSet.Visible := False;
       end;
-      RePaint;
+      Invalidate; //RePaint;
     end;
   except
     Source := OldName;
@@ -689,9 +686,9 @@ begin
   Stream.Position := 0;
   Doc := TBuffer.Create(Stream, Url);
   try
-    if (StreamType = HTMLType) and IsFrame(MasterSet.FrameViewer, Doc, Url) then
+    if (StreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc) then
     begin {it's a Frameset html file}
-      ParseFrame(FrameViewer, Self, Doc, Url, HandleMeta);
+      MasterSet.FrameViewer.ParseFrame(Self, Doc, Url, HandleMeta);
       for I := 0 to List.Count - 1 do
         TFrameBaseOpener(List.Items[I]).LoadFiles;
       CalcSizes(Self);
@@ -813,7 +810,7 @@ begin
         S1 := '';
         PostRequest(Self, IsGet, S, Query, EncType, Referer, Reload, S1, StreamType, Stream);
         if not Assigned(Stream) then
-          raise(EfvLoadError.Create('Can''t load: ' + S));
+          raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [S]);
         if S1 <> '' then
           S := S1;
 
@@ -849,9 +846,9 @@ begin
           CurbrFrameSet.BringToFront;
         finally
           SendMessage(Handle, wm_SetRedraw, 1, 0);
-          Repaint;
+          Invalidate; //Repaint;
         end;
-        CurbrFrameSet.Repaint;
+        //CurbrFrameSet.Repaint;
       end;
 
       BumpHistory(OldFrameSet, OldPos);
@@ -867,7 +864,7 @@ begin
       end;
       PostRequest(Self, IsGet, S, Query, EncType, Referer, Reload, S1, StreamType, Stream);
       if not Assigned(Stream) then
-        raise(EfvLoadError.Create('Can''t locate cache file: ' + S));
+        raise EhtLoadError.CreateFmt('Can''t locate cache file ''%s''.', [S]);
 
       if S1 <> '' then
       begin

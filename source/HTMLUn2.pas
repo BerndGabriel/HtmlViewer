@@ -530,7 +530,6 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    procedure Parsed(const Title, Base, BaseTarget: ThtString); virtual; abstract;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -3551,7 +3550,7 @@ begin
   Result := TBitmap.Create;
   {$IFNDEF NoGDIPlus}
   if Image is TGpImage then
-    NewBitmap := TGpImage(Image).GetTBitmap
+    NewBitmap := TGpImage(Image).GetBitmap
   else {$ENDIF !NoGDIPlus}
     NewBitmap := Image as TBitmap;
   Result.Assign(NewBitmap);

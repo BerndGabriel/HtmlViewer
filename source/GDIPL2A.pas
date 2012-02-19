@@ -1,6 +1,8 @@
 {
-Version   11      
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -30,7 +32,8 @@ unit GDIPL2A;
 interface
 
 uses
-  Windows, ActiveX, SysUtils, Graphics;
+  Windows, ActiveX, SysUtils, Graphics,
+  HtmlGlobals;
 
 var
   GDIPlusActive: boolean;
@@ -44,10 +47,10 @@ type
     function GetHeight: integer;
     function GetWidth: integer;
   public
-    constructor Create(Filename: WideString; TmpFile: boolean = False); overload;
+    constructor Create(Filename: ThtString; TmpFile: boolean = False); overload;
     constructor Create(IStr: IStream); overload;
     destructor Destroy; override;
-    function GetTBitmap: TBitmap;
+    function GetBitmap: TBitmap;
     property Height: integer read GetHeight;
     property Width: integer read GetWidth;
   end;
@@ -292,7 +295,7 @@ end;
 
 { TGpImage }
 
-constructor TGpImage.Create(Filename: WideString; TmpFile: boolean = False);
+constructor TGpImage.Create(Filename: ThtString; TmpFile: boolean = False);
 var
   err: Integer;
 begin
@@ -342,7 +345,7 @@ begin
   Result := fHeight;
 end;
 
-function TGpImage.GetTBitmap: TBitmap;
+function TGpImage.GetBitmap: TBitmap;
 var
   g: TGpGraphics;
 begin
@@ -468,4 +471,3 @@ begin
 end;
 
 end.
-
