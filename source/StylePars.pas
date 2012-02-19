@@ -948,7 +948,18 @@ var
               GetSelectors;
               GetCollection;
               SkipWhiteSpace;
-            until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
+
+              case LCh of
+                '}':
+                begin
+                  GetCh;
+                  break;
+                end;
+                
+                '<', EofChar:
+                  break;
+              end;
+            until False;
           end
           else
             SkipRule(1);
