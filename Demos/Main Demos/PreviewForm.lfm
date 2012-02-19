@@ -37,7 +37,7 @@ object PreviewForm: TPreviewForm
   }
   OnClose = FormClose
   OnShow = FormShow
-  LCLVersion = '0.9.31'
+  LCLVersion = '0.9.30.2'
   WindowState = wsMaximized
   object ToolBarPanel: TPanel
     Left = 0
@@ -686,7 +686,7 @@ object PreviewForm: TPreviewForm
       end
     end
   end
-  object PrintDialog1: TPrintDialog
+  object PrintDialog: TPrintDialog
     FromPage = 1
     MinPage = 1
     Options = [poPrintToFile, poPageNums]

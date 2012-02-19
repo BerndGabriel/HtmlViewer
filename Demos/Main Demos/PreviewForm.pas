@@ -20,8 +20,10 @@ uses
 {$endif}
 {$ifndef NoMetafile}
   MetaFilePrinter,
+  vwPrint,
+  GDIPL2A,
 {$endif}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Printers,
   StdCtrls, ExtCtrls, Buttons,
   HTMLView, PrintStatusForm;
 
@@ -60,7 +62,7 @@ type
     PB1: TPaintBox;
     PagePanel2: TPanel;
     PB2: TPaintBox;
-    PrintDialog1: TPrintDialog;
+    PrintDialog: TPrintDialog;
     FitPageBut: TSpeedButton;
     FitWidthBut: TSpeedButton;
     Bevel1: TBevel;
@@ -85,21 +87,18 @@ type
     procedure LastPageSpeedClick(Sender: TObject);
     procedure ZoomCursorButClick(Sender: TObject);
     procedure HandCursorButClick(Sender: TObject);
-    procedure PB1MouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure PB1MouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
-    procedure PB1MouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    procedure PB1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure PB1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure PB1MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure PrintButClick(Sender: TObject);
     procedure PageNumSpeedClick(Sender: TObject);
-    procedure OnePageButMouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    procedure OnePageButMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure FitPageButClick(Sender: TObject);
     procedure FitWidthButClick(Sender: TObject);
     procedure UnitsBoxChange(Sender: TObject);
   private
     Viewer: ThtmlViewer;
+    function GetPageCount: Integer;
   protected
     FCurPage      : integer;
     OldHint       : TNotifyEvent;
@@ -110,9 +109,10 @@ type
     procedure     DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
 {$endif}
     procedure     OnHint(Sender: TObject);
-    procedure     SetCurPage(Val: integer);
+    procedure     SetCurPage(Val: Integer);
     procedure     CheckEnable;
-    property      CurPage: integer read FCurPage write SetCurPage;
+    property      CurPage: Integer read FCurPage write SetCurPage;
+    property      PageCount: Integer read GetPageCount;
   public
     Zoom          : double;
     constructor CreateIt(AOwner: TComponent; AViewer: ThtmlViewer; var Abort: boolean);
@@ -132,8 +132,7 @@ uses
 {$endif}
 {$R GRID.RES}
 
-constructor TPreviewForm.CreateIt(AOwner: TComponent; AViewer: ThtmlViewer;
-                var Abort: boolean);
+constructor TPreviewForm.CreateIt(AOwner: TComponent; AViewer: ThtmlViewer; var Abort: boolean);
 var
   StatusForm: TPrnStatusForm;
 begin
@@ -172,8 +171,7 @@ begin
    Close;
 end;
 
-procedure TPreviewForm.FormClose(Sender: TObject;
-  var Action: TCloseAction);
+procedure TPreviewForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
    Action := caFree;
    Application.OnHint := OldHint;
@@ -204,10 +202,8 @@ begin
       ZoomBox.ItemIndex := 0;
 
    Case ZoomBox.ItemIndex of
-      0: z := ((ScrollBox1.ClientHeight - BORD) / PixelsPerInch) /
-               (MFPrinter.PaperHeight / MFPrinter.PixelsPerInchY);
-      1: z := ((ScrollBox1.ClientWidth - BORD) / PixelsPerInch) /
-               (MFPrinter.PaperWidth / MFPrinter.PixelsPerInchX);
+      0: z := ((ScrollBox1.ClientHeight - BORD) / PixelsPerInch) / (MFPrinter.PaperHeight / MFPrinter.PixelsPerInchY);
+      1: z := ((ScrollBox1.ClientWidth - BORD) / PixelsPerInch) / (MFPrinter.PaperWidth / MFPrinter.PixelsPerInchX);
       2: z := Zoom;
       3: z := 0.25;
       4: z := 0.50;
@@ -283,7 +279,7 @@ end;
 {$ifndef NoMetafile}
 procedure TPreviewForm.DrawMetaFile(PB: TPaintBox; mf: TMetaFile);
 begin
-   PB.Canvas.Draw(0, 0, mf);
+  PB.Canvas.Draw(0, 0, mf);
 end;
 {$endif}
 
@@ -311,7 +307,7 @@ begin
       end;
 
    SetMapMode(PB.Canvas.Handle, MM_ANISOTROPIC);
-   SetWindowExtEx(PB.Canvas.Handle, MFPrinter.PaperWidth, MFPrinter.PaperHeight, nil);    
+   SetWindowExtEx(PB.Canvas.Handle, MFPrinter.PaperWidth, MFPrinter.PaperHeight, nil);
    SetViewportExtEx(PB.Canvas.Handle, PB.Width, PB.Height, nil);
    SetWindowOrgEx(PB.Canvas.Handle, -MFPrinter.OffsetX, -MFPrinter.OffsetY, nil);
    if Draw then
@@ -489,23 +485,8 @@ begin
 end;
 
 procedure TPreviewForm.PrintButClick(Sender: TObject);
-var
-  StatusForm: TPrnStatusForm;
-  Dummy: boolean;
 begin
-  with PrintDialog1 do
-    begin
-    MaxPage  := 9999;
-    ToPage   := 1;
-    Options  := [poPageNums];
-    StatusForm := TPrnStatusForm.Create(Self);
-    if Execute then
-      if PrintRange = prAllPages then
-        StatusForm.DoPrint(Viewer, FromPage, 9999, Dummy)
-      else
-        StatusForm.DoPrint(Viewer, FromPage, ToPage, Dummy);
-    StatusForm.Free;
-  end;
+  PrintWithDialog(Self, PrintDialog, Viewer, PageCount);
 end;
 
 procedure TPreviewForm.PageNumSpeedClick(Sender: TObject);
@@ -550,6 +531,11 @@ if GridBut.down then
   PB1.Invalidate;
   PB2.Invalidate;
   end;
+end;
+
+function TPreviewForm.GetPageCount: Integer;
+begin
+  Result := MFPrinter.LastAvailablePage;
 end;
 
 end.
