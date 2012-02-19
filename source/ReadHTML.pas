@@ -179,6 +179,7 @@ type
     function GetIdentifier(out Identifier: ThtString): Boolean;
     function PropStackIndex: Integer;
     procedure PopProp;
+    property PropStack: THtmlPropStack read FPropStack;
   public
     constructor Create(Doc: TBuffer);
     destructor Destroy; override;
@@ -1869,35 +1870,40 @@ begin
                 FPropStack.Last.Assign('center', TextAlign) {th}
               else
                 FPropStack.Last.Assign('left', TextAlign); {td}
-            if not HasBorderProps(Attributes.TheStyle) and (Table.BorderWidth > 0) then
+
+            // BG, 02.02.2012: border
+            for S := BorderTopStyle to BorderLeftStyle do
             begin
-              for S := BorderTopStyle to BorderLeftStyle do
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
+                if VarType(NewBlock.MargArrayO[S]) in varInt then
+                  case BorderStyleType(NewBlock.MargArrayO[S]) of
+                    bssInset:   PropStack.Last.Props[S] := bssOutset;
+                    bssOutset:  PropStack.Last.Props[S] := bssInset;
+                  else
+                    PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
+                  end;
+            end;
+            for S := BorderTopWidth to BorderLeftWidth do
+            begin
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
               begin
-                V := FPropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  if VarType(NewBlock.MargArrayO[S]) in varInt then
-                    case BorderStyleType(NewBlock.MargArrayO[S]) of
-                      bssInset:   FPropStack.Last.Props[S] := bssOutset;
-                      bssOutset:  FPropStack.Last.Props[S] := bssInset;
-                    else
-                      FPropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
-                    end;
-              end;
-              for S := BorderTopWidth to BorderLeftWidth do
-              begin
-                V := FPropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  FPropStack.Last.Props[S] := 1;
-              end;
-              for S := BorderTopColor to BorderLeftColor do
-              begin
-                V := FPropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  FPropStack.Last.Props[S] := Table.BorderColor;
+                if Table.BorderWidth <= 0 then
+                  PropStack.Last.Props[S] := 3
+                else
+                  PropStack.Last.Props[S] := 1
               end;
             end;
+            for S := BorderTopColor to BorderLeftColor do
+            begin
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
+                PropStack.Last.Props[S] := Table.BorderColor;
+            end;
+
             // BG, 13.01.2012: parent block should be the TableBlock, shouldn't it?
-            // BTW: In CreateCopy() the TableBlock becomes parent of the TCellObj anyway. 
+            // BTW: In CreateCopy() the TableBlock becomes parent of the TCellObj anyway.
             //CellObj := TCellObj.Create(FPropStack.Document, SaveSectionList.OwnerBlock, VAlign, Attributes, FPropStack.Last);
             CellObj := TCellObj.Create(FPropStack.Document, NewBlock, VAlign, Attributes, FPropStack.Last);
             SectionList := CellObj.Cell;
