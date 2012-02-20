@@ -61,7 +61,8 @@ type
   end;
 
 function ReadURL(Item: Variant): ThtString;
-function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
+function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean; overload;
+function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor; var Opacity : Byte): Boolean; overload;
 
 implementation
 uses HSLUtils;
@@ -181,7 +182,25 @@ begin
   end;
 end;
 
+function OpacityFromStr(S : ThtString) : Byte;
+var LErr : Integer;
+  LR : Real;
+begin
+  Val(S,LR,LErr);
+  if LErr <> 0 then begin
+    Result := 255;
+  end else begin
+    Result := Trunc(255 * LR);
+  end;
+end;
+
 function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
+var LDummy : Byte;
+begin
+  Result := TryStrToColor(S,NeedPound,Color,LDummy);
+end;
+
+function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor; var Opacity : Byte): Boolean;
 {Translate StyleSheet color ThtString to Color.  If NeedPound is true, a '#' sign
  is required to preceed a hexidecimal value.}
 const
@@ -217,12 +236,13 @@ var
       I := Pos(',', S);
       if I > 0 then begin
         A[luminance] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+        Opacity := OpacityFromStr(S);
       end else begin
         A[luminance] := S;
+        Opacity := 255;
       end;
-      S := Trim(Copy(S, I + 1, 255));
-      // Opacity (alpha) code would go here.
-      //
+
       C[hue] := StrToIntDef(A[hue],0);
       while C[hue] >= 360 do begin
         C[hue] := C[hue] - 360;
@@ -258,6 +278,7 @@ var
     C: array[red..blue] of Integer;
     I, J: Integer;
     K: Colors;
+
   begin
     I := Pos('(', S);
     J := Pos(')', S);
@@ -274,12 +295,13 @@ var
       I := Pos(',', S);
       if I > 0 then begin
         A[blue] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+        Opacity := OpacityFromStr(S);
       end else begin
         A[blue] := S;
+        Opacity := 255;
       end;
-      S := Trim(Copy(S, I + 1, 255));
-     // Opacity (alpha) code would go here.
-     //
+
       for K := Red to Blue do
       begin
         I := Pos('%', A[K]);
@@ -308,6 +330,8 @@ var
   Int: Integer;
 //BG, 26.08.2009
 begin
+  //Opacity is not supported with # hexidecimal notation or color names
+  Opacity := 255;
   if S = '' then
   begin
     Result := False;

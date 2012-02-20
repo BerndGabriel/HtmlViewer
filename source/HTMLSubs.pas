@@ -61,6 +61,7 @@ unit HTMLSubs;
 interface
 
 uses
+  AlphaBlendUn,
 {$ifdef VCL}
   Windows,
 {$endif}
@@ -135,6 +136,8 @@ type
     procedure SetDocument(List: ThtDocument);
   public
     // source buffer reference
+    MainTextOpacities : TMainTextOpacities;
+    BorderOpacities : TBorderOpacities;
     StartCurs: Integer;     // where the section starts in the source buffer.
     Len: Integer;           // number of bytes in source buffer the section represents.
     // Z coordinates are calculated in Create()
@@ -1838,6 +1841,7 @@ type
 type
   BorderRec = class {record for inline borders}
   private
+    BGOpacity : Byte;
     BStart, BEnd: Integer;
     OpenStart, OpenEnd: boolean;
     BRect: TRect;
@@ -5805,10 +5809,15 @@ begin
             InitFullBG(IW, IH);
             FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
-            FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
+            AlphaBlendUn.TransparentFillRect(Canvas,Rect(0, 0, IW, IH),Self.MainTextOpacities[BackgroundColor]);
+          //  FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
           end
           else
-            Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
+            if Document.Printing then begin
+              Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
+            end else begin
+              AlphaBlendUn.TransparentFillRect(Canvas,Rect(PdRect.Left, FT, PdRect.Right, FT + IH),Self.MainTextOpacities[BackgroundColor] );
+            end;
         end;
 
         if ImgOK then
@@ -11791,6 +11800,7 @@ begin
           BorderList.Add(BR);
           with BR do
           begin
+            BR.BGOpacity := Self.MainTextOpacities[BackgroundColor];
             BR.MargArray := InlineRec(Document.InlineList.Items[I]).MargArray; {get border data}
             if StartBI < LineStart then
             begin
@@ -13282,7 +13292,8 @@ begin
   begin
     Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
     Canvas.Brush.Style := bsSolid;
-    Canvas.FillRect(IRect);
+    TransparentFillRect(Canvas,IRect,BGOpacity);
+ //   Canvas.FillRect(IRect);
   end;
 
   ORect.Left := IRect.Left - MargArray[BorderLeftWidth];
@@ -13419,7 +13430,8 @@ begin
       begin
         Brush.Color := Color or $2000000;
         Brush.Style := bsSolid;
-        FillRect(Rect(X, YT, XR + 1, YT + VSize));
+        TransparentFillRect(Canvas,Rect(X, YT, XR + 1, YT + VSize),MainTextOpacities[BackgroundColor]);
+//        FillRect(Rect(X, YT, XR + 1, YT + VSize));
       end
       else
       begin
@@ -14158,6 +14170,8 @@ constructor TSectionBase.Create(OwnerCell: TCellBasic; Attributes: TAttributeLis
 begin
   inherited;
   FDisplay := AProp.Display;
+  MainTextOpacities := AProp.MainTextOpacities;
+  BorderOpacities := AProp.BorderOpacities;
   ContentTop := 999999999; {large number in case it has Display: none; }
 end;
 
