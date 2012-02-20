@@ -27,26 +27,19 @@ are covered by separate copyright notices located in those modules.
 
 program HtmlDemo;
 
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
-
 {A program to demonstrate the ThtmlViewer component}
 
 uses
-{$ifdef FPC}
-  Interfaces,
-{$else}
-  PreviewForm in 'PreviewForm.pas' {PreviewForm},
-{$endif}
   Forms,
-  demounit in 'demounit.pas' {Form1},
-  SUBMIT in 'SUBMIT.PAS' {SubmitForm},
+  DemoSubs in 'DemoSubs.pas',
   Fontdlg in 'Fontdlg.pas' {FontForm},
+  Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
-  Gopage in 'Gopage.pas' {GoPageForm},
-  PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm};
+  PreviewForm in 'PreviewForm.pas' {PreviewForm},
+  PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
+  SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
+  DemoUnit in 'DemoUnit.pas' {Form1};
 
 {$R *.res}
 

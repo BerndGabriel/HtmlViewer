@@ -112,9 +112,9 @@ type
     FCodePage: TBuffCodePage;
     FInitalCodePage: TBuffCodePage;
     function GetNext: Word; {$ifdef UseInline} inline; {$endif}
-    function GetNextEucAsShiftJis(var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
-    function GetNextJisAsShiftJis(var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
-    function GetAsShiftJis(j, k: Word; var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetNextEucAsShiftJis(out Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetNextJisAsShiftJis(out Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetAsShiftJis(j, k: Word; out Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
     function GetPosition: Integer; {$ifdef UseInline} inline; {$endif}
     procedure DetectCodePage;
     procedure Reset;
@@ -717,7 +717,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function TBuffer.GetNextEucAsShiftJis(var Buffer: TBuffArray4): Integer;
+function TBuffer.GetNextEucAsShiftJis(out Buffer: TBuffArray4): Integer;
 var
   Chr: Word;
 begin
@@ -732,7 +732,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function TBuffer.GetNextJisAsShiftJis(var Buffer: TBuffArray4): Integer;
+function TBuffer.GetNextJisAsShiftJis(out Buffer: TBuffArray4): Integer;
 {
   The following table gives the escape sequences and the character sets
   used in "ISO-2022-JP" messages. The reg# is the registration number
@@ -837,7 +837,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function TBuffer.GetAsShiftJis(j, k: Word; var Buffer: TBuffArray4): Integer;
+function TBuffer.GetAsShiftJis(j, k: Word; out Buffer: TBuffArray4): Integer;
 // core method to convert a 2 byte EUC-JP resp. X0208 code to ShiftJIS
 var
   s, t: Word;

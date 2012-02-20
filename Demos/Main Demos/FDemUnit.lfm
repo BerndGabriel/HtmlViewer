@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 442
+  Left = 1219
   Height = 292
-  Top = 413
+  Top = 247
   Width = 494
   Caption = 'Frame Demo'
   ClientHeight = 272
@@ -13,7 +13,7 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '0.9.31'
+  LCLVersion = '0.9.30.2'
   object FrameViewer: TFrameViewer
     Left = 0
     Height = 218
@@ -142,10 +142,10 @@ object Form1: TForm1
     object File1: TMenuItem
       Caption = '&File'
       OnClick = File1Click
-      object Open1: TMenuItem
+      object Open: TMenuItem
         Caption = '&Open'
         ShortCut = 114
-        OnClick = Open1Click
+        OnClick = OpenClick
       end
       object SetPrintScale: TMenuItem
         Caption = 'Set PrintScale'
@@ -155,10 +155,10 @@ object Form1: TForm1
         Caption = 'Printer Setup...'
         OnClick = PrinterSetupClick
       end
-      object PrintPreview1: TMenuItem
-        Caption = 'Print Pre&view'
+      object PrintPreview: TMenuItem
+        Caption = 'Print Pre&view...'
         Enabled = False
-        OnClick = PrintPreview1Click
+        OnClick = PrintPreviewClick
       end
       object Print1: TMenuItem
         Caption = '&Print...'
@@ -180,17 +180,17 @@ object Form1: TForm1
         ShortCut = 16454
         OnClick = Find1Click
       end
-      object Copy1: TMenuItem
+      object CopyItem: TMenuItem
         Caption = '&Copy'
         ShortCut = 16451
-        OnClick = Copy1Click
+        OnClick = CopyItemClick
       end
       object N2: TMenuItem
         Caption = '-'
       end
-      object SelectAll1: TMenuItem
+      object SelectAllItem: TMenuItem
         Caption = '&Select All'
-        OnClick = SelectAll1Click
+        OnClick = SelectAllItemClick
       end
     end
     object Options1: TMenuItem

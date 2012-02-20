@@ -1,36 +1,36 @@
 object Form1: TForm1
   Left = 657
+  Height = 435
   Top = 269
-  ClientHeight = 435
+  Width = 613
+  ClientHeight = 415
   ClientWidth = 613
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
   Font.Name = 'System'
-  Font.Style = []
   Menu = MainMenu
-  OldCreateOrder = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 16
+  LCLVersion = '0.9.30.2'
   object Panel1: TPanel
     Left = 0
-    Top = 417
-    Width = 613
     Height = 18
+    Top = 397
+    Width = 613
     Align = alBottom
     Alignment = taLeftJustify
     BevelInner = bvLowered
     BevelOuter = bvNone
+    ClientHeight = 18
+    ClientWidth = 613
     TabOrder = 0
     object ProgressBar: TProgressBar
       Left = 462
+      Height = 16
       Top = 1
       Width = 150
-      Height = 16
       Align = alRight
       TabOrder = 0
       Visible = False
@@ -38,77 +38,81 @@ object Form1: TForm1
   end
   object Panel2: TPanel
     Left = 0
+    Height = 33
     Top = 0
     Width = 613
-    Height = 33
     Align = alTop
     BevelOuter = bvNone
+    ClientHeight = 33
+    ClientWidth = 613
     TabOrder = 1
     object Edit1: TEdit
       Left = 246
+      Height = 24
       Top = 4
       Width = 337
-      Height = 24
-      TabStop = False
       ReadOnly = True
+      TabStop = False
       TabOrder = 3
     end
     object ReloadButton: TButton
       Left = 66
+      Height = 24
       Top = 4
       Width = 59
-      Height = 24
       Caption = '&Reload'
       Enabled = False
-      TabOrder = 0
       OnClick = ReloadButtonClick
+      TabOrder = 0
     end
     object BackButton: TButton
       Left = 125
+      Height = 24
       Top = 4
       Width = 59
-      Height = 24
       Caption = '&Back'
       Enabled = False
-      TabOrder = 1
       OnClick = FwdBackClick
+      TabOrder = 1
     end
     object FwdButton: TButton
       Left = 184
+      Height = 24
       Top = 4
       Width = 59
-      Height = 24
       Caption = '&Forward'
       Enabled = False
-      TabOrder = 2
       OnClick = FwdBackClick
+      TabOrder = 2
     end
     object RepaintButton: TButton
       Left = 7
+      Height = 24
       Top = 4
       Width = 59
-      Height = 24
       Caption = 'Re&paint'
       Enabled = False
-      TabOrder = 4
       OnClick = RepaintButtonClick
+      TabOrder = 4
     end
   end
   object Panel3: TPanel
     Left = 0
+    Height = 364
     Top = 33
     Width = 613
-    Height = 384
     Align = alClient
     BevelInner = bvLowered
     BevelOuter = bvNone
     Caption = 'Panel3'
+    ClientHeight = 364
+    ClientWidth = 613
     TabOrder = 2
     object Viewer: THtmlViewer
       Left = 1
+      Height = 362
       Top = 1
       Width = 611
-      Height = 382
       TabStop = True
       TabOrder = 0
       Align = alClient
@@ -145,15 +149,15 @@ object Form1: TForm1
     end
   end
   object OpenDialog: TOpenDialog
-    DefaultExt = 'htm'
+    DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    Left = 329
-    Top = 2
+    left = 329
+    top = 2
   end
   object MainMenu: TMainMenu
-    Left = 291
-    Top = 4
+    left = 352
+    top = 75
     object File1: TMenuItem
       Caption = '&File'
       object Open: TMenuItem
@@ -169,12 +173,12 @@ object Form1: TForm1
         Caption = 'Open &Image File'
         OnClick = OpenImageFileClick
       end
-      object PrinterSetup1: TMenuItem
+      object PrinterSetup: TMenuItem
         Caption = 'Printer Setup...'
-        OnClick = PrinterSetup1Click
+        OnClick = PrinterSetupClick
       end
       object Printpreview: TMenuItem
-        Caption = 'Print pre&view'
+        Caption = 'Print Pre&view...'
         Enabled = False
         OnClick = PrintpreviewClick
       end
@@ -221,7 +225,7 @@ object Form1: TForm1
       end
       object Fonts: TMenuItem
         Caption = 'Default &Font/Colors...'
-        OnClick = FontColorsClick
+        OnClick = FontsClick
       end
     end
     object HistoryMenuItem: TMenuItem
@@ -236,12 +240,12 @@ object Form1: TForm1
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    Left = 249
-    Top = 65535
+    left = 249
+    top = 65535
   end
   object PopupMenu: TPopupMenu
-    Left = 400
-    Top = 1
+    left = 400
+    top = 1
     object Viewimage: TMenuItem
       Caption = '&View image'
       OnClick = ViewimageClick
@@ -261,13 +265,21 @@ object Form1: TForm1
   object MetaTimer: TTimer
     Enabled = False
     OnTimer = MetaTimerTimer
-    Left = 242
-    Top = 75
+    left = 242
+    top = 75
   end
   object Timer1: TTimer
     Interval = 200
     OnTimer = Timer1Timer
-    Left = 291
-    Top = 71
+    left = 291
+    top = 71
+  end
+  object PrintDialog: TPrintDialog
+    left = 160
+    top = 83
+  end
+  object PrinterSetupDialog: TPrinterSetupDialog
+    left = 56
+    top = 83
   end
 end

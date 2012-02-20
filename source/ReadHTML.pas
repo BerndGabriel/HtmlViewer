@@ -179,6 +179,7 @@ type
     function GetIdentifier(out Identifier: ThtString): Boolean;
     function PropStackIndex: Integer;
     procedure PopProp;
+    property PropStack: THtmlPropStack read FPropStack;
   public
     constructor Create(Doc: TBuffer);
     destructor Destroy; override;
@@ -286,17 +287,6 @@ begin
     Result := PSymbol(AttributeNames.Objects[I]).Name
   else
     Result := ''; // no match
-end;
-
-//-- BG ---------------------------------------------------------- 03.12.2011 --
-function IsIdChar(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
-begin
-  case Ch of
-    'a'..'z', 'A'..'Z', '0'..'9', '-', '$':
-      Result := True;
-  else
-    Result := False;
-  end;
 end;
 
 { THtmlParser }
@@ -1762,6 +1752,20 @@ var
     end;
   end;
 
+  function HasBorderProps(const P: TProperties): Boolean;
+  var
+    I: PropIndices;
+  begin
+    Result := False;
+    if P <> nil then
+      for I := BorderTopWidth to BorderLeftStyle do
+        if not ((VarType(P.Props[I]) in varInt) and (P.Props[I] = IntNull)) then
+        begin
+          Result := True;
+          break;
+        end;
+  end;
+
 begin
   SaveNoBreak := False;
   Inc(TableLevel);
@@ -1855,35 +1859,44 @@ begin
                 FPropStack.Last.Assign('center', TextAlign) {th}
               else
                 FPropStack.Last.Assign('left', TextAlign); {td}
-            if (Attributes.TheStyle = nil) and (Table.BorderWidth > 0) then
+
+            // BG, 02.02.2012: border
+            for S := BorderTopStyle to BorderLeftStyle do
             begin
-              for S := BorderTopStyle to BorderLeftStyle do
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
+                if VarType(NewBlock.MargArrayO[S]) in varInt then
+                  case BorderStyleType(NewBlock.MargArrayO[S]) of
+                    bssInset:   PropStack.Last.Props[S] := bssOutset;
+                    bssOutset:  PropStack.Last.Props[S] := bssInset;
+                  else
+                    PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
+                  end;
+            end;
+
+            for S := BorderTopWidth to BorderLeftWidth do
+            begin
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
               begin
-                V := FPropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  if VarType(NewBlock.MargArrayO[S]) in varInt then
-                    case BorderStyleType(NewBlock.MargArrayO[S]) of
-                      bssInset:   FPropStack.Last.Props[S] := bssOutset;
-                      bssOutset:  FPropStack.Last.Props[S] := bssInset;
-                    else
-                      FPropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
-                    end;
-              end;
-              for S := BorderTopWidth to BorderLeftWidth do
-              begin
-                V := FPropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  FPropStack.Last.Props[S] := 1;
-              end;
-              for S := BorderTopColor to BorderLeftColor do
-              begin
-                V := FPropStack.Last.Props[S];
-                if (VarType(V) in varInt) and (V = IntNull) then
-                  FPropStack.Last.Props[S] := Table.BorderColor;
+                if Table.brdWidthAttr <= 0 then
+                  if Table.HasBorderWidth then
+                  else
+                    PropStack.Last.Props[S] := 3
+                else
+                  PropStack.Last.Props[S] := 1
               end;
             end;
+
+            for S := BorderTopColor to BorderLeftColor do
+            begin
+              V := PropStack.Last.Props[S];
+              if (VarType(V) in varInt) and (V = IntNull) then
+                PropStack.Last.Props[S] := Table.BorderColor;
+            end;
+
             // BG, 13.01.2012: parent block should be the TableBlock, shouldn't it?
-            // BTW: In CreateCopy() the TableBlock becomes parent of the TCellObj anyway. 
+            // BTW: In CreateCopy() the TableBlock becomes parent of the TCellObj anyway.
             //CellObj := TCellObj.Create(FPropStack.Document, SaveSectionList.OwnerBlock, VAlign, Attributes, FPropStack.Last);
             CellObj := TCellObj.Create(FPropStack.Document, NewBlock, VAlign, Attributes, FPropStack.Last);
             SectionList := CellObj.Cell;

@@ -44,7 +44,7 @@ object PreviewForm: TPreviewForm
   object ToolBarPanel: TPanel
     Left = 0
     Top = 0
-    Width = 734
+    Width = 726
     Height = 35
     Align = alTop
     BevelOuter = bvNone
@@ -187,7 +187,7 @@ object PreviewForm: TPreviewForm
     object Bevel1: TBevel
       Left = 0
       Top = 33
-      Width = 734
+      Width = 726
       Height = 2
       Align = alBottom
       Shape = bsBottomLine
@@ -368,8 +368,8 @@ object PreviewForm: TPreviewForm
   end
   object StatBarPanel: TPanel
     Left = 0
-    Top = 484
-    Width = 734
+    Top = 480
+    Width = 726
     Height = 27
     Align = alBottom
     BevelOuter = bvNone
@@ -405,7 +405,7 @@ object PreviewForm: TPreviewForm
     object Panel1: TPanel
       Left = 322
       Top = 0
-      Width = 412
+      Width = 404
       Height = 27
       Hint = 'Displays Help for the object beneath the mouse'
       Align = alClient
@@ -600,8 +600,8 @@ object PreviewForm: TPreviewForm
   object ScrollBox1: TScrollBox
     Left = 0
     Top = 35
-    Width = 734
-    Height = 449
+    Width = 726
+    Height = 445
     HorzScrollBar.Tracking = True
     VertScrollBar.Tracking = True
     Align = alClient
@@ -664,7 +664,8 @@ object PreviewForm: TPreviewForm
       end
     end
   end
-  object PrintDialog1: TPrintDialog
+  object PrintDialog: TPrintDialog
+    Collate = True
     FromPage = 1
     MinPage = 1
     Options = [poPrintToFile, poPageNums]

@@ -762,7 +762,7 @@ type
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); virtual;
     constructor CreateCopy(Parent: TCellBasic; T: TFormControlObj); virtual;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; virtual;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; virtual;
     function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
     function TotalWidth: Integer; {$ifdef UseInline} inline; {$endif}
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); virtual;
@@ -827,7 +827,7 @@ type
     procedure SetTop(Value: Integer); override;
     procedure SetWidth(Value: Integer); override;
   public
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Hide; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
     procedure Show; override;
@@ -843,7 +843,7 @@ type
     XPos, YPos, XTmp, YTmp: Integer; {click position}
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure ImageClick(Sender: TObject);
     procedure ProcessProperties(Prop: TProperties); override;
   end;
@@ -864,7 +864,7 @@ type
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -921,7 +921,7 @@ type
     //xMyCell: TCellBasic;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure RadioClick(Sender: TObject);
     procedure ResetToValue; override;
@@ -949,7 +949,7 @@ type
     IsChecked: boolean;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ResetToValue; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
@@ -979,6 +979,7 @@ type
     FListFont: TFont;
     Image: TImageObj;
     FirstLineHt: Integer;
+    procedure SetListFont(const Value: TFont);
   public
     constructor Create(OwnerCell: TCellBasic; Attributes: TAttributeList; Prop: TProperties;
       Sy: Symb; APlain: boolean; AIndexType: ThtChar;
@@ -988,10 +989,10 @@ type
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    property ListNumb: Integer read FListNumb;
-    property ListStyleType: ListBulletType read FListStyleType;
-    property ListType: ListTypeType read FListType;
-    property ListFont: TFont read FListFont;
+    property ListNumb: Integer read FListNumb write FListNumb;
+    property ListStyleType: ListBulletType read FListStyleType write FListStyleType;
+    property ListType: ListTypeType read FListType write FListType;
+    property ListFont: TFont read FListFont write SetListFont;
   end;
 
   TFieldsetBlock = class(TBlock)
@@ -1095,7 +1096,7 @@ type
 // BG, 12.01.2012: not C++-Builder compatible
 //    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
 //    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
-    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Height as specified}
+    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Width as specified}
 // BG, 12.01.2012: not C++-Builder compatible
 //    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
 //    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
@@ -1240,6 +1241,8 @@ type
     Initialized: Boolean;
     //Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
+    brdWidthAttr: Integer;  {Width attribute as entered}
+    HasBorderWidth: Boolean; {width of border has been set by attr or prop}
     Float: Boolean;         {if floating}
     NumCols: Integer;       {Number columns in table}
     TableWidth: Integer;    {width of table}
@@ -1301,7 +1304,7 @@ type
     function FreeMe: Boolean; override;
   public
     constructor Create(Document: ThtDocument; Pos: Integer);
-    property ChPos: Integer read FChPos;
+    property ChPos: Integer read FChPos write FChPos;
     property Document: ThtDocument read FDocument;
   end;
 
@@ -3472,7 +3475,7 @@ begin end;
 procedure TFormControlObj.ResetToValue;
 begin end;
 
-function TFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := False;
 end;
@@ -3619,7 +3622,7 @@ begin
   Result := FControl;
 end;
 
-function TImageFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TImageFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := (Index <= 1) and (XPos >= 0);
   if Result then
@@ -3658,7 +3661,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function THiddenFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -3843,7 +3846,7 @@ begin
   Result := FControl;
 end;
 
-function TEditFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TEditFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -4122,7 +4125,7 @@ begin
   Result := FControl;
 end;
 
-function TCheckBoxFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TCheckBoxFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := (Index = 0) and FControl.Checked;
   if Result then
@@ -4329,7 +4332,7 @@ begin
   Result := FControl.Checked;
 end;
 
-function TRadioButtonFormControlObj.GetSubmission(Index: Integer; var S: ThtString): boolean;
+function TRadioButtonFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
   Result := (Index = 0) and Checked;
   if Result then
@@ -5600,69 +5603,68 @@ begin
         Exit;
       end;
 
-      //with Document do
-        if Document.Printing and (Positioning <> posAbsolute) then
-          if BreakBefore and not Document.FirstPageItem then
+      if Document.Printing and (Positioning <> posAbsolute) then
+        if BreakBefore and not Document.FirstPageItem then
+        begin
+          if ARect.Top + Document.YOff < YDraw + MargArray[MarginTop] then {page-break-before}
           begin
-            if ARect.Top + Document.YOff < YDraw + MargArray[MarginTop] then {page-break-before}
+            if YDraw + MargArray[MarginTop] < Document.PageBottom then
+              Document.PageBottom := YDraw + MargArray[MarginTop];
+            Document.SkipDraw := True; {prevents next block from drawing a line}
+            Exit;
+          end;
+        end
+        else if KeepIntact then
+        begin
+        {if we're printing and block won't fit on this page and block will fit on
+         next page, then don't do block now}
+          if (YO > ARect.Top) and (Y + DrawHeight > Document.PageBottom) and
+            (DrawHeight - MargArray[MarginTop] < ARect.Bottom - ARect.Top) then
+          begin
+            if Y + MargArray[MarginTop] < Document.PageBottom then
+              Document.PageBottom := Y + MargArray[MarginTop];
+            Exit;
+          end;
+        end
+        else if BreakAfter then
+        begin
+          if ARect.Top + Document.YOff < Result then {page-break-after}
+            if Result < Document.PageBottom then
+              Document.PageBottom := Result;
+        end
+        else if Self is TTableBlock and not TTableBlock(Self).Table.HeadOrFoot then {ordinary tables}
+        {if we're printing and
+         we're 2/3 down page and table won't fit on this page and table will fit on
+         next page, then don't do table now}
+        begin
+          if (YO > ARect.Top + ((ARect.Bottom - ARect.Top) * 2) div 3) and
+            (Y + DrawHeight > Document.PageBottom) and
+            (DrawHeight < ARect.Bottom - ARect.Top) then
+          begin
+            if Y + MargArray[MarginTop] < Document.PageBottom then
+              Document.PageBottom := Y + MargArray[MarginTop];
+            Exit;
+          end;
+        end
+        else if Self is TTableBlock then {try to avoid just a header and footer at page break}
+          with TTableBlock(Self).Table do
+            if HeadOrFoot and (Document.TableNestLevel = 0)
+              and ((Document.PrintingTable = nil) or
+              (Document.PrintingTable = TTableBlock(Self).Table)) then
             begin
-              if YDraw + MargArray[MarginTop] < Document.PageBottom then
-                Document.PageBottom := YDraw + MargArray[MarginTop];
-              Document.SkipDraw := True; {prevents next block from drawing a line}
-              Exit;
-            end;
-          end
-          else if KeepIntact then
-          begin
-          {if we're printing and block won't fit on this page and block will fit on
-           next page, then don't do block now}
-            if (YO > ARect.Top) and (Y + DrawHeight > Document.PageBottom) and
-              (DrawHeight - MargArray[MarginTop] < ARect.Bottom - ARect.Top) then
-            begin
-              if Y + MargArray[MarginTop] < Document.PageBottom then
-                Document.PageBottom := Y + MargArray[MarginTop];
-              Exit;
-            end;
-          end
-          else if BreakAfter then
-          begin
-            if ARect.Top + Document.YOff < Result then {page-break-after}
-              if Result < Document.PageBottom then
-                Document.PageBottom := Result;
-          end
-          else if Self is TTableBlock and not TTableBlock(Self).Table.HeadOrFoot then {ordinary tables}
-          {if we're printing and
-           we're 2/3 down page and table won't fit on this page and table will fit on
-           next page, then don't do table now}
-          begin
-            if (YO > ARect.Top + ((ARect.Bottom - ARect.Top) * 2) div 3) and
-              (Y + DrawHeight > Document.PageBottom) and
-              (DrawHeight < ARect.Bottom - ARect.Top) then
-            begin
-              if Y + MargArray[MarginTop] < Document.PageBottom then
-                Document.PageBottom := Y + MargArray[MarginTop];
-              Exit;
-            end;
-          end
-          else if Self is TTableBlock then {try to avoid just a header and footer at page break}
-            with TTableBlock(Self).Table do
-              if HeadOrFoot and (Document.TableNestLevel = 0)
-                and ((Document.PrintingTable = nil) or
-                (Document.PrintingTable = TTableBlock(Self).Table)) then
-              begin
-                Spacing := CellSpacing div 2;
-                HeightNeeded := HeaderHeight + FootHeight + Rows.Items[HeaderRowCount].RowHeight;
-                if (YO > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
-                  (HeightNeeded < ARect.Bottom - ARect.Top) then
-                begin {will go on next page}
-                  if Y + Spacing < Document.PageBottom then
-                  begin
-                    Document.PageShortened := True;
-                    Document.PageBottom := Y + Spacing;
-                  end;
-                  Exit;
+              Spacing := CellSpacing div 2;
+              HeightNeeded := HeaderHeight + FootHeight + Rows.Items[HeaderRowCount].RowHeight;
+              if (YO > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
+                (HeightNeeded < ARect.Bottom - ARect.Top) then
+              begin {will go on next page}
+                if Y + Spacing < Document.PageBottom then
+                begin
+                  Document.PageShortened := True;
+                  Document.PageBottom := Y + Spacing;
                 end;
+                Exit;
               end;
+            end;
 
         if Positioning = posRelative then {for debugging}
           DrawBlock(Canvas, ARect, IMgr, X + LeftP, Y + TopP, XRef, YRef)
@@ -6093,7 +6095,7 @@ end;
 constructor TTableBlock.Create(
   OwnerCell: TCellBasic; Attr: TAttributeList; Prop: TProperties; ATable: THtmlTable; TableLevel: Integer);
 var
-  I, AutoCount, BorderColor: Integer;
+  I, AutoCount, BorderColor, BorderWidth: Integer;
   Percent: boolean;
   S,W,C: PropIndices;
 begin
@@ -6146,54 +6148,68 @@ begin
       end;
 
   //BG, 13.06.2010: Issue 5: Table border versus stylesheets:
-  if Table.BorderWidth > 0 then
-  begin
-    S := BorderTopStyle;
-    for W := BorderTopWidth to BorderLeftWidth do
-    begin
-      if MargArrayO[S] = bssNone then
-      begin
-        if Table.BorderColor = clNone then
-          MargArrayO[S] := bssOutset
-        else
-          MargArrayO[S] := bssSolid;
-        if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
-          MargArrayO[W] := Table.BorderWidth;
-      end;
-      Inc(S);
-    end;
-    HasBorderStyle := True; //bssOutset;
-  end;
-
+  //BG, 02.02.2012: Issue 121: Cell border:
+  TableBorder := False;
   BorderColor := Table.BorderColor;
   if BorderColor = clNone then
     BorderColor := clSilver;
+  if Table.HasBorderWidth then
+    BorderWidth := Table.BorderWidth
+  else
+    BorderWidth := 3;
   C := BorderTopColor;
-  TableBorder := False;
+  W := BorderTopWidth;
   for S := BorderTopStyle to BorderLeftStyle do
   begin
-    if MargArrayO[S] <> bssNone then
+    if (MargArrayO[S] = Unassigned) or (MargArrayO[S] = bssNone) then
     begin
-      TableBorder := True;
-      if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
-        case BorderStyleType(MargArrayO[S]) of
-          bssOutset:
-            if S in [BorderLeftStyle, BorderTopStyle] then
-              MargArrayO[C] := Table.BorderColorLight
-            else
-              MargArrayO[C] := Table.BorderColorDark;
-          bssInset:
-            if S in [BorderLeftStyle, BorderTopStyle] then
-              MargArrayO[C] := Table.BorderColorDark
-            else
-              MargArrayO[C] := Table.BorderColorLight;
-        else
-          MargArrayO[C] := BorderColor;
-        end;
-    end;
-    Inc(C);
-  end;
+      // no style specified
+      if Table.BorderWidth > 0 then
+      begin
+        if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
+          // set default style
+          if Table.BorderColor = clNone then
+            MargArrayO[S] := bssOutset
+          else
+            MargArrayO[S] := bssSolid;
 
+        if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
+          // set default width
+          MargArrayO[W] := Table.BorderWidth;
+
+        HasBorderStyle := True;
+        TableBorder := True;
+      end;
+    end
+    else
+    begin
+      // style has been specified
+      TableBorder := not Table.HasBorderWidth or (Table.BorderWidth > 0);
+      if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
+        // set default width
+        MargArrayO[W] := BorderWidth;
+    end;
+
+    if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
+      // no color specified, set default color:
+      case BorderStyleType(MargArrayO[S]) of
+        bssOutset:
+          if S in [BorderLeftStyle, BorderTopStyle] then
+            MargArrayO[C] := Table.BorderColorLight
+          else
+            MargArrayO[C] := Table.BorderColorDark;
+        bssInset:
+          if S in [BorderLeftStyle, BorderTopStyle] then
+            MargArrayO[C] := Table.BorderColorDark
+          else
+            MargArrayO[C] := Table.BorderColorLight;
+      else
+        MargArrayO[C] := BorderColor;
+      end;
+
+    Inc(C);
+    Inc(W);
+  end;
 
 {need to see if width is defined in style}
   Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
@@ -6334,7 +6350,7 @@ end;
 function TTableBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer;
 var
   LeftSide, RightSide: Integer;
-  Min, Max, M: Integer;
+  Min, Max, M, P: Integer;
 begin
   if not HasCaption then
   begin
@@ -6376,25 +6392,26 @@ begin
     if not HasCaption then {already done if HasCaption}
     begin
       if AsPercent then
-      begin
-        Result := MulDiv(AWidth, WidthAttr, 1000);
-        Dec(Result, (LeftSide + RightSide));
-      end
+        Result := MulDiv(AWidth, WidthAttr, 1000) - LeftSide - RightSide
       else
-        Result := WidthAttr - (MargArray[PaddingLeft] + MargArray[BorderLeftWidth]
-          + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
+        Result := WidthAttr - (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
       Table.tblWidthAttr := Result;
       Table.MinMaxWidth(Canvas, Min, Max);
-      Result := Math.Max(Min, Result);
-      Table.tblWidthAttr := Result;
-    end
-    else
-      Result := Table.tblWidthAttr;
+      Table.tblWidthAttr := Math.Max(Min, Result);
+    end;
+    Result := Table.tblWidthAttr;
   end
   else
   begin
-    Table.MinMaxWidth(Canvas, Min, Max);
     Result := AWidth - LeftSide - RightSide;
+    Table.MinMaxWidth(Canvas, Min, Max);
+    P := Math.Min(Sum(Table.Percents), 1000);
+    if P > 0 then
+    begin
+      P := MulDiv(Result, P, 1000);
+      Min := Math.Max(Min, P);
+      Max := Math.Max(Max, P);
+    end;
     if Result > Max then
       Result := Max
     else if Result < Min then
@@ -6624,6 +6641,12 @@ begin
   finally
     Document.FirstLineHtPtr := nil;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 31.01.2012 --
+procedure TBlockLI.SetListFont(const Value: TFont);
+begin
+  FListFont.Assign(Value);
 end;
 
 ////-- BG ---------------------------------------------------------- 16.09.2009 --
@@ -7925,9 +7948,9 @@ begin
   PT := BT + FBrd.Top; {Padding Top and Bottom}
   PB := BB - FBrd.Bottom;
 
-  IT := Max(0, Arect.Top - 2 - PT);
+  IT := Max(0, ARect.Top - 2 - PT);
   FT := Max(PT, ARect.Top - 2); {top of area drawn, screen coordinates}
-  IH := Min(PB - FT, Arect.Bottom - FT); {height of area actually drawn}
+  IH := Min(PB - FT, ARect.Bottom - FT); {height of area actually drawn}
 
   Cell.MyRect := Rect(BL, BT, BR, BB);
   if not (BT <= ARect.Bottom) and (BB >= ARect.Top) then
@@ -7988,7 +8011,7 @@ begin
         end
         else
           if Border then
-            InflateRect(BRect, -1, -1);
+            InflateRect(BRect, 1, 1);
         Canvas.FillRect(BRect);
       end;
     end;
@@ -8054,9 +8077,9 @@ begin
       GetWindowOrgEx(Canvas.Handle, Point); {when scrolling or animated Gifs, canvas may not start at X=0, Y=0}
       if not Cell.Document.Printing then
         if IsWin95 then
-          Rgn := CreateRectRgn(BL - Point.X, Max(BT - Point.Y, -32000), X + Wd - Point.X, Min(YO + Ht - Point.Y, 32000))
+          Rgn := CreateRectRgn(BL - Point.X, Max(BT - Point.Y, -32000), BR - Point.X, Min(BB - Point.Y, 32000))
         else
-          Rgn := CreateRectRgn(BL - Point.X, BT - Point.Y, X + Wd - Point.X, YO + Ht - Point.Y)
+          Rgn := CreateRectRgn(BL - Point.X, BT - Point.Y, BR - Point.X, BB - Point.Y)
       else
       begin
         GetViewportExtEx(Canvas.Handle, SizeV);
@@ -8381,8 +8404,8 @@ begin
     (not Document.Printing or (Y < Document.PageBottom)) then
     for I := 0 to Count - 1 do
     begin
-      CellObj := TCellObj(Items[I]);
-      if Assigned(CellObj) then
+      CellObj := Items[I];
+      if (CellObj <> nil) and (CellObj.ColSpan > 0) and (CellObj.RowSpan > 0) then
         CellObj.Draw(Canvas, ARect, X, Y, CellSpacing, Border, Light, Dark);
       X := X + Widths[I];
     end;
@@ -8400,6 +8423,7 @@ begin
   Rows := TRowList.Create;
   CellPadding := 1;
   CellSpacing := 2;
+  HasBorderWidth := Prop.HasBorderWidth;
   BorderColor := clNone;
   BorderColorLight := clBtnHighLight;
   BorderColorDark := clBtnShadow;
@@ -8408,11 +8432,15 @@ begin
       case Which of
         BorderSy:
           //BG, 15.10.2010: issue 5: set border width only, if style does not set any border width:
-          if not Prop.HasBorderWidth then
+          if not HasBorderWidth then
+          begin
             if Name = '' then
               BorderWidth := 1
             else
               BorderWidth := Min(100, Max(0, Value)); {Border=0 is no border}
+            HasBorderWidth := True;
+            brdWidthAttr := BorderWidth;
+          end;
 
         CellSpacingSy:
           CellSpacing := Min(40, Max(-1, Value));
@@ -8861,7 +8889,7 @@ var
 
 var
   //
-  I, J, Span, EndIndex: Integer;
+  I, J, K, Span, EndIndex: Integer;
   Cells: TCellList;
   CellObj: TCellObj;
   MaxSpans: IntArray;
@@ -8968,14 +8996,9 @@ begin
           begin
             EndIndex := I + Span - 1;
 
-            // get current min and max width of spanned columns
+            // Get current min and max width of spanned columns.
             SpannedMin := Sum(MinWidths, I, EndIndex);
             SpannedMax := Sum(MaxWidths, I, EndIndex);
-            if Span = NumCols then
-            begin
-              SpannedMin := Max(SpannedMin, TheWidth);
-              SpannedMax := Max(SpannedMax, TheWidth);
-            end;
 
             if (CellMin > SpannedMin) or (CellMax > SpannedMax) then
             begin
@@ -8998,6 +9021,24 @@ begin
                   even if there was a <colgroup> definition although W3C specified differently.
               }
               SummarizeCountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
+
+              if CellPercent > 0 then
+              begin
+                SpannedPercents := SumOfType(wtPercent, ColumnSpecs, Percents, I, EndIndex);
+                if SpannedPercents > CellPercent then
+                  continue;
+
+                // BG, 05.02.2012: spread excessive percentage over unspecified columns:
+                if SpannedCounts[wtNone] > 0 then
+                begin
+                  // a) There is at least 1 column without any width constraint: Widen this/these.
+                  IncreaseWidthsEvenly(wtNone, Percents, I, EndIndex, CellPercent - SpannedPercents, 0, SpannedCounts[wtNone]);
+                  for K := I to EndIndex do
+                    ColumnSpecs[K] := wtPercent;
+                  continue;
+                end
+              end;
+
               if SpannedCounts[wtNone] > 0 then
               begin
                 // a) There is at least 1 column without any width constraint: Widen this/these.
@@ -9120,7 +9161,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       else
       begin
         W := SumOfType(WidthType, ColumnSpecs, Widths, 0, NumCols -1);
-        IncreaseWidthsByWidth(WidthType, Widths, 0, NumCols - 1, NewWidth - MinWidth + D, W, Count);
+        IncreaseWidthsByWidth(WidthType, Widths, 0, NumCols - 1, NewWidth - MinWidth + W, W, Count);
       end;
     end;
 
@@ -9170,13 +9211,13 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       MinWidth := Sum(Widths);
 
       if MinWidth > NewWidth then
-        // Table is too small for given precentage specifications.
+        // Table is too small for given percentage specifications.
         // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
         IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
       else if not Specified and (MaxWidth <= NewWidth) then
         // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
         Widths := Copy(MaxWidths)
-      else
+      else if MinWidth < NewWidth then
       begin
         // Expand columns to fit exactly into NewWidth.
         // Prefer widening columns without or with relative specification.

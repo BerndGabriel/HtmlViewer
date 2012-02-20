@@ -18,8 +18,8 @@ object Form1: TForm1
   TextHeight = 16
   object Panel1: TPanel
     Left = 0
-    Top = 417
-    Width = 613
+    Top = 413
+    Width = 605
     Height = 18
     Align = alBottom
     Alignment = taLeftJustify
@@ -27,7 +27,7 @@ object Form1: TForm1
     BevelOuter = bvNone
     TabOrder = 0
     object ProgressBar: TProgressBar
-      Left = 462
+      Left = 454
       Top = 1
       Width = 150
       Height = 16
@@ -41,7 +41,7 @@ object Form1: TForm1
   object Panel2: TPanel
     Left = 0
     Top = 0
-    Width = 613
+    Width = 605
     Height = 33
     Align = alTop
     BevelOuter = bvNone
@@ -99,8 +99,8 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 0
     Top = 33
-    Width = 613
-    Height = 384
+    Width = 605
+    Height = 380
     Align = alClient
     BevelInner = bvLowered
     BevelOuter = bvNone
@@ -109,8 +109,8 @@ object Form1: TForm1
     object Viewer: THtmlViewer
       Left = 1
       Top = 1
-      Width = 611
-      Height = 382
+      Width = 603
+      Height = 378
       TabStop = True
       TabOrder = 0
       Align = alClient
@@ -159,12 +159,12 @@ object Form1: TForm1
     DefaultExt = 'htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    Left = 329
+    Left = 321
     Top = 2
   end
   object MainMenu: TMainMenu
-    Left = 291
-    Top = 4
+    Left = 171
+    Top = 60
     object File1: TMenuItem
       Caption = '&File'
       object Open: TMenuItem
@@ -180,12 +180,12 @@ object Form1: TForm1
         Caption = 'Open &Image File'
         OnClick = OpenImageFileClick
       end
-      object PrinterSetup1: TMenuItem
+      object PrinterSetup: TMenuItem
         Caption = 'Printer Setup...'
-        OnClick = PrinterSetup1Click
+        OnClick = PrinterSetupClick
       end
       object Printpreview: TMenuItem
-        Caption = 'Print pre&view'
+        Caption = 'Print Pre&view...'
         Enabled = False
         OnClick = PrintpreviewClick
       end
@@ -232,7 +232,7 @@ object Form1: TForm1
       end
       object Fonts: TMenuItem
         Caption = 'Default &Font/Colors...'
-        OnClick = FontColorsClick
+        OnClick = FontsClick
       end
     end
     object HistoryMenuItem: TMenuItem
@@ -250,17 +250,17 @@ object Form1: TForm1
     MaxPage = 9999
     Options = [poPageNums]
     ToPage = 1
-    Left = 362
+    Left = 378
     Top = 1
   end
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    Left = 249
+    Left = 265
     Top = 65535
   end
   object PopupMenu: TPopupMenu
-    Left = 400
+    Left = 432
     Top = 1
     object Viewimage: TMenuItem
       Caption = '&View image'
@@ -291,6 +291,6 @@ object Form1: TForm1
     Top = 71
   end
   object PrinterSetupDialog: TPrinterSetupDialog
-    Left = 448
+    Left = 512
   end
 end

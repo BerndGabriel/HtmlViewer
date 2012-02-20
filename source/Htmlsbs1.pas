@@ -101,7 +101,7 @@ type
   public
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -124,7 +124,7 @@ type
   public
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -151,7 +151,7 @@ type
     TheText: ThtString;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
-    function GetSubmission(Index: integer; var S: ThtString): boolean; override;
+    function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
     procedure AddStr(const S: ThtString);
@@ -344,7 +344,7 @@ begin
   Result := FControl;
 end;
 
-function TListBoxFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
+function TListBoxFormControlObj.GetSubmission(Index: integer; out S: ThtString): boolean;
 begin
   with FControl do
   begin
@@ -531,7 +531,7 @@ begin
   Result := FControl;
 end;
 
-function TComboFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
+function TComboFormControlObj.GetSubmission(Index: integer; out S: ThtString): boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -741,7 +741,7 @@ begin
   Result := FControl;
 end;
 
-function TTextAreaFormControlObj.GetSubmission(Index: integer; var S: ThtString): boolean;
+function TTextAreaFormControlObj.GetSubmission(Index: integer; out S: ThtString): boolean;
 var
   I: integer;
 begin

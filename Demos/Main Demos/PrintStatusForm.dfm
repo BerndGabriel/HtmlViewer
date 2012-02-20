@@ -1,7 +1,7 @@
 object PrnStatusForm: TPrnStatusForm
-  Left = 731
-  Top = 443
-  Width = 255
+  Left = 554
+  Top = 304
+  Width = 371
   Height = 130
   Caption = 'PrnStatusForm'
   Color = clBtnFace
@@ -11,14 +11,18 @@ object PrnStatusForm: TPrnStatusForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = True
+  DesignSize = (
+    355
+    92)
   PixelsPerInch = 96
   TextHeight = 13
   object StatusLabel: TLabel
-    Left = 13
-    Top = 24
-    Width = 222
+    Left = 8
+    Top = 32
+    Width = 338
     Height = 13
     Alignment = taCenter
+    Anchors = [akLeft, akTop, akRight]
     AutoSize = False
     Caption = 'Status'
     Font.Charset = DEFAULT_CHARSET
@@ -28,11 +32,28 @@ object PrnStatusForm: TPrnStatusForm
     Font.Style = []
     ParentFont = False
   end
+  object InfoLabel: TLabel
+    Left = 8
+    Top = 8
+    Width = 338
+    Height = 13
+    Alignment = taCenter
+    Anchors = [akLeft, akTop, akRight]
+    AutoSize = False
+    Caption = 'Info'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
   object CancelButton: TBitBtn
-    Left = 88
+    Left = 140
     Top = 56
     Width = 75
     Height = 25
+    Anchors = [akTop]
     Cancel = True
     Caption = 'Cancel'
     TabOrder = 0

@@ -25,7 +25,7 @@ Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-program FrameDemLaz;
+program HtmlDemoLaz;
 
 {A program to demonstrate the TFrameViewer component}
 
@@ -43,7 +43,7 @@ uses
   PreviewForm in 'PreviewForm.pas' {PreviewForm},
   PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
   Submit in 'Submit.pas' {SubmitForm},
-  FDemUnit in 'FDemUnit.PAS' {Form1};
+  DemoUnit in 'DemoUnit.PAS' {Form1};
 
 {$R *.res}
 

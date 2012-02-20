@@ -1,32 +1,52 @@
 object PrnStatusForm: TPrnStatusForm
-  Left = 731
-  Height = 96
-  Top = 443
-  Width = 247
+  Left = 554
+  Height = 91
+  Top = 304
+  Width = 371
   Caption = 'PrnStatusForm'
-  ClientHeight = 96
-  ClientWidth = 247
+  ClientHeight = 91
+  ClientWidth = 371
+  Color = clBtnFace
+  Font.Color = clWindowText
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
-  LCLVersion = '0.9.28.2'
+  LCLVersion = '0.9.30.2'
   object StatusLabel: TLabel
-    Left = 13
+    Left = 8
     Height = 13
-    Top = 24
-    Width = 222
+    Top = 32
+    Width = 338
     Alignment = taCenter
+    Anchors = [akTop, akLeft, akRight]
     AutoSize = False
     Caption = 'Status'
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    ParentColor = False
+    ParentFont = False
+  end
+  object InfoLabel: TLabel
+    Left = 8
+    Height = 13
+    Top = 8
+    Width = 338
+    Alignment = taCenter
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = False
+    Caption = 'Info'
+    Font.Color = clWindowText
     Font.Height = -11
     Font.Name = 'Tahoma'
     ParentColor = False
     ParentFont = False
   end
   object CancelButton: TBitBtn
-    Left = 88
+    Left = 140
     Height = 25
     Top = 56
     Width = 75
+    Anchors = [akTop]
     Cancel = True
     Caption = 'Cancel'
     Glyph.Data = {

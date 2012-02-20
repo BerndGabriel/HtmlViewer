@@ -40,14 +40,14 @@ uses
   StdCtrls, Buttons, Forms,
   HtmlMisc,
   WideStringsLcl,
-  {$ifdef DEBUG}
+  {$ifdef DebugIt}
     {$message 'HtmlViewer uses LCL standard controls.'}
   {$endif}
 {$else}
   Consts,
   StrUtils,
   {$ifdef UseTNT}
-    {$ifdef DEBUG}
+    {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
     {$endif}
     TntControls,
@@ -59,7 +59,7 @@ uses
     {$endif}
     TntClasses,
   {$else UseTNT}
-    {$ifdef DEBUG}
+    {$ifdef DebugIt}
       {$message 'HtmlViewer uses VCL standard controls.'}
     {$endif}
     StdCtrls,
@@ -95,7 +95,7 @@ type
   {$ENDIF}
 {$ENDIF}
 
-{$ifdef DEBUG}
+{$ifdef DebugIt}
   {$ifdef UNICODE}
     {$message 'Compiler uses unicode by default.'}
   {$else}
@@ -271,7 +271,6 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; MaskDC: HDC; MaskX,
   MaskY: Integer): Boolean;
 {$endif}
-
 
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
@@ -546,30 +545,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htLowerCase(Str: ThtString): ThtString;
-{$ifdef UNICODE}
 begin
-  Result := LowerCase(Str);
-{$else}
-var
-  Len, NewLen: Integer;
-  Tmp: string;
-begin
-  if IsWin32Platform then
-  begin {win95,98,ME}
-    Len := Length(Str);
-    NewLen := 2 * Len;
-    SetLength(Tmp, NewLen);
-    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), NewLen, nil, nil);
-    SetLength(Tmp, NewLen);
-    Tmp := AnsiLowercase(Tmp);
-    SetLength(Result, Len);
-    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
-    exit;
-  end;
-
-  Result := Str;
-  CharLowerBuffW(@Result[1], Length(Result));
-{$endif}
+  {$ifdef UNICODE}
+    Result := LowerCase(Str);
+  {$else}
+    Result := Str;
+    CharLowerBuffW(@Result[1], Length(Result));
+  {$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
@@ -609,30 +591,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htUpperCase(Str: ThtString): ThtString;
-{$ifdef UNICODE}
 begin
-  Result := UpperCase(Str);
-{$else}
-var
-  Len, NewLen: Integer;
-  Tmp: string;
-begin
-  if IsWin32Platform then
-  begin {win95,98,ME}
-    Len := Length(Str);
-    NewLen := 2 * Len;
-    SetLength(Tmp, NewLen);
-    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(Str), Len, PChar(Tmp), NewLen, nil, nil);
-    SetLength(Tmp, NewLen);
-    Tmp := AnsiUppercase(Tmp);
-    SetLength(Result, Len);
-    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
-    exit;
-  end;
-
-  Result := Str;
-  CharUpperBuffW(@Result[1], Length(Result));
-{$endif}
+  {$ifdef UNICODE}
+    Result := UpperCase(Str);
+  {$else}
+    Result := Str;
+    CharUpperBuffW(@Result[1], Length(Result));
+  {$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 21.08.2011 --
