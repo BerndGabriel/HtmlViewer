@@ -8412,8 +8412,10 @@ begin
             if CellObj.FSpecHt.Value < SpecRowHeight.Value then
               CellObj.FSpecHt.Value := SpecRowHeight.Value;
 
+          wtNone,
           wtRelative: // percentage is stronger
             CellObj.FSpecHt := SpecRowHeight;
+
         else
           // keep specified absolute value
         end;
@@ -8422,6 +8424,9 @@ begin
         case CellObj.FSpecHt.VType of
           wtPercent: ; // percentage is stronger
 
+          wtNone:
+            CellObj.FSpecHt := SpecRowHeight;
+
           wtRelative:
             if CellObj.FSpecHt.Value < SpecRowHeight.Value then
               CellObj.FSpecHt.Value := SpecRowHeight.Value;
@@ -8429,15 +8434,15 @@ begin
           // keep specified absolute value
         end;
 
-    else
-      case CellObj.FSpecHt.VType of
-        wtAbsolute:
-          if CellObj.FSpecHt.Value < SpecRowHeight.Value then
-            CellObj.FSpecHt.Value := SpecRowHeight.Value;
-      else
-        // absolute value is stronger
-        CellObj.FSpecHt := SpecRowHeight;
-      end;
+      wtAbsolute:
+        case CellObj.FSpecHt.VType of
+          wtAbsolute:
+            if CellObj.FSpecHt.Value < SpecRowHeight.Value then
+              CellObj.FSpecHt.Value := SpecRowHeight.Value;
+        else
+          // absolute value is stronger
+          CellObj.FSpecHt := SpecRowHeight;
+        end;
     end;
   end;
 end;
@@ -11463,27 +11468,34 @@ var
         Inc(Cnt, J);
       until Cnt >= NN;
 
-    SB := 0; {if there are images, then maybe they add extra space}
-    SA := 0; {space before and after}
-      if LineHeight > DHt then
-      begin
-        // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
-        case Align of
-          aTop:
-            SA := LineHeight - DHt;
+    {if there are images or line-height, then maybe they add extra space}
+    SB := 0; // vertical space before DHt / Text
+    SA := 0; // vertical space after DHt / Text
+    if LineHeight > DHt then
+    begin
+      // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
+      case Align of
+        aTop:
+          SA := LineHeight - DHt;
 
-          aMiddle:
-            begin
-              SB := (LineHeight - DHt) div 2;
-              SA := (LineHeight - DHt) - SB;
-            end;
-        else
-//          aNone:
-//          aBaseline,
-//          aBottom:
-            SB := LineHeight - DHt;
-        end;
+        aMiddle:
+          begin
+            SB := (LineHeight - DHt) div 2;
+            SA := (LineHeight - DHt) - SB;
+          end;
+      else
+//        aNone:
+//        aBaseline,
+//        aBottom:
+          SB := LineHeight - DHt;
       end;
+    end
+    else if LineHeight >= 0 then
+    begin
+      SB := (LineHeight - DHt) div 2;
+      SA := (LineHeight - DHt) - SB;
+    end;
+
     Cnt := 0;
     repeat
       Cnt := Cnt + Images.GetImageCountAt(PStart - Buff + Cnt);
