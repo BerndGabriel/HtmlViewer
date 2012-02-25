@@ -8147,8 +8147,10 @@ begin
             if CellObj.SpecHt.Value < SpecRowHeight.Value then
               CellObj.SpecHt := SpecRowHeight;
 
+          wtNone,
           wtRelative: // percentage is stronger
-            CellObj.SpecHt := SpecRowHeight;
+            CellObj.FSpecHt := SpecRowHeight;
+
         else
           // keep specified absolute value
         end;
@@ -8157,6 +8159,9 @@ begin
         case CellObj.SpecHt.VType of
           wtPercent: ; // percentage is stronger
 
+          wtNone:
+            CellObj.FSpecHt := SpecRowHeight;
+
           wtRelative:
             if CellObj.SpecHt.Value < SpecRowHeight.Value then
               CellObj.SpecHt := SpecRowHeight;
@@ -8164,18 +8169,15 @@ begin
           // keep specified absolute value
         end;
 
-      wtNone:
-        ; // anything is stonger than none.
-
-    else
-      case CellObj.SpecHt.VType of
-        wtAbsolute:
-          if CellObj.SpecHt.Value < SpecRowHeight.Value then
-            CellObj.SpecHt := SpecRowHeight;
-      else
-        // absolute value is stronger
-        CellObj.SpecHt := SpecRowHeight;
-      end;
+      wtAbsolute:
+        case CellObj.FSpecHt.VType of
+          wtAbsolute:
+            if CellObj.FSpecHt.Value < SpecRowHeight.Value then
+              CellObj.FSpecHt.Value := SpecRowHeight.Value;
+        else
+          // absolute value is stronger
+          CellObj.FSpecHt := SpecRowHeight;
+        end;
     end;
   end;
 end;
@@ -11295,6 +11297,11 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
 //          aBottom:
             SB := LineHeight - DHt;
         end;
+      end
+      else if LineHeight >= 0 then
+      begin
+        SB := (LineHeight - DHt) div 2;
+        SA := (LineHeight - DHt) - SB;
       end;
       Cnt := 0;
       repeat
