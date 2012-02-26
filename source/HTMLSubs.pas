@@ -5687,22 +5687,6 @@ end;
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 var
   YOffset: Integer;
   XR, YB, RefX, RefY, TmpHt: Integer;
@@ -5806,7 +5790,7 @@ begin
           Canvas.Brush.Style := bsSolid;
           if Document.IsCopy and ImgOK then
           begin
-            InitFullBG(IW, IH);
+            InitFullBG(FullBG,IW, IH,Document.IsCopy);
             FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
             AlphaBlendUn.TransparentFillRect(Canvas,Rect(0, 0, IW, IH),Self.MainTextOpacities[BackgroundColor]);
@@ -5834,7 +5818,7 @@ begin
               BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
             else
             begin
-              InitFullBG(PdRect.Right - PdRect.Left, IH);
+              InitFullBG(FullBG,PdRect.Right - PdRect.Left, IH,Document.IsCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, Canvas.Handle, PdRect.Left, FT, SrcCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -6336,10 +6320,9 @@ end;
 
 function TTableBlock.GetContentHeight: Integer;
 begin
-      Result := MargArray[piHeight] -
-          (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
-           MargArray[PaddingTop] + MargArray[PaddingBottom]);
-
+  Result := MargArray[piHeight] -
+     (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+     MargArray[PaddingTop] + MargArray[PaddingBottom]);
 end;
 
 function TTableBlock.GetContentWidth: Integer;
@@ -6685,11 +6668,6 @@ var
   BrushStyle: TBrushStyle;
   YB, AlphaNumb: Integer;
 
-  procedure Circle(X, Y, Rad: Integer);
-  begin
-    Canvas.Ellipse(X, Y - Rad, X + Rad, Y);
-  end;
-
 begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 
@@ -6739,10 +6717,10 @@ begin
               lbCircle:
                 begin
                   Brush.Style := bsClear;
-                  Circle(X - 16, YB, 7);
+                  Circle(Canvas, X - 16, YB, 7);
                 end;
               lbDisc:
-                Circle(X - 15, YB - 1, 5);
+                Circle(Canvas, X - 15, YB - 1, 5);
               lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
             end;
             Brush.Color := BrushColor;
@@ -7928,22 +7906,6 @@ var
   BRect: TRect;
   IsVisible: Boolean;
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Cell.Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 begin
   YO := Y - Cell.Document.YOff;
 
@@ -7998,7 +7960,7 @@ begin
       Canvas.Brush.Style := bsSolid;
       if Cell.Document.IsCopy and ImgOK then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG, PR - PL, IH,Cell.Document.IsCopy);
         FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
         FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
@@ -8036,7 +7998,7 @@ begin
           BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
         else
         begin
-          InitFullBG(PR - PL, IH);
+          InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -8062,7 +8024,7 @@ begin
         PrintBitmap(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage))
       else if Cell.BkGnd then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
@@ -10363,6 +10325,25 @@ end;
 
 {----------------TSection.ProcessText}
 
+procedure Remove(
+  FormControls : TFormControlObjList;
+  Fonts : TFontList;
+  Images : TFloatingObjList;
+  Document : ThtDocument;
+  var BuffS : String;
+  const I: Integer;
+  Brk : TTextWrapArray;
+  XP : PXArray);
+begin
+    Move(XP^[I], XP^[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
+    Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(TTextWrap));
+    SetLength(Brk, Length(Brk) - 1);
+    System.Delete(BuffS, I, 1);
+    FormControls.Decrement(I - 1);
+    Fonts.Decrement(I - 1, Document);
+    Images.Decrement(I - 1);
+end;
+
 procedure TSection.ProcessText(TagIndex: Integer);
 const
   Shy = #173; {soft hyphen}
@@ -10370,7 +10351,7 @@ var
   I: Integer;
   FO: TFontObj;
 
-  procedure Remove(I: Integer);
+{  procedure Remove(I: Integer);
   begin
     Move(XP^[I], XP^[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
     Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(TTextWrap));
@@ -10379,7 +10360,7 @@ var
     FormControls.Decrement(I - 1);
     Fonts.Decrement(I - 1, Document);
     Images.Decrement(I - 1);
-  end;
+  end;  }
 
 begin
   if WhiteSpaceStyle in [wsPre] then
@@ -10395,7 +10376,7 @@ begin
     I := WidePos(Shy, BuffS);
     while I > 0 do
     begin
-      Remove(I);
+      Remove(FormControls,Fonts,Images,Document,BuffS,I,Brk,XP);
       if (I > 1) and (Brk[I - 2] <> twNo) then
         Brk[I - 2] := twSoft;
       I := WidePos(Shy, BuffS);
@@ -10404,15 +10385,15 @@ begin
     if WhiteSpaceStyle in [wsNormal, wsNoWrap, wsPreLine] then
     begin
       while (Length(BuffS) > 0) and (BuffS[1] = ' ') do
-        Remove(1);
+        Remove(FormControls,Fonts,Images,Document,BuffS,1,Brk,XP);
 
       I := WidePos('  ', BuffS);
       while I > 0 do
       begin
         if Brk[I - 1] = twNo then
-          Remove(I)
+          Remove(FormControls,Fonts,Images,Document,BuffS,I,Brk,XP)
         else
-          Remove(I + 1);
+          Remove(FormControls,Fonts,Images,Document,BuffS,I + 1,Brk,XP);
         I := WidePos('  ', BuffS);
       end;
 
@@ -10420,27 +10401,27 @@ begin
       for I := Length(BuffS) - 1 downto 1 do
         if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).Floating in [ALeft, ARight])
           and (BuffS[I + 1] = ' ') then
-          Remove(I + 1);
+          Remove(FormControls,Fonts,Images,Document,BuffS,I + 1,Brk,XP);
 
       I := WidePos(UnicodeString(' ' + #8), BuffS); {#8 is break char}
       while I > 0 do
       begin
-        Remove(I);
+        Remove(FormControls,Fonts,Images,Document,BuffS,I,Brk,XP);
         I := WidePos(UnicodeString(' ' + #8), BuffS);
       end;
 
       I := WidePos(UnicodeString(#8 + ' '), BuffS);
       while I > 0 do
       begin
-        Remove(I + 1);
+        Remove(FormControls,Fonts,Images,Document,BuffS,I + 1,Brk,XP);
         I := WidePos(UnicodeString(#8 + ' '), BuffS);
       end;
 
       if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = #8) then
-        Remove(Length(BuffS));
+        Remove(FormControls,Fonts,Images,Document,BuffS,Length(BuffS),Brk,XP);
 
       if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = ' ') then
-        Remove(Length(BuffS));
+        Remove(FormControls,Fonts,Images,Document,BuffS,Length(BuffS),Brk,XP);
 
       if (BuffS <> #8) and (Length(BuffS) > 0) and (BuffS[Length(BuffS)] <> ' ') then
       begin
@@ -11076,6 +11057,22 @@ end;
 
 {----------------TSection.DrawLogic}
 
+function GetClearSpace(Imgr : TIndentManager; ClearAttr: ClearAttrType; const Y : Integer): Integer;
+var
+      CL, CR: Integer;
+begin
+      Result := 0;
+      if (ClearAttr <> clrNone) then
+      begin {may need to move down past floating image}
+        IMgr.GetClearY(CL, CR);
+        case ClearAttr of
+          clLeft: Result := Max(0, CL - Y - 1);
+          clRight: Result := Max(0, CR - Y - 1);
+          clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
+        end;
+      end;
+end;
+
 function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth: Integer; var Curs: Integer): Integer;
 {returns height of the section}
@@ -11255,21 +11252,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     LR: LineRec;
     AccumImgBot: Integer;
 
-    function GetClearSpace(ClearAttr: ClearAttrType): Integer;
-    var
-      CL, CR: Integer;
-    begin
-      Result := 0;
-      if (ClearAttr <> clrNone) then
-      begin {may need to move down past floating image}
-        IMgr.GetClearY(CL, CR);
-        case ClearAttr of
-          clLeft: Result := Max(0, CL - Y - 1);
-          clRight: Result := Max(0, CR - Y - 1);
-          clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
-        end;
-      end;
-    end;
+
 
     procedure LineComplete(NN: Integer);
     var
@@ -11284,15 +11267,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       LRTextWidth: Integer;
       OHang: Integer;
 
-      function FindSpaces: Integer;
-      var
-        I: Integer;
-      begin
-        Result := 0;
-        for I := 0 to NN - 2 do {-2 so as not to count end spaces}
-          if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
-            Inc(Result);
-      end;
+
 
     begin
       DHt := 0; {for the fonts on this line get the maximum height}
@@ -11458,7 +11433,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         if not Finished then
         begin
           LR.Extra := TmpRt - Tmp - LRTextWidth;
-          LR.Spaces := FindSpaces;
+          LR.Spaces := FindSpaces(PStart,NN);
         end;
       end;
       LR.DrawWidth := TmpRt - Tmp;
@@ -11497,7 +11472,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     TextWidth := 0;
     if Len = 0 then
     begin
-      Result := GetClearSpace(ClearAttr);
+      Result := GetClearSpace(IMgr,ClearAttr,Y);
       DrawHeight := Result;
       SectionHeight := Result;
       ContentBot := Y + Result;
@@ -11554,7 +11529,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       LR := LineRec.Create(Document); {a new line}
       if Lines.Count = 0 then
       begin {may need to move down past floating image}
-        Tmp := GetClearSpace(ClearAttr);
+        Tmp := GetClearSpace(IMgr,ClearAttr,Y);
         if Tmp > 0 then
         begin
           LR.LineHt := Tmp;
@@ -11837,6 +11812,44 @@ end;
 
 {----------------TSection.Draw}
 
+function AddHyphen(P: PWideChar; N: Integer): UnicodeString; {$ifdef UseInline} inline; {$endif}
+var
+    I: Integer;
+begin
+  SetLength(Result, N + 1);
+  for I := 1 to N do
+     Result[I] := P[I - 1];
+  Result[N + 1] := WideChar('-');
+end;
+
+function ChkInversion(Document : ThtDocument; Start, Buff: PWideChar;
+  var Count: Integer; const MySelB, MySelE : Integer): boolean;
+var
+  LongCount, C: Integer;
+begin
+  Result := False;
+  C := Start - Buff;
+  Count := 32000;
+  if Document.IsCopy then
+    Exit;
+  if (MySelE < MySelB) or ((MySelE = MySelB) and
+    not Document.ShowDummyCaret) then
+      Exit;
+  if (MySelB <= C) and (MySelE > C) then
+  begin
+    Result := True;
+    LongCount := MySelE - C;
+  end
+  else if MySelB > C then
+    LongCount := MySelB - C
+  else
+    LongCount := 32000;
+  if LongCount > 32000 then
+    Count := 32000
+  else
+    Count := LongCount;
+end;
+
 function TSection.Draw1(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
@@ -11859,43 +11872,6 @@ var
     Start: PWideChar;
     Cnt, Descent: Integer;
     St: UnicodeString;
-
-    function AddHyphen(P: PWideChar; N: Integer): UnicodeString;
-    var
-      I: Integer;
-    begin
-      SetLength(Result, N + 1);
-      for I := 1 to N do
-        Result[I] := P[I - 1];
-      Result[N + 1] := WideChar('-');
-    end;
-
-    function ChkInversion(Start: PWideChar; var Count: Integer): boolean;
-    var
-      LongCount, C: Integer;
-    begin
-      Result := False;
-      C := Start - Buff;
-      Count := 32000;
-      if Document.IsCopy then
-        Exit;
-      if (MySelE < MySelB) or ((MySelE = MySelB) and
-        not Document.ShowDummyCaret) then
-        Exit;
-      if (MySelB <= C) and (MySelE > C) then
-      begin
-        Result := True;
-        LongCount := MySelE - C;
-      end
-      else if MySelB > C then
-        LongCount := MySelB - C
-      else
-        LongCount := 32000;
-      if LongCount > 32000 then
-        Count := 32000
-      else
-        Count := LongCount;
-    end;
 
   begin {Y is at bottom of line here}
     LR := LineRec(Lines[LineNo]);
@@ -12182,7 +12158,7 @@ var
       begin
         J := Min(J1, J2);
         J := Min(J, J4);
-        Inverted := ChkInversion(Start, J3);
+        Inverted := ChkInversion(Document,Start, Buff, J3, MySelB, MySelE);
         J := Min(J, J3 - 1);
         I := Min(Cnt, J + 1);
 

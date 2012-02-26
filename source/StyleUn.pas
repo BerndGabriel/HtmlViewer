@@ -1516,11 +1516,15 @@ procedure TProperties.Combine(Styles: TStyleList;
                           iSize := FontSizeConv(Props[FontSize], iSize, FUseQuirksMode);
 
                         Color:
+                        begin
                           iColor := Props[Color];
-
+                          iOpacity := MainTextOpacities[Index];
+                        end;
                         BackgroundColor:
+                        begin
                           ibgColor := Props[BackgroundColor];
-
+                          ibgOpacity := MainTextOpacities[Index];
+                        end;
                         FontStyle:
                           if (Props[FontStyle] = 'italic') or (Props[FontStyle] = 'oblique') then
                             iStyle := iStyle + [fsItalic]
@@ -2002,7 +2006,9 @@ var
   Style: TFontStyles;
 begin {call only if all things valid}
   Font.ibgColor := FontBG;
+  Font.ibgOpacity := Self.MainTextOpacities[BackgroundColor];
   Font.iColor := Props[Color];
+  Font.iOpacity := Self.MainTextOpacities[Color];
   Style := [];
   if Pos('bold', Props[FontWeight]) > 0 then
     Include(Style, fsBold)
