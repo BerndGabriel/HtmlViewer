@@ -206,11 +206,11 @@ type
     function BorderStyleNotBlank: Boolean;
     function Collapse: Boolean;
     function GetBackgroundColor: TColor;
-    function GetBackgroundImage(out Image: ThtString): Boolean;
+    function GetBackgroundImage(var Image: ThtString): Boolean;
     function GetBorderStyle(Index: PropIndices; var BorderStyle: BorderStyleType): Boolean;
-    function GetClear(out Clr: ClearAttrType): Boolean;
+    function GetClear(var Clr: ClearAttrType): Boolean;
     function GetDisplay: TPropDisplay; //BG, 15.09.2009
-    function GetFloat(out Align: AlignmentType): Boolean;
+    function GetFloat(var Align: AlignmentType): Boolean;
     function GetFont: TMyFont;
     function GetFontVariant: ThtString;
     function GetLineHeight(NewHeight: Integer): Integer;
@@ -220,7 +220,7 @@ type
     function GetPosition: PositionType;
     function GetTextIndent(out PC: Boolean): Integer;
     function GetTextTransform: TextTransformType;
-    function GetVertAlign(out Align: AlignmentType): Boolean;
+    function GetVertAlign(var Align: AlignmentType): Boolean;
     function GetVisibility: VisibilityType;
     function GetZIndex: Integer;
     function HasBorderStyle: Boolean;
@@ -798,7 +798,7 @@ begin
   end;
 end;
 
-function TProperties.GetBackgroundImage(out Image: ThtString): Boolean;
+function TProperties.GetBackgroundImage(var Image: ThtString): Boolean;
 begin
   if (VarIsStr(Props[BackgroundImage])) then
     if (Props[BackgroundImage] = 'none') then
@@ -997,7 +997,7 @@ begin
   P.Y.Fixed := P.X.Fixed;
 end;
 
-function TProperties.GetVertAlign(out Align: AlignmentType): Boolean;
+function TProperties.GetVertAlign(var Align: AlignmentType): Boolean;
 {note:  'top' should have a catagory of its own}
 var
   S: ThtString;
@@ -1030,7 +1030,7 @@ begin
   Result := (VarIsStr(Props[OverFlow])) and (Props[OverFlow] = 'hidden');
 end;
 
-function TProperties.GetFloat(out Align: AlignmentType): Boolean;
+function TProperties.GetFloat(var Align: AlignmentType): Boolean;
 var
   S: ThtString;
 begin
@@ -1051,7 +1051,7 @@ begin
     Result := False;
 end;
 
-function TProperties.GetClear(out Clr: ClearAttrType): Boolean;
+function TProperties.GetClear(var Clr: ClearAttrType): Boolean;
 var
   S: ThtString;
 begin
