@@ -1214,7 +1214,7 @@ begin
         else
           Viewer.Base := MasterSet.FBase;
           if EV.Doc <> nil then
-            Viewer.LoadFromDocument(EV.Doc, Dest, ft)
+            Viewer.LoadFromDocument(EV.Doc, EV.NewName + Dest, ft)
           else
             Viewer.LoadFromFile(EV.NewName + Dest, ft);
         end;
@@ -1284,11 +1284,11 @@ begin
         case ft of
           ImgType,
           TextType:
-            Viewer.LoadFromFile(EV.NewName, ft)
+            Viewer.LoadFromFile(EV.NewName + Dest, ft)
         else
           Viewer.Base := MasterSet.FBase;
           if EV.Doc <> nil then
-            Viewer.LoadFromDocument(EV.Doc, Dest, ft)
+            Viewer.LoadFromDocument(EV.Doc, EV.NewName + Dest, ft)
           else
             Viewer.LoadFromFile(EV.NewName + Dest, ft);
         end;
