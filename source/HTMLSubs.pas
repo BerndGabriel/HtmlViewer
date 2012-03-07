@@ -6742,7 +6742,7 @@ begin
                 end;
               lbDisc:
                 TransparentCircle(Canvas, X - 15, YB - 1, 5,MainTextOpacities[StyleUn.Color]);
-              lbSquare: TransparentRectangle(X - 15, YB - 6, X - 10, YB - 1,MainTextOpacities[StyleUn.Color]);
+              lbSquare: TransparentRectangle(Canvas,X - 15, YB - 6, X - 10, YB - 1,MainTextOpacities[StyleUn.Color]);
             end;
             Brush.Color := BrushColor;
             Brush.Style := BrushStyle;

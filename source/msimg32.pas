@@ -1,0 +1,115 @@
+unit msimg32;
+
+interface
+{$ALIGN ON}
+{$MINENUMSIZE 4}
+uses Windows;
+{
+This is not done like a typical header for several reasons.
+
+1) We don't want to conflict with Embarcadero's Windows.pas header.
+2) We do not want to load a .DLL durring drawing code and that would happen if
+you loaded the .DLL when calling a function for the first time.
+3) Some Embarcadero's VCL versions will load the msimg32.dll so we do not want to
+reload it in those cases.
+}
+const
+  c_AC_SRC_OVER                = $00;
+  c_AC_SRC_ALPHA               = $01;
+
+  c_GRADIENT_FILL_RECT_H    = $00000000;
+  c_GRADIENT_FILL_RECT_V    = $00000001;
+  c_GRADIENT_FILL_TRIANGLE  = $00000002;
+  c_GRADIENT_FILL_OP_FLAG   = $000000ff;
+
+type
+  t_BLENDFUNCTION = record
+    BlendOp : Byte;
+    BlendFlags : Byte;
+    SourceConstantAlpha : Byte;
+    AlphaFormat : Byte;
+  end;
+  Pt_BLENDFUNCTION = ^t_BLENDFUNCTION;
+  t_COLOR16 = WORD;
+  t_TRIVERTEX = record
+    x : LongInt;
+    y : LongInt;
+    Red : t_COLOR16;
+    Green : t_COLOR16;
+    Blue : t_COLOR16;
+    Alpha : t_COLOR16;
+  end;
+  Pt_TRIVERTEX = ^t_TRIVERTEX;
+  t_GRADIENT_TRIANGLE = record
+    Vertex1 : ULONG;
+    Vertex2 : ULONG;
+    Vertex3 : ULONG;
+  end;
+  Pt_GRADIENT_TRIANGLE = ^t_GRADIENT_TRIANGLE;
+  t_GRADIENT_RECT = record
+    UpperLeft : ULONG;
+    LowerRight : ULONG;
+  end;
+  Pt_GRADIENT_RECT = ^t_GRADIENT_RECT;
+
+type
+  fn_AlphaBlend = function(hdcDest : HDC;
+    xoriginDest, yoriginDest, wDest, hDest : Integer;
+    hdcSrc : HDC;
+    xoriginSrc, yoriginSrc, wSrc, hSrc : Integer;
+    ftn : t_BLENDFUNCTION ) : BOOL stdcall;
+  fn_GradientFill = function(hdc : HDC;
+    pVertex : Pt_TRIVERTEX;
+    nVertex : ULONG;
+    pMesh : Pointer;
+    nMesh : ULONG;
+    ulMode : ULONG ) : BOOL stdcall;
+  fn_TransparentBlt = function(hdcDest : HDC;
+    xoriginDest, yoriginDest, wDest, hDest : Integer;
+    hdcSrc : HDC;
+    xoriginSrc, yoriginSrc, wSrc, hSrc : Integer;
+    crTransparent : UINT ) : BOOL stdcall;
+
+const
+  c_msimg32 = 'msimg32.dll';
+  c_AlphaBlend = 'AlphaBlend';
+  c_GradientFill = 'GradientFill';
+  c_TransparentBlt = 'TransparentBlt';
+
+var
+  jpm_AlphaBlend : fn_AlphaBlend = nil;
+  jpm_GradientFill : fn_GradientFill = nil;
+  jpm_TransparentBlt : fn_TransparentBlt = nil;
+
+var
+  GLoadedMsImg : Boolean = False;
+  GHandleMsImg : THandle = INVALID_HANDLE_VALUE;
+
+implementation
+uses SysUtils;
+
+initialization
+{if the .DLL is already loaded, then do not load it again,
+use that copy instead.  Some RTL-code will load it.}
+  GHandleMsImg := GetModuleHandle(c_msimg32);
+  if GHandleMsImg = INVALID_HANDLE_VALUE then
+  begin
+    GHandleMsImg := SafeLoadLibrary(c_msimg32);
+    if GHandleMsImg <> INVALID_HANDLE_VALUE then
+      GLoadedMsImg := True;
+  end;
+  if GHandleMsImg <> INVALID_HANDLE_VALUE then
+  begin
+    jpm_AlphaBlend := GetProcAddress(GHandleMsImg,c_AlphaBlend);
+    jpm_GradientFill := GetProcAddress(GHandleMsImg,c_GradientFill);
+    jpm_TransparentBlt := GetProcAddress(GHandleMsImg,c_TransparentBlt);
+  end;
+finalization
+  if GLoadedMsImg then begin
+    FreeLibrary(GHandleMsImg);
+    jpm_AlphaBlend := nil;
+    jpm_GradientFill := nil;
+    jpm_TransparentBlt := nil;
+  end;
+
+end.
