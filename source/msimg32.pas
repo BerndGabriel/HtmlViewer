@@ -23,6 +23,14 @@ const
   c_GRADIENT_FILL_OP_FLAG   = $000000ff;
 
 type
+// Base record type for the enhanced metafile.
+  t_EMR = record
+    iType : DWORD;              // Enhanced metafile record type
+    nSize : DWORD;              // Length of the record in bytes.
+                                // This must be a multiple of 4.
+  end;
+  Pt_EMR = ^t_EMR;
+
   t_BLENDFUNCTION = record
     BlendOp : Byte;
     BlendFlags : Byte;
@@ -51,6 +59,15 @@ type
     LowerRight : ULONG;
   end;
   Pt_GRADIENT_RECT = ^t_GRADIENT_RECT;
+  t_EMRGRADIENTFILL = record
+    emr : t_EMR;
+    rclBounds : TRect;          // Inclusive-inclusive bounds in device units
+    nVer : DWORD;
+    nTri : DWORD;
+    ulMode : ULONG;
+    Ver : array[0..0] of t_TRIVERTEX;
+  end;
+  Pt_t_EMRGRADIENTFILL = ^t_EMRGRADIENTFILL;
 
 type
   fn_AlphaBlend = function(hdcDest : HDC;

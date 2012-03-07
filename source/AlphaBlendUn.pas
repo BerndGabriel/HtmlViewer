@@ -128,7 +128,7 @@ function TransparentTextOutput(ACanvas : TCanvas;
 var
   LB : Graphics.TBitmap;
   LSize : TSize;
-  LColor : TColor;
+
 begin
   if Assigned(jpm_AlphaBlend) then begin
     if (AOpacity = $FF)  then begin
