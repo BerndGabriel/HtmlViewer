@@ -687,6 +687,7 @@ function WideSameStr1(const S1, S2: UnicodeString): boolean;  {$ifdef UseInline}
 function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
 procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 
@@ -1126,6 +1127,16 @@ begin
   ARect := Rect(X1, Y1, X2, Y2);
   DrawTextW(Canvas.Handle, PWideChar(S), Length(S), ARect, DT_Wordbreak);
   SetTextAlign(Canvas.Handle, TAlign);
+end;
+
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+var
+    Dummy: Integer;
+begin
+  if not IsWin32Platform then
+    GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, VSize)
+  else
+    GetTextExtentPoint32W(DC, P, N, VSize); {win95, 98 ME}
 end;
 
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;

@@ -165,6 +165,7 @@ type
 implementation
 
 uses
+  AlphaBlendUn,
   SysUtils, Variants, Forms, StdCtrls, Math;
 
 destructor TOptionObj.Destroy;

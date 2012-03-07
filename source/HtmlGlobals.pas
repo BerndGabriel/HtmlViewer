@@ -306,10 +306,18 @@ function Lighter(Color: TColor): TColor;  {$ifdef UseInline} inline; {$endif}
 
 //code movements from HTMLSubs
 function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer; {$ifdef UseInline} inline; {$endif}
-procedure InitFullBg(FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean); {$ifdef UseInline} inline; {$endif}
+procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean); {$ifdef UseInline} inline; {$endif}
 procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer); {$ifdef UseInline} inline; {$endif}
 
+//alpha blend determination for Printers only
+function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
+
 implementation
+
+function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
+begin
+  Result := GetDeviceCaps(ADC,SHADEBLENDCAPS) and SB_CONST_ALPHA > 0;
+end;
 
 function Darker(Color: TColor): TColor;
   {find a somewhat darker color for shading purposes}
@@ -360,7 +368,8 @@ begin
       Inc(Result);
 end;
 
-procedure InitFullBg(FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean);
+procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean);
+
 begin
   if not Assigned(FullBG) then
   begin
@@ -372,8 +381,7 @@ begin
           FullBG.Palette := CopyPalette(ThePalette);
       end;
   end;
-  FullBG.Height := Max(H, 2);
-  FullBG.Width := Max(W, 2);
+  FullBG.SetSize(Max(W,2),Max(H,2));
 end;
 
 procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer);
