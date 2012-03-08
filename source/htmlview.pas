@@ -285,7 +285,11 @@ type
     function GetSelLength: Integer;
     function GetSelText: UnicodeString;
     function GetViewImages: Boolean;
+<<<<<<< HEAD
     function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
+=======
+    function GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
+>>>>>>> origin/HtmlViewer11
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
     procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
@@ -392,8 +396,13 @@ type
     function FullDisplaySize(FormatWidth: Integer): TSize;
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
+<<<<<<< HEAD
     function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
     function GetURL(X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
+=======
+    function GetTextByIndices(AStart, ALast: Integer): WideString;
+    function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
+>>>>>>> origin/HtmlViewer11
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
@@ -848,7 +857,11 @@ begin
     raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
   Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
   try
+<<<<<<< HEAD
     LoadStream(Name + Dest, Stream, ft);
+=======
+    LoadStream(FName + Dest, Stream, ft);
+>>>>>>> origin/HtmlViewer11
   finally
     Stream.Free;
   end;
@@ -971,6 +984,7 @@ begin
   SetProcessing(True);
   try
     OldFile := FCurrentFile;
+<<<<<<< HEAD
     OldCursor := Screen.Cursor;
     Screen.Cursor := crHourGlass;
     Include(FViewerState, vsDontDraw);
@@ -1040,6 +1054,33 @@ begin
       Exclude(FViewerState, vsDontDraw);
       Screen.Cursor := OldCursor;
     end;
+=======
+    FCurrentFile := ExpandFileName(FName);
+    FCurrentFileType := ft;
+    FSectionList.ProgressStart := 75;
+    htProgressInit;
+    InitLoad;
+    CaretPos := 0;
+    Sel1 := -1;
+    if Assigned(FOnSoundRequest) then
+      FOnSoundRequest(Self, '', 0, True);
+    FreeAndNil(FDocument);
+    FDocument := Document;
+    if Assigned(FOnParseBegin) then
+      FOnParseBegin(Self, FDocument);
+    if Ft = HTMLType then
+      ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+    else
+      ParseText(Self, FDocument);
+    CheckVisitedLinks;
+    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
+    begin
+      {if neither destination specified nor same file, move to top}
+      ScrollTo(0);
+      HScrollBar.Position := 0;
+    end;
+    PaintPanel.Invalidate;
+>>>>>>> origin/HtmlViewer11
   finally
     SetProcessing(False);
   end;
@@ -1053,7 +1094,54 @@ procedure THtmlViewer.LoadString(const Source, Reference: ThtString; ft: ThtmlFi
 begin
   if IsProcessing then
     Exit;
+<<<<<<< HEAD
   LoadDocument(TBuffer.Create(Source, Reference), Reference, ft);
+=======
+  SetProcessing(True);
+  FRefreshDelay := 0;
+  FName := Reference;
+  I := Pos('#', FName);
+  if I > 0 then
+  begin
+    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
+    FName := Copy(FName, 1, I - 1);
+  end
+  else
+    Dest := '';
+  Include(FViewerState, vsDontDraw);
+  try
+    OldFile := FCurrentFile;
+    FCurrentFile := ExpandFileName(FName);
+    FCurrentFileType := ft;
+    FSectionList.ProgressStart := 75;
+    htProgressInit;
+    InitLoad;
+    CaretPos := 0;
+    Sel1 := -1;
+    if Assigned(FOnSoundRequest) then
+      FOnSoundRequest(Self, '', 0, True);
+    FreeAndNil(FDocument);
+    FDocument := TBuffer.Create(Source, FName);
+    if Assigned(FOnParseBegin) then
+      FOnParseBegin(Self, FDocument);
+    if Ft = HTMLType then
+      ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink)
+    else
+      ParseText(Self, FDocument);
+    CheckVisitedLinks;
+    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
+    begin
+      {if neither destination specified nor same file, move to top}
+      ScrollTo(0);
+      HScrollBar.Position := 0;
+    end;
+    PaintPanel.Invalidate;
+  finally
+    htProgressEnd;
+    SetProcessing(False);
+    Exclude(FViewerState, vsDontDraw);
+  end;
+>>>>>>> origin/HtmlViewer11
 end;
 
 {----------------THtmlViewer.LoadFromStream}
@@ -1072,10 +1160,16 @@ end;
 
 procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
 var
+<<<<<<< HEAD
   SaveOnImageRequest: TGetImageEvent;
+=======
+  I: Integer;   OldCursor: TCursor;  SaveOnImageRequest: TGetImageEvent;
+  Dest, FName, OldFile: ThtString;
+>>>>>>> origin/HtmlViewer11
 begin
   if IsProcessing or not Assigned(AStream) then
     Exit;
+<<<<<<< HEAD
   AStream.Position := 0;
   if ft in [HTMLType, TextType] then
     LoadDocument(TBuffer.Create(AStream, URL), URL, ft)
@@ -1083,6 +1177,56 @@ begin
   begin
     SaveOnImageRequest := OnImageRequest;
     try
+=======
+  SetProcessing(True);
+  FRefreshDelay := 0;
+  FName := URL;
+  I := Pos('#', FName);
+  if I > 0 then
+  begin
+    Dest := Copy(FName, I + 1, Length(FName) - I); {positioning information}
+    FName := Copy(FName, 1, I - 1);
+  end
+  else
+    Dest := '';
+  Include(FViewerState, vsDontDraw);
+  OldCursor := Screen.Cursor;
+  Screen.Cursor := crHourGlass;
+  try
+    FSectionList.ProgressStart := 75;
+    htProgressInit;
+    InitLoad;
+    CaretPos := 0;
+    Sel1 := -1;
+
+    AStream.Position := 0;
+    FreeAndNil(FDocument);
+    if ft in [HTMLType, TextType] then
+      FDocument := TBuffer.Create(AStream, FName)
+    else
+      FDocument := TBuffer.Create('<img src="' + FName + '">');
+
+    if Assigned(FOnParseBegin) then
+      FOnParseBegin(Self, FDocument);
+
+    OldFile := FCurrentFile;
+    FCurrentFile := ExpandFileName(FName);
+    case ft of
+      HTMLType:
+      begin
+        if Assigned(FOnSoundRequest) then
+          FOnSoundRequest(Self, '', 0, True);
+        ParseHtml(Self, FDocument, FOnInclude, FOnSoundRequest, HandleMeta, FOnLink);
+      end;
+
+      TextType:
+      begin
+        ParseText(Self, FDocument);
+      end;
+    else
+      SaveOnImageRequest := OnImageRequest;
+      SetOnImageRequest(DoImage);
+>>>>>>> origin/HtmlViewer11
       FImageStream := AStream;
       OnImageRequest := DoImage;
       LoadDocument(TBuffer.Create('<img src="' + URL + '">'), URL, HTMLType)
@@ -1090,6 +1234,22 @@ begin
       FImageStream := nil;
       OnImageRequest := SaveOnImageRequest;
     end;
+<<<<<<< HEAD
+=======
+    if not PositionTo(Dest) and ((FCurrentFile = '') or (FCurrentFile <> OldFile)) then
+    begin
+      {if neither destination specified nor same file, move to top}
+      ScrollTo(0);
+      HScrollBar.Position := 0;
+    end;
+    PaintPanel.Invalidate;
+    FCurrentFile := URL;
+  finally
+    Screen.Cursor := OldCursor;
+    htProgressEnd;
+    Exclude(FViewerState, vsDontDraw);
+    SetProcessing(False);
+>>>>>>> origin/HtmlViewer11
   end;
 end;
 
@@ -1419,6 +1579,16 @@ begin
     end
     else
     begin
+<<<<<<< HEAD
+=======
+      if I > 1 then
+      begin
+        Dest := System.Copy(S, I, Length(S) - I + 1); {local destination}
+        S := System.Copy(S, 1, I - 1); {the file name}
+      end
+      else
+        Dest := ''; {no local destination}
+>>>>>>> origin/HtmlViewer11
       S := HTMLExpandFileName(S);
       ft := GetFileType(S);
       case ft of
@@ -1893,7 +2063,11 @@ end;
 
 {----------------THtmlViewer.GetWordAtCursor}
 
+<<<<<<< HEAD
 function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
+=======
+function THtmlViewer.GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
+>>>>>>> origin/HtmlViewer11
 var
   XR, X1, CaretHt: Integer;
   YR, Y1: Integer;
@@ -2117,8 +2291,8 @@ begin
   end;
 end;
 
-function THtmlViewer.GetURL(X, Y: Integer; var UrlTarg: TUrlTarget;
-  var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
+function THtmlViewer.GetURL(X, Y: Integer; out UrlTarg: TUrlTarget;
+  out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
 begin
   Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff,
     UrlTarg, FormControl, ATitle);
@@ -2465,6 +2639,7 @@ begin
     HI := FHistory[FHistory.Index];
     if (HI <> nil) and (OldFilename <> '') then
     begin
+<<<<<<< HEAD
       HI.Url := OldFilename;
       HI.Title := OldTitle;
       HI.Position := OldPos;
@@ -2495,6 +2670,44 @@ begin
     if Assigned(OnHistoryChange) then
       OnHistoryChange(Self);
   end
+=======
+      if (Count > 0) and (Filename <> '') then
+      begin
+        Strings[FHistoryIndex] := Filename;
+        with PositionObj(FPositionHistory[FHistoryIndex]) do
+        begin
+          Pos := OldPos;
+          FileType := ft;
+          if not SameName then {only stored when documents changed}
+            FormData := OldFormData
+          else
+            OldFormData.Free;
+        end;
+        FTitleHistory[FHistoryIndex] := Title;
+        for I := 0 to FHistoryIndex - 1 do
+        begin
+          Delete(0);
+          FTitleHistory.Delete(0);
+          FPositionHistory.Delete(0);
+        end;
+      end;
+      FHistoryIndex := 0;
+      Insert(0, FCurrentFile);
+      PO := PositionObj.Create;
+      PO.Pos := Position;
+      PO.FileType := FCurrentFileType;
+      FPositionHistory.Insert(0, PO);
+      FTitleHistory.Insert(0, FTitle);
+      if Count > FHistoryMaxCount then
+      begin
+        Delete(HistoryMaxCount);
+        FTitleHistory.Delete(HistoryMaxCount);
+        FPositionHistory.Delete(HistoryMaxCount);
+      end;
+      if Assigned(FOnHistoryChange) then
+        FOnHistoryChange(Self);
+    end
+>>>>>>> origin/HtmlViewer11
   else
     OldFormData.Free;
 end;

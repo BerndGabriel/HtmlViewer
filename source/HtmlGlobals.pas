@@ -1,7 +1,6 @@
 {
-Version   12
+Version   11
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -45,7 +44,6 @@ uses
   {$endif}
 {$else}
   Consts,
-  StrUtils,
   {$ifdef UseTNT}
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
@@ -72,7 +70,7 @@ uses
     {$endif}
   {$endif UseTNT}
 {$endif}
-  Math;
+  HtmlBuffer;
 
 type
 
@@ -119,16 +117,12 @@ type
   ThtStringList = TStringList;
   PhtChar = PChar;
 {$else}
-  UnicodeString = WideString;
   ThtChar = WideChar;
   ThtString = WideString;
   ThtStrings = TWideStrings;
   ThtStringList = TWideStringList;
   PhtChar = PWideChar;
 {$endif}
-  ThtCharArray = array of ThtChar;
-  ThtStringArray = array of ThtString;
-  ThtIntegerArray = array of Integer;
 
   ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected
@@ -160,21 +154,19 @@ type
   end;
 
 const
-  EofChar     = ThtChar(#0);
-  TabChar     = ThtChar(#9);
-  LfChar      = ThtChar(#10);
-  FfChar      = ThtChar(#12);
-  CrChar      = ThtChar(#13);
-  SpcChar     = ThtChar(' ');
-  DotChar     = ThtChar('.');
-  LessChar    = ThtChar('<');
-  MinusChar   = ThtChar('-');
-  GreaterChar = ThtChar('>');
-  PercentChar = ThtChar('%');
-  AmperChar   = ThtChar('&');
-  CrLf        = ThtString(#13#10);
-  CrLfTab     = ThtString(#13#10#9);
-  NullRect: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
+  EofChar     = #0;
+  TabChar     = #9;
+  LfChar      = #10;
+  FfChar      = #12;
+  CrChar      = #13;
+  SpcChar     = ' ';
+  DotChar     = '.';
+  LessChar    = '<';
+  MinusChar   = '-';
+  GreaterChar = '>';
+  PercentChar = '%';
+  AmperChar   = '&';
+
 
 {$ifdef LCL}
 const
@@ -274,20 +266,11 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
-procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
-function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-function SameStringArray(const A1, A2: ThtStringArray): Boolean;
-function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
-procedure SortStringArray(A: ThtStringArray);
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
-function RemoveQuotes(const S: ThtString): ThtString;
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -300,94 +283,10 @@ function PtrSub(P1, P2: Pointer): Integer; {$ifdef UseInline} inline; {$endif}
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inline; {$endif}
 procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
-//code movement from HTMLUn2
-function Darker(Color: TColor): TColor; {$ifdef UseInline} inline; {$endif}
-function Lighter(Color: TColor): TColor;  {$ifdef UseInline} inline; {$endif}
-
-//code movements from HTMLSubs
-function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer; {$ifdef UseInline} inline; {$endif}
-procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean); {$ifdef UseInline} inline; {$endif}
-procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer); {$ifdef UseInline} inline; {$endif}
-
-//alpha blend determination for Printers only
-function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
-
 implementation
 
-function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
-begin
-  Result := GetDeviceCaps(ADC,SHADEBLENDCAPS) and SB_CONST_ALPHA > 0;
-end;
-
-function Darker(Color: TColor): TColor;
-  {find a somewhat darker color for shading purposes}
-const
-    F = 0.75; // F < 1 makes color darker
-var
-    Red, Green, Blue: Byte;
-begin
-  if Color < 0 then
-    Color := GetSysColor(Color and $FFFFFF)
-  else
-    Color := Color and $FFFFFF;
-  Red := Color and $FF;
-  Green := (Color and $FF00) shr 8;
-  Blue := (Color and $FF0000) shr 16;
-  Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
-end;
-
-function Lighter(Color: TColor): TColor;
-{find a somewhat lighter color for shading purposes}
-const
-    F = 1.15; // F > 1 makes color lighter
-var
-    Red, Green, Blue: Byte;
-begin
-  if Color < 0 then
-    Color := GetSysColor(Color and $FFFFFF)
-  else
-    Color := Color and $FFFFFF;
-  if Color = 0 then
-    Result := 0
-  else
-  begin
-    Red := Color and $FF;
-    Green := (Color and $FF00) shr 8;
-    Blue := (Color and $FF0000) shr 16;
-    Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
-  end;
-end;
-
-function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer;
-var
-        I: Integer;
-begin
-  Result := 0;
-  for I := 0 to ACount - 2 do {-2 so as not to count end spaces}
-    if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
-      Inc(Result);
-end;
-
-procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean);
-
-begin
-  if not Assigned(FullBG) then
-  begin
-      FullBG := Graphics.TBitmap.Create;
-      if AIsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-  end;
-  FullBG.SetSize(Max(W,2),Max(H,2));
-end;
-
-procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer);
-begin
-    ACanvas.Ellipse(X, Y - Rad, X + Rad, Y);
-end;
+uses
+  HTMLUn2;
 
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
@@ -598,7 +497,6 @@ begin
 end;
 
 {$endif TransparentStretchBltMissing}
-
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendChr(var Dest: ThtString; C: ThtChar);
 begin
@@ -620,16 +518,6 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-function htCompareString(S1, S2: ThtString): Integer;
-begin
-{$ifdef UNICODE}
-  Result := CompareStr(S1, S2);
-{$else}
-  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2)) - 2;
-{$endif}
-end;
-
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htLowerCase(Str: ThtString): ThtString;
 begin
@@ -639,41 +527,6 @@ begin
     Result := Str;
     CharLowerBuffW(@Result[1], Length(Result));
   {$endif}
-end;
-
-//-- BG ---------------------------------------------------------- 27.03.2011 --
-procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer);
-begin
-{$ifdef UNICODE}
-  SetString(Dest, Chr, Len);
-{$else}
-  SetLength(Dest, Len);
-  Move(Chr^, Dest[1], Len * sizeof(ThtChar));
-{$endif}
-end;
-
-//-- BG ---------------------------------------------------------- 09.08.2011 --
-function htTrim(Str: ThtString): ThtString;
-{$ifdef UNICODE}
-begin
-  Result := Trim(Str);
-{$else}
-var
-  I, L: Integer;
-begin
-  L := Length(Str);
-  I := 1;
-  while (I <= L) and (Str[I] <= ' ') do
-    Inc(I);
-  if I > L then
-    Result := ''
-  else
-  begin
-    while Str[L] <= ' ' do
-      Dec(L);
-    Result := Copy(Str, I, L - I + 1);
-  end;
-{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
@@ -706,102 +559,6 @@ begin
       Result := True;
   else
     Result := False;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
-begin
-  Result := Length(A) - 1;
-  while (Result >= 0) and (htCompareString(A[Result], S) <> 0) do
-    Dec(Result);
-end;
-
-{----------------RemoveQuotes}
-
-function RemoveQuotes(const S: ThtString): ThtString;
-{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
-begin
-  Result := S;
-  if Length(Result) >= 2 then
-  begin
-    case Result[1] of
-      '"', '''':
-        if Result[Length(Result)] = Result[1] then
-          Result := Copy(Result, 2, Length(Result) - 2);
-    end;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-function SameStringArray(const A1, A2: ThtStringArray): Boolean;
-var
-  I, N: Integer;
-begin
-  N := Length(A1);
-  Result := N = Length(A2);
-  if Result then
-    for I := 0 To N - 1 do
-      if htCompareString(A1[I], A2[I]) <> 0 then
-      begin
-        Result := False;
-        break;
-      end;
-end;
-
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-procedure SortStringArray(A: ThtStringArray);
-
-  procedure QuickSort(L, R: Integer);
-  var
-    I, J: Integer;
-    P, T: ThtString;
-  begin
-    repeat
-      I := L;
-      J := R;
-      P := A[(L + R) shr 1];
-      repeat
-        while htCompareString(A[I], P) < 0 do
-          Inc(I);
-        while htCompareString(A[J], P) > 0 do
-          Dec(J);
-        if I <= J then
-        begin
-          T := A[I];
-          A[I] := A[J];
-          A[J] := T;
-          Inc(I);
-          Dec(J);
-        end;
-      until I > J;
-      if L < J then
-        QuickSort(L, J);
-      L := I;
-    until I >= R;
-  end;
-
-begin
-  if length(A) > 1 then
-    QuickSort(Low(A), High(A));
-end;
-
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
-var
-  S1: ThtString;
-  I: Integer;
-begin
-  if Offset <= 1 then
-    Result := Pos(SubStr, S)
-  else
-  begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := Pos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
   end;
 end;
 

@@ -22,14 +22,6 @@
 
   {$define ver100_plus}
   {$define ver120_plus}
-
-  // compiler features
-  {$ifdef DEBUG}
-  {$else}
-    {$define UseInline}
-  {$endif}
-  {.$define UseEnhancedRecord}
-  {.$define UseToStringOverride}
 {$else}
 
 { Identify Delphi Compiler Version:
@@ -120,26 +112,17 @@
     {$endif}
   {$endif}
 
-  {$ifdef Compiler18_Plus}
-    {$define UseEnhancedRecord}
-  {$endif}
-
-  {$ifdef Compiler20_Plus}
-    {$define UseToStringOverride}
-  {$endif}
-
   {$ifdef Compiler23_Plus}
   {$else}
     {$define UseASMx86}
   {$endif}
 
-
   { Set Delphi Compiler Switches }
 
   {$ifdef ver150}  {Delphi 7}
-    {$WARN Unsafe_Type off}
-    {$WARN Unsafe_Code off}
-    {$WARN Unsafe_Cast off}
+  {$WARN Unsafe_Type off}
+  {$WARN Unsafe_Code off}
+  {$WARN Unsafe_Cast off}
   {$endif}
 
   {$A+,B-,F-,G+,I+,P+,T-,V+,X+,R-}
@@ -153,21 +136,21 @@
     {$H+}  {LongStrings On}
   {$endif}
 
-  {$ifdef DebugIt}
-    {$W+}  {Stack frames on}
-    {$Q+}  {overflow checking on}
-    {$S+}  {stack checking on}
-    {$C+}  {Assertions on}
-    {$ifdef Win32}
-      {$O-}  {optimization off}
-    {$endif}
-  {$else}
+  {$ifndef DebugIt}
     {$W-}  {Stack frames off}
     {$Q-}  {overflow checking off}
     {$S-}  {stack checking off}
     {$C-}  {Assertions off}
     {$ifdef Win32}
       {$O+}  {optimization on}
+    {$endif}
+  {$else}
+    {$W+}  {Stack frames on}
+    {$Q+}  {overflow checking on}
+    {$S+}  {stack checking on}
+    {$C+}  {Assertions on}
+    {$ifdef Win32}
+      {$O-}  {optimization off}
     {$endif}
   {$endif}
 
@@ -176,7 +159,6 @@
   {$Define OwnPaintPanelDoubleBuffering}
 
 {$endif}
-
 
 { Define Aspects Of HtmlViewer }
 
@@ -236,14 +218,6 @@
   {$ifdef LCL}
   {$else}
     {$define UseTNT}
-  {$endif}
-{$endif}
-
-{$ifdef Compiler23_Plus}
-{JPM_DEBUGGING define is used for internal debugging using CodeSite Express that is included with
-some versions of RAD Studio XE2.  This should never be used for release software and for component usage.}
-  {$ifdef win32}
-  {.$define JPM_DEBUGGING}
   {$endif}
 {$endif}
 

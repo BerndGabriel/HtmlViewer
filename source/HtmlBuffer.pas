@@ -1,6 +1,6 @@
 {
-Version   12
-Copyright (c) 2010-2012 by Bernd Gabriel
+HtmlViewer Version 11
+Copyright (c) 2010 by B.Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -29,26 +29,17 @@ unit HtmlBuffer;
 
 interface
 
-{Important: Be sure to list LclType after SysUtils and Classes
-   in order to use LclType's THandle declaration (32 or 64 bits)
-   rather than THandle in SysUtils and Classes (=System.THandle,
-   which apparently is always 32 bits).}
 uses
 {$ifdef LCL}
-  Classes, SysUtils,
   LclIntf, LclType, HtmlMisc,
 {$else}
   Windows,
-  Classes, SysUtils,
 {$endif}
   Graphics,
 {$ifdef UNICODE}
   AnsiStrings,
 {$endif}
-  Math,
-  //
-  HtmlCaches,
-  HtmlGlobals;
+  Classes, SysUtils, Math;
 
 const
   // more char sets
@@ -69,9 +60,9 @@ type
   TBuffCodePage = LongInt;
   TBuffCharSet = SmallInt;  // slightly more than a TFontCharset.
 
-  TBuffChar = ThtChar;     // the type of a wide char
-  PBuffChar = PhtChar;
-  TBuffString = ThtString; // the type of a wide string
+  TBuffChar = WideChar;     // the type of a wide char
+  PBuffChar = PWideChar;
+  TBuffString = WideString; // the type of a wide string
 
   TBuffPointer = record
     case Integer of
@@ -99,7 +90,7 @@ type
   );
 
   // BG, 17.12.2010: helps converting any kind of stream to WideChars.
-  TBuffer = class(ThtCachable)
+  TBuffer = class
   private
     FBuffer: TBuffArray;
     FName: TBuffString;
@@ -112,7 +103,7 @@ type
     FCodePage: TBuffCodePage;
     FInitalCodePage: TBuffCodePage;
     function GetNext: Word; {$ifdef UseInline} inline; {$endif}
-    function GetNextEucAsShiftJis(out Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
+    function GetNextEucAsShiftJis(var Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
     function GetNextJisAsShiftJis(out Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
     function GetAsShiftJis(j, k: Word; out Buffer: TBuffArray4): Integer; {$ifdef UseInline} inline; {$endif}
     function GetPosition: Integer; {$ifdef UseInline} inline; {$endif}
@@ -124,7 +115,7 @@ type
     procedure SetCodePage(const Value: TBuffCodePage);
   protected
   public
-    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString;
+    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; 
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CharSet: TBuffCharSet; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
@@ -140,21 +131,6 @@ type
     property CharSet: TBuffCharSet read FCharSet write SetCharSet;
     property CodePage: TBuffCodePage read FCodePage write SetCodePage;
     property Position: Integer read GetPosition write SetPostion;
-  end;
-
-  ThtBuffer = TBuffer;
-
-  TGetBufferEvent = function(Sender: TObject; const Url: TBuffString): ThtBuffer of object;
-
-//------------------------------------------------------------------------------
-// ThtBufferCache is the buffer cache, that holds the above buffers.
-//------------------------------------------------------------------------------
-
-  ThtBufferCache = class(ThtCache)
-  {a list of buffer filenames and their ThtBuffers}
-  public
-    function AddObject(const S: ThtString; AObject: ThtBuffer): Integer; reintroduce; {$ifdef UseInline} inline; {$endif}
-    function GetBuffer(I: Integer): ThtBuffer; {$ifdef UseInline} inline; {$endif}
   end;
 
   TBuffCharSetCodePageInfo = class
@@ -427,21 +403,6 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
 function TBuffer.AsString: TBuffString;
-
-  procedure CharByChar;
-  var
-    I: Integer;
-  begin
-    I := 1;
-    repeat
-      Result[I] := NextChar;
-      if Result[I] = #0 then
-        break;
-      Inc(I);
-    until false;
-    SetLength(Result, I);
-  end;
-
 var
   I, J: Integer;
 begin
@@ -455,14 +416,20 @@ begin
       CP_UTF16LE,
       CP_UTF16BE,
       CP_UTF8:
-        CharByChar;
+        begin
+          I := 1;
+          repeat
+            Result[I] := NextChar;
+            if Result[I] = #0 then
+              break;
+            Inc(I);
+          until false;
+          SetLength(Result, I);
+        end;
 
       CP_ACP,
       CP_OEMCP,
       CP_MACCP:
-        if FCodePage <> FInitalCodePage then
-          CharByChar
-        else
         begin
           J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
           //BG, 23.12.2010: Some single byte chars may have been converted accidently as UTF-8.
@@ -479,24 +446,19 @@ begin
           Inc(FPos.AnsiChr, I);
         end;
     else
-      if FCodePage <> FInitalCodePage then
-        CharByChar
-      else
+      J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+      if J = 0 then
       begin
-        J := MultiByteToWideChar(FCodePage, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-        if J = 0 then
+        //BG, 14.12.2010: maybe an UTF8 without preamble?
+        J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
+        if J > 0 then
         begin
-          //BG, 14.12.2010: maybe an UTF8 without preamble?
-          J := MultiByteToWideChar(CP_UTF8, 0, FPos.AnsiChr, I, PWideChar(Result), I);
-          if J > 0 then
-          begin
-            FCodePage := CP_UTF8;
-            FCharSet := DEFAULT_CHARSET;
-          end;
+          FCodePage := CP_UTF8;
+          FCharSet := DEFAULT_CHARSET;
         end;
-        SetLength(Result, J);
-        Inc(FPos.AnsiChr, I);
       end;
+      SetLength(Result, J);
+      Inc(FPos.AnsiChr, I);
     end
   end
   else
@@ -625,7 +587,6 @@ begin
           Include(FState, bsFixedCodePage);
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
-          // TODO: if followed by $0000, this is UTF-32-LE
           Exit;
         end;
 
@@ -638,7 +599,6 @@ begin
           Include(FState, bsFixedCodePage);
           FCharSet := UNKNOWN_CHARSET;
           Inc(FPos.WordPtr);
-          // TODO: if followed by $0000, this is UTF-32-3412
           Exit;
         end;
 
@@ -658,13 +618,6 @@ begin
           end;
           Dec(FPos.WordPtr);
         end;
-
-      //TODO:
-      {
-      $0000:
-        if followed by $FFFE, this is UTF-32-BE
-        if followed by $FEFF, this is UTF-32-2143
-      }
     end;
   end;
   if IsIso2022JP then
@@ -717,7 +670,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function TBuffer.GetNextEucAsShiftJis(out Buffer: TBuffArray4): Integer;
+function TBuffer.GetNextEucAsShiftJis(var Buffer: TBuffArray4): Integer;
 var
   Chr: Word;
 begin
@@ -1027,20 +980,6 @@ end;
 function TBuffer.Size: Integer;
 begin
   Result := Length(FBuffer);
-end;
-
-{ ThtBufferCache }
-
-//-- BG ---------------------------------------------------------- 30.04.2011 --
-function ThtBufferCache.AddObject(const S: ThtString; AObject: ThtBuffer): Integer;
-begin
-  Result := inherited AddObject(S, AObject);
-end;
-
-//-- BG ---------------------------------------------------------- 30.04.2011 --
-function ThtBufferCache.GetBuffer(I: Integer): ThtBuffer;
-begin
-  Result := ThtBuffer(GetCachable(I));
 end;
 
 // GDG

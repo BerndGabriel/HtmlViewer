@@ -342,8 +342,10 @@ type
   TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar; InitData: PDeviceMode): HDC stdcall;
 var
   CreateHandleFunc: TCreateHandleFunc;
+{$ifndef FPC_TODO_PRINTING}
   Driver, Device, Port: array[0..100] of char;
   TmpDeviceMode: THandle;
+{$endif}
 begin
   if Value <> State then
   begin
