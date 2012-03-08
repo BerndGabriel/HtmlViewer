@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.2
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -73,6 +75,7 @@ uses
   FramView,
   DemoSubs,
   Htmlabt,
+  PrintStatusForm,
   ImgForm;
 
 const
@@ -86,11 +89,13 @@ type
     TBaseForm = TForm;
 {$endif}
 
+  { TForm1 }
+
   TForm1 = class(TBaseForm)
     About1: TMenuItem;
     BackButton: TButton;
-    Copy1: TMenuItem;
     CopyImagetoclipboard: TMenuItem;
+    CopyItem: TMenuItem;
     Edit1: TMenuItem;
     Edit2: TEdit;
     Exit1: TMenuItem;
@@ -101,28 +106,28 @@ type
     FrameViewer: TFrameViewer;
     FwdButton: TButton;
     HistoryMenuItem: TMenuItem;
-    MainMenu1: TMainMenu;
+    InfoPanel: TPanel;
+    MainMenu: TMainMenu;
     N1: TMenuItem;
     N2: TMenuItem;
     N3: TMenuItem;
-    Open1: TMenuItem;
+    Open: TMenuItem;
     OpenDialog: TOpenDialog;
     OpenInNewWindow: TMenuItem;
     Options1: TMenuItem;
     Panel1: TPanel;
+    Panel3: TPanel;
     PopupMenu: TPopupMenu;
     Print1: TMenuItem;
     PrinterSetup: TMenuItem;
-    PrintPreview1: TMenuItem;
+    PrintPreview: TMenuItem;
+    ProgressBar: TProgressBar;
     ReloadButton: TButton;
-    SelectAll1: TMenuItem;
+    SelectAllItem: TMenuItem;
     SetPrintScale: TMenuItem;
     Showimages: TMenuItem;
     Timer1: TTimer;
     ViewImage: TMenuItem;
-    Panel3: TPanel;
-    ProgressBar: TProgressBar;
-    InfoPanel: TPanel;
 {$ifdef MsWindows}
   {$ifndef LCL}
     MediaPlayer: TMediaPlayer;
@@ -132,7 +137,7 @@ type
     PrinterSetupDialog: TPrinterSetupDialog;
     procedure About1Click(Sender: TObject);
     procedure BackButtonClick(Sender: TObject);
-    procedure Copy1Click(Sender: TObject);
+    procedure CopyItemClick(Sender: TObject);
     procedure CopyImagetoclipboardClick(Sender: TObject);
     procedure Edit1Click(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -150,14 +155,14 @@ type
     procedure HistoryChange(Sender: TObject);
     procedure HistoryClick(Sender: TObject);
     procedure MediaPlayerNotify(Sender: TObject);
-    procedure Open1Click(Sender: TObject);
+    procedure OpenClick(Sender: TObject);
     procedure OpenInNewWindowClick(Sender: TObject);
     procedure Print1Click(Sender: TObject);
     procedure PrinterSetupClick(Sender: TObject);
-    procedure PrintPreview1Click(Sender: TObject);
+    procedure PrintPreviewClick(Sender: TObject);
     procedure ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
     procedure ReloadClick(Sender: TObject);
-    procedure SelectAll1Click(Sender: TObject);
+    procedure SelectAllItemClick(Sender: TObject);
     procedure SetPrintScaleClick(Sender: TObject);
     procedure ShowimagesClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
@@ -191,8 +196,11 @@ type
     FoundObject: TImageObj;
     NewWindowFile: string;
 {$ifdef MsWindows}
+  {$ifdef LCL}
+  {$else}
     MediaCount: integer;
     ThePlayer: TOBject;
+  {$endif}
 {$endif}
     TimerCount: integer;
     OldTitle: ThtString;
@@ -231,16 +239,6 @@ begin
   Width := (Screen.Width * 8) div 10;
   Height := (Screen.Height * 6) div 8;
 
-  {//< Temporary fix, for as long as the TFrameViewer component isn't registered :
-    if Assigned(FrameViewer) then
-      ShowMessage('Remove debug code')
-    else
-    begin
-      FrameViewer := TFrameViewer.Create(Self);
-      FrameViewer.Parent := Self;
-      FrameViewer.Align := alClient;
-    end;
-  //>}
 
   FrameViewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
@@ -272,6 +270,45 @@ begin
     Edit2.Text := 'Program uses single byte characters.'
   else
     Edit2.Text := 'Program uses unicode characters.';
+  UpdateCaption;
+end;
+
+procedure TForm1.FormShow(Sender: TObject);
+var
+  S: string;
+  I: integer;
+begin
+if (ParamCount >= 1) then
+  begin            {Parameter is file to load}
+  S := CmdLine;
+  I := Pos('" ', S);
+  if I > 0 then
+    Delete(S, 1, I+1)  {delete EXE name in quotes}
+  else Delete(S, 1, Length(ParamStr(0)));  {in case no quote marks}
+  I := Pos('"', S);
+  while I > 0 do     {remove any quotes from parameter}
+    begin
+    Delete(S, I, 1);
+    I := Pos('"', S);
+    end;
+  FrameViewer.LoadFromFile(HtmlToDos(Trim(S)));
+  end
+else if FileExists(ExtractFilePath(ParamStr(0))+'demo.htm') then
+  FrameViewer.LoadFromFile(ExtractFilePath(ParamStr(0))+'demo.htm');
+end;
+
+procedure TForm1.OpenClick(Sender: TObject);
+begin
+  if FrameViewer.CurrentFile <> '' then
+    OpenDialog.InitialDir := ExtractFilePath(FrameViewer.CurrentFile)
+  else
+    OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
+  OpenDialog.FilterIndex := 1;
+  if OpenDialog.Execute then
+  begin
+    FrameViewer.LoadFromFile(OpenDialog.Filename);
+    UpdateCaption();
+  end;
 end;
 
 procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: boolean);
@@ -281,8 +318,10 @@ procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtStrin
 
  If the URL is handled here, set Handled to True.  If not handled here, set it
  to False and ThtmlViewer will handle it.}
+{$ifndef MultiMediaMissing}
 const
   snd_Async = $0001;  { play asynchronously }
+{$endif}
 var
   PC: array[0..255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
   S, Params: ThtString;
@@ -388,52 +427,14 @@ begin
 {$endif}
 end;
 
-procedure TForm1.Open1Click(Sender: TObject);
-begin
-  if FrameViewer.CurrentFile <> '' then
-    OpenDialog.InitialDir := ExtractFilePath(FrameViewer.CurrentFile)
-  else
-    OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
-  OpenDialog.FilterIndex := 1;
-  if OpenDialog.Execute then
-  begin
-    FrameViewer.LoadFromFile(OpenDialog.Filename);
-    UpdateCaption();
-  end;
-end;
-
 procedure TForm1.Exit1Click(Sender: TObject);
 begin
-Close;
+  Close;
 end;
 
 procedure TForm1.Find1Click(Sender: TObject);
 begin
-FindDialog.Execute;
-end;
-
-procedure TForm1.FormShow(Sender: TObject);
-var
-  S: string;
-  I: integer;
-begin
-if (ParamCount >= 1) then
-  begin            {Parameter is file to load}
-  S := CmdLine;
-  I := Pos('" ', S);
-  if I > 0 then
-    Delete(S, 1, I+1)  {delete EXE name in quotes}
-  else Delete(S, 1, Length(ParamStr(0)));  {in case no quote marks}
-  I := Pos('"', S);
-  while I > 0 do     {remove any quotes from paramenter}
-    begin
-    Delete(S, I, 1);
-    I := Pos('"', S);
-    end;
-  FrameViewer.LoadFromFile(HtmlToDos(Trim(S)));
-  end
-else if FileExists(ExtractFilePath(ParamStr(0))+'demo.htm') then
-  FrameViewer.LoadFromFile(ExtractFilePath(ParamStr(0))+'demo.htm');
+  FindDialog.Execute;
 end;
 
 procedure TForm1.ReloadClick(Sender: TObject);
@@ -448,7 +449,7 @@ with FrameViewer do
   end;
 end;
 
-procedure TForm1.Copy1Click(Sender: TObject);
+procedure TForm1.CopyItemClick(Sender: TObject);
 begin
 FrameViewer.CopyToClipboard;
 end;
@@ -457,13 +458,13 @@ procedure TForm1.Edit1Click(Sender: TObject);
 begin
 with FrameViewer do
   begin
-  Copy1.Enabled := SelLength <> 0;
-  SelectAll1.Enabled := (ActiveViewer <> Nil) and (ActiveViewer.CurrentFile <> '');
-  Find1.Enabled := SelectAll1.Enabled;
+  CopyItem.Enabled := SelLength <> 0;
+  SelectAllItem.Enabled := (ActiveViewer <> Nil) and (ActiveViewer.CurrentFile <> '');
+  Find1.Enabled := SelectAllItem.Enabled;
   end;
 end;
 
-procedure TForm1.SelectAll1Click(Sender: TObject);
+procedure TForm1.SelectAllItemClick(Sender: TObject);
 begin
 FrameViewer.SelectAll;
 end;
@@ -492,28 +493,29 @@ var
   I: integer;
   Cap: string;
 begin
-with Sender as TFrameViewer do
+  with FrameViewer do
   begin
-  {check to see which buttons are to be enabled}
-  FwdButton.Enabled := FwdButtonEnabled;
-  BackButton.Enabled := BackButtonEnabled;
+    {check to see which buttons are to be enabled}
+    FwdButton.Enabled := FwdButtonEnabled;
+    BackButton.Enabled := BackButtonEnabled;
 
-  {Enable and caption the appropriate history menuitems}
-  HistoryMenuItem.Visible := History.Count > 0;
-  for I := 0 to MaxHistories-1 do
-    with Histories[I] do
-      if I < History.Count then
-        Begin
-        Cap := History.Strings[I];
-        if TitleHistory[I] <> '' then
-          Cap := Cap + '--' + TitleHistory[I];
-        Caption := Cap;    {Cap limits string to 80 char}
-        Visible := True;
-        Checked := I = HistoryIndex;
+    {Enable and caption the appropriate history menuitems}
+    HistoryMenuItem.Visible := History.Count > 0;
+    for I := 0 to MaxHistories-1 do
+      with Histories[I] do
+        if I < History.Count then
+        begin
+          Cap := History.Strings[I];
+          if TitleHistory[I] <> '' then
+            Cap := Cap + '--' + TitleHistory[I];
+          Caption := Cap;    {Cap limits string to 80 char}
+          Visible := True;
+          Checked := I = HistoryIndex;
         end
-      else Histories[I].Visible := False;
-  UpdateCaption();    {keep the caption updated}
-  FrameViewer.SetFocus;
+        else
+          Histories[I].Visible := False;
+    UpdateCaption();    {keep the caption updated}
+    FrameViewer.SetFocus;
   end;
 end;
 
@@ -534,48 +536,47 @@ begin
   end;
 end;
 
-procedure TForm1.Print1Click(Sender: TObject);
-begin
-  with PrintDialog do
-    if Execute then
-      if PrintRange = prAllPages then
-        FrameViewer.Print(1, 9999)
-      else
-        FrameViewer.Print(FromPage, ToPage);
-end;
-
-procedure TForm1.File1Click(Sender: TObject);
-begin
-Print1.Enabled := FrameViewer.ActiveViewer <> Nil;
-PrintPreview1.Enabled := Print1.Enabled;
-end;
-
 procedure TForm1.FontsClick(Sender: TObject);
 var
   FontForm: TFontForm;
 begin
-FontForm := TFontForm.Create(Self);
-try
-  with FontForm do
+  FontForm := TFontForm.Create(Self);
+  try
+    with FontForm do
     begin
-    FontName := FrameViewer.DefFontName;
-    FontColor := FrameViewer.DefFontColor;
-    FontSize := FrameViewer.DefFontSize;
-    HotSpotColor := FrameViewer.DefHotSpotColor;
-    Background := FrameViewer.DefBackground;
-    if ShowModal = mrOK then
+      FontName := FrameViewer.DefFontName;
+      FontColor := FrameViewer.DefFontColor;
+      FontSize := FrameViewer.DefFontSize;
+      HotSpotColor := FrameViewer.DefHotSpotColor;
+      Background := FrameViewer.DefBackground;
+      if ShowModal = mrOK then
       begin
-      FrameViewer.DefFontName := FontName;
-      FrameViewer.DefFontColor := FontColor;
-      FrameViewer.DefFontSize := FontSize;
-      FrameViewer.DefHotSpotColor := HotSpotColor;
-      FrameViewer.DefBackground := Background;
-      ReloadClick(Self);    {reload to see how it looks}
+        FrameViewer.DefFontName := FontName;
+        FrameViewer.DefFontColor := FontColor;
+        FrameViewer.DefFontSize := FontSize;
+        FrameViewer.DefHotSpotColor := HotSpotColor;
+        FrameViewer.DefBackground := Background;
+        ReloadClick(Self);    {reload to see how it looks}
       end;
     end;
-finally
-  FontForm.Free;
- end;
+  finally
+    FontForm.Free;
+  end;
+end;
+
+procedure TForm1.Print1Click(Sender: TObject);
+var
+  Viewer: THtmlViewer;
+begin
+  Viewer := FrameViewer.ActiveViewer;
+  if Viewer <> nil then
+    PrintWithDialog(Self, PrintDialog, Viewer);
+end;
+
+procedure TForm1.File1Click(Sender: TObject);
+begin
+  Print1.Enabled := FrameViewer.ActiveViewer <> Nil;
+  PrintPreview.Enabled := Print1.Enabled;
 end;
 
 procedure TForm1.SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
@@ -591,30 +592,20 @@ begin
 end;
 
 procedure TForm1.ProcessingHandler(Sender: TObject; ProcessingOn: Boolean);
+var
+  Enabled: Boolean;
 begin
-if ProcessingOn then
-  begin    {disable various buttons and menuitems during processing}
-  FwdButton.Enabled := False;
-  BackButton.Enabled := False;
-  ReloadButton.Enabled := False;
-  Print1.Enabled := False;
-  PrintPreview1.Enabled := False;
-  Find1.Enabled := False;
-  SelectAll1.Enabled := False;
-  Open1.Enabled := False;
-  CloseAll;    {in case hint window is open}
-  end
-else
-  begin
-  FwdButton.Enabled := FrameViewer.FwdButtonEnabled;
-  BackButton.Enabled := FrameViewer.BackButtonEnabled; 
-  ReloadButton.Enabled := FrameViewer.CurrentFile <> '';
-  Print1.Enabled := (FrameViewer.CurrentFile <> '') and (FrameViewer.ActiveViewer <> Nil);
-  PrintPreview1.Enabled := Print1.Enabled;
+  Enabled := not ProcessingOn;
+  if ProcessingOn then
+    CloseAll;    {in case hint window is open}
+  FwdButton.Enabled := Enabled and FrameViewer.FwdButtonEnabled;
+  BackButton.Enabled := Enabled and FrameViewer.BackButtonEnabled;
+  ReloadButton.Enabled := Enabled and (FrameViewer.CurrentFile <> '');
+  Print1.Enabled := Enabled and (FrameViewer.CurrentFile <> '') and (FrameViewer.ActiveViewer <> Nil);
+  PrintPreview.Enabled := Print1.Enabled;
   Find1.Enabled := Print1.Enabled;
-  SelectAll1.Enabled := Print1.Enabled;
-  Open1.Enabled := True;
-  end;
+  SelectAllItem.Enabled := Print1.Enabled;
+  Open.Enabled := Enabled;
 end;
 
 procedure TForm1.FwdButtonClick(Sender: TObject);
@@ -648,16 +639,16 @@ if FileExists(S) then
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
+{$ifdef LCL}
+begin
+{$else}
 var
   S: string;
-  Count: integer;
 begin
-{$ifdef LCL}
-{$else}
-  Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-  SetLength(S, Count);
+  SetLength(S, 1024);
+  SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
-  if Count >0 then
+  if Length(S) > 0 then
     FrameViewer.LoadFromFile(S);
 {$endif}
   Message.Result := 0;
@@ -863,14 +854,14 @@ begin
   PrinterSetupDialog.Execute;
 end;
 
-procedure TForm1.PrintPreview1Click(Sender: TObject);
+procedure TForm1.PrintPreviewClick(Sender: TObject);
 var
   pf: TPreviewForm;
   Viewer: ThtmlViewer;
   Abort: boolean;
 begin
   Viewer := FrameViewer.ActiveViewer;
-  if Assigned(Viewer) then
+  if Viewer <> nil then
   begin
     pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
     try
@@ -1032,15 +1023,28 @@ begin
 end;
 
 procedure TForm1.UpdateCaption;
+var
+  Viewer: TFrameViewer;
+  Title, Cap: ThtString;
 begin
-  if FrameViewer.DocumentTitle <> '' then
-{$ifdef LCL}
-    Caption := 'FrameViewer Demo - ' + UTF8Encode(FrameViewer.DocumentTitle)
-{$else}
-    Caption := 'FrameViewer Demo - ' + FrameViewer.DocumentTitle
-{$endif}
+  Viewer := FrameViewer;
+  if Viewer.DocumentTitle <> '' then
+    Title := Viewer.DocumentTitle
+  else if Viewer.URL <> '' then
+    Title := Viewer.URL
+  else if Viewer.CurrentFile <> '' then
+    Title := Viewer.CurrentFile
   else
-    Caption := 'FrameViewer Demo - <untitled document>';
+    Title := '';
+
+  Cap := 'FrameViewer ' + VersionNo + ' Demo';
+  if Title <> '' then
+    Cap := Cap + ' - ' + Title;
+{$ifdef LCL}
+  Caption := UTF8Encode(Cap);
+{$else}
+  Caption := Cap;
+{$endif}
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -1049,4 +1053,3 @@ begin
 end;
 
 end.
-

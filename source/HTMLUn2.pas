@@ -44,7 +44,7 @@ uses
   StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
-  VersionNo = '11.1';
+  VersionNo = '11.2';
   MaxHScroll = 6000; {max horizontal display in pixels}
   HandCursor = 10101;
   OldThickIBeamCursor = 2;
@@ -68,7 +68,7 @@ type
 
   // BG, 26.12.2011:
   TSpecWidth = record
-    Value: Double;
+    Value: Integer;
     VType: TWidthType;
   end;
 
@@ -530,7 +530,6 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    procedure Parsed(const Title, Base, BaseTarget: ThtString); virtual; abstract;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -608,8 +607,8 @@ procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
 //------------------------------------------------------------------------------
 
 // BG, 26.12.2011: new type TSpecWidth
-function SpecWidth(Value: Double; VType: TWidthType): TSpecWidth;
-function ToSpecWidth(AsDouble: Double; AsString: string): TSpecWidth;
+function SpecWidth(Value: Integer; VType: TWidthType): TSpecWidth;
+function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
 
 //------------------------------------------------------------------------------
 // canvas methods
@@ -1155,31 +1154,31 @@ end;
 {$ENDIF}
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
-function SpecWidth(Value: Double; VType: TWidthType): TSpecWidth;
+function SpecWidth(Value: Integer; VType: TWidthType): TSpecWidth;
 begin
   Result.Value := Value;
   Result.VType := VType;
 end;
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
-function ToSpecWidth(AsDouble: Double; AsString: string): TSpecWidth;
-// Return a TSpecWidth prepared with values given in AsDouble *and* AsString.
-// AsString is used to evaluate the type while AsDouble is used to evaluate the value.
-// BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Double.
+function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
+// Return a TSpecWidth prepared with values given in AsInteger *and* AsString.
+// AsString is used to evaluate the type while AsInteger is used to evaluate the value.
+// BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Integer.
 begin
   if Pos('%', AsString) > 0 then
   begin
-    Result.Value := Min(100, AsDouble) * 10;
+    Result.Value := Min(100, AsInteger) * 10;
     Result.VType := wtPercent;
   end
   else if Pos('*', AsString) > 0 then // this is not specified for <td>, <th>. Only <col> and <colgroup> support it officially.
   begin
-    Result.Value := AsDouble;
+    Result.Value := AsInteger;
     Result.VType := wtRelative;
   end
   else
   begin
-    Result.Value := AsDouble;
+    Result.Value := AsInteger;
     Result.VType := wtAbsolute;
   end;
 end;
@@ -3551,7 +3550,7 @@ begin
   Result := TBitmap.Create;
   {$IFNDEF NoGDIPlus}
   if Image is TGpImage then
-    NewBitmap := TGpImage(Image).GetTBitmap
+    NewBitmap := TGpImage(Image).GetBitmap
   else {$ENDIF !NoGDIPlus}
     NewBitmap := Image as TBitmap;
   Result.Assign(NewBitmap);

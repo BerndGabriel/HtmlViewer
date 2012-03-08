@@ -1,6 +1,7 @@
 {
 Version   11
 Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -44,6 +45,7 @@ uses
   {$endif}
 {$else}
   Consts,
+  StrUtils,
   {$ifdef UseTNT}
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
@@ -70,7 +72,7 @@ uses
     {$endif}
   {$endif UseTNT}
 {$endif}
-  HtmlBuffer;
+  Math;
 
 type
 
@@ -117,12 +119,16 @@ type
   ThtStringList = TStringList;
   PhtChar = PChar;
 {$else}
+  UnicodeString = WideString;
   ThtChar = WideChar;
   ThtString = WideString;
   ThtStrings = TWideStrings;
   ThtStringList = TWideStringList;
   PhtChar = PWideChar;
 {$endif}
+  ThtCharArray = array of ThtChar;
+  ThtStringArray = array of ThtString;
+  ThtIntegerArray = array of Integer;
 
   ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected
@@ -154,19 +160,21 @@ type
   end;
 
 const
-  EofChar     = #0;
-  TabChar     = #9;
-  LfChar      = #10;
-  FfChar      = #12;
-  CrChar      = #13;
-  SpcChar     = ' ';
-  DotChar     = '.';
-  LessChar    = '<';
-  MinusChar   = '-';
-  GreaterChar = '>';
-  PercentChar = '%';
-  AmperChar   = '&';
-
+  EofChar     = ThtChar(#0);
+  TabChar     = ThtChar(#9);
+  LfChar      = ThtChar(#10);
+  FfChar      = ThtChar(#12);
+  CrChar      = ThtChar(#13);
+  SpcChar     = ThtChar(' ');
+  DotChar     = ThtChar('.');
+  LessChar    = ThtChar('<');
+  MinusChar   = ThtChar('-');
+  GreaterChar = ThtChar('>');
+  PercentChar = ThtChar('%');
+  AmperChar   = ThtChar('&');
+  CrLf        = ThtString(#13#10);
+  CrLfTab     = ThtString(#13#10#9);
+  NullRect: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
 
 {$ifdef LCL}
 const
@@ -266,11 +274,15 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
+procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
+function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 
 function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
+function RemoveQuotes(const S: ThtString): ThtString;
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -284,9 +296,6 @@ function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inlin
 procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
 implementation
-
-uses
-  HTMLUn2;
 
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
@@ -518,6 +527,16 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function htCompareString(S1, S2: ThtString): Integer;
+begin
+{$ifdef UNICODE}
+  Result := CompareStr(S1, S2);
+{$else}
+  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2)) - 2;
+{$endif}
+end;
+
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htLowerCase(Str: ThtString): ThtString;
 begin
@@ -527,6 +546,41 @@ begin
     Result := Str;
     CharLowerBuffW(@Result[1], Length(Result));
   {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer);
+begin
+{$ifdef UNICODE}
+  SetString(Dest, Chr, Len);
+{$else}
+  SetLength(Dest, Len);
+  Move(Chr^, Dest[1], Len * sizeof(ThtChar));
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 09.08.2011 --
+function htTrim(Str: ThtString): ThtString;
+{$ifdef UNICODE}
+begin
+  Result := Trim(Str);
+{$else}
+var
+  I, L: Integer;
+begin
+  L := Length(Str);
+  I := 1;
+  while (I <= L) and (Str[I] <= ' ') do
+    Inc(I);
+  if I > L then
+    Result := ''
+  else
+  begin
+    while Str[L] <= ' ' do
+      Dec(L);
+    Result := Copy(Str, I, L - I + 1);
+  end;
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
@@ -559,6 +613,22 @@ begin
       Result := True;
   else
     Result := False;
+  end;
+end;
+
+{----------------RemoveQuotes}
+
+function RemoveQuotes(const S: ThtString): ThtString;
+{if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
+begin
+  Result := S;
+  if Length(Result) >= 2 then
+  begin
+    case Result[1] of
+      '"', '''':
+        if Result[Length(Result)] = Result[1] then
+          Result := Copy(Result, 2, Length(Result) - 2);
+    end;
   end;
 end;
 
