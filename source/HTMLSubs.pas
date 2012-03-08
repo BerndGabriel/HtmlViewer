@@ -83,6 +83,7 @@ type
 
   ThtDocument = class;
   TBlock = class;
+  THtmlPropStack = class;
 
   TSectionBase = class(TIDObject)
   private
@@ -535,6 +536,9 @@ type
 
   TBlock = class(TSectionBase)
   protected
+    function GetContentWidth : Integer; virtual;
+    function GetContentHeight : Integer; virtual;
+    function GetTotalWidthAndMarg : Integer; virtual;
     function getBorderWidth: Integer; virtual;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
@@ -1118,6 +1122,10 @@ type
 
   TTableBlock = class(TBlock)
   protected
+    function GetContentWidth : Integer; override;
+    function GetContentHeight : Integer; override;
+    function GetTotalWidthAndMarg : Integer; override;
+
     function getBorderWidth: Integer; override;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); override;
   public
@@ -1284,9 +1292,12 @@ type
 
   ThtDocument = class(TCell) {a list of all the sections -- the html document}
   private
+    FUseQuirksMode : Boolean;
+    FPropStack: THtmlPropStack;
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
   public
+
     // copied by move() in CreateCopy()
     ShowImages: boolean; {set if showing images}
     Printing: boolean; {set if printing -- also see IsCopy}
@@ -1364,7 +1375,7 @@ type
     PrintingTable: THtmlTable;
     ScaleX, ScaleY: single;
     SkipDraw: boolean;
-
+    FNoBreak : Boolean;
     constructor Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
     constructor CreateCopy(T: ThtDocument);
     destructor Destroy; override;
@@ -1399,6 +1410,11 @@ type
       AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
       LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
       MarginHeight, MarginWidth: Integer);
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
+    property PropStack : THtmlPropStack read FPropStack write FPropStack;
+
+    property NoBreak : Boolean read FNoBreak write FNoBreak;  {set when in <NoBr>}
+
     property ImageCache: TStringBitmapList read BitmapList;
   end;
 
@@ -1459,13 +1475,13 @@ var
   UnicodeControls: boolean;
 {$endif}
 
-var
+//var
   // TODO: must be part of the THtmlParser or the ThtDocument.
-  PropStack: THtmlPropStack;
+  //PropStack: THtmlPropStack;
   //Title: ThtString;
   //Base: ThtString;
   //BaseTarget: ThtString;
-  NoBreak: boolean; {set when in <NoBr>}
+  //NoBreak: boolean; {set when in <NoBr>}
 
 implementation
 
@@ -5076,6 +5092,58 @@ begin
   end;
 end;
 
+{This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
+model.  In those browsers, width and height include padding and border.}
+
+function TBlock.GetContentHeight: Integer;
+begin
+  if Document.UseQuirksMode then begin
+    Result := MargArray[piHeight] -
+        (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+         MargArray[PaddingTop] + MargArray[PaddingBottom]);
+  end else begin
+    if MargArray[BoxSizing] = 1 then begin
+      Result := MargArray[piHeight] -
+          (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+           MargArray[PaddingTop] + MargArray[PaddingBottom]);
+    end else begin
+      Result := MargArray[piHeight];
+    end;
+  end;
+end;
+
+function TBlock.GetContentWidth: Integer;
+begin
+  if Document.UseQuirksMode then begin
+    Result := NewWidth -
+      (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+       MargArray[PaddingRight] + MargArray[BorderRightWidth] )
+  end else begin
+    if MargArray[BoxSizing] = 1 then begin
+      Result := NewWidth -
+       (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+        MargArray[PaddingRight] + MargArray[BorderRightWidth] )
+    end else begin
+      Result := NewWidth;
+    end;
+  end;
+end;
+
+function TBlock.GetTotalWidthAndMarg: Integer;
+begin
+  if Document.UseQuirksMode then begin
+    Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
+  end else begin
+    if MargArray[BoxSizing] = 1 then begin
+      Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
+    end else begin
+      Result := NewWidth +
+        MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+        MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+    end;
+  end;
+end;
+
 function TBlock.CursorToXY(Canvas: TCanvas; Cursor: Integer; out X, Y: Integer): boolean;
 begin
   case Display of
@@ -5430,11 +5498,13 @@ var
   end;
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
+  var LHeight : Integer;
   begin
-    if HideOverflow and (MargArray[piHeight] > 3) then
-      Result := ContentTop + MargArray[piHeight]
+    LHeight := GetContentHeight;
+    if HideOverflow and (LHeight > 3) then
+      Result := ContentTop + LHeight
     else
-      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
+      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + LHeight);
   end;
 
 var
@@ -5468,7 +5538,8 @@ begin
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := MiscWidths + NewWidth;
+    TotalWidth  := GetTotalWidthAndMarg;
+    NewWidth := GetContentWidth;
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -6436,6 +6507,25 @@ begin
   Result := Table.BorderWidth;
 end;
 
+function TTableBlock.GetContentHeight: Integer;
+begin
+  Result := MargArray[piHeight] -
+     (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+     MargArray[PaddingTop] + MargArray[PaddingBottom]);
+end;
+
+function TTableBlock.GetContentWidth: Integer;
+begin
+  Result := NewWidth;
+end;
+
+function TTableBlock.GetTotalWidthAndMarg: Integer;
+begin
+  Result := NewWidth +
+      MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+      MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+end;
+
 {----------------TTableBlock.FindWidth}
 
 function TTableBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer;
@@ -6950,6 +7040,8 @@ end;
 constructor ThtDocument.Create(Owner: THtmlViewerBase; APaintPanel: TWinControl);
 begin
   inherited Create(Self);
+  FPropStack := THtmlPropStack.Create;
+  UseQuirksMode := Owner.UseQuirksMode;
   TheOwner := Owner;
   PPanel := APaintPanel;
   IDNameList := TIDObjectList.Create; //(Self);
@@ -6997,6 +7089,7 @@ begin
   DrawList := TDrawList.Create;
   ScaleX := 1.0;
   ScaleY := 1.0;
+  UseQuirksMode := T.UseQuirksMode;
 end;
 
 destructor ThtDocument.Destroy;
@@ -7017,6 +7110,7 @@ begin
   TabOrderList.Free;
   if not IsCopy then
     TInlineList(InlineList).Free;
+  FPropStack.Free;
 end;
 
 function ThtDocument.GetURL(Canvas: TCanvas; X, Y: Integer;
@@ -7148,8 +7242,10 @@ begin
   ActiveLink := nil;
   ActiveImage := nil;
   PanelList.Clear;
-  if not IsCopy then
+  if not IsCopy then begin
     Styles.Clear;
+    Styles.UseQuirksMode := Self.UseQuirksMode;
+  end;
   if Assigned(TabOrderList) then
     TabOrderList.Clear;
   inherited Clear;
@@ -10473,13 +10569,13 @@ begin
   if T.Count = 0 then
     Exit;
   { Yunqa.de: Simple hack to support <span style="display:none"> }
-  if PropStack.Last.Display = pdNone then
+  if Document.PropStack.Last.Display = pdNone then
     Exit;
 
   L := Len + T.Count;
   if BuffSize < L + 3 then
     Allocate(L + 500); {L+3 to permit additions later}
-  case PropStack.Last.GetTextTransform of
+  case Document.PropStack.Last.GetTextTransform of
     txUpper:
       St := WideUpperCase1(T.S);
     txLower:
@@ -10488,14 +10584,14 @@ begin
     St := T.S;
   end;
   Move(T.I[1], XP^[Len], T.Count * Sizeof(Integer));
-  if NoBreak or (Self is TPreformated) then
+  if Document.NoBreak or (Self is TPreformated) then
     C := 'n'
   else
     C := 'y';
   for I := 1 to T.Count do
     Brk := Brk + C;
 
-  if PropStack.Last.GetFontVariant = 'small-caps' then
+  if Document.PropStack.Last.GetFontVariant = 'small-caps' then
   begin
     StU := WideUpperCase1(St);
     BuffS := BuffS + StU;
@@ -10511,15 +10607,15 @@ begin
         begin
           if StU[I] <> St[I] then
           begin {St[I] was lower case}
-            PropStack.PushNewProp('small', '', '', '', '', nil); {change to smaller font}
-            ChangeFont(PropStack.Last);
+            Document.PropStack.PushNewProp('small', '', '', '', '', nil); {change to smaller font}
+            ChangeFont(Document.PropStack.Last);
             Small := True;
           end;
         end
         else if StU[I] = St[I] then
         begin {St[I] was uppercase and Small is set}
-          PropStack.PopAProp('small');
-          ChangeFont(PropStack.Last);
+          Document.PropStack.PopAProp('small');
+          ChangeFont(Document.PropStack.Last);
           Small := False;
         end;
       end;
@@ -10527,8 +10623,8 @@ begin
     end;
     if Small then {change back to regular font}
     begin
-      PropStack.PopAProp('small');
-      ChangeFont(PropStack.Last);
+      Document.PropStack.PopAProp('small');
+      ChangeFont(Document.PropStack.Last);
     end;
   end
   else
@@ -13749,7 +13845,7 @@ procedure THtmlPropStack.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: T
 var
   NewProp: TProperties;
 begin
-  NewProp := TProperties.Create(self);
+  NewProp := TProperties.Create(self, Self.MasterList.UseQuirksMode);
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
   NewProp.Combine(MasterList.Styles, Tag, AClass, AnID, APseudo, ATitle, AProps, Count - 1);
@@ -13790,6 +13886,7 @@ constructor THtmlStyleList.Create(AMasterList: ThtDocument);
 begin
   inherited Create;
   MasterList := AMasterList;
+  Self.FUseQuirksMode := AMasterList.UseQuirksMode;
 end;
 
 //-- BG ---------------------------------------------------------- 08.03.2011 --

@@ -295,8 +295,43 @@ function PtrSub(P1, P2: Pointer): Integer; {$ifdef UseInline} inline; {$endif}
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inline; {$endif}
 procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+
 implementation
 
+
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+var
+    Dummy: Integer;
+begin
+  if not IsWin32Platform then
+    GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, VSize)
+  else
+    GetTextExtentPoint32W(DC, P, N, VSize); {win95, 98 ME}
+end;
+
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
+  end;
+end;
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
 begin
@@ -502,6 +537,25 @@ begin
   finally
     if SavePal <> 0 then SelectPalette(MemDC, SavePal, False);
     DeleteDC(MemDC);
+  end;
+end;
+
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
   end;
 end;
 

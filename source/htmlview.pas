@@ -948,6 +948,31 @@ begin
       FSectionList.ProgressStart := 75;
       htProgressInit;
       try
+        //handle quirks mode settings
+        if (DocType = HTMLType) then begin
+          case QuirksMode of
+            qmDetect :
+              begin
+                with THtmlParser.Create(Document) do
+                try
+                  FUseQuirksMode := ShouldUseQuirksMode;
+                finally
+                  Free;
+                end;
+              end;
+            qmStandards :
+              begin
+                FUseQuirksMode := False;
+              end;
+            qmQuirks :
+              begin
+                FUseQuirksMode := True;
+              end;
+          end;
+        end else begin
+          FUseQuirksMode := False;
+        end;
+        Self.FSectionList.UseQuirksMode := FUseQuirksMode;
         // terminate old document
         InitLoad;
         CaretPos := 0;
@@ -4135,6 +4160,7 @@ begin
     Include(FViewerState, vsLocalBitmapList);
   end;
   FSectionList.Clear;
+  FSectionList.UseQuirksMode := FUseQuirksMode;
   UpdateImageCache;
   FSectionList.SetFonts(FFontName, FPreFontName, FFontSize, FFontColor,
     FHotSpotColor, FVisitedColor, FOverColor, FBackground,
@@ -4150,6 +4176,7 @@ begin
   if vsProcessing in FViewerState then
     Exit;
   HTMLTimer.Enabled := False;
+  FSectionList.UseQuirksMode := FUseQuirksMode;
   FSectionList.Clear;
   if vsLocalBitmapList in FViewerState then
     FSectionList.BitmapList.Clear;

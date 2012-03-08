@@ -59,6 +59,8 @@ const
   BrkCh = #8;
 
 type
+  THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
+
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -503,15 +505,24 @@ type
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
   protected
+    // set to determine if child objects should be in "quirks" mode
+    //This must be protected because it's set directly in a descendant
+    FUseQuirksMode : Boolean;
+    FQuirksMode : THtQuirksMode;
     procedure SetOnInclude(Handler: TIncludeType); virtual;
     procedure SetOnLink(Handler: TLinkType); virtual;
     procedure SetOnScript(Handler: TScriptEvent); virtual;
     procedure SetOnSoundRequest(Handler: TSoundType); virtual;
+    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
   public
+    constructor Create(AOwner: TComponent); override;
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
+
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
     property OnSoundRequest: TSoundType read FOnSoundRequest write SetOnSoundRequest;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
@@ -562,8 +573,6 @@ function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inlin
 function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
 function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
 function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
 
@@ -950,24 +959,6 @@ begin
   Result := S1 = S2;
 end;
 
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
-var
-  S1: ThtString;
-  I: Integer;
-begin
-  if Offset <= 1 then
-    Result := Pos(SubStr, S)
-  else
-  begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := Pos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
-  end;
-end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 function ScaleRect(const Rect: TRect; ScaleX, ScaleY: Double): TRect;
@@ -2105,7 +2096,7 @@ begin
   begin
     NonAnimated := True;
     if KindOfImage(Stream) in [GIF{, Gif89}] then
-      Result := CreateAGifFromStream(NonAnimated, Stream);
+      Result := LoadGifFromStream(NonAnimated, Stream);
     if Result <> nil then
     begin
       if NonAnimated then
@@ -4271,6 +4262,12 @@ end;
 { TViewerBase }
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
+constructor TViewerBase.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FQuirksMode := qmDetect;
+end;
+
 procedure TViewerBase.SetOnInclude(Handler: TIncludeType);
 begin
   FOnInclude := Handler;
@@ -4292,6 +4289,11 @@ end;
 procedure TViewerBase.SetOnSoundRequest(Handler: TSoundType);
 begin
   FOnSoundRequest := Handler;
+end;
+
+procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
+begin
+  FQuirksMode := AValue;
 end;
 
 { THtmlViewerBase }

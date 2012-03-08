@@ -3,8 +3,6 @@ unit AlphaBlendUn;
 interface
 {$I htmlcons.inc}
 uses Graphics, Types, SysUtils,
-  StyleTypes,
-  HtmlFonts,
   HTMLUn2, HtmlGlobals, Windows, msimg32;
 
 function TransparentTextOutput(ACanvas : TCanvas;

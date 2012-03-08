@@ -65,6 +65,14 @@ var
 
 type
   AlignmentType = (ANone, ATop, AMiddle, ABaseline, ABottom, ALeft, ARight, AJustify, ASub, ASuper);
+  BoxSizingType = (ContentBox, BorderBox);
+
+const
+  CBoxSizing: array[BoxSizingType] of ThtString = (
+    'content-box',
+    'border-box');
+
+type
   BorderStyleType = (bssNone, bssSolid, bssInset, bssOutset, bssGroove, bssRidge,
     bssDashed, bssDotted, bssDouble);
   ListBulletType = (lbBlank, lbCircle, lbDecimal, lbDisc, lbLowerAlpha, lbLowerRoman,
@@ -137,6 +145,7 @@ type
     BackgroundColor, 
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
+    BoxSizing,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
     // BG, 31.01.2012: don't change the order of the border properties:
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
@@ -183,6 +192,7 @@ type
     TheFont: TMyFont;
     InLink: Boolean;
     DefFontname: ThtString;
+    FUseQuirksMode : Boolean;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
     procedure AssignCharSet(CS: TFontCharset);
     procedure AssignCodePage(const CP: Integer);
@@ -200,8 +210,10 @@ type
     FIArray: TFontInfoArray;
     ID: Integer;
 
-    constructor Create(APropStack: TPropStack); overload; // for use in property stack
     constructor Create; overload; // for use in style list only
+    constructor Create(const AUseQuirksMode : Boolean); overload; // for use in style list only
+    constructor Create(APropStack: TPropStack; const AUseQuirksMode : Boolean); overload; // for use in property stack
+
     destructor Destroy; override;
     function BorderStyleNotBlank: Boolean;
     function Collapse: Boolean;
@@ -236,6 +248,7 @@ type
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
+    function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
     procedure GetVMarginArray(var MArray: TVMarginArray);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
@@ -246,30 +259,34 @@ type
     property CodePage: Integer read FCodePage write AssignCodePage;
     property EmSize: Integer read FEmSize;
     property ExSize: Integer read FExSize;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TStyleList = class(ThtStringList)
   private
     SeqNo: Integer;
   protected
+    //this must be protected so that the property can be changed in
+    //a descendant while being read only.
+    FUseQuirksMode : Boolean;
     procedure setLinksActive(Value: Boolean); virtual; abstract;
     property LinksActive: Boolean write setLinksActive;
   public
     DefProp: TProperties;
-    constructor Create;
+    constructor Create; overload;
+    constructor Create(const AUseQuirksMode : Boolean); overload;
     destructor Destroy; override;
     function AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
     function AddObject(const S: ThtString; AObject: TObject): Integer; override;
     function GetSeqNo: ThtString;
     procedure Clear; override;
     procedure AddModifyProp(const Selector, Prop, Value: ThtString);
-{$IFDEF Quirk}
     procedure FixupTableColor(BodyProp: TProperties);
-{$ENDIF}
     procedure Initialize(const FontName, PreFontName: ThtString;
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
   end;
 
   TPropStack = class(TObjectList)
@@ -288,6 +305,7 @@ const
     'color', 'background-color',
     //'border-color',
     'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'box-sizing',
     'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
@@ -298,6 +316,52 @@ const
     'list-style-type', 'list-style-image', 'float', 'clear', 'text-indent',
     'page-break-before', 'page-break-after', 'page-break-inside', 'text-transform',
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells');
+
+//------------------------------------------------------------------------------
+// media types
+//------------------------------------------------------------------------------
+
+type
+  // http://www.w3.org/TR/2010/WD-CSS2-20101207/media.html
+  TMediaType = (
+    mtAll,        // Suitable for all devices.
+    mtBraille,    // Intended for braille tactile feedback devices.
+    mtEmbossed,   // Intended for paged braille printers.
+    mtHandheld,   // Intended for handheld devices (typically small screen, limited bandwidth).
+    mtPrint,      // Intended for paged material and for documents viewed on screen in print preview mode. Please consult the section on paged media for information about formatting issues that are specific to paged media.
+    mtProjection, // Intended for projected presentations, for example projectors. Please consult the section on paged media for information about formatting issues that are specific to paged media.
+    mtScreen,     // Intended primarily for color computer screens.
+    mtSpeech,     // Intended for speech synthesizers. Note: CSS2 had a similar media type called 'aural' for this purpose. See the appendix on aural style sheets for details.
+    mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
+    mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
+  );
+  TMediaTypes = set of TMediaType;
+
+const
+  CMediaTypes: array[TMediaType] of ThtString = (
+    'all',
+    'braille',
+    'embossed',
+    'handheld',
+    'print',
+    'projection',
+    'screen',
+    'speech',
+    'tty',
+    'tv'
+  );
+  AllMediaTypes: TMediaTypes = [
+    //mtAll,        // Suitable for all devices.
+    mtBraille,    // Intended for braille tactile feedback devices.
+    mtEmbossed,   // Intended for paged braille printers.
+    mtHandheld,   // Intended for handheld devices (typically small screen, limited bandwidth).
+    mtPrint,      // Intended for paged material and for documents viewed on screen in print preview mode. Please consult the section on paged media for information about formatting issues that are specific to paged media.
+    mtProjection, // Intended for projected presentations, for example projectors. Please consult the section on paged media for information about formatting issues that are specific to paged media.
+    mtScreen,     // Intended primarily for color computer screens.
+    mtSpeech,     // Intended for speech synthesizers. Note: CSS2 had a similar media type called 'aural' for this purpose. See the appendix on aural style sheets for details.
+    mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
+    mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
+  ];
 
 //BG, 05.10.2010: added:
 function VarIsIntNull(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -318,8 +382,11 @@ procedure ConvMargArrayForCellPadding(const VM: TVMarginArray; EmSize,
 procedure ConvInlineMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize,
   ExSize: Integer; {BStyle: BorderStyleType;} out M: TMarginArray);
 
+function OpacityFromStr(S : ThtString) : Byte;
+
 function SortedColors: ThtStringList;
 function ColorFromString(S: ThtString; NeedPound: Boolean; out Color: TColor): Boolean;
+function ColorAndOpacityFromString(S: ThtString; NeedPound: Boolean; out Color: TColor; out VOpacity : Byte): Boolean;
 
 function ReadURL(Item: Variant): ThtString;
 
@@ -363,7 +430,14 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
    get drawn.  They're calculated so that only images within ARect are drawn.
 }
 
+{ Media type handling from trunk}
+function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
+function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
+function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
+function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): Boolean;
+
 implementation
+uses HSLUtils;
 
 type
   TMyFontCache = class
@@ -381,7 +455,7 @@ var
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
   AllMyFonts: TMyFontCache;
 
-function FontSizeConv(const Str: ThtString; OldSize: Double): Double; forward;
+function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double; forward;
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
 
 function FindPropIndex(const PropWord: ThtString; out PropIndex: PropIndices): Boolean;
@@ -656,13 +730,22 @@ begin
   for I := MarginTop to LeftPos do
     Props[I] := IntNull;
   Props[ZIndex] := 0;
+  FUseQuirksMode := False;
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
-constructor TProperties.Create(APropStack: TPropStack);
+
+constructor TProperties.Create(APropStack: TPropStack; const AUseQuirksMode : Boolean);
 begin
   Create;
   self.PropStack := APropStack;
+  FUseQuirksMode := AUseQuirksMode;
+end;
+
+constructor TProperties.Create(const AUseQuirksMode : Boolean);
+begin
+  Create;
+  FUseQuirksMode := AUseQuirksMode;
 end;
 
 destructor TProperties.Destroy;
@@ -1251,6 +1334,22 @@ begin {return a color only if it hasn't been inherited}
 end;
 
 
+//-- JPM --------------------------------------------------------- 03.02-2012 --
+
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: BoxSizingType): Boolean;
+var
+  I: BoxSizingType;
+begin
+  for I := low(I) to high(I) do
+    if CBoxSizing[I] = Str then
+    begin
+      Result := True;
+      ABoxSizing := I;
+      exit;
+    end;
+  Result := False;
+end;
+
 //-- BG ---------------------------------------------------------- 16.03.2011 --
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: BorderStyleType): Boolean;
 const
@@ -1296,6 +1395,11 @@ begin
       BorderStyle := BorderStyleType(Props[Index]);
       Result := True;
     end;
+end;
+
+function TProperties.GetBoxSizing(var VBoxSizing: BoxSizingType): Boolean;
+begin
+  Result := TryStrToBoxSizing(Props[BoxSizing], VBoxSizing);
 end;
 
 function TProperties.BorderStyleNotBlank: Boolean;
@@ -1526,6 +1630,17 @@ begin
           else
             M[I] := 0;
         end;
+      BoxSizing :
+        begin
+          if VarIsStr(VM[I]) then begin
+            if VM[I] = CBoxSizing[BorderBox] then
+              M[I] := 1
+            else
+              M[I] := 0;
+          end else begin
+            M[I] := 0;
+          end;
+        end;
       piWidth:
         begin
           if VarIsStr(VM[I]) then
@@ -1719,7 +1834,7 @@ procedure TProperties.Combine(Styles: TStyleList;
                           end;
 
                         FontSize:
-                          iSize := FontSizeConv(Props[FontSize], iSize);
+                          iSize := FontSizeConv(Props[FontSize], iSize, FUseQuirksMode);
 
                         Color:
                           iColor := Props[Color];
@@ -1950,15 +2065,21 @@ procedure TProperties.Combine(Styles: TStyleList;
     end;
 
   begin
-  {$IFDEF Quirk}
-    if (Tag = 'td') or (Tag = 'th') then
-      OldSize := DefPointSize
-    else
-  {$ENDIF}if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
+    if FUseQuirksMode then begin
+       if (Tag = 'td') or (Tag = 'th') then begin
+          OldSize := DefPointSize;
+       end else begin
+          if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
+            OldSize := Props[FontSize]
+          else
+            OldSize := DefPointSize;
+       end;
+    end else begin
+      if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
         OldSize := Props[FontSize]
       else
         OldSize := DefPointSize;
-
+    end;
   {Some hover and visited items adequately taken care of when link processed}
     NoHoverVisited := (Pseudo = '') or ((Pseudo <> 'hover') and (Pseudo <> 'visited'));
 
@@ -2060,7 +2181,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       Merge(AProp);
 
     if not (VarType(Props[FontSize]) in varNum) then {if still a ThtString, hasn't been converted}
-      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize);
+      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FUseQuirksMode);
   end;
 
 var
@@ -2290,7 +2411,7 @@ procedure TProperties.CalcLinkFontInfo(Styles: TStyleList; I: Integer);
 
   procedure InsertNewProp(N: Integer; const Pseudo: ThtString);
   begin
-    PropStack.Insert(N, TProperties.Create(PropStack));
+    PropStack.Insert(N, TProperties.Create(PropStack,FUseQuirksMode));
     PropStack[N].Inherit('', PropStack[N - 1]);
     PropStack[N].Combine(Styles, PropTag, PropClass, PropID, Pseudo, PropTitle, PropStyle, N - 1);
   end;
@@ -2320,16 +2441,32 @@ end;
 procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
 var
   I: PropIndices;
+  BS: BorderStyleType;
+  NewColor : TColor;
 begin
   for I := Low(Marray) to High(MArray) do
     case I of
       BorderTopStyle..BorderLeftStyle:
-        if VarIsStr(Props[I]) then
-          MArray[I] := BorderStyleFromString(Props[I])
-        else if (VarType(Props[I]) in varInt) and (Props[i] <> IntNull) then
-          MArray[I] := Props[I];
-//        else
-//          MArray[I] := bssNone;
+      begin
+        BS := MArray[I];
+        GetBorderStyle(I, BS);
+        MArray[I] := BS;
+      end;
+      {From: http://www.w3.org/TR/CSS21/box.html#x49
+
+      If an element's border color is not specified with a
+      border property, user agents must use the value of the
+      element's 'color' property as the computed value for
+      the border color.
+      }
+      BorderTopColor..BorderLeftColor:
+      begin
+        if ColorFromString(Props[I],False,NewColor) then begin
+          MArray[I] := Props[I]
+        end else begin
+          MArray[I] := Props[StyleUn.Color];
+        end;
+      end
     else
       MArray[I] := Props[I];
     end;
@@ -2426,6 +2563,13 @@ begin
   SeqNo := 10;
 end;
 
+constructor TStyleList.Create(const AUseQuirksMode: Boolean);
+begin
+  Create;
+  DefProp := nil;
+  FUseQuirksMode := AUseQuirksMode;
+end;
+
 destructor TStyleList.Destroy;
 begin
   Clear;
@@ -2448,7 +2592,12 @@ begin {used to help sort contextual items by entry sequence}
   Inc(SeqNo);
 end;
 
-{$IFDEF Quirk}
+procedure FixBordProps(AProp, BodyProp : TProperties);
+var i : PropIndices;
+begin
+  for i := BorderTopColor to BorderLeftColor do
+    AProp.Props[I] := BodyProp.Props[I];
+end;
 
 procedure TStyleList.FixupTableColor(BodyProp: TProperties);
 {if Quirk is set, make sure that the table color is defined the same as the
@@ -2457,18 +2606,25 @@ var
   Propty1: TProperties;
   I: Integer;
 begin
+  if Find('table', I) then
+  begin
+    Propty1 := TProperties(Objects[I]);
+    Propty1.Props[Color] := BodyProp.Props[Color];
+    FixBordProps(Propty1,BodyProp);
+  end;
   if Find('td', I) then
   begin
     Propty1 := TProperties(Objects[I]);
     Propty1.Props[Color] := BodyProp.Props[Color];
+    FixBordProps(Propty1,BodyProp);
   end;
   if Find('th', I) then
   begin
     Propty1 := TProperties(Objects[I]);
     Propty1.Props[Color] := BodyProp.Props[Color];
+    FixBordProps(Propty1,BodyProp);
   end;
 end;
-{$ENDIF}
 
 procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
 {strings are all lowercase here}
@@ -2574,10 +2730,11 @@ begin
     begin
       AddModifyProp('::link', Prop, Value); {also applies to ::link}
     end;
-{$IFDEF Quirk}
-    if (Selector = 'body') and (PropIndex = Color) then
-      FixupTableColor(Propty);
-{$ENDIF}
+    if UseQuirksMode then begin
+      if (Selector = 'body') and (PropIndex = Color) then begin
+        FixupTableColor(Propty);
+      end;
+    end;
   end;
 end;
 
@@ -2589,7 +2746,7 @@ end;
 
 function TStyleList.AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
 begin
-  Result := TProperties.Create(Prop.PropStack);
+  Result := TProperties.Create(Prop.PropStack,FUseQuirksMode);
   Result.Copy(Prop);
   AddObject(Tag, Result);
 end;
@@ -2639,20 +2796,23 @@ begin
   Properties.Props[MarginRight] := MarginWidth;
   Properties.Props[Visibility] := viVisible;
   Properties.Props[LetterSpacing] := 0;
+  Properties.Props[BoxSizing] := ContentBox;
   Properties.CharSet := ACharSet;
   AddObject('default', Properties);
   DefProp := Properties;
 
-{$IFDEF Quirk}
-  Properties := TProperties.Create;
-  Properties.Props[FontSize] := PointSize * 1.0;
-  Properties.Props[FontStyle] := 'none';
-  Properties.Props[FontWeight] := 'normal';
-  Properties.Props[Color] := AColor;
-  AddObject('td', Properties);
-  Properties := AddDuplicate('th', Properties);
-  Properties.Props[FontWeight] := 'bold';
-{$ENDIF}
+  if UseQuirksMode then begin
+    Properties := TProperties.Create(UseQuirksMode);
+    Properties.Props[FontSize] := PointSize * 1.0;
+    Properties.Props[FontStyle] := 'none';
+    Properties.Props[FontWeight] := 'normal';
+    Properties.Props[Color] := AColor;
+    AddObject('td', Properties);
+    Properties := AddDuplicate('table', Properties);
+
+    Properties := AddDuplicate('th', Properties);
+    Properties.Props[FontWeight] := 'bold';
+  end;
 
   Properties := TProperties.Create;
   Properties.Props[Color] := AHotSpot or PalRelative;
@@ -2740,9 +2900,13 @@ begin
   Properties.Props[FontWeight] := 'bold';
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
-{$IFNDEF Quirk}
-  AddDuplicate('th', Properties);
-{$ENDIF}
+  if UseQuirksMode = False then begin
+
+    AddDuplicate('th', Properties);
+    Properties := TProperties.Create;
+    Properties.Props[TextAlign] := 'none';
+    AddObject('table', Properties);
+  end;
 
   Properties := TProperties.Create;
   Properties.Props[FontSize] := '0.83em';
@@ -2762,9 +2926,7 @@ begin
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
 
-  Properties := TProperties.Create;
-  Properties.Props[TextAlign] := 'none';
-  AddObject('table', Properties);
+
 
   Properties := TProperties.Create;
   Properties.Props[FontStyle] := 'italic';
@@ -2830,6 +2992,70 @@ begin
     Properties.Props[FontWeight] := 'bold';
     AddObject('h' + IntToStr(HIndex), Properties);
   end;
+end;
+
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
+var
+  I: TMediaType;
+begin
+  SetLength(Result, 0);
+  for I := low(I) to high(I) do
+    if I in MediaTypes then
+    begin
+      if Length(Result) = 0 then
+        Result := CMediaTypes[I]
+      else
+        Result := Result + ', ' + CMediaTypes[I];
+    end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
+begin
+  if mtAll in MediaTypes then
+    Result := AllMediaTypes
+  else
+    Result := MediaTypes;
+end;
+
+//-- BG ---------------------------------------------------------- 15.03.2011 --
+function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
+var
+  I: TMediaType;
+begin
+  for I := low(I) to high(I) do
+    if CMediaTypes[I] = Str then
+    begin
+      Result := True;
+      MediaType := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 17.04.2011 --
+function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): Boolean;
+var
+  I, J: Integer;
+  MediaType: TMediaType;
+begin
+  Result := False;
+  MediaTypes := [];
+  I := 1;
+  repeat
+    J := PosX(',', Str, I);
+    if J = 0 then
+      // no more commas, try the rest
+      J := Length(Str) + 1;
+    if TryStrToMediaType(htLowerCase(Trim(Copy(Str, I, J - I))), MediaType) then
+    begin
+      Include(MediaTypes, MediaType);
+      Result := True;
+    end;
+    I := J + 1;
+  until J > Length(Str);
 end;
 
 { TPropStack }
@@ -2938,7 +3164,25 @@ begin
   Result := ColorStrings;
 end;
 
+function OpacityFromStr(S : ThtString) : Byte;
+var LErr : Integer;
+  LR : Real;
+begin
+  Val(S,LR,LErr);
+  if LErr <> 0 then begin
+    Result := 255;
+  end else begin
+    Result := Trunc(255 * LR);
+  end;
+end;
+
 function ColorFromString(S: ThtString; NeedPound: Boolean; out Color: TColor): Boolean;
+var LDummy : Byte;
+begin
+  Result := ColorAndOpacityFromString(S,NeedPound,Color,LDummy);
+end;
+
+function ColorAndOpacityFromString(S: ThtString; NeedPound: Boolean; out Color: TColor; out VOpacity : Byte): Boolean;
 {Translate StyleSheet color ThtString to Color.  If NeedPound is true, a '#' sign
  is required to preceed a hexidecimal value.}
 const
@@ -2949,6 +3193,65 @@ var
   I, Rd, Bl: Integer;
   S1: ThtString;
 
+  function FindHSLColor(S: ThtString): Boolean;
+  type
+    Colors = (hue, saturation, luminance);
+  var
+    I, J: Integer;
+  var
+    A: array[hue..luminance] of ThtString;
+    C: array[hue..luminance] of Integer;
+    K: Colors;
+  begin
+    I := Pos('(', S);
+    J := Pos(')', S);
+    if (I > 0) and (J > 0) then
+    begin
+      S := copy(S, 1, J - 1);
+      S := Trim(Copy(S, I + 1, 255));
+      for K := hue to saturation do
+      begin
+        I := Pos(',', S);
+        A[K] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+      end;
+      I := Pos(',', S);
+      if I > 0 then begin
+        A[luminance] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+        VOpacity := OpacityFromStr(S);
+      end else begin
+        A[luminance] := S;
+        VOpacity := 255;
+      end;
+
+      C[hue] := StrToIntDef(A[hue],0);
+      while C[hue] >= 360 do begin
+        C[hue] := C[hue] - 360;
+      end;
+      while C[hue] < 0 do begin
+        C[hue] := C[hue] + 360;
+      end;
+      for K := saturation to luminance do begin
+        I := Pos('%', A[K]);
+        if I > 0 then begin
+          Delete(A[K], I, 1);
+        end;
+        C[K] := StrToIntDef(A[K],0);
+        if C[K] > 100 then begin
+          C[K] := 100;
+        end;
+        if C[K] < 0 then begin
+          C[K] := 0;
+        end;
+      end;
+      Color := HSLUtils.HSLtoRGB(C[hue],C[saturation],C[luminance]);
+      Result := True;
+    end
+    else
+      Result := False;
+  end;
+
   function FindRGBColor(S: ThtString): Boolean;
   type
     Colors = (red, green, blue);
@@ -2957,6 +3260,7 @@ var
     C: array[red..blue] of Integer;
     I, J: Integer;
     K: Colors;
+
   begin
     I := Pos('(', S);
     J := Pos(')', S);
@@ -2970,7 +3274,16 @@ var
         A[K] := Trim(copy(S, 1, I - 1));
         S := Trim(Copy(S, I + 1, 255));
       end;
-      A[Blue] := S;
+      I := Pos(',', S);
+      if I > 0 then begin
+        A[blue] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+        VOpacity := OpacityFromStr(S);
+      end else begin
+        A[blue] := S;
+        VOpacity := 255;
+      end;
+
       for K := Red to Blue do
       begin
         I := Pos('%', A[K]);
@@ -2996,9 +3309,12 @@ var
 
 //BG, 26.08.2009: exceptions are very slow
 var
-  Int, Idx: Integer;
+  Int: Integer;
+  Idx : Integer;
 //BG, 26.08.2009
 begin
+  //Opacity is not supported with # hexidecimal notation or color names
+  VOpacity := 255;
   if S = '' then
   begin
     Result := False;
@@ -3010,6 +3326,11 @@ begin
     Color := LastColor;
     Result := True;
     Exit;
+  end;
+  I := Pos('hsl',S);
+  if I > 0 then begin
+    Result := FindHSLColor(Copy(S, I + 3, 255));
+    exit;
   end;
   I := Pos('rgb', S);
   if (I = 0) and (S[1] <> '#') then
@@ -3028,7 +3349,7 @@ begin
     Result := FindRGBColor(Copy(S, I + 3, 255))
   else
   begin
-    try
+//    try
       I := Pos('#', S);
       if I > 0 then
         while I > 0 do {sometimes multiple ##}
@@ -3045,13 +3366,7 @@ begin
       if Length(S) <= 3 then
         for I := Length(S) downto 1 do
           Insert(S[I], S, I); {Double each character}
-//BG, 26.08.2009: exceptions are very slow
-//    Color := StrToInt('$'+S);  {but bytes are backwards!}
-//    Rd := Color and $FF;
-//    Bl := Color and $FF0000;
-//    Color := (Color and $00FF00) + (Rd shl 16) + (Bl shr 16) or PalRelative;
-//    Result := True;
-      Result := tryStrToInt('$' + S, Int);
+      Result := TryStrToInt('$' + S, Int);
       if Result then
       begin
       {ok, but bytes are backwards!}
@@ -3059,10 +3374,9 @@ begin
         Bl := Int and $FF0000;
         Color := (Int and $00FF00) + (Rd shl 16) + (Bl shr 16) or PalRelative;
       end;
-//BG, 26.08.2009
-    except
-      Result := False;
-    end;
+//    except
+//      Result := False;
+//    end;
   end;
   if Result then
   begin
@@ -3202,11 +3516,12 @@ begin
     Result := OldSize * FontConv[NewIndex] / FontConv[OldIndex];
 end;
 
-function FontSizeConv(const Str: ThtString; OldSize: Double): Double;
+function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double;
 {given a font-size ThtString, return the point size}
 var
   V: extended;
   U: ThtString;
+  i : Integer;
 begin
   if decodeSize(Str, V, U) then
   begin
@@ -3236,22 +3551,27 @@ begin
   else
   begin
     U := Str;
+    if AUseQuirksMode then begin
+      i := 1;
+    end else begin
+      i := 0;
+    end;
     if U = 'smaller' then
       Result := IncFontSize(OldSize, -1) // 0.75 * OldSize
     else if U = 'larger' then
       Result := IncFontSize(OldSize,  1) // 1.25 * OldSize
     else if U = 'xx-small' then
-      Result := FontConv[1]
+      Result := FontConv[1 + i]
     else if U = 'x-small' then
-      Result := FontConv[2]
+      Result := FontConv[2 + i]
     else if U = 'small' then
-      Result := FontConv[3]
+      Result := FontConv[3 + i]
     else if U = 'medium' then
-      Result := FontConv[4]
+      Result := FontConv[4 + i]
     else if U = 'large' then
-      Result := FontConv[5]
+      Result := FontConv[5 + i]
     else if U = 'x-large' then
-      Result := FontConv[6]
+      Result := FontConv[6 + i]
     else if U = 'xx-large' then
       Result := FontConv[7]
     else
