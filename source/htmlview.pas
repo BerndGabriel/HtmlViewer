@@ -4607,9 +4607,9 @@ begin
     if FCurrentFileType = HTMLType then
       LoadFromFile(FCurrentFile)
     else if FCurrentFileType = TextType then
-      LoadTextFile(FCurrentFile)
+      LoadFromFile(FCurrentFile, TextType)
     else
-      LoadImageFile(FCurrentFile);
+      LoadFromFile(FCurrentFile, ImgType);
     Position := Pos;
   end;
 end;
