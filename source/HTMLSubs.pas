@@ -6025,19 +6025,21 @@ begin
           end
           else
           {$ENDIF !NoGDIPlus}
-          if NoMask then {printing}
-            PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
-          else if HasBackgroundColor then
-          begin
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
-            PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
-          end
-          else
-            PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
-        end;
+          if Assigned(TiledImage) then begin
 
+            if NoMask then {printing}
+                PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
+              else if HasBackgroundColor then
+              begin
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
+                PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
+              end
+              else
+              PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
+            end;
+          end;
       except
       end;
     end;
