@@ -87,6 +87,21 @@ type
     xoriginSrc, yoriginSrc, wSrc, hSrc : Integer;
     crTransparent : UINT ) : BOOL stdcall;
 
+{Note that I could not find TransparentDIBits and AlphaDIBBlend are
+not in the msimg32.dll and I can not find those function in the current
+Windows 7.1 SDK.
+
+I also can not find the alpha format flags
+AC_SRC_NO_PREMULT_ALPHA
+AC_SRC_NO_ALPHA
+AC_DST_NO_PREMULT_ALPHA
+AC_DST_NO_PREMULT_ALPHA
+AC_DST_NO_ALPHA
+
+In the Windows 7.1 SDK.  This all is interesting as some older versions of winGDI.h
+include those functions and flags. None of this stuff is documented at MSDN.
+}
+
 const
   c_msimg32 = 'msimg32.dll';
   c_AlphaBlend = 'AlphaBlend';
