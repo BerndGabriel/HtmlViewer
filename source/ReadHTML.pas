@@ -576,6 +576,191 @@ begin
   end;
 end;
 
+function THtmlParser.ShouldUseQuirksMode: Boolean;
+{
+This is not in ParseHTML because quirks mode effects
+the CSS property initialization which is done earlier than
+the parsing is and because it can dictate how HTML is parsed.
+In addition, you may want to skip this detection if:
+
+1) The document was served as "application/xhtml+xml" or is known to be
+XHTML.  In those cases, the document should ALWAYS be displayed in a "standards"
+mode. In ideal situations, XHTML should be parsed in a stricter manner than regular
+HTML and use XML rules.
+2) You want to force THTMLViewer to display the document in "quirks mode"
+3) You want to force THTMLViewer to display the document in a "standards"
+non-quirks mode
+
+Scan for the following DOCTYPE declarations:
+
+<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+   "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN"
+    "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
+   "http://www.w3.org/TR/html4/frameset.dtd">
+
+}
+var LId : ThtString;
+
+  procedure GetChBasic;
+  begin
+     LCh := Doc.NextChar;
+  end;
+
+  procedure ReadToGT; {read to the next GreaterChar }
+  begin
+    while (LCh <> GreaterChar) and (LCh <> EofChar) do
+      GetChBasic;
+    InComment := False;
+  end;
+
+  procedure ReadToLT;  {read to the next LessChar }
+  begin
+    if not InComment then begin
+      while (LCh <> LessChar) and (LCh <> EofChar) do
+        GetChBasic;
+    end;
+  end;
+
+  procedure ScanDTDIdentifier(out Identifier : ThtString);
+  begin
+    SetLength(Identifier, 0);
+    case LCh of
+      'A'..'Z', 'a'..'z', '0'..'9', '_', '/', '-','.':
+        Result := True;
+    else
+      Result := False;
+    end;
+  // loop through all allowed characters:
+    while Result do
+    begin
+      case LCh of
+         'A'..'Z', 'a'..'z', '0'..'9', '_', '/', '-','.': ;
+      else
+        break;
+      end;
+      htAppendChr(Identifier, LCh);
+      GetChBasic;
+    end;
+
+    if Result then
+      Result := Length(Identifier) > 0;
+  end;
+
+  function ScanDTD : Boolean;
+  var
+    LPart : ThtString;
+  begin
+    Result := False;
+    SkipWhiteSpace;
+
+    ScanDTDIdentifier(LPart);
+    if htUpperCase(LPart) = htUpperCase('HTML') then
+    begin
+      GetChBasic;
+      if LCh = GreaterChar then
+      begin
+        //HTML5 - don't use quirks mode
+        Result := True;
+        exit;
+      end;
+      ScanDTDIdentifier(LPart);
+      if htUpperCase(LPart) <> htUpperCase('PUBLIC') then
+        exit;
+      SkipWhiteSpace;
+      if LCh = '"' then
+        GetChBasic;
+      SkipWhiteSpace;
+      ScanDTDIdentifier(LPart);
+      if htUpperCase(LPart) <> htUpperCase('-//W3C//DTD') then
+        exit;
+      SkipWhiteSpace;
+      ScanDTDIdentifier(LPart);
+      LPart := htUpperCase(LPart);
+      if LPart = htUpperCase('HTML') then
+      begin
+        SkipWhiteSpace;
+        ScanDTDIdentifier(LPart);
+        Result := (LPart = '4.01');
+        exit;
+      end;
+      if LPart = 'XHTML' then
+      begin
+        SkipWhiteSpace;
+        ScanDTDIdentifier(LPart);
+        if htUpperCase(LPart) = htUpperCase('BASIC') then
+        begin
+          SkipWhiteSpace;
+          ScanDTDIdentifier(LPart);
+          if LPart = '1.1' then
+            Result := True;
+        end
+        else
+        begin
+          Result := (LPart = '1.0') or (LPart = '1.1')
+        end;
+      end;
+    end;
+  end;
+
+var
+  OldPos: Integer;
+begin
+  FPropStack := THTMLPropStack.Create;
+  try
+    OldPos := Doc.Position;
+    Result := True;
+    repeat
+      ReadToLT;
+      GetChBasic;
+      case LCh of
+        '!':
+        begin
+          GetChBasic;
+          GetIdentifier(LId);
+          if htUpperCase(LId) <> 'DOCTYPE' then
+          begin
+            InComment := True;
+            ReadToGT;
+          end
+          else
+          begin
+            if ScanDTD then
+            begin
+              Result := False;
+              break;
+            end;
+          end;
+        end;
+
+        EofChar:
+          break;
+      end;
+      GetIdentifier(LId);
+      SkipWhiteSpace;
+      LId := htUpperCase(LId);
+      if (LId = 'HTML') or (LId = 'HEAD') or (LId = 'BODY') then
+        break;
+    until False;
+    Doc.Position := OldPos;
+  finally
+    FreeAndNil(FPropStack);
+  end;
+end;
+
 {-------------SkipWhiteSpace}
 
 procedure THtmlParser.SkipWhiteSpace;
@@ -967,17 +1152,17 @@ begin
   FPropStack.PopProp;
 end;
 
+procedure THtmlParser.PopAProp(const Tag: ThtString);
+begin
+  FPropStack.PopAProp(Tag);
+end;
+
 procedure THtmlParser.SetNoBreak(const AValue : Boolean);
 begin
   FNoBreak := AValue;
   if Assigned(FPropStack) and Assigned(FPropStack.MasterList ) then begin
     FPropStack.MasterList.NoBreak := AValue;
   end;
-end;
-
-procedure THtmlParser.PopAProp(const Tag: ThtString);
-begin
-  FPropStack.PopAProp(Tag);
 end;
 
 procedure THtmlParser.DoTextArea(TxtArea: TTextAreaFormControlObj);
@@ -1135,10 +1320,10 @@ var
   IsFieldsetLegend: Boolean;
 begin
   case Sym of
-    DivSy:
+    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp('div', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         CheckForAlign;
 
         DivBlock := TBlock.Create(FPropStack.MasterList, FPropStack.Last, SectionList, Attributes);
@@ -1147,9 +1332,9 @@ begin
 
         Section := TSection.Create(FPropStack.MasterList, nil, FPropStack.Last, CurrentUrlTarget, SectionList, True);
         Next;
-        DoBody([DivEndSy] + TermSet);
+        DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
-        PopAProp('div');
+        PopAProp(SymbToStr(Sym));
         if SectionList.CheckLastBottomMargin then
         begin
           DivBlock.MargArray[MarginBottom] := ParagraphSpace;
@@ -2918,7 +3103,8 @@ begin
             CommandSy:
               Next;
             PSy: DoP([]);
-            DivSy: DoDivEtc(DivSy, [HeadingEndSy]);
+            DivSy, HeaderSy, NavSy, ArticleSy,AsideSy,FooterSy, HGroupSy:
+              DoDivEtc(Sy, [HeadingEndSy]);
           else
             Done := True;
           end;
@@ -3130,7 +3316,8 @@ begin
         else
           Done := True; {else terminate lone <li>s on <p>}
       PEndSy: Next;
-      DivSy, CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
@@ -3229,7 +3416,8 @@ begin
       PSy: DoP(TermSet);
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
-      DivSy, CenterSy, FormSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy,
           LISy, DDSy, DTSy, EofSy] + TermSet);
 
@@ -3560,7 +3748,8 @@ begin
           Next;
         end;
 
-      DivSy, CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
         DoDivEtc(Sy, TermSet);
 
       TitleSy:
@@ -3898,6 +4087,7 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
   function Parse: Boolean;
   var
     SetExit: Boolean;
+
   begin
     Result := False;
     FPropStack.Clear;
@@ -3936,216 +4126,29 @@ begin
   FPropStack := THTMLPropStack.Create;
   try
   FPropStack.MasterList := nil;
-  CallingObject := FrameViewer;
-  SoundEvent := nil;
+    CallingObject := FrameViewer;
+    SoundEvent := nil;
 
-  FBase := '';
-  FBaseTarget := '';
-  Result := False;
-  InScript := False;
-  NoBreak := False;
-  InComment := False;
-
-  Pos := Doc.Position;
-  Attributes := TAttributeList.Create;
-  try
-    Self.Doc := Doc;
-    try
-      Result := Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
-    end;
-  finally
-    Attributes.Free;
-    Doc.Position := Pos;
-  end;
-  finally
-    FreeAndNil(FPropStack);
-  end;
-end;
-
-
-function THtmlParser.ShouldUseQuirksMode: Boolean;
-{
-This is not in ParseHTML because quirks mode effects
-the CSS property initialization which is done earlier than
-the parsing is and because it can dictate how HTML is parsed.
-In addition, you may want to skip this detection if:
-
-1) The document was served as "application/xhtml+xml" or is known to be
-XHTML.  In those cases, the document should ALWAYS be displayed in a "standards"
-mode. In ideal situations, XHTML should be parsed in a stricter manner than regular
-HTML and use XML rules.
-2) You want to force THTMLViewer to display the document in "quirks mode"
-3) You want to force THTMLViewer to display the document in a "standards"
-non-quirks mode
-
-Scan for the following DOCTYPE declarations:
-
-<!DOCTYPE html>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-   "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN"
-    "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
-   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
-
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-   "http://www.w3.org/TR/html4/strict.dtd">
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-   "http://www.w3.org/TR/html4/loose.dtd">
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
-   "http://www.w3.org/TR/html4/frameset.dtd">
-
-}
-var LId : ThtString;
-
-  procedure GetChBasic;
-  begin
-     LCh := Doc.NextChar;
-  end;
-
-  procedure ReadToGT; {read to the next GreaterChar }
-  begin
-    while (LCh <> GreaterChar) and (LCh <> EofChar) do
-      GetChBasic;
-    InComment := False;
-  end;
-
-  procedure ReadToLT;  {read to the next LessChar }
-  begin
-    if not InComment then begin
-      while (LCh <> LessChar) and (LCh <> EofChar) do
-        GetChBasic;
-    end;
-  end;
-
-  procedure ScanDTDIdentifier(out Identifier : ThtString);
-  begin
-    SetLength(Identifier, 0);
-    case LCh of
-      'A'..'Z', 'a'..'z', '0'..'9', '_', '/', '-','.':
-        Result := True;
-    else
-      Result := False;
-    end;
-  // loop through all allowed characters:
-    while Result do
-    begin
-      case LCh of
-         'A'..'Z', 'a'..'z', '0'..'9', '_', '/', '-','.': ;
-      else
-        break;
-      end;
-      htAppendChr(Identifier, LCh);
-      GetChBasic;
-    end;
-
-    if Result then
-      Result := Length(Identifier) > 0;
-  end;
-
-  function ScanDTD : Boolean;
-  var
-    LPart : ThtString;
-  begin
+    FBase := '';
+    FBaseTarget := '';
     Result := False;
-    SkipWhiteSpace;
+    InScript := False;
+    NoBreak := False;
+    InComment := False;
 
-    ScanDTDIdentifier(LPart);
-    if htUpperCase(LPart) = htUpperCase('HTML') then
-    begin
-      GetChBasic;
-      if LCh = GreaterChar then
-      begin
-        //HTML5 - don't use quirks mode
-        Result := True;
-        exit;
+    Pos := Doc.Position;
+    Attributes := TAttributeList.Create;
+    try
+      try
+        Result := Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
       end;
-      ScanDTDIdentifier(LPart);
-      if htUpperCase(LPart) <> htUpperCase('PUBLIC') then
-        exit;
-      SkipWhiteSpace;
-      if LCh = '"' then
-        GetChBasic;
-      SkipWhiteSpace;
-      ScanDTDIdentifier(LPart);
-      if htUpperCase(LPart) <> htUpperCase('-//W3C//DTD') then
-        exit;
-      SkipWhiteSpace;
-      ScanDTDIdentifier(LPart);
-      LPart := htUpperCase(LPart);
-      if LPart = htUpperCase('HTML') then
-      begin
-        SkipWhiteSpace;
-        ScanDTDIdentifier(LPart);
-        Result := (LPart = '4.01');
-        exit;
-      end;
-      if LPart = 'XHTML' then
-      begin
-        SkipWhiteSpace;
-        ScanDTDIdentifier(LPart);
-        if htUpperCase(LPart) = htUpperCase('BASIC') then
-        begin
-          SkipWhiteSpace;
-          ScanDTDIdentifier(LPart);
-          if LPart = '1.1' then
-            Result := True;
-        end
-        else
-        begin
-          Result := (LPart = '1.0') or (LPart = '1.1')
-        end;
-      end;
+    finally
+      Attributes.Free;
+      Doc.Position := Pos;
     end;
-  end;
-
-var
-  OldPos: Integer;
-begin
-  FPropStack := THTMLPropStack.Create;
-  try
-    OldPos := Doc.Position;
-    Result := True;
-    repeat
-      ReadToLT;
-      GetChBasic;
-      case LCh of
-        '!':
-        begin
-          GetChBasic;
-          GetIdentifier(LId);
-          if htUpperCase(LId) <> 'DOCTYPE' then
-          begin
-            InComment := True;
-            ReadToGT;
-          end
-          else
-          begin
-            if ScanDTD then
-            begin
-              Result := False;
-              break;
-            end;
-          end;
-        end;
-
-        EofChar:
-          break;
-      end;
-      GetIdentifier(LId);
-      SkipWhiteSpace;
-      LId := htUpperCase(LId);
-      if (LId = 'HTML') or (LId = 'HEAD') or (LId = 'BODY') then
-        break;
-    until False;
-    Doc.Position := OldPos;
   finally
     FreeAndNil(FPropStack);
   end;
@@ -4602,7 +4605,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..82] of TResWord = (
+  ResWordDefinitions: array[1..89] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4684,8 +4687,15 @@ const
     (Name: 'LINK';        Symbol: LinkSy;       EndSym: CommandSy),
     (Name: 'COL';         Symbol: ColSy;        EndSym: CommandSy),
     (Name: 'PARAM';       Symbol: ParamSy;      EndSym: CommandSy),
-    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy)
-    );
+    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy),
+    {HTML5 }
+    (Name: 'HEADER';      Symbol: HeaderSy;     EndSym: HeaderEndSy),
+    (Name: 'SECTION';     Symbol: SectionSy;    EndSym: SectionEndSy),
+    (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),
+    (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
+    (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
+    (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin
