@@ -5893,6 +5893,8 @@ var
   OpenRgn: Boolean;
   PdRect: TRect;
 begin
+  if Document.Printing and not Document.PrintBackground then
+    NeedDoImageStuff := False;
   YOffset := Document.YOff;
 
   case FLoatLR of
