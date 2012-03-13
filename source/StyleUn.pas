@@ -2609,6 +2609,10 @@ begin
   if Find('table', I) then
   begin
     Propty1 := TProperties(Objects[I]);
+    Propty1.Props[FontSize] := BodyProp.Props[FontSize];
+    Propty1.Props[FontStyle] := BodyProp.Props[FontStyle];
+    Propty1.Props[FontWeight] := BodyProp.Props[FontWeight];
+    Propty1.Props[FontVariant] := BodyProp.Props[FontVariant];
     Propty1.Props[Color] := BodyProp.Props[Color];
     FixBordProps(Propty1,BodyProp);
   end;
@@ -3330,6 +3334,11 @@ begin
   I := Pos('hsl',S);
   if I > 0 then begin
     Result := FindHSLColor(Copy(S, I + 3, 255));
+    if Result then
+    begin
+      LastS := S1;
+      LastColor := Color;
+    end;
     exit;
   end;
   I := Pos('rgb', S);

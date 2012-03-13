@@ -722,7 +722,11 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values: array [TShortHandedProps] of ThtString;
   begin
     Values[shType] := 'disc';
-    Values[shPosition] := 'outside';
+    if Self.FUseQuirksMode then begin
+      Values[shPosition] := 'inside';
+    end else begin
+      Values[shPosition] := 'outside';
+    end;
     Values[shImage] := 'none';
 
     SplitString(Value, S, Count);
