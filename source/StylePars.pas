@@ -1,5 +1,5 @@
 {
-Version   11.5
+Version   11.2
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -33,17 +33,25 @@ interface
 
 uses
 {$ifdef VCL}
-  Windows,  // needed to expand inline function htUpCase
+  Windows,  // needed to expand inline function htUpCase 
 {$endif}
   Classes, Graphics, SysUtils,
-  //
-  Parser,
-  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, StyleTypes;
+  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn;
 
 
 {---------  Detect Shorthand syntax }
 type
+  TShortHand = (
+    MarginX, PaddingX, BorderWidthX, BorderX,
+    BorderTX, BorderRX, BorderBX, BorderLX,
+    FontX, BackgroundX, ListStyleX, BorderColorX,
+    BorderStyleX);
+
   EParseError = class(Exception);
+
+  //TProcessProc = procedure(Obj: TObject; Selectors: ThtStringList; Prop, Value: ThtString);
+
+  { THtmlStyleParser }
 
   THtmlStyleParser = class
   private
@@ -54,15 +62,14 @@ type
     // parser methods
     procedure GetCh;
     function GetIdentifier(out Identifier: ThtString): Boolean;
-    function GetString(out Str: ThtString): Boolean;
     procedure SkipWhiteSpace;
+    function GetString(out Str: ThtString): Boolean;
     //
     function AddPath(S: ThtString): ThtString;
     procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString);
   protected
-    procedure ProcessProperty(const Prop, Value: ThtString); virtual; abstract;
-  public
     constructor Create(const AUseQuirksMode : Boolean);
+    procedure ProcessProperty(const Prop, Value: ThtString); virtual; abstract;
   end;
 
   THtmlStyleTagParser = class(THtmlStyleParser)
@@ -88,12 +95,18 @@ type
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
 
-
 procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
 procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(S: ThtString): ThtString;
 
 implementation
+
+const
+  ShortHands: array[Low(TShortHand)..High(TShortHand)] of ThtString = (
+    'margin', 'padding', 'border-width', 'border',
+    'border-top', 'border-right', 'border-bottom', 'border-left',
+    'font', 'background', 'list-style', 'border-color',
+    'border-style');
 
 const
   NeedPound = True;
@@ -116,7 +129,7 @@ procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
 var
   Parser: THtmlStyleAttrParser;
 begin
-  Parser := THtmlStyleAttrParser.Create( Propty.UseQuirksMode );
+  Parser := THtmlStyleAttrParser.Create(Propty.UseQuirksMode);
   try
     Parser.ParseProperties(Doc, Propty);
   finally
@@ -218,15 +231,16 @@ begin
     Result := Length(Identifier) > 0;
 end;
 
+
 //-- BG ---------------------------------------------------------- 13.03.2011 --
 function THtmlStyleParser.GetString(out Str: ThtString): Boolean;
 // Must start and end with single or double quote.
-// Returns string incl. quotes and with the original escape sequences. 
+// Returns string incl. quotes and with the original escape sequences.
 var
   Esc: Boolean;
   Term: ThtChar;
 begin
-  Term := #0;
+  Term := #0; // valium for the compiler
   SetLength(Str, 0);
   case LCh of
     '''', '"':
@@ -252,7 +266,7 @@ begin
         Esc := True;
       end;
 
-      CrChar, LfChar:
+      LfChar:
       begin
         Result := False;
         break;
@@ -298,27 +312,30 @@ begin
     else
       Result := S;
   end;
+{
+IMPORTANT!!!
+
+You must enclose the URL in quotation marks to prevent the code choking
+on paths specifiers that contain spaces.  Spaces are legal filename characters.
+}
   Result := 'url("' + Result + '")';
 end;
 
-//-- BG ---------------------------------------------------------- 15.03.2011 --
-function FindShortHand(S: ThtString; var Index: TShortHand): boolean;
+function FindShortHand(S: ThtString; out Index: TShortHand): boolean;
 var
-  I: Integer;
-  P: TPropertyIndex;
+  I: TShortHand;
 begin
-  I := SortedProperties.IndexOf(S);
-  Result := I >= 0;
-  if Result then
-  begin
-    P := TPropertyIndex(SortedProperties.Objects[I]);
-    Result := P in [Low(TShortHand)..High(TShortHand)];
-    if Result then
-      Index := P;
-  end;
+  for I := Low(TShortHand) to High(TShortHand) do
+    if S = ShortHands[I] then
+    begin
+      Result := True;
+      Index := I;
+      Exit;
+    end;
+  Result := False;
 end;
 
-procedure SplitString(Src: ThtString; var Dest: array of ThtString; var Count: integer);
+procedure SplitString(Src: ThtString; out Dest: array of ThtString; out Count: integer);
 {Split a Src ThtString into pieces returned in the Dest ThtString array.  Splitting
  is on spaces with spaces within quotes being ignored.  ThtString containing a '/'
  are also split to allow for the "size/line-height" Font construct. }
@@ -414,6 +431,12 @@ begin
     if I = 0 then
       I := Pos('rgb(', Src);
     if I = 0 then
+      I := Pos('rgba(', Src);
+    if I = 0 then
+      I := Pos('hsla(', Src);
+    if I = 0 then
+      I := Pos('hsl(', Src);
+    if I = 0 then
       Exit;
     J := Pos(')', Src);
     if (J = 0) or (J < I) then
@@ -453,6 +476,12 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     begin
       if Pos('rgb(', S[I]) > 0 then
         Values[shColor] := S[I]
+      else if Pos('rgba(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsla(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsl(', S[I]) > 0 then
+        Values[shColor] := S[I]
       else if (Pos('url(', S[I]) > 0) then
       begin
         if LinkPath <> '' then {path added now only for <link...>}
@@ -463,7 +492,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
-      if TryStrToColor(S[I], NeedPound, Dummy) then
+      if ColorFromString(S[I], NeedPound, Dummy) then
       begin
         Values[shColor] := S[I];
         S[I] := '';
@@ -559,13 +588,13 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
 
     ExtractParn(Value, S, Count);
     for I := 0 to Count - 1 do
-      if TryStrToColor(S[I], NeedPound, Dummy) then
+      if ColorFromString(S[I], NeedPound, Dummy) then
         Values[shColor] := S[I];
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
-      if TryStrToColor(S[I], NeedPound, Dummy) then
+      if ColorFromString(S[I], NeedPound, Dummy) then
         Values[shColor] := S[I]
       else if FindStyle(S[I]) then
         Values[shStyle] := S[I]
@@ -625,9 +654,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values[shStyle] := 'normal';
     Values[shVariant] := 'normal';
     Values[shWeight] := 'normal';
-
     if Self.FUseQuirksMode then begin
-
       Values[shSize] := 'small';
     end else begin
       Values[shSize] := 'medium';
@@ -695,7 +722,11 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values: array [TShortHandedProps] of ThtString;
   begin
     Values[shType] := 'disc';
-    Values[shPosition] := 'outside';
+    if Self.FUseQuirksMode then begin
+      Values[shPosition] := 'inside';
+    end else begin
+      Values[shPosition] := 'outside';
+    end;
     Values[shImage] := 'none';
 
     SplitString(Value, S, Count);
@@ -854,7 +885,7 @@ begin
       SL.Add(SS);
     end;
     for I := 0 to SL.Count - 1 do
-      htAppendStr(Result, Copy(SL.Strings[I], 2, Length(SL.Strings[I]) - 1));
+      Result := Result + Copy(SL.Strings[I], 2, Length(SL.Strings[I]) - 1);
   finally
     SL.Free;
   end;
@@ -955,7 +986,7 @@ var
                   GetCh;
                   break;
                 end;
-                
+
                 '<', EofChar:
                   break;
               end;
@@ -1317,7 +1348,7 @@ begin
       SetLength(S, Length(S) + 1);
       S[Length(S)] := LCh;
       GetCh;
-    until False;
+    until false;
     if not Ignore then
     begin
       S := FormatContextualSelector(Lowercase(Trim(S)), Sort);

@@ -139,6 +139,14 @@ const
     'double');
 
 type
+  TBoxSizing = (ContentBox, BorderBox);
+
+const
+  CBoxSizing: array[TBoxSizing] of ThtString = (
+    'content-box',
+    'border-box');
+
+type
   TBulletStyle = (
     lbBlank,
     lbCircle,
@@ -337,6 +345,7 @@ function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlign
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
 function TryStrToBoxFloatStyle(const Str: ThtString; out Float: TBoxFloatStyle): Boolean;
 function TryStrToBoxPositionStyle(const Str: ThtString; out Position: TBoxPositionStyle): Boolean;
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: TBoxSizing): Boolean;
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: TBulletStyle): Boolean;
 function TryStrToDisplayStyle(const Str: ThtString; out Display: TDisplayStyle): Boolean;
 
@@ -470,6 +479,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
+
 function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlignmentStyle): Boolean;
 var
   I: TAlignmentStyle;
@@ -479,6 +489,22 @@ begin
     begin
       Result := True;
       AlignmentStyle := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- JPM --------------------------------------------------------- 03.02-2012 --
+
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: TBoxSizing): Boolean;
+var
+  I: TBoxSizing;
+begin
+  for I := low(I) to high(I) do
+    if CBoxSizing[I] = Str then
+    begin
+      Result := True;
+      ABoxSizing := I;
       exit;
     end;
   Result := False;

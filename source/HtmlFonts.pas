@@ -44,7 +44,9 @@ type
     iSize: Double;
     iStyle: TFontStyles;
     iColor: TColor;
+    iOpacity: Byte;
     ibgColor: TColor;
+    ibgOpacity : Byte;
     iCharSet: TFontCharSet;
     iCharExtra: Variant;
     iWeight: Integer;
@@ -67,6 +69,7 @@ type
   ThtFont = class(TFont)
   public
     bgColor: TColor;
+    bgOpacity : Byte;
     tmHeight: Integer;
     tmDescent: Integer;
     tmExternalLeading: Integer;
@@ -76,6 +79,7 @@ type
     CharExtra: Integer;
     EmSize: Integer;
     ExSize: Integer;
+    iOpacity : Byte;
     constructor Create; {$ifdef LCL} override; {$endif}
     procedure Assign(const Info: ThtFontInfo); reintroduce; overload;
     procedure Assign(Source: TPersistent); overload; override;
@@ -125,6 +129,8 @@ begin
   if Source is ThtFont then
   begin
     bgColor := ThtFont(Source).bgColor;
+    bgOpacity := ThtFont(Source).bgOpacity;
+    iOpacity := ThtFont(Source).iOpacity;
     tmHeight := ThtFont(Source).tmHeight;
     tmDescent := ThtFont(Source).tmDescent;
     tmExternalLeading := ThtFont(Source).tmExternalLeading;
@@ -145,7 +151,9 @@ begin
   Height := -Round(Info.iSize * Screen.PixelsPerInch / 72);
   Style := Info.iStyle;
   bgColor := Info.ibgColor;
+  Self.bgOpacity := Info.ibgOpacity;
   Color := Info.iColor;
+  Self.iOpacity := Info.iOpacity;
   CharSet := Info.iCharSet;
 end;
 
@@ -159,6 +167,8 @@ constructor ThtFont.Create;
 begin
   inherited;
   Charset := DEFAULT_CHARSET;
+  Self.bgOpacity := $FF;
+  Self.iOpacity := $FF;
 end;
 
 { TMyFontCache }
@@ -248,6 +258,8 @@ begin
     SameFont.Name := Font.iName;
     SameFont.Height := -Round(Font.iSize * Screen.PixelsPerInch / 72);
     SameFont.Style := Font.iStyle;
+    SameFont.iOpacity := Font.iOpacity;
+    SameFont.bgOpacity := Font.ibgOpacity;
     SameFont.Charset := Font.iCharSet;
     Add(SameFont);
 
@@ -294,7 +306,9 @@ begin
   Result := ThtFont.Create;
   Result.Assign(SameFont);
   Result.bgColor := Font.ibgColor;
+  Result.bgOpacity := Font.ibgOpacity;
   Result.Color := Font.iColor;
+  Result.iOpacity := Font.iOpacity;
 
   V := Font.iCharExtra;
   if VarType(V) in VarInt then

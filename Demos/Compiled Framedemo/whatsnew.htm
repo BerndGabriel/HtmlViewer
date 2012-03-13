@@ -24,22 +24,31 @@
 <ul>
   <li>Tags <b>&lt;col&gt;</b> and <b>&lt;colspan&gt;</b> support relative widths "n*".
   <li>Added .xhtml and .xht file extensions for XHTML.  This will be rendered as HTML. (J. Peter Mugaas)
+  <li>Added relative width specification (like &quot;n*&quot;) of tags &lt;col&gt; and &lt;colgroup&gt;
+  <li>Sections may break text lines after slashes.
 </ul>
-<h5>Fixed and Changed</h5>
+<h5>Enhanced</h5>
 <ul>
-  <li>Enhanced: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 40</a>: Optical bug in tables with columns with relative widths. Enhanced table formatting.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 59</a>: Image scaling error.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=101">Issue 101</a>: Floating images in tables appear in incorrect location.
-  <li>Fixed: Too much space below an image. Extra space distribution for inline image depends on image's vertical alignment.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=106">Issue 106</a>: Anchors are not working.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=107">Issue 107</a>: LoadTextFile produces an exception.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=108">Issue 108</a>: HTMLSubs.pas and C++Builder: E1025 Unsupported language feature: 'property of array type'.
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=109">Issue 109</a>: C++Builder cannot handle properties that reference record members.<br>
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 40</a>: Optical bug in tables with columns with relative widths. Enhanced table formatting.
+</ul>  
+<h5>Fixed</h5>
+<ul>
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 59</a>: Image scaling error.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=101">Issue 101</a>: Floating images in tables appear in incorrect location.
+  <li>Too much space below an image. Extra space distribution for inline image depends on image's vertical alignment.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=106">Issue 106</a>: Anchors are not working.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=107">Issue 107</a>: LoadTextFile produces an exception.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=108">Issue 108</a>: HTMLSubs.pas and C++Builder: E1025 Unsupported language feature: 'property of array type'.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=109">Issue 109</a>: C++Builder cannot handle properties that reference record members.<br>
   <b style="color:blue">NOTICE: Properties BrdTop, BrdRight, BrdBottom, BrdLeft, PadTop, PadRight, PadBottom, PadLeft are provided for legacy support only and will be removed in a near future release. Please use properties Border and Padding instead.</b><br>
-  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=111">Issue 111</a>: CSS line-height BUG.
-  <li>Fixed: Access Violation in BumpHistory.
-  <li>Fixed: HtmlViewer vertically scrolls beyond end of document.
-  <li>Fixed: Html parser did not detect table sections (tfoot, tbody) after cells without end tag.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=111">Issue 111</a>: CSS line-height BUG.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=114">Issue 114</a>: &lt;page&gt; tag not working.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=131">Issue 131</a>: Empty CSS rules break following rule.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=136">Issue 136</a>: Table cell background is missing.
+  <li>Access Violation in BumpHistory.
+  <li>HtmlViewer vertically scrolls beyond end of document.
+  <li>Html parser did not detect table sections (tfoot, tbody) after cells without end tag.
+  <li>Missing border lines in tables in 64bit Lazarus.
 </ul>
 
 <p class="heading">Version 11.1</p>

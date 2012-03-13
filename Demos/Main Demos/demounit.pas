@@ -1,5 +1,5 @@
 {
-Version   11.5
+Version   11.2
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -201,8 +201,8 @@ type
     Histories: array[0..MaxHistories-1] of TMenuItem;
     MediaCount: integer;
     FoundObject: TImageObj;
-    NewWindowFile: ThtString;
-    NextFile, PresentFile: ThtString;
+    NewWindowFile: string;
+    NextFile, PresentFile: string;
     TimerCount: integer;
     OldTitle: string;
     HintWindow: THintWindow;
@@ -280,7 +280,7 @@ if (ParamCount >= 1) then
     Delete(S, I, 1);
     I := Pos('"', S);
     end;
-  Viewer.LoadFromFile(Viewer.HtmlExpandFilename(S), GetFileType(S));
+  Viewer.LoadFromFile(Viewer.HtmlExpandFilename(S));
   end;
 end;
 
@@ -291,7 +291,7 @@ begin
   if OpenDialog.Execute then
   begin
     Update;
-    Viewer.LoadFromFile(OpenDialog.Filename, GetFileType(OpenDialog.Filename));
+    Viewer.LoadFromFile(OpenDialog.Filename);
     UpdateCaption;
   end;
 end;
@@ -442,9 +442,8 @@ end;
 procedure TForm1.HistoryChange(Sender: TObject);
 {This event occurs when something changes history list}
 var
-  I: integer;
+  I: Integer;
   Cap: ThtString;
-  HI: THistoryItem;
 begin
   with Sender as THtmlViewer do
   begin
@@ -457,11 +456,10 @@ begin
     for I := 0 to MaxHistories-1 do
       with Histories[I] do
         if I < History.Count then
-        begin
-          HI := History[I];
-          Cap := HI.Url;
-          if HI.Title <> '' then
-            Cap := Cap + '--' + HI.Title;
+        Begin
+          Cap := History.Strings[I];
+          if TitleHistory[I] <> '' then
+            Cap := Cap + '--' + TitleHistory[I];
           Caption := Cap;    {Cap limits string to 80 char}
           Visible := True;
           Checked := I = HistoryIndex;
@@ -604,7 +602,7 @@ begin
   begin
     ReloadButton.Enabled := False;
     Update;
-    Viewer.LoadFromFile(OpenDialog.Filename, TextType);
+    Viewer.LoadTextFile(OpenDialog.Filename);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
@@ -623,7 +621,7 @@ begin
   if OpenDialog.Execute then
   begin
     ReloadButton.Enabled := False;
-    Viewer.LoadFromFile(OpenDialog.Filename, ImgType);
+    Viewer.LoadImageFile(OpenDialog.Filename);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
@@ -642,7 +640,7 @@ begin
   SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
   if Length(S) > 0 then
-    Viewer.LoadFromFile(S, GetFileType(S));
+    Viewer.LoadFromFile(S);
 {$endif}
   Message.Result := 0;
 end;
