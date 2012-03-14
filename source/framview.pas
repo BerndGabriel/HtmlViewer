@@ -3122,43 +3122,42 @@ var
   Obj: TObject;
 begin
   if (HistoryMaxCount > 0) and (OldFrameSet.FCurrentFile <> '') then
-    with FHistory do
+  begin
+    if FHistory.Count > 0 then
     begin
-      if (Count > 0) then
-      begin
-        Strings[FHistoryIndex] := OldFrameSet.FCurrentFile;
-        Objects[FHistoryIndex] := OldFrameSet;
-        FTitleHistory[FHistoryIndex] := OldFrameSet.FTitle;
-        FPosition[FHistoryIndex] := TObject(OldPos);
-        OldFrameSet.Parent := nil;
-        OldFrameSet.ClearForwards;
-      end
-      else
-        OldFrameSet.Free;
-      for I := 0 to FHistoryIndex - 1 do
-      begin
-        Obj := Objects[0];
-        Delete(0);
-        ChkFree(Obj);
-        FTitleHistory.Delete(0);
-        FPosition.Delete(0);
-      end;
-      FHistoryIndex := 0;
-      Insert(0, CurFrameSet.FCurrentFile);
-      Objects[0] := CurFrameSet;
-      FTitleHistory.Insert(0, CurFrameSet.FTitle);
-      FPosition.Insert(0, nil);
-      if Count > HistoryMaxCount then
-      begin
-        Obj := Objects[HistoryMaxCount];
-        Delete(HistoryMaxCount);
-        ChkFree(Obj);
-        FTitleHistory.Delete(HistoryMaxCount);
-        FPosition.Delete(HistoryMaxCount);
-      end;
-      if Assigned(OnHistoryChange) then
-        OnHistoryChange(Self);
+      FHistory.Strings[FHistoryIndex] := OldFrameSet.FCurrentFile;
+      FHistory.Objects[FHistoryIndex] := OldFrameSet;
+      FTitleHistory[FHistoryIndex] := OldFrameSet.FTitle;
+      FPosition[FHistoryIndex] := TObject(OldPos);
+      OldFrameSet.Parent := nil;
+      OldFrameSet.ClearForwards;
     end
+    else
+      OldFrameSet.Free;
+    for I := 0 to FHistoryIndex - 1 do
+    begin
+      Obj := FHistory.Objects[0];
+      FHistory.Delete(0);
+      ChkFree(Obj);
+      FTitleHistory.Delete(0);
+      FPosition.Delete(0);
+    end;
+    FHistoryIndex := 0;
+    FHistory.Insert(0, CurFrameSet.FCurrentFile);
+    FHistory.Objects[0] := CurFrameSet;
+    FTitleHistory.Insert(0, CurFrameSet.FTitle);
+    FPosition.Insert(0, nil);
+    if FHistory.Count > HistoryMaxCount then
+    begin
+      Obj := FHistory.Objects[HistoryMaxCount];
+      FHistory.Delete(HistoryMaxCount);
+      ChkFree(Obj);
+      FTitleHistory.Delete(HistoryMaxCount);
+      FPosition.Delete(HistoryMaxCount);
+    end;
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end
   else
     OldFrameSet.Free;
 end;
@@ -3172,39 +3171,38 @@ var
   Obj: TObject;
 begin
   if (HistoryMaxCount > 0) and (Filename <> '') then
-    with FHistory do
+  begin
+    if (FHistory.Count > 0) then
     begin
-      if (Count > 0) then
-      begin
-        Strings[FHistoryIndex] := Filename;
-        Objects[FHistoryIndex] := CurFrameSet;
-        FTitleHistory[FHistoryIndex] := Title;
-        FPosition[FHistoryIndex] := TObject(OldPos);
-      end;
-      for I := 0 to FHistoryIndex - 1 do
-      begin
-        Obj := Objects[0];
-        Delete(0);
-        ChkFree(Obj);
-        FTitleHistory.Delete(0);
-        FPosition.Delete(0);
-      end;
-      FHistoryIndex := 0;
-      Insert(0, CurFrameSet.FCurrentFile);
-      Objects[0] := CurFrameSet;
-      FTitleHistory.Insert(0, CurFrameSet.FTitle);
-      FPosition.Insert(0, nil);
-      if Count > HistoryMaxCount then
-      begin
-        Obj := Objects[HistoryMaxCount];
-        Delete(HistoryMaxCount);
-        ChkFree(Obj);
-        FTitleHistory.Delete(HistoryMaxCount);
-        FPosition.Delete(HistoryMaxCount);
-      end;
-      if Assigned(OnHistoryChange) then
-        OnHistoryChange(Self);
+      FHistory.Strings[FHistoryIndex] := Filename;
+      FHistory.Objects[FHistoryIndex] := CurFrameSet;
+      FTitleHistory[FHistoryIndex] := Title;
+      FPosition[FHistoryIndex] := TObject(OldPos);
     end;
+    for I := 0 to FHistoryIndex - 1 do
+    begin
+      Obj := FHistory.Objects[0];
+      FHistory.Delete(0);
+      ChkFree(Obj);
+      FTitleHistory.Delete(0);
+      FPosition.Delete(0);
+    end;
+    FHistoryIndex := 0;
+    FHistory.Insert(0, CurFrameSet.FCurrentFile);
+    FHistory.Objects[0] := CurFrameSet;
+    FTitleHistory.Insert(0, CurFrameSet.FTitle);
+    FPosition.Insert(0, nil);
+    if FHistory.Count > HistoryMaxCount then
+    begin
+      Obj := FHistory.Objects[HistoryMaxCount];
+      FHistory.Delete(HistoryMaxCount);
+      ChkFree(Obj);
+      FTitleHistory.Delete(HistoryMaxCount);
+      FPosition.Delete(HistoryMaxCount);
+    end;
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end;
 end;
 
 {----------------TFrameViewer.BumpHistory2}
@@ -3216,39 +3214,38 @@ var
   Obj: TObject;
 begin
   if (HistoryMaxCount > 0) and (CurFrameSet.FCurrentFile <> '') then
-    with FHistory do
+  begin
+    if (FHistory.Count > 0) then
     begin
-      if (Count > 0) then
-      begin
-        Strings[FHistoryIndex] := CurFrameSet.FCurrentFile;
-        Objects[FHistoryIndex] := CurFrameSet;
-        FTitleHistory[FHistoryIndex] := CurFrameSet.FTitle;
-        FPosition[FHistoryIndex] := TObject(OldPos);
-      end;
-      for I := 0 to FHistoryIndex - 1 do
-      begin
-        Obj := Objects[0];
-        Delete(0);
-        ChkFree(Obj);
-        FTitleHistory.Delete(0);
-        FPosition.Delete(0);
-      end;
-      FHistoryIndex := 0;
-      Insert(0, CurFrameSet.FCurrentFile);
-      Objects[0] := CurFrameSet;
-      FTitleHistory.Insert(0, CurFrameSet.FTitle);
-      FPosition.Insert(0, nil);
-      if Count > HistoryMaxCount then
-      begin
-        Obj := Objects[HistoryMaxCount];
-        Delete(HistoryMaxCount);
-        ChkFree(Obj);
-        FTitleHistory.Delete(HistoryMaxCount);
-        FPosition.Delete(HistoryMaxCount);
-      end;
-      if Assigned(OnHistoryChange) then
-        OnHistoryChange(Self);
+      FHistory.Strings[FHistoryIndex] := CurFrameSet.FCurrentFile;
+      FHistory.Objects[FHistoryIndex] := CurFrameSet;
+      FTitleHistory[FHistoryIndex] := CurFrameSet.FTitle;
+      FPosition[FHistoryIndex] := TObject(OldPos);
     end;
+    for I := 0 to FHistoryIndex - 1 do
+    begin
+      Obj := FHistory.Objects[0];
+      FHistory.Delete(0);
+      ChkFree(Obj);
+      FTitleHistory.Delete(0);
+      FPosition.Delete(0);
+    end;
+    FHistoryIndex := 0;
+    FHistory.Insert(0, CurFrameSet.FCurrentFile);
+    FHistory.Objects[0] := CurFrameSet;
+    FTitleHistory.Insert(0, CurFrameSet.FTitle);
+    FPosition.Insert(0, nil);
+    if FHistory.Count > HistoryMaxCount then
+    begin
+      Obj := FHistory.Objects[HistoryMaxCount];
+      FHistory.Delete(HistoryMaxCount);
+      ChkFree(Obj);
+      FTitleHistory.Delete(HistoryMaxCount);
+      FPosition.Delete(HistoryMaxCount);
+    end;
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end;
 end;
 
 {----------------TFrameViewer.SetHistoryIndex}
@@ -3258,54 +3255,52 @@ var
   FrameSet, FrameSet1: TFrameSetBase;
   Tmp: TObject;
 begin
-  with {CurFrameSet,} FHistory do
-    if (Value <> FHistoryIndex) and (Value >= 0) and (Value < Count)
-      and not Processing then
+  if (Value <> FHistoryIndex) and (Value >= 0) and (Value < FHistory.Count) and not Processing then
+  begin
+    if CurFrameSet.Viewers.Count > 0 then
+      Tmp := CurFrameSet.Viewers[0]
+    else
+      Tmp := nil;
+    if CurFrameSet.FCurrentFile <> '' then
     begin
-      if CurFrameSet.Viewers.Count > 0 then
-        Tmp := CurFrameSet.Viewers[0]
+    {Objects[FHistoryIndex] should have CurFrameSet here}
+      FTitleHistory[FHistoryIndex] := CurFrameSet.FTitle;
+      if (Tmp is THtmlViewer) then
+        FPosition[FHistoryIndex] := TObject((Tmp as THtmlViewer).Position)
       else
-        Tmp := nil;
-      if CurFrameSet.FCurrentFile <> '' then
-      begin
-      {Objects[FHistoryIndex] should have CurFrameSet here}
-        FTitleHistory[FHistoryIndex] := CurFrameSet.FTitle;
-        if (Tmp is THtmlViewer) then
-          FPosition[FHistoryIndex] := TObject((Tmp as THtmlViewer).Position)
-        else
-          FPosition[FHistoryIndex] := nil;
-      end;      
-      FrameSet := Objects[Value] as TFrameSetBase;
-      if FrameSet <> CurFrameSet then
-      begin
-        FrameSet1 := CurFrameSet; {swap framesets}
-        FCurFrameSet := FrameSet;
-        CurFrameSet.OldWidth := 0; {encourage recalc of internal layout}
-        CurFrameSet.Visible := False;
-        Self.InsertControl(CurFrameSet);
-        if CurFrameSet.Viewers.Count = 1 then
-          CurFrameSet.ReloadFiles(integer(FPosition[Value]))
-        else
-          CurFrameSet.ReloadFiles(-1);
-        SendMessage(Self.handle, wm_SetRedraw, 0, 0);
-        CurFrameSet.Visible := True;
-        SendMessage(Self.handle, wm_SetRedraw, 1, 0);
-        Invalidate; //CurFrameSet.Repaint;
-        FrameSet1.Unloadfiles;
-        Self.RemoveControl(FrameSet1);
-      end
-      else
-      begin
-        if (Tmp is THtmlViewer) then
-          TViewerFrameBase(THtmlViewer(Tmp).FrameOwner).ReloadFile(FHistory[Value],
-            integer(FPosition[Value]));
-      end;
-
-      FHistoryIndex := Value;
-      if Assigned(OnHistoryChange) then
-        OnHistoryChange(Self);
-      CheckVisitedLinks;
+        FPosition[FHistoryIndex] := nil;
     end;
+    FrameSet := FHistory.Objects[Value] as TFrameSetBase;
+    if FrameSet <> CurFrameSet then
+    begin
+      FrameSet1 := CurFrameSet; {swap framesets}
+      FCurFrameSet := FrameSet;
+      CurFrameSet.OldWidth := 0; {encourage recalc of internal layout}
+      CurFrameSet.Visible := False;
+      Self.InsertControl(CurFrameSet);
+      if CurFrameSet.Viewers.Count = 1 then
+        CurFrameSet.ReloadFiles(integer(FPosition[Value]))
+      else
+        CurFrameSet.ReloadFiles(-1);
+      SendMessage(Self.handle, wm_SetRedraw, 0, 0);
+      CurFrameSet.Visible := True;
+      SendMessage(Self.handle, wm_SetRedraw, 1, 0);
+      Invalidate; //CurFrameSet.Repaint;
+      FrameSet1.Unloadfiles;
+      Self.RemoveControl(FrameSet1);
+    end
+    else
+    begin
+      if (Tmp is THtmlViewer) then
+        TViewerFrameBase(THtmlViewer(Tmp).FrameOwner).ReloadFile(FHistory[Value],
+          integer(FPosition[Value]));
+    end;
+
+    FHistoryIndex := Value;
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+    CheckVisitedLinks;
+  end;
 end;
 
 {----------------TFrameViewer.ChkFree}
