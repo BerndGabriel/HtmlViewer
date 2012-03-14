@@ -8920,7 +8920,7 @@ begin
       else
       begin
         // add the remaining pixels to the first column's width.
-        Inc(Widths[I], Required - AddedExcess);
+        Inc(Widths[I], Excess - AddedExcess);
         break;
       end;
 end;
@@ -9386,11 +9386,60 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       end;
     end;
 
+    procedure CalcPercentDeltas(var PercentDeltas: IntArray; NewWidth: Integer);
+    var
+      I: Integer;
+      Percent, PercentDelta: Integer;
+    begin
+      Percent := Max(1000, Sum(Percents));
+      for I := NumCols - 1 downto 0 do
+        if ColumnSpecs[I] = wtPercent then
+        begin
+          PercentDelta := Trunc(1000 * (Percents[I] / Percent - MinWidths[I] / NewWidth));
+          if PercentDelta > 0 then
+            PercentDeltas[I] := PercentDelta;
+        end;
+    end;
+
+    procedure IncreaseWidthsByPercentage(var Widths: IntArray;
+      const PercentDeltas: IntArray;
+      StartIndex, EndIndex, Required, Spanned, Percent, Count: Integer);
+    // Increases width of columns relative to given percentages.
+    var
+      Excess, AddedExcess, AddedPercent, I, Add, MaxColWidth, SpecPercent: Integer;
+    begin
+      SpecPercent := Max(1000, Sum(Percents));
+      Excess := Required - Spanned;
+      AddedExcess := 0;
+      AddedPercent := 0;
+      for I := EndIndex downto StartIndex do
+        if (ColumnSpecs[I] = wtPercent) and (PercentDeltas[I] > 0) then
+          if Count > 1 then
+          begin
+            Inc(AddedPercent, PercentDeltas[I]);
+            Add := MulDiv(Excess, AddedPercent, Percent) - AddedExcess;
+            MaxColWidth := MulDiv(Required, Percents[I], SpecPercent);
+            Widths[I] := Min(Widths[I] + Add, MaxColWidth);
+            Inc(AddedExcess, Add);
+            Dec(Count);
+          end
+          else
+          begin
+            // add the remaining pixels to the first column's width.
+            Add := Excess - AddedExcess;
+            MaxColWidth := MulDiv(Required, Percents[I], SpecPercent);
+            Widths[I] := Min(Widths[I] + Add, MaxColWidth);
+            break;
+          end;
+    end;
+
   var
     Specified: boolean;
     NewWidth, MaxWidth, MinWidth, D, W, I: Integer;
     Counts: TIntegerPerWidthType;
-    wt: TWidthType;
+    PercentDeltas: IntArray;
+    PercentAbove0Count: Integer;
+    PercentDeltaAbove0Count: Integer;
   begin
     Specified := tblWidthAttr > 0;
     if Specified then
@@ -9414,20 +9463,34 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
     begin
       // Table fits into NewWidth.
 
-      // Calculate widths with respect to percentage specifications.
       Counts[wtPercent] := 0;
+      PercentAbove0Count := 0;
       for I := 0 to NumCols - 1 do
-      begin
-        wt := ColumnSpecs[I];
-        case wt of
-          wtPercent:
-          begin
-            Widths[I] := Max(MinWidths[I], MulDiv(NewWidth, Percents[I], 1000));
-            Inc(Counts[wtPercent]);
-          end;
-        else
-          Widths[I] := MinWidths[I];
+        if ColumnSpecs[I] = wtPercent then
+        begin
+          Inc(Counts[wtPercent]);
+          if Percents[I] > 0 then
+            Inc(PercentAbove0Count);
         end;
+
+      Widths := Copy(MinWidths);
+      if (PercentAbove0Count > 0) and (NewWidth > 0) then
+      begin
+        // Calculate widths with respect to percentage specifications.
+        // Don't shrink Column i below MinWidth[i]! Therefor spread exessive space
+        // trying to fit the percentage demands.
+        // If there are more than 100% percent reduce linearly to 100% (including
+        // the corresponding percentages of the MinWidth of all other columns).
+        SetLength(PercentDeltas, NumCols);
+        CalcPercentDeltas(PercentDeltas, NewWidth);
+
+        PercentDeltaAbove0Count := 0;
+        for I := 0 to NumCols - 1 do
+          if PercentDeltas[I] > 0 then
+            Inc(PercentDeltaAbove0Count);
+
+
+        IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
       end;
       MinWidth := Sum(Widths);
 
