@@ -2930,8 +2930,6 @@ begin
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
 
-
-
   Properties := TProperties.Create;
   Properties.Props[FontStyle] := 'italic';
   AddObject('i', Properties);
@@ -2996,6 +2994,12 @@ begin
     Properties.Props[FontWeight] := 'bold';
     AddObject('h' + IntToStr(HIndex), Properties);
   end;
+
+  Properties := TProperties.Create;
+  Properties.Props[FontStyle] := 'none';
+  Properties.Props[BackgroundColor] := $00FFFF;
+  Properties.Props[Color] := $000000;
+  AddObject('mark', Properties);
 end;
 
 

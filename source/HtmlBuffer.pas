@@ -947,7 +947,6 @@ begin
       end
       else
         Result := TBuffChar(0);
-
     932: // shift jis
       if FPos.AnsiChr < FEnd.AnsiChr then
       begin

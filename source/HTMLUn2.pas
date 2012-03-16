@@ -125,7 +125,8 @@ type
     ArticleSy, ArticleEndSy,
     AsideSy, AsideEndSy,
     FooterSy, FooterEndSy,
-    HGroupSy, HGroupEndSy);
+    HGroupSy, HGroupEndSy,
+    MarkSy, MarkEndSy);
 
 //------------------------------------------------------------------------------
 

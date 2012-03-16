@@ -2157,12 +2157,27 @@ begin
 
   if NewSpace >= 0 then
     HSpaceL := NewSpace
-  else if Floating in [ALeft, ARight] then
-    HSpaceL := ImageSpace {default}
   else
-    HSpaceL := 0;
-  HSpaceR := HSpaceL;
-  VSpaceB := VSpaceT;
+    if Self.Document.UseQuirksMode then begin
+      case Floating of
+       ARight :
+          begin
+            HSpaceR := 0;
+            HSpaceL := ImageSpace;
+          end;
+       ALeft :
+          begin
+            HSpaceR := ImageSpace;
+            HSpaceL := 0;
+          end
+        else
+          HSpaceR := 0;
+          HSpaceL := 0;
+        end;
+    end else begin
+      HSpaceR := 0;
+      VSpaceB := 0;
+    end;
 end;
 
 constructor TImageObj.SimpleCreate(MasterList: ThtDocument; const AnURL: ThtString);
