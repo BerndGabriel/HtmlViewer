@@ -832,7 +832,7 @@ begin
     Result := 1;
     exit;
   end;
-  
+
   Result := 2;
 
   {first byte}
@@ -947,6 +947,43 @@ begin
       end
       else
         Result := TBuffChar(0);
+
+    932: // shift jis
+      if FPos.AnsiChr < FEnd.AnsiChr then
+      begin
+        Len := 1;
+        Buffer2[0] := GetNext;
+        case Buffer2[0] of
+          $81..$9f, $E0..$FC:
+            if FPos.AnsiChr < FEnd.AnsiChr then
+            begin
+              Buffer2[1] := GetNext;
+              Len := 2;
+            end;
+        end;
+        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
+      end
+      else
+        Result := TBuffChar(0);
+
+    950: // BIG5
+      if FPos.AnsiChr < FEnd.AnsiChr then
+      begin
+        Len := 1;
+        Buffer2[0] := GetNext;
+        case Buffer2[0] of
+          $A1..$F9:
+            if FPos.AnsiChr < FEnd.AnsiChr then
+            begin
+              Buffer2[1] := GetNext;
+              Len := 2;
+            end;
+        end;
+        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
+      end
+      else
+        Result := TBuffChar(0);
+
   else
     Buffer := GetNext;
     if Buffer <> 0 then
