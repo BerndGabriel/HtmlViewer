@@ -227,6 +227,7 @@ some versions of RAD Studio XE2.  This should never be used for release software
   {$ifdef win32}
   {.$define JPM_DEBUGGING}
   {$endif}
+    {$define UseVCLStyles}
 {$endif}
 {
 Using Third Party Unicode Controls

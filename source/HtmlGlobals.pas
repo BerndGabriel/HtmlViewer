@@ -31,6 +31,9 @@ unit HtmlGlobals;
 interface
 
 uses
+  {$ifdef UseVCLStyles}
+  Vcl.Themes,
+  {$endif}
   Classes, SysUtils, Graphics, Controls,
 {$ifdef MSWINDOWS}
   Windows,
@@ -300,8 +303,26 @@ function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
 
+function ThemedColor(const AColor : TColor): TColor; {$ifdef UseInline} inline; {$endif}
+
 implementation
 
+function ThemedColor(const AColor : TColor): TColor;
+begin
+  {$ifdef UseVCLStyles}
+  Result := StyleServices.GetSystemColor(AColor);
+  if Result < 0 then begin
+      Result := GetSysColor(AColor and $FFFFFF);
+    if Result < 0 then
+      Result := AColor and $FFFFFF;
+  end;
+  {$else}
+  if AColor < 0 then
+    Result := GetSysColor(AColor and $FFFFFF);
+  else
+    Result := AColor and $FFFFFF;
+  {$endif}
+end;
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
 var

@@ -2693,7 +2693,7 @@ begin
   begin
     OldPal := SelectPalette(DC, ThePalette, False);
     RealizePalette(DC);
-    ACanvas.Brush.Color := BGColor or PalRelative;
+    ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
     OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
     OldBack := SetBkColor(DC, clWhite);
     OldFore := SetTextColor(DC, clBlack);
@@ -2810,7 +2810,7 @@ begin
   begin
     OldPal := SelectPalette(DC, ThePalette, False);
     RealizePalette(DC);
-    ACanvas.Brush.Color := BGColor or PalRelative;
+    ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
     OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
     OldBack := SetBkColor(DC, clWhite);
     OldFore := SetTextColor(DC, clBlack);
@@ -3140,7 +3140,7 @@ var
 
   procedure PaintBackground(Canvas: TCanvas; Top, Bot: Integer);
   begin
-    Canvas.Brush.Color := CopyList.Background;
+    Canvas.Brush.Color := ThemedColor(CopyList.Background);
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(Rect(0, Top, Width + 1, Bot));
   end;
@@ -4955,7 +4955,7 @@ begin
       SetWindowOrgEx(MemDC, X, Y, nil);
       Canvas2.Font := Font;
       Canvas2.Handle := MemDC;
-      Canvas2.Brush.Color := Color;
+      Canvas2.Brush.Color := ThemedColor(Color);
       Canvas2.Brush.Style := bsSolid;
       FViewer.DrawBorder;
       FViewer.HTMLPaint(Canvas2, Rect);
@@ -4978,7 +4978,7 @@ begin
 //  of frameviewer, if some images have to be shown
 //  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
-  Canvas.Brush.Color := Color;
+  Canvas.Brush.Color := ThemedColor(Color);
   Canvas.Brush.Style := bsSolid;
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);

@@ -2713,11 +2713,11 @@ begin
   end
   else
   begin
-    Dark := clBtnShadow;
+    Dark := ThemedColor(clBtnShadow);
     if White then
       Light := clSilver
     else
-      Light := clBtnHighLight;
+      Light := ThemedColor(clBtnHighLight);
   end;
 end;
 
@@ -2864,7 +2864,7 @@ begin
   SetTextAlign(Canvas.Handle, TA_Top);
   if SubstImage and (BorderSize = 0) then
   begin
-    Canvas.Font.Color := FO.TheFont.Color;
+    Canvas.Font.Color := ThemedColor(FO.TheFont.Color);
   {calc the offset from the image's base to the alt= text baseline}
     case VertAlign of
       ATop, ANone:
@@ -2894,7 +2894,7 @@ begin
       SaveColor := Pen.Color;
       SaveWidth := Pen.Width;
       SaveStyle := Pen.Style;
-      Pen.Color := FO.TheFont.Color;
+      Pen.Color := ThemedColor(FO.TheFont.Color);
       Pen.Width := BorderSize;
       Pen.Style := psInsideFrame;
       Font.Color := Pen.Color;
@@ -4321,7 +4321,7 @@ begin
     MonoBlack := MasterList.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
       (GetDeviceCaps(Handle, PLANES) = 1);
     if Disabled and not MonoBlack then
-      Brush.Color := clBtnFace
+      Brush.Color := ThemedColor(clBtnFace)
     else
       Brush.Color := clWhite;
     Pen.Color := clWhite;
@@ -4336,7 +4336,7 @@ begin
     else
     begin
       Pen.Width := 2;
-      Pen.Color := clBtnShadow;
+      Pen.Color := ThemedColor(clBtnShadow);
     end;
     Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
     if not MonoBlack then
@@ -5993,12 +5993,12 @@ begin
         if HasBackgroundColor and
           (not Document.Printing or Document.PrintTableBackground) then
         begin {color the Padding Region}
-          Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+          Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
           Canvas.Brush.Style := bsSolid;
           if Document.IsCopy and ImgOK then
           begin
             InitFullBG(IW, IH);
-            FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+            FullBG.Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
             FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
           end
@@ -6919,7 +6919,7 @@ begin
         begin
           PenColor := Pen.Color;
           PenStyle := Pen.Style;
-          Pen.Color := ListFont.Color;
+          Pen.Color := ThemedColor(ListFont.Color);
           Pen.Style := psSolid;
           BrushStyle := Brush.Style;
           BrushColor := Brush.Color;
@@ -8276,12 +8276,12 @@ begin
 
     if Cell.BkGnd then
     begin
-      Canvas.Brush.Color := Cell.BkColor or PalRelative;
+      Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
       Canvas.Brush.Style := bsSolid;
       if Cell.MasterList.IsCopy and ImgOK then
       begin
         InitFullBG(PR - PL, IH);
-        FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
+        FullBG.Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
         FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
       end
@@ -12204,6 +12204,7 @@ var
         end;
 
       FO.TheFont.AssignToCanvas(Canvas);
+      Canvas.Font.Color := ThemedColor(Canvas.Font.Color);
       if J2 = -1 then
       begin {it's an image or panel}
         Obj := Images.FindImage(Start - Buff);
@@ -12458,14 +12459,15 @@ var
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
-            if Color < 0 then
-              Color := GetSysColor(Color and $FFFFFF)
-            else
-              Color := Color and $FFFFFF;
+            Color := ThemedColor(Color);
+//            if Color < 0 then
+//              Color := GetSysColor(Color and $FFFFFF)
+//            else
+//              Color := Color and $FFFFFF;
             Canvas.Font.Color := Color xor $FFFFFF;
           end
           else
-            Canvas.Font.Color := FO.TheFont.bgColor;
+            Canvas.Font.Color := ThemedColor(FO.TheFont.bgColor);
         end
         else if FO.TheFont.BGColor = clNone then
         begin
@@ -12476,7 +12478,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Style := bsClear;
-          Canvas.Brush.Color := FO.TheFont.BGColor;
+          Canvas.Brush.Color := ThemedColor(FO.TheFont.BGColor);
         end;
 
         if Document.Printing then
@@ -13378,7 +13380,7 @@ begin
         OldBrushColor := Brush.Color;
         OldPenColor := Pen.Color;
         Pen.Color := clBlack;
-        Brush.Color := Panel.Color;
+        Brush.Color := ThemedColor(Panel.Color);
         Brush.Style := bsSolid;
 
         ACanvas.Rectangle(X1, Y1, X1 + ImageWidth, Y1 + ImageHeight);
@@ -13680,7 +13682,7 @@ begin
 
   if MargArray[BackgroundColor] <> clNone then
   begin
-    Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+    Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(IRect);
   end;
@@ -13818,7 +13820,7 @@ begin
       XR := X + Width - 1;
       if Color <> clNone then
       begin
-        Brush.Color := Color or $2000000;
+        Brush.Color := ThemedColor(Color) or $2000000;
         Brush.Style := bsSolid;
         FillRect(Rect(X, YT, XR + 1, YT + VSize));
       end
@@ -13836,14 +13838,14 @@ begin
         else if White then
           Pen.Color := clSilver
         else
-          Pen.Color := clBtnHighLight;
+          Pen.Color := ThemedColor(clBtnHighLight);
         MoveTo(XR, YT);
         LineTo(XR, YT + VSize - 1);
         LineTo(X, YT + VSize - 1);
         if BlackBorder then
           Pen.Color := clBlack
         else
-          Pen.Color := clBtnShadow;
+          Pen.Color := ThemedColor(clBtnShadow);
         LineTo(X, YT);
         LineTo(XR, YT);
       end;
