@@ -1508,6 +1508,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: IntArray): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1515,6 +1516,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType; StartIndex, EndIndex: TWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of array elements from StartIndex to EndIndex.
 var
   I: TWidthType;
@@ -1526,6 +1528,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1533,6 +1536,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.01.2012 --
 function SubArray(const Arr, Minus: IntArray): IntArray; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return array with differences per index.
 var
   I: Integer;
@@ -1544,6 +1548,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value, StartIndex, EndIndex: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1553,12 +1558,14 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   SetArray(Arr, Value, Low(Arr), High(Arr));
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: TIntegerPerWidthType; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: TWidthType;
 begin
@@ -1571,6 +1578,7 @@ procedure SummarizeCountsPerType(
   var CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1585,6 +1593,8 @@ function SumOfType(
   const ColumnSpecs: TWidthTypeArray;
   const Widths: IntArray;
   StartIndex, EndIndex: Integer): Integer;
+  {$ifdef UseInline} inline; {$endif}
+
 var
   I: Integer;
 begin
@@ -1596,11 +1606,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := WideCompareText(T1, T2);
 end;
 
 procedure InitializeFontSizes(Size: Integer);
+   {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -2695,7 +2707,7 @@ end;
 {----------------TImageObj.Draw}
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
-procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);
+procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);  {$ifdef UseInline} inline; {$endif}
 var
   White, BlackBorder: boolean;
 begin
@@ -2725,6 +2737,7 @@ end;
 // Thus move htStyles and htColors from HtmlUn2.pas to HtmlSubs.pas the only unit where they are used
 
 function htStyles(P0, P1, P2, P3: BorderStyleType): htBorderStyleArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := P0;
   Result[1] := P1;
@@ -2733,6 +2746,7 @@ begin
 end;
 
 function htColors(C0, C1, C2, C3: TColor): htColorArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := C0;
   Result[1] := C1;
@@ -2742,6 +2756,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(Light, Dark: TColor; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 begin
   if Raised then
     Result := htColors(Light, Light, Dark, Dark)
@@ -2751,6 +2766,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 var
   Light, Dark: TColor;
 begin
@@ -2763,6 +2779,7 @@ procedure RaisedRectColor(Canvas: TCanvas;
   const ORect, IRect: TRect;
   const Colors: htColorArray;
   Styles: htBorderStyleArray); overload;
+  {$ifdef UseInline} inline; {$endif}
 {Draws colored raised or lowered rectangles for table borders}
 begin
   DrawBorder(Canvas, ORect, IRect, Colors, Styles, clNone, False);
@@ -2772,6 +2789,7 @@ procedure RaisedRect(SectionList: ThtDocument; Canvas: TCanvas;
   X1, Y1, X2, Y2: Integer;
   Raised: boolean;
   W: Integer);
+  {$ifdef UseInline} inline; {$endif}
 {Draws raised or lowered rectangles for table borders}
 begin
   RaisedRectColor(Canvas,
@@ -2781,8 +2799,7 @@ begin
     htStyles(bssSolid, bssSolid, bssSolid, bssSolid));
 end;
 
-procedure TImageObj.Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer;
-  FO: TFontObj);
+procedure TImageObj.Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj);
 var
   TmpImage: TgpObject;
   TmpMask: TBitmap;
@@ -5882,22 +5899,6 @@ end;
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 var
   YOffset: Integer;
   XR, YB, RefX, RefY, TmpHt: Integer;
@@ -5997,7 +5998,7 @@ begin
           Canvas.Brush.Style := bsSolid;
           if Document.IsCopy and ImgOK then
           begin
-            InitFullBG(IW, IH);
+            InitFullBG(FullBG,IW, IH,Document.IsCopy);
             FullBG.Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
             FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
@@ -6020,7 +6021,7 @@ begin
               BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
             else
             begin
-              InitFullBG(PdRect.Right - PdRect.Left, IH);
+              InitFullBG(FullBG,PdRect.Right - PdRect.Left, IH,Document.IsCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, Canvas.Handle, PdRect.Left, FT, SrcCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -6873,11 +6874,6 @@ var
   BrushStyle: TBrushStyle;
   YB, AlphaNumb: Integer;
 
-  procedure Circle(X, Y, Rad: Integer);
-  begin
-    Canvas.Ellipse(X, Y - Rad, X + Rad, Y);
-  end;
-
 begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 
@@ -6929,10 +6925,10 @@ begin
             lbCircle:
               begin
                 Brush.Style := bsClear;
-                Circle(X - 16, YB, 7);
+                Circle(Canvas,X - 16, YB, 7);
               end;
             lbDisc:
-              Circle(X - 15, YB - 1, 5);
+              Circle(Canvas,X - 15, YB - 1, 5);
             lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
           end;
           Brush.Color := BrushColor;
@@ -8210,22 +8206,6 @@ var
   BRect: TRect;
   IsVisible: Boolean;
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Cell.MasterList.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 begin
   YO := Y - Cell.MasterList.YOff;
 
@@ -8280,8 +8260,8 @@ begin
       Canvas.Brush.Style := bsSolid;
       if Cell.MasterList.IsCopy and ImgOK then
       begin
-        InitFullBG(PR - PL, IH);
-        FullBG.Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
+        InitFullBG(FullBG, PR - PL, IH,Cell.MasterList.IsCopy);
+        FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
         FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
       end
@@ -8318,7 +8298,7 @@ begin
           BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
         else
         begin
-          InitFullBG(PR - PL, IH);
+          InitFullBG(FullBG,PR - PL, IH,Cell.MasterList.IsCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -8344,7 +8324,7 @@ begin
         PrintBitmap(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage))
       else if Cell.BkGnd then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG,PR - PL, IH,Cell.MasterList.IsCopy);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
@@ -11601,16 +11581,6 @@ var
     LRTextWidth: Integer;
     OHang: Integer;
 
-    function FindSpaces: Integer;
-    var
-      I: Integer;
-    begin
-      Result := 0;
-      for I := 0 to NN - 2 do {-2 so as not to count end spaces}
-        if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
-          Inc(Result);
-    end;
-
   begin
     DHt := 0; {for the fonts on this line get the maximum height}
     Cnt := 0;
@@ -11759,36 +11729,36 @@ var
     if PStart = Buff then
       Tmp := Tmp + FirstLineIndent;
 
-    LRTextWidth := FindTextWidth(Canvas, PStart, NN, True);
-    if LR.Shy then
-    begin {take into account the width of the hyphen}
-      Fonts.GetFontAt(PStart - Buff + NN - 1, OHang).AssignToCanvas(Canvas);
-      Inc(LRTextWidth, Canvas.TextWidth('-'));
-    end;
-    TextWidth := Max(TextWidth, LRTextWidth);
-    case Justify of
-      Left:     LR.LineIndent := Tmp - X;
-      Centered: LR.LineIndent := (TmpRt + Tmp - LRTextWidth) div 2 - X;
-      Right:    LR.LineIndent := TmpRt - X - LRTextWidth;
-    else
-      {Justify = FullJustify}
-      LR.LineIndent := Tmp - X;
-      if not Finished then
-      begin
-        LR.Extra := TmpRt - Tmp - LRTextWidth;
-        LR.Spaces := FindSpaces;
+      LRTextWidth := FindTextWidth(Canvas, PStart, NN, True);
+      if LR.Shy then
+      begin {take into account the width of the hyphen}
+        Fonts.GetFontAt(PStart - Buff + NN - 1, OHang).AssignToCanvas(Canvas);
+        Inc(LRTextWidth, Canvas.TextWidth('-'));
       end;
+      TextWidth := Max(TextWidth, LRTextWidth);
+      case Justify of
+        Left:     LR.LineIndent := Tmp - X;
+        Centered: LR.LineIndent := (TmpRt + Tmp - LRTextWidth) div 2 - X;
+        Right:    LR.LineIndent := TmpRt - X - LRTextWidth;
+      else
+        {Justify = FullJustify}
+        LR.LineIndent := Tmp - X;
+        if not Finished then
+        begin
+          LR.Extra := TmpRt - Tmp - LRTextWidth;
+          LR.Spaces := FindSpaces(PStart,NN);
+        end;
+      end;
+      LR.DrawWidth := TmpRt - Tmp;
+      LR.SpaceBefore := LR.SpaceBefore + SB;
+      LR.SpaceAfter := SA;
+      Lines.Add(LR);
+      Inc(PStart, NN);
+      SectionHeight := SectionHeight + DHt + SA + LR.SpaceBefore;
+      Tmp := DHt + SA + SB;
+      Inc(Y, Tmp);
+      LR.LineImgHt := Max(Tmp, ImgHt);
     end;
-    LR.DrawWidth := TmpRt - Tmp;
-    LR.SpaceBefore := LR.SpaceBefore + SB;
-    LR.SpaceAfter := SA;
-    Lines.Add(LR);
-    Inc(PStart, NN);
-    SectionHeight := SectionHeight + DHt + SA + LR.SpaceBefore;
-    Tmp := DHt + SA + SB;
-    Inc(Y, Tmp);
-    LR.LineImgHt := Max(Tmp, ImgHt);
-  end;
 
 var
   P: PWideChar;
