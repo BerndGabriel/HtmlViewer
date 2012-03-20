@@ -282,6 +282,8 @@ function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline;
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -310,10 +312,7 @@ procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer); {$ifdef UseInline
 //alpha blend determination for Printers only
 function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
 
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-
-procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);  {$ifdef UseInline} inline; {$endif}
 
 function ThemedColor(const AColor : TColor): TColor; {$ifdef UseInline} inline; {$endif}
 
@@ -351,51 +350,42 @@ begin
   Result := GetDeviceCaps(ADC,SHADEBLENDCAPS) and SB_CONST_ALPHA > 0;
 end;
 
-  function Darker(Color: TColor): TColor;
+function Darker(Color: TColor): TColor;
   {find a somewhat darker color for shading purposes}
-  const
-    F = 0.75; // F < 1 makes color darker
-  var
-    Red, Green, Blue: Byte;
+const
+  F = 0.75; // F < 1 makes color darker
+var
+  Red, Green, Blue: Byte;
+begin
+  Color := ThemedColor(Color);
+  Red := Color and $FF;
+  Green := (Color and $FF00) shr 8;
+  Blue := (Color and $FF0000) shr 16;
+  Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
+end;
+
+function Lighter(Color: TColor): TColor;
+{find a somewhat lighter color for shading purposes}
+const
+  F = 1.15; // F > 1 makes color lighter
+var
+  Red, Green, Blue: Byte;
+begin
+  Color := ThemedColor(Color);
+  if Color = 0 then
+    Result := 0
+  else
   begin
-    Color := ThemedColor(Color);
-//    if Color < 0 then
-//      Color := GetSysColor(Color and $FFFFFF)
-//    else
-//      Color := Color and $FFFFFF;
     Red := Color and $FF;
     Green := (Color and $FF00) shr 8;
     Blue := (Color and $FF0000) shr 16;
-    Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
+    Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
   end;
-
-  function Lighter(Color: TColor): TColor;
-  {find a somewhat lighter color for shading purposes}
-  const
-    F = 1.15; // F > 1 makes color lighter
-  var
-    Red, Green, Blue: Byte;
-  begin
-    Color := ThemedColor(Color);
-//    if Color < 0 then
-//      Color := GetSysColor(Color and $FFFFFF)
-//    else
-//      Color := Color and $FFFFFF;
-    if Color = 0 then
-      Result := 0
-    else
-    begin
-      Red := Color and $FF;
-      Green := (Color and $FF00) shr 8;
-      Blue := (Color and $FF0000) shr 16;
-      Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
-    end;
-  end;
-
+end;
 
 function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer;
 var
-        I: Integer;
+  I: Integer;
 begin
   Result := 0;
   for I := 0 to ACount - 2 do {-2 so as not to count end spaces}
@@ -404,17 +394,16 @@ begin
 end;
 
 procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean);
-
 begin
   if not Assigned(FullBG) then
   begin
-      FullBG := Graphics.TBitmap.Create;
-      if AIsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
+    FullBG := Graphics.TBitmap.Create;
+    if AIsCopy then
+    begin
+      FullBG.HandleType := bmDIB;
+      if ColorBits <= 8 then
+        FullBG.Palette := CopyPalette(ThePalette);
+    end;
   end;
   FullBG.SetSize(Max(W,2),Max(H,2));
 end;
@@ -424,25 +413,6 @@ begin
     ACanvas.Ellipse(X, Y - Rad, X + Rad, Y);
 end;
 
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
-var
-  S1: ThtString;
-  I: Integer;
-begin
-  if Offset <= 1 then
-    Result := Pos(SubStr, S)
-  else
-  begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := Pos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
-  end;
-end;
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
 begin
@@ -651,26 +621,8 @@ begin
   end;
 end;
 
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
-var
-  S1: ThtString;
-  I: Integer;
-begin
-  if Offset <= 1 then
-    Result := Pos(SubStr, S)
-  else
-  begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := Pos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
-  end;
-end;
-
 {$endif TransparentStretchBltMissing}
+
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendChr(var Dest: ThtString; C: ThtChar);
 begin
@@ -794,6 +746,25 @@ begin
         if Result[Length(Result)] = Result[1] then
           Result := Copy(Result, 2, Length(Result) - 2);
     end;
+  end;
+end;
+
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
   end;
 end;
 
