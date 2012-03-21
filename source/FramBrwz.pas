@@ -23,6 +23,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
+
+ANGUS - fixed HotSpotClick not normalising URL before adding protocol for links
+
 }
 
 {$I htmlcons.inc}
@@ -936,7 +939,7 @@ begin
     FullUrl := CombineURL(ConvDosToHTML(Viewer.Base), S)
   else
     FullUrl := CombineURL((Viewer.FrameOwner as TbrFrame).URLBase, S);
-
+  FullUrl := Normalize(FullUrl);  // ANGUS
   if not HotSpotClickHandled(FullUrl + Dest) then
   begin
     Handled := True;

@@ -24,6 +24,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 
+
+ANGUS - LoadDocument, don't add physical disk file path to URL, it corrupts referrer
+
+
 ********************************************************************************}
 
 {$I htmlcons.inc}
@@ -958,7 +962,8 @@ begin
 
         // load new document
         FDocument := Document;
-        FCurrentFile := ExpandFileName(Name);
+//        FCurrentFile := ExpandFileName(Name);
+        FCurrentFile := Name; // ANGUS don't add physical disk file path to URL, it corrupts referrer
         FCurrentFileType := DocType;
         if Assigned(OnParseBegin) then
           OnParseBegin(Self, FDocument);
