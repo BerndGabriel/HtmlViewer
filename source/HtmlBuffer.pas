@@ -966,6 +966,25 @@ begin
       else
         Result := TBuffChar(0);
 
+    936, // Simplified Chinese GBK
+    949: // Korean
+      if FPos.AnsiChr < FEnd.AnsiChr then
+      begin
+        Len := 1;
+        Buffer2[0] := GetNext;
+        case Buffer2[0] of
+          $81..$FE:
+            if FPos.AnsiChr < FEnd.AnsiChr then
+            begin
+              Buffer2[1] := GetNext;
+              Len := 2;
+            end;
+        end;
+        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
+      end
+      else
+        Result := TBuffChar(0);
+
     950: // BIG5
       if FPos.AnsiChr < FEnd.AnsiChr then
       begin
