@@ -71,6 +71,10 @@ Key Routines:
       Gets the next token.  Fills Sy, LCToken, Attributes.  Calls GetCh so the
       next character after the present token is available.  Each part of the
       parser is responsible for calling Next after it does its thing.
+
+ANGUS March 2012 - fixed THtmlParser.DoMeta to handle meta without http-equiv="Content-Type"
+         <meta charset="utf-8"> (used by Goggle)
+
 }
 
 unit ReadHTML;
@@ -3523,6 +3527,10 @@ begin
     Name := '';
   if Attributes.Find(ContentSy, T) then
     Content := T.Name
+  else if Attributes.Find(CharSetSy, T) then begin // ANGUS    <meta charset="utf-8"> from HTML5
+    HttpEq := 'content-type';
+    Content := T.Name;
+  end
   else
     Content := '';
   if (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
