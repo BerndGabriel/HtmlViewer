@@ -9584,7 +9584,6 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           if PercentDeltas[I] > 0 then
             Inc(PercentDeltaAbove0Count);
 
-
         IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
       end;
       MinWidth := Sum(Widths);
