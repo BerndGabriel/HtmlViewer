@@ -181,7 +181,7 @@ type
     procedure ParseText(ASectionList: ThtDocument);
     property Base: ThtString read FBase;
     property BaseTarget: ThtString read FBaseTarget;
-    property Title: ThtString read getTitle;
+    property Title: ThtString read GetTitle;
   end;
 
 implementation
