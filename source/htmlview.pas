@@ -187,6 +187,7 @@ type
     FOnhtStreamRequest: TGetStreamEvent;
     FOnImageClick: TImageClickEvent;
     FOnImageOver: TImageOverEvent;
+    FOnImageRequest: TGetImageEvent;
     FOnInclude: TIncludeType;
     FOnLink: TLinkType;
     FOnLinkDrawn: TLinkDrawnEvent;
@@ -262,7 +263,6 @@ type
     function GetOnBitmapRequest: TGetBitmapEvent;
     function GetOnExpandName: TExpandNameEvent;
     function GetOnFileBrowse: TFileBrowseEvent;
-    function GetOnImageRequest: TGetImageEvent;
     function GetOnImageRequested: TGottenImageEvent;
     function GetOnObjectBlur: ThtObjectEvent;
     function GetOnObjectChange: ThtObjectEvent;
@@ -285,17 +285,14 @@ type
     function GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
-    procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
     procedure DoLogic;
     procedure DoScrollBars;
     procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
     procedure DrawBorder;
     procedure FormControlEnterEvent(Sender: TObject);
-    procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
     procedure HTMLDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure HTMLDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure HTMLTimerTimer(Sender: TObject);
-    procedure InitLoad;
     procedure Layout;
     procedure Parsed(const Title, Base, BaseTarget: ThtString);
     procedure ParseHtml;
@@ -324,7 +321,6 @@ type
     procedure SetOnExpandName(Handler: TExpandNameEvent);
     procedure SetOnFileBrowse(Handler: TFileBrowseEvent);
     procedure SetOnFormSubmit(Handler: TFormSubmitEvent);
-    procedure SetOnImageRequest(Handler: TGetImageEvent);
     procedure SetOnImageRequested(Handler: TGottenImageEvent);
     procedure SetOnObjectBlur(Handler: ThtObjectEvent);
     procedure SetOnObjectChange(Handler: ThtObjectEvent);
@@ -366,13 +362,16 @@ type
     procedure DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
     procedure DrawBackground2(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
       Image: TGpObject; Mask: TBitmap; BW, BH: Integer; BGColor: TColor);
+    procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
+    procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString); virtual;
     procedure HTMLMouseDblClk(Message: TWMMouse);
     procedure HTMLMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
     procedure HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
+    procedure InitLoad; virtual;
     procedure LoadDocument(Document: TBuffer; const DocName: ThtString; DocType: THtmlFileType);
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
@@ -555,7 +554,7 @@ type
     property OnhtStreamRequest: TGetStreamEvent read FOnhtStreamRequest write FOnhtStreamRequest;
     property OnImageClick: TImageClickEvent read FOnImageClick write FOnImageClick;
     property OnImageOver: TImageOverEvent read FOnImageOver write FOnImageOver;
-    property OnImageRequest: TGetImageEvent read GetOnImageRequest write SetOnImageRequest;
+    property OnImageRequest: TGetImageEvent read FOnImageRequest write FOnImageRequest;
     property OnImageRequested: TGottenImageEvent read GetOnImageRequested write SetOnImageRequested;
     property OnInclude: TIncludeType read FOnInclude write FOnInclude;
     property OnLink: TLinkType read FOnLink write FOnLink;
@@ -713,6 +712,7 @@ begin
   FSectionList.ControlEnterEvent := FormControlEnterEvent;
   FSectionList.OnBackgroundChange := BackgroundChange;
   FSectionList.ShowImages := True;
+  FSectionList.GetImage := DoGetImage;
   FNameList := FSectionList.IDNameList;
 
   DefBackground := clBtnFace;
@@ -1012,16 +1012,18 @@ begin
   LoadStream(Reference, AStream, DocType);
 end;
 
-procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
+//-- BG ---------------------------------------------------------- 23.03.2012 --
+procedure THtmlViewer.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
-  Stream := FImageStream;
+  if FImageStream <> nil then
+  	Stream := FImageStream
+  else if Assigned(FOnImageRequest) then
+    FOnImageRequest(Sender, SRC, Stream);
 end;
 
 {----------------THtmlViewer.LoadStream}
 
 procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
-var
-  SaveOnImageRequest: TGetImageEvent;
 begin
   if (vsProcessing in FViewerState) or not Assigned(AStream) then
     Exit;
@@ -1029,17 +1031,12 @@ begin
   if ft in [HTMLType, TextType] then
     LoadDocument(TBuffer.Create(AStream, URL), URL, ft)
   else
-  begin
-    SaveOnImageRequest := OnImageRequest;
     try
       FImageStream := AStream;
-      OnImageRequest := DoImage;
       LoadDocument(TBuffer.Create('<img src="' + URL + '">'), URL, HTMLType)
     finally
       FImageStream := nil;
-      OnImageRequest := SaveOnImageRequest;
     end;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 20.02.2011 --
@@ -1137,7 +1134,7 @@ begin
     PaintPanel.Height := VHeight;
 
     HScrollBar.Visible := HBar;
-    if HBar then
+    if HBar Or (csDesigning In ComponentState) then
     begin
       HScrollBar.SetBounds(PaintPanel.Left, PaintPanel.Top + PaintPanel.Height, PaintPanel.Width, sbWidth);
       HScrollBar.LargeChange := Max(16, HWidth - HScrollBar.SmallChange);
@@ -1147,7 +1144,7 @@ begin
     end;
 
     VScrollBar.Visible := VBar;
-    if VBar then
+    if VBar Or (csDesigning In ComponentState) then
     begin
       VScrollBar.SetBounds(PaintPanel.Left + PaintPanel.Width, PaintPanel.Top, sbWidth, PaintPanel.Height);
       VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
@@ -3886,18 +3883,6 @@ procedure THtmlViewer.SetOnFileBrowse(Handler: TFileBrowseEvent);
 begin
   //FOnFileBrowse := Handler;
   FSectionList.FileBrowse := Handler;
-end;
-
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnImageRequest: TGetImageEvent;
-begin
-  Result := FSectionList.GetImage;
-end;
-
-procedure THtmlViewer.SetOnImageRequest(Handler: TGetImageEvent);
-begin
-  //FOnImageRequest := Handler;
-  FSectionList.GetImage := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 20.11.2010 --
