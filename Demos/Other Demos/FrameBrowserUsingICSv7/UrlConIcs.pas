@@ -162,6 +162,7 @@ type
 //  FRcvdCount: integer;
     FState: ThttpState;
     FAborted: boolean;
+    FWinsockLoaded: Boolean;
 //  FLastResponse : String;
     procedure GetPostInit1;
     procedure GetPostFinal;
@@ -357,6 +358,11 @@ end;
 procedure THTTPConnection.GetPostInit1;
 {common initiation for Get, Post}
 begin
+  if not FWinsockLoaded then
+  begin
+    WSocketForceLoadWinsock;
+    FWinsockLoaded := TRUE;
+  end;
 FAborted := False;
 CheckInputStream;
 if NOT Assigned (HTTP) then
