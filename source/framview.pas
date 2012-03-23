@@ -136,7 +136,7 @@ type
     FCurFrameSet: TFrameSetBase; {the TFrameSet being displayed}
     ProcessList: TList; {list of viewers that are processing}
     Visited: TStringList; {visited URLs}
-    function CreateViewer(Owner: TComponent): THtmlViewer;
+    function CreateViewer(Owner: TComponent): THtmlViewer; virtual;
     function GetActiveBase: ThtString;
     function GetActiveTarget: ThtString;
     function GetActiveViewer: THtmlViewer;
@@ -163,7 +163,7 @@ type
     function GetViewers: TStrings;
     function HotSpotClickHandled(const FullUrl: ThtString): Boolean;
     procedure AddVisitedLink(const S: ThtString);
-    procedure BeginProcessing;
+    procedure BeginProcessing; virtual;
     procedure BumpHistory(OldFrameSet: TFrameSetBase; OldPos: integer);
     procedure BumpHistory1(const FileName, Title: ThtString; OldPos: integer; ft: ThtmlFileType);
     procedure BumpHistory2(OldPos: integer);
@@ -171,8 +171,9 @@ type
     procedure CheckVisitedLinks; virtual; abstract;
     procedure ChkFree(Obj: TObject);
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); virtual; abstract;
+    Procedure DoGetImage(Sender: TObject; Const SRC: ThtString; Var Stream: TStream); Virtual;
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream); virtual; abstract;
-    procedure EndProcessing;
+    procedure EndProcessing; virtual;
     procedure fvDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure fvDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: boolean); virtual; abstract;
@@ -200,7 +201,6 @@ type
     procedure SetNoSelect(Value: boolean);
     procedure SetOnBitmapRequest(Handler: TGetBitmapEvent);
     procedure SetOnFileBrowse(Handler: TFileBrowseEvent);
-    procedure SetOnImageRequest(Handler: TGetImageEvent);
     procedure SetOnImageRequested(Handler: TGottenImageEvent);
     procedure SetOnLink(Handler: TLinkType); override;
     procedure SetOnMeta(Handler: TMetaType);
@@ -318,7 +318,7 @@ type
     property OnHotSpotTargetCovered: THotSpotTargetEvent read FOnHotSpotTargetCovered write FOnHotSpotTargetCovered;
     property OnImageClick: TImageClickEvent read FOnImageClick write SetImageClick;
     property OnImageOver: TImageOverEvent read FOnImageOver write SetImageOver;
-    property OnImageRequest: TGetImageEvent read FOnImageRequest write SetOnImageRequest;
+    property OnImageRequest: TGetImageEvent read FOnImageRequest write FOnImageRequest;
     property OnImageRequested: TGottenImageEvent read FOnImageRequested write SetOnImageRequested;
     property OnInclude;
     property OnLink;
@@ -591,7 +591,6 @@ type
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream); override;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
     procedure LoadFromFileInternal(const S, Dest: ThtString);
-    procedure SetOnFormSubmit(Handler: TFormSubmitEvent);
   public
     destructor Destroy; override;
     function HTMLExpandFilename(const Filename: ThtString): ThtString; virtual;
@@ -603,7 +602,7 @@ type
   published
     property OnBufferRequest: TBufferRequestEvent read FOnBufferRequest write FOnBufferRequest;
     property OnFileRequest: TFileRequestEvent read FOnFileRequest write FOnFileRequest;
-    property OnFormSubmit: TFormSubmitEvent read FOnFormSubmit write SetOnFormSubmit;
+    property OnFormSubmit: TFormSubmitEvent read FOnFormSubmit write FOnFormSubmit;
     property OnStreamRequest: TStreamRequestEvent read FOnStreamRequest write FOnStreamRequest;
     property OnStringsRequest: TStringsRequestEvent read FOnStringsRequest write FOnStringsRequest;
 
@@ -3418,17 +3417,6 @@ begin
     FOnHistoryChange(Self);
 end;
 
-procedure TFrameViewer.SetOnFormSubmit(Handler: TFormSubmitEvent);
-var
-  I: integer;
-begin
-  FOnFormSubmit := Handler;
-  with CurFrameSet do
-    for I := 0 to Viewers.Count - 1 do
-      with THtmlViewer(Viewers[I]) do
-        OnFormSubmit := Handler;
-end;
-
 procedure TFVBase.SetOnProgress(Handler: ThtProgressEvent);
 var
   I: integer;
@@ -3485,16 +3473,6 @@ procedure TFVBase.fvDragOver(Sender, Source: TObject; X, Y: Integer;
 begin
   if Assigned(FOnDragOver) then
     FOnDragOver(Self, Source, X, Y, State, Accept);
-end;
-
-procedure TFVBase.SetOnImageRequest(Handler: TGetImageEvent);
-var
-  I: integer;
-begin
-  FOnImageRequest := Handler;
-  with CurFrameSet do
-    for I := 0 to Viewers.Count - 1 do
-      THtmlViewer(Viewers[I]).OnImageRequest := Handler;
 end;
 
 procedure TFVBase.SetOnImageRequested(Handler: TGottenImageEvent);
@@ -3660,8 +3638,8 @@ begin
   //BG, 04.01.2010: added fvNoFocusRect handling according to mik kvitchko's patch MK20091107
   if fvNoFocusRect in FOptions then
     Result.htOptions := Result.htOptions + [htNoFocusRect];
-  Result.OnImageRequest := OnImageRequest;
-  Result.OnFormSubmit := doFormSubmitEvent;
+  Result.OnImageRequest := DoGetImage;
+  Result.OnFormSubmit := DoFormSubmitEvent;
   Result.OnLink := OnLink;
   Result.OnMeta := FOnMeta;
 //  Result.OnMetaRefresh := RefreshEvent;
@@ -3717,6 +3695,13 @@ end;
 procedure TFVBase.DoAttributes(FrameSet: TObject; Attr: TAttributeList);
 begin
   (FrameSet as TSubFrameSetBase).DoAttributes(Attr);
+end;
+
+//-- BG ---------------------------------------------------------- 23.03.2012 --
+procedure TFVBase.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
+begin
+  if Assigned(FOnImageRequest) then
+    FOnImageRequest(Self, SRC, Stream);
 end;
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --
