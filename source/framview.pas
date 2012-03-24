@@ -3701,7 +3701,7 @@ end;
 procedure TFVBase.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
   if Assigned(FOnImageRequest) then
-    FOnImageRequest(Self, SRC, Stream);
+    FOnImageRequest(Sender, SRC, Stream);
 end;
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --
