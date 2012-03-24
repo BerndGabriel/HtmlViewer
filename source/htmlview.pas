@@ -983,7 +983,8 @@ begin
 
         // load new document
         FDocument := Document;
-        FCurrentFile := ExpandFileName(Name);
+//        FCurrentFile := ExpandFileName(Name);
+        FCurrentFile := Name; // ANGUS don't add physical disk file path to URL, it corrupts referrer
         FCurrentFileType := DocType;
         if Assigned(OnParseBegin) then
           OnParseBegin(Self, FDocument);

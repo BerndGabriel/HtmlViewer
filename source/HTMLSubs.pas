@@ -5146,16 +5146,16 @@ end;
 
 function TBlock.GetContentWidth: Integer;
 begin
-  if Document.UseQuirksMode then begin
+  if Document.UseQuirksMode then begin //border-box
     Result := NewWidth -
       (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
        MargArray[PaddingRight] + MargArray[BorderRightWidth] )
   end else begin
-    if MargArray[BoxSizing] = 1 then begin
+    if MargArray[BoxSizing] = 1 then begin //border-box
       Result := NewWidth -
        (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
         MargArray[PaddingRight] + MargArray[BorderRightWidth] )
-    end else begin
+    end else begin   //content-box
       Result := NewWidth;
     end;
   end;
