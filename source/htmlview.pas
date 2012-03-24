@@ -769,11 +769,15 @@ begin
 end;
 
 destructor THtmlViewer.Destroy;
+var
+  I: Integer;
 begin
 {$ifndef NoMetaFile}
   AbortPrint;
 {$endif}
   FImagesInserted.Free;
+  for I := 0 to FInsertedImages.Count - 1 do
+    FInsertedImages.Objects[I].Free;
   FInsertedImages.Free;
   FHTMLTimer.Free;
   Exclude(FViewerState, vsMiddleScrollOn);
@@ -2169,12 +2173,23 @@ end;
 
 {----------------THtmlViewer.InsertImage}
 function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
+var
+  MS: TMemoryStream;
 begin
-  FInsertedImages.AddObject(Src, Stream);
-  if not FImagesInserted.Enabled then
-    FImagesInserted.Enabled := True
-  else if FInsertedImages.Count >= 10 then
-    ImagesInsertedTimer(nil);
+  if Stream <> nil then
+  begin
+    MS := TMemoryStream.Create;
+    try
+      MS.LoadFromStream(Stream);
+      FInsertedImages.AddObject(Src, MS);
+    except
+      MS.Free;
+      raise;
+    end;
+  end
+  else
+    FInsertedImages.AddObject(Src, nil);
+  FImagesInserted.Enabled := True;
   Result := True;
 end;
 
@@ -2185,8 +2200,13 @@ var
   Reformat, ImageReformat: Boolean;
 begin
   if IsProcessing then
+  begin
+    if FInsertedImages.Count > 0 then
+      // try again later:
+      FImagesInserted.Enabled := True;
     Exit;
-    
+  end;
+
   SetProcessing(True);
   try
     FImagesInserted.Enabled := False;
@@ -2197,6 +2217,7 @@ begin
       FSectionList.InsertImage(FInsertedImages[0], TStream(FInsertedImages.Objects[0]), ImageReformat);
       if ImageReformat then
         Reformat := True;
+      FInsertedImages.Objects[0].Free;
       FInsertedImages.Delete(0);
     end;
     FSectionList.GetBackgroundBitmap; {in case it's the one placed}
