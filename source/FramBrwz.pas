@@ -23,6 +23,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
+
+ANGUS - fixed HotSpotClick not normalising URL before adding protocol for links
+
 }
 
 {$I htmlcons.inc}
@@ -115,7 +118,7 @@ type
       Reload: boolean;
       out NewURL: ThtString;
       out DocType: ThtmlFileType;
-      out Stream: TMemoryStream);
+      out Stream: TMemoryStream); virtual;
   protected
     function GetFrameSetClass: TFrameSetClass; override;
     function GetSubFrameSetClass: TSubFrameSetClass; override;
@@ -123,6 +126,7 @@ type
     procedure CheckVisitedLinks; override;
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
+    procedure AssertCanPostRequest(const URL: ThtString); virtual;
   public
     constructor Create(AOwner: TComponent); override;
     function GetViewerUrlBase(Viewer: ThtmlViewer): ThtString;
@@ -781,9 +785,7 @@ var
   StreamType: ThtmlFileType;
   I: integer;
 begin
-  if not sameText(copy(URL, 1, 7), 'file://') then
-    if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
-      raise(Exception.Create('No OnGetPostRequest or OnGetPostRequestEx event defined'));
+  AssertCanPostRequest(URL);
   BeginProcessing;
   IOResult; {remove any pending file errors}
   S := URL;
@@ -936,7 +938,7 @@ begin
     FullUrl := CombineURL(ConvDosToHTML(Viewer.Base), S)
   else
     FullUrl := CombineURL((Viewer.FrameOwner as TbrFrame).URLBase, S);
-
+  FullUrl := Normalize(FullUrl);  // ANGUS
   if not HotSpotClickHandled(FullUrl + Dest) then
   begin
     Handled := True;
@@ -1173,6 +1175,14 @@ begin
   except
     Result := '';
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 23.03.2012 --
+procedure TFrameBrowser.AssertCanPostRequest(const URL: ThtString);
+begin
+  if not SameText(Copy(URL, 1, 7), 'file://') then
+    if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
+      raise Exception.Create('Don''t know how to load an URL. Neither OnGetPostRequest nor OnGetPostRequestEx event defined.');
 end;
 
 {----------------TFrameBrowser.CheckVisitedLinks}
