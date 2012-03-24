@@ -111,6 +111,14 @@ type
     InFormSubmit: boolean;
     function CurbrFrameSet: TbrFrameSet; {$ifdef UseInline} inline; {$endif} {the TbrFrameSet being displayed}
     procedure LoadURLInternal(const URL, Dest, Query, EncType, Referer: ThtString; IsGet, Reload: boolean);
+  protected
+    function GetFrameSetClass: TFrameSetClass; override;
+    function GetSubFrameSetClass: TSubFrameSetClass; override;
+    procedure AssertCanPostRequest(const URL: ThtString); virtual;
+    procedure CheckVisitedLinks; override;
+    procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
+    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
+    procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
     procedure PostRequest(
       Sender: TObject;
       IsGet: boolean;
@@ -119,14 +127,6 @@ type
       out NewURL: ThtString;
       out DocType: ThtmlFileType;
       out Stream: TMemoryStream); virtual;
-  protected
-    function GetFrameSetClass: TFrameSetClass; override;
-    function GetSubFrameSetClass: TSubFrameSetClass; override;
-    procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
-    procedure CheckVisitedLinks; override;
-    procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
-    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
-    procedure AssertCanPostRequest(const URL: ThtString); virtual;
   public
     constructor Create(AOwner: TComponent); override;
     function GetViewerUrlBase(Viewer: ThtmlViewer): ThtString;

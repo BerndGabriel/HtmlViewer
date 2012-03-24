@@ -171,7 +171,7 @@ type
     procedure CheckVisitedLinks; virtual; abstract;
     procedure ChkFree(Obj: TObject);
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); virtual; abstract;
-    Procedure DoGetImage(Sender: TObject; Const SRC: ThtString; Var Stream: TStream); Virtual;
+    procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream); virtual; abstract;
     procedure EndProcessing; virtual;
     procedure fvDragDrop(Sender, Source: TObject; X, Y: Integer);
