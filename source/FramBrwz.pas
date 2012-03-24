@@ -111,6 +111,14 @@ type
     InFormSubmit: boolean;
     function CurbrFrameSet: TbrFrameSet; {$ifdef UseInline} inline; {$endif} {the TbrFrameSet being displayed}
     procedure LoadURLInternal(const URL, Dest, Query, EncType, Referer: ThtString; IsGet, Reload: boolean);
+  protected
+    function GetFrameSetClass: TFrameSetClass; override;
+    function GetSubFrameSetClass: TSubFrameSetClass; override;
+    procedure AssertCanPostRequest(const URL: ThtString); virtual;
+    procedure CheckVisitedLinks; override;
+    procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
+    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
+    procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
     procedure PostRequest(
       Sender: TObject;
       IsGet: boolean;
@@ -118,14 +126,7 @@ type
       Reload: boolean;
       out NewURL: ThtString;
       out DocType: ThtmlFileType;
-      out Stream: TMemoryStream);
-  protected
-    function GetFrameSetClass: TFrameSetClass; override;
-    function GetSubFrameSetClass: TSubFrameSetClass; override;
-    procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
-    procedure CheckVisitedLinks; override;
-    procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
-    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
+      out Stream: TMemoryStream); virtual;
   public
     constructor Create(AOwner: TComponent); override;
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
@@ -807,9 +808,7 @@ var
   StreamType: ThtmlFileType;
   I: integer;
 begin
-  if not sameText(copy(URL, 1, 7), 'file://') then
-    if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
-      raise(Exception.Create('No OnGetPostRequest or OnGetPostRequestEx event defined'));
+  AssertCanPostRequest(URL);
   BeginProcessing;
   IOResult; {remove any pending file errors}
   S := URL;
@@ -1198,6 +1197,14 @@ begin
   except
     Result := '';
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 23.03.2012 --
+procedure TFrameBrowser.AssertCanPostRequest(const URL: ThtString);
+begin
+  if not SameText(Copy(URL, 1, 7), 'file://') then
+    if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
+      raise Exception.Create('Don''t know how to load an URL. Neither OnGetPostRequest nor OnGetPostRequestEx event defined.');
 end;
 
 {----------------TFrameBrowser.CheckVisitedLinks}
