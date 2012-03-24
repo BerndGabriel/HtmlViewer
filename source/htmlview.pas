@@ -292,15 +292,12 @@ type
     function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
-    procedure DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
     procedure DoLogic;
     procedure DoScrollBars;
     procedure DrawBorder;
     procedure FormControlEnterEvent(Sender: TObject);
-    procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
     procedure HTMLTimerTimer(Sender: TObject);
     procedure ImagesInsertedTimer(Sender: TObject);
-    procedure InitLoad;
     procedure Layout;
     procedure Parsed(const Title, Base, BaseTarget: ThtString);
     procedure ParseHtml;
@@ -346,12 +343,15 @@ type
     function IsProcessing: Boolean;
     procedure DoBackground1(ACanvas: TCanvas; ATop, AWidth, AHeight, FullHeight: Integer);
     procedure DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
+    procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
+    procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString); virtual;
     procedure HTMLMouseDblClk(Message: TWMMouse);
     procedure HTMLMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
     procedure HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
+    procedure InitLoad; virtual;
     procedure LoadDocument(Document: TBuffer; const DocName: ThtString; DocType: THtmlFileType);
     procedure LoadFile(const FileName: ThtString; ft: ThtmlFileType); virtual;
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
@@ -711,6 +711,7 @@ begin
   FSectionList.ControlEnterEvent := FormControlEnterEvent;
   FSectionList.OnBackgroundChange := BackgroundChange;
   FSectionList.ShowImages := True;
+  FSectionList.GetImage := DoGetImage;
   FNameList := FSectionList.IDNameList;
 
   SetOptions([htPrintTableBackground, htPrintMonochromeBlack]);
@@ -1072,16 +1073,17 @@ begin
   LoadStream(Reference, AStream, DocType);
 end;
 
-procedure THtmlViewer.DoImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
+procedure THtmlViewer.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
-  Stream := FImageStream;
+  if FImageStream <> nil then
+  	Stream := FImageStream
+  else if Assigned(OnImageRequest) then
+    OnImageRequest(Sender, SRC, Stream);
 end;
 
 {----------------THtmlViewer.LoadStream}
 
 procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
-var
-  SaveOnImageRequest: TGetImageEvent;
 begin
   if IsProcessing or not Assigned(AStream) then
     Exit;
@@ -1089,17 +1091,12 @@ begin
   if ft in [HTMLType, TextType] then
     LoadDocument(TBuffer.Create(AStream, URL), URL, ft)
   else
-  begin
-    SaveOnImageRequest := OnImageRequest;
     try
       FImageStream := AStream;
-      OnImageRequest := DoImage;
       LoadDocument(TBuffer.Create('<img src="' + URL + '">'), URL, HTMLType)
     finally
       FImageStream := nil;
-      OnImageRequest := SaveOnImageRequest;
     end;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 20.02.2011 --
@@ -1197,7 +1194,7 @@ begin
     PaintPanel.Height := VHeight;
 
     HScrollBar.Visible := HBar;
-    if HBar then
+    if HBar or (csDesigning in ComponentState) then
     begin
       HScrollBar.SetBounds(PaintPanel.Left, PaintPanel.Top + PaintPanel.Height, PaintPanel.Width, sbWidth);
       HScrollBar.LargeChange := Max(16, HWidth - HScrollBar.SmallChange);
@@ -1207,7 +1204,7 @@ begin
     end;
 
     VScrollBar.Visible := VBar;
-    if VBar then
+    if VBar or (csDesigning in ComponentState) then
     begin
       VScrollBar.SetBounds(PaintPanel.Left + PaintPanel.Width, PaintPanel.Top, sbWidth, PaintPanel.Height);
       VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
