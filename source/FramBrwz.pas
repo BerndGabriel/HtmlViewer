@@ -417,146 +417,150 @@ begin
     end
     else
       Doc := nil;
-    if not SameName then
-      FrameFile := (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc)
-    else
-      FrameFile := not Assigned(Viewer);
-    if SameName and not Reload then
-      if Assigned(Viewer) then
-      begin
-        OldPos := Viewer.Position;
-        Viewer.PositionTo(Dest);
-        MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
-        if Bump and (Viewer.Position <> OldPos) then
-        {Viewer to Viewer}
-          frBumpHistory(HS, Viewer.Position, OldPos, nil);
-      end
+    try
+      if not SameName then
+        FrameFile := (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc)
       else
-      begin
-        with FrameSet do
-          for I := 0 to List.Count - 1 do
-          begin
-            Item := TFrameBase(List.Items[I]);
-            if (Item is TbrFrame) then
-              with TbrFrame(Item) do
-                if CompareText(Source, OrigSource) <> 0 then
-                  frLoadFromBrzFile(OrigSource, '', '', '', '', True, True, False);
-          end;
-        Exit;
-      end
-    else if Assigned(Viewer) and not FrameFile then {not samename or samename and reload}
-    begin {Viewer already assigned and it's not a Frame file}
-      OldPos := Viewer.Position;
-      OldTitle := Viewer.DocumentTitle;
-      if Bump and not SameName and (MasterSet.Viewers.Count > 1) then
-        OldFormData := Viewer.FormData
-      else
-        OldFormData := nil;
-      try
-        Viewer.Base := MasterSet.FBase;
-        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
-        Viewer.PositionTo(Dest);
-        MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
-        if not samename then
-        begin {don't bump history on a forced reload}
-          if MasterSet.Viewers.Count > 1 then
-          begin
-            if Bump then
-             {Viewer to Viewer}
-              frBumpHistory(HS, Viewer.Position, OldPos, OldFormData)
-            else
-              OldFormData.Free;
-          end
-          else if (MasterSet.Viewers.Count = 1) and Bump then
-          {a single viewer situation, bump the history here}
-            with MasterSet do
-            begin
-              FCurrentFile := Source;
-              FTitle := Viewer.DocumentTitle;
-              FBase := Viewer.Base;
-              FBaseTarget := Viewer.BaseTarget;
-              FrameViewer.BumpHistory1(OldName, OldTitle, OldPos, HTMLType);
-            end;
-        end;
-      except
-        OldFormData.Free;
-        raise;
-      end;
-    end
-    else
-    begin {Viewer is not assigned or it is a Frame File}
-    {keep the old viewer or frameset around (free later) to minimize blink}
-      OldViewer := Viewer;       FViewer := nil;
-      OldFrameSet := FrameSet; FFrameSet := nil;
-      if OldFrameSet <> nil then
-        OldFrameSet.ClearFrameNames;
-      if FrameFile then
-      begin {it's a frame file}
-        FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
-        FrameSet.URLBase := URLBase;
-        FrameSet.Align := alClient;
-        FrameSet.Visible := False;
-        InsertControl(FrameSet);
-        FrameSet.SendToBack; {to prevent blink}
-        FrameSet.Visible := True;
-        MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
-        MasterSet.FrameViewer.AddVisitedLink(URL);
-        Self.BevelOuter := bvNone;
-        with FrameSet do
+        FrameFile := not Assigned(Viewer);
+      if SameName and not Reload then
+        if Assigned(Viewer) then
         begin
-          for I := 0 to List.Count - 1 do
-            TFrameBaseOpener(List.Items[I]).LoadFiles;
-          CheckNoresize(Lower, Upper);
-          if FRefreshDelay > 0 then
-            SetRefreshTimer;
+          OldPos := Viewer.Position;
+          Viewer.PositionTo(Dest);
+          MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
+          if Bump and (Viewer.Position <> OldPos) then
+          {Viewer to Viewer}
+            frBumpHistory(HS, Viewer.Position, OldPos, nil);
+        end
+        else
+        begin
+          with FrameSet do
+            for I := 0 to List.Count - 1 do
+            begin
+              Item := TFrameBase(List.Items[I]);
+              if (Item is TbrFrame) then
+                with TbrFrame(Item) do
+                  if CompareText(Source, OrigSource) <> 0 then
+                    frLoadFromBrzFile(OrigSource, '', '', '', '', True, True, False);
+            end;
+          Exit;
+        end
+      else if Assigned(Viewer) and not FrameFile then {not samename or samename and reload}
+      begin {Viewer already assigned and it's not a Frame file}
+        OldPos := Viewer.Position;
+        OldTitle := Viewer.DocumentTitle;
+        if Bump and not SameName and (MasterSet.Viewers.Count > 1) then
+          OldFormData := Viewer.FormData
+        else
+          OldFormData := nil;
+        try
+          Viewer.Base := MasterSet.FBase;
+          Viewer.LoadFromStream(TheStream, Source, TheStreamType);
+          Viewer.PositionTo(Dest);
+          MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
+          if not samename then
+          begin {don't bump history on a forced reload}
+            if MasterSet.Viewers.Count > 1 then
+            begin
+              if Bump then
+               {Viewer to Viewer}
+                frBumpHistory(HS, Viewer.Position, OldPos, OldFormData)
+              else
+                OldFormData.Free;
+            end
+            else if (MasterSet.Viewers.Count = 1) and Bump then
+            {a single viewer situation, bump the history here}
+              with MasterSet do
+              begin
+                FCurrentFile := Source;
+                FTitle := Viewer.DocumentTitle;
+                FBase := Viewer.Base;
+                FBaseTarget := Viewer.BaseTarget;
+                FrameViewer.BumpHistory1(OldName, OldTitle, OldPos, HTMLType);
+              end;
+          end;
+        except
+          OldFormData.Free;
+          raise;
+        end;
+      end
+      else
+      begin {Viewer is not assigned or it is a Frame File}
+      {keep the old viewer or frameset around (free later) to minimize blink}
+        OldViewer := Viewer;       FViewer := nil;
+        OldFrameSet := FrameSet; FFrameSet := nil;
+        if OldFrameSet <> nil then
+          OldFrameSet.ClearFrameNames;
+        if FrameFile then
+        begin {it's a frame file}
+          FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
+          FrameSet.URLBase := URLBase;
+          FrameSet.Align := alClient;
+          FrameSet.Visible := False;
+          InsertControl(FrameSet);
+          FrameSet.SendToBack; {to prevent blink}
+          FrameSet.Visible := True;
+          MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
+          MasterSet.FrameViewer.AddVisitedLink(URL);
+          Self.BevelOuter := bvNone;
+          with FrameSet do
+          begin
+            for I := 0 to List.Count - 1 do
+              TFrameBaseOpener(List.Items[I]).LoadFiles;
+            CheckNoresize(Lower, Upper);
+            if FRefreshDelay > 0 then
+              SetRefreshTimer;
+          end;
+          if Assigned(OldViewer) then
+            frBumpHistory(HS, 0, OldViewer.Position, OldViewer.FormData)
+          else
+            frBumpHistory(S, 0, 0, nil);
+        end
+        else
+        begin {not a frame file but needs a viewer}
+          CreateViewer;
+          Viewer.Base := MasterSet.FBase;
+          Viewer.LoadFromStream(TheStream, Source, TheStreamType);
+          Viewer.PositionTo(Dest);
+          MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
+        {FrameSet to Viewer}
+          frBumpHistory(HS, Viewer.Position, 0, nil);
+        end;
+        if FrameSet <> nil then
+          with FrameSet do
+          begin
+            with ClientRect do
+              InitializeDimensions(Left, Top, Right - Left, Bottom - Top);
+            CalcSizes(nil);
+          end;
+        if Assigned(Viewer) then
+        begin
+          if MasterSet.BorderSize = 0 then
+            BevelOuter := bvNone
+          else
+          begin
+            BevelOuter := bvLowered;
+            BevelWidth := MasterSet.BorderSize;
+          end;
+          if (Dest <> '') then
+            Viewer.PositionTo(Dest);
         end;
         if Assigned(OldViewer) then
-          frBumpHistory(HS, 0, OldViewer.Position, OldViewer.FormData)
-        else
-          frBumpHistory(S, 0, 0, nil);
-      end
-      else
-      begin {not a frame file but needs a viewer}
-        CreateViewer;
-        Viewer.Base := MasterSet.FBase;
-        Viewer.LoadFromStream(TheStream, Source, TheStreamType);
-        Viewer.PositionTo(Dest);
-        MasterSet.FrameViewer.AddVisitedLink(URL + Dest);
-      {FrameSet to Viewer}
-        frBumpHistory(HS, Viewer.Position, 0, nil);
-      end;
-      if FrameSet <> nil then
-        with FrameSet do
         begin
-          with ClientRect do
-            InitializeDimensions(Left, Top, Right - Left, Bottom - Top);
-          CalcSizes(nil);
-        end;
-      if Assigned(Viewer) then
-      begin
-        if MasterSet.BorderSize = 0 then
-          BevelOuter := bvNone
-        else
+          MasterSet.Viewers.Remove(OldViewer);
+          if MasterSet.FActive = OldViewer then
+            MasterSet.FActive := nil;
+          OldViewer.Free;
+        end
+        else if Assigned(OldFrameSet) then
         begin
-          BevelOuter := bvLowered;
-          BevelWidth := MasterSet.BorderSize;
+          OldFrameSet.UnloadFiles;
+          OldFrameSet.Visible := False;
         end;
-        if (Dest <> '') then
-          Viewer.PositionTo(Dest);
+        Invalidate; //RePaint;
       end;
-      if Assigned(OldViewer) then
-      begin
-        MasterSet.Viewers.Remove(OldViewer);
-        if MasterSet.FActive = OldViewer then
-          MasterSet.FActive := nil;
-        OldViewer.Free;
-      end
-      else if Assigned(OldFrameSet) then
-      begin
-        OldFrameSet.UnloadFiles;
-        OldFrameSet.Visible := False;
-      end;
-      Invalidate; //RePaint;
+    finally
+      Doc.Free;
     end;
   except
     Source := OldName;

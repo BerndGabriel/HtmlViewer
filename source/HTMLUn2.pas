@@ -1667,6 +1667,7 @@ var
   Area: TMapArea;
 begin
   Result := False;
+  URLTarg := nil;
   for I := 0 to FAreas.Count - 1 do
   begin
     Area := FAreas[I];

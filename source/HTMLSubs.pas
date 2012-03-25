@@ -4955,6 +4955,8 @@ end;
 function TBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
 begin
+  UrlTarg := nil;
+  FormControl := nil;
   case Display of
     pdNone: Result := [];
 {$ifdef DO_BLOCK_INLINE}
@@ -10070,6 +10072,8 @@ function THtmlTable.GetURL(Canvas: TCanvas; X, Y: Integer;
   end;
 
 begin
+  UrlTarg := nil;
+  FormControl := nil;
   if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) then
     Result := GetTableURL(X, Y)
   else
@@ -12638,6 +12642,8 @@ var
 
 begin
   Result := [];
+  UrlTarg := nil;
+  FormControl := nil;
 {First, check to see if in an image}
   if (Images.Count > 0) and Images.PtInImage(X, Y, IX, IY, Posn, IMap, UMap, MapItem, ImageObj) then
   begin
@@ -14346,11 +14352,14 @@ function TSectionBase.GetURL(Canvas: TCanvas; X, Y: Integer;
   out ATitle: ThtString): guResultType;
 begin
   Result := [];
+  UrlTarg := nil;
+  FormControl := nil;
 end;
 
-function TSectionBase.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
+function TSectionBase.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;
 begin
   Result := False;
+  Obj := nil;
 end;
 
 function TSectionBase.FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
@@ -14386,6 +14395,7 @@ end;
 function TSectionBase.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 begin
   Result := False;
+  Obj := nil;
 end;
 
 procedure TSectionBase.SetDocument(List: ThtDocument);

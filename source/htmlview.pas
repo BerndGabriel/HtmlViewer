@@ -1488,8 +1488,10 @@ begin
   else if (Button = mbLeft) then
   begin
     Include(FViewerState, vsLeftButtonDown);
+    Dummy := nil;
     if not (htNoLinkHilite in FOptions) or not (guUrl in GetURL(X, Y, Dummy, DummyFC, DummyTitle)) then
       Include(FViewerState, vsHiLiting);
+    Dummy.Free;
     with FSectionList do
     begin
       Sel1 := FindCursor(PaintPanel.Canvas, X, Y + YOff, XR, YR, CaretHt, InText);
@@ -1560,8 +1562,7 @@ begin
       begin
         Dummy := nil;
         GetURL(X + FormControlObj.Left, Y + FormControlObj.Top, Dummy, DummyFC, FTitleAttr);
-        if Assigned(Dummy) then
-          Dummy.Free;
+        Dummy.Free;
       end;
       inherited MouseMove(Shift, X, Y);
     end;
@@ -2061,8 +2062,7 @@ end;
 function THtmlViewer.GetURL(X, Y: Integer; out UrlTarg: TUrlTarget;
   out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
 begin
-  Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff,
-    UrlTarg, FormControl, ATitle);
+  Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff, UrlTarg, FormControl, ATitle);
 end;
 
 //-- BG ---------------------------------------------------------- 23.11.2010 --
