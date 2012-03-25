@@ -155,14 +155,14 @@ type
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; virtual;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; virtual;
-    function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; virtual;
+    function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
     function FindSourcePos(DocPos: Integer): Integer; virtual;
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
-    function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; virtual;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
-    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; virtual;
+    function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; virtual;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): guResultType; virtual;
+    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; virtual;
     procedure AddSectionsToList; virtual;
     procedure CopyToClipboard; virtual;
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
@@ -213,7 +213,7 @@ type
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; virtual;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; virtual;
     function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
     procedure Add(Item: TSectionBase; TagIndex: Integer);
     procedure AddSectionsToList;
@@ -564,16 +564,16 @@ type
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
     function FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWideChar; Max: Integer): Integer;
-    function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
+    function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindTextWidth(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
     function FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer): Integer;
-    function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
-    function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
+    function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
+    function PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddChar(C: WideChar; Index: Integer); virtual;
     procedure AddOpBrk;
     procedure AddPanel1(PO: TPanelObj; Index: Integer);
@@ -662,16 +662,15 @@ type
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
-    function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
+    function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; virtual;
-    function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
-    function GetURL(Canvas: TCanvas; X, Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
-    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
+    function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
+    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
     procedure CollapseMargins;
     procedure CopyToClipboard; override;
@@ -1011,8 +1010,7 @@ type
   TBodyBlock = class(TBlock)
   public
     constructor Create(OwnerCell: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
-    function GetURL(Canvas: TCanvas; X, Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -1031,8 +1029,8 @@ type
     Url, Target: ThtString;
   public
     constructor CreateCopy(Document: ThtDocument; Parent: TBlock; T: TCellObjCell);
-    function GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget;
-      var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget;
+      out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
   end;
 
   IntArray = array of Integer;
@@ -1264,13 +1262,11 @@ type
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    function GetURL(Canvas: TCanvas; X, Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-      var ATitle: ThtString): guResultType; override;
-    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
-    function FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
+    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
+    function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
-    function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean; override;
+    function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; override;
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
@@ -1419,7 +1415,7 @@ type
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
     function GetURL(Canvas: TCanvas; X, Y: Integer;
-      var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType; override;
+      out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
     procedure CancelActives;
     procedure CheckGIFList(Sender: TObject);
     procedure Clear; override;
@@ -4462,8 +4458,8 @@ end;
 {----------------TCellBasic.GetURL}
 
 function TCellBasic.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
+  out ATitle: ThtString): guResultType;
 {Y is absolute}
 var
   I: Integer;
@@ -4947,8 +4943,10 @@ end;
 {----------------TBlock.GetURL}
 
 function TBlock.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj}; var ATitle: ThtString): guResultType;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
 begin
+  UrlTarg := nil;
+  FormControl := nil;
   case Display of
     pdNone: Result := [];
 {$ifdef DO_BLOCK_INLINE}
@@ -4994,9 +4992,7 @@ end;
 
 {----------------TBlock.FindCursor}
 
-function TBlock.FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
-  var XR: Integer; var YR: Integer; var CaretHt: Integer;
-  var Intext: boolean): Integer;
+function TBlock.FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
 var
   I: Integer;
 begin
@@ -5029,8 +5025,8 @@ end;
 
 {----------------TBlock.PtInObject}
 
-function TBlock.PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-  var IX, IY: Integer): boolean;
+function TBlock.PtInObject(X: Integer; Y: Integer; out Obj: TObject;
+  out IX, IY: Integer): boolean;
 {Y is absolute}
 var
   I: Integer;
@@ -5060,8 +5056,9 @@ end;
 
 {----------------TBlock.GetChAtPos}
 
-function TBlock.GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
+function TBlock.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 begin
+  Obj := nil;
   case Display of
     pdNone:   Result := False;
 {$ifdef DO_BLOCK_INLINE}
@@ -6723,9 +6720,9 @@ end;
 
 {----------------TBodyBlock.GetURL}
 
-function TBodyBlock.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+function TBodyBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
+  out ATitle: ThtString): guResultType;
 begin
   Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
   if (BlockTitle <> '') then
@@ -6891,8 +6888,8 @@ begin
 end;
 
 function ThtDocument.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
+  out ATitle: ThtString): guResultType;
 var
   OldLink: TFontObj;
   OldImage: TImageObj;
@@ -9776,9 +9773,9 @@ end;
 
 {----------------THtmlTable.GetURL}
 
-function THtmlTable.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject {TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+function THtmlTable.GetURL(Canvas: TCanvas; X, Y: Integer;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
+  out ATitle: ThtString): guResultType;
 
   function GetTableURL(X: Integer; Y: Integer): guResultType;
   var
@@ -9808,6 +9805,8 @@ function THtmlTable.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
   end;
 
 begin
+  UrlTarg := nil;
+  FormControl := nil;
   if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) then
     Result := GetTableURL(X, Y)
   else
@@ -9816,7 +9815,7 @@ end;
 
 {----------------THtmlTable.PtInObject}
 
-function THtmlTable.PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
+function THtmlTable.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
 
   function GetTableObj(X: Integer; Y: Integer): boolean;
   var
@@ -9854,9 +9853,8 @@ end;
 
 {----------------THtmlTable.FindCursor}
 
-function THtmlTable.FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
-  var XR: Integer; var YR: Integer; var CaretHt: Integer;
-  var Intext: boolean): Integer;
+function THtmlTable.FindCursor(Canvas: TCanvas; X, Y: Integer;
+  out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
 
   function GetTableCursor(X: Integer; Y: Integer; var XR: Integer;
     var YR: Integer; var CaretHt: Integer; var Intext: boolean): Integer;
@@ -9924,12 +9922,13 @@ end;
 
 {----------------THtmlTable.GetChAtPos}
 
-function THtmlTable.GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
+function THtmlTable.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 var
   I, J: Integer;
   Row: TCellList;
   CellObj: TCellObj;
 begin
+  Obj := nil;
   if (len > 0) and (Pos >= StartCurs) and (Pos < StartCurs + Len) then
     for J := 0 to Rows.Count - 1 do
     begin
@@ -12469,8 +12468,7 @@ end;
 
 {----------------TSection.PtInObject}
 
-function TSection.PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-  var IX, IY: Integer): boolean;
+function TSection.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
 {Y is distance from start of section}
 begin
   Result := (Images.Count > 0) and Images.PtInObject(X, Y, Obj, IX, IY);
@@ -12479,8 +12477,8 @@ end;
 {----------------TSection.GetURL}
 
 function TSection.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj};
+  out ATitle: ThtString): guResultType;
  {Y is absolute}
 var
   I, L, Index, Width, IX, IY, Posn: Integer;
@@ -12499,6 +12497,8 @@ var
 
 begin
   Result := [];
+  UrlTarg := nil;
+  FormControl := nil;
 {First, check to see if in an image}
   if (Images.Count > 0) and Images.PtInImage(X, Y, IX, IY, Posn, IMap, UMap, MapItem, ImageObj) then
   begin
@@ -12593,9 +12593,8 @@ end;
 
 {----------------TSection.FindCursor}
 
-function TSection.FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
-  var XR: Integer; var YR: Integer; var CaretHt: Integer;
-  var Intext: boolean): Integer;
+function TSection.FindCursor(Canvas: TCanvas; X, Y: Integer;
+  out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
 {Given an X, Y, find the character position and the resulting XR, YR position
  for a caret along with its height, CaretHt.  Coordinates are relative to this
  section}
@@ -12883,7 +12882,7 @@ end;
 
 {----------------TSection.GetChAtPos}
 
-function TSection.GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
+function TSection.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 begin
   Result := False;
   if (Len = 0) or (Pos < StartCurs) or (Pos >= StartCurs + Len) then
@@ -13110,8 +13109,8 @@ end;
 
 {----------------TCellObjCell.GetUrl}
 
-function TCellObjCell.GetURL(Canvas: TCanvas; X, Y: Integer; var UrlTarg: TUrlTarget;
-  var FormControl: TIDObject{TImageFormControlObj}; var ATitle: ThtString): guResultType;
+function TCellObjCell.GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget;
+  out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): guResultType;
 {Y is absolute}
 begin
   Result := inherited GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
@@ -14231,18 +14230,21 @@ begin
 end;
 
 function TSectionBase.GetURL(Canvas: TCanvas; X, Y: Integer;
-  var UrlTarg: TUrlTarget; var FormControl: TIDObject{TImageFormControlObj};
-  var ATitle: ThtString): guResultType;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj};
+  out ATitle: ThtString): guResultType;
 begin
   Result := [];
+  UrlTarg := nil;
+  FormControl := nil;
 end;
 
-function TSectionBase.PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
+function TSectionBase.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;
 begin
   Result := False;
+  Obj := nil;
 end;
 
-function TSectionBase.FindCursor(Canvas: TCanvas; X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer;
+function TSectionBase.FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
 begin
   Result := -1;
 end;
@@ -14272,9 +14274,10 @@ begin
   Result := False;
 end;
 
-function TSectionBase.GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
+function TSectionBase.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 begin
   Result := False;
+  Obj := nil;
 end;
 
 procedure TSectionBase.SetDocument(List: ThtDocument);
