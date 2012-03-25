@@ -3166,24 +3166,26 @@ begin
   if EndSym = CommandSy then
     EndSym := HtmlSy;
   Plain := False;
-  if (Sym = OLSy) then
-  begin
-    if Attributes.Find(StartSy, T) then
-      if T.Value >= 0 then
-        LineCount := T.Value;
-    if Attributes.Find(TypeSy, T) and (T.Name <> '') then
-      Index := T.Name[1];
-  end
-  else if Sym = ULSy then
-    Plain := Attributes.Find(PlainSy, T) or (Attributes.Find(TypeSy, T) and
-      ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
+  case Sym of
+    OLSy:
+      begin
+        if Attributes.Find(StartSy, T) then
+          if T.Value >= 0 then
+            LineCount := T.Value;
+        if Attributes.Find(TypeSy, T) and (T.Name <> '') then
+          Index := T.Name[1];
+      end;
+
+    ULSy:
+      Plain := Attributes.Find(PlainSy, T)
+           or (Attributes.Find(TypeSy, T) and ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
+  end;
   SectionList.Add(Section, TagIndex);
   Section := nil;
-  PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '',
-    Attributes.TheTitle, Attributes.TheStyle);
+  PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
 
   NewBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
-  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
+// BG, 25.03.2012: unused:  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
   SectionList.Add(NewBlock, TagIndex);
   SectionList := NewBlock.MyCell;
   Next;
@@ -3204,34 +3206,39 @@ begin
           DoListItem(LiBlock, LiSection, Sym, Sy, LineCount, Index, Plain, TermSet);
           Inc(LineCount);
         end;
+
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
           DoLists(Sy, TermSet);
           if not (Sy in TermSet) then
             Next;
         end;
-      PSy: DoP(TermSet);
+
+      PSy:
+        DoP(TermSet);
+
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
+
       DivSy, CenterSy, FormSy:
-        DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy,
-          LISy, DDSy, DTSy, EofSy] + TermSet);
+        DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
-        BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
-        USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
-        SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
-        TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
-        NameSy, HRefSy, ASy, AEndSy, SpanSy, SpanEndSy,
-        HeadingSy, HeadingEndSy, PreSy,
-        InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
-        ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
-        SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-        ObjectSy, ObjectEndSy:
+      BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
+      USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
+      SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
+      TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
+      NameSy, HRefSy, ASy, AEndSy, SpanSy, SpanEndSy,
+      HeadingSy, HeadingEndSy, PreSy,
+      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+      ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
+      SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
+      ObjectSy, ObjectEndSy:
         DoCommonSy;
-    else if Sy in TermSet then {exit below}
     else
-      Next;
+      if Sy in TermSet then {exit below}
+      else
+        Next;
     end;
   until (Sy in [EndSym, EofSy]) or (Sy in TermSet);
   if Sym in [ULSy, OLSy, DirSy, MenuSy, DLSy] then

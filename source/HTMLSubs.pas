@@ -557,7 +557,7 @@ type
     HasBorderStyle: Boolean;
     FloatLR: AlignmentType; {ALeft or ARight if floating}
     ClearAttr: ClearAttrType;
-    IsListBlock: boolean;
+// BG, 25.03.2012: unused:    IsListBlock: boolean;
     PRec: PtPositionRec;
     Positioning: PositionType;
     Visibility: VisibilityType;
@@ -5068,6 +5068,7 @@ end;
 
 function TBlock.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 begin
+  Obj := nil;
   case Display of
     pdNone:   Result := False;
 {$ifdef DO_BLOCK_INLINE}
@@ -10195,6 +10196,7 @@ var
   Row: TCellList;
   CellObj: TCellObj;
 begin
+  Obj := nil;
   if (len > 0) and (Pos >= StartCurs) and (Pos < StartCurs + Len) then
     for J := 0 to Rows.Count - 1 do
     begin
