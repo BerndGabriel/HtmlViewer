@@ -46,7 +46,7 @@ uses
 const
   VersionNo = '11.2';
   MaxHScroll = 6000; {max horizontal display in pixels}
-  HandCursor = 10101;
+  HandCursor = crHandPoint; //10101;
   OldThickIBeamCursor = 2;
   UpDownCursor = 10103;
   UpOnlyCursor = 10104;
@@ -4312,13 +4312,38 @@ begin
 end;
 
 {$ifdef LCL}
+const
+  DefaultBitmap = 'DefaultBitmap';
+  ErrBitmap = 'ErrBitmap';
+  ErrBitmapMask = 'ErrBitmapMask';
+//  Hand_Cursor = 'Hand_Cursor';
+
+procedure htLoadBitmap(var Bitmap: TBitmap; const Resource: String);
+begin
+  Bitmap.LoadFromLazarusResource(Resource);
+end;
+
+function htLoadCursor(const CursorName: String): HICON;
+begin
+  Result := LoadCursorFromLazarusResource(CursorName);
+end;
+
 {$else}
 const
   DefaultBitmap = 1002;
   ErrBitmap = 1001;
   ErrBitmapMask = 1005;
-  Hand_Cursor = 1003;
-  ThickIBeam_Cursor = 1006;
+
+procedure htLoadBitmap(var Bitmap: TBitmap; Resource: Integer);
+begin
+  BitMap.Handle := LoadBitmap(HInstance, MakeIntResource(Resource));
+end;
+
+function htLoadCursor(const CursorName: String): HICON;
+begin
+  Result := LoadCursor(HInstance, CursorName);
+end;
+
 {$endif}
 
 { TIDObject }
@@ -4335,23 +4360,15 @@ initialization
   ErrorBitMapMask := TBitmap.Create;
 {$ifdef LCL}
   {$I htmlun2.lrs}
-  DefBitMap.LoadFromLazarusResource('ErrBitmap');
-  ErrorBitMap.LoadFromLazarusResource('DefaultBitmap');
-  ErrorBitMapMask.LoadFromLazarusResource('ErrBitmapMask');
-  Screen.Cursors[HandCursor] := LoadCursorFromLazarusResource('Hand_Cursor');
-  Screen.Cursors[UpDownCursor] := LoadCursorFromLazarusResource('UPDOWNCURSOR');
-  Screen.Cursors[UpOnlyCursor] := LoadCursorFromLazarusResource('UPONLYCURSOR');
-  Screen.Cursors[DownOnlyCursor] := LoadCursorFromLazarusResource('DOWNONLYCURSOR');
 {$else}
   {$R Html32.res}
-  DefBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(DefaultBitmap));
-  ErrorBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmap));
-  ErrorBitMapMask.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmapMask));
-  Screen.Cursors[HandCursor] := LoadCursor(HInstance, MakeIntResource(Hand_Cursor));
-  Screen.Cursors[UpDownCursor] := LoadCursor(HInstance, 'UPDOWNCURSOR');
-  Screen.Cursors[UpOnlyCursor] := LoadCursor(HInstance, 'UPONLYCURSOR');
-  Screen.Cursors[DownOnlyCursor] := LoadCursor(HInstance, 'DOWNONLYCURSOR');
 {$endif}
+  htLoadBitmap(DefBitMap, DefaultBitmap);
+  htLoadBitmap(ErrorBitMap, ErrBitmap);
+  htLoadBitmap(ErrorBitMapMask, ErrBitmapMask);
+  Screen.Cursors[UpDownCursor] := htLoadCursor('UPDOWNCURSOR');
+  Screen.Cursors[UpOnlyCursor] := htLoadCursor('UPONLYCURSOR');
+  Screen.Cursors[DownOnlyCursor] := htLoadCursor('DOWNONLYCURSOR');
   WaitStream := TMemoryStream.Create;
   ErrorStream := TMemoryStream.Create;
 
