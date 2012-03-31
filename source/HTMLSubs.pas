@@ -7205,7 +7205,7 @@ begin
     CB := ClipBuffer.Create(Leng);
     for I := 0 to Count - 1 do
     begin
-      SB := TSectionBase(Items[I]);
+      SB := Items[I];
       with SB do
       begin
         if (SelB >= StartCurs + Len) then
