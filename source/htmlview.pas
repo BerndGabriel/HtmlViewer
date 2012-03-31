@@ -232,6 +232,10 @@ type
     MiddleY: Integer;
     NoJump: Boolean;
     sbWidth: Integer;
+    // BG, 10.08.2011 speed up inserting images
+    FInsertedImages: TStrings;
+    FImagesInserted: TTimer;
+    FImagesReformat: Boolean;
 // child components
     BorderPanel: TPanel;
     PaintPanel: TPaintPanel;
@@ -293,6 +297,7 @@ type
     procedure HTMLDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure HTMLDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure HTMLTimerTimer(Sender: TObject);
+    procedure ImagesInsertedTimer(Sender: TObject);
     procedure Layout;
     procedure Parsed(const Title, Base, BaseTarget: ThtString);
     procedure ParseHtml;
@@ -738,6 +743,11 @@ begin
   HTMLTimer.OnTimer := HTMLTimerTimer;
   FLinkAttributes := ThtStringList.Create;
 
+  FInsertedImages := TStringList.Create;
+  FImagesInserted := TTimer.Create(Self);
+  FImagesInserted.Enabled := False;
+  FImagesInserted.Interval := 100;
+  FImagesInserted.OnTimer := ImagesInsertedTimer;
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
   DoScrollBars;
@@ -746,10 +756,17 @@ begin
 end;
 
 destructor THtmlViewer.Destroy;
+var
+  I: Integer;
 begin
 {$ifndef NoMetaFile}
   AbortPrint;
 {$endif}
+  FImagesInserted.Free;
+  for I := 0 to FInsertedImages.Count - 1 do
+    FInsertedImages.Objects[I].Free;
+  FInsertedImages.Free;
+  HTMLTimer.Free;
   Exclude(FViewerState, vsMiddleScrollOn);
   if vsLocalBitmapList in FViewerState then
   begin
@@ -761,7 +778,6 @@ begin
   FPositionHistory.Free;
   FTitleHistory.Free;
   Visited.Free;
-  HTMLTimer.Free;
   FLinkAttributes.Free;
   FDocument.Free;
   inherited Destroy;
@@ -2107,17 +2123,57 @@ end;
 
 function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
 var
-  OldPos: Integer;
-  ReFormat: Boolean;
+  MS: TMemoryStream;
 begin
-  Result := False;
-  if vsProcessing in FViewerState then
+  begin
+    if Stream <> nil then
+    begin
+      MS := TMemoryStream.Create;
+      try
+        MS.LoadFromStream(Stream);
+        FInsertedImages.AddObject(Src, MS);
+      except
+        MS.Free;
+        raise;
+      end;
+    end
+    else
+      FInsertedImages.AddObject(Src, nil);
+    FImagesInserted.Enabled := True;
+  end;
+  Result := True;
+end;
+
+//-- BG ---------------------------------------------------------- 10.08.2011 --
+procedure THtmlViewer.ImagesInsertedTimer(Sender: TObject);
+var
+  OldPos: Integer;
+  Reformat, ImageReformat: Boolean;
+begin
+  if IsProcessing then
+  begin
+    if FInsertedImages.Count > 0 then
+      // try again later:
+      FImagesInserted.Enabled := True;
     Exit;
+  end;
+
+  SetProcessing(True);
   try
-    SetProcessing(True);
-    FSectionList.InsertImage(Src, Stream, Reformat);
+    FImagesInserted.Enabled := False;
+    Reformat := FImagesReformat;
+    FImagesReformat := False;
+    while FInsertedImages.Count > 0 do
+    begin
+      FSectionList.InsertImage(FInsertedImages[0], TStream(FInsertedImages.Objects[0]), ImageReformat);
+      if ImageReformat then
+        Reformat := True;
+      FInsertedImages.Objects[0].Free;
+      FInsertedImages.Delete(0);
+    end;
     FSectionList.GetBackgroundBitmap; {in case it's the one placed}
     if Reformat then
+    begin
       if FSectionList.Count > 0 then
       begin
         FSectionList.GetBackgroundBitmap; {load any background bitmap}
@@ -2125,12 +2181,13 @@ begin
         DoLogic;
         Position := OldPos;
       end;
+    end;
     Invalidate;
   finally
     SetProcessing(False);
-    Result := True;
   end;
 end;
+
 
 function THtmlViewer.GetBase: ThtString;
 begin
