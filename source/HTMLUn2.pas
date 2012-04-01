@@ -59,8 +59,6 @@ const
   BrkCh = #8;
 
 type
-  THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
-
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -116,17 +114,7 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy,
-	
-    {HTML5 elements}
-    HeaderSy, HeaderEndSy,
-    SectionSy, SectionEndSy,
-    NavSy, NavEndSy,
-    ArticleSy, ArticleEndSy,
-    AsideSy, AsideEndSy,
-    FooterSy, FooterEndSy,
-    HGroupSy, HGroupEndSy,
-    MarkSy, MarkEndSy);
+    ReadonlySy, EolSy, MediaSy);
 
 //------------------------------------------------------------------------------
 
@@ -515,24 +503,15 @@ type
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
   protected
-    // set to determine if child objects should be in "quirks" mode
-    //This must be protected because it's set directly in a descendant
-    FUseQuirksMode : Boolean;
-    FQuirksMode : THtQuirksMode;
     procedure SetOnInclude(Handler: TIncludeType); virtual;
     procedure SetOnLink(Handler: TLinkType); virtual;
     procedure SetOnScript(Handler: TScriptEvent); virtual;
     procedure SetOnSoundRequest(Handler: TSoundType); virtual;
-    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
   public
-    constructor Create(AOwner: TComponent); override;
-    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
-
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
     property OnSoundRequest: TSoundType read FOnSoundRequest write SetOnSoundRequest;
-    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
@@ -583,6 +562,8 @@ function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inlin
 function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
 function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
 function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
 
@@ -969,6 +950,24 @@ begin
   Result := S1 = S2;
 end;
 
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
+  end;
+end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 function ScaleRect(const Rect: TRect; ScaleX, ScaleY: Double): TRect;
@@ -1110,9 +1109,9 @@ begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
     if not MonoBlack and Disabled then
-      Brush.Color := ThemedColor(clBtnFace)
+      Brush.Color := clBtnFace
     else
-      Brush.Color := ThemedColor(color);
+      Brush.Color := color;
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1130,14 +1129,14 @@ begin
       if Raised then
         Pen.Color := clSilver
       else
-        Pen.Color := ThemedColor(clBtnShadow);
+        Pen.Color := clBtnShadow;
     end;
     MoveTo(X1, Y2);
     LineTo(X1, Y1);
     LineTo(X2, Y1);
     if not MonoBlack then
       if Raised then
-        Pen.Color := ThemedColor(clBtnShadow)
+        Pen.Color := clBtnShadow
       else
         Pen.Color := clSilver;
     LineTo(X2, Y2);
@@ -1848,232 +1847,6 @@ begin
   end;
 end;
 
-
-function ConvertImage(Bitmap: TBitmap): TBitmap;
-{convert bitmap into a form for BitBlt later}
-
-  function DIBConvert: TBitmap;
-  var
-    DC: HDC;
-    DIB: TDib;
-    OldBmp: HBitmap;
-    OldPal: HPalette;
-    Hnd: HBitmap;
-  begin
-    DC := CreateCompatibleDC(0);
-    OldBmp := SelectObject(DC, Bitmap.Handle);
-    OldPal := SelectPalette(DC, ThePalette, False);
-    RealizePalette(DC);
-    DIB := TDib.CreateDIB(DC, Bitmap);
-    Hnd := DIB.CreateDIBmp;
-    DIB.Free;
-    SelectPalette(DC, OldPal, False);
-    SelectObject(DC, OldBmp);
-    DeleteDC(DC);
-    Bitmap.Free;
-    Result := TBitmap.Create;
-    Result.Handle := Hnd;
-    if (ColorBits = 8) and (Result.Palette = 0) then
-      Result.Palette := CopyPalette(ThePalette);
-  end;
-
-begin
-  if not Assigned(Bitmap) then
-  begin
-    Result := nil;
-    Exit;
-  end;
-
-  if ColorBits > 8 then
-  begin
-    if Bitmap.PixelFormat <= pf8bit then
-      Result := DIBConvert
-    else
-      Result := Bitmap;
-    Exit;
-  end;
-
-  if Bitmap.HandleType = bmDIB then
-  begin
-    Result := GetBitmap(Bitmap);
-    Bitmap.Free;
-    Exit;
-  end;
-  Result := DIBConvert;
-end;
-
-//{----------------GetImageAndMaskFromFile}
-//
-//function GetImageAndMaskFromFile(const Filename: ThtString; var Transparent: Transparency;
-//  var Mask: TBitmap): TgpObject;
-//var
-//  Stream: TMemoryStream;
-//begin
-//  Result := nil;
-//  Mask := nil;
-//  if not FileExists(Filename) then
-//    Exit;
-//  {$IFNDEF NoGDIPlus}
-//  if GDIPlusActive and (KindOfImageFile(Filename) = Png) then
-//  begin
-//    Result := TObject(TGPBitmap.Create(Filename));
-//  end
-//  else
-//  {$ENDIF !NoGDIPlus}
-//  begin
-//    Stream := TMemoryStream.Create;
-//    Stream.LoadFromFile(Filename);
-//    try
-//      Result := GetImageAndMaskFromStream(Stream, Transparent, Mask);
-//    finally
-//      Stream.Free;
-//    end;
-//  end;
-//end;
-
-{----------------GetBitmapAndMaskFromStream}
-
-function GetBitmapAndMaskFromStream(Stream: TStream;
-  var Transparent: Transparency; var AMask: TBitmap): TBitmap;
-var
-  jpImage: TJpegImage;
-{$ifdef LCL}
-  pngImage: TPortableNetworkGraphic;
-{$endif}
-begin
-  Result := nil;
-  AMask := nil;
-  if not Assigned(Stream) or (Stream.Size < 20) then
-    Exit;
-  Stream.Position := 0;
-  try
-    case KindOfImage(Stream) of
-      Jpg:
-      begin
-        Transparent := NotTransp;
-        jpImage := TJpegImage.Create;
-        try
-          jpImage.LoadFromStream(Stream);
-          if ColorBits <= 8 then
-          begin
-            jpImage.PixelFormat := {$ifdef LCL} pf8bit {$else} jf8bit {$endif};
-            if not jpImage.GrayScale and (ColorBits = 8) then
-              jpImage.Palette := CopyPalette(ThePalette);
-          end
-          else
-            jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
-          Result := TBitmap.Create;
-          Result.Assign(jpImage);
-        finally
-          jpImage.Free;
-        end;
-      end;
-
-      Png:
-      begin
-{$ifdef LCL}
-        pngImage := TPortableNetworkGraphic.Create;
-        try
-          Transparent := TrPng;
-          pngImage.LoadFromStream(Stream);
-          if ColorBits <= 8 then
-            pngImage.PixelFormat := pf8bit
-          else
-            pngImage.PixelFormat := pf24bit;
-          Result := TBitmap.Create;
-          Result.Assign(pngImage);
-          pngImage.Mask(clDefault);
-          if pngImage.MaskHandleAllocated then
-          begin
-            AMask := TBitmap.Create;
-            AMask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
-          end;
-        finally
-          pngImage.Free;
-        end;
-{$endif}
-      end;
-
-      Bmp:
-      begin
-        Result := TBitmap.Create;
-        Result.LoadFromStream(Stream);
-      end;
-    end;
-
-    if Transparent = LLCorner then
-      AMask := GetImageMask(Result, False, 0);
-    Result := ConvertImage(Result);
-  except
-    freeAndNil(Result);
-    freeAndNil(AMask);
-  end;
-end;
-
-{----------------GetImageAndMaskFromStream}
-
-{$IFNDEF NoGDIPlus}
-var
-  TempPathInited: Boolean;
-  TempPath: array [0..Max_Path] of char;
-{$ENDIF !NoGDIPlus}
-
-function GetImageAndMaskFromStream(Stream: TStream;
-  var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-{$IFNDEF NoGDIPlus}
-var
-  Filename: string;
-  F: TFileStream;
-{$ENDIF !NoGDIPlus}
-begin
-  Result := nil;
-  AMask := nil;
-  if not Assigned(Stream) or (Stream.Size < 20) then
-    Exit;
-  Stream.Position := 0;
-
-  {$IFNDEF NoGDIPlus}
-  if GDIPlusActive and (KindOfImage(Stream) = png) then
-  begin
-    try
-      if not TempPathInited then
-      begin
-        GetTempPath(Max_Path, TempPath);
-        TempPathInited := True;
-      end;
-      SetLength(Filename, Max_Path+1);
-      GetTempFilename(TempPath, 'png', 0, PChar(Filename));
-      SetLength(Filename, Pos(#0, Filename) - 1);
-      F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
-      try
-        F.CopyFrom(Stream, Stream.Size);
-      finally
-        F.Free;
-      end;
-      Result := TgpImage.Create(Filename, True); {True because it's a temporary file}
-      Transparent := NotTransp;
-    except
-    end;
-    Exit;
-  end;
-  {$ENDIF !NoGDIPlus}
-
-  Result := GetBitmapAndMaskFromStream(Stream, Transparent, AMask);
-{$IFNDEF NoMetafile}
-  if not Assigned(Result) then
-  begin
-    Result := ThtMetafile.Create;
-    try
-      AMask := nil;
-      Transparent := NotTransp;
-      ThtMetaFile(Result).LoadFromStream(Stream);
-    except
-      FreeAndNil(Result);
-    end;
-  end;
-{$ENDIF}
-end;
-
 function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBitmap;
 begin
   try
@@ -2098,36 +1871,202 @@ end;
 //-- BG ---------------------------------------------------------- 26.09.2010 --
 function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
-var
-  NonAnimated: boolean;
-  Tmp: TGifImage;
-begin
-  Result := nil;
-  if (Stream <> nil) and (Stream.Size > 0) then
-  begin
-    NonAnimated := True;
-    if KindOfImage(Stream) in [GIF{, Gif89}] then
-      Result := LoadGifFromStream(NonAnimated, Stream);
-    if Result <> nil then
+
+  function ConvertImage(Bitmap: TBitmap): TBitmap;
+  {convert bitmap into a form for BitBlt later}
+
+    function DIBConvert: TBitmap;
+    var
+      DC: HDC;
+      DIB: TDib;
+      OldBmp: HBitmap;
+      OldPal: HPalette;
+      Hnd: HBitmap;
     begin
-      if NonAnimated then
-      begin {else already have animated GIF}
-        Tmp := TGifImage(Result);
-        Result := TBitmap.Create;
-        TBitmap(Result).Assign(Tmp.MaskedBitmap);
-        if Tmp.IsTransparent then
+      DC := CreateCompatibleDC(0);
+      OldBmp := SelectObject(DC, Bitmap.Handle);
+      OldPal := SelectPalette(DC, ThePalette, False);
+      RealizePalette(DC);
+      DIB := TDib.CreateDIB(DC, Bitmap);
+      Hnd := DIB.CreateDIBmp;
+      DIB.Free;
+      SelectPalette(DC, OldPal, False);
+      SelectObject(DC, OldBmp);
+      DeleteDC(DC);
+      Bitmap.Free;
+      Result := TBitmap.Create;
+      Result.Handle := Hnd;
+      if (ColorBits = 8) and (Result.Palette = 0) then
+        Result.Palette := CopyPalette(ThePalette);
+    end;
+
+  begin
+    if ColorBits > 8 then
+    begin
+      if Bitmap.PixelFormat <= pf8bit then
+        Result := DIBConvert
+      else
+        Result := Bitmap;
+    end
+    else if Bitmap.HandleType = bmDIB then
+    begin
+      Result := GetBitmap(Bitmap);
+      Bitmap.Free;
+    end
+    else
+      Result := DIBConvert;
+  end;
+
+  function LoadGifFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+  var
+    GifImage: TGifImage;
+    Bitmap: TBitmap;
+  begin
+    GifImage := CreateAGifFromStream(Stream);
+    if GifImage.IsAnimated then
+      Result := GifImage
+    else
+    begin
+      Bitmap := TBitmap.Create;
+      try
+        Bitmap.Assign(GifImage.MaskedBitmap);
+        if GifImage.IsTransparent then
         begin
           AMask := TBitmap.Create;
-          AMask.Assign(Tmp.Mask);
+          AMask.Assign(GifImage.Mask);
           Transparent := TrGif;
         end
         else if Transparent = LLCorner then
-          AMask := GetImageMask(TBitmap(Result), False, 0);
-        Tmp.Free;
+          AMask := GetImageMask(Bitmap, False, 0);
+        GifImage.Free;
+        Result := Bitmap;
+      except
+        Bitmap.Free;
+        raise;
       end;
-    end
-    else
-      Result := GetImageAndMaskFromStream(Stream, Transparent, AMask);
+    end;
+  end;
+
+  function LoadPngFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+{$ifdef LCL}
+  var
+    PngImage: TPortableNetworkGraphic;
+    Bitmap: TBitmap;
+{$endif}
+  begin
+{$IFNDEF NoGDIPlus}
+    if GDIPlusActive then
+    begin
+      Result := TgpImage.Create(Stream);
+      Transparent := NotTransp;
+      exit;
+    end;
+{$ENDIF !NoGDIPlus}
+{$ifdef LCL}
+    PngImage := TPortableNetworkGraphic.Create;
+    try
+      Transparent := TrPng;
+      PngImage.LoadFromStream(Stream);
+      if ColorBits <= 8 then
+        PngImage.PixelFormat := pf8bit
+      else
+        PngImage.PixelFormat := pf24bit;
+      Bitmap := TBitmap.Create;
+      try
+        Bitmap.Assign(PngImage);
+        PngImage.Mask(clDefault);
+        if PngImage.MaskHandleAllocated then
+        begin
+          AMask := TBitmap.Create;
+          AMask.LoadFromBitmapHandles(PngImage.MaskHandle, 0);
+        end;
+        Result := ConvertImage(Bitmap);
+      except
+        Bitmap.Free;
+        raise;
+      end;
+    finally
+      PngImage.Free;
+    end;
+{$else}
+    Result := nil;
+{$endif}
+  end;
+
+  function LoadJpgFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TBitmap;
+  var
+    jpImage: TJpegImage;
+  begin
+    Transparent := NotTransp;
+    jpImage := TJpegImage.Create;
+    try
+      jpImage.LoadFromStream(Stream);
+      if ColorBits <= 8 then
+      begin
+        jpImage.PixelFormat := {$ifdef LCL} pf8bit {$else} jf8bit {$endif};
+        if not jpImage.GrayScale and (ColorBits = 8) then
+          jpImage.Palette := CopyPalette(ThePalette);
+      end
+      else
+        jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
+      Result := TBitmap.Create;
+      try
+        Result.Assign(jpImage);
+        Result := ConvertImage(Result);
+      except
+        Result.Free;
+        raise;
+      end;
+    finally
+      jpImage.Free;
+    end;
+  end;
+
+  function LoadBmpFromStream(Stream: TStream; Transparent: Transparency; var AMask: TBitmap): TBitmap;
+  begin
+    Result := TBitmap.Create;
+    try
+      Result.LoadFromStream(Stream);
+      Result := ConvertImage(Result);
+      if Transparent = LLCorner then
+        AMask := GetImageMask(Result, False, 0);
+    except
+      Result.Free;
+      raise;
+    end;
+  end;
+
+  function LoadMetaFileFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+  begin
+{$IFDEF NoMetafile}
+    Result := nil;
+{$ELSE}
+    Result := ThtMetafile.Create;
+    try
+      AMask := nil;
+      Transparent := NotTransp;
+      ThtMetaFile(Result).LoadFromStream(Stream);
+    except
+      FreeAndNil(Result);
+    end;
+{$ENDIF}
+  end;
+
+begin
+  if (Stream = nil) or (Stream.Size < SizeOf(DWord)) then
+  begin
+    Result := nil;
+    exit;
+  end;
+
+  Stream.Position := 0;
+  case KindOfImage(Stream) of
+    Gif: Result := LoadGifFromStream(Stream, Transparent, AMask);
+    Png: Result := LoadPngFromStream(Stream, Transparent, AMask);
+    Jpg: Result := LoadJpgFromStream(Stream, Transparent, AMask);
+    Bmp: Result := LoadBmpFromStream(Stream, Transparent, AMask);
+  else
+    Result := LoadMetaFileFromStream(Stream, Transparent, AMask);
   end;
 end;
 
@@ -3920,7 +3859,7 @@ begin
       with Canvas do
       begin
         Brush.Style := bsSolid;
-        Brush.Color := ThemedColor(Color);
+        Brush.Color := Color;
         FillRgn(Handle, R, Brush.Handle);
       end;
     finally
@@ -3950,6 +3889,45 @@ var
   StyleSet: set of BorderStyleType;
   OuterRegion, InnerRegion: THandle;
   Brush: TBrush;
+
+  function Darker(Color: TColor): TColor;
+  {find a somewhat darker color for shading purposes}
+  const
+    F = 0.75; // F < 1 makes color darker
+  var
+    Red, Green, Blue: Byte;
+  begin
+    if Color < 0 then
+      Color := GetSysColor(Color and $FFFFFF)
+    else
+      Color := Color and $FFFFFF;
+    Red := Color and $FF;
+    Green := (Color and $FF00) shr 8;
+    Blue := (Color and $FF0000) shr 16;
+    Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
+  end;
+
+  function Lighter(Color: TColor): TColor;
+  {find a somewhat lighter color for shading purposes}
+  const
+    F = 1.15; // F > 1 makes color lighter
+  var
+    Red, Green, Blue: Byte;
+  begin
+    if Color < 0 then
+      Color := GetSysColor(Color and $FFFFFF)
+    else
+      Color := Color and $FFFFFF;
+    if Color = 0 then
+      Result := 0
+    else
+    begin
+      Red := Color and $FF;
+      Green := (Color and $FF00) shr 8;
+      Blue := (Color and $FF0000) shr 16;
+      Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
+    end;
+  end;
 
 begin
 {Limit the borders to somewhat more than the screen size}
@@ -4047,7 +4025,7 @@ begin
     CombineRgn(OuterRegion, OuterRegion, InnerRegion, RGN_DIFF);
     Brush := TBrush.Create;
     try
-      Brush.Color := ThemedColor(BGround) or PalRelative;
+      Brush.Color := BGround or PalRelative;
       Brush.Style := bsSolid;
       FillRgn(Canvas.Handle, OuterRegion, Brush.Handle);
     finally
@@ -4158,7 +4136,7 @@ begin
         if not InPath then
         begin
           lb.lbStyle := BS_SOLID;
-          lb.lbColor := ThemedColor(C[I]) or PalRelative;
+          lb.lbColor := C[I] or PalRelative;
           lb.lbHatch := 0;
           if S[I] = bssDotted then
             PenType := PS_Dot or ps_EndCap_Round
@@ -4234,12 +4212,6 @@ end;
 { TViewerBase }
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-constructor TViewerBase.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-  FQuirksMode := qmDetect;
-end;
-
 procedure TViewerBase.SetOnInclude(Handler: TIncludeType);
 begin
   FOnInclude := Handler;
@@ -4261,11 +4233,6 @@ end;
 procedure TViewerBase.SetOnSoundRequest(Handler: TSoundType);
 begin
   FOnSoundRequest := Handler;
-end;
-
-procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
-begin
-  FQuirksMode := AValue;
 end;
 
 { THtmlViewerBase }
