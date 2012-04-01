@@ -159,6 +159,7 @@ type
     BackgroundColor, 
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
+    piMinHeight, piMinWidth, piMaxHeight, piMaxWidth,
     BoxSizing,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
     // BG, 31.01.2012: don't change the order of the border properties:
@@ -323,6 +324,7 @@ const
     'color', 'background-color',
     //'border-color',
     'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'min-height', 'min-width',    'max-height',    'max-width',
     'box-sizing',
     'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
@@ -458,6 +460,10 @@ function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): 
 procedure LogProperties(AProp : TProperties; const APropName : String);
 {$endif}
 
+
+procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
+procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
+
 implementation
 uses
  {$ifdef JPM_DEBUGGING}
@@ -484,6 +490,138 @@ var
 {$ifdef JPM_DEBUGGING}
 const
     CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
+
+function LogPropColor(const AInt : Integer): String; overload;
+begin
+  Result := Graphics.ColorToString( AInt);
+end;
+
+function LogPropColor(const AVar : Variant): String; overload;
+begin
+  if Variants.VarIsOrdinal(AVar) then
+    Result := Graphics.ColorToString( AVar)
+  else
+    Result := VarToStr( AVar );
+end;
+
+function LogPropDisplay(const AInt : Integer): String; overload;
+begin
+  Result := CPropDisplay[ TPropDisplay(AInt)];
+end;
+
+function LogPropDisplay(const AVar : Variant): String; overload;
+begin
+  if Variants.VarIsOrdinal(AVar) then begin
+    Result := CPropDisplay[ TPropDisplay(AVar)]  + ' int = '+ IntToStr(AVar);;
+  end else begin
+    Result := VarToStr( AVar );
+  end;
+end;
+
+function LogPropBoxSizing(const AInt : Integer): String; overload;
+begin
+  case AInt of
+    0 : Result := CBoxSizing[ContentBox];
+    1 : Result := CBoxSizing[BorderBox];
+  else
+    Result := 'Error value is '+IntToStr(AInt);
+  end;
+//  Result := CBoxSizing[BoxSizingType (AInt)];
+end;
+
+function LogPropBoxSizing(const AVar : Variant): String; overload;
+begin
+  if Variants.VarIsOrdinal(AVar) then begin
+    Result := CBoxSizing[BoxSizingType (AVar)]  + ' int = '+ IntToStr(AVar);;
+  end else begin
+    Result := VarToStr( AVar );
+  end;
+end;
+
+function LogPropBorderStyle(const AVar : Variant): String;
+begin
+  if Variants.VarIsOrdinal(AVar) then begin
+    Result := CBorderStyle[ BorderStyleType ( AVar )]  + ' int = '+ IntToStr(AVar);;
+  end else begin
+    Result := VarToStr( AVar);
+  end;
+
+end;
+
+function LogPropListStyle(const AVar : Variant): String;
+begin
+  if Variants.VarIsOrdinal(AVar) then begin
+    Result := CListStyleType[ ListBulletType ( AVar )]  + ' int = '+ IntToStr(AVar);;
+  end else begin
+    Result := VarToStr( AVar);
+  end;
+end;
+
+function LogVisibility(const AVar : Variant): String;
+begin
+  if Variants.VarIsOrdinal(AVar) then begin
+    Result := CVis[Integer( AVar )] + ' int = '+ IntToStr(AVar);
+  end else begin
+    Result := VarToStr( AVar);
+  end;
+end;
+
+procedure LogTVMarginArray(const AMarg : TVMarginArray; const AMargName : String);
+var i : PropIndices;
+begin
+  for i := Low(AMarg) to High(AMarg) do
+        case I of
+          Color, BackgroundColor,
+          BorderTopColor..BorderLeftColor :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropColor(AMarg[I])]);
+          piDisplay :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropDisplay(AMarg[I])]);
+          BoxSizing :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropBoxSizing(AMarg[I])]);
+          BorderTopStyle..BorderLeftStyle :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropBorderStyle(AMarg[I])]);
+          ListStyleType :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropListStyle(AMarg[I])]);
+          Visibility :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogVisibility(AMarg[I])]);
+        else
+          CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i],VarToStr( AMarg[I])]);
+
+        end;
+end;
+
+procedure LogTMarginArray(AMarg : TMarginArray; const AMargName : String);
+var i : PropIndices;
+begin
+  for i := Low(AMarg) to High(AMarg) do
+    if VarIsIntNull(AMarg[I]) then begin
+      CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], 'IntNul']);
+    end else begin
+      if VarIsAuto(AMarg[I]) then begin
+        CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], 'Auto']);
+
+      end else begin
+        case I of
+          Color, BackgroundColor,
+          BorderTopColor..BorderLeftColor :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropColor(AMarg[I])]);
+          piDisplay :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropDisplay(AMarg[I])]);
+          BoxSizing :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropBoxSizing(AMarg[I])]);
+          BorderTopStyle..BorderLeftStyle :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropBorderStyle(AMarg[I])]);
+          ListStyleType :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogPropListStyle(AMarg[I])]);
+          Visibility :
+            CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i], LogVisibility(AMarg[I])]);
+        else
+          CodeSiteLogging.CodeSite.SendFmtMsg('%s[%s] = %s',[AMargName,PropWords[i],VarToStr( AMarg[I])]);
+
+        end;
+    end;
+  end;
+end;
 
 procedure LogProperties(AProp : TProperties; const APropName : String);
 
@@ -515,52 +653,30 @@ begin
           Color, BackgroundColor,
           BorderTopColor..BorderLeftColor :
             begin
-              if Variants.VarIsOrdinal(AProp.Props[I]) then
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], Graphics.ColorToString( AProp.Props[I])])
-              else
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+              CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],LogPropColor( AProp.Props[I])]);
             end;
           piDisplay :
             begin
-              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
-                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CPropDisplay[ TPropDisplay(AProp.Props[I])]]);
-              end else begin
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
-              end;
+              CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], LogPropDisplay(AProp.Props[I])]);
             end;
           BoxSizing :
             begin
-              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
-                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CBoxSizing[BoxSizingType ( AProp.Props[I])]]);
-              end else begin
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
-              end;
+              CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],LogPropBoxSizing( AProp.Props[I])]);
             end;
           BorderTopStyle..BorderLeftStyle :
-              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CBorderStyle[ BorderStyleType ( AProp.Props[I])]]);
-              end else begin
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
-              end;
+            begin
+              CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], LogPropBorderStyle( AProp.Props[I])]);
+            end;
           ListStyleType :
             begin
-              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
-                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CListStyleType[ ListBulletType ( AProp.Props[I])]]);
-              end else begin
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
-              end;
+              CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], LogPropListStyle( AProp.Props[I])]);
             end;
           Visibility :
             begin
-              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
-                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CVis[Integer( AProp.Props[I])]]);
-              end else begin
-                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
-              end;
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],LogVisibility( AProp.Props[I])]);
             end;
         else
           CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
-
         end;
       end;
     end;
@@ -874,8 +990,19 @@ procedure TProperties.Copy(Source: TProperties);
 var
   I: PropIndices;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'Copy');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Source,'Source');
+  {$ENDIF}
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'Copy');
+
+  {$ENDIF}
 end;
 
 {----------------TProperties.CopyDefault}
@@ -884,11 +1011,22 @@ procedure TProperties.CopyDefault(Source: TProperties);
 var
   I: PropIndices;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'CopyDefault');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Source,'Source');
+  {$ENDIF}
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
   AssignCharSet(Source.CharSet);
   DefFontname := Source.DefFontname;
   PropTag := 'default';
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'CopyDefault');
+
+  {$ENDIF}
 end;
 
 procedure TProperties.Inherit(Tag: ThtString; Source: TProperties);
@@ -898,6 +1036,12 @@ var
   Span, HBF: Boolean;
   isTable: Boolean;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.Inherit');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.SendFmtMsg('tag = [%s]',[Tag]);
+  StyleUn.LogProperties(Source,'Source');
+  {$ENDIF}
   Span := Source.PropTag = 'span';
   HBF := (Source.PropTag = 'thead') or (Source.PropTag = 'tbody') or (Source.PropTag = 'tfoot');
   isTable := Tag = 'table';
@@ -942,6 +1086,12 @@ begin
 
   FEmSize := Source.FEmSize; {actually this is calculated later }
   FExSize := Source.FExSize; {apparently correlates with what browsers are doing}
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.Inherit');
+
+  {$ENDIF}
 end;
 
 {----------------TProperties.Update}
@@ -951,6 +1101,11 @@ procedure TProperties.Update(Source: TProperties; Styles: TStyleList; I: Integer
 var
   Index: PropIndices;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.Update');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Source,'Source');
+  {$ENDIF}
   for Index := Low(Index) to High(Index) do
     if not Originals[Index] then
       Props[Index] := Source.Props[Index];
@@ -965,6 +1120,12 @@ begin
       FreeAndNil(FIArray);
       Inlink := False;
     end;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.Update');
+
+  {$ENDIF}
 end;
 
 {----------------TProperties.Assign}
@@ -1579,8 +1740,22 @@ procedure ConvVertMargins(const VM: TVMarginArray;
   end;
 
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
+  CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
+  CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
+  CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+
+  StyleUn.LogTVMarginArray(VM,'VM');
+  {$ENDIF}
   M[MarginTop] := Convert(VM[MarginTop], TopAuto);
   M[MarginBottom] := Convert(VM[MarginBottom], BottomAuto);
+    {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.Send('Results');
+  CodeSiteLogging.CodeSite.ExitMethod('ConvMargArray');
+  StyleUn.LogTMarginArray(M,'M');
+  {$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
@@ -1606,6 +1781,43 @@ begin
     Result := Default;
 end;
 
+procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
+begin
+  if AUseQuirksMode then begin
+    ApplyBorderBoxModel(AMarg);
+  end else begin
+    //width
+    if AMarg[piMaxWidth] > 0 then begin
+      AMarg[piWidth] := Min(AMarg[piWidth],AMarg[piMaxWidth]);
+    end;
+    if AMarg[piMaxWidth] > 0 then begin
+      AMarg[piWidth] := Max(AMarg[piWidth],AMarg[piMinWidth]);
+    end;
+    //height
+    if AMarg[piMaxHeight] > 0 then begin
+      AMarg[piHeight] := Min(AMarg[piHeight],AMarg[piMaxHeight]);
+    end;
+    if AMarg[piMaxHeight] > 0 then begin
+      AMarg[piHeight] := Max(AMarg[piHeight],AMarg[piMinHeight]);
+    end;
+    case AMarg[BoxSizing] of
+        0 : ;
+        1 : ApplyBorderBoxModel(AMarg);
+    else
+    end;
+  end;
+end;
+
+procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
+begin
+  AMarg[piWidth] := AMarg[piWidth] -
+      (AMarg[BorderLeftWidth] + AMarg[BorderRightWidth] +
+       AMarg[PaddingLeft] + AMarg[PaddingRight]);
+  AMarg[piHeight] := AMarg[piHeight] -
+      (AMarg[BorderTopWidth] + AMarg[BorderBottomWidth] +
+       AMarg[PaddingTop] + AMarg[PaddingBottom]);
+end;
+
 {----------------ConvMargArray}
 
 procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
@@ -1614,7 +1826,23 @@ procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, 
 var
   I: PropIndices;
   Base: Integer;
+  LBoxSizing : BoxSizingType;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
+ CodeSiteLogging.CodeSite.AddSeparator;
+ CodeSiteLogging.CodeSite.Send('Input');
+
+ CodeSiteLogging.CodeSite.AddSeparator;
+   LogTVMarginArray(VM,'VM');
+   CodeSiteLogging.CodeSite.Send('BaseWidth   = [%d]',[BaseWidth]);
+   CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
+   CodeSiteLogging.CodeSite.Send('BorderWidth  = [%d]',[BorderWidth]);
+
+   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
+   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+   CodeSiteLogging.CodeSite.Send('BorderWidth = [%d]',[BorderWidth]);
+  {$ENDIF}
   AutoCount := 0; {count of 'auto's in width items}
   for I := Low(VM) to High(VM) do
   begin
@@ -1658,6 +1886,7 @@ begin
             end;
           end;
         end;
+      piMinHeight, piMaxHeight,
       piHeight:
         begin
           if VarIsStr(VM[I]) then
@@ -1706,6 +1935,13 @@ begin
           else
             M[I] := Auto;
         end;
+      BoxSizing :
+        if TryStrToBoxSizing(VM[I],LBoxSizing) then begin
+           M[I] := Ord(LBoxSizing);
+        end else begin
+          //assume content-box
+           M[I] := 0;
+        end;
       MarginLeft, MarginRight:
         begin
           if VarIsStr(VM[I]) then
@@ -1728,17 +1964,7 @@ begin
           else
             M[I] := 0;
         end;
-      BoxSizing :
-        begin
-          if VarIsStr(VM[I]) then begin
-            if VM[I] = CBoxSizing[BorderBox] then
-              M[I] := 1
-            else
-              M[I] := 0;
-          end else begin
-            M[I] := 0;
-          end;
-        end;
+      piMinWidth, piMaxWidth,
       piWidth:
         begin
           if VarIsStr(VM[I]) then
@@ -1786,6 +2012,15 @@ begin
       end;
     end;
   end;
+    {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.Send('Results');
+
+  LogTMarginArray(M,'M');
+   CodeSiteLogging.CodeSite.Send('AutoCount  = [%d]',[AutoCount]);
+
+  CodeSiteLogging.CodeSite.ExitMethod('ConvMargArray');
+  {$ENDIF}
 end;
 
 procedure ConvMargArrayForCellPadding(const VM: TVMarginArray; EmSize,
@@ -1794,6 +2029,13 @@ procedure ConvMargArrayForCellPadding(const VM: TVMarginArray; EmSize,
 var
   I: PropIndices;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod('ConvMargArrayForCellPadding');
+  CodeSiteLogging.CodeSite.AddSeparator;
+   LogTVMarginArray(VM,'VM');
+   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
+   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+  {$ENDIF}
   for I := PaddingTop to PaddingLeft do
     if VarIsStr(VM[I]) then
       M[I] := LengthConv(VM[I], False, -100, EmSize, ExSize, 0) {Auto will be 0}
@@ -1806,6 +2048,12 @@ begin
     end
     else
       M[I] := -1;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  LogTMarginArray(M,'M');
+  CodeSiteLogging.CodeSite.ExitMethod('ConvMargArrayForCellPadding');
+
+  {$ENDIF}
 end;
 
 {----------------ConvInlineMargArray}
@@ -1816,6 +2064,16 @@ procedure ConvInlineMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, Em
 var
   I: PropIndices;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod('ConvInlineMargArray');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  LogTVMarginArray(VM,'VM');
+  CodeSiteLogging.CodeSite.Send('BaseWidth   = [%d]',[BaseWidth]);
+  CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
+
+  CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
+  CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+  {$ENDIF}
   for I := Low(VM) to High(VM) do
     case I of
       piHeight, piWidth:
@@ -1832,6 +2090,8 @@ begin
           else
             M[I] := IntNull;
         end;
+      piMinHeight, piMinWidth, piMaxHeight, piMaxWidth,
+
       MarginLeft, MarginRight, MarginTop, MarginBottom:
         begin
           if VarIsStr(VM[I]) then
@@ -1875,6 +2135,12 @@ begin
     else
       ; {remaining items unsupported/unused}
     end;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  LogTMarginArray(M,'M');
+  CodeSiteLogging.CodeSite.ExitMethod('ConvInlineMargArray');
+
+  {$ENDIF}
 end;
 
 {----------------TProperties.Combine}
@@ -1901,6 +2167,12 @@ procedure TProperties.Combine(Styles: TStyleList;
       Wt: Integer;
       S1: ThtString;
     begin
+{$ifdef JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod('TProperties.Combine CombineX Merge');
+  CodeSiteLogging.CodeSite.Send('Parameters');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  LogProperties(Source,'Source');
+{$endif}
       for Index := Low(Index) to High(PropIndices) do
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
           case Index of
@@ -1976,6 +2248,14 @@ procedure TProperties.Combine(Styles: TStyleList;
               Originals[Index] := True; {it's defined for this item, not inherited}
             end;
           end;
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.AddSeparator;
+ CodeSiteLogging.CodeSite.Send('Results');
+
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Self,'Self');
+ CodeSiteLogging.CodeSite.ExitMethod('TProperties.Combine CombineX Merge');
+{$endif}
     end;
 
     function CheckForContextual(I: Integer): Boolean;
@@ -2542,6 +2822,10 @@ var
   BS: BorderStyleType;
   NewColor : TColor;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
+  LogProperties(Self,'Self');
+  {$ENDIF}
   for I := Low(Marray) to High(MArray) do
     case I of
       BorderTopStyle..BorderLeftStyle:
@@ -2568,12 +2852,24 @@ begin
     else
       MArray[I] := Props[I];
     end;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogTVMarginArray(MArray,'MArray');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.GetVMarginArray');
+  {$ENDIF}
 end;
 
 procedure TProperties.AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
 var
   NewColor: TColor;
 begin
+{$ifdef JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByIndex');
+  CodeSiteLogging.CodeSite.Send('Parameters');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.SendFmtMsg('Index = %s',[PropWords[Index]]);
+  LogProperties(Self,'Self');
+{$endif}
   case Index of
 //    BorderColor:
 //      if ColorFromString(PropValue, False, NewColor) then
@@ -2641,14 +2937,30 @@ begin
   else
     Props[Index] := PropValue;
   end;
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.AddSeparator;
+ CodeSiteLogging.CodeSite.Send('Results');
+
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Self,'Self');
+ CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByIndex');
+{$endif}
 end;
 
 procedure TProperties.AddPropertyByName(const PropName, PropValue: ThtString);
 var
   Index: PropIndices;
 begin
+{$ifdef JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByName');
+
+{$endif}
   if FindPropIndex(PropName, Index) then
     AddPropertyByIndex(Index, PropValue);
+{$ifdef JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByName');
+
+{$endif}
 end;
 
 { TStyleList }

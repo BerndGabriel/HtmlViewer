@@ -3889,34 +3889,34 @@ begin
     IncludeEvent := AIncludeEvent;
     ParseInit(ASectionList,IncludeEvent);
 
-  try
-{$IFNDEF NoTabLink}
-    SaveSIndex := PropStack.SIndex;
-    SavePosition := Doc.Position;
-    LinkSearch := True;
-    SoundEvent := nil;
-    MetaEvent := nil;
-    LinkEvent := nil;
-    TabCount := 0;
     try
-      GetCh; {get the reading started}
-      Next;
-      while Sy <> EofSy do
-      begin
-        if (Sy = ASy) and Attributes.Find(HrefSy, T) then
-        begin
-          Inc(TabCount);
-          if TabCount > MaxTab then
-            break;
-        end;
+{$IFNDEF NoTabLink}
+      SaveSIndex := PropStack.SIndex;
+      SavePosition := Doc.Position;
+      LinkSearch := True;
+      SoundEvent := nil;
+      MetaEvent := nil;
+      LinkEvent := nil;
+      TabCount := 0;
+      try
+        GetCh; {get the reading started}
         Next;
+        while Sy <> EofSy do
+        begin
+          if (Sy = ASy) and Attributes.Find(HrefSy, T) then
+          begin
+            Inc(TabCount);
+            if TabCount > MaxTab then
+              break;
+          end;
+          Next;
+        end;
+        ASectionList.StopTab := TabCount > MaxTab;
+      except
       end;
-      ASectionList.StopTab := TabCount > MaxTab;
-    except
-    end;
   {reset a few things}
-    PropStack.SIndex := SaveSIndex;
-    Doc.Position := SavePosition;
+      PropStack.SIndex := SaveSIndex;
+      Doc.Position := SavePosition;
 {$ENDIF}
 
       LinkSearch := False;
@@ -4034,7 +4034,7 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   begin
     SetExit := False;
     PropStack.Clear;
-    PropStack.Add(TProperties.Create(PropStack));
+    PropStack.Add(TProperties.Create(FPropStack,False));
     GetCh; {get the reading started}
     Next;
     repeat
@@ -4145,7 +4145,7 @@ begin
   end;
   FPropStack := THTMLPropStack.Create;
   try
-  FPropStack.MasterList := nil;
+    FPropStack.MasterList := nil;
     CallingObject := FrameViewer;
     SoundEvent := nil;
 
@@ -4156,19 +4156,22 @@ begin
     NoBreak := False;
     InComment := False;
 
-  Pos := Doc.Position;
-  Attributes := TAttributeList.Create;
-  try
-    Self.Doc := Doc;
+    Pos := Doc.Position;
+    Attributes := TAttributeList.Create;
     try
-      Result := Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
+      Self.Doc := Doc;
+      try
+        Result := Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
+    finally
+      Attributes.Free;
+      Doc.Position := Pos;
     end;
   finally
-    Attributes.Free;
-    Doc.Position := Pos;
+    FreeAndNil( FPropStack );
   end;
 end;
 
