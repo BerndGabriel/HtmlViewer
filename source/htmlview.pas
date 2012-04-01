@@ -4400,8 +4400,15 @@ begin
   FSectionList.CopyToClipboardA(Leng + 1);
 
   HTML := DocumentSource;
-  StSrc := FindSourcePos(FSectionList.SelB) + 1;
+  StSrc := FindSourcePos(FSectionList.SelB);
   EnSrc := FindSourcePos(FSectionList.SelE);
+  if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
+  begin
+    StSrc := StSrc div 2;
+    EnSrc := EnSrc div 2;
+  end;
+  Inc(StSrc);
+
   if EnSrc < 0 then {check to see if end selection is at end of document}
   begin
     EnSrc := Length(HTML);
