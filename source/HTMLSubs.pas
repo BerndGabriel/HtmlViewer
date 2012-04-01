@@ -536,9 +536,6 @@ type
 
   TBlock = class(TSectionBase)
   protected
-    function GetContentWidth : Integer; virtual;
-    function GetContentHeight : Integer; virtual;
-    function GetTotalWidthAndMarg : Integer; virtual;
     function getBorderWidth: Integer; virtual;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
@@ -1122,9 +1119,6 @@ type
 
   TTableBlock = class(TBlock)
   protected
-    function GetContentWidth : Integer; override;
-    function GetContentHeight : Integer; override;
-    function GetTotalWidthAndMarg : Integer; override;
 
     function getBorderWidth: Integer; override;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); override;
@@ -1486,6 +1480,9 @@ var
 implementation
 
 uses
+   {$IFDEF JPM_DEBUGGING}
+ CodeSiteLogging,
+   {$ENDIF}
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
@@ -4434,8 +4431,14 @@ end;
 
 constructor TCellBasic.Create(Master: ThtDocument);
 begin
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TCellBasic.Create');
+   {$ENDIF}
   inherited Create;
   FDocument := Master;
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.ExitMethod(Self,'TCellBasic.Create');
+   {$ENDIF}
 end;
 
 {----------------TCellBasic.CreateCopy}
@@ -4736,6 +4739,9 @@ procedure TCellBasic.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   I, Mn, Mx: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TCellBasic.MinMaxWidth');
+   {$ENDIF}
   Max := 0; Min := 0;
   for I := 0 to Count - 1 do
   begin
@@ -4743,6 +4749,11 @@ begin
     Max := Math.Max(Max, Mx);
     Min := Math.Max(Min, Mn);
   end;
+   {$IFDEF JPM_DEBUGGING}
+   CodeSite.SendFmtMsg('min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('min = [%d]',[Max]);
+  CodeSite.ExitMethod(Self,'TCellBasic.MinMaxWidth');
+   {$ENDIF}
 end;
 
 {----------------TCellBasic.Draw}
@@ -4769,6 +4780,11 @@ var
   Clr: ClearAttrType;
   S: ThtString;
 begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TBlock.Create');
+  StyleUn.LogProperties(Prop,'Prop');
+  CodeSite.AddSeparator;
+  {$ENDIF}
   inherited Create(Master, Prop);
   OwnerCell := AnOwnerCell;
 
@@ -4825,6 +4841,9 @@ begin
     Justify := Centered
   else
     Justify := Left;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSite.ExitMethod(Self,'TBlock.Create');
+  {$ENDIF}
 end;
 
 procedure TBlock.CollapseMargins;
@@ -4913,7 +4932,21 @@ end;
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 begin
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TBlock.ConvMargArray');
+   CodeSite.SendFmtMsg('BaseWidth       = [%d]',[BaseWidth]);
+   CodeSite.SendFmtMsg('BaseHeight      = [%d]',[BaseHeight]);
+  CodeSite.SendFmtMsg('Self.EmSize      = [%d]',[EmSize]);
+  CodeSite.SendFmtMsg('Self.ExSize      = [%d]',[ExSize]);
+  CodeSite.SendFmtMsg('Self.BorderWidth = [%d]',[BorderWidth]);
+   CodeSite.AddSeparator;
+   {$ENDIF}
   StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+
+  {$IFDEF JPM_DEBUGGING}
+  CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
+  CodeSite.ExitMethod(Self,'TBlock.ConvMargArray');
+  {$ENDIF}
 end;
 
 {----------------TBlock.CreateCopy}
@@ -5125,58 +5158,6 @@ begin
 {$endif}
   else
     Result := MyCell.GetChAtPos(Pos, Ch, Obj);
-  end;
-end;
-
-{This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
-model.  In those browsers, width and height include padding and border.}
-
-function TBlock.GetContentHeight: Integer;
-begin
-  if Document.UseQuirksMode then begin
-    Result := MargArray[piHeight] -
-        (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
-         MargArray[PaddingTop] + MargArray[PaddingBottom]);
-  end else begin
-    if MargArray[BoxSizing] = 1 then begin
-      Result := MargArray[piHeight] -
-          (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
-           MargArray[PaddingTop] + MargArray[PaddingBottom]);
-    end else begin
-      Result := MargArray[piHeight];
-    end;
-  end;
-end;
-
-function TBlock.GetContentWidth: Integer;
-begin
-  if Document.UseQuirksMode then begin //border-box
-    Result := NewWidth -
-      (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
-       MargArray[PaddingRight] + MargArray[BorderRightWidth] )
-  end else begin
-    if MargArray[BoxSizing] = 1 then begin //border-box
-      Result := NewWidth -
-       (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
-        MargArray[PaddingRight] + MargArray[BorderRightWidth] )
-    end else begin   //content-box
-      Result := NewWidth;
-    end;
-  end;
-end;
-
-function TBlock.GetTotalWidthAndMarg: Integer;
-begin
-  if Document.UseQuirksMode then begin
-    Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
-  end else begin
-    if MargArray[BoxSizing] = 1 then begin
-      Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
-    end else begin
-      Result := NewWidth +
-        MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
-        MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
-    end;
   end;
 end;
 
@@ -7564,7 +7545,7 @@ end;
 procedure ThtDocument.InsertImage(const Src: ThtString; Stream: TStream; out Reformat: boolean);
 var
   UName: ThtString;
-  J: Integer;
+  I, J: Integer;
   Pair: TBitmapItem;
   Rformat, Error: boolean;
   Image: TgpObject;
@@ -7572,37 +7553,41 @@ var
   Tr, Transparent: Transparency;
   Obj: TObject;
 begin
+  Image := nil;
+  AMask := nil;
+  Error := False;
   Reformat := False;
   UName := Trim(Uppercase(Src));
-  J := MissingImages.IndexOf(UName);
-  if J >= 0 then
+  I := BitmapList.IndexOf(UName); {first see if the bitmap is already loaded}
+  J := MissingImages.IndexOf(UName); {see if it's in missing image list}
+  if (I = -1) and (J >= 0) then
   begin
-    Error := False;
-    if BitmapList.IndexOf(UName) = -1 then
-      // Bitmap not yet loaded: Add to BitmmapList.
+    Transparent := NotTransp;
+    Image := LoadImageFromStream(Stream, Transparent, AMask);
+    if Assigned(Image) then {put in Cache}
+    try
+      if Assigned(AMask) then
+        Tr := Transparent
+      else
+        Tr := NotTransp;
+      Pair := TBitmapItem.Create(Image, AMask, Tr);
       try
-        AMask := nil;
-        Transparent := NotTransp;
-        Image := LoadImageFromStream(Stream, Transparent, AMask);
-        if AMask <> nil then
-          Tr := Transparent
-        else
-          Tr := NotTransp;
-        Pair := TBitmapItem.Create(Image, AMask, Tr);
-        try
-          BitmapList.AddObject(UName, Pair); {put new bitmap in list}
-          BitmapList.DecUsage(UName); {this does not count as being used yet}
-        except {accept inability to create}
-          Pair.Mask := nil;
-          Pair.MImage := nil;
-          Pair.Free;
-        end;
+        BitmapList.AddObject(UName, Pair); {put new bitmap in list}
+        BitmapList.DecUsage(UName); {this does not count as being used yet}
       except
-        Error := True;
+        Pair.Mask := nil;
+        Pair.MImage := nil;
+        Pair.Free;
       end;
-
-    // Insert image into all TImageObj that are missing it.
-    repeat
+    except {accept inability to create}
+    end
+    else
+      Error := True; {bad stream or Nil}
+  end;
+  if (I >= 0) or Assigned(Image) or Error then {a valid image in the Cache or Bad stream}
+  begin
+    while J >= 0 do
+    begin
       Obj := MissingImages.Objects[J];
       if (Obj = Self) and not IsCopy and not Error then
         BitmapLoaded := False {the background image, set to load}
@@ -7613,15 +7598,18 @@ begin
       end;
       MissingImages.Delete(J);
       J := MissingImages.IndexOf(UName);
-    until J = -1;
+    end;
   end;
 end;
 
 //------------------------------------------------------------------------------
 function ThtDocument.GetTheBitmap(const BMName: ThtString; var Transparent: Transparency;
   out AMask: TBitmap; out FromCache, Delay: boolean): TgpObject;
-{Note: Bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
-{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif or TrPng here}
+{Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy
+ them}
+{Transparent may be set to NotTransp or LLCorner on entry but may discover it's
+ TGif here}
+
 var
   UName: ThtString;
   I: Integer;
@@ -13393,8 +13381,14 @@ end;
 
 constructor TCell.Create(Master: ThtDocument);
 begin
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TCell.Create');
+   {$ENDIF}
   inherited Create(Master);
   IMgr := TIndentManager.Create;
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.ExitMethod(Self,'TCell.Create');
+   {$ENDIF}
 end;
 
 {----------------TCell.CreateCopy}
@@ -13421,6 +13415,16 @@ var
   LIndex, RIndex: Integer;
   SaveID: TObject;
 begin
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TCell.DoLogic');
+  CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
+  CodeSite.SendFmtMsg('Width       = [%d]',[Width]);
+  CodeSite.SendFmtMsg('AHeight     = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  CodeSite.SendFmtMsg('Cur         = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   IMgr.Init(0, Width);
   SaveID := IMgr.CurrentID;
   IMgr.CurrentID := Self;
@@ -13436,6 +13440,10 @@ begin
   IMgr.CurrentID := SaveID;
   if IB > Result then
     Result := IB;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TCell.DoLogic');
+  {$ENDIF}
 end;
 
 {----------------TCell.Draw}
@@ -13491,6 +13499,16 @@ var
   H, Tmp: Integer;
   SB: TSectionBase;
 begin
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TBlockCell.DoLogicX');
+  CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
+  CodeSite.SendFmtMsg('Width       = [%d]',[Width]);
+  CodeSite.SendFmtMsg('AHeight     = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt        = [%d]',[BlHt]);
+  CodeSite.SendFmtMsg('Cur         = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   YValue := Y;
   StartCurs := Curs;
   H := 0;
@@ -13522,6 +13540,10 @@ begin
   Len := Curs - StartCurs;
   Result := H;
   CellHeight := Result;
+   {$IFDEF JPM_DEBUGGING}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBlockCell.DoLogicX');
+   {$ENDIF}
 end;
 
 
