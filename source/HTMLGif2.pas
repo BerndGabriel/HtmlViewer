@@ -153,9 +153,8 @@ type
     property Visible: Boolean read FVisible write FVisible;
   end;
 
-function CreateAGifFromStream(var NonAnimated: boolean;
-  Stream: TStream): TGifImage;
-function CreateAGif(const Name: string; var NonAnimated: boolean): TGifImage;
+function CreateAGifFromStream(Stream: TStream): TGifImage;
+// BG, 01.04.2012: unused: function CreateAGif(const Name: string; var NonAnimated: boolean): TGifImage;
 
 implementation
 
@@ -166,25 +165,20 @@ begin
   Result.Height := Height;
 end;
 
-function CreateAGifFromStream(var NonAnimated: boolean;
-  Stream: TStream): TGifImage;
+function CreateAGifFromStream(Stream: TStream): TGifImage;
 var
   AGif: TGif;
   Frame: TgfFrame;
   I: integer;
   ABitmap, AMask: TBitmap;
 begin
-  Result := nil;
+  AGif := TGif.Create;
   try
-    NonAnimated := True;
-    AGif := TGif.Create;
+    AGif.LoadFromStream(Stream);
+    Result := TGifImage.Create;
     try
-      AGif.LoadFromStream(Stream);
-      Result := TGifImage.Create;
-
       Result.FNumFrames := AGif.ImageCount;
       Result.FAnimated := Result.FNumFrames > 1;
-      NonAnimated := not Result.FAnimated;
       Result.FImageWidth := AGif.Width;
       Result.FImageHeight := AGif.Height;
       Result.FNumIterations := AGif.LoopCount;
@@ -228,29 +222,31 @@ begin
       end;
       if Result.IsAnimated then
         Result.WasDisposal := dtToBackground;
-    finally
-      AGif.Free;
+    except
+      Result.Free;
+      raise;
     end;
-  except
-    FreeAndNil(Result);
+  finally
+    AGif.Free;
   end;
 end;
 
-function CreateAGif(const Name: string; var NonAnimated: boolean): TGifImage;
-var
-  Stream: TFileStream;
-begin
-  Result := nil;
-  try
-    Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
-    try
-      Result := CreateAGifFromStream(NonAnimated, Stream);
-    finally
-      Stream.Free;
-    end;
-  except
-  end;
-end;
+// BG, 01.04.2012: unused:
+//function CreateAGif(const Name: string; var NonAnimated: boolean): TGifImage;
+//var
+//  Stream: TFileStream;
+//begin
+//  Result := nil;
+//  try
+//    Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+//    try
+//      Result := CreateAGifFromStream(NonAnimated, Stream);
+//    finally
+//      Stream.Free;
+//    end;
+//  except
+//  end;
+//end;
 
 {----------------TgfFrame.Create}
 

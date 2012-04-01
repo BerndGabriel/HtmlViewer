@@ -319,7 +319,7 @@ type
   ThvPanel = class(TPanel)
   public
     FVisible: boolean;
-    procedure SetVisible(Value: boolean);
+    procedure SetVisible(Value: boolean); {$ifdef LCL} override; {$endif}
     property Visible: boolean read FVisible write SetVisible default True;
   end;
 
@@ -1595,9 +1595,6 @@ begin
   end;
 end;
 
-var
-  NLevel: Integer; {for debugging}
-
 type
   TSectionClass = class of TSectionBase;
   EProcessError = class(Exception);
@@ -2274,43 +2271,43 @@ var
   Stream: TMemoryStream;
   I: Integer;
 begin
-  Transparent := NotTransp;
-  AMask := nil;
-  if NewImage is TMemoryStream then
-    TmpImage := LoadImageFromStream(TMemoryStream(NewImage), Transparent, AMask)
-  else
-  begin
-    // TODO BG, 30.11.2010: do we need this intermediate stream?
-    Stream := TMemoryStream.Create;
-    try
-      Stream.LoadFromStream(NewImage);
-      TmpImage := LoadImageFromStream(Stream, Transparent, AMask);
-    finally
-      Stream.Free;
+  try
+    Transparent := NotTransp;
+    AMask := nil;
+    if NewImage is TMemoryStream then
+      TmpImage := LoadImageFromStream(NewImage, Transparent, AMask)
+    else
+    begin
+      // TODO BG, 30.11.2010: do we need this intermediate stream?
+      Stream := TMemoryStream.Create;
+      try
+        Stream.LoadFromStream(NewImage);
+        TmpImage := LoadImageFromStream(Stream, Transparent, AMask);
+      finally
+        Stream.Free;
+      end;
     end;
-  end;
-  if Assigned(TmpImage) then
-  begin
+
+    // terminated old image
     if not Swapped then
     begin
     {OrigImage is left in cache and kept}
-      if (Image is TGifImage) then
+      if Image is TGifImage then
         Document.AGifList.Remove(Image);
       Swapped := True;
     end
     else {swapped already}
     begin
-      if (Image is TGifImage) then
-      begin
+      if Image is TGifImage then
         Document.AGifList.Remove(Image);
-      end;
       Image.Free;
       FreeAndNil(Mask);
     end;
     FreeAndNil(FBitmap);
+
+    // initialize new image
     Image := TmpImage;
-    if (Image is TGifImage) then
-    begin
+    if Image is TGifImage then
       if not FHoverImage then
       begin
         TGifImage(Image).Animate := True;
@@ -2321,10 +2318,11 @@ begin
         TGifImage(Image).Animate := False;
         SetHover(hvOff);
       end;
-    end;
     Mask := AMask;
+
     if Missing then
-    begin {if waiting for image, no longer want it}
+    begin
+      // image is not missing any more
       with Document.MissingImages do
         for I := 0 to count - 1 do
           if Objects[I] = Self then
@@ -2334,7 +2332,10 @@ begin
           end;
       Missing := False;
     end;
+
     Document.PPanel.Invalidate;
+  except
+    // replacing image failed
   end;
 end;
 
@@ -7261,7 +7262,6 @@ var
 begin
   Inc(CycleNumber);
   TableNestLevel := 0;
-  NLevel := 0;
   InLogic2 := False;
   if Assigned(Timer) then
     Timer.Enabled := False;
@@ -7453,7 +7453,7 @@ end;
 procedure ThtDocument.InsertImage(const Src: ThtString; Stream: TStream; out Reformat: boolean);
 var
   UName: ThtString;
-  I, J: Integer;
+  J: Integer;
   Pair: TBitmapItem;
   Rformat, Error: boolean;
   Image: TgpObject;
@@ -7461,41 +7461,37 @@ var
   Tr, Transparent: Transparency;
   Obj: TObject;
 begin
-  Image := nil;
-  AMask := nil;
-  Error := False;
   Reformat := False;
   UName := Trim(Uppercase(Src));
-  I := BitmapList.IndexOf(UName); {first see if the bitmap is already loaded}
-  J := MissingImages.IndexOf(UName); {see if it's in missing image list}
-  if (I = -1) and (J >= 0) then
+  J := MissingImages.IndexOf(UName);
+  if J >= 0 then
   begin
-    Transparent := NotTransp;
-    Image := LoadImageFromStream(Stream, Transparent, AMask);
-    if Assigned(Image) then {put in Cache}
-    try
-      if Assigned(AMask) then
-        Tr := Transparent
-      else
-        Tr := NotTransp;
-      Pair := TBitmapItem.Create(Image, AMask, Tr);
+    Error := False;
+    if BitmapList.IndexOf(UName) = -1 then
+      // Bitmap not yet loaded: Add to BitmmapList.
       try
-        BitmapList.AddObject(UName, Pair); {put new bitmap in list}
-        BitmapList.DecUsage(UName); {this does not count as being used yet}
+        AMask := nil;
+        Transparent := NotTransp;
+        Image := LoadImageFromStream(Stream, Transparent, AMask);
+        if AMask <> nil then
+          Tr := Transparent
+        else
+          Tr := NotTransp;
+        Pair := TBitmapItem.Create(Image, AMask, Tr);
+        try
+          BitmapList.AddObject(UName, Pair); {put new bitmap in list}
+          BitmapList.DecUsage(UName); {this does not count as being used yet}
+        except {accept inability to create}
+          Pair.Mask := nil;
+          Pair.MImage := nil;
+          Pair.Free;
+        end;
       except
-        Pair.Mask := nil;
-        Pair.MImage := nil;
-        Pair.Free;
+        Error := True;
       end;
-    except {accept inability to create}
-    end
-    else
-      Error := True; {bad stream or Nil}
-  end;
-  if (I >= 0) or Assigned(Image) or Error then {a valid image in the Cache or Bad stream}
-  begin
-    while J >= 0 do
-    begin
+
+    // Insert image into all TImageObj that are missing it.
+    repeat
       Obj := MissingImages.Objects[J];
       if (Obj = Self) and not IsCopy and not Error then
         BitmapLoaded := False {the background image, set to load}
@@ -7506,18 +7502,15 @@ begin
       end;
       MissingImages.Delete(J);
       J := MissingImages.IndexOf(UName);
-    end;
+    until J = -1;
   end;
 end;
 
 //------------------------------------------------------------------------------
 function ThtDocument.GetTheBitmap(const BMName: ThtString; var Transparent: Transparency;
   out AMask: TBitmap; out FromCache, Delay: boolean): TgpObject;
-{Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy
- them}
-{Transparent may be set to NotTransp or LLCorner on entry but may discover it's
- TGif here}
-
+{Note: Bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
+{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif or TrPng here}
 var
   UName: ThtString;
   I: Integer;
@@ -7526,93 +7519,96 @@ var
   Stream: TStream;
   Color: TColor;
 begin
+  Result := nil;
   AMask := nil;
   Delay := False;
   FromCache := False;
-  if BMName <> '' then
-  begin
-    UName := Trim(Uppercase(BMName));
-    I := BitmapList.IndexOf(UName); {first see if the bitmap is already loaded}
-    if I > -1 then
-    begin {yes, handle the case where the image is already loaded}
-      Result := BitmapList.GetImage(I);
-      FromCache := True;
-      if Result is TBitmap then
-        with BitmapList.Objects[I] do
-        begin
-          if Transp = TrGif then
-            Transparent := TrGif {it's a transparent GIF}
-          else if Transp = TrPng then
-            Transparent := TrPng
-          else if Transparent = LLCorner then
-          begin
-            if not Assigned(Mask) then {1st bitmap may not have been marked transp}
-              Mask := GetImageMask(TBitmap(MImage), False, 0);
-            if Assigned(Mask) then
-              Transp := LLCorner;
-          end;
-          AMask := Mask;
-        end;
-      Exit;
-    end;
-
-  {The image is not loaded yet, need to get it}
-    Result := nil;
-    if Assigned(GetBitmap) or Assigned(GetImage) then
+  try
+    if BMName <> '' then
     begin
-      if Assigned(GetBitmap) then
-      begin {the OnBitmapRequest event}
-        Color := -1;
-        GetBitmap(TheOwner, BMName, TBitmap(Result), Color);
-        if Assigned(Result) then
-          if Color <> -1 then
-          begin
-            AMask := GetImageMask(TBitmap(Result), True, Color);
-            Transparent := TrGif;
-          end
-          else if (Transparent = LLCorner) then
-            AMask := GetImageMask(TBitmap(Result), False, 0);
+      UName := Trim(Uppercase(BMName));
+      I := BitmapList.IndexOf(UName); {first see if image is already loaded}
+      if I >= 0 then
+      begin {yes, image is already loaded}
+        Result := BitmapList.GetImage(I);
+        FromCache := True;
+        if Result is TBitmap then
+        begin
+          Pair := BitmapList.Objects[I];
+          case Pair.Transp of
+            TrGif, TrPng:
+              Transparent := Pair.Transp;
+          else
+            if Transparent = LLCorner then
+            begin
+              if not Assigned(Pair.Mask) then {1st bitmap may not have been marked transp}
+                Pair.Mask := GetImageMask(TBitmap(Result), False, 0);
+              if Assigned(Pair.Mask) then
+                Pair.Transp := LLCorner;
+            end;
+          end;
+          AMask := Pair.Mask;
+        end;
+        Exit;
       end;
-      if Assigned(GetImage) then
-      begin {the OnImageRequest}
-        Stream := nil;
-        GetImage(TheOwner, BMName, Stream);
-        if Stream = WaitStream then
-          Delay := True
-        else if Stream = ErrorStream then
-          Result := nil
-        else if Assigned(Stream) then
-          try
-            Result := LoadImageFromStream(Stream, Transparent, AMask);
-          finally
-            if assigned(GottenImage) then
-              GottenImage(TheOwner, BMName, Stream);
-          end
-        else
-          Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent, AMask);
-      end;
-    end
-    else
-      Result := LoadImageFromFile(BMName, Transparent, AMask);
-    if Assigned(Result) then {put in Image List for use later also}
-    try
-      if Assigned(AMask) then
-        Tr := Transparent
+
+    {The image is not loaded yet, need to get it}
+      if Assigned(GetBitmap) or Assigned(GetImage) then
+      begin
+        if Assigned(GetBitmap) then
+        begin {the OnBitmapRequest event}
+          Color := -1;
+          GetBitmap(TheOwner, BMName, TBitmap(Result), Color);
+          if Assigned(Result) then
+            if Color <> -1 then
+            begin
+              AMask := GetImageMask(TBitmap(Result), True, Color);
+              Transparent := TrGif;
+            end
+            else if (Transparent = LLCorner) then
+              AMask := GetImageMask(TBitmap(Result), False, 0);
+        end;
+        if Assigned(GetImage) then
+        begin {the OnImageRequest}
+          Stream := nil;
+          GetImage(TheOwner, BMName, Stream);
+          if Stream = WaitStream then
+            Delay := True
+          else if Stream = ErrorStream then
+            Result := nil
+          else if Assigned(Stream) then
+            try
+              Result := LoadImageFromStream(Stream, Transparent, AMask);
+            finally
+              if assigned(GottenImage) then
+                GottenImage(TheOwner, BMName, Stream);
+            end
+          else
+            Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent, AMask);
+        end;
+      end
       else
-        Tr := NotTransp;
-      Pair := TBitmapItem.Create(Result, AMask, Tr);
-      try
-        BitmapList.AddObject(UName, Pair); {put new bitmap in list}
-      except
-        Pair.Mask := nil;
-        Pair.MImage := nil;
-        Pair.Free;
+        Result := LoadImageFromFile(BMName, Transparent, AMask);
+
+      if Assigned(Result) then {put in Image List for use later also}
+      begin
+        if Assigned(AMask) then
+          Tr := Transparent
+        else
+          Tr := NotTransp;
+        Pair := TBitmapItem.Create(Result, AMask, Tr);
+        try
+          BitmapList.AddObject(UName, Pair); {put new bitmap in list}
+        except
+          Pair.Mask := nil;
+          Pair.MImage := nil;
+          Pair.Free;
+        end;
       end;
-    except {accept inability to create}
     end;
-  end
-  else
+  except
     Result := nil;
+  end;
 end;
 
 //------------------------------------------------------------------------------

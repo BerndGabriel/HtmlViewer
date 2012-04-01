@@ -1847,232 +1847,6 @@ begin
   end;
 end;
 
-
-function ConvertImage(Bitmap: TBitmap): TBitmap;
-{convert bitmap into a form for BitBlt later}
-
-  function DIBConvert: TBitmap;
-  var
-    DC: HDC;
-    DIB: TDib;
-    OldBmp: HBitmap;
-    OldPal: HPalette;
-    Hnd: HBitmap;
-  begin
-    DC := CreateCompatibleDC(0);
-    OldBmp := SelectObject(DC, Bitmap.Handle);
-    OldPal := SelectPalette(DC, ThePalette, False);
-    RealizePalette(DC);
-    DIB := TDib.CreateDIB(DC, Bitmap);
-    Hnd := DIB.CreateDIBmp;
-    DIB.Free;
-    SelectPalette(DC, OldPal, False);
-    SelectObject(DC, OldBmp);
-    DeleteDC(DC);
-    Bitmap.Free;
-    Result := TBitmap.Create;
-    Result.Handle := Hnd;
-    if (ColorBits = 8) and (Result.Palette = 0) then
-      Result.Palette := CopyPalette(ThePalette);
-  end;
-
-begin
-  if not Assigned(Bitmap) then
-  begin
-    Result := nil;
-    Exit;
-  end;
-
-  if ColorBits > 8 then
-  begin
-    if Bitmap.PixelFormat <= pf8bit then
-      Result := DIBConvert
-    else
-      Result := Bitmap;
-    Exit;
-  end;
-
-  if Bitmap.HandleType = bmDIB then
-  begin
-    Result := GetBitmap(Bitmap);
-    Bitmap.Free;
-    Exit;
-  end;
-  Result := DIBConvert;
-end;
-
-//{----------------GetImageAndMaskFromFile}
-//
-//function GetImageAndMaskFromFile(const Filename: ThtString; var Transparent: Transparency;
-//  var Mask: TBitmap): TgpObject;
-//var
-//  Stream: TMemoryStream;
-//begin
-//  Result := nil;
-//  Mask := nil;
-//  if not FileExists(Filename) then
-//    Exit;
-//  {$IFNDEF NoGDIPlus}
-//  if GDIPlusActive and (KindOfImageFile(Filename) = Png) then
-//  begin
-//    Result := TObject(TGPBitmap.Create(Filename));
-//  end
-//  else
-//  {$ENDIF !NoGDIPlus}
-//  begin
-//    Stream := TMemoryStream.Create;
-//    Stream.LoadFromFile(Filename);
-//    try
-//      Result := GetImageAndMaskFromStream(Stream, Transparent, Mask);
-//    finally
-//      Stream.Free;
-//    end;
-//  end;
-//end;
-
-{----------------GetBitmapAndMaskFromStream}
-
-function GetBitmapAndMaskFromStream(Stream: TStream;
-  var Transparent: Transparency; var AMask: TBitmap): TBitmap;
-var
-  jpImage: TJpegImage;
-{$ifdef LCL}
-  pngImage: TPortableNetworkGraphic;
-{$endif}
-begin
-  Result := nil;
-  AMask := nil;
-  if not Assigned(Stream) or (Stream.Size < 20) then
-    Exit;
-  Stream.Position := 0;
-  try
-    case KindOfImage(Stream) of
-      Jpg:
-      begin
-        Transparent := NotTransp;
-        jpImage := TJpegImage.Create;
-        try
-          jpImage.LoadFromStream(Stream);
-          if ColorBits <= 8 then
-          begin
-            jpImage.PixelFormat := {$ifdef LCL} pf8bit {$else} jf8bit {$endif};
-            if not jpImage.GrayScale and (ColorBits = 8) then
-              jpImage.Palette := CopyPalette(ThePalette);
-          end
-          else
-            jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
-          Result := TBitmap.Create;
-          Result.Assign(jpImage);
-        finally
-          jpImage.Free;
-        end;
-      end;
-
-      Png:
-      begin
-{$ifdef LCL}
-        pngImage := TPortableNetworkGraphic.Create;
-        try
-          Transparent := TrPng;
-          pngImage.LoadFromStream(Stream);
-          if ColorBits <= 8 then
-            pngImage.PixelFormat := pf8bit
-          else
-            pngImage.PixelFormat := pf24bit;
-          Result := TBitmap.Create;
-          Result.Assign(pngImage);
-          pngImage.Mask(clDefault);
-          if pngImage.MaskHandleAllocated then
-          begin
-            AMask := TBitmap.Create;
-            AMask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
-          end;
-        finally
-          pngImage.Free;
-        end;
-{$endif}
-      end;
-
-      Bmp:
-      begin
-        Result := TBitmap.Create;
-        Result.LoadFromStream(Stream);
-      end;
-    end;
-
-    if Transparent = LLCorner then
-      AMask := GetImageMask(Result, False, 0);
-    Result := ConvertImage(Result);
-  except
-    freeAndNil(Result);
-    freeAndNil(AMask);
-  end;
-end;
-
-{----------------GetImageAndMaskFromStream}
-
-{$IFNDEF NoGDIPlus}
-var
-  TempPathInited: Boolean;
-  TempPath: array [0..Max_Path] of char;
-{$ENDIF !NoGDIPlus}
-
-function GetImageAndMaskFromStream(Stream: TStream;
-  var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-{$IFNDEF NoGDIPlus}
-var
-  Filename: string;
-  F: TFileStream;
-{$ENDIF !NoGDIPlus}
-begin
-  Result := nil;
-  AMask := nil;
-  if not Assigned(Stream) or (Stream.Size < 20) then
-    Exit;
-  Stream.Position := 0;
-
-  {$IFNDEF NoGDIPlus}
-  if GDIPlusActive and (KindOfImage(Stream) = png) then
-  begin
-    try
-      if not TempPathInited then
-      begin
-        GetTempPath(Max_Path, TempPath);
-        TempPathInited := True;
-      end;
-      SetLength(Filename, Max_Path+1);
-      GetTempFilename(TempPath, 'png', 0, PChar(Filename));
-      SetLength(Filename, Pos(#0, Filename) - 1);
-      F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
-      try
-        F.CopyFrom(Stream, Stream.Size);
-      finally
-        F.Free;
-      end;
-      Result := TgpImage.Create(Filename, True); {True because it's a temporary file}
-      Transparent := NotTransp;
-    except
-    end;
-    Exit;
-  end;
-  {$ENDIF !NoGDIPlus}
-
-  Result := GetBitmapAndMaskFromStream(Stream, Transparent, AMask);
-{$IFNDEF NoMetafile}
-  if not Assigned(Result) then
-  begin
-    Result := ThtMetafile.Create;
-    try
-      AMask := nil;
-      Transparent := NotTransp;
-      ThtMetaFile(Result).LoadFromStream(Stream);
-    except
-      FreeAndNil(Result);
-    end;
-  end;
-{$ENDIF}
-end;
-
 function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBitmap;
 begin
   try
@@ -2097,36 +1871,202 @@ end;
 //-- BG ---------------------------------------------------------- 26.09.2010 --
 function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
-var
-  NonAnimated: boolean;
-  Tmp: TGifImage;
-begin
-  Result := nil;
-  if (Stream <> nil) and (Stream.Size > 0) then
-  begin
-    NonAnimated := True;
-    if KindOfImage(Stream) in [GIF{, Gif89}] then
-      Result := CreateAGifFromStream(NonAnimated, Stream);
-    if Result <> nil then
+
+  function ConvertImage(Bitmap: TBitmap): TBitmap;
+  {convert bitmap into a form for BitBlt later}
+
+    function DIBConvert: TBitmap;
+    var
+      DC: HDC;
+      DIB: TDib;
+      OldBmp: HBitmap;
+      OldPal: HPalette;
+      Hnd: HBitmap;
     begin
-      if NonAnimated then
-      begin {else already have animated GIF}
-        Tmp := TGifImage(Result);
-        Result := TBitmap.Create;
-        TBitmap(Result).Assign(Tmp.MaskedBitmap);
-        if Tmp.IsTransparent then
+      DC := CreateCompatibleDC(0);
+      OldBmp := SelectObject(DC, Bitmap.Handle);
+      OldPal := SelectPalette(DC, ThePalette, False);
+      RealizePalette(DC);
+      DIB := TDib.CreateDIB(DC, Bitmap);
+      Hnd := DIB.CreateDIBmp;
+      DIB.Free;
+      SelectPalette(DC, OldPal, False);
+      SelectObject(DC, OldBmp);
+      DeleteDC(DC);
+      Bitmap.Free;
+      Result := TBitmap.Create;
+      Result.Handle := Hnd;
+      if (ColorBits = 8) and (Result.Palette = 0) then
+        Result.Palette := CopyPalette(ThePalette);
+    end;
+
+  begin
+    if ColorBits > 8 then
+    begin
+      if Bitmap.PixelFormat <= pf8bit then
+        Result := DIBConvert
+      else
+        Result := Bitmap;
+    end
+    else if Bitmap.HandleType = bmDIB then
+    begin
+      Result := GetBitmap(Bitmap);
+      Bitmap.Free;
+    end
+    else
+      Result := DIBConvert;
+  end;
+
+  function LoadGifFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+  var
+    GifImage: TGifImage;
+    Bitmap: TBitmap;
+  begin
+    GifImage := CreateAGifFromStream(Stream);
+    if GifImage.IsAnimated then
+      Result := GifImage
+    else
+    begin
+      Bitmap := TBitmap.Create;
+      try
+        Bitmap.Assign(GifImage.MaskedBitmap);
+        if GifImage.IsTransparent then
         begin
           AMask := TBitmap.Create;
-          AMask.Assign(Tmp.Mask);
+          AMask.Assign(GifImage.Mask);
           Transparent := TrGif;
         end
         else if Transparent = LLCorner then
-          AMask := GetImageMask(TBitmap(Result), False, 0);
-        Tmp.Free;
+          AMask := GetImageMask(Bitmap, False, 0);
+        GifImage.Free;
+        Result := Bitmap;
+      except
+        Bitmap.Free;
+        raise;
       end;
-    end
-    else
-      Result := GetImageAndMaskFromStream(Stream, Transparent, AMask);
+    end;
+  end;
+
+  function LoadPngFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+{$ifdef LCL}
+  var
+    PngImage: TPortableNetworkGraphic;
+    Bitmap: TBitmap;
+{$endif}
+  begin
+{$IFNDEF NoGDIPlus}
+    if GDIPlusActive then
+    begin
+      Result := TgpImage.Create(Stream);
+      Transparent := NotTransp;
+      exit;
+    end;
+{$ENDIF !NoGDIPlus}
+{$ifdef LCL}
+    PngImage := TPortableNetworkGraphic.Create;
+    try
+      Transparent := TrPng;
+      PngImage.LoadFromStream(Stream);
+      if ColorBits <= 8 then
+        PngImage.PixelFormat := pf8bit
+      else
+        PngImage.PixelFormat := pf24bit;
+      Bitmap := TBitmap.Create;
+      try
+        Bitmap.Assign(PngImage);
+        PngImage.Mask(clDefault);
+        if PngImage.MaskHandleAllocated then
+        begin
+          AMask := TBitmap.Create;
+          AMask.LoadFromBitmapHandles(PngImage.MaskHandle, 0);
+        end;
+        Result := ConvertImage(Bitmap);
+      except
+        Bitmap.Free;
+        raise;
+      end;
+    finally
+      PngImage.Free;
+    end;
+{$else}
+    Result := nil;
+{$endif}
+  end;
+
+  function LoadJpgFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TBitmap;
+  var
+    jpImage: TJpegImage;
+  begin
+    Transparent := NotTransp;
+    jpImage := TJpegImage.Create;
+    try
+      jpImage.LoadFromStream(Stream);
+      if ColorBits <= 8 then
+      begin
+        jpImage.PixelFormat := {$ifdef LCL} pf8bit {$else} jf8bit {$endif};
+        if not jpImage.GrayScale and (ColorBits = 8) then
+          jpImage.Palette := CopyPalette(ThePalette);
+      end
+      else
+        jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
+      Result := TBitmap.Create;
+      try
+        Result.Assign(jpImage);
+        Result := ConvertImage(Result);
+      except
+        Result.Free;
+        raise;
+      end;
+    finally
+      jpImage.Free;
+    end;
+  end;
+
+  function LoadBmpFromStream(Stream: TStream; Transparent: Transparency; var AMask: TBitmap): TBitmap;
+  begin
+    Result := TBitmap.Create;
+    try
+      Result.LoadFromStream(Stream);
+      Result := ConvertImage(Result);
+      if Transparent = LLCorner then
+        AMask := GetImageMask(Result, False, 0);
+    except
+      Result.Free;
+      raise;
+    end;
+  end;
+
+  function LoadMetaFileFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+  begin
+{$IFDEF NoMetafile}
+    Result := nil;
+{$ELSE}
+    Result := ThtMetafile.Create;
+    try
+      AMask := nil;
+      Transparent := NotTransp;
+      ThtMetaFile(Result).LoadFromStream(Stream);
+    except
+      FreeAndNil(Result);
+    end;
+{$ENDIF}
+  end;
+
+begin
+  if (Stream = nil) or (Stream.Size < SizeOf(DWord)) then
+  begin
+    Result := nil;
+    exit;
+  end;
+
+  Stream.Position := 0;
+  case KindOfImage(Stream) of
+    Gif: Result := LoadGifFromStream(Stream, Transparent, AMask);
+    Png: Result := LoadPngFromStream(Stream, Transparent, AMask);
+    Jpg: Result := LoadJpgFromStream(Stream, Transparent, AMask);
+    Bmp: Result := LoadBmpFromStream(Stream, Transparent, AMask);
+  else
+    Result := LoadMetaFileFromStream(Stream, Transparent, AMask);
   end;
 end;
 
