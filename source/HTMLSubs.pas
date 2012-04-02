@@ -7648,7 +7648,7 @@ end;
 procedure ThtDocument.InsertImage(const Src: ThtString; Stream: TStream; out Reformat: boolean);
 var
   UName: ThtString;
-  I, J: Integer;
+  J: Integer;
   Pair: TBitmapItem;
   Rformat, Error: boolean;
   Image: TgpObject;
@@ -7656,41 +7656,37 @@ var
   Tr, Transparent: Transparency;
   Obj: TObject;
 begin
-  Image := nil;
-  AMask := nil;
-  Error := False;
   Reformat := False;
   UName := Trim(Uppercase(Src));
-  I := BitmapList.IndexOf(UName); {first see if the bitmap is already loaded}
-  J := MissingImages.IndexOf(UName); {see if it's in missing image list}
-  if (I = -1) and (J >= 0) then
+  J := MissingImages.IndexOf(UName);
+  if J >= 0 then
   begin
-    Transparent := NotTransp;
-    Image := LoadImageFromStream(Stream, Transparent, AMask);
-    if Assigned(Image) then {put in Cache}
-    try
-      if Assigned(AMask) then
-        Tr := Transparent
-      else
-        Tr := NotTransp;
-      Pair := TBitmapItem.Create(Image, AMask, Tr);
+    Error := False;
+    if BitmapList.IndexOf(UName) = -1 then
+      // Bitmap not yet loaded: Add to BitmmapList.
       try
-        BitmapList.AddObject(UName, Pair); {put new bitmap in list}
-        BitmapList.DecUsage(UName); {this does not count as being used yet}
+        AMask := nil;
+        Transparent := NotTransp;
+        Image := LoadImageFromStream(Stream, Transparent, AMask);
+        if AMask <> nil then
+          Tr := Transparent
+        else
+          Tr := NotTransp;
+        Pair := TBitmapItem.Create(Image, AMask, Tr);
+        try
+          BitmapList.AddObject(UName, Pair); {put new bitmap in list}
+          BitmapList.DecUsage(UName); {this does not count as being used yet}
+        except {accept inability to create}
+          Pair.Mask := nil;
+          Pair.MImage := nil;
+          Pair.Free;
+        end;
       except
-        Pair.Mask := nil;
-        Pair.MImage := nil;
-        Pair.Free;
+        Error := True;
       end;
-    except {accept inability to create}
-    end
-    else
-      Error := True; {bad stream or Nil}
-  end;
-  if (I >= 0) or Assigned(Image) or Error then {a valid image in the Cache or Bad stream}
-  begin
-    while J >= 0 do
-    begin
+
+    // Insert image into all TImageObj that are missing it.
+    repeat
       Obj := MissingImages.Objects[J];
       if (Obj = Self) and not IsCopy and not Error then
         BitmapLoaded := False {the background image, set to load}
@@ -7701,18 +7697,15 @@ begin
       end;
       MissingImages.Delete(J);
       J := MissingImages.IndexOf(UName);
-    end;
+    until J = -1;
   end;
 end;
 
 //------------------------------------------------------------------------------
 function ThtDocument.GetTheBitmap(const BMName: ThtString; var Transparent: Transparency;
   out AMask: TBitmap; out FromCache, Delay: boolean): TgpObject;
-{Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy
- them}
-{Transparent may be set to NotTransp or LLCorner on entry but may discover it's
- TGif here}
-
+{Note: Bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
+{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif or TrPng here}
 var
   UName: ThtString;
   I: Integer;
