@@ -70,6 +70,8 @@ function GetURLExtension(const URL: ThtString): ThtString;
 function GetURLFilenameAndExt(const URL: ThtString): ThtString;
 {returns mixed case after last /}
 
+function DecodeURL(const URL: ThtString): ThtString;
+{return % encoded URL convert to UnicodeString}
 
 {***************************************************************************************************
  * both URL and DOS processing methods
@@ -555,10 +557,94 @@ begin
   Result := FName;
 end;
 
+//-- BG ---------------------------------------------------------- 04.04.2012 --
+function DecodeURL(const URL: ThtString): ThtString;
+{return % encoded URL convert to UnicodeString.
+ According to http://tools.ietf.org/html/rfc3986 percent encoded data is in UTF-8}
+var
+  J: Integer;
+  FName: ThtString;
+
+  function GetNextChar: Cardinal;
+
+    function GetNext: Cardinal;
+
+      function CharToHexInt(Chr: ThtChar): Cardinal;
+      begin
+        case Chr of
+          '0'..'9': Result := Ord(Chr) - Ord('0');
+          'A'..'F': Result := Ord(Chr) - Ord('A') + 10;
+          'a'..'f': Result := Ord(Chr) - Ord('a') + 10;
+        else
+          raise EConvertError.Create('Invalid escape character: ''' + Chr + '''');
+        end;
+      end;
+
+    begin
+      if Length(FName) - J < 2 then
+        raise EConvertError.CreateFmt('Invalid escape sequence: 3 digits expected, but %d found', [Length(FName) - J + 1]);
+      if FName[J] <> '%' then
+        raise EConvertError.CreateFmt('Invalid escape sequence: "%%" expected but "%s" (#%d) found', [FName[J], Ord(FName[J])]);
+      Inc(J);
+
+      Result := CharToHexInt(FName[J]) * 16;
+      Inc(J);
+
+      Inc(Result, CharToHexInt(FName[J]));
+      Inc(J);
+    end;
+
+  var
+    Chr: Cardinal;
+  begin
+    // convert UTF-8 to Unicode:
+    Result := GetNext;
+    if (Result and $80) <> 0 then
+    begin
+      Chr := Result and $3F;
+      if (Result and $20) <> 0 then
+      begin
+        Result := GetNext;
+        if (Result and $C0) <> $80 then
+          raise EConvertError.Create('Invalid 3 octet UTF sequence.');
+        Chr := (Chr shl 6) or (Result and $3F);
+      end;
+      Result := GetNext;
+      if (Result and $C0) <> $80 then
+        raise EConvertError.Create('Invalid UTF sequence.');
+      Result := (Chr shl 6) or (Result and $3F);
+    end;
+  end;
+
+var
+  I: integer;
+begin
+  FName := URL;
+  I := Pos('%', FName);
+  if I > 0 then
+    while I <= Length(FName) - 2 do
+    begin
+      if FName[I] = '%' then
+      begin
+        try
+          J := I;
+          FName[I] := ThtChar(GetNextChar);
+          Inc(I);
+          Delete(FName, I, J - I);
+        except {ignore exception}
+          I := J;
+        end;
+      end
+      else
+        Inc(I);
+    end;
+  Result := FName;
+end;
+
 function HTMLToDos(FName: ThtString): ThtString;
 {convert an HTML style filename to one for Dos}
 var
-  I: integer;
+  I, N: integer;
 
   procedure Replace(Old, New: ThtChar);
   var
@@ -572,53 +658,22 @@ var
     end;
   end;
 
-  function CharToHexInt(Chr: ThtChar): Integer;
-  begin
-    case Chr of
-      '0'..'9': Result := Ord(Chr) - Ord('0');
-      'A'..'F': Result := Ord(Chr) - Ord('A') + 10;
-      'a'..'f': Result := Ord(Chr) - Ord('a') + 10;
-    else
-      raise EConvertError.Create('Not a valid escape character: ''' + Chr + '''');
-    end;
-  end;
-
-  procedure ReplaceEscapeChars;
-  var
-    I: integer;
-  begin
-    I := Pos('%', FName);
-    while (I >= 1) and (I <= Length(FName) - 2) do
-    begin
-      try
-        FName[I] := ThtChar(CharToHexInt(FName[I + 1]) * 16 + CharToHexInt(FName[I + 2])); // chr(StrToInt(S));
-        Delete(FName, I + 1, 2);
-      except {ignore exception}
-        Exit;
-      end;
-      I := Pos('%', FName);
-    end;
-  end;
-
 begin
-  ReplaceEscapeChars;
+  FName := DecodeURL(FName);
   I := pos('/', FName);
   if I <> 0 then
   begin
-    I := Pos('file:///', Lowercase(FName));
+    I := Pos('file:/', Lowercase(FName));
     if I > 0 then
-      System.Delete(FName, I, 8)
-    else
     begin
-      I := Pos('file://', Lowercase(FName));
-      if I > 0 then
-        System.Delete(FName, I, 7)
+      N := Length(FName);
+      if (N < 7) or (FName[7] <> '/') then
+        N := 6
+      else if (N < 8) or (FName[8] <> '/') then
+        N := 7
       else
-      begin
-        I := Pos('file:/', Lowercase(FName));
-        if I > 0 then
-          System.Delete(FName, I, 6);
-      end;
+        N := 8;
+      System.Delete(FName, I, N);
     end;
     Replace('|', ':');
     Replace('/', '\');
