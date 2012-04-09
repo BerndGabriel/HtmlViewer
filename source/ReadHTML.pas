@@ -3411,7 +3411,7 @@ begin
     Attributes.TheTitle, Attributes.TheStyle);
 
   NewBlock := TBlock.Create(SectionList, Attributes, FPropStack.Last);
-  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
+// BG, 25.03.2012: unused:  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
   SectionList.Add(NewBlock, TagIndex);
   SectionList := NewBlock.MyCell;
   Next;

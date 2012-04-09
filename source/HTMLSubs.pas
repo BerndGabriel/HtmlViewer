@@ -630,7 +630,7 @@ type
     HasBorderStyle: Boolean;
     FloatLR: AlignmentType; {ALeft or ARight if floating}
     ClearAttr: ClearAttrType;
-    IsListBlock: boolean;
+// BG, 25.03.2012: unused:    IsListBlock: boolean;
     PRec: PtPositionRec;
     Positioning: PositionType;
     Visibility: VisibilityType;
