@@ -68,6 +68,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
+  EncdDecd,
   HtmlGlobals,
   HtmlFonts,
   StyleTypes,
@@ -2472,7 +2473,7 @@ end;
 function TImageObj.InsertImage(const UName: ThtString; Error: boolean; var Reformat: boolean): boolean;
 var
   TmpImage: ThtImage;
-  FromCache, Delay: boolean;
+  FromCache, DelayDummy: boolean;
 begin
   Result := False;
   Reformat := False;
@@ -2483,7 +2484,7 @@ begin
       FImage := ErrorImage
     else
     begin
-      TmpImage := Document.GetTheImage(UName, Transparent, FromCache, Delay);
+      TmpImage := Document.GetTheImage(UName, Transparent, FromCache, DelayDummy);
       if not Assigned(TmpImage) then
         Exit;
 
@@ -7412,8 +7413,32 @@ function ThtDocument.GetTheImage(
     end;
   end;
 
+  procedure GetTheBase64(Name: ThtString);
+  var
+    I: Integer;
+    Source: TStream;
+    Stream: TStream;
+  begin
+    I := Pos(';base64,', Name);
+    if I >= 11 then
+    begin
+      Source := TStringStream.Create(Copy(Name, I + 8, MaxInt));
+      try
+        Stream := TMemoryStream.Create;
+        try
+          DecodeStream(Source, Stream);
+          Result := LoadImageFromStream(Stream, Transparent);
+        finally
+          Stream.Free;
+        end;
+      finally
+        Source.Free;
+      end;
+    end;
+  end;
+
 var
-  UName: ThtString;
+  UName, Name: ThtString;
   I: Integer;
 begin
   Result := nil;
@@ -7421,7 +7446,8 @@ begin
   FromCache := False;
   if BMName <> '' then
   begin
-    UName := htUpperCase(htTrim(BMName));
+    Name := htTrim(BMName);
+    UName := htUpperCase(Name);
     I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
     if I >= 0 then
     begin {yes, handle the case where the image is already loaded}
@@ -7431,7 +7457,9 @@ begin
     else
     begin
     {The image is not loaded yet, need to get it}
-      if Assigned(GetBitmap) or Assigned(GetImage) then
+      if Copy(Name, 1, 11) = 'data:image/' then
+        GetTheBase64(Name)
+      else if Assigned(GetBitmap) or Assigned(GetImage) then
       begin
         GetTheBitmap;
         GetTheStream;
