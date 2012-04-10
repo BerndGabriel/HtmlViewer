@@ -7,11 +7,11 @@ package FrameViewer2006;
 {$ALIGN 1}
 {$ASSERTIONS OFF}
 {$BOOLEVAL OFF}
-{$DEBUGINFO ON}
+{$DEBUGINFO OFF}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA OFF}
 {$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
+{$LOCALSYMBOLS OFF}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
 {$OPTIMIZATION ON}
@@ -25,22 +25,23 @@ package FrameViewer2006;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
-  designide,
-  rtl;
+  designide;
 
 contains
   framview in '..\source\framview.pas',
   htmlview in '..\source\htmlview.pas',
-  readhtml in '..\source\readhtml.pas',
+  Readhtml in '..\source\readhtml.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
-  htmlsubs in '..\source\htmlsubs.pas',
+  Htmlsubs in '..\source\htmlsubs.pas',
   HTMLUn2 in '..\source\HTMLUn2.pas',
   vwPrint in '..\source\vwPrint.pas',
   MetaFilePrinter in '..\source\MetaFilePrinter.pas',
@@ -51,7 +52,7 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   StylePars in '..\source\StylePars.pas',
   HTMLGif2 in '..\source\HTMLGif2.pas',
-  htmlgif1 in '..\source\htmlgif1.pas',
+  HtmlGif1 in '..\source\htmlgif1.pas',
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',

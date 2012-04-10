@@ -25,11 +25,14 @@ package FrameViewer6;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESIGNONLY}
 {$IMPLICITBUILD ON}
 {$DEFINE DEBUG}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
   designide,
@@ -55,11 +58,6 @@ contains
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas',
-  HtmlStyles in '..\source\HtmlStyles.pas',
-  HtmlSymbols in '..\source\HtmlSymbols.pas',
-  Parser in '..\source\Parser.pas',
-  HtmlImages in '..\source\HtmlImages.pas',
-  StyleTypes in '..\source\StyleTypes.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas';
 
 end.
