@@ -4279,7 +4279,7 @@ begin
   BitMap.Handle := LoadBitmap(HInstance, MakeIntResource(Resource));
 end;
 
-function htLoadCursor(const CursorName: String): HICON;
+function htLoadCursor(const CursorName: PChar): HICON;
 begin
   Result := LoadCursor(HInstance, CursorName);
 end;
