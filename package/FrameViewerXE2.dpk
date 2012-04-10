@@ -28,15 +28,16 @@ package FrameViewerXE2;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vclimg,
-  designide,
-  rtl;
+  designide;
 
 contains
   framview in '..\source\framview.pas',

@@ -25,12 +25,14 @@ package FrameViewer6;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 {$DEFINE DEBUG}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
   designide,

@@ -25,15 +25,17 @@ package FrameViewer7;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
   designide,
-  rtl;
+  TntUnicodeVcl_R70;
 
 contains
   framview in '..\source\framview.pas',
