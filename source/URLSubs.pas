@@ -275,7 +275,13 @@ begin
   else
     S := Url;
   N := Pos('://', S);
-  Result := (N > 0) and (N < Pos('/', S)) or (Pos('mailto:', Lowercase(S)) <> 0);
+  if (N > 0) and (N < Pos('/', S)) then
+    Result := True
+  else
+  begin
+    S := htLowerCase(S);
+    Result := (Copy(S, 1, 7) = 'mailto:') or (Copy(S, 1, 5) = 'data:');
+  end;
 end;
 
 function GetProtocol(const URL: ThtString): ThtString;
@@ -426,6 +432,11 @@ begin
     else if lowercase(Copy(url, 1, 7)) = 'mailto:' then
     begin
       proto := 'mailto';
+      p := pos(':', url);
+    end
+    else if lowercase(Copy(url, 1, 5)) = 'data:' then
+    begin
+      proto := 'data';
       p := pos(':', url);
     end;
   end

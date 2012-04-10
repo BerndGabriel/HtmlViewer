@@ -1870,7 +1870,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
 function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-// extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
+// extracted from ThtDocument.GetTheImage(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
 
   function ConvertImage(Bitmap: TBitmap): TBitmap;
   {convert bitmap into a form for BitBlt later}
@@ -2072,7 +2072,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
 function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
-// extracted from ThtDocument.GetTheBitmap() and redesigned.
+// extracted from ThtDocument.GetTheImage() and redesigned.
 // Now the image file is loaded once only (was: 2 to 3 times) and GetImageAndMaskFromFile() is obsolete.
 var
   Stream: TStream;

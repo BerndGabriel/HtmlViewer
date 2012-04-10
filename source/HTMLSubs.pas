@@ -68,7 +68,11 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
-  HtmlGlobals, HTMLUn2, StyleUn, HTMLGif2;
+  EncdDecd,
+  HtmlGlobals,
+  HTMLUn2,
+  StyleUn,
+  HTMLGif2;
 
 type
 
@@ -1377,7 +1381,7 @@ type
     function GetFormcontrolData: TFreeList;
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTheBitmap(const BMName: ThtString;
+    function GetTheImage(const BMName: ThtString;
       var Transparent: Transparency; out AMask: TBitmap; out FromCache, Delay: boolean): TgpObject;
     function GetURL(Canvas: TCanvas; X, Y: Integer;
       out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
@@ -2344,7 +2348,7 @@ end;
 function TImageObj.InsertImage(const UName: ThtString; Error: boolean; out Reformat: boolean): boolean;
 var
   TmpImage: TgpObject;
-  FromCache, Delay: boolean;
+  FromCache, DelayDummy: Boolean;
 begin
   Result := False;
   Reformat := False;
@@ -2359,7 +2363,7 @@ begin
     end
     else
     begin
-      TmpImage := Document.GetTheBitmap(UName, Transparent, Mask, FromCache, Delay);
+      TmpImage := Document.GetTheImage(UName, Transparent, Mask, FromCache, DelayDummy);
       if not Assigned(TmpImage) then
         Exit;
 
@@ -2422,7 +2426,7 @@ begin
           Source := Rslt;
         end;
         if MissingImages.IndexOf(Uppercase(Source)) = -1 then
-          TmpImage := Document.GetTheBitmap(Source, Transparent, Mask, FromCache, Missing)
+          TmpImage := Document.GetTheImage(Source, Transparent, Mask, FromCache, Missing)
         else
           Missing := True; {already in list, don't request it again}
       end;
@@ -7507,12 +7511,80 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.GetTheBitmap(const BMName: ThtString; var Transparent: Transparency;
+function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: Transparency;
   out AMask: TBitmap; out FromCache, Delay: boolean): TgpObject;
 {Note: Bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
 {Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif or TrPng here}
+
+  procedure GetTheBitmap;
+  var
+    Color: TColor;
+  begin
+    if Assigned(GetBitmap) then
+    begin {the OnBitmapRequest event}
+      Color := -1;
+      GetBitmap(TheOwner, BMName, TBitmap(Result), Color);
+      if Assigned(Result) then
+        if Color <> -1 then
+        begin
+          AMask := GetImageMask(TBitmap(Result), True, Color);
+          Transparent := TrGif;
+        end
+        else if (Transparent = LLCorner) then
+          AMask := GetImageMask(TBitmap(Result), False, 0);
+    end;
+  end;
+
+  procedure GetTheStream;
+  var
+    Stream: TStream;
+  begin
+    if Assigned(GetImage) then
+    begin {the OnImageRequest}
+      Stream := nil;
+      GetImage(TheOwner, BMName, Stream);
+      if Stream = WaitStream then
+        Delay := True
+      else if Stream = ErrorStream then
+        Result := nil
+      else if Stream <> nil then
+        try
+          Result := LoadImageFromStream(Stream, Transparent, AMask);
+        finally
+          if Assigned(GottenImage) then
+            GottenImage(TheOwner, BMName, Stream);
+        end
+      else
+        Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent, AMask);
+    end;
+  end;
+
+  procedure GetTheBase64(Name: ThtString);
+  var
+    I: Integer;
+    Source: TStream;
+    Stream: TStream;
+  begin
+    I := Pos(';base64,', Name);
+    if I >= 11 then
+    begin
+      Source := TStringStream.Create(Copy(Name, I + 8, MaxInt));
+      try
+        Stream := TMemoryStream.Create;
+        try
+          DecodeStream(Source, Stream);
+          Result := LoadImageFromStream(Stream, Transparent, AMask);
+        finally
+          Stream.Free;
+        end;
+      finally
+        Source.Free;
+      end;
+    end;
+  end;
+
 var
-  UName: ThtString;
+  UName, Name: ThtString;
   I: Integer;
   Pair: TBitmapItem;
   Tr: Transparency;
@@ -7523,10 +7595,12 @@ begin
   AMask := nil;
   Delay := False;
   FromCache := False;
+
   try
     if BMName <> '' then
     begin
-      UName := Trim(Uppercase(BMName));
+      Name := htTrim(BMName);
+      UName := htUpperCase(Name);
       I := BitmapList.IndexOf(UName); {first see if image is already loaded}
       if I >= 0 then
       begin {yes, image is already loaded}
@@ -7553,39 +7627,12 @@ begin
       end;
 
     {The image is not loaded yet, need to get it}
-      if Assigned(GetBitmap) or Assigned(GetImage) then
+      if Copy(Name, 1, 11) = 'data:image/' then
+        GetTheBase64(Name)
+      else if Assigned(GetBitmap) or Assigned(GetImage) then
       begin
-        if Assigned(GetBitmap) then
-        begin {the OnBitmapRequest event}
-          Color := -1;
-          GetBitmap(TheOwner, BMName, TBitmap(Result), Color);
-          if Assigned(Result) then
-            if Color <> -1 then
-            begin
-              AMask := GetImageMask(TBitmap(Result), True, Color);
-              Transparent := TrGif;
-            end
-            else if (Transparent = LLCorner) then
-              AMask := GetImageMask(TBitmap(Result), False, 0);
-        end;
-        if Assigned(GetImage) then
-        begin {the OnImageRequest}
-          Stream := nil;
-          GetImage(TheOwner, BMName, Stream);
-          if Stream = WaitStream then
-            Delay := True
-          else if Stream = ErrorStream then
-            Result := nil
-          else if Assigned(Stream) then
-            try
-              Result := LoadImageFromStream(Stream, Transparent, AMask);
-            finally
-              if assigned(GottenImage) then
-                GottenImage(TheOwner, BMName, Stream);
-            end
-          else
-            Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent, AMask);
-        end;
+        GetTheBitmap;
+        GetTheStream;
       end
       else
         Result := LoadImageFromFile(BMName, Transparent, AMask);
@@ -7649,7 +7696,7 @@ begin
         ExpandName(TheOwner, BitmapName, Rslt);
         BitmapName := Rslt;
       end;
-      TmpResult := GetTheBitmap(BitmapName, Dummy1, Mask, FromCache, Delay); {might be Nil}
+      TmpResult := GetTheImage(BitmapName, Dummy1, Mask, FromCache, Delay); {might be Nil}
       if (TmpResult is TBitmap) {$IFNDEF NoGDIPlus}or (TmpResult is TGpImage){$ENDIF !NoGDIPlus} then
       begin
         BackgroundBitmap := TmpResult;
