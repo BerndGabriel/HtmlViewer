@@ -37,7 +37,7 @@ uses
 {$endif}
 {$ifdef LCL}
   LclIntf, LclType,
-  StdCtrls, Buttons, Forms,
+  StdCtrls, Buttons, Forms, Base64,
   HtmlMisc,
   WideStringsLcl,
   {$ifdef DebugIt}
@@ -248,6 +248,8 @@ type
     psEnding
   );
 }
+
+procedure DecodeStream(Input, Output: TStream);
 {$endif}
 
 {$ifndef Compiler17_Plus}
@@ -663,6 +665,33 @@ begin
   Changed;
 {$endif LCL}
 end;
+
+{$ifdef LCL}
+procedure DecodeStream(Input, Output: TStream);
+const
+  BufferSize = 999;
+var
+  Decoder: TBase64DecodingStream;
+  Buffer: array[1..BufferSize] of Byte;
+  Count: LongInt;
+  I, J: Integer;
+begin
+  I := 0;
+  J := 0;
+  Decoder := TBase64DecodingStream.Create(Input, bdmMIME);
+  try
+    Decoder.Reset;
+    repeat
+      Count := Decoder.Read(Buffer[1], BufferSize);
+      Output.Write(Buffer[1], Count);
+      Inc(I);
+      Inc(J, Count);
+    until Count < BufferSize;
+  finally
+    Decoder.Free;
+  end;
+end;
+{$endif LCL}
 
 { initialization }
 

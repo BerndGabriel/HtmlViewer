@@ -63,12 +63,12 @@ interface
 uses
 {$ifdef VCL}
   Windows,
+  EncdDecd,
 {$endif}
   Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs,
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
-  EncdDecd,
   HtmlGlobals,
   HTMLUn2,
   StyleUn,
@@ -7568,6 +7568,11 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: Trans
     I := Pos(';base64,', Name);
     if I >= 11 then
     begin
+      // Firefox 11 saves multiline inline images by writing %0A for the linefeeds.
+      // BTW: Internet Explorer 9 shows but does not save inline images at all.
+      // Using StringReplace() here is a quick and dirty hack.
+      // Better decode %encoded attribute values while reading the attributes.
+      Name := StringReplace(Name, '%0A', #$0A, [rfReplaceAll]);
       Source := TStringStream.Create(Copy(Name, I + 8, MaxInt));
       try
         Stream := TMemoryStream.Create;
@@ -7588,8 +7593,6 @@ var
   I: Integer;
   Pair: TBitmapItem;
   Tr: Transparency;
-  Stream: TStream;
-  Color: TColor;
 begin
   Result := nil;
   AMask := nil;
