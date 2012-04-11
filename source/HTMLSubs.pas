@@ -5791,6 +5791,13 @@ begin
       DrawSort;
   end;
    {$IFDEF JPM_DEBUGGING}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);

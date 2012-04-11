@@ -1001,7 +1001,6 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'Copy');
-
   {$ENDIF}
 end;
 
@@ -1025,7 +1024,6 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'CopyDefault');
-
   {$ENDIF}
 end;
 
@@ -1090,7 +1088,6 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.Inherit');
-
   {$ENDIF}
 end;
 
@@ -1124,7 +1121,6 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.Update');
-
   {$ENDIF}
 end;
 
@@ -1741,11 +1737,10 @@ procedure ConvVertMargins(const VM: TVMarginArray;
 
 begin
   {$IFDEF JPM_DEBUGGING}
-  CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
+  CodeSiteLogging.CodeSite.EnterMethod('ConvVertMargins');
   CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
-
   StyleUn.LogTVMarginArray(VM,'VM');
   {$ENDIF}
   M[MarginTop] := Convert(VM[MarginTop], TopAuto);
@@ -1753,7 +1748,7 @@ begin
     {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
-  CodeSiteLogging.CodeSite.ExitMethod('ConvMargArray');
+  CodeSiteLogging.CodeSite.ExitMethod('ConvVertMargins');
   StyleUn.LogTMarginArray(M,'M');
   {$ENDIF}
 end;
@@ -1964,7 +1959,21 @@ begin
           else
             M[I] := 0;
         end;
-      piMinWidth, piMaxWidth,
+      piMinWidth,
+      piMaxWidth :
+        begin
+          if VarIsStr(VM[I]) then
+            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
+          else if VarType(VM[I]) in varInt then
+          begin
+            if VM[I] = IntNull then
+              M[I] := 0
+            else
+              M[I] := VM[I];
+          end
+          else
+            M[I] := 0;
+        end;
       piWidth:
         begin
           if VarIsStr(VM[I]) then
@@ -2012,13 +2021,11 @@ begin
       end;
     end;
   end;
-    {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
-
   LogTMarginArray(M,'M');
-   CodeSiteLogging.CodeSite.Send('AutoCount  = [%d]',[AutoCount]);
-
+  CodeSiteLogging.CodeSite.Send('AutoCount  = [%d]',[AutoCount]);
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArray');
   {$ENDIF}
 end;
@@ -2032,9 +2039,9 @@ begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod('ConvMargArrayForCellPadding');
   CodeSiteLogging.CodeSite.AddSeparator;
-   LogTVMarginArray(VM,'VM');
-   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
-   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+  LogTVMarginArray(VM,'VM');
+  CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
+  CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
   {$ENDIF}
   for I := PaddingTop to PaddingLeft do
     if VarIsStr(VM[I]) then
@@ -2052,7 +2059,6 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   LogTMarginArray(M,'M');
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArrayForCellPadding');
-
   {$ENDIF}
 end;
 
@@ -2136,10 +2142,9 @@ begin
       ; {remaining items unsupported/unused}
     end;
   {$IFDEF JPM_DEBUGGING}
-  CodeSiteLogging.CodeSite.AddSeparator;
-  LogTMarginArray(M,'M');
-  CodeSiteLogging.CodeSite.ExitMethod('ConvInlineMargArray');
-
+   CodeSiteLogging.CodeSite.AddSeparator;
+   LogTMarginArray(M,'M');
+   CodeSiteLogging.CodeSite.ExitMethod('ConvInlineMargArray');
   {$ENDIF}
 end;
 
@@ -2168,10 +2173,10 @@ procedure TProperties.Combine(Styles: TStyleList;
       S1: ThtString;
     begin
 {$ifdef JPM_DEBUGGING}
-  CodeSiteLogging.CodeSite.EnterMethod('TProperties.Combine CombineX Merge');
-  CodeSiteLogging.CodeSite.Send('Parameters');
-  CodeSiteLogging.CodeSite.AddSeparator;
-  LogProperties(Source,'Source');
+      CodeSiteLogging.CodeSite.EnterMethod('TProperties.Combine CombineX Merge');
+      CodeSiteLogging.CodeSite.Send('Parameters');
+      CodeSiteLogging.CodeSite.AddSeparator;
+      LogProperties(Source,'Source');
 {$endif}
       for Index := Low(Index) to High(PropIndices) do
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
@@ -2249,12 +2254,11 @@ procedure TProperties.Combine(Styles: TStyleList;
             end;
           end;
 {$ifdef JPM_DEBUGGING}
- CodeSiteLogging.CodeSite.AddSeparator;
- CodeSiteLogging.CodeSite.Send('Results');
-
- CodeSiteLogging.CodeSite.AddSeparator;
- LogProperties(Self,'Self');
- CodeSiteLogging.CodeSite.ExitMethod('TProperties.Combine CombineX Merge');
+      CodeSiteLogging.CodeSite.AddSeparator;
+      CodeSiteLogging.CodeSite.Send('Results');
+      CodeSiteLogging.CodeSite.AddSeparator;
+      LogProperties(Self,'Self');
+      CodeSiteLogging.CodeSite.ExitMethod('TProperties.Combine CombineX Merge');
 {$endif}
     end;
 
@@ -2938,12 +2942,11 @@ begin
     Props[Index] := PropValue;
   end;
 {$ifdef JPM_DEBUGGING}
- CodeSiteLogging.CodeSite.AddSeparator;
- CodeSiteLogging.CodeSite.Send('Results');
-
- CodeSiteLogging.CodeSite.AddSeparator;
- LogProperties(Self,'Self');
- CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByIndex');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.Send('Results');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByIndex');
 {$endif}
 end;
 
@@ -2953,13 +2956,11 @@ var
 begin
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByName');
-
 {$endif}
   if FindPropIndex(PropName, Index) then
     AddPropertyByIndex(Index, PropValue);
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByName');
-
 {$endif}
 end;
 
@@ -3315,7 +3316,6 @@ begin
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
   if UseQuirksMode = False then begin
-
     AddDuplicate('th', Properties);
     Properties := TProperties.Create;
     Properties.Props[TextAlign] := 'none';
@@ -3339,7 +3339,6 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
-
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontStyle] := 'italic';
