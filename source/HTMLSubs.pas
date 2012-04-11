@@ -11998,7 +11998,7 @@ begin
       begin
         StartBI := StartB[I];
         EndBI := EndB[I];
-        LineStart := StartCurs + Start - Buff; {offset from Section start to Line start}
+        LineStart := StartCurs + (Start - Buff); {offset from Section start to Line start}
         if (EndBI > LineStart) and (StartBI < LineStart + Ln) then
         begin {it's in this line}
           if not Assigned(BorderList) then
