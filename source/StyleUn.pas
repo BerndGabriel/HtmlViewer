@@ -1785,14 +1785,14 @@ begin
     if AMarg[piMaxWidth] > 0 then begin
       AMarg[piWidth] := Min(AMarg[piWidth],AMarg[piMaxWidth]);
     end;
-    if AMarg[piMaxWidth] > 0 then begin
+    if AMarg[piMinWidth] > 0 then begin
       AMarg[piWidth] := Max(AMarg[piWidth],AMarg[piMinWidth]);
     end;
     //height
     if AMarg[piMaxHeight] > 0 then begin
       AMarg[piHeight] := Min(AMarg[piHeight],AMarg[piMaxHeight]);
     end;
-    if AMarg[piMaxHeight] > 0 then begin
+    if AMarg[piMinHeight] > 0 then begin
       AMarg[piHeight] := Max(AMarg[piHeight],AMarg[piMinHeight]);
     end;
     case AMarg[BoxSizing] of
