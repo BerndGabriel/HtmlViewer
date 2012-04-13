@@ -5294,8 +5294,9 @@ var
       MargArray[piWidth] := Max(MinWidth, AWidth - BordWidth - LeftP)
     else if (FloatLR in [ALeft, ARight]) then
       MargArray[piWidth] := Min(MaxWidth, AWidth - BordWidth)
-    else
+    else begin
       MargArray[piWidth] := Max(MinWidth, AWidth - BordWidth);
+    end;
   end;
 
   procedure CalcMargRt;
@@ -5327,6 +5328,7 @@ begin
           and not (FloatLR in [ALeft, ARight]) and
           (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) then
         begin
+          ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
           Marg2 := Max(0, AWidth - MargArray[piWidth] - BordPad);
           case Justify of
             centered:
@@ -5341,8 +5343,10 @@ begin
       end;
 
     1:
-      if MargArray[piWidth] = Auto then
-        CalcWidth
+      if MargArray[piWidth] = Auto then begin
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
+        CalcWidth;
+      end
       else
       begin
         if MargArray[MarginRight] = Auto then
@@ -5361,6 +5365,7 @@ begin
           MargArray[MarginLeft] := 0
         else
           MargArray[MarginRight] := 0;
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
         CalcWidth;
       end
       else
@@ -5374,6 +5379,7 @@ begin
       begin
         MargArray[MarginLeft] := 0;
         MargArray[MarginRight] := 0;
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
         CalcWidth;
       end;
   end;

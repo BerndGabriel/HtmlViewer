@@ -460,6 +460,7 @@ function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): 
 procedure LogProperties(AProp : TProperties; const APropName : String);
 {$endif}
 
+  procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
 
 procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
 procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
@@ -641,7 +642,7 @@ begin
 //  end;
 //  for I := Low(TBorderOpacities) to High(TBorderOpacities) do begin
 //    CodeSiteLogging.CodeSite.SendFmtMsg('%s.BorderOpacities[%s] = %d',[APropName,PropWords[i],AProp.BorderOpacities[I]]);
-//d  end;
+//  end;
   for I := Low(AProp.Props) to High(AProp.Props) do begin
     if VarIsIntNull(AProp.Props[I]) then begin
       CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = null',[APropName,PropWords[i]]);
@@ -1776,17 +1777,41 @@ begin
     Result := Default;
 end;
 
+  procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+  begin
+    {Important!!!
+
+    You have to do this with settings.  This is only for FindWidth methods}
+    if not AUseQuirksMode then begin
+      if AMarg[piMaxWidth] > 0 then begin
+        VMaxWidth := AMarg[piMaxWidth];
+        AMarg[piWidth] := Min(AMarg[piMaxWidth],AMarg[piWidth]);
+      end;
+      if AMarg[piMinWidth] > 0 then begin
+        AMarg[piWidth] := Max(AMarg[piMinWidth],AMarg[piWidth]);
+        VMinWidth := AMarg[piWidth];
+      end;
+
+    end;
+  end;
+
 procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
 begin
   if AUseQuirksMode then begin
     ApplyBorderBoxModel(AMarg);
   end else begin
+    {JPM:  This test is here to prevent AMarg[piWidth] from being ruined
+    if it is set to Auto.  If it is ruined, AutoCount might be incremented
+    correctly causing a rendering bug. }
+    if AMarg[piWidth] > -1 then begin
     //width
-    if AMarg[piMaxWidth] > 0 then begin
-      AMarg[piWidth] := Min(AMarg[piWidth],AMarg[piMaxWidth]);
-    end;
-    if AMarg[piMinWidth] > 0 then begin
-      AMarg[piWidth] := Max(AMarg[piWidth],AMarg[piMinWidth]);
+      if AMarg[piMaxWidth] > 0 then begin
+        AMarg[piWidth] := Min(AMarg[piWidth],AMarg[piMaxWidth]);
+      end;
+
+      if AMarg[piMinWidth] > 0 then begin
+        AMarg[piWidth] := Max(AMarg[piWidth],AMarg[piMinWidth]);
+      end;
     end;
     //height
     if AMarg[piMaxHeight] > 0 then begin
