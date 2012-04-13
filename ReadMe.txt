@@ -1,4 +1,24 @@
 --------------------------------------------------------------------------------
+HtmlViewer 12 (under development)                                 BG, 2011-04-02
+--------------------------------------------------------------------------------
+
+What is HtmlViewer 12?
+
+HtmlViewer 12 will be a re-implementation of the HtmlViewer 11.
+
+Some new features:
+- supports Delphi 6+ and Lazarus 0.9.31+
+- supports most CSS 2.1 features incl. MEDIA and DISPLAY
+- supports most HTML 4.01 features incl. IFRAME, NOSCRIPT
+- HTML document tree separated from visual component
+- only one visual component
+  - for framed and unframed documents.
+  - for local and downloaded documents.
+- faster processing (due to less string operations)
+
+You can watch it growing in Demos\HtmlViewer12\HtmlViewer12Test.exe
+
+--------------------------------------------------------------------------------
 HtmlViewer 10.2 and 11
 --------------------------------------------------------------------------------
 

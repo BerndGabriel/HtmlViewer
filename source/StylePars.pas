@@ -58,14 +58,17 @@ type
     Doc: TBuffer;
     LCh: ThtChar;
     LinkPath: ThtString;
+    FUseQuirksMode : Boolean;
     // parser methods
     procedure GetCh;
     function GetIdentifier(out Identifier: ThtString): Boolean;
     procedure SkipWhiteSpace;
+    function GetString(out Str: ThtString): Boolean;
     //
     function AddPath(S: ThtString): ThtString;
     procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString);
   protected
+    constructor Create(const AUseQuirksMode : Boolean);
     procedure ProcessProperty(const Prop, Value: ThtString); virtual; abstract;
   end;
 
@@ -78,7 +81,7 @@ type
   protected
     procedure ProcessProperty(const Prop, Value: ThtString); override;
   public
-    constructor Create;
+    constructor Create(const AUseQuirksMode : Boolean);
     destructor Destroy; override;
     procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
   end;
@@ -92,8 +95,7 @@ type
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
 
-
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
 procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(S: ThtString): ThtString;
 
@@ -110,11 +112,11 @@ const
   NeedPound = True;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
 var
   Parser: THtmlStyleTagParser;
 begin
-  Parser := THtmlStyleTagParser.Create;
+  Parser := THtmlStyleTagParser.Create(AUseQuirksMode);
   try
     Parser.DoStyle(Styles, C, Doc, APath, FromLink);
   finally
@@ -127,7 +129,7 @@ procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
 var
   Parser: THtmlStyleAttrParser;
 begin
-  Parser := THtmlStyleAttrParser.Create;
+  Parser := THtmlStyleAttrParser.Create(Propty.UseQuirksMode);
   try
     Parser.ParseProperties(Doc, Propty);
   finally
@@ -146,6 +148,12 @@ begin
   finally
     Doc.Free;
   end;
+end;
+
+constructor THtmlStyleParser.Create(const AUseQuirksMode: Boolean);
+begin
+  inherited Create;
+  FUseQuirksMode := AUseQuirksMode;
 end;
 
 procedure THtmlStyleParser.GetCh;
@@ -223,6 +231,59 @@ begin
     Result := Length(Identifier) > 0;
 end;
 
+
+//-- BG ---------------------------------------------------------- 13.03.2011 --
+function THtmlStyleParser.GetString(out Str: ThtString): Boolean;
+// Must start and end with single or double quote.
+// Returns string incl. quotes and with the original escape sequences.
+var
+  Esc: Boolean;
+  Term: ThtChar;
+begin
+  Term := #0; // valium for the compiler
+  SetLength(Str, 0);
+  case LCh of
+    '''', '"':
+    begin
+      SetLength(Str, Length(Str) + 1);
+      Str[Length(Str)] := LCh;
+      Term := LCh;
+      Result := True;
+    end;
+  else
+    Result := False;
+  end;
+
+  Esc := False;
+  while Result do
+  begin
+    GetCh;
+    case LCh of
+      '\':
+      begin
+        SetLength(Str, Length(Str) + 1);
+        Str[Length(Str)] := LCh;
+        Esc := True;
+      end;
+
+      LfChar:
+      begin
+        Result := False;
+        break;
+      end;
+    else
+      SetLength(Str, Length(Str) + 1);
+      Str[Length(Str)] := LCh;
+      if (LCh = Term) and not Esc then
+      begin
+        GetCh;
+        break;
+      end;
+      Esc := False;
+    end;
+  end;
+end;
+
 {-------------SkipWhiteSpace}
 
 procedure THtmlStyleParser.SkipWhiteSpace;
@@ -251,7 +312,13 @@ begin
     else
       Result := S;
   end;
-  Result := 'url(' + Result + ')';
+{
+IMPORTANT!!!
+
+You must enclose the URL in quotation marks to prevent the code choking
+on paths specifiers that contain spaces.  Spaces are legal filename characters.
+}
+  Result := 'url("' + Result + '")';
 end;
 
 function FindShortHand(S: ThtString; out Index: TShortHand): boolean;
@@ -364,6 +431,12 @@ begin
     if I = 0 then
       I := Pos('rgb(', Src);
     if I = 0 then
+      I := Pos('rgba(', Src);
+    if I = 0 then
+      I := Pos('hsla(', Src);
+    if I = 0 then
+      I := Pos('hsl(', Src);
+    if I = 0 then
       Exit;
     J := Pos(')', Src);
     if (J = 0) or (J < I) then
@@ -402,6 +475,12 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     for I := 0 to Count - 1 do
     begin
       if Pos('rgb(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('rgba(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsla(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsl(', S[I]) > 0 then
         Values[shColor] := S[I]
       else if (Pos('url(', S[I]) > 0) then
       begin
@@ -575,7 +654,11 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values[shStyle] := 'normal';
     Values[shVariant] := 'normal';
     Values[shWeight] := 'normal';
-    Values[shSize] := 'medium';
+    if Self.FUseQuirksMode then begin
+      Values[shSize] := 'small';
+    end else begin
+      Values[shSize] := 'medium';
+    end;
     Values[shHeight] := 'normal';
     // TODO: BG, 04.01.2012: set default font as set in THtmlViewer:
     Values[shFamily] := '';
@@ -639,7 +722,11 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values: array [TShortHandedProps] of ThtString;
   begin
     Values[shType] := 'disc';
-    Values[shPosition] := 'outside';
+    if Self.FUseQuirksMode then begin
+      Values[shPosition] := 'inside';
+    end else begin
+      Values[shPosition] := 'outside';
+    end;
     Values[shImage] := 'none';
 
     SplitString(Value, S, Count);
@@ -807,9 +894,9 @@ end;
 { THtmlStyleTagParser }
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
-constructor THtmlStyleTagParser.Create;
+constructor THtmlStyleTagParser.Create(const AUseQuirksMode: Boolean);
 begin
-  inherited Create;
+  inherited Create(AUseQuirksMode);
   Selectors := ThtStringList.Create;
 end;
 
@@ -822,46 +909,171 @@ end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+var
+  AvailableMedia: TMediaTypes;
 
-  procedure ReadAt; {read thru @import or some other @}
-  var
-    Media: ThtString;
+  procedure ReadAt;
+  {read @import and @media}
 
-    procedure Brackets;
+    function GetMediaTypes: TMediaTypes;
+    var
+      Identifier: ThtString;
+      MediaType: TMediaType;
     begin
-      if Pos('screen', Lowercase(Media)) > 0 then
-      begin {parse @ media screen  }
+      Result := [];
+      SkipWhiteSpace;
+      if not GetIdentifier(Identifier) then
+        exit;
+      repeat
+        if TryStrToMediaType(Identifier, MediaType) then
+          Include(Result, MediaType);
+        SkipWhiteSpace;
+        if LCh <> ',' then
+          break;
         GetCh;
-        repeat
-          Selectors.Clear;
-          GetSelectors;
-          GetCollection;
-          SkipWhiteSpace;
-        until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
-      end
-      else
-        repeat // read thru nested '{...}' pairs
-          GetCh;
-          if LCh = '{' then
-            Brackets;
-        until (LCh = '}') or (LCh = '<') or (LCh = EofChar);
-      if LCh = '}' then
-        GetCh;
+        SkipWhiteSpace;
+        if not GetIdentifier(Identifier) then
+          break;
+      until False;
     end;
 
+    procedure SkipRule(Depth: Integer);
+    begin
+      repeat
+        GetCh;
+        case LCh of
+          '{':
+            Inc(Depth);
+
+          '}':
+            begin
+              Dec(Depth);
+              if Depth = 0 then
+              begin
+                GetCh;
+                break;
+              end;
+            end;
+
+          #0, '<':
+            break;
+        end;
+      until False;
+    end;
+
+    procedure DoMedia;
+    var
+      Media: TMediaTypes;
+    begin
+      Media := GetMediaTypes;
+      if Media = [] then
+        Include(Media, mtAll);
+      case LCh of
+        '{':
+        begin
+          if Media * AvailableMedia <> [] then
+          begin {parse @media screen}
+            GetCh;
+            repeat
+              Selectors.Clear;
+              GetSelectors;
+              GetCollection;
+              SkipWhiteSpace;
+
+              case LCh of
+                '}':
+                begin
+                  GetCh;
+                  break;
+                end;
+
+                '<', EofChar:
+                  break;
+              end;
+            until False;
+          end
+          else
+            SkipRule(1);
+        end;
+
+        ';':
+          GetCh;
+      else
+        // BG, 07.01.2012: following J. Peter Mugaas' fix.
+        // CSS 2.1 skips unknown or malformed entries.
+        // I.e. you may see media queries defined by http://www.w3.org/TR/css3-mediaqueries/
+        SkipRule(0);
+      end;
+    end;
+
+    procedure DoImport;
+    var
+      Result: Boolean;
+      URL: ThtString;
+      Media: TMediaTypes;
+    begin
+      Result := False;
+      SkipWhiteSpace;
+      case LCh of
+        '"':
+          Result := GetString(URL);
+
+        'u':
+          if GetIdentifier(URL) then
+            if LowerCase(URL) = 'url' then
+              if LCh = '(' then
+              begin
+                GetCh;
+                SkipWhiteSpace;
+                if GetString(URL) then
+                begin
+                  SkipWhiteSpace;
+                  Result := LCh = ')';
+                  if Result then
+                    GetCh;
+                end;
+              end;
+      end;
+
+      if Result then
+      begin
+        Media := GetMediaTypes;
+        if Media = [] then
+          Include(Media, mtAll);
+        if Media * AvailableMedia <> [] then
+          // TODO -oBG, 13.03.2011: read style sheet from import
+          // The import style sheet parser must return the list of rulesets.
+          // I must insert the imported rulesets at the beginning of my list of rulesets
+          // to gain a lower precedence than my rulesets of the same selectors.
+          ;
+      end;
+      case LCh of
+        ';':
+          GetCh;
+      else
+        // BG, 07.01.2012: following J. Peter Mugaas' fix.
+        // CSS 2.1 skips unknown or malformed entries.
+        // I.e. you may see media queries defined by http://www.w3.org/TR/css3-mediaqueries/
+        SkipRule(0);
+      end;
+    end;
+
+  var
+    AtRule: ThtString;
   begin
-    Media := ''; {read the Media ThtString}
-    repeat
-      GetCh;
-      Media := Media + LCh;
-    until (LCh = ';') or (LCh = '{') or (LCh = '<') or (LCh = EofChar);
-    if LCh = '{' then
-      Brackets
-    else if LCh = ';' then
-      GetCh;
+    GetCh; // skip the '@';
+    if GetIdentifier(AtRule) then
+    begin
+      AtRule := LowerCase(AtRule);
+      if AtRule = 'media' then
+        DoMedia
+      else if AtRule = 'import' then
+        DoImport;
+    end;
   end;
 
 begin
+  AvailableMedia := [mtAll, mtScreen];
   Self.Doc := Doc;
   Self.Styles := Styles;
   LinkPath := APath;

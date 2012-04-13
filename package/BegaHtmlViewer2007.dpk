@@ -1,0 +1,57 @@
+package BegaHtmlViewer2007;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'HtmlViewer12'}
+{$IMPLICITBUILD ON}
+{$DEFINE DebugIt}
+
+requires
+  rtl,
+  vcl,
+  vcljpg,
+  TntUnicodeVclD11,
+  FrameViewer2007,
+  vclactnband,
+  vclx,
+  dsnap,
+  dbrtl,
+  vcldb,
+  designide,
+  xmlrtl;
+
+contains
+  HtmlElements in '..\source\HtmlElements.pas',
+  StyleParser in '..\source\StyleParser.pas',
+  HtmlDocument in '..\source\HtmlDocument.pas',
+  HtmlParser in '..\source\HtmlParser.pas',
+  HtmlViewer in '..\source\HtmlViewer.pas',
+  HtmlDraw in '..\source\HtmlDraw.pas',
+  HtmlBoxes in '..\source\HtmlBoxes.pas',
+  HtmlRenderer in '..\source\HtmlRenderer.pas',
+  BegaClasses in '..\source\BegaClasses.pas',
+  HtmlControls in '..\source\HtmlControls.pas',
+  HtmlUri in '..\source\HtmlUri.pas',
+  HtmlIndentation in '..\source\HtmlIndentation.pas';
+
+end.

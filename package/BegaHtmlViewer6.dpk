@@ -1,0 +1,47 @@
+package BegaHtmlViewer6;
+
+{$R *.res}
+{$ALIGN 1}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA OFF}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl,
+  TntUnicodeVcl_R60,
+  vcljpg,
+  FrameViewer6;
+
+contains
+  HtmlDocument in '..\source\HtmlDocument.pas',
+  HtmlParser in '..\source\HtmlParser.pas',
+  StyleParser in '..\source\StyleParser.pas',
+  BegaClasses in '..\source\BegaClasses.pas',
+  HtmlBoxes in '..\source\HtmlBoxes.pas',
+  HtmlControls in '..\source\HtmlControls.pas',
+  HtmlDraw in '..\source\HtmlDraw.pas',
+  HtmlElements in '..\source\HtmlElements.pas',
+  HtmlRenderer in '..\source\HtmlRenderer.pas',
+  HtmlViewer in '..\source\HtmlViewer.pas';
+
+end.

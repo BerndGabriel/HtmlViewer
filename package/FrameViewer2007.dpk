@@ -14,7 +14,7 @@ package FrameViewer2007;
 {$LOCALSYMBOLS ON}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
-{$OPTIMIZATION OFF}
+{$OPTIMIZATION ON}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
 {$REFERENCEINFO OFF}
@@ -28,6 +28,7 @@ package FrameViewer2007;
 {$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
+{$DEFINE DEBUG}
 
 requires
   rtl,
@@ -40,7 +41,7 @@ requires
 contains
   framview in '..\source\framview.pas',
   htmlview in '..\source\htmlview.pas',
-  readhtml in '..\source\readhtml.pas',
+  ReadHTML in '..\source\ReadHTML.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
   HTMLUn2 in '..\source\HTMLUn2.pas',
   vwPrint in '..\source\vwPrint.pas',
@@ -57,6 +58,13 @@ contains
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
   HTMLSubs in '..\source\HTMLSubs.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  HtmlImages in '..\source\HtmlImages.pas',
+  HtmlSymbols in '..\source\HtmlSymbols.pas',
+  Parser in '..\source\Parser.pas',
+  HtmlStyles in '..\source\HtmlStyles.pas',
+  StyleTypes in '..\source\StyleTypes.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas';
 
 end.
