@@ -330,10 +330,11 @@ begin
       Result := AColor and $FFFFFF;
   end;
   {$else}
-  if AColor < 0 then
+  if AColor < 0 then begin
     Result := GetSysColor(AColor and $FFFFFF);
-  else
+  end else begin
     Result := AColor and $FFFFFF;
+  end;
   {$endif}
 end;
 
