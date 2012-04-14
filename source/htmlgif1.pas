@@ -277,7 +277,7 @@ type
     procedure ReadImageDescriptor;
     procedure ReadDataBlockList(List: TList);
     procedure ReadExtension(var Done: boolean);
-    procedure ReadSourceInteger(size: integer; var value: integer);
+    procedure ReadSourceInteger(size: integer; out value: integer);
 
 // LZW encode and decode
 
@@ -1097,7 +1097,7 @@ end;
 { ---------------------------------------------------------------------------- }
 { read a 1 or 2-byte integer from the source stream }
 
-procedure TGif.ReadSourceInteger(size: integer; var value: integer);
+procedure TGif.ReadSourceInteger(size: integer; out value: integer);
 var
   b: byte;
   w: word;

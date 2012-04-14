@@ -1,8 +1,6 @@
 {
-Version   11.5
-Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Version   11
+Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -36,33 +34,31 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types,
+  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, Messages, Variants, Types,
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
-  HtmlBuffer,
-  HtmlGif2,
-  HtmlGlobals,
-  HtmlImages,
-  StyleTypes,
-  StyleUn,
-  UrlSubs;
+  StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
-  VersionNo = '11.5';
-  MaxHScroll = 100000; {max horizontal display in pixels}
+  VersionNo = '11.2';
+  MaxHScroll = 6000; {max horizontal display in pixels}
+  HandCursor = crHandPoint; //10101;
+  OldThickIBeamCursor = 2;
+  UpDownCursor = 10103;
+  UpOnlyCursor = 10104;
+  DownOnlyCursor = 10105;
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
   BotLim = 5000;
-  FmCtl = WideChar(#2);
-  ImgPan = WideChar(#4);
-  BrkCh = WideChar(#8);
+  FmCtl = #2;
+  ImgPan = #4;
+  BrkCh = #8;
 
 type
-  THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -73,11 +69,12 @@ type
   // BG, 26.12.2011:
   TSpecWidth = record
     Value: Integer;
-    VType: TWidthType; // treat wtNone like "0*" (Value = 0.0, CType = wtRelative)
+    VType: TWidthType;
   end;
 
   //BG, 09.09.2009: renamed TGif and TPng to TrGif and TrPng
   //  TGif interfered with same named class.
+  Transparency = (NotTransp, LLCorner, TrGif, TrPng);
   JustifyType = (NoJustify, Left, Centered, Right, FullJustify);
   TRowType = (THead, TBody, TFoot);
 
@@ -117,15 +114,7 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy,
-    {HTML5 elements}
-    HeaderSy, HeaderEndSy,
-    SectionSy, SectionEndSy,
-    NavSy, NavEndSy,
-    ArticleSy, ArticleEndSy,
-    AsideSy, AsideEndSy,
-    FooterSy, FooterEndSy,
-    HGroupSy, HGroupEndSy);
+    ReadonlySy, EolSy, MediaSy);
 
 //------------------------------------------------------------------------------
 
@@ -167,14 +156,50 @@ type
   public
     destructor Destroy; override;
     procedure Clear; override;
-    function Find(Sy: Symb; var T: TAttribute): boolean; overload; {$ifdef UseInline} inline; {$endif}
-    function Find(SyName: ThtString; var T: TAttribute): boolean; overload; {$ifdef UseInline} inline; {$endif}
+    function Find(Sy: Symb; out T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
     property TheTitle: ThtString read GetTitle;
     property TheStyle: TProperties read GetStyle;
     property Items[Index: Integer]: TAttribute read GetAttribute; default;
+  end;
+
+//------------------------------------------------------------------------------
+// image cache
+//------------------------------------------------------------------------------
+
+  TgpObject = TObject;
+
+  TBitmapItem = class(TObject)
+  public
+    AccessCount: Integer;
+    UsageCount: Integer; {how many in use}
+    Transp: Transparency; {identifies what the mask is for}
+    MImage: TgpObject; {main image, bitmap or animated GIF}
+    Mask: TBitmap; {its mask}
+    constructor Create(AImage: TgpObject; AMask: TBitmap; Tr: Transparency);
+    destructor Destroy; override;
+  end;
+
+  TStringBitmapList = class(ThtStringList)
+  {a list of bitmap filenames and TBitmapItems}
+  private
+    FMaxCache: Integer;
+    function GetObject(Index: Integer): TBitmapItem; reintroduce;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function AddObject(const S: ThtString; AObject: TBitmapItem): Integer; reintroduce;
+    function GetImage(I: Integer): TgpObject; {$ifdef UseInline} inline; {$endif}
+    procedure BumpAndCheck;
+    procedure Clear; override;
+    procedure DecUsage(const S: ThtString);
+    procedure IncUsage(const S: ThtString);
+    procedure PurgeCache;
+    procedure SetCacheCount(N: Integer);
+    property MaxCache: Integer read FMaxCache;
+    property Objects[Index: Integer]: TBitmapItem read GetObject;
   end;
 
 //------------------------------------------------------------------------------
@@ -244,7 +269,7 @@ type
     FTarget: ThtString;
     FTitle: ThtString;
   public
-    function PtInRegion(X, Y: Integer): Boolean;
+    function PtInArea(X, Y: Integer): Boolean;
     property HRef: ThtString read FHRef;
     property Target: ThtString read FTarget;
     property Title: ThtString read FTitle;
@@ -265,13 +290,35 @@ type
     MapName: ThtString;
     constructor Create;
     destructor Destroy; override;
-    function GetURL(X, Y: Integer; var URLTarg: TURLTarget; var ATitle: ThtString): boolean;
+    function GetURL(X, Y: Integer; out URLTarg: TURLTarget; out ATitle: ThtString): boolean;
     procedure AddArea(Attrib: TAttributeList);
   end;
 
   TFontObjBase = class(TObject) {font information}
   public
     UrlTarget: TUrlTarget;
+  end;
+
+//------------------------------------------------------------------------------
+// device independent bitmap wrapper
+//------------------------------------------------------------------------------
+
+  TDib = class(TObject)
+  private
+    Info: PBitmapInfoHeader;
+    InfoSize: Integer;
+    Image: Pointer;
+    ImageSize: Integer;
+    FHandle: THandle;
+    procedure InitializeBitmapInfoHeader(Bitmap: HBITMAP);
+    procedure GetDIBX(DC: HDC; Bitmap: HBITMAP; Palette: HPALETTE);
+    procedure Allocate(Size: Integer);
+    procedure DeAllocate;
+  public
+    constructor CreateDIB(DC: HDC; Bitmap: TBitmap);
+    destructor Destroy; override;
+    function CreateDIBmp: hBitmap;
+    procedure DrawDIB(DC: HDC; X, Y, W, H: Integer; ROP: DWord);
   end;
 
 //------------------------------------------------------------------------------
@@ -313,7 +360,7 @@ type
     function SetRightIndent(XRight, Y: Integer): Integer;
     procedure FreeLeftIndentRec(I: Integer);
     procedure FreeRightIndentRec(I: Integer);
-    procedure GetClearY(var CL, CR: Integer);
+    procedure GetClearY(out CL, CR: Integer);
     procedure Init(Lf, Wd: Integer);
     procedure Reset(Lf: Integer);
   end;
@@ -329,6 +376,9 @@ type
 
   {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
    characters along with their original indices.}
+
+  { TCharCollection }
+
   TCharCollection = class
   private
     FChars: ThtString;
@@ -339,10 +389,11 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Add(C: ThtChar; Index: Integer); overload;
+    procedure Add(C: AnsiChar; Index: Integer); overload;
+    procedure Add(C: WideChar; Index: Integer); overload;
     procedure Add(const S: ThtString; Index: Integer); overload;
     procedure Clear;
-//    procedure Concat(const T: TCharCollection);
+    procedure Concat(T: TCharCollection);
 
     property AsString: ThtString read GetAsString;
     property Indices: PIndexArray read FIndices;
@@ -351,11 +402,11 @@ type
 
   TokenObj = class
   private
-    St: UnicodeString;
+    St: WideString;
     StringOK: boolean;
     FCapacity: Integer;
     FCount: Integer;
-    function GetString: UnicodeString;
+    function GetString: WideString;
     procedure SetCapacity(NewCapacity: Integer);
   public
     C: PChrArray;
@@ -364,24 +415,45 @@ type
     destructor Destroy; override;
     procedure AddUnicodeChar(Ch: WideChar; Ind: Integer);
     procedure AddString(S: TCharCollection);
-//    procedure Concat(T: TokenObj);
+    procedure Concat(T: TokenObj);
     procedure Clear;
-//    procedure Remove(N: Integer);
-//    procedure Replace(N: Integer; Ch: WideChar);
+    procedure Remove(N: Integer);
+    procedure Replace(N: Integer; Ch: WideChar);
 
     property Capacity: Integer read FCapacity write SetCapacity;
     property Count: Integer read FCount;
-    property S: UnicodeString read GetString;
+    property S: WideString read GetString;
   end;
 
+{$IFNDEF NoMetafile}
+
 //------------------------------------------------------------------------------
-// TIDObject is base class for all objects the HtmlViewer can scroll to.
+//
+//------------------------------------------------------------------------------
+
+  ThtMetaFile = class(TMetaFile)
+  private
+    FBitmap, FMask: TBitmap;
+    FWhiteBGBitmap: TBitmap;
+    function GetBitmap: TBitmap;
+    function GetMask: TBitmap;
+    procedure Construct;
+    function GetWhiteBGBitmap: TBitmap;
+  public
+    destructor Destroy; override;
+    property Bitmap: TBitmap read GetBitmap;
+    property Mask: TBitmap read GetMask;
+    property WhiteBGBitmap: TBitmap read GetWhiteBGBitmap;
+  end;
+
+{$ENDIF}
+
+//------------------------------------------------------------------------------
+// TIDObject is base class for all tag objects.
 //------------------------------------------------------------------------------
 // If they have an ID, the parser puts them into the HtmlViewer's IDNameList,
 // a TIDObjectList, where they can be obtained from by ID.
 // Their Y coordinates can be retrieved and HtmlViewer can scroll to them.
-//
-// Most decendents are objects representing an HTML tag, except TChPosObj.
 //------------------------------------------------------------------------------
 
   TIDObject = class(TObject)
@@ -404,6 +476,8 @@ type
     property Objects[Index: Integer]: TIDObject read GetObject; default;
   end;
 
+  TImageType = (NoImage, Bmp, Gif, {Gif89,} Png, Jpg);
+
   htColorArray = packed array[0..3] of TColor;
   htBorderStyleArray = packed array[0..3] of BorderStyleType;
 
@@ -412,229 +486,33 @@ type
   guResultType = set of (guUrl, guControl, guTitle);
 
 //------------------------------------------------------------------------------
-// ThvPanel is base class for panels held in TPanelObj
-//------------------------------------------------------------------------------
-
-  ThvPanel = class(TPanel)
-  public
-    FVisible: boolean;
-    procedure SetVisible(Value: boolean);
-    property Visible: boolean read FVisible write SetVisible default True;
-  end;
-
-  TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: ThtString; Panel: ThvPanel) of object;
-  TPanelDestroyEvent = procedure(Sender: TObject; Panel: ThvPanel) of object;
-  TPanelPrintEvent = procedure(Sender: TObject; Panel: ThvPanel; const Bitmap: TBitmap) of object;
-  TObjectTagEvent = procedure(Sender: TObject; Panel: ThvPanel; const Attributes, Params: ThtStringList; var WantPanel: boolean) of object;
-  TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: ThtString) of object;
-  ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: ThtString) of object;
-
-//------------------------------------------------------------------------------
-// ThtControlBase is base class for TViewerBase and TFrameBase
-//------------------------------------------------------------------------------
-
-  ThtControlBase = class(TWinControl);
-
-//------------------------------------------------------------------------------
-// TViewerBase is base class for THtmlViewer and TFrameViewer
+// TViewerBase is base class for both THtmlViewer and TFrameViewer
 //------------------------------------------------------------------------------
 
   TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
-
-  THotSpotTargetClickEvent = procedure(Sender: TObject; const Target, URL: ThtString; var Handled: boolean) of object;
-  THotSpotTargetEvent = procedure(Sender: TObject; const Target, URL: ThtString) of object;
-  ThtProgressEvent = procedure(Sender: TObject; Stage: TProgressStage; PercentDone: Integer) of object;
-  TImageClickEvent = procedure(Sender, Obj: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer) of object;
-  TImageOverEvent = procedure(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer) of object;
   TIncludeType = procedure(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer) of object;
   TLinkType = procedure(Sender: TObject; const Rel, Rev, Href: ThtString) of object;
   TMetaType = procedure(Sender: TObject; const HttpEq, Name, Content: ThtString) of object;
-  TPagePrinted = procedure(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer; var StopPrinting: Boolean) of object;
-  TParseEvent = procedure(Sender: TObject; var Source: TBuffer) of object;
-  TProcessingEvent = procedure(Sender: TObject; ProcessingOn: Boolean) of object;
   TScriptEvent = procedure(Sender: TObject; const Name, ContentType, Src, Script: ThtString) of object;
   TSoundType = procedure(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: boolean) of object;
-  THTMLViewPrinted = TNotifyEvent;
-  THTMLViewPrinting = procedure(Sender: TObject; var StopPrinting: Boolean) of object;
-  TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: ThtString; ARect: TRect) of object;
-  TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: ThtString) of object;
-  TGetBitmapEvent = procedure(Sender: TObject; const SRC: ThtString; var Bitmap: TBitmap; var Color: TColor) of object;
-  TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
-  TGottenImageEvent = TGetImageEvent;
-  TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList) of object;
 
-  TViewerBase = class(ThtControlBase)
+  TViewerBase = class(TWinControl)
   private
-    FBackGround, FHotSpotColor, FVisitedColor, FOverColor: TColor;
-    FCharset: TFontCharset;
-    FCodePage: Integer;
-    FFontColor: TColor;
-    FFontName, FPreFontName: TFontName;
-    FFontSize: Integer;
-    FHistoryMaxCount, FImageCacheCount, FVisitedMaxCount: Integer;
-    FMarginWidth, FMarginHeight: Integer;
-    FNoSelect: Boolean;
-    FPrintMarginLeft, FPrintMarginRight, FPrintMarginTop, FPrintMarginBottom: Double;
-    FPrintMaxHPages: Integer;
-    FPrintScale: Double;
-    FServerRoot: ThtString;
-    //
-    FOnBitmapRequest: TGetBitmapEvent;
-    FOnDragDrop: TDragDropEvent;
-    FOnDragOver: TDragOverEvent;
-    FOnHistoryChange: TNotifyEvent;
-    FOnHotSpotTargetClick: THotSpotTargetClickEvent;
-    FOnHotSpotTargetCovered: THotSpotTargetEvent;
-    FOnImageClick: TImageClickEvent;
-    FOnImageOver: TImageOverEvent;
-    FOnImageRequest: TGetImageEvent;
-    FOnImageRequested: TGottenImageEvent;
     FOnInclude: TIncludeType;
     FOnLink: TLinkType;
-    FOnMeta: TMetaType;
-    FOnMouseDouble: TMouseEvent;
-    FOnObjectBlur: ThtObjectEvent;
-    FOnObjectChange: ThtObjectEvent;
-    FOnObjectClick: TObjectClickEvent;
-    FOnObjectFocus: ThtObjectEvent;
-    FOnObjectTag: TObjectTagEvent;
-    FOnPanelCreate: TPanelCreateEvent;
-    FOnPanelDestroy: TPanelDestroyEvent;
-    FOnPanelPrint: TPanelPrintEvent;
-    FOnParseBegin: TParseEvent;
-    FOnParseEnd: TNotifyEvent;
-    FOnPrinted: THTMLViewPrinted;
-    FOnPrintHeader, FOnPrintFooter: TPagePrinted;
-    FOnPrinting: THTMLViewPrinting;
-    FOnProcessing: TProcessingEvent;
-    FOnProgress: ThtProgressEvent;
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
-    FQuirksMode : THtQuirksMode;
   protected
-    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
-    procedure SetActiveColor(const Value: TColor); virtual;
-    procedure SetCharset(const Value: TFontCharset); virtual;
-    procedure SetCodePage(const Value: Integer); virtual;
-    procedure SetDefBackground(const Value: TColor); virtual;
-    procedure SetFontColor(const Value: TColor); virtual;
-    procedure SetFontName(const Value: TFontName); virtual;
-    procedure SetFontSize(const Value: Integer); virtual;
-    procedure SetHistoryMaxCount(const Value: Integer); virtual;
-    procedure SetHotSpotColor(const Value: TColor); virtual;
-    procedure SetImageCacheCount(const Value: Integer); virtual;
-    procedure SetMarginHeight(const Value: Integer); virtual;
-    procedure SetMarginWidth(const Value: Integer); virtual;
-    procedure SetNoSelect(const Value: Boolean); virtual;
-    procedure SetOnBitmapRequest(const Value: TGetBitmapEvent); virtual;
-    procedure SetOnDragDrop(const Value: TDragDropEvent); virtual;
-    procedure SetOnDragOver(const Value: TDragOverEvent); virtual;
-    procedure SetOnHistoryChange(const Value: TNotifyEvent); virtual;
-    procedure SetOnHotSpotTargetClick(const Value: THotSpotTargetClickEvent); virtual;
-    procedure SetOnHotSpotTargetCovered(const Value: THotSpotTargetEvent); virtual;
-    procedure SetOnImageClick(const Value: TImageClickEvent); virtual;
-    procedure SetOnImageOver(const Value: TImageOverEvent); virtual;
-    procedure SetOnImageRequest(const Value: TGetImageEvent); virtual;
-    procedure SetOnImageRequested(const Value: TGottenImageEvent); virtual;
-    procedure SetOnInclude(const Handler: TIncludeType); virtual;
-    procedure SetOnLink(const Handler: TLinkType); virtual;
-    procedure SetOnMeta(const Value: TMetaType); virtual;
-    procedure SetOnMouseDouble(const Value: TMouseEvent); virtual;
-    procedure SetOnObjectBlur(const Value: ThtObjectEvent); virtual;
-    procedure SetOnObjectChange(const Value: ThtObjectEvent); virtual;
-    procedure SetOnObjectClick(const Value: TObjectClickEvent); virtual;
-    procedure SetOnObjectFocus(const Value: ThtObjectEvent); virtual;
-    procedure SetOnObjectTag(const Value: TObjectTagEvent); virtual;
-    procedure SetOnPanelCreate(const Value: TPanelCreateEvent); virtual;
-    procedure SetOnPanelDestroy(const Value: TPanelDestroyEvent); virtual;
-    procedure SetOnPanelPrint(const Value: TPanelPrintEvent); virtual;
-    procedure SetOnParseBegin(const Value: TParseEvent); virtual;
-    procedure SetOnParseEnd(const Value: TNotifyEvent); virtual;
-    procedure SetOnPrinted(const Value: THTMLViewPrinted); virtual;
-    procedure SetOnPrintFooter(const Value: TPagePrinted); virtual;
-    procedure SetOnPrintHeader(const Value: TPagePrinted); virtual;
-    procedure SetOnPrinting(const Value: THTMLViewPrinting); virtual;
-    procedure SetOnProcessing(const Value: TProcessingEvent); virtual;
-    procedure SetOnProgress(const Value: ThtProgressEvent); virtual;
-    procedure SetOnScript(const Handler: TScriptEvent); virtual;
-    procedure SetOnSoundRequest(const Handler: TSoundType); virtual;
-    procedure SetPreFontName(const Value: TFontName); virtual;
-    procedure SetPrintMarginBottom(const Value: Double); virtual;
-    procedure SetPrintMarginLeft(const Value: Double); virtual;
-    procedure SetPrintMarginRight(const Value: Double); virtual;
-    procedure SetPrintMarginTop(const Value: Double); virtual;
-    procedure SetPrintMaxHPages(const Value: Integer); virtual;
-    procedure SetPrintScale(const Value: Double); virtual;
-    procedure SetServerRoot(const Value: ThtString); virtual;
-    procedure SetVisitedColor(const Value: TColor); virtual;
-    procedure SetVisitedMaxCount(const Value: Integer); virtual;
-    procedure ViewerDragDrop(Sender, Source: TObject; X, Y: Integer);
-    procedure ViewerDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
+    procedure SetOnInclude(Handler: TIncludeType); virtual;
+    procedure SetOnLink(Handler: TLinkType); virtual;
+    procedure SetOnScript(Handler: TScriptEvent); virtual;
+    procedure SetOnSoundRequest(Handler: TSoundType); virtual;
   public
-    constructor Create(AOwner: TComponent); override;
-    constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
-    // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
-    procedure Load(const Url: ThtString); virtual; abstract;
-    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
-    property CodePage: Integer read FCodePage write SetCodePage;
-    property CharSet: TFontCharset read FCharSet write SetCharset;
-    property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
-    property DefFontColor: TColor read FFontColor write SetFontColor default clBtnText;
-    property DefFontName: TFontName read FFontName write SetFontName;
-    property DefFontSize: Integer read FFontSize write SetFontSize default 12;
-    property DefHotSpotColor: TColor read FHotSpotColor write SetHotSpotColor default clBlue;
-    property DefOverLinkColor: TColor read FOverColor write SetActiveColor default clBlue;
-    property DefPreFontName: TFontName read FPreFontName write SetPreFontName;
-    property DefVisitedLinkColor: TColor read FVisitedColor write SetVisitedColor default clPurple;
-    property HistoryMaxCount: Integer read FHistoryMaxCount write SetHistoryMaxCount;
-    property ImageCacheCount: Integer read FImageCacheCount write SetImageCacheCount default 5;
-    property MarginHeight: Integer read FMarginHeight write SetMarginHeight default 5;
-    property MarginWidth: Integer read FMarginWidth write SetMarginWidth default 10;
-    property NoSelect: Boolean read FNoSelect write SetNoSelect;
-    property PrintMarginBottom: Double read FPrintMarginBottom write SetPrintMarginBottom;
-    property PrintMarginLeft: Double read FPrintMarginLeft write SetPrintMarginLeft;
-    property PrintMarginRight: Double read FPrintMarginRight write SetPrintMarginRight;
-    property PrintMarginTop: Double read FPrintMarginTop write SetPrintMarginTop;
-    property PrintMaxHPages: Integer read FPrintMaxHPages write SetPrintMaxHPages default 2;
-    property PrintScale: Double read FPrintScale write SetPrintScale;
-    property ServerRoot: ThtString read FServerRoot write SetServerRoot;
-    property VisitedMaxCount: Integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
-    //
-    property OnBitmapRequest: TGetBitmapEvent read FOnBitmapRequest write SetOnBitmapRequest;
-    property OnDragDrop: TDragDropEvent read FOnDragDrop write SetOnDragDrop;
-    property OnDragOver: TDragOverEvent read FOnDragOver write SetOnDragOver;
-    property OnHistoryChange: TNotifyEvent read FOnHistoryChange write SetOnHistoryChange;
-    property OnHotSpotTargetClick: THotSpotTargetClickEvent read FOnHotSpotTargetClick write SetOnHotSpotTargetClick;
-    property OnHotSpotTargetCovered: THotSpotTargetEvent read FOnHotSpotTargetCovered write SetOnHotSpotTargetCovered;
-    property OnImageClick: TImageClickEvent read FOnImageClick write SetOnImageClick;
-    property OnImageOver: TImageOverEvent read FOnImageOver write SetOnImageOver;
-    property OnImageRequest: TGetImageEvent read FOnImageRequest write SetOnImageRequest;
-    property OnImageRequested: TGottenImageEvent read FOnImageRequested write SetOnImageRequested;
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
-    property OnMeta: TMetaType read FOnMeta write SetOnMeta;
-    property OnMouseDouble: TMouseEvent read FOnMouseDouble write SetOnMouseDouble;
-    property OnObjectBlur: ThtObjectEvent read FOnObjectBlur write SetOnObjectBlur;
-    property OnObjectChange: ThtObjectEvent read FOnObjectChange write SetOnObjectChange;
-    property OnObjectClick: TObjectClickEvent read FOnObjectClick write SetOnObjectClick;
-    property OnObjectFocus: ThtObjectEvent read FOnObjectFocus write SetOnObjectFocus;
-    property OnObjectTag: TObjectTagEvent read FOnObjectTag write SetOnObjectTag;
-    property OnPanelCreate: TPanelCreateEvent read FOnPanelCreate write SetOnPanelCreate;
-    property OnPanelDestroy: TPanelDestroyEvent read FOnPanelDestroy write SetOnPanelDestroy;
-    property OnPanelPrint: TPanelPrintEvent read FOnPanelPrint write SetOnPanelPrint;
-    property OnParseBegin: TParseEvent read FOnParseBegin write SetOnParseBegin;
-    property OnParseEnd: TNotifyEvent read FOnParseEnd write SetOnParseEnd;
-    property OnPrinted: THTMLViewPrinted read FOnPrinted write SetOnPrinted;
-    property OnPrintFooter: TPagePrinted read FOnPrintFooter write SetOnPrintFooter;
-    property OnPrintHeader: TPagePrinted read FOnPrintHeader write SetOnPrintHeader;
-    property OnPrinting: THTMLViewPrinting read FOnPrinting write SetOnPrinting;
-    property OnProcessing: TProcessingEvent read FOnProcessing write SetOnProcessing;
-    property OnProgress: ThtProgressEvent read FOnProgress write SetOnProgress;
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
     property OnSoundRequest: TSoundType read FOnSoundRequest write SetOnSoundRequest;
   end;
-
-  TViewerBaseClass = class of TViewerBase;
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
   TTablePartRec = class
@@ -645,10 +523,6 @@ type
   end;
 
   THtmlViewerBase = class(TViewerBase)
-  protected
-    // set to determine if child objects should be in "quirks" mode
-    //This must be protected because it's set directly in a descendant
-    FUseQuirksMode : Boolean;
   public
     TablePartRec: TTablePartRec;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
@@ -656,8 +530,6 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    // set to determine if child objects should be in "quirks" mode
-    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -670,6 +542,13 @@ type
   end;
 
 //------------------------------------------------------------------------------
+
+var
+  DefBitMap, ErrorBitMap, ErrorBitmapMask: TBitMap;
+  WaitStream: TMemoryStream;
+  ErrorStream: TMemoryStream;
+
+//------------------------------------------------------------------------------
 // string methods
 //------------------------------------------------------------------------------
 
@@ -677,18 +556,51 @@ function StrLenW(Str: PWideChar): Cardinal;
 function StrPosW(Str, SubStr: PWideChar): PWideChar;
 function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
 function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
-function WidePos(SubStr, S: UnicodeString): Integer;
-//function WideTrim(const S: UnicodeString): UnicodeString; deprecated; // use HtmlGlobals.htTrim() instead
-//function WideUpperCase1(const S: UnicodeString): UnicodeString; {$ifdef UNICODE} inline; {$endif} deprecated; // use HtmlGlobals.htUppercase() instead
-//function WideLowerCase1(const S: UnicodeString): UnicodeString; {$ifdef UNICODE} inline; {$endif}deprecated; // use HtmlGlobals.htLowercase() instead
-function WideSameText1(const S1, S2: UnicodeString): boolean; {$ifdef UseInline} inline; {$endif}
-function WideSameStr1(const S1, S2: UnicodeString): boolean;  {$ifdef UseInline} inline; {$endif}
+function WidePos(SubStr, S: WideString): Integer;
+function WideTrim(const S: WideString): WideString;
+function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
+function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
+function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
+function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
-function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
+function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
-procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
+procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: WideString);
+
+//------------------------------------------------------------------------------
+// image methods
+//------------------------------------------------------------------------------
+
+function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+function KindOfImage(Stream: TStream): TImageType;
+
+function GetImageHeight(Image: TGpObject): Integer;
+function GetImageWidth(Image: TGpObject): Integer;
+function EnlargeImage(Image: TGpObject; W, H: Integer): TBitmap;
+
+function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBitmap;
+procedure FinishTransparentBitmap(ahdc: HDC; InImage, Mask: TBitmap; xStart, yStart, W, H: Integer);
+procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
+procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer; Bitmap, Mask: TBitmap; YI, HI: Integer);
+
+{$IFNDEF NoGDIPlus}
+procedure DrawGpImage(Handle: THandle; Image: TGPImage; DestX, DestY: Integer); overload;
+procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+  SrcX, SrcY, SrcW, SrcH: Integer); overload;
+procedure StretchDrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY, DestW, DestH: Integer);
+procedure PrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY: Integer;
+  ScaleX, ScaleY: single);
+procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage;
+  DestX, DestY, DestW, DestH: Integer;
+  ScaleX, ScaleY: single);
+procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
+  DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
+{$ENDIF NoGDIPlus}
 
 //------------------------------------------------------------------------------
 // misc. methods
@@ -952,7 +864,7 @@ end;
 
 {----------------WidePos}
 
-function WidePos(SubStr, S: UnicodeString): Integer;
+function WidePos(SubStr, S: WideString): Integer;
 // Unicode equivalent for Pos() function.
 var
   P: PWideChar;
@@ -964,78 +876,97 @@ begin
     Result := P - PWideChar(S) + 1;
 end;
 
-//{----------------WideUpperCase1}
-//
-//{$ifdef UNICODE}
-//
-//function WideUpperCase1(const S: UnicodeString): UnicodeString;
-//begin
-//  Result := WideUpperCase(S);
-//end;
-//
-//function WideLowerCase1(const S: UnicodeString): UnicodeString;
-//begin
-//  Result := WideLowerCase(S);
-//end;
-//
-//{$else}
-//
-//function WideUpperCase1(const S: UnicodeString): UnicodeString;
-//var
-//  Len, NewLen: Integer;
-//  Tmp: string;
-//begin
-//  Len := Length(S);
-//  if not IsWin32Platform then
-//  begin
-//    SetString(Result, PWideChar(S), Len);
-//    if Len > 0 then
-//      CharUpperBuffW(Pointer(Result), Len);
-//  end
-//  else
-//  begin {win95,98,ME}
-//    SetLength(Tmp, 2 * Len);
-//    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
-//    SetLength(Tmp, NewLen);
-//    Tmp := AnsiUppercase(Tmp);
-//    SetLength(Result, Len);
-//    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
-//  end;
-//end;
-//
-//function WideLowerCase1(const S: UnicodeString): UnicodeString;
-//var
-//  Len, NewLen: Integer;
-//  Tmp: string;
-//begin
-//  Len := Length(S);
-//  if not IsWin32Platform then
-//  begin
-//    SetString(Result, PWideChar(S), Len);
-//    if Len > 0 then
-//      CharLowerBuffW(Pointer(Result), Len);
-//  end
-//  else
-//  begin {win95,98,ME}
-//    SetLength(Tmp, 2 * Len);
-//    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
-//    SetLength(Tmp, NewLen);
-//    Tmp := AnsiLowercase(Tmp);
-//    SetLength(Result, Len);
-//    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
-//  end;
-//end;
-//
-//{$endif}
+{----------------WideUpperCase1}
 
-function WideSameText1(const S1, S2: UnicodeString): boolean;
+{$ifdef UNICODE}
+
+function WideUpperCase1(const S: WideString): WideString;
 begin
-  Result := htUpperCase(S1) = htUpperCase(S2);
+  Result := WideUpperCase(S);
 end;
 
-function WideSameStr1(const S1, S2: UnicodeString): boolean;
+function WideLowerCase1(const S: WideString): WideString;
+begin
+  Result := WideLowerCase(S);
+end;
+
+{$else}
+
+function WideUpperCase1(const S: WideString): WideString;
+var
+  Len, NewLen: Integer;
+  Tmp: string;
+begin
+  Len := Length(S);
+  if not IsWin32Platform then
+  begin
+    SetString(Result, PWideChar(S), Len);
+    if Len > 0 then
+      CharUpperBuffW(Pointer(Result), Len);
+  end
+  else
+  begin {win95,98,ME}
+    SetLength(Tmp, 2 * Len);
+    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
+    SetLength(Tmp, NewLen);
+    Tmp := AnsiUppercase(Tmp);
+    SetLength(Result, Len);
+    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
+  end;
+end;
+
+function WideLowerCase1(const S: WideString): WideString;
+var
+  Len, NewLen: Integer;
+  Tmp: string;
+begin
+  Len := Length(S);
+  if not IsWin32Platform then
+  begin
+    SetString(Result, PWideChar(S), Len);
+    if Len > 0 then
+      CharLowerBuffW(Pointer(Result), Len);
+  end
+  else
+  begin {win95,98,ME}
+    SetLength(Tmp, 2 * Len);
+    NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(S), Len, PChar(Tmp), 2 * Len, nil, nil);
+    SetLength(Tmp, NewLen);
+    Tmp := AnsiLowercase(Tmp);
+    SetLength(Result, Len);
+    MultibyteToWideChar(CP_ACP, 0, PChar(Tmp), NewLen, PWideChar(Result), Len);
+  end;
+end;
+
+{$endif}
+
+function WideSameText1(const S1, S2: WideString): boolean;
+begin
+  Result := WideUpperCase1(S1) = WideUpperCase1(S2);
+end;
+
+function WideSameStr1(const S1, S2: WideString): boolean;
 begin
   Result := S1 = S2;
+end;
+
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
@@ -1096,9 +1027,10 @@ begin
     end;
   if Rslt = 1 then {if there was a region, use the intersection with this region}
     CombineRgn(Rgn, Rgn, SaveRgn, Rgn_And);
+  SelectClipRgn(Canvas.Handle, Rgn);
 end;
 
-function WideTrim(const S: UnicodeString): UnicodeString;
+function WideTrim(const S: WideString): WideString;
 var
   I, L: Integer;
 begin
@@ -1116,7 +1048,7 @@ begin
   end;
 end;
 
-procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
+procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: WideString);
 {Wraps text in a clipping rectangle. Font must be set on entry}
 var
   ARect: TRect;
@@ -1230,9 +1162,9 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
 function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
-// Return a TSpecWidth prepared with values given in AsDouble *and* AsString.
-// AsString is used to evaluate the type while AsDouble is used to evaluate the value.
-// BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Double.
+// Return a TSpecWidth prepared with values given in AsInteger *and* AsString.
+// AsString is used to evaluate the type while AsInteger is used to evaluate the value.
+// BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Integer.
 begin
   if Pos('%', AsString) > 0 then
   begin
@@ -1256,6 +1188,146 @@ procedure TFreeList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
   if Action = lnDeleted then
     TObject(Ptr).Free;
+end;
+
+constructor TBitmapItem.Create(AImage: TgpObject; AMask: TBitmap; Tr: Transparency);
+begin
+  inherited Create;
+  MImage := AImage;
+  Mask := AMask;
+  AccessCount := 0;
+  Transp := Tr;
+end;
+
+destructor TBitmapItem.Destroy;
+begin
+  Assert(UsageCount = 0, 'Freeing Image still in use');
+  MImage.Free;
+  Mask.Free;
+  inherited Destroy;
+end;
+
+constructor TStringBitmapList.Create;
+begin
+  inherited Create;
+  FMaxCache := 4;
+  {$IFNDEF NoGDIPlus}
+  CheckInitGDIPlus;
+  {$ENDIF NoGDIPlus}
+end;
+
+destructor TStringBitmapList.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+    Objects[I].Free;
+  {$IFNDEF NoGDIPlus}
+  CheckExitGDIPlus;
+  {$ENDIF NoGDIPlus}
+  inherited Destroy;
+end;
+
+function TStringBitmapList.AddObject(const S: ThtString; AObject: TBitmapItem): Integer;
+begin
+  Result := inherited AddObject(S, AObject);
+  Inc(AObject.UsageCount);
+end;
+
+procedure TStringBitmapList.DecUsage(const S: ThtString);
+var
+  I: Integer;
+begin
+  I := IndexOf(S);
+  if I >= 0 then
+    with Objects[I] do
+    begin
+      Dec(UsageCount);
+      Assert(UsageCount >= 0, 'Cache image usage count < 0');
+    end;
+end;
+
+procedure TStringBitmapList.IncUsage(const S: ThtString);
+var
+  I: Integer;
+begin
+  I := IndexOf(S);
+  if I >= 0 then
+    Inc(Objects[I].UsageCount);
+end;
+
+procedure TStringBitmapList.SetCacheCount(N: Integer);
+var
+  I: Integer;
+begin
+  for I := Count - 1 downto 0 do
+    with Objects[I] do
+    begin
+      if (AccessCount > N) and (UsageCount <= 0) then
+      begin
+        Delete(I);
+        Free;
+      end;
+    end;
+  FMaxCache := N;
+end;
+
+function TStringBitmapList.GetImage(I: Integer): TgpObject;
+begin
+  with Objects[I] do
+  begin
+    Result := MImage;
+    AccessCount := 0;
+    Inc(UsageCount);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.03.2011 --
+function TStringBitmapList.GetObject(Index: Integer): TBitmapItem;
+begin
+  Result := TBitmapItem(inherited GetObject(Index));
+end;
+
+procedure TStringBitmapList.BumpAndCheck;
+var
+  I: Integer;
+  Tmp: TBitmapItem;
+begin
+  for I := Count - 1 downto 0 do
+  begin
+    Tmp := Objects[I];
+    Inc(Tmp.AccessCount);
+    if (Tmp.AccessCount > FMaxCache) and (Tmp.UsageCount <= 0) then
+    begin
+      Delete(I);
+      Tmp.Free; {the TBitmapItem}
+    end;
+  end;
+end;
+
+procedure TStringBitmapList.PurgeCache;
+var
+  I: Integer;
+  Tmp: TBitmapItem;
+begin
+  for I := Count - 1 downto 0 do
+  begin
+    Tmp := Objects[I];
+    if (Tmp.UsageCount <= 0) then
+    begin
+      Delete(I);
+      Tmp.Free; {the TBitmapItem}
+    end;
+  end;
+end;
+
+procedure TStringBitmapList.Clear;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+    Objects[I].Free;
+  inherited Clear;
 end;
 
 { TAttribute }
@@ -1295,26 +1367,12 @@ begin
   inherited;
 end;
 
-function TAttributeList.Find(Sy: Symb; var T: TAttribute): boolean;
+function TAttributeList.Find(Sy: Symb; out T: TAttribute): boolean;
 var
   I: Integer;
 begin
   for I := 0 to Count - 1 do
-    if Items[I].Which = Sy then
-    begin
-      Result := True;
-      T := Items[I];
-      Exit;
-    end;
-  Result := False;
-end;
-
-function TAttributeList.Find(SyName: ThtString; var T: TAttribute): boolean;
-var
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do
-    if Items[I].WhichName = SyName then
+    if Items[I].which = Sy then
     begin
       Result := True;
       T := Items[I];
@@ -1385,7 +1443,7 @@ begin
   if Find(StyleSy, T) then
   begin
     Prop.Free;
-    Prop := TProperties.Create(False);
+    Prop := TProperties.Create;
     Result := Prop;
     ParsePropertyStr(T.Name, Result);
   end
@@ -1576,9 +1634,9 @@ end;
 { TMapArea }
 
 //-- BG ---------------------------------------------------------- 31.12.2011 --
-function TMapArea.PtInRegion(X, Y: Integer): Boolean;
+function TMapArea.PtInArea(X, Y: Integer): Boolean;
 begin
-  Result := Windows.PtInRegion(FRegion, X, Y);
+  Result := PtInRegion(FRegion, X, Y);
 end;
 
 { TMapAreaList }
@@ -1603,7 +1661,7 @@ begin
   inherited Destroy;
 end;
 
-function TMapItem.GetURL(X, Y: Integer; var URLTarg: TUrlTarget; var ATitle: ThtString): boolean;
+function TMapItem.GetURL(X, Y: Integer; out URLTarg: TUrlTarget; out ATitle: ThtString): boolean;
 var
   I: Integer;
   Area: TMapArea;
@@ -1613,7 +1671,7 @@ begin
   for I := 0 to FAreas.Count - 1 do
   begin
     Area := FAreas[I];
-    if Area.PtInRegion(X, Y) then
+    if Area.PtInArea(X, Y) then
     begin
       if Area.HRef <> '' then {could be NoHRef}
       begin
@@ -1755,6 +1813,526 @@ begin
   end;
 end;
 
+
+function KindOfImage(Stream: TStream): TImageType;
+var
+  Pos: Int64;
+  Magic: DWord;
+  WMagic: Word absolute Magic;
+//  BMagic: Byte absolute Magic;
+begin
+  Pos := Stream.Position;
+  Stream.Position := 0;
+  try
+    Stream.Read(Magic, sizeof(Magic));
+    if Magic = $38464947 then
+    begin
+//      Stream.Read(BMagic, sizeof(BMagic));
+//      if BMagic = Ord('9') then
+//        Result := Gif89
+//      else
+        Result := Gif;
+    end
+    else if Magic = $474E5089 then
+      Result := Png
+    else
+      case WMagic of
+        $4D42: Result := Bmp;
+        $D8FF: Result := Jpg;
+      else
+        Result := NoImage;
+      end;
+  finally
+    Stream.Position := Pos;
+  end;
+end;
+
+function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBitmap;
+begin
+  try
+    if ColorValid then
+      Image.TransparentColor := AColor; {color has already been selected}
+  {else the transparent color is the lower left pixel of the bitmap}
+
+    Image.Transparent := True;
+
+    Result := TBitmap.Create;
+    try
+      Result.Handle := Image.ReleaseMaskHandle;
+      Image.Transparent := False;
+    except
+      FreeAndNil(Result);
+    end;
+  except
+    Result := nil;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 26.09.2010 --
+function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+// extracted from ThtDocument.GetTheImage(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
+
+  function ConvertImage(Bitmap: TBitmap): TBitmap;
+  {convert bitmap into a form for BitBlt later}
+
+    function DIBConvert: TBitmap;
+    var
+      DC: HDC;
+      DIB: TDib;
+      OldBmp: HBitmap;
+      OldPal: HPalette;
+      Hnd: HBitmap;
+    begin
+      DC := CreateCompatibleDC(0);
+      OldBmp := SelectObject(DC, Bitmap.Handle);
+      OldPal := SelectPalette(DC, ThePalette, False);
+      RealizePalette(DC);
+      DIB := TDib.CreateDIB(DC, Bitmap);
+      Hnd := DIB.CreateDIBmp;
+      DIB.Free;
+      SelectPalette(DC, OldPal, False);
+      SelectObject(DC, OldBmp);
+      DeleteDC(DC);
+      Bitmap.Free;
+      Result := TBitmap.Create;
+      Result.Handle := Hnd;
+      if (ColorBits = 8) and (Result.Palette = 0) then
+        Result.Palette := CopyPalette(ThePalette);
+    end;
+
+  begin
+    if ColorBits > 8 then
+    begin
+      if Bitmap.PixelFormat <= pf8bit then
+        Result := DIBConvert
+      else
+        Result := Bitmap;
+    end
+    else if Bitmap.HandleType = bmDIB then
+    begin
+      Result := GetBitmap(Bitmap);
+      Bitmap.Free;
+    end
+    else
+      Result := DIBConvert;
+  end;
+
+  function LoadGifFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+  var
+    GifImage: TGifImage;
+    Bitmap: TBitmap;
+  begin
+    GifImage := CreateAGifFromStream(Stream);
+    if GifImage.IsAnimated then
+      Result := GifImage
+    else
+    begin
+      Bitmap := TBitmap.Create;
+      try
+        Bitmap.Assign(GifImage.MaskedBitmap);
+        if GifImage.IsTransparent then
+        begin
+          AMask := TBitmap.Create;
+          AMask.Assign(GifImage.Mask);
+          Transparent := TrGif;
+        end
+        else if Transparent = LLCorner then
+          AMask := GetImageMask(Bitmap, False, 0);
+        GifImage.Free;
+        Result := Bitmap;
+      except
+        Bitmap.Free;
+        raise;
+      end;
+    end;
+  end;
+
+  function LoadPngFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+{$ifdef LCL}
+  var
+    PngImage: TPortableNetworkGraphic;
+    Bitmap: TBitmap;
+{$endif}
+  begin
+{$IFNDEF NoGDIPlus}
+    if GDIPlusActive then
+    begin
+      Result := TgpImage.Create(Stream);
+      Transparent := NotTransp;
+      exit;
+    end;
+{$ENDIF !NoGDIPlus}
+{$ifdef LCL}
+    PngImage := TPortableNetworkGraphic.Create;
+    try
+      Transparent := TrPng;
+      PngImage.LoadFromStream(Stream);
+      if ColorBits <= 8 then
+        PngImage.PixelFormat := pf8bit
+      else
+        PngImage.PixelFormat := pf24bit;
+      Bitmap := TBitmap.Create;
+      try
+        Bitmap.Assign(PngImage);
+        PngImage.Mask(clDefault);
+        if PngImage.MaskHandleAllocated then
+        begin
+          AMask := TBitmap.Create;
+          AMask.LoadFromBitmapHandles(PngImage.MaskHandle, 0);
+        end;
+        Result := ConvertImage(Bitmap);
+      except
+        Bitmap.Free;
+        raise;
+      end;
+    finally
+      PngImage.Free;
+    end;
+{$else}
+    Result := nil;
+{$endif}
+  end;
+
+  function LoadJpgFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TBitmap;
+  var
+    jpImage: TJpegImage;
+  begin
+    Transparent := NotTransp;
+    jpImage := TJpegImage.Create;
+    try
+      jpImage.LoadFromStream(Stream);
+      if ColorBits <= 8 then
+      begin
+        jpImage.PixelFormat := {$ifdef LCL} pf8bit {$else} jf8bit {$endif};
+        if not jpImage.GrayScale and (ColorBits = 8) then
+          jpImage.Palette := CopyPalette(ThePalette);
+      end
+      else
+        jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
+      Result := TBitmap.Create;
+      try
+        Result.Assign(jpImage);
+        Result := ConvertImage(Result);
+      except
+        Result.Free;
+        raise;
+      end;
+    finally
+      jpImage.Free;
+    end;
+  end;
+
+  function LoadBmpFromStream(Stream: TStream; Transparent: Transparency; var AMask: TBitmap): TBitmap;
+  begin
+    Result := TBitmap.Create;
+    try
+      Result.LoadFromStream(Stream);
+      Result := ConvertImage(Result);
+      if Transparent = LLCorner then
+        AMask := GetImageMask(Result, False, 0);
+    except
+      Result.Free;
+      raise;
+    end;
+  end;
+
+  function LoadMetaFileFromStream(Stream: TStream; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+  begin
+{$IFDEF NoMetafile}
+    Result := nil;
+{$ELSE}
+    Result := ThtMetafile.Create;
+    try
+      AMask := nil;
+      Transparent := NotTransp;
+      ThtMetaFile(Result).LoadFromStream(Stream);
+    except
+      FreeAndNil(Result);
+    end;
+{$ENDIF}
+  end;
+
+begin
+  if (Stream = nil) or (Stream.Size < SizeOf(DWord)) then
+  begin
+    Result := nil;
+    exit;
+  end;
+
+  Stream.Position := 0;
+  case KindOfImage(Stream) of
+    Gif: Result := LoadGifFromStream(Stream, Transparent, AMask);
+    Png: Result := LoadPngFromStream(Stream, Transparent, AMask);
+    Jpg: Result := LoadJpgFromStream(Stream, Transparent, AMask);
+    Bmp: Result := LoadBmpFromStream(Stream, Transparent, AMask);
+  else
+    Result := LoadMetaFileFromStream(Stream, Transparent, AMask);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 26.09.2010 --
+function LoadImageFromFile(const FName: ThtString; var Transparent: Transparency; var AMask: TBitmap): TgpObject;
+// extracted from ThtDocument.GetTheImage() and redesigned.
+// Now the image file is loaded once only (was: 2 to 3 times) and GetImageAndMaskFromFile() is obsolete.
+var
+  Stream: TStream;
+begin {look for the image file}
+  Result := nil;
+  if FileExists(FName) then
+  begin
+    Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
+    try
+      Result := LoadImageFromStream(Stream, Transparent, AMask);
+    finally
+      Stream.Free;
+    end;
+  end;
+end;
+
+{----------------FinishTransparentBitmap }
+
+procedure FinishTransparentBitmap(ahdc: HDC; InImage, Mask: TBitmap; xStart, yStart, W, H: Integer);
+var
+  bmAndBack,
+    bmSave,
+    bmBackOld,
+    bmObjectOld: HBitmap;
+  hdcInvMask,
+    hdcMask,
+    hdcImage: HDC;
+  DestSize, SrcSize: TPoint;
+  OldBack, OldFore: TColor;
+  BM: {$ifdef LCL} LclType.Bitmap {$else} Windows.TBitmap {$endif};
+  Image: TBitmap;
+
+begin
+  Image := TBitmap.Create; {protect original image}
+  try
+    Image.Assign(InImage);
+
+    hdcImage := CreateCompatibleDC(ahdc);
+    SelectObject(hdcImage, Image.Handle); { select the bitmap }
+
+  { convert bitmap dimensions from device to logical points}
+    SrcSize.x := Image.Width;
+    SrcSize.y := Image.Height;
+    DPtoLP(hdcImage, SrcSize, 1);
+
+    DestSize.x := W;
+    DestSize.y := H;
+    DPtoLP(hdcImage, DestSize, 1);
+
+  { create a bitmap for each DC}
+  { monochrome DC}
+    bmAndBack := CreateBitmap(SrcSize.x, SrcSize.y, 1, 1, nil);
+
+    bmSave := CreateCompatibleBitmap(ahdc, DestSize.x, DestSize.y);
+    GetObject(bmSave, SizeOf(BM), @BM);
+    if (BM.bmBitsPixel > 1) or (BM.bmPlanes > 1) then
+    begin
+    { create some DCs to hold temporary data}
+      hdcInvMask := CreateCompatibleDC(ahdc);
+      hdcMask := CreateCompatibleDC(ahdc);
+
+    { each DC must select a bitmap object to store pixel data}
+      bmBackOld := SelectObject(hdcInvMask, bmAndBack);
+
+    { set proper mapping mode}
+      SetMapMode(hdcImage, GetMapMode(ahdc));
+
+      bmObjectOld := SelectObject(hdcMask, Mask.Handle);
+
+    { create the inverse of the object mask}
+      BitBlt(hdcInvMask, 0, 0, SrcSize.x, SrcSize.y, hdcMask, 0, 0, NOTSRCCOPY);
+
+    {set the background color of the source DC to the color contained in the
+     parts of the bitmap that should be transparent, the foreground to the parts that
+     will show}
+      OldBack := SetBkColor(ahDC, clWhite);
+      OldFore := SetTextColor(ahDC, clBlack);
+
+    { Punch out a black hole in the background where the image will go}
+      SetStretchBltMode(ahDC, WhiteOnBlack);
+      StretchBlt(ahDC, XStart, YStart, DestSize.x, DestSize.y, hdcMask, 0, 0, SrcSize.x, SrcSize.y, SRCAND);
+
+    { mask out the transparent colored pixels on the bitmap}
+      BitBlt(hdcImage, 0, 0, SrcSize.x, SrcSize.y, hdcInvMask, 0, 0, SRCAND);
+
+    { XOR the bitmap with the background on the destination DC}
+{$IFDEF HalfToneStretching}
+      SetStretchBltMode(ahDC, HALFTONE);
+{$ELSE}
+      SetStretchBltMode(ahDC, COLORONCOLOR);
+{$ENDIF}
+      StretchBlt(ahDC, XStart, YStart, W, H, hdcImage, 0, 0, Image.Width, Image.Height, SRCPAINT);
+
+      SetBkColor(ahDC, OldBack);
+      SetTextColor(ahDC, OldFore);
+
+    { delete the memory bitmaps}
+      DeleteObject(SelectObject(hdcInvMask, bmBackOld));
+      SelectObject(hdcMask, bmObjectOld);
+
+    { delete the memory DCs}
+      DeleteDC(hdcInvMask);
+      DeleteDC(hdcMask);
+    end
+    else
+    begin
+      DeleteObject(bmAndBack);
+    end;
+    DeleteObject(bmSave);
+    DeleteDC(hdcImage);
+  finally
+    Image.Free;
+  end;
+end;
+
+{----------------TDib.CreateDIB}
+
+constructor TDib.CreateDIB(DC: HDC; Bitmap: TBitmap);
+{given a TBitmap, construct a device independent bitmap}
+var
+  ImgSize: DWord;
+begin
+  InitializeBitmapInfoHeader(Bitmap.Handle);
+  ImgSize := Info^.biSizeImage;
+  Allocate(ImgSize);
+  try
+    GetDIBX(DC, Bitmap.Handle, Bitmap.Palette);
+  except
+    DeAllocate;
+    raise;
+  end;
+end;
+
+destructor TDib.Destroy;
+begin
+  DeAllocate;
+  inherited Destroy;
+end;
+
+procedure TDib.Allocate(Size: Integer);
+begin
+  ImageSize := Size;
+  if Size < $FF00 then
+    GetMem(Image, Size)
+  else
+  begin
+    FHandle := GlobalAlloc(HeapAllocFlags, Size);
+    if FHandle = 0 then
+      ABort;
+    Image := GlobalLock(FHandle);
+  end;
+end;
+
+procedure TDib.DeAllocate;
+begin
+  if ImageSize > 0 then
+  begin
+    if ImageSize < $FF00 then
+      Freemem(Image, ImageSize)
+    else
+    begin
+      GlobalUnlock(FHandle);
+      GlobalFree(FHandle);
+    end;
+    ImageSize := 0;
+  end;
+  if InfoSize > 0 then
+  begin
+    FreeMem(Info, InfoSize);
+    InfoSize := 0;
+  end;
+end;
+
+procedure TDib.InitializeBitmapInfoHeader(Bitmap: HBITMAP);
+var
+  BM: {$ifdef LCL} LclType.Bitmap {$else} Windows.TBitmap {$endif};
+  BitCount: Integer;
+
+  function WidthBytes(I: Integer): Integer;
+  begin
+    Result := ((I + 31) div 32) * 4;
+  end;
+
+begin
+  GetObject(Bitmap, SizeOf(BM), @BM);
+  BitCount := BM.bmBitsPixel * BM.bmPlanes;
+  if BitCount > 8 then
+    InfoSize := SizeOf(TBitmapInfoHeader)
+  else
+    InfoSize := SizeOf(TBitmapInfoHeader) + SizeOf(TRGBQuad) * (1 shl BitCount);
+  GetMem(Info, InfoSize);
+
+  with Info^ do
+  begin
+    biSize := SizeOf(TBitmapInfoHeader);
+    biWidth := BM.bmWidth;
+    biHeight := BM.bmHeight;
+    biBitCount := BM.bmBitsPixel * BM.bmPlanes;
+    biPlanes := 1;
+    biXPelsPerMeter := 0;
+    biYPelsPerMeter := 0;
+    biClrUsed := 0;
+    biClrImportant := 0;
+    biCompression := BI_RGB;
+    if biBitCount in [16, 32] then
+      biBitCount := 24;
+    biSizeImage := WidthBytes(biWidth * biBitCount) * biHeight;
+  end;
+end;
+
+procedure TDib.GetDIBX(DC: HDC; Bitmap: HBITMAP; Palette: HPALETTE);
+var
+  OldPal: HPALETTE;
+  Rslt: Integer;
+  bmInfo: PBitmapInfo;
+begin
+  OldPal := 0;
+  if Palette <> 0 then
+  begin
+    OldPal := SelectPalette(DC, Palette, False);
+    RealizePalette(DC);
+  end;
+  bmInfo := PBitmapInfo(Info);
+  Rslt := GetDIBits(DC, Bitmap, 0, Info^.biHeight, Image, bmInfo^, DIB_RGB_COLORS);
+  if OldPal <> 0 then
+    SelectPalette(DC, OldPal, False);
+  if Rslt = 0 then
+  begin
+    OutofMemoryError;
+  end;
+end;
+
+procedure TDib.DrawDIB(DC: HDC; X, Y, W, H: Integer; ROP: DWord);
+var
+  bmInfo: PBitmapInfo;
+begin
+  bmInfo := PBitmapInfo(Info);
+  with Info^ do
+    StretchDIBits(DC, X, Y, W, H, 0, 0, biWidth, biHeight, Image,
+      bmInfo^, DIB_RGB_COLORS, ROP);
+end;
+
+function TDib.CreateDIBmp: hBitmap;
+var
+  bmInfo: PBitmapInfo;
+  DC: HDC;
+  OldPal: HPalette;
+begin
+  bmInfo := PBitmapInfo(Info);
+  DC := GetDC(0);
+  OldPal := SelectPalette(DC, ThePalette, False);
+  RealizePalette(DC);
+  try
+    Result := CreateDIBitmap(DC, bmInfo^.bmiHeader, CBM_INIT, Image,
+      bmInfo^, DIB_RGB_COLORS);
+  finally
+    SelectPalette(DC, OldPal, False);
+    ReleaseDC(0, DC);
+  end;
+end;
 
 { TIndentManager }
 
@@ -1933,7 +2511,7 @@ begin
         Result := YB;
 end;
 
-procedure TIndentManager.GetClearY(var CL, CR: Integer);
+procedure TIndentManager.GetClearY(out CL, CR: Integer);
 {returns the left and right Y values which will clear image margins}
 var
   I: Integer;
@@ -2292,6 +2870,84 @@ begin
   end;
 end;
 
+{$IFNDEF NoMetafile}
+
+procedure ThtMetaFile.Construct;
+var
+  Tmp: TBitmap;
+  pe: TPaletteEntry;
+  Color: TColor;
+begin
+  if not Assigned(FBitmap) then
+  begin
+    FBitmap := TBitmap.Create;
+    try
+      FBitmap.Width := Width;
+      FBitmap.Height := Height;
+      PatBlt(FBitmap.Canvas.Handle, 0, 0, Width, Height, Blackness);
+      FBitmap.Canvas.Draw(0, 0, Self);
+
+      Tmp := TBitmap.Create;
+      try
+        Tmp.Width := Width;
+        Tmp.Height := Height;
+        Tmp.PixelFormat := pf8Bit;
+      {pick an odd color from the palette to represent the background color,
+       one not likely in the metafile}
+        GetPaletteEntries(Tmp.Palette, 115, 1, pe);
+        Color := pe.peBlue shl 16 or pe.peGreen shl 8 or pe.peRed;
+        Tmp.Canvas.Brush.Color := Color;
+        Tmp.Canvas.FillRect(Rect(0, 0, Width, Height));
+        Tmp.Canvas.Draw(0, 0, Self);
+
+        FMask := GetImageMask(Tmp, False, Color);
+      finally
+        Tmp.Free;
+      end;
+    except
+      FreeAndNil(FBitmap);
+    end;
+  end;
+end;
+
+function ThtMetaFile.GetBitmap: TBitmap;
+begin
+  Construct;
+  Result := FBitmap;
+end;
+
+function ThtMetaFile.GetMask: TBitmap;
+begin
+  Construct;
+  Result := FMask;
+end;
+
+function ThtMetaFile.GetWhiteBGBitmap: TBitmap;
+begin
+  if not Assigned(FWhiteBGBitmap) then
+  begin
+    FWhiteBGBitmap := TBitmap.Create;
+    try
+      FWhiteBGBitmap.Width := Width;
+      FWhiteBGBitmap.Height := Height;
+      PatBlt(FWhiteBGBitmap.Canvas.Handle, 0, 0, Width, Height, Whiteness);
+      FWhiteBGBitmap.Canvas.Draw(0, 0, Self);
+    except
+      FreeAndNil(FWhiteBGBitmap);
+    end;
+  end;
+  Result := FWhiteBGBitmap;
+end;
+
+destructor ThtMetaFile.Destroy;
+begin
+  FreeAndNil(FBitmap);
+  FreeAndNil(FMask);
+  FreeAndNil(FWhiteBGBitmap);
+  inherited;
+end;
+{$ENDIF}
+
 //function InSet(W: WideChar; S: SetOfChar): boolean;
 //begin
 //  if Ord(W) > 255 then
@@ -2327,7 +2983,12 @@ begin
   inherited;
 end;
 
-procedure TCharCollection.Add(C: ThtChar; Index: Integer);
+procedure TCharCollection.Add(C: AnsiChar; Index: Integer);
+begin
+  Add(WideChar(C), Index);
+end;
+
+procedure TCharCollection.Add(C: WideChar; Index: Integer);
 begin
   if FCurrentIndex = Length(FChars) then
   begin
@@ -2360,23 +3021,23 @@ end;
 procedure TCharCollection.Clear;
 begin
   FCurrentIndex := 0;
-  SetLength(FChars, 0);
+  FChars := '';
 end;
 
-//procedure TCharCollection.Concat(T: TCharCollection);
-//var
-//  K: Integer;
-//begin
-//  K := FCurrentIndex + T.FCurrentIndex;
-//  if K >= Length(FChars) then
-//  begin
-//    SetLength(FChars, K + 50);
-//    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
-//  end;
-//  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
-//  Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
-//  FCurrentIndex := K;
-//end;
+procedure TCharCollection.Concat(T: TCharCollection);
+var
+  K: Integer;
+begin
+  K := FCurrentIndex + T.FCurrentIndex;
+  if K >= Length(FChars) then
+  begin
+    SetLength(FChars, K + 50);
+    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
+  end;
+  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
+  Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
+  FCurrentIndex := K;
+end;
 
 { TokenObj }
 
@@ -2416,7 +3077,7 @@ begin
   StringOK := True;
 end;
 
-function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): Ansistring;
+function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
 var
   NewLen, Len: Integer;
 begin
@@ -2434,29 +3095,29 @@ begin
   end;
 end;
 
-//function ByteNum(CodePage: Integer; P: PAnsiChar): Integer;
-//var
-//  P1: PAnsiChar;
-//begin
-//  if CodePage <> CP_UTF8 then
-//  begin
-//    P1 := {$ifdef LCL} CharNextEx {$else} CharNextExA {$endif} (CodePage, P, 0);
-//    if Assigned(P1) then
-//      Result := P1 - P
-//    else
-//      Result := 0;
-//  end
-//  else
-//    case ord(P^) of {UTF-8}
-//      0: Result := 0;
-//      1..127: Result := 1;
-//      192..223: Result := 2;
-//      224..239: Result := 3;
-//      240..247: Result := 4;
-//    else
-//      Result := 1; {error}
-//    end;
-//end;
+function ByteNum(CodePage: Integer; P: PAnsiChar): Integer;
+var
+  P1: PAnsiChar;
+begin
+  if CodePage <> CP_UTF8 then
+  begin
+    P1 := {$ifdef LCL} CharNextEx {$else} CharNextExA {$endif} (CodePage, P, 0);
+    if Assigned(P1) then
+      Result := P1 - P
+    else
+      Result := 0;
+  end
+  else
+    case ord(P^) of {UTF-8}
+      0: Result := 0;
+      1..127: Result := 1;
+      192..223: Result := 2;
+      224..239: Result := 3;
+      240..247: Result := 4;
+    else
+      Result := 1; {error}
+    end;
+end;
 
 procedure TokenObj.AddString(S: TCharCollection);
 var
@@ -2471,40 +3132,40 @@ begin
   StringOK := False;
 end;
 
-//procedure TokenObj.Concat(T: TokenObj);
-//var
-//  K: Integer;
-//begin
-//  K := Count + T.Count;
-//  if K >= Capacity then
-//    SetCapacity(K + 50);
-//  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
-//  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
-//  FCount := K;
-//  StringOK := False;
-//end;
-//
-//procedure TokenObj.Remove(N: Integer);
-//begin {remove a single character}
-//  if N <= Count then
-//  begin
-//    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
-//    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
-//    if StringOK then
-//      Delete(St, N, 1);
-//    Dec(FCount);
-//  end;
-//end;
-//
-//procedure TokenObj.Replace(N: Integer; Ch: WideChar);
-//begin {replace a single character}
-//  if N <= Count then
-//  begin
-//    C^[N] := Ch;
-//    if StringOK then
-//      St[N] := Ch;
-//  end;
-//end;
+procedure TokenObj.Concat(T: TokenObj);
+var
+  K: Integer;
+begin
+  K := Count + T.Count;
+  if K >= Capacity then
+    SetCapacity(K + 50);
+  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
+  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
+  FCount := K;
+  StringOK := False;
+end;
+
+procedure TokenObj.Remove(N: Integer);
+begin {remove a single character}
+  if N <= Count then
+  begin
+    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
+    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
+    if StringOK then
+      Delete(St, N, 1);
+    Dec(FCount);
+  end;
+end;
+
+procedure TokenObj.Replace(N: Integer; Ch: WideChar);
+begin {replace a single character}
+  if N <= Count then
+  begin
+    C^[N] := Ch;
+    if StringOK then
+      St[N] := Ch;
+  end;
+end;
 
 //-- BG ---------------------------------------------------------- 20.01.2011 --
 procedure TokenObj.SetCapacity(NewCapacity: Integer);
@@ -2523,7 +3184,7 @@ begin
   end;
 end;
 
-function TokenObj.GetString: UnicodeString;
+function TokenObj.GetString: WideString;
 begin
   if not StringOK then
   begin
@@ -2583,8 +3244,552 @@ begin
   Result := TIDObject(inherited GetObject(Index));
 end;
 
+{----------------BitmapToRegion}
+
+function BitmapToRegion(ABmp: TBitmap; XForm: PXForm; TransparentColor: TColor): HRGN;
+{Find a Region corresponding to the non-transparent area of a bitmap.
+
+ Thanks to Felipe Machado.  See http://www.delphi3000.com/
+ Minor modifications made.}
+const
+  AllocUnit = 100;
+type
+  PRectArray = ^TRectArray;
+  TRectArray = array[0..(MaxInt div SizeOf(TRect)) - 1] of TRect;
+var
+  pr: PRectArray; // used to access the rects array of RgnData by index
+  h: HRGN; // Handles to regions
+  RgnData: PRgnData; // Pointer to structure RGNDATA used to create regions
+  lr, lg, lb: Byte; // values for lowest and hightest trans. colors
+  x, y, x0: Integer; // coordinates of current rect of visible pixels
+  maxRects: Cardinal; // Number of rects to realloc memory by chunks of AllocUnit
+{$ifdef LCL}
+  bmp: TLazIntfImage;
+  b: TFpColor;
+{$else}
+  b: PByteArray; // used to easy the task of testing the byte pixels (R,G,B)
+  ScanLinePtr: Pointer; // Pointer to current ScanLine being scanned
+  ScanLineInc: Integer; // Offset to next bitmap scanline (can be negative)
+  bmp: TBitmap;
+{$endif}
+begin
+  Result := 0;
+  lr := GetRValue(TransparentColor);
+  lg := GetGValue(TransparentColor);
+  lb := GetBValue(TransparentColor);
+  { ensures that the pixel format is 32-bits per pixel }
+{$ifdef LCL}
+  bmp := TLazIntfImage.Create(0,0);
+  try
+    bmp.Assign(ABmp);
+    { alloc initial region data }
+    maxRects := AllocUnit;
+    GetMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects));
+    FillChar(RgnData^, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects), 0);
+    try
+      with RgnData^.rdh do
+      begin
+        dwSize := SizeOf(TRgnDataHeader);
+        iType := RDH_RECTANGLES;
+        nCount := 0;
+        nRgnSize := 0;
+        SetRect(rcBound, MAXLONG, MAXLONG, 0, 0);
+      end;
+      { scan each bitmap row - the orientation doesn't matter (Bottom-up or not) }
+      for y := 0 to bmp.Height - 1 do
+      begin
+        x := 0;
+        while x < bmp.Width do
+        begin
+          x0 := x;
+          while x < bmp.Width do
+          begin
+            b := bmp[x,y];
+            if (b.red = lr) and (b.green = lg) and (b.blue = lb) then
+              Break; // pixel is transparent
+            Inc(x);
+          end;
+          { test to see if we have a non-transparent area in the image }
+          if x > x0 then
+          begin
+            { increase RgnData by AllocUnit rects if we exceeds maxRects }
+            if RgnData^.rdh.nCount >= maxRects then
+            begin
+              Inc(maxRects, AllocUnit);
+              ReallocMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * MaxRects));
+              pr := @RgnData^.Buffer;
+              FillChar(pr^[maxRects - AllocUnit], AllocUnit * SizeOf(TRect), 0);
+            end;
+            { Add the rect (x0, y)-(x, y+1) as a new visible area in the region }
+            pr := @RgnData^.Buffer; // Buffer is an array of rects
+            with RgnData^.rdh do
+            begin
+              SetRect(pr[nCount], x0, y, x, y + 1);
+              { adjust the bound rectangle of the region if we are "out-of-bounds" }
+              if x0 < rcBound.Left then
+                rcBound.Left := x0;
+              if y < rcBound.Top then
+                rcBound.Top := y;
+              if x > rcBound.Right then
+                rcBound.Right := x;
+              if y + 1 > rcBound.Bottom then
+                rcBound.Bottom := y + 1;
+              Inc(nCount);
+            end;
+          end; // if x > x0
+          { Need to create the region by muliple calls to ExtCreateRegion, 'cause }
+          { it will fail on Windows 98 if the number of rectangles is too large   }
+          if RgnData^.rdh.nCount = 2000 then
+          begin
+            h := ExtCreateRegion(XForm, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects), RgnData^);
+            if Result > 0 then
+            begin // Expand the current region
+              CombineRgn(Result, Result, h, RGN_OR);
+              DeleteObject(h);
+            end
+            else // First region, assign it to Result
+              Result := h;
+            RgnData^.rdh.nCount := 0;
+            SetRect(RgnData^.rdh.rcBound, MAXLONG, MAXLONG, 0, 0);
+          end;
+          Inc(x);
+        end; // scan every sample byte of the image
+      end;
+      { need to call ExCreateRegion one more time because we could have left    }
+      { a RgnData with less than 2000 rects, so it wasn't yet created/combined  }
+      if RgnData^.rdh.nCount > 0 then {LDB  0 Count causes exception and abort in Win98}
+        h := ExtCreateRegion(XForm, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * MaxRects), RgnData^)
+      else
+        h := 0;
+      if Result > 0 then
+      begin
+        CombineRgn(Result, Result, h, RGN_OR);
+        DeleteObject(h);
+      end
+      else
+        Result := h;
+    finally
+      FreeMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * MaxRects));
+    end;
+  finally
+    bmp.Free;
+  end;
+{$else}
+  bmp := TBitmap.Create;
+  try
+    bmp.Assign(ABmp);
+    bmp.PixelFormat := pf32bit;
+    { alloc initial region data }
+    maxRects := AllocUnit;
+    GetMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects));
+    FillChar(RgnData^, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects), 0);
+    try
+      with RgnData^.rdh do
+      begin
+        dwSize := SizeOf(TRgnDataHeader);
+        iType := RDH_RECTANGLES;
+        nCount := 0;
+        nRgnSize := 0;
+        SetRect(rcBound, MAXLONG, MAXLONG, 0, 0);
+      end;
+      { scan each bitmap row - the orientation doesn't matter (Bottom-up or not) }
+      ScanLinePtr := bmp.ScanLine[0];
+      if bmp.Height > 1 then
+        ScanLineInc := PtrSub(bmp.ScanLine[1], ScanLinePtr)
+      else
+        ScanLineInc := 0;
+      for y := 0 to bmp.Height - 1 do
+      begin
+        x := 0;
+        while x < bmp.Width do
+        begin
+          x0 := x;
+          while x < bmp.Width do
+          begin
+            b := @PByteArray(ScanLinePtr)[x * SizeOf(TRGBQuad)];
+            // BGR-RGB: Windows 32bpp BMPs are made of BGRa quads (not RGBa)
+            if (b[2] = lr) and (b[1] = lg) and (b[0] = lb) then
+              Break; // pixel is transparent
+            Inc(x);
+          end;
+          { test to see if we have a non-transparent area in the image }
+          if x > x0 then
+          begin
+            { increase RgnData by AllocUnit rects if we exceeds maxRects }
+            if RgnData^.rdh.nCount >= maxRects then
+            begin
+              Inc(maxRects, AllocUnit);
+              ReallocMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * MaxRects));
+              pr := @RgnData^.Buffer;
+              FillChar(pr^[maxRects - AllocUnit], AllocUnit * SizeOf(TRect), 0);
+            end;
+            { Add the rect (x0, y)-(x, y+1) as a new visible area in the region }
+            pr := @RgnData^.Buffer; // Buffer is an array of rects
+            with RgnData^.rdh do
+            begin
+              SetRect(pr[nCount], x0, y, x, y + 1);
+              { adjust the bound rectangle of the region if we are "out-of-bounds" }
+              if x0 < rcBound.Left then
+                rcBound.Left := x0;
+              if y < rcBound.Top then
+                rcBound.Top := y;
+              if x > rcBound.Right then
+                rcBound.Right := x;
+              if y + 1 > rcBound.Bottom then
+                rcBound.Bottom := y + 1;
+              Inc(nCount);
+            end;
+          end; // if x > x0
+          { Need to create the region by muliple calls to ExtCreateRegion, 'cause }
+          { it will fail on Windows 98 if the number of rectangles is too large   }
+          if RgnData^.rdh.nCount = 2000 then
+          begin
+            h := ExtCreateRegion(XForm, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects), RgnData^);
+            if Result > 0 then
+            begin // Expand the current region
+              CombineRgn(Result, Result, h, RGN_OR);
+              DeleteObject(h);
+            end
+            else // First region, assign it to Result
+              Result := h;
+            RgnData^.rdh.nCount := 0;
+            SetRect(RgnData^.rdh.rcBound, MAXLONG, MAXLONG, 0, 0);
+          end;
+          Inc(x);
+        end; // scan every sample byte of the image
+        PtrInc(ScanLinePtr, ScanLineInc);
+      end;
+      { need to call ExCreateRegion one more time because we could have left    }
+      { a RgnData with less than 2000 rects, so it wasn't yet created/combined  }
+      if RgnData^.rdh.nCount > 0 then {LDB  0 Count causes exception and abort in Win98}
+        h := ExtCreateRegion(XForm, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * MaxRects), RgnData^)
+      else
+        h := 0;
+      if Result > 0 then
+      begin
+        CombineRgn(Result, Result, h, RGN_OR);
+        DeleteObject(h);
+      end
+      else
+        Result := h;
+    finally
+      FreeMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * MaxRects));
+    end;
+  finally
+    bmp.Free;
+  end;
+{$endif}
+end;
+
+{----------------EnlargeImage}
+
+function EnlargeImage(Image: TGpObject; W, H: Integer): TBitmap;
+{enlarge 1 pixel images for tiling.  Returns a TBitmap regardless of Image type}
+var
+  NewBitmap: TBitmap;
+begin
+  Result := TBitmap.Create;
+  {$IFNDEF NoGDIPlus}
+  if Image is TGpImage then
+    NewBitmap := TGpImage(Image).GetBitmap
+  else {$ENDIF !NoGDIPlus}
+    NewBitmap := Image as TBitmap;
+  Result.Assign(NewBitmap);
+  if NewBitmap.Width = 1 then
+    Result.Width := Min(100, W)
+  else
+    Result.Width := NewBitmap.Width;
+  if NewBitmap.Height = 1 then
+    Result.Height := Min(100, H)
+  else
+    Result.Height := NewBitmap.Height;
+  Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), NewBitmap);
+  {$IFNDEF NoGDIPlus}
+  if Image is TGpImage then
+    NewBitmap.Free;
+  {$ENDIF NoGDIPlus}
+end;
+
+{----------------PrintBitmap}
+
+type
+  AllocRec = class(TObject)
+    Ptr: Pointer;
+    ASize: Integer;
+    AHandle: THandle;
+  end;
+
+procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
+{Y relative to top of display here}
+
+  function Allocate(Size: Integer): AllocRec;
+  begin
+    Result := AllocRec.Create;
+    with Result do
+    begin
+      ASize := Size;
+      if Size < $FF00 then
+        GetMem(Ptr, Size)
+      else
+      begin
+        AHandle := GlobalAlloc(HeapAllocFlags, Size);
+        if AHandle = 0 then
+          ABort;
+        Ptr := GlobalLock(AHandle);
+      end;
+    end;
+  end;
+
+  procedure DeAllocate(AR: AllocRec);
+  begin
+    with AR do
+      if ASize < $FF00 then
+        Freemem(Ptr, ASize)
+      else
+      begin
+        GlobalUnlock(AHandle);
+        GlobalFree(AHandle);
+      end;
+    AR.Free;
+  end;
+
+{$ifdef LCL}
+{$else}
+var
+  OldPal: HPalette;
+  DC: HDC;
+  Info: PBitmapInfo;
+  Image: AllocRec;
+  ImageSize: DWord;
+  InfoSize: DWord;
+{$endif}
+begin
+{$ifdef LCL}
+  Canvas.StretchDraw(Rect(X, Y, W, H), Bitmap);
+{$else}
+  if (Bitmap = nil) or (Bitmap.Handle = 0) then
+    Exit;
+  DC := Canvas.Handle;
+  try
+    GetDIBSizes(Bitmap.Handle, InfoSize, ImageSize);
+    GetMem(Info, InfoSize);
+    try
+      Image := Allocate(ImageSize);
+      OldPal := SelectPalette(DC, ThePalette, False);
+      try
+        GetDIB(Bitmap.Handle, ThePalette, Info^, Image.Ptr^);
+        RealizePalette(DC);
+        with Info^.bmiHeader do
+          StretchDIBits(DC, X, Y, W, H, 0, 0, biWidth, biHeight, Image.Ptr, Info^, DIB_RGB_COLORS, SRCCOPY);
+      finally
+        DeAllocate(Image);
+        SelectPalette(DC, OldPal, False);
+      end;
+    finally
+      FreeMem(Info, InfoSize);
+    end;
+  except
+  end;
+{$endif}
+end;
+
+{----------------PrintTransparentBitmap3}
+
+procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer;
+  Bitmap, Mask: TBitmap; YI, HI: Integer);
+{Y relative to top of display here}
+{This routine prints transparently on complex background by printing through a clip region}
+{X, Y are point where upper left corner will be printed.
+ NewW, NewH are the Width and Height of the output (possibly stretched)
+ Vertically only a portion of the Bitmap, Mask may be printed starting at
+   Y=YI in the bitmap and a height of HI
+}
+var
+  DC: HDC;
+  hRgn, OldRgn: THandle;
+  Rslt: Integer;
+  XForm: TXForm;
+  SizeV, SizeW: TSize;
+  HF, VF: double;
+  ABitmap, AMask: TBitmap;
+  BitmapCopy: boolean;
+  Origin: TPoint; //BG, 29.08.2009: window origin for correct mask translation
+begin
+{the following converts the black masked area in the image to white.  This may look
+ better in WPTools which currently doesn't handle the masking}
+  if (Bitmap.Handle = 0) or (HI <= 0) or (Bitmap.Width <= 0) then
+    Exit;
+  BitmapCopy := Bitmap.Height <> HI;
+  try
+    if BitmapCopy then
+    begin
+      ABitmap := TBitmap.Create;
+      AMask := TBitmap.Create;
+    end
+    else
+    begin
+      ABitmap := Bitmap;
+      AMask := Mask;
+    end;
+    try
+      if BitmapCopy then
+      begin
+        Abitmap.Assign(Bitmap);
+        ABitmap.Height := HI;
+        BitBlt(ABitmap.Canvas.Handle, 0, 0, Bitmap.Width, HI, Bitmap.Canvas.Handle, 0, YI, SrcCopy);
+        AMask.Assign(Mask);
+        AMask.Height := HI;
+        BitBlt(AMask.Canvas.Handle, 0, 0, AMask.Width, HI, Mask.Canvas.Handle, 0, YI, SrcCopy);
+      end;
+
+      SetBkColor(ABitmap.Canvas.Handle, clWhite);
+      SetTextColor(ABitmap.Canvas.Handle, clBlack);
+      BitBlt(ABitmap.Canvas.Handle, 0, 0, Bitmap.Width, HI, AMask.Canvas.Handle, 0, 0, SRCPAINT);
+
+      DC := Canvas.Handle;
+    {calculate a transform for the clip region as it may be a different size than
+     the mask and needs to be positioned on the canvas.}
+      GetViewportExtEx(DC, SizeV);
+      GetWindowExtEx(DC, SizeW);
+      GetWindowOrgEx(DC, Origin); //BG, 29.08.2009: get origin for correct mask translation
+
+      HF := (SizeV.cx / SizeW.cx); {Horizontal adjustment factor}
+      VF := (SizeV.cy / SizeW.cy); {Vertical adjustment factor}
+
+      XForm.eM11 := HF * (NewW / Bitmap.Width);
+      XForm.eM12 := 0;
+      XForm.eM21 := 0;
+      XForm.eM22 := VF * (NewH / HI);
+      XForm.edx := HF * (X - Origin.X); //BG, 29.08.2009: subtract origin
+      XForm.edy := VF * Y;
+
+    {Find the region for the white area of the Mask}
+      hRgn := BitmapToRegion(AMask, @XForm, $FFFFFF);
+      if hRgn <> 0 then {else nothing to output--this would be unusual}
+      begin
+        OldRgn := CreateRectRgn(0, 0, 1, 1); {a valid region is needed for the next call}
+        Rslt := GetClipRgn(DC, OldRgn); {save the Old clip region}
+        try
+          if Rslt = 1 then
+            CombineRgn(hRgn, hRgn, OldRgn, RGN_AND);
+          SelectClipRgn(DC, hRgn);
+          PrintBitmap(Canvas, X, Y, NewW, NewH, ABitmap);
+        finally
+          if Rslt = 1 then
+            SelectClipRgn(DC, OldRgn)
+          else
+            SelectClipRgn(DC, 0);
+          DeleteObject(hRgn);
+          DeleteObject(OldRgn);
+        end;
+      end;
+    finally
+      if BitmapCopy then
+      begin
+        ABitmap.Free;
+        AMask.Free;
+      end;
+    end;
+  except
+  end;
+end;
+
 type
   BorderPointArray = array[0..3] of TPoint;
+
+{$IFNDEF NoGDIPlus}
+
+procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY: Integer);
+{Draws the entire image as specified at the point specified}
+var
+  g: TGpGraphics;
+begin
+  g := TGPGraphics.Create(Handle);
+  try
+    g.DrawImage(Image, DestX, DestY, Image.Width, Image.Height);
+  except
+  end;
+  g.Free;
+end;
+
+procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+  SrcX, SrcY, SrcW, SrcH: Integer);
+{Draw a portion of the image at DestX, DestY.  No stretching}
+var
+  g: TGpGraphics;
+begin
+  g := TGPGraphics.Create(Handle);
+  try
+    g.DrawImage(Image, DestX, DestY, SrcX, SrcY, SrcW, SrcH);
+  except
+  end;
+  g.Free;
+end;
+
+procedure StretchDrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+  DestW, DestH: Integer);
+{Draws the entire image in the rectangle specified}
+var
+  g: TGpGraphics;
+begin
+  g := TGPGraphics.Create(Handle);
+  try
+    g.DrawImage(Image, DestX, DestY, DestW, DestH);
+  except
+  end;
+  g.Free;
+end;
+
+procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage;
+  DestX, DestY, DestW, DestH: Integer;
+  ScaleX, ScaleY: single);
+{Prints the entire image at the point specified with the height and width specified}
+var
+  g: TGpGraphics;
+begin
+  g := TGPGraphics.Create(Handle);
+  try
+    g.ScaleTransform(ScaleX, ScaleY);
+    g.DrawImage(Image, DestX, DestY, DestW, DestH);
+  except
+  end;
+  g.Free;
+end;
+
+procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
+  DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
+var
+  g: TGpGraphics;
+  bg: TBitmap;
+begin {Draw image on white background first, then print}
+  bg := TBitmap.Create;
+  bg.Width := TGPImage(Image).Width;
+  bg.Height := TGPImage(Image).Height;
+  bg.Canvas.Brush.Color := Color;
+  bg.Canvas.FillRect(Rect(0, 0, bg.Width, bg.Height));
+  g := TGPGraphics.Create(bg.Canvas.Handle);
+  g.DrawImage(TGPImage(Image), 0, 0, bg.Width, bg.Height);
+  g.Free;
+  Canvas.StretchDraw(Rect(DestX, DestY, DestX + DestW, DestY + DestH), bg);
+  bg.Free;
+end;
+
+procedure PrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY: Integer;
+  ScaleX, ScaleY: single);
+{Prints the entire image as specified at the point specified}
+var
+  g: TGpGraphics;
+begin
+  g := TGPGraphics.Create(Handle);
+  try
+    g.ScaleTransform(ScaleX, ScaleY);
+    g.DrawImage(Image, DestX, DestY, Image.Width, Image.Height);
+  except
+  end;
+  g.Free;
+end;
+
+{$ENDIF NoGDIPlus}
 
 //function Points(P0, P1, P2, P3: TPoint): BorderPointArray;
 //begin
@@ -2966,402 +4171,68 @@ begin
   end;
 end;
 
+{ TgpObject }
+
+function GetImageHeight(Image: TGpObject): Integer;
+begin
+  if Image is TBitmap then
+    Result := TBitmap(Image).Height
+  else {$IFNDEF NoGDIPlus}
+  if Image is TGpImage then
+    Result := TGpImage(Image).Height
+  else {$ENDIF !NoGDIPlus}
+  if Image is TGifImage then
+    Result := TGifImage(Image).Height
+{$IFNDEF NoMetafile}
+  else if Image is ThtMetaFile then
+    Result := ThtMetaFile(Image).Height
+{$ENDIF}
+  else
+    raise(EGDIPlus.Create('Not a TBitmap, TGifImage, TMetafile, or TGpImage'));
+end;
+
+function GetImageWidth(Image: TGpObject): Integer;
+begin
+  if Image is TBitmap then
+    Result := TBitmap(Image).Width
+  else {$IFNDEF NoGDIPlus}
+  if Image is TGpImage then
+    Result := TGpImage(Image).Width
+  else {$ENDIF !NoGDIPlus}
+  if Image is TGifImage then
+    Result := TGifImage(Image).Width
+{$IFNDEF NoMetafile}
+  else if Image is ThtMetaFile then
+    Result := ThtMetaFile(Image).Width
+{$ENDIF}
+  else
+    raise(EGDIPlus.Create('Not a TBitmap, TGifImage, TMetafile, or TGpImage'));
+end;
+
 { TViewerBase }
 
-//-- BG ---------------------------------------------------------- 24.11.2011 --
-constructor TViewerBase.Create(AOwner: TComponent);
-begin
-  inherited;
-  PrintMarginLeft := 2.0;
-  PrintMarginRight := 2.0;
-  PrintMarginTop := 2.0;
-  PrintMarginBottom := 2.0;
-  PrintMaxHPages := 2;
-  PrintScale := 1.0;
-  Charset := DEFAULT_CHARSET;
-  MarginHeight := 5;
-  MarginWidth := 10;
-  DefBackground := clBtnFace;
-  DefFontColor := clBtnText;
-  DefHotSpotColor := clBlue;
-  DefOverLinkColor := clBlue;
-  DefVisitedLinkColor := clPurple;
-  VisitedMaxCount := 50;
-  DefFontSize := 12;
-  DefFontName := 'Times New Roman';
-  DefPreFontName := 'Courier New';
-  ImageCacheCount := 5;
-  FQuirksMode := qmDetect;
-end;
-
-//-- BG ---------------------------------------------------------- 16.11.2011 --
-constructor TViewerBase.CreateCopy(Owner: TComponent; Source: TViewerBase);
-begin
-  Create(Owner);
-
-  Charset := Source.Charset;
-  CodePage := Source.CodePage;
-  DefBackGround := Source.DefBackGround;
-  DefFontColor := Source.DefFontColor;
-  DefFontName := Source.DefFontName;
-  DefFontSize := Source.DefFontSize;
-  DefHotSpotColor := Source.DefHotSpotColor;
-  DefOverLinkColor := Source.DefOverLinkColor;
-  DefPreFontName := Source.DefPreFontName;
-  DefVisitedLinkColor := Source.DefVisitedLinkColor;
-  NoSelect := Source.NoSelect;
-  ServerRoot := Source.ServerRoot;
-
-  MarginHeight := Source.MarginHeight;
-  MarginWidth := Source.MarginWidth;
-  PrintMarginBottom := Source.PrintMarginBottom;
-  PrintMarginLeft := Source.PrintMarginLeft;
-  PrintMarginRight := Source.PrintMarginRight;
-  PrintMarginTop := Source.PrintMarginTop;
-  PrintMaxHPages := Source.PrintMaxHPages;
-  PrintScale := Source.PrintScale;
-  FQuirksMode := Source.QuirksMode;
-  HistoryMaxCount := Source.HistoryMaxCount;
-  ImageCacheCount := Source.ImageCacheCount;
-  VisitedMaxCount := Source.VisitedMaxCount;
-
-  OnBitmapRequest := Source.OnBitmapRequest;
-  OnDragDrop := Source.OnDragDrop;
-  OnDragOver := Source.OnDragOver;
-  OnHistoryChange := Source.OnHistoryChange;
-  OnHotSpotTargetClick := Source.OnHotSpotTargetClick;
-  OnHotSpotTargetCovered := Source.OnHotSpotTargetCovered;
-  OnImageClick := Source.OnImageClick;
-  OnImageOver := Source.OnImageOver;
-  OnImageRequest := Source.OnImageRequest;
-  OnImageRequested := Source.OnImageRequested;
-  OnInclude := Source.OnInclude;
-  OnLink := Source.OnLink;
-  OnMeta := Source.OnMeta;
-  OnMouseDouble := Source.OnMouseDouble;
-  OnObjectBlur := Source.OnObjectBlur;
-  OnObjectChange := Source.OnObjectChange;
-  OnObjectClick := Source.OnObjectClick;
-  OnObjectFocus := Source.OnObjectFocus;
-  OnObjectTag := Source.OnObjectTag;
-  OnObjectTag := Source.OnObjectTag;
-  OnPanelCreate := Source.OnPanelCreate;
-  OnPanelDestroy := Source.OnPanelDestroy;
-  OnPanelPrint := Source.OnPanelPrint;
-  OnParseBegin := Source.OnParseBegin;
-  OnParseEnd := Source.OnParseEnd;
-  OnPrinted := Source.OnPrinted;
-  OnPrintFooter := Source.OnPrintFooter;
-  OnPrintHeader := Source.OnPrintHeader;
-  OnPrinting := Source.OnPrinting;
-  OnProcessing := Source.OnProcessing;
-  OnProgress := Source.OnProgress;
-  OnScript := Source.OnScript;
-  OnSoundRequest := Source.OnSoundRequest;
-
-  Cursor := Cursor;
-  OnKeyDown := OnKeyDown;
-  OnKeyPress := OnKeyPress;
-  OnKeyUp := OnKeyUp;
-  OnMouseDown := OnMouseDown;
-  OnMouseMove := OnMouseMove;
-  OnMouseUp := OnMouseUp;
-end;
-
-procedure TViewerBase.SetActiveColor(const Value: TColor);
-begin
-  FOverColor := Value;
-end;
-
-procedure TViewerBase.SetCharset(const Value: TFontCharset);
-begin
-  FCharSet := Value;
-end;
-
-procedure TViewerBase.SetCodePage(const Value: Integer);
-begin
-  FCodePage := Value;
-end;
-
-procedure TViewerBase.SetDefBackground(const Value: TColor);
-begin
-  FBackground := Value;
-end;
-
-procedure TViewerBase.SetOnBitmapRequest(const Value: TGetBitmapEvent);
-begin
-  FOnBitmapRequest := Value;
-end;
-
-procedure TViewerBase.SetOnDragDrop(const Value: TDragDropEvent);
-begin
-  FOnDragDrop := Value;
-end;
-
-procedure TViewerBase.SetOnDragOver(const Value: TDragOverEvent);
-begin
-  FOnDragOver := Value;
-end;
-
-procedure TViewerBase.SetFontColor(const Value: TColor);
-begin
-  FFontColor := Value;
-end;
-
-procedure TViewerBase.SetFontName(const Value: TFontName);
-begin
-  FFontName := Value;
-end;
-
-procedure TViewerBase.SetFontSize(const Value: Integer);
-begin
-  FFontSize := Value;
-end;
-
-procedure TViewerBase.SetHistoryMaxCount(const Value: Integer);
-begin
-  FHistoryMaxCount := Value;
-end;
-
-procedure TViewerBase.SetHotSpotColor(const Value: TColor);
-begin
-  FHotSpotColor := Value;
-end;
-
-procedure TViewerBase.SetImageCacheCount(const Value: Integer);
-begin
-  FImageCacheCount := Value;
-end;
-
-procedure TViewerBase.SetMarginHeight(const Value: Integer);
-begin
-  FMarginHeight := Value;
-end;
-
-procedure TViewerBase.SetMarginWidth(const Value: Integer);
-begin
-  FMarginWidth := Value;
-end;
-
-procedure TViewerBase.SetNoSelect(const Value: Boolean);
-begin
-  FNoSelect := Value;
-end;
-
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnHistoryChange(const Value: TNotifyEvent);
-begin
-  FOnHistoryChange := Value;
-end;
-
-procedure TViewerBase.SetOnHotSpotTargetClick(const Value: THotSpotTargetClickEvent);
-begin
-  FOnHotSpotTargetClick := Value;
-end;
-
-procedure TViewerBase.SetOnHotSpotTargetCovered(const Value: THotSpotTargetEvent);
-begin
-  FOnHotSpotTargetCovered := Value;
-end;
-
-procedure TViewerBase.SetOnImageClick(const Value: TImageClickEvent);
-begin
-  FOnImageClick := Value;
-end;
-
-procedure TViewerBase.SetOnImageOver(const Value: TImageOverEvent);
-begin
-  FOnImageOver := Value;
-end;
-
-procedure TViewerBase.SetOnImageRequest(const Value: TGetImageEvent);
-begin
-  FOnImageRequest := Value;
-end;
-
-procedure TViewerBase.SetOnImageRequested(const Value: TGottenImageEvent);
-begin
-  FOnImageRequested := Value;
-end;
-
-procedure TViewerBase.SetOnInclude(const Handler: TIncludeType);
+procedure TViewerBase.SetOnInclude(Handler: TIncludeType);
 begin
   FOnInclude := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnLink(const Handler: TLinkType);
+procedure TViewerBase.SetOnLink(Handler: TLinkType);
 begin
   FOnLink := Handler;
 end;
 
-procedure TViewerBase.SetOnMeta(const Value: TMetaType);
-begin
-  FOnMeta := Value;
-end;
-
-procedure TViewerBase.SetOnMouseDouble(const Value: TMouseEvent);
-begin
-  FOnMouseDouble := Value;
-end;
-
-procedure TViewerBase.SetOnObjectBlur(const Value: ThtObjectEvent);
-begin
-  FOnObjectBlur := Value;
-end;
-
-procedure TViewerBase.SetOnObjectChange(const Value: ThtObjectEvent);
-begin
-  FOnObjectChange := Value;
-end;
-
-procedure TViewerBase.SetOnObjectClick(const Value: TObjectClickEvent);
-begin
-  FOnObjectClick := Value;
-end;
-
-procedure TViewerBase.SetOnObjectFocus(const Value: ThtObjectEvent);
-begin
-  FOnObjectFocus := Value;
-end;
-
-procedure TViewerBase.SetOnObjectTag(const Value: TObjectTagEvent);
-begin
-  FOnObjectTag := Value;
-end;
-
-procedure TViewerBase.SetOnPanelCreate(const Value: TPanelCreateEvent);
-begin
-  FOnPanelCreate := Value;
-end;
-
-procedure TViewerBase.SetOnPanelDestroy(const Value: TPanelDestroyEvent);
-begin
-  FOnPanelDestroy := Value;
-end;
-
-procedure TViewerBase.SetOnPanelPrint(const Value: TPanelPrintEvent);
-begin
-  FOnPanelPrint := Value;
-end;
-
-procedure TViewerBase.SetOnParseBegin(const Value: TParseEvent);
-begin
-  FOnParseBegin := Value;
-end;
-
-procedure TViewerBase.SetOnParseEnd(const Value: TNotifyEvent);
-begin
-  FOnParseEnd := Value;
-end;
-
-procedure TViewerBase.SetOnPrinted(const Value: THTMLViewPrinted);
-begin
-  FOnPrinted := Value;
-end;
-
-procedure TViewerBase.SetOnPrintFooter(const Value: TPagePrinted);
-begin
-  FOnPrintFooter := Value;
-end;
-
-procedure TViewerBase.SetOnPrintHeader(const Value: TPagePrinted);
-begin
-  FOnPrintHeader := Value;
-end;
-
-procedure TViewerBase.SetOnPrinting(const Value: THTMLViewPrinting);
-begin
-  FOnPrinting := Value;
-end;
-
-procedure TViewerBase.SetOnProcessing(const Value: TProcessingEvent);
-begin
-  FOnProcessing := Value;
-end;
-
-procedure TViewerBase.SetOnProgress(const Value: ThtProgressEvent);
-begin
-  FOnProgress := Value;
-end;
-
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnScript(const Handler: TScriptEvent);
+procedure TViewerBase.SetOnScript(Handler: TScriptEvent);
 begin
   FOnScript := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-procedure TViewerBase.SetOnSoundRequest(const Handler: TSoundType);
+procedure TViewerBase.SetOnSoundRequest(Handler: TSoundType);
 begin
   FOnSoundRequest := Handler;
-end;
-
-procedure TViewerBase.SetPreFontName(const Value: TFontName);
-begin
-  FPreFontName := Value;
-end;
-
-procedure TViewerBase.SetPrintMarginBottom(const Value: Double);
-begin
-  FPrintMarginBottom := Value;
-end;
-
-procedure TViewerBase.SetPrintMarginLeft(const Value: Double);
-begin
-  FPrintMarginLeft := Value;
-end;
-
-procedure TViewerBase.SetPrintMarginRight(const Value: Double);
-begin
-  FPrintMarginRight := Value;
-end;
-
-procedure TViewerBase.SetPrintMarginTop(const Value: Double);
-begin
-  FPrintMarginTop := Value;
-end;
-
-procedure TViewerBase.SetPrintMaxHPages(const Value: Integer);
-begin
-  FPrintMaxHPages := Value;
-end;
-
-procedure TViewerBase.SetPrintScale(const Value: Double);
-begin
-  FPrintScale := Value;
-end;
-
-procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
-begin
-  FQuirksMode := AValue;
-end;
-
-procedure TViewerBase.SetServerRoot(const Value: ThtString);
-begin
-  FServerRoot := ExcludeTrailingPathDelimiter(Trim(Value));
-end;
-
-procedure TViewerBase.SetVisitedColor(const Value: TColor);
-begin
-  FVisitedColor := Value;
-end;
-
-procedure TViewerBase.SetVisitedMaxCount(const Value: Integer);
-begin
-  FVisitedMaxCount := Value;
-end;
-
-procedure TViewerBase.ViewerDragDrop(Sender, Source: TObject; X, Y: Integer);
-begin
-  if Assigned(OnDragDrop) then
-    OnDragDrop(Self, Source, X, Y);
-end;
-
-procedure TViewerBase.ViewerDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
-begin
-  if Assigned(OnDragOver) then
-    OnDragOver(Self, Source, X, Y, State, Accept);
 end;
 
 { THtmlViewerBase }
@@ -3380,6 +4251,41 @@ begin
   msg.result := 1;
 end;
 
+{$ifdef LCL}
+const
+  DefaultBitmap = 'DefaultBitmap';
+  ErrBitmap = 'ErrBitmap';
+  ErrBitmapMask = 'ErrBitmapMask';
+//  Hand_Cursor = 'Hand_Cursor';
+
+procedure htLoadBitmap(var Bitmap: TBitmap; const Resource: String);
+begin
+  Bitmap.LoadFromLazarusResource(Resource);
+end;
+
+function htLoadCursor(const CursorName: String): HICON;
+begin
+  Result := LoadCursorFromLazarusResource(CursorName);
+end;
+
+{$else}
+const
+  DefaultBitmap = 1002;
+  ErrBitmap = 1001;
+  ErrBitmapMask = 1005;
+
+procedure htLoadBitmap(var Bitmap: TBitmap; Resource: Integer);
+begin
+  BitMap.Handle := LoadBitmap(HInstance, MakeIntResource(Resource));
+end;
+
+function htLoadCursor(const CursorName: PChar): HICON;
+begin
+  Result := LoadCursor(HInstance, CursorName);
+end;
+
+{$endif}
+
 { TIDObject }
 
 //-- BG ---------------------------------------------------------- 06.03.2011 --
@@ -3388,19 +4294,29 @@ begin
   Result := False;
 end;
 
-{ ThvPanel }
+initialization
+  DefBitMap := TBitmap.Create;
+  ErrorBitMap := TBitmap.Create;
+  ErrorBitMapMask := TBitmap.Create;
+{$ifdef LCL}
+  {$I htmlun2.lrs}
+{$else}
+  {$R Html32.res}
+{$endif}
+  htLoadBitmap(DefBitMap, DefaultBitmap);
+  htLoadBitmap(ErrorBitMap, ErrBitmap);
+  htLoadBitmap(ErrorBitMapMask, ErrBitmapMask);
+  Screen.Cursors[UpDownCursor] := htLoadCursor('UPDOWNCURSOR');
+  Screen.Cursors[UpOnlyCursor] := htLoadCursor('UPONLYCURSOR');
+  Screen.Cursors[DownOnlyCursor] := htLoadCursor('DOWNONLYCURSOR');
+  WaitStream := TMemoryStream.Create;
+  ErrorStream := TMemoryStream.Create;
 
-procedure ThvPanel.SetVisible(Value: boolean);
-begin
-  if Value <> FVisible then
-  begin
-    FVisible := Value;
-    if FVisible then
-      Show
-    else
-      Hide;
-  end;
-end;
-
+finalization
+  DefBitMap.Free;
+  ErrorBitMap.Free;
+  ErrorBitMapMask.Free;
+  WaitStream.Free;
+  ErrorStream.Free;
 end.
 

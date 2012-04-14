@@ -1,5 +1,5 @@
 {
-Version   11.5
+Version   11.2
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -129,11 +129,9 @@ type
       out Stream: TMemoryStream); virtual;
   public
     constructor Create(AOwner: TComponent); override;
-    constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     function GetViewerUrlBase(Viewer: ThtmlViewer): ThtString;
     procedure GetPostQuery(const URL, Query, EncType: ThtString; IsGet: boolean);
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: boolean); override;
-    procedure Load(const SRC: ThtString); override;
     procedure LoadFromFile(const Name: ThtString); override;
     procedure LoadURL(const URL: ThtString);
     property EncodePostArgs: boolean read FEncodePostArgs write FEncodePostArgs;
@@ -733,27 +731,6 @@ begin
   FEncodePostArgs := True;
 end;
 
-//-- BG ---------------------------------------------------------- 25.11.2011 --
-constructor TFrameBrowser.CreateCopy(Owner: TComponent; Source: TViewerBase);
-var
-  Viewer: TFrameBrowser absolute Source;
-begin
-  inherited;
-  if Source is TFrameBrowser then
-  begin
-    OnGetPostRequest := Viewer.OnGetPostRequest;
-    OnGetPostRequestEx := Viewer.OnGetPostRequestEx;
-    OnFormSubmit := Viewer.OnFormSubmit;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 24.11.2011 --
-procedure TFrameBrowser.Load(const SRC: ThtString);
-begin
-  inherited;
-  LoadUrl(SRC);
-end;
-
 //-- BG ---------------------------------------------------------- 24.09.2010 --
 procedure TFrameBrowser.LoadFromFile(const Name: ThtString);
 begin
@@ -868,17 +845,18 @@ begin
       end;
       OldFrameSet.UnloadFiles;
       CurbrFrameSet.Visible := True;
-      if Visible then
-      begin
-        SendMessage(Handle, wm_SetRedraw, 0, 0);
-        try
-          CurbrFrameSet.BringToFront;
-        finally
-          SendMessage(Handle, wm_SetRedraw, 1, 0);
-          Invalidate; //Repaint;
-        end;
-        //CurbrFrameSet.Repaint;
-      end;
+      CurbrFrameSet.BringToFront;
+//      if Visible then
+//      begin
+//        SendMessage(Handle, wm_SetRedraw, 0, 0);
+//        try
+//          CurbrFrameSet.BringToFront;
+//        finally
+//          SendMessage(Handle, wm_SetRedraw, 1, 0);
+//          Repaint;
+//        end;
+//        CurbrFrameSet.Repaint;
+//      end;
 
       BumpHistory(OldFrameSet, OldPos);
     end
@@ -1077,12 +1055,12 @@ var
           ' ':
             htAppendChr(Result, '+');
 
-          ThtChar('a')..ThtChar('z'),
-          ThtChar('A')..ThtChar('Z'),
-          ThtChar('0')..ThtChar('9'),
-          ThtChar('='), ThtChar('_'),
-          ThtChar('-'), ThtChar('.'),
-          ThtChar('*'), ThtChar('@'):
+          'a'..'z',
+          'A'..'Z',
+          '0'..'9',
+          '=', '_',
+          '-', '.',
+          '*', '@':
             htAppendChr(Result, Ch);
         else
           htAppendChr(Result, '%');
