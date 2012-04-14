@@ -59,6 +59,8 @@ const
   BrkCh = #8;
 
 type
+  THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
+
   // BG, 26.12.2011:
   TWidthType = (
     wtNone,
@@ -114,7 +116,17 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy);
+    ReadonlySy, EolSy, MediaSy,
+	
+    {HTML5 elements}
+    HeaderSy, HeaderEndSy,
+    SectionSy, SectionEndSy,
+    NavSy, NavEndSy,
+    ArticleSy, ArticleEndSy,
+    AsideSy, AsideEndSy,
+    FooterSy, FooterEndSy,
+    HGroupSy, HGroupEndSy,
+    MarkSy, MarkEndSy);
 
 //------------------------------------------------------------------------------
 
@@ -503,15 +515,24 @@ type
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
   protected
+    // set to determine if child objects should be in "quirks" mode
+    //This must be protected because it's set directly in a descendant
+    FUseQuirksMode : Boolean;
+    FQuirksMode : THtQuirksMode;
     procedure SetOnInclude(Handler: TIncludeType); virtual;
     procedure SetOnLink(Handler: TLinkType); virtual;
     procedure SetOnScript(Handler: TScriptEvent); virtual;
     procedure SetOnSoundRequest(Handler: TSoundType); virtual;
+    procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
   public
+    constructor Create(AOwner: TComponent); override;
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
+
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
     property OnSoundRequest: TSoundType read FOnSoundRequest write SetOnSoundRequest;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
@@ -562,8 +583,6 @@ function WideUpperCase1(const S: WideString): WideString; {$ifdef UNICODE} inlin
 function WideLowerCase1(const S: WideString): WideString; {$ifdef UNICODE} inline; {$endif}
 function WideSameText1(const S1, S2: WideString): boolean; {$ifdef UseInline} inline; {$endif}
 function WideSameStr1(const S1, S2: WideString): boolean;  {$ifdef UseInline} inline; {$endif}
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
 
@@ -950,24 +969,6 @@ begin
   Result := S1 = S2;
 end;
 
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
-var
-  S1: ThtString;
-  I: Integer;
-begin
-  if Offset <= 1 then
-    Result := Pos(SubStr, S)
-  else
-  begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := Pos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
-  end;
-end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 function ScaleRect(const Rect: TRect; ScaleX, ScaleY: Double): TRect;
@@ -1109,9 +1110,9 @@ begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
     if not MonoBlack and Disabled then
-      Brush.Color := clBtnFace
+      Brush.Color := ThemedColor(clBtnFace)
     else
-      Brush.Color := color;
+      Brush.Color := ThemedColor(color);
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1129,14 +1130,14 @@ begin
       if Raised then
         Pen.Color := clSilver
       else
-        Pen.Color := clBtnShadow;
+        Pen.Color := ThemedColor(clBtnShadow);
     end;
     MoveTo(X1, Y2);
     LineTo(X1, Y1);
     LineTo(X2, Y1);
     if not MonoBlack then
       if Raised then
-        Pen.Color := clBtnShadow
+        Pen.Color := ThemedColor(clBtnShadow)
       else
         Pen.Color := clSilver;
     LineTo(X2, Y2);
@@ -3859,7 +3860,7 @@ begin
       with Canvas do
       begin
         Brush.Style := bsSolid;
-        Brush.Color := Color;
+        Brush.Color := ThemedColor(Color);
         FillRgn(Handle, R, Brush.Handle);
       end;
     finally
@@ -3889,45 +3890,6 @@ var
   StyleSet: set of BorderStyleType;
   OuterRegion, InnerRegion: THandle;
   Brush: TBrush;
-
-  function Darker(Color: TColor): TColor;
-  {find a somewhat darker color for shading purposes}
-  const
-    F = 0.75; // F < 1 makes color darker
-  var
-    Red, Green, Blue: Byte;
-  begin
-    if Color < 0 then
-      Color := GetSysColor(Color and $FFFFFF)
-    else
-      Color := Color and $FFFFFF;
-    Red := Color and $FF;
-    Green := (Color and $FF00) shr 8;
-    Blue := (Color and $FF0000) shr 16;
-    Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
-  end;
-
-  function Lighter(Color: TColor): TColor;
-  {find a somewhat lighter color for shading purposes}
-  const
-    F = 1.15; // F > 1 makes color lighter
-  var
-    Red, Green, Blue: Byte;
-  begin
-    if Color < 0 then
-      Color := GetSysColor(Color and $FFFFFF)
-    else
-      Color := Color and $FFFFFF;
-    if Color = 0 then
-      Result := 0
-    else
-    begin
-      Red := Color and $FF;
-      Green := (Color and $FF00) shr 8;
-      Blue := (Color and $FF0000) shr 16;
-      Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
-    end;
-  end;
 
 begin
 {Limit the borders to somewhat more than the screen size}
@@ -4025,7 +3987,7 @@ begin
     CombineRgn(OuterRegion, OuterRegion, InnerRegion, RGN_DIFF);
     Brush := TBrush.Create;
     try
-      Brush.Color := BGround or PalRelative;
+      Brush.Color := ThemedColor(BGround) or PalRelative;
       Brush.Style := bsSolid;
       FillRgn(Canvas.Handle, OuterRegion, Brush.Handle);
     finally
@@ -4136,7 +4098,7 @@ begin
         if not InPath then
         begin
           lb.lbStyle := BS_SOLID;
-          lb.lbColor := C[I] or PalRelative;
+          lb.lbColor := ThemedColor(C[I]) or PalRelative;
           lb.lbHatch := 0;
           if S[I] = bssDotted then
             PenType := PS_Dot or ps_EndCap_Round
@@ -4212,6 +4174,12 @@ end;
 { TViewerBase }
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
+constructor TViewerBase.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FQuirksMode := qmDetect;
+end;
+
 procedure TViewerBase.SetOnInclude(Handler: TIncludeType);
 begin
   FOnInclude := Handler;
@@ -4233,6 +4201,11 @@ end;
 procedure TViewerBase.SetOnSoundRequest(Handler: TSoundType);
 begin
   FOnSoundRequest := Handler;
+end;
+
+procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
+begin
+  FQuirksMode := AValue;
 end;
 
 { THtmlViewerBase }

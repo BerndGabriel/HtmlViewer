@@ -140,6 +140,10 @@ type
     MetaEvent: TMetaType;
     LinkEvent: TLinkType;
 
+    FUseQuirksMode : Boolean;
+    FPropStack: THtmlPropStack;
+    FNoBreak : Boolean;
+    procedure SetNoBreak(const AValue : Boolean);
     procedure GetCh;
 
     function DoCharSet(Content: ThtString): Boolean;
@@ -173,9 +177,11 @@ type
     procedure ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
     procedure SkipWhiteSpace;
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
+    procedure PopProp;
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
     function GetTitle: ThtString;
+    function PropStackIndex: Integer;
   public
     constructor Create(Doc: TBuffer);
     destructor Destroy; override;
@@ -183,9 +189,14 @@ type
     procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString; AMetaEvent: TMetaType);
     procedure ParseHtml(ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
     procedure ParseText(ASectionList: ThtDocument);
+    function ShouldUseQuirksMode: Boolean;
+
     property Base: ThtString read FBase;
     property BaseTarget: ThtString read FBaseTarget;
     property Title: ThtString read GetTitle;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
+    property PropStack: THtmlPropStack read FPropStack;
+    property NoBreak : Boolean read FNoBreak write SetNoBreak;
   end;
 
 implementation
@@ -232,10 +243,6 @@ var
   AttributeNames: ThtStringList;
   SymbolNames: array [Symb] of ThtString;
 
-function PropStackIndex: Integer;
-begin
-  Result := PropStack.Count - 1;
-end;
 
 function SymbToStr(Sy: Symb): ThtString; {$ifdef UseInline} inline; {$endif}
 begin
@@ -273,6 +280,11 @@ begin
   DocStack.Free;
   LCToken.Free;
   inherited;
+end;
+
+function THtmlParser.PropStackIndex: Integer;
+begin
+  Result := FPropStack.Count - 1;
 end;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
@@ -568,6 +580,191 @@ begin
   end;
 end;
 
+function THtmlParser.ShouldUseQuirksMode: Boolean;
+{
+This is not in ParseHTML because quirks mode effects
+the CSS property initialization which is done earlier than
+the parsing is and because it can dictate how HTML is parsed.
+In addition, you may want to skip this detection if:
+
+1) The document was served as "application/xhtml+xml" or is known to be
+XHTML.  In those cases, the document should ALWAYS be displayed in a "standards"
+mode. In ideal situations, XHTML should be parsed in a stricter manner than regular
+HTML and use XML rules.
+2) You want to force THTMLViewer to display the document in "quirks mode"
+3) You want to force THTMLViewer to display the document in a "standards"
+non-quirks mode
+
+Scan for the following DOCTYPE declarations:
+
+<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+   "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN"
+    "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
+   "http://www.w3.org/TR/html4/frameset.dtd">
+
+}
+var LId : ThtString;
+
+  procedure GetChBasic;
+  begin
+     LCh := Doc.NextChar;
+  end;
+
+  procedure ReadToGT; {read to the next GreaterChar }
+  begin
+    while (LCh <> GreaterChar) and (LCh <> EofChar) do
+      GetChBasic;
+    InComment := False;
+  end;
+
+  procedure ReadToLT;  {read to the next LessChar }
+  begin
+    if not InComment then begin
+      while (LCh <> LessChar) and (LCh <> EofChar) do
+        GetChBasic;
+    end;
+  end;
+
+  procedure ScanDTDIdentifier(out Identifier : ThtString);
+  begin
+    SetLength(Identifier, 0);
+    case LCh of
+      'A'..'Z', 'a'..'z', '0'..'9', '_', '/', '-','.':
+        Result := True;
+    else
+      Result := False;
+    end;
+  // loop through all allowed characters:
+    while Result do
+    begin
+      case LCh of
+         'A'..'Z', 'a'..'z', '0'..'9', '_', '/', '-','.': ;
+      else
+        break;
+      end;
+      htAppendChr(Identifier, LCh);
+      GetChBasic;
+    end;
+
+    if Result then
+      Result := Length(Identifier) > 0;
+  end;
+
+  function ScanDTD : Boolean;
+  var
+    LPart : ThtString;
+  begin
+    Result := False;
+    SkipWhiteSpace;
+
+    ScanDTDIdentifier(LPart);
+    if htUpperCase(LPart) = htUpperCase('HTML') then
+    begin
+      GetChBasic;
+      if LCh = GreaterChar then
+      begin
+        //HTML5 - don't use quirks mode
+        Result := True;
+        exit;
+      end;
+      ScanDTDIdentifier(LPart);
+      if htUpperCase(LPart) <> htUpperCase('PUBLIC') then
+        exit;
+      SkipWhiteSpace;
+      if LCh = '"' then
+        GetChBasic;
+      SkipWhiteSpace;
+      ScanDTDIdentifier(LPart);
+      if htUpperCase(LPart) <> htUpperCase('-//W3C//DTD') then
+        exit;
+      SkipWhiteSpace;
+      ScanDTDIdentifier(LPart);
+      LPart := htUpperCase(LPart);
+      if LPart = htUpperCase('HTML') then
+      begin
+        SkipWhiteSpace;
+        ScanDTDIdentifier(LPart);
+        Result := (LPart = '4.01');
+        exit;
+      end;
+      if LPart = 'XHTML' then
+      begin
+        SkipWhiteSpace;
+        ScanDTDIdentifier(LPart);
+        if htUpperCase(LPart) = htUpperCase('BASIC') then
+        begin
+          SkipWhiteSpace;
+          ScanDTDIdentifier(LPart);
+          if LPart = '1.1' then
+            Result := True;
+        end
+        else
+        begin
+          Result := (LPart = '1.0') or (LPart = '1.1')
+        end;
+      end;
+    end;
+  end;
+
+var
+  OldPos: Integer;
+begin
+  FPropStack := THTMLPropStack.Create;
+  try
+    OldPos := Doc.Position;
+    Result := True;
+    repeat
+      ReadToLT;
+      GetChBasic;
+      case LCh of
+        '!':
+        begin
+          GetChBasic;
+          GetIdentifier(LId);
+          if htUpperCase(LId) <> 'DOCTYPE' then
+          begin
+            InComment := True;
+            ReadToGT;
+          end
+          else
+          begin
+            if ScanDTD then
+            begin
+              Result := False;
+              break;
+            end;
+          end;
+        end;
+
+        EofChar:
+          break;
+      end;
+      GetIdentifier(LId);
+      SkipWhiteSpace;
+      LId := htUpperCase(LId);
+      if (LId = 'HTML') or (LId = 'HEAD') or (LId = 'BODY') then
+        break;
+    until False;
+    Doc.Position := OldPos;
+  finally
+    FreeAndNil(FPropStack);
+  end;
+end;
+
 {-------------SkipWhiteSpace}
 
 procedure THtmlParser.SkipWhiteSpace;
@@ -606,7 +803,7 @@ begin
         break;
 
       AmperChar:
-        S := S + GetEntityStr(PropStack.Last.CodePage);
+        S := S + GetEntityStr(FPropStack.Last.CodePage);
     else
       // this is faster than: S := S + LCh;
       SetLength(S, Length(S) + 1);
@@ -953,15 +1150,23 @@ begin
   PropStack.PushNewProp(Tag, AClass, AnID, APseudo, ATitle, AProp);
 end;
 
-procedure PopProp;
+procedure THtmlParser.PopProp;
 {pop and free a TProperties from the Prop stack}
 begin
-  PropStack.PopProp;
+  FPropStack.PopProp;
 end;
 
 procedure THtmlParser.PopAProp(const Tag: ThtString);
 begin
-  PropStack.PopAProp(Tag);
+  FPropStack.PopAProp(Tag);
+end;
+
+procedure THtmlParser.SetNoBreak(const AValue : Boolean);
+begin
+  FNoBreak := AValue;
+  if Assigned(FPropStack) and Assigned(FPropStack.MasterList ) then begin
+    FPropStack.MasterList.NoBreak := AValue;
+  end;
 end;
 
 procedure THtmlParser.DoTextArea(TxtArea: TTextAreaFormControlObj);
@@ -1119,10 +1324,10 @@ var
   IsFieldsetLegend: Boolean;
 begin
   case Sym of
-    DivSy:
+    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp('div', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         CheckForAlign;
 
         DivBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
@@ -1131,9 +1336,9 @@ begin
 
         Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
         Next;
-        DoBody([DivEndSy] + TermSet);
+        DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
-        PopAProp('div');
+        PopAProp(SymbToStr(Sym));
         if SectionList.CheckLastBottomMargin then
         begin
           DivBlock.MargArray[MarginBottom] := ParagraphSpace;
@@ -2406,6 +2611,7 @@ var
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
+                  MarkSy, MarkEndSy,
                 BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
                   USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
                   SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
@@ -2415,6 +2621,7 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     case Sy of
+                      MarkSy,
                       BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                         SubSy, SupSy, BigSy, SmallSy, LabelSy:
                         begin
@@ -2424,6 +2631,7 @@ var
                           if Prop.HasBorderStyle then {start of inline border}
                             PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                         end;
+                      MarkEndSy,
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
                         SEndSy, StrikeEndSy, SpanEndSy,
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
@@ -2739,10 +2947,12 @@ begin
         Section.AddOpBrk;
         Next;
       end;
+    MarkSy,  MarkEndSy,
     BSy, BEndSy, ISy, IEndSy, StrongSy, StrongEndSy, EmSy, EmEndSy,
       CiteSy, CiteEndSy, VarSy, VarEndSy, USy, UEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy:
       begin
         case Sy of
+          MarkSy,
           BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy:
             begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -2751,6 +2961,7 @@ begin
               if Prop.HasBorderStyle then {start of inline border}
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
+          MarkEndSy,
           BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy:
             PopAProp(EndSymbToStr(Sy));
         end;
@@ -2889,6 +3100,7 @@ begin
         Done := False;
         while not Done do
           case Sy of
+            MarkSy,
             TextSy, BrSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
               EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
               CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
@@ -2902,7 +3114,8 @@ begin
             CommandSy:
               Next;
             PSy: DoP([]);
-            DivSy: DoDivEtc(DivSy, [HeadingEndSy]);
+            DivSy, HeaderSy, NavSy, ArticleSy,AsideSy,FooterSy, HGroupSy:
+              DoDivEtc(Sy, [HeadingEndSy]);
           else
             Done := True;
           end;
@@ -3007,7 +3220,7 @@ begin
   SectionList := NewBlock.MyCell;
 
   while not (Sy in Termset) and
-    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
     EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3098,7 +3311,7 @@ begin
   Done := False;
   while not Done do {handle second part like after a <p>}
     case Sy of
-      TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+      TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
         EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
         CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
         SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3114,7 +3327,8 @@ begin
         else
           Done := True; {else terminate lone <li>s on <p>}
       PEndSy: Next;
-      DivSy, CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
@@ -3166,23 +3380,21 @@ begin
   if EndSym = CommandSy then
     EndSym := HtmlSy;
   Plain := False;
-  case Sym of
-    OLSy:
-      begin
-        if Attributes.Find(StartSy, T) then
-          if T.Value >= 0 then
-            LineCount := T.Value;
-        if Attributes.Find(TypeSy, T) and (T.Name <> '') then
-          Index := T.Name[1];
-      end;
-
-    ULSy:
-      Plain := Attributes.Find(PlainSy, T)
-           or (Attributes.Find(TypeSy, T) and ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
-  end;
+  if (Sym = OLSy) then
+  begin
+    if Attributes.Find(StartSy, T) then
+      if T.Value >= 0 then
+        LineCount := T.Value;
+    if Attributes.Find(TypeSy, T) and (T.Name <> '') then
+      Index := T.Name[1];
+  end
+  else if Sym = ULSy then
+    Plain := Attributes.Find(PlainSy, T) or (Attributes.Find(TypeSy, T) and
+      ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
   SectionList.Add(Section, TagIndex);
   Section := nil;
-  PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+  PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '',
+    Attributes.TheTitle, Attributes.TheStyle);
 
   NewBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
 // BG, 25.03.2012: unused:  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
@@ -3206,7 +3418,6 @@ begin
           DoListItem(LiBlock, LiSection, Sym, Sy, LineCount, Index, Plain, TermSet);
           Inc(LineCount);
         end;
-
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
           DoLists(Sy, TermSet);
@@ -3219,21 +3430,22 @@ begin
 
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
-
-      DivSy, CenterSy, FormSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
-      BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
-      USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
-      SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
-      TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
-      NameSy, HRefSy, ASy, AEndSy, SpanSy, SpanEndSy,
-      HeadingSy, HeadingEndSy, PreSy,
-      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
-      ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
-      SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-      ObjectSy, ObjectEndSy:
+        MarkSy, MarkEndSy,
+        BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
+        USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
+        SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
+        TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
+        NameSy, HRefSy, ASy, AEndSy, SpanSy, SpanEndSy,
+        HeadingSy, HeadingEndSy, PreSy,
+        InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+        ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
+        SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
+        ObjectSy, ObjectEndSy:
         DoCommonSy;
     else
       if Sy in TermSet then {exit below}
@@ -3428,7 +3640,7 @@ begin
           Style := TBuffer.Create(DStream, Url);
           try
             C := SpcChar;
-            DoStyle(PropStack.MasterList.Styles, C, Style, Path, True);
+            DoStyle(FPropStack.MasterList.Styles, C, Style, Path, True, FUseQuirksMode);
           finally
             Style.Free;
           end;
@@ -3463,6 +3675,7 @@ begin
     case Sy of
       TextSy, BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3516,9 +3729,9 @@ begin
                     if CompareText(Name, 'fixed') = 0 then
                       PropStack.Last.Assign('fixed', BackgroundAttachment);
                 end;
-{$IFDEF Quirk}
-            PropStack.MasterList.Styles.FixupTableColor(PropStack.Last);
-{$ENDIF}
+            if FUseQuirksMode then begin
+              FPropStack.MasterList.Styles.FixupTableColor(FPropStack.Last);
+            end;
             PropStack.Last.Assign(AMarginWidth, MarginLeft);
             PropStack.Last.Assign(AMarginWidth, MarginRight);
             PropStack.Last.Assign(AMarginHeight, MarginTop);
@@ -3526,11 +3739,11 @@ begin
 
             SectionList := BodyBlock.OwnerCell;
             SectionList.Remove(BodyBlock);
-            BodyBlock := TBodyBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
+            BodyBlock := TBodyBlock.Create(FPropStack.MasterList, FPropStack.Last, SectionList, Attributes);
             SectionList.Add(BodyBlock, TagIndex);
             SectionList := BodyBlock.MyCell;
 
-            Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, nil, SectionList, True);
+            Section := TSection.Create(FPropStack.MasterList, nil, FPropStack.Last, nil, SectionList, True);
           end;
           Next;
         end;
@@ -3555,7 +3768,8 @@ begin
           Next;
         end;
 
-      DivSy, CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
+      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+       CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
         DoDivEtc(Sy, TermSet);
 
       TitleSy:
@@ -3566,7 +3780,7 @@ begin
 
       StyleSy:
         begin
-          DoStyle(PropStack.MasterList.Styles, LCh, Doc, '', False);
+          DoStyle(FPropStack.MasterList.Styles, LCh, Doc, '', False,FUseQuirksMode);
           Next;
         end;
 
@@ -3623,14 +3837,14 @@ end;
 procedure THtmlParser.ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
 begin
   SectionList := ASectionList;
-  
-  PropStack.MasterList := ASectionList;
+  FUseQuirksMode := ASectionList.UseQuirksMode;
+  FPropStack.MasterList := ASectionList;
   CallingObject := ASectionList.TheOwner;
   IncludeEvent := AIncludeEvent;
-  PropStack.Clear;
-  PropStack.Add(TProperties.Create(PropStack));
-  PropStack[0].CopyDefault(PropStack.MasterList.Styles.DefProp);
-  PropStack.SIndex := -1;
+  FPropStack.Clear;
+  FPropStack.Add(TProperties.Create(FPropStack,FUseQuirksMode));
+  FPropStack[0].CopyDefault(FPropStack.MasterList.Styles.DefProp);
+  FPropStack.SIndex := -1;
 
   if CallingObject is ThtmlViewer then
     ThtmlViewer(CallingObject).CodePage := PropStack[0].CodePage;
@@ -3670,59 +3884,64 @@ var
 {$ENDIF}
 begin
   Self.Doc := Doc;
-  ParseInit(ASectionList, nil);
-
+  FPropStack := ASectionList.PropStack;
   try
-{$IFNDEF NoTabLink}
-    SaveSIndex := PropStack.SIndex;
-    SavePosition := Doc.Position;
-    LinkSearch := True;
-    SoundEvent := nil;
-    MetaEvent := nil;
-    LinkEvent := nil;
-    TabCount := 0;
+    IncludeEvent := AIncludeEvent;
+    ParseInit(ASectionList,IncludeEvent);
+
     try
-      GetCh; {get the reading started}
-      Next;
-      while Sy <> EofSy do
-      begin
-        if (Sy = ASy) and Attributes.Find(HrefSy, T) then
-        begin
-          Inc(TabCount);
-          if TabCount > MaxTab then
-            break;
-        end;
+{$IFNDEF NoTabLink}
+      SaveSIndex := PropStack.SIndex;
+      SavePosition := Doc.Position;
+      LinkSearch := True;
+      SoundEvent := nil;
+      MetaEvent := nil;
+      LinkEvent := nil;
+      TabCount := 0;
+      try
+        GetCh; {get the reading started}
         Next;
+        while Sy <> EofSy do
+        begin
+          if (Sy = ASy) and Attributes.Find(HrefSy, T) then
+          begin
+            Inc(TabCount);
+            if TabCount > MaxTab then
+              break;
+          end;
+          Next;
+        end;
+        ASectionList.StopTab := TabCount > MaxTab;
+      except
       end;
-      ASectionList.StopTab := TabCount > MaxTab;
-    except
-    end;
   {reset a few things}
-    PropStack.SIndex := SaveSIndex;
-    Doc.Position := SavePosition;
+      PropStack.SIndex := SaveSIndex;
+      Doc.Position := SavePosition;
 {$ENDIF}
 
-    LinkSearch := False;
-    SoundEvent := ASoundEvent;
-    MetaEvent := AMetaEvent;
-    LinkEvent := ALinkEvent;
-    IncludeEvent := AIncludeEvent;
-    try
-      GetCh; {get the reading started}
-      Next;
-      DoBody([]);
-    except
-      on E: Exception do
-        Assert(False, E.Message);
-    end;
+      LinkSearch := False;
+      SoundEvent := ASoundEvent;
+      MetaEvent := AMetaEvent;
+      LinkEvent := ALinkEvent;
+      try
+        GetCh; {get the reading started}
+        Next;
+        DoBody([]);
+      except
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
 
+    finally
+      Attributes.Free;
+      if Assigned(Section) then
+        SectionList.Add(Section, TagIndex);
+      FPropStack.Clear;
+      CurrentURLTarget.Free;
+    end; {finally}
   finally
-    Attributes.Free;
-    if Assigned(Section) then
-      SectionList.Add(Section, TagIndex);
-    PropStack.Clear;
-    CurrentURLTarget.Free;
-  end; {finally}
+    FPropStack := nil;
+  end;
 end;
 
 {----------------DoText}
@@ -3782,6 +4001,8 @@ end;
 //-- BG ---------------------------------------------------------- 27.12.2010 --
 procedure THtmlParser.ParseText(ASectionList: ThtDocument);
 begin
+  FPropStack := ASectionList.PropStack;
+  try
   Self.Doc := Doc;
   ParseInit(ASectionList, nil);
   InScript := True;
@@ -3797,6 +4018,9 @@ begin
     PropStack.Clear;
     CurrentUrlTarget.Free;
   end; {finally}
+  finally
+    FPropStack := nil;
+  end;
 end;
 
 {-------------FrameParseString}
@@ -3810,7 +4034,7 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   begin
     SetExit := False;
     PropStack.Clear;
-    PropStack.Add(TProperties.Create(PropStack));
+    PropStack.Add(TProperties.Create(FPropStack,False));
     GetCh; {get the reading started}
     Next;
     repeat
@@ -3843,8 +4067,10 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   end;
 
 begin
+  FPropStack := THTMLPropStack.Create;
+  try
   Self.Doc := Doc;
-  PropStack.MasterList := nil;
+  FPropStack.MasterList := nil;
   CallingObject := FrameViewer;
   IncludeEvent := FrameViewer.OnInclude;
   SoundEvent := FrameViewer.OnSoundRequest;
@@ -3869,6 +4095,9 @@ begin
   finally
     Attributes.Free;
   end;
+  finally
+    FreeAndNil(FPropStack);
+  end;
 end;
 
 {----------------IsFrameString}
@@ -3878,10 +4107,11 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
   function Parse: Boolean;
   var
     SetExit: Boolean;
+
   begin
     Result := False;
-    PropStack.Clear;
-    PropStack.Add(TProperties.Create(PropStack));
+    FPropStack.Clear;
+    FPropStack.Add(TProperties.Create(FPropStack, FUseQuirksMode ));
     SetExit := False;
     GetCh; {get the reading started}
     Next;
@@ -3902,7 +4132,7 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
         Next;
       end;
     until SetExit or (Sy = EofSy);
-    PropStack.Clear;
+    FPropStack.Clear;
   end;
 
 var
@@ -3913,30 +4143,35 @@ begin
     Result := False;
     exit;
   end;
-  PropStack.MasterList := nil;
-  CallingObject := FrameViewer;
-  SoundEvent := nil;
-
-  FBase := '';
-  FBaseTarget := '';
-  Result := False;
-  InScript := False;
-  NoBreak := False;
-  InComment := False;
-
-  Pos := Doc.Position;
-  Attributes := TAttributeList.Create;
+  FPropStack := THTMLPropStack.Create;
   try
-    Self.Doc := Doc;
+    FPropStack.MasterList := nil;
+    CallingObject := FrameViewer;
+    SoundEvent := nil;
+
+    FBase := '';
+    FBaseTarget := '';
+    Result := False;
+    InScript := False;
+    NoBreak := False;
+    InComment := False;
+
+    Pos := Doc.Position;
+    Attributes := TAttributeList.Create;
     try
-      Result := Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
+      Self.Doc := Doc;
+      try
+        Result := Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
+    finally
+      Attributes.Free;
+      Doc.Position := Pos;
     end;
   finally
-    Attributes.Free;
-    Doc.Position := Pos;
+    FreeAndNil( FPropStack );
   end;
 end;
 
@@ -4391,7 +4626,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..82] of TResWord = (
+  ResWordDefinitions: array[1..90] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4473,8 +4708,16 @@ const
     (Name: 'LINK';        Symbol: LinkSy;       EndSym: CommandSy),
     (Name: 'COL';         Symbol: ColSy;        EndSym: CommandSy),
     (Name: 'PARAM';       Symbol: ParamSy;      EndSym: CommandSy),
-    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy)
-    );
+    (Name: 'READONLY';    Symbol: ReadonlySy;   EndSym: CommandSy),
+    {HTML5 }
+    (Name: 'HEADER';      Symbol: HeaderSy;     EndSym: HeaderEndSy),
+    (Name: 'SECTION';     Symbol: SectionSy;    EndSym: SectionEndSy),
+    (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),
+    (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
+    (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
+    (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
+    (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin
@@ -4625,12 +4868,10 @@ begin
 end;
 
 initialization
-  PropStack := THtmlPropStack.Create;
   InitEntities;
   InitAttributes;
   InitReservedWords;
 finalization
-  PropStack.Free;
   Entities.Free;
   AttributeNames.Free;
   ReservedWords.Free;
