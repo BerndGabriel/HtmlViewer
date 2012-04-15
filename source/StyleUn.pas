@@ -3075,6 +3075,15 @@ var
   NewColor: TColor;
   NewProp: Boolean;
 begin
+{$ifdef JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TStyleList.AddModifyProp');
+  CodeSiteLogging.CodeSite.Send('Parameters');
+
+  CodeSiteLogging.CodeSite.SendFmtMsg('Selector = %s',[Selector]);
+  CodeSiteLogging.CodeSite.SendFmtMsg('Prop = %s',[Prop]);
+  CodeSiteLogging.CodeSite.SendFmtMsg('Value = %s',[Value]);
+CodeSiteLogging.CodeSite.AddSeparator;
+  {$endif}
   if FindPropIndex(Prop, PropIndex) then
   begin
     if not Find(Selector, I) then
@@ -3176,6 +3185,9 @@ begin
       end;
     end;
   end;
+{$ifdef JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TStyleList.AddModifyProp');
+{$endif}
 end;
 
 function TStyleList.AddObject(const S: ThtString; AObject: TObject): Integer;
