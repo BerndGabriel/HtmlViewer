@@ -59,6 +59,9 @@ contains
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
+  msimg32 in '..\source\msimg32.pas',
+  HSLUtils in '..\source\HSLUtils.pas';
 
 end.

@@ -333,62 +333,65 @@ begin
     end;
 end;
 
-{ Find the count'th occurence of the s ThtString in the t ThtString.              }
-{ If count < 0 then look from the back                                      }
-{Thanx to François PIETTE}
-
-function Posn(const s, t: ThtString; Count: Integer): Integer;
-var
-  i, h, Last: Integer;
-  u: ThtString;
-begin
-  u := t;
-  if Count > 0 then
-  begin
-    Result := Length(t);
-    for i := 1 to Count do
-    begin
-      h := Pos(s, u);
-      if h > 0 then
-        u := Copy(u, h + 1, Length(u))
-      else
-      begin
-        u := '';
-        Inc(Result);
-      end;
-    end;
-    Result := Result - Length(u);
-  end
-  else if Count < 0 then
-  begin
-    Last := 0;
-    for i := Length(t) downto 1 do
-    begin
-      u := Copy(t, i, Length(t));
-      h := Pos(s, u);
-      if (h <> 0) and ((h + i) <> Last) then
-      begin
-        Last := h + i - 1;
-        Inc(count);
-        if Count = 0 then
-          break;
-      end;
-    end;
-    if Count = 0 then
-      Result := Last
-    else
-      Result := 0;
-  end
-  else
-    Result := 0;
-end;
-
-{ Syntax of an URL: protocol://[user[:password]@]server[:port]/path         }
-{Thanx to François PIETTE}
+// Syntax of an URL: protocol://[user[:password]@]server[:port]/path
+// Thanx to François PIETTE
 
 procedure ParseURL(
   const url: ThtString;
   out Proto, User, Pass, Host, Port, Path: ThtString);
+
+  // Find the count'th occurence of string s in string t.
+  // If count < 0 then look from the back
+  // Thanx to François PIETTE
+
+  function Posn(const s, t: ThtString; Count: Integer): Integer;
+  var
+    i, h: Integer;
+    u: ThtString;
+  begin
+    if Count > 0 then
+    begin
+      u := t;
+      Result := Length(u);
+      for i := 1 to Count do
+      begin
+        h := Pos(s, u);
+        if h > 0 then
+          u := Copy(u, h + 1, Length(u))
+        else
+        begin
+          u := '';
+          Inc(Result);
+        end;
+      end;
+      Result := Result - Length(u);
+    end
+    else if Count < 0 then
+    begin
+      Result := 0;
+      // BG, 21.08.2011: just a little optimizing:
+      // - cannot match, if copy of t is shorter than s: start with i at Length(t) - Length(s) + 1.
+      // - cannot match, if 1st char already does not match: skip the string copy and pos.
+      for i := Length(t) - Length(s) + 1 downto 1 do
+        if t[i] = s[1] then
+        begin
+          u := Copy(t, i, Length(t));
+          h := Pos(s, u);
+          if (h <> 0) and ((h + i) <> Result) then
+          begin
+            Result := h + i - 1;
+            Inc(Count);
+            if Count = 0 then
+              break;
+          end;
+        end;
+      if Count <> 0 then
+        Result := 0;
+    end
+    else
+      Result := 0;
+  end;
+
 var
   p, q: Integer;
   s: ThtString;
@@ -408,7 +411,7 @@ begin
   begin
     if (url[1] = '/') then
     begin
-            { Absolute path without protocol specified }
+      { Absolute path without protocol specified }
       proto := 'http';
       p := 1;
       if (Length(url) > 1) and (url[2] <> '/') then
@@ -424,7 +427,7 @@ begin
       p := 6;
       if (Length(url) > 6) and (url[7] <> '/') then
       begin
-                { Relative path }
+        { Relative path }
         Path := Copy(url, 6, Length(url));
         Exit;
       end;

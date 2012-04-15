@@ -40,7 +40,7 @@ requires
 contains
   framview in '..\source\framview.pas',
   htmlview in '..\source\htmlview.pas',
-  readhtml in '..\source\readhtml.pas',
+  ReadHTML in '..\source\ReadHTML.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
   HTMLUn2 in '..\source\HTMLUn2.pas',
   vwPrint in '..\source\vwPrint.pas',
@@ -57,6 +57,9 @@ contains
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
   HTMLSubs in '..\source\HTMLSubs.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
+  msimg32 in '..\source\msimg32.pas',
+  HSLUtils in '..\source\HSLUtils.pas';
 
 end.

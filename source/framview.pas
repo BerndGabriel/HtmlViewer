@@ -1014,14 +1014,6 @@ var
   Upper, Lower: boolean;
   EV: EventRec;
 
-  procedure DoError;
-  var
-    Msg: ThtString;
-  begin
-    Msg := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source;
-    Viewer.LoadFromBuffer(@Msg[1], Length(Msg), ''); {load an error message}
-  end;
-
 begin
   if Source <> '' then
     if Assigned(FrameSet) then
@@ -1041,11 +1033,11 @@ begin
       Viewer.Base := MasterSet.FBase;
       if HasImageFileExt(Source) then
       try
-        Viewer.LoadImageFile(Source)
+        Viewer.LoadFromFile(Source, ImgType);
       except end {leave blank on error}
       else if HasTextFileExt(Source) then
       try
-        Viewer.LoadTextFile(Source)
+        Viewer.LoadFromFile(Source, TextType);
       except end
       else
       begin
@@ -1065,7 +1057,7 @@ begin
           ViewerFormData.Free;
           ViewerFormData := nil;
         except
-          DoError;
+          Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + EV.NewName); {load an error message}
         end;
       end;
     end;
