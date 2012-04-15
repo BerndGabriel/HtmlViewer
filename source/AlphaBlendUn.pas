@@ -27,8 +27,9 @@ unit AlphaBlendUn;
 
 interface
 {$I htmlcons.inc}
-uses Graphics, Types, SysUtils,
-  HTMLUn2, HtmlGlobals, Windows, msimg32;
+uses
+  Windows, Graphics, Types, SysUtils,
+  HTMLUn2, HtmlGlobals, msimg32;
 
 function TransparentTextOutput(ACanvas : TCanvas;
   const AX, AY : Integer;
@@ -114,10 +115,11 @@ end;
 function SetupAlphaBlendBmp(ASrcCanvas : TCanvas; const AWidth, AHeight : Integer) : Graphics.TBitmap;
 begin
   Result := Graphics.TBitmap.Create;
-  Result.SetSize(AWidth,AHeight);
-  Result.Canvas.Font.Assign(ASrcCanvas.Font );
+  Result.Width := AWidth;
+  Result.height := AHeight;
+  Result.Canvas.Font.Assign(ASrcCanvas.Font);
   Result.Canvas.Brush.Assign(ASrcCanvas.Brush);
-  Result.Canvas.Pen.Assign(ASrcCanvas.Pen );
+  Result.Canvas.Pen.Assign(ASrcCanvas.Pen);
 end;
 
 function TransparentExtTextOutW(ACanvas : TCanvas; X, Y: Integer; Options: Longint;
@@ -129,7 +131,7 @@ begin
     if (AOpacity = $FF)  then begin
       Result := ExtTextOutW(ACanvas.Handle,X,Y,Options,Rect,Str,Count,Dx);
     end else begin
-      LB := SetupAlphaBlendBmp(ACanvas,Rect^.Width,Rect^.Height);
+      LB := SetupAlphaBlendBmp(ACanvas,Rect^.Right - Rect^.Left,Rect^.Bottom - Rect^.Top);
       try
         Result := ExtTextOutW(LB.Canvas.Handle,X,Y,Options,Rect,Str,Count,Dx);
         AlphaDrawTransparentBitmap(LB, ACanvas,Rect^,AOpacity);
@@ -182,17 +184,19 @@ end;
 procedure TransparentDrawFocusRect(ACanvas : TCanvas; ARect : TRect; const AOpacity : Byte);
 
 var
-  LB : Graphics.TBitmap;
+  LB: Graphics.TBitmap;
+  Width, Height: Integer;
 begin
   if Assigned(jpm_AlphaBlend) then begin
     if (AOpacity = $FF)  then begin
       ACanvas.DrawFocusRect(ARect);
     end else begin
-      LB := SetupAlphaBlendBmp(ACanvas,ARect.Width,ARect.Height);
+      Width := ARect.Right - ARect.Left;
+      Height := ARect.Bottom - ARect.Top;
+      LB := SetupAlphaBlendBmp(ACanvas,Width,Height);
       try
-        LB.Canvas.DrawFocusRect(Rect(0,0,ARect.Width,ARect.Height ));
+        LB.Canvas.DrawFocusRect(Rect(0,0,Width,Height ));
         AlphaDrawTransparentBitmap(LB, ACanvas,ARect,AOpacity);
-
       finally
         LB.Free;
       end;
@@ -281,7 +285,6 @@ begin
       try
         WrapTextW(ACanvas,0,0,AWidth,AHeight,AStr);
         AlphaDrawTransparentBitmap(LB, ACanvas,Rect(AX,AY,AWidth+AX,AHeight+AY),AOpacity);
-
       finally
         LB.Free;
       end;
@@ -295,19 +298,22 @@ procedure TransparentFillRect(ACanvas : TCanvas; ARect : TRect; const AOpacity :
 var
   LR : TRect;
   LB : Graphics.TBitmap;
+  Width, Height: Integer;
 begin
   if Assigned(jpm_AlphaBlend) then begin
     if (AOpacity = $FF) then begin
       ACanvas.FillRect(ARect);
     end else begin
-      LB := SetupAlphaBlendBmp(ACanvas,ARect.Width,ARect.Height);
+      Width := ARect.Right - ARect.Left;
+      Height := ARect.Bottom - ARect.Top;
+      LB := SetupAlphaBlendBmp(ACanvas, Width, Height);
       try
         LR.Left := 0;
         LR.Top := 0;
-        LR.Right := ARect.Right - LR.Left;
-        LR.Height := ARect.Bottom - LR.Top;
+        LR.Right := Width;
+        LR.Bottom := Height;
         LB.Canvas.FillRect(LR);
-        AlphaDrawTransparentBitmap(LB,LR, ACanvas,ARect, AOpacity  );
+        AlphaDrawTransparentBitmap(LB, LR, ACanvas, ARect, AOpacity);
       finally
         LB.Free;
       end;

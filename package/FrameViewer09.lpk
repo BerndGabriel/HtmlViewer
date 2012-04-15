@@ -43,7 +43,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="17">
+    <Files Count="19">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -113,6 +113,14 @@
         <Filename Value="..\source\URLSubs.pas"/>
         <UnitName Value="URLSubs"/>
       </Item17>
+      <Item18>
+        <Filename Value="..\source\msimg32.pas"/>
+        <UnitName Value="msimg32"/>
+      </Item18>
+      <Item19>
+        <Filename Value="..\source\AlphaBlendUn.pas"/>
+        <UnitName Value="AlphaBlendUn"/>
+      </Item19>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">

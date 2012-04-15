@@ -239,6 +239,13 @@ const
   {$EXTERNALSYM GHND}
   GPTR = GMEM_FIXED or GMEM_ZEROINIT;
   {$EXTERNALSYM GPTR}
+
+  // device caps
+  {$EXTERNALSYM SHADEBLENDCAPS}
+  SHADEBLENDCAPS = 45;
+  {$EXTERNALSYM SB_CONST_ALPHA}
+  SB_CONST_ALPHA = 1;
+
 {
 const
   HeapAllocFlags = GMEM_MOVEABLE;
@@ -324,17 +331,17 @@ function ThemedColor(const AColor : TColor): TColor;
 begin
   {$ifdef UseVCLStyles}
   Result := StyleServices.GetSystemColor(AColor);
-  if Result < 0 then begin
-      Result := GetSysColor(AColor and $FFFFFF);
+  if Result < 0 then
+  begin
+    Result := GetSysColor(AColor and $FFFFFF);
     if Result < 0 then
       Result := AColor and $FFFFFF;
   end;
   {$else}
-  if AColor < 0 then begin
-    Result := GetSysColor(AColor and $FFFFFF);
-  end else begin
+  if AColor < 0 then
+    Result := GetSysColor(AColor and $FFFFFF)
+  else
     Result := AColor and $FFFFFF;
-  end;
   {$endif}
 end;
 
@@ -408,7 +415,8 @@ begin
         FullBG.Palette := CopyPalette(ThePalette);
     end;
   end;
-  FullBG.SetSize(Max(W,2),Max(H,2));
+  FullBG.Width := Max(W,2);
+  FullBG.Height := Max(H,2);
 end;
 
 procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer);
