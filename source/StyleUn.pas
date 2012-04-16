@@ -1791,7 +1791,6 @@ end;
         AMarg[piWidth] := Max(AMarg[piMinWidth],AMarg[piWidth]);
         VMinWidth := AMarg[piWidth];
       end;
-
     end;
   end;
 
@@ -1830,12 +1829,16 @@ end;
 
 procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
 begin
-  AMarg[piWidth] := AMarg[piWidth] -
+  if AMarg[piWidth] > -1 then begin
+    AMarg[piWidth] := AMarg[piWidth] -
       (AMarg[BorderLeftWidth] + AMarg[BorderRightWidth] +
        AMarg[PaddingLeft] + AMarg[PaddingRight]);
-  AMarg[piHeight] := AMarg[piHeight] -
+  end;
+  if AMarg[piHeight] > -1 then begin
+    AMarg[piHeight] := AMarg[piHeight] -
       (AMarg[BorderTopWidth] + AMarg[BorderBottomWidth] +
        AMarg[PaddingTop] + AMarg[PaddingBottom]);
+  end;
 end;
 
 {----------------ConvMargArray}
