@@ -41,7 +41,7 @@ var
 type
   TGpImage = class(TObject)
   private
-    fHandle: integer;
+    fHandle: Pointer;
     fWidth, fHeight: integer;
     fFilename: string;
     function GetHeight: integer;
@@ -70,7 +70,7 @@ type
 
   TGpGraphics = class(TObject)
   private
-    fGraphics: integer;
+    fGraphics: Pointer;
     procedure DrawSmallStretchedImage(Image: TGPImage; X, Y, Width, Height: Integer);
   public
     constructor Create(Handle: HDC); overload;
@@ -93,7 +93,43 @@ const
   GdiPlusLib = 'GdiPlus.dll';
 
 type
+  ARGB = DWORD;
+  TARGB = ARGB;
+  GpStatus = Integer;
+  PixelFormat = Integer;
+  NotificationHookProc = function (out token : ULONG) : GpStatus stdcall;
+  NotificationUnhookProc = procedure (token : ULONG) stdcall;
+
+  DebugEventLevel = Integer;
+  DebugEventProc = procedure (level : DebugEventLevel; message_ : PAnsiChar) stdcall;
+  GdiplusStartupInput = packed record
+    GdiplusVersion : DWORD;  // Must be 1  (or 2 for the Ex version)
+    DebugEventCallback : DebugEventProc; // Ignored on free builds
+    SuppressBackgroundThread : BOOL; // FALSE unless you're prepared to call
+                                       // the hook/unhook functions properly
+    SuppressExternalCodecs : BOOL; // FALSE unless you want GDI+ only to use
+                                       // its internal image codecs.
+  end;
+  TGdiplusStartupInput = GdiplusStartupInput;
+  PGdiplusStartupInput = ^TGdiplusStartupInput;
+  GdiplusStartupOutput = record
+    NotificationHook : NotificationHookProc;
+    NotificationUnhook : NotificationUnhookProc;
+  end;
+  TGdiplusStartupOutput = GdiplusStartupOutput;
+  PGdiplusStartupOutput = ^TGdiplusStartupOutput;
+  PGpGraphics = Pointer;
+  PGpImage = Pointer;
+  PGpBitmap = Pointer;
+  GpUnit = Integer; //enumeration
+  GpMatrixOrder = Integer;
+  InterpolationMode = Integer;
+  TInterpolationMode = InterpolationMode;
+  PGpImageAttributes = Pointer;
+  ImageAbort = function : BOOL stdcall;
+  DrawImageAbort = ImageAbort;
   EGDIPlus = class(Exception);
+
   //TRectF = record
   //  X: Single;
   //  Y: Single;
@@ -121,55 +157,49 @@ type
 
 var
 {$IFNDEF NoGDIPlus}
-  GdiplusStartup: function(var Token: DWord; const Input, Output: Pointer): Integer; stdcall;
-  GdiplusShutdown: procedure(Token: DWord); stdcall;
-  GdipDrawImageI: function(Graphics, Image, X, Y: Integer): Integer; stdcall;
-  GdipCreateHBITMAPFromBitmap: function(bitmap: integer; out hbmReturn: HBITMAP;
-    background: DWord): integer; stdcall;
-  GdipGetInterpolationMode: function(graphics: integer; var interpolationMode: integer): integer; stdcall;
+  GdiplusStartup: function(out Token: ULONG;
+    const Input : PGdiplusStartupInput;
+    const Output: PGdiplusStartupOutput): GpStatus stdcall;
+  GdiplusShutdown: procedure(Token: ULONG) stdcall;
+  GdipDrawImageI: function(Graphics : PGpGraphics; Image : PGpImage; X, Y: Integer): GpStatus stdcall;
+  GdipCreateHBITMAPFromBitmap: function(bitmap: PGpBitmap; out hbmReturn: HBITMAP;
+    background: TARGB): GpStatus stdcall;
+  GdipGetInterpolationMode: function(graphics: PGpGraphics; var interpolationMode: TInterpolationMode): GpStatus stdcall;
 {$ENDIF$}
-  GdipDeleteGraphics: function(Graphics: Integer): Integer; stdcall;
-  GdipCreateFromHDC: function(hdc: HDC; var Graphics: Integer): Integer; stdcall;
-  GdipDrawImageRectI: function(Graphics, Image, X, Y, Width, Height: Integer): Integer; stdcall;
-  GdipLoadImageFromFile: function(const FileName: PWideChar; var Image: Integer): Integer; stdcall;
+  GdipDeleteGraphics: function(Graphics: PGpGraphics): GpStatus stdcall;
+  GdipCreateFromHDC: function(hdc: HDC; out Graphics: PGpGraphics): GpStatus stdcall;
+  GdipDrawImageRectI: function(Graphics : PGpGraphics; Image : PGpImage; X, Y, Width, Height: Integer): GpStatus stdcall;
+  GdipLoadImageFromFile: function(const FileName: PWideChar; out Image: PGpImage): GpStatus stdcall;
   GdipLoadImageFromStream: function(stream: ISTREAM;
-    out image: integer): integer; stdcall;
-  GdipCreateBitmapFromStream: function(stream: ISTREAM; out bitmap: integer): integer; stdcall;
-  GdipDisposeImage: function(Image: Integer): Integer; stdcall;
-  GdipGetImageWidth: function(Image: Integer; var Width: Integer): Integer; stdcall;
+    out image: PGpImage): GpStatus stdcall;
+  GdipCreateBitmapFromStream: function(stream: ISTREAM; out bitmap: PGpBitmap): GpStatus stdcall;
+  GdipDisposeImage: function(Image: PGpImage): GpStatus stdcall;
+  GdipGetImageWidth: function(Image: PGpImage; out Width: Integer): GpStatus stdcall;
 
-  GdipGetImageHeight: function(Image: Integer; var Height: Integer): Integer; stdcall;
-  GdipGetImageGraphicsContext: function(Image: integer; out graphics: integer): integer; stdcall;
-  GdipGraphicsClear: function(Graphics: Integer; Color: Cardinal): Integer; stdcall;
+  GdipGetImageHeight: function(Image: PGpImage; out Height: Integer): GpStatus stdcall;
+  GdipGetImageGraphicsContext: function(Image: PGpImage; out graphics: PGpGraphics): GpStatus stdcall;
+  GdipGraphicsClear: function(Graphics: PGpGraphics; Color: TARGB): GpStatus stdcall;
   GdipCreateBitmapFromScan0: function(width: Integer; height: Integer;
-    stride: Integer; pixelformat: dword; scan0: Pointer;
-    out bitmap: integer): integer; stdcall;
-  GdipDrawImagePointRect: function(graphics: integer; image: integer;
+    stride: Integer; pixelformat: PixelFormat; scan0: Pointer;
+    out bitmap: PGpBitmap): GpStatus stdcall;
+  GdipDrawImagePointRect: function(graphics: PGpGraphics; image: PGpImage;
     x: Single; y: Single; srcx: Single; srcy: Single; srcwidth: Single;
-    srcheight: Single; srcUnit: integer): integer; stdcall;
-  GdipScaleWorldTransform: function(graphics: integer; sx: Single; sy: Single;
-    order: integer): integer; stdcall;
+    srcheight: Single; srcUnit: GpUnit): GpStatus stdcall;
+  GdipScaleWorldTransform: function(graphics: PGpGraphics; sx: Single; sy: Single;
+    order: GpMatrixOrder): GpStatus stdcall;
   GdipCreateBitmapFromGraphics: function(width, height: Integer;
-    Graphics: integer; out Bitmap: integer): integer; stdcall;
-  GdipBitmapGetPixel: function(bitmap, x, y: Integer; out color: DWord): integer; stdcall;
-  GdipDrawImageRectRectI: function(graphics, image,
+    Graphics: PGpGraphics; out Bitmap: PGpBitmap): GpStatus; stdcall;
+  GdipBitmapGetPixel: function(bitmap : PGpBitmap; x, y: Integer; out color: TARGB): GpStatus stdcall;
+  GdipDrawImageRectRectI: function(graphics : PGpGraphics; image : PGpImage;
     dstx, dsty, dstwidth, dstheight, srcx, srcy, srcwidth, srcheight,
-    srcUnit, imageAttributes: integer;
-    callback: Pointer; callbackData: integer): integer; stdcall;
+    srcUnit : GpUnit; imageAttributes: PGpImageAttributes;
+    callback: Pointer; callbackData: Pointer): GpStatus; stdcall;
 
-  GdipSetInterpolationMode: function(graphics, interpolationMode: integer): integer; stdcall;
-  GdipBitmapSetPixel: function(bitmap, x, y: Integer; color: DWord): Integer; stdcall;
-
-type
-  TGDIStartup = packed record
-    Version: Integer; // Must be one
-    DebugEventCallback: Pointer; // Only for debug builds
-    SuppressBackgroundThread: Bool; // True if replacing GDI+ background processing
-    SuppressExternalCodecs: Bool; // True if only using internal codecs
-  end;
+  GdipSetInterpolationMode: function(graphics : PGpGraphics; interpolationMode: InterpolationMode): GpStatus stdcall;
+  GdipBitmapSetPixel: function(bitmap : PGpBitmap; x, y: Integer; color: TARGB): GpStatus stdcall;
 
 var
-  Err: Integer;
+  Err: GpStatus;
 
 //-- BG ---------------------------------------------------------- 01.04.2012 --
 function IStreamFromStream(Stream: TStream): IStream;
@@ -189,7 +219,7 @@ end;
 
 constructor TGpGraphics.Create(Handle: HDC);
 var
-  err: integer;
+  err: GpStatus;
 begin
   inherited Create;
   err := GdipCreateFromHDC(Handle, fGraphics);
@@ -209,7 +239,7 @@ end;
 
 destructor TGpGraphics.Destroy;
 begin
-  if fGraphics <> 0 then
+  if fGraphics <> nil then
     GdipDeleteGraphics(fGraphics);
   inherited;
 end;
@@ -293,7 +323,7 @@ const
   UnitPixel = 2;
 begin
   GdipDrawImageRectRectI(fGraphics, Image.fHandle, dx, dy, dw, dh,
-    sx, sy, sw, sh, UnitPixel, 0, nil, 0);
+    sx, sy, sw, sh, UnitPixel, nil, nil, 0);
 
 end;
 
@@ -433,7 +463,7 @@ end;
 {$IFNDEF NoGDIPlus}
 var
   InitToken: DWord;
-  Startup: TGDIStartup;
+  Startup: GdiplusStartupInput;
   LibHandle: THandle;
   GDIPlusCount: integer;
 {$ENDIF}
@@ -473,7 +503,7 @@ begin
       @GdipBitmapSetPixel := GetProcAddress(LibHandle, 'GdipBitmapSetPixel');
 
       FillChar(Startup, sizeof(Startup), 0);
-      Startup.Version := 1;
+      Startup.GdiplusVersion := 1;
       Err := GdiPlusStartup(InitToken, @Startup, nil);
       GDIPlusActive := Err = 0;
       if not GDIPlusActive then

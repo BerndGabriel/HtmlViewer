@@ -3380,17 +3380,19 @@ begin
   if EndSym = CommandSy then
     EndSym := HtmlSy;
   Plain := False;
-  if (Sym = OLSy) then
-  begin
-    if Attributes.Find(StartSy, T) then
-      if T.Value >= 0 then
-        LineCount := T.Value;
-    if Attributes.Find(TypeSy, T) and (T.Name <> '') then
-      Index := T.Name[1];
-  end
-  else if Sym = ULSy then
-    Plain := Attributes.Find(PlainSy, T) or (Attributes.Find(TypeSy, T) and
-      ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
+  case Sym of
+    OLSy:
+      begin
+        if Attributes.Find(StartSy, T) then
+          if T.Value >= 0 then
+           LineCount := T.Value;
+        if Attributes.Find(TypeSy, T) and (T.Name <> '') then
+         Index := T.Name[1];
+      end;
+    ULSy:
+      Plain := Attributes.Find(PlainSy, T)
+           or (Attributes.Find(TypeSy, T) and ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
+  end;
   SectionList.Add(Section, TagIndex);
   Section := nil;
   PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '',
