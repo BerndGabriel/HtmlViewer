@@ -5784,7 +5784,8 @@ begin
             FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
           end
           else
-            Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
+            if (not Document.Printing or Document.PrintBackground) then
+              Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
         end;
 
         if ImgOK then
