@@ -923,7 +923,9 @@ procedure THtmlParser.Next;
                 Value := Round(ValD);
               except
               end;
-          end;
+          end
+        else if Trim(S) = '*' then
+          Value := 1;
         Sy := SaveSy;
       end;
 
