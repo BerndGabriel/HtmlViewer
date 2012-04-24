@@ -9505,7 +9505,7 @@ procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
 var
   // calculated values:
   CellSpec: TWidthType;
-  CellMin, CellMax, CellPercent: Integer;
+  CellMin, CellMax, CellPercent, CellRel: Integer;
   SpannedMin, SpannedMax, SpannedMultis, SpannedPercents: Integer;
   SpannedCounts: TIntegerPerWidthType;
 
@@ -9605,6 +9605,7 @@ begin
           // get min and max width of this cell:
           CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
           CellPercent := 0;
+          CellRel := 0;
           with CellObj.SpecWd do
           begin
             CellSpec := VType;
@@ -9617,6 +9618,9 @@ begin
                 CellMin := Max(CellMin, Value);
                 CellMax := Max(CellMax, Value);
               end;
+
+              wtRelative:
+                CellRel := Value;
             end;
           end;
           Inc(CellMin, CellSpacing + CellObj.HzSpace);
@@ -9627,6 +9631,7 @@ begin
             MinWidths[I] := Max(MinWidths[I], CellMin);
             MaxWidths[I] := Max(MaxWidths[I], CellMax);
             Percents[I] := Max(Percents[I], CellPercent); {collect percents}
+            Multis[I] := Max(Multis[I], CellRel);
             UpdateColumnSpec(ColumnCounts, ColumnSpecs[I], CellSpec);
           end
           else
@@ -12011,29 +12016,32 @@ var
     {if there are images or line-height, then maybe they add extra space}
     SB := 0; // vertical space before DHt / Text
     SA := 0; // vertical space after DHt / Text
-    if LineHeight > DHt then
+    if not NoChar then
     begin
-      // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
-      case Align of
-        aTop:
-          SA := LineHeight - DHt;
+      if LineHeight > DHt then
+      begin
+        // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
+        case Align of
+          aTop:
+            SA := LineHeight - DHt;
 
-        aMiddle:
-          begin
-            SB := (LineHeight - DHt) div 2;
-            SA := (LineHeight - DHt) - SB;
-          end;
-      else
-//        aNone:
-//        aBaseline,
-//        aBottom:
-          SB := LineHeight - DHt;
+          aMiddle:
+            begin
+              SB := (LineHeight - DHt) div 2;
+              SA := (LineHeight - DHt) - SB;
+            end;
+        else
+//          aNone:
+//          aBaseline,
+//          aBottom:
+            SB := LineHeight - DHt;
+        end;
+      end
+      else if LineHeight >= 0 then
+      begin
+        SB := (LineHeight - DHt) div 2;
+        SA := (LineHeight - DHt) - SB;
       end;
-    end
-    else if LineHeight >= 0 then
-    begin
-      SB := (LineHeight - DHt) div 2;
-      SA := (LineHeight - DHt) - SB;
     end;
 
     Cnt := 0;
