@@ -8848,7 +8848,7 @@ procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
 var
   // calculated values:
   CellSpec: TWidthType;
-  CellMin, CellMax, CellPercent: Integer;
+  CellMin, CellMax, CellPercent, CellRel: Integer;
   SpannedMin, SpannedMax, SpannedMultis, SpannedPercents: Integer;
   SpannedCounts: TIntegerPerWidthType;
 
@@ -8950,6 +8950,7 @@ begin
           // get min and max width of this cell:
           CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax);
           CellPercent := 0;
+          CellRel := 0;
           with CellObj.SpecWd do
           begin
             CellSpec := VType;
@@ -8963,6 +8964,9 @@ begin
                 CellMin := Max(CellMin, Value);
                 CellMax := Max(CellMax, Value);
               end;
+
+              wtRelative:
+                CellRel := Value;
             end;
           end;
           Inc(CellMin, CellSpacing + CellObj.HzSpace);
@@ -8974,6 +8978,7 @@ begin
             MaxWidths[I] := Max(MaxWidths[I], CellMax);
             Widths[I] := Max(Widths[I], CellMin);
             Percents[I] := Max(Percents[I], CellPercent); {collect percents}
+            Multis[I] := Max(Multis[I], CellRel);
             UpdateColumnSpec(ColumnCounts, ColumnSpecs[I], CellSpec);
           end
           else
