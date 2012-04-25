@@ -383,6 +383,9 @@ const
     mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
   ];
 
+// BG, 25.04.2012: Added:
+function IsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
+
 //BG, 05.10.2010: added:
 function VarIsIntNull(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
 function VarIsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -1752,6 +1755,12 @@ begin
   CodeSiteLogging.CodeSite.ExitMethod('ConvVertMargins');
   StyleUn.LogTMarginArray(M,'M');
   {$ENDIF}
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2012 --
+function IsAuto(const Value: Variant): Boolean;
+begin
+  Result := Value = Auto;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --

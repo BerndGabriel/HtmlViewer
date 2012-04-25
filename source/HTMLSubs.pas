@@ -7212,6 +7212,8 @@ begin
   YDraw := Y;
   StartCurs := Curs;
   StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+  if IsAuto(MargArray[MarginLeft]) then MargArray[MarginLeft] := 0;
+  if IsAuto(MargArray[MarginRight]) then MargArray[MarginRight] := 0;
   ApplyBoxSettings(MargArray,Document.UseQuirksMode);
 
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
