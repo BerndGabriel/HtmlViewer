@@ -350,6 +350,7 @@ type
     property PrintMarginTop: double read FPrintMarginTop write SetPrintMarginTop;
     property PrintMaxHPages: Integer read FPrintMaxHPages write FPrintMaxHPages default 2;
     property PrintScale: double read FPrintScale write SetPrintScale;
+    property QuirksMode;
     property ViewImages: boolean read FViewImages write SetViewImages default True;
     property VisitedMaxCount: integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
 
@@ -3676,6 +3677,7 @@ begin
   Result.OnParseEnd := OnParseEnd;
   Result.OnProgress := OnProgress;
   Result.OnObjectTag := OnObjectTag;
+  Result.QuirksMode := QuirksMode;
 end;
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --

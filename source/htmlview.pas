@@ -528,6 +528,7 @@ type
     property PrintMarginTop: Double read FPrintMarginTop write FPrintMarginTop;
     property PrintMaxHPages: Integer read FPrintMaxHPages write FPrintMaxHPages default 2;
     property PrintScale: Double read FPrintScale write SetPrintScale;
+    property QuirksMode;
     property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
     property ServerRoot: ThtString read FServerRoot write SetServerRoot;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
