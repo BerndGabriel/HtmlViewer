@@ -48,8 +48,6 @@ Key Variables:
       tag was encountered, etc.
   LCh:
       The next character in the stream to be analyzed.  In mixed case.
-  Ch:
-      The same character in upper case.
   LCToken:
       A ThtString which is associated with the current token.  If Sy is TextSy,
       then LCToken contains the text.
@@ -65,8 +63,7 @@ Key Variables:
 Key Routines:
 
   GetCh:
-      Gets the next character from the stream.  Fills Ch and LCh.  Skips
-      comments.
+      Gets the next character from the stream.  Fills LCh.  Skips comments.
   Next:
       Gets the next token.  Fills Sy, LCToken, Attributes.  Calls GetCh so the
       next character after the present token is available.  Each part of the
@@ -302,7 +299,7 @@ end;
 {-------------GetCh}
 
 procedure THtmlParser.GetCh;
-{Return next ThtChar in Lch, its uppercase value in Ch.  Ignore comments}
+{Return next ThtChar in Lch.  Ignore comments}
 
   procedure GetChBasic; {read a character}
 
