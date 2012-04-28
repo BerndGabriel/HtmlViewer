@@ -11372,33 +11372,37 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           Inc(Cnt, J);
         until Cnt >= NN;
 
-      SB := 0; {if there are images, then maybe they add extra space}
-      SA := 0; {space before and after}
-      if LineHeight > DHt then
+      {if there are images or line-height, then maybe they add extra space}
+      SB := 0; // vertical space before DHt / Text
+      SA := 0; // vertical space after DHt / Text
+      if not NoChar then
       begin
-        // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
-        case Align of
-          aTop:
-            SA := LineHeight - DHt;
+        if LineHeight > DHt then
+        begin
+          // BG, 28.08.2011: too much space below an image: SA and SB depend on Align:
+          case Align of
+            aTop:
+              SA := LineHeight - DHt;
 
-          aMiddle:
-            begin
-              SB := (LineHeight - DHt) div 2;
-              SA := (LineHeight - DHt) - SB;
-            end;
-
-        else
-//          aNone,
-//          aBaseline,
-//          aBottom:
-            SB := LineHeight - DHt;
+            aMiddle:
+              begin
+                SB := (LineHeight - DHt) div 2;
+                SA := (LineHeight - DHt) - SB;
+              end;
+          else
+//            aNone,
+//            aBaseline,
+//            aBottom:
+              SB := LineHeight - DHt;
+          end;
+        end
+        else if LineHeight >= 0 then
+        begin
+          SB := (LineHeight - DHt) div 2;
+          SA := (LineHeight - DHt) - SB;
         end;
-      end
-      else if LineHeight >= 0 then
-      begin
-        SB := (LineHeight - DHt) div 2;
-        SA := (LineHeight - DHt) - SB;
       end;
+
       Cnt := 0;
       repeat
         Cnt := Cnt + Images.GetImageCountAt(PStart - Buff + Cnt);
