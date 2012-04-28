@@ -84,6 +84,7 @@ object HTTPForm: THTTPForm
     HistoryMaxCount = 0
     NoSelect = False
     OnBlankWindowRequest = BlankWindowRequest
+    OnFileBrowse = FrameBrowserFileBrowse
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
     OnHotSpotTargetCovered = HotSpotTargetCovered
@@ -126,7 +127,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 350
+        Width = 286
       end
       item
         Break = False
@@ -134,7 +135,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 218
+        Width = 282
       end>
     object ToolBar2: TToolBar
       Left = 9
@@ -185,8 +186,9 @@ object HTTPForm: THTTPForm
     object UrlComboBox: TComboBox
       Left = 193
       Top = 8
-      Width = 308
+      Width = 244
       Height = 21
+      ItemHeight = 13
       TabOrder = 1
       OnClick = URLComboBoxClick
       OnKeyPress = URLComboBoxKeyPress
@@ -194,9 +196,9 @@ object HTTPForm: THTTPForm
         'http://pc19-web/local/localindex.html')
     end
     object Panel10: TPanel
-      Left = 516
+      Left = 452
       Top = 0
-      Width = 209
+      Width = 273
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -232,14 +234,13 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 181
+        Left = 245
         Top = 0
         Width = 28
         Height = 37
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 245
         object Animate1: TAnimate
           Left = 3
           Top = 8
@@ -337,6 +338,10 @@ object HTTPForm: THTTPForm
         Caption = 'Log HTML'
         OnClick = ShowLogHTMLClick
       end
+      object ShowLogHTTP: TMenuItem
+        Caption = 'Log HTTP'
+        OnClick = ShowLogHTTPClick
+      end
     end
     object Help1: TMenuItem
       Caption = '&Help'
@@ -359,13 +364,6 @@ object HTTPForm: THTTPForm
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
     Left = 296
     Top = 152
-  end
-  object Timer: TTimer
-    Enabled = False
-    Interval = 100
-    OnTimer = TimerTimer
-    Left = 368
-    Top = 145
   end
   object SaveDialog: TSaveDialog
     Filter = 'All Files|*.*'
@@ -416,7 +414,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 160
     Bitmap = {
-      494C01010D005800580011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D006400640011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1045,5 +1043,40 @@ object HTTPForm: THTTPForm
     OnNewCookie = IcsCookiesNewCookie
     Left = 122
     Top = 95
+  end
+  object MimeTypesList1: TMimeTypesList
+    LoadOSonDemand = True
+    MimeTypesFile = '/etc/apache2/mime.types'
+    DefaultTypes.Strings = (
+      '.htm=text/html'
+      '.html=text/html'
+      '.gif=image/gif'
+      '.bmp=image/bmp'
+      '.jpg=image/jpeg'
+      '.jpeg=image/jpeg'
+      '.tif=image/tiff'
+      '.tiff=image/tiff'
+      '.txt=text/plain'
+      '.css=text/css'
+      '.wav=audio/x-wav'
+      '.ico=image/x-icon'
+      '.wml=text/vnd.wap.wml'
+      '.wbmp=image/vnd.wap.wbmp'
+      '.wmlc=application/vnd.wap.wmlc'
+      '.wmlscript=text/vnd.wap.wmlscript'
+      '.wmlscriptc=application/vnd.wap.wmlscriptc'
+      '.pdf=application/pdf'
+      '.png=image/png'
+      '.xml=application/xml'
+      '.xhtml=application/xhtml+xml'
+      '.zip=application/zip'
+      '.exe=application/x-msdownload'
+      '.msi=application/x-msdownload'
+      '.bin=application/octet-stream'
+      '.iso=application/octet-stream')
+    MimeTypeSrc = MTypeList
+    UnknownType = 'application/octet-stream'
+    Left = 396
+    Top = 92
   end
 end
