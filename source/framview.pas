@@ -268,6 +268,7 @@ type
     property PrintMarginTop;
     property PrintMaxHPages;
     property PrintScale;
+    property QuirksMode;
     property ViewImages: boolean read FViewImages write SetViewImages default True;
     property VisitedMaxCount;
     //
@@ -804,6 +805,7 @@ begin
   Viewer.MarginWidth := frMarginWidth;
   Viewer.MarginHeight := frMarginHeight;
   Viewer.OnEnter := MasterSet.CheckActive;
+
 end;
 
 {----------------TViewerFrameBase.LoadFiles}
@@ -3560,6 +3562,7 @@ begin
   Result.OnPrintHtmlHeader := OnPrintHtmlHeader;
   Result.OnRightClick := OnRightClick;
   Result.OnCreateIFrameControl := CreateIFrameControl;
+  Result.QuirksMode := QuirksMode;
 end;
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --

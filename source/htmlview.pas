@@ -522,6 +522,7 @@ type
     property PrintMarginTop;
     property PrintMaxHPages;
     property PrintScale;
+    property QuirksMode;
     property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
     property ServerRoot;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
