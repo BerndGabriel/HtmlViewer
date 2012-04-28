@@ -687,6 +687,7 @@ function WideSameStr1(const S1, S2: UnicodeString): boolean;  {$ifdef UseInline}
 function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
 procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 
@@ -1126,6 +1127,16 @@ begin
   ARect := Rect(X1, Y1, X2, Y2);
   DrawTextW(Canvas.Handle, PWideChar(S), Length(S), ARect, DT_Wordbreak);
   SetTextAlign(Canvas.Handle, TAlign);
+end;
+
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+var
+    Dummy: Integer;
+begin
+  if not IsWin32Platform then
+    GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, VSize)
+  else
+    GetTextExtentPoint32W(DC, P, N, VSize); {win95, 98 ME}
 end;
 
 function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
@@ -2684,45 +2695,6 @@ var
   StyleSet: set of BorderStyleType;
   OuterRegion, InnerRegion: THandle;
   Brush: TBrush;
-
-  function Darker(Color: TColor): TColor;
-  {find a somewhat darker color for shading purposes}
-  const
-    F = 0.75; // F < 1 makes color darker
-  var
-    Red, Green, Blue: Byte;
-  begin
-    if Color < 0 then
-      Color := GetSysColor(Color and $FFFFFF)
-    else
-      Color := Color and $FFFFFF;
-    Red := Color and $FF;
-    Green := (Color and $FF00) shr 8;
-    Blue := (Color and $FF0000) shr 16;
-    Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
-  end;
-
-  function Lighter(Color: TColor): TColor;
-  {find a somewhat lighter color for shading purposes}
-  const
-    F = 1.15; // F > 1 makes color lighter
-  var
-    Red, Green, Blue: Byte;
-  begin
-    if Color < 0 then
-      Color := GetSysColor(Color and $FFFFFF)
-    else
-      Color := Color and $FFFFFF;
-    if Color = 0 then
-      Result := 0
-    else
-    begin
-      Red := Color and $FF;
-      Green := (Color and $FF00) shr 8;
-      Blue := (Color and $FF0000) shr 16;
-      Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
-    end;
-  end;
 
 begin
 {Limit the borders to somewhat more than the screen size}

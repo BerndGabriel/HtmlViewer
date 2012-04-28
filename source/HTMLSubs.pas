@@ -61,6 +61,7 @@ unit HTMLSubs;
 interface
 
 uses
+  AlphaBlendUn,
 {$ifdef VCL}
   Windows,
 {$endif}
@@ -136,6 +137,8 @@ type
     procedure SetDocument(List: ThtDocument);
   public
     // source buffer reference
+    MainTextOpacities : TMainTextOpacities;
+    BorderOpacities : TBorderOpacities;
     StartCurs: Integer;     // where the section starts in the source buffer.
     Len: Integer;           // number of bytes in source buffer the section represents.
     // Z coordinates are calculated in Create()
@@ -610,6 +613,9 @@ type
 
   TBlock = class(TSectionBase)
   protected
+    function GetContentWidth : Integer; virtual;
+    function GetContentHeight : Integer; virtual;
+    function GetTotalWidthAndMarg : Integer; virtual;
     function getBorderWidth: Integer; virtual;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
@@ -1163,6 +1169,9 @@ type
 
   TTableBlock = class(TBlock)
   protected
+    function GetContentWidth : Integer; override;
+    function GetContentHeight : Integer; override;
+    function GetTotalWidthAndMarg : Integer; override;
     function getBorderWidth: Integer; override;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); override;
   public
@@ -1521,6 +1530,7 @@ uses
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: IntArray; StartIndex, EndIndex: Integer): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of array elements from StartIndex to EndIndex.
 var
   I: Integer;
@@ -1532,6 +1542,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: IntArray): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1539,6 +1550,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType; StartIndex, EndIndex: TWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of array elements from StartIndex to EndIndex.
 var
   I: TWidthType;
@@ -1550,6 +1562,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1557,6 +1570,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.01.2012 --
 function SubArray(const Arr, Minus: IntArray): IntArray; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return array with differences per index.
 var
   I: Integer;
@@ -1568,6 +1582,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value, StartIndex, EndIndex: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1577,12 +1592,14 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   SetArray(Arr, Value, Low(Arr), High(Arr));
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: TIntegerPerWidthType; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: TWidthType;
 begin
@@ -1595,6 +1612,7 @@ procedure SummarizeCountsPerType(
   var CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1609,6 +1627,8 @@ function SumOfType(
   const ColumnSpecs: TWidthTypeArray;
   const Widths: IntArray;
   StartIndex, EndIndex: Integer): Integer;
+  {$ifdef UseInline} inline; {$endif}
+
 var
   I: Integer;
 begin
@@ -1620,11 +1640,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := WideCompareText(T1, T2);
 end;
 
 procedure InitializeFontSizes(Size: Integer);
+   {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1829,6 +1851,7 @@ type
 type
   BorderRec = class {record for inline borders}
   private
+    BGOpacity : Byte;
     BStart, BEnd: Integer;
     OpenStart, OpenEnd: boolean;
     BRect: TRect;
@@ -2674,7 +2697,7 @@ end;
 {----------------TImageObj.Draw}
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
-procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);
+procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);  {$ifdef UseInline} inline; {$endif}
 var
   White, BlackBorder: boolean;
 begin
@@ -2701,6 +2724,7 @@ end;
 // Thus move htStyles and htColors from HtmlUn2.pas to HtmlSubs.pas the only unit where they are used
 
 function htStyles(P0, P1, P2, P3: BorderStyleType): htBorderStyleArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := P0;
   Result[1] := P1;
@@ -2709,6 +2733,7 @@ begin
 end;
 
 function htColors(C0, C1, C2, C3: TColor): htColorArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := C0;
   Result[1] := C1;
@@ -2718,6 +2743,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(Light, Dark: TColor; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 begin
   if Raised then
     Result := htColors(Light, Light, Dark, Dark)
@@ -2727,6 +2753,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 var
   Light, Dark: TColor;
 begin
@@ -2739,6 +2766,7 @@ procedure RaisedRectColor(Canvas: TCanvas;
   const ORect, IRect: TRect;
   const Colors: htColorArray;
   Styles: htBorderStyleArray); overload;
+  {$ifdef UseInline} inline; {$endif}
 {Draws colored raised or lowered rectangles for table borders}
 begin
   DrawBorder(Canvas, ORect, IRect, Colors, Styles, clNone, False);
@@ -2748,6 +2776,7 @@ procedure RaisedRect(SectionList: ThtDocument; Canvas: TCanvas;
   X1, Y1, X2, Y2: Integer;
   Raised: boolean;
   W: Integer);
+  {$ifdef UseInline} inline; {$endif}
 {Draws raised or lowered rectangles for table borders}
 begin
   RaisedRectColor(Canvas,
@@ -2833,19 +2862,19 @@ begin
       ATop, ANone:
         begin
           if FAlt <> '' then
-            WrapTextW(Canvas, X + 24, TopY + Ofst, X + AltWidth - 2, TopY + AltHeight - 1, FAlt);
+            TransparentWrapTextW(Canvas,X + 24, TopY + Ofst, X + AltWidth - 2, TopY + AltHeight - 1, FAlt, Self.OwnerBlock.MainTextOpacities[Color]);
           RaisedRect(Document, Canvas, X, TopY, X + AltWidth, TopY + AltHeight, False, 1);
         end;
       AMiddle:
         begin {MiddleAlignTop is always initialized}
           if FAlt <> '' then
-            WrapTextW(Canvas, X + 24, MiddleAlignTop + Ofst, X + AltWidth - 2, MiddleAlignTop + AltHeight - 1, FAlt);
+            TransparentWrapTextW(Canvas, X + 24, MiddleAlignTop + Ofst, X + AltWidth - 2, MiddleAlignTop + AltHeight - 1, FAlt, Self.OwnerBlock.MainTextOpacities[Color]);
           RaisedRect(Document, Canvas, X, MiddleAlignTop, X + AltWidth, MiddleAlignTop + AltHeight, False, 1);
         end;
       ABottom, ABaseline:
         begin
           if FAlt <> '' then
-            WrapTextW(Canvas, X + 24, YBaseLine - AltHeight + Ofst - VSpaceB, X + AltWidth - 2, YBaseLine - VSpaceB - 1, FAlt);
+            TransparentWrapTextW(Canvas, X + 24, YBaseLine - AltHeight + Ofst - VSpaceB, X + AltWidth - 2, YBaseLine - VSpaceB - 1, FAlt, Self.OwnerBlock.MainTextOpacities[Color] );
           RaisedRect(Document, Canvas, X, YBaseLine - AltHeight - VSpaceB, X + AltWidth, YBaseLine - VSpaceB, False, 1);
         end;
     end;
@@ -2868,11 +2897,11 @@ begin
           YY := DrawYY - Document.YOff;
           case VertAlign of
             ATop, ANone:
-              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
+              TransparentWrapTextW(Canvas,DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt, Self.OwnerBlock.MainTextOpacities[Color] );
             AMiddle:
-              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
+              TransparentWrapTextW(Canvas,DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt, Self.OwnerBlock.MainTextOpacities[Color] );
             ABottom, ABaseline:
-              WrapTextW(Canvas, DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt);
+              TransparentWrapTextW(Canvas,DrawXX + 24, YY + Ofst, DrawXX + AltWidth - 2, YY + AltHeight - 1, FAlt, Self.OwnerBlock.MainTextOpacities[Color] );
           end;
         end;
 
@@ -2880,11 +2909,11 @@ begin
         case VertAlign of
 
           {ALeft, ARight,} ATop, ANone:
-            Rectangle(X, TopY + VSpaceT, X + ClientWidth, TopY + VSpaceT + ClientHeight);
+            AlphaBlendUn.TransparentRectangle(Canvas,X, TopY + VSpaceT, X + ClientWidth, TopY + VSpaceT + ClientHeight, Self.OwnerBlock.MainTextOpacities[StyleUn.Color] );
           AMiddle:
-            Rectangle(X, MiddleAlignTop, X + ClientWidth, MiddleAlignTop + ClientHeight);
+            AlphaBlendUn.TransparentRectangle(Canvas,X, MiddleAlignTop, X + ClientWidth, MiddleAlignTop + ClientHeight,Self.OwnerBlock.MainTextOpacities[StyleUn.Color]);
           ABottom, ABaseline:
-            Rectangle(X, YBaseLine - ClientHeight - VSpaceB, X + ClientWidth, YBaseLine - VSpaceB);
+            AlphaBlendUn.TransparentRectangle(Canvas,X, YBaseLine - ClientHeight - VSpaceB, X + ClientWidth, YBaseLine - VSpaceB,Self.OwnerBlock.MainTextOpacities[StyleUn.Color]);
         end;
       finally
         Pen.Color := SaveColor;
@@ -2903,17 +2932,20 @@ begin
       Brush.Color := clWhite;
       case VertAlign of
         ATop, ANone:
-            Rectangle(X, TopY + VSpaceT, X + ClientWidth, TopY + VSpaceT + ClientHeight);
+          AlphaBlendUn.TransparentRectangle(Canvas,X, TopY + VSpaceT, X + ClientWidth, TopY + VSpaceT + ClientHeight,
+            Self.OwnerBlock.MainTextOpacities[StyleUn.Color]);
           AMiddle:
-            Rectangle(X, MiddleAlignTop, X + ClientWidth, MiddleAlignTop + ClientHeight);
+            AlphaBlendUn.TransparentRectangle(Canvas,X, MiddleAlignTop, X + ClientWidth, MiddleAlignTop + ClientHeight,
+            Self.OwnerBlock.MainTextOpacities[StyleUn.Color]);
           ABottom, ABaseline:
-            Rectangle(X, YBaseLine - ClientHeight - VSpaceB, X + ClientWidth, YBaseLine - VSpaceB);
+            AlphaBlendUn.TransparentRectangle(Canvas,X, YBaseLine - ClientHeight - VSpaceB, X + ClientWidth, YBaseLine - VSpaceB,
+            Self.OwnerBlock.MainTextOpacities[StyleUn.Color]);
       end;
       if not Document.IsCopy then
       begin
         if Document.TheOwner.ShowFocusRect then //MK20091107
-          Canvas.DrawFocusRect(ARect);  {draw focus box}
-      end
+           TransparentDrawFocusRect(Canvas,ARect,Self.OwnerBlock.MainTextOpacities[StyleUn.Color]);
+       end
       else
         Document.LinkDrawnEvent(Document.TheOwner, Document.LinkPage,
           FO.UrlTarget.Url, FO.UrlTarget.Target, ARect);
@@ -5225,38 +5257,54 @@ end;
 
 {This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
 model.  In those browsers, width and height include padding and border.}
-function GetContentHeight(AMargArray : TMarginArray; const AUseQuirksMode : Boolean) : Integer;
+function TBlock.GetContentHeight : Integer;
 begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[piHeight] -
-        (AMargArray[BorderTopWidth] + AMargArray[BorderBottomWidth] +
-         AMargArray[PaddingTop] + AMargArray[PaddingBottom]);
+  if Document.UseQuirksMode then begin
+    Result := MargArray[piHeight] -
+        (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+         MargArray[PaddingTop] + MargArray[PaddingBottom]);
   end else begin
-    Result := AMargArray[piHeight];
+    if MargArray[BoxSizing] = 1 then begin
+      Result := MargArray[piHeight] -
+          (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+           MargArray[PaddingTop] + MargArray[PaddingBottom]);
+    end else begin
+      Result := MargArray[piHeight];
+    end;
   end;
 end;
 
-function GetTotalWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
+function TBlock.GetTotalWidthAndMarg : Integer;
 begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[MarginLeft] + ANewWidth + AMargArray[MarginRight];
+  if Document.UseQuirksMode then begin
+    Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
   end else begin
-    Result := ANewWidth +
-      AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-      AMargArray[MarginRight] + AMargArray[PaddingRight] + AMargArray[BorderRightWidth];
+    if MargArray[BoxSizing] = 1 then begin
+      Result := MargArray[MarginLeft] + NewWidth + MargArray[MarginRight];
+    end else begin
+      Result := NewWidth +
+        MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+        MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+    end;
   end;
 end;
 
-function AdjustNewWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
+function TBlock.GetContentWidth : Integer;
 begin
-  if AUseQuirksMode then begin
-    Result := ANewWidth -
-      (AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-       AMargArray[PaddingRight] + AMargArray[BorderRightWidth] )
+  if Document.UseQuirksMode then begin
+    Result := NewWidth -
+      (//MargArray[MarginLeft] +
+       MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+       MargArray[PaddingRight] + MargArray[BorderRightWidth] )
   end else begin
-    Result := ANewWidth;
+    if MargArray[BoxSizing] = 1 then begin
+      Result := NewWidth -
+       (//MargArray[MarginLeft] +
+         MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+        MargArray[PaddingRight] + MargArray[BorderRightWidth] )
+    end else begin
+      Result := NewWidth;
+    end;
   end;
 end;
 
@@ -5292,7 +5340,7 @@ var
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   var LHeight : Integer;
   begin
-    LHeight := GetContentHeight(MargArray, Document.UseQuirksMode);
+    LHeight := GetContentHeight;
     if HideOverflow and (LHeight > 3) then
       Result := ContentTop + LHeight
     else
@@ -5330,8 +5378,8 @@ begin
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.UseQuirksMode);
-    NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
+    TotalWidth  := GetTotalWidthAndMarg;
+    NewWidth := GetContentWidth;
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -5659,22 +5707,6 @@ end;
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 var
   YOffset: Integer;
   XR, YB, RefX, RefY, TmpHt: Integer;
@@ -5778,13 +5810,17 @@ begin
           Canvas.Brush.Style := bsSolid;
           if Document.IsCopy and ImgOK then
           begin
-            InitFullBG(IW, IH);
+            InitFullBG(FullBG,IW, IH,Document.IsCopy);
             FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
-            FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
+            AlphaBlendUn.TransparentFillRect(Canvas,Rect(0, 0, IW, IH),Self.MainTextOpacities[BackgroundColor]);
           end
           else
-            Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
+            if Document.Printing then begin
+              Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
+            end else begin
+              AlphaBlendUn.TransparentFillRect(Canvas,Rect(PdRect.Left, FT, PdRect.Right, FT + IH),Self.MainTextOpacities[BackgroundColor] );
+            end;
         end;
 
         if ImgOK then
@@ -5801,7 +5837,7 @@ begin
               BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
             else
             begin
-              InitFullBG(PdRect.Right - PdRect.Left, IH);
+              InitFullBG(FullBG,PdRect.Right - PdRect.Left, IH,Document.IsCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, Canvas.Handle, PdRect.Left, FT, SrcCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -6301,6 +6337,25 @@ begin
   Result := Table.BorderWidth;
 end;
 
+function TTableBlock.GetContentHeight: Integer;
+begin
+  Result := MargArray[piHeight] -
+     (MargArray[BorderTopWidth] + MargArray[BorderBottomWidth] +
+     MargArray[PaddingTop] + MargArray[PaddingBottom]);
+end;
+
+function TTableBlock.GetContentWidth: Integer;
+begin
+  Result := NewWidth;
+end;
+
+function TTableBlock.GetTotalWidthAndMarg: Integer;
+begin
+  Result := NewWidth +
+      MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth] +
+      MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+end;
+
 {----------------TTableBlock.FindWidth}
 
 function TTableBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer;
@@ -6632,11 +6687,6 @@ var
   BrushStyle: TBrushStyle;
   YB, AlphaNumb: Integer;
 
-  procedure Circle(X, Y, Rad: Integer);
-  begin
-    Canvas.Ellipse(X, Y - Rad, X + Rad, Y);
-  end;
-
 begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 
@@ -6686,11 +6736,11 @@ begin
               lbCircle:
                 begin
                   Brush.Style := bsClear;
-                  Circle(X - 16, YB, 7);
+                  TransparentCircle(Canvas, X - 16, YB, 7,MainTextOpacities[StyleUn.Color]);
                 end;
               lbDisc:
-                Circle(X - 15, YB - 1, 5);
-              lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
+                TransparentCircle(Canvas, X - 15, YB - 1, 5,MainTextOpacities[StyleUn.Color]);
+              lbSquare: TransparentRectangle(Canvas,X - 15, YB - 6, X - 10, YB - 1,MainTextOpacities[StyleUn.Color]);
             end;
             Brush.Color := BrushColor;
             Brush.Style := BrushStyle;
@@ -7020,8 +7070,10 @@ begin
   ActiveLink := nil;
   ActiveImage := nil;
   PanelList.Clear;
-  if not IsCopy then
+  if not IsCopy then begin
     Styles.Clear;
+    Styles.UseQuirksMode := Self.UseQuirksMode;
+  end;
   if Assigned(TabOrderList) then
     TabOrderList.Clear;
   inherited Clear;
@@ -7900,22 +7952,6 @@ var
   BRect: TRect;
   IsVisible: Boolean;
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Cell.Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 begin
   YO := Y - Cell.Document.YOff;
 
@@ -7970,10 +8006,10 @@ begin
       Canvas.Brush.Style := bsSolid;
       if Cell.Document.IsCopy and ImgOK then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG, PR - PL, IH,Cell.Document.IsCopy);
         FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
-        FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
+        TransparentFillRect(FullBG.Canvas,Rect(0, 0, PR - PL,IH), Cell.OwnerBlock.MainTextOpacities[StyleUn.BackgroundColor] );
       end
       else
       begin
@@ -7993,7 +8029,7 @@ begin
         else
           if Border then
             InflateRect(BRect, 1, 1);
-        Canvas.FillRect(BRect);
+        TransparentFillRect(Canvas,BRect, Cell.OwnerBlock.MainTextOpacities[StyleUn.BackgroundColor] );
       end;
     end;
     if ImgOK then
@@ -8008,7 +8044,7 @@ begin
           BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
         else
         begin
-          InitFullBG(PR - PL, IH);
+          InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -8034,7 +8070,7 @@ begin
         PrintBitmap(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage))
       else if Cell.BkGnd then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
@@ -10400,6 +10436,25 @@ end;
 
 {----------------TSection.ProcessText}
 
+procedure Remove(
+  FormControls : TFormControlObjList;
+  Fonts : TFontList;
+  Images : TFloatingObjList;
+  Document : ThtDocument;
+  var BuffS : String;
+  const I: Integer;
+  Brk : TTextWrapArray;
+  XP : PXArray);   {$ifdef UseInline} inline; {$endif}
+begin
+    Move(XP^[I], XP^[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
+    Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(TTextWrap));
+    SetLength(Brk, Length(Brk) - 1);
+    System.Delete(BuffS, I, 1);
+    FormControls.Decrement(I - 1);
+    Fonts.Decrement(I - 1, Document);
+    Images.Decrement(I - 1);
+end;
+
 procedure TSection.ProcessText(TagIndex: Integer);
 const
   Shy = #173; {soft hyphen}
@@ -10407,7 +10462,7 @@ var
   I: Integer;
   FO: TFontObj;
 
-  procedure Remove(I: Integer);
+{  procedure Remove(I: Integer);
   begin
     Move(XP^[I], XP^[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
     Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(TTextWrap));
@@ -10416,7 +10471,7 @@ var
     FormControls.Decrement(I - 1);
     Fonts.Decrement(I - 1, Document);
     Images.Decrement(I - 1);
-  end;
+  end;  }
 
 begin
   if WhiteSpaceStyle in [wsPre] then
@@ -10432,7 +10487,7 @@ begin
     I := WidePos(Shy, BuffS);
     while I > 0 do
     begin
-      Remove(I);
+      Remove(FormControls,Fonts,Images,Document,BuffS,I,Brk,XP);
       if (I > 1) and (Brk[I - 2] <> twNo) then
         Brk[I - 2] := twSoft;
       I := WidePos(Shy, BuffS);
@@ -10441,15 +10496,15 @@ begin
     if WhiteSpaceStyle in [wsNormal, wsNoWrap, wsPreLine] then
     begin
       while (Length(BuffS) > 0) and (BuffS[1] = ' ') do
-        Remove(1);
+        Remove(FormControls,Fonts,Images,Document,BuffS,1,Brk,XP);
 
       I := WidePos('  ', BuffS);
       while I > 0 do
       begin
         if Brk[I - 1] = twNo then
-          Remove(I)
+          Remove(FormControls,Fonts,Images,Document,BuffS,I,Brk,XP)
         else
-          Remove(I + 1);
+          Remove(FormControls,Fonts,Images,Document,BuffS,I + 1,Brk,XP);
         I := WidePos('  ', BuffS);
       end;
 
@@ -10457,27 +10512,27 @@ begin
       for I := Length(BuffS) - 1 downto 1 do
         if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).Floating in [ALeft, ARight])
           and (BuffS[I + 1] = ' ') then
-          Remove(I + 1);
+          Remove(FormControls,Fonts,Images,Document,BuffS,I + 1,Brk,XP);
 
       I := WidePos(UnicodeString(' ' + #8), BuffS); {#8 is break char}
       while I > 0 do
       begin
-        Remove(I);
+        Remove(FormControls,Fonts,Images,Document,BuffS,I,Brk,XP);
         I := WidePos(UnicodeString(' ' + #8), BuffS);
       end;
 
       I := WidePos(UnicodeString(#8 + ' '), BuffS);
       while I > 0 do
       begin
-        Remove(I + 1);
+        Remove(FormControls,Fonts,Images,Document,BuffS,I + 1,Brk,XP);
         I := WidePos(UnicodeString(#8 + ' '), BuffS);
       end;
 
       if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = #8) then
-        Remove(Length(BuffS));
+        Remove(FormControls,Fonts,Images,Document,BuffS,Length(BuffS),Brk,XP);
 
       if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = ' ') then
-        Remove(Length(BuffS));
+        Remove(FormControls,Fonts,Images,Document,BuffS,Length(BuffS),Brk,XP);
 
       if (BuffS <> #8) and (Length(BuffS) > 0) and (BuffS[Length(BuffS)] <> ' ') then
       begin
@@ -10658,6 +10713,16 @@ end;
 
 {----------------TSection.AddFormControl}
 
+function CreateEditFCO(AMasterList : ThtDocument;
+    ACell : TCellBasic;
+    Len : Integer;
+    S : String;
+    L : TAttributeList;
+    Prop : TProperties): TEditFormControlObj; {$ifdef UseInline} inline; {$endif}
+begin
+  Result := TEditFormControlObj.Create(AMasterList, ACell, Len, S, L, Prop);
+end;
+
 function TSection.AddFormControl(Which: Symb; AMasterList: ThtDocument;
   L: TAttributeList; ACell: TCellBasic; Index: Integer;
   Prop: TProperties): TFormControlObj;
@@ -10668,11 +10733,6 @@ var
   IO: TImageObj;
   ButtonControl: TButtonFormControlObj;
 
-  function CreateEditFCO: TEditFormControlObj;
-  begin
-    Result := TEditFormControlObj.Create(AMasterList, ACell, Len, S, L, Prop);
-  end;
-
 begin
   S := '';
   case Which of
@@ -10682,7 +10742,7 @@ begin
       begin
         S := LowerCase(T.Name);
         if (S = 'text') or (S = 'password') or (S = 'file') then
-          FCO := CreateEditFCO
+          FCO := CreateEditFCO(AMasterList,ACell, Len, S, L, Prop)
         else if (S = 'submit') or (S = 'reset') or (S = 'button') then
           FCO := TButtonFormControlObj.Create(AMasterList, ACell, Len, S, L, Prop)
         else if S = 'radio' then
@@ -10694,10 +10754,10 @@ begin
         else if S = 'image' then
           FCO := TImageFormControlObj.Create(AMasterList, ACell, Len, L, Prop)
         else
-          FCO := CreateEditFCO;
+          FCO := CreateEditFCO(AMasterList,ACell, Len, S, L, Prop);
       end
       else
-        FCO := CreateEditFCO;
+        FCO := CreateEditFCO(AMasterList,ACell, Len, S, L, Prop);
 
     end;
 
@@ -10829,13 +10889,13 @@ begin
   OldResult := Result;
 end;
 
-function WrapChar(C: WideChar): Boolean;
+function WrapChar(C: WideChar): Boolean;  {$ifdef UseInline} inline; {$endif}
 begin
   Result := Ord(C) >= $3000;
 end;
 
 //-- BG ---------------------------------------------------------- 27.01.2012 --
-function CanWrapAfter(C: WideChar): Boolean;
+function CanWrapAfter(C: WideChar): Boolean;   {$ifdef UseInline} inline; {$endif}
 begin
   case C of
     WideChar('-'), WideChar('/'), WideChar('?'):
@@ -10846,7 +10906,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.09.2010 --
-function CanWrap(C: WideChar): Boolean;
+function CanWrap(C: WideChar): Boolean;   {$ifdef UseInline} inline; {$endif}
 begin
   case C of
     WideChar(' '), WideChar('-'), WideChar('/'), WideChar('?'), ImgPan, FmCtl, BrkCh:
@@ -11113,6 +11173,22 @@ end;
 
 {----------------TSection.DrawLogic}
 
+function GetClearSpace(Imgr : TIndentManager; ClearAttr: ClearAttrType; const Y : Integer): Integer;  {$ifdef UseInline} inline; {$endif}
+var
+      CL, CR: Integer;
+begin
+      Result := 0;
+      if (ClearAttr <> clrNone) then
+      begin {may need to move down past floating image}
+        IMgr.GetClearY(CL, CR);
+        case ClearAttr of
+          clLeft: Result := Max(0, CL - Y - 1);
+          clRight: Result := Max(0, CR - Y - 1);
+          clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
+        end;
+      end;
+end;
+
 function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth: Integer; var Curs: Integer): Integer;
 {returns height of the section}
@@ -11125,7 +11201,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
   //  FindCountThatFits1() is part of TSection.DrawLogic() and fills IMgr with the embedded floating images.
   //  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
   var
-    Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, W, H, ImgX, OHang, Width: Integer;
+    Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, W, H,  OHang, Width: Integer;
     Picture: boolean;
     FlObj: TFloatingObj;
     FcObj: TFormControlObj;
@@ -11292,21 +11368,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     LR: LineRec;
     AccumImgBot: Integer;
 
-    function GetClearSpace(ClearAttr: ClearAttrType): Integer;
-    var
-      CL, CR: Integer;
-    begin
-      Result := 0;
-      if (ClearAttr <> clrNone) then
-      begin {may need to move down past floating image}
-        IMgr.GetClearY(CL, CR);
-        case ClearAttr of
-          clLeft: Result := Max(0, CL - Y - 1);
-          clRight: Result := Max(0, CR - Y - 1);
-          clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
-        end;
-      end;
-    end;
+
 
     procedure LineComplete(NN: Integer);
     var
@@ -11321,15 +11383,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       LRTextWidth: Integer;
       OHang: Integer;
 
-      function FindSpaces: Integer;
-      var
-        I: Integer;
-      begin
-        Result := 0;
-        for I := 0 to NN - 2 do {-2 so as not to count end spaces}
-          if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
-            Inc(Result);
-      end;
+
 
     begin
       DHt := 0; {for the fonts on this line get the maximum height}
@@ -11495,7 +11549,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         if not Finished then
         begin
           LR.Extra := TmpRt - Tmp - LRTextWidth;
-          LR.Spaces := FindSpaces;
+          LR.Spaces := FindSpaces(PStart,NN);
         end;
       end;
       LR.DrawWidth := TmpRt - Tmp;
@@ -11534,7 +11588,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     TextWidth := 0;
     if Len = 0 then
     begin
-      Result := GetClearSpace(ClearAttr);
+      Result := GetClearSpace(IMgr,ClearAttr,Y);
       DrawHeight := Result;
       SectionHeight := Result;
       ContentBot := Y + Result;
@@ -11591,7 +11645,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       LR := LineRec.Create(Document); {a new line}
       if Lines.Count = 0 then
       begin {may need to move down past floating image}
-        Tmp := GetClearSpace(ClearAttr);
+        Tmp := GetClearSpace(IMgr,ClearAttr,Y);
         if Tmp > 0 then
         begin
           LR.LineHt := Tmp;
@@ -11844,6 +11898,7 @@ begin
           BorderList.Add(BR);
           with BR do
           begin
+            BR.BGOpacity := Self.MainTextOpacities[BackgroundColor];
             BR.MargArray := InlineRec(Document.InlineList.Items[I]).MargArray; {get border data}
             if StartBI < LineStart then
             begin
@@ -11873,6 +11928,44 @@ end;
 
 {----------------TSection.Draw}
 
+function AddHyphen(P: PWideChar; N: Integer): UnicodeString;  {$ifdef UseInline} inline; {$endif}{$ifdef UseInline} inline; {$endif}
+var
+    I: Integer;
+begin
+  SetLength(Result, N + 1);
+  for I := 1 to N do
+     Result[I] := P[I - 1];
+  Result[N + 1] := WideChar('-');
+end;
+
+function ChkInversion(Document : ThtDocument; Start, Buff: PWideChar;
+  var Count: Integer; const MySelB, MySelE : Integer): boolean;  {$ifdef UseInline} inline; {$endif}
+var
+  LongCount, C: Integer;
+begin
+  Result := False;
+  C := Start - Buff;
+  Count := 32000;
+  if Document.IsCopy then
+    Exit;
+  if (MySelE < MySelB) or ((MySelE = MySelB) and
+    not Document.ShowDummyCaret) then
+      Exit;
+  if (MySelB <= C) and (MySelE > C) then
+  begin
+    Result := True;
+    LongCount := MySelE - C;
+  end
+  else if MySelB > C then
+    LongCount := MySelB - C
+  else
+    LongCount := 32000;
+  if LongCount > 32000 then
+    Count := 32000
+  else
+    Count := LongCount;
+end;
+
 function TSection.Draw1(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
@@ -11895,43 +11988,6 @@ var
     Start: PWideChar;
     Cnt, Descent: Integer;
     St: UnicodeString;
-
-    function AddHyphen(P: PWideChar; N: Integer): UnicodeString;
-    var
-      I: Integer;
-    begin
-      SetLength(Result, N + 1);
-      for I := 1 to N do
-        Result[I] := P[I - 1];
-      Result[N + 1] := WideChar('-');
-    end;
-
-    function ChkInversion(Start: PWideChar; var Count: Integer): boolean;
-    var
-      LongCount, C: Integer;
-    begin
-      Result := False;
-      C := Start - Buff;
-      Count := 32000;
-      if Document.IsCopy then
-        Exit;
-      if (MySelE < MySelB) or ((MySelE = MySelB) and
-        not Document.ShowDummyCaret) then
-        Exit;
-      if (MySelB <= C) and (MySelE > C) then
-      begin
-        Result := True;
-        LongCount := MySelE - C;
-      end
-      else if MySelB > C then
-        LongCount := MySelB - C
-      else
-        LongCount := 32000;
-      if LongCount > 32000 then
-        Count := 32000
-      else
-        Count := LongCount;
-    end;
 
   begin {Y is at bottom of line here}
     LR := LineRec(Lines[LineNo]);
@@ -12200,12 +12256,15 @@ var
                   if (Ctrl is TRadioButtonFormControlObj) then
                   begin
                     if Screen.PixelsPerInch > 100 then
-                      Canvas.DrawFocusRect(Rect(Left - 2, Top - 2, Left + 18, Top + 18))
+                      TransparentDrawFocusRect(Canvas,Rect(Left - 2, Top - 2, Left + 18, Top + 18),
+                        Self.MainTextOpacities[StyleUn.Color])
                     else
-                      Canvas.DrawFocusRect(Rect(Left - 3, Top - 2, Left + 16, Top + 16));
+                      TransparentDrawFocusRect(Canvas,Rect(Left - 3, Top - 2, Left + 16, Top + 16),
+                        Self.MainTextOpacities[StyleUn.Color]);
                   end
                   else
-                    Canvas.DrawFocusRect(Rect(Left - 3, Top - 3, Left + 16, Top + 16));
+                      TransparentDrawFocusRect(Canvas,Rect(Left - 3, Top - 3, Left + 16, Top + 16),
+                        Self.MainTextOpacities[StyleUn.Color]);
                 end;
                 //SetTextColor(Handle, SaveColor);
               end;
@@ -12218,7 +12277,7 @@ var
       begin
         J := Min(J1, J2);
         J := Min(J, J4);
-        Inverted := ChkInversion(Start, J3);
+        Inverted := ChkInversion(Document,Start, Buff, J3, MySelB, MySelE);
         J := Min(J, J3 - 1);
         I := Min(Cnt, J + 1);
 
@@ -12297,7 +12356,7 @@ var
           if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not OwnerBlock.HideOverflow then
           begin {so will clip in Table cells}
             ARect := Rect(IMgr.LfEdge, Y - LR.LineHt - LR.SpaceBefore - YOffset, X + IMgr.ClipWidth, Y - YOffset + 1);
-            ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil);
+            TransparentExtTextOutW(Canvas,CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil, FO.TheFont.iOpacity );
             CP1x := CPx + GetXExtent(Canvas.Handle, Start, Tmp);
           end
           else
@@ -12311,13 +12370,33 @@ var
               if (Cnt - I <= 0) and LR.Shy then
               begin
                 St := AddHyphen(Start, Tmp);
-                TextOutW(Canvas.Handle, CPx, CPy, PWideChar(St), Length(St));
-                CP1x := CPx + GetXExtent(Canvas.Handle, PWideChar(St), Length(St));
+                if LR.Spaces = 0 then
+                  CP1x := TransparentTextOutput(Canvas,CPx, CPy,
+                    PWideChar(St), Length(St),
+                    Y - LR.LineHt, LR.LineHt,
+                    FO.TheFont.iOpacity,0,0)
+                else
+                  CP1x := TransparentTextOutput(Canvas,CPx, CPy,
+                    PWideChar(St), Length(St),
+                    Y - LR.LineHt, LR.LineHt,
+                    FO.TheFont.iOpacity,LR.Extra, LR.Spaces);
+
+//                TextOutW(Canvas.Handle, CPx, CPy, PWideChar(St), Length(St));
+//                CP1x := CPx + GetXExtent(Canvas.Handle, PWideChar(St), Length(St));
               end
               else
               begin
-                TextOutW(Canvas.Handle, CPx, CPy, Start, Tmp);
-                CP1x := CPx + GetXExtent(Canvas.Handle, Start, Tmp);
+                if LR.Spaces = 0 then
+                  CP1x := TransparentTextOutput(Canvas, CPx, CPy, Start, Tmp,
+                    Y - LR.LineHt, LR.LineHt,
+                    FO.TheFont.iOpacity,0,0)
+                else
+                  CP1x := TransparentTextOutput(Canvas, CPx, CPy, Start, Tmp,
+                    Y - LR.LineHt, LR.LineHt,
+                    FO.TheFont.iOpacity,LR.Extra, LR.Spaces);
+
+//                TextOutW(Canvas.Handle, CPx, CPy, Start, Tmp);
+//                CP1x := CPx + GetXExtent(Canvas.Handle, Start, Tmp);
               end
             end
             else
@@ -12336,7 +12415,8 @@ var
             Canvas.Pen.Color := Canvas.Font.Color;
             Tmp := Y - Descent + FO.Descent + Addon - YOffset;
             Canvas.Brush.Color := clWhite;
-            Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
+            TransparentRectangle(Canvas,CPx, Tmp, CPx + 1, Tmp - FO.FontHeight,
+              FO.TheFont.iOpacity);
           end;
         end;
 
@@ -12350,7 +12430,7 @@ var
             Canvas.Font.Color := clBlack; {black font needed for DrawFocusRect}
             DC := Canvas.Handle; {Dummy call needed to make Delphi add font color change to handle}
             if Document.TheOwner.ShowFocusRect then //MK20091107
-              Canvas.DrawFocusRect(ARect);
+              TransparentDrawFocusRect(Canvas,ARect,Self.MainTextOpacities[StyleUn.Color]);
           end;
           if Assigned(Document.LinkDrawnEvent) then
             Document.LinkDrawnEvent(Document.TheOwner, Document.LinkPage,
@@ -12366,7 +12446,7 @@ var
           Canvas.Pen.Color := Canvas.Font.Color;
           Tmp := Y - Descent + FO.Descent + Addon - YOffset;
           Canvas.Brush.Color := clWhite;
-          Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
+          TransparentRectangle(Canvas,CPx, Tmp, CPx + 1, Tmp - FO.FontHeight, FO.TheFont.iOpacity  );
         end;
 
       end;
@@ -13335,8 +13415,8 @@ begin
   begin
     Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
     Canvas.Brush.Style := bsSolid;
-    Canvas.FillRect(IRect);
-  end;
+    TransparentFillRect(Canvas,IRect,BGOpacity);
+   end;
 
   ORect.Left := IRect.Left - MargArray[BorderLeftWidth];
   ORect.Top := IRect.Top - MargArray[BorderTopWidth];
@@ -13472,7 +13552,7 @@ begin
       begin
         Brush.Color := Color or $2000000;
         Brush.Style := bsSolid;
-        FillRect(Rect(X, YT, XR + 1, YT + VSize));
+        TransparentFillRect(Canvas,Rect(X, YT, XR + 1, YT + VSize),MainTextOpacities[BackgroundColor]);
       end
       else
       begin
@@ -14211,6 +14291,8 @@ constructor TSectionBase.Create(OwnerCell: TCellBasic; Attributes: TAttributeLis
 begin
   inherited;
   FDisplay := AProp.Display;
+  MainTextOpacities := AProp.MainTextOpacities;
+  BorderOpacities := AProp.BorderOpacities;
   ContentTop := 999999999; {large number in case it has Display: none; }
 end;
 
@@ -14410,7 +14492,7 @@ begin
   Canvas.Brush.Style := bsSolid;
   try
     // paint a rectangular placeholder
-    Canvas.Rectangle(X, TopY, X + ClientWidth, TopY + ClientHeight);
+    TransparentRectangle(Canvas, X, TopY, X + ClientWidth, TopY + ClientHeight, FO.TheFont.iOpacity );
     if FAlt <> '' then
     begin
       // show the alternative text.
@@ -14419,7 +14501,7 @@ begin
         SaveFont.Assign(Canvas.Font);
         Canvas.Font.Size := 8;
         Canvas.Font.Name := 'Arial';
-        WrapTextW(Canvas, X + 5, TopY + 5, X + ClientWidth - 5, TopY + ClientHeight - 5, FAlt);
+        TransparentWrapTextW(Canvas, X + 5, TopY + 5, X + ClientWidth - 5, TopY + ClientHeight - 5, FAlt,FO.TheFont.iOpacity );
       finally
         Canvas.Font := SaveFont;
         SaveFont.Free;

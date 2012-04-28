@@ -56,6 +56,7 @@ type
     BackgroundColor,
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
+    BoxSizing,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
     // BG, 31.01.2012: don't change the order of the border properties:
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
@@ -87,6 +88,9 @@ type
   TVMarginArray = array [MarginIndices] of Variant;
   TMarginArray = array [MarginIndices] of Integer;
 
+  TMainTextOpacities = array [Color..BackgroundColor] of byte;
+  TBorderOpacities = array [BorderTopColor..BorderLeftColor ] of byte;
+
 const
   PropWords: array [TPropertyIndex] of ThtString =
   ('font-family', 'font-size', 'font-style', 'font-weight', 'text-align',
@@ -95,6 +99,7 @@ const
     'color', 'background-color',
     //'border-color',
     'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'box-sizing',
     'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
@@ -151,6 +156,8 @@ type
     Originals: array[PropIndices] of Boolean;
     FIArray: TFontInfoArray;
     ID: Integer;
+    MainTextOpacities : TMainTextOpacities;
+    BorderOpacities : TBorderOpacities;
     constructor Create; overload;
     constructor Create(APropStack: TPropStack; const AUseQuirksMode : Boolean); overload; // for use in property stack
     constructor Create(const AUseQuirksMode : Boolean); overload; // for use in style list only
@@ -163,6 +170,7 @@ type
     function GetClear(var Clr: ClearAttrType): Boolean;
     function GetDisplay: TPropDisplay; //BG, 15.09.2009
     function GetFloat(var Align: AlignmentType): Boolean;
+    function GetBoxSizing(var VBoxSizing : TBoxSizing) : Boolean;
     function GetFont: ThtFont;
     function GetFontVariant: ThtString;
     function GetLineHeight(NewHeight: Integer): Integer;
@@ -227,7 +235,7 @@ type
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
-    property UseQuirksMode : Boolean read FUseQuirksMode;
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
   end;
 
@@ -268,11 +276,103 @@ var
   FontConv: array[1..7] of Double;
   PreFontConv: array[1..7] of Double;
 
-implementation
+{$ifdef JPM_DEBUGGING}
+procedure LogProperties(AProp : TProperties; const APropName : String);
+{$endif}
 
+implementation
+{$ifdef JPM_DEBUGGING}
+uses CodeSiteLogging;
+{$endif}
 var
   DefPointSize: Double;
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
+
+{$ifdef JPM_DEBUGGING}
+const
+    CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
+
+procedure LogProperties(AProp : TProperties; const APropName : String);
+var i : PropIndices;
+begin
+  if not Assigned(AProp) then begin
+    CodeSiteLogging.CodeSite.SendFmtMsg('%s = nil',[APropName]);
+    exit;
+  end;
+  CodeSiteLogging.CodeSite.SendFmtMsg('%s.PropTag = %s',[APropName,AProp.PropTag ]);
+  CodeSiteLogging.CodeSite.SendFmtMsg('%s.PropClass = %s',[APropName,AProp.PropClass ]);
+  CodeSiteLogging.CodeSite.SendFmtMsg('%s.PropID = %s',[APropName,AProp.PropID ]);
+  CodeSiteLogging.CodeSite.SendFmtMsg('%s.PropTitle = %s',[APropName,AProp.PropTitle ]);
+  CodeSiteLogging.CodeSite.SendFmtMsg('%s.PropPseudo = %s',[APropName,AProp.PropPseudo ]);
+  for I := Low(TMainTextOpacities) to High(TMainTextOpacities) do begin
+    CodeSiteLogging.CodeSite.SendFmtMsg('%s.MainTextOpacities[%s] = %d',[APropName,PropWords[i],AProp.MainTextOpacities[I] ]);
+  end;
+  for I := Low(TBorderOpacities) to High(TBorderOpacities) do begin
+    CodeSiteLogging.CodeSite.SendFmtMsg('%s.BorderOpacities[%s] = %d',[APropName,PropWords[i],AProp.BorderOpacities[I]]);
+  end;
+  for I := Low(TPropertyArray) to High(TPropertyArray) do begin
+    if VarIsIntNull(AProp.Props[I]) then begin
+      CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = null',[APropName,PropWords[i]]);
+    end else begin
+      if VarIsAuto(AProp.Props[I]) then begin
+        CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = auto',[APropName,PropWords[i]]);
+      end else begin
+        case I of
+          Color, BackgroundColor,
+          BorderTopColor..BorderLeftColor :
+            begin
+              if Variants.VarIsOrdinal(AProp.Props[I]) then
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], Graphics.ColorToString( AProp.Props[I])])
+              else
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+            end;
+          piDisplay :
+            begin
+              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
+                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CDisplayStyle[ TDisplayStyle( AProp.Props[I])]]);
+              end else begin
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+              end;
+            end;
+          BoxSizing :
+            begin
+              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
+                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CBoxSizing[TBoxSizing ( AProp.Props[I])]]);
+              end else begin
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+              end;
+            end;
+          BorderTopStyle..BorderLeftStyle :
+              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
+                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CBorderStyle[TBorderStyle ( AProp.Props[I])]]);
+              end else begin
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+              end;
+          ListStyleType :
+            begin
+              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
+                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CBulletStyle[TBulletStyle ( AProp.Props[I])]]);
+              end else begin
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+              end;
+            end;
+          Visibility :
+            begin
+              if Variants.VarIsOrdinal(AProp.Props[I]) then begin
+                 CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i], CVis[Integer( AProp.Props[I])]]);
+              end else begin
+                CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+              end;
+            end;
+        else
+          CodeSiteLogging.CodeSite.SendFmtMsg('%s.TPropertyArray[%s] = %s',[APropName,PropWords[i],VarToStr( AProp.Props[I])]);
+
+        end;
+      end;
+    end;
+  end;
+end;
+{$endif}
 
 function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double; forward;
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
@@ -330,6 +430,10 @@ begin
     Props[I] := IntNull;
   Props[ZIndex] := 0;
   FUseQuirksMode := False;
+  for I := Low(MainTextOpacities) to High(MainTextOpacities) do
+    MainTextOpacities[I] := $ff;
+  for I := Low(BorderOpacities) to High(BorderOpacities) do
+    BorderOpacities[I] := $FF;
 end;
 
 constructor TProperties.Create(const AUseQuirksMode : Boolean);
@@ -361,6 +465,8 @@ var
 begin
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
+  for I := Low(MainTextOpacities) to High(MainTextOpacities) do
+    MainTextOpacities[I] := Source.MainTextOpacities[I];
 end;
 
 {----------------TProperties.CopyDefault}
@@ -371,6 +477,8 @@ var
 begin
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
+  for I := Low(MainTextOpacities) to High(MainTextOpacities) do
+    MainTextOpacities[I] := Source.MainTextOpacities[I];
   AssignCharSet(Source.CharSet);
   DefFontname := Source.DefFontname;
   PropTag := 'default';
@@ -396,7 +504,7 @@ begin
     end
     else
       case I of
-        MarginTop..BorderLeftStyle,
+        MarginTop..MarginLeft, PaddingTop..BorderLeftStyle,
         piWidth, piHeight,
         TopPos..LeftPos:
           Props[I] := IntNull;
@@ -412,10 +520,21 @@ begin
         //BorderColor, BorderStyle,
         BorderCollapse,
         PageBreakBefore, PageBreakAfter, PageBreakInside,
-        Clear, Float, Position, OverFlow, piDisplay:
-          ; {do nothing}
+        Clear, Float, Position, OverFlow, piDisplay,
+        BoxSizing:
+          if VarIsStr(Props[I]) and (Props[I]='inherit') then begin
+             Props[I] := Source.Props[I];
+             if I in [Color..BackgroundColor] then begin
+               MainTextOpacities[I] := Source.MainTextOpacities[I];
+             end;
+          end; {do nothing}
       else
-        Props[I] := Source.Props[I];
+        begin
+          Props[I] := Source.Props[I];
+          if I in [Color..BackgroundColor] then begin
+            MainTextOpacities[I] := Source.MainTextOpacities[I];
+          end;
+        end;
       end;
   DefFontname := Source.DefFontname;
   FontBG := Source.FontBG;
@@ -429,7 +548,6 @@ begin
       FIArray := TFontInfoArray.Create;
     FIArray.Assign(Source.FIArray);
   end;
-
   FEmSize := Source.FEmSize; {actually this is calculated later }
   FExSize := Source.FExSize; {apparently correlates with what browsers are doing}
 end;
@@ -441,9 +559,20 @@ procedure TProperties.Update(Source: TProperties; Styles: TStyleList; I: Integer
 var
   Index: PropIndices;
 begin
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.EnterMethod('TProperties.Update ');
+ CodeSiteLogging.CodeSite.Send('Parameters');
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Source,'Source');
+ {$endif}
+//  MainTextOpacities := Source.MainTextOpacities;
   for Index := Low(Index) to High(Index) do
-    if not Originals[Index] then
+    if not Originals[Index] then begin
       Props[Index] := Source.Props[Index];
+      if Index in [Color..BackgroundColor] then begin
+        Self.MainTextOpacities[Index] := Source.MainTextOpacities[Index];
+      end;
+    end;
   FreeAndNil(TheFont); {may no longer be good}
   if Assigned(FIArray) then
     if Source.Inlink then
@@ -455,6 +584,14 @@ begin
       FreeAndNil(FIArray);
       Inlink := False;
     end;
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.AddSeparator;
+ CodeSiteLogging.CodeSite.Send('Results');
+
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Self,'Self');
+ CodeSiteLogging.CodeSite.ExitMethod('TProperties.Update ');
+{$endif}
 end;
 
 {----------------TProperties.Assign}
@@ -735,6 +872,11 @@ begin
   end
   else
     Result := False;
+end;
+
+function TProperties.GetBoxSizing(var VBoxSizing : TBoxSizing) : Boolean;
+begin
+  Result := TryStrToBoxSizing(Props[BoxSizing], VBoxSizing);
 end;
 
 function TProperties.GetClear(var Clr: ClearAttrType): Boolean;
@@ -1158,6 +1300,17 @@ begin
           else
             M[I] := 0;
         end;
+      BoxSizing :
+        begin
+          if VarIsStr(VM[I]) then begin
+            if VM[I] = CBoxSizing[BorderBox] then
+              M[I] := 1
+            else
+              M[I] := 0;
+          end else begin
+            M[I] := 0;
+          end;
+        end;
       piWidth:
         begin
           if VarIsStr(VM[I]) then
@@ -1320,6 +1473,12 @@ procedure TProperties.Combine(Styles: TStyleList;
       Wt: Integer;
       S1: ThtString;
     begin
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.EnterMethod('TProperties.Combine CombineX Merge');
+ CodeSiteLogging.CodeSite.Send('Parameters');
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Source,'Source');
+{$endif}
       for Index := Low(Index) to High(PropIndices) do
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
           case Index of
@@ -1339,6 +1498,9 @@ procedure TProperties.Combine(Styles: TStyleList;
               begin
                 Originals[Index] := True;
                 Props[Index] := Source.Props[Index];
+                if Index in [Color,BackgroundColor] then begin
+                  MainTextOpacities[Index] := Source.MainTextOpacities[Index];
+                end;
                 if InLink then
                   for I := LFont to HVFont do
                     with FIArray.Ar[I] do
@@ -1354,11 +1516,15 @@ procedure TProperties.Combine(Styles: TStyleList;
                           iSize := FontSizeConv(Props[FontSize], iSize, FUseQuirksMode);
 
                         Color:
+                        begin
                           iColor := Props[Color];
-
+                          iOpacity := MainTextOpacities[Index];
+                        end;
                         BackgroundColor:
+                        begin
                           ibgColor := Props[BackgroundColor];
-
+                          ibgOpacity := MainTextOpacities[Index];
+                        end;
                         FontStyle:
                           if (Props[FontStyle] = 'italic') or (Props[FontStyle] = 'oblique') then
                             iStyle := iStyle + [fsItalic]
@@ -1395,6 +1561,14 @@ procedure TProperties.Combine(Styles: TStyleList;
               Originals[Index] := True; {it's defined for this item, not inherited}
             end;
           end;
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.AddSeparator;
+ CodeSiteLogging.CodeSite.Send('Results');
+
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Self,'Self');
+ CodeSiteLogging.CodeSite.ExitMethod('TProperties.Combine CombineX Merge');
+{$endif}
     end;
 
     function CheckForContextual(I: Integer): Boolean;
@@ -1707,6 +1881,17 @@ var
   BClass, S: ThtString;
   I: Integer;
 begin
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.EnterMethod('TProperties.Combine');
+ CodeSiteLogging.CodeSite.Send('Parameters');
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(AProp,'AProp');
+ CodeSiteLogging.CodeSite.SendFmtMsg('Tag = "%s"',[Tag]);
+ CodeSiteLogging.CodeSite.SendFmtMsg('AClass = "%s"',[AClass]);
+ CodeSiteLogging.CodeSite.SendFmtMsg('AnID = "%s"',[AnID]);
+ CodeSiteLogging.CodeSite.SendFmtMsg('PSeudo = "%s"',[PSeudo]);
+ CodeSiteLogging.CodeSite.SendFmtMsg('ATitle = "%s"',[ ATitle]);
+ {$endif}
   BClass := Trim(AClass);
   I := Pos('.', BClass);
   if I <= 0 then
@@ -1737,6 +1922,14 @@ begin
     CalcLinkFontInfo(Styles, PropStack.Count - 1);
     InLink := True;
   end;
+{$ifdef JPM_DEBUGGING}
+ CodeSiteLogging.CodeSite.AddSeparator;
+ CodeSiteLogging.CodeSite.Send('Results');
+
+ CodeSiteLogging.CodeSite.AddSeparator;
+ LogProperties(Self,'Self');
+ CodeSiteLogging.CodeSite.ExitMethod('TProperties.Combine');
+{$endif}
 end;
 
 function TProperties.GetFont: ThtFont;
@@ -1813,7 +2006,9 @@ var
   Style: TFontStyles;
 begin {call only if all things valid}
   Font.ibgColor := FontBG;
+  Font.ibgOpacity := Self.MainTextOpacities[BackgroundColor];
   Font.iColor := Props[Color];
+  Font.iOpacity := Self.MainTextOpacities[Color];
   Style := [];
   if Pos('bold', Props[FontWeight]) > 0 then
     Include(Style, fsBold)
@@ -1874,6 +2069,7 @@ procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
 var
   I: PropIndices;
   BS: BorderStyleType;
+  NewColor : TColor;
 begin
   for I := Low(Marray) to High(MArray) do
     case I of
@@ -1883,6 +2079,21 @@ begin
         GetBorderStyle(I, BS);
         MArray[I] := BS;
       end;
+      {From: http://www.w3.org/TR/CSS21/box.html#x49
+
+      If an element's border color is not specified with a
+      border property, user agents must use the value of the
+      element's 'color' property as the computed value for
+      the border color.
+      }
+      BorderTopColor..BorderLeftColor:
+      begin
+        if TryStrToColor(Props[I],False,NewColor) then begin
+          MArray[I] := Props[I]
+        end else begin
+          MArray[I] := Props[StyleUn.Color];
+        end;
+      end
     else
       MArray[I] := Props[I];
     end;
@@ -1891,6 +2102,7 @@ end;
 procedure TProperties.AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
 var
   NewColor: TColor;
+  LOpacity : Byte;
 begin
   case Index of
 //    BorderColor:
@@ -1903,11 +2115,15 @@ begin
 //        Props[BorderBottomColor] := NewColor;
 //      end;
     BorderTopColor..BorderLeftColor:
-      if TryStrToColor(PropValue, False, NewColor) then
+      if TryStrToColor(PropValue, False, NewColor,LOpacity) then begin
         Props[Index] := NewColor;
+        BorderOpacities[Index] := LOpacity;
+      end;
     Color, BackgroundColor:
-      if TryStrToColor(PropValue, False, NewColor) then
-        Props[Index] := NewColor
+      if TryStrToColor(PropValue, False, NewColor,LOpacity) then begin
+        Props[Index] := NewColor;
+        Self.MainTextOpacities[Index] := LOpacity;
+      end
       else if Index = Color then
         Props[Index] := clBlack
       else
@@ -2011,6 +2227,13 @@ end;
 
 {.$IFDEF Quirk}
 
+procedure FixBordProps(AProp, BodyProp : TProperties);
+var i : TPropertyIndex;
+begin
+  for i := BorderTopColor to BorderLeftColor do
+    AProp.Props[I] := BodyProp.Props[I];
+end;
+
 procedure TStyleList.FixupTableColor(BodyProp: TProperties);
 {if Quirk is set, make sure that the table color is defined the same as the
  body color}
@@ -2024,11 +2247,13 @@ begin
     begin
       Propty1 := TProperties(Objects[I]);
       Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
     end;
     if Find('th', I) then
     begin
       Propty1 := TProperties(Objects[I]);
       Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
     end;
   end;
 end;
@@ -2041,6 +2266,7 @@ var
   PropIndex: PropIndices;
   Propty: TProperties;
   NewColor: TColor;
+  LOpacity : Byte;
   NewProp: Boolean;
 begin
   if TryStrToPropIndex(Prop, PropIndex) then
@@ -2057,7 +2283,7 @@ begin
     end;
     case PropIndex of
       Color:
-        if TryStrToColor(Value, False, NewColor) then
+        if TryStrToColor(Value, False, NewColor,LOpacity) then
         begin
           if Selector = ':link' then
           begin {changed the defaults to be the same as link}
@@ -2067,6 +2293,7 @@ begin
           else if Selector = ':visited' then
             ModifyLinkColor('hover', NewColor);
           Propty.Props[PropIndex] := NewColor;
+          Propty.MainTextOpacities[Color] := LOpacity;
         end;
 //      BorderColor:
 //        if ColorFromString(Value, False, NewColor) then
@@ -2078,12 +2305,15 @@ begin
 //          Propty.Props[BorderBottomColor] := NewColor;
 //        end;
       BorderTopColor..BorderLeftColor:
-        if TryStrToColor(Value, False, NewColor) then
+        if TryStrToColor(Value, False, NewColor,LOpacity) then begin
           Propty.Props[PropIndex] := NewColor;
+          Propty.BorderOpacities[PropIndex] := LOpacity;
+        end;
       BackgroundColor:
-        if TryStrToColor(Value, False, NewColor) then
-          Propty.Props[PropIndex] := NewColor
-        else
+        if TryStrToColor(Value, False, NewColor,LOpacity) then begin
+          Propty.Props[PropIndex] := NewColor;
+          Propty.MainTextOpacities[BackgroundColor] := LOpacity;
+        end else
           Propty.Props[PropIndex] := clNone;
       Visibility:
         begin
@@ -2206,6 +2436,7 @@ begin
   Properties.Props[MarginRight] := MarginWidth;
   Properties.Props[Visibility] := viVisible;
   Properties.Props[LetterSpacing] := 0;
+  Properties.Props[BoxSizing] := ContentBox;
   Properties.CharSet := ACharSet;
   AddObject('default', Properties);
   FDefProp := Properties;

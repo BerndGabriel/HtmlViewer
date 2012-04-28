@@ -61,9 +61,11 @@ type
   end;
 
 function ReadURL(Item: Variant): ThtString;
-function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
+function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean; overload;
+function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor; var Opacity : Byte): Boolean; overload;
 
 implementation
+uses HSLUtils;
 
 type
   TParserDocStackItem = class
@@ -180,7 +182,25 @@ begin
   end;
 end;
 
+function OpacityFromStr(S : ThtString) : Byte;
+var LErr : Integer;
+  LR : Real;
+begin
+  Val(S,LR,LErr);
+  if LErr <> 0 then begin
+    Result := 255;
+  end else begin
+    Result := Trunc(255 * LR);
+  end;
+end;
+
 function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor): Boolean;
+var LDummy : Byte;
+begin
+  Result := TryStrToColor(S,NeedPound,Color,LDummy);
+end;
+
+function TryStrToColor(S: ThtString; NeedPound: Boolean; var Color: TColor; var Opacity : Byte): Boolean;
 {Translate StyleSheet color ThtString to Color.  If NeedPound is true, a '#' sign
  is required to preceed a hexidecimal value.}
 const
@@ -191,6 +211,65 @@ var
   I, Rd, Bl: Integer;
   S1: ThtString;
 
+  function FindHSLColor(S: ThtString): Boolean;
+  type
+    Colors = (hue, saturation, luminance);
+  var
+    I, J: Integer;
+  var
+    A: array[hue..luminance] of ThtString;
+    C: array[hue..luminance] of Integer;
+    K: Colors;
+  begin
+    I := Pos('(', S);
+    J := Pos(')', S);
+    if (I > 0) and (J > 0) then
+    begin
+      S := copy(S, 1, J - 1);
+      S := Trim(Copy(S, I + 1, 255));
+      for K := hue to saturation do
+      begin
+        I := Pos(',', S);
+        A[K] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+      end;
+      I := Pos(',', S);
+      if I > 0 then begin
+        A[luminance] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+        Opacity := OpacityFromStr(S);
+      end else begin
+        A[luminance] := S;
+        Opacity := 255;
+      end;
+
+      C[hue] := StrToIntDef(A[hue],0);
+      while C[hue] >= 360 do begin
+        C[hue] := C[hue] - 360;
+      end;
+      while C[hue] < 0 do begin
+        C[hue] := C[hue] + 360;
+      end;
+      for K := saturation to luminance do begin
+        I := Pos('%', A[K]);
+        if I > 0 then begin
+          Delete(A[K], I, 1);
+        end;
+        C[K] := StrToIntDef(A[K],0);
+        if C[K] > 100 then begin
+          C[K] := 100;
+        end;
+        if C[K] < 0 then begin
+          C[K] := 0;
+        end;
+      end;
+      Color := HSLUtils.HSLtoRGB(C[hue],C[saturation],C[luminance]);
+      Result := True;
+    end
+    else
+      Result := False;
+  end;
+
   function FindRGBColor(S: ThtString): Boolean;
   type
     Colors = (red, green, blue);
@@ -199,6 +278,7 @@ var
     C: array[red..blue] of Integer;
     I, J: Integer;
     K: Colors;
+
   begin
     I := Pos('(', S);
     J := Pos(')', S);
@@ -212,7 +292,16 @@ var
         A[K] := Trim(copy(S, 1, I - 1));
         S := Trim(Copy(S, I + 1, 255));
       end;
-      A[Blue] := S;
+      I := Pos(',', S);
+      if I > 0 then begin
+        A[blue] := Trim(copy(S, 1, I - 1));
+        S := Trim(Copy(S, I + 1, 255));
+        Opacity := OpacityFromStr(S);
+      end else begin
+        A[blue] := S;
+        Opacity := 255;
+      end;
+
       for K := Red to Blue do
       begin
         I := Pos('%', A[K]);
@@ -241,6 +330,8 @@ var
   Int: Integer;
 //BG, 26.08.2009
 begin
+  //Opacity is not supported with # hexidecimal notation or color names
+  Opacity := 255;
   if S = '' then
   begin
     Result := False;
@@ -252,6 +343,11 @@ begin
     Color := LastColor;
     Result := True;
     Exit;
+  end;
+  I := Pos('hsl',S);
+  if I > 0 then begin
+    Result := FindHSLColor(Copy(S, I + 3, 255));
+    exit;
   end;
   I := Pos('rgb', S);
   if (I = 0) and (S[1] <> '#') then
