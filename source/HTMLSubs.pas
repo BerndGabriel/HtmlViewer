@@ -7405,7 +7405,7 @@ function ThtDocument.GetTheImage(
         try
           Result := LoadImageFromStream(Stream, Transparent);
         finally
-          if assigned(GottenImage) then
+          if Assigned(GottenImage) then
             GottenImage(TheOwner, BMName, Stream);
         end
       else

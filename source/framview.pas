@@ -201,7 +201,7 @@ type
     function CreateSubFrameSet(FrameSet: TObject): TObject; override;
     function Find(const S: UnicodeString; MatchCase: boolean): boolean;
     function FindEx(const S: UnicodeString; MatchCase, Reverse: boolean): boolean;
-    function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TMemoryStream): boolean;
+    function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TStream): Boolean;
     function ViewerFromTarget(const Target: ThtString): THtmlViewer;
 {$ifndef NoMetafile}
     function NumPrinterPages(var WidthRatio: double): integer; overload;
@@ -4350,8 +4350,7 @@ end;
 
 {----------------TFVBase.InsertImage}
 
-function TFVBase.InsertImage(Viewer: THtmlViewer; const Src: ThtString;
-  Stream: TMemoryStream): boolean;
+function TFVBase.InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TStream): Boolean;
 begin
   try
     Result := (Viewer as THtmlViewer).InsertImage(Src, Stream);
