@@ -323,7 +323,7 @@ const
   UnitPixel = 2;
 begin
   GdipDrawImageRectRectI(fGraphics, Image.fHandle, dx, dy, dw, dh,
-    sx, sy, sw, sh, UnitPixel, nil, nil, 0);
+    sx, sy, sw, sh, UnitPixel, nil, nil, nil);
 
 end;
 
