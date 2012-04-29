@@ -29,10 +29,11 @@ package FrameViewer2009;
 {$IMPLICITBUILD ON}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vclimg,
-  designide,
-  rtl;
+  designide;
 
 contains
   framview in '..\source\framview.pas',

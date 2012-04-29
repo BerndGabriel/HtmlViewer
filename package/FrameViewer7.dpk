@@ -30,10 +30,12 @@ package FrameViewer7;
 {$IMPLICITBUILD ON}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
   designide,
-  rtl;
+  TntUnicodeVcl_R70;
 
 contains
   framview in '..\source\framview.pas',

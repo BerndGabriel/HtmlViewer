@@ -5331,7 +5331,8 @@ begin
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
     TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.UseQuirksMode);
-    NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
+    // BG, 29.04.2012: produces wrong width, if MarginLeft is <> 0. Most probably MarginLeft is wrong there:
+    //NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -6747,6 +6748,8 @@ begin
   YDraw := Y;
   StartCurs := Curs;
   StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+  if IsAuto(MargArray[MarginLeft]) then MargArray[MarginLeft] := 0;
+  if IsAuto(MargArray[MarginRight]) then MargArray[MarginRight] := 0;
 
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
   NewWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
@@ -7423,6 +7426,11 @@ function ThtDocument.GetTheImage(
     I := Pos(';base64,', Name);
     if I >= 11 then
     begin
+      // Firefox 11 saves multiline inline images by writing %0A for the linefeeds.
+      // BTW: Internet Explorer 9 shows but does not save inline images at all.
+      // Using StringReplace() here is a quick and dirty hack.
+      // Better decode %encoded attribute values while reading the attributes.
+      Name := StringReplace(Name, '%0A', #$0A, [rfReplaceAll]);
       Source := TStringStream.Create(Copy(Name, I + 8, MaxInt));
       try
         Stream := TMemoryStream.Create;

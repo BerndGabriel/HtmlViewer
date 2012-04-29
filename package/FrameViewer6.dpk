@@ -30,6 +30,8 @@ package FrameViewer6;
 {$DEFINE DEBUG}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
   designide,

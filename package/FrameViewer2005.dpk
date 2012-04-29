@@ -30,10 +30,12 @@ package FrameViewer2005;
 {$IMPLICITBUILD ON}
 
 requires
+  rtl,
+  soaprtl,
   vcl,
   vcljpg,
   designide,
-  rtl;
+  TntUnicodeVcl_R90;
 
 contains
   framview in '..\source\framview.pas',
