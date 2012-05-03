@@ -26,26 +26,26 @@
 
 { Identify Delphi Compiler Version:
 
-  Compiler    Version Compiler Defined Symbol
-  Delphi XE2    23    VER230
-  Delphi XE     22    VER220
-  Delphi 2010   21    VER210
-  Delphi 2009   20    VER200
-  Delphi 2007   18.5  VER185
-  Delphi 2006   18    VER180
-  Delphi 2005   17    VER170
-  Delphi 8      16    VER160
-  Delphi 7      15    VER150
-  Delphi 6      14    VER140
-  C++Builder 5        VER130 BCB
-  Delphi 5            VER130
-  C++Builder 4        VER125
-  Delphi 4            VER120
-  C++Builder 3        VER110
-  Delphi 3            VER100
-  C++Builder 1        VER93
-  Delphi 2            VER90
-  Delphi 1            VER80
+  #   Compiler    Version Compiler Defined Symbol
+  D15 Delphi XE2    23    VER230
+  D14 Delphi XE     22    VER220
+  D13 Delphi 2010   21    VER210
+  D12 Delphi 2009   20    VER200
+  D11 Delphi 2007   18.5  VER185
+  D10 Delphi 2006   18    VER180
+  D9  Delphi 2005   17    VER170
+  D8  Delphi 8      16    VER160
+  D7  Delphi 7      15    VER150
+  D6  Delphi 6      14    VER140
+      C++Builder 5        VER130 BCB
+  D5  Delphi 5            VER130
+      C++Builder 4        VER125
+  D4  Delphi 4            VER120
+      C++Builder 3        VER110
+  D3  Delphi 3            VER100
+      C++Builder 1        VER93
+  D2  Delphi 2            VER90
+  D1  Delphi 1            VER80
 
   Since Delphi 6 the version number can be found in the system constant System.CompilerVersion
 
