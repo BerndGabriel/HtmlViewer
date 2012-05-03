@@ -1,8 +1,7 @@
 {
-Version   11.2
+Version   11.3
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2012 by HtmlViewer Team
 
 *********************************************************
 *                                                       *
@@ -148,7 +147,7 @@ type
     function FindAlignment: ThtString;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
-    function GetValue(var S: ThtString; var Value: Integer): Boolean;
+//    function GetValue(var S: ThtString; var Value: Integer): Boolean;
     procedure CheckForAlign;
     procedure DoAEnd;
     procedure DoBase;
@@ -411,7 +410,7 @@ var
         while (LCh <> Term) and (LCh <> EofChar) do
         begin
           if LCh = AmperChar then
-            htAppendStr(S, GetEntityStr(CP_ACP))
+            htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage))
           else
           begin
             if LCh = CrChar then
@@ -772,54 +771,6 @@ end;
 
 {----------------GetValue}
 
-function THtmlParser.GetValue(var S: ThtString; var Value: Integer): Boolean;
-{read a numeric.  Also reads a ThtString if it looks like a numeric initially}
-var
-  ValD: double;
-begin
-  case LCh of
-    '-', '+':
-      begin
-        S := LCh;
-        GetCh;
-      end;
-
-    '0'..'9':
-      S := '';
-
-  else
-    Result := False;
-    exit;
-  end;
-
-  Result := True;
-  Value := 0;
-  while True do
-    case LCh of
-      SpcChar, TabChar, CrChar, GreaterChar, PercentChar, EofChar:
-        break;
-
-      AmperChar:
-        S := S + GetEntityStr(FPropStack.Last.CodePage);
-    else
-      // this is faster than: S := S + LCh;
-      SetLength(S, Length(S) + 1);
-      S[Length(S)] := LCh;
-      GetCh;
-    end;
-  SkipWhiteSpace;
-
-  {see if S evaluates to a numerical value.}
-  if TryStrToFloat(S, ValD) then
-    Value := Round(ValD);
-
-  if LCh = '%' then
-  begin
-    S := S + '%';
-    GetCh;
-  end;
-end;
-
 //-- BG ---------------------------------------------------------- 31.01.2011 --
 function THtmlParser.GetTitle: ThtString;
 begin
@@ -857,73 +808,78 @@ procedure THtmlParser.Next;
           S := htUpperCase(S);
       end;
 
-      function GetQuotedStr(var S: ThtString; var Value: Integer; WantCrLf: Boolean; Sym: Symb): Boolean;
+      function GetQuotedStr(var S: ThtString; WantCrLf: Boolean; Sym: Symb): Boolean;
       {get a quoted ThtString but strip the quotes, check to see if it is numerical}
       var
         Term: ThtChar;
-        S1: ThtString;
-        Code: Integer;
-        ValD: double;
         SaveSy: Symb;
       begin
-        Result := False;
-        Term := LCh;
-        if (Term <> '"') and (Term <> '''') then
+        Result := (LCh = '"') or (LCh = '''');
+        if not Result then
           Exit;
-        Result := True;
+        Term := LCh;
         SaveSy := Sy;
         GetCh;
         while (LCh <> Term) and (LCh <> EofChar) do
         begin
-          if LCh <> CrChar then
-          begin
-            if LCh = AmperChar then
-            begin
-      {$ifdef UNICODE}
-      {$else}
-              if (Sym = ValueSy) and UnicodeControls then
-                S := S + GetEntityStr(PropStack.Last.CodePage)
-              else
-      {$endif}
-                S := S + GetEntityStr(PropStack.Last.CodePage); //CP_ACP);
-            end
-            else
-            begin
-              // this is faster than: S := S + LCh;
-              SetLength(S, Length(S) + 1);
-              S[Length(S)] := LCh;
-              GetCh;
-            end;
-          end
-          else if WantCrLf then
-          begin
-            S := S + ^M^J;
-            GetCh;
-          end
+          case LCh of
+            CrChar:
+              begin
+                if WantCrLf then
+                  htAppendStr(S, ^M^J);
+                GetCh;
+              end;
+
+            AmperChar:
+              htAppendStr(S, GetEntityStr(PropStack.Last.CodePage));
+
           else
+            htAppendChr(S, LCh);
             GetCh;
+          end;
         end;
         if LCh = Term then
-          GetCh; {pass termination ThtChar}
-        S1 := Trim(S);
-        if (Pos('%', S1) = Length(S1)) or (Pos('*', S1) = Length(S1)) then
-          SetLength(S1, Length(S1) - 1);
-      {see if S1 evaluates to a numerical value.}
-        Value := 0;
-        if Length(S1) > 0 then
-          case S1[1] of
-            '0'..'9', '+', '-', '.':
-//              if TryStrToFloat(S1, ValD) then
-//                Value := Round(ValD);
-              try
-                System.Val(S1, ValD, Code);
-                Value := Round(ValD);
-              except
-              end;
-          end
-        else if Trim(S) = '*' then
-          Value := 1;
+          GetCh; {pass termination char}
+
         Sy := SaveSy;
+      end;
+
+      procedure StrToInteger(const S: ThtString; var Value: Integer);
+      var
+        S1: ThtString;
+        I, Code: Integer;
+        ValD: Double;
+      begin
+        S1 := Trim(S);
+        I := Length(S1);
+        if I > 0 then
+        begin
+          case S1[I] of
+            PercentChar:
+            begin
+              SetLength(S1, Length(S1) - 1);
+              Dec(I);
+            end;
+
+            StarChar:
+            begin
+              SetLength(S1, Length(S1) - 1);
+              Dec(I);
+              if I = 0 then
+                Value := 1;
+            end;
+          end;
+
+          if I > 0 then
+            case S1[1] of
+              '0'..'9', '+', '-', '.':
+                try
+                  System.Val(S1, ValD, Code);
+                  Value := Round(ValD);
+                except
+                end;
+            end;
+        end;
       end;
 
     var
@@ -939,6 +895,7 @@ procedure THtmlParser.Next;
       if AttributeNames.Find(St, I) then
         Sym := PSymbol(AttributeNames.Objects[I]).Value;
       SkipWhiteSpace;
+
       S := '';
       if Sym = BorderSy then
         Val := 1
@@ -950,23 +907,26 @@ procedure THtmlParser.Next;
       GetCh;
 
       SkipWhiteSpace;
-      if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
-        if not GetValue(S, Val) then
-          while True do
-            case LCh of
-              SpcChar,
-              TabChar,
-              CrChar,
-              GreaterChar,
-              EofChar:
-                break;
-
-              AmperChar:
-                htAppendStr(S, GetEntityStr(PropStack.Last.CodePage));
-            else
-              htAppendChr(S, LCh);
-              GetCh;
+      if not GetQuotedStr(S, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
+        while True do
+          case LCh of
+            SpcChar, TabChar, CrChar:
+            begin
+              SkipWhiteSpace;
+              break;
             end;
+
+            GreaterChar, EofChar:
+              break;
+
+            AmperChar:
+              htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage));
+          else
+            htAppendChr(S, LCh);
+            GetCh;
+          end;
+
+      StrToInteger(S, Val);
 
       if (Sym = IDSy) and (S <> '') and Assigned(PropStack.MasterList) and not LinkSearch then
         PropStack.MasterList.AddChPosObjectToIDNameList(S, PropStack.SIndex);
@@ -1206,62 +1166,57 @@ var
           htAppendChr(Token, LCh);
           GetCh;
         end;
-      if Length(Token) > 0 then
-      begin
-        Sy := TextSy;
-        IsText1 := True;
-      end
-      else
-        IsText1 := False;
+
+      Result := Length(Token) > 0;
     end;
 
   begin {already have fresh character loaded here}
     Token := '';
     LCToken.Clear;
-    if LCh = EofChar then
-      Sy := EofSy
-    else if LCh = CrChar then
-    begin
-      Sy := EolSy;
-      GetCh;
-    end
-    else if LCh = LessChar then
-    begin GetTag1; Exit; end
-    else if LCh = AmperChar then
-    begin
-{$ifdef UNICODE}
-{$else}
-      if UnicodeControls then
-        Token := Token + GetEntityStr(PropStack.Last.CodePage)
-      else
-{$endif}
-        Token := Token + GetEntityStr(PropStack.Last.CodePage); //CP_ACP);
-      Sy := CommandSy;
-    end
-    else if IsText1 then
+    case LCh of
+      EofChar:
+        Sy := EofSy;
+
+      CrChar:
+      begin
+        Sy := EolSy;
+        GetCh;
+      end;
+
+      LessChar:
+        GetTag1;
+
+      AmperChar:
+      begin
+        htAppendStr(Token, GetEntityStr(PropStack.Last.CodePage));
+        Sy := CommandSy;
+      end;
+
     else
-    begin
-      Sy := OtherChar;
-      Token := LCh;
-      GetCh;
+      if IsText1 then
+        Sy := TextSy
+      else
+      begin
+        Sy := OtherChar;
+        Token := LCh;
+        GetCh;
+      end;
     end;
   end;
 
 begin
   Next1;
-  S := '';
+  SetLength(S, 0);
   while (Sy <> TextAreaEndSy) and (Sy <> EofSy) do
   begin
     case Sy of
-      TextSy: S := S + Token;
       EolSy:
         begin
-          S := S + CrChar + ^J;
-          TxtArea.AddStr(S);
-          S := '';
+          TxtArea.AddStr(S + ^M^J);
+          SetLength(S, 0);
         end;
     else
-      S := S + Token;
+      htAppendStr(S, Token);
     end;
     Next1;
   end;
@@ -1273,7 +1228,7 @@ begin
       GetCh; {remove chars to and past GreaterChar}
     end;
   GetCh;
-  if S <> '' then
+  if Length(S) > 0 then
     TxtArea.AddStr(S);
   TxtArea.ResetToValue;
 end;

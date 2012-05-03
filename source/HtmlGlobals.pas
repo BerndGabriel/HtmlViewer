@@ -1,7 +1,6 @@
 {
-Version   11
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Version   11.3
+Copyright (c) 2008-2012 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -175,6 +174,7 @@ const
   GreaterChar = ThtChar('>');
   PercentChar = ThtChar('%');
   AmperChar   = ThtChar('&');
+  StarChar    = ThtChar('*');
   CrLf        = ThtString(#13#10);
   CrLfTab     = ThtString(#13#10#9);
   NullRect: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
