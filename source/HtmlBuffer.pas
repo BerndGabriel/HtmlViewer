@@ -1016,9 +1016,12 @@ end;
 function TBuffer.PeekChar: TBuffChar;
 var
   Pos: Integer;
+  Jis: TBuffJisState;
 begin
   Pos := Position;
+  Jis := FJis;
   Result := NextChar;
+  FJis := Jis;
   Position := Pos;
 end;
 

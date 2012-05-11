@@ -25,7 +25,7 @@ package FrameViewer2005;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
@@ -34,7 +34,8 @@ requires
   soaprtl,
   vcl,
   vcljpg,
-  designide;
+  designide,
+  TntUnicodeVcl_R90;
 
 contains
   framview in '..\source\framview.pas',

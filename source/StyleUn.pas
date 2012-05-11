@@ -299,6 +299,9 @@ const
     'page-break-before', 'page-break-after', 'page-break-inside', 'text-transform',
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells');
 
+// BG, 25.04.2012: added:
+function IsAuto(const Value: Variant): Boolean;
+
 //BG, 05.10.2010: added:
 function VarIsIntNull(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
 function VarIsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -1379,6 +1382,12 @@ procedure ConvVertMargins(const VM: TVMarginArray;
 begin
   M[MarginTop] := Convert(VM[MarginTop], TopAuto);
   M[MarginBottom] := Convert(VM[MarginBottom], BottomAuto);
+end;
+
+//-- BG ---------------------------------------------------------- 25.04.2012 --
+function IsAuto(const Value: Variant): Boolean;
+begin
+  Result := Value = Auto;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
