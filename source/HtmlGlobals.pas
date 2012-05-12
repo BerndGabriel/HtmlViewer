@@ -1,5 +1,5 @@
 {
-Version   11
+Version   12
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
 
@@ -37,7 +37,7 @@ uses
 {$endif}
 {$ifdef LCL}
   LclIntf, LclType,
-  StdCtrls, Buttons, Forms, Base64,
+  StdCtrls, Buttons, Forms,
   HtmlMisc,
   WideStringsLcl,
   {$ifdef DebugIt}
@@ -248,8 +248,6 @@ type
     psEnding
   );
 }
-
-procedure DecodeStream(Input, Output: TStream);
 {$endif}
 
 {$ifndef Compiler17_Plus}
@@ -281,6 +279,11 @@ function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline;
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function SameStringArray(const A1, A2: ThtStringArray): Boolean;
+function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
+procedure SortStringArray(A: ThtStringArray);
+// Posx(SubStr, S, Offst): find substring in S starting at Offset:
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -508,6 +511,7 @@ begin
 end;
 
 {$endif TransparentStretchBltMissing}
+
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendChr(var Dest: ThtString; C: ThtChar);
 begin
@@ -618,6 +622,14 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function IndexOfString(const A: ThtStringArray; S: ThtString): Integer;
+begin
+  Result := Length(A) - 1;
+  while (Result >= 0) and (htCompareString(A[Result], S) <> 0) do
+    Dec(Result);
+end;
+
 {----------------RemoveQuotes}
 
 function RemoveQuotes(const S: ThtString): ThtString;
@@ -631,6 +643,78 @@ begin
         if Result[Length(Result)] = Result[1] then
           Result := Copy(Result, 2, Length(Result) - 2);
     end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function SameStringArray(const A1, A2: ThtStringArray): Boolean;
+var
+  I, N: Integer;
+begin
+  N := Length(A1);
+  Result := N = Length(A2);
+  if Result then
+    for I := 0 To N - 1 do
+      if htCompareString(A1[I], A2[I]) <> 0 then
+      begin
+        Result := False;
+        break;
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+procedure SortStringArray(A: ThtStringArray);
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J: Integer;
+    P, T: ThtString;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := A[(L + R) shr 1];
+      repeat
+        while htCompareString(A[I], P) < 0 do
+          Inc(I);
+        while htCompareString(A[J], P) > 0 do
+          Dec(J);
+        if I <= J then
+        begin
+          T := A[I];
+          A[I] := A[J];
+          A[J] := T;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then
+        QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+
+begin
+  if length(A) > 1 then
+    QuickSort(Low(A), High(A));
+end;
+
+function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+{find substring in S starting at Offset}
+var
+  S1: ThtString;
+  I: Integer;
+begin
+  if Offset <= 1 then
+    Result := Pos(SubStr, S)
+  else
+  begin
+    S1 := Copy(S, Offset, Length(S) - Offset + 1);
+    I := Pos(SubStr, S1);
+    if I > 0 then
+      Result := I + Offset - 1
+    else
+      Result := 0;
   end;
 end;
 
@@ -665,33 +749,6 @@ begin
   Changed;
 {$endif LCL}
 end;
-
-{$ifdef LCL}
-procedure DecodeStream(Input, Output: TStream);
-const
-  BufferSize = 999;
-var
-  Decoder: TBase64DecodingStream;
-  Buffer: array[1..BufferSize] of Byte;
-  Count: LongInt;
-  I, J: Integer;
-begin
-  I := 0;
-  J := 0;
-  Decoder := TBase64DecodingStream.Create(Input, bdmMIME);
-  try
-    Decoder.Reset;
-    repeat
-      Count := Decoder.Read(Buffer[1], BufferSize);
-      Output.Write(Buffer[1], Count);
-      Inc(I);
-      Inc(J, Count);
-    until Count < BufferSize;
-  finally
-    Decoder.Free;
-  end;
-end;
-{$endif LCL}
 
 { initialization }
 

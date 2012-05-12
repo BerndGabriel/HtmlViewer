@@ -1,5 +1,5 @@
 {
-Version   11.2
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -56,10 +56,10 @@ type
     FPaperWidth: Integer;   // Physical Width in device units
     FPgHeight: Integer;     // Vertical height in pixels
     FPgWidth: Integer;      // Horizontal width in pixels
-    FPPIX: Integer;         // Logical pixels per inch in X
-    FPPIY: Integer;         // Logical pixels per inch in Y
+    FPPIX: Integer;         // Logical pixelsinch in X
+    FPPIY: Integer;         // Logical pixelsinch in Y
     FPrinting: Boolean;
-    FTitle: ThtString;         // Printed Document's Title
+    FTitle: ThtString;      // Printed Document's Title
   protected
     function GetCanvas: TCanvas; virtual; abstract;
     function GetPageNum: Integer; virtual; abstract;
@@ -71,7 +71,6 @@ type
     procedure NewPage; virtual; abstract;
     procedure EndDoc; virtual; abstract;
     procedure Abort; virtual; abstract;
-    procedure Assign(Source: TPersistent); override;
     property Canvas: TCanvas read GetCanvas;
     property OffsetX: Integer read FOffsetX;
     property OffsetY: Integer read FOffsetY;
@@ -113,6 +112,15 @@ type
     property Handle: HDC read GetHandle;
   end;
 
+{ vwPrinter function - Replaces the Printer global variable of previous versions,
+  to improve smart linking (reduce exe size by 2.5k in projects that don't use
+  the printer).  Code which assigned to the Printer global variable
+  must call SetPrinter instead.  SetPrinter returns current printer object
+  and makes the new printer object the current printer.  It is the caller's
+  responsibility to free the old printer, if appropriate.  (This allows
+  toggling between different printer objects without destroying configuration
+  settings.) }
+
 implementation
 
 uses
@@ -121,30 +129,20 @@ uses
 {$else}
   Consts,
 {$endif}
-  SysUtils, Forms, Contnrs;
+  SysUtils, Forms;
 
 type
   // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
-  TMapItem = class(TObject)
-  private
-    FKey: Integer;
-    FValue: Pointer;
-  public
-    constructor Create(Key: Integer; Value: Pointer);
-  end;
-
-  // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
   TMap = class(TObject)
   private
-    FItems: TObjectList;
-    function getItem(Index: Integer): TMapItem;
-    property Items[Index: Integer]: TMapItem read getItem;
+    FKeys: TList;
+    FValues: TList;
   public
     constructor Create;
     destructor Destroy; override;
-    function Get(Key: Integer): Pointer;
-    function Put(Key: Integer; Value: Pointer): Pointer;
-    function Remove(Key: Integer): Pointer;
+    function Get(Key: Pointer): Pointer;
+    function Put(Key, Value: Pointer): Pointer;
+    function Remove(Key: Pointer): Pointer;
   end;
 
 var
@@ -162,111 +160,74 @@ begin
   Application.ProcessMessages;
   if FPrinters <> nil then
   begin
-    Printer := FPrinters.Get(Prn);
+    Printer := FPrinters.Get(Ptr(Prn));
     Result := (Printer <> nil) and not Printer.Aborted;
   end
   else
     Result := False;
 end;
 
-{ TMapItem }
-
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-constructor TMapItem.Create(Key: Integer; Value: Pointer);
-begin
-  inherited Create;
-  FKey := Key;
-  FValue := Value;
-end;
-
 { TMap }
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
 constructor TMap.Create;
 begin
   inherited Create;
-  FItems := TObjectList.Create;
+  FKeys := TList.Create;
+  FValues := TList.Create;
 end;
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
 destructor TMap.Destroy;
 begin
-  FItems.Free;
+  FKeys.Free;
+  FValues.Free;
   inherited;
 end;
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.Get(Key: Integer): Pointer;
+function TMap.Get(Key: Pointer): Pointer;
 var
   I: Integer;
 begin
-  for I := 0 to FItems.Count - 1 do
-    if Items[I].FKey = Key then
-    begin
-      Result := Items[I].FValue;
-      exit;
-    end;
-  Result := nil;
+  I := FKeys.IndexOf(Key);
+  if I >= 0 then
+    Result := FValues[I]
+  else
+    Result := nil;
 end;
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.getItem(Index: Integer): TMapItem;
-begin
-  Result := TMapItem(FItems[Index]);
-end;
-
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.Put(Key: Integer; Value: Pointer): Pointer;
+function TMap.Put(Key, Value: Pointer): Pointer;
 var
   I: Integer;
 begin
-  for I := 0 to FItems.Count - 1 do
-    if Items[I].FKey = Key then
-    begin
-      Result := Items[I].FValue;
-      Items[I].FValue := Value;
-      exit;
-    end;
-
-  Result := nil;
-  FItems.add(TMapItem.Create(Key, Value));
+  I := FKeys.IndexOf(Key);
+  if I >= 0 then
+  begin
+    Result := FValues[I];
+    FValues[I] := Value;
+  end
+  else
+  begin
+    Result := nil;
+    FKeys.add(Key);
+    FValues.add(Value);
+  end;
 end;
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.Remove(Key: Integer): Pointer;
+function TMap.Remove(Key: Pointer): Pointer;
 var
   I: Integer;
 begin
-  for I := 0 to FItems.Count - 1 do
-    if Items[I].FKey = Key then
-    begin
-      Result := Items[I].FValue;
-      FItems.Delete(I);
-      exit;
-    end;
-  Result := nil;
+  I := FKeys.IndexOf(Key);
+  if I >= 0 then
+  begin
+    Result := FValues[I];
+    FKeys.Delete(I);
+    FValues.Delete(I);
+  end
+  else
+    Result := nil;
 end;
 
 { ThtPrinter }
-
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-procedure ThtPrinter.Assign(Source: TPersistent);
-var
-  Src: ThtPrinter absolute Source;
-begin
-  inherited;
-  if Source is ThtPrinter then
-  begin
-    FPPIX := Src.FPPIX;
-    FPPIY := Src.FPPIY;
-    FPaperWidth  := Src.FPaperWidth;
-    FPaperHeight := Src.FPaperHeight;
-    FOffsetX  := Src.FOffsetX;
-    FOffsetY  := Src.FOffsetY;
-    FPgHeight := Src.FPgHeight;
-    FPgWidth  := Src.FPgWidth;
-  end;
-end;
 
 procedure ThtPrinter.CheckPrinting(Value: Boolean);
 begin
@@ -277,7 +238,6 @@ begin
       RaiseError(SPrinting);
 end;
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
 procedure ThtPrinter.GetPrinterCapsOf(Printer: TPrinter);
 begin
   if Printer.Printers.Count = 0 then
@@ -382,10 +342,8 @@ type
   TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar; InitData: PDeviceMode): HDC stdcall;
 var
   CreateHandleFunc: TCreateHandleFunc;
-{$ifndef FPC_TODO_PRINTING}
   Driver, Device, Port: array[0..100] of char;
   TmpDeviceMode: THandle;
-{$endif}
 begin
   if Value <> State then
   begin
@@ -470,7 +428,7 @@ begin
     lpszDocName := CTitle;
     lpszOutput := nil;
   end;
-  FPrinters.Put(DC, Self);
+  FPrinters.Put(Ptr(DC), Self);
   SetAbortProc(DC, AbortProc);
   StartDoc(DC, DocInfo);
   SetPrinting(True);
@@ -481,7 +439,7 @@ procedure TvwPrinter.EndDoc;
 begin
   CheckPrinting(True);
   EndPage(DC);
-  FPrinters.Remove(DC);
+  FPrinters.Remove(Ptr(DC));
   if not Aborted then
     Windows.EndDoc(DC);
   SetPrinting(False);
@@ -526,3 +484,4 @@ initialization
 finalization
   FreeAndNil(FPrinters);
 end.
+

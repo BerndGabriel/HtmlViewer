@@ -1,5 +1,5 @@
 {
-Version   11.2
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -32,7 +32,7 @@ unit GDIPL2A;
 interface
 
 uses
-  Windows, ActiveX, SysUtils, Graphics, Classes,
+  Windows, ActiveX, SysUtils, Graphics,
   HtmlGlobals;
 
 var
@@ -49,7 +49,6 @@ type
   public
     constructor Create(Filename: ThtString; TmpFile: boolean = False); overload;
     constructor Create(IStr: IStream); overload;
-    constructor Create(Stream: TStream); overload;
     destructor Destroy; override;
     function GetBitmap: TBitmap;
     property Height: integer read GetHeight;
@@ -62,7 +61,6 @@ type
   public
     constructor Create(W, H: integer); overload;
     constructor Create(IStr: IStream); overload;
-    constructor Create(Stream: TStream); overload;
     constructor Create(W, H: integer; Graphics: TGpGraphics); overload;
     function GetPixel(X, Y: integer): DWord;
     procedure SetPixel(X, Y: integer; Color: DWord);
@@ -201,20 +199,6 @@ var
 var
   Err: GpStatus;
 
-//-- BG ---------------------------------------------------------- 01.04.2012 --
-function IStreamFromStream(Stream: TStream): IStream;
-// thanks to Sérgio Alexandre for this method.
-var
-  Handle: THandle;
-begin
-  Handle := GlobalAlloc(GPTR, Stream.Size);
-  if Handle <> 0 then
-  begin
-    Stream.Read(Pointer(Handle)^, Stream.Size);
-    CreateStreamOnHGlobal(Handle, True, Result);
-  end;
-end;
-
 { TGpGraphics }
 
 constructor TGpGraphics.Create(Handle: HDC);
@@ -224,7 +208,7 @@ begin
   inherited Create;
   err := GdipCreateFromHDC(Handle, fGraphics);
   if err <> 0 then
-    raise EGDIPlus.CreateFmt('Can''t Create Graphics. GDI error %d', [err]);
+    raise EGDIPlus.Create('Can''t Create Graphics');
 end;
 
 constructor TGpGraphics.Create(Image: TGpImage);
@@ -234,7 +218,7 @@ begin
   inherited Create;
   err := GdipGetImageGraphicsContext(image.fHandle, fgraphics);
   if err <> 0 then
-    raise EGDIPlus.CreateFmt('Can''t Create Graphics. GDI error %d', [err]);
+    raise EGDIPlus.Create('Can''t Create Graphics');
 end;
 
 destructor TGpGraphics.Destroy;
@@ -349,9 +333,9 @@ begin
   err := GdipLoadImageFromFile(PWideChar(FileName), fHandle);
   if err <> 0 then
     if GetLastError = 2 then
-      raise EGDIPlus.CreateFmt('Image file "%s" not found. GDI error %d', [FileName, err])
+      raise EGDIPlus.Create(Format('Image file "%s" not found.', [FileName]))
     else
-      raise EGDIPlus.CreateFmt('Can''t load image file "%s". GDI error %d', [FileName, err]);
+      raise EGDIPlus.Create(Format('Can''t load image file "%s".', [FileName]));
   if TmpFile then
     fFilename := Filename;
 end;
@@ -363,13 +347,7 @@ begin
   inherited Create;
   err := GdipLoadImageFromStream(IStr, fHandle);
   if err <> 0 then
-    raise EGDIPlus.CreateFmt('Can''t load image stream. GDI error %d', [err]);
-end;
-
-//-- BG ---------------------------------------------------------- 01.04.2012 --
-constructor TGpImage.Create(Stream: TStream);
-begin
-  Create(IStreamFromStream(Stream));
+    raise EGDIPlus.Create('Can''t load image stream');
 end;
 
 destructor TGpImage.Destroy;
@@ -423,7 +401,7 @@ begin
   inherited Create;
   err := GdipCreateBitmapFromScan0(W, H, 0, PixelFormat32bppARGB, nil, fHandle);
   if err <> 0 then
-    raise EGDIPlus.CreateFmt('Can''t create bitmap of size %d x %d. GDI error %d', [W, H, err]);
+    raise EGDIPlus.Create('Can''t create bitmap');
 end;
 
 constructor TGpBitmap.Create(IStr: IStream);
@@ -433,7 +411,7 @@ begin
   inherited Create;
   err := GdipCreateBitmapFromStream(IStr, fHandle);
   if err <> 0 then
-    raise EGDIPlus.CreateFmt('Can''t create bitmap from IStream. GDI error %d', [err]);
+    raise EGDIPlus.Create('Can''t create bitmap');
 end;
 
 constructor TGpBitmap.Create(W, H: integer; Graphics: TGpGraphics);
@@ -441,13 +419,7 @@ begin
   inherited Create;
   err := GdipCreateBitmapFromGraphics(W, H, Graphics.fGraphics, fHandle);
   if err <> 0 then
-    raise EGDIPlus.CreateFmt('Can''t create bitmap of size %d x %d from TGpGraphics. GDI error %d', [W, H, err]);
-end;
-
-//-- BG ---------------------------------------------------------- 01.04.2012 --
-constructor TGpBitmap.Create(Stream: TStream);
-begin
-  Create(IStreamFromStream(Stream));
+    raise EGDIPlus.Create('Can''t create bitmap');
 end;
 
 function TGpBitmap.GetPixel(X, Y: integer): DWord;

@@ -25,8 +25,7 @@ package FrameViewer2009;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
-{$DESIGNONLY}
+{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$IMPLICITBUILD ON}
 
 requires
@@ -56,6 +55,14 @@ contains
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  StyleParser in '..\source\StyleParser.pas',
+  HtmlStyles in '..\source\HtmlStyles.pas',
+  StyleTypes in '..\source\StyleTypes.pas',
+  HtmlImages in '..\source\HtmlImages.pas',
+  HtmlSymbols in '..\source\HtmlSymbols.pas',
+  Parser in '..\source\Parser.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas';
 
 end.
