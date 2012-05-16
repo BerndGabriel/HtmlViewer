@@ -144,6 +144,10 @@ type
   end;
 
 implementation
+  {$IFDEF Compiler24_Plus}
+uses
+  System.Types;
+  {$ENDIF}
 
 function ConvDosToHTML(const Name: ThtString): ThtString; forward;
 

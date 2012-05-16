@@ -339,6 +339,8 @@ type
     PercentHeight: boolean; {if height is percent}
     Title: ThtString;
   protected
+    FDisplay: TPropDisplay; // how it is displayed
+
     IsCopy: boolean;
     function GetYPosition: Integer; override;
     procedure CalcSize(AvailableWidth, AvailableHeight, SetWidth, SetHeight: Integer; IsClientSizeSpecified: Boolean);
@@ -1509,11 +1511,20 @@ var
 //  NoBreak: boolean; {set when in <NoBr>}
 
 implementation
-
+ {$IFDEF JPM_DEBUGGING}
+   {/$DEFINE JPM_DEBUGGING_HTMLSUBS}
+ {$ENDIF}
 uses
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+ CodeSiteLogging,
+   {$ENDIF}
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
+  {$IFDEF Compiler24_Plus}
+  System.Types,
+  System.UITypes,
+  {$ENDIF}
   HtmlView,
   HtmlSbs1,
   ReadHtml;
@@ -1532,6 +1543,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: IntArray): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1539,6 +1551,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType; StartIndex, EndIndex: TWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of array elements from StartIndex to EndIndex.
 var
   I: TWidthType;
@@ -1550,6 +1563,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1557,6 +1571,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.01.2012 --
 function SubArray(const Arr, Minus: IntArray): IntArray; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return array with differences per index.
 var
   I: Integer;
@@ -1568,6 +1583,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value, StartIndex, EndIndex: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1577,12 +1593,14 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   SetArray(Arr, Value, Low(Arr), High(Arr));
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: TIntegerPerWidthType; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: TWidthType;
 begin
@@ -1595,6 +1613,7 @@ procedure SummarizeCountsPerType(
   var CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1609,6 +1628,8 @@ function SumOfType(
   const ColumnSpecs: TWidthTypeArray;
   const Widths: IntArray;
   StartIndex, EndIndex: Integer): Integer;
+  {$ifdef UseInline} inline; {$endif}
+
 var
   I: Integer;
 begin
@@ -1620,11 +1641,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := WideCompareText(T1, T2);
 end;
 
 procedure InitializeFontSizes(Size: Integer);
+   {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -2302,6 +2325,27 @@ begin
 
   if L.TheID <> '' then
     Document.IDNameList.AddObject(L.TheID, Self);
+
+  if Self.Document.UseQuirksMode then begin
+      case Floating of
+       ARight :
+          begin
+            HSpaceR := 0;
+            HSpaceL := ImageSpace;
+          end;
+       ALeft :
+          begin
+            HSpaceR := ImageSpace;
+            HSpaceL := 0;
+          end
+        else
+          HSpaceR := 0;
+          HSpaceL := 0;
+        end;
+  end else begin
+      HSpaceR := 0;
+      VSpaceB := 0;
+  end;
 end;
 
 constructor TImageObj.SimpleCreate(Document: ThtDocument; Parent: TCellBasic; const AnURL: ThtString);
@@ -2530,6 +2574,24 @@ var
   UName: ThtString;
 begin
   ViewImages := Document.ShowImages;
+  case FDisplay of
+
+    pdNone:
+    begin
+      ObjHeight := 0;
+      ObjWidth := 0;
+
+      ClientHeight := ObjHeight;
+      ClientWidth := ObjWidth;
+      Exit;
+{      SectionHeight := 0;
+      DrawHeight := 0;
+      ContentBot := 0;
+      DrawBot := 0;
+      MaxWidth := 0;
+      Result := 0; }
+    end;
+  end;
   if ViewImages then
   begin
     if FImage = nil then
@@ -2689,11 +2751,11 @@ begin
   begin
     White := SectionList.Printing or (SectionList.Background and $FFFFFF = clWhite) or
       ((SectionList.Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF));
-    Dark := clBtnShadow;
+    Dark := ThemedColor(clBtnShadow);
     if White then
       Light := clSilver
     else
-      Light := clBtnHighLight;
+      Light := ThemedColor(clBtnHighLight);
   end;
 end;
 
@@ -2701,6 +2763,7 @@ end;
 // Thus move htStyles and htColors from HtmlUn2.pas to HtmlSubs.pas the only unit where they are used
 
 function htStyles(P0, P1, P2, P3: BorderStyleType): htBorderStyleArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := P0;
   Result[1] := P1;
@@ -2709,6 +2772,7 @@ begin
 end;
 
 function htColors(C0, C1, C2, C3: TColor): htColorArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := C0;
   Result[1] := C1;
@@ -2718,6 +2782,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(Light, Dark: TColor; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 begin
   if Raised then
     Result := htColors(Light, Light, Dark, Dark)
@@ -2727,6 +2792,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 var
   Light, Dark: TColor;
 begin
@@ -2739,6 +2805,7 @@ procedure RaisedRectColor(Canvas: TCanvas;
   const ORect, IRect: TRect;
   const Colors: htColorArray;
   Styles: htBorderStyleArray); overload;
+  {$ifdef UseInline} inline; {$endif}
 {Draws colored raised or lowered rectangles for table borders}
 begin
   DrawBorder(Canvas, ORect, IRect, Colors, Styles, clNone, False);
@@ -2748,6 +2815,7 @@ procedure RaisedRect(SectionList: ThtDocument; Canvas: TCanvas;
   X1, Y1, X2, Y2: Integer;
   Raised: boolean;
   W: Integer);
+  {$ifdef UseInline} inline; {$endif}
 {Draws raised or lowered rectangles for table borders}
 begin
   RaisedRectColor(Canvas,
@@ -2827,7 +2895,7 @@ begin
   SetTextAlign(Canvas.Handle, TA_Top);
   if SubstImage and (BorderSize = 0) then
   begin
-    Canvas.Font.Color := FO.TheFont.Color;
+    Canvas.Font.Color := ThemedColor(FO.TheFont.Color);
   {calc the offset from the image's base to the alt= text baseline}
     case VertAlign of
       ATop, ANone:
@@ -2857,7 +2925,7 @@ begin
       SaveColor := Pen.Color;
       SaveWidth := Pen.Width;
       SaveStyle := Pen.Style;
-      Pen.Color := FO.TheFont.Color;
+      Pen.Color := ThemedColor(FO.TheFont.Color);
       Pen.Width := BorderSize;
       Pen.Style := psInsideFrame;
       Font.Color := Pen.Color;
@@ -4278,7 +4346,7 @@ begin
     MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
       (GetDeviceCaps(Handle, PLANES) = 1);
     if Disabled and not MonoBlack then
-      Brush.Color := clBtnFace
+      Brush.Color := ThemedColor(clBtnFace)
     else
       Brush.Color := clWhite;
     Pen.Color := clWhite;
@@ -4293,7 +4361,7 @@ begin
     else
     begin
       Pen.Width := 2;
-      Pen.Color := clBtnShadow;
+      Pen.Color := ThemedColor(clBtnShadow);
     end;
     Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
     if not MonoBlack then
@@ -4373,9 +4441,15 @@ end;
 
 constructor TCellBasic.Create(MasterList: ThtDocument; OwnerBlock: TBlock);
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCellBasic.Create');
+   {$ENDIF}
   inherited Create;
   FOwnerBlock := OwnerBlock;
   FDocument := MasterList;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TCellBasic.Create');
+   {$ENDIF}
 end;
 
 {----------------TCellBasic.CreateCopy}
@@ -4648,6 +4722,16 @@ var
   I, Sw, TheCount: Integer;
   H: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCellBasic.DoLogic');
+  CodeSite.SendFmtMsg('Y = [%d]',[Y]);
+  CodeSite.SendFmtMsg('Width = [%d]',[Width]);
+  CodeSite.SendFmtMsg('AHeight = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt = [%d]',[BlHt]);
+  CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
+  CodeSite.SendFmtMsg('Curs = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   YValue := Y;
   StartCurs := Curs;
   H := 0;
@@ -4672,6 +4756,12 @@ begin
   end;
   Len := Curs - StartCurs;
   Result := H;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
+  CodeSite.SendFmtMsg('Curs = [%d]',[Curs]);
+   CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TCellBasic.DoLogic');
+   {$ENDIF}
 end;
 
 {----------------TCellBasic.MinMaxWidth}
@@ -4682,6 +4772,9 @@ procedure TCellBasic.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   I, Mn, Mx: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCellBasic.MinMaxWidth');
+   {$ENDIF}
   Max := 0; Min := 0;
   for I := 0 to Count - 1 do
   begin
@@ -4689,6 +4782,11 @@ begin
     Max := Math.Max(Max, Mx);
     Min := Math.Max(Min, Mn);
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('max = [%d]',[Max]);
+  CodeSite.ExitMethod(Self,'TCellBasic.MinMaxWidth');
+   {$ENDIF}
 end;
 
 {----------------TCellBasic.Draw}
@@ -4714,6 +4812,11 @@ var
   Clr: ClearAttrType;
   S: ThtString;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.Create');
+  StyleUn.LogProperties(Prop,'Prop');
+  CodeSite.AddSeparator;
+  {$ENDIF}
   inherited Create(OwnerCell, Attributes, Prop);
 
   MyCell := TBlockCell.Create(Document, Self);
@@ -4768,6 +4871,9 @@ begin
     Justify := Centered
   else
     Justify := Left;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TBlock.Create');
+  {$ENDIF}
 end;
 
 procedure TBlock.CollapseMargins;
@@ -4850,13 +4956,39 @@ end;
 //-- BG ---------------------------------------------------------- 09.10.2010 --
 procedure TBlock.ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.ContentMinMaxWidth');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+
+  CodeSite.AddSeparator;
+   {$ENDIF}
   MyCell.MinMaxWidth(Canvas, Min, Max);
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+  CodeSite.ExitMethod(Self,'TBlock.ContentMinMaxWidth');
+   {$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.ConvMargArray');
+   CodeSite.SendFmtMsg('BaseWidth       = [%d]',[BaseWidth]);
+   CodeSite.SendFmtMsg('BaseHeight      = [%d]',[BaseHeight]);
+  CodeSite.SendFmtMsg('Self.EmSize      = [%d]',[EmSize]);
+  CodeSite.SendFmtMsg('Self.ExSize      = [%d]',[ExSize]);
+  CodeSite.SendFmtMsg('Self.BorderWidth = [%d]',[BorderWidth]);
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+   CodeSite.AddSeparator;
+   {$ENDIF}
   StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
+  CodeSite.ExitMethod(Self,'TBlock.ConvMargArray');
+  {$ENDIF}
 end;
 
 {----------------TBlock.CreateCopy}
@@ -4898,16 +5030,35 @@ var
   MinCell, MaxCell: Integer;
   LeftSide, RightSide, AutoCount: Integer;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.MinMaxWidth');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+
+  CodeSite.AddSeparator;
+  {$ENDIF}
   if (Display = pdNone) or (Positioning = PosAbsolute) then
   begin
     Min := 0;
     Max := 0;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+
+   CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
+   {$ENDIF}
     Exit;
   end;
 {$ifdef DO_BLOCK_INLINE}
   if Display = pdInline then
   begin
     inherited;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+
+   CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
+   {$ENDIF}
+
     exit;
   end;
 {$endif}
@@ -4939,6 +5090,12 @@ begin
     Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
     Max := Math.Max(MaxCell, MargArray[piWidth]) + LeftSide + RightSide;
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+
+  CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
+   {$ENDIF}
 end;
 
 {----------------TBlock.GetURL}
@@ -5161,6 +5318,15 @@ var
   end;
 
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.FindWidth');
+  CodeSite.SendFmtMsg('AWidth    = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight   = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+
+  CodeSite.AddSeparator;
+  {$ENDIF}
   ContentMinMaxWidth(Canvas, MinWidth, MaxWidth);
   HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
   case AutoCount of
@@ -5170,6 +5336,7 @@ begin
           and not (FloatLR in [ALeft, ARight]) and
           (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) then
         begin
+          ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
           Marg2 := Max(0, AWidth - MargArray[piWidth] - BordPad);
           case Justify of
             centered:
@@ -5184,8 +5351,10 @@ begin
       end;
 
     1:
-      if MargArray[piWidth] = Auto then
-        CalcWidth
+      if MargArray[piWidth] = Auto then begin
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
+        CalcWidth;
+      end
       else
       begin
         if MargArray[MarginRight] = Auto then
@@ -5204,6 +5373,7 @@ begin
           MargArray[MarginLeft] := 0
         else
           MargArray[MarginRight] := 0;
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
         CalcWidth;
       end
       else
@@ -5217,47 +5387,15 @@ begin
       begin
         MargArray[MarginLeft] := 0;
         MargArray[MarginRight] := 0;
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
         CalcWidth;
       end;
   end;
   Result := MargArray[piWidth];
-end;
-
-{This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
-model.  In those browsers, width and height include padding and border.}
-function GetContentHeight(AMargArray : TMarginArray; const AUseQuirksMode : Boolean) : Integer;
-begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[piHeight] -
-        (AMargArray[BorderTopWidth] + AMargArray[BorderBottomWidth] +
-         AMargArray[PaddingTop] + AMargArray[PaddingBottom]);
-  end else begin
-    Result := AMargArray[piHeight];
-  end;
-end;
-
-function GetTotalWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
-begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[MarginLeft] + ANewWidth + AMargArray[MarginRight];
-  end else begin
-    Result := ANewWidth +
-      AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-      AMargArray[MarginRight] + AMargArray[PaddingRight] + AMargArray[BorderRightWidth];
-  end;
-end;
-
-function AdjustNewWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
-begin
-  if AUseQuirksMode then begin
-    Result := ANewWidth -
-      (AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-       AMargArray[PaddingRight] + AMargArray[BorderRightWidth] )
-  end else begin
-    Result := ANewWidth;
-  end;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBlock.FindWidth');
+  {$ENDIF}
 end;
 
 {----------------TBlock.DrawLogic}
@@ -5290,18 +5428,37 @@ var
   end;
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
-  var LHeight : Integer;
   begin
-    LHeight := GetContentHeight(MargArray, Document.UseQuirksMode);
-    if HideOverflow and (LHeight > 3) then
-      Result := ContentTop + LHeight
+    if HideOverflow and (MargArray[piHeight] > 3) then
+      Result := ContentTop + MargArray[piHeight]
     else
-      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + LHeight);
+      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
   end;
 
 var
   LIndent, RIndent: Integer;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.DrawLogic');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   case Display of
     pdNone:
     begin
@@ -5326,13 +5483,12 @@ begin
     MaxWidth := AWidth;
 
     ConvMargArray(AWidth, AHeight, AutoCount);
+    ApplyBoxSettings(MargArray,Document.UseQuirksMode);
     NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.UseQuirksMode);
-    // BG, 29.04.2012: produces wrong width, if MarginLeft is <> 0. Most probably MarginLeft is wrong there:
-    //NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
+    TotalWidth  := MiscWidths + NewWidth;
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -5502,6 +5658,19 @@ begin
     if DrawList.Count = 0 then
       DrawSort;
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBlock.DrawLogic');
+   {$ENDIF}
 end;
 
 {----------------TBlock.DrawSort}
@@ -5660,22 +5829,6 @@ end;
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 var
   YOffset: Integer;
   XR, YB, RefX, RefY, TmpHt: Integer;
@@ -5686,6 +5839,8 @@ var
   OpenRgn: Boolean;
   PdRect, CnRect: TRect; // padding rect, content rect
 begin
+  if Document.Printing and not Document.PrintBackground then
+    NeedDoImageStuff := False;
   YOffset := Document.YOff;
 
   case FLoatLR of
@@ -5775,12 +5930,12 @@ begin
         if HasBackgroundColor and
           (not Document.Printing or Document.PrintTableBackground) then
         begin {color the Padding Region}
-          Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+          Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
           Canvas.Brush.Style := bsSolid;
           if Document.IsCopy and ImgOK then
           begin
-            InitFullBG(IW, IH);
-            FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+            InitFullBG(FullBG,IW, IH,Document.IsCopy);
+            FullBG.Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
             FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
           end
@@ -5803,7 +5958,7 @@ begin
               BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
             else
             begin
-              InitFullBG(PdRect.Right - PdRect.Left, IH);
+              InitFullBG(FullBG,PdRect.Right - PdRect.Left, IH,Document.IsCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, Canvas.Handle, PdRect.Left, FT, SrcCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -5825,19 +5980,21 @@ begin
           end
           else
           {$ENDIF !NoGDIPlus}
-          if NoMask then {printing}
-            PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
-          else if HasBackgroundColor then
-          begin
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
-            PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
-          end
-          else
-            PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
-        end;
+          if Assigned(TiledImage) then begin
 
+            if NoMask then {printing}
+                PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
+              else if HasBackgroundColor then
+              begin
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
+                PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
+              end
+              else
+              PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
+            end;
+          end;
       except
       end;
     end;
@@ -5940,6 +6097,9 @@ constructor TTableAndCaptionBlock.Create(
 var
   I: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TTableAndCaptionBlock.Create');
+   {$ENDIF}
   inherited Create(OwnerCell, Attributes, Prop);
   TableBlock := ATableBlock;
   Justify := TableBlock.Justify;
@@ -5968,6 +6128,9 @@ begin
   MargArray[MarginBottom] := TableBlock.MargArray[MarginBottom];
 
   TagClass := 'TableAndCaption.';
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TTableAndCaptionBlock.Create');
+   {$ENDIF}
 end;
 
 {----------------TTableAndCaptionBlock.CancelUsage}
@@ -6013,6 +6176,13 @@ function TTableAndCaptionBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoC
 var
   Mx, Mn, FWidth: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TTableAndCaptionBlock.FindWidth');
+  CodeSite.SendFmtMsg('AWidth = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   HasBorderStyle := False; //bssNone; {has no border}
   MargArray[BorderLeftWidth] := 0;
   MargArray[BorderTopWidth] := 0;
@@ -6038,6 +6208,10 @@ begin
         MargArray[MarginLeft] := AWidth - Result;
     end;
   TableBlock.Justify := Centered;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TTableAndCaptionBlock.FindWidth');
+   {$ENDIF}
 end;
 
 {----------------TTableAndCaptionBlock.MinMaxWidth}
@@ -6046,10 +6220,18 @@ procedure TTableAndCaptionBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integ
 var
   Mx, Mn, MxTable, MnTable: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TTableAndCaptionBlock.MinMaxWidth');
+   {$ENDIF}
   TableBlock.MinMaxWidth(Canvas, MnTable, MxTable);
   FCaptionBlock.MinMaxWidth(Canvas, Mn, Mx);
   Min := Math.Max(MnTable, Mn);
   Max := Math.Max(MxTable, Mn);
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+  CodeSite.ExitMethod(Self,'TTableAndCaptionBlock.MinMaxWidth');
+   {$ENDIF}
 end;
 
 function TTableAndCaptionBlock.FindDocPos(SourcePos: Integer; Prev: boolean): Integer;
@@ -6077,6 +6259,9 @@ var
   Percent: boolean;
   S,W,C: PropIndices;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TTableBlock.Create');
+   {$ENDIF}
   inherited Create(OwnerCell, Attr, Prop);
   Table := ATable;
   Justify := NoJustify;
@@ -6215,6 +6400,9 @@ begin
   Table.Float := FloatLR in [ALeft, ARight];
   if Table.Float and (ZIndex = 0) then
     ZIndex := 1;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TTableBlock.Create');
+   {$ENDIF}
 end;
 
 {----------------TTableBlock.CreateCopy}
@@ -6237,6 +6425,11 @@ procedure TTableBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   TmpWidth: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TTableBlock.MinMaxWidth');
+    CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   if AsPercent then
     TmpWidth := 0
   else
@@ -6249,6 +6442,11 @@ begin
     Min := Math.Max(Min, TmpWidth);
     Max := Min;
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+  CodeSite.ExitMethod(Self,'TTableBlock.MinMaxWidth');
+   {$ENDIF}
 end;
 
 {----------------TTableBlock.FindWidth1}
@@ -6402,6 +6600,28 @@ function TTableBlock.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
 var
   X1, Tmp: Integer;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TTableBlock.DrawLogic');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   if not (FloatLR in [ALeft, ARight]) then
   begin
     Tmp := X;
@@ -6411,6 +6631,19 @@ begin
     AWidth := X1 - X;
   end;
   Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TTableBlock.DrawLogic');
+   {$ENDIF}
 end;
 
 function TTableBlock.Draw1(Canvas: TCanvas; const ARect: TRect;
@@ -6453,6 +6686,15 @@ var
   LeftSide, RightSide, SWidth: Integer;
   Diff: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'THRBlock.FindWidth');
+    CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+
+  CodeSite.SendFmtMsg('AWidth = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   if Positioning = posAbsolute then
     Align := Left;
   LeftSide := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
@@ -6478,6 +6720,10 @@ of TBlock}
   end;
   if not Document.IsCopy then
     THorzline(MyHRule).VSize := MargArray[piHeight];
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'THRBlock.FindWidth');
+   {$ENDIF}
 end;
 
 {----------------TBlockLI.Create}
@@ -6586,6 +6832,28 @@ end;
 function TBlockLI.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth: Integer; var Curs: Integer): Integer;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlockLI.DrawLogic');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   if Assigned(Image) then
   begin
     Image.DrawLogic(Document, Canvas, nil, 100, 0);
@@ -6599,6 +6867,19 @@ begin
   finally
     Document.FirstLineHtPtr := nil;
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBlockLI.DrawLogic');
+   {$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 31.01.2012 --
@@ -6678,7 +6959,7 @@ begin
           begin
             PenColor := Pen.Color;
             PenStyle := Pen.Style;
-            Pen.Color := ListFont.Color;
+            Pen.Color := ThemedColor(ListFont.Color);
             Pen.Style := psSolid;
             BrushStyle := Brush.Style;
             BrushColor := Brush.Color;
@@ -6711,6 +6992,11 @@ var
   Image: ThtString;
   Val: TColor;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBodyBlock.Create');
+  StyleUn.LogProperties(Prop,'Prop');
+  CodeSite.AddSeparator;
+  {$ENDIF}
   inherited;
   positioning := PosStatic; {7.28}
   Prop.GetBackgroundPos(0, 0, PRec);
@@ -6719,6 +7005,9 @@ begin
   Val := Prop.GetBackgroundColor;
   if Val <> clNone then
     Document.SetBackGround(Val or PalRelative);
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TBodyBlock.Create');
+  {$ENDIF}
 end;
 
 {----------------TBodyBlock.GetURL}
@@ -6745,11 +7034,33 @@ var
   SaveID: TObject;
   ClientContentBot: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBodyBlock.DrawLogic');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   YDraw := Y;
   StartCurs := Curs;
   StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
   if IsAuto(MargArray[MarginLeft]) then MargArray[MarginLeft] := 0;
   if IsAuto(MargArray[MarginRight]) then MargArray[MarginRight] := 0;
+  ApplyBoxSettings(MargArray,Document.UseQuirksMode);
 
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
   NewWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
@@ -6787,6 +7098,19 @@ begin
   MaxWidth := Max(IMgr.Width, Max(ScrollWidth, NewWidth) + MargArray[MarginLeft] + MargArray[MarginRight]);
   if DrawList.Count = 0 then
     DrawSort;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBodyBlock.DrawLogic');
+  {$ENDIF}
 end;
 
 {----------------TBodyBlock.Draw}
@@ -7024,8 +7348,10 @@ begin
   ActiveLink := nil;
   ActiveImage := nil;
   PanelList.Clear;
-  if not IsCopy then
+  if not IsCopy then begin
     Styles.Clear;
+    Styles.UseQuirksMode := Self.UseQuirksMode;
+  end;
   if Assigned(TabOrderList) then
     TabOrderList.Clear;
   inherited Clear;
@@ -7132,6 +7458,9 @@ function ThtDocument.DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: 
 var
   I, J: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'ThtDocument.DoLogic');
+   {$ENDIF}
   Inc(CycleNumber);
   TableNestLevel := 0;
   InLogic2 := False;
@@ -7187,6 +7516,9 @@ begin
   begin
     AddSectionsToList;
   end;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'ThtDocument.DoLogic');
+  {$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 11.09.2010 --
@@ -7599,6 +7931,9 @@ var
   MargArrayO: TVMarginArray;
   Dummy1: Integer;
 begin
+ {$ifdef JPM_DEBUGGING_HTMLSUBS}
+ CodeSite.EnterMethod(Self,'ThtDocument.ProcessInlines');
+ {$endif}
   with InlineList do
   begin
     if Start then
@@ -7627,6 +7962,9 @@ begin
         end;
       end;
   end;
+ {$ifdef JPM_DEBUGGING_HTMLSUBS}
+ CodeSite.ExitMethod(Self,'ThtDocument.ProcessInlines');
+ {$endif}
 end;
 
 {----------------TInlineList.Create}
@@ -7692,6 +8030,9 @@ var
   J: PropIndices;
 //  Border: Boolean;
 begin
+ {$ifdef JPM_DEBUGGING_HTMLSUBS}
+ CodeSite.EnterMethod(Self,'TCellObj.Create');
+ {$endif}
   inherited Create;
   FCell := TCellObjCell.Create(Master, Parent);
   if Assigned(Prop) then
@@ -7800,6 +8141,9 @@ begin
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);
     ShowEmptyCells := Prop.ShowEmptyCells;
   end;
+ {$ifdef JPM_DEBUGGING_HTMLSUBS}
+ CodeSite.ExitMethod(Self,'TCellObj.Create');
+ {$endif}
 end;
 
 constructor TCellObj.CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellObj);
@@ -7868,6 +8212,13 @@ var
   Dummy: Integer;
   Tmp: Integer;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
+  CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
+  CodeSite.SendFmtMsg('CellSpacing = [%d]',[CellSpacing]);
+  CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   if Cell.Count > 0 then
   begin
     Tmp := Ht - VSize - (VrSpace + CellSpacing);
@@ -7891,6 +8242,9 @@ begin
       NeedDoImageStuff := True;
     end;
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TCellObj.DrawLogic2');
+   {$ENDIF}
 end;
 
 {----------------TCellObj.Draw}
@@ -7908,22 +8262,6 @@ var
   HF, VF: double;
   BRect: TRect;
   IsVisible: Boolean;
-
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Cell.Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
 
 begin
   YO := Y - Cell.Document.YOff;
@@ -7975,11 +8313,11 @@ begin
 
     if Cell.BkGnd then
     begin
-      Canvas.Brush.Color := Cell.BkColor or PalRelative;
+      Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
       Canvas.Brush.Style := bsSolid;
       if Cell.Document.IsCopy and ImgOK then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG, PR - PL, IH,Cell.Document.IsCopy);
         FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
         FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
@@ -8017,7 +8355,7 @@ begin
           BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
         else
         begin
-          InitFullBG(PR - PL, IH);
+          InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -8043,7 +8381,7 @@ begin
         PrintBitmap(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage))
       else if Cell.BkGnd then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
@@ -8307,12 +8645,23 @@ var
   I: Integer;
   CellObj: TCellObj;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
+  CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
+  CodeSite.SendFmtMsg('CellSpacing = [%d]',[CellSpacing]);
+  CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   for I := 0 to Count - 1 do
   begin
     CellObj := TCellObj(Items[I]);
     if Assigned(CellObj) then
       CellObj.DrawLogic2(Canvas, Y, CellSpacing, Curs);
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
+  CodeSite.ExitMethod(Self,'TCellObj.DrawLogic2');
+   {$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
@@ -9265,7 +9614,6 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           if PercentDeltas[I] > 0 then
             Inc(PercentDeltaAbove0Count);
 
-
         IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
       end;
       MinWidth := Sum(Widths);
@@ -9531,6 +9879,27 @@ var
   TopY: Integer;
   FirstLinePtr: PInteger;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'THtmlTable.DrawLogic');
+
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   Inc(Document.TableNestLevel);
   try
     YDraw := Y;
@@ -9562,6 +9931,19 @@ begin
   finally
     Dec(Document.TableNestLevel);
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'THtmlTable.DrawLogic');
+   {$ENDIF}
 end;
 
 {----------------THtmlTable.Draw}
@@ -10137,6 +10519,11 @@ var
   Clr: ClearAttrType;
   Percent: boolean;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TSection.Create');
+  StyleUn.LogProperties(Prop,'Prop');
+  CodeSite.AddSeparator;
+  {$ENDIF}
   inherited Create(OwnerCell, Attr, Prop);
   Buff := PWideChar(BuffS);
   Len := 0;
@@ -10222,6 +10609,9 @@ begin
     else if Prop.Props[piWhiteSpace] = 'normal' then
       WhiteSpaceStyle := wsNormal;
   end;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TSection.Create');
+  {$ENDIF}
 end;
 
 {----------------TSection.CreateCopy}
@@ -10343,7 +10733,7 @@ begin
   if T.Count = 0 then
     Exit;
   { Yunqa.de: Simple hack to support <span style="display:none"> }
-  if Document.PropStack.Last.Display = pdNone then
+  if Assigned(Document) and (Document.PropStack.Last.Display = pdNone) then
     Exit;
 
   L := Len + T.Count;
@@ -10894,10 +11284,19 @@ var
   end;
 
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TSection.MinMaxWidth');
+  CodeSite.AddSeparator;
+   {$ENDIF} 
   if Len = 0 then
   begin
     Min := 0;
     Max := 0;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
+   {$ENDIF}	
     Exit;
   end;
 
@@ -10911,6 +11310,11 @@ begin
     else
       Max := StoredMax;
     Min := Math.Min(MaxHScroll, Max);
+    {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+    CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+    CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+    CodeSiteLogging.CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
+    {$ENDIF}	
     Exit;
   end;
 
@@ -10918,6 +11322,11 @@ begin
   begin
     Min := StoredMin;
     Max := StoredMax;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
+   {$ENDIF}
     Exit;
   end;
 
@@ -11019,6 +11428,11 @@ begin
   Min := Math.Max(FloatMin, Min);
   StoredMin := Min;
   StoredMax := Max;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+  CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
+   {$ENDIF}
 end;
 
 {----------------TSection.FindTextWidth}
@@ -11031,6 +11445,10 @@ var
   Align: AlignmentType;
   FlObj: TFloatingObj;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TSection.FindTextWidth');
+  CodeSite.AddSeparator;
+   {$ENDIF}
   Result := 0;
   if RemoveSpaces then
     while True do
@@ -11073,6 +11491,10 @@ begin
       Inc(Start, I);
     end;
   end;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TSection.FindTextWidth');
+  {$ENDIF}
 end;
 
 {----------------TSection.FindTextWidthA}
@@ -11527,18 +11949,38 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       LR.LineImgHt := Max(Tmp, ImgHt);
     end;
 
-  var
-    P: PWideChar;
-    MaxChars: Integer;
-    N, NN, Width, I, Indx: Integer;
-    Tmp: Integer;
-    Obj: TFloatingObj;
-    TopY, HtRef: Integer;
-    Ctrl: TFormControlObj;
-    //BG, 06.02.2011: floating objects:
-    PDoneFlObj: PWideChar;
-    YDoneFlObj: Integer;
-  begin
+var
+  P: PWideChar;
+  MaxChars: Integer;
+  N, NN, Width, I, Indx: Integer;
+  Tmp: Integer;
+  Obj: TFloatingObj;
+  TopY, HtRef: Integer;
+  Ctrl: TFormControlObj;
+  //BG, 06.02.2011: floating objects:
+  PDoneFlObj: PWideChar;
+  YDoneFlObj: Integer;
+begin {TSection.DrawLogic}
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TSection.DrawLogic');
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
     YDraw := Y;
     AccumImgBot := 0;
     TopY := Y;
@@ -11803,6 +12245,26 @@ var
   Dummy: Integer;
   Save: Integer;
 begin {TSection.DrawLogic}
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TSection.DrawLogic');
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   if WhiteSpaceStyle in [wsPre, wsNoWrap] then
   begin
     if Len = 0 then
@@ -11830,6 +12292,19 @@ begin {TSection.DrawLogic}
     end;
   end;
   DoDrawLogic;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TSection.DrawLogic');
+   {$ENDIF}  
 end;
 
 {----------------TSection.CheckForInlines}
@@ -11991,6 +12466,7 @@ var
         end;
 
       FO.TheFont.AssignToCanvas(Canvas);
+      Canvas.Font.Color := ThemedColor(Canvas.Font.Color);
       if J2 = -1 then
       begin {it's an image or panel}
         Obj := Images.FindImage(Start - Buff);
@@ -12247,14 +12723,15 @@ var
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
-            if Color < 0 then
-              Color := GetSysColor(Color and $FFFFFF)
-            else
-              Color := Color and $FFFFFF;
+            Color := ThemedColor(Color);
+//            if Color < 0 then
+//              Color := GetSysColor(Color and $FFFFFF)
+//            else
+//              Color := Color and $FFFFFF;
             Canvas.Font.Color := Color xor $FFFFFF;
           end
           else
-            Canvas.Font.Color := FO.TheFont.bgColor;
+            Canvas.Font.Color := ThemedColor(FO.TheFont.bgColor);
         end
         else if FO.TheFont.BGColor = clNone then
         begin
@@ -12265,7 +12742,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Style := bsClear;
-          Canvas.Brush.Color := FO.TheFont.BGColor;
+          Canvas.Brush.Color := ThemedColor(FO.TheFont.BGColor);
         end;
 
         if Document.Printing then
@@ -13089,8 +13566,14 @@ end;
 
 constructor TCell.Create(Master: ThtDocument; OwnerBlock: TBlock);
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCell.Create');
+   {$ENDIF}
   inherited;
   IMgr := TIndentManager.Create;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.ExitMethod(Self,'TCell.Create');
+   {$ENDIF}
 end;
 
 {----------------TCell.CreateCopy}
@@ -13117,6 +13600,16 @@ var
   LIndex, RIndex: Integer;
   SaveID: TObject;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TCell.DoLogic');
+  CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
+  CodeSite.SendFmtMsg('Width       = [%d]',[Width]);
+  CodeSite.SendFmtMsg('AHeight     = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt        = [%d]',[BlHt]);
+  CodeSite.SendFmtMsg('Cur         = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   IMgr.Init(0, Width);
   SaveID := IMgr.CurrentID;
   IMgr.CurrentID := Self;
@@ -13132,6 +13625,10 @@ begin
   IMgr.CurrentID := SaveID;
   if IB > Result then
     Result := IB;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TCell.DoLogic');
+  {$ENDIF}
 end;
 
 {----------------TCell.Draw}
@@ -13187,6 +13684,16 @@ var
   H, Tmp: Integer;
   SB: TSectionBase;
 begin
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlockCell.DoLogicX');
+  CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
+  CodeSite.SendFmtMsg('Width       = [%d]',[Width]);
+  CodeSite.SendFmtMsg('AHeight     = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt        = [%d]',[BlHt]);
+  CodeSite.SendFmtMsg('Cur         = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
+  CodeSite.AddSeparator;
+   {$ENDIF}
   YValue := Y;
   StartCurs := Curs;
   H := 0;
@@ -13218,6 +13725,11 @@ begin
   Len := Curs - StartCurs;
   Result := H;
   CellHeight := Result;
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.SendFmtMsg('Curs = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBlockCell.DoLogicX');
+  {$ENDIF}
 end;
 
 
@@ -13351,7 +13863,7 @@ begin
 
   if MargArray[BackgroundColor] <> clNone then
   begin
-    Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+    Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(IRect);
   end;
@@ -13453,6 +13965,26 @@ end;
 function THorzLine.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth: Integer; var Curs: Integer): Integer;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'THorzLine.DrawLogic');
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   YDraw := Y;
   StartCurs := Curs;
 {Note: VSize gets updated in THRBlock.FindWidth}
@@ -13466,6 +13998,19 @@ begin
   ContentBot := Y + SectionHeight;
   DrawBot := Y + DrawHeight;
   Result := SectionHeight;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'THorzLine.DrawLogic');
+   {$ENDIF}
 end;
 
 {----------------THorzLine.Draw}
@@ -13488,7 +14033,7 @@ begin
       XR := X + Width - 1;
       if Color <> clNone then
       begin
-        Brush.Color := Color or $2000000;
+        Brush.Color := ThemedColor(Color) or $2000000;
         Brush.Style := bsSolid;
         FillRect(Rect(X, YT, XR + 1, YT + VSize));
       end
@@ -13506,14 +14051,14 @@ begin
         else if White then
           Pen.Color := clSilver
         else
-          Pen.Color := clBtnHighLight;
+          Pen.Color := ThemedColor(clBtnHighLight);
         MoveTo(XR, YT);
         LineTo(XR, YT + VSize - 1);
         LineTo(X, YT + VSize - 1);
         if BlackBorder then
           Pen.Color := clBlack
         else
-          Pen.Color := clBtnShadow;
+          Pen.Color := ThemedColor(clBtnShadow);
         LineTo(X, YT);
         LineTo(XR, YT);
       end;
@@ -13745,6 +14290,27 @@ var
   AutoCount, BlockHeight, ScrollWidth, L, LI, RI: Integer;
   SaveID: TObject;
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TBlock.DrawLogic');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   case Display of
 
     pdNone:
@@ -13759,6 +14325,7 @@ begin
 
   else
     StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, self.BorderWidth, AutoCount, MargArray);
+    StyleUn.ApplyBoxSettings(MargArray,Document.UseQuirksMode);
     BorderWidth.Left := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
     BorderWidth.Right := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
     BorderWidth.Top  := MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop];
@@ -13784,6 +14351,19 @@ begin
 
     Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
   end;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TBlock.DrawLogic');
+   {$ENDIF}
 end;
 
 
@@ -14183,6 +14763,7 @@ begin
     Inc(VSpaceT, MargArray[BorderTopWidth]);
     Inc(VSpaceB, MargArray[BorderBottomWidth]);
   end;
+  FDisplay := Prop.Display;
 end;
 
 //-- BG ---------------------------------------------------------- 30.11.2010 --
@@ -14258,6 +14839,26 @@ function TSectionBase.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeig
 //
 // Returns the nominal height of the section (without overhanging floating blocks)
 begin
+  {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  CodeSite.EnterMethod(Self,'TSectionBase.DrawLogic');
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+  {$ENDIF}
   StartCurs := Curs;
   Result := SectionHeight;
   DrawHeight := SectionHeight;
@@ -14267,6 +14868,19 @@ begin
   YDraw := Y;
   ContentBot := Y + SectionHeight;
   DrawBot := Y + DrawHeight;
+   {$IFDEF JPM_DEBUGGING_HTMLSUBS}
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TSectionBase.DrawLogic');
+   {$ENDIF}
 end;
 
 function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;

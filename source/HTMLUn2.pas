@@ -36,13 +36,19 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types,
+  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants,
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
+  {$IFDEF Compiler24_Plus}
+  System.Types,
+  System.UITypes,
+  {$ELSE}
+  Types,
+  {$ENDIF}
   HtmlBuffer,
   HtmlGif2,
   HtmlGlobals,
@@ -125,7 +131,8 @@ type
     ArticleSy, ArticleEndSy,
     AsideSy, AsideEndSy,
     FooterSy, FooterEndSy,
-    HGroupSy, HGroupEndSy);
+    HGroupSy, HGroupEndSy,
+    MarkSy, MarkEndSy);
 
 //------------------------------------------------------------------------------
 
@@ -1177,9 +1184,9 @@ begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
     if not MonoBlack and Disabled then
-      Brush.Color := clBtnFace
+      Brush.Color := ThemedColor(clBtnFace)
     else
-      Brush.Color := color;
+      Brush.Color := ThemedColor(color);
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1197,14 +1204,14 @@ begin
       if Raised then
         Pen.Color := clSilver
       else
-        Pen.Color := clBtnShadow;
+        Pen.Color := ThemedColor(clBtnShadow);
     end;
     MoveTo(X1, Y2);
     LineTo(X1, Y1);
     LineTo(X2, Y1);
     if not MonoBlack then
       if Raised then
-        Pen.Color := clBtnShadow
+        Pen.Color := ThemedColor(clBtnShadow)
       else
         Pen.Color := clSilver;
     LineTo(X2, Y2);
@@ -2654,7 +2661,7 @@ begin
       with Canvas do
       begin
         Brush.Style := bsSolid;
-        Brush.Color := Color;
+        Brush.Color := ThemedColor(Color);
         FillRgn(Handle, R, Brush.Handle);
       end;
     finally
@@ -2820,7 +2827,7 @@ begin
     CombineRgn(OuterRegion, OuterRegion, InnerRegion, RGN_DIFF);
     Brush := TBrush.Create;
     try
-      Brush.Color := BGround or PalRelative;
+      Brush.Color := ThemedColor(BGround) or PalRelative;
       Brush.Style := bsSolid;
       FillRgn(Canvas.Handle, OuterRegion, Brush.Handle);
     finally
@@ -2931,7 +2938,7 @@ begin
         if not InPath then
         begin
           lb.lbStyle := BS_SOLID;
-          lb.lbColor := C[I] or PalRelative;
+          lb.lbColor := ThemedColor(C[I]) or PalRelative;
           lb.lbHatch := 0;
           if S[I] = bssDotted then
             PenType := PS_Dot or ps_EndCap_Round

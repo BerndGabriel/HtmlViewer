@@ -568,6 +568,10 @@ type
   end;
 
 implementation
+  {$IFDEF Compiler24_Plus}
+uses
+  System.Types;
+  {$ENDIF}
 
 const
   Sequence: integer = 10;

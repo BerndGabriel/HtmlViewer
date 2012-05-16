@@ -53,6 +53,8 @@ type
     aJustify,
     aSub,
     aSuper);
+  BoxSizingType = (ContentBox, BorderBox);
+
 const
   CAlignmentStyle: array[TAlignmentStyle] of ThtString = (
     'none',
@@ -65,6 +67,11 @@ const
     'justify',
     'sub',
     'super');
+
+const
+  CBoxSizing: array[BoxSizingType] of ThtString = (
+    'content-box',
+    'border-box');
 
 type
   TBackgroundPosition = (
@@ -334,6 +341,7 @@ function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, De
 function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
 
 function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlignmentStyle): Boolean;
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: BoxSizingType): Boolean;
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
 function TryStrToBoxFloatStyle(const Str: ThtString; out Float: TBoxFloatStyle): Boolean;
 function TryStrToBoxPositionStyle(const Str: ThtString; out Position: TBoxPositionStyle): Boolean;
@@ -479,6 +487,22 @@ begin
     begin
       Result := True;
       AlignmentStyle := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- JPM --------------------------------------------------------- 03.02-2012 --
+
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: BoxSizingType): Boolean;
+var
+  I: BoxSizingType;
+begin
+  for I := low(I) to high(I) do
+    if CBoxSizing[I] = Str then
+    begin
+      Result := True;
+      ABoxSizing := I;
       exit;
     end;
   Result := False;

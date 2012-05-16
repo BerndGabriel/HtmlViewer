@@ -46,6 +46,10 @@ uses
 {$ifndef NoMetafile}
   MetaFilePrinter, vwPrint,
 {$endif}
+  {$IFDEF Compiler24_Plus}
+  System.Types,
+  System.UITypes,
+  {$ENDIF}
   URLSubs,
   HtmlGlobals,
   HtmlBuffer,

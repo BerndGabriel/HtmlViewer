@@ -203,6 +203,9 @@ function IsWhiteSpace(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 implementation
 
 uses
+  {$IFDEF Compiler24_Plus}
+  System.Types,
+  {$ENDIF}
   HtmlView, FramView, StylePars, UrlSubs;
 
 const
@@ -439,7 +442,7 @@ var
         while (LCh <> Term) and (LCh <> EofChar) do
         begin
           if LCh = AmperChar then
-            htAppendStr(S, GetEntityStr(CP_ACP))
+            htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage))
           else
           begin
             if LCh = CrChar then
@@ -890,66 +893,78 @@ procedure THtmlParser.Next;
           S := htUpperCase(S);
       end;
 
-      function GetQuotedStr(var S: ThtString; var Value: Integer; WantCrLf: Boolean; Sym: Symb): Boolean;
+      function GetQuotedStr(var S: ThtString; WantCrLf: Boolean; Sym: Symb): Boolean;
       {get a quoted ThtString but strip the quotes, check to see if it is numerical}
       var
         Term: ThtChar;
-        S1: ThtString;
-        Code: Integer;
-        ValD: double;
         SaveSy: Symb;
       begin
-        Result := False;
-        Term := LCh;
-        if (Term <> '"') and (Term <> '''') then
+        Result := (LCh = '"') or (LCh = '''');
+        if not Result then
           Exit;
-        Result := True;
+        Term := LCh;
         SaveSy := Sy;
         GetCh;
         while (LCh <> Term) and (LCh <> EofChar) do
         begin
-          if LCh <> CrChar then
-          begin
-            if LCh = AmperChar then
-            begin
-              S := S + GetEntityStr(FPropStack.Last.CodePage);
-            end
-            else
-            begin
-              // this is faster than: S := S + LCh;
-              SetLength(S, Length(S) + 1);
-              S[Length(S)] := LCh;
-              GetCh;
-            end;
-          end
-          else if WantCrLf then
-          begin
-            S := S + ^M^J;
-            GetCh;
-          end
+          case LCh of
+            CrChar:
+              begin
+                if WantCrLf then
+                  htAppendStr(S, ^M^J);
+                GetCh;
+              end;
+
+            AmperChar:
+              htAppendStr(S, GetEntityStr(PropStack.Last.CodePage));
+
           else
+            htAppendChr(S, LCh);
             GetCh;
+          end;
         end;
         if LCh = Term then
-          GetCh; {pass termination ThtChar}
-        S1 := Trim(S);
-        if Pos('%', S1) = Length(S1) then
-          SetLength(S1, Length(S1) - 1);
-      {see if S1 evaluates to a numerical value.  Note that something like
-       S1 = 'e8196' can give exception because of the 'e'}
-        Value := 0;
-        if Length(S1) > 0 then
-          case S1[1] of
-            '0'..'9', '+', '-', '.':
-              try
-                System.Val(S1, ValD, Code);
-                Value := Round(ValD);
-              except
-              end;
-          end
-        else if Trim(S) = '*' then
-          Value := 1;
+          GetCh; {pass termination char}
+
         Sy := SaveSy;
+      end;
+
+      procedure StrToInteger(const S: ThtString; var Value: Integer);
+      var
+        S1: ThtString;
+        I, Code: Integer;
+        ValD: Double;
+      begin
+        S1 := Trim(S);
+        I := Length(S1);
+        if I > 0 then
+        begin
+          case S1[I] of
+            PercentChar:
+            begin
+              SetLength(S1, Length(S1) - 1);
+              Dec(I);
+            end;
+
+            StarChar:
+            begin
+              SetLength(S1, Length(S1) - 1);
+              Dec(I);
+              if I = 0 then
+                Value := 1;
+            end;
+          end;
+
+          if I > 0 then
+            case S1[1] of
+              '0'..'9', '+', '-', '.':
+                try
+                  System.Val(S1, ValD, Code);
+                  Value := Round(ValD);
+                except
+                end;
+            end;
+        end;
       end;
 
     var
@@ -965,6 +980,7 @@ procedure THtmlParser.Next;
       if AttributeNames.Find(St, I) then
         Sym := PSymbol(AttributeNames.Objects[I]).Value;
       SkipWhiteSpace;
+
       S := '';
       if Sym = BorderSy then
         Val := 1
@@ -976,26 +992,29 @@ procedure THtmlParser.Next;
       GetCh;
 
       SkipWhiteSpace;
-      if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
-        if not GetValue(S, Val) then
-          while True do
-            case LCh of
-              SpcChar,
-              TabChar,
-              CrChar,
-              GreaterChar,
-              EofChar:
-                break;
-
-              AmperChar:
-                htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage));
-            else
-              htAppendChr(S, LCh);
-              GetCh;
+      if not GetQuotedStr(S, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
+        while True do
+          case LCh of
+            SpcChar, TabChar, CrChar:
+            begin
+              SkipWhiteSpace;
+              break;
             end;
 
-      if (Sym = IDSy) and (S <> '') and Assigned(FPropStack.Document) and not LinkSearch then
-        FPropStack.Document.AddChPosObjectToIDNameList(S, FPropStack.SIndex);
+            GreaterChar, EofChar:
+              break;
+
+            AmperChar:
+              htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage));
+          else
+            htAppendChr(S, LCh);
+            GetCh;
+          end;
+
+      StrToInteger(S, Val);
+
+      if (Sym = IDSy) and (S <> '') and Assigned(PropStack.Document ) and not LinkSearch then
+        PropStack.Document.AddChPosObjectToIDNameList(S, PropStack.SIndex);
     end;
 
   var
@@ -2633,6 +2652,7 @@ var
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
+                MarkSy, MarkEndSy,
                 BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
                 USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
                 SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
@@ -2642,6 +2662,7 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     case Sy of
+                      MarkSy,
                       BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                         SubSy, SupSy, BigSy, SmallSy, LabelSy:
                         begin
@@ -2651,6 +2672,7 @@ var
                           if Prop.HasBorderStyle then {start of inline border}
                             FPropStack.Document.ProcessInlines(FPropStack.SIndex, Prop, True);
                         end;
+                      MarkEndSy,
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
                         SEndSy, StrikeEndSy, SpanEndSy,
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
@@ -2981,6 +3003,7 @@ begin
         Next;
       end;
 
+    MarkSy,
     BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy,
     CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
       begin
@@ -3007,7 +3030,7 @@ begin
           Section.ChangeFont(FPropStack.Last);
         Next;
       end;
-
+    MarkEndSy,
     BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy,
     SubEndSy, SupEndSy, SmallEndSy, BigEndSy, FontEndSy,
     CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
@@ -3232,7 +3255,7 @@ begin
   SectionList := NewBlock.MyCell;
 
   while not (Sy in Termset) and
-    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
     EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3323,7 +3346,7 @@ begin
   Done := False;
   while not Done do {handle second part like after a <p>}
     case Sy of
-      TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+      TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
         EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
         CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
         SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3446,6 +3469,7 @@ begin
           LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3685,6 +3709,7 @@ begin
     case Sy of
       TextSy, BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3738,11 +3763,9 @@ begin
                     if CompareText(Name, 'fixed') = 0 then
                       FPropStack.Last.Assign('fixed', BackgroundAttachment);
                 end;
-{.$IFDEF Quirk}
             if FUseQuirksMode then begin
               FPropStack.Document.Styles.FixupTableColor(FPropStack.Last);
             end;
-{.$ENDIF}
             FPropStack.Last.Assign(AMarginWidth, MarginLeft);
             FPropStack.Last.Assign(AMarginWidth, MarginRight);
             FPropStack.Last.Assign(AMarginHeight, MarginTop);
@@ -3898,6 +3921,7 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
+  Self.Doc := Doc;
   FPropStack := ASectionList.PropStack;
   try
     ParseInit(ASectionList);
@@ -4628,7 +4652,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..90] of TResWord = (
+  ResWordDefinitions: array[1..91] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4719,7 +4743,8 @@ const
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
     (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
     (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
-    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy));
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
+    (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin

@@ -32,6 +32,10 @@ unit HtmlFonts;
 interface
 
 uses
+  {$IFDEF Compiler24_Plus}
+  System.Types,
+  System.UITypes,
+  {$ENDIF}
   Windows, SysUtils,
   Graphics, Classes, Forms, Contnrs, Variants,
   //
