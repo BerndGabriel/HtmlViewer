@@ -6915,11 +6915,6 @@ var
   BrushStyle: TBrushStyle;
   YB, AlphaNumb: Integer;
 
-  procedure Circle(X, Y, Rad: Integer);
-  begin
-    Canvas.Ellipse(X, Y - Rad, X + Rad, Y);
-  end;
-
 begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 
@@ -6969,10 +6964,10 @@ begin
               lbCircle:
                 begin
                   Brush.Style := bsClear;
-                  Circle(X - 16, YB, 7);
+                  Circle(Canvas,X - 16, YB, 7);
                 end;
               lbDisc:
-                Circle(X - 15, YB - 1, 5);
+                Circle(Canvas,X - 15, YB - 1, 5);
               lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
             end;
             Brush.Color := BrushColor;
