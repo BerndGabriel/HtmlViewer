@@ -2325,27 +2325,6 @@ begin
 
   if L.TheID <> '' then
     Document.IDNameList.AddObject(L.TheID, Self);
-
-  if Self.Document.UseQuirksMode then begin
-      case Floating of
-       ARight :
-          begin
-            HSpaceR := 0;
-            HSpaceL := ImageSpace;
-          end;
-       ALeft :
-          begin
-            HSpaceR := ImageSpace;
-            HSpaceL := 0;
-          end
-        else
-          HSpaceR := 0;
-          HSpaceL := 0;
-        end;
-  end else begin
-      HSpaceR := 0;
-      VSpaceB := 0;
-  end;
 end;
 
 constructor TImageObj.SimpleCreate(Document: ThtDocument; Parent: TCellBasic; const AnURL: ThtString);
@@ -14629,16 +14608,36 @@ begin
             end;
           end;
       end;
+  if NewSpace >= 0 then begin
+    HSpaceL := NewSpace;
+  end else begin
+    if Self.Document.UseQuirksMode then begin
+       case Floating of
+         ALeft :
+           begin
+             HSpaceL := 0;
+             HSpaceR := ImageSpace;
+           end;
+         ARight :
+           begin
+             HSpaceL := ImageSpace;
+             HSpaceR := 0;
+           end;
+       end;
+    end;
+  end;
 
+ {
   if NewSpace >= 0 then
     HSpaceL := NewSpace
   else if Floating in [ALeft, ARight] then
     HSpaceL := ImageSpace {default}
-  else
+{  else
     HSpaceL := 0;
 
   HSpaceR := HSpaceL;
   VSpaceB := VSpaceT;
+    }
 end;
 
 constructor TFloatingObj.CreateCopy(Document: ThtDocument; Parent: TCellBasic; Source: TFloatingObj);
@@ -14688,11 +14687,12 @@ begin
     VertAlign := Align;
   if Prop.GetFloat(Align) and (Align <> ANone) then
   begin
-    if HSpaceR = 0 then
-    begin {default is different for Align = left/right}
-      HSpaceR := ImageSpace;
-      HSpaceL := ImageSpace;
-    end;
+//    if HSpaceR = 0 then
+//    begin {default is different for Align = left/right}
+//      HSpaceR := ImageSpace;
+//      HSpaceL := ImageSpace;
+//    end;
+
     Floating := Align;
     VertAlign := ANone;
   end;
