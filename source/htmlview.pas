@@ -46,6 +46,10 @@ uses
 {$ifndef NoMetafile}
   MetaFilePrinter, vwPrint,
 {$endif}
+  {$IFDEF Compiler24_Plus}
+  System.Types,
+  System.UITypes,
+  {$ENDIF}
   URLSubs,
   HtmlGlobals,
   HtmlBuffer,
@@ -2805,7 +2809,8 @@ procedure THtmlViewer.DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeig
     begin
       OldPal := SelectPalette(DC, ThePalette, False);
       RealizePalette(DC);
-      ACanvas.Brush.Color := BGColor or PalRelative;
+//      ACanvas.Brush.Color := BGColor or PalRelative;
+      ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
       OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
       OldBack := SetBkColor(DC, clWhite);
       OldFore := SetTextColor(DC, clBlack);
@@ -3034,7 +3039,8 @@ var
 
   procedure PaintBackground(Canvas: TCanvas; Top, Bot: Integer);
   begin
-    Canvas.Brush.Color := CopyList.Background;
+//    Canvas.Brush.Color := CopyList.Background;
+    Canvas.Brush.Color := ThemedColor(CopyList.Background);
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(Rect(0, Top, Width + 1, Bot));
   end;
@@ -4777,8 +4783,9 @@ begin
       SelectObject(MemDC, Bm);
       SetWindowOrgEx(MemDC, X, Y, nil);
       Canvas2.Font := Font;
+      Canvas2.Font.Color := ThemedColor(Font.Color);
       Canvas2.Handle := MemDC;
-      Canvas2.Brush.Color := Color;
+      Canvas2.Brush.Color := ThemedColor(Color);
       Canvas2.Brush.Style := bsSolid;
       FViewer.DrawBorder;
       FViewer.HTMLPaint(Canvas2, Rect);

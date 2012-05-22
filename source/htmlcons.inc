@@ -1,4 +1,12 @@
 {Version 11}
+{$IFDEF CONDITIONALEXPRESSIONS}
+
+
+  // Must be at the top...
+  {$IF COMPILERVERSION >= 24.0}
+    {$LEGACYIFEND ON}
+  {$IFEND}
+{$ENDIF}
 
 {$ifdef FPC}
 
@@ -35,6 +43,7 @@
 { Identify Delphi Compiler Version:
 
   Compiler    Version Compiler Defined Symbol
+  Delphi XE3    24    VER240
   Delphi XE2    23    VER230
   Delphi XE     22    VER220
   Delphi 2010   21    VER210
@@ -96,6 +105,11 @@
                         {$ifdef ver220}
                         {$else}
                           {$define Compiler23_Plus}
+                          {$ifdef ver230}
+                          {$else}
+                            {$define Compiler24_Plus}
+                            {$define nextgen}
+                          {$endif}
                         {$endif}
                       {$endif}
                     {$endif}
@@ -237,6 +251,15 @@
   {$else}
     {$define UseTNT}
   {$endif}
+{$endif}
+
+{$ifdef Compiler23_Plus}
+{JPM_DEBUGGING define is used for internal debugging using CodeSite Express that is included with
+some versions of RAD Studio XE2.  This should never be used for release software and for component usage.}
+  {$ifdef win32}
+  {.$define JPM_DEBUGGING}
+  {$endif}
+    {$define UseVCLStyles}
 {$endif}
 
 {
