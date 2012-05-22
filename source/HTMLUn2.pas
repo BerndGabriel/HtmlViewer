@@ -1157,7 +1157,8 @@ begin
   begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
-    Brush.Color := Color;
+    Brush.Color := ThemedColor(Color);
+//    Brush.Color := Color;
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;

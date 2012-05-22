@@ -1232,7 +1232,7 @@ begin
   begin
     OldPal := SelectPalette(DC, ThePalette, False);
     RealizePalette(DC);
-    ACanvas.Brush.Color := BGColor or PalRelative;
+    ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
     OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
     OldBack := SetBkColor(DC, clWhite);
     OldFore := SetTextColor(DC, clBlack);

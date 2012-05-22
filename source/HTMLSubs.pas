@@ -3865,6 +3865,7 @@ begin
   with FControl do
   begin
     Canvas.Font := Font;
+    Canvas.Font.Color := ThemedColor(Font.Color);
     H2 := Abs(Font.Height);
     if BorderStyle <> bsNone then
       DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, Color)
@@ -6921,6 +6922,7 @@ begin
             NStr := IntToStr(ListNumb);
           end;
           Canvas.Font := ListFont;
+          Canvas.Font.Color := ThemedColor(ListFont.Color);
           NStr := NStr + '.';
           BkMode := SetBkMode(Canvas.Handle, Transparent);
           TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
@@ -6938,7 +6940,7 @@ begin
             BrushStyle := Brush.Style;
             BrushColor := Brush.Color;
             Brush.Style := bsSolid;
-            Brush.Color := ListFont.Color;
+            Brush.Color := ThemedColor(ListFont.Color);
             case ListStyleType of
               lbCircle:
                 begin
@@ -8292,7 +8294,7 @@ begin
       if Cell.Document.IsCopy and ImgOK then
       begin
         InitFullBG(FullBG, PR - PL, IH,Cell.Document.IsCopy);
-        FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
+        FullBG.Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
         FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
       end
@@ -12802,7 +12804,8 @@ var
           if Document.ShowDummyCaret and not Inverted
             and (MySelB = Start - Buff) then
           begin
-            Canvas.Pen.Color := Canvas.Font.Color;
+            Canvas.Pen.Color := ThemedColor(Canvas.Font.Color);
+//            Canvas.Pen.Color := Canvas.Font.Color;
             Tmp := Y - Descent + FO.Descent + Addon - YOffset;
             Canvas.Brush.Color := clWhite;
             Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
@@ -15032,8 +15035,10 @@ begin
   OldBrushStyle := Canvas.Brush.Style; {save style first}
   OldBrushColor := Canvas.Brush.Color;
   OldPenColor := Canvas.Pen.Color;
-  Canvas.Pen.Color := FO.TheFont.Color;
-  Canvas.Brush.Color := BackgroundColor;
+  Canvas.Pen.Color := ThemedColor(FO.TheFont.Color);
+//  Canvas.Pen.Color := FO.TheFont.Color;
+  Canvas.Brush.Color := ThemedColor(BackgroundColor);
+//  Canvas.Brush.Color := BackgroundColor;
   Canvas.Brush.Style := bsSolid;
   try
     // paint a rectangular placeholder
