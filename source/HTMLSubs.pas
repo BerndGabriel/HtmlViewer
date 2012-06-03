@@ -1292,6 +1292,9 @@ type
     FPropStack: THtmlPropStack;
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
+    function CopyToBuffer(Buffer: SelTextCount): Integer;
+  protected
+    CB: SelTextCount;
   public
 
     // copied by move() in CreateCopy()
@@ -1335,7 +1338,6 @@ type
     PanelCreateEvent: TPanelCreateEvent;
     PanelDestroyEvent: TPanelDestroyEvent;
     PanelPrintEvent: TPanelPrintEvent;
-    CB: SelTextCount;
     PageBottom: Integer;
     PageShortened: boolean;
     MapList: TFreeList; {holds list of client maps, TMapItems}
@@ -7519,87 +7521,59 @@ begin
     FormControlList.Clear;
 end;
 
-function ThtDocument.GetSelLength: Integer;
+//-- BG ---------------------------------------------------------- 03.06.2012 --
+// extracted from CopyToClipboardA(), GetSelLength() and GetSelTextBuf().
+function ThtDocument.CopyToBuffer(Buffer: SelTextCount): Integer;
 var
   I: Integer;
 begin
-  Result := 0;
-  if SelE <= SelB then
-    Exit; {nothing to do}
-  CB := SelTextCount.Create;
+  CB := Buffer;
   try
-    for I := 0 to Count - 1 do
-      with TSectionBase(Items[I]) do
-      begin
-        if (SelB >= StartCurs + Len) then
-          Continue;
-        if (SelE <= StartCurs) then
-          Break;
-        CopyToClipboard;
-      end;
-    Result := CB.Terminate;
-  finally
-    CB.Free;
-  end;
-end;
-
-//------------------------------------------------------------------------------
-procedure ThtDocument.CopyToClipboardA(Leng: Integer);
-var
-  I: Integer;
-  SB: TSectionBase;
-begin
-  if SelE <= SelB then
-    Exit; {nothing to do}
-  try
-    CB := ClipBuffer.Create(Leng);
     for I := 0 to Count - 1 do
     begin
-      SB := Items[I];
-      with SB do
+      with Items[I] do
       begin
-        if (SelB >= StartCurs + Len) then
+        if SelB >= StartCurs + Len then
           Continue;
-        if (SelE <= StartCurs) then
+        if SelE <= StartCurs then
           Break;
         CopyToClipboard;
       end;
     end;
-    CB.Terminate;
+    Result := CB.Terminate;
   finally
-    CB.Free;
+    FreeAndNil(CB);
   end;
+end;
+
+procedure ThtDocument.CopyToClipboardA(Leng: Integer);
+begin
+  if SelE > SelB then
+    CopyToBuffer(ClipBuffer.Create(Leng));
+end;
+
+function ThtDocument.GetSelLength: Integer;
+begin
+  if SelE > SelB then
+    Result := CopyToBuffer(SelTextCount.Create)
+  else
+    Result := 0; {nothing to do}
 end;
 
 //------------------------------------------------------------------------------
 function ThtDocument.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-
-var
-  I: Integer;
 begin
-  if BufSize >= 1 then
-  begin
-    Buffer[0] := #0;
-    Result := 1;
-  end
+  if SelE > SelB then
+    Result := CopyToBuffer(SelTextBuf.Create(Buffer, BufSize))
   else
-    Result := 0;
-  if SelE <= SelB then
-    Exit; {nothing to do}
-  CB := SelTextBuf.Create(Buffer, BufSize);
-  try
-    for I := 0 to Count - 1 do
-      with TSectionBase(Items[I]) do
-      begin
-        if (SelB >= StartCurs + Len) then
-          Continue;
-        if (SelE <= StartCurs) then
-          Break;
-        CopyToClipboard;
-      end;
-    Result := CB.Terminate;
-  finally
-    CB.Free;
+  begin
+    if BufSize >= 1 then
+    begin
+      Buffer[0] := #0;
+      Result := 1;
+    end
+    else
+      Result := 0;
   end;
 end;
 
@@ -10749,41 +10723,42 @@ end;
 function THtmlTable.FindDocPos(SourcePos: Integer; Prev: boolean): Integer;
 var
   I, J: Integer;
-  TC: TCellObj;
+  Row: TCellList;
+  CellObj: TCellObj;
 begin
-  Result := -1;
   if not Prev then
-  begin
     for J := 0 to Rows.Count - 1 do
-      if Assigned(Rows.Items[J]) then
-        with TCellList(Rows[J]) do
-          for I := 0 to Count - 1 do
+    begin
+      Row := Rows[J];
+      if Row <> nil then
+        for I := 0 to Row.Count - 1 do
+        begin
+          CellObj := Row[I];
+          if CellObj <> nil then
           begin
-            TC := TCellObj(Items[I]);
-            if Assigned(TC) then
-            begin
-              Result := TC.Cell.FindDocPos(SourcePos, Prev);
-              if Result >= 0 then
-                Exit;
-            end;
+            Result := CellObj.Cell.FindDocPos(SourcePos, Prev);
+            if Result >= 0 then
+              Exit;
           end;
-  end
+        end;
+    end
   else {Prev , iterate in reverse}
-  begin
     for J := Rows.Count - 1 downto 0 do
-      with TCellList(Rows[J]) do
-        for I := Count - 1 downto 0 do
-          if Assigned(Items[I]) then
+    begin
+      Row := Rows[J];
+      if Row <> nil then
+        for I := Row.Count - 1 downto 0 do
+        begin
+          CellObj := Row[I];
+          if CellObj <> nil then
           begin
-            TC := TCellObj(Items[I]);
-            if Assigned(TC) then
-            begin
-              Result := TC.Cell.FindDocPos(SourcePos, Prev);
-              if Result >= 0 then
-                Exit;
-            end;
+            Result := CellObj.Cell.FindDocPos(SourcePos, Prev);
+            if Result >= 0 then
+              Exit;
           end;
-  end;
+        end;
+    end;
+  Result := -1;
 end;
 
 {----------------THtmlTable.CopyToClipboard}

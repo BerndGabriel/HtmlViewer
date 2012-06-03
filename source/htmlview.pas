@@ -4406,7 +4406,8 @@ begin
   if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
   begin
     StSrc := StSrc div 2;
-    EnSrc := EnSrc div 2;
+    if EnSrc > 0 then
+      EnSrc := EnSrc div 2;
   end;
   Inc(StSrc);
 
@@ -4420,7 +4421,8 @@ begin
     end;
   end
   else
-    EnSrc := EnSrc + 1;
+    Inc(EnSrc);
+
 {Truncate beyond EnSrc}
   HTML := Copy(HTML, 1, EnSrc - 1);
 {Also remove any tags on the end}
