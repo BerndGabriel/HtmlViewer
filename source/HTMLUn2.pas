@@ -3522,7 +3522,10 @@ type
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}
-
+{$ifdef LCL}
+begin
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Bitmap);
+{$else}
   function Allocate(Size: Integer): AllocRec;
   begin
     Result := AllocRec.Create;
@@ -3554,8 +3557,6 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
     AR.Free;
   end;
 
-{$ifdef LCL}
-{$else}
 var
   OldPal: HPalette;
   DC: HDC;
@@ -3563,11 +3564,7 @@ var
   Image: AllocRec;
   ImageSize: DWord;
   InfoSize: DWord;
-{$endif}
 begin
-{$ifdef LCL}
-  Canvas.StretchDraw(Rect(X, Y, W, H), Bitmap);
-{$else}
   if (Bitmap = nil) or (Bitmap.Handle = 0) then
     Exit;
   DC := Canvas.Handle;
