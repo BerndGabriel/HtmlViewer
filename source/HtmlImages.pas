@@ -1529,7 +1529,7 @@ var
 {$endif}
 begin
 {$ifdef LCL}
-  Canvas.StretchDraw(Rect(X, Y, W, H), Bitmap);
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Bitmap);
 {$else}
   if (Bitmap = nil) or (Bitmap.Handle = 0) then
     Exit;
@@ -2274,7 +2274,7 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 procedure ThtMetafileImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 begin
-  Canvas.StretchDraw(Rect(X, Y, W, H), MetaFile);
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), MetaFile);
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -2309,8 +2309,7 @@ end;
 //-- BG ---------------------------------------------------------- 10.04.2011 --
 procedure ThtMetafileImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
 begin
-  inherited;
-  Canvas.StretchDraw(Rect(X, Y, W, H), MetaFile);
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), MetaFile);
 end;
 
 {$ENDIF !NoMetafile}
