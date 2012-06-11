@@ -5451,6 +5451,9 @@ var
 var
   IsTiledGpImage: Boolean;
 begin
+  if (IW = 0) or (IH = 0) then
+    exit;
+
   if (BGImage.Image is TBitmap) then
   begin
     TheGpObj := TBitmap(BGImage.Image);
@@ -6101,7 +6104,7 @@ begin
               Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
         end;
 
-        if ImgOK then
+        if ImgOK and (TiledImage <> nil) then
         begin
           if not Document.IsCopy then
             {$IFNDEF NoGDIPlus}
@@ -8877,7 +8880,7 @@ begin
                 GuessHt := Trunc(SpecHt.Value);
 
               wtPercent:
-                GuessHt := Trunc(SpecHt.Value * AHeight / 100.0);
+                GuessHt := Trunc(SpecHt.Value * AHeight / 1000.0);
             else
               GuessHt := 0;
             end;
@@ -9217,6 +9220,66 @@ procedure THtmlTable.Initialize;
           end;
         end;
       end;
+
+    NumCols := 0;
+    for Rw := 0 to Rows.Count - 1 do
+      NumCols := Max(NumCols, Rows[Rw].Count);
+  end;
+
+  procedure AddDummyCellsForUnequalRowLengths;
+  var
+    Cl: Integer;
+    CellObj: TCellObj;
+    Row: TCellList;
+
+    function IsLastCellOfRow(): Boolean;
+    begin
+      // Is Row[Cl] resp. CellObj a cell in this row? (Cl >= 0)
+      // With respect to rowspans from previous rows is it the last one? (Cl + CellObj.ColSpan >= NumCols)
+      Result := (Cl >= 0) and (Cl + CellObj.ColSpan >= Row.Count);
+    end;
+
+  var
+    Rw, I, K: Integer;
+  begin
+    Rw := 0;
+    while Rw < Rows.Count do
+    begin
+      Row := Rows[Rw];
+      Cl := -1;
+      if Row.Count < NumCols then
+      begin
+        // this row is too short
+
+        // find the spanning column
+        Cl := Row.Count - 1;
+        while Cl >= 0 do
+        begin
+          CellObj := Row[Cl];
+          if CellObj.ColSpan > 0 then
+            break;
+          Dec(Cl);
+        end;
+
+        if IsLastCellOfRow then
+        begin
+          // widen this cell
+          for I := Row.Count to NumCols - 1 do
+          begin
+            Row.Add(DummyCell(CellObj.RowSpan));
+            for K := Rw + 1 to Rw + CellObj.RowSpan - 1 do
+              Rows[K].Add(DummyCell(0));
+          end;
+          CellObj.ColSpan := NumCols - Cl;
+        end;
+      end;
+      
+      // continue with next row not spanned by this cell.
+      if (Cl >= 0) and (CellObj.RowSpan > 0) then
+        Inc(Rw, CellObj.RowSpan)
+      else
+        Inc(Rw);
+    end;
   end;
 
 var
@@ -9228,10 +9291,7 @@ begin
   begin
     AddDummyCellsForColSpansAndInitializeCells;
     AddDummyCellsForRowSpans;
-
-    NumCols := 0;
-    for Rw := 0 to Rows.Count - 1 do
-      NumCols := Max(NumCols, Rows[Rw].Count);
+    AddDummyCellsForUnequalRowLengths;
 
     for Rw := 0 to Rows.Count - 1 do
     begin
