@@ -4197,58 +4197,30 @@ begin
 end;
 
 procedure THtmlViewer.CopyToClipboard;
-const
-  // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
-  StartFrag: ThtString = '<!--StartFragment-->';
-  EndFrag: ThtString = '<!--EndFragment-->';
-  DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
-var
-  Leng: Integer;
-  StSrc, EnSrc: Integer;
-  HTML: ThtString;
-  CF_HTML: UINT;
 
-  procedure copyFormatToClipBoard(const Source: ThtString);
-  // Put SOURCE on the clipboard, using FORMAT as the clipboard format
-{$ifdef LCL}
+  procedure CopyToClipboardAsText(const HTML: ThtString; StSrc, EnSrc: Integer);
   var
-    Utf8: UTF8String;
+    Source: ThtString;
+{$ifdef LCL}
   begin
-    Clipboard.Clear;
+    Source := Copy(HTML, StSrc, EnSrc - StSrc);
     Clipboard.AddFormat(CF_UNICODETEXT, PWideChar(Source)[0], Length(Source) * sizeof(WIDECHAR));
-    Utf8 := UTF8Encode(Source);
-    Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
   end;
 {$else}
   var
     Len: Integer;
     Mem: HGLOBAL;
-    Buf: PAnsiChar;
     Wuf: PWideChar;
-    L: Integer;
   begin
-    Clipboard.Clear;
+    Source := Copy(HTML, StSrc, EnSrc - StSrc);
     Len := Length(Source);
-    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len * 4 + 1);
-    try
-      Buf := GlobalLock(Mem);
-      try
-        L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
-        Buf[L] := #0;
-        Clipboard.SetAsHandle(CF_HTML, Mem);
-      finally
-        GlobalUnlock(Mem);
-      end;
-    except
-      GlobalFree(Mem);
-    end;
     Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
     try
       Wuf := GlobalLock(Mem);
       try
         Move(Source[1], Wuf^, Len * SizeOf(ThtChar));
         Wuf[Len] := #0;
-        Clipboard.SetAsHandle(CF_UNICODETEXT, Mem);
+        SetClipboardData(CF_UNICODETEXT, Mem);
       finally
         GlobalUnlock(Mem);
       end;
@@ -4258,142 +4230,213 @@ var
   end;
 {$endif}
 
-  function GetHeader(const HTML: ThtString): ThtString;
-  const
-    Version = 'Version:1.0'#13#10;
-    StartHTML = 'StartHTML:';
-    EndHTML = 'EndHTML:';
-    StartFragment = 'StartFragment:';
-    EndFragment = 'EndFragment:';
-    SourceURL = 'SourceURL:';
-    NumberLengthAndCR = 10;
+  procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
 
-    // Let the compiler determine the description length.
-    PreliminaryLength = Length(Version) + Length(StartHTML) +
-      Length(EndHTML) + Length(StartFragment) +
-      Length(EndFragment) + 4 * NumberLengthAndCR +
-      2; {2 for last CRLF}
-  var
-    URLString: ThtString;
-    StartHTMLIndex,
-      EndHTMLIndex,
-      StartFragmentIndex,
-      EndFragmentIndex: Integer;
-  begin
-    if CurrentFile = '' then
-      UrlString := SourceURL + 'unsaved:///THtmlViewer.htm'
-    else if Pos('://', CurrentFile) > 0 then
-      URLString := SourceURL + CurrentFile {already has protocol}
-    else
-      URLString := SourceURL + 'file://' + CurrentFile;
-    StartHTMLIndex := PreliminaryLength + Length(URLString);
-    EndHTMLIndex := StartHTMLIndex + Length(HTML);
-    StartFragmentIndex := StartHTMLIndex + Pos(StartFrag, HTML) + Length(StartFrag) - 1;
-    EndFragmentIndex := StartHTMLIndex + Pos(EndFrag, HTML) - 1;
-
-    Result := Version +
-      SysUtils.Format('%s%.8d', [StartHTML, StartHTMLIndex]) + #13#10 +
-      SysUtils.Format('%s%.8d', [EndHTML, EndHTMLIndex]) + #13#10 +
-      SysUtils.Format('%s%.8d', [StartFragment, StartFragmentIndex]) + #13#10 +
-      SysUtils.Format('%s%.8d', [EndFragment, EndFragmentIndex]) + #13#10 +
-      URLString + #13#10;
-  end;
-
-  procedure RemoveTag(const Tag: ThtString);
-  {remove all the tags that look like "<tag .....>" }
-  var
-    I, J: Integer;
-    LTML: ThtString;
-    C: ThtChar;
-  begin
-    C := #0; // valium for Delphi 2009+
-    LTML := htLowerCase(HTML);
-    repeat
-      I := Pos(Tag, LTML);
-      if I = 0 then
-        break;
-      J := I - 1 + Length(Tag);
-      repeat
-        Inc(J);
-        if J = Length(LTML) then
-          break;
-        C := LTML[J];
-      until (C = GreaterChar) or (C = EofChar);
-      Delete(HTML, I, J - I + 1);
-      Delete(LTML, I, J - I + 1);
-    until False;
-  end;
-
-  procedure MessUp(const S: ThtString);
-  var
-    I: Integer;
-    L: ThtString;
-  begin
-    L := htLowerCase(HTML);
-    I := Pos(S, L);
-    while (I > 0) do
+    procedure CopyToClipBoard(const Source: ThtString);
+    // Put SOURCE on the clipboard, using FORMAT as the clipboard format
+  {$ifdef LCL}
+    var
+      Utf8: UTF8String;
     begin
-      Delete(HTML, I, 1);
+      Utf8 := UTF8Encode(Source);
+      Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
+    end;
+  {$else}
+    var
+      Len: Integer;
+      Mem: HGLOBAL;
+      Buf: PAnsiChar;
+      L: Integer;
+      CF_HTML: UINT;
+    begin
+      Len := Length(Source);
+      CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
+      Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len * 4 + 1);
+      try
+        Buf := GlobalLock(Mem);
+        try
+          L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
+          Buf[L] := #0;
+          SetClipboardData(CF_HTML, Mem);
+        finally
+          GlobalUnlock(Mem);
+        end;
+      except
+        GlobalFree(Mem);
+      end;
+    end;
+  {$endif}
+
+    const
+      // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
+      StartFrag: ThtString = '<!--StartFragment-->';
+      EndFrag: ThtString = '<!--EndFragment-->';
+      DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
+
+    function GetHeader(const HTML: ThtString): ThtString;
+    const
+      Version = 'Version:1.0'#13#10;
+      StartHTML = 'StartHTML:';
+      EndHTML = 'EndHTML:';
+      StartFragment = 'StartFragment:';
+      EndFragment = 'EndFragment:';
+      SourceURL = 'SourceURL:';
+      NumberLengthAndCR = 10;
+
+      // Let the compiler determine the description length.
+      PreliminaryLength = Length(Version) + Length(StartHTML) +
+        Length(EndHTML) + Length(StartFragment) +
+        Length(EndFragment) + 4 * NumberLengthAndCR +
+        2; {2 for last CRLF}
+    var
+      URLString: ThtString;
+      StartHTMLIndex,
+        EndHTMLIndex,
+        StartFragmentIndex,
+        EndFragmentIndex: Integer;
+    begin
+      if CurrentFile = '' then
+        UrlString := SourceURL + 'unsaved:///THtmlViewer.htm'
+      else if Pos('://', CurrentFile) > 0 then
+        URLString := SourceURL + CurrentFile {already has protocol}
+      else
+        URLString := SourceURL + 'file://' + CurrentFile;
+      StartHTMLIndex := PreliminaryLength + Length(URLString);
+      EndHTMLIndex := StartHTMLIndex + Length(HTML);
+      StartFragmentIndex := StartHTMLIndex + Pos(StartFrag, HTML) + Length(StartFrag) - 1;
+      EndFragmentIndex := StartHTMLIndex + Pos(EndFrag, HTML) - 1;
+
+      Result := Version +
+        SysUtils.Format('%s%.8d', [StartHTML, StartHTMLIndex]) + #13#10 +
+        SysUtils.Format('%s%.8d', [EndHTML, EndHTMLIndex]) + #13#10 +
+        SysUtils.Format('%s%.8d', [StartFragment, StartFragmentIndex]) + #13#10 +
+        SysUtils.Format('%s%.8d', [EndFragment, EndFragmentIndex]) + #13#10 +
+        URLString + #13#10;
+    end;
+
+    procedure RemoveTag(const Tag: ThtString);
+    {remove all the tags that look like "<tag .....>" }
+    var
+      I, J: Integer;
+      LTML: ThtString;
+      C: ThtChar;
+    begin
+      C := #0; // valium for Delphi 2009+
+      LTML := htLowerCase(HTML);
+      repeat
+        I := Pos(Tag, LTML);
+        if I = 0 then
+          break;
+        J := I - 1 + Length(Tag);
+        repeat
+          Inc(J);
+          if J = Length(LTML) then
+            break;
+          C := LTML[J];
+        until (C = GreaterChar) or (C = EofChar);
+        Delete(HTML, I, J - I + 1);
+        Delete(LTML, I, J - I + 1);
+      until False;
+    end;
+
+    procedure MessUp(const S: ThtString);
+    var
+      I: Integer;
+      L: ThtString;
+    begin
       L := htLowerCase(HTML);
       I := Pos(S, L);
-    end;
-  end;
-
-  procedure InsertDefaultFontInfo;
-  var
-    I: Integer;
-    S, L: ThtString;
-    HeadFound: Boolean;
-  begin
-    L := LowerCase(HTML);
-    I := Pos('<head>', L);
-    HeadFound := I > 0;
-    if not HeadFound then
-      I := Pos('<html>', L);
-    if I <= 0 then
-      I := 1;
-    S := '<style> body {font-size: ' + IntToStr(DefFontSize) + 'pt; font-family: "' +
-      DefFontName + '"; }</style>';
-    if not HeadFound then
-      S := '<head>' + S + '</head>';
-    Insert(S, HTML, I);
-  end;
-
-  function BackupToContent: ThtString;
-  var
-    C: ThtChar;
-    I: Integer;
-
-    procedure GetC; {reads characters backwards}
-    begin
-      if I - 1 > StSrc then
+      while (I > 0) do
       begin
+        Delete(HTML, I, 1);
+        L := htLowerCase(HTML);
+        I := Pos(S, L);
+      end;
+    end;
+
+    procedure InsertDefaultFontInfo;
+    var
+      I: Integer;
+      S, L: ThtString;
+      HeadFound: Boolean;
+    begin
+      L := LowerCase(HTML);
+      I := Pos('<head>', L);
+      HeadFound := I > 0;
+      if not HeadFound then
+        I := Pos('<html>', L);
+      if I <= 0 then
+        I := 1;
+      S := '<style> body {font-size: ' + IntToStr(DefFontSize) + 'pt; font-family: "' +
+        DefFontName + '"; }</style>';
+      if not HeadFound then
+        S := '<head>' + S + '</head>';
+      Insert(S, HTML, I);
+    end;
+
+    function BackupToContent: ThtString;
+    var
+      C: ThtChar;
+      I: Integer;
+
+      procedure GetC; {reads characters backwards}
+      begin
+        if I - 1 > StSrc then
+        begin
+          Dec(I);
+          C := HTML[I];
+        end
+        else
+          C := #0;
+      end;
+
+    begin
+      I := EnSrc;
+      repeat
+        repeat {skip past white space}
+          GetC;
+        until (C > ' ') or (C = EofChar);
+        if C = '>' then
+          repeat {read thru a tag}
+            repeat
+              GetC;
+            until (C = LessChar) or (C = EofChar);
+            GetC;
+          until C <> '>';
+      until (C > ' ') or (C = EofChar); {until found some content}
+      if C = EofChar then
         Dec(I);
-        C := HTML[I];
-      end
-      else
-        C := #0;
+      Result := Copy(HTML, 1, I); {truncate the tags}
     end;
 
   begin
-    I := EnSrc;
-    repeat
-      repeat {skip past white space}
-        GetC;
-      until (C > ' ') or (C = EofChar);
-      if C = '>' then
-        repeat {read thru a tag}
-          repeat
-            GetC;
-          until (C = LessChar) or (C = EofChar);
-          GetC;
-        until C <> '>';
-    until (C > ' ') or (C = EofChar); {until found some content}
-    if C = EofChar then
-      Dec(I);
-    Result := Copy(HTML, 1, I); {truncate the tags}
+  {Truncate beyond EnSrc}
+    HTML := Copy(HTML, 1, EnSrc - 1);
+  {Also remove any tags on the end}
+    HTML := BackupToContent;
+  {insert the StartFrag ThtString}
+    Insert(StartFrag, HTML, StSrc);
+  {Remove all Meta tags, in particular the ones that specify language, but others
+   seem to cause problems also}
+    RemoveTag('<meta');
+  {Remove <!doctype> in preparation to having one added}
+    RemoveTag('<!doctype');
+  {page-break-... stylesheet properties cause a hang in Word -- mess them up}
+    MessUp('page-break-');
+  {Add in default font information which wouldn't be in the HTML}
+    InsertDefaultFontInfo;
+  {Add Doctype tag at start and append the EndFrag ThtString}
+    HTML := DocType + HTML + EndFrag;
+  {Add the header to start}
+    HTML := GetHeader(HTML) + HTML;
+
+    CopyToClipBoard(HTML);
   end;
 
+var
+  Leng: Integer;
+  StSrc, EnSrc: Integer;
+  HTML: ThtString;
 begin
   Leng := FSectionList.GetSelLength;
   if Leng = 0 then
@@ -4423,28 +4466,14 @@ begin
   else
     Inc(EnSrc);
 
-{Truncate beyond EnSrc}
-  HTML := Copy(HTML, 1, EnSrc - 1);
-{Also remove any tags on the end}
-  HTML := BackupToContent;
-{insert the StartFrag ThtString}
-  Insert(StartFrag, HTML, StSrc);
-{Remove all Meta tags, in particular the ones that specify language, but others
- seem to cause problems also}
-  RemoveTag('<meta');
-{Remove <!doctype> in preparation to having one added}
-  RemoveTag('<!doctype');
-{page-break-... stylesheet properties cause a hang in Word -- mess them up}
-  MessUp('page-break-');
-{Add in default font information which wouldn't be in the HTML}
-  InsertDefaultFontInfo;
-{Add Doctype tag at start and append the EndFrag ThtString}
-  HTML := DocType + HTML + EndFrag;
-{Add the header to start}
-  HTML := GetHeader(HTML) + HTML;
-
-  CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-  CopyFormatToClipBoard(HTML);
+  Clipboard.Open;
+  try
+    Clipboard.Clear;
+    CopyToClipboardAsText(Html, StSrc, EnSrc);
+    CopyToClipboardAsHtml(Html, StSrc, EnSrc);
+  finally
+    Clipboard.Close;
+  end;
 end;
 
 function THtmlViewer.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;

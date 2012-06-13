@@ -1,6 +1,7 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.3
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2012 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -44,7 +45,7 @@ uses
   StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
-  VersionNo = '11.2';
+  VersionNo = '11.3';
   MaxHScroll = 6000; {max horizontal display in pixels}
   HandCursor = crHandPoint; //10101;
   OldThickIBeamCursor = 2;
