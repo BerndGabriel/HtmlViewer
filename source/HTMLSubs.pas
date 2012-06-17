@@ -273,6 +273,8 @@ type
     procedure AKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure AssignY(Y: Integer);
 {$ENDIF}
+    function GetFontInfoIndex: FIIndex;
+    property FontInfoIndex: FIIndex read GetFontInfoIndex;
   public
     Pos: Integer; {0..Len  Index where font takes effect}
     TheFont: ThtFont;
@@ -2055,15 +2057,7 @@ begin
   if Value <> FVisited then
   begin
     FVisited := Value;
-    if Value then
-      if Hover then
-        ConvertFont(FIArray.Ar[HVFont])
-      else
-        ConvertFont(FIArray.Ar[VFont])
-    else if Hover then
-      ConvertFont(FIArray.Ar[HLFont])
-    else
-      ConvertFont(FIArray.Ar[LFont]);
+    ConvertFont(FIArray.Ar[FontInfoIndex]);
     FontChanged;
   end;
 end;
@@ -2073,15 +2067,7 @@ begin
   if Value <> FHover then
   begin
     FHover := Value;
-    if Value then
-      if FVisited then
-        ConvertFont(FIArray.Ar[HVFont])
-      else
-        ConvertFont(FIArray.Ar[HLFont])
-    else if FVisited then
-      ConvertFont(FIArray.Ar[VFont])
-    else
-      ConvertFont(FIArray.Ar[LFont]);
+    ConvertFont(FIArray.Ar[FontInfoIndex]);
     FontChanged;
   end;
 end;
@@ -2138,6 +2124,21 @@ end;
 function TFontObj.GetOverhang: Integer;
 begin
   Result := Overhang;
+end;
+
+//-- BG ---------------------------------------------------------- 17.06.2012 --
+function TFontObj.GetFontInfoIndex: FIIndex;
+begin
+  if Visited then
+    if Hover then
+      Result := HVFont
+    else
+      Result := VFont
+  else
+    if Hover then
+      Result := HLFont
+    else
+      Result := LFont;
 end;
 
 function TFontObj.GetHeight(var Desc: Integer): Integer;
