@@ -1575,7 +1575,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.01.2012 --
-procedure SummarizeCountsPerType(
+procedure CountsPerType(
   var CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
@@ -1595,13 +1595,28 @@ function SumOfType(
   const Widths: IntArray;
   StartIndex, EndIndex: Integer): Integer;
   {$ifdef UseInline} inline; {$endif}
-
 var
   I: Integer;
 begin
   Result := 0;
   for I := StartIndex to EndIndex do
     if ColumnSpecs[I] = WidthType then
+      Inc(Result, Widths[I]);
+end;
+
+//-- BG ---------------------------------------------------------- 17.06.2012 --
+function SumOfNotType(
+  WidthType: TWidthType;
+  const ColumnSpecs: TWidthTypeArray;
+  const Widths: IntArray;
+  StartIndex, EndIndex: Integer): Integer;
+  {$ifdef UseInline} inline; {$endif}
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := StartIndex to EndIndex do
+    if ColumnSpecs[I] <> WidthType then
       Inc(Result, Widths[I]);
 end;
 
@@ -9545,11 +9560,19 @@ var
   SpannedCounts: TIntegerPerWidthType;
 
   procedure IncreaseMinMaxWidthsEvenly(WidthType: TWidthType; StartIndex, EndIndex: Integer);
+  var
+    Untouched: Integer;
   begin
     if CellMin > SpannedMin then
-      IncreaseWidthsEvenly(WidthType, MinWidths, StartIndex, EndIndex, CellMin, SpannedMin, SpannedCounts[WidthType]);
+    begin
+      Untouched := SumOfNotType(WidthType, ColumnSpecs, MinWidths, StartIndex, EndIndex);
+      IncreaseWidthsEvenly(WidthType, MinWidths, StartIndex, EndIndex, CellMin - Untouched, SpannedMin - Untouched, SpannedCounts[WidthType]);
+    end;
     if CellMax > SpannedMax then
-      IncreaseWidthsEvenly(WidthType, MaxWidths, StartIndex, EndIndex, CellMax, SpannedMax, SpannedCounts[WidthType]);
+    begin
+      Untouched := SumOfNotType(WidthType, ColumnSpecs, MinWidths, StartIndex, EndIndex);
+      IncreaseWidthsEvenly(WidthType, MaxWidths, StartIndex, EndIndex, CellMax - Untouched, SpannedMax - Untouched, SpannedCounts[WidthType]);
+    end;
   end;
 
   procedure IncreaseMinMaxWidthsByMinMaxDelta(WidthType: TWidthType; StartIndex, EndIndex: Integer);
@@ -9697,7 +9720,7 @@ begin
                 - Fixed Layout: experiments showed that IExplore and Firefox *do* respect width attributes of <td> and <th>
                   even if there was a <colgroup> definition although W3C specified differently.
               }
-              SummarizeCountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
+              CountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
 
               if CellPercent > 0 then
               begin
@@ -9960,7 +9983,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       begin
         // Expand columns to fit exactly into NewWidth.
         // Prefer widening columns without or with relative specification.
-        SummarizeCountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
+        CountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
         if Counts[wtNone] > 0 then
         begin
           // a) There is at least 1 column without any width constraint: modify this/these.
@@ -11711,7 +11734,8 @@ begin
   if RemoveSpaces then
     while True do
       case (Start + N - 1)^ of
-        WideChar(' '), BrkCh:
+        SpcChar,
+        BrkCh:
           Dec(N); {remove spaces on end}
       else
         break;
@@ -11720,7 +11744,7 @@ begin
   begin
     J := Images.GetImageCountAt(Start - Buff);
     J1 := FormControls.GetControlCountAt(Start - Buff);
-    if J = 0 then {it's and image}
+    if J = 0 then {it's an image}
     begin
       Wid := Images.GetWidthAt(Start - Buff, Align, HSpcL, HSpcR, FlObj);
     {Here we count floating images as 1 ThtChar but do not include their width,
@@ -11764,7 +11788,6 @@ var
   I, J, J1, OHang, Wid, HSpcL, HSpcR: Integer;
   Align: AlignmentType;
   FlObj: TFloatingObj;
-  Font: TMyFont;
 begin
   Result := 0;
   while N > 0 do
@@ -11777,25 +11800,22 @@ begin
     {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
       if not (Align in [ALeft, ARight]) then
-      begin
-        Result := Result + Wid + HSpcL + HSpcR;
-      end;
+        Inc(Result, Wid + HSpcL + HSpcR);
       Dec(N); {image counts as one ThtChar}
       Inc(Start);
     end
     else if J1 = 0 then
     begin
-      Result := Result + FormControls.GetWidthAt(Start - Buff, HSpcL, HSpcR);
-      Result := Result + HSpcL + HSpcR;
+      Inc(Result, FormControls.GetWidthAt(Start - Buff, HSpcL, HSpcR) + HSpcL + HSpcR);
       Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
     else
     begin
-      Font := Fonts.GetFontAt(Start - Buff, OHang);
-      Font.AssignToCanvas(Canvas);
+      Fonts.GetFontAt(Start - Buff, OHang).AssignToCanvas(Canvas);
       I := Min(J, J1);
       I := Min(I, Min(Fonts.GetFontCountAt(Start - Buff, Len), N));
+      Assert(I > 0, 'I less than or = 0 in FindTextWidthA');
       Inc(Result, GetXExtent(Canvas.Handle, Start, I) - OHang);
       if I = 0 then
         Break;
