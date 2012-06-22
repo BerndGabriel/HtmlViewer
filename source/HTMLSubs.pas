@@ -11237,6 +11237,7 @@ begin
       end;
       FreeMem(XP);
       XP := nil;
+      BuffSize := 0;
     end;
   end;
   if Len > 0 then
