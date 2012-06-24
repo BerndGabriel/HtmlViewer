@@ -4744,6 +4744,7 @@ begin
   while I < TheCount do
   begin
     try
+      //TODO -oBG, 24.06.2012: merge sections with display=inline etc.  
       Inc(H, Items[I].DrawLogic(Canvas, 0, Y + H, 0, 0, Width, AHeight, BlHt, IMgr, Sw, Curs));
       ScrollWidth := Max(ScrollWidth, Sw);
       Inc(I);
@@ -6919,7 +6920,7 @@ begin
     UlSy, DirSy, MenuSy:
       begin
         FListType := Unordered;
-        if APlain then
+        if APlain or (Display = pdInline) then
           FListStyleType := lbNone
         else
           if Tmp = lbBlank then
@@ -6959,7 +6960,7 @@ begin
     case Sy of
 
       OLSy, ULSy, DirSy, MenuSy:
-        if FListStyleType = lbNone then
+        if APlain then
           MargArrayO[PaddingLeft] := 0
         else
           MargArrayO[PaddingLeft] := ListIndent;
