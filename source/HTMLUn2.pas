@@ -1601,27 +1601,33 @@ begin
 end;
 
 procedure ClipBuffer.CopyToClipboard;
-{Unicode clipboard routine courtesy Mike Lischke}
-var
-  Data: THandle;
-  DataPtr: Pointer;
+{$ifdef LCL}
 begin
-  Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, 2 * BufferLeng);
+  Clipboard.AddFormat(CF_UNICODETEXT, Buffer[0], BufferLeng * sizeof(WIDECHAR));
+end;
+{$else}
+var
+  Len: Integer;
+  Mem: HGLOBAL;
+  Wuf: PWideChar;
+begin
+  Len := BufferLeng;
+  Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
   try
-    DataPtr := GlobalLock(Data);
+    Wuf := GlobalLock(Mem);
     try
-      Move(Buffer^, DataPtr^, 2 * BufferLeng);
-{$ifndef FPC_TODO}
-      Clipboard.SetAsHandle(CF_UNICODETEXT, Data);
-{$endif}
+      Move(Buffer[0], Wuf[0], Len * SizeOf(ThtChar));
+      Wuf[Len] := #0;
+      // BG, 28.06.2012: use API method. The vcl clipboard does not support multiple formats.
+      SetClipboardData(CF_UNICODETEXT, Mem);
     finally
-      GlobalUnlock(Data);
+      GlobalUnlock(Mem);
     end;
   except
-    GlobalFree(Data);
-    raise;
+    GlobalFree(Mem);
   end;
 end;
+{$endif}
 
 function ClipBuffer.Terminate: Integer;
 begin

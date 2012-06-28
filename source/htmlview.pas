@@ -4441,35 +4441,35 @@ begin
   Leng := FSectionList.GetSelLength;
   if Leng = 0 then
     Exit;
-  FSectionList.CopyToClipboardA(Leng + 1);
-
-  HTML := DocumentSource;
-  StSrc := FindSourcePos(FSectionList.SelB);
-  EnSrc := FindSourcePos(FSectionList.SelE);
-  if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
-  begin
-    StSrc := StSrc div 2;
-    if EnSrc > 0 then
-      EnSrc := EnSrc div 2;
-  end;
-  Inc(StSrc);
-
-  if EnSrc < 0 then {check to see if end selection is at end of document}
-  begin
-    EnSrc := Length(HTML);
-    if HTML[EnSrc] = '>' then
-    begin
-      HTML := HTML + ' ';
-      Inc(EnSrc);
-    end;
-  end
-  else
-    Inc(EnSrc);
-
   Clipboard.Open;
   try
     Clipboard.Clear;
-    CopyToClipboardAsText(Html, StSrc, EnSrc);
+    FSectionList.CopyToClipboardA(Leng + 1);
+
+    HTML := DocumentSource;
+    StSrc := FindSourcePos(FSectionList.SelB);
+    EnSrc := FindSourcePos(FSectionList.SelE);
+    if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
+    begin
+      StSrc := StSrc div 2;
+      if EnSrc > 0 then
+        EnSrc := EnSrc div 2;
+    end;
+    Inc(StSrc);
+
+    if EnSrc < 0 then {check to see if end selection is at end of document}
+    begin
+      EnSrc := Length(HTML);
+      if HTML[EnSrc] = '>' then
+      begin
+        HTML := HTML + ' ';
+        Inc(EnSrc);
+      end;
+    end
+    else
+      Inc(EnSrc);
+
+    //CopyToClipboardAsText(Html, StSrc, EnSrc);
     CopyToClipboardAsHtml(Html, StSrc, EnSrc);
   finally
     Clipboard.Close;
