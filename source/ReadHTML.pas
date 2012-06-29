@@ -1327,20 +1327,21 @@ begin
           DivBlock := TBlock.Create(SectionList, Attributes, FPropStack.Last);
           SectionList.Add(DivBlock, TagIndex);
           SectionList := DivBlock.MyCell;
-        end;
+        end
+        else
+          DivBlock := nil;
         Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
-
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
         PopAProp(SymbToStr(Sym));
-        if SectionList.CheckLastBottomMargin then
-        begin
-          DivBlock.MargArray[MarginBottom] := ParagraphSpace;
-          DivBlock.BottomAuto := True;
-        end;
         if not IsInline then
         begin
+          if SectionList.CheckLastBottomMargin then
+          begin
+            DivBlock.MargArray[MarginBottom] := ParagraphSpace;
+            DivBlock.BottomAuto := True;
+          end;
           SectionList := DivBlock.OwnerCell;
         end;
 
