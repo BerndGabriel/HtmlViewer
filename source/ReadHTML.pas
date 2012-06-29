@@ -1344,7 +1344,7 @@ begin
           SectionList := DivBlock.OwnerCell;
         end;
 
-        Section := nil; //TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
+        Section := nil; // TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
         if Sy = EndSymbFromSymb(Sym) then
           Next;
       end;
