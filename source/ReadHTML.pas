@@ -1313,7 +1313,7 @@ begin
           SectionList := DivBlock.OwnerCell;
         end;
         Section := nil; // TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, False);
-        if Sy = DivEndSy then
+        if Sy = EndSymbFromSymb(Sym) then
           Next;
       end;
 
