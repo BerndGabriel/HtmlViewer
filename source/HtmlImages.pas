@@ -1314,6 +1314,9 @@ var
 {$ENDIF !NoGDIPlus}
 
 begin
+  if (IW = 0) or (IH = 0) then
+    exit;
+
   TheGpObj := BGImage.Bitmap;
   TheMask  := BGImage.Mask;
   NoMask := not Assigned(TheMask) and PRec.X.RepeatD and PRec.Y.RepeatD;
