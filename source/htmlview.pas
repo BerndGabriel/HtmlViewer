@@ -4198,38 +4198,6 @@ end;
 
 procedure THtmlViewer.CopyToClipboard;
 
-  procedure CopyToClipboardAsText(const HTML: ThtString; StSrc, EnSrc: Integer);
-  var
-    Source: ThtString;
-{$ifdef LCL}
-  begin
-    Source := Copy(HTML, StSrc, EnSrc - StSrc);
-    Clipboard.AddFormat(CF_UNICODETEXT, PWideChar(Source)[0], Length(Source) * sizeof(WIDECHAR));
-  end;
-{$else}
-  var
-    Len: Integer;
-    Mem: HGLOBAL;
-    Wuf: PWideChar;
-  begin
-    Source := Copy(HTML, StSrc, EnSrc - StSrc);
-    Len := Length(Source);
-    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
-    try
-      Wuf := GlobalLock(Mem);
-      try
-        Move(Source[1], Wuf^, Len * SizeOf(ThtChar));
-        Wuf[Len] := #0;
-        SetClipboardData(CF_UNICODETEXT, Mem);
-      finally
-        GlobalUnlock(Mem);
-      end;
-    except
-      GlobalFree(Mem);
-    end;
-  end;
-{$endif}
-
   procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
 
     procedure CopyToClipBoard(const Source: ThtString);
@@ -4469,7 +4437,6 @@ begin
     else
       Inc(EnSrc);
 
-    //CopyToClipboardAsText(Html, StSrc, EnSrc);
     CopyToClipboardAsHtml(Html, StSrc, EnSrc);
   finally
     Clipboard.Close;
