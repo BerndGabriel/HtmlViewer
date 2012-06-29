@@ -339,6 +339,7 @@ type
     PercentHeight: boolean; {if height is percent}
     Title: ThtString;
   protected
+    FDisplay: TPropDisplay; // how it is displayed
     IsCopy: boolean;
     function GetYPosition: Integer; override;
     procedure CalcSize(AvailableWidth, AvailableHeight, SetWidth, SetHeight: Integer; IsClientSizeSpecified: Boolean);
@@ -1532,6 +1533,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: IntArray): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1539,6 +1541,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType; StartIndex, EndIndex: TWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of array elements from StartIndex to EndIndex.
 var
   I: TWidthType;
@@ -1550,6 +1553,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntegerPerWidthType): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of all array elements.
 begin
   Result := Sum(Arr, Low(Arr), High(Arr));
@@ -1557,6 +1561,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.01.2012 --
 function SubArray(const Arr, Minus: IntArray): IntArray; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return array with differences per index.
 var
   I: Integer;
@@ -1568,6 +1573,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value, StartIndex, EndIndex: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1577,12 +1583,14 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: IntArray; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   SetArray(Arr, Value, Low(Arr), High(Arr));
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2012 --
 procedure SetArray(var Arr: TIntegerPerWidthType; Value: Integer); overload;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: TWidthType;
 begin
@@ -1595,6 +1603,7 @@ procedure SummarizeCountsPerType(
   var CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -1609,6 +1618,8 @@ function SumOfType(
   const ColumnSpecs: TWidthTypeArray;
   const Widths: IntArray;
   StartIndex, EndIndex: Integer): Integer;
+  {$ifdef UseInline} inline; {$endif}
+
 var
   I: Integer;
 begin
@@ -1620,11 +1631,13 @@ end;
 
 //-- BG ---------------------------------------------------------- 10.12.2010 --
 function htCompareText(const T1, T2: ThtString): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := WideCompareText(T1, T2);
 end;
 
 procedure InitializeFontSizes(Size: Integer);
+   {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -2530,6 +2543,18 @@ var
   UName: ThtString;
 begin
   ViewImages := Document.ShowImages;
+  case FDisplay of
+
+    pdNone:
+    begin
+      ObjHeight := 0;
+      ObjWidth := 0;
+
+      ClientHeight := ObjHeight;
+      ClientWidth := ObjWidth;
+      Exit;
+    end;
+  end;
   if ViewImages then
   begin
     if FImage = nil then
@@ -2689,11 +2714,11 @@ begin
   begin
     White := SectionList.Printing or (SectionList.Background and $FFFFFF = clWhite) or
       ((SectionList.Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF));
-    Dark := clBtnShadow;
+    Dark := ThemedColor(clBtnShadow);
     if White then
       Light := clSilver
     else
-      Light := clBtnHighLight;
+      Light := ThemedColor(clBtnHighLight);
   end;
 end;
 
@@ -2701,6 +2726,7 @@ end;
 // Thus move htStyles and htColors from HtmlUn2.pas to HtmlSubs.pas the only unit where they are used
 
 function htStyles(P0, P1, P2, P3: BorderStyleType): htBorderStyleArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := P0;
   Result[1] := P1;
@@ -2709,6 +2735,7 @@ begin
 end;
 
 function htColors(C0, C1, C2, C3: TColor): htColorArray;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := C0;
   Result[1] := C1;
@@ -2718,6 +2745,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(Light, Dark: TColor; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 begin
   if Raised then
     Result := htColors(Light, Light, Dark, Dark)
@@ -2727,6 +2755,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 function htRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; Raised: Boolean): htColorArray; overload;
+  {$ifdef UseInline} inline; {$endif}
 var
   Light, Dark: TColor;
 begin
@@ -2739,6 +2768,7 @@ procedure RaisedRectColor(Canvas: TCanvas;
   const ORect, IRect: TRect;
   const Colors: htColorArray;
   Styles: htBorderStyleArray); overload;
+  {$ifdef UseInline} inline; {$endif}
 {Draws colored raised or lowered rectangles for table borders}
 begin
   DrawBorder(Canvas, ORect, IRect, Colors, Styles, clNone, False);
@@ -2748,6 +2778,7 @@ procedure RaisedRect(SectionList: ThtDocument; Canvas: TCanvas;
   X1, Y1, X2, Y2: Integer;
   Raised: boolean;
   W: Integer);
+  {$ifdef UseInline} inline; {$endif}
 {Draws raised or lowered rectangles for table borders}
 begin
   RaisedRectColor(Canvas,
@@ -2827,7 +2858,7 @@ begin
   SetTextAlign(Canvas.Handle, TA_Top);
   if SubstImage and (BorderSize = 0) then
   begin
-    Canvas.Font.Color := FO.TheFont.Color;
+    Canvas.Font.Color := ThemedColor(FO.TheFont.Color);
   {calc the offset from the image's base to the alt= text baseline}
     case VertAlign of
       ATop, ANone:
@@ -2857,7 +2888,7 @@ begin
       SaveColor := Pen.Color;
       SaveWidth := Pen.Width;
       SaveStyle := Pen.Style;
-      Pen.Color := FO.TheFont.Color;
+      Pen.Color := ThemedColor(FO.TheFont.Color);
       Pen.Width := BorderSize;
       Pen.Style := psInsideFrame;
       Font.Color := Pen.Color;
@@ -3818,6 +3849,7 @@ begin
   with FControl do
   begin
     Canvas.Font := Font;
+    Canvas.Font.Color := ThemedColor(Font.Color);
     H2 := Abs(Font.Height);
     if BorderStyle <> bsNone then
       DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, Color)
@@ -4278,7 +4310,7 @@ begin
     MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
       (GetDeviceCaps(Handle, PLANES) = 1);
     if Disabled and not MonoBlack then
-      Brush.Color := clBtnFace
+      Brush.Color := ThemedColor(clBtnFace)
     else
       Brush.Color := clWhite;
     Pen.Color := clWhite;
@@ -4293,7 +4325,7 @@ begin
     else
     begin
       Pen.Width := 2;
-      Pen.Color := clBtnShadow;
+      Pen.Color := ThemedColor(clBtnShadow);
     end;
     Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
     if not MonoBlack then
@@ -5161,6 +5193,7 @@ var
   end;
 
 begin
+
   ContentMinMaxWidth(Canvas, MinWidth, MaxWidth);
   HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
   case AutoCount of
@@ -5170,6 +5203,7 @@ begin
           and not (FloatLR in [ALeft, ARight]) and
           (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) then
         begin
+          ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
           Marg2 := Max(0, AWidth - MargArray[piWidth] - BordPad);
           case Justify of
             centered:
@@ -5184,8 +5218,10 @@ begin
       end;
 
     1:
-      if MargArray[piWidth] = Auto then
-        CalcWidth
+      if MargArray[piWidth] = Auto then begin
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
+        CalcWidth;
+      end
       else
       begin
         if MargArray[MarginRight] = Auto then
@@ -5204,6 +5240,7 @@ begin
           MargArray[MarginLeft] := 0
         else
           MargArray[MarginRight] := 0;
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
         CalcWidth;
       end
       else
@@ -5217,47 +5254,12 @@ begin
       begin
         MargArray[MarginLeft] := 0;
         MargArray[MarginRight] := 0;
+        ApplyBoxWidthSettings(MargArray,MinWidth,MaxWidth,Document.UseQuirksMode);
         CalcWidth;
       end;
   end;
   Result := MargArray[piWidth];
-end;
 
-{This stuff is necssary because IE 5x and IE 6 quirks mode has a non-standard
-model.  In those browsers, width and height include padding and border.}
-function GetContentHeight(AMargArray : TMarginArray; const AUseQuirksMode : Boolean) : Integer;
-begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[piHeight] -
-        (AMargArray[BorderTopWidth] + AMargArray[BorderBottomWidth] +
-         AMargArray[PaddingTop] + AMargArray[PaddingBottom]);
-  end else begin
-    Result := AMargArray[piHeight];
-  end;
-end;
-
-function GetTotalWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
-begin
-  if AUseQuirksMode then begin
-    Result := AMargArray[MarginLeft] + ANewWidth + AMargArray[MarginRight];
-  end else begin
-    Result := ANewWidth +
-      AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-      AMargArray[MarginRight] + AMargArray[PaddingRight] + AMargArray[BorderRightWidth];
-  end;
-end;
-
-function AdjustNewWidth(const ANewWidth : Integer; AMargArray : TMarginArray;
-  const AUseQuirksMode : Boolean) : Integer;
-begin
-  if AUseQuirksMode then begin
-    Result := ANewWidth -
-      (AMargArray[MarginLeft] + AMargArray[PaddingLeft] + AMargArray[BorderLeftWidth] +
-       AMargArray[PaddingRight] + AMargArray[BorderRightWidth] )
-  end else begin
-    Result := ANewWidth;
-  end;
 end;
 
 {----------------TBlock.DrawLogic}
@@ -5290,13 +5292,11 @@ var
   end;
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
-  var LHeight : Integer;
   begin
-    LHeight := GetContentHeight(MargArray, Document.UseQuirksMode);
-    if HideOverflow and (LHeight > 3) then
-      Result := ContentTop + LHeight
+    if HideOverflow and (MargArray[piHeight] > 3) then
+      Result := ContentTop + MargArray[piHeight]
     else
-      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + LHeight);
+      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
   end;
 
 var
@@ -5326,13 +5326,12 @@ begin
     MaxWidth := AWidth;
 
     ConvMargArray(AWidth, AHeight, AutoCount);
+    ApplyBoxSettings(MargArray,Document.UseQuirksMode);
     NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
     MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := GetTotalWidth( NewWidth, MargArray, Document.UseQuirksMode);
-    // BG, 29.04.2012: produces wrong width, if MarginLeft is <> 0. Most probably MarginLeft is wrong there:
-    //NewWidth := AdjustNewWidth(NewWidth, MargArray, Document.UseQuirksMode);
+    TotalWidth  := MiscWidths + NewWidth;
 
     Indent := LeftWidths;
     TopP := MargArray[TopPos];
@@ -5660,22 +5659,6 @@ end;
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 var
   YOffset: Integer;
   XR, YB, RefX, RefY, TmpHt: Integer;
@@ -5686,6 +5669,8 @@ var
   OpenRgn: Boolean;
   PdRect, CnRect: TRect; // padding rect, content rect
 begin
+  if Document.Printing and not Document.PrintBackground then
+    NeedDoImageStuff := False;
   YOffset := Document.YOff;
 
   case FLoatLR of
@@ -5775,12 +5760,12 @@ begin
         if HasBackgroundColor and
           (not Document.Printing or Document.PrintTableBackground) then
         begin {color the Padding Region}
-          Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+          Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
           Canvas.Brush.Style := bsSolid;
           if Document.IsCopy and ImgOK then
           begin
-            InitFullBG(IW, IH);
-            FullBG.Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+            InitFullBG(FullBG,IW, IH,Document.IsCopy);
+            FullBG.Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
             FullBG.Canvas.Brush.Style := bsSolid;
             FullBG.Canvas.FillRect(Rect(0, 0, IW, IH));
           end
@@ -5803,7 +5788,7 @@ begin
               BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
             else
             begin
-              InitFullBG(PdRect.Right - PdRect.Left, IH);
+              InitFullBG(FullBG,PdRect.Right - PdRect.Left, IH,Document.IsCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, Canvas.Handle, PdRect.Left, FT, SrcCopy);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
               BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -5825,19 +5810,21 @@ begin
           end
           else
           {$ENDIF !NoGDIPlus}
-          if NoMask then {printing}
-            PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
-          else if HasBackgroundColor then
-          begin
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
-            BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
-            PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
-          end
-          else
-            PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
-        end;
+          if Assigned(TiledImage) then begin
 
+            if NoMask then {printing}
+                PrintBitmap(Canvas, PdRect.Left, FT, PdRect.Right - PdRect.Left, IH, TBitmap(TiledImage))
+              else if HasBackgroundColor then
+              begin
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
+                BitBlt(FullBG.Canvas.Handle, 0, 0, IW, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
+                PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
+              end
+              else
+              PrintTransparentBitmap3(Canvas, PdRect.Left, FT, IW, IH, TBitmap(TiledImage), TiledMask, IT, IH)
+            end;
+          end;
       except
       end;
     end;
@@ -6634,11 +6621,6 @@ var
   BrushStyle: TBrushStyle;
   YB, AlphaNumb: Integer;
 
-  procedure Circle(X, Y, Rad: Integer);
-  begin
-    Canvas.Ellipse(X, Y - Rad, X + Rad, Y);
-  end;
-
 begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
 
@@ -6666,6 +6648,7 @@ begin
             NStr := IntToStr(ListNumb);
           end;
           Canvas.Font := ListFont;
+          Canvas.Font.Color := ThemedColor(ListFont.Color);
           NStr := NStr + '.';
           BkMode := SetBkMode(Canvas.Handle, Transparent);
           TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
@@ -6678,20 +6661,20 @@ begin
           begin
             PenColor := Pen.Color;
             PenStyle := Pen.Style;
-            Pen.Color := ListFont.Color;
+            Pen.Color := ThemedColor(ListFont.Color);
             Pen.Style := psSolid;
             BrushStyle := Brush.Style;
             BrushColor := Brush.Color;
             Brush.Style := bsSolid;
-            Brush.Color := ListFont.Color;
+            Brush.Color := ThemedColor(ListFont.Color);
             case ListStyleType of
               lbCircle:
                 begin
                   Brush.Style := bsClear;
-                  Circle(X - 16, YB, 7);
+                  Circle(Canvas,X - 16, YB, 7);
                 end;
               lbDisc:
-                Circle(X - 15, YB - 1, 5);
+                Circle(Canvas,X - 15, YB - 1, 5);
               lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
             end;
             Brush.Color := BrushColor;
@@ -6750,6 +6733,7 @@ begin
   StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
   if IsAuto(MargArray[MarginLeft]) then MargArray[MarginLeft] := 0;
   if IsAuto(MargArray[MarginRight]) then MargArray[MarginRight] := 0;
+  ApplyBoxSettings(MargArray,Document.UseQuirksMode);
 
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
   NewWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
@@ -7024,8 +7008,10 @@ begin
   ActiveLink := nil;
   ActiveImage := nil;
   PanelList.Clear;
-  if not IsCopy then
+  if not IsCopy then begin
     Styles.Clear;
+    Styles.UseQuirksMode := Self.UseQuirksMode;
+  end;
   if Assigned(TabOrderList) then
     TabOrderList.Clear;
   inherited Clear;
@@ -7909,22 +7895,6 @@ var
   BRect: TRect;
   IsVisible: Boolean;
 
-  procedure InitFullBg(W, H: Integer);
-  begin
-    if not Assigned(FullBG) then
-    begin
-      FullBG := TBitmap.Create;
-      if Cell.Document.IsCopy then
-      begin
-        FullBG.HandleType := bmDIB;
-        if ColorBits <= 8 then
-          FullBG.Palette := CopyPalette(ThePalette);
-      end;
-    end;
-    FullBG.Height := Max(H, 2);
-    FullBG.Width := Max(W, 2);
-  end;
-
 begin
   YO := Y - Cell.Document.YOff;
 
@@ -7975,12 +7945,12 @@ begin
 
     if Cell.BkGnd then
     begin
-      Canvas.Brush.Color := Cell.BkColor or PalRelative;
+      Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
       Canvas.Brush.Style := bsSolid;
       if Cell.Document.IsCopy and ImgOK then
       begin
-        InitFullBG(PR - PL, IH);
-        FullBG.Canvas.Brush.Color := Cell.BkColor or PalRelative;
+        InitFullBG(FullBG, PR - PL, IH,Cell.Document.IsCopy);
+        FullBG.Canvas.Brush.Color := ThemedColor(Cell.BkColor) or PalRelative;
         FullBG.Canvas.Brush.Style := bsSolid;
         FullBG.Canvas.FillRect(Rect(0, 0, PR - PL, IH));
       end
@@ -8017,7 +7987,7 @@ begin
           BitBlt(Canvas.Handle, PL, FT, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcCopy)
         else
         begin
-          InitFullBG(PR - PL, IH);
+          InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, Canvas.Handle, PL, FT, SrcCopy);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
           BitBlt(FullBG.Canvas.Handle,  0,  0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
@@ -8043,7 +8013,7 @@ begin
         PrintBitmap(Canvas, PL, FT, PR - PL, IH, TBitmap(TiledImage))
       else if Cell.BkGnd then
       begin
-        InitFullBG(PR - PL, IH);
+        InitFullBG(FullBG,PR - PL, IH,Cell.Document.IsCopy);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SrcInvert);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TiledMask.Canvas.Handle, 0, IT, SRCAND);
         BitBlt(FullBG.Canvas.Handle, 0, 0, PR - PL, IH, TBitmap(TiledImage).Canvas.Handle, 0, IT, SRCPaint);
@@ -9265,7 +9235,6 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           if PercentDeltas[I] > 0 then
             Inc(PercentDeltaAbove0Count);
 
-
         IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
       end;
       MinWidth := Sum(Widths);
@@ -10343,7 +10312,7 @@ begin
   if T.Count = 0 then
     Exit;
   { Yunqa.de: Simple hack to support <span style="display:none"> }
-  if Document.PropStack.Last.Display = pdNone then
+  if Assigned(Document) and (Document.PropStack.Last.Display = pdNone) then
     Exit;
 
   L := Len + T.Count;
@@ -11991,6 +11960,7 @@ var
         end;
 
       FO.TheFont.AssignToCanvas(Canvas);
+      Canvas.Font.Color := ThemedColor(Canvas.Font.Color);
       if J2 = -1 then
       begin {it's an image or panel}
         Obj := Images.FindImage(Start - Buff);
@@ -12247,14 +12217,15 @@ var
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
-            if Color < 0 then
-              Color := GetSysColor(Color and $FFFFFF)
-            else
-              Color := Color and $FFFFFF;
+            Color := ThemedColor(Color);
+//            if Color < 0 then
+//              Color := GetSysColor(Color and $FFFFFF)
+//            else
+//              Color := Color and $FFFFFF;
             Canvas.Font.Color := Color xor $FFFFFF;
           end
           else
-            Canvas.Font.Color := FO.TheFont.bgColor;
+            Canvas.Font.Color := ThemedColor(FO.TheFont.bgColor);
         end
         else if FO.TheFont.BGColor = clNone then
         begin
@@ -12265,7 +12236,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Style := bsClear;
-          Canvas.Brush.Color := FO.TheFont.BGColor;
+          Canvas.Brush.Color := ThemedColor(FO.TheFont.BGColor);
         end;
 
         if Document.Printing then
@@ -12351,7 +12322,8 @@ var
           if Document.ShowDummyCaret and not Inverted
             and (MySelB = Start - Buff) then
           begin
-            Canvas.Pen.Color := Canvas.Font.Color;
+            Canvas.Pen.Color := ThemedColor(Canvas.Font.Color);
+//            Canvas.Pen.Color := Canvas.Font.Color;
             Tmp := Y - Descent + FO.Descent + Addon - YOffset;
             Canvas.Brush.Color := clWhite;
             Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
@@ -13351,7 +13323,7 @@ begin
 
   if MargArray[BackgroundColor] <> clNone then
   begin
-    Canvas.Brush.Color := MargArray[BackgroundColor] or PalRelative;
+    Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]) or PalRelative;
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(IRect);
   end;
@@ -13488,7 +13460,7 @@ begin
       XR := X + Width - 1;
       if Color <> clNone then
       begin
-        Brush.Color := Color or $2000000;
+        Brush.Color := ThemedColor(Color) or $2000000;
         Brush.Style := bsSolid;
         FillRect(Rect(X, YT, XR + 1, YT + VSize));
       end
@@ -13506,14 +13478,14 @@ begin
         else if White then
           Pen.Color := clSilver
         else
-          Pen.Color := clBtnHighLight;
+          Pen.Color := ThemedColor(clBtnHighLight);
         MoveTo(XR, YT);
         LineTo(XR, YT + VSize - 1);
         LineTo(X, YT + VSize - 1);
         if BlackBorder then
           Pen.Color := clBlack
         else
-          Pen.Color := clBtnShadow;
+          Pen.Color := ThemedColor(clBtnShadow);
         LineTo(X, YT);
         LineTo(XR, YT);
       end;
@@ -13759,6 +13731,7 @@ begin
 
   else
     StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, self.BorderWidth, AutoCount, MargArray);
+    StyleUn.ApplyBoxSettings(MargArray,Document.UseQuirksMode);
     BorderWidth.Left := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
     BorderWidth.Right := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
     BorderWidth.Top  := MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop];
@@ -14054,16 +14027,36 @@ begin
             end;
           end;
       end;
+  if NewSpace >= 0 then begin
+    HSpaceL := NewSpace;
+  end else begin
+    if Self.Document.UseQuirksMode then begin
+       case Floating of
+         ALeft :
+           begin
+             HSpaceL := 0;
+             HSpaceR := ImageSpace;
+           end;
+         ARight :
+           begin
+             HSpaceL := ImageSpace;
+             HSpaceR := 0;
+           end;
+       end;
+    end;
+  end;
 
+ {
   if NewSpace >= 0 then
     HSpaceL := NewSpace
   else if Floating in [ALeft, ARight] then
     HSpaceL := ImageSpace {default}
-  else
+{  else
     HSpaceL := 0;
 
   HSpaceR := HSpaceL;
   VSpaceB := VSpaceT;
+    }
 end;
 
 constructor TFloatingObj.CreateCopy(Document: ThtDocument; Parent: TCellBasic; Source: TFloatingObj);
@@ -14113,11 +14106,11 @@ begin
     VertAlign := Align;
   if Prop.GetFloat(Align) and (Align <> ANone) then
   begin
-    if HSpaceR = 0 then
-    begin {default is different for Align = left/right}
-      HSpaceR := ImageSpace;
-      HSpaceL := ImageSpace;
-    end;
+//    if HSpaceR = 0 then
+//    begin {default is different for Align = left/right}
+//      HSpaceR := ImageSpace;
+//      HSpaceL := ImageSpace;
+//    end;
     Floating := Align;
     VertAlign := ANone;
   end;
@@ -14183,6 +14176,7 @@ begin
     Inc(VSpaceT, MargArray[BorderTopWidth]);
     Inc(VSpaceB, MargArray[BorderBottomWidth]);
   end;
+  FDisplay := Prop.Display;
 end;
 
 //-- BG ---------------------------------------------------------- 30.11.2010 --
@@ -14423,8 +14417,8 @@ begin
   OldBrushStyle := Canvas.Brush.Style; {save style first}
   OldBrushColor := Canvas.Brush.Color;
   OldPenColor := Canvas.Pen.Color;
-  Canvas.Pen.Color := FO.TheFont.Color;
-  Canvas.Brush.Color := BackgroundColor;
+  Canvas.Pen.Color := ThemedColor(FO.TheFont.Color);
+  Canvas.Brush.Color := ThemedColor(BackgroundColor);
   Canvas.Brush.Style := bsSolid;
   try
     // paint a rectangular placeholder

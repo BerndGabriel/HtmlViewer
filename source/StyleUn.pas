@@ -95,6 +95,8 @@ const
     'color', 'background-color',
     //'border-color',
     'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'min-height', 'min-width',    'max-height',    'max-width',
+    'box-sizing',
     'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
@@ -188,6 +190,7 @@ type
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(var Before, After, Intact: Boolean);
+    function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
     procedure GetVMarginArray(var MArray: TVMarginArray);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
@@ -227,7 +230,7 @@ type
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
-    property UseQuirksMode : Boolean read FUseQuirksMode;
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
   end;
 
@@ -933,6 +936,11 @@ begin
     end;
 end;
 
+function TProperties.GetBoxSizing(var VBoxSizing: BoxSizingType): Boolean;
+begin
+  Result := TryStrToBoxSizing(Props[BoxSizing], VBoxSizing);
+end;
+
 function TProperties.BorderStyleNotBlank: Boolean;
 {was a border of some type (including bssNone) requested?}
 var
@@ -1045,6 +1053,69 @@ begin
     Result := Default;
 end;
 
+procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+begin
+  {Important!!!
+
+  You have to do this with settings.  This is only for FindWidth methods}
+  if not AUseQuirksMode then begin
+    if AMarg[piMaxWidth] > 0 then begin
+      VMaxWidth := AMarg[piMaxWidth];
+      AMarg[piWidth] := Min(AMarg[piMaxWidth],AMarg[piWidth]);
+    end;
+    if AMarg[piMinWidth] > 0 then begin
+      AMarg[piWidth] := Max(AMarg[piMinWidth],AMarg[piWidth]);
+      VMinWidth := AMarg[piWidth];
+    end;
+  end;
+end;
+
+procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
+begin
+  if AUseQuirksMode then begin
+    ApplyBorderBoxModel(AMarg);
+  end else begin
+    {JPM:  This test is here to prevent AMarg[piWidth] from being ruined
+    if it is set to Auto.  If it is ruined, AutoCount might be incremented
+    correctly causing a rendering bug. }
+    if AMarg[piWidth] > -1 then begin
+    //width
+      if AMarg[piMaxWidth] > 0 then begin
+        AMarg[piWidth] := Min(AMarg[piWidth],AMarg[piMaxWidth]);
+      end;
+
+      if AMarg[piMinWidth] > 0 then begin
+        AMarg[piWidth] := Max(AMarg[piWidth],AMarg[piMinWidth]);
+      end;
+    end;
+    //height
+    if AMarg[piMaxHeight] > 0 then begin
+      AMarg[piHeight] := Min(AMarg[piHeight],AMarg[piMaxHeight]);
+    end;
+    if AMarg[piMinHeight] > 0 then begin
+      AMarg[piHeight] := Max(AMarg[piHeight],AMarg[piMinHeight]);
+    end;
+    case AMarg[BoxSizing] of
+        0 : ;
+        1 : ApplyBorderBoxModel(AMarg);
+    else
+    end;
+  end;
+end;
+
+procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
+begin
+  if AMarg[piWidth] > -1 then begin
+    AMarg[piWidth] := AMarg[piWidth] -
+      (AMarg[BorderLeftWidth] + AMarg[BorderRightWidth] +
+       AMarg[PaddingLeft] + AMarg[PaddingRight]);
+  end;
+  if AMarg[piHeight] > -1 then begin
+    AMarg[piHeight] := AMarg[piHeight] -
+      (AMarg[BorderTopWidth] + AMarg[BorderBottomWidth] +
+       AMarg[PaddingTop] + AMarg[PaddingBottom]);
+  end;
+end;
 {----------------ConvMargArray}
 
 procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
@@ -1053,6 +1124,7 @@ procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, 
 var
   I: PropIndices;
   Base: Integer;
+  LBoxSizing : BoxSizingType;
 begin
   AutoCount := 0; {count of 'auto's in width items}
   for I := Low(VM) to High(VM) do
@@ -1097,6 +1169,7 @@ begin
             end;
           end;
         end;
+      piMinHeight, piMaxHeight,
       piHeight:
         begin
           if VarIsStr(VM[I]) then
@@ -1145,6 +1218,13 @@ begin
           else
             M[I] := Auto;
         end;
+      BoxSizing :
+        if TryStrToBoxSizing(VM[I],LBoxSizing) then begin
+           M[I] := Ord(LBoxSizing);
+        end else begin
+          //assume content-box
+           M[I] := 0;
+        end;
       MarginLeft, MarginRight:
         begin
           if VarIsStr(VM[I]) then
@@ -1157,6 +1237,21 @@ begin
             else
               M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, 0);
           end
+          else if VarType(VM[I]) in varInt then
+          begin
+            if VM[I] = IntNull then
+              M[I] := 0
+            else
+              M[I] := VM[I];
+          end
+          else
+            M[I] := 0;
+        end;
+      piMinWidth,
+      piMaxWidth :
+        begin
+          if VarIsStr(VM[I]) then
+            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
           else if VarType(VM[I]) in varInt then
           begin
             if VM[I] = IntNull then
@@ -1260,6 +1355,7 @@ begin
           else
             M[I] := IntNull;
         end;
+      piMinHeight, piMinWidth, piMaxHeight, piMaxWidth,
       MarginLeft, MarginRight, MarginTop, MarginBottom:
         begin
           if VarIsStr(VM[I]) then
@@ -1883,6 +1979,7 @@ procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
 var
   I: PropIndices;
   BS: BorderStyleType;
+  NewColor : TColor;
 begin
   for I := Low(Marray) to High(MArray) do
     case I of
@@ -1892,6 +1989,21 @@ begin
         GetBorderStyle(I, BS);
         MArray[I] := BS;
       end;
+      {From: http://www.w3.org/TR/CSS21/box.html#x49
+
+      If an element's border color is not specified with a
+      border property, user agents must use the value of the
+      element's 'color' property as the computed value for
+      the border color.
+      }
+      BorderTopColor..BorderLeftColor:
+      begin
+        if TryStrToColor(Props[I],False,NewColor) then begin
+          MArray[I] := Props[I]
+        end else begin
+          MArray[I] := Props[StyleUn.Color];
+        end;
+      end
     else
       MArray[I] := Props[I];
     end;
@@ -2018,7 +2130,12 @@ begin {used to help sort contextual items by entry sequence}
   Inc(SeqNo);
 end;
 
-{.$IFDEF Quirk}
+procedure FixBordProps(AProp, BodyProp : TProperties);
+var i : PropIndices;
+begin
+  for i := BorderTopColor to BorderLeftColor do
+    AProp.Props[I] := BodyProp.Props[I];
+end;
 
 procedure TStyleList.FixupTableColor(BodyProp: TProperties);
 {if Quirk is set, make sure that the table color is defined the same as the
@@ -2028,20 +2145,30 @@ var
   I: Integer;
 begin
   if Self.UseQuirksMode then begin
-
+    if Find('table', I) then
+    begin
+      Propty1 := TProperties(Objects[I]);
+      Propty1.Props[FontSize] := BodyProp.Props[FontSize];
+      Propty1.Props[FontStyle] := BodyProp.Props[FontStyle];
+      Propty1.Props[FontWeight] := BodyProp.Props[FontWeight];
+      Propty1.Props[FontVariant] := BodyProp.Props[FontVariant];
+      Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
+    end;
     if Find('td', I) then
     begin
       Propty1 := TProperties(Objects[I]);
       Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
     end;
     if Find('th', I) then
     begin
       Propty1 := TProperties(Objects[I]);
       Propty1.Props[Color] := BodyProp.Props[Color];
+      FixBordProps(Propty1,BodyProp);
     end;
   end;
 end;
-{.$ENDIF}
 
 procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
 {strings are all lowercase here}
@@ -2147,13 +2274,11 @@ begin
     begin
       AddModifyProp('::link', Prop, Value); {also applies to ::link}
     end;
-{/$IFDEF Quirk}
     if UseQuirksMode then begin
       if (Selector = 'body') and (PropIndex = Color) then begin
         FixupTableColor(Propty);
       end;
     end;
-{/$ENDIF}
   end;
 end;
 
@@ -2215,11 +2340,11 @@ begin
   Properties.Props[MarginRight] := MarginWidth;
   Properties.Props[Visibility] := viVisible;
   Properties.Props[LetterSpacing] := 0;
+  Properties.Props[BoxSizing] := ContentBox;
   Properties.CharSet := ACharSet;
   AddObject('default', Properties);
   FDefProp := Properties;
 
-{/$IFDEF Quirk}
   if UseQuirksMode then begin
     Properties := TProperties.Create(UseQuirksMode);
     Properties.Props[FontSize] := PointSize * 1.0;
@@ -2227,10 +2352,11 @@ begin
     Properties.Props[FontWeight] := 'normal';
     Properties.Props[Color] := AColor;
     AddObject('td', Properties);
+    Properties := AddDuplicate('table', Properties);
+
     Properties := AddDuplicate('th', Properties);
     Properties.Props[FontWeight] := 'bold';
   end;
-{/$ENDIF}
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AHotSpot or PalRelative;
@@ -2247,7 +2373,6 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AActiveColor or PalRelative;
   AddObject('::hover', Properties);
-  AddDuplicate(':hover', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   AddObject('null', Properties);
@@ -2319,12 +2444,12 @@ begin
   Properties.Props[FontWeight] := 'bold';
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
-{.$IFNDEF Quirk}
   if UseQuirksMode = False then begin
-
     AddDuplicate('th', Properties);
+    Properties := TProperties.Create;
+    Properties.Props[TextAlign] := 'none';
+    AddObject('table', Properties);
   end;
-{.$ENDIF}
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
@@ -2343,10 +2468,6 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
-
-  Properties := TProperties.Create(UseQuirksMode);
-  Properties.Props[TextAlign] := 'none';
-  AddObject('table', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontStyle] := 'italic';
@@ -2412,6 +2533,12 @@ begin
     Properties.Props[FontWeight] := 'bold';
     AddObject('h' + IntToStr(HIndex), Properties);
   end;
+
+  Properties := TProperties.Create;
+  Properties.Props[FontStyle] := 'none';
+  Properties.Props[BackgroundColor] := $00FFFF;
+  Properties.Props[Color] := $000000;
+  AddObject('mark', Properties);
 end;
 
 { TPropStack }

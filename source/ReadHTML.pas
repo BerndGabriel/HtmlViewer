@@ -439,7 +439,7 @@ var
         while (LCh <> Term) and (LCh <> EofChar) do
         begin
           if LCh = AmperChar then
-            htAppendStr(S, GetEntityStr(CP_ACP))
+            htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage))
           else
           begin
             if LCh = CrChar then
@@ -2633,6 +2633,7 @@ var
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
+                MarkSy, MarkEndSy,
                 BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
                 USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
                 SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
@@ -2642,6 +2643,7 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     case Sy of
+                      MarkSy,
                       BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                         SubSy, SupSy, BigSy, SmallSy, LabelSy:
                         begin
@@ -2651,6 +2653,7 @@ var
                           if Prop.HasBorderStyle then {start of inline border}
                             FPropStack.Document.ProcessInlines(FPropStack.SIndex, Prop, True);
                         end;
+                      MarkEndSy,
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
                         SEndSy, StrikeEndSy, SpanEndSy,
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
@@ -2981,6 +2984,7 @@ begin
         Next;
       end;
 
+    MarkSy,
     BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy,
     CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
       begin
@@ -3007,7 +3011,7 @@ begin
           Section.ChangeFont(FPropStack.Last);
         Next;
       end;
-
+    MarkEndSy,
     BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy,
     SubEndSy, SupEndSy, SmallEndSy, BigEndSy, FontEndSy,
     CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
@@ -3232,7 +3236,7 @@ begin
   SectionList := NewBlock.MyCell;
 
   while not (Sy in Termset) and
-    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
     EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3323,7 +3327,7 @@ begin
   Done := False;
   while not Done do {handle second part like after a <p>}
     case Sy of
-      TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+      TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
         EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
         CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
         SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3446,6 +3450,7 @@ begin
           LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3685,6 +3690,7 @@ begin
     case Sy of
       TextSy, BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3738,11 +3744,9 @@ begin
                     if CompareText(Name, 'fixed') = 0 then
                       FPropStack.Last.Assign('fixed', BackgroundAttachment);
                 end;
-{.$IFDEF Quirk}
             if FUseQuirksMode then begin
               FPropStack.Document.Styles.FixupTableColor(FPropStack.Last);
             end;
-{.$ENDIF}
             FPropStack.Last.Assign(AMarginWidth, MarginLeft);
             FPropStack.Last.Assign(AMarginWidth, MarginRight);
             FPropStack.Last.Assign(AMarginHeight, MarginTop);
@@ -3898,6 +3902,7 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
+  Self.Doc := Doc;
   FPropStack := ASectionList.PropStack;
   try
     ParseInit(ASectionList);
@@ -4628,7 +4633,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..90] of TResWord = (
+  ResWordDefinitions: array[1..91] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4719,7 +4724,8 @@ const
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
     (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
     (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
-    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy));
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
+    (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin

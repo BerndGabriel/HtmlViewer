@@ -2805,7 +2805,8 @@ procedure THtmlViewer.DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeig
     begin
       OldPal := SelectPalette(DC, ThePalette, False);
       RealizePalette(DC);
-      ACanvas.Brush.Color := BGColor or PalRelative;
+//      ACanvas.Brush.Color := BGColor or PalRelative;
+      ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
       OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
       OldBack := SetBkColor(DC, clWhite);
       OldFore := SetTextColor(DC, clBlack);
@@ -3034,7 +3035,8 @@ var
 
   procedure PaintBackground(Canvas: TCanvas; Top, Bot: Integer);
   begin
-    Canvas.Brush.Color := CopyList.Background;
+//    Canvas.Brush.Color := CopyList.Background;
+    Canvas.Brush.Color := ThemedColor(CopyList.Background);
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(Rect(0, Top, Width + 1, Bot));
   end;
