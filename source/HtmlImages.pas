@@ -58,7 +58,7 @@ uses
   DitherUnit;
 
 const
-  HandCursor = 10101;
+  HandCursor = crHandPoint; //10101;
   OldThickIBeamCursor = 2;
   UpDownCursor = 10103;
   UpOnlyCursor = 10104;
