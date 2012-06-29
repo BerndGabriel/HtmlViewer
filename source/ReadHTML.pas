@@ -1297,19 +1297,21 @@ begin
           DivBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
           SectionList.Add(DivBlock, TagIndex);
           SectionList := DivBlock.MyCell;
-        end;
+        end
+        else
+          DivBlock := nil;
         Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, not IsInline);
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
         PopAProp(SymbToStr(Sym));
-        if SectionList.CheckLastBottomMargin then
-        begin
-          DivBlock.MargArray[MarginBottom] := ParagraphSpace;
-          DivBlock.BottomAuto := True;
-        end;
         if not IsInline then
         begin
+          if SectionList.CheckLastBottomMargin then
+          begin
+            DivBlock.MargArray[MarginBottom] := ParagraphSpace;
+            DivBlock.BottomAuto := True;
+          end;
           SectionList := DivBlock.OwnerCell;
         end;
         Section := nil; // TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, False);
