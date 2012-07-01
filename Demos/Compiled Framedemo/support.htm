@@ -275,8 +275,8 @@
 <P CLASS="heading"><A NAME="Frames"> Frame Syntax</A></P>
 <PRE>&lt;FRAMESET&gt;...&lt;/FRAMESET&gt;
    ROWS|COLS=n1, n2, .., nn  (absolute, %, or *)
-   BORDER=n    (Main FRAMSET only)
-   FRAMEBORDER=n    (Main FRAMSET only)
+   BORDER=n         (Main FRAMESET only)
+   FRAMEBORDER=n    (Main FRAMESET only)
 &lt;FRAME&gt;
    SRC=filename
    NAME=windowname
@@ -288,7 +288,12 @@
 </PRE>
 
 <P CLASS="heading"><A NAME="colors">Color Syntax</A></P>
-<P>Color information may consist of a hexidecimal red, green, and blue value such as #FF8000 or be one of the
+<P>Color information may consist of 
+<ul>
+<li>a hexidecimal red, green, and blue value such as #FF8000 or 
+<li>a decimal color triple like RGB(255, 128, 0) or
+<li><span class="new">via hue, saturation and luminance like HSL(180, 255, 128) or</span>
+<li>be one of the
 following identifiers: </P>
 <P STYLE="font-family: 'courier new'; margin: 0 25px;"> Black, Maroon, Green, Olive, Navy, Purple, Teal, Gray,
 Silver, Red, Lime, Yellow, Blue, Fuchsia, Aqua, white, Aliceblue, Antiquewhite, Aquamarine, Azure, Beige, Bisque,
@@ -312,7 +317,7 @@ inactiveborder, appworkSpace, highlight, hightlighttext, buttonface,
 buttonshadow, graytext, buttontext, inactivecaptiontext, buttonhighlight,
 threeddarkshadow, threedlightshadow, infotext, infobackground, scrollbar,
 threedface, threedhighlight, threedshadow.</p>
-
+</ul>
 </BODY>
 </HTML>
 

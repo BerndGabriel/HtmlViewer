@@ -43,7 +43,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="19">
+    <Files Count="20">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -121,6 +121,10 @@
         <Filename Value="..\source\AlphaBlendUn.pas"/>
         <UnitName Value="AlphaBlendUn"/>
       </Item19>
+      <Item20>
+        <Filename Value="..\source\HSLUtils.pas"/>
+        <UnitName Value="HSLUtils"/>
+      </Item20>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">
