@@ -268,7 +268,7 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
-    procedure GetVMarginArray(var MArray: TVMarginArray);
+    procedure GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean = true);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -1885,7 +1885,7 @@ begin
       Base := BaseWidth;
     end;
     case I of
-      BackgroundColor: //, BorderColor:
+      BackgroundColor, BorderTopColor..BorderLeftColor:
         begin
           if VarType(VM[I]) <= VarNull then
             M[I] := clNone
@@ -2857,7 +2857,7 @@ begin
   AFI.Assign(FIArray);
 end;
 
-procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+procedure TProperties.GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean);
 var
   I: PropIndices;
   BS: BorderStyleType;
@@ -2884,11 +2884,12 @@ begin
       }
       BorderTopColor..BorderLeftColor:
       begin
-        if ColorFromString(Props[I],False,NewColor) then begin
+        if ColorFromString(Props[I], False, NewColor) then
           MArray[I] := Props[I]
-        end else begin
-          MArray[I] := Props[StyleUn.Color];
-        end;
+        else if DefaultToColor then
+          MArray[I] := Props[StyleUn.Color]
+        else
+          MArray[I] := IntNull;
       end
     else
       MArray[I] := Props[I];
@@ -3834,7 +3835,6 @@ begin
         Result := False;
         Exit;
       end;
-      S := Trim(S);
       if Length(S) <= 3 then
         for I := Length(S) downto 1 do
           Insert(S[I], S, I); {Double each character}

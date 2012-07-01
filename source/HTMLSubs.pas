@@ -4830,7 +4830,7 @@ begin
   MyCell.FOwner := Self;
   DrawList := TList.Create;
 
-  Prop.GetVMarginArray(MargArrayO);
+  Prop.GetVMarginArray(MargArrayO, not (Self is TTableBlock));
   if Prop.GetClear(Clr) then
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
@@ -8280,7 +8280,7 @@ begin
   begin {Caption does not have Prop}
     if Prop.GetVertAlign(Algn) and (Algn in [Atop, AMiddle, ABottom]) then
       Valign := Algn;
-    Prop.GetVMarginArray(MargArrayO);
+    Prop.GetVMarginArray(MargArrayO, False);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
     ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, 0, AutoCount, MargArray);
@@ -8332,7 +8332,7 @@ begin
     end;
 
     for J := BorderTopColor to BorderLeftColor do
-      if MargArray[J] = clNone then
+      if MargArray[J] = IntNull {was: clNone} then
         MargArray[J] := clSilver;
 
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);
