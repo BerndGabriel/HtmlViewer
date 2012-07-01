@@ -4205,7 +4205,9 @@ procedure THtmlViewer.CopyToClipboard;
   {$ifdef LCL}
     var
       Utf8: UTF8String;
+      CF_HTML: UINT;
     begin
+      CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
       Utf8 := UTF8Encode(Source);
       Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
     end;
