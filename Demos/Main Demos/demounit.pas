@@ -602,7 +602,7 @@ begin
   begin
     ReloadButton.Enabled := False;
     Update;
-    Viewer.LoadTextFile(OpenDialog.Filename);
+    Viewer.LoadFromFile(OpenDialog.Filename, TextType);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
@@ -621,7 +621,7 @@ begin
   if OpenDialog.Execute then
   begin
     ReloadButton.Enabled := False;
-    Viewer.LoadImageFile(OpenDialog.Filename);
+    Viewer.LoadFromFile(OpenDialog.Filename, ImgType);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
