@@ -1177,7 +1177,8 @@ begin
             Value[Length(Value)] := LCh;
             GetCh;
           end;
-          Value1 := LowerCase(Trim(Value)); {leave quotes on for font:}
+          {leave quotes on for font:}
+          Value1 := LowerCase(Trim(Value));
           Value := RemoveQuotes(Value1);
 
           Prop := LowerCase(Prop);
@@ -1187,7 +1188,10 @@ begin
           begin
             if (LinkPath <> '') and (Pos('url(', Value) > 0) then
               Value := AddPath(Value);
-            ProcessProperty(Prop, Value);
+            if Prop = 'font-family' then
+              ProcessProperty(Prop, Value1)
+            else
+              ProcessProperty(Prop, Value);
           end;
         end;
       end;
