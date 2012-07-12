@@ -2811,7 +2811,7 @@ var
       while PropStackIndex >= InitialStackIndex do
         PopProp;
       SectionList := PreBlock.OwnerCell;
-      if Sy = PreEndSy then
+      if (Sy = PreEndSy) or (LCh = #0) then
         Next;
     finally
       S.Free;
