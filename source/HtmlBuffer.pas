@@ -156,7 +156,6 @@ type
 function GetCharSetCodePageInfo(Name: string): TBuffCharSetCodePageInfo;
 function CharSetToCodePage(CharSet: TBuffCharSet): TBuffCodePage;
 function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
-function AnsiPosX(const SubStr, S: AnsiString; Offset: Integer = 1): Integer;
 
 implementation
 
@@ -247,24 +246,50 @@ begin
   Bytes[1] := B;
 end;
 
-//------------------------------------------------------------------------------
-function AnsiPosX(const SubStr, S: AnsiString; Offset: Integer = 1): Integer;
-{find substring in S starting at Offset}
+//-- BG ---------------------------------------------------------- 15.07.2012 --
+function StrNCmpA(Str1, Str2: PAnsiChar; N: Integer): Integer;
 var
-  S1: AnsiString;
-  I: Integer;
+  StrEnd: PAnsiChar;
 begin
-  if Offset <= 1 then
-    Result := AnsiPos(SubStr, S)
-  else
+  StrEnd := Str1 + N;
+  while Str1 < StrEnd do
   begin
-    S1 := Copy(S, Offset, Length(S) - Offset + 1);
-    I := AnsiPos(SubStr, S1);
-    if I > 0 then
-      Result := I + Offset - 1
-    else
-      Result := 0;
+    Result := Ord(Str1^) - Ord(Str2^);
+    if (Result <> 0) or (Str1^ = #0) then
+      Exit;
+    Inc(Str1);
+    Inc(Str2);
   end;
+  Result := 0;
+end;
+
+//-- BG ---------------------------------------------------------- 15.07.2012 --
+function StrNPosA(Str, SubStr: PAnsiChar; N: Integer): PAnsiChar;
+// returns a pointer to the first occurrence of SubStr in the first N chars of Str.
+// Finds SubStr only, if the entire SubStr is within the first N chars.
+// Example:
+//   StrNPosA('expression', 'press', 7) finds pointer to 'pression' while
+//   StrNPosA('expression', 'press', 6) retuns nil, as 'press' is not in the first 6 chars ('expres').
+var
+  L: Integer;
+  StrEnd: PAnsiChar;
+begin
+  StrEnd := SubStr;
+  while StrEnd^ <> #0 do
+    Inc(StrEnd);
+  L := StrEnd - SubStr;
+  if L > 0 then  // Make sure substring not null string and SubStr fits into Str at all.
+  begin
+    Result := Str;
+    StrEnd := Str + N - L;
+    while (Result < StrEnd) and (Result^ <> #0) do
+    begin
+      if StrNCmpA(Result, SubStr, L) = 0 then
+        Exit;
+      Inc(Result);
+    end;
+  end;
+  Result := nil;
 end;
 
 { TBuffCharSetCodePageInfo }
@@ -568,33 +593,32 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
 procedure TBuffer.DetectCodePage;
+var
+  ByteCount: Integer;
 
   function IsIso2022JP: boolean;
   {look for iso-2022-jp Japanese file}
   const
-    EscSequence: array [0..3] of AnsiString = (
-      #$1b'$@', #$1b'$B', #$1b'(J', #$1b'(B');
+    EscSequence: array [0..3] of PAnsiChar = (#$1b'$@'#0, #$1b'$B'#0, #$1b'(J'#0, #$1b'(B'#0);
   var
-    DocS: AnsiString;
-    I, J, K, L: integer;
+    I, J, K, L: PAnsiChar;
   begin
     Result := False;
-    DocS := FPos.AnsiChr;
-    I := AnsiPos(EscSequence[0], DocS); {look for starting sequence}
-    J := AnsiPos(EscSequence[1], DocS);
-    I := Max(I, J); {pick a positive value}
-    if I > 0 then
+    I := StrNPosA(FPos.AnsiChr, EscSequence[0], ByteCount); {look for starting sequence}
+    J := StrNPosA(FPos.AnsiChr, EscSequence[1], ByteCount);
+    if I < J then
+      I := J;
+    if I <> nil then
     begin {now look for ending sequence after the start}
-      K := AnsiPosX(EscSequence[2], DocS, I);
-      L := AnsiPosX(EscSequence[3], DocS, I);
-      K := Max(K, L); {pick a positive value}
-      if K > 0 then {start and end sequence found}
+      K := StrNPosA(I, EscSequence[2], ByteCount);
+      L := StrNPosA(I, EscSequence[3], ByteCount);
+      if K < L then
+        K := L; {pick a positive value}
+      if K <> nil then {start and end sequence found}
         Result := True;
     end;
   end;
 
-var
-  ByteCount: Integer;
 begin
   ByteCount := FEnd.AnsiChr - FPos.AnsiChr;
   if ByteCount >= 2 then
@@ -810,12 +834,16 @@ begin
         begin
           Buffer[0] := Chr;
           Result := 1;
+          break;
         end;
 
       {two byte codes / 94 character sets}
       bjsX0208_1978,
       bjsX0208_1983:
+      begin
         Result := GetAsShiftJis(Chr, GetNext, Buffer);
+        break;
+      end;
     end;
   end;
 end;
@@ -934,7 +962,7 @@ begin
       if FPos.AnsiChr < FEnd.AnsiChr then
       begin
         Len := GetNextJisAsShiftJis(Buffer2);
-        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
+        MultiByteToWideChar(932, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
       end
       else
         Result := TBuffChar(0);
@@ -943,7 +971,7 @@ begin
       if FPos.AnsiChr < FEnd.AnsiChr then
       begin
         Len := GetNextEucAsShiftJis(Buffer2);
-        MultiByteToWideChar(FCodePage, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
+        MultiByteToWideChar(932, 0, PAnsiChar(@Buffer2[0]), Len, @Result, 1);
       end
       else
         Result := TBuffChar(0);
