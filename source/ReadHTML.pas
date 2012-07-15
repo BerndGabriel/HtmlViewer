@@ -1330,7 +1330,7 @@ begin
         end
         else
           DivBlock := nil;
-        Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
+        Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, not IsInline);
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
