@@ -635,7 +635,7 @@ else
   Dest := '';    {no local destination}
 S := FrameViewer.HTMLExpandFileName(S);
 if FileExists(S) then
-   StartProcess(StrPCopy(PC, ParamStr(0)+' "'+S+Dest+'"'), sw_Show);
+   StartProcess(StrPCopy(PC, '"' + ParamStr(0)+'" "'+S+Dest+'"'), sw_Show);
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
