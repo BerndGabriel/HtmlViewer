@@ -4740,7 +4740,7 @@ begin
   MyCell.OwnersTag := Prop.PropTag;
   DrawList := TList.Create;
 
-  Prop.GetVMarginArray(MargArrayO);
+  Prop.GetVMarginArray(MargArrayO, not (Self is TTableBlock));
   if Prop.GetClear(Clr) then
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
@@ -7729,7 +7729,7 @@ begin
   begin {Caption does not have Prop}
     if Prop.GetVertAlign(Algn) and (Algn in [Atop, AMiddle, ABottom]) then
       Valign := Algn;
-    Prop.GetVMarginArray(MargArrayO);
+    Prop.GetVMarginArray(MargArrayO, False);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
     //Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
@@ -7786,7 +7786,7 @@ begin
 //      BorderStyle := bssNone;
 
     for J := BorderTopColor to BorderLeftColor do
-      if MargArray[J] = clNone then
+      if MargArray[J] = IntNull {was: clNone} then
         MargArray[J] := clSilver;
 
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);

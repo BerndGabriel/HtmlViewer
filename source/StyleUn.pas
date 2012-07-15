@@ -187,8 +187,8 @@ type
     procedure CopyDefault(Source: TProperties);
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
     procedure GetFontInfo(AFI: TFontInfoArray);
-    procedure GetPageBreaks(var Before, After, Intact: Boolean);
-    procedure GetVMarginArray(var MArray: TVMarginArray);
+    procedure GetPageBreaks(out Before, After, Intact: Boolean);
+    procedure GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean = true);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -894,7 +894,7 @@ begin
   end;
 end;
 
-procedure TProperties.GetPageBreaks(var Before, After, Intact: Boolean);
+procedure TProperties.GetPageBreaks(out Before, After, Intact: Boolean);
 begin
   Before := (VarIsStr(Props[PageBreakBefore])) and (Props[PageBreakBefore] = 'always');
   After := (VarIsStr(Props[PageBreakAfter])) and (Props[PageBreakAfter] = 'always');
@@ -1064,7 +1064,7 @@ begin
       Base := BaseWidth;
     end;
     case I of
-      BackgroundColor: //, BorderColor:
+      BackgroundColor, BorderTopColor..BorderLeftColor:
         begin
           if VarType(VM[I]) <= VarNull then
             M[I] := clNone
@@ -1879,10 +1879,11 @@ begin
   AFI.Assign(FIArray);
 end;
 
-procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+procedure TProperties.GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean);
 var
   I: PropIndices;
   BS: BorderStyleType;
+  NewColor : TColor;
 begin
   for I := Low(Marray) to High(MArray) do
     case I of
@@ -1892,6 +1893,22 @@ begin
         GetBorderStyle(I, BS);
         MArray[I] := BS;
       end;
+      {From: http://www.w3.org/TR/CSS21/box.html#x49
+
+      If an element's border color is not specified with a
+      border property, user agents must use the value of the
+      element's 'color' property as the computed value for
+      the border color.
+      }
+      BorderTopColor..BorderLeftColor:
+      begin
+        if TryStrToColor(Props[I], False, NewColor) then
+          MArray[I] := Props[I]
+        else if DefaultToColor then
+          MArray[I] := Props[StyleUn.Color]
+        else
+          MArray[I] := IntNull;
+      end
     else
       MArray[I] := Props[I];
     end;
