@@ -1,8 +1,7 @@
 {
-Version   11.2
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2012 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -127,7 +126,7 @@ type
   TInterpolationMode = InterpolationMode;
   PGpImageAttributes = Pointer;
   ImageAbort = function : BOOL stdcall;
-  DrawImageAbort = ImageAbort;
+  //DrawImageAbort = ImageAbort;
   EGDIPlus = class(Exception);
 
   //TRectF = record
@@ -161,10 +160,9 @@ var
     const Input : PGdiplusStartupInput;
     const Output: PGdiplusStartupOutput): GpStatus stdcall;
   GdiplusShutdown: procedure(Token: ULONG) stdcall;
-  GdipDrawImageI: function(Graphics : PGpGraphics; Image : PGpImage; X, Y: Integer): GpStatus stdcall;
-  GdipCreateHBITMAPFromBitmap: function(bitmap: PGpBitmap; out hbmReturn: HBITMAP;
-    background: TARGB): GpStatus stdcall;
-  GdipGetInterpolationMode: function(graphics: PGpGraphics; var interpolationMode: TInterpolationMode): GpStatus stdcall;
+//  GdipDrawImageI: function(Graphics : PGpGraphics; Image : PGpImage; X, Y: Integer): GpStatus stdcall;
+//  GdipCreateHBITMAPFromBitmap: function(bitmap: PGpBitmap; out hbmReturn: HBITMAP; background: TARGB): GpStatus stdcall;
+//  GdipGetInterpolationMode: function(graphics: PGpGraphics; var interpolationMode: TInterpolationMode): GpStatus stdcall;
 {$ENDIF$}
   GdipDeleteGraphics: function(Graphics: PGpGraphics): GpStatus stdcall;
   GdipCreateFromHDC: function(hdc: HDC; out Graphics: PGpGraphics): GpStatus stdcall;
@@ -195,7 +193,7 @@ var
     srcUnit : GpUnit; imageAttributes: PGpImageAttributes;
     callback: Pointer; callbackData: Pointer): GpStatus; stdcall;
 
-  GdipSetInterpolationMode: function(graphics : PGpGraphics; interpolationMode: InterpolationMode): GpStatus stdcall;
+//  GdipSetInterpolationMode: function(graphics : PGpGraphics; interpolationMode: InterpolationMode): GpStatus stdcall;
   GdipBitmapSetPixel: function(bitmap : PGpBitmap; x, y: Integer; color: TARGB): GpStatus stdcall;
 
 var
@@ -205,12 +203,13 @@ var
 function IStreamFromStream(Stream: TStream): IStream;
 // thanks to Sérgio Alexandre for this method.
 var
-  Handle: THandle;
+  Handle: HGLOBAL;
+  Ptr: Pointer absolute Handle;
 begin
   Handle := GlobalAlloc(GPTR, Stream.Size);
   if Handle <> 0 then
   begin
-    Stream.Read(Pointer(Handle)^, Stream.Size);
+    Stream.Read(Ptr^, Stream.Size);
     CreateStreamOnHGlobal(Handle, True, Result);
   end;
 end;
@@ -256,8 +255,8 @@ end;
 procedure TGpGraphics.DrawSmallStretchedImage(Image: TGPImage; X, Y, Width, Height: Integer);
 {when a small image is getting enlarged, add a row and column to it copying
  the last row/column to the new row/column.  This gives much better interpolation.}
-const
-  NearestNeighbor = 5;
+//const
+//  NearestNeighbor = 5;
 var
   g1, g2: TGpGraphics;
   BM1, BM2: TGpBitmap;
@@ -480,7 +479,7 @@ begin
       @GdiplusShutdown := GetProcAddress(LibHandle, 'GdiplusShutdown');
       @GdipDeleteGraphics := GetProcAddress(LibHandle, 'GdipDeleteGraphics');
       @GdipCreateFromHDC := GetProcAddress(LibHandle, 'GdipCreateFromHDC');
-      @GdipDrawImageI := GetProcAddress(LibHandle, 'GdipDrawImageI');
+      //@GdipDrawImageI := GetProcAddress(LibHandle, 'GdipDrawImageI');
       @GdipDrawImageRectI := GetProcAddress(LibHandle, 'GdipDrawImageRectI');
       @GdipLoadImageFromFile := GetProcAddress(LibHandle, 'GdipLoadImageFromFile');
       @GdipLoadImageFromStream := GetProcAddress(LibHandle, 'GdipLoadImageFromStream');
@@ -496,10 +495,10 @@ begin
       @GdipCreateBitmapFromGraphics := GetProcAddress(LibHandle, 'GdipCreateBitmapFromGraphics');
       @GdipBitmapGetPixel := GetProcAddress(LibHandle, 'GdipBitmapGetPixel');
       @GdipDrawImageRectRectI := GetProcAddress(LibHandle, 'GdipDrawImageRectRectI');
-      @GdipCreateHBITMAPFromBitmap := GetProcAddress(LibHandle, 'GdipCreateHBITMAPFromBitmap');
+      //@GdipCreateHBITMAPFromBitmap := GetProcAddress(LibHandle, 'GdipCreateHBITMAPFromBitmap');
 
-      @GdipSetInterpolationMode := GetProcAddress(LibHandle, 'GdipSetInterpolationMode');
-      @GdipGetInterpolationMode := GetProcAddress(LibHandle, 'GdipGetInterpolationMode');
+      //@GdipSetInterpolationMode := GetProcAddress(LibHandle, 'GdipSetInterpolationMode');
+      //@GdipGetInterpolationMode := GetProcAddress(LibHandle, 'GdipGetInterpolationMode');
       @GdipBitmapSetPixel := GetProcAddress(LibHandle, 'GdipBitmapSetPixel');
 
       FillChar(Startup, sizeof(Startup), 0);

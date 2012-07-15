@@ -1,5 +1,5 @@
 {
-Version   11.3
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2012 by HtmlViewer Team
 
@@ -3450,7 +3450,6 @@ procedure TFormControlObj.ProcessProperties(Prop: TProperties);
 var
   MargArrayO: TVMarginArray;
   MargArray: TMarginArray;
-  Align: AlignmentType;
   EmSize, ExSize: Integer;
 begin
   Prop.GetVMarginArray(MargArrayO);
@@ -3492,8 +3491,7 @@ begin
       FWidth := MargArray[piWidth];
   if MargArray[piHeight] > 0 then
     FHeight := MargArray[piHeight] - BordT - BordB;
-  if Prop.GetVertAlign(Align) then
-    FormAlign := Align;
+  Prop.GetVertAlign(FormAlign);
   BkColor := Prop.GetBackgroundColor;
 end;
 
@@ -12036,7 +12034,6 @@ var
     FlObj: TFloatingObj;
     LRTextWidth: Integer;
     OHang: Integer;
-
   begin
     DHt := 0; {for the fonts on this line get the maximum height}
     Cnt := 0;
@@ -12062,7 +12059,9 @@ var
       end;
     end;
 
+    Align := ANone;
     if not NoChar then
+    begin
       repeat
         FO := Fonts.GetFontObjAt(PStart - Buff + Cnt, Index);
         Tmp := FO.GetHeight(Desc);
@@ -12071,6 +12070,8 @@ var
         J := Fonts.GetFontCountAt(PStart - Buff + Cnt, Len);
         Inc(Cnt, J);
       until Cnt >= NN;
+      Align := FO.SScript;
+    end;
 
     {if there are images or line-height, then maybe they add extra space}
     SB := 0; // vertical space before DHt / Text
@@ -14898,8 +14899,8 @@ var
   Align: AlignmentType;
   EmSize, ExSize: Integer;
 begin
-  if Prop.GetVertAlign(Align) then
-    VertAlign := Align;
+  Prop.GetVertAlign(VertAlign);
+  Align := ANone;
   if Prop.GetFloat(Align) and (Align <> ANone) then
   begin
     if HSpaceR = 0 then

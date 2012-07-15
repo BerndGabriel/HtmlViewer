@@ -1,4 +1,4 @@
-{Version 11}
+{Version 11.4}
 
 {$ifdef FPC}
 
@@ -238,29 +238,21 @@ this reason, provision had been made to use either the TNT or Elpack third party
 controls.
 
 The TNT controls may be obtained at
-http://home.ccci.org/wolbrink/tnt/delphi_unicode_controls.htm.  They are
-freeware.  They handle Unicode well in Win2000 and WinXP (probably NT also).
-However, with Win95/98 they are not Unicode but do handle multibyte and other
-character sets well with the exception of UTF-8.  The TNT controls do not work
-with Delphi 4.
+http://www.yunqa.de/delphi/doku.php/products/tntunicodecontrols/index.
+They are freeware.  They handle Unicode well in Win2000 and WinXP (probably NT
+also). However, with Win95/98 they are not Unicode but do handle multibyte and
+other character sets well with the exception of UTF-8.  The TNT controls do not
+work with Delphi 4.
 
-The Elpack controls may be purchased at http://www.eldos.org/elpack/elpack.html.
-For use with the HTML Components, the item you will want is the "LMD Elpack 4.0
-Standard VCL".  The Elpack controls are fully Unicode for Win95 through WinXP.
-
-Either of these control sets may be used by defining the appropriate compile
-time constant, "UseTNT" or "UseElpack".  You can define these in htmlcons.inc or
-in the Project|Options dialog, Directories/Conditionals tab.  Be sure and do a
-complete Build on your application after changing these compile time constants.
-
-HtmlGlobals.pas defines several new symbols to represent the form controls and types
-depending on the set of controls being used. These types are
+HtmlGlobals.pas defines several new symbols to represent the unicode char and string
+types depending on the compilers native types and defines form controls and types
+depending on the set of controls being used.  These types are ThtChar, ThtString,
 ThtEdit, ThtButton, ThtMemo, ThtCombobox, ThtListbox, ThtString and ThtStringList.
 
-The definitions of these symbols change with the set of controls being used.  So,
-for instance, ThtEdit is the same as TEdit for the Delphi controls but becomes
-TTntEdit when UseTNT is defined or TElEdit when UseElpack is defined. And ThtString
-is string for Delphi controls and WideString for the unicode controls.
+The definitions of these symbols change with the compiler and/or set of controls
+being used.  So, for instance, ThtEdit is the same as TEdit for the Delphi controls
+but becomes TTntEdit when UseTNT is defined.  And ThtString is WideString for Delphi
+6 .. 2007 and string since Delphi 2009.
 
 If your application accesses the form controls for special purposes, you should
 use these new symbols.  For example code like,

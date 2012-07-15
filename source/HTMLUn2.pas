@@ -1,5 +1,5 @@
 {
-Version   11.3
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2012 by HtmlViewer Team
 
@@ -3520,12 +3520,15 @@ end;
 
 {----------------PrintBitmap}
 
+{$ifdef LCL}
+{$else}
 type
   AllocRec = class(TObject)
     Ptr: Pointer;
     ASize: Integer;
     AHandle: THandle;
   end;
+{$endif}
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}
