@@ -11614,6 +11614,7 @@ begin
    {$ENDIF}
     Exit;
   end;
+
   for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
   begin
     Obj := Images[I];
@@ -11642,7 +11643,7 @@ begin
           Min := Math.Max(Min, Width + HSpaceL + HSpaceR);
   end;
 
-  //Max := 0;
+  SoftHyphen := False;
   P := Buff;
   P1 := StrScanW(P, BrkCh); {look for break ThtChar}
   while Assigned(P1) do
@@ -11664,6 +11665,7 @@ begin
     while P^ <> #0 do
     {find the next string of chars that can't be wrapped}
     begin
+      SoftHyphen := False;
       if CanWrap(P1^) and (Brk[I] = 'y') then
       begin
         Inc(P1);
