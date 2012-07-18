@@ -12919,6 +12919,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Color := Canvas.Font.Color;
+          Canvas.Brush.Style := bsSolid;
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
@@ -12940,7 +12941,7 @@ var
         else
         begin
           SetBkMode(Canvas.Handle, Opaque);
-          Canvas.Brush.Style := bsClear;
+          Canvas.Brush.Style := bsSolid;
           Canvas.Brush.Color := ThemedColor(FO.TheFont.BGColor);
         end;
 
