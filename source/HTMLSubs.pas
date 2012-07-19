@@ -11010,7 +11010,7 @@ begin
           Min := Math.Max(Min, Width + HSpaceL + HSpaceR);
   end;
 
-  //Max := 0;
+  SoftHyphen := False;
   P := Buff;
   P1 := StrScanW(P, BrkCh); {look for break ThtChar}
   while Assigned(P1) do
@@ -11032,6 +11032,7 @@ begin
     while P^ <> #0 do
     {find the next string of chars that can't be wrapped}
     begin
+      SoftHyphen := False;
       if CanWrap(P1^) and (Brk[I - 1] = twYes) then
       begin
         Inc(P1);
