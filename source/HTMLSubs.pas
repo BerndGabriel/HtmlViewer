@@ -14612,6 +14612,7 @@ constructor TFieldsetBlock.CreateCopy(AMasterList: ThtDocument; T: TSectionBase)
 begin
   inherited;
   FLegend := TBlockCell.CreateCopy(AMasterList, (T as TFieldsetBlock).FLegend);
+  FLegend.FOwner := Self;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
