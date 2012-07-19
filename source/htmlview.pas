@@ -3450,7 +3450,7 @@ var
     Canvas.Rectangle(MLeft, Y, W + MLeft + 1, TopPixels + H + 1);
     if (htPrintBackground in FOptions) and (Y - TopPixels < H) then
     begin {need to reprint background in whited out area}
-      hrgnClip1 := CreateRectRgn(MLeftPrn, Trunc(Y * YDpi / WDpi) + 2, MLeftPrn + WPrn, TopPixelsPrn + HPrn);
+      hrgnClip1 := CreateRectRgn(MLeftPrn, Trunc(Y * (YDpi / WDpi)) + 2, MLeftPrn + WPrn, TopPixelsPrn + HPrn);
       SelectClipRgn(Canvas.Handle, hrgnClip1);
       DeleteObject(hrgnClip1);
       DoBackground2(Canvas, MLeft + XOrigin, TopPixels, W, H, PaintPanel.Color);
@@ -3529,6 +3529,7 @@ var
   ScaledPgWid: Integer;
   FootViewer, HeadViewer: THtmlViewer;
 
+  Wx, Wy: Double;
   DeltaMarginTop: Double;
   SavePrintMarginTop: Double;
   DeltaPixelsPrn: Integer;
@@ -3629,22 +3630,23 @@ begin
         { which results in LowerRightPoint containing the BOTTOM and RIGHT unprintable area offset;
           using these we modify the (logical, true) borders...}
 
-        MLeftPrn  := Trunc(PrintMarginLeft / 2.54 * XDpi) - Margins.Left;
-        MRightPrn := Trunc(PrintMarginRight / 2.54 * XDpi) - Margins.Right;
-        WPrn := Prn.PageWidth - (MLeftPrn + MRightPrn);
+        Wx            := WDpi / XDpi;
+        MLeftPrn      := Trunc(PrintMarginLeft / 2.54 * XDpi) - Margins.Left;
+        MLeft         := Trunc(MLeftPrn * Wx); {scaled end of left margin == left of used paper area}
+        MRightPrn     := Trunc(PrintMarginRight / 2.54 * XDpi) - Margins.Right;
+        WPrn          := Prn.PageWidth - (MLeftPrn + MRightPrn);
+        W             := Trunc(WPrn * Wx); {scaled pageWidth without margins == width of used paper area}
+        ScaledPgWid   := Trunc(Prn.PageWidth * Wx); {scaled pageWidth with margins}
 
-        MTopPrn    := Trunc(PrintMarginTop / 2.54 * YDpi) - Margins.Top;
-        MBottomPrn := Trunc(PrintMarginBottom / 2.54 * YDpi) - Margins.Bottom;
-        HPrn := Prn.PageHeight - (MTopPrn + MBottomPrn);
+        Wy            := WDpi / YDpi;
+        MTopPrn       := Trunc(PrintMarginTop / 2.54 * YDpi) - Margins.Top;
+        TopPixelsPrn  := MTopPrn;
+        TopPixels     := Trunc(MTopPrn * Wy); {scaled end of top margin == top of used paper area}
+        MBottomPrn    := Trunc(PrintMarginBottom / 2.54 * YDpi) - Margins.Bottom;
+        HPrn          := Prn.PageHeight - (MTopPrn + MBottomPrn);
+        H             := Trunc(HPrn * Wy); {scaled pageHeight without margins == height of used paper area}
+        ScaledPgHt    := Trunc(Prn.PageHeight * Wy); {scaled pageHeight with margins}
 
-        MLeft := Trunc(MLeftPrn * WDpi / XDpi);
-        W := Trunc(WPrn * WDpi / XDpi); {scaled pageWidth}
-        H := Trunc(HPrn * WDpi / YDpi); {scaled pageHeight}
-        ScaledPgWid := Trunc(Prn.PageWidth * WDpi / XDpi);
-        ScaledPgHt := Trunc(Prn.PageHeight * WDpi / YDpi);
-
-        TopPixelsPrn := MTopPrn;
-        TopPixels := Trunc(TopPixelsPrn * WDpi / YDpi);
         HTop := 0;
         OldTop := 0;
         Curs := 0;
