@@ -12300,6 +12300,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Color := Canvas.Font.Color;
+          Canvas.Brush.Style := bsSolid;
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
@@ -12320,7 +12321,7 @@ var
         else
         begin
           SetBkMode(Canvas.Handle, Opaque);
-          Canvas.Brush.Style := bsClear;
+          Canvas.Brush.Style := bsSolid;
           Canvas.Brush.Color := FO.TheFont.BGColor;
         end;
 
@@ -13951,13 +13952,13 @@ end;
 
 function TFormControlObjList.GetControlCountAt(Posn: integer): integer;
 {Return count of chars before the next form control.  0 if at the control,
- 9999 if no controls after Posn}
+ 999999 if no controls after Posn}
 var
   I, Pos: integer;
 begin
   if Count = 0 then
   begin
-    Result := 9999;
+    Result := 999999;
     Exit;
   end;
   I := 0;
@@ -13969,7 +13970,7 @@ begin
     Inc(I);
   end;
   if I = Count then
-    Result := 9999
+    Result := 999999
   else
     Result := Items[I].Pos - Posn;
 end;
