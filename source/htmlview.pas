@@ -4788,8 +4788,9 @@ begin
       SelectObject(MemDC, Bm);
       SetWindowOrgEx(MemDC, X, Y, nil);
       Canvas2.Font := Font;
+      Canvas2.Font.Color := ThemedColor(Canvas2.Font.Color);
       Canvas2.Handle := MemDC;
-      Canvas2.Brush.Color := Color;
+      Canvas2.Brush.Color := ThemedColor(Color);
       Canvas2.Brush.Style := bsSolid;
       FViewer.DrawBorder;
       FViewer.HTMLPaint(Canvas2, Rect);
@@ -4812,7 +4813,8 @@ begin
 //  of frameviewer, if some images have to be shown
 //  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
-  Canvas.Brush.Color := Color;
+  Canvas.Font.Color := ThemedColor(Canvas.Font.Color);
+  Canvas.Brush.Color := ThemedColor(Color);
   Canvas.Brush.Style := bsSolid;
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);
