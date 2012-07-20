@@ -56,6 +56,8 @@ type
     BackgroundColor,
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
+    piMinHeight, piMinWidth, piMaxHeight, piMaxWidth,
+    BoxSizing,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
     // BG, 31.01.2012: don't change the order of the border properties:
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
@@ -190,6 +192,7 @@ type
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
+    function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
     procedure GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean = true);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
@@ -229,7 +232,7 @@ type
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
-    property UseQuirksMode : Boolean read FUseQuirksMode;
+    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
   end;
 
@@ -268,6 +271,10 @@ procedure ConvVertMargins(const VM: TVMarginArray; BaseHeight, EmSize, ExSize: I
 function SortedProperties: ThtStringList;
 
 function ReadFontName(S: ThtString): ThtString;
+
+procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
+procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
 
 var
   FontConv: array[1..7] of Double;
@@ -2136,7 +2143,6 @@ begin
   for i := BorderTopColor to BorderLeftColor do
     AProp.Props[I] := BodyProp.Props[I];
 end;
-{.$IFDEF Quirk}
 
 procedure TStyleList.FixupTableColor(BodyProp: TProperties);
 {if Quirk is set, make sure that the table color is defined the same as the
@@ -2156,7 +2162,6 @@ begin
       Propty1.Props[Color] := BodyProp.Props[Color];
       FixBordProps(Propty1,BodyProp);
     end;
-
     if Find('td', I) then
     begin
       Propty1 := TProperties(Objects[I]);
@@ -2171,7 +2176,6 @@ begin
     end;
   end;
 end;
-{.$ENDIF}
 
 procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
 {strings are all lowercase here}
@@ -2277,13 +2281,11 @@ begin
     begin
       AddModifyProp('::link', Prop, Value); {also applies to ::link}
     end;
-{/$IFDEF Quirk}
     if UseQuirksMode then begin
       if (Selector = 'body') and (PropIndex = Color) then begin
         FixupTableColor(Propty);
       end;
     end;
-{/$ENDIF}
   end;
 end;
 
@@ -2350,7 +2352,6 @@ begin
   AddObject('default', Properties);
   FDefProp := Properties;
 
-{/$IFDEF Quirk}
   if UseQuirksMode then begin
     Properties := TProperties.Create(UseQuirksMode);
     Properties.Props[FontSize] := PointSize * 1.0;
@@ -2363,7 +2364,6 @@ begin
     Properties := AddDuplicate('th', Properties);
     Properties.Props[FontWeight] := 'bold';
   end;
-{/$ENDIF}
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AHotSpot or PalRelative;
@@ -2380,7 +2380,6 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AActiveColor or PalRelative;
   AddObject('::hover', Properties);
-  AddDuplicate(':hover', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   AddObject('null', Properties);
@@ -2452,15 +2451,12 @@ begin
   Properties.Props[FontWeight] := 'bold';
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
-{.$IFNDEF Quirk}
   if UseQuirksMode = False then begin
-
     AddDuplicate('th', Properties);
     Properties := TProperties.Create;
     Properties.Props[TextAlign] := 'none';
     AddObject('table', Properties);
   end;
-{.$ENDIF}
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
@@ -2479,10 +2475,6 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
-
-  Properties := TProperties.Create(UseQuirksMode);
-  Properties.Props[TextAlign] := 'none';
-  AddObject('table', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontStyle] := 'italic';
