@@ -189,9 +189,8 @@ type
     procedure CopyDefault(Source: TProperties);
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
     procedure GetFontInfo(AFI: TFontInfoArray);
-    procedure GetPageBreaks(var Before, After, Intact: Boolean);
-    function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
-    procedure GetVMarginArray(var MArray: TVMarginArray);
+    procedure GetPageBreaks(out Before, After, Intact: Boolean);
+    procedure GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean = true);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -230,7 +229,7 @@ type
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
       LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
-    property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
+    property UseQuirksMode : Boolean read FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
   end;
 
@@ -897,7 +896,7 @@ begin
   end;
 end;
 
-procedure TProperties.GetPageBreaks(var Before, After, Intact: Boolean);
+procedure TProperties.GetPageBreaks(out Before, After, Intact: Boolean);
 begin
   Before := (VarIsStr(Props[PageBreakBefore])) and (Props[PageBreakBefore] = 'always');
   After := (VarIsStr(Props[PageBreakAfter])) and (Props[PageBreakAfter] = 'always');
@@ -1136,7 +1135,7 @@ begin
       Base := BaseWidth;
     end;
     case I of
-      BackgroundColor: //, BorderColor:
+      BackgroundColor, BorderTopColor..BorderLeftColor:
         begin
           if VarType(VM[I]) <= VarNull then
             M[I] := clNone
@@ -1975,7 +1974,7 @@ begin
   AFI.Assign(FIArray);
 end;
 
-procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+procedure TProperties.GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean);
 var
   I: PropIndices;
   BS: BorderStyleType;
@@ -1998,11 +1997,12 @@ begin
       }
       BorderTopColor..BorderLeftColor:
       begin
-        if TryStrToColor(Props[I],False,NewColor) then begin
+        if TryStrToColor(Props[I], False, NewColor) then
           MArray[I] := Props[I]
-        end else begin
-          MArray[I] := Props[StyleUn.Color];
-        end;
+        else if DefaultToColor then
+          MArray[I] := Props[StyleUn.Color]
+        else
+          MArray[I] := IntNull;
       end
     else
       MArray[I] := Props[I];
@@ -2136,6 +2136,7 @@ begin
   for i := BorderTopColor to BorderLeftColor do
     AProp.Props[I] := BodyProp.Props[I];
 end;
+{.$IFDEF Quirk}
 
 procedure TStyleList.FixupTableColor(BodyProp: TProperties);
 {if Quirk is set, make sure that the table color is defined the same as the
@@ -2155,6 +2156,7 @@ begin
       Propty1.Props[Color] := BodyProp.Props[Color];
       FixBordProps(Propty1,BodyProp);
     end;
+
     if Find('td', I) then
     begin
       Propty1 := TProperties(Objects[I]);
@@ -2169,6 +2171,7 @@ begin
     end;
   end;
 end;
+{.$ENDIF}
 
 procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
 {strings are all lowercase here}
@@ -2274,11 +2277,13 @@ begin
     begin
       AddModifyProp('::link', Prop, Value); {also applies to ::link}
     end;
+{/$IFDEF Quirk}
     if UseQuirksMode then begin
       if (Selector = 'body') and (PropIndex = Color) then begin
         FixupTableColor(Propty);
       end;
     end;
+{/$ENDIF}
   end;
 end;
 
@@ -2345,6 +2350,7 @@ begin
   AddObject('default', Properties);
   FDefProp := Properties;
 
+{/$IFDEF Quirk}
   if UseQuirksMode then begin
     Properties := TProperties.Create(UseQuirksMode);
     Properties.Props[FontSize] := PointSize * 1.0;
@@ -2357,6 +2363,7 @@ begin
     Properties := AddDuplicate('th', Properties);
     Properties.Props[FontWeight] := 'bold';
   end;
+{/$ENDIF}
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AHotSpot or PalRelative;
@@ -2373,6 +2380,7 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[Color] := AActiveColor or PalRelative;
   AddObject('::hover', Properties);
+  AddDuplicate(':hover', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   AddObject('null', Properties);
@@ -2444,12 +2452,15 @@ begin
   Properties.Props[FontWeight] := 'bold';
   AddObject('b', Properties);
   AddDuplicate('strong', Properties);
+{.$IFNDEF Quirk}
   if UseQuirksMode = False then begin
+
     AddDuplicate('th', Properties);
     Properties := TProperties.Create;
     Properties.Props[TextAlign] := 'none';
     AddObject('table', Properties);
   end;
+{.$ENDIF}
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
@@ -2468,6 +2479,10 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontSize] := '0.83em';
   AddObject('small', Properties);
+
+  Properties := TProperties.Create(UseQuirksMode);
+  Properties.Props[TextAlign] := 'none';
+  AddObject('table', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[FontStyle] := 'italic';

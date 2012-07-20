@@ -1330,7 +1330,7 @@ begin
         end
         else
           DivBlock := nil;
-        Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
+        Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, not IsInline);
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
@@ -2852,7 +2852,7 @@ var
       while PropStackIndex >= InitialStackIndex do
         PopProp;
       SectionList := PreBlock.OwnerCell;
-      if Sy = PreEndSy then
+      if (Sy = PreEndSy) or (LCh = #0) then
         Next;
     finally
       S.Free;

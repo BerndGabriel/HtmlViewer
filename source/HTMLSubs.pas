@@ -4740,7 +4740,7 @@ begin
   MyCell.OwnersTag := Prop.PropTag;
   DrawList := TList.Create;
 
-  Prop.GetVMarginArray(MargArrayO);
+  Prop.GetVMarginArray(MargArrayO, not (Self is TTableBlock));
   if Prop.GetClear(Clr) then
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
@@ -7729,7 +7729,7 @@ begin
   begin {Caption does not have Prop}
     if Prop.GetVertAlign(Algn) and (Algn in [Atop, AMiddle, ABottom]) then
       Valign := Algn;
-    Prop.GetVMarginArray(MargArrayO);
+    Prop.GetVMarginArray(MargArrayO, False);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
     //Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
@@ -7786,7 +7786,7 @@ begin
 //      BorderStyle := bssNone;
 
     for J := BorderTopColor to BorderLeftColor do
-      if MargArray[J] = clNone then
+      if MargArray[J] = IntNull {was: clNone} then
         MargArray[J] := clSilver;
 
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);
@@ -11010,7 +11010,7 @@ begin
           Min := Math.Max(Min, Width + HSpaceL + HSpaceR);
   end;
 
-  //Max := 0;
+  SoftHyphen := False;
   P := Buff;
   P1 := StrScanW(P, BrkCh); {look for break ThtChar}
   while Assigned(P1) do
@@ -11032,6 +11032,7 @@ begin
     while P^ <> #0 do
     {find the next string of chars that can't be wrapped}
     begin
+      SoftHyphen := False;
       if CanWrap(P1^) and (Brk[I - 1] = twYes) then
       begin
         Inc(P1);
@@ -12300,6 +12301,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Color := Canvas.Font.Color;
+          Canvas.Brush.Style := bsSolid;
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
@@ -12320,7 +12322,7 @@ var
         else
         begin
           SetBkMode(Canvas.Handle, Opaque);
-          Canvas.Brush.Style := bsClear;
+          Canvas.Brush.Style := bsSolid;
           Canvas.Brush.Color := FO.TheFont.BGColor;
         end;
 
@@ -13951,13 +13953,13 @@ end;
 
 function TFormControlObjList.GetControlCountAt(Posn: integer): integer;
 {Return count of chars before the next form control.  0 if at the control,
- 9999 if no controls after Posn}
+ 999999 if no controls after Posn}
 var
   I, Pos: integer;
 begin
   if Count = 0 then
   begin
-    Result := 9999;
+    Result := 999999;
     Exit;
   end;
   I := 0;
@@ -13969,7 +13971,7 @@ begin
     Inc(I);
   end;
   if I = Count then
-    Result := 9999
+    Result := 999999
   else
     Result := Items[I].Pos - Posn;
 end;
