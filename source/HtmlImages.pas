@@ -58,7 +58,7 @@ uses
   DitherUnit;
 
 const
-  HandCursor = 10101;
+  HandCursor = crHandPoint; //10101;
   OldThickIBeamCursor = 2;
   UpDownCursor = 10103;
   UpOnlyCursor = 10104;
@@ -1314,6 +1314,9 @@ var
 {$ENDIF !NoGDIPlus}
 
 begin
+  if (IW = 0) or (IH = 0) then
+    exit;
+
   TheGpObj := BGImage.Bitmap;
   TheMask  := BGImage.Mask;
   NoMask := not Assigned(TheMask) and PRec.X.RepeatD and PRec.Y.RepeatD;

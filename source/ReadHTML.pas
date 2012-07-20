@@ -1,8 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2012 by HtmlViewer Team
 
 *********************************************************
 *                                                       *
@@ -73,6 +72,11 @@ ANGUS March 2012 - fixed THtmlParser.DoMeta to handle meta without http-equiv="C
          <meta charset="utf-8"> (used by Goggle)
 
 }
+
+{$define DO_LI_INLINE}
+{$ifdef DO_LI_INLINE}
+{$else}
+{$endif}
 
 unit ReadHTML;
 
@@ -147,7 +151,8 @@ type
     function DoCharSet(Content: ThtString): Boolean;
     function FindAlignment: ThtString;
     function GetEntityStr(CodePage: Integer): ThtString;
-    function GetValue(var S: ThtString; var Value: Integer): Boolean;
+    function GetIdentifier(out Identifier: ThtString): Boolean;
+//    function GetValue(var S: ThtString; var Value: Integer): Boolean;
     procedure CheckForAlign;
     procedure DoAEnd;
     procedure DoBase;
@@ -156,7 +161,9 @@ type
     procedure DoCommonSy;
     procedure DoDivEtc(Sym: Symb; const TermSet: SymbSet);
     procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
-    procedure DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
+    procedure DoListItem(
+      {$ifdef DO_LI_INLINE}var LiBlock: TBlockLi; var LiSection: TSection;{$endif}
+      BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
     procedure DoLists(Sym: Symb; const TermSet: SymbSet);
     procedure DoMap;
     procedure DoMeta(Sender: TObject);
@@ -176,8 +183,7 @@ type
     procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(const Tag: ThtString); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
-    function getTitle: ThtString;
-    function GetIdentifier(out Identifier: ThtString): Boolean;
+    function GetTitle: ThtString;
     function PropStackIndex: Integer;
     procedure PopProp;
     property PropStack: THtmlPropStack read FPropStack;
@@ -800,60 +806,8 @@ end;
 
 {----------------GetValue}
 
-function THtmlParser.GetValue(var S: ThtString; var Value: Integer): Boolean;
-{read a numeric.  Also reads a ThtString if it looks like a numeric initially}
-var
-  Code: Integer;
-  ValD: double;
-begin
-  case LCh of
-    '-', '+':
-      begin
-        S := LCh;
-        GetCh;
-      end;
-
-    '0'..'9':
-      S := '';
-
-  else
-    Result := False;
-    exit;
-  end;
-
-  Result := True;
-  Value := 0;
-  while True do
-    case LCh of
-      SpcChar, TabChar, CrChar, GreaterChar, PercentChar, EofChar:
-        break;
-
-      AmperChar:
-        S := S + GetEntityStr(FPropStack.Last.CodePage);
-    else
-      // this is faster than: S := S + LCh;
-      SetLength(S, Length(S) + 1);
-      S[Length(S)] := LCh;
-      GetCh;
-    end;
-  SkipWhiteSpace;
-{see if a numerical value is appropriate.
- avoid the exception that happens when the likes of 'e1234' occurs}
-  try
-    Val(S, ValD, Code);
-    Value := Round(ValD);
-  except
-  end;
-
-  if LCh = '%' then
-  begin
-    S := S + '%';
-    GetCh;
-  end;
-end;
-
 //-- BG ---------------------------------------------------------- 31.01.2011 --
-function THtmlParser.getTitle: ThtString;
+function THtmlParser.GetTitle: ThtString;
 begin
   if TitleEnd > TitleStart then
     Result := Doc.GetString(TitleStart, TitleEnd)
@@ -890,66 +844,78 @@ procedure THtmlParser.Next;
           S := htUpperCase(S);
       end;
 
-      function GetQuotedStr(var S: ThtString; var Value: Integer; WantCrLf: Boolean; Sym: Symb): Boolean;
+      function GetQuotedStr(var S: ThtString; WantCrLf: Boolean; Sym: Symb): Boolean;
       {get a quoted ThtString but strip the quotes, check to see if it is numerical}
       var
         Term: ThtChar;
-        S1: ThtString;
-        Code: Integer;
-        ValD: double;
         SaveSy: Symb;
       begin
-        Result := False;
-        Term := LCh;
-        if (Term <> '"') and (Term <> '''') then
+        Result := (LCh = '"') or (LCh = '''');
+        if not Result then
           Exit;
-        Result := True;
+        Term := LCh;
         SaveSy := Sy;
         GetCh;
         while (LCh <> Term) and (LCh <> EofChar) do
         begin
-          if LCh <> CrChar then
-          begin
-            if LCh = AmperChar then
-            begin
-              S := S + GetEntityStr(FPropStack.Last.CodePage);
-            end
-            else
-            begin
-              // this is faster than: S := S + LCh;
-              SetLength(S, Length(S) + 1);
-              S[Length(S)] := LCh;
-              GetCh;
-            end;
-          end
-          else if WantCrLf then
-          begin
-            S := S + ^M^J;
-            GetCh;
-          end
+          case LCh of
+            CrChar:
+              begin
+                if WantCrLf then
+                  htAppendStr(S, ^M^J);
+                GetCh;
+              end;
+
+            AmperChar:
+              htAppendStr(S, GetEntityStr(PropStack.Last.CodePage));
+
           else
+            htAppendChr(S, LCh);
             GetCh;
+          end;
         end;
         if LCh = Term then
-          GetCh; {pass termination ThtChar}
-        S1 := Trim(S);
-        if Pos('%', S1) = Length(S1) then
-          SetLength(S1, Length(S1) - 1);
-      {see if S1 evaluates to a numerical value.  Note that something like
-       S1 = 'e8196' can give exception because of the 'e'}
-        Value := 0;
-        if Length(S1) > 0 then
-          case S1[1] of
-            '0'..'9', '+', '-', '.':
-              try
-                System.Val(S1, ValD, Code);
-                Value := Round(ValD);
-              except
-              end;
-          end
-        else if Trim(S) = '*' then
-          Value := 1;
+          GetCh; {pass termination char}
+
         Sy := SaveSy;
+      end;
+
+      procedure StrToInteger(const S: ThtString; var Value: Integer);
+      var
+        S1: ThtString;
+        I, Code: Integer;
+        ValD: Double;
+      begin
+        S1 := Trim(S);
+        I := Length(S1);
+        if I > 0 then
+        begin
+          case S1[I] of
+            PercentChar:
+            begin
+              SetLength(S1, Length(S1) - 1);
+              Dec(I);
+            end;
+
+            StarChar:
+            begin
+              SetLength(S1, Length(S1) - 1);
+              Dec(I);
+              if I = 0 then
+                Value := 1;
+            end;
+          end;
+
+          if I > 0 then
+            case S1[1] of
+              '0'..'9', '+', '-', '.':
+                try
+                  System.Val(S1, ValD, Code);
+                  Value := Round(ValD);
+                except
+                end;
+            end;
+        end;
       end;
 
     var
@@ -965,6 +931,7 @@ procedure THtmlParser.Next;
       if AttributeNames.Find(St, I) then
         Sym := PSymbol(AttributeNames.Objects[I]).Value;
       SkipWhiteSpace;
+
       S := '';
       if Sym = BorderSy then
         Val := 1
@@ -976,26 +943,29 @@ procedure THtmlParser.Next;
       GetCh;
 
       SkipWhiteSpace;
-      if not GetQuotedStr(S, Val, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
-        if not GetValue(S, Val) then
-          while True do
-            case LCh of
-              SpcChar,
-              TabChar,
-              CrChar,
-              GreaterChar,
-              EofChar:
-                break;
-
-              AmperChar:
-                htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage));
-            else
-              htAppendChr(S, LCh);
-              GetCh;
+      if not GetQuotedStr(S, Sym in [TitleSy, AltSy], Sym) then {either it's a quoted ThtString or a number}
+        while True do
+          case LCh of
+            SpcChar, TabChar, CrChar:
+            begin
+              SkipWhiteSpace;
+              break;
             end;
 
-      if (Sym = IDSy) and (S <> '') and Assigned(FPropStack.Document) and not LinkSearch then
-        FPropStack.Document.AddChPosObjectToIDNameList(S, FPropStack.SIndex);
+            GreaterChar, EofChar:
+              break;
+
+            AmperChar:
+              htAppendStr(S, GetEntityStr(FPropStack.Last.CodePage));
+          else
+            htAppendChr(S, LCh);
+            GetCh;
+          end;
+
+      StrToInteger(S, Val);
+
+      if (Sym = IDSy) and (S <> '') and Assigned(PropStack.Document) and not LinkSearch then
+        PropStack.Document.AddChPosObjectToIDNameList(S, PropStack.SIndex);
     end;
 
   var
@@ -1232,56 +1202,57 @@ var
           htAppendChr(Token, LCh);
           GetCh;
         end;
-      if Length(Token) > 0 then
-      begin
-        Sy := TextSy;
-        IsText1 := True;
-      end
-      else
-        IsText1 := False;
+
+      Result := Length(Token) > 0;
     end;
 
   begin {already have fresh character loaded here}
     Token := '';
     LCToken.Clear;
-    if LCh = EofChar then
-      Sy := EofSy
-    else if LCh = CrChar then
-    begin
-      Sy := EolSy;
-      GetCh;
-    end
-    else if LCh = LessChar then
-    begin GetTag1; Exit; end
-    else if LCh = AmperChar then
-    begin
-      Token := Token + GetEntityStr(FPropStack.Last.CodePage);
-      Sy := CommandSy;
-    end
-    else if IsText1 then
+    case LCh of
+      EofChar:
+        Sy := EofSy;
+
+      CrChar:
+      begin
+        Sy := EolSy;
+        GetCh;
+      end;
+
+      LessChar:
+        GetTag1;
+
+      AmperChar:
+      begin
+        htAppendStr(Token, GetEntityStr(PropStack.Last.CodePage));
+        Sy := CommandSy;
+      end;
+
     else
-    begin
-      Sy := OtherChar;
-      Token := LCh;
-      GetCh;
+      if IsText1 then
+        Sy := TextSy
+      else
+      begin
+        Sy := OtherChar;
+        Token := LCh;
+        GetCh;
+      end;
     end;
   end;
 
 begin
   Next1;
-  S := '';
+  SetLength(S, 0);
   while (Sy <> TextAreaEndSy) and (Sy <> EofSy) do
   begin
     case Sy of
-      TextSy: S := S + Token;
       EolSy:
         begin
-          S := S + CrChar + ^J;
-          TxtArea.AddStr(S);
-          S := '';
+          TxtArea.AddStr(S + ^M^J);
+          SetLength(S, 0);
         end;
     else
-      S := S + Token;
+      htAppendStr(S, Token);
     end;
     Next1;
   end;
@@ -1293,7 +1264,7 @@ begin
       GetCh; {remove chars to and past GreaterChar}
     end;
   GetCh;
-  if S <> '' then
+  if Length(S) > 0 then
     TxtArea.AddStr(S);
   TxtArea.ResetToValue;
 end;
@@ -1341,7 +1312,9 @@ var
   FormBlock, DivBlock: TBlock;
   FieldsetBlock: TFieldsetBlock;
   IsFieldsetLegend: Boolean;
+  IsInline: Boolean;
 begin
+  IsInline := PropStack.Last.Display = pdInline;
   case Sym of
     DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
@@ -1349,23 +1322,30 @@ begin
         PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         CheckForAlign;
 
-        DivBlock := TBlock.Create(SectionList, Attributes, FPropStack.Last);
-        SectionList.Add(DivBlock, TagIndex);
-        SectionList := DivBlock.MyCell;
-
+        if not IsInline then
+        begin
+          DivBlock := TBlock.Create(SectionList, Attributes, FPropStack.Last);
+          SectionList.Add(DivBlock, TagIndex);
+          SectionList := DivBlock.MyCell;
+        end
+        else
+          DivBlock := nil;
         Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
         PopAProp(SymbToStr(Sym));
-        if SectionList.CheckLastBottomMargin then
+        if not IsInline then
         begin
-          DivBlock.MargArray[MarginBottom] := ParagraphSpace;
-          DivBlock.BottomAuto := True;
+          if SectionList.CheckLastBottomMargin then
+          begin
+            DivBlock.MargArray[MarginBottom] := ParagraphSpace;
+            DivBlock.BottomAuto := True;
+          end;
+          SectionList := DivBlock.OwnerCell;
         end;
-        SectionList := DivBlock.OwnerCell;
 
-        Section := TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
+        Section := nil; // TSection.Create(SectionList, nil, FPropStack.Last, CurrentUrlTarget, True);
         if Sy = EndSymbFromSymb(Sym) then
           Next;
       end;
@@ -2633,7 +2613,6 @@ var
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
-                MarkSy, MarkEndSy,
                 BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
                 USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
                 SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
@@ -2643,7 +2622,6 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     case Sy of
-                      MarkSy,
                       BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                         SubSy, SupSy, BigSy, SmallSy, LabelSy:
                         begin
@@ -2653,7 +2631,6 @@ var
                           if Prop.HasBorderStyle then {start of inline border}
                             FPropStack.Document.ProcessInlines(FPropStack.SIndex, Prop, True);
                         end;
-                      MarkEndSy,
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
                         SEndSy, StrikeEndSy, SpanEndSy,
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
@@ -2984,7 +2961,6 @@ begin
         Next;
       end;
 
-    MarkSy,
     BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy,
     CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
       begin
@@ -3011,7 +2987,7 @@ begin
           Section.ChangeFont(FPropStack.Last);
         Next;
       end;
-    MarkEndSy,
+
     BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy,
     SubEndSy, SupEndSy, SmallEndSy, BigEndSy, FontEndSy,
     CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
@@ -3236,7 +3212,7 @@ begin
   SectionList := NewBlock.MyCell;
 
   while not (Sy in Termset) and
-    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
+    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
     EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3301,79 +3277,96 @@ begin
   Next;
 end;
 
-procedure THtmlParser.DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
+procedure THtmlParser.DoListItem(
+  {$ifdef DO_LI_INLINE}var LiBlock: TBlockLi; var LiSection: TSection;{$endif}
+  BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
 var
-  Done: Boolean;
-  //LiBlock: TBlock;
-  //LISection: TSection;
+{$ifdef DO_LI_INLINE}
   IsInline: Boolean;
   IsFirst: Boolean;
+{$else}
+  LiBlock: TBlock;
+  LISection: TSection;
+{$endif}
 begin
+  SectionList.Add(Section, TagIndex);
   PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-  IsInline := FPropStack.Last.Display = pdInline;
+{$ifdef DO_LI_INLINE}
+  IsInline := PropStack.Last.Display = pdInline;
   IsFirst := not IsInline or (LiSection = nil) or not (LiSection.Display = pdInline);
   if IsFirst then
+{$endif}
   begin
-    SectionList.Add(Section, TagIndex);
     LiBlock := TBlockLI.Create(SectionList, Attributes, FPropStack.Last, BlockType, Plain, Index, LineCount, ListLevel);
     SectionList.Add(LiBlock, TagIndex);
     LiSection := TSection.Create(LiBlock.MyCell, nil, FPropStack.Last, CurrentUrlTarget, True);
+    Section := LISection;
+{$ifdef DO_LI_INLINE}
+  end
+  else
+  begin
+    Section := TSection.Create(LiBlock.MyCell, nil, FPropStack.Last, CurrentUrlTarget, True);
+{$endif}
   end;
   SectionList := LiBlock.MyCell;
-  Section := LISection;
 
   SkipWhiteSpace;
   Next;
-  Done := False;
-  while not Done do {handle second part like after a <p>}
+  while true do {handle second part like after a <p>}
     case Sy of
-      TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
-        EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
-        CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
-        SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
-        TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
-        SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
-        InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
-        ImageSy, FontSy, BaseFontSy, BrSy, HeadingSy,
-        MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy,
-        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
+      TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
+      CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
+      SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
+      TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
+      SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
+      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+      ImageSy, FontSy, BaseFontSy, BrSy, HeadingSy,
+      MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy,
+      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
         DoCommonSy;
+
       PSy:
         if BlockType in [OLSy, ULSy, DirSy, MenuSy, DLSy] then
           DoP([])
         else
-          Done := True; {else terminate lone <li>s on <p>}
-      PEndSy: Next;
+          break; {else terminate lone <li>s on <p>}
+
+      PEndSy,
+      CommandSy:
+        Next;
+
       DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
+
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
           DoLists(Sy, TermSet);
           LiBlock.MyCell.CheckLastBottomMargin;
           Next;
         end;
-      CommandSy: Next;
-      TableSy: DoTable;
+
+      TableSy:
+        DoTable;
     else
-      Done := True;
+      break;
     end;
 
   if Assigned(Section) and (Section = LISection) and (Section.Len = 0) then
     Section.AddChar(WideChar(160), TagIndex); {so that bullet will show on blank <li>}
-  if not IsInline then
-  begin
-    SectionList.Add(Section, TagIndex);
-    Section := nil;
-  end;
+  SectionList.Add(Section, TagIndex);
+  Section := nil;
   SectionList.CheckLastBottomMargin;
   PopAProp(SymbToStr(Sym));
   SectionList := LiBlock.OwnerCell;
+{$ifdef DO_LI_INLINE}
   if not IsInline then
   begin
     LiBlock := nil;
     LiSection := nil;
   end;
+{$endif}
 end;
 
 {-------------DoLists}
@@ -3386,11 +3379,11 @@ var
   Index: ThtChar;
   NewBlock: TBlock;
   EndSym: Symb;
+{$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
   LiSection: TSection;
+{$endif}
 begin
-  LiBlock := nil;
-  LiSection := nil ;
   LineCount := 1;
   Index := '1';
   EndSym := EndSymbFromSymb(Sym);
@@ -3432,7 +3425,7 @@ begin
         begin
           if (Sy = LiSy) and Attributes.Find(ValueSy, T) and (T.Value <> 0) then
             LineCount := T.Value;
-          DoListItem(LiBlock, LiSection, Sym, Sy, LineCount, Index, Plain, TermSet);
+          DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}Sym, Sy, LineCount, Index, Plain, TermSet);
           Inc(LineCount);
         end;
       OLSy, ULSy, DirSy, MenuSy, DLSy:
@@ -3450,7 +3443,6 @@ begin
           LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
-        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3678,19 +3670,17 @@ var
   I: Integer;
   Val: TColor;
   AMarginHeight, AMarginWidth: Integer;
+{$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
   LiSection: TSection;
-//  Ch: ThtChar;
+{$endif}
 begin
-  LiBlock := nil;
-  LiSection := nil;
   repeat
     if Sy in TermSet then
       Exit;
     case Sy of
       TextSy, BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
-        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3744,9 +3734,11 @@ begin
                     if CompareText(Name, 'fixed') = 0 then
                       FPropStack.Last.Assign('fixed', BackgroundAttachment);
                 end;
+{.$IFDEF Quirk}
             if FUseQuirksMode then begin
               FPropStack.Document.Styles.FixupTableColor(FPropStack.Last);
             end;
+{.$ENDIF}
             FPropStack.Last.Assign(AMarginWidth, MarginLeft);
             FPropStack.Last.Assign(AMarginWidth, MarginRight);
             FPropStack.Last.Assign(AMarginHeight, MarginTop);
@@ -3770,10 +3762,10 @@ begin
         end;
 
       LISy:
-        DoListItem(LiBlock, LiSection, LiAloneSy, Sy, 1, '1', False, TermSet);
+        DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}LiAloneSy, Sy, 1, '1', False, TermSet);
 
       DDSy, DTSy:
-        DoListItem(LiBlock, LiSection, DLSy, Sy, 1, '1', False, TermSet);
+        DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}DLSy, Sy, 1, '1', False, TermSet);
 
       PSy: DoP(TermSet);
 
@@ -3902,7 +3894,6 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
-  Self.Doc := Doc;
   FPropStack := ASectionList.PropStack;
   try
     ParseInit(ASectionList);
@@ -4633,7 +4624,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..91] of TResWord = (
+  ResWordDefinitions: array[1..90] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4724,8 +4715,7 @@ const
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
     (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
     (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
-    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
-    (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy));
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin
