@@ -880,12 +880,13 @@ procedure THtmlParser.Next;
         Sy := SaveSy;
       end;
 
-      procedure StrToInteger(const S: ThtString; var Value: Integer);
+      function StrToInteger(const S: ThtString; var Value: Integer): Boolean;
       var
         S1: ThtString;
         I, Code: Integer;
         ValD: Double;
       begin
+        Result := False;
         S1 := Trim(S);
         I := Length(S1);
         if I > 0 then
@@ -912,6 +913,7 @@ procedure THtmlParser.Next;
                 try
                   System.Val(S1, ValD, Code);
                   Value := Round(ValD);
+                  Result := True;
                 except
                 end;
             end;
@@ -962,7 +964,12 @@ procedure THtmlParser.Next;
             GetCh;
           end;
 
-      StrToInteger(S, Val);
+      if not StrToInteger(S, Val) then
+        case Sym of
+          BorderSy:
+            if htLowerCase(S) = 'none' then
+              Val := 0;
+        end;
 
       if (Sym = IDSy) and (S <> '') and Assigned(PropStack.Document) and not LinkSearch then
         PropStack.Document.AddChPosObjectToIDNameList(S, PropStack.SIndex);
