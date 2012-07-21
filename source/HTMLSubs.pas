@@ -4770,7 +4770,7 @@ begin
   MyCell.OwnersTag := Prop.PropTag;
   DrawList := TList.Create;
 
-  Prop.GetVMarginArray(MargArrayO, not (Self is TTableBlock));
+  Prop.GetVMarginArray(MargArrayO, not ((Self is TTableBlock) and Document.UseQuirksMode ));
   if Prop.GetClear(Clr) then
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
@@ -7712,7 +7712,7 @@ begin
   begin {Caption does not have Prop}
     if Prop.GetVertAlign(Algn) and (Algn in [Atop, AMiddle, ABottom]) then
       Valign := Algn;
-    Prop.GetVMarginArray(MargArrayO, False);
+    Prop.GetVMarginArray(MargArrayO, not Master.UseQuirksMode );
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
     //Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
