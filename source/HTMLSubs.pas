@@ -11664,7 +11664,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       begin
         //BG, 24.01.2010: do not move down images or trailing spaces.
         P := PStart + N - 1; {the last char that fits}
-        if ((P^ in [WideChar(' '), {FmCtl,} ImgPan]) or WrapChar(P^)) and (Brk[P - Buff] <> twNo) or (P^ = BrkCh) then
+        if ((P^ = SpcChar) {or (P^ = FmCtl,} or (P^ = ImgPan) or WrapChar(P^)) and (Brk[P - Buff] <> twNo) or (P^ = BrkCh) then
         begin {move past spaces so as not to print any on next line}
           while (N < MaxChars) and ((P + 1)^ = ' ') do
           begin
@@ -11692,7 +11692,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       else
       begin
         P := PStart + N - 1; {the last ThtChar that fits}
-        if ((P^ in [WideChar(' '), FmCtl, ImgPan]) or WrapChar(P^)) and (Brk[P - Buff] <> twNo) or (P^ = BrkCh) then
+        if ((P^ = SpcChar) or (P^ = FmCtl) or (p^ = ImgPan) or WrapChar(P^)) and (Brk[P - Buff] <> twNo) or (P^ = BrkCh) then
         begin {move past spaces so as not to print any on next line}
           while (N < MaxChars) and ((P + 1)^ = ' ') do
           begin
@@ -11711,7 +11711,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           Finished := N >= MaxChars;
           LineComplete(N);
         end
-        else if (N < MaxChars) and ((P + 1)^ in [FmCtl, ImgPan]) and (Brk[PStart - Buff + N - 1] <> twNo) then {an image or control}
+        else if (N < MaxChars) and (((P + 1)^ = FmCtl) or ((P + 1)^ = ImgPan)) and (Brk[PStart - Buff + N - 1] <> twNo) then {an image or control}
         begin
           Finished := False;
           LineComplete(N);
@@ -11735,7 +11735,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
             Dec(P);
           end;
 
-          if (P = PStart) and ((not (P^ in [FmCtl, ImgPan])) or (Brk[PStart - Buff] = twNo)) then
+          if (P = PStart) and ((not ((P^ = FmCtl) or (P^ = ImgPan))) or (Brk[PStart - Buff] = twNo)) then
           begin
             {no space found, forget the wrap, write the whole word and any spaces found after it}
             if BreakWord then
@@ -11744,13 +11744,20 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
             begin
               P := PStart + N - 1;
 
-              while (P <> Last)
-                and not CanWrapAfter(P^)
-                and not (Brk[P - Buff] in [twSoft, twOptional])
-                and not (((P + 1)^ in [WideChar(' '), FmCtl, ImgPan, BrkCh]) or WrapChar((P + 1)^))
-                or (Brk[P - Buff + 1] = twNo)
+              while (P <> Last) and not CanWrapAfter(P^) and not (Brk[P - Buff] in [twSoft, twOptional])
               do
               begin
+                case Brk[P - Buff + 1] of
+                  twNo: ; // must not wrap after this char.
+                else
+                  case (P + 1)^ of
+                    ' ', FmCtl, ImgPan, BrkCh:
+                      break; // can wrap before this char.
+                  else
+                    if WrapChar((P + 1)^) then
+                      break; // can wrap before this char.
+                  end;
+                end;
                 Inc(P);
               end;
 
@@ -12334,10 +12341,12 @@ var
 
         if not Document.NoOutput then
         begin
-          if (Cnt - I <= 0) and ((Start + I - 1)^ in [WideChar(' '), WideChar(BrkCh)]) then
-            Tmp := I - 1 {at end of line, don't show space or break}
-          else
-            Tmp := I;
+          Tmp := I;
+          if Cnt - I <= 0 then
+            case (Start + I - 1)^ of
+              ' ', BrkCh:
+                Dec(Tmp); {at end of line, don't show space or break}
+            end;
           if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not OwnerBlock.HideOverflow then
           begin {so will clip in Table cells}
             ARect := Rect(IMgr.LfEdge, Y - LR.LineHt - LR.SpaceBefore - YOffset, X + IMgr.ClipWidth, Y - YOffset + 1);
