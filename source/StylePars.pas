@@ -88,7 +88,6 @@ type
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
 
-
 procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
 procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(S: ThtString): ThtString;
@@ -298,6 +297,12 @@ begin
     else
       Result := S;
   end;
+{
+IMPORTANT!!!
+
+You must enclose the URL in quotation marks to prevent the code choking
+on paths specifiers that contain spaces.  Spaces are legal filename characters.
+}
   Result := 'url("' + Result + '")';
 end;
 
@@ -414,6 +419,12 @@ begin
     if I = 0 then
       I := Pos('rgb(', Src);
     if I = 0 then
+      I := Pos('rgba(', Src);
+    if I = 0 then
+      I := Pos('hsla(', Src);
+    if I = 0 then
+      I := Pos('hsl(', Src);
+    if I = 0 then
       Exit;
     J := Pos(')', Src);
     if (J = 0) or (J < I) then
@@ -452,6 +463,12 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     for I := 0 to Count - 1 do
     begin
       if Pos('rgb(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('rgba(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsla(', S[I]) > 0 then
+        Values[shColor] := S[I]
+      else if Pos('hsl(', S[I]) > 0 then
         Values[shColor] := S[I]
       else if (Pos('url(', S[I]) > 0) then
       begin
@@ -695,7 +712,11 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values: array [TShortHandedProps] of ThtString;
   begin
     Values[shType] := 'disc';
-    Values[shPosition] := 'outside';
+    if Self.FUseQuirksMode then begin
+      Values[shPosition] := 'inside';
+    end else begin
+      Values[shPosition] := 'outside';
+    end;
     Values[shImage] := 'none';
 
     SplitString(Value, S, Count);

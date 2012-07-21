@@ -612,7 +612,7 @@ begin
   // background
   if Color <> clNone then
   begin
-    Canvas.Brush.Color := Color;
+    Canvas.Brush.Color := ThemedColor(Color);
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(Rect);
   end;

@@ -2613,6 +2613,7 @@ var
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
+                MarkSy, MarkEndSy,
                 BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
                 USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
                 SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
@@ -2622,6 +2623,7 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     case Sy of
+                      MarkSy,
                       BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                         SubSy, SupSy, BigSy, SmallSy, LabelSy:
                         begin
@@ -2631,6 +2633,7 @@ var
                           if Prop.HasBorderStyle then {start of inline border}
                             FPropStack.Document.ProcessInlines(FPropStack.SIndex, Prop, True);
                         end;
+                      MarkEndSy,
                       BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy,
                         SEndSy, StrikeEndSy, SpanEndSy,
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
@@ -2961,6 +2964,7 @@ begin
         Next;
       end;
 
+    MarkSy,
     BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, SSy, StrikeSy,
     CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
       begin
@@ -2987,7 +2991,7 @@ begin
           Section.ChangeFont(FPropStack.Last);
         Next;
       end;
-
+    MarkEndSy,
     BEndSy, IEndSy, StrongEndSy, EmEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy,
     SubEndSy, SupEndSy, SmallEndSy, BigEndSy, FontEndSy,
     CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy:
@@ -3212,7 +3216,7 @@ begin
   SectionList := NewBlock.MyCell;
 
   while not (Sy in Termset) and
-    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
     EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3443,6 +3447,7 @@ begin
           LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3681,6 +3686,7 @@ begin
     case Sy of
       TextSy, BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
+        MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -4624,7 +4630,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..90] of TResWord = (
+  ResWordDefinitions: array[1..91] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4715,7 +4721,8 @@ const
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),
     (Name: 'ASIDE';       Symbol: AsideSy;      EndSym: AsideEndSy),
     (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
-    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy));
+    (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
+    (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy));
 
 procedure SetSymbolName(Sy: Symb; Name: ThtString);
 begin

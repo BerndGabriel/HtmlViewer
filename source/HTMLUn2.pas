@@ -124,7 +124,8 @@ type
     ArticleSy, ArticleEndSy,
     AsideSy, AsideEndSy,
     FooterSy, FooterEndSy,
-    HGroupSy, HGroupEndSy);
+    HGroupSy, HGroupEndSy,
+    MarkSy, MarkEndSy);
 
 //------------------------------------------------------------------------------
 
@@ -1149,7 +1150,8 @@ begin
   begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
-    Brush.Color := Color;
+    Brush.Color := ThemedColor(Color);
+//    Brush.Color := Color;
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1176,9 +1178,9 @@ begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
     if not MonoBlack and Disabled then
-      Brush.Color := clBtnFace
+      Brush.Color := ThemedColor(clBtnFace)
     else
-      Brush.Color := color;
+      Brush.Color := ThemedColor(color);
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1196,14 +1198,14 @@ begin
       if Raised then
         Pen.Color := clSilver
       else
-        Pen.Color := clBtnShadow;
+        Pen.Color := ThemedColor(clBtnShadow);
     end;
     MoveTo(X1, Y2);
     LineTo(X1, Y1);
     LineTo(X2, Y1);
     if not MonoBlack then
       if Raised then
-        Pen.Color := clBtnShadow
+        Pen.Color := ThemedColor(clBtnShadow)
       else
         Pen.Color := clSilver;
     LineTo(X2, Y2);
@@ -2659,7 +2661,7 @@ begin
       with Canvas do
       begin
         Brush.Style := bsSolid;
-        Brush.Color := Color;
+        Brush.Color := ThemedColor(Color);
         FillRgn(Handle, R, Brush.Handle);
       end;
     finally
@@ -2689,45 +2691,6 @@ var
   StyleSet: set of BorderStyleType;
   OuterRegion, InnerRegion: THandle;
   Brush: TBrush;
-
-  function Darker(Color: TColor): TColor;
-  {find a somewhat darker color for shading purposes}
-  const
-    F = 0.75; // F < 1 makes color darker
-  var
-    Red, Green, Blue: Byte;
-  begin
-    if Color < 0 then
-      Color := GetSysColor(Color and $FFFFFF)
-    else
-      Color := Color and $FFFFFF;
-    Red := Color and $FF;
-    Green := (Color and $FF00) shr 8;
-    Blue := (Color and $FF0000) shr 16;
-    Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
-  end;
-
-  function Lighter(Color: TColor): TColor;
-  {find a somewhat lighter color for shading purposes}
-  const
-    F = 1.15; // F > 1 makes color lighter
-  var
-    Red, Green, Blue: Byte;
-  begin
-    if Color < 0 then
-      Color := GetSysColor(Color and $FFFFFF)
-    else
-      Color := Color and $FFFFFF;
-    if Color = 0 then
-      Result := 0
-    else
-    begin
-      Red := Color and $FF;
-      Green := (Color and $FF00) shr 8;
-      Blue := (Color and $FF0000) shr 16;
-      Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
-    end;
-  end;
 
 begin
 {Limit the borders to somewhat more than the screen size}
@@ -2825,7 +2788,7 @@ begin
     CombineRgn(OuterRegion, OuterRegion, InnerRegion, RGN_DIFF);
     Brush := TBrush.Create;
     try
-      Brush.Color := BGround or PalRelative;
+      Brush.Color := ThemedColor(BGround) or PalRelative;
       Brush.Style := bsSolid;
       FillRgn(Canvas.Handle, OuterRegion, Brush.Handle);
     finally
@@ -2936,7 +2899,7 @@ begin
         if not InPath then
         begin
           lb.lbStyle := BS_SOLID;
-          lb.lbColor := C[I] or PalRelative;
+          lb.lbColor := ThemedColor(C[I]) or PalRelative;
           lb.lbHatch := 0;
           if S[I] = bssDotted then
             PenType := PS_Dot or ps_EndCap_Round

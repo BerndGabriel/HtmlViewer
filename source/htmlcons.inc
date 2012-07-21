@@ -129,6 +129,7 @@
   {$endif}
 
   {$ifdef Compiler23_Plus}
+    {$define UseVCLStyles}
   {$else}
     {$define UseASMx86}
   {$endif}

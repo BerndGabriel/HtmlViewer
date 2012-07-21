@@ -19,100 +19,27 @@
 
 <h2 align="center"><font color="#a00000">What's New</font></h2>
 
-<p class="heading">Version 11.3</p>
-<h5>Added</h5>
-<ul>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=127">Issue 127</a>:  <b>Embedded Images</b> (image URL starts with 'data:image/', continues with ';base64,' and a lot of gibberish).
-  <li>HTML5 Tags <b>&lt;header&gt;</b>, <b>&lt;section&gt;</b>, <b>&lt;nav&gt;</b>, <b>&lt;article&gt;</b>, 
-                 <b>&lt;aside&gt;</b>, <b>&lt;footer&gt;</b>, <b>&lt;hgroup&gt;</b>, and <b>&lt;mark&gt;</b>.
-  <li>Property <b>TViewerBase.QuirksMode</b>, which can be one of qmDetect, qmStandards, and qmQuirks.
-    <p>Implemented the following in Quirks mode:
-      <ul>
-        <li><b>List Item Markers</b><br>
-            The default value of list-style-position is "inside" if the list-item is outside a &lt;UL&gt; or &lt;OL&gt; element, and "outside" otherwise.<br>
-            Documented at <a href = "http://msdn.microsoft.com/en-us/library/gg558047%28v=vs.85%29.aspx">http://msdn.microsoft.com/en-us/library/gg558047%28v=vs.85%29.aspx</a>
-        <li><b>Table Font Inheritance</b><br>
-            With the exception of font-family, by default table elements do not inherit font properties.<br>
-            Documented at <a href = "http://msdn.microsoft.com/en-us/library/gg558047%28v=vs.85%29.aspx">http://msdn.microsoft.com/en-us/library/gg558047%28v=vs.85%29.aspx</a> and verified by J. Peter Mugaas.
-        <li><b>Opera Quirk</b><br>
-            Font sizes are increased by one and the default font size is small.<br>
-            Documented at <a href = "http://www.opera.com/docs/specs/doctype/">http://www.opera.com/docs/specs/doctype/</a>
-        <li><b>Box-Sizing Model</b><br>
-            Is content-box instead of border-box.<br>
-            Described by <a href = "http://www.quirksmode.org/css/box.html">http://www.quirksmode.org/css/box.html</a> 
-            and by Microsoft at <a href = "http://msdn.microsoft.com/en-us/library/gg558047%28v=vs.85%29.aspx">http://msdn.microsoft.com/en-us/library/gg558047%28v=vs.85%29.aspx</a>
-        <li><b>Aligned Images</b><br>
-            Right-aligned images have a default left margin of 3 pixels.  Left-aligned images have a default right margin of 3 pixels.<br>  
-            Described at <a href = "http://www.cs.tut.fi/~jkorpela/quirks-mode.html">http://www.cs.tut.fi/~jkorpela/quirks-mode.html</a> 
-            and in <a href = "http://mxr.mozilla.org/mozilla-central/source/layout/style/quirk.css">Mozzila's quirks.css file</a>.
-      </ul>
-    </p>
-  <li>New Demo <b>FrameBrowserUsingICSv7</b>: Same as FrameBrowserUsingIndy but using <a href = "http://www.overbyte.be/frame_index.html">Overbyte's ICSv7</a> instead of Indy (Angus Robertson)
-  <li>Some support for CSS3 colors <b>RGBA</b> (Red, Green, Blue, Alpha), <b>HSL</b> (Hue, Saturation, Lightness), and <b>HSLA</b> (Hue, Saturation, Lightness, Alpha). (J. Peter Mugaas)
-  <li>CSS properties in standards (non quirks) mode: CSS3 box-sizing, CSS2 max-height, CSS2 min-height, CSS2 max-width, CSS2 min-width (J. Peter Mugaas)
-  <li>Delphi XE2+ only: support for Vcl.Themes <b>StyleService colors</b> using the StyleServices.GetSystemColor call. (J. Peter Mugaas)  
-</ul>
-<h5>Enhanced</h5>
-<ul>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=130">Issue 130</a>:  Non-standard pointer cursor replaced with crHandPoint.
-  <li>DoScrollbars runs now at design time, the ugly missplaced scrollbars vanish. (S&eacute;rgio Alexandre)
-  <li>THtmlViewer now always uses DoGetImage() as event handler for FSectionList.OnGetImage. DoGetImage() now is virtual, thus THtmlViewer descendents can override it and handle images on its own without blocking the OnImageRequest event. (S&eacute;rgio Alexandre)
-  <li>HandleMeta and InitLoad promoted to virtual, descendents can now do something. For example S&eacute;rgio Alexandre uses meta tags to define base64 encoded images: &lt;meta name="cid" HttpEq="image/*" content="base64"&gt;, so any &lt;img src="cid"&gt; will display that image. (S&eacute;rgio Alexandre)
-  <li>Virtual method TFVBase.DoGetImage added analog to THtmlViewer.DoGetImage. All viewers will use it, and it triggers the event. (S&eacute;rgio Alexandre)
-  <li>PostRequest is virtual now, descendants can provide internally any resource. (S&eacute;rgio Alexandre)
-  <li>Virtual method TFrameBrowser.AssertCanPostRequest extracted from LoadURLInternal. Descendants that override PostRequest may not require OnGetPostRequest* events and if so they must override AssertCanPostRequest as well. (S&eacute;rgio Alexandre)
-  <li>BeginProcessing, EndProcessing promoted to virtual, same purpose like InitLoad. (S&eacute;rgio Alexandre)
-  <li>Since "GetViewerClass" is virtual, "CreateViewer" is now virtual. E.g. S&eacute;rgio Alexandre uses it to remove borders. (S&eacute;rgio Alexandre)
-  <li>GDIPL2A.pas - Loading png-files no longer produces temporary files. Using IStreams instead.
-  <li>Property TViewerBase.UseQuirksMode replaces the definable symbol "Quirk". THtmlViewer now can decide to use the quirks mode depending on document. (J. Peter Mugaas)
-</ul>  
-<h5>Fixed</h5>
-<ul>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=138">Issue 138</a>: Version 11.2 has table formatting problems.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=139">Issue 139</a>: Asian HTML files with double-byte encoding cannot be displayed.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=147">Issue 147</a>: Problem with Umlaut characters in path names.<br>
-      New function DecodeURL() in URLSubs.pas converts % encoded URL to Unicode. Function extracted from HTMLToDOS(), renamed from ReplaceEscapeChars() and enhanced.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=148">Issue 148</a>: Error while compiling package under Lazarus 1.1
-  <li>THtmlParser.DoMeta to handle meta without http-equiv="Content-Type" &lt;meta charset="utf-8"&gt; from HTML5 (Angus Robertson)
-  <li>HtmlView.pas - LoadDocument, don't add physical disk file path to URL, it corrupts referrer (Angus Robertson)
-  <li>FramBrwz.pas - HotSpotClick not normalising URL before adding protocol for links (Angus Robertson)
-  <li>Memory leaks in TbrFrame.frLoadFromBrzFile and THtmlViewer.HTMLMouseDown (Arno Garrels)
-  <li>Missing initializations of some out parameters.
-  <li>A bug where background images might not load if a path name contains spaces. (J. Peter Mugaas)
-  <li>When printing, do not show background if PrintBackground is False. This was happening when drawing a block. (J. Peter Mugaas)
-  <li>Merged a fix for media-queries in style sheets from HtmlViewer 12.  This does not support media queries but simply skips them when parsing. (J. Peter Mugaas)
-</ul>
-
 <p class="heading">Version 11.2</p>
 <h5>Added</h5>
 <ul>
   <li>Tags <b>&lt;col&gt;</b> and <b>&lt;colspan&gt;</b> support relative widths "n*".
   <li>Added .xhtml and .xht file extensions for XHTML.  This will be rendered as HTML. (J. Peter Mugaas)
-  <li>Added relative width specification (like &quot;n*&quot;) of tags &lt;col&gt; and &lt;colgroup&gt;
-  <li>Sections may break text lines after slashes.
 </ul>
-<h5>Enhanced</h5>
+<h5>Fixed and Changed</h5>
 <ul>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 40</a>: Optical bug in tables with columns with relative widths. Enhanced table formatting.
-</ul>  
-<h5>Fixed</h5>
-<ul>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 59</a>: Image scaling error.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=101">Issue 101</a>: Floating images in tables appear in incorrect location.
-  <li>Too much space below an image. Extra space distribution for inline image depends on image's vertical alignment.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=106">Issue 106</a>: Anchors are not working.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=107">Issue 107</a>: LoadTextFile produces an exception.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=108">Issue 108</a>: HTMLSubs.pas and C++Builder: E1025 Unsupported language feature: 'property of array type'.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=109">Issue 109</a>: C++Builder cannot handle properties that reference record members.<br>
+  <li>Enhanced: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 40</a>: Optical bug in tables with columns with relative widths. Enhanced table formatting.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=59">Issue 59</a>: Image scaling error.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=101">Issue 101</a>: Floating images in tables appear in incorrect location.
+  <li>Fixed: Too much space below an image. Extra space distribution for inline image depends on image's vertical alignment.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=106">Issue 106</a>: Anchors are not working.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=107">Issue 107</a>: LoadTextFile produces an exception.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=108">Issue 108</a>: HTMLSubs.pas and C++Builder: E1025 Unsupported language feature: 'property of array type'.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=109">Issue 109</a>: C++Builder cannot handle properties that reference record members.<br>
   <b style="color:blue">NOTICE: Properties BrdTop, BrdRight, BrdBottom, BrdLeft, PadTop, PadRight, PadBottom, PadLeft are provided for legacy support only and will be removed in a near future release. Please use properties Border and Padding instead.</b><br>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=111">Issue 111</a>: CSS line-height BUG.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=114">Issue 114</a>: &lt;page&gt; tag not working.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=131">Issue 131</a>: Empty CSS rules break following rule.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=136">Issue 136</a>: Table cell background is missing.
-  <li>Access Violation in BumpHistory.
-  <li>HtmlViewer vertically scrolls beyond end of document.
-  <li>Html parser did not detect table sections (tfoot, tbody) after cells without end tag.
-  <li>Missing border lines in tables in 64bit Lazarus.
+  <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=111">Issue 111</a>: CSS line-height BUG.
+  <li>Fixed: Access Violation in BumpHistory.
+  <li>Fixed: HtmlViewer vertically scrolls beyond end of document.
+  <li>Fixed: Html parser did not detect table sections (tfoot, tbody) after cells without end tag.
 </ul>
 
 <p class="heading">Version 11.1</p>
