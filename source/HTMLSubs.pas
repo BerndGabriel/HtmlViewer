@@ -4813,7 +4813,11 @@ begin
   MyCell.FOwner := Self;
   DrawList := TList.Create;
 
-  Prop.GetVMarginArray(MargArrayO);
+  if not (Master.UseQuirksMode and (Self is TTableBlock)) then begin
+    Prop.GetVMarginArray(MargArrayO);
+  end else begin
+    Prop.GetVMarginArrayDefBorder(MargArrayO,clSilver);
+  end;
   if Prop.GetClear(Clr) then
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
@@ -8260,7 +8264,11 @@ begin
   begin {Caption does not have Prop}
     if Prop.GetVertAlign(Algn) and (Algn in [Atop, AMiddle, ABottom]) then
       Valign := Algn;
-    Prop.GetVMarginArray(MargArrayO);
+    if Master.UseQuirksMode then begin
+      Prop.GetVMarginArrayDefBorder(MargArrayO,clSilver);
+    end else begin
+      Prop.GetVMarginArray(MargArrayO);
+    end;
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
     ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, 0, AutoCount, MargArray);
@@ -11153,6 +11161,7 @@ begin
       end;
       FreeMem(XP);
       XP := nil;
+      BuffSize := 0;
     end;
   end;
   if Len > 0 then

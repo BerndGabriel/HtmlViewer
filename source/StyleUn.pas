@@ -268,6 +268,7 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
+    procedure GetVMarginArrayDefBorder(var MArray: TVMarginArray; const ADefColor : Variant);
     procedure GetVMarginArray(var MArray: TVMarginArray);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
@@ -2857,15 +2858,17 @@ begin
   AFI.Assign(FIArray);
 end;
 
-procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+procedure TProperties.GetVMarginArrayDefBorder(var MArray: TVMarginArray; const ADefColor : Variant);
 var
   I: PropIndices;
   BS: BorderStyleType;
   NewColor : TColor;
 begin
   {$IFDEF JPM_DEBUGGING}
-  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArrayDefBorder');
   LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.SendFmtMsg('ADefColor = %s',[LogPropColor( ADefColor )]);
+
   {$ENDIF}
   for I := Low(Marray) to High(MArray) do
     case I of
@@ -2875,24 +2878,39 @@ begin
         GetBorderStyle(I, BS);
         MArray[I] := BS;
       end;
-      {From: http://www.w3.org/TR/CSS21/box.html#x49
-
-      If an element's border color is not specified with a
-      border property, user agents must use the value of the
-      element's 'color' property as the computed value for
-      the border color.
-      }
       BorderTopColor..BorderLeftColor:
       begin
         if ColorFromString(Props[I],False,NewColor) then begin
           MArray[I] := Props[I]
         end else begin
-          MArray[I] := Props[StyleUn.Color];
+          MArray[I] := ADefColor;
         end;
       end
     else
       MArray[I] := Props[I];
     end;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogTVMarginArray(MArray,'MArray');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.GetVMarginArrayDefBorder');
+  {$ENDIF}
+end;
+
+procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+{From: http://www.w3.org/TR/CSS21/box.html#x49
+
+If an element's border color is not specified with a
+border property, user agents must use the value of the
+element's 'color' property as the computed value for
+the border color.
+}
+begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
+  LogPropColor();
+  LogProperties(Self,'Self');
+  {$ENDIF}
+  GetVMarginArrayDefBorder(MArray,Props[StyleUn.Color]);
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogTVMarginArray(MArray,'MArray');
