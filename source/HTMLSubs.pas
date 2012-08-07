@@ -4925,6 +4925,7 @@ begin
   MargArrayO := TT.MargArrayO;
   if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     MyCell.IMgr := TIndentManager.Create;
+  BlockTitle := TT.BlockTitle;
 end;
 
 destructor TBlock.Destroy;
