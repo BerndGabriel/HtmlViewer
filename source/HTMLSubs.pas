@@ -5013,6 +5013,7 @@ begin
   MargArrayO := TT.MargArrayO;
   if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     MyCell.IMgr := TIndentManager.Create;
+  BlockTitle := TT.BlockTitle; // Thanks to Nagy Ervin.
 end;
 
 destructor TBlock.Destroy;
@@ -12342,7 +12343,7 @@ begin {TSection.DrawLogic}
     begin
       //BG, 24.01.2010: do not move down images or trailing spaces.
       P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ = ThtChar(' ')) or {(P^ = FmCtl) or} (P^ = ImgPan) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+      if ((P^ = SpcChar) or {(P^ = FmCtl) or} (P^ = ImgPan) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
       begin {move past spaces so as not to print any on next line}
         while (N < MaxChars) and ((P + 1)^ = ' ') do
         begin
