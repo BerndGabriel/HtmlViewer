@@ -149,6 +149,8 @@ type
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
     // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
 
+    DrawRect: TRect; //>-- DZ where the section starts (calcualted in Draw1)
+
     constructor Create(OwnerCell: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); virtual;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; virtual;
@@ -1673,8 +1675,18 @@ end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
+var
+  id: ThtString; //>-- DZ
 begin
-  inherited Create;
+  //>-- DZ
+  if Properties <> nil then
+    id := Properties.PropID
+  else if Attributes <> nil then
+    id := Attributes.TheId
+  else
+    id := '';
+
+  inherited Create(id);
   FOwnerCell := Parent;
   FOwnerBlock := Parent.OwnerBlock;
   FDocument := Parent.Document;
@@ -1685,7 +1697,7 @@ end;
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.CreateCopy(Parent: TCellBasic; Node: THtmlNode);
 begin
-  inherited Create;
+  inherited Create( Node.htmlId );
   FOwnerCell := Parent;
   FOwnerBlock := Parent.OwnerBlock;
   FDocument := Parent.Document;
@@ -5082,6 +5094,13 @@ function TBlock.PtInObject(X: Integer; Y: Integer; out Obj: TObject;
 {Y is absolute}
 var
   I: Integer;
+  item : TSectionBase;
+
+  function inRect() : boolean;
+  begin
+      Result := ( X >= DrawRect.Left ) and ( X < DrawRect.Right ) and ( Y >= DrawRect.Top ) and ( Y < DrawRect.Bottom );
+  end;
+
 begin
   case Display of
     pdNone: Result := False;
@@ -5092,17 +5111,27 @@ begin
     {check this in z order}
     Result := False;
     Obj := nil;
-    with DrawList do
-      for I := Count - 1 downto 0 do
-        with TSectionBase(Items[I]) do
-        begin
-          if (Y >= DrawTop) and (Y < DrawBot) then
-          begin
-            Result := PtInObject(X, Y, Obj, IX, IY);
-            if Result then
-              Exit;
-          end;
-        end;
+    for I := DrawList.Count - 1 downto 0 do
+    begin
+      item:= TSectionBase(DrawList.Items[I]);
+
+      if (Y >= item.DrawTop) and (Y < item.DrawBot) then
+      begin
+        Result:= item.PtInObject(X, Y, Obj, IX, IY);
+
+        if Result then
+          Exit;
+       end;
+    end;
+  end;
+
+  //>-- DZ 18.09.2012
+  if ( not Result ) and inRect() then
+  begin
+    Result := true;
+    obj:= self;
+    IX:= X - DrawRect.Left;
+    IY:= Y - DrawRect.Top;
   end;
 end;
 
@@ -5519,6 +5548,12 @@ begin
     if DrawList.Count = 0 then
       DrawSort;
   end;
+
+  //>-- DZ
+  DrawRect.Left:= X;
+  DrawRect.Top:= DrawTop;
+  DrawRect.Right:= NewWidth;
+  DrawRect.Bottom:= X + SectionHeight;
 end;
 
 {----------------TBlock.DrawSort}
@@ -5727,6 +5762,9 @@ begin
   CnRect.Top    := PdRect.Top    + MargArray[PaddingTop];
   CnRect.Right  := PdRect.Right  - MargArray[PaddingRight];
   CnRect.Bottom := PdRect.Bottom - MargArray[PaddingBottom];
+
+  //>-- DZ
+  DrawRect:= MyRect;
 
   IT := Max(0, ARect.Top - 2 - PdRect.Top);
   FT := Max(PdRect.Top, ARect.Top - 2); {top of area drawn, screen coordinates}
@@ -6807,6 +6845,12 @@ begin
   Imgr.CurrentID := Self;
   DrawTheList(Canvas, ARect, NewWidth, X, IMgr.LfEdge, 0);
   Imgr.CurrentID := SaveID;
+
+  //>-- DZ
+  DrawRect.Top:= X;
+  DrawRect.Left:= Y;
+  DrawRect.Right:= X + NewWidth;
+  DrawRect.Bottom:= Y + DrawHeight;
 end;
 
 { ThtDocument }
@@ -9822,6 +9866,12 @@ begin
     YO := Y - YOffset;
 
     DrawX := X;
+
+    //>-- DZ
+    DrawRect.Top:= X;
+    DrawRect.Left:= Y;
+    DrawRect.Right:= X + TableWidth;
+    DrawRect.Bottom:= Y + DrawHeight;
     //DrawY := Y;
 
     if (YO + DrawHeight >= ARect.Top) and (YO < ARect.Bottom) or Document.Printing then
@@ -14326,6 +14376,12 @@ begin
   YDraw := Y;
   ContentBot := Y + SectionHeight;
   DrawBot := Y + DrawHeight;
+
+  //>-- DZ
+  DrawRect.Top:= X;
+  DrawRect.Left:= Y;
+  DrawRect.Right:= X + MaxWidth;
+  DrawRect.Bottom:= Y + DrawHeight;
 end;
 
 function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
@@ -14447,7 +14503,7 @@ end;
 //-- BG ---------------------------------------------------------- 04.03.2011 --
 constructor TChPosObj.Create(Document: ThtDocument; Pos: Integer);
 begin
-  inherited Create;
+  inherited Create('');
   FChPos := Pos;
   FDocument := Document;
 end;

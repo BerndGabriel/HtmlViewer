@@ -83,6 +83,8 @@ type
   ThtmlPagePrinted = procedure(Sender: TObject; HFViewer: THtmlViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean) of object;
   TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: ThtString) of object;
   TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
+  TSectionMouseClickEvent = procedure(Sender: TObject; Obj: TSectionBase; Button: TMouseButton; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
+  TSectionMouseMoveEvent = procedure(Sender: TObject; Obj: TSectionBase; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
 
   THtmlViewerOption = (
     htOverLinksActive, htNoLinkUnderline, htPrintTableBackground,
@@ -218,6 +220,8 @@ type
     FOnPrintHTMLHeader, FOnPrintHTMLFooter: ThtmlPagePrinted;
     //FOnPrinting: THTMLViewPrinting;
     FOnRightClick: TRightClickEvent;
+    FOnSectionClick: TSectionMouseClickEvent; //>-- DZ 17.09.2012
+    FOnSectionOver: TSectionMouseMoveEvent; //>-- DZ 17.09.2012
 
     // status info
     FViewerState: THtmlViewerState;
@@ -538,6 +542,8 @@ type
     property OnHotSpotClick: THotSpotClickEvent read FOnHotSpotClick write FOnHotSpotClick;
     property OnHotSpotCovered: THotSpotEvent read FOnHotSpotCovered write FOnHotSpotCovered;
     property OnhtStreamRequest: TGetStreamEvent read FOnhtStreamRequest write FOnhtStreamRequest;
+    property OnSectionClick: TSectionMouseClickEvent read FOnSectionClick write FOnSectionClick; //>-- DZ 17.09.2012
+    property OnSectionOver: TSectionMouseMoveEvent read FOnSectionOver write FOnSectionOver; //>-- DZ 17.09.2012
     property OnImageClick;
     property OnImageOver;
     property OnImageRequest;
@@ -768,6 +774,8 @@ begin
     OnPrintHTMLFooter := Viewer.OnPrintHTMLFooter;
     OnPrintHTMLHeader := Viewer.OnPrintHTMLHeader;
     OnRightClick := Viewer.OnRightClick;
+    OnSectionClick := Viewer.OnSectionClick;
+    OnSectionOver := Viewer.OnSectionOver;    
   end;
 end;
 
@@ -1694,6 +1702,11 @@ begin
     FLinkText := GetTextByIndices(UrlTarget.Start, UrlTarget.Last);
     UrlTarget.Free;
   end;
+
+  //>-- DZ 18.09.2012
+  if Assigned(OnSectionOver) and PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY) then
+    OnSectionOver(Self, TSectionBase( Obj ), Shift, X, Y, IX, IY);
+
   if guControl in guResult then
     NextCursor := HandCursor;
   if (Assigned(OnImageClick) or Assigned(OnImageOver)) and
@@ -1758,6 +1771,10 @@ begin
   end;
 
   inherited MouseUp(Button, Shift, X, Y);
+
+  //>-- DZ 17.09.2012
+  if Assigned(OnSectionClick) and PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY) then
+    OnSectionClick(Self, TSectionBase( Obj ), Button, Shift, X, Y, IX, IY);
 
   if Assigned(OnImageClick) or Assigned(OnRightClick) then
   begin
