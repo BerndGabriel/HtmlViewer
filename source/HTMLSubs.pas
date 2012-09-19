@@ -79,6 +79,8 @@ uses
 
 type
 
+  //>-- DZ 19.09.2012
+  TDrawRect = TRect;
   TSymbol = Symb;
 
   ThtDocument = class;
@@ -148,6 +150,8 @@ type
     SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
     // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
+
+    DrawRect: TDrawRect; //>-- DZ where the section starts (calcualted in Draw1)
 
     constructor Create(OwnerCell: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); virtual;
@@ -1673,8 +1677,18 @@ end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
+var
+  id: ThtString; //>-- DZ
 begin
-  inherited Create;
+  //>-- DZ
+  if Properties <> nil then
+    id := Properties.PropID
+  else if Attributes <> nil then
+    id := Attributes.TheId
+  else
+    id := '';
+
+  inherited Create(id);
   FOwnerCell := Parent;
   FOwnerBlock := Parent.OwnerBlock;
   FDocument := Parent.Document;
@@ -1685,7 +1699,7 @@ end;
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.CreateCopy(Parent: TCellBasic; Node: THtmlNode);
 begin
-  inherited Create;
+  inherited Create( Node.htmlId );
   FOwnerCell := Parent;
   FOwnerBlock := Parent.OwnerBlock;
   FDocument := Parent.Document;
@@ -4538,7 +4552,15 @@ function TCellBasic.PtInObject(X: Integer; Y: Integer; var Obj: TObject;
 {Y is absolute}
 var
   I: Integer;
+
+  //>-- DZ 19.09.2012
+  function inDrawRect(const aDrawRect: TDrawRect) : boolean;
+  begin
+    Result := ( X >= aDrawRect.Left ) and ( X < aDrawRect.Right ) and ( ( Y - Document.YOff ) >= aDrawRect.Top ) and ( ( Y - Document.YOff ) < aDrawRect.Bottom );
+  end;
+
 begin
+
   Result := False;
   Obj := nil;
   for I := 0 to Count - 1 do
@@ -4547,6 +4569,16 @@ begin
       if (Y >= DrawTop) and (Y < DrawBot) then
       begin
         Result := PtInObject(X, Y, Obj, IX, IY);
+
+        //>-- DZ 19.09.2012
+        if ( not Result ) and inDrawRect( Items[I].DrawRect ) then
+        begin
+          Result := true;
+          obj:= Items[I];
+          IX:= X - Items[I].DrawRect.Left;
+          IY:= Y - Document.YOff - Items[I].DrawRect.Top;
+        end;
+
         if Result then
           Exit;
       end;
@@ -5082,6 +5114,14 @@ function TBlock.PtInObject(X: Integer; Y: Integer; out Obj: TObject;
 {Y is absolute}
 var
   I: Integer;
+  item : TSectionBase;
+
+  //>-- DZ 18.09.2012
+  function inDrawRect() : boolean;
+  begin
+    Result := ( X >= DrawRect.Left ) and ( X < DrawRect.Right ) and ( ( Y - Document.YOff ) >= DrawRect.Top ) and ( ( Y - Document.YOff ) < DrawRect.Bottom );
+  end;
+
 begin
   case Display of
     pdNone: Result := False;
@@ -5092,17 +5132,27 @@ begin
     {check this in z order}
     Result := False;
     Obj := nil;
-    with DrawList do
-      for I := Count - 1 downto 0 do
-        with TSectionBase(Items[I]) do
-        begin
-          if (Y >= DrawTop) and (Y < DrawBot) then
-          begin
-            Result := PtInObject(X, Y, Obj, IX, IY);
-            if Result then
-              Exit;
-          end;
-        end;
+    for I := DrawList.Count - 1 downto 0 do
+    begin
+      item:= TSectionBase(DrawList.Items[I]);
+
+      if (Y >= item.DrawTop) and (Y < item.DrawBot) then
+      begin
+        Result:= item.PtInObject(X, Y, Obj, IX, IY);
+
+        if Result then
+          Exit;
+       end;
+    end;
+  end;
+
+  //>-- DZ 18.09.2012
+  if ( not Result ) and inDrawRect() then
+  begin
+    Result := true;
+    obj:= self;
+    IX:= X - DrawRect.Left;
+    IY:= Y - Document.YOff - DrawRect.Top;
   end;
 end;
 
@@ -5519,6 +5569,12 @@ begin
     if DrawList.Count = 0 then
       DrawSort;
   end;
+
+  //>-- DZ
+  DrawRect.Left   := X;
+  DrawRect.Top    := DrawTop;
+  DrawRect.Right  := NewWidth;
+  DrawRect.Bottom := DrawRect.Top + SectionHeight;
 end;
 
 {----------------TBlock.DrawSort}
@@ -5727,6 +5783,12 @@ begin
   CnRect.Top    := PdRect.Top    + MargArray[PaddingTop];
   CnRect.Right  := PdRect.Right  - MargArray[PaddingRight];
   CnRect.Bottom := PdRect.Bottom - MargArray[PaddingBottom];
+
+  //>-- DZ
+  DrawRect.Top    := MyRect.Top;
+  DrawRect.Left   := MyRect.Left;
+  DrawRect.Bottom := MyRect.Bottom;
+  DrawRect.Right  := MyRect.Right;
 
   IT := Max(0, ARect.Top - 2 - PdRect.Top);
   FT := Max(PdRect.Top, ARect.Top - 2); {top of area drawn, screen coordinates}
@@ -6807,6 +6869,12 @@ begin
   Imgr.CurrentID := Self;
   DrawTheList(Canvas, ARect, NewWidth, X, IMgr.LfEdge, 0);
   Imgr.CurrentID := SaveID;
+
+  //>-- DZ
+  DrawRect.Top    := Y;
+  DrawRect.Left   := X;
+  DrawRect.Right  := DrawRect.Left + NewWidth;
+  DrawRect.Bottom := DrawRect.Top + DrawHeight;
 end;
 
 { ThtDocument }
@@ -9822,6 +9890,12 @@ begin
     YO := Y - YOffset;
 
     DrawX := X;
+
+    //>-- DZ
+    DrawRect.Top    := Y;
+    DrawRect.Left   := X;
+    DrawRect.Right  := DrawRect.Left + TableWidth;
+    DrawRect.Bottom := DrawRect.Top + DrawHeight;
     //DrawY := Y;
 
     if (YO + DrawHeight >= ARect.Top) and (YO < ARect.Bottom) or Document.Printing then
@@ -9901,7 +9975,8 @@ function THtmlTable.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX,
           if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
           begin
             Result := CellObj.Cell.PtInObject(X, Y, Obj, IX, IY);
-            Exit;
+            if Result then //>-- DZ 19.09.2012
+              Exit;
           end;
         end;
         Inc(XX, Widths[I]);
@@ -11928,6 +12003,30 @@ var
   MySelB, MySelE: Integer;
   YOffset, Y, Desc: Integer;
 
+  //>-- DZ 19.09.2012
+  procedure AdjustDrawRect( aTop: integer; const aLeft, aWidth, aHeight: integer ); overload;
+  begin
+     dec( aTop, Document.YOff );
+
+     if DrawRect.Top > aTop then
+       DrawRect.Top:= aTop;
+
+     if DrawRect.Left > aLeft then
+       DrawRect.Left:= aLeft;
+
+     if DrawRect.Right < aLeft + aWidth then
+       DrawRect.Right:= aLeft + aWidth;
+
+     if DrawRect.Bottom < aTop + aHeight then
+       DrawRect.Bottom:= aTop + aHeight;
+  end;
+
+  //>-- DZ 19.09.2012
+  procedure AdjustDrawRect( const aRect: TRect ); overload;
+  begin
+    AdjustDrawRect( aRect.Top, aRect.Left, aRect.Right - aRect.Left, aRect.Bottom - aRect.Top );
+  end;
+
   procedure DrawTheText(LineNo: Integer);
   var
     I, J, J1, J2, J3, J4, Index, Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
@@ -11993,6 +12092,7 @@ var
     CP1x := CPx;
     LR.DrawY := Y - LR.LineHt;
     LR.DrawXX := CPx;
+    AdjustDrawRect( LR.DrawY, LR.DrawXX, LR.DrawWidth, LR.LineHt ); //>-- DZ 19.09.2012
     while Cnt > 0 do
     begin
       I := 1;
@@ -12436,6 +12536,8 @@ var
         BR := BorderRec(LR.BorderList.Items[K]);
         if BR.OpenEnd or (BR.BRect.Right = 0) then
           BR.BRect.Right := CPx;
+
+        AdjustDrawRect(BR.bRect); //>-- DZ 19.09.2012
       end;
   end;
 
@@ -14289,6 +14391,11 @@ begin
   inherited;
   FDisplay := AProp.Display;
   ContentTop := 999999999; {large number in case it has Display: none; }
+
+  DrawRect.Top    := 999999999;
+  DrawRect.Left   := 999999999;
+  DrawRect.Bottom := 0;
+  DrawRect.Right  := 0;
 end;
 
 constructor TSectionBase.CreateCopy(OwnerCell: TCellBasic; T: TSectionBase);
@@ -14326,6 +14433,12 @@ begin
   YDraw := Y;
   ContentBot := Y + SectionHeight;
   DrawBot := Y + DrawHeight;
+
+  //>-- DZ
+  DrawRect.Top    := DrawTop;
+  DrawRect.Left   := X;
+  DrawRect.Right  := DrawRect.Left + MaxWidth;
+  DrawRect.Bottom := DrawBot;
 end;
 
 function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
@@ -14447,7 +14560,7 @@ end;
 //-- BG ---------------------------------------------------------- 04.03.2011 --
 constructor TChPosObj.Create(Document: ThtDocument; Pos: Integer);
 begin
-  inherited Create;
+  inherited Create('');
   FChPos := Pos;
   FDocument := Document;
 end;

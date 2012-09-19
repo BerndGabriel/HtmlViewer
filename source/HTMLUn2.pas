@@ -385,11 +385,22 @@ type
 //------------------------------------------------------------------------------
 
   TIDObject = class(TObject)
+  private
+    function getID(): ThtString; //>-- DZ
   protected
+    FhtmlId: ThtString; //>-- DZ real ID from HTML if any
+    FglobalId: ThtString; //>-- DZ global unique ID
+
     function GetYPosition: Integer; virtual; abstract;
     function FreeMe: Boolean; virtual; // some objects the TIDObjectsList owns, some others not.
   public
+    constructor Create(const AhtmlID: ThtString);
+    procedure AfterConstruction(); override;//>-- DZ
+
     property YPosition: Integer read GetYPosition;
+    property id: ThtString read getID; //>-- DZ if FhtmlId then FglobalId will be returned as result
+    property htmlId: ThtString read FhtmlId; //>-- DZ
+    property globalId: ThtString read FglobalId; //>-- DZ
   end;
 
   //BG, 04.03.2011: TIDNameList renamed to TIDObjectList and used TObject changed to TIDObject.
@@ -721,6 +732,9 @@ uses
 
 type
   EGDIPlus = class(Exception);
+
+var
+  GlobalObjectID: cardinal; //>-- DZ, counter for TIDObject.FglobalID
 
 {$ifdef UseASMx86}
 
@@ -3356,6 +3370,27 @@ begin
   Result := False;
 end;
 
+//>-- DZ 18.09.2011
+constructor TIDObject.Create(const AhtmlID: ThtString);
+begin
+  FhtmlID:= trim(AhtmlID);
+end;
+
+procedure TIDObject.AfterConstruction();
+begin
+  FglobalId:= IntToStr(GlobalObjectID);
+  inc(GlobalObjectID);
+end;
+
+function TIDObject.getID(): ThtString;
+begin
+  if FhtmlID <> '' then
+    Result:= FhtmlID
+  else
+    Result:= FglobalId;
+end;
+//<-- DZ
+
 { ThvPanel }
 
 procedure ThvPanel.SetVisible(Value: boolean);
@@ -3370,5 +3405,7 @@ begin
   end;
 end;
 
+initialization
+  GlobalObjectID := 0; //>-- DZ
 end.
 
