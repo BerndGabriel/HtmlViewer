@@ -2984,7 +2984,6 @@ begin
     Exclude(FViewerState, vsBGFixed);
     DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ACanvas.Brush.Color);
   end;
-
   FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
 end;
 
