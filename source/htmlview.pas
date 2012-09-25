@@ -369,7 +369,7 @@ type
     procedure HTMLMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual;
     procedure HTMLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
-    procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint);
+    procedure HTMLMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
     procedure InitLoad; virtual;
     procedure LoadDocument(Document: TBuffer; const DocName: ThtString; DocType: THtmlFileType);
@@ -689,6 +689,7 @@ begin
   PaintPanel.OnMouseDown := HTMLMouseDown;
   PaintPanel.OnMouseMove := HTMLMouseMove;
   PaintPanel.OnMouseUp := HTMLMouseUp;
+  PaintPanel.OnMouseWheel := HtmlMouseWheel; // BG, 25.09.2012: issue 174. Thanks to Alan Chate
 
   VScrollBar := TScrollBar.Create(Self);
   VScrollBar.Kind := sbVertical;
@@ -1803,7 +1804,7 @@ end;
 {----------------THtmlViewer.HTMLMouseWheel}
 
 procedure THtmlViewer.HTMLMouseWheel(Sender: TObject; Shift: TShiftState;
-  WheelDelta: Integer; MousePos: TPoint);
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
 var
   Lines: Integer;
 begin
@@ -1815,17 +1816,15 @@ begin
       VScrollBarPosition := VScrollBarPosition + (Lines * 16)
   else
     VScrollBarPosition := VScrollBarPosition - WheelDelta div 2;
+  Handled := True;
 end;
 
 function THtmlViewer.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer;
   MousePos: TPoint): Boolean;
 begin
-  result := inherited DoMouseWheel(shift, wheelDelta, mousePos);
-  if not result and not (htNoWheelMouse in htOptions) then
-  begin
-    HTMLMouseWheel(Self, Shift, WheelDelta, MousePos);
-    Result := True;
-  end;
+  Result := inherited DoMouseWheel(shift, wheelDelta, mousePos);
+  if not Result and not (htNoWheelMouse in htOptions) then
+    HTMLMouseWheel(Self, Shift, WheelDelta, MousePos, Result);
 end;
 
  {----------------THtmlViewer.XYToDisplayPos}
