@@ -36,7 +36,12 @@ uses
 {$else}
   Windows,
 {$endif}
-  Classes, Graphics, Controls,
+ {$ifdef scrollbarInClasses}
+ System.Classes,
+ {$else}
+  Classes,
+  {$endif}
+  Graphics, Controls,
   HtmlGlobals, HTMLUn2, HTMLSubs, StyleUn;
 
 type
@@ -242,6 +247,9 @@ begin
 {$ENDIF}
     OnMouseMove := HandleMouseMove;
     Enabled := not Disabled;
+{$ifdef has_StyleElements}
+    StyleElements := AMasterList.StyleElements;
+{$endif}
   end;
 end;
 
@@ -266,17 +274,18 @@ begin
   ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
   if FControl.BorderStyle <> bsNone then
   begin
-    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
+    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color {$ifdef has_StyleElements}, MasterList.StyleElements{$endif});
     Addon := 4;
   end
   else
   begin
-    FillRectWhite(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, FControl.Color);
+    FillRectWhite(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, FControl.Color {$ifdef has_StyleElements}, MasterList.StyleElements{$endif});
     Addon := 2;
   end;
 
   Canvas.Brush.Style := bsClear;
   Canvas.Font := FControl.Font;
+  Canvas.Font.Color := ThemedColor( Canvas.Font.Color{$ifdef has_StyleElements}, seFont in Self.MasterList.StyleElements{$endif});
   H2 := Abs(Canvas.Font.Height);
   SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
   InflateRect(ARect, -Addon, -Addon);
@@ -314,6 +323,8 @@ begin
   with FControl do
   begin
     Canvas.Font := Font;
+    Canvas.Font.Color := ThemedColor( Canvas.Font.Color{$ifdef has_StyleElements},seFont in Self.MasterList.StyleElements{$endif});
+
     if LBSize = -1 then
       LBSize := Max(1, Min(8, TheOptions.Count));
     if FHeight >= 10 then
@@ -458,6 +469,9 @@ begin
 {$ENDIF}
     OnDropDown := FormControlClick;
     Enabled := not Disabled;
+{$ifdef has_StyleElements}
+    FControl.StyleElements := AMasterList.StyleElements;
+{$endif}
   end;
   FControl.Parent := PntPanel;
 end;
@@ -492,9 +506,10 @@ var
   ARect: TRect;
 begin
   ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
-  DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color);
+  DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, MasterList.PrintMonoBlack, False, FControl.Color{$ifdef has_StyleElements},MasterList.StyleElements{$endif});
   Canvas.Brush.Style := bsClear;
   Canvas.Font := FControl.Font;
+  Canvas.Font.Color := ThemedColor(FControl.Font.Color{$ifdef has_StyleElements},seFont in MasterList.StyleElements{$endif});
   SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
   InflateRect(ARect, -4, -4);
   Inc(ARect.Bottom, 5);
@@ -589,7 +604,7 @@ constructor TTextAreaFormControlObj.Create(AMasterList: ThtDocument;
 var
   PntPanel: TWinControl; //TPaintPanel;
   I: integer;
-  SB: TScrollStyle;
+  SB: ThtScrollStyle;
   Tmp: TMyFont;
 begin
   inherited Create(AMasterList, Position, L);
@@ -597,7 +612,7 @@ begin
   Rows := 5;
   Cols := 30;
   Wrap := wrSoft;
-  SB := StdCtrls.ssVertical;
+  SB := ssVertical;
 
   for I := 0 to L.Count - 1 do
     with TAttribute(L[I]) do
@@ -607,7 +622,7 @@ begin
         WrapSy:
           if (Lowercase(Name) = 'off') then
           begin
-            SB := StdCtrls.ssBoth;
+            SB := ssBoth;
             Wrap := wrOff;
           end
           else if (Lowercase(Name) = 'hard') then
@@ -635,6 +650,9 @@ begin
     OnMouseMove := HandleMouseMove;
     Enabled := not Disabled;
     ReadOnly := Self.Readonly;
+     {$ifdef has_StyleElements}
+    FControl.StyleElements := AMasterList.StyleElements;
+     {$endif}
   end;
   FControl.Parent := PntPanel;
 end;
@@ -660,12 +678,12 @@ begin
   begin
     if BorderStyle <> bsNone then
     begin
-      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, FControl.Color);
+      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, MasterList.PrintMonoBlack, False, FControl.Color{$ifdef has_StyleElements},MasterList.StyleElements{$endif});
       Addon := 4;
     end
     else
     begin
-      FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, FControl.Color);
+      FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, FControl.Color {$ifdef has_StyleElements}, MasterList.StyleElements{$endif});
       Addon := 2;
     end;
     Canvas.Brush.Style := bsClear;

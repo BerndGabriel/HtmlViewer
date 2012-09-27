@@ -1,5 +1,12 @@
 {Version 11}
+{$IFDEF CONDITIONALEXPRESSIONS}
 
+
+  // Must be at the top...
+  {$IF CompilerVersion >= 24.0}
+    {$LEGACYIFEND ON}
+  {$IFEND}
+{$ENDIF}
 {$ifdef FPC}
 
 { Identify FreePascal/Lazarus Compiler Version }
@@ -27,6 +34,7 @@
 { Identify Delphi Compiler Version:
 
   #   Compiler    Version Compiler Defined Symbol
+  D16 Delphi XE3    24    VER240
   D15 Delphi XE2    23    VER230
   D14 Delphi XE     22    VER220
   D13 Delphi 2010   21    VER210
@@ -88,6 +96,10 @@
                         {$ifdef ver220}
                         {$else}
                           {$define Compiler23_Plus}
+                          {$ifdef ver230}
+                          {$else}
+                            {$define Compiler24_Plus}
+                          {$endif}
                         {$endif}
                       {$endif}
                     {$endif}
@@ -229,6 +241,12 @@ some versions of RAD Studio XE2.  This should never be used for release software
   {$endif}
     {$define UseVCLStyles}
 {$endif}
+
+{$ifdef Compiler24_Plus}
+   {$define TScrollStyleInSystemUITypes}
+   {$define has_StyleElements}
+{$endif}
+
 {
 Using Third Party Unicode Controls
 

@@ -235,6 +235,9 @@ type
     procedure SetServerRoot(Value: ThtString);
     procedure SetViewImages(Value: boolean);
     procedure SetVisitedColor(Value: TColor);
+    {$ifdef has_StyleElements}
+    procedure UpdateStyleElements; override;
+    {$endif}
     procedure SetVisitedMaxCount(Value: integer);
     procedure SetCharset(Value: TFontCharset);
     property Base: ThtString read GetBase write SetBase;
@@ -410,6 +413,9 @@ type
     RefreshTimer: TTimer;
     NextFile: ThtString;
   protected
+  {$ifdef has_StyleElements}
+    procedure UpdateStyleElements; override;
+    {$endif}
     function CheckNoResize(out Lower, Upper: boolean): boolean; override;
     function ExpandSourceName(Base, Path, S: ThtString): ThtString; virtual; abstract;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
@@ -609,10 +615,15 @@ type
 
     property OnBitmapRequest;
     property ServerRoot;
+    {$ifdef has_StyleElements}
+    property StyleElements;
+    {$endif}
   end;
 
 implementation
-
+{$ifdef Compiler24_Plus}
+uses System.Types;
+{$endif}
 const
   Sequence: integer = 10;
 
@@ -653,6 +664,19 @@ begin
 end;
 
 {----------------TViewerFrameBase.CreateIt}
+
+{$ifdef has_StyleElements}
+procedure TViewerFrameBase.UpdateStyleElements;
+var i : Integer;
+begin
+  inherited UpdateStyleElements;
+  if Assigned(MasterSet.Viewers) then begin
+    for i := 0 to MasterSet.Viewers.Count - 1 do begin
+      (MasterSet.FrameViewer as TFrameViewer).StyleElements := StyleElements;
+    end;
+  end;
+end;
+{$endif}
 
 constructor TViewerFrameBase.CreateIt(AOwner: TComponent; L: TAttributeList;
   Master: TFrameSetBase; const Path: ThtString);
@@ -701,6 +725,8 @@ begin
   OnMouseUp := FVMouseUp;
   frHistory := TStringList.Create;
   frPositionHistory := TFreeList.Create;
+      {$ifdef has_StyleElements}
+      {$endif}
 end;
 
 {----------------TViewerFrameBase.Destroy}
@@ -1495,6 +1521,9 @@ begin
   ParentBackground := False;
 {$ENDIF}
   ParentColor := True;
+{$ifdef has_StyleElements}
+  StyleElements := FMasterSet.StyleElements;
+{$endif}
 end;
 
 {----------------TSubFrameSetBase.ClearFrameNames}
@@ -2621,6 +2650,9 @@ begin
   CurFrameSet.Align := alClient;
   CurFrameSet.OnDragDrop := FOnDragDrop;
   CurFrameSet.OnDragOver := FOnDragOver;
+  {$ifdef has_StyleElements}
+  CurFrameSet.StyleElements := StyleElements;
+  {$endif}
   InsertControl(CurFrameSet);
 end;
 
@@ -3678,6 +3710,9 @@ begin
   Result.OnProgress := OnProgress;
   Result.OnObjectTag := OnObjectTag;
   Result.QuirksMode := QuirksMode;
+  {$ifdef has_StyleElements}
+  Result.StyleElements := StyleElements;
+  {$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --
@@ -4167,6 +4202,18 @@ begin
     Color := Value;
   end;
 end;
+
+{$ifdef has_StyleElements}
+procedure TFVBase.UpdateStyleElements;
+var
+  I: integer;
+begin
+  CurFrameSet.StyleElements := StyleElements;
+    for I := 0 to GetCurViewerCount - 1 do
+      CurViewer[I].StyleElements := StyleElements;
+  inherited UpdateStyleElements;
+end;
+{$endif}
 
 function TFVBase.GetFontName: TFontName;
 begin

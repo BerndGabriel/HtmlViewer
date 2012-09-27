@@ -198,6 +198,9 @@ type
 implementation
 
 uses
+{$ifdef Compiler24_Plus}
+  System.Types,
+{$endif}
   HtmlView, FramView, StylePars, UrlSubs;
 
 const

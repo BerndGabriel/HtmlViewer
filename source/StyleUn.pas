@@ -471,6 +471,9 @@ procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Bool
 
 implementation
 uses
+{$ifdef Compiler24_Plus}
+  System.UITypes,
+{$endif}
  {$ifdef JPM_DEBUGGING}
  CodeSiteLogging,
  {$endif}
