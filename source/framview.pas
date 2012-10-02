@@ -72,6 +72,7 @@ type
     FBackground: TColor;
     FBitmapList: TStringBitmapList;
     FCharset: TFontCharset;
+    FCodePage: TBuffCodePage;
     FCursor: TCursor;
 //BG, 21.08.2010: has no effect:    FDither: Boolean; 
     FFontColor: TColor;
@@ -275,6 +276,7 @@ type
 
     property ActiveViewer: THtmlViewer read GetActiveViewer;
     property CaretPos: integer read GetCaretPos write SetCaretPos;
+    property CodePage: TBuffCodePage read FCodePage write FCodePage;
     property CurrentFile: ThtString read GetCurrentFile;
     property DocumentTitle: ThtString read GetTitle;
     property History: TStrings read FHistory;
@@ -292,7 +294,7 @@ type
     property FwdButtonEnabled: boolean read GetFwdButtonEnabled;
     property BackButtonEnabled: boolean read GetBackButtonEnabled;
   published
-    property CharSet: TFontCharset read FCharSet write SetCharset;
+    property CharSet: TFontCharset read FCharSet write SetCharset default DEFAULT_CHARSET;
     property Cursor: TCursor read FCursor write SetCursor default crIBeam;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
     property DefFontColor: TColor read FFontColor write SetFontColor default clBtnText;
@@ -382,7 +384,7 @@ type
     FOwner: TSubFrameSetBase;
   protected
     UnLoaded: boolean;
-    LocalCharSet: TFontCharset;
+    LocalCodePage: TBuffCodePage;
     procedure FVMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
@@ -662,7 +664,7 @@ var
 begin
   inherited Create(AOwner);
   if AOwner is TSubFrameSetBase then
-    LocalCharSet := TSubFrameSetBase(AOwner).LocalCharSet;
+    LocalCodePage := TSubFrameSetBase(AOwner).LocalCodePage;
   FOwner := AOwner as TSubFrameSetBase;
   FMasterSet := Master;
   BevelInner := bvNone;
@@ -851,7 +853,7 @@ begin
 //  Viewer.SendToBack;
 //  Viewer.Visible := True;
   Viewer.Tabstop := True;
-  Viewer.CharSet := LocalCharset;
+  Viewer.CodePage := LocalCodePage;
   MasterSet.Viewers.Add(Viewer);
   with MasterSet.FrameViewer do
   begin
@@ -1481,7 +1483,7 @@ begin
   inherited Create(AOwner);
   FMasterSet := Master;
   if AOwner is TFrameBase then
-    LocalCharSet := TSubFrameSetBase(AOwner).LocalCharSet;
+    LocalCodePage := TSubFrameSetBase(AOwner).LocalCodePage;
   OuterBorder := 0; {no border for subframesets}
   if Self <> Master then
     BorderSize := Master.BorderSize;
@@ -2117,8 +2119,8 @@ begin
     Info := GetCharSetCodePageInfo(Content);
     if Info <> nil then
     begin
-      LocalCharSet := Info.CharSet;
-      //LocalCodePage := Info.CodePage;
+      //LocalCharSet := Info.CharSet;
+      LocalCodePage := Info.CodePage;
     end;
   end;
 
@@ -2188,7 +2190,7 @@ constructor TFrameSetBase.Create(AOwner: TComponent);
 begin
   inherited CreateIt(AOwner, Self);
   FFrameViewer := AOwner as TFvBase;
-  LocalCharSet := FrameViewer.Charset;
+  LocalCodePage := FrameViewer.CodePage;
   if fvNoBorder in FrameViewer.fvOptions then
     BorderSize := 0
   else

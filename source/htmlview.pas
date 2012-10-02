@@ -506,7 +506,7 @@ type
     property Width default 150;
     property Visible;
     property BorderStyle: THTMLBorderStyle read FBorderStyle write SetBorderStyle;
-    property CharSet: TFontCharset read FCharSet write SetCharset;
+    property CharSet: TFontCharset read FCharSet write SetCharset default DEFAULT_CHARSET;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
     property DefFontColor: TColor read FFontColor write FFontColor default clBtnText;
     property DefFontName: TFontName read FFontName write FFontName;
