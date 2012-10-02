@@ -1539,16 +1539,8 @@ begin
   Result := Info <> nil;
   if Result then
   begin
-    case Info.CodePage of
-      CP_UTF8,
-      CP_UTF16LE,
-      CP_UTF16BE:
-        FPropStack.Last.CodePage := Info.CodePage;
-    else
-      FPropStack.Last.CharSet := Info.CharSet;
-    end;
-    Doc.CharSet := FPropStack.Last.CharSet;
-    Doc.CodePage := FPropStack.Last.CodePage;
+    PropStack.Last.CodePage := Info.CodePage;
+    Doc.CodePage := PropStack.Last.CodePage;
   end;
 end;
 

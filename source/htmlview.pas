@@ -501,7 +501,7 @@ type
     property VScrollBar: TScrollBar read FVScrollBar;
   published
     property BorderStyle: THTMLBorderStyle read FBorderStyle write SetBorderStyle;
-    property CharSet;
+    property CharSet default DEFAULT_CHARSET;
     property DefBackground;
     property DefFontColor;
     property DefFontName;

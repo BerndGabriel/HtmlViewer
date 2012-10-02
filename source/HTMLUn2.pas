@@ -467,7 +467,7 @@ type
   private
     FBackGround, FHotSpotColor, FVisitedColor, FOverColor: TColor;
     FCharset: TFontCharset;
-    FCodePage: Integer;
+    FCodePage: TBuffCodePage;
     FFontColor: TColor;
     FFontName, FPreFontName: TFontName;
     FFontSize: Integer;

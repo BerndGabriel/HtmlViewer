@@ -140,7 +140,7 @@ type
     DefFontname: ThtString;
     FUseQuirksMode : Boolean;
     procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
-    procedure AssignCharSet(CS: TFontCharset);
+//    procedure AssignCharSet(CS: TFontCharset);
     procedure AssignCodePage(const CP: Integer);
     procedure CalcLinkFontInfo(Styles: TStyleList; I: Integer);
     procedure GetSingleFontInfo(var Font: ThtFontInfo);
@@ -199,7 +199,7 @@ type
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
     //BG, 20.09.2009:
     property Display: TPropDisplay read GetDisplay;
-    property CharSet: TFontCharset read FCharSet write AssignCharSet;
+    property CharSet: TFontCharset read FCharSet; // write AssignCharSet;
     property CodePage: Integer read FCodePage write AssignCodePage;
     property EmSize: Integer read FEmSize;
     property ExSize: Integer read FExSize;
@@ -230,7 +230,7 @@ type
 {.$ENDIF}
     procedure Initialize(const FontName, PreFontName: ThtString;
       PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
-      LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
+      LinkUnderline: Boolean; ACodePage: TBuffCodePage; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
@@ -383,7 +383,7 @@ var
 begin
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
-  AssignCharSet(Source.CharSet);
+  CodePage := Source.CodePage;
   DefFontname := Source.DefFontname;
   PropTag := 'default';
 end;
@@ -431,7 +431,6 @@ begin
       end;
   DefFontname := Source.DefFontname;
   FontBG := Source.FontBG;
-  CharSet := Source.CharSet;
   CodePage := Source.CodePage;
   PropTitle := Source.PropTitle;
   InLink := Source.InLink;
@@ -513,10 +512,10 @@ begin
     Result := False;
 end;
 
-procedure TProperties.AssignCharSet(CS: TFontCharset);
-begin
-  AssignCharSetAndCodePage(CS, CharSetToCodePage(CS));
-end;
+//procedure TProperties.AssignCharSet(CS: TFontCharset);
+//begin
+//  AssignCharSetAndCodePage(CS, CharSetToCodePage(CS));
+//end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
 function TranslateCharset(CS: TFontCharset): TFontCharset;
@@ -2313,7 +2312,7 @@ end;
 
 procedure TStyleList.Initialize(const FontName, PreFontName: ThtString;
   PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
-  LinkUnderline: Boolean; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
+  LinkUnderline: Boolean; ACodePage: TBuffCodePage; MarginHeight, MarginWidth: Integer);
 type
   ListTypes = (ul, ol, menu, dir, dl, dd, blockquote);
 const
@@ -2348,7 +2347,7 @@ begin
   Properties.Props[Visibility] := viVisible;
   Properties.Props[LetterSpacing] := 0;
   Properties.Props[BoxSizing] := ContentBox;
-  Properties.CharSet := ACharSet;
+  Properties.CodePage := ACodePage;
   AddObject('default', Properties);
   FDefProp := Properties;
 
