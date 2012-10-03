@@ -1,6 +1,7 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.4
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2012 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -44,7 +45,7 @@ uses
   StyleUn, HtmlGlobals, HtmlBuffer, HtmlGif2;
 
 const
-  VersionNo = '11.2';
+  VersionNo = '11.4';
   MaxHScroll = 6000; {max horizontal display in pixels}
   HandCursor = crHandPoint; //10101;
   OldThickIBeamCursor = 2;
@@ -381,11 +382,6 @@ type
 // parser
 //------------------------------------------------------------------------------
 
-  IndexArray = array[1..TokenLeng] of Integer;
-  PIndexArray = ^IndexArray;
-  ChrArray = array[1..TokenLeng] of WideChar;
-  PChrArray = ^ChrArray;
-
   {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
    characters along with their original indices.}
 
@@ -394,13 +390,14 @@ type
   TCharCollection = class
   private
     FChars: ThtString;
-    FIndices: PIndexArray;
+    FIndices: array of Integer;
     FCurrentIndex: Integer;
     function GetSize: Integer;
     function GetAsString: ThtString;
+    function GetCapacity: Integer;
+    procedure SetCapacity(NewCapacity: Integer);
   public
     constructor Create;
-    destructor Destroy; override;
     procedure Add(C: AnsiChar; Index: Integer); overload;
     procedure Add(C: WideChar; Index: Integer); overload;
     procedure Add(const S: ThtString; Index: Integer); overload;
@@ -408,31 +405,32 @@ type
     procedure Concat(T: TCharCollection);
 
     property AsString: ThtString read GetAsString;
-    property Indices: PIndexArray read FIndices;
+    property Capacity: Integer read GetCapacity write SetCapacity;
     property Size: Integer read GetSize;
   end;
+
+  { TokenObj }
 
   TokenObj = class
   private
     St: WideString;
     StringOK: boolean;
-    FCapacity: Integer;
     FCount: Integer;
+    function GetCapacity: Integer;
     function GetString: WideString;
     procedure SetCapacity(NewCapacity: Integer);
   public
-    C: PChrArray;
-    I: PIndexArray;
+    C: array of ThtChar;
+    I: array of Integer;
     constructor Create;
-    destructor Destroy; override;
     procedure AddUnicodeChar(Ch: WideChar; Ind: Integer);
     procedure AddString(S: TCharCollection);
     procedure Concat(T: TokenObj);
     procedure Clear;
     procedure Remove(N: Integer);
-    procedure Replace(N: Integer; Ch: WideChar);
+    procedure Replace(N: Integer; Ch: ThtChar);
 
-    property Capacity: Integer read FCapacity write SetCapacity;
+    property Capacity: Integer read GetCapacity write SetCapacity;
     property Count: Integer read FCount;
     property S: WideString read GetString;
   end;
@@ -519,9 +517,6 @@ type
     //This must be protected because it's set directly in a descendant
     FUseQuirksMode : Boolean;
     FQuirksMode : THtQuirksMode;
-    {$ifdef has_StyleElements}
-    procedure UpdateStyleElements; override;
-    {$endif}
     procedure SetOnInclude(Handler: TIncludeType); virtual;
     procedure SetOnLink(Handler: TLinkType); virtual;
     procedure SetOnScript(Handler: TScriptEvent); virtual;
@@ -536,10 +531,6 @@ type
     property OnScript: TScriptEvent read FOnScript write SetOnScript;
     property OnSoundRequest: TSoundType read FOnSoundRequest write SetOnSoundRequest;
     property UseQuirksMode : Boolean read FUseQuirksMode;
-  published
-    {$ifdef has_StyleElements}
-    property StyleElements;
-    {$endif}
   end;
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
@@ -643,20 +634,16 @@ function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
 function CalcClipRect(Canvas: TCanvas; const Rect: TRect; Printing: boolean): TRect;
 procedure GetClippingRgn(Canvas: TCanvas; const ARect: TRect; Printing: boolean; var Rgn, SaveRgn: HRgn);
 
-procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
-procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor
-  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
+procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);
+procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor);
+
 procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
-  const S: htBorderStyleArray; BGround: TColor; Print: boolean
-  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
+  const S: htBorderStyleArray; BGround: TColor; Print: boolean);
 
 implementation
 
 uses
   Forms, Math,
-  {$ifdef Compiler24_Plus}
-  System.UITypes,
-  {$endif}
   {$ifndef FPC_TODO}jpeg, {$endif}
   {$IFDEF UNICODE} PngImage, {$ENDIF}
   DitherUnit, StylePars;
@@ -847,10 +834,8 @@ end;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 {return count <= Max which fits in Width.  Return X, the extent of chars that fit}
-type
-  Integers = array[1..1] of Integer;
 var
-  Ints: ^Integers;
+  Ints: array of Integer;
   L, H, I: Integer;
 begin
   Extent.cx := 0;
@@ -861,16 +846,12 @@ begin
 
   if not IsWin32Platform then
   begin
-    GetMem(Ints, Sizeof(Integer) * Max);
-    try
-      if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints^, Extent) then
-        if Result > 0 then
-          Extent.cx := Ints^[Result]
-        else
-          Extent.cx := 0;
-    finally
-      FreeMem(Ints);
-    end;
+    SetLength(Ints, Max);
+    if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent) then
+      if Result > 0 then
+        Extent.cx := Ints[Result - 1]
+      else
+        Extent.cx := 0;
   end
   else {GetTextExtentExPointW not available in win98, 95}
   begin {optimize this by looking for Max to fit first -- it usually does}
@@ -1085,8 +1066,7 @@ begin
   Result := ExtS.cx;
 end;
 
-procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor
- {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
+procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);
 var
   OldBrushStyle: TBrushStyle;
   OldBrushColor: TColor;
@@ -1095,8 +1075,7 @@ begin
   begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
-    Brush.Color := ThemedColor(Color
-      {$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+    Brush.Color := Color;
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1104,12 +1083,7 @@ begin
   end;
 end;
 
-{$ifdef has_StyleElements}
-procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor;
-  const AStyleElements : TStyleElements);
-{$else}
 procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor);
-{$endif}
 {Draws lowered rectangles for form control printing}
 var
   OldStyle: TPenStyle;
@@ -1127,19 +1101,10 @@ begin
     OldStyle := Pen.Style;
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
-    if not MonoBlack then begin
-      if Disabled then begin
-        Brush.Color := ThemedColor(clBtnFace{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
-      end else begin
-        Brush.Color := ThemedColor(color{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
-      end;
-    end else begin
-      Brush.Color := clBlack;//color;
-    end;
-//    if not MonoBlack and Disabled then
-//      Brush.Color := ThemedColor(clBtnFace)
-//    else
-//      Brush.Color := ThemedColor(color);
+    if not MonoBlack and Disabled then
+      Brush.Color := ThemedColor(clBtnFace)
+    else
+      Brush.Color := ThemedColor(color);
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1155,21 +1120,18 @@ begin
     begin
       Pen.Width := 2;
       if Raised then
-        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in AStyleElements{$endif})//clSilver
+        Pen.Color := clSilver
       else
-        Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+        Pen.Color := ThemedColor(clBtnShadow);
     end;
     MoveTo(X1, Y2);
     LineTo(X1, Y1);
     LineTo(X2, Y1);
-    if not MonoBlack then begin
+    if not MonoBlack then
       if Raised then
-        Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seClient in AStyleElements{$endif})
+        Pen.Color := ThemedColor(clBtnShadow)
       else
-        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in AStyleElements{$endif});//clSilver;
-    end else begin
-      Pen.Color := clSilver;
-    end;
+        Pen.Color := clSilver;
     LineTo(X2, Y2);
     LineTo(X1, Y2);
     Pen.Style := OldStyle;
@@ -1630,27 +1592,33 @@ begin
 end;
 
 procedure ClipBuffer.CopyToClipboard;
-{Unicode clipboard routine courtesy Mike Lischke}
-var
-  Data: THandle;
-  DataPtr: Pointer;
+{$ifdef LCL}
 begin
-  Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, 2 * BufferLeng);
+  Clipboard.AddFormat(CF_UNICODETEXT, Buffer[0], BufferLeng * sizeof(WIDECHAR));
+end;
+{$else}
+var
+  Len: Integer;
+  Mem: HGLOBAL;
+  Wuf: PWideChar;
+begin
+  Len := BufferLeng;
+  Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
   try
-    DataPtr := GlobalLock(Data);
+    Wuf := GlobalLock(Mem);
     try
-      Move(Buffer^, DataPtr^, 2 * BufferLeng);
-{$ifndef FPC_TODO}
-      Clipboard.SetAsHandle(CF_UNICODETEXT, Data);
-{$endif}
+      Move(Buffer[0], Wuf[0], Len * SizeOf(ThtChar));
+      Wuf[Len] := #0;
+      // BG, 28.06.2012: use API method. The vcl clipboard does not support multiple formats.
+      SetClipboardData(CF_UNICODETEXT, Mem);
     finally
-      GlobalUnlock(Data);
+      GlobalUnlock(Mem);
     end;
   except
-    GlobalFree(Data);
-    raise;
+    GlobalFree(Mem);
   end;
 end;
+{$endif}
 
 function ClipBuffer.Terminate: Integer;
 begin
@@ -2994,8 +2962,12 @@ begin
   Result := Copy(FChars, 1, FCurrentIndex);
 end;
 
-function TCharCollection.GetSize: Integer;
+function TCharCollection.GetCapacity: Integer;
+begin
+  Result := Length(FChars);
+end;
 
+function TCharCollection.GetSize: Integer;
 begin
   Result := FCurrentIndex;
 end;
@@ -3003,15 +2975,17 @@ end;
 constructor TCharCollection.Create;
 begin
   inherited;
-  SetLength(FChars, TokenLeng);
-  GetMem(FIndices, TokenLeng * Sizeof(Integer));
   FCurrentIndex := 0;
+  Capacity := TokenLeng;
 end;
 
-destructor TCharCollection.Destroy;
+procedure TCharCollection.SetCapacity(NewCapacity: Integer);
 begin
-  FreeMem(FIndices);
-  inherited;
+  if NewCapacity <> Capacity then
+  begin
+    SetLength(FChars, NewCapacity);
+    SetLength(FIndices, NewCapacity + 1);
+  end;
 end;
 
 procedure TCharCollection.Add(C: AnsiChar; Index: Integer);
@@ -3021,31 +2995,29 @@ end;
 
 procedure TCharCollection.Add(C: WideChar; Index: Integer);
 begin
-  if FCurrentIndex = Length(FChars) then
-  begin
-    SetLength(FChars, FCurrentIndex + 50);
-    ReallocMem(FIndices, (FCurrentIndex + 50) * Sizeof(Integer));
-  end;
   Inc(FCurrentIndex);
-  FIndices^[FCurrentIndex] := Index;
+  if Capacity <= FCurrentIndex then
+    Capacity := Capacity + 50;
+  FIndices[FCurrentIndex] := Index;
   FChars[FCurrentIndex] := C;
 end;
 
 procedure TCharCollection.Add(const S: ThtString; Index: Integer);
 var
-  K: Integer;
+  K, L: Integer;
 begin
-  K := FCurrentIndex + Length(S);
-  if K >= Length(FChars) then
+  L := Length(S);
+  if L > 0 then
   begin
-    SetLength(FChars, K + 50);
-    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
-  end;
-  Move(PhtChar(S)^, FChars[FCurrentIndex + 1], Length(S) * SizeOf(ThtChar));
-  while FCurrentIndex < K do
-  begin
-    Inc(FCurrentIndex);
-    FIndices^[FCurrentIndex] := Index;
+    K := FCurrentIndex + L;
+    if Capacity <= K then
+      Capacity := K + 50;
+    Move(S[1], FChars[FCurrentIndex + 1], L * SizeOf(ThtChar));
+    while FCurrentIndex < K do
+    begin
+      Inc(FCurrentIndex);
+      FIndices[FCurrentIndex] := Index;
+    end;
   end;
 end;
 
@@ -3060,13 +3032,10 @@ var
   K: Integer;
 begin
   K := FCurrentIndex + T.FCurrentIndex;
-  if K >= Length(FChars) then
-  begin
-    SetLength(FChars, K + 50);
-    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
-  end;
-  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
-  Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
+  if Capacity <= K then
+     Capacity := K + 50;
+  Move(T.FChars[1],     FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
+  Move(T.FIndices[1], FIndices[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
   FCurrentIndex := K;
 end;
 
@@ -3075,29 +3044,20 @@ end;
 constructor TokenObj.Create;
 begin
   inherited;
-  GetMem(C, TokenLeng * Sizeof(WideChar));
-  GetMem(I, TokenLeng * Sizeof(Integer));
-  FCapacity := TokenLeng;
+  Capacity := TokenLeng;
   FCount := 0;
   St := '';
   StringOK := True;
 end;
 
-destructor TokenObj.Destroy;
-begin
-  FreeMem(I);
-  FreeMem(C);
-  inherited;
-end;
-
 procedure TokenObj.AddUnicodeChar(Ch: WideChar; Ind: Integer);
 {Ch must be Unicode in this method}
 begin
-  if Count >= Capacity then
-    SetCapacity(Capacity + 50);
+  if Capacity <= Count then
+    Capacity := Capacity + 50;
   Inc(FCount);
-  C^[Count] := Ch;
-  I^[Count] := Ind;
+  C[Count] := Ch;
+  I[Count] := Ind;
   StringOK := False;
 end;
 
@@ -3155,10 +3115,10 @@ var
   K: Integer;
 begin
   K := Count + S.FCurrentIndex;
-  if K >= Capacity then
-    SetCapacity(K + 50);
-  Move(S.FChars[1], C^[Count + 1], S.FCurrentIndex * Sizeof(WideChar));
-  Move(S.FIndices[1], I^[Count + 1], S.FCurrentIndex * Sizeof(Integer));
+  if Capacity <= K then
+    Capacity := K + 50;
+  Move(S.FChars[1],   C[Count + 1], S.FCurrentIndex * Sizeof(ThtChar));
+  Move(S.FIndices[1], I[Count + 1], S.FCurrentIndex * Sizeof(Integer));
   FCount := K;
   StringOK := False;
 end;
@@ -3168,10 +3128,10 @@ var
   K: Integer;
 begin
   K := Count + T.Count;
-  if K >= Capacity then
-    SetCapacity(K + 50);
-  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
-  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
+  if Capacity <= K then
+    Capacity := K + 50;
+  Move(T.C[1], C[Count + 1], T.Count * Sizeof(ThtChar));
+  Move(T.I[1], I[Count + 1], T.Count * Sizeof(Integer));
   FCount := K;
   StringOK := False;
 end;
@@ -3180,32 +3140,39 @@ procedure TokenObj.Remove(N: Integer);
 begin {remove a single character}
   if N <= Count then
   begin
-    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
-    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
+    if N < Count then
+    begin
+      Move(C[N + 1], C[N], (Count - N) * Sizeof(ThtChar));
+      Move(I[N + 1], I[N], (Count - N) * Sizeof(Integer));
+    end;
     if StringOK then
       Delete(St, N, 1);
     Dec(FCount);
   end;
 end;
 
-procedure TokenObj.Replace(N: Integer; Ch: WideChar);
+procedure TokenObj.Replace(N: Integer; Ch: ThtChar);
 begin {replace a single character}
   if N <= Count then
   begin
-    C^[N] := Ch;
+    C[N] := Ch;
     if StringOK then
       St[N] := Ch;
   end;
 end;
 
+function TokenObj.GetCapacity: Integer;
+begin
+  Result := Length(C) - 1;
+end;
+
 //-- BG ---------------------------------------------------------- 20.01.2011 --
 procedure TokenObj.SetCapacity(NewCapacity: Integer);
 begin
-  if NewCapacity <> FCapacity then
+  if NewCapacity <> Capacity then
   begin
-    ReallocMem(C, NewCapacity * Sizeof(WideChar));
-    ReallocMem(I, NewCapacity * Sizeof(Integer));
-    FCapacity := NewCapacity;
+    SetLength(C, NewCapacity + 1);
+    SetLength(I, NewCapacity + 1);
     if NewCapacity < Count then
     begin
       FCount := NewCapacity;
@@ -3220,7 +3187,8 @@ begin
   if not StringOK then
   begin
     SetLength(St, Count);
-    Move(C^, St[1], SizeOf(WideChar) * Count);
+    if Count > 0 then
+       Move(C[1], St[1], SizeOf(WideChar) * Count);
     StringOK := True;
   end;
   Result := St;
@@ -3543,16 +3511,22 @@ end;
 
 {----------------PrintBitmap}
 
+{$ifdef LCL}
+{$else}
 type
   AllocRec = class(TObject)
     Ptr: Pointer;
     ASize: Integer;
     AHandle: THandle;
   end;
+{$endif}
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}
-
+{$ifdef LCL}
+begin
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Bitmap);
+{$else}
   function Allocate(Size: Integer): AllocRec;
   begin
     Result := AllocRec.Create;
@@ -3584,8 +3558,6 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
     AR.Free;
   end;
 
-{$ifdef LCL}
-{$else}
 var
   OldPal: HPalette;
   DC: HDC;
@@ -3593,11 +3565,7 @@ var
   Image: AllocRec;
   ImageSize: DWord;
   InfoSize: DWord;
-{$endif}
 begin
-{$ifdef LCL}
-  Canvas.StretchDraw(Rect(X, Y, W, H), Bitmap);
-{$else}
   if (Bitmap = nil) or (Bitmap.Handle = 0) then
     Exit;
   DC := Canvas.Handle;
@@ -3831,7 +3799,7 @@ end;
 //end;
 
 procedure DrawOnePolygon(Canvas: TCanvas; P: BorderPointArray; Color: TColor;
-  Side: byte; Printing: boolean {$ifdef has_StyleElements};const AStyleElements : TStyleElements {$endif});
+  Side: byte; Printing: boolean);
 {Here we draw a 4 sided polygon (by filling a region).  This represents one
  side (or part of a side) of a border.
  For single pixel thickness, drawing is done by lines for better printing}
@@ -3890,7 +3858,7 @@ begin
       with Canvas do
       begin
         Brush.Style := bsSolid;
-        Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+        Brush.Color := ThemedColor(Color);
         FillRgn(Handle, R, Brush.Handle);
       end;
     finally
@@ -3900,16 +3868,9 @@ begin
 end;
 
 {----------------DrawBorder}
- {$ifdef has_StyleElements}
 
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
-  const S: htBorderStyleArray; BGround: TColor; Print: boolean;
-  const AStyleElements : TStyleElements);
-
- {$else}
 procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
   const S: htBorderStyleArray; BGround: TColor; Print: boolean);
-  {$endif}
 {Draw the 4 sides of a border.  The sides may be of different styles or colors.
  The side indices, 0,1,2,3, represent left, top, right, bottom.
  ORect is the outside rectangle of the border, IRect the inside Rectangle.
@@ -4024,7 +3985,7 @@ begin
     CombineRgn(OuterRegion, OuterRegion, InnerRegion, RGN_DIFF);
     Brush := TBrush.Create;
     try
-      Brush.Color := ThemedColor(BGround{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
+      Brush.Color := ThemedColor(BGround) or PalRelative;
       Brush.Style := bsSolid;
       FillRgn(Canvas.Handle, OuterRegion, Brush.Handle);
     finally
@@ -4050,22 +4011,22 @@ begin
         Color := C[I] or PalRelative;
         case S[I] of
           bssSolid:
-            DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+            DrawOnePolygon(Canvas, Bnd, Color, I, Print);
           bssInset:
             begin
               if I in [0, 1] then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
+                Color := Darker(C[I]) or PalRelative
               else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+                Color := Lighter(C[I]) or PalRelative;
+              DrawOnePolygon(Canvas, Bnd, Color, I, Print);
             end;
           bssOutset:
             begin
               if (I in [2, 3]) then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
+                Color := Darker(C[I]) or PalRelative
               else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+                Color := Lighter(C[I]) or PalRelative;
+              DrawOnePolygon(Canvas, Bnd, Color, I, Print);
             end;
         end;
       end
@@ -4079,18 +4040,18 @@ begin
           bssGroove:
             begin
               if I in [0, 1] then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
+                Color := Darker(C[I]) or PalRelative
               else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+                Color := Lighter(C[I]) or PalRelative;
+              DrawOnePolygon(Canvas, Bnd, Color, I, Print);
             end;
           bssRidge:
             begin
               if (I in [2, 3]) then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
+                Color := Darker(C[I]) or PalRelative
               else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+                Color := Lighter(C[I]) or PalRelative;
+              DrawOnePolygon(Canvas, Bnd, Color, I, Print);
             end;
         end;
         Bnd[0] := PM[I];
@@ -4101,41 +4062,41 @@ begin
           bssRidge:
             begin
               if I in [0, 1] then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
+                Color := Darker(C[I]) or PalRelative
               else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+                Color := Lighter(C[I]) or PalRelative;
+              DrawOnePolygon(Canvas, Bnd, Color, I, Print);
             end;
           bssGroove:
             begin
               if (I in [2, 3]) then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
+                Color := Darker(C[I]) or PalRelative
               else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+                Color := Lighter(C[I]) or PalRelative;
+              DrawOnePolygon(Canvas, Bnd, Color, I, Print);
             end;
         end;
       end
       else if S[I] = bssDouble then
       begin
-        Color := ThemedColor(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
+        Color := C[I] or PalRelative;
         Bnd[0] := PO[I];
         Bnd[1] := PO[(I + 1) mod 4];
         Bnd[2] := P1[(I + 1) mod 4];
         Bnd[3] := P1[I];
-        DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+        DrawOnePolygon(Canvas, Bnd, Color, I, Print);
         Bnd[0] := P2[I];
         Bnd[1] := P2[(I + 1) mod 4];
         Bnd[2] := PI[(I + 1) mod 4];
         Bnd[3] := PI[I];
-        DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
+        DrawOnePolygon(Canvas, Bnd, Color, I, Print);
       end
       else if S[I] in [bssDashed, bssDotted] then
       begin
         if not InPath then
         begin
           lb.lbStyle := BS_SOLID;
-          lb.lbColor := ThemedColor(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
+          lb.lbColor := ThemedColor(C[I]) or PalRelative;
           lb.lbHatch := 0;
           if S[I] = bssDotted then
             PenType := PS_Dot or ps_EndCap_Round
@@ -4244,13 +4205,6 @@ procedure TViewerBase.SetQuirksMode(const AValue: THtQuirksMode);
 begin
   FQuirksMode := AValue;
 end;
-
-{$ifdef has_StyleElements}
-procedure TViewerBase.UpdateStyleElements;
-begin
-  inherited UpdateStyleElements;
-end;
-{$endif
 
 { THtmlViewerBase }
 
