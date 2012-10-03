@@ -186,7 +186,7 @@ function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
 implementation
 
 uses
-  BufferSubs;
+  BuffConv;
 
 type
   TBuffCharSetCodePageInfoList = class(TStringList)
