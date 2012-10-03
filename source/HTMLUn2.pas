@@ -3108,7 +3108,7 @@ begin
   StringOK := True;
 end;
 
-function WideStringToMultibyte(CodePage: Integer; W: WideString): Ansistring;
+function WideStringToMultibyte(CodePage: Integer; W: WideString): AnsiString;
 var
   NewLen, Len: Integer;
 begin
