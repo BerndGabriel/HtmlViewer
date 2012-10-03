@@ -446,7 +446,7 @@ type
     destructor Destroy; override;
   end;
 
-  XArray = array[0..300] of Integer;
+  XArray = array[0..10000000] of Integer;
   PXArray = ^XArray;
 
   IndexObj = class

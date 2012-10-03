@@ -672,7 +672,8 @@ begin
     Result := LowerCase(Str);
   {$else}
     Result := Str;
-    CharLowerBuffW(@Result[1], Length(Result));
+    if Length(Result) > 0 then
+      CharLowerBuffW(@Result[1], Length(Result));
   {$endif}
 end;
 
@@ -718,7 +719,8 @@ begin
     Result := UpperCase(Str);
   {$else}
     Result := Str;
-    CharUpperBuffW(@Result[1], Length(Result));
+    if Length(Result) > 0 then
+      CharUpperBuffW(@Result[1], Length(Result));
   {$endif}
 end;
 
