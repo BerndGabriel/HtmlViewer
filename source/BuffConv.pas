@@ -74,8 +74,19 @@ type
   protected
     procedure Assign(Source: TBuffConverter); override;
   public
-    function NextChar: TBuffChar; override;
     procedure AfterConstruction; override;
+    function NextChar: TBuffChar; override;
+  end;
+
+  // BG, 02.10.2012: converts code page 858 using an AnsiCharHighMap to unicode.
+  TBuffConvLatin1Euro = class(TBuffConverter)
+  public
+    function NextChar: WideChar; override;
+  end;
+
+  TBuffConvEstonian922 = class(TBuffConverter)
+  public
+    function NextChar: WideChar; override;
   end;
 
   // BG, 26.09.2012: converts shift-jis (codepage 932) to unicode.
@@ -107,6 +118,11 @@ type
   protected
     function GB2312DecodeChar(c1, c2: Byte): TBuffChar;
     function KSC5601DecodeChar(c1, c2: Byte): TBuffChar;
+  end;
+
+  TBuffConvIBM936 = class(TBuffConvEastAsia)
+  public
+    function NextChar: TBuffChar; override;
   end;
 
   TBuffConvEUC = class(TBuffConvEastAsia)
@@ -146,7 +162,7 @@ const CodePageInfos: array [0..162] of TBuffConvInfo = (
   ( CodePage:        852; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvHighMap;     Name: 'OEM Latin 2; Central European (DOS)'),
   ( CodePage:        855; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvHighMap;     Name: 'OEM Cyrillic (primarily Russian)'),
   ( CodePage:        857; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvHighMap;     Name: 'OEM Turkish; Turkish (DOS)'),
-  ( CodePage:        858; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'OEM Multilingual Latin 1 + Euro symbol'),
+  ( CodePage:        858; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvLatin1Euro;  Name: 'OEM Multilingual Latin 1 + Euro symbol'),
   ( CodePage:        860; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvHighMap;     Name: 'OEM Portuguese; Portuguese (DOS)'),
   ( CodePage:        861; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvHighMap;     Name: 'OEM Icelandic; Icelandic (DOS)'),
   ( CodePage:        862; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvHighMap;     Name: 'OEM Hebrew; Hebrew (DOS)'),
@@ -158,9 +174,9 @@ const CodePageInfos: array [0..162] of TBuffConvInfo = (
   ( CodePage:        870; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'IBM EBCDIC Multilingual/ROECE (Latin 2); IBM EBCDIC Multilingual Latin 2'),
   ( CodePage:        874; CharSet: THAI_CHARSET;        Converter: TBuffConvHighMap;     Name: 'ANSI/OEM Thai (same as 28605, ISO 8859-15); Thai (Windows)'),
   ( CodePage:        875; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'IBM EBCDIC Greek Modern'),
-  ( CodePage:        922; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: '??? CP 922'),
+  ( CodePage:        922; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvEstonian922; Name: 'ANSI/OEM Estonian (DOS)'),
   ( CodePage:        932; CharSet: SHIFTJIS_CHARSET;    Converter: TBuffConvShiftJis932; Name: 'ANSI/OEM Japanese; Japanese (Shift-JIS)'),
-  ( CodePage:        936; CharSet: GB2312_CHARSET;      Converter: TBuffConvSingleByte;  Name: 'ANSI/OEM Simplified Chinese (PRC, Singapore); Chinese Simplified (GB2312)'),
+  ( CodePage:        936; CharSet: GB2312_CHARSET;      Converter: TBuffConvIBM936;      Name: 'ANSI/OEM Simplified Chinese (PRC, Singapore); Chinese Simplified (GB2312)'),
   ( CodePage:        943; CharSet: SHIFTJIS_CHARSET;    Converter: TBuffConvShiftJis932; Name: '??? CP 943; Japanese (Shift-JIS)'),
   ( CodePage:        949; CharSet: HANGEUL_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ANSI/OEM Korean (Unified Hangul Code)'),
   ( CodePage:        950; CharSet: CHINESEBIG5_CHARSET; Converter: TBuffConvSingleByte;  Name: 'ANSI/OEM Traditional Chinese (Taiwan; Hong Kong SAR, PRC); Chinese Traditional (Big5)'),
@@ -430,6 +446,33 @@ begin
   end;
 end;
 
+{ TBuffConvLatin1Euro }
+
+//-- BG ---------------------------------------------------------- 03.10.2012 --
+function TBuffConvLatin1Euro.NextChar: WideChar;
+begin
+  Result := TBuffChar(GetNext);
+  case Ord(Result) of
+    $00..$7F:;
+    $D5: Result := #$20AC;
+  else
+    Result := CP850Map[Ord(Result)];
+  end;
+end;
+
+{ TBuffConvEstonian922 }
+
+//-- BG ---------------------------------------------------------- 03.10.2012 --
+function TBuffConvEstonian922.NextChar: WideChar;
+begin
+  Result := TBuffChar(GetNext);
+  case Ord(Result) of
+    $A0..$AF: Result := CP922_1Map[Ord(Result) - $A0];
+    $D0..$DF: Result := CP922_2Map[Ord(Result) - $D0];
+    $F0..$FF: Result := CP922_3Map[Ord(Result) - $F0];
+  end;
+end;
+
 { TBuffConvISO2022JP }
 
 //-- BG ---------------------------------------------------------- 27.09.2012 --
@@ -602,21 +645,15 @@ end;
 
 { TBuffConvShiftJis932 }
 
+//-- BG ---------------------------------------------------------- 02.10.2012 --
 function TBuffConvShiftJis932.NextChar: TBuffChar;
 var c1, c2, t1, t2, i, a, b: Cardinal;
     WC: TBuffChar;
 begin
-  c1 := Ord(FPos.AnsiChr[0]);
+  c1 := GetNext;
   Result := TBuffChar(c1);
-  Inc(FPos.AnsiChr, 1);
   case c1 of
-    0:
-    begin
-      Dec(FPos.AnsiChr, 1);
-      Result := #$0;
-    end;
-
-    $01..$80: ;
+    $00..$80: ;
       // done above: Result := TBuffChar(c1);
 
     $A1..$DF:
@@ -624,10 +661,7 @@ begin
 
     $81..$86, $88..$9F, $E0..$EA:
     begin
-      c2 := Ord(FPos.AnsiChr[0]);
-      if c2 = 0 then
-        Exit;
-      Inc(FPos.AnsiChr, 1);
+      c2 := GetNext;
       case c2 of
         $40..$7E, $80..$FC:
         begin
@@ -680,11 +714,7 @@ begin
 
     $87, $ED..$EE, $FA..$FC:
     begin
-      c2 := Ord(FPos.AnsiChr[0]);
-      if c2 = 0 then
-        Exit;
-      Inc(FPos.AnsiChr, 1);
-
+      c2 := GetNext;
       case c2 of
         $40..$7E, $80..$FC:
         begin
@@ -723,10 +753,7 @@ begin
 
     $F0..$F9:
     begin
-      c2 := Ord(FPos.AnsiChr[0]);
-      if c2 = 0 then
-        Exit;
-      Inc(FPos.AnsiChr, 1);
+      c2 := GetNext;
       case c2 of
         $40..$7E:
           Result := TBuffChar($E000 + 188 * (c1 - $F0) + (c2 - $40));
@@ -753,8 +780,8 @@ begin
         begin
           i := 94 * (c1 - $21) + (c2 - $21);
           case i of
-               0.. 831: Result := GB2312_1Map[i];
-            1410..8178: Result := GB2312_2Map[i - 1410];
+               0.. 830: Result := GB2312_1Map[i];
+            1410..8177: Result := GB2312_2Map[i - 1410];
           end;
         end;
       end;
@@ -774,9 +801,9 @@ begin
         begin
           i := 94 * (c1 - $21) + (c2 - $21);
           case i of
-               0..1115: Result := KSC5601_1Map[i];
-            1410..3760: Result := KSC5601_2Map[i - 1410];
-            3854..8742: Result := KSC5601_3Map[i - 3854];
+               0..1114: Result := KSC5601_1Map[i];
+            1410..3759: Result := KSC5601_2Map[i - 1410];
+            3854..8741: Result := KSC5601_3Map[i - 3854];
           end;
         end;
       end;
@@ -816,6 +843,7 @@ end;
 
 { TBuffConvEUC_CN }
 
+//-- BG ---------------------------------------------------------- 02.10.2012 --
 function TBuffConvEUC_CN.TwoByteDecoder(c1, c2: Byte): WideChar;
 begin
   Result := GB2312DecodeChar(c1, c2);
@@ -823,9 +851,109 @@ end;
 
 { TBuffConvEUC_KR }
 
+//-- BG ---------------------------------------------------------- 02.10.2012 --
 function TBuffConvEUC_KR.TwoByteDecoder(c1, c2: Byte): WideChar;
 begin
   Result := KSC5601DecodeChar(c1, c2);
+end;
+
+{ TBuffConvIBM936 }
+
+//-- BG ---------------------------------------------------------- 03.10.2012 --
+function TBuffConvIBM936.NextChar: TBuffChar;
+
+  function Offset(cmul, c1, c2: Cardinal): Integer;
+  begin
+    case c2 of
+      $40..$7E: Result := cmul * (c1 - $81) + (c2 - $40);
+      $80..$FE: Result := cmul * (c1 - $81) + (c2 - $41);
+    else
+      Result := MaxInt;
+    end;
+  end;
+
+var
+  c1, c2: Cardinal;
+  i: Integer;
+begin
+  c1 := GetNext;
+  case c1 of
+    $00..$7F: Result := TBuffChar(c1);
+    $80:      Result := TBuffChar($20AC);
+  else
+    // two byte code
+    c2 := GetNext;
+
+    case c1 of
+      $81..$A0:
+      begin
+        Result := GBKE_1Map[Offset(190, c1, c2)];
+        Exit;
+      end;
+
+      $A1:
+        case c2 of
+          $A4: Result := WideChar($00B7);
+          $AA: Result := WideChar($2014);
+        else
+          Result := GB2312DecodeChar(c1 - $80, c2 - $80);
+        end;
+
+      $A2:
+        case c2 of
+          $A1..$AA: Result := WideChar($2170 + (c2 - $A1));
+        else
+          Result := GB2312DecodeChar(c1 - $80, c2 - $80);
+        end;
+    else
+      Result := GB2312DecodeChar(c1 - $80, c2 - $80);
+    end;
+    if Result <> #0 then
+      Exit;
+
+    case c1 of
+      $A6, $A8:
+      begin
+        i := Offset(190, c1, c2);
+        case i of
+          7189..7210: Result := CP936E_1Map[i - 7189];
+          7532..7537: Result := CP936E_2Map[i - 7532];
+        end;
+        if Result = #$FFFD then
+          Result := #0;
+        if Result <> #0 then
+          exit;
+      end;
+    end;
+
+    case c1 of
+      $A8..$FE:
+      begin
+        i := Offset(96, c1, c2);
+        case i of
+          3744..12015: Result := GBKE_2Map[i - 3744];
+        end;
+        if Result = #$FFFD then
+          Result := #0;
+        if Result <> #0 then
+          exit;
+      end;
+    end;
+
+    case c1 of
+      $A1..$A2:
+        case c2 of
+          $40..$7E: Result := WideChar($E4C6 + 96 * (c1 - $81) + (c2 - $40));
+          $80..$A0: Result := WideChar($E4C6 + 96 * (c1 - $A1) + (c2 - $41));
+        end;
+
+      $AA..$AF, $F8..$FE:
+        case c2 of
+          $A1..$F7: Result := WideChar($E000 + 94 * (c1 - $AA) + (c2 - $A1));
+          $F8..$FE: Result := WideChar($E000 + 94 * (c1 - $F2) + (c2 - $A1));
+        end;
+    end;
+  end;
 end;
 
 end.
