@@ -473,7 +473,7 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
         Info := GetCharSetCodePageInfo(Charset);
         if Info <> nil then
         begin
-          Doc.CharSet := Info.CharSet;
+          //Doc.CharSet := Info.CharSet;
           Doc.CodePage := Info.CodePage;
         end;
         SkipWhiteSpace;

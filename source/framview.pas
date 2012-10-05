@@ -227,7 +227,6 @@ type
 
     property ActiveViewer: THtmlViewer read GetActiveViewer;
     property CaretPos: integer read GetCaretPos write SetCaretPos;
-    property CodePage: TBuffCodePage read FCodePage write FCodePage;
     property CurrentFile: ThtString read GetCurrentFile;
     property DocumentTitle: ThtString read GetTitle;
     property History: TStrings read FHistory;
