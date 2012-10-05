@@ -431,6 +431,7 @@ const
   CP_ACP = 0;  {ANSI code page}
   CP_OEMCP = 1;  {OEM code page }
   CP_MACCP = 2;  {MAC code page }
+  CP_SYMBOL = 42;
   HeapAllocFlags = GMEM_MOVEABLE;  {2}
   CP_UTF8 = 65001;
   RDH_RECTANGLES = 1;

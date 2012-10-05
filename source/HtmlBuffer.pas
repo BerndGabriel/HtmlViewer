@@ -1129,7 +1129,7 @@ begin
   SetLength(FBuffer, I + sizeof(TBuffChar));
   if I > 0 then
     Move(Text[1], FBuffer[0], I);
-  ZeroMemory(@FBuffer[I], sizeof(TBuffChar));
+  PBuffChar(@FBuffer[I])^ := TBuffChar(0);
   Reset;
   FName := Name;
   SetCodePage(CP_UTF16LE);
@@ -1146,7 +1146,7 @@ end;
 //  I := Length(Text);
 //  SetLength(FBuffer, I + sizeof(TBuffChar));
 //  Move(Text[1], FBuffer[0], I);
-//  ZeroMemory(@FBuffer[I], sizeof(TBuffChar));
+//  PBuffChar(@FBuffer[I])^ := TBuffChar(0);
 //  Reset;
 //  FName := Name;
 //  Self.CharSet := CharSet;
@@ -1512,7 +1512,7 @@ begin
   //  Do not read from empty/exhausted stream:
   if I > 0 then
     Stream.Read(FBuffer[0], I);
-  ZeroMemory(@FBuffer[I], sizeof(TBuffChar));
+  PBuffChar(@FBuffer[I])^ := TBuffChar(0);
   Reset;
 end;
 

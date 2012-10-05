@@ -163,17 +163,18 @@ end;
 
 { TMyFontCache }
 
-type
-  ThtStringListOpener = class(ThtStringList)
-  end;
-
 //-- BG ---------------------------------------------------------- 30.01.2011 --
 procedure ThtFontCache.Add(Font: ThtFont);
 var
   I: Integer;
+  FontName: ThtString;
 begin
-  if not FFontsByName.Find(htLowerCase(Font.Name), I) then
-    ThtStringListOpener(FFontsByName).InsertItem(I, Font.Name, TObjectList.Create(True));
+  FontName := htLowerCase(Font.Name);
+  if not FFontsByName.Find(FontName, I) then
+  begin
+    I := FFontsByName.Add(FontName);
+    FFontsByName.Objects[I] := TObjectList.Create(True);
+  end;
   TObjectList(FFontsByName.Objects[I]).Add(Font);
 end;
 

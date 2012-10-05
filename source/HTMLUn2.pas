@@ -322,54 +322,51 @@ type
 // parser
 //------------------------------------------------------------------------------
 
-  IndexArray = array[1..TokenLeng] of Integer;
-  PIndexArray = ^IndexArray;
-  ChrArray = array[1..TokenLeng] of WideChar;
-  PChrArray = ^ChrArray;
-
   {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
    characters along with their original indices.}
   TCharCollection = class
   private
     FChars: ThtString;
-    FIndices: PIndexArray;
+    FIndices: array of Integer;
     FCurrentIndex: Integer;
     function GetSize: Integer;
     function GetAsString: ThtString;
+    function GetCapacity: Integer;
+    procedure SetCapacity(NewCapacity: Integer);
   public
     constructor Create;
-    destructor Destroy; override;
     procedure Add(C: ThtChar; Index: Integer); overload;
     procedure Add(const S: ThtString; Index: Integer); overload;
     procedure Clear;
 //    procedure Concat(const T: TCharCollection);
 
     property AsString: ThtString read GetAsString;
-    property Indices: PIndexArray read FIndices;
+    property Capacity: Integer read GetCapacity write SetCapacity;
     property Size: Integer read GetSize;
   end;
+
+  { TokenObj }
 
   TokenObj = class
   private
     St: UnicodeString;
     StringOK: boolean;
-    FCapacity: Integer;
     FCount: Integer;
+    function GetCapacity: Integer;
     function GetString: UnicodeString;
     procedure SetCapacity(NewCapacity: Integer);
   public
-    C: PChrArray;
-    I: PIndexArray;
+    C: array of ThtChar;
+    I: array of Integer;
     constructor Create;
-    destructor Destroy; override;
     procedure AddUnicodeChar(Ch: WideChar; Ind: Integer);
     procedure AddString(S: TCharCollection);
-//    procedure Concat(T: TokenObj);
     procedure Clear;
+//    procedure Concat(T: TokenObj);
 //    procedure Remove(N: Integer);
 //    procedure Replace(N: Integer; Ch: WideChar);
 
-    property Capacity: Integer read FCapacity write SetCapacity;
+    property Capacity: Integer read GetCapacity write SetCapacity;
     property Count: Integer read FCount;
     property S: UnicodeString read GetString;
   end;
@@ -905,10 +902,8 @@ end;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 {return count <= Max which fits in Width.  Return X, the extent of chars that fit}
-type
-  Integers = array[1..1] of Integer;
 var
-  Ints: ^Integers;
+  Ints: array of Integer;
   L, H, I: Integer;
 begin
   Extent.cx := 0;
@@ -919,16 +914,12 @@ begin
 
   if not IsWin32Platform then
   begin
-    GetMem(Ints, Sizeof(Integer) * Max);
-    try
-      if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints^, Extent) then
-        if Result > 0 then
-          Extent.cx := Ints^[Result]
-        else
-          Extent.cx := 0;
-    finally
-      FreeMem(Ints);
-    end;
+    SetLength(Ints, Max);
+    if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent) then
+      if Result > 0 then
+        Extent.cx := Ints[Result - 1]
+      else
+        Extent.cx := 0;
   end
   else {GetTextExtentExPointW not available in win98, 95}
   begin {optimize this by looking for Max to fit first -- it usually does}
@@ -2314,8 +2305,12 @@ begin
   Result := Copy(FChars, 1, FCurrentIndex);
 end;
 
-function TCharCollection.GetSize: Integer;
+function TCharCollection.GetCapacity: Integer;
+begin
+  Result := Length(FChars);
+end;
 
+function TCharCollection.GetSize: Integer;
 begin
   Result := FCurrentIndex;
 end;
@@ -2323,44 +2318,44 @@ end;
 constructor TCharCollection.Create;
 begin
   inherited;
-  SetLength(FChars, TokenLeng);
-  GetMem(FIndices, TokenLeng * Sizeof(Integer));
   FCurrentIndex := 0;
+  Capacity := TokenLeng;
 end;
 
-destructor TCharCollection.Destroy;
+procedure TCharCollection.SetCapacity(NewCapacity: Integer);
 begin
-  FreeMem(FIndices);
-  inherited;
+  if NewCapacity <> Capacity then
+  begin
+    SetLength(FChars, NewCapacity);
+    SetLength(FIndices, NewCapacity + 1);
+  end;
 end;
 
 procedure TCharCollection.Add(C: ThtChar; Index: Integer);
 begin
-  if FCurrentIndex = Length(FChars) then
-  begin
-    SetLength(FChars, FCurrentIndex + 50);
-    ReallocMem(FIndices, (FCurrentIndex + 50) * Sizeof(Integer));
-  end;
   Inc(FCurrentIndex);
-  FIndices^[FCurrentIndex] := Index;
+  if Capacity <= FCurrentIndex then
+    Capacity := Capacity + 50;
+  FIndices[FCurrentIndex] := Index;
   FChars[FCurrentIndex] := C;
 end;
 
 procedure TCharCollection.Add(const S: ThtString; Index: Integer);
 var
-  K: Integer;
+  K, L: Integer;
 begin
-  K := FCurrentIndex + Length(S);
-  if K >= Length(FChars) then
+  L := Length(S);
+  if L > 0 then
   begin
-    SetLength(FChars, K + 50);
-    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
-  end;
-  Move(PhtChar(S)^, FChars[FCurrentIndex + 1], Length(S) * SizeOf(ThtChar));
-  while FCurrentIndex < K do
-  begin
-    Inc(FCurrentIndex);
-    FIndices^[FCurrentIndex] := Index;
+    K := FCurrentIndex + L;
+    if Capacity <= K then
+      Capacity := K + 50;
+    Move(S[1], FChars[FCurrentIndex + 1], L * SizeOf(ThtChar));
+    while FCurrentIndex < K do
+    begin
+      Inc(FCurrentIndex);
+      FIndices[FCurrentIndex] := Index;
+    end;
   end;
 end;
 
@@ -2375,13 +2370,10 @@ end;
 //  K: Integer;
 //begin
 //  K := FCurrentIndex + T.FCurrentIndex;
-//  if K >= Length(FChars) then
-//  begin
-//    SetLength(FChars, K + 50);
-//    ReallocMem(FIndices, (K + 50) * Sizeof(Integer));
-//  end;
-//  Move(PhtChar(T.FChars)^, FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
-//  Move(T.FIndices^[1], FIndices^[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
+//  if Capacity <= K then
+//     Capacity := K + 50;
+//  Move(T.FChars[1],     FChars[FCurrentIndex + 1], T.FCurrentIndex * SizeOf(ThtChar)); //@@@ Tiburon: todo test
+//  Move(T.FIndices[1], FIndices[FCurrentIndex + 1], T.FCurrentIndex * Sizeof(Integer));
 //  FCurrentIndex := K;
 //end;
 
@@ -2390,29 +2382,20 @@ end;
 constructor TokenObj.Create;
 begin
   inherited;
-  GetMem(C, TokenLeng * Sizeof(WideChar));
-  GetMem(I, TokenLeng * Sizeof(Integer));
-  FCapacity := TokenLeng;
+  Capacity := TokenLeng;
   FCount := 0;
   St := '';
   StringOK := True;
 end;
 
-destructor TokenObj.Destroy;
-begin
-  FreeMem(I);
-  FreeMem(C);
-  inherited;
-end;
-
 procedure TokenObj.AddUnicodeChar(Ch: WideChar; Ind: Integer);
 {Ch must be Unicode in this method}
 begin
-  if Count >= Capacity then
-    SetCapacity(Capacity + 50);
+  if Capacity <= Count then
+    Capacity := Capacity + 50;
   Inc(FCount);
-  C^[Count] := Ch;
-  I^[Count] := Ind;
+  C[Count] := Ch;
+  I[Count] := Ind;
   StringOK := False;
 end;
 
@@ -2470,10 +2453,10 @@ var
   K: Integer;
 begin
   K := Count + S.FCurrentIndex;
-  if K >= Capacity then
-    SetCapacity(K + 50);
-  Move(S.FChars[1], C^[Count + 1], S.FCurrentIndex * Sizeof(WideChar));
-  Move(S.FIndices[1], I^[Count + 1], S.FCurrentIndex * Sizeof(Integer));
+  if Capacity <= K then
+    Capacity := K + 50;
+  Move(S.FChars[1],   C[Count + 1], S.FCurrentIndex * Sizeof(ThtChar));
+  Move(S.FIndices[1], I[Count + 1], S.FCurrentIndex * Sizeof(Integer));
   FCount := K;
   StringOK := False;
 end;
@@ -2483,10 +2466,10 @@ end;
 //  K: Integer;
 //begin
 //  K := Count + T.Count;
-//  if K >= Capacity then
-//    SetCapacity(K + 50);
-//  Move(T.C^, C^[Count + 1], T.Count * Sizeof(WideChar));
-//  Move(T.I^, I^[Count + 1], T.Count * Sizeof(Integer));
+//  if Capacity <= K then
+//    Capacity := K + 50;
+//  Move(T.C[1], C[Count + 1], T.Count * Sizeof(ThtChar));
+//  Move(T.I[1], I[Count + 1], T.Count * Sizeof(Integer));
 //  FCount := K;
 //  StringOK := False;
 //end;
@@ -2495,32 +2478,39 @@ end;
 //begin {remove a single character}
 //  if N <= Count then
 //  begin
-//    Move(C^[N + 1], C^[N], (Count - N) * Sizeof(WideChar));
-//    Move(I^[N + 1], I^[N], (Count - N) * Sizeof(Integer));
+//    if N < Count then
+//    begin
+//      Move(C[N + 1], C[N], (Count - N) * Sizeof(ThtChar));
+//      Move(I[N + 1], I[N], (Count - N) * Sizeof(Integer));
+//    end;
 //    if StringOK then
 //      Delete(St, N, 1);
 //    Dec(FCount);
 //  end;
 //end;
 //
-//procedure TokenObj.Replace(N: Integer; Ch: WideChar);
+//procedure TokenObj.Replace(N: Integer; Ch: ThtChar);
 //begin {replace a single character}
 //  if N <= Count then
 //  begin
-//    C^[N] := Ch;
+//    C[N] := Ch;
 //    if StringOK then
 //      St[N] := Ch;
 //  end;
 //end;
 
+function TokenObj.GetCapacity: Integer;
+begin
+  Result := Length(C) - 1;
+end;
+
 //-- BG ---------------------------------------------------------- 20.01.2011 --
 procedure TokenObj.SetCapacity(NewCapacity: Integer);
 begin
-  if NewCapacity <> FCapacity then
+  if NewCapacity <> Capacity then
   begin
-    ReallocMem(C, NewCapacity * Sizeof(WideChar));
-    ReallocMem(I, NewCapacity * Sizeof(Integer));
-    FCapacity := NewCapacity;
+    SetLength(C, NewCapacity + 1);
+    SetLength(I, NewCapacity + 1);
     if NewCapacity < Count then
     begin
       FCount := NewCapacity;
@@ -2535,7 +2525,8 @@ begin
   if not StringOK then
   begin
     SetLength(St, Count);
-    Move(C^, St[1], SizeOf(WideChar) * Count);
+    if Count > 0 then
+       Move(C[1], St[1], SizeOf(WideChar) * Count);
     StringOK := True;
   end;
   Result := St;
