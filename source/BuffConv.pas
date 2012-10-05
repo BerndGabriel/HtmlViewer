@@ -69,8 +69,20 @@ type
   // BG, 02.10.2012: converts several single byte code pages using an AnsiCharHighMap to unicode.
   TBuffConvHighMap = class(TBuffConverter)
   private
-    FHighMap: AnsiCharHighMap;
-    procedure UpdateHighMap;
+    FMap: AnsiCharHighMap;
+    procedure UpdateMap;
+  protected
+    procedure Assign(Source: TBuffConverter); override;
+  public
+    procedure AfterConstruction; override;
+    function NextChar: TBuffChar; override;
+  end;
+
+  // BG, 02.10.2012: converts the single byte code of ISO 8859 using an AnsiCharIsoMap to unicode.
+  TBuffConvIsoMap = class(TBuffConverter)
+  private
+    FMap: AnsiCharISOMap;
+    procedure UpdateMap;
   protected
     procedure Assign(Source: TBuffConverter); override;
   public
@@ -163,8 +175,29 @@ type
     function NextChar: TBuffChar; override;
   end;
 
+  TBuffConvISO2022CN = class(TBuffConvEastAsia)
+  private
+    CNState1: (CNSTATE_ASCII, CNSTATE_TWOBYTE);
+    CNState2: (CNSTATE2_NONE, STATE2_DESIGNATED_GB2312, STATE2_DESIGNATED_CNS11643_1);
+    CNState3: (CNSTATE3_NONE, STATE3_DESIGNATED_CNS11643_2);
+  protected
+    procedure Assign(Source: TBuffConverter); override;
+  public
+    function NextChar: TBuffChar; override;
+  end;
+
+  TBuffConvISO2022KR = class(TBuffConvEastAsia)
+    KRState1: (KRSTATE_ASCII, KRSTATE_TWOBYTE);
+    KRState2: (KRSTATE2_NONE, STATE2_DESIGNATED_KSC5601);
+  protected
+    procedure Assign(Source: TBuffConverter); override;
+  public
+    function NextChar: TBuffChar; override;
+  end;
+
+
 // CodePages (most names taken from http://msdn.microsoft.com/en-us/library/windows/desktop/dd317756%28v=vs.85%29.aspx):
-const CodePageInfos: array [0..162] of TBuffConvInfo = (
+const CodePageInfos: array [0..161] of TBuffConvInfo = (
   // first entry must be code page CP_UNKNOWN!!!
   ( CodePage: CP_UNKNOWN; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Unknown'),
   ( CodePage:     CP_ACP; CharSet: DEFAULT_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Default ANSI CP'),
@@ -280,30 +313,30 @@ const CodePageInfos: array [0..162] of TBuffConvInfo = (
   ( CodePage:      21025; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'IBM EBCDIC Cyrillic Serbian-Bulgarian'),
   ( CodePage:      21027; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: '(deprecated)'),
   ( CodePage:      21866; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Ukrainian (KOI8-U); Cyrillic (KOI8-U)'),
-  ( CodePage:      28591; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-1 Latin 1; Western European (ISO)'),
-  ( CodePage:      28592; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-2 Central European; Central European (ISO)'),
-  ( CodePage:      28593; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-3 Latin 3'),
-  ( CodePage:      28594; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-4 Baltic'),
+  ( CodePage:      28591; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConverter;       Name: 'ISO 8859-1 Latin 1; Western European (ISO)'),
+  ( CodePage:      28592; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-2 Latin 2; Central European; Central European (ISO)'),
+  ( CodePage:      28593; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-3 Latin 3; Southern European'),
+  ( CodePage:      28594; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-4 Latin 4; Northern European'),
   ( CodePage:      28595; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-5 Cyrillic'),
   ( CodePage:      28596; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-6 Arabic'),
   ( CodePage:      28597; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-7 Greek'),
   ( CodePage:      28598; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-8 Hebrew; Hebrew (ISO-Visual)'),
   ( CodePage:      28599; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-9 Turkish'),
-  ( CodePage:      28600; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-10 ??? CP 28600'),
-  ( CodePage:      28601; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-11 ??? CP 28601'),
-  ( CodePage:      28602; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-12 ??? CP 28602'),
-  ( CodePage:      28603; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-13 Estonian'),
-  ( CodePage:      28604; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-14 ??? CP 28604'),
-  ( CodePage:      28605; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-15 Latin 9'),
-  ( CodePage:      28606; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-16 ??? CP 28606'),
+  ( CodePage:      28600; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-10 Latin 6; Nordic'),
+  ( CodePage:      28601; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-11 Thai'),
+//( CodePage:      28602; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-12 ??? CP 28602'),
+  ( CodePage:      28603; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-13 Latin 7; Baltic'),
+  ( CodePage:      28604; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-14 Latin 8; Celtic'),
+  ( CodePage:      28605; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-15 Latin 9; Western European'),
+  ( CodePage:      28606; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-16 Latin 10; South Eastern European'),
   ( CodePage:      29001; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Europa 3'),
   ( CodePage:      38598; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-8 Hebrew; Hebrew (ISO-Logical)'),
   ( CodePage:      50220; CharSet: SHIFTJIS_CHARSET;    Converter: TBuffConvISO2022JP;   Name: 'ISO 2022 Japanese with no halfwidth Katakana; Japanese (JIS)'),
   ( CodePage:      50221; CharSet: SHIFTJIS_CHARSET;    Converter: TBuffConvISO2022JP;   Name: 'ISO 2022 Japanese with halfwidth Katakana; Japanese (JIS-Allow 1 byte Kana)'),
   ( CodePage:      50222; CharSet: SHIFTJIS_CHARSET;    Converter: TBuffConvISO2022JP;   Name: 'ISO 2022 Japanese JIS X 0201-1989; Japanese (JIS-Allow 1 byte Kana - SO/SI)'),
-  ( CodePage:      50225; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 2022 Korean'),
-  ( CodePage:      50227; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 2022 Simplified Chinese; Chinese Simplified (ISO 2022)'),
-  ( CodePage:      50229; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 2022 Traditional Chinese'),
+  ( CodePage:      50225; CharSet: HANGEUL_CHARSET;     Converter: TBuffConvISO2022KR;   Name: 'ISO 2022 Korean'),
+  ( CodePage:      50227; CharSet: GB2312_CHARSET;      Converter: TBuffConvISO2022CN;   Name: 'ISO 2022 Simplified Chinese; Chinese Simplified (ISO 2022)'),
+  ( CodePage:      50229; CharSet: CHINESEBIG5_CHARSET; Converter: TBuffConvSingleByte;  Name: 'ISO 2022 Traditional Chinese'),
   ( CodePage:      50930; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'EBCDIC Japanese (Katakana) Extended'),
   ( CodePage:      50931; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'EBCDIC US-Canada and Japanese'),
   ( CodePage:      50933; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'EBCDIC Korean Extended and Korean'),
@@ -410,14 +443,14 @@ end;
 procedure TBuffConvHighMap.AfterConstruction;
 begin
   inherited;
-  UpdateHighMap;
+  UpdateMap;
 end;
 
 //-- BG ---------------------------------------------------------- 02.10.2012 --
 procedure TBuffConvHighMap.Assign(Source: TBuffConverter);
 begin
   inherited;
-  UpdateHighMap;
+  UpdateMap;
 end;
 
 //-- BG ---------------------------------------------------------- 02.10.2012 --
@@ -425,43 +458,90 @@ function TBuffConvHighMap.NextChar: TBuffChar;
 begin
   Result := TBuffChar(GetNext);
   case Ord(Result) of
-    $80..$FF: Result := FHighMap[Ord(Result)];
+    $80..$FF: Result := FMap[Ord(Result)];
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 02.10.2012 --
-procedure TBuffConvHighMap.UpdateHighMap;
+procedure TBuffConvHighMap.UpdateMap;
 begin
   case CodePage of
-    437: FHighMap := CP437Map;
-    708: FHighMap := Windows708Map;
-    737: FHighMap := Windows737Map;
-    775: FHighMap := Windows775Map;
-    850: FHighMap := CP850Map;
-    852: FHighMap := CP852Map;
-    855: FHighMap := CP855Map;
-    857: FHighMap := CP857Map;
-    860: FHighMap := IBM860Map;
-    861: FHighMap := CP861Map;
-    862: FHighMap := CP862Map;
-    863: FHighMap := CP863Map;
-    864: FHighMap := Windows864Map;
-    865: FHighMap := CP865Map;
-    866: FHighMap := CP866Map;
-    869: FHighMap := CP869Map;
-    874: FHighMap := Windows874Map;
-    10000: FHighMap := MacRomanMap;
-    10004: FHighMap := MacArabicMap;
-    10005: FHighMap := MacHebrewMap;
-    10006: FHighMap := MacGreekMap;
-    10007: FHighMap := MacCyrillicMap;
-    10010: FHighMap := MacRomaniaMap;
-    10017: FHighMap := MacUkraineMap;
-    10021: FHighMap := MacThaiMap;
-    10029: FHighMap := MacCentralEuropeMap;
-    10079: FHighMap := MacIcelandicMap;
-    10081: FHighMap := MacTurkishMap;
-    10082: FHighMap := MacCroatianMap;
+    437: FMap := CP437Map;
+    708: FMap := Windows708Map;
+    737: FMap := Windows737Map;
+    775: FMap := Windows775Map;
+    850: FMap := CP850Map;
+    852: FMap := CP852Map;
+    855: FMap := CP855Map;
+    857: FMap := CP857Map;
+    860: FMap := IBM860Map;
+    861: FMap := CP861Map;
+    862: FMap := CP862Map;
+    863: FMap := CP863Map;
+    864: FMap := Windows864Map;
+    865: FMap := CP865Map;
+    866: FMap := CP866Map;
+    869: FMap := CP869Map;
+    874: FMap := Windows874Map;
+    10000: FMap := MacRomanMap;
+    10004: FMap := MacArabicMap;
+    10005: FMap := MacHebrewMap;
+    10006: FMap := MacGreekMap;
+    10007: FMap := MacCyrillicMap;
+    10010: FMap := MacRomaniaMap;
+    10017: FMap := MacUkraineMap;
+    10021: FMap := MacThaiMap;
+    10029: FMap := MacCentralEuropeMap;
+    10079: FMap := MacIcelandicMap;
+    10081: FMap := MacTurkishMap;
+    10082: FMap := MacCroatianMap;
+  end;
+end;
+
+{ TBuffConvIsoMap }
+
+//-- BG ---------------------------------------------------------- 04.10.2012 --
+procedure TBuffConvIsoMap.AfterConstruction;
+begin
+  inherited;
+  UpdateMap;
+end;
+
+//-- BG ---------------------------------------------------------- 04.10.2012 --
+procedure TBuffConvIsoMap.Assign(Source: TBuffConverter);
+begin
+  inherited;
+  UpdateMap;
+end;
+
+//-- BG ---------------------------------------------------------- 04.10.2012 --
+function TBuffConvIsoMap.NextChar: TBuffChar;
+begin
+  Result := TBuffChar(GetNext);
+  case Ord(Result) of
+    $A0..$FF: Result := FMap[Ord(Result)];
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 04.10.2012 --
+procedure TBuffConvIsoMap.UpdateMap;
+begin
+  case CodePage of
+    28592: FMap := ISO8859_2Map;
+    28593: FMap := ISO8859_3Map;
+    28594: FMap := ISO8859_4Map;
+//    28595: FMap := ISO8859_5Map;
+//    28596: FMap := ISO8859_6Map;
+//    28597: FMap := ISO8859_7Map;
+//    28598: FMap := ISO8859_8Map;
+//    28599: FMap := ISO8859_9Map;
+    28600: FMap := ISO8859_10Map;
+//    28601: FMap := ISO8859_11Map;
+//    28602: FMap := ISO8859_12Map;
+    28603: FMap := ISO8859_13Map;
+    28604: FMap := ISO8859_14Map;
+//    28605: FMap := ISO8859_15Map;
+    28606: FMap := ISO8859_16Map;
   end;
 end;
 
@@ -536,7 +616,10 @@ var
   Src: TBuffConvISO2022JP absolute Source;
 begin
   inherited;
-  FJis := Src.FJis;
+  if Source is TBuffConvISO2022JP then
+    FJis := Src.FJis
+  else
+    FJis := bjsAscii;
 end;
 
 //-- BG ---------------------------------------------------------- 27.09.2012 --
@@ -855,7 +938,6 @@ function TBuffConvEastAsia.JIS_X0212DecodeChar(c1, c2: Byte): TBuffChar;
 var
   i: Integer;
 begin
-  Result := #$0;
   case c1 of
     $22, $26..$27, $29..$2B, $30..$6D:
       case c2 of
@@ -1227,8 +1309,6 @@ begin
   c1 := GetNext;
   case c1 of
     $00..$7F: Result := TBuffChar(c1);    // ANSI/ASCII
-    $80, $FF: Result := TBuffChar($FFFD); // undefined
-    // $81..$A0: Result := TBuffChar($FFFD);
 
     $8E:
     begin
@@ -1282,6 +1362,283 @@ begin
         Result := TBuffChar($FFFD);
       end;
     end;
+
+  else
+    // $80..$A0, $FF:
+    Result := TBuffChar($FFFD);
+  end;
+end;
+
+{ TBuffConvISO2022CN }
+
+//-- BG ---------------------------------------------------------- 05.10.2012 --
+procedure TBuffConvISO2022CN.Assign(Source: TBuffConverter);
+var
+  Src: TBuffConvISO2022CN absolute Source;
+begin
+  inherited;
+  if Source is TBuffConvISO2022CN then
+  begin
+    CNState1 := Src.CNState1;
+    CNState2 := Src.CNState2;
+    CNState3 := Src.CNState3;
+  end
+  else
+  begin
+    CNState1 := CNSTATE_ASCII;
+    CNState2 := CNSTATE2_NONE;
+    CNState3 := CNSTATE3_NONE;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 05.10.2012 --
+function TBuffConvISO2022CN.NextChar: TBuffChar;
+var
+  c1, c2, c3: Cardinal;
+  Pos: PAnsiChar;
+  i: Integer;
+begin
+  repeat
+    c1 := GetNext;
+    case c1 of
+      $1B:
+        if FEnd.AnsiChr - FPos.AnsiChr > 2 then
+        begin
+          Pos := FPos.AnsiChr;
+          case TBuffChar(GetNext) of
+            '$':
+              case TBuffChar(GetNext) of
+                ')':
+                case TBuffChar(GetNext) of
+                  'A':
+                  begin
+                    CNState2 := STATE2_DESIGNATED_GB2312;
+                    Continue;
+                  end;
+
+                  'G':
+                  begin
+                    CNState2 := STATE2_DESIGNATED_CNS11643_1;
+                    Continue;
+                  end;
+                end;
+
+                '*':
+                  case TBuffChar(GetNext) of
+                    'H':
+                    begin
+                      CNState3 := STATE3_DESIGNATED_CNS11643_2;
+                      Continue;
+                    end;
+                  end;
+              end;
+
+            'N':
+              case CNState3 of
+
+                CNSTATE3_NONE:
+                  Break;
+
+                STATE3_DESIGNATED_CNS11643_2:
+                begin
+                  c2 := GetNext;
+                  c3 := GetNext;
+                  case c2 of
+                    $21..$72:
+                      case c3 of
+                        $21..$7E:
+                        begin
+                          i := 94 * (c2 - $21) + (c3 - $21);
+                          if i < 7650 then
+                            Result := CNS11643_2Map[i]
+                          else
+                            Result := TBuffChar(#$FFFD);
+                        end;
+                      else
+                        Result := TBuffChar(#$FFFD);
+                      end;
+                  else
+                    Result := TBuffChar(#$FFFD);
+                  end;
+                  Exit;
+                end;
+
+              end;
+          end;
+          FPos.AnsiChr := Pos;
+        end;
+
+        $0E:
+        begin
+          if (CNState2 <> STATE2_DESIGNATED_GB2312) and (CNState2 <> STATE2_DESIGNATED_CNS11643_1) then
+            Break;
+          CNState1 := CNSTATE_TWOBYTE;
+          Continue;
+        end;
+
+        $0F:
+        begin
+          CNState1 := CNSTATE_ASCII;
+          Continue;
+        end;
+
+    end;
+    break;
+  until false;
+
+  case CNState1 of
+    CNSTATE_ASCII:
+      case c1 of
+        $00..$7F:
+        begin
+          Result := TBuffChar(c1);
+          case Result of
+            #$000A, #$000D:
+            begin
+              CNState2 := CNSTATE2_NONE;
+              CNState3 := CNSTATE3_NONE;
+            end;
+          end;
+        end;
+      else
+        Result := TBuffChar(#$FFFD);
+      end;
+
+    CNSTATE_TWOBYTE:
+    begin
+      c2 := GetNext;
+      case CNState2 of
+        STATE2_DESIGNATED_GB2312: Result := GB2312DecodeChar(c1, c2);
+
+        STATE2_DESIGNATED_CNS11643_1: //Result := CNS11643_1DecodeChar(c1, c2);
+          case c1 of
+            $21..$27, $42, $44..$7D:
+            begin
+              case c2 of
+                $21..$7E:
+                begin
+                  i := 94 * (Ord(c1) - $21) + (Ord(c2) - $21);
+                  case i of
+                       0.. 499: Result := CNS11643_1_1Map[i];
+                     571:       Result := TBuffChar($4EA0);
+                     578:       Result := TBuffChar($51AB);
+                     583:       Result := TBuffChar($52F9);
+                    3102..3134: Result := CNS11643_1_2Map[i - 3102];
+                    3290..8690: Result := CNS11643_1_3Map[i - 3290];
+                  else
+                    Result := TBuffChar(#$FFFD);
+                  end;
+                end;
+              else
+                Result := TBuffChar(#$FFFD);
+              end;
+            end;
+          else
+            Result := TBuffChar(#$FFFD);
+          end;
+      else
+        Result := TBuffChar(#$FFFD);
+      end;
+    end;
+  else
+    Result := TBuffChar(#$FFFD);
+  end;
+end;
+
+{ TBuffConvISO2022KR }
+
+//-- BG ---------------------------------------------------------- 05.10.2012 --
+procedure TBuffConvISO2022KR.Assign(Source: TBuffConverter);
+var
+  Src: TBuffConvISO2022KR absolute Source;
+begin
+  inherited;
+  if Source is TBuffConvISO2022KR then
+  begin
+    KRState1 := Src.KRState1;
+    KRState2 := Src.KRState2;
+  end
+  else
+  begin
+    KRState1 := KRSTATE_ASCII;
+    KRState2 := KRSTATE2_NONE;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 05.10.2012 --
+function TBuffConvISO2022KR.NextChar: TBuffChar;
+var
+  c1, c2: Cardinal;
+  Pos: PAnsiChar;
+begin
+  repeat
+    c1 := GetNext;
+    case c1 of
+      $1B:
+        if FEnd.AnsiChr - FPos.AnsiChr > 2 then
+        begin
+          Pos := FPos.AnsiChr;
+          case TBuffChar(GetNext) of
+            '$':
+              case TBuffChar(GetNext) of
+                ')':
+                  case TBuffChar(GetNext) of
+                    'C':
+                    begin
+                      KRState2 := STATE2_DESIGNATED_KSC5601;
+                      Continue;
+                    end;
+                  end;
+              end;
+          end;
+          FPos.AnsiChr := Pos;
+        end;
+
+      $0E:
+      begin
+        if KRState2 <> STATE2_DESIGNATED_KSC5601 then
+          Break;
+        KRState1 := KRSTATE_TWOBYTE;
+        Continue;
+      end;
+
+      $0F:
+      begin
+        KRState1 := KRSTATE_ASCII;
+        Continue;
+      end;
+
+    end;
+    Break;
+  until False;
+
+  case KRState1 of
+    KRSTATE_ASCII:
+      case c1 of
+        $00..$7F:
+        begin
+          Result := TBuffChar(c1);
+          case Result of
+            #$000A, #$000D:
+              KRState2 := KRSTATE2_NONE;
+          end;
+        end;
+      else
+        Result := TBuffChar(#$FFFD);
+      end;
+
+    KRSTATE_TWOBYTE:
+    begin
+      if KRState2 <> STATE2_DESIGNATED_KSC5601 then
+      begin
+        Result := TBuffChar(#$FFFD);
+        Exit;
+      end;
+      c2 := GetNext;
+      Result := KSC5601DecodeChar(c1, c2);
+    end;
+  else
+    Result := TBuffChar(#$FFFD);
   end;
 end;
 
