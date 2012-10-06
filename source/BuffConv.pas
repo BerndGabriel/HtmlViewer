@@ -238,6 +238,7 @@ type
   end;
 
   TBuffConvISO2022KR = class(TBuffBaseConverter)
+  private
     KRState1: (KRSTATE_ASCII, KRSTATE_TWOBYTE);
     KRState2: (KRSTATE2_NONE, STATE2_DESIGNATED_KSC5601);
   protected
