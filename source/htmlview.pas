@@ -69,6 +69,7 @@ type
 
   THTMLBorderStyle = (htFocused, htNone, htSingle);
   TRightClickParameters = class(TObject)
+  public
     URL, Target: ThtString;
     Image: TImageObj;
     ImageX, ImageY: Integer;
@@ -613,6 +614,7 @@ const
 
 type
   PositionObj = class(TObject)
+  public
     Pos: Integer;
     FileType: ThtmlFileType;
     FormData: TFreeList;

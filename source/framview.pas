@@ -631,6 +631,7 @@ const
 
 type
   PositionObj = class(TObject)
+  public
     Pos: integer;
     Seq: integer;
     FormData: TFreeList;

@@ -194,6 +194,7 @@ type
   TKRState2 = (KRSTATE2_NONE, STATE2_DESIGNATED_KSC5601);
 
   TBuffConvISO2022KR = class(TBuffBaseConverter)
+  private
     KRState1: TKRState1;
     KRState2: TKRState2;
   protected

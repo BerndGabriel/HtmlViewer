@@ -448,6 +448,7 @@ type
   PXArray = ^XArray;
 
   IndexObj = class
+  public
     Pos: Integer;
     Index: Integer;
   end;
@@ -1436,6 +1437,7 @@ type
   end;
 
   THorzLine = class(TSectionBase) {a horizontal line, <hr>}
+  public
     VSize: Integer;
     Color: TColor;
     Align: JustifyType;
@@ -14056,6 +14058,7 @@ end;
 
 type
   TImageRec = class(TObject)
+  public
     AObj: TImageObj;
     ACanvas: TCanvas;
     AX, AY: Integer;

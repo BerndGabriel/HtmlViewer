@@ -339,6 +339,7 @@ type
 //------------------------------------------------------------------------------
 
   IndentRec = class(TObject)
+  public
     X: Integer;   // left or right indentation relative to LfEdge.
     YT: Integer;  // top Y inclusive coordinate for this record relative to document top.
     YB: Integer;  // bottom Y exclusive coordinate for this record relative to document top.
@@ -542,6 +543,7 @@ type
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
   TTablePartRec = class
+  public
     TablePart: TablePartType;
     PartStart: Integer;
     PartHeight: Integer;
@@ -3545,6 +3547,7 @@ end;
 {$else}
 type
   AllocRec = class(TObject)
+  public
     Ptr: Pointer;
     ASize: Integer;
     AHandle: THandle;
