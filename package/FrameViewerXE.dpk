@@ -59,6 +59,8 @@ contains
   HtmlBuffer in '..\source\HtmlBuffer.pas',
   AlphaBlendUn in '..\source\AlphaBlendUn.pas',
   msimg32 in '..\source\msimg32.pas',
-  HSLUtils in '..\source\HSLUtils.pas';
+  HSLUtils in '..\source\HSLUtils.pas',
+  BuffConv in '..\source\BuffConv.pas',
+  BuffConvArrays in '..\source\BuffConvArrays.pas';
 
 end.

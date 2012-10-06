@@ -795,7 +795,7 @@ begin
 //    AddInfo(TBuffCharSetCodePageInfo.Create('koi8-t', CP_UNKNOWN));             //-5
 
     AddInfo(TBuffCharSetCodePageInfo.Create('default', CP_ACP));
-    AddInfo(TBuffCharSetCodePageInfo.Create('symbol', CP_SYMBOL));
+//    AddInfo(TBuffCharSetCodePageInfo.Create('symbol', CP_SYMBOL));
     AddInfo(TBuffCharSetCodePageInfo.Create('oem', CP_OEMCP));
 
     CaseSensitive := False;
