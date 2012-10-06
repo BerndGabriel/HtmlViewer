@@ -2,6 +2,11 @@
 HtmlViewer Version 11.4
 Copyright (c) 2010-2012 by Bernd Gabriel
 
+This source module is based on code of CodeChangerDecode.pas written by SchwarzKopf-M (SchwarzKopf-M@yandex.ru)
+and the source code library libiconv, which is published under the GNU Library General Public License.
+
+Thanks to SchwarzKopf-M for his extensive work.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
@@ -22,6 +27,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
+
+//This is the original copyright notice in CodeChangerDecode.pas
+
+//This is charset Windows-1251:
+//ћодуль перекодировки текста €вл€етс€ свободно распростран€емым и распростран€етс€ " ак есть".
+//ѕри модификации или частичном использовании исходного кода ссылки
+//  на оригинальный модуль об€зательны.
+//јвторское право оставл€ю за собой - SchwarzKopf-M (SchwarzKopf-M@yandex.ru).
+//¬ данном модуле используетс€ информаци€ найденна€ в »нтернете
+//  без нарушени€ исходных авторских прав.
+//ƒл€ перекодировки некоторых азиатских €зыков использовалась вольна€
+//  интерпретаци€ исходных кодов библиотеки libiconv.
+//
+//—пециально дл€ HTMLViewer (http://code.google.com/p/thtmlviewer)
+
+// Translated by "http://translate.google.de/#ru|en|" it is:
+// Text conversion module is freeware and is distributed "as is".
+// If you modify or partial use of source code links
+// To the original module is required.
+// Copyright reserve the - SchwarzKopf-M (SchwarzKopf-M@yandex.ru).
+// This module uses the information found on the Internet
+// Without affecting the original copyright holder.
+// For the conversion of some Asian languages ??used in freestyle
+// Interpretation of the source code library libiconv.
+//
+// Especially for HTMLViewer (http://code.google.com/p/thtmlviewer)
 
 {.$I htmlcons.inc}
 
@@ -53,6 +84,16 @@ uses
   BuffConvArrays;
 
 type
+
+  // BG, 06.10.2012: converts UTF7 to unicode.
+  TBuffConvUTF7 = class(TBuffConverter)
+  private
+    State: Byte;
+  protected
+    procedure Assign(Source: TBuffConverter); override;
+  public
+    function NextChar: TBuffChar; override;
+  end;
 
   // BG, 26.09.2012: converts UTF8 to unicode.
   TBuffConvUTF8 = class(TBuffConverter)
@@ -89,6 +130,7 @@ type
     function ASCIIDecodeChar(c1: Byte): TBuffChar;
     function CP922EstonianDecodeChar(c1: Byte): TBuffChar;
     function GB2312DecodeChar(c1, c2: Byte): TBuffChar;
+    function GBKDecodeChar(c1, c2: Byte): TBuffChar;
     function ISO8859_11DecodeChar(c1: Byte): TBuffChar;
     function ISO8859_15DecodeChar(c1: Byte): TBuffChar;
     function ISO8859_5DecodeChar(c1: Byte): TBuffChar;
@@ -154,6 +196,11 @@ type
     function NextChar: TBuffChar; override;
   end;
 
+  TBuffConvGB18030 = class(TBuffBaseConverter)
+  public
+    function NextChar: TBuffChar; override;
+  end;
+
   TBuffConvEUC_JP = class(TBuffBaseConverter)
   public
     function NextChar: TBuffChar; override;
@@ -190,12 +237,9 @@ type
     function NextChar: TBuffChar; override;
   end;
 
-  TKRState1 = (KRSTATE_ASCII, KRSTATE_TWOBYTE);
-  TKRState2 = (KRSTATE2_NONE, STATE2_DESIGNATED_KSC5601);
-
   TBuffConvISO2022KR = class(TBuffBaseConverter)
-    KRState1: TKRState1;
-    KRState2: TKRState2;
+    KRState1: (KRSTATE_ASCII, KRSTATE_TWOBYTE);
+    KRState2: (KRSTATE2_NONE, STATE2_DESIGNATED_KSC5601);
   protected
     procedure Assign(Source: TBuffConverter); override;
   public
@@ -206,6 +250,7 @@ type
 const CodePageInfos: array [0..161] of TBuffConvInfo = (
   // first entry must be code page CP_UNKNOWN!!!
   ( CodePage: CP_UNKNOWN; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Unknown'),
+  //
   ( CodePage:     CP_ACP; CharSet: DEFAULT_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Default ANSI CP'),
   ( CodePage:   CP_OEMCP; CharSet: OEM_CHARSET;         Converter: TBuffConvSingleByte;  Name: 'Default OEM CP'),
   ( CodePage:   CP_MACCP; CharSet: MAC_CHARSET;         Converter: TBuffConvSingleByte;  Name: 'Default MAC CP'),
@@ -330,7 +375,6 @@ const CodePageInfos: array [0..161] of TBuffConvInfo = (
   ( CodePage:      28599; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-9 Turkish'),
   ( CodePage:      28600; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-10 Latin 6; Nordic'),
   ( CodePage:      28601; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-11 Thai'),
-//( CodePage:      28602; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-12 ??? CP 28602'),
   ( CodePage:      28603; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-13 Latin 7; Baltic'),
   ( CodePage:      28604; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvIsoMap;      Name: 'ISO 8859-14 Latin 8; Celtic'),
   ( CodePage:      28605; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISO 8859-15 Latin 9; Western European'),
@@ -355,7 +399,7 @@ const CodePageInfos: array [0..161] of TBuffConvInfo = (
   ( CodePage:      51949; CharSet: HANGEUL_CHARSET;     Converter: TBuffConvDoubleByte;  Name: 'EUC Korean'),
   ( CodePage:      51950; CharSet: CHINESEBIG5_CHARSET; Converter: TBuffConvBig5CP950;   Name: 'EUC Traditional Chinese'),
   ( CodePage:      52936; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'HZ-GB2312 Simplified Chinese; Chinese Simplified (HZ)'),
-  ( CodePage:      54936; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Windows XP and later: GB18030 Simplified Chinese (4 byte); Chinese Simplified (GB18030)'),
+  ( CodePage:      54936; CharSet: GB2312_CHARSET;      Converter: TBuffConvGB18030;     Name: 'Windows XP and later: GB18030 Simplified Chinese (4 byte); Chinese Simplified (GB18030)'),
   ( CodePage:      57002; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISCII Devanagari'),
   ( CodePage:      57003; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISCII Bengali'),
   ( CodePage:      57004; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISCII Tamil'),
@@ -366,7 +410,7 @@ const CodePageInfos: array [0..161] of TBuffConvInfo = (
   ( CodePage:      57009; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISCII Malayalam'),
   ( CodePage:      57010; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISCII Gujarati'),
   ( CodePage:      57011; CharSet: UNKNOWN_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'ISCII Punjabi'),
-  ( CodePage:      65000; CharSet: DEFAULT_CHARSET;     Converter: TBuffConvSingleByte;  Name: 'Unicode (UTF-7)'),
+  ( CodePage:      65000; CharSet: DEFAULT_CHARSET;     Converter: TBuffConvUTF7;        Name: 'Unicode (UTF-7)'),
   ( CodePage:      65001; CharSet: DEFAULT_CHARSET;     Converter: TBuffConvUTF8;        Name: 'Unicode (UTF-8)')
 );
 
@@ -438,6 +482,89 @@ begin
       end;
   else
     Result := TBuffChar($FFFD);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.10.2012 --
+function TBuffBaseConverter.GBKDecodeChar(c1, c2: Byte): TBuffChar;
+
+  function Offset(cmul, c1, c2: Word): Integer;
+  begin
+    case c2 of
+      $40..$7E: Result := cmul * (c1 - $81) + (c2 - $40);
+      $80..$FE: Result := cmul * (c1 - $81) + (c2 - $41);
+    else
+      Result := MaxInt;
+    end;
+  end;
+
+var
+  i: Integer;
+begin
+  case c1 of
+    $81..$A0:
+    begin
+      Result := GBKE_1Map[Offset(190, c1, c2)];
+      Exit;
+    end;
+
+    $A1:
+      case c2 of
+        $A4: Result := TBuffChar($00B7);
+        $AA: Result := TBuffChar($2014);
+      else
+        Result := GB2312DecodeChar(c1 - $80, c2 - $80);
+      end;
+
+    $A2:
+      case c2 of
+        $A1..$AA: Result := TBuffChar($2170 + (c2 - $A1));
+      else
+        Result := GB2312DecodeChar(c1 - $80, c2 - $80);
+      end;
+  else
+    Result := GB2312DecodeChar(c1 - $80, c2 - $80);
+  end;
+  if Result <> TBuffChar(#$FFFD) then
+    Exit;
+
+  case c1 of
+    $A6, $A8:
+    begin
+      i := Offset(190, c1, c2);
+      case i of
+        7189..7210: Result := CP936E_1Map[i - 7189];
+        7532..7537: Result := CP936E_2Map[i - 7532];
+      end;
+      if Result <> TBuffChar(#$FFFD) then
+        exit;
+    end;
+  end;
+
+  case c1 of
+    $A8..$FE:
+    begin
+      i := Offset(96, c1, c2);
+      case i of
+        3744..12015: Result := GBKE_2Map[i - 3744];
+      end;
+      if Result <> TBuffChar(#$FFFD) then
+        exit;
+    end;
+  end;
+
+  case c1 of
+    $A1..$A2:
+      case c2 of
+        $40..$7E: Result := TBuffChar($E4C6 + 96 * (c1 - $81) + (c2 - $40));
+        $80..$A0: Result := TBuffChar($E4C6 + 96 * (c1 - $A1) + (c2 - $41));
+      end;
+
+    $AA..$AF, $F8..$FE:
+      case c2 of
+        $A1..$F7: Result := TBuffChar($E000 + 94 * (c1 - $AA) + (c2 - $A1));
+        $F8..$FE: Result := TBuffChar($E000 + 94 * (c1 - $F2) + (c2 - $A1));
+      end;
   end;
 end;
 
@@ -991,20 +1118,8 @@ end;
 
 //-- BG ---------------------------------------------------------- 03.10.2012 --
 function TBuffConvIBM936.NextChar: TBuffChar;
-
-  function Offset(cmul, c1, c2: Word): Integer;
-  begin
-    case c2 of
-      $40..$7E: Result := cmul * (c1 - $81) + (c2 - $40);
-      $80..$FE: Result := cmul * (c1 - $81) + (c2 - $41);
-    else
-      Result := MaxInt;
-    end;
-  end;
-
 var
-  c1, c2: Word;
-  i: Integer;
+  c1: Word;
 begin
   c1 := GetNext;
   case c1 of
@@ -1012,73 +1127,7 @@ begin
     $80:      Result := TBuffChar($20AC);
   else
     // two byte code
-    c2 := GetNext;
-
-    case c1 of
-      $81..$A0:
-      begin
-        Result := GBKE_1Map[Offset(190, c1, c2)];
-        Exit;
-      end;
-
-      $A1:
-        case c2 of
-          $A4: Result := TBuffChar($00B7);
-          $AA: Result := TBuffChar($2014);
-        else
-          Result := GB2312DecodeChar(c1 - $80, c2 - $80);
-        end;
-
-      $A2:
-        case c2 of
-          $A1..$AA: Result := TBuffChar($2170 + (c2 - $A1));
-        else
-          Result := GB2312DecodeChar(c1 - $80, c2 - $80);
-        end;
-    else
-      Result := GB2312DecodeChar(c1 - $80, c2 - $80);
-    end;
-    if Result <> TBuffChar(#$FFFD) then
-      Exit;
-
-    case c1 of
-      $A6, $A8:
-      begin
-        i := Offset(190, c1, c2);
-        case i of
-          7189..7210: Result := CP936E_1Map[i - 7189];
-          7532..7537: Result := CP936E_2Map[i - 7532];
-        end;
-        if Result <> TBuffChar(#$FFFD) then
-          exit;
-      end;
-    end;
-
-    case c1 of
-      $A8..$FE:
-      begin
-        i := Offset(96, c1, c2);
-        case i of
-          3744..12015: Result := GBKE_2Map[i - 3744];
-        end;
-        if Result <> TBuffChar(#$FFFD) then
-          exit;
-      end;
-    end;
-
-    case c1 of
-      $A1..$A2:
-        case c2 of
-          $40..$7E: Result := TBuffChar($E4C6 + 96 * (c1 - $81) + (c2 - $40));
-          $80..$A0: Result := TBuffChar($E4C6 + 96 * (c1 - $A1) + (c2 - $41));
-        end;
-
-      $AA..$AF, $F8..$FE:
-        case c2 of
-          $A1..$F7: Result := TBuffChar($E000 + 94 * (c1 - $AA) + (c2 - $A1));
-          $F8..$FE: Result := TBuffChar($E000 + 94 * (c1 - $F2) + (c2 - $A1));
-        end;
-    end;
+    Result := GBKDecodeChar(c1, GetNext);
   end;
 end;
 
@@ -1701,6 +1750,379 @@ begin
   else
     Result := TBuffChar($FFFD);
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.10.2012 --
+function TBuffConvGB18030.NextChar: TBuffChar;
+
+  function GB18030ExtDecode(row, col: Integer): TBuffChar;
+  var
+    i: Integer;
+  begin
+    i := 190 * row + col;
+    case i of
+      6432:         Result := #$20AC;
+      7536:         Result := #$01F9;
+      7672..7684:   Result := GB18030Ext_2uni_pagea9[i-7672];
+      23750..23844: Result := GB18030Ext_2uni_pagefe[i-23750];
+    else
+      Result := TBuffChar($FFFD);
+    end;
+  end;
+
+  function GB18030Uni1DecodeChar(c1, c2, c3, c4: Byte): TBuffChar;
+  var
+    i: Integer;
+    k, k1, k2: Byte;
+  begin
+    case c4 of
+      $30..$39:
+      begin
+        i := (((c1 - $81) * 10 + (c2 - $30)) * 126 + (c3 - $81)) * 10 + (c4 - $30);
+        case i of
+          0..39419:
+          begin
+            k1 := 0;
+            k2 := 193;
+            while k1 < k2 do
+            begin
+              k := (k1 + k2) div 2;
+              if i <= GB18030Uni_charset2uni_ranges[k shl 1 + 1] then
+                k2 := k
+              else if i >= GB18030Uni_charset2uni_ranges[k shl 1 + 2] then
+                k1 := k + 1
+              else
+              begin
+                Result := TBuffChar($FFFD);
+                exit;
+              end;
+            end;
+            Result := TBuffChar(i + gb18030uni_ranges[k1]);
+          end;
+        else
+          Result := TBuffChar($FFFD);
+        end;
+      end;
+    else
+      Result := TBuffChar($FFFD);
+    end;
+  end;
+
+{$ifdef TBuffChar_Has_At_Least_3_Bytes}
+  function GB18030Uni2DecodeChar(c1, c2, c3, c4: Byte): TBuffChar;
+  var
+    i: Integer;
+  begin
+    case c4 of
+      $30..$39:
+      begin
+        i := (((c1 - $90) * 10 + (c2 - $30)) * 126 + (c3 - $81)) * 10 + (c4 - $30);
+        if (i >= 0) and (i < $100000) then
+          Result := TBuffChar($10000 + i)
+        else
+          Result := TBuffChar($FFFD);
+      end;
+    else
+      Result := TBuffChar($FFFD);
+    end;
+  end;
+{$endif TBuffChar_Has_At_Least_3_Bytes}
+
+var
+  c1, c2, c3, c4: Word;
+begin
+  c1 := GetNext;
+{$ifdef TBuffChar_Has_At_Least_3_Bytes}
+  c2 := 0;
+  c3 := 0;
+  c4 := 0;
+{$endif TBuffChar_Has_At_Least_3_Bytes}
+  case c1 of
+    $00..$7F: Result := ASCIIDecodeChar(c1);
+
+    $81..$84:
+    begin
+      // Code set 2 (remainder of Unicode U+0000..U+FFFF)
+      c2 := GetNext;
+      case c2 of
+        $30..$39:
+        begin
+          c3 := GetNext;
+          case c3 of
+            $81..$FE:
+            begin
+              c4 := GetNext;
+              Result := GB18030Uni1DecodeChar(c1, c2, c3, c4);
+            end;
+          else
+            Result := TBuffChar($FFFD);
+          end;
+        end;
+      else
+        Result := TBuffChar($FFFD);
+      end;
+    end;
+
+    $A2, $A8..$A9, $FE:
+    begin
+      // Code set 1 (GBK extended)
+      c2 := GetNext;
+      case c2 of
+        $40..$7E: Result := GB18030ExtDecode(c1 - $81, c2 - $40);
+        $80..$FE: Result := GB18030ExtDecode(c1 - $81, c2 - $41);
+      else
+        Result := TBuffChar($FFFD);
+      end;
+    end;
+
+  else
+    // Code set 1 (GBK extended)
+    Result := GBKDecodeChar(c1, GetNext);
+  end;
+
+{$ifdef TBuffChar_Has_At_Least_3_Bytes}
+  if Result <> TBuffChar($FFFD) then
+    exit;
+
+  { Code set 3 (Unicode U+10000..U+10FFFF) }
+  case c1 of
+    $90..$E3:
+    begin
+      if c2 = 0 then
+        c2 := GetNext;
+      case c2 of
+        $30..$39:
+        begin
+          if c3 = 0 then
+            c3 := GetNext;
+          case c3 of
+            $81..$FE:
+            begin
+              if c4 = 0 then
+                c4 := GetNext;
+              Result := GB18030Uni2DecodeChar(c1, c2, c3, c4);
+            end;
+          else
+            Result := TBuffChar($FFFD);
+          end;
+        end;
+      end;
+    end;
+  end;
+{$endif TBuffChar_Has_At_Least_3_Bytes}
+end;
+
+{ TBuffConvUTF7 }
+
+//-- BG ---------------------------------------------------------- 05.10.2012 --
+procedure TBuffConvUTF7.Assign(Source: TBuffConverter);
+var
+  Src: TBuffConvUTF7 absolute Source;
+begin
+  inherited;
+  if Source is TBuffConvUTF7 then
+  begin
+    State := Src.State;
+  end
+  else
+  begin
+    State := 0;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.10.2012 --
+function TBuffConvUTF7.NextChar;
+// Specification: RFC 2152 (and old RFC 1641, RFC 1642)
+// The original Base64 encoding is defined in RFC 2045.
+
+  // Set of direct characters:
+  //   A-Z a-z 0-9 ' ( ) , - . / : ? space tab lf cr
+  function IsDirect(ch: Byte): Boolean; {$ifdef UseInline} inline; {$endif}
+  const
+    Tab: array [0..15] of Byte = (
+      $00, $26, $00, $00, $81, $f3, $ff, $87,
+      $fe, $ff, $ff, $07, $fe, $ff, $ff, $07);
+  begin
+    Result := (ch < 128) and (((Tab[ch shr 3] shr (ch and 7)) and 1) <> 0);
+  end;
+
+  // Set of direct and optional direct characters:
+  //   A-Z a-z 0-9 ' ( ) , - . / : ? space tab lf cr
+  //   ! " # $ % & * ; < = > @ [ ] ^ _ ` { | }
+  function IsXDirect(ch: Byte): Boolean; {$ifdef UseInline} inline; {$endif}
+  const
+    Tab: array [0..15] of Byte = (
+      $00, $26, $00, $00, $ff, $f7, $ff, $ff,
+      $ff, $ff, $ff, $ef, $ff, $ff, $ff, $3f);
+  begin
+    Result := (ch < 128) and (((Tab[ch shr 3] shr (ch and 7)) and 1) <> 0);
+  end;
+
+  // Set of base64 characters, extended:
+  //   A-Z a-z 0-9 + / -
+  function IsXBase64(ch: Byte): Boolean; {$ifdef UseInline} inline; {$endif}
+  const
+    Tab: array [0..15] of Byte = (
+      $00, $00, $00, $00, $00, $a8, $ff, $03,
+      $fe, $ff, $ff, $07, $fe, $ff, $ff, $07);
+  begin
+    Result := (ch < 128) and (((Tab[ch shr 3] shr (ch and 7)) and 1) <> 0);
+  end;
+
+label
+  active, inactive, none;
+var
+  c1, c2: Byte;
+  wc: Cardinal;
+  base64state: Byte;
+  kmax: Cardinal;         // number of payload bytes to read
+  k: Cardinal;            // number of payload bytes already read
+  base64count: Cardinal;  // number of base64 bytes already read
+  i: Cardinal;
+{$ifdef TBuffChar_Has_At_Least_3_Bytes}
+  wc1, wc2: Cardinal;
+{$endif TBuffChar_Has_At_Least_3_Bytes}
+begin
+  c1 := GetNext;
+  if (state and 3) <> 0 then
+    goto active
+  else
+    goto inactive;
+
+inactive:
+  // Here (state & 3) == 0
+  if c1 = 0 then
+    goto none;
+
+  if IsXDirect(c1) then
+  begin
+    Result := TBuffChar(c1);
+    exit;
+  end;
+  if c1 = Ord('+') then
+  begin
+    c2 := GetNext;
+    if c2 = Ord('-') then
+    begin
+      Result := TBuffChar(c1);
+      exit;
+    end;
+    c1 := c2;
+    state := 1;
+    goto active;
+  end;
+  Result := TBuffChar($FFFD);
+exit;
+
+active:
+  // base64 encoding active
+  wc := 0;
+  base64state := State;
+  kmax := 2;
+  k := 0;
+  base64count := 0;
+  i := 0; // valium for the compiler
+  while c1 <> 0 do
+  begin
+    case c1 of
+      Ord('A')..Ord('Z'): i := c1 - Ord('A');
+      Ord('a')..Ord('z'): i := c1 - Ord('a') + 26;
+      Ord('0')..Ord('9'): i := c1 - Ord('0') + 52;
+      Ord('+'):           i := 62;
+      Ord('/'):           i := 63;
+    else
+      // c terminates base64 encoding
+      if (base64state and Cardinal(-4)) <> 0 then
+      begin
+        Result := TBuffChar($FFFD); // data must be 0, otherwise illegal
+        State := 0;
+        exit;
+      end;
+      if base64count <> 0 then
+      begin
+        Result := TBuffChar($FFFD); // partial UTF-16 characters are invalid
+        State := 0;
+        exit;
+      end;
+
+      if c1 = Ord('-') then
+        c1 := GetNext;
+      state := 0;
+      goto inactive;
+    end;
+    //s++;
+    Inc(base64count);
+    //* read 6 bits: 0 <= i < 64 */
+    case base64state and 3 of
+      1: // inside base64, no pending bits
+      begin
+        base64state := i shl 2;
+      end;
+
+      0: // inside base64, 6 bits remain from 1st byte
+      begin
+        wc := (wc shl 8) or (base64state and Cardinal(-4)) or (i shr 4);
+        Inc(k);
+        base64state := ((i and 15) shl 4) or 2;
+      end;
+
+      2: // inside base64, 4 bits remain from 2nd byte
+      begin
+        wc := (wc shl 8) or (base64state and Cardinal(-4)) or (i shr 2);
+        Inc(k);
+        base64state := ((i and 3) shl 6) or 3;
+      end;
+
+      3: // inside base64, 2 bits remain from 3rd byte
+      begin
+        wc := (wc shl 8) or (base64state and Cardinal(-4)) or i;
+        Inc(k);
+        base64state := 1;
+      end;
+    end;
+    if k = kmax then
+    begin
+      // UTF-16: When we see a High Surrogate, we must also decode the following Low Surrogate.
+      if (kmax = 2) and (wc >= $D800) and (wc <= $DBFF) then
+        kmax := 4
+      else
+        break;
+    end;
+    if base64count <= 0 then
+      goto none;
+    c1 := GetNext;
+    if c1 = 0 then
+      goto none;
+  end;
+
+  // Here k = kmax > 0, hence base64count > 0.
+  if (base64state and 3) = 0 then
+    Result := TBuffChar($FFFD)
+  else if kmax = 4 then
+{$ifdef TBuffChar_Has_At_Least_3_Bytes}
+  begin
+    wc1 := wc shr 16;
+    wc2 := wc and 0xffff;
+    if not ((wc1 >= $D800) and (wc1 < $DC00)) then
+      Result := TBuffChar($FFFD)
+    else if not ((wc2 >= $DC00) and (wc2 < $E000)) then
+      Result := TBuffChar($FFFD)
+    else
+      Result := $10000 + ((wc1 - $D800) shl 10) + (wc2 - $DC00);
+  end
+{$else  TBuffChar_Has_At_Least_3_Bytes}
+    Result := TBuffChar($FFFD)
+{$endif TBuffChar_Has_At_Least_3_Bytes}
+  else
+    Result := TBuffChar(wc);
+  State := base64state;
+exit;
+
+none:
+  if c1 = 0 then
+    Result := TBuffChar(0)
+  else
+    Result := TBuffChar($FFFD);
 end;
 
 end.
