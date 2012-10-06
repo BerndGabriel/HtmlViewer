@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <CONFIG>
-  <Package Version="3">
+  <Package Version="4">
     <PathDelim Value="\"/>
     <Name Value="FrameViewer09"/>
+    <AddToProjectUsesSection Value="True"/>
     <AutoUpdate Value="Manually"/>
     <CompilerOptions>
-      <Version Value="9"/>
+      <Version Value="11"/>
       <PathDelim Value="\"/>
       <SearchPaths>
         <OtherUnitFiles Value="..\source"/>
@@ -21,7 +22,6 @@
       </Parsing>
       <CodeGeneration>
         <Checks>
-          <RangeChecks Value="True"/>
           <OverflowChecks Value="True"/>
           <StackChecks Value="True"/>
         </Checks>
@@ -29,7 +29,7 @@
       </CodeGeneration>
       <Linking>
         <Debugging>
-          <GenerateDwarf Value="True"/>
+          <DebugInfoType Value="dsDwarf2Set"/>
         </Debugging>
       </Linking>
       <Other>
@@ -43,7 +43,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="20">
+    <Files Count="22">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -125,6 +125,14 @@
         <Filename Value="..\source\HSLUtils.pas"/>
         <UnitName Value="HSLUtils"/>
       </Item20>
+      <Item21>
+        <Filename Value="..\source\BuffConv.pas"/>
+        <UnitName Value="BuffConv"/>
+      </Item21>
+      <Item22>
+        <Filename Value="..\source\BuffConvArrays.pas"/>
+        <UnitName Value="BuffConvArrays"/>
+      </Item22>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">
