@@ -9667,8 +9667,10 @@ begin
 
               wtAbsolute:
               begin
-                CellMin := Max(CellMin, Value);
-                CellMax := Max(CellMax, Value);
+                // BG, 07.10.2012: issue 55: wrong CellMax calculation
+                CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
+                CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
+                CellMax := Max(CellMax, CellMin); // CellMax should be at least CellMin
               end;
 
               wtRelative:
