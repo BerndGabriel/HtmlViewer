@@ -246,6 +246,7 @@ type
   private
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
   protected
+    destructor Destroy; override;
     property OnEnter;
     property OnExit;
     property TabStop;
@@ -13346,6 +13347,20 @@ begin
 end;
 
 {----------------ThtTabcontrol.Destroy}
+
+destructor ThtTabControl.Destroy;
+var
+  ParentForm: TCustomForm;
+begin
+  // if this control was focused, return focus to the parent
+  if Focused then
+  begin
+    ParentForm := GetParentForm(Self);
+    if Assigned(ParentForm) then
+      ParentForm.ActiveControl := Self.Parent;
+  end;
+  inherited;
+end;
 
 procedure ThtTabcontrol.WMGetDlgCode(var Message: TMessage);
 begin
