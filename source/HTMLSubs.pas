@@ -246,11 +246,12 @@ type
   private
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
   protected
-    destructor Destroy; override;
     property OnEnter;
     property OnExit;
     property TabStop;
     property OnKeyUp;
+  public
+    destructor Destroy; override;
   end;
 
   TFontObj = class(TFontObjBase) {font information}
