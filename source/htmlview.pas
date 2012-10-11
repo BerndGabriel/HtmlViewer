@@ -185,6 +185,8 @@ type
     ppSinglePrint,  // THtmlViewer.Print() produces a single print job. Ends the job or cancels it, if no output has been produced.
     ppMultiPrint);  // THtmlViewer.Print() produces the print, but does not end or cancel the job.
 
+  TLoadHistoryItem = procedure(Sender: TObject; HI: ThvHistoryItem; var Handled: Boolean) of object;
+
   THtmlViewer = class(THtmlViewerBase)
   private
     // child components
@@ -218,6 +220,7 @@ type
     FOnPrintHTMLHeader, FOnPrintHTMLFooter: ThtmlPagePrinted;
     //FOnPrinting: THTMLViewPrinting;
     FOnRightClick: TRightClickEvent;
+    FOnLoadHistoryItem: TLoadHistoryItem;
 
     // status info
     FViewerState: THtmlViewerState;
@@ -345,6 +348,7 @@ type
     procedure DoBackground1(ACanvas: TCanvas; ATop, AWidth, AHeight, FullHeight: Integer);
     procedure DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
     procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
+    procedure DoLoadHistoryItem(HI: ThvHistoryItem);
     procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString); virtual;
     procedure HTMLMouseDblClk(Message: TWMMouse);
     procedure HTMLMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
@@ -422,6 +426,8 @@ type
     function XYToDisplayPos(X, Y: Integer): Integer;
     procedure AddVisitedLink(const S: ThtString);
     procedure BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
+    procedure HistoryBack;
+    procedure HistoryForward;
     procedure CheckVisitedLinks;
     procedure Clear; virtual;
     procedure ClearHistory;
@@ -538,6 +544,7 @@ type
     property OnHotSpotClick: THotSpotClickEvent read FOnHotSpotClick write FOnHotSpotClick;
     property OnHotSpotCovered: THotSpotEvent read FOnHotSpotCovered write FOnHotSpotCovered;
     property OnhtStreamRequest: TGetStreamEvent read FOnhtStreamRequest write FOnhtStreamRequest;
+    property OnLoadHistoryItem: TLoadHistoryItem read FOnLoadHistoryItem write FOnLoadHistoryItem;
     property OnImageClick;
     property OnImageOver;
     property OnImageRequest;
@@ -1228,6 +1235,16 @@ var
   VScrollBalance: Integer;
   LogicDonePos: array [0..3] of integer;
   LogicDoneNeg: array [0..3] of integer;
+
+procedure THtmlViewer.DoLoadHistoryItem(HI: ThvHistoryItem);
+var Handled: Boolean;
+begin
+  Handled := False;
+  if Assigned(FOnLoadHistoryItem) then
+    FOnLoadHistoryItem(Self, HI, Handled);
+  if not Handled then
+    LoadFile(HI.Url, HI.FileType);
+end;
 
 procedure THtmlViewer.DoLogic;
 
@@ -2571,14 +2588,14 @@ begin
 
     {reestablish the new desired history position}
     HI := FHistory[Value];
+    FHistory.Index := Value;  // the following handler will have actual index value
     if (FCurrentFile <> HI.Url) or (FCurrentFileType <> HI.FileType) then
-      LoadFile(HI.Url, HI.FileType);
+      DoLoadHistoryItem(HI);
     Position := HI.Position;
     HI := FHistory[FHistory.GetLowestIndexOfUrl(HI.Url, Value)];
     SetFormData(HI.FormData); {reload the forms if any}
     HI.FormData.Free;
     HI.FormData := nil;
-    FHistory.Index := Value;
 
     // notify
     if Assigned(OnHistoryChange) then
@@ -4563,6 +4580,17 @@ begin
         FRefreshURL := '';
       FRefreshDelay := DelTime;
     end;
+end;
+
+procedure THtmlViewer.HistoryBack;
+begin
+  HistoryIndex := HistoryIndex + 1;
+end;
+
+procedure THtmlViewer.HistoryForward;
+begin
+  if HistoryIndex > 0 then
+    HistoryIndex := HistoryIndex - 1;
 end;
 
 procedure THtmlViewer.SetOptions(Value: ThtmlViewerOptions);
