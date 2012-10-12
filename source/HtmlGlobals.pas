@@ -330,8 +330,8 @@ function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);  {$ifdef UseInline} inline; {$endif}
 
-function ThemedColor(const AColor : TColor;
-  {$ifdef has_StyleElements}const AUseThemes : Boolean{$endif}
+function ThemedColor(const AColor : TColor
+  {$ifdef has_StyleElements};const AUseThemes : Boolean{$endif}
   ): TColor; {$ifdef UseInline} inline; {$endif} //overload;
 
 
