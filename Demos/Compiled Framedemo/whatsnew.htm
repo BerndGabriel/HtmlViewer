@@ -19,8 +19,6 @@
 
 <h2 align="center"><font color="#a00000">What's New</font></h2>
 
-<!----------------------------------------------------------------------------->
-
 <p class="heading">Version 11.3</p>
 <h5>Added</h5>
 <ul>
@@ -46,7 +44,7 @@
         <li><b>Aligned Images</b><br>
             Right-aligned images have a default left margin of 3 pixels.  Left-aligned images have a default right margin of 3 pixels.<br>  
             Described at <a href = "http://www.cs.tut.fi/~jkorpela/quirks-mode.html">http://www.cs.tut.fi/~jkorpela/quirks-mode.html</a> 
-            and in <a href = "http://mxr.mozilla.org/mozilla-central/source/layout/style/quirk.css">Mozilla's quirks.css file</a>.
+            and in <a href = "http://mxr.mozilla.org/mozilla-central/source/layout/style/quirk.css">Mozzila's quirks.css file</a>.
       </ul>
     </p>
   <li>New Demo <b>FrameBrowserUsingICSv7</b>: Same as FrameBrowserUsingIndy but using <a href = "http://www.overbyte.be/frame_index.html">Overbyte's ICSv7</a> instead of Indy (Angus Robertson)
@@ -57,7 +55,6 @@
 <h5>Enhanced</h5>
 <ul>
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=130">Issue 130</a>:  Non-standard pointer cursor replaced with crHandPoint.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=150">Issue 150.2</a>: Table column width with '*' even in &lt;td&gt;.
   <li>DoScrollbars runs now at design time, the ugly missplaced scrollbars vanish. (S&eacute;rgio Alexandre)
   <li>THtmlViewer now always uses DoGetImage() as event handler for FSectionList.OnGetImage. DoGetImage() now is virtual, thus THtmlViewer descendents can override it and handle images on its own without blocking the OnImageRequest event. (S&eacute;rgio Alexandre)
   <li>HandleMeta and InitLoad promoted to virtual, descendents can now do something. For example S&eacute;rgio Alexandre uses meta tags to define base64 encoded images: &lt;meta name="cid" HttpEq="image/*" content="base64"&gt;, so any &lt;img src="cid"&gt; will display that image. (S&eacute;rgio Alexandre)
@@ -71,23 +68,11 @@
 </ul>  
 <h5>Fixed</h5>
 <ul>
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=135">Issue 135</a>: HTMLViewer.CopyToClipboard - broken
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=138">Issue 138</a>: Version 11.2 has table formatting problems.
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=139">Issue 139</a>: Asian HTML files with double-byte encoding cannot be displayed.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=140">Issue 140.1</a>: Column width calculation of spanned columns.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=147">Issue 145</a>: Freeing documents containing inlined list items like &lt;li style="display:inline"&gt; produces exceptions, if they contain blocks like &lt;div&gt; etc.<br>
-      This fix switches off display=inline feature. Will be back with a general rework of blocks and sections to display blocks inlined.
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=147">Issue 147</a>: Problem with Umlaut characters in path names.<br>
       New function DecodeURL() in URLSubs.pas converts % encoded URL to Unicode. Function extracted from HTMLToDOS(), renamed from ReplaceEscapeChars() and enhanced.
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=148">Issue 148</a>: Error while compiling package under Lazarus 1.1
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=150">Issue 150.3</a>: After r277 table grid was not displayed.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=150">Issue 150.4</a>: Do not vertically align smaller images in section lines, if there are no characters. Then minimum line height equals image height.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=152">Issue 152</a>: floating point divide by zero exception in HTMLSubs.pas. The changes for issue 150.2 worked only, if * was enclosed in ' or ".
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=157">Issue 157</a>: metafile display bug. Images where displayed/printed too small.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=158">Issue 158</a>: HtmlViewer.GetTextByIndices(0, HtmlViewer.SelLength)) returned an empty string after HtmlViewer.SelectAll.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=158">Issue 159</a>: Error function "CopyToClipboard".
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=161">Issue 161.2</a>: Some issues loading www.konstanz.de - incomplete loading.
-  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=163">Issue 163</a>: Table borders not rendered correctly (same as Issue 150.3).
   <li>THtmlParser.DoMeta to handle meta without http-equiv="Content-Type" &lt;meta charset="utf-8"&gt; from HTML5 (Angus Robertson)
   <li>HtmlView.pas - LoadDocument, don't add physical disk file path to URL, it corrupts referrer (Angus Robertson)
   <li>FramBrwz.pas - HotSpotClick not normalising URL before adding protocol for links (Angus Robertson)
@@ -96,11 +81,7 @@
   <li>A bug where background images might not load if a path name contains spaces. (J. Peter Mugaas)
   <li>When printing, do not show background if PrintBackground is False. This was happening when drawing a block. (J. Peter Mugaas)
   <li>Merged a fix for media-queries in style sheets from HtmlViewer 12.  This does not support media queries but simply skips them when parsing. (J. Peter Mugaas)
-  <li>TBuffer.PeekChar did not reset the JIS state.
-  <li>Do not print background color if Options.fvBackground is false. (J.Peter Mugaas)
 </ul>
-
-<!----------------------------------------------------------------------------->
 
 <p class="heading">Version 11.2</p>
 <h5>Added</h5>
@@ -134,8 +115,6 @@
   <li>Missing border lines in tables in 64bit Lazarus.
 </ul>
 
-<!----------------------------------------------------------------------------->
-
 <p class="heading">Version 11.1</p>
 <h5>Fixed and Changed</h5>
 <ul>
@@ -148,8 +127,6 @@
   <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=103">Issue 103</a>: Extra whitespace in preformatted blocks.
   <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=104">Issue 104</a>: Percentage width calculation issuesPercentage width calculation issues.
 </ul>
-
-<!----------------------------------------------------------------------------->
 
 <p class="heading">Version 11</p>
 <h5>Added</h5>
@@ -165,8 +142,6 @@
   <li>Fixed: <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=61">Issue 61</a>: HTMLViewer PrintPreview issue with objects hidden by positions with negative coordinates. 
   <li>Tuned: Document loading and formatting. Especially large documents benefit from this tunings immense.
 </ul>
-
-<!----------------------------------------------------------------------------->
 
 <p class="heading">Version 10</p>
 <h5>Added</h5>
@@ -194,8 +169,6 @@
   <li>Fix <b>border-collapse:collapse</b> respects cells' <b>border-styles</b> etc.
   <li>Fix some memory leaks and a buffer overrun.
 </ul>
-
-<!----------------------------------------------------------------------------->
 
 <p class="heading">Version 9.45</p>
 <h5>Added</h5>

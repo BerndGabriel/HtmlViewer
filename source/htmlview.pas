@@ -69,6 +69,7 @@ type
 
   THTMLBorderStyle = (htFocused, htNone, htSingle);
   TRightClickParameters = class(TObject)
+  public
     URL, Target: ThtString;
     Image: TImageObj;
     ImageX, ImageY: Integer;
@@ -219,7 +220,7 @@ type
     FPrintScale: Double;
     FRefreshDelay: Integer;
     FRefreshURL: ThtString;
-    FScrollBars: TScrollStyle;
+    FScrollBars: ThtScrollStyle;
     FSectionList: ThtDocument;
     FServerRoot: ThtString;
     FTarget: ThtString;
@@ -335,7 +336,7 @@ type
     procedure SetPreFontName(Value: TFontName);
     procedure SetPrintScale(Value: Double);
     procedure SetProcessing(Value: Boolean);
-    procedure SetScrollBars(Value: TScrollStyle);
+    procedure SetScrollBars(Value: ThtScrollStyle);
     procedure SetScrollPos(Value: Integer);
     procedure SetSelLength(Value: Integer);
     procedure SetSelStart(Value: Integer);
@@ -354,7 +355,9 @@ type
     function GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
   protected
     ScrollWidth: Integer;
-
+    {$ifdef has_StyleElements}
+    procedure UpdateStyleElements; override;
+    {$endif}
     function GetPalette: HPALETTE; override;
     function HotSpotClickHandled: Boolean; dynamic;
     function IsProcessing: Boolean;
@@ -529,7 +532,7 @@ type
     property PrintMaxHPages: Integer read FPrintMaxHPages write FPrintMaxHPages default 2;
     property PrintScale: Double read FPrintScale write SetPrintScale;
     property QuirksMode;
-    property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
+    property ScrollBars: ThtScrollStyle read FScrollBars write SetScrollBars default ssBoth;
     property ServerRoot: ThtString read FServerRoot write SetServerRoot;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
     property VisitedMaxCount: Integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
@@ -598,6 +601,11 @@ function GetFileType(const S: ThtString): THtmlFileType;
 implementation
 
 uses
+{$ifdef Compiler24_Plus}
+  System.Types,
+  System.UITypes,
+  Vcl.Themes,
+{$endif}
   Math, Clipbrd, Forms, Printers, {$IFDEF UNICODE}AnsiStrings, {$ENDIF}
   HTMLGif2 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
 
@@ -606,6 +614,7 @@ const
 
 type
   PositionObj = class(TObject)
+  public
     Pos: Integer;
     FileType: ThtmlFileType;
     FormData: TFreeList;
@@ -685,6 +694,9 @@ begin
 {$ifndef LCL}
   PaintPanel.Ctl3D := False;
 {$endif}
+{$ifdef has_StyleElements}
+  PaintPanel.StyleElements := StyleElements;
+{$endif}
   //PaintPanel.OnPaint := HTMLPaint;
   PaintPanel.OnMouseDown := HTMLMouseDown;
   PaintPanel.OnMouseMove := HTMLMouseMove;
@@ -746,6 +758,21 @@ begin
 {$endif}
   Exclude(FViewerState, vsCreating);
 end;
+
+{$ifdef has_StyleElements}
+procedure THtmlViewer.UpdateStyleElements;
+begin
+
+  HScrollBar.StyleElements := StyleElements;
+  VScrollBar.StyleElements := StyleElements;
+  BorderPanel.StyleElements := StyleElements;
+  PaintPanel.StyleElements := StyleElements;
+  if Assigned(FSectionList) then begin
+    FSectionList.StyleElements := StyleElements;
+  end;
+  inherited UpdateStyleElements;
+end;
+{$endif}
 
 destructor THtmlViewer.Destroy;
 begin
@@ -979,6 +1006,9 @@ begin
           FUseQuirksMode := False;
         end;
         Self.FSectionList.UseQuirksMode := FUseQuirksMode;
+             {$ifdef has_StyleElements}
+        Self.FSectionList.StyleElements := Self.StyleElements;
+             {$endif}
         // terminate old document
         InitLoad;
         CaretPos := 0;
@@ -2672,7 +2702,8 @@ end;
 {----------------DrawBackground}
 
 procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
-  Image: TGpObject; Mask: TBitmap; AniGif: TGifImage; BW, BH: Integer; BGColor: TColor);
+  Image: TGpObject; Mask: TBitmap; AniGif: TGifImage; BW, BH: Integer; BGColor: TColor
+  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
 {draw the background color and any tiled images on it}
 {ARect, the cliprect, drawing outside this will not show but images may overhang
  XStart, YStart are first image position already calculated for the cliprect and parameters.
@@ -2695,7 +2726,7 @@ begin
   begin
     OldPal := SelectPalette(DC, ThePalette, False);
     RealizePalette(DC);
-    ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
+    ACanvas.Brush.Color := ThemedColor(BGColor {$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
     OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
     OldBack := SetBkColor(DC, clWhite);
     OldFore := SetTextColor(DC, clBlack);
@@ -2812,7 +2843,7 @@ begin
   begin
     OldPal := SelectPalette(DC, ThePalette, False);
     RealizePalette(DC);
-    ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
+    ACanvas.Brush.Color := ThemedColor(BGColor{$ifdef has_StyleElements},seClient in StyleElements {$endif}) or PalRelative;
     OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
     OldBack := SetBkColor(DC, clWhite);
     OldFore := SetTextColor(DC, clBlack);
@@ -2924,11 +2955,11 @@ begin
   {Calculate where the tiled background images go}
     CalcBackgroundLocationAndTiling(PRec, ARect, XOff, YOff, IW, IH, BW, BH, X, Y, X2, Y2);
 
-    DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, nil, BW, BH, PaintPanel.Color);
+    DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, nil, BW, BH, PaintPanel.Color{$ifdef has_StyleElements},StyleElements{$endif});
   end
   else
   begin {no background image, show color only}
-    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, PaintPanel.Color);
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, PaintPanel.Color{$ifdef has_StyleElements},StyleElements{$endif});
   end;
 end;
 
@@ -3055,7 +3086,7 @@ begin
         else
           NewMask := nil;
         try
-          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewBitmap, NewMask, nil, NewBitmap.Width, NewBitmap.Height, ACanvas.Brush.Color);
+          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewBitmap, NewMask, nil, NewBitmap.Width, NewBitmap.Height, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
         finally
           NewMask.Free;
         end;
@@ -3066,13 +3097,13 @@ begin
     else {normal situation}
     begin
       AniGif := FSectionList.BackgroundAniGif;
-      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, AniGif, BW, BH, ACanvas.Brush.Color);
+      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, AniGif, BW, BH, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
     end;
   end
   else
   begin {no background image, show color only}
     Exclude(FViewerState, vsBGFixed);
-    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, ACanvas.Brush.Color);
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
   end;
 
   FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
@@ -3142,7 +3173,7 @@ var
 
   procedure PaintBackground(Canvas: TCanvas; Top, Bot: Integer);
   begin
-    Canvas.Brush.Color := ThemedColor(CopyList.Background);
+    Canvas.Brush.Color := ThemedColor(CopyList.Background{$ifdef has_StyleElements},seClient in StyleElements {$endif});
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(Rect(0, Top, Width + 1, Bot));
   end;
@@ -3288,6 +3319,9 @@ begin
     PrintBackground := True;
     PrintTableBackground := True;
   end;
+  {$ifdef has_StyleElements}
+  Result.StyleElements := StyleElements;
+  {$endif}
 end;
 
 {$ifndef NoMetafile}
@@ -3449,7 +3483,7 @@ var
     Canvas.Rectangle(MLeft, Y, W + MLeft + 1, TopPixels + H + 1);
     if (htPrintBackground in FOptions) and (Y - TopPixels < H) then
     begin {need to reprint background in whited out area}
-      hrgnClip1 := CreateRectRgn(MLeftPrn, Trunc(Y * (YDpi / WDpi)) + 2, MLeftPrn + WPrn, TopPixelsPrn + HPrn);
+      hrgnClip1 := CreateRectRgn(MLeftPrn, Trunc(Y * YDpi / WDpi) + 2, MLeftPrn + WPrn, TopPixelsPrn + HPrn);
       SelectClipRgn(Canvas.Handle, hrgnClip1);
       DeleteObject(hrgnClip1);
       DoBackground2(Canvas, MLeft + XOrigin, TopPixels, W, H, PaintPanel.Color);
@@ -3528,7 +3562,6 @@ var
   ScaledPgWid: Integer;
   FootViewer, HeadViewer: THtmlViewer;
 
-  Wx, Wy: Double;
   DeltaMarginTop: Double;
   SavePrintMarginTop: Double;
   DeltaPixelsPrn: Integer;
@@ -3629,23 +3662,22 @@ begin
         { which results in LowerRightPoint containing the BOTTOM and RIGHT unprintable area offset;
           using these we modify the (logical, true) borders...}
 
-        Wx            := WDpi / XDpi;
-        MLeftPrn      := Trunc(PrintMarginLeft / 2.54 * XDpi) - Margins.Left;
-        MLeft         := Trunc(MLeftPrn * Wx); {scaled end of left margin == left of used paper area}
-        MRightPrn     := Trunc(PrintMarginRight / 2.54 * XDpi) - Margins.Right;
-        WPrn          := Prn.PageWidth - (MLeftPrn + MRightPrn);
-        W             := Trunc(WPrn * Wx); {scaled pageWidth without margins == width of used paper area}
-        ScaledPgWid   := Trunc(Prn.PageWidth * Wx); {scaled pageWidth with margins}
+        MLeftPrn  := Trunc(PrintMarginLeft / 2.54 * XDpi) - Margins.Left;
+        MRightPrn := Trunc(PrintMarginRight / 2.54 * XDpi) - Margins.Right;
+        WPrn := Prn.PageWidth - (MLeftPrn + MRightPrn);
 
-        Wy            := WDpi / YDpi;
-        MTopPrn       := Trunc(PrintMarginTop / 2.54 * YDpi) - Margins.Top;
-        TopPixelsPrn  := MTopPrn;
-        TopPixels     := Trunc(MTopPrn * Wy); {scaled end of top margin == top of used paper area}
-        MBottomPrn    := Trunc(PrintMarginBottom / 2.54 * YDpi) - Margins.Bottom;
-        HPrn          := Prn.PageHeight - (MTopPrn + MBottomPrn);
-        H             := Trunc(HPrn * Wy); {scaled pageHeight without margins == height of used paper area}
-        ScaledPgHt    := Trunc(Prn.PageHeight * Wy); {scaled pageHeight with margins}
+        MTopPrn    := Trunc(PrintMarginTop / 2.54 * YDpi) - Margins.Top;
+        MBottomPrn := Trunc(PrintMarginBottom / 2.54 * YDpi) - Margins.Bottom;
+        HPrn := Prn.PageHeight - (MTopPrn + MBottomPrn);
 
+        MLeft := Trunc(MLeftPrn * WDpi / XDpi);
+        W := Trunc(WPrn * WDpi / XDpi); {scaled pageWidth}
+        H := Trunc(HPrn * WDpi / YDpi); {scaled pageHeight}
+        ScaledPgWid := Trunc(Prn.PageWidth * WDpi / XDpi);
+        ScaledPgHt := Trunc(Prn.PageHeight * WDpi / YDpi);
+
+        TopPixelsPrn := MTopPrn;
+        TopPixels := Trunc(TopPixelsPrn * WDpi / YDpi);
         HTop := 0;
         OldTop := 0;
         Curs := 0;
@@ -4153,6 +4185,9 @@ begin
   end;
   FSectionList.Clear;
   FSectionList.UseQuirksMode := FUseQuirksMode;
+     {$ifdef has_StyleElements}
+  FSectionList.StyleElements := Self.StyleElements;
+     {$endif}
   UpdateImageCache;
   FSectionList.SetFonts(FFontName, FPreFontName, FFontSize, FFontColor,
     FHotSpotColor, FVisitedColor, FOverColor, FBackground,
@@ -4169,6 +4204,9 @@ begin
     Exit;
   HTMLTimer.Enabled := False;
   FSectionList.UseQuirksMode := FUseQuirksMode;
+     {$ifdef has_StyleElements}
+  FSectionList.StyleElements := Self.StyleElements;
+     {$endif}
   FSectionList.Clear;
   if vsLocalBitmapList in FViewerState then
     FSectionList.BitmapList.Clear;
@@ -4198,252 +4236,254 @@ begin
 end;
 
 procedure THtmlViewer.CopyToClipboard;
-
-  procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
-
-    procedure CopyToClipBoard(const Source: ThtString);
-    // Put SOURCE on the clipboard, using FORMAT as the clipboard format
-  {$ifdef LCL}
-    var
-      Utf8: UTF8String;
-      CF_HTML: UINT;
-    begin
-      CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-      Utf8 := UTF8Encode(Source);
-      Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
-    end;
-  {$else}
-    var
-      Len: Integer;
-      Mem: HGLOBAL;
-      Buf: PAnsiChar;
-      L: Integer;
-      CF_HTML: UINT;
-    begin
-      Len := Length(Source);
-      CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-      Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len * 4 + 1);
-      try
-        Buf := GlobalLock(Mem);
-        try
-          L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
-          Buf[L] := #0;
-          SetClipboardData(CF_HTML, Mem);
-        finally
-          GlobalUnlock(Mem);
-        end;
-      except
-        GlobalFree(Mem);
-      end;
-    end;
-  {$endif}
-
-    const
-      // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
-      StartFrag: ThtString = '<!--StartFragment-->';
-      EndFrag: ThtString = '<!--EndFragment-->';
-      DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
-
-    function GetHeader(const HTML: ThtString): ThtString;
-    const
-      Version = 'Version:1.0'#13#10;
-      StartHTML = 'StartHTML:';
-      EndHTML = 'EndHTML:';
-      StartFragment = 'StartFragment:';
-      EndFragment = 'EndFragment:';
-      SourceURL = 'SourceURL:';
-      NumberLengthAndCR = 10;
-
-      // Let the compiler determine the description length.
-      PreliminaryLength = Length(Version) + Length(StartHTML) +
-        Length(EndHTML) + Length(StartFragment) +
-        Length(EndFragment) + 4 * NumberLengthAndCR +
-        2; {2 for last CRLF}
-    var
-      URLString: ThtString;
-      StartHTMLIndex,
-        EndHTMLIndex,
-        StartFragmentIndex,
-        EndFragmentIndex: Integer;
-    begin
-      if CurrentFile = '' then
-        UrlString := SourceURL + 'unsaved:///THtmlViewer.htm'
-      else if Pos('://', CurrentFile) > 0 then
-        URLString := SourceURL + CurrentFile {already has protocol}
-      else
-        URLString := SourceURL + 'file://' + CurrentFile;
-      StartHTMLIndex := PreliminaryLength + Length(URLString);
-      EndHTMLIndex := StartHTMLIndex + Length(HTML);
-      StartFragmentIndex := StartHTMLIndex + Pos(StartFrag, HTML) + Length(StartFrag) - 1;
-      EndFragmentIndex := StartHTMLIndex + Pos(EndFrag, HTML) - 1;
-
-      Result := Version +
-        SysUtils.Format('%s%.8d', [StartHTML, StartHTMLIndex]) + #13#10 +
-        SysUtils.Format('%s%.8d', [EndHTML, EndHTMLIndex]) + #13#10 +
-        SysUtils.Format('%s%.8d', [StartFragment, StartFragmentIndex]) + #13#10 +
-        SysUtils.Format('%s%.8d', [EndFragment, EndFragmentIndex]) + #13#10 +
-        URLString + #13#10;
-    end;
-
-    procedure RemoveTag(const Tag: ThtString);
-    {remove all the tags that look like "<tag .....>" }
-    var
-      I, J: Integer;
-      LTML: ThtString;
-      C: ThtChar;
-    begin
-      C := #0; // valium for Delphi 2009+
-      LTML := htLowerCase(HTML);
-      repeat
-        I := Pos(Tag, LTML);
-        if I = 0 then
-          break;
-        J := I - 1 + Length(Tag);
-        repeat
-          Inc(J);
-          if J = Length(LTML) then
-            break;
-          C := LTML[J];
-        until (C = GreaterChar) or (C = EofChar);
-        Delete(HTML, I, J - I + 1);
-        Delete(LTML, I, J - I + 1);
-      until False;
-    end;
-
-    procedure MessUp(const S: ThtString);
-    var
-      I: Integer;
-      L: ThtString;
-    begin
-      L := htLowerCase(HTML);
-      I := Pos(S, L);
-      while (I > 0) do
-      begin
-        Delete(HTML, I, 1);
-        L := htLowerCase(HTML);
-        I := Pos(S, L);
-      end;
-    end;
-
-    procedure InsertDefaultFontInfo;
-    var
-      I: Integer;
-      S, L: ThtString;
-      HeadFound: Boolean;
-    begin
-      L := LowerCase(HTML);
-      I := Pos('<head>', L);
-      HeadFound := I > 0;
-      if not HeadFound then
-        I := Pos('<html>', L);
-      if I <= 0 then
-        I := 1;
-      S := '<style> body {font-size: ' + IntToStr(DefFontSize) + 'pt; font-family: "' +
-        DefFontName + '"; }</style>';
-      if not HeadFound then
-        S := '<head>' + S + '</head>';
-      Insert(S, HTML, I);
-    end;
-
-    function BackupToContent: ThtString;
-    var
-      C: ThtChar;
-      I: Integer;
-
-      procedure GetC; {reads characters backwards}
-      begin
-        if I - 1 > StSrc then
-        begin
-          Dec(I);
-          C := HTML[I];
-        end
-        else
-          C := #0;
-      end;
-
-    begin
-      I := EnSrc;
-      repeat
-        repeat {skip past white space}
-          GetC;
-        until (C > ' ') or (C = EofChar);
-        if C = '>' then
-          repeat {read thru a tag}
-            repeat
-              GetC;
-            until (C = LessChar) or (C = EofChar);
-            GetC;
-          until C <> '>';
-      until (C > ' ') or (C = EofChar); {until found some content}
-      if C = EofChar then
-        Dec(I);
-      Result := Copy(HTML, 1, I); {truncate the tags}
-    end;
-
-  begin
-  {Truncate beyond EnSrc}
-    HTML := Copy(HTML, 1, EnSrc - 1);
-  {Also remove any tags on the end}
-    HTML := BackupToContent;
-  {insert the StartFrag ThtString}
-    Insert(StartFrag, HTML, StSrc);
-  {Remove all Meta tags, in particular the ones that specify language, but others
-   seem to cause problems also}
-    RemoveTag('<meta');
-  {Remove <!doctype> in preparation to having one added}
-    RemoveTag('<!doctype');
-  {page-break-... stylesheet properties cause a hang in Word -- mess them up}
-    MessUp('page-break-');
-  {Add in default font information which wouldn't be in the HTML}
-    InsertDefaultFontInfo;
-  {Add Doctype tag at start and append the EndFrag ThtString}
-    HTML := DocType + HTML + EndFrag;
-  {Add the header to start}
-    HTML := GetHeader(HTML) + HTML;
-
-    CopyToClipBoard(HTML);
-  end;
-
+const
+  // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
+  StartFrag: ThtString = '<!--StartFragment-->';
+  EndFrag: ThtString = '<!--EndFragment-->';
+  DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
 var
   Leng: Integer;
   StSrc, EnSrc: Integer;
   HTML: ThtString;
+  CF_HTML: UINT;
+
+  procedure copyFormatToClipBoard(const Source: ThtString);
+  // Put SOURCE on the clipboard, using FORMAT as the clipboard format
+{$ifdef LCL}
+  var
+    Utf8: UTF8String;
+  begin
+    Clipboard.Clear;
+    Clipboard.AddFormat(CF_UNICODETEXT, PWideChar(Source)[0], Length(Source) * sizeof(WIDECHAR));
+    Utf8 := UTF8Encode(Source);
+    Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
+  end;
+{$else}
+  var
+    Len: Integer;
+    Mem: HGLOBAL;
+    Buf: PAnsiChar;
+    Wuf: PWideChar;
+    L: Integer;
+  begin
+    Clipboard.Clear;
+    Len := Length(Source);
+    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len * 4 + 1);
+    try
+      Buf := GlobalLock(Mem);
+      try
+        L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
+        Buf[L] := #0;
+        Clipboard.SetAsHandle(CF_HTML, Mem);
+      finally
+        GlobalUnlock(Mem);
+      end;
+    except
+      GlobalFree(Mem);
+    end;
+    Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
+    try
+      Wuf := GlobalLock(Mem);
+      try
+        Move(Source[1], Wuf^, Len * SizeOf(ThtChar));
+        Wuf[Len] := #0;
+        Clipboard.SetAsHandle(CF_UNICODETEXT, Mem);
+      finally
+        GlobalUnlock(Mem);
+      end;
+    except
+      GlobalFree(Mem);
+    end;
+  end;
+{$endif}
+
+  function GetHeader(const HTML: ThtString): ThtString;
+  const
+    Version = 'Version:1.0'#13#10;
+    StartHTML = 'StartHTML:';
+    EndHTML = 'EndHTML:';
+    StartFragment = 'StartFragment:';
+    EndFragment = 'EndFragment:';
+    SourceURL = 'SourceURL:';
+    NumberLengthAndCR = 10;
+
+    // Let the compiler determine the description length.
+    PreliminaryLength = Length(Version) + Length(StartHTML) +
+      Length(EndHTML) + Length(StartFragment) +
+      Length(EndFragment) + 4 * NumberLengthAndCR +
+      2; {2 for last CRLF}
+  var
+    URLString: ThtString;
+    StartHTMLIndex,
+      EndHTMLIndex,
+      StartFragmentIndex,
+      EndFragmentIndex: Integer;
+  begin
+    if CurrentFile = '' then
+      UrlString := SourceURL + 'unsaved:///THtmlViewer.htm'
+    else if Pos('://', CurrentFile) > 0 then
+      URLString := SourceURL + CurrentFile {already has protocol}
+    else
+      URLString := SourceURL + 'file://' + CurrentFile;
+    StartHTMLIndex := PreliminaryLength + Length(URLString);
+    EndHTMLIndex := StartHTMLIndex + Length(HTML);
+    StartFragmentIndex := StartHTMLIndex + Pos(StartFrag, HTML) + Length(StartFrag) - 1;
+    EndFragmentIndex := StartHTMLIndex + Pos(EndFrag, HTML) - 1;
+
+    Result := Version +
+      SysUtils.Format('%s%.8d', [StartHTML, StartHTMLIndex]) + #13#10 +
+      SysUtils.Format('%s%.8d', [EndHTML, EndHTMLIndex]) + #13#10 +
+      SysUtils.Format('%s%.8d', [StartFragment, StartFragmentIndex]) + #13#10 +
+      SysUtils.Format('%s%.8d', [EndFragment, EndFragmentIndex]) + #13#10 +
+      URLString + #13#10;
+  end;
+
+  procedure RemoveTag(const Tag: ThtString);
+  {remove all the tags that look like "<tag .....>" }
+  var
+    I, J: Integer;
+    LTML: ThtString;
+    C: ThtChar;
+  begin
+    C := #0; // valium for Delphi 2009+
+    LTML := htLowerCase(HTML);
+    repeat
+      I := Pos(Tag, LTML);
+      if I = 0 then
+        break;
+      J := I - 1 + Length(Tag);
+      repeat
+        Inc(J);
+        if J = Length(LTML) then
+          break;
+        C := LTML[J];
+      until (C = GreaterChar) or (C = EofChar);
+      Delete(HTML, I, J - I + 1);
+      Delete(LTML, I, J - I + 1);
+    until False;
+  end;
+
+  procedure MessUp(const S: ThtString);
+  var
+    I: Integer;
+    L: ThtString;
+  begin
+    L := htLowerCase(HTML);
+    I := Pos(S, L);
+    while (I > 0) do
+    begin
+      Delete(HTML, I, 1);
+      L := htLowerCase(HTML);
+      I := Pos(S, L);
+    end;
+  end;
+
+  procedure InsertDefaultFontInfo;
+  var
+    I: Integer;
+    S, L: ThtString;
+    HeadFound: Boolean;
+  begin
+    L := LowerCase(HTML);
+    I := Pos('<head>', L);
+    HeadFound := I > 0;
+    if not HeadFound then
+      I := Pos('<html>', L);
+    if I <= 0 then
+      I := 1;
+    S := '<style> body {font-size: ' + IntToStr(DefFontSize) + 'pt; font-family: "' +
+      DefFontName + '"; }</style>';
+    if not HeadFound then
+      S := '<head>' + S + '</head>';
+    Insert(S, HTML, I);
+  end;
+
+  function BackupToContent: ThtString;
+  var
+    C: ThtChar;
+    I: Integer;
+
+    procedure GetC; {reads characters backwards}
+    begin
+      if I - 1 > StSrc then
+      begin
+        Dec(I);
+        C := HTML[I];
+      end
+      else
+        C := #0;
+    end;
+
+  begin
+    I := EnSrc;
+    repeat
+      repeat {skip past white space}
+        GetC;
+      until (C > ' ') or (C = EofChar);
+      if C = '>' then
+        repeat {read thru a tag}
+          repeat
+            GetC;
+          until (C = LessChar) or (C = EofChar);
+          GetC;
+        until C <> '>';
+    until (C > ' ') or (C = EofChar); {until found some content}
+    if C = EofChar then
+      Dec(I);
+    Result := Copy(HTML, 1, I); {truncate the tags}
+  end;
+
 begin
   Leng := FSectionList.GetSelLength;
   if Leng = 0 then
     Exit;
-  Clipboard.Open;
-  try
-    Clipboard.Clear;
-    FSectionList.CopyToClipboardA(Leng + 1);
+  FSectionList.CopyToClipboardA(Leng + 1);
 
-    HTML := DocumentSource;
-    StSrc := FindSourcePos(FSectionList.SelB);
-    EnSrc := FindSourcePos(FSectionList.SelE);
-    if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
-    begin
-      StSrc := StSrc div 2;
-      if EnSrc > 0 then
-        EnSrc := EnSrc div 2;
-    end;
-    Inc(StSrc);
-
-    if EnSrc < 0 then {check to see if end selection is at end of document}
-    begin
-      EnSrc := Length(HTML);
-      if HTML[EnSrc] = '>' then
-      begin
-        HTML := HTML + ' ';
-        Inc(EnSrc);
-      end;
-    end
-    else
-      Inc(EnSrc);
-
-    CopyToClipboardAsHtml(Html, StSrc, EnSrc);
-  finally
-    Clipboard.Close;
+  HTML := DocumentSource;
+  StSrc := FindSourcePos(FSectionList.SelB);
+  EnSrc := FindSourcePos(FSectionList.SelE);
+  if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
+  begin
+    StSrc := StSrc div 2;
+    if EnSrc > 0 then
+      EnSrc := EnSrc div 2;
   end;
+  Inc(StSrc);
+
+  if EnSrc < 0 then {check to see if end selection is at end of document}
+  begin
+    EnSrc := Length(HTML);
+    if HTML[EnSrc] = '>' then
+    begin
+      HTML := HTML + ' ';
+      Inc(EnSrc);
+    end;
+  end
+  else
+    Inc(EnSrc);
+
+{Truncate beyond EnSrc}
+  HTML := Copy(HTML, 1, EnSrc - 1);
+{Also remove any tags on the end}
+  HTML := BackupToContent;
+{insert the StartFrag ThtString}
+  Insert(StartFrag, HTML, StSrc);
+{Remove all Meta tags, in particular the ones that specify language, but others
+ seem to cause problems also}
+  RemoveTag('<meta');
+{Remove <!doctype> in preparation to having one added}
+  RemoveTag('<!doctype');
+{page-break-... stylesheet properties cause a hang in Word -- mess them up}
+  MessUp('page-break-');
+{Add in default font information which wouldn't be in the HTML}
+  InsertDefaultFontInfo;
+{Add Doctype tag at start and append the EndFrag ThtString}
+  HTML := DocType + HTML + EndFrag;
+{Add the header to start}
+  HTML := GetHeader(HTML) + HTML;
+
+  CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
+  CopyFormatToClipBoard(HTML);
 end;
 
 function THtmlViewer.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
@@ -4576,7 +4616,7 @@ begin
   DrawBorder;
 end;
 
-procedure THtmlViewer.SetScrollBars(Value: TScrollStyle);
+procedure THtmlViewer.SetScrollBars(Value: ThtScrollStyle);
 begin
   if (Value <> FScrollBars) then
   begin
@@ -4915,6 +4955,9 @@ begin
 {$else}
   DoubleBuffered := True;
 {$endif}
+{$ifdef has_StyleElements}
+  StyleElements := Viewer.StyleElements;
+{$endif}
 end;
 
 
@@ -4953,8 +4996,9 @@ begin
       SelectObject(MemDC, Bm);
       SetWindowOrgEx(MemDC, X, Y, nil);
       Canvas2.Font := Font;
+      Canvas2.Font.Color := ThemedColor(Font.Color{$ifdef has_StyleElements},seFont in StyleElements {$endif});
       Canvas2.Handle := MemDC;
-      Canvas2.Brush.Color := ThemedColor(Color);
+      Canvas2.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements {$endif});
       Canvas2.Brush.Style := bsSolid;
       FViewer.DrawBorder;
       FViewer.HTMLPaint(Canvas2, Rect);
@@ -4977,7 +5021,7 @@ begin
 //  of frameviewer, if some images have to be shown
 //  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
-  Canvas.Brush.Color := ThemedColor(Color);
+  Canvas.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements {$endif});
   Canvas.Brush.Style := bsSolid;
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);

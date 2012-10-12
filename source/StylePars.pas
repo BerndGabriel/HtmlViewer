@@ -1,7 +1,8 @@
 {
-Version   11.3
+Version   11.2
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1177,8 +1178,7 @@ begin
             Value[Length(Value)] := LCh;
             GetCh;
           end;
-          {leave quotes on for font:}
-          Value1 := LowerCase(Trim(Value));
+          Value1 := LowerCase(Trim(Value)); {leave quotes on for font:}
           Value := RemoveQuotes(Value1);
 
           Prop := LowerCase(Prop);
@@ -1188,10 +1188,7 @@ begin
           begin
             if (LinkPath <> '') and (Pos('url(', Value) > 0) then
               Value := AddPath(Value);
-            if Prop = 'font-family' then
-              ProcessProperty(Prop, Value1)
-            else
-              ProcessProperty(Prop, Value);
+            ProcessProperty(Prop, Value);
           end;
         end;
       end;

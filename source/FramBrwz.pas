@@ -1,7 +1,8 @@
 {
-Version   11.4
+Version   11.2
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -35,19 +36,12 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, //LMessages, HtmlMisc,
+  LclIntf, LclType, LMessages, HtmlMisc,
 {$else}
   Windows,
 {$endif}
-  SysUtils, Classes, {Messages,} Controls, ExtCtrls,
-  HtmlGlobals,
-  HtmlBuffer,
-  HtmlSubs,
-  HtmlView,
-  Htmlun2,
-  ReadHTML,
-  UrlSubs,
-  FramView;
+  SysUtils, Classes, Messages, Controls, ExtCtrls,
+  HtmlGlobals, HtmlBuffer, HtmlSubs, HtmlView, Htmlun2, ReadHTML, UrlSubs, FramView;
 
 type
   TGetPostRequestEvent = procedure(Sender: TObject; IsGet: boolean; const URL, Query: ThtString;
@@ -148,6 +142,9 @@ type
   end;
 
 implementation
+{$ifdef Compiler24_Plus}
+uses System.Types;
+{$endif}
 
 function ConvDosToHTML(const Name: ThtString): ThtString; forward;
 

@@ -1,7 +1,6 @@
 {
-Version   11.3
-Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2012 by HtmlViewer Team
+Version   11
+Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -269,7 +268,8 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : BoxSizingType) : Boolean;
-    procedure GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean = true);
+    procedure GetVMarginArrayDefBorder(var MArray: TVMarginArray; const ADefColor : Variant);
+    procedure GetVMarginArray(var MArray: TVMarginArray);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -471,6 +471,9 @@ procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Bool
 
 implementation
 uses
+{$ifdef Compiler24_Plus}
+  System.UITypes,
+{$endif}
  {$ifdef JPM_DEBUGGING}
  CodeSiteLogging,
  {$endif}
@@ -1885,7 +1888,7 @@ begin
       Base := BaseWidth;
     end;
     case I of
-      BackgroundColor, BorderTopColor..BorderLeftColor:
+      BackgroundColor: //, BorderColor:
         begin
           if VarType(VM[I]) <= VarNull then
             M[I] := clNone
@@ -2857,15 +2860,17 @@ begin
   AFI.Assign(FIArray);
 end;
 
-procedure TProperties.GetVMarginArray(var MArray: TVMarginArray; DefaultToColor: Boolean);
+procedure TProperties.GetVMarginArrayDefBorder(var MArray: TVMarginArray; const ADefColor : Variant);
 var
   I: PropIndices;
   BS: BorderStyleType;
   NewColor : TColor;
 begin
   {$IFDEF JPM_DEBUGGING}
-  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArrayDefBorder');
   LogProperties(Self,'Self');
+  CodeSiteLogging.CodeSite.SendFmtMsg('ADefColor = %s',[LogPropColor( ADefColor )]);
+
   {$ENDIF}
   for I := Low(Marray) to High(MArray) do
     case I of
@@ -2875,25 +2880,39 @@ begin
         GetBorderStyle(I, BS);
         MArray[I] := BS;
       end;
-      {From: http://www.w3.org/TR/CSS21/box.html#x49
-
-      If an element's border color is not specified with a
-      border property, user agents must use the value of the
-      element's 'color' property as the computed value for
-      the border color.
-      }
       BorderTopColor..BorderLeftColor:
       begin
-        if ColorFromString(Props[I], False, NewColor) then
+        if ColorFromString(Props[I],False,NewColor) then begin
           MArray[I] := Props[I]
-        else if DefaultToColor then
-          MArray[I] := Props[StyleUn.Color]
-        else
-          MArray[I] := IntNull;
+        end else begin
+          MArray[I] := ADefColor;
+        end;
       end
     else
       MArray[I] := Props[I];
     end;
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.AddSeparator;
+  StyleUn.LogTVMarginArray(MArray,'MArray');
+  CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.GetVMarginArrayDefBorder');
+  {$ENDIF}
+end;
+
+procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+{From: http://www.w3.org/TR/CSS21/box.html#x49
+
+If an element's border color is not specified with a
+border property, user agents must use the value of the
+element's 'color' property as the computed value for
+the border color.
+}
+begin
+  {$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
+  LogPropColor();
+  LogProperties(Self,'Self');
+  {$ENDIF}
+  GetVMarginArrayDefBorder(MArray,Props[StyleUn.Color]);
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogTVMarginArray(MArray,'MArray');
@@ -3835,6 +3854,7 @@ begin
         Result := False;
         Exit;
       end;
+      S := Trim(S);
       if Length(S) <= 3 then
         for I := Length(S) downto 1 do
           Insert(S[I], S, I); {Double each character}

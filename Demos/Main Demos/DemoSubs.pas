@@ -45,13 +45,12 @@ procedure StartProcess(CommandLine: string; ShowWindow: Word);
 var
   PC: array[0..255] of {$ifdef Compiler20_Plus} WideChar {$else} AnsiChar {$endif};
 {$ifdef Compiler20_Plus}
-  si: TStartupInfo;
-  pi: TProcessInformation;
+  si: _STARTUPINFO;
+  pi: _PROCESS_INFORMATION;
 {$endif}
 begin
   StrPCopy(PC, CommandLine);
 {$ifdef Compiler20_Plus}
-  FillChar(si, SizeOf(si), 0);
   si.cb := SizeOf(si);
   si.lpReserved := nil;
   si.lpDesktop := nil;

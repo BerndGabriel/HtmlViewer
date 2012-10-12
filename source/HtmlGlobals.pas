@@ -30,6 +30,9 @@ unit HtmlGlobals;
 interface
 
 uses
+  {$ifdef TScrollStyleInSystemUITypes}
+  System.UITypes,
+  {$endif}
   {$ifdef UseVCLStyles}
   Vcl.Themes,
   {$endif}
@@ -154,7 +157,11 @@ type
   ThtRadioButton = TRadioButton;
   ThtHintWindow = THintWindow;
 {$endif}
-
+  {$ifdef TScrollStyleInSystemUITypes}
+   ThtScrollStyle = System.UITypes.TScrollStyle;
+  {$else}
+  ThtScrollStyle = TScrollStyle;
+  {$endif}
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)
   public
@@ -309,10 +316,10 @@ function PtrSub(P1, P2: Pointer): Integer; {$ifdef UseInline} inline; {$endif}
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inline; {$endif}
 procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
-//code movement from HTMLUn2
-function Darker(Color: TColor): TColor; {$ifdef UseInline} inline; {$endif}
-function Lighter(Color: TColor): TColor;  {$ifdef UseInline} inline; {$endif}
-
+function Darker(Color : TColor
+  {$ifdef has_StyleElements}; const AUseThemes : Boolean{$endif}): TColor; {$ifdef UseInline} inline; {$endif} overload;
+function Lighter(Color : TColor
+  {$ifdef has_StyleElements}; const AUseThemes : Boolean{$endif}): TColor; {$ifdef UseInline} inline; {$endif} overload;
 //code movements from HTMLSubs
 function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer; {$ifdef UseInline} inline; {$endif}
 procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean); {$ifdef UseInline} inline; {$endif}
@@ -323,14 +330,37 @@ function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);  {$ifdef UseInline} inline; {$endif}
 
-function ThemedColor(const AColor : TColor): TColor; {$ifdef UseInline} inline; {$endif}
+function ThemedColor(const AColor : TColor
+  {$ifdef has_StyleElements};const AUseThemes : Boolean{$endif}
+  ): TColor; {$ifdef UseInline} inline; {$endif} //overload;
+
 
 implementation
+{$ifdef has_StyleElements}
+function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
+begin
+  if AUseThemes and TStyleManager.IsCustomStyleActive then begin
+    Result := StyleServices.GetSystemColor(AColor);
+  end else begin
+    Result := AColor;
+  end;
+  if Result < 0 then
+  begin
+    Result := GetSysColor(AColor and $FFFFFF);
+    if Result < 0 then
+      Result := AColor and $FFFFFF;
+  end;
+end;
+{$else}
 
 function ThemedColor(const AColor : TColor): TColor;
 begin
   {$ifdef UseVCLStyles}
-  Result := StyleServices.GetSystemColor(AColor);
+  if TStyleManager.IsCustomStyleActive then begin
+    Result := StyleServices.GetSystemColor(AColor);
+  end else begin
+    Result := AColor;
+  end;
   if Result < 0 then
   begin
     Result := GetSysColor(AColor and $FFFFFF);
@@ -344,6 +374,7 @@ begin
     Result := AColor and $FFFFFF;
   {$endif}
 end;
+{$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
 var
@@ -360,28 +391,34 @@ begin
   Result := GetDeviceCaps(ADC,SHADEBLENDCAPS) and SB_CONST_ALPHA > 0;
 end;
 
-function Darker(Color: TColor): TColor;
+
+function Darker(Color : TColor
+  {$ifdef has_StyleElements}; const AUseThemes : Boolean{$endif}
+  ): TColor; {$ifdef UseInline} inline; {$endif}
   {find a somewhat darker color for shading purposes}
 const
   F = 0.75; // F < 1 makes color darker
 var
   Red, Green, Blue: Byte;
 begin
-  Color := ThemedColor(Color);
+  Color := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
   Red := Color and $FF;
   Green := (Color and $FF00) shr 8;
   Blue := (Color and $FF0000) shr 16;
   Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
 end;
 
-function Lighter(Color: TColor): TColor;
+
+function Lighter(Color : TColor
+  {$ifdef has_StyleElements}; const AUseThemes : Boolean {$endif})
+  : TColor; {$ifdef UseInline} inline; {$endif}
 {find a somewhat lighter color for shading purposes}
 const
   F = 1.15; // F > 1 makes color lighter
 var
   Red, Green, Blue: Byte;
 begin
-  Color := ThemedColor(Color);
+  Color := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
   if Color = 0 then
     Result := 0
   else
