@@ -1262,7 +1262,7 @@ var
   OldPos: PByte;
 begin
   Bytes := FEnd.AnsiChr - FPos.AnsiChr;
-  if FCodePage = CP_UTF16LE then
+  if (FCodePage = CP_UTF16LE) and (FInitalCodePage = CP_UTF16LE) then
   begin
     SetLength(Result, Bytes);
     System.Move(Result[1], FPos.BytePtr^, Bytes);

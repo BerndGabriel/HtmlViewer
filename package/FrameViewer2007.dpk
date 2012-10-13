@@ -33,16 +33,18 @@ requires
   rtl,
   soaprtl,
   vcl,
+  vclx,
   vcljpg,
+  vclsmp,
   designide,
   TntUnicodeVclD11;
 
 contains
   framview in '..\source\framview.pas',
   htmlview in '..\source\htmlview.pas',
-  Readhtml in '..\source\readhtml.pas',
+  readhtml in '..\source\readhtml.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
-  Htmlsubs in '..\source\htmlsubs.pas',
+  htmlsubs in '..\source\htmlsubs.pas',
   HTMLUn2 in '..\source\HTMLUn2.pas',
   vwPrint in '..\source\vwPrint.pas',
   MetaFilePrinter in '..\source\MetaFilePrinter.pas',
@@ -53,7 +55,7 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   StylePars in '..\source\StylePars.pas',
   HTMLGif2 in '..\source\HTMLGif2.pas',
-  HtmlGif1 in '..\source\htmlgif1.pas',
+  htmlgif1 in '..\source\htmlgif1.pas',
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
@@ -62,6 +64,13 @@ contains
   msimg32 in '..\source\msimg32.pas',
   HSLUtils in '..\source\HSLUtils.pas',
   BuffConv in '..\source\BuffConv.pas',
-  BuffConvArrays in '..\source\BuffConvArrays.pas';
+  BuffConvArrays in '..\source\BuffConvArrays.pas',
+  BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
+  BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
+  BegaPreview in '..\source\BegaPreview.pas',
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas',
+  BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
+  BegaScrollBox in '..\source\BegaScrollBox.pas',
+  BegaZoom in '..\source\BegaZoom.pas';
 
 end.
