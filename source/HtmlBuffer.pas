@@ -41,7 +41,7 @@ uses
   Windows,
   Classes, SysUtils,
 {$endif}
-  Graphics, Math,
+  Graphics, 
 {$ifdef UNICODE}
   AnsiStrings,
 {$endif}
@@ -68,8 +68,7 @@ const
   EASTEUROPE_CHARSET  = 238;
   OEM_CHARSET         = 255;
 }
-
-  // some more charset constants
+  // more charset constants
   UNKNOWN_CHARSET = -1;
 
   // some more codepage constants
@@ -111,6 +110,7 @@ type
     function AsString: TBuffString; virtual;
     property CodePage: TBuffCodePage read FCodePage;
   end;
+  TBuffConverterClass =  class of TBuffConverter;
 
   TBuffArray = array of Byte;
   TBuffArray4 = array [0..3] of Byte;
@@ -123,6 +123,17 @@ type
   );
 
   // BG, 17.12.2010: helps converting any kind of stream to WideChars.
+  //
+  // Although loading files via ThtStringList.LoadFromFile(FileName) produces WideChars,
+  // these WideChars may not be coded correctly, if the file is not a unicode file.
+  // For those cases you can apply a CodePage to the TBuffString versions of Convert()/Create().
+  // Or you can used the PByte versions with the InitialCodePage parameters and set InitialCodePage to CP_UTF16LE.
+  //
+  // Avoid passing such raw ThtStringList.Text to HtmlViewer.
+  // HtmlViewer assumes correct unicode in ThtString.
+  // You MUST convert it before passing it to HtmlViewer: HtmlViewer.LoadFromString(TBuffer.Convert(StringList.Text, CodePage));
+  // Or you let HtmlViewer load it from file or a TFileStream.
+  //
   TBuffer = class
   private
     FBuffer: TBuffArray;
@@ -132,33 +143,98 @@ type
     FConverter: TBuffConverter;
     FState: TBufferState;
 
-    function GetCodePage: TBuffCodePage;
+    function GetCodePage: TBuffCodePage;  {$ifdef UseInline} inline; {$endif}
     function GetPosition: Integer; {$ifdef UseInline} inline; {$endif}
     procedure DetectCodePage;
     procedure Reset;
+    procedure SetCodePage(Value: TBuffCodePage); {$ifdef UseInline} inline; {$endif}
+    procedure SetCodePages(Value, Initial: TBuffCodePage);
+    procedure SetPosition(const Value: Integer); {$ifdef UseInline} inline; {$endif}
     procedure SetStream(Stream: TStream); {$ifdef UseInline} inline; {$endif}
-    procedure SetPostion(const Value: Integer); {$ifdef UseInline} inline; {$endif}
-    procedure SetCodePage(const Value: TBuffCodePage);
-  protected
   public
-    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; overload;
-    class function Convert(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage): TBuffString; overload;
-    constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
+    class function Convert(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
+    class function Convert(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
+    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    constructor Create(Text: TBuffString; Name: TBuffString = ''); overload;
-    constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    procedure AssignTo(Destin: TObject);
-    function AsString: TBuffString;
-    function NextChar: TBuffChar;
-    function PeekChar: TBuffChar;  {$ifdef UseInline} inline; {$endif}
-    function Size: Integer;
+    constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
+    constructor Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; Name: TBuffString = ''); overload;
+    constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = ''); overload; {$ifdef UseInline} inline; {$endif}
+    constructor Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = ''); overload; {$ifdef UseInline} inline; {$endif}
+    constructor Create(Text: TBuffString; Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE); overload;
+    function AsString: TBuffString; {$ifdef UseInline} inline; {$endif}
     function GetString(FromIndex, UntilIndex: Integer): TBuffString;
-    property Name: TBuffString read FName;
+    function NextChar: TBuffChar; {$ifdef UseInline} inline; {$endif}
+    function PeekChar: TBuffChar; {$ifdef UseInline} inline; {$endif}
+    function Size: Integer; {$ifdef UseInline} inline; {$endif}
+    procedure AssignTo(Destin: TObject);
     property CodePage: TBuffCodePage read GetCodePage write SetCodePage;
-    property Position: Integer read GetPosition write SetPostion;
+    property Name: TBuffString read FName;
+    property Position: Integer read GetPosition write SetPosition;
   end;
 
-  TBuffCharSetCodePageInfo = class
+// BG, 13.10.2012: Code Page Management
+//
+// You can register your own code page to unicode converters or unregister your own or predefined converters.
+// Registering an existing converter again updates it.
+//
+// As each code page may have any number of aliases there are 2 sets of un-/register methods.
+// One to register a code page name to code page numner mappings and
+// one to register the converter. 
+
+// Add a name of a code page. Code pages can have many names, but each name names one code page only:
+procedure RegisterCodePageName(const CodePageName: string; CodePage: TBuffCodePage);
+// Remove a name of a code page:
+procedure UnregisterCodePageName(const CodePageName: string);
+// Get code page by name:
+function StrToCodePage(const CodePageName: string): TBuffCodePage;
+
+// Add a code page to unicode converter. Only one converter per code page is allowed,
+// but a converter may handle more than one code page:
+procedure RegisterCodePageToUnicodeConverter(
+  CodePage: TBuffCodePage; Converter: TBuffConverterClass;
+  const ConverterName: string = ''; CharSet: TBuffCharSet = UNKNOWN_CHARSET);
+// Remove a code page to unicode converter:
+procedure UnregisterCodePageToUnicodeConverter(CodePage: TBuffCodePage);
+// Get charset of code page:
+function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
+
+implementation
+
+uses
+  BuffConv;
+
+type
+
+  TBuffConvInfo = class
+  private
+    FName: String;
+    FCodePage:  TBuffCodePage;
+    FCharSet:   TBuffCharSet;
+    FConverter: TBuffConverterClass;
+  public
+    constructor Create(CodePage: TBuffCodePage; CharSet: TBuffCharSet; Converter: TBuffConverterClass; const Name: String);
+    property CharSet: TBuffCharSet read FCharSet;
+    property CodePage: TBuffCodePage read FCodePage;
+    property Converter: TBuffConverterClass read FConverter;
+    property Name: String read FName;
+  end;
+
+  TBuffConvInfoList = class(TList)
+  private
+    FSorted: Boolean;
+    function GetItem(Index: Integer): TBuffConvInfo;
+  protected
+    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  public
+    constructor Create;
+    procedure Add(Item: TBuffConvInfo);
+    function Find(CodePage: TBuffCodePage): Integer;
+    procedure Sort;
+    property Items[Index: Integer]: TBuffConvInfo read GetItem; default;
+    property Sorted: Boolean read FSorted;
+  end;
+
+  TBuffCodePageName = class
   private
     FName: string;
     FCodePage: TBuffCodePage;
@@ -168,53 +244,153 @@ type
     property Name: string read FName;
   end;
 
-function GetCharSetCodePageInfo(const Name: string): TBuffCharSetCodePageInfo;
-//function CharSetToCodePage(CharSet: TBuffCharSet): TBuffCodePage;
-function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
-
-implementation
-
-uses
-  BuffConv;
-
-type
-  TBuffCharSetCodePageInfoList = class(TStringList)
+  TBuffCodePageNameList = class(TStringList)
   private
-    function GetInfo(Index: Integer): TBuffCharSetCodePageInfo;
+    function GetItem(Index: Integer): TBuffCodePageName;
   public
     constructor Create;
     destructor Destroy; override;
-    procedure AddInfo(Info: TBuffCharSetCodePageInfo);
+    procedure Add(Info: TBuffCodePageName); reintroduce;
     function IndexOf(const S: String): Integer; override;
-    property Infos[Index: Integer]: TBuffCharSetCodePageInfo read GetInfo; default;
+    property Items[Index: Integer]: TBuffCodePageName read GetItem; default;
   end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
 var
-  VCharSetCodePageByName: TBuffCharSetCodePageInfoList;
+  VFinalizing: Boolean;
+  VConvertersByCodePage: TBuffConvInfoList;
+  VCodePagesByName: TBuffCodePageNameList;
 
-//-- BG ---------------------------------------------------------- 22.12.2010 --
-function GetCharSetCodePageInfo(const Name: string): TBuffCharSetCodePageInfo;
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+function GetCodePageNameList: TBuffCodePageNameList;
+begin
+  if (VCodePagesByName = nil) and not VFinalizing then
+    VCodePagesByName := TBuffCodePageNameList.Create;
+  Result := VCodePagesByName;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure RegisterCodePageName(const CodePageName: string; CodePage: TBuffCodePage);
 var
+  CodePagesByName: TBuffCodePageNameList;
+begin
+  CodePagesByName := GetCodePageNameList;
+  if CodePagesByName <> nil then
+    CodePagesByName.Add(TBuffCodePageName.Create(CodePageName, CodePage));
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure UnregisterCodePageName(const CodePageName: string);
+var
+  CodePagesByName: TBuffCodePageNameList;
   Index: Integer;
 begin
-  if VCharSetCodePageByName = nil then
-    VCharSetCodePageByName := TBuffCharSetCodePageInfoList.Create;
-  if not VCharSetCodePageByName.Find(Name, Index) then
-    Index := VCharSetCodePageByName.IndexOf(Name);
-  if Index >= 0 then
-    Result := VCharSetCodePageByName[Index]
+  CodePagesByName := GetCodePageNameList;
+  if CodePagesByName <> nil then
+  begin
+    if not CodePagesByName.Find(CodePageName, Index) then
+      Index := CodePagesByName.IndexOf(CodePageName);
+    if Index >= 0 then
+    begin
+      CodePagesByName[Index].Free;
+      CodePagesByName.Delete(Index);
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 22.12.2010 --
+function StrToCodePageInfo(const CodePageName: string): TBuffCodePageName;
+var
+  CodePagesByName: TBuffCodePageNameList;
+  Index: Integer;
+begin
+  CodePagesByName := GetCodePageNameList;
+  Result := nil;
+  if CodePagesByName <> nil then
+  begin
+    if not CodePagesByName.Find(CodePageName, Index) then
+      Index := CodePagesByName.IndexOf(CodePageName);
+    if Index >= 0 then
+      Result := CodePagesByName[Index];
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+function StrToCodePage(const CodePageName: string): TBuffCodePage;
+var
+  Info: TBuffCodePageName;
+begin
+  Info := StrToCodePageInfo(CodePageName);
+  if Info <> nil then
+    Result := Info.CodePage
   else
-    Result := nil;
+    Result := CP_UNKNOWN;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+function GetConvInfoList: TBuffConvInfoList;
+begin
+  if (VConvertersByCodePage = nil) and not VFinalizing then
+    VConvertersByCodePage := TBuffConvInfoList.Create;
+  Result := VConvertersByCodePage;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure RegisterCodePageToUnicodeConverter(
+  CodePage: TBuffCodePage; Converter: TBuffConverterClass;
+  const ConverterName: string = ''; CharSet: TBuffCharSet = UNKNOWN_CHARSET);
+var
+  Index: Integer;
+  CodePageInfos: TBuffConvInfoList;
+  CodePageInfo: TBuffConvInfo;
+begin
+  CodePageInfos := GetConvInfoList;
+  if CodePageInfos <> nil then
+  begin
+    Index := CodePageInfos.Find(CodePage);
+    if Index >= 0 then
+    begin
+      // update existing code page
+      CodePageInfo := CodePageInfos[Index];
+      CodePageInfo.FName := ConverterName;
+      CodePageInfo.FCharSet := CharSet;
+      CodePageInfo.FConverter := Converter;
+    end
+    else
+      // Add new code page
+      CodePageInfos.Add(TBuffConvInfo.Create(CodePage, CharSet, Converter, ConverterName));
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure UnregisterCodePageToUnicodeConverter(CodePage: TBuffCodePage);
+var
+  Index: Integer;
+  CodePageInfos: TBuffConvInfoList;
+begin
+  CodePageInfos := GetConvInfoList;
+  if CodePageInfos <> nil then
+  begin
+    Index := CodePageInfos.Find(CodePage);
+    if Index >= 0 then
+      CodePageInfos.Delete(Index);
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
 function CodePageToCharSet(CodePage: TBuffCodePage): TBuffCharSet;
 var
   Index: Integer;
+  CodePageInfos: TBuffConvInfoList;
 begin
-  Index := Max(0, FindCodePageInfo(CodePage));
-  Result := GetCodePageInfo(Index).CharSet;
+  Result := UNKNOWN_CHARSET;
+  CodePageInfos := GetConvInfoList;
+  if CodePageInfos <> nil then
+  begin
+    Index := CodePageInfos.Find(CodePage);
+    if Index >= 0 then
+      Result := CodePageInfos[Index].CharSet;
+  end;
 
   if Result = UNKNOWN_CHARSET then
     //raise EConversionError.CreateFmt('Don''t know equivalent char set for code page %d.', [CodePage]);
@@ -267,32 +443,266 @@ begin
   Result := nil;
 end;
 
-{ TBuffCharSetCodePageInfo }
+{ TBuffConvInfo }
 
-//-- BG ---------------------------------------------------------- 22.12.2010 --
-constructor TBuffCharSetCodePageInfo.Create(Name: string;
-  //CharSet: TBuffCharSet;
-  CodePage: TBuffCodePage);
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+constructor TBuffConvInfo.Create(CodePage: TBuffCodePage; CharSet: TBuffCharSet; Converter: TBuffConverterClass; const Name: String);
 begin
   inherited Create;
   FName := Name;
-  //FCharSet := CharSet;
-  //if CodePage <> CP_UNKNOWN then
-    FCodePage := CodePage;
-  //else
-  //  FCodePage := CharSetToCodePage(FCharSet);
+  FCodePage := CodePage;
+  FCharSet := CharSet;
+  FConverter := Converter;
 end;
 
-{ TBuffCharSetCodePageInfoList }
+{ TBuffConvInfoList }
+
+function CompareConvInfo(Item1, Item2: Pointer): Integer;
+var
+  Info1: TBuffConvInfo absolute Item1;
+  Info2: TBuffConvInfo absolute Item2;
+begin
+  Result := Info1.CodePage - Info2.CodePage;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure TBuffConvInfoList.Add(Item: TBuffConvInfo);
+begin
+  inherited Add(Item);
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+constructor TBuffConvInfoList.Create;
+begin
+  inherited Create;
+  Add(TBuffConvInfo.Create(CP_UNKNOWN, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Unknown'));
+  Add(TBuffConvInfo.Create(    CP_ACP, DEFAULT_CHARSET,     TBuffConvSingleByte,  'Default ANSI CP'));
+  Add(TBuffConvInfo.Create(  CP_OEMCP, OEM_CHARSET,         TBuffConvSingleByte,  'Default OEM CP'));
+  Add(TBuffConvInfo.Create(  CP_MACCP, MAC_CHARSET,         TBuffConvSingleByte,  'Default MAC CP'));
+  Add(TBuffConvInfo.Create(        37, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC US-Canada'));
+  Add(TBuffConvInfo.Create(       437, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM United States'));
+  Add(TBuffConvInfo.Create(       500, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC International'));
+  Add(TBuffConvInfo.Create(       708, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Arabic (ASMO 708)'));
+  Add(TBuffConvInfo.Create(       709, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Arabic (ASMO-449+, BCON V4)'));
+  Add(TBuffConvInfo.Create(       710, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Arabic - Transparent Arabic'));
+  Add(TBuffConvInfo.Create(       720, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Arabic (Transparent ASMO); Arabic (DOS)'));
+  Add(TBuffConvInfo.Create(       737, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Greek (formerly 437G); Greek (DOS)'));
+  Add(TBuffConvInfo.Create(       775, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Baltic; Baltic (DOS)'));
+  Add(TBuffConvInfo.Create(       850, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Multilingual Latin 1; Western European (DOS)'));
+  Add(TBuffConvInfo.Create(       852, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Latin 2; Central European (DOS)'));
+  Add(TBuffConvInfo.Create(       855, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Cyrillic (primarily Russian)'));
+  Add(TBuffConvInfo.Create(       857, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Turkish; Turkish (DOS)'));
+  Add(TBuffConvInfo.Create(       858, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'OEM Multilingual Latin 1 + Euro symbol'));
+  Add(TBuffConvInfo.Create(       860, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Portuguese; Portuguese (DOS)'));
+  Add(TBuffConvInfo.Create(       861, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Icelandic; Icelandic (DOS)'));
+  Add(TBuffConvInfo.Create(       862, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Hebrew; Hebrew (DOS)'));
+  Add(TBuffConvInfo.Create(       863, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM French Canadian; French Canadian (DOS)'));
+  Add(TBuffConvInfo.Create(       864, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Arabic; Arabic (864)'));
+  Add(TBuffConvInfo.Create(       865, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Nordic; Nordic (DOS)'));
+  Add(TBuffConvInfo.Create(       866, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Russian; Cyrillic (DOS)'));
+  Add(TBuffConvInfo.Create(       869, UNKNOWN_CHARSET,     TBuffConvHighMap,     'OEM Modern Greek; Greek, Modern (DOS)'));
+  Add(TBuffConvInfo.Create(       870, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Multilingual/ROECE (Latin 2); IBM EBCDIC Multilingual Latin 2'));
+  Add(TBuffConvInfo.Create(       874, THAI_CHARSET,        TBuffConvHighMap,     'ANSI/OEM Thai (same as 28605, ISO 8859-15); Thai (Windows)'));
+  Add(TBuffConvInfo.Create(       875, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Greek Modern'));
+  Add(TBuffConvInfo.Create(       922, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ANSI/OEM Estonian (DOS)'));
+  Add(TBuffConvInfo.Create(       932, SHIFTJIS_CHARSET,    TBuffConvShiftJis932, 'ANSI/OEM Japanese; Japanese (Shift-JIS)'));
+  Add(TBuffConvInfo.Create(       936, GB2312_CHARSET,      TBuffConvIBM936,      'ANSI/OEM Simplified Chinese (PRC, Singapore); Chinese Simplified (GB2312)'));
+  Add(TBuffConvInfo.Create(       943, SHIFTJIS_CHARSET,    TBuffConvShiftJis932, 'ANSI/OEM Japanese (Shift-JIS)'));
+  Add(TBuffConvInfo.Create(       949, HANGEUL_CHARSET,     TBuffConvHangeul949,  'ANSI/OEM Korean (Unified Hangul Code)'));
+  Add(TBuffConvInfo.Create(       950, CHINESEBIG5_CHARSET, TBuffConvBig5CP950,   'ANSI/OEM Traditional Chinese (Taiwan; Hong Kong SAR, PRC); Chinese Traditional (Big5)'));
+  Add(TBuffConvInfo.Create(      1026, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Turkish (Latin 5)'));
+  Add(TBuffConvInfo.Create(      1047, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Latin 1/Open System'));
+  Add(TBuffConvInfo.Create(      1140, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC US-Canada (037 + Euro symbol); IBM EBCDIC (US-Canada-Euro)'));
+  Add(TBuffConvInfo.Create(      1141, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Germany (20273 + Euro symbol); IBM EBCDIC (Germany-Euro)'));
+  Add(TBuffConvInfo.Create(      1142, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Denmark-Norway (20277 + Euro symbol); IBM EBCDIC (Denmark-Norway-Euro)'));
+  Add(TBuffConvInfo.Create(      1143, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Finland-Sweden (20278 + Euro symbol); IBM EBCDIC (Finland-Sweden-Euro)'));
+  Add(TBuffConvInfo.Create(      1144, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Italy (20280 + Euro symbol); IBM EBCDIC (Italy-Euro)'));
+  Add(TBuffConvInfo.Create(      1145, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Latin America-Spain (20284 + Euro symbol); IBM EBCDIC (Spain-Euro)'));
+  Add(TBuffConvInfo.Create(      1146, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC United Kingdom (20285 + Euro symbol); IBM EBCDIC (UK-Euro)'));
+  Add(TBuffConvInfo.Create(      1147, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC France (20297 + Euro symbol); IBM EBCDIC (France-Euro)'));
+  Add(TBuffConvInfo.Create(      1148, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC International (500 + Euro symbol); IBM EBCDIC (International-Euro)'));
+  Add(TBuffConvInfo.Create(      1149, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Icelandic (20871 + Euro symbol); IBM EBCDIC (Icelandic-Euro)'));
+  Add(TBuffConvInfo.Create(      1200, DEFAULT_CHARSET,     TBuffConverter,       'Unicode UTF-16, little endian byte order (BMP of ISO 10646); available only to managed applications'));
+  Add(TBuffConvInfo.Create(      1201, DEFAULT_CHARSET,     TBuffConverter,       'Unicode UTF-16, big endian byte order; available only to managed applications'));
+  Add(TBuffConvInfo.Create(      1250, EASTEUROPE_CHARSET,  TBuffConvSingleByte,  'ANSI Central European; Central European (Windows)'));
+  Add(TBuffConvInfo.Create(      1251, RUSSIAN_CHARSET,     TBuffConvSingleByte,  'ANSI Cyrillic; Cyrillic (Windows)'));
+  Add(TBuffConvInfo.Create(      1252, ANSI_CHARSET,        TBuffConvSingleByte,  'ANSI Latin 1; Western European (Windows)'));
+  Add(TBuffConvInfo.Create(      1253, GREEK_CHARSET,       TBuffConvSingleByte,  'ANSI Greek; Greek (Windows)'));
+  Add(TBuffConvInfo.Create(      1254, TURKISH_CHARSET,     TBuffConvSingleByte,  'ANSI Turkish; Turkish (Windows)'));
+  Add(TBuffConvInfo.Create(      1255, HEBREW_CHARSET,      TBuffConvSingleByte,  'ANSI Hebrew; Hebrew (Windows)'));
+  Add(TBuffConvInfo.Create(      1256, ARABIC_CHARSET,      TBuffConvSingleByte,  'ANSI Arabic; Arabic (Windows)'));
+  Add(TBuffConvInfo.Create(      1257, BALTIC_CHARSET,      TBuffConvSingleByte,  'ANSI Baltic; Baltic (Windows)'));
+  Add(TBuffConvInfo.Create(      1258, VIETNAMESE_CHARSET,  TBuffConvSingleByte,  'ANSI/OEM Vietnamese; Vietnamese (Windows)'));
+  Add(TBuffConvInfo.Create(      1361, JOHAB_CHARSET,       TBuffConvSingleByte,  'Korean (Johab)'));
+  Add(TBuffConvInfo.Create(     10000, UNKNOWN_CHARSET,     TBuffConvHighMap,     'MAC Roman; Western European (Mac)'));
+  Add(TBuffConvInfo.Create(     10001, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Japanese (Mac)'));
+  Add(TBuffConvInfo.Create(     10002, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'MAC Traditional Chinese (Big5); Chinese Traditional (Mac)'));
+  Add(TBuffConvInfo.Create(     10003, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Korean (Mac)'));
+  Add(TBuffConvInfo.Create(     10004, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Arabic (Mac)'));
+  Add(TBuffConvInfo.Create(     10005, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Hebrew (Mac)'));
+  Add(TBuffConvInfo.Create(     10006, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Greek (Mac)'));
+  Add(TBuffConvInfo.Create(     10007, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Cyrillic (Mac)'));
+  Add(TBuffConvInfo.Create(     10008, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'MAC Simplified Chinese (GB 2312); Chinese Simplified (Mac)'));
+  Add(TBuffConvInfo.Create(     10010, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Romanian (Mac)'));
+  Add(TBuffConvInfo.Create(     10017, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Ukrainian (Mac)'));
+  Add(TBuffConvInfo.Create(     10021, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Thai (Mac)'));
+  Add(TBuffConvInfo.Create(     10029, UNKNOWN_CHARSET,     TBuffConvHighMap,     'MAC Latin 2; Central European (Mac)'));
+  Add(TBuffConvInfo.Create(     10079, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Icelandic (Mac)'));
+  Add(TBuffConvInfo.Create(     10081, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Turkish (Mac)'));
+  Add(TBuffConvInfo.Create(     10082, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Croatian (Mac)'));
+  Add(TBuffConvInfo.Create(     12000, DEFAULT_CHARSET,     TBuffConvSingleByte,  'Unicode UTF-32, little endian byte order; available only to managed applications'));
+  Add(TBuffConvInfo.Create(     12001, DEFAULT_CHARSET,     TBuffConvSingleByte,  'Unicode UTF-32, big endian byte order; available only to managed applications'));
+  Add(TBuffConvInfo.Create(     20000, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'CNS Taiwan; Chinese Traditional (CNS)'));
+  Add(TBuffConvInfo.Create(     20001, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'TCA Taiwan'));
+  Add(TBuffConvInfo.Create(     20002, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Eten Taiwan; Chinese Traditional (Eten)'));
+  Add(TBuffConvInfo.Create(     20003, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM5550 Taiwan'));
+  Add(TBuffConvInfo.Create(     20004, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'TeleText Taiwan'));
+  Add(TBuffConvInfo.Create(     20005, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Wang Taiwan'));
+  Add(TBuffConvInfo.Create(     20105, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IA5 (IRV International Alphabet No. 5, 7-bit); Western European (IA5)'));
+  Add(TBuffConvInfo.Create(     20106, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IA5 German (7-bit)'));
+  Add(TBuffConvInfo.Create(     20107, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IA5 Swedish (7-bit)'));
+  Add(TBuffConvInfo.Create(     20108, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IA5 Norwegian (7-bit)'));
+  Add(TBuffConvInfo.Create(     20127, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'US-ASCII (7-bit)'));
+  Add(TBuffConvInfo.Create(     20261, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'T.61'));
+  Add(TBuffConvInfo.Create(     20269, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 6937 Non-Spacing Accent'));
+  Add(TBuffConvInfo.Create(     20273, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Germany'));
+  Add(TBuffConvInfo.Create(     20277, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Denmark-Norway'));
+  Add(TBuffConvInfo.Create(     20278, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Finland-Sweden'));
+  Add(TBuffConvInfo.Create(     20280, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Italy'));
+  Add(TBuffConvInfo.Create(     20284, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Latin America-Spain'));
+  Add(TBuffConvInfo.Create(     20285, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC United Kingdom'));
+  Add(TBuffConvInfo.Create(     20290, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Japanese Katakana Extended'));
+  Add(TBuffConvInfo.Create(     20297, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC France'));
+  Add(TBuffConvInfo.Create(     20420, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Arabic'));
+  Add(TBuffConvInfo.Create(     20423, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Greek'));
+  Add(TBuffConvInfo.Create(     20424, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Hebrew'));
+  Add(TBuffConvInfo.Create(     20833, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Korean Extended'));
+  Add(TBuffConvInfo.Create(     20838, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Thai'));
+  Add(TBuffConvInfo.Create(     20866, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Russian (KOI8-R); Cyrillic (KOI8-R)'));
+  Add(TBuffConvInfo.Create(     20871, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Icelandic'));
+  Add(TBuffConvInfo.Create(     20880, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Cyrillic Russian'));
+  Add(TBuffConvInfo.Create(     20905, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Turkish'));
+  Add(TBuffConvInfo.Create(     20924, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Latin 1/Open System (1047 + Euro symbol)'));
+  Add(TBuffConvInfo.Create(     20932, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Japanese (JIS 0208-1990 and 0121-1990)'));
+  Add(TBuffConvInfo.Create(     20936, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Simplified Chinese (GB2312); Chinese Simplified (GB2312-80)'));
+  Add(TBuffConvInfo.Create(     20949, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Korean Wansung'));
+  Add(TBuffConvInfo.Create(     21025, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Cyrillic Serbian-Bulgarian'));
+  Add(TBuffConvInfo.Create(     21027, UNKNOWN_CHARSET,     TBuffConvSingleByte,  '(deprecated)'));
+  Add(TBuffConvInfo.Create(     21866, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Ukrainian (KOI8-U); Cyrillic (KOI8-U)'));
+  Add(TBuffConvInfo.Create(     28591, UNKNOWN_CHARSET,     TBuffConverter,       'ISO 8859-1 Latin 1; Western European (ISO)'));
+  Add(TBuffConvInfo.Create(     28592, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-2 Latin 2; Central European; Central European (ISO)'));
+  Add(TBuffConvInfo.Create(     28593, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-3 Latin 3; Southern European'));
+  Add(TBuffConvInfo.Create(     28594, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-4 Latin 4; Northern European'));
+  Add(TBuffConvInfo.Create(     28595, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-5 Cyrillic'));
+  Add(TBuffConvInfo.Create(     28596, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-6 Arabic'));
+  Add(TBuffConvInfo.Create(     28597, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-7 Greek'));
+  Add(TBuffConvInfo.Create(     28598, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-8 Hebrew; Hebrew (ISO-Visual)'));
+  Add(TBuffConvInfo.Create(     28599, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-9 Turkish'));
+  Add(TBuffConvInfo.Create(     28600, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-10 Latin 6; Nordic'));
+  Add(TBuffConvInfo.Create(     28601, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-11 Thai'));
+  Add(TBuffConvInfo.Create(     28603, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-13 Latin 7; Baltic'));
+  Add(TBuffConvInfo.Create(     28604, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-14 Latin 8; Celtic'));
+  Add(TBuffConvInfo.Create(     28605, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-15 Latin 9; Western European'));
+  Add(TBuffConvInfo.Create(     28606, UNKNOWN_CHARSET,     TBuffConvIsoMap,      'ISO 8859-16 Latin 10; South Eastern European'));
+  Add(TBuffConvInfo.Create(     29001, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Europa 3'));
+  Add(TBuffConvInfo.Create(     38598, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISO 8859-8 Hebrew; Hebrew (ISO-Logical)'));
+  Add(TBuffConvInfo.Create(     50220, SHIFTJIS_CHARSET,    TBuffConvISO2022JP,   'ISO 2022 Japanese with no halfwidth Katakana; Japanese (JIS)'));
+  Add(TBuffConvInfo.Create(     50221, SHIFTJIS_CHARSET,    TBuffConvISO2022JP,   'ISO 2022 Japanese with halfwidth Katakana; Japanese (JIS-Allow 1 byte Kana)'));
+  Add(TBuffConvInfo.Create(     50222, SHIFTJIS_CHARSET,    TBuffConvISO2022JP,   'ISO 2022 Japanese JIS X 0201-1989; Japanese (JIS-Allow 1 byte Kana - SO/SI)'));
+  Add(TBuffConvInfo.Create(     50225, HANGEUL_CHARSET,     TBuffConvISO2022KR,   'ISO 2022 Korean'));
+  Add(TBuffConvInfo.Create(     50227, GB2312_CHARSET,      TBuffConvISO2022CN,   'ISO 2022 Simplified Chinese; Chinese Simplified (ISO 2022)'));
+  Add(TBuffConvInfo.Create(     50229, CHINESEBIG5_CHARSET, TBuffConvSingleByte,  'ISO 2022 Traditional Chinese'));
+  Add(TBuffConvInfo.Create(     50930, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC Japanese (Katakana) Extended'));
+  Add(TBuffConvInfo.Create(     50931, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC US-Canada and Japanese'));
+  Add(TBuffConvInfo.Create(     50933, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC Korean Extended and Korean'));
+  Add(TBuffConvInfo.Create(     50935, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC Simplified Chinese Extended and Simplified Chinese'));
+  Add(TBuffConvInfo.Create(     50936, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC Simplified Chinese'));
+  Add(TBuffConvInfo.Create(     50937, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC US-Canada and Traditional Chinese'));
+  Add(TBuffConvInfo.Create(     50939, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'EBCDIC Japanese (Latin) Extended and Japanese'));
+  Add(TBuffConvInfo.Create(     51932, SHIFTJIS_CHARSET,    TBuffConvEUC_JP,      'EUC Japanese'));
+  Add(TBuffConvInfo.Create(     51936, GB2312_CHARSET,      TBuffConvDoubleByte,  'EUC Simplified Chinese; Chinese Simplified (EUC)'));
+  Add(TBuffConvInfo.Create(     51949, HANGEUL_CHARSET,     TBuffConvDoubleByte,  'EUC Korean'));
+  Add(TBuffConvInfo.Create(     51950, CHINESEBIG5_CHARSET, TBuffConvBig5CP950,   'EUC Traditional Chinese'));
+  Add(TBuffConvInfo.Create(     52936, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'HZ-GB2312 Simplified Chinese; Chinese Simplified (HZ)'));
+  Add(TBuffConvInfo.Create(     54936, GB2312_CHARSET,      TBuffConvGB18030,     'Windows XP and later: GB18030 Simplified Chinese (4 byte); Chinese Simplified (GB18030)'));
+  Add(TBuffConvInfo.Create(     57002, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Devanagari'));
+  Add(TBuffConvInfo.Create(     57003, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Bengali'));
+  Add(TBuffConvInfo.Create(     57004, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Tamil'));
+  Add(TBuffConvInfo.Create(     57005, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Telugu'));
+  Add(TBuffConvInfo.Create(     57006, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Assamese'));
+  Add(TBuffConvInfo.Create(     57007, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Oriya'));
+  Add(TBuffConvInfo.Create(     57008, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Kannada'));
+  Add(TBuffConvInfo.Create(     57009, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Malayalam'));
+  Add(TBuffConvInfo.Create(     57010, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Gujarati'));
+  Add(TBuffConvInfo.Create(     57011, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'ISCII Punjabi'));
+  Add(TBuffConvInfo.Create(     65000, DEFAULT_CHARSET,     TBuffConvUTF7,        'Unicode (UTF-7)'));
+  Add(TBuffConvInfo.Create(     65001, DEFAULT_CHARSET,     TBuffConvUTF8,        'Unicode (UTF-8)'));
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+function TBuffConvInfoList.Find(CodePage: TBuffCodePage): Integer;
+var
+  Low, Index: Integer;
+begin
+  Result := Count;
+  if not Sorted then
+    Sort;
+  Low := 0;
+  while Low < Result do
+  begin
+    Index := (Low + Result) shr 1;
+    if Items[Index].CodePage < CodePage then
+      Low := Index + 1
+    else
+      Result := Index;
+  end;
+  if Items[Result].CodePage <> CodePage then
+    Result := -1;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+function TBuffConvInfoList.GetItem(Index: Integer): TBuffConvInfo;
+begin
+  Result := Get(Index);
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure TBuffConvInfoList.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  inherited;
+  case Action of
+    lnAdded:   FSorted := False;
+    lnDeleted: TBuffConvInfo(Ptr).Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 12.10.2012 --
+procedure TBuffConvInfoList.Sort;
+begin
+  inherited Sort(CompareConvInfo);
+  FSorted := True;
+end;
+
+{ TBuffCodePageName }
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-procedure TBuffCharSetCodePageInfoList.AddInfo(Info: TBuffCharSetCodePageInfo);
+constructor TBuffCodePageName.Create(Name: string; CodePage: TBuffCodePage);
+begin
+  inherited Create;
+  FName := Name;
+  FCodePage := CodePage;
+end;
+
+{ TBuffCodePageNameList }
+
+//-- BG ---------------------------------------------------------- 22.12.2010 --
+procedure TBuffCodePageNameList.Add(Info: TBuffCodePageName);
 begin
   AddObject(Info.FName, Info);
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-constructor TBuffCharSetCodePageInfoList.Create;
+constructor TBuffCodePageNameList.Create;
 //  The official CharSet definitions:
 //    http://www.iana.org/assignments/character-sets
 //    http://www.iana.org/assignments/ianacharset-mib
@@ -300,493 +710,493 @@ begin
   inherited Create;
   BeginUpdate;
   try
-    AddInfo(TBuffCharSetCodePageInfo.Create('708', 708));                       //708
-    AddInfo(TBuffCharSetCodePageInfo.Create('asmo-708', 708));                  //708
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('737', 737));                       //737
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm737', 737));                    //737
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp437', 737));                     //737
-    AddInfo(TBuffCharSetCodePageInfo.Create('cspc8codepage437', 737));          //737
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('775', 775));                       //775
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm775', 775));                    //775
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp775', 775));                     //775
-    AddInfo(TBuffCharSetCodePageInfo.Create('cspc775baltic', 775));             //775
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('850', 850));                       //850
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm850', 850));                    //850
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp850', 850));                     //850
-    AddInfo(TBuffCharSetCodePageInfo.Create('cspc850multilingual', 850));       //850
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('852', 852));                       //852
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm852', 852));                    //852
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp852', 852));                     //852
-    AddInfo(TBuffCharSetCodePageInfo.Create('cspcp852', 852));                  //852
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('855', 855));                       //855
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm855', 855));                    //855
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp855', 855));                     //855
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm855', 855));                  //855
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('857', 857));                       //857
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm857', 857));                    //857
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp857', 857));                     //857
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm857', 857));                  //857
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('858', 858));                       //858
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm00858', 858));                  //858
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp858', 858));                     //858
-    AddInfo(TBuffCharSetCodePageInfo.Create('ccsid00858', 858));                //858
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp00858', 858));                   //858
-    AddInfo(TBuffCharSetCodePageInfo.Create('pc-multilingual-850+euro', 858));  //858
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('860', 860));                       //860
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm860', 860));                    //860
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp860', 860));                     //860
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm860', 860));                  //860
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('861', 861));                       //861
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm861', 861));                    //861
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp861', 861));                     //861
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm861', 861));                  //861
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-is', 861));                     //861
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('862', 862));                       //862
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm862', 862));                    //862
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp862', 862));                     //862
-    AddInfo(TBuffCharSetCodePageInfo.Create('cspc862latinhebrew', 862));        //862
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('863', 863));                       //863
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm863', 863));                    //863
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp863', 863));                     //863
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm863', 863));                  //863
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('864', 864));                       //864
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm864', 864));                    //864
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp864', 864));                     //864
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm864', 864));                  //864
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('865', 865));                       //865
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm865', 865));                    //865
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp865', 865));                     //865
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm865', 865));                  //865
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('866', 866));                       //866
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm866', 866));                    //866
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp866', 866));                     //866
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm866', 866));                  //866
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('869', 869));                       //869
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm869', 869));                    //869
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp869', 869));                     //869
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-gr', 869));                     //869
-    AddInfo(TBuffCharSetCodePageInfo.Create('csibm869', 869));                  //869
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('874', 874));                       //874
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-874', 874));               //874
-    AddInfo(TBuffCharSetCodePageInfo.Create('dos-874', 874));                   //874
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp874', 874));                     //874
-    AddInfo(TBuffCharSetCodePageInfo.Create('thai', 874));                      //874
-    AddInfo(TBuffCharSetCodePageInfo.Create('tis-620', 874));                   //874
-    AddInfo(TBuffCharSetCodePageInfo.Create('tis620', 874));                    //874
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('922', 922));                       //922
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp922', 922));                     //922
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('932', 932));                       //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms_kanji', 932));                  //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('csshiftjis', 932));                //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('cswindows31j', 932));              //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('shift-jis', 932));                 //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('shift_jis', 932));                 //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('shiftjis', 932));                  //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-ms-cp932', 932));                //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms932', 932));                     //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp932', 932));                     //932
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-sjis', 932));                    //932
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('936', 936));                       //936
-    AddInfo(TBuffCharSetCodePageInfo.Create('gbk', 936));                       //936
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp936', 936));                     //936
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms936', 936));                     //936
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-936', 936));               //936
-    AddInfo(TBuffCharSetCodePageInfo.Create('chinese', 936));                   //936
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('943', 943));                       //943
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp943', 943));                     //943
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('949', 949));                       //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp949', 949));                     //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('unc', 949));                       //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('ks_c_5601-1987', 949));            //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-149', 949));                //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('ks_c_5601-1989', 949));            //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('ksc_5601', 949));                  //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('ksc5601', 949));                   //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('ks_c_5601', 949));                 //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('korean', 949));                    //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('csksc56011987', 949));             //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('5601', 949));                      //949
-    AddInfo(TBuffCharSetCodePageInfo.Create('hangeul', 949));                   //949
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('950', 950));                       //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp950', 950));                     //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('big5', 950));                      //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('big-5', 950));                     //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('csbig5', 950));                    //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('cn-big5', 950));                   //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-x-big5', 950));                  //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms950', 950));                     //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('big5-hkscs', 950));                //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('big-five', 950));                  //950
-    AddInfo(TBuffCharSetCodePageInfo.Create('bigfive', 950));                   //950
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf-16le', 1200));                 //1200
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf16le', 1200));                  //1200
-    AddInfo(TBuffCharSetCodePageInfo.Create('unicode', 1200));                  //1200
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf-16', 1200));                   //1200
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf-16be', 1201));                 //1201
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf16be', 1201));                  //1201
-    AddInfo(TBuffCharSetCodePageInfo.Create('unicodefffe', 1201));              //1201
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1250', 1250));                     //1250
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-cp1250', 1250));                 //1250
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1250', 1250));                  //1250
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1250', 1250));                   //1250
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-ee', 1250));                    //1250
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1250', 1250));             //1250
-    AddInfo(TBuffCharSetCodePageInfo.Create('easteurope', 1250));               //1250
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1251', 1251));                     //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-cp1251', 1251));                 //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1251', 1251));                  //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1251', 1251));                   //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-cyr', 1251));                   //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-cyrl', 1251));                  //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('win-1251', 1251));                 //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('win1251', 1251));                  //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1251', 1251));             //1251
-    AddInfo(TBuffCharSetCodePageInfo.Create('russian', 1251));                  //1251
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1252', 1252));                     //1252
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1252', 1252));             //1252
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1252', 1252));                   //1252
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1252', 1252));                  //1252
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-ansi', 1252));                   //1252
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-ansi', 1252));                  //1252
-    AddInfo(TBuffCharSetCodePageInfo.Create('ansi', 1252));                     //1252
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1253', 1253));                     //1253
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1253', 1253));             //1253
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1253', 1253));                  //1253
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1253', 1253));                   //1253
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-greek', 1253));                 //1253
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1254', 1254));                     //1254
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1254', 1254));             //1254
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1254', 1254));                  //1254
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1254', 1254));                   //1254
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-turk', 1254));                  //1254
-    AddInfo(TBuffCharSetCodePageInfo.Create('turkish', 1254));                  //1254
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1255', 1255));                     //1255
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1255', 1255));             //1255
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1255', 1255));                  //1255
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1255', 1255));                   //1255
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-hebr', 1255));                  //1255
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1256', 1256));                     //1256
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1256', 1256));             //1256
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1256', 1256));                   //1256
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1256', 1256));                  //1256
-    AddInfo(TBuffCharSetCodePageInfo.Create('ms-arab', 1256));                  //1256
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1257', 1257));                     //1257
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1257', 1257));             //1257
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1257', 1257));                  //1257
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1257', 1257));                   //1257
-    AddInfo(TBuffCharSetCodePageInfo.Create('winbaltrim', 1257));               //1257
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('1258', 1258));                     //1258
-    AddInfo(TBuffCharSetCodePageInfo.Create('windows-1258', 1258));             //1258
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp-1258', 1258));                  //1258
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1258', 1258));                   //1258
-    AddInfo(TBuffCharSetCodePageInfo.Create('vietnamese', 1258));               //1258
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('johab', 1361));                    //1361
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp1361', 1361));                   //1361
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('macintosh', 10000));               //10000
-    AddInfo(TBuffCharSetCodePageInfo.Create('csmacintosh', 10000));             //10000
-    AddInfo(TBuffCharSetCodePageInfo.Create('mac', 10000));                     //10000
-    AddInfo(TBuffCharSetCodePageInfo.Create('macroman', 10000));                //10000
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-arabic', 10004));            //10004
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-hebrew', 10005));            //10005
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-greek', 10006));             //10006
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-cyrillic', 10007));          //10007
-    AddInfo(TBuffCharSetCodePageInfo.Create('maccyrillic', 10007));             //10007
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-romanian', 10010));          //10010
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-ukrainian', 10017));         //10017
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-thai', 10021));              //10021
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-ce', 10029));                //10029
-    AddInfo(TBuffCharSetCodePageInfo.Create('cmac', 10029));                    //10029
-    AddInfo(TBuffCharSetCodePageInfo.Create('macce', 10029));                   //10029
-    AddInfo(TBuffCharSetCodePageInfo.Create('maccentraleurope', 10029));        //10029
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-icelandic', 10079));         //10079
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-turkish', 10081));           //10081
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-mac-croatian', 10082));          //10082
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('us-ascii', 20127));                //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('ansi_x3.4-1968', 20127));          //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-6', 20127));                //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('ansi_x3.4-1986', 20127));          //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_646.irv:1991', 20127));        //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('ascii', 20127));                   //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso646-us', 20127));               //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('us', 20127));                      //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm367', 20127));                  //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp367', 20127));                   //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('csascii', 20127));                 //20127
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-6us', 20127));              //20127
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi8-r', 20866));                  //20866
-    AddInfo(TBuffCharSetCodePageInfo.Create('cskoi8r', 20866));                 //20866
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi', 20866));                     //20866
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi8', 20866));                    //20866
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi8r', 20866));                   //20866
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi8-u', 21866));                  //21866
-    AddInfo(TBuffCharSetCodePageInfo.Create('cskoi8u', 21866));                 //21866
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi8u', 21866));                   //21866
-    AddInfo(TBuffCharSetCodePageInfo.Create('koi8-ru', 21866));                 //21866
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-1', 28591));              //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('cp819', 28591));                   //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('ibm819', 28591));                  //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin1', 28591));                  //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-1', 28591));                 //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-1:1987', 28591));         //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-100', 28591));              //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-1', 28591));              //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('l1', 28591));                      //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatin1', 28591));             //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-1', 28591));               //28591
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-1', 28591));              //28591
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-2', 28592));              //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-2:1987', 28592));         //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-101', 28592));              //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-2', 28592));              //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin2', 28592));                  //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-2', 28592));                 //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('l2', 28592));                      //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatin2', 28592));             //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-2', 28592));               //28592
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-2', 28592));              //28592
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-3', 28593));              //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-3:1988', 28593));         //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-109', 28593));              //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-3', 28593));              //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin3', 28593));                  //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-3', 28593));                 //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('l3', 28593));                      //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatin3', 28593));             //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-3', 28593));              //28593
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-3', 28593));               //28593
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-4', 28594));              //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-4:1988', 28594));         //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-110', 28594));              //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-4', 28594));              //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin4', 28594));                  //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-4', 28594));                 //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('l4', 28594));                      //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatin4', 28594));             //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-4', 28594));              //28594
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-4', 28594));               //28594
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-5', 28595));              //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-5:1988', 28595));         //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-144', 28595));              //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-5', 28595));              //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('cyrillic', 28595));                //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatincyrillic', 28595));      //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('l5', 28595));                      //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-5', 28595));              //28595
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-5', 28595));               //28595
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-6', 28596));              //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-6:1987', 28596));         //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('arabic', 28596));                  //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatinarabic', 28596));        //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('ecma-114', 28596));                //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-6', 28596));              //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-127', 28596));              //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-6', 28596));              //28596
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-6', 28596));               //28596
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-7', 28597));              //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-7:1987', 28597));         //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-126', 28597));              //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-7', 28597));              //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('elot_928', 28597));                //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('ecma-118', 28597));                //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('greek', 28597));                   //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('greek8', 28597));                  //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatingreek', 28597));         //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-7', 28597));              //28597
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-7', 28597));               //28597
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-8', 28598));              //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-8:1988', 28598));         //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-138', 28598));              //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-8', 28598));              //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('hebrew', 28598));                  //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatinhebrew', 28598));        //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('visual', 28598));                  //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-8', 28598));              //28598
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-8', 28598));               //28598
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-9', 28599));              //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-9:1989', 28599));         //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-148', 28599));              //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-9', 28599));              //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin5', 28599));                  //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-5', 28599));                 //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('l5', 28599));                      //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatin5', 28599));             //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-9', 28599));              //28599
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-9', 28599));               //28599
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-10', 28600));             //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-157', 28600));              //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('l6', 28600));                      //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-10:1992', 28600));        //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('csisolatin6', 28600));             //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-10', 28600));             //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-10', 28600));              //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-10', 28600));             //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin6', 28600));                  //28600
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-6', 28600));                 //28600
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-11', 28601));             //28601
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-11', 28601));             //28601
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-11', 28601));              //28601
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-11', 28601));             //28601
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-11:1992', 28601));        //28601
-    AddInfo(TBuffCharSetCodePageInfo.Create('tactis', 28601));                  //28601
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-13', 28603));             //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-13', 28603));             //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-179', 28603));              //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-13', 28603));              //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-13', 28603));             //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('l7', 28603));                      //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin7', 28603));                  //28603
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-7', 28603));                 //28603
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-14', 28604));             //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-14', 28604));             //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-199', 28604));              //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-14', 28604));              //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-14', 28604));             //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-14:1998', 28604));        //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('l8', 28604));                      //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin8', 28604));                  //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-8', 28604));                 //28604
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-celtic', 28604));              //28604
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-15', 28605));             //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-15', 28605));             //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-9', 28605));                 //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin9', 28605));                  //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('l9', 28605));                      //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-15', 28605));             //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-203', 28605));              //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-15', 28605));              //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-15:1998', 28605));        //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin-0', 28605));                 //28605
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin0', 28605));                  //28605
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-8859-16', 28606));             //28606
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 8859-16', 28606));             //28606
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-226', 28606));              //28606
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso8859-16', 28606));              //28606
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-16', 28606));             //28606
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso_8859-16:2000', 28606));        //28606
-    AddInfo(TBuffCharSetCodePageInfo.Create('latin10', 28606));                 //28606
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-2022-jp', 50220));             //50220
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso 2022-jp', 50220));             //50220
-    AddInfo(TBuffCharSetCodePageInfo.Create('csiso2022jp', 50220));             //50220
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-2022-jp-1', 50222));           //50222
-    AddInfo(TBuffCharSetCodePageInfo.Create('_iso-2022-jp$sio', 50222));        //50222
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-2022-kr', 50225));             //50225
-    AddInfo(TBuffCharSetCodePageInfo.Create('csiso2022kr', 50225));             //50225
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-2022-cn', 50227));             //50227
-    AddInfo(TBuffCharSetCodePageInfo.Create('csiso2022cn', 50227));             //50227
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-cp50227', 50227));               //50227
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('euc-jp', 51932));                  //51932
-    AddInfo(TBuffCharSetCodePageInfo.Create('eucjp', 51932));                   //51932
-    AddInfo(TBuffCharSetCodePageInfo.Create('cseucjp', 51932));                 //51932
-    AddInfo(TBuffCharSetCodePageInfo.Create('euc_jp', 51932));                  //51932
-    AddInfo(TBuffCharSetCodePageInfo.Create('cseucpkdfmtjapanese', 51932));     //51932
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-euc', 51932));                   //51932
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-euc-jp', 51932));                //51932
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('cn-gb', 51936));                   //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('euc-cn', 51936));                  //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('euc_cn', 51936));                  //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('euccn', 51936));                   //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('csgb2312', 51936));                //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('gb2312', 51936));                  //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('gb_2312-80', 51936));              //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-cp20936', 51936));               //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('csiso58gb231280', 51936));         //51936
-    AddInfo(TBuffCharSetCodePageInfo.Create('iso-ir-58', 51936));               //51936
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('euc-kr', 51949));                  //51949
-    AddInfo(TBuffCharSetCodePageInfo.Create('euc_kr', 51949));                  //51949
-    AddInfo(TBuffCharSetCodePageInfo.Create('cseuckr', 51949));                 //51949
-    AddInfo(TBuffCharSetCodePageInfo.Create('euckr', 51949));                   //51949
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('gb18030', 54936));                 //54936
-    AddInfo(TBuffCharSetCodePageInfo.Create('gb-18030', 54936));                //54936
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf-7', 65000));                   //65000
-    AddInfo(TBuffCharSetCodePageInfo.Create('csunicode11utf7', 65000));         //65000
-    AddInfo(TBuffCharSetCodePageInfo.Create('unicode-1-1-utf-7', 65000));       //65000
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-unicode-2-0-utf-7', 65000));     //65000
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf-8', 65001));                   //65001
-    AddInfo(TBuffCharSetCodePageInfo.Create('utf8', 65001));                    //65001
-    AddInfo(TBuffCharSetCodePageInfo.Create('unicode-1-1-utf-8', 65001));       //65001
-    AddInfo(TBuffCharSetCodePageInfo.Create('unicode-2-0-utf-8', 65001));       //65001
-    AddInfo(TBuffCharSetCodePageInfo.Create('x-unicode-2-0-utf-8', 65001));     //65001
-
-//    AddInfo(TBuffCharSetCodePageInfo.Create('koi8-t', CP_UNKNOWN));             //-5
-
-    AddInfo(TBuffCharSetCodePageInfo.Create('default', CP_ACP));
+    Add(TBuffCodePageName.Create('708', 708));                       //708
+    Add(TBuffCodePageName.Create('asmo-708', 708));                  //708
+
+    Add(TBuffCodePageName.Create('737', 737));                       //737
+    Add(TBuffCodePageName.Create('ibm737', 737));                    //737
+    Add(TBuffCodePageName.Create('cp437', 737));                     //737
+    Add(TBuffCodePageName.Create('cspc8codepage437', 737));          //737
+
+    Add(TBuffCodePageName.Create('775', 775));                       //775
+    Add(TBuffCodePageName.Create('ibm775', 775));                    //775
+    Add(TBuffCodePageName.Create('cp775', 775));                     //775
+    Add(TBuffCodePageName.Create('cspc775baltic', 775));             //775
+
+    Add(TBuffCodePageName.Create('850', 850));                       //850
+    Add(TBuffCodePageName.Create('ibm850', 850));                    //850
+    Add(TBuffCodePageName.Create('cp850', 850));                     //850
+    Add(TBuffCodePageName.Create('cspc850multilingual', 850));       //850
+
+    Add(TBuffCodePageName.Create('852', 852));                       //852
+    Add(TBuffCodePageName.Create('ibm852', 852));                    //852
+    Add(TBuffCodePageName.Create('cp852', 852));                     //852
+    Add(TBuffCodePageName.Create('cspcp852', 852));                  //852
+
+    Add(TBuffCodePageName.Create('855', 855));                       //855
+    Add(TBuffCodePageName.Create('ibm855', 855));                    //855
+    Add(TBuffCodePageName.Create('cp855', 855));                     //855
+    Add(TBuffCodePageName.Create('csibm855', 855));                  //855
+
+    Add(TBuffCodePageName.Create('857', 857));                       //857
+    Add(TBuffCodePageName.Create('ibm857', 857));                    //857
+    Add(TBuffCodePageName.Create('cp857', 857));                     //857
+    Add(TBuffCodePageName.Create('csibm857', 857));                  //857
+
+    Add(TBuffCodePageName.Create('858', 858));                       //858
+    Add(TBuffCodePageName.Create('ibm00858', 858));                  //858
+    Add(TBuffCodePageName.Create('cp858', 858));                     //858
+    Add(TBuffCodePageName.Create('ccsid00858', 858));                //858
+    Add(TBuffCodePageName.Create('cp00858', 858));                   //858
+    Add(TBuffCodePageName.Create('pc-multilingual-850+euro', 858));  //858
+
+    Add(TBuffCodePageName.Create('860', 860));                       //860
+    Add(TBuffCodePageName.Create('ibm860', 860));                    //860
+    Add(TBuffCodePageName.Create('cp860', 860));                     //860
+    Add(TBuffCodePageName.Create('csibm860', 860));                  //860
+
+    Add(TBuffCodePageName.Create('861', 861));                       //861
+    Add(TBuffCodePageName.Create('ibm861', 861));                    //861
+    Add(TBuffCodePageName.Create('cp861', 861));                     //861
+    Add(TBuffCodePageName.Create('csibm861', 861));                  //861
+    Add(TBuffCodePageName.Create('cp-is', 861));                     //861
+
+    Add(TBuffCodePageName.Create('862', 862));                       //862
+    Add(TBuffCodePageName.Create('ibm862', 862));                    //862
+    Add(TBuffCodePageName.Create('cp862', 862));                     //862
+    Add(TBuffCodePageName.Create('cspc862latinhebrew', 862));        //862
+
+    Add(TBuffCodePageName.Create('863', 863));                       //863
+    Add(TBuffCodePageName.Create('ibm863', 863));                    //863
+    Add(TBuffCodePageName.Create('cp863', 863));                     //863
+    Add(TBuffCodePageName.Create('csibm863', 863));                  //863
+
+    Add(TBuffCodePageName.Create('864', 864));                       //864
+    Add(TBuffCodePageName.Create('ibm864', 864));                    //864
+    Add(TBuffCodePageName.Create('cp864', 864));                     //864
+    Add(TBuffCodePageName.Create('csibm864', 864));                  //864
+
+    Add(TBuffCodePageName.Create('865', 865));                       //865
+    Add(TBuffCodePageName.Create('ibm865', 865));                    //865
+    Add(TBuffCodePageName.Create('cp865', 865));                     //865
+    Add(TBuffCodePageName.Create('csibm865', 865));                  //865
+
+    Add(TBuffCodePageName.Create('866', 866));                       //866
+    Add(TBuffCodePageName.Create('ibm866', 866));                    //866
+    Add(TBuffCodePageName.Create('cp866', 866));                     //866
+    Add(TBuffCodePageName.Create('csibm866', 866));                  //866
+
+    Add(TBuffCodePageName.Create('869', 869));                       //869
+    Add(TBuffCodePageName.Create('ibm869', 869));                    //869
+    Add(TBuffCodePageName.Create('cp869', 869));                     //869
+    Add(TBuffCodePageName.Create('cp-gr', 869));                     //869
+    Add(TBuffCodePageName.Create('csibm869', 869));                  //869
+
+    Add(TBuffCodePageName.Create('874', 874));                       //874
+    Add(TBuffCodePageName.Create('windows-874', 874));               //874
+    Add(TBuffCodePageName.Create('dos-874', 874));                   //874
+    Add(TBuffCodePageName.Create('cp874', 874));                     //874
+    Add(TBuffCodePageName.Create('thai', 874));                      //874
+    Add(TBuffCodePageName.Create('tis-620', 874));                   //874
+    Add(TBuffCodePageName.Create('tis620', 874));                    //874
+
+    Add(TBuffCodePageName.Create('922', 922));                       //922
+    Add(TBuffCodePageName.Create('cp922', 922));                     //922
+
+    Add(TBuffCodePageName.Create('932', 932));                       //932
+    Add(TBuffCodePageName.Create('ms_kanji', 932));                  //932
+    Add(TBuffCodePageName.Create('csshiftjis', 932));                //932
+    Add(TBuffCodePageName.Create('cswindows31j', 932));              //932
+    Add(TBuffCodePageName.Create('shift-jis', 932));                 //932
+    Add(TBuffCodePageName.Create('shift_jis', 932));                 //932
+    Add(TBuffCodePageName.Create('shiftjis', 932));                  //932
+    Add(TBuffCodePageName.Create('x-ms-cp932', 932));                //932
+    Add(TBuffCodePageName.Create('ms932', 932));                     //932
+    Add(TBuffCodePageName.Create('cp932', 932));                     //932
+    Add(TBuffCodePageName.Create('x-sjis', 932));                    //932
+
+    Add(TBuffCodePageName.Create('936', 936));                       //936
+    Add(TBuffCodePageName.Create('gbk', 936));                       //936
+    Add(TBuffCodePageName.Create('cp936', 936));                     //936
+    Add(TBuffCodePageName.Create('ms936', 936));                     //936
+    Add(TBuffCodePageName.Create('windows-936', 936));               //936
+    Add(TBuffCodePageName.Create('chinese', 936));                   //936
+
+    Add(TBuffCodePageName.Create('943', 943));                       //943
+    Add(TBuffCodePageName.Create('cp943', 943));                     //943
+
+    Add(TBuffCodePageName.Create('949', 949));                       //949
+    Add(TBuffCodePageName.Create('cp949', 949));                     //949
+    Add(TBuffCodePageName.Create('unc', 949));                       //949
+    Add(TBuffCodePageName.Create('ks_c_5601-1987', 949));            //949
+    Add(TBuffCodePageName.Create('iso-ir-149', 949));                //949
+    Add(TBuffCodePageName.Create('ks_c_5601-1989', 949));            //949
+    Add(TBuffCodePageName.Create('ksc_5601', 949));                  //949
+    Add(TBuffCodePageName.Create('ksc5601', 949));                   //949
+    Add(TBuffCodePageName.Create('ks_c_5601', 949));                 //949
+    Add(TBuffCodePageName.Create('korean', 949));                    //949
+    Add(TBuffCodePageName.Create('csksc56011987', 949));             //949
+    Add(TBuffCodePageName.Create('5601', 949));                      //949
+    Add(TBuffCodePageName.Create('hangeul', 949));                   //949
+
+    Add(TBuffCodePageName.Create('950', 950));                       //950
+    Add(TBuffCodePageName.Create('cp950', 950));                     //950
+    Add(TBuffCodePageName.Create('big5', 950));                      //950
+    Add(TBuffCodePageName.Create('big-5', 950));                     //950
+    Add(TBuffCodePageName.Create('csbig5', 950));                    //950
+    Add(TBuffCodePageName.Create('cn-big5', 950));                   //950
+    Add(TBuffCodePageName.Create('x-x-big5', 950));                  //950
+    Add(TBuffCodePageName.Create('ms950', 950));                     //950
+    Add(TBuffCodePageName.Create('big5-hkscs', 950));                //950
+    Add(TBuffCodePageName.Create('big-five', 950));                  //950
+    Add(TBuffCodePageName.Create('bigfive', 950));                   //950
+
+    Add(TBuffCodePageName.Create('utf-16le', 1200));                 //1200
+    Add(TBuffCodePageName.Create('utf16le', 1200));                  //1200
+    Add(TBuffCodePageName.Create('unicode', 1200));                  //1200
+    Add(TBuffCodePageName.Create('utf-16', 1200));                   //1200
+
+    Add(TBuffCodePageName.Create('utf-16be', 1201));                 //1201
+    Add(TBuffCodePageName.Create('utf16be', 1201));                  //1201
+    Add(TBuffCodePageName.Create('unicodefffe', 1201));              //1201
+
+    Add(TBuffCodePageName.Create('1250', 1250));                     //1250
+    Add(TBuffCodePageName.Create('x-cp1250', 1250));                 //1250
+    Add(TBuffCodePageName.Create('cp-1250', 1250));                  //1250
+    Add(TBuffCodePageName.Create('cp1250', 1250));                   //1250
+    Add(TBuffCodePageName.Create('ms-ee', 1250));                    //1250
+    Add(TBuffCodePageName.Create('windows-1250', 1250));             //1250
+    Add(TBuffCodePageName.Create('easteurope', 1250));               //1250
+
+    Add(TBuffCodePageName.Create('1251', 1251));                     //1251
+    Add(TBuffCodePageName.Create('x-cp1251', 1251));                 //1251
+    Add(TBuffCodePageName.Create('cp-1251', 1251));                  //1251
+    Add(TBuffCodePageName.Create('cp1251', 1251));                   //1251
+    Add(TBuffCodePageName.Create('ms-cyr', 1251));                   //1251
+    Add(TBuffCodePageName.Create('ms-cyrl', 1251));                  //1251
+    Add(TBuffCodePageName.Create('win-1251', 1251));                 //1251
+    Add(TBuffCodePageName.Create('win1251', 1251));                  //1251
+    Add(TBuffCodePageName.Create('windows-1251', 1251));             //1251
+    Add(TBuffCodePageName.Create('russian', 1251));                  //1251
+
+    Add(TBuffCodePageName.Create('1252', 1252));                     //1252
+    Add(TBuffCodePageName.Create('windows-1252', 1252));             //1252
+    Add(TBuffCodePageName.Create('cp1252', 1252));                   //1252
+    Add(TBuffCodePageName.Create('cp-1252', 1252));                  //1252
+    Add(TBuffCodePageName.Create('x-ansi', 1252));                   //1252
+    Add(TBuffCodePageName.Create('ms-ansi', 1252));                  //1252
+    Add(TBuffCodePageName.Create('ansi', 1252));                     //1252
+
+    Add(TBuffCodePageName.Create('1253', 1253));                     //1253
+    Add(TBuffCodePageName.Create('windows-1253', 1253));             //1253
+    Add(TBuffCodePageName.Create('cp-1253', 1253));                  //1253
+    Add(TBuffCodePageName.Create('cp1253', 1253));                   //1253
+    Add(TBuffCodePageName.Create('ms-greek', 1253));                 //1253
+
+    Add(TBuffCodePageName.Create('1254', 1254));                     //1254
+    Add(TBuffCodePageName.Create('windows-1254', 1254));             //1254
+    Add(TBuffCodePageName.Create('cp-1254', 1254));                  //1254
+    Add(TBuffCodePageName.Create('cp1254', 1254));                   //1254
+    Add(TBuffCodePageName.Create('ms-turk', 1254));                  //1254
+    Add(TBuffCodePageName.Create('turkish', 1254));                  //1254
+
+    Add(TBuffCodePageName.Create('1255', 1255));                     //1255
+    Add(TBuffCodePageName.Create('windows-1255', 1255));             //1255
+    Add(TBuffCodePageName.Create('cp-1255', 1255));                  //1255
+    Add(TBuffCodePageName.Create('cp1255', 1255));                   //1255
+    Add(TBuffCodePageName.Create('ms-hebr', 1255));                  //1255
+
+    Add(TBuffCodePageName.Create('1256', 1256));                     //1256
+    Add(TBuffCodePageName.Create('windows-1256', 1256));             //1256
+    Add(TBuffCodePageName.Create('cp1256', 1256));                   //1256
+    Add(TBuffCodePageName.Create('cp-1256', 1256));                  //1256
+    Add(TBuffCodePageName.Create('ms-arab', 1256));                  //1256
+
+    Add(TBuffCodePageName.Create('1257', 1257));                     //1257
+    Add(TBuffCodePageName.Create('windows-1257', 1257));             //1257
+    Add(TBuffCodePageName.Create('cp-1257', 1257));                  //1257
+    Add(TBuffCodePageName.Create('cp1257', 1257));                   //1257
+    Add(TBuffCodePageName.Create('winbaltrim', 1257));               //1257
+
+    Add(TBuffCodePageName.Create('1258', 1258));                     //1258
+    Add(TBuffCodePageName.Create('windows-1258', 1258));             //1258
+    Add(TBuffCodePageName.Create('cp-1258', 1258));                  //1258
+    Add(TBuffCodePageName.Create('cp1258', 1258));                   //1258
+    Add(TBuffCodePageName.Create('vietnamese', 1258));               //1258
+
+    Add(TBuffCodePageName.Create('johab', 1361));                    //1361
+    Add(TBuffCodePageName.Create('cp1361', 1361));                   //1361
+
+    Add(TBuffCodePageName.Create('macintosh', 10000));               //10000
+    Add(TBuffCodePageName.Create('csmacintosh', 10000));             //10000
+    Add(TBuffCodePageName.Create('mac', 10000));                     //10000
+    Add(TBuffCodePageName.Create('macroman', 10000));                //10000
+
+    Add(TBuffCodePageName.Create('x-mac-arabic', 10004));            //10004
+
+    Add(TBuffCodePageName.Create('x-mac-hebrew', 10005));            //10005
+
+    Add(TBuffCodePageName.Create('x-mac-greek', 10006));             //10006
+
+    Add(TBuffCodePageName.Create('x-mac-cyrillic', 10007));          //10007
+    Add(TBuffCodePageName.Create('maccyrillic', 10007));             //10007
+
+    Add(TBuffCodePageName.Create('x-mac-romanian', 10010));          //10010
+
+    Add(TBuffCodePageName.Create('x-mac-ukrainian', 10017));         //10017
+
+    Add(TBuffCodePageName.Create('x-mac-thai', 10021));              //10021
+
+    Add(TBuffCodePageName.Create('x-mac-ce', 10029));                //10029
+    Add(TBuffCodePageName.Create('cmac', 10029));                    //10029
+    Add(TBuffCodePageName.Create('macce', 10029));                   //10029
+    Add(TBuffCodePageName.Create('maccentraleurope', 10029));        //10029
+
+    Add(TBuffCodePageName.Create('x-mac-icelandic', 10079));         //10079
+
+    Add(TBuffCodePageName.Create('x-mac-turkish', 10081));           //10081
+
+    Add(TBuffCodePageName.Create('x-mac-croatian', 10082));          //10082
+
+    Add(TBuffCodePageName.Create('us-ascii', 20127));                //20127
+    Add(TBuffCodePageName.Create('ansi_x3.4-1968', 20127));          //20127
+    Add(TBuffCodePageName.Create('iso-ir-6', 20127));                //20127
+    Add(TBuffCodePageName.Create('ansi_x3.4-1986', 20127));          //20127
+    Add(TBuffCodePageName.Create('iso_646.irv:1991', 20127));        //20127
+    Add(TBuffCodePageName.Create('ascii', 20127));                   //20127
+    Add(TBuffCodePageName.Create('iso646-us', 20127));               //20127
+    Add(TBuffCodePageName.Create('us', 20127));                      //20127
+    Add(TBuffCodePageName.Create('ibm367', 20127));                  //20127
+    Add(TBuffCodePageName.Create('cp367', 20127));                   //20127
+    Add(TBuffCodePageName.Create('csascii', 20127));                 //20127
+    Add(TBuffCodePageName.Create('iso-ir-6us', 20127));              //20127
+
+    Add(TBuffCodePageName.Create('koi8-r', 20866));                  //20866
+    Add(TBuffCodePageName.Create('cskoi8r', 20866));                 //20866
+    Add(TBuffCodePageName.Create('koi', 20866));                     //20866
+    Add(TBuffCodePageName.Create('koi8', 20866));                    //20866
+    Add(TBuffCodePageName.Create('koi8r', 20866));                   //20866
+
+    Add(TBuffCodePageName.Create('koi8-u', 21866));                  //21866
+    Add(TBuffCodePageName.Create('cskoi8u', 21866));                 //21866
+    Add(TBuffCodePageName.Create('koi8u', 21866));                   //21866
+    Add(TBuffCodePageName.Create('koi8-ru', 21866));                 //21866
+
+    Add(TBuffCodePageName.Create('iso-8859-1', 28591));              //28591
+    Add(TBuffCodePageName.Create('cp819', 28591));                   //28591
+    Add(TBuffCodePageName.Create('ibm819', 28591));                  //28591
+    Add(TBuffCodePageName.Create('latin1', 28591));                  //28591
+    Add(TBuffCodePageName.Create('latin-1', 28591));                 //28591
+    Add(TBuffCodePageName.Create('iso_8859-1:1987', 28591));         //28591
+    Add(TBuffCodePageName.Create('iso-ir-100', 28591));              //28591
+    Add(TBuffCodePageName.Create('iso_8859-1', 28591));              //28591
+    Add(TBuffCodePageName.Create('l1', 28591));                      //28591
+    Add(TBuffCodePageName.Create('csisolatin1', 28591));             //28591
+    Add(TBuffCodePageName.Create('iso8859-1', 28591));               //28591
+    Add(TBuffCodePageName.Create('iso 8859-1', 28591));              //28591
+
+    Add(TBuffCodePageName.Create('iso-8859-2', 28592));              //28592
+    Add(TBuffCodePageName.Create('iso_8859-2:1987', 28592));         //28592
+    Add(TBuffCodePageName.Create('iso-ir-101', 28592));              //28592
+    Add(TBuffCodePageName.Create('iso_8859-2', 28592));              //28592
+    Add(TBuffCodePageName.Create('latin2', 28592));                  //28592
+    Add(TBuffCodePageName.Create('latin-2', 28592));                 //28592
+    Add(TBuffCodePageName.Create('l2', 28592));                      //28592
+    Add(TBuffCodePageName.Create('csisolatin2', 28592));             //28592
+    Add(TBuffCodePageName.Create('iso8859-2', 28592));               //28592
+    Add(TBuffCodePageName.Create('iso 8859-2', 28592));              //28592
+
+    Add(TBuffCodePageName.Create('iso-8859-3', 28593));              //28593
+    Add(TBuffCodePageName.Create('iso_8859-3:1988', 28593));         //28593
+    Add(TBuffCodePageName.Create('iso-ir-109', 28593));              //28593
+    Add(TBuffCodePageName.Create('iso_8859-3', 28593));              //28593
+    Add(TBuffCodePageName.Create('latin3', 28593));                  //28593
+    Add(TBuffCodePageName.Create('latin-3', 28593));                 //28593
+    Add(TBuffCodePageName.Create('l3', 28593));                      //28593
+    Add(TBuffCodePageName.Create('csisolatin3', 28593));             //28593
+    Add(TBuffCodePageName.Create('iso 8859-3', 28593));              //28593
+    Add(TBuffCodePageName.Create('iso8859-3', 28593));               //28593
+
+    Add(TBuffCodePageName.Create('iso-8859-4', 28594));              //28594
+    Add(TBuffCodePageName.Create('iso_8859-4:1988', 28594));         //28594
+    Add(TBuffCodePageName.Create('iso-ir-110', 28594));              //28594
+    Add(TBuffCodePageName.Create('iso_8859-4', 28594));              //28594
+    Add(TBuffCodePageName.Create('latin4', 28594));                  //28594
+    Add(TBuffCodePageName.Create('latin-4', 28594));                 //28594
+    Add(TBuffCodePageName.Create('l4', 28594));                      //28594
+    Add(TBuffCodePageName.Create('csisolatin4', 28594));             //28594
+    Add(TBuffCodePageName.Create('iso 8859-4', 28594));              //28594
+    Add(TBuffCodePageName.Create('iso8859-4', 28594));               //28594
+
+    Add(TBuffCodePageName.Create('iso-8859-5', 28595));              //28595
+    Add(TBuffCodePageName.Create('iso_8859-5:1988', 28595));         //28595
+    Add(TBuffCodePageName.Create('iso-ir-144', 28595));              //28595
+    Add(TBuffCodePageName.Create('iso_8859-5', 28595));              //28595
+    Add(TBuffCodePageName.Create('cyrillic', 28595));                //28595
+    Add(TBuffCodePageName.Create('csisolatincyrillic', 28595));      //28595
+    Add(TBuffCodePageName.Create('l5', 28595));                      //28595
+    Add(TBuffCodePageName.Create('iso 8859-5', 28595));              //28595
+    Add(TBuffCodePageName.Create('iso8859-5', 28595));               //28595
+
+    Add(TBuffCodePageName.Create('iso-8859-6', 28596));              //28596
+    Add(TBuffCodePageName.Create('iso_8859-6:1987', 28596));         //28596
+    Add(TBuffCodePageName.Create('arabic', 28596));                  //28596
+    Add(TBuffCodePageName.Create('csisolatinarabic', 28596));        //28596
+    Add(TBuffCodePageName.Create('ecma-114', 28596));                //28596
+    Add(TBuffCodePageName.Create('iso_8859-6', 28596));              //28596
+    Add(TBuffCodePageName.Create('iso-ir-127', 28596));              //28596
+    Add(TBuffCodePageName.Create('iso 8859-6', 28596));              //28596
+    Add(TBuffCodePageName.Create('iso8859-6', 28596));               //28596
+
+    Add(TBuffCodePageName.Create('iso-8859-7', 28597));              //28597
+    Add(TBuffCodePageName.Create('iso_8859-7:1987', 28597));         //28597
+    Add(TBuffCodePageName.Create('iso-ir-126', 28597));              //28597
+    Add(TBuffCodePageName.Create('iso_8859-7', 28597));              //28597
+    Add(TBuffCodePageName.Create('elot_928', 28597));                //28597
+    Add(TBuffCodePageName.Create('ecma-118', 28597));                //28597
+    Add(TBuffCodePageName.Create('greek', 28597));                   //28597
+    Add(TBuffCodePageName.Create('greek8', 28597));                  //28597
+    Add(TBuffCodePageName.Create('csisolatingreek', 28597));         //28597
+    Add(TBuffCodePageName.Create('iso 8859-7', 28597));              //28597
+    Add(TBuffCodePageName.Create('iso8859-7', 28597));               //28597
+
+    Add(TBuffCodePageName.Create('iso-8859-8', 28598));              //28598
+    Add(TBuffCodePageName.Create('iso_8859-8:1988', 28598));         //28598
+    Add(TBuffCodePageName.Create('iso-ir-138', 28598));              //28598
+    Add(TBuffCodePageName.Create('iso_8859-8', 28598));              //28598
+    Add(TBuffCodePageName.Create('hebrew', 28598));                  //28598
+    Add(TBuffCodePageName.Create('csisolatinhebrew', 28598));        //28598
+    Add(TBuffCodePageName.Create('visual', 28598));                  //28598
+    Add(TBuffCodePageName.Create('iso 8859-8', 28598));              //28598
+    Add(TBuffCodePageName.Create('iso8859-8', 28598));               //28598
+
+    Add(TBuffCodePageName.Create('iso-8859-9', 28599));              //28599
+    Add(TBuffCodePageName.Create('iso_8859-9:1989', 28599));         //28599
+    Add(TBuffCodePageName.Create('iso-ir-148', 28599));              //28599
+    Add(TBuffCodePageName.Create('iso_8859-9', 28599));              //28599
+    Add(TBuffCodePageName.Create('latin5', 28599));                  //28599
+    Add(TBuffCodePageName.Create('latin-5', 28599));                 //28599
+    Add(TBuffCodePageName.Create('l5', 28599));                      //28599
+    Add(TBuffCodePageName.Create('csisolatin5', 28599));             //28599
+    Add(TBuffCodePageName.Create('iso 8859-9', 28599));              //28599
+    Add(TBuffCodePageName.Create('iso8859-9', 28599));               //28599
+
+    Add(TBuffCodePageName.Create('iso-8859-10', 28600));             //28600
+    Add(TBuffCodePageName.Create('iso-ir-157', 28600));              //28600
+    Add(TBuffCodePageName.Create('l6', 28600));                      //28600
+    Add(TBuffCodePageName.Create('iso_8859-10:1992', 28600));        //28600
+    Add(TBuffCodePageName.Create('csisolatin6', 28600));             //28600
+    Add(TBuffCodePageName.Create('iso 8859-10', 28600));             //28600
+    Add(TBuffCodePageName.Create('iso8859-10', 28600));              //28600
+    Add(TBuffCodePageName.Create('iso_8859-10', 28600));             //28600
+    Add(TBuffCodePageName.Create('latin6', 28600));                  //28600
+    Add(TBuffCodePageName.Create('latin-6', 28600));                 //28600
+
+    Add(TBuffCodePageName.Create('iso-8859-11', 28601));             //28601
+    Add(TBuffCodePageName.Create('iso 8859-11', 28601));             //28601
+    Add(TBuffCodePageName.Create('iso8859-11', 28601));              //28601
+    Add(TBuffCodePageName.Create('iso_8859-11', 28601));             //28601
+    Add(TBuffCodePageName.Create('iso_8859-11:1992', 28601));        //28601
+    Add(TBuffCodePageName.Create('tactis', 28601));                  //28601
+
+    Add(TBuffCodePageName.Create('iso-8859-13', 28603));             //28603
+    Add(TBuffCodePageName.Create('iso 8859-13', 28603));             //28603
+    Add(TBuffCodePageName.Create('iso-ir-179', 28603));              //28603
+    Add(TBuffCodePageName.Create('iso8859-13', 28603));              //28603
+    Add(TBuffCodePageName.Create('iso_8859-13', 28603));             //28603
+    Add(TBuffCodePageName.Create('l7', 28603));                      //28603
+    Add(TBuffCodePageName.Create('latin7', 28603));                  //28603
+    Add(TBuffCodePageName.Create('latin-7', 28603));                 //28603
+
+    Add(TBuffCodePageName.Create('iso-8859-14', 28604));             //28604
+    Add(TBuffCodePageName.Create('iso 8859-14', 28604));             //28604
+    Add(TBuffCodePageName.Create('iso-ir-199', 28604));              //28604
+    Add(TBuffCodePageName.Create('iso8859-14', 28604));              //28604
+    Add(TBuffCodePageName.Create('iso_8859-14', 28604));             //28604
+    Add(TBuffCodePageName.Create('iso_8859-14:1998', 28604));        //28604
+    Add(TBuffCodePageName.Create('l8', 28604));                      //28604
+    Add(TBuffCodePageName.Create('latin8', 28604));                  //28604
+    Add(TBuffCodePageName.Create('latin-8', 28604));                 //28604
+    Add(TBuffCodePageName.Create('iso-celtic', 28604));              //28604
+
+    Add(TBuffCodePageName.Create('iso-8859-15', 28605));             //28605
+    Add(TBuffCodePageName.Create('iso_8859-15', 28605));             //28605
+    Add(TBuffCodePageName.Create('latin-9', 28605));                 //28605
+    Add(TBuffCodePageName.Create('latin9', 28605));                  //28605
+    Add(TBuffCodePageName.Create('l9', 28605));                      //28605
+    Add(TBuffCodePageName.Create('iso 8859-15', 28605));             //28605
+    Add(TBuffCodePageName.Create('iso-ir-203', 28605));              //28605
+    Add(TBuffCodePageName.Create('iso8859-15', 28605));              //28605
+    Add(TBuffCodePageName.Create('iso_8859-15:1998', 28605));        //28605
+    Add(TBuffCodePageName.Create('latin-0', 28605));                 //28605
+    Add(TBuffCodePageName.Create('latin0', 28605));                  //28605
+
+    Add(TBuffCodePageName.Create('iso-8859-16', 28606));             //28606
+    Add(TBuffCodePageName.Create('iso 8859-16', 28606));             //28606
+    Add(TBuffCodePageName.Create('iso-ir-226', 28606));              //28606
+    Add(TBuffCodePageName.Create('iso8859-16', 28606));              //28606
+    Add(TBuffCodePageName.Create('iso_8859-16', 28606));             //28606
+    Add(TBuffCodePageName.Create('iso_8859-16:2000', 28606));        //28606
+    Add(TBuffCodePageName.Create('latin10', 28606));                 //28606
+
+    Add(TBuffCodePageName.Create('iso-2022-jp', 50220));             //50220
+    Add(TBuffCodePageName.Create('iso 2022-jp', 50220));             //50220
+    Add(TBuffCodePageName.Create('csiso2022jp', 50220));             //50220
+
+    Add(TBuffCodePageName.Create('iso-2022-jp-1', 50222));           //50222
+    Add(TBuffCodePageName.Create('_iso-2022-jp$sio', 50222));        //50222
+
+    Add(TBuffCodePageName.Create('iso-2022-kr', 50225));             //50225
+    Add(TBuffCodePageName.Create('csiso2022kr', 50225));             //50225
+
+    Add(TBuffCodePageName.Create('iso-2022-cn', 50227));             //50227
+    Add(TBuffCodePageName.Create('csiso2022cn', 50227));             //50227
+    Add(TBuffCodePageName.Create('x-cp50227', 50227));               //50227
+
+    Add(TBuffCodePageName.Create('euc-jp', 51932));                  //51932
+    Add(TBuffCodePageName.Create('eucjp', 51932));                   //51932
+    Add(TBuffCodePageName.Create('cseucjp', 51932));                 //51932
+    Add(TBuffCodePageName.Create('euc_jp', 51932));                  //51932
+    Add(TBuffCodePageName.Create('cseucpkdfmtjapanese', 51932));     //51932
+    Add(TBuffCodePageName.Create('x-euc', 51932));                   //51932
+    Add(TBuffCodePageName.Create('x-euc-jp', 51932));                //51932
+
+    Add(TBuffCodePageName.Create('cn-gb', 51936));                   //51936
+    Add(TBuffCodePageName.Create('euc-cn', 51936));                  //51936
+    Add(TBuffCodePageName.Create('euc_cn', 51936));                  //51936
+    Add(TBuffCodePageName.Create('euccn', 51936));                   //51936
+    Add(TBuffCodePageName.Create('csgb2312', 51936));                //51936
+    Add(TBuffCodePageName.Create('gb2312', 51936));                  //51936
+    Add(TBuffCodePageName.Create('gb_2312-80', 51936));              //51936
+    Add(TBuffCodePageName.Create('x-cp20936', 51936));               //51936
+    Add(TBuffCodePageName.Create('csiso58gb231280', 51936));         //51936
+    Add(TBuffCodePageName.Create('iso-ir-58', 51936));               //51936
+
+    Add(TBuffCodePageName.Create('euc-kr', 51949));                  //51949
+    Add(TBuffCodePageName.Create('euc_kr', 51949));                  //51949
+    Add(TBuffCodePageName.Create('cseuckr', 51949));                 //51949
+    Add(TBuffCodePageName.Create('euckr', 51949));                   //51949
+
+    Add(TBuffCodePageName.Create('gb18030', 54936));                 //54936
+    Add(TBuffCodePageName.Create('gb-18030', 54936));                //54936
+
+    Add(TBuffCodePageName.Create('utf-7', 65000));                   //65000
+    Add(TBuffCodePageName.Create('csunicode11utf7', 65000));         //65000
+    Add(TBuffCodePageName.Create('unicode-1-1-utf-7', 65000));       //65000
+    Add(TBuffCodePageName.Create('x-unicode-2-0-utf-7', 65000));     //65000
+
+    Add(TBuffCodePageName.Create('utf-8', 65001));                   //65001
+    Add(TBuffCodePageName.Create('utf8', 65001));                    //65001
+    Add(TBuffCodePageName.Create('unicode-1-1-utf-8', 65001));       //65001
+    Add(TBuffCodePageName.Create('unicode-2-0-utf-8', 65001));       //65001
+    Add(TBuffCodePageName.Create('x-unicode-2-0-utf-8', 65001));     //65001
+
+//    Add(TBuffCodePageName.Create('koi8-t', CP_UNKNOWN));             //-5
+
+    Add(TBuffCodePageName.Create('default', CP_ACP));
 // BG, 11.10.2012: too many compiler versions do not declare CP_SYMBOL. Do we actually need it?     
-//    AddInfo(TBuffCharSetCodePageInfo.Create('symbol', CP_SYMBOL));
-    AddInfo(TBuffCharSetCodePageInfo.Create('oem', CP_OEMCP));
+//    Add(TBuffCodePageName.Create('symbol', CP_SYMBOL));
+    Add(TBuffCodePageName.Create('oem', CP_OEMCP));
 
     CaseSensitive := False;
     Sort;
@@ -796,7 +1206,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 08.01.2011 --
-destructor TBuffCharSetCodePageInfoList.Destroy;
+destructor TBuffCodePageNameList.Destroy;
 var
   I: Integer;
 begin
@@ -814,13 +1224,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function TBuffCharSetCodePageInfoList.GetInfo(Index: Integer): TBuffCharSetCodePageInfo;
+function TBuffCodePageNameList.GetItem(Index: Integer): TBuffCodePageName;
 begin
-  Result := TBuffCharSetCodePageInfo(Objects[Index]);
+  Result := TBuffCodePageName(Objects[Index]);
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function TBuffCharSetCodePageInfoList.IndexOf(const S: String): Integer;
+function TBuffCodePageNameList.IndexOf(const S: String): Integer;
 var
   LS: string;
 begin
@@ -1005,7 +1415,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: TBuffString; Name: TBuffString = '');
+constructor TBuffer.Create(Text: TBuffString; Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE);
 var
   I: Integer;
 begin
@@ -1017,12 +1427,24 @@ begin
   PBuffChar(@FBuffer[I])^ := TBuffChar(0);
   Reset;
   FName := Name;
-  SetCodePage(CP_UTF16LE);
+  SetCodePages(CodePage, CP_UTF16LE);
   Include(FState, bsFixedCodePage);
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
+constructor TBuffer.Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = '');
+begin
+  Create(Text, Name, CodePage);
+end;
+
+//-- BG ---------------------------------------------------------- 17.12.2010 --
 constructor TBuffer.Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = '');
+begin
+  Create(Text, ByteCount, CodePage, CodePage, Name);
+end;
+
+//-- BG ---------------------------------------------------------- 17.12.2010 --
+constructor TBuffer.Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; Name: TBuffString = '');
 var
   I: Integer;
 begin
@@ -1033,7 +1455,7 @@ begin
   PBuffChar(@FBuffer[I])^ := TBuffChar(0);
   Reset;
   FName := Name;
-  SetCodePage(CodePage);
+  SetCodePages(CodePage, InitialCodePage);
 end;
 
 //-- BG ---------------------------------------------------------- 06.12.2011 --
@@ -1041,9 +1463,8 @@ class function TBuffer.Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuf
 var
   Buffer: TBuffer;
 begin
-  Buffer := TBuffer.Create(Text);
+  Buffer := TBuffer.Create(Text, CodePage);
   try
-    Buffer.SetCodePage(CodePage);
     Result := Buffer.AsString;
   finally
     Buffer.Free;
@@ -1056,6 +1477,19 @@ var
   Buffer: TBuffer;
 begin
   Buffer := TBuffer.Create(Text, ByteCount, CodePage);
+  try
+    Result := Buffer.AsString;
+  finally
+    Buffer.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.12.2011 --
+class function TBuffer.Convert(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage): TBuffString;
+var
+  Buffer: TBuffer;
+begin
+  Buffer := TBuffer.Create(Text, ByteCount, CodePage, InitialCodePage);
   try
     Result := Buffer.AsString;
   finally
@@ -1210,44 +1644,58 @@ begin
   FEnd.AnsiChr := FStart.AnsiChr + Size;
 end;
 
-////-- BG --------------------------------------------------------- 11.11.2011 --
-//procedure TBuffer.SetCharSet(const Value: TBuffCharSet);
-//begin
-//  FCharSet := Value;
-//end;
-
 //-- BG --------------------------------------------------------- 11.11.2011 --
-procedure TBuffer.SetCodePage(const Value: TBuffCodePage);
-var
-  Index: Integer;
-  OldConverter: TBuffConverter;
+procedure TBuffer.SetCodePage(Value: TBuffCodePage);
 begin
   if bsFixedCodePage in FState then
     exit;
-  if FConverter = nil then
-  begin
-    // setting CodePage for the first time:
-    Index := Max(0, FindCodePageInfo(Value)); // Index = 0: CP_UNKNOWN
-    FConverter := GetCodePageInfo(Index).Converter.Create(FStart, FEnd, Value, Value)
-  end
-  else
-  begin
-    // setting CodePage again:
-    if FConverter.CodePage = Value then
-      // same CodePage again. Nothing to do.
-      exit;
 
-    // Change the CodePage. Keep common internal states including InitialCodePage.
-    OldConverter := FConverter;
-    OldConverter.FCodePage := Value; // set new code page to old converter. CreateCopy will set it to the new converter.
-    Index := Max(0, FindCodePageInfo(Value)); // Index = 0: CP_UNKNOWN
-    FConverter := GetCodePageInfo(Index).Converter.CreateCopy(OldConverter);
-    OldConverter.Free;
+  if FConverter = nil then
+    SetCodePages(Value, Value)
+  else
+    SetCodePages(Value, FConverter.FInitalCodePage);
+end;
+
+//-- BG ---------------------------------------------------------- 13.10.2012 --
+procedure TBuffer.SetCodePages(Value, Initial: TBuffCodePage);
+var
+  Index: Integer;
+  OldConverter: TBuffConverter;
+  CodePageInfos: TBuffConvInfoList;
+begin
+  CodePageInfos := GetConvInfoList;
+  if CodePageInfos <> nil then
+  begin
+    if FConverter = nil then
+    begin
+      // setting CodePage for the first time:
+      Index := CodePageInfos.Find(Value);
+      if Index < 0 then
+        Index := CodePageInfos.Find(CP_UNKNOWN);
+      FConverter := CodePageInfos[Index].Converter.Create(FStart, FEnd, Value, Initial)
+    end
+    else
+    begin
+      // setting CodePage again:
+      if FConverter.CodePage = Value then
+        // same CodePage again. Nothing to do.
+        exit;
+
+      // Change the CodePage. Keep common internal states including InitialCodePage.
+      OldConverter := FConverter;
+      OldConverter.FCodePage := Value; // set new code page to old converter. CreateCopy will set it to the new converter.
+      OldConverter.FInitalCodePage := Initial;
+      Index := CodePageInfos.Find(Value);
+      if Index < 0 then
+        Index := CodePageInfos.Find(CP_UNKNOWN);
+      FConverter := CodePageInfos[Index].Converter.CreateCopy(OldConverter);
+      OldConverter.Free;
+    end;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 16.12.2010 --
-procedure TBuffer.SetPostion(const Value: Integer);
+procedure TBuffer.SetPosition(const Value: Integer);
 begin
   FConverter.FPos.AnsiChr := PAnsiChar(FBuffer) + Value;
 end;
@@ -1273,10 +1721,12 @@ begin
   Result := Length(FBuffer) - sizeof(TBuffChar);
 end;
 
-// GDG
 initialization
 finalization
-  FreeAndNil(VCharSetCodePageByName);
+// GDG
+  VFinalizing := True;
+  FreeAndNil(VCodePagesByName);
+  FreeAndNil(VConvertersByCodePage);
 end.
 
 

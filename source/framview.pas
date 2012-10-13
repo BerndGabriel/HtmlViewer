@@ -2112,15 +2112,15 @@ end;
 procedure TSubFrameSetBase.HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
 var
   DelTime, I: Integer;
-  Info: TBuffCharSetCodePageInfo;
+  CP: TBuffCodePage;
 begin
   if CompareText(HttpEq, 'content-type') = 0 then
   begin
-    Info := GetCharSetCodePageInfo(Content);
-    if Info <> nil then
+    CP := StrToCodePage(Content);
+    if CP <> CP_UNKNOWN then
     begin
       //LocalCharSet := Info.CharSet;
-      LocalCodePage := Info.CodePage;
+      LocalCodePage := CP;
     end;
   end;
 
