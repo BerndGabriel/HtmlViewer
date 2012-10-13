@@ -158,8 +158,8 @@ type
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
     constructor Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = ''); overload; {$ifdef UseInline} inline; {$endif}
-    constructor Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = ''); overload; {$ifdef UseInline} inline; {$endif}
+    constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
+    constructor Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = ''); overload; 
     constructor Create(Text: TBuffString; Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE); overload;
     function AsString: TBuffString; {$ifdef UseInline} inline; {$endif}
     function GetString(FromIndex, UntilIndex: Integer): TBuffString;
