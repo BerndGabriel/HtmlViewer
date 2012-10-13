@@ -3280,7 +3280,7 @@ begin
 {$ifdef LCL}
   bmp := TLazIntfImage.Create(0,0);
   try
-    bmp.Assign(ABmp);
+    bmp.LoadFromBitmap(ABmp.Handle, 0);
     { alloc initial region data }
     maxRects := AllocUnit;
     GetMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects));

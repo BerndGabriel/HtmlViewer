@@ -1,5 +1,5 @@
 {
-Version   11.2
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -3828,7 +3828,7 @@ begin
             Done := True;
           OldTop := HTop;
           if not Done and (FPage >= FromPage) and (FPage < ToPage) then
-            // Pages before FromPage aren't printed. Tus no new page required.
+            // Pages before FromPage aren't printed. Thus no new page required.
             Prn.NewPage;
           // Increment page number no matter if we start a new page at the printer, as it does not count
           // the number of sheets printed, but is the number of the currently processed document page.
