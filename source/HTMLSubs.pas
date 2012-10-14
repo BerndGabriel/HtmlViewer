@@ -1496,9 +1496,10 @@ var
 implementation
 
 uses
-{$ifdef Compiler24_Plus}
+{$ifdef UseVCLStyles}
   System.Types,
   System.UITypes,
+  Vcl.Themes,
 {$endif}
    {$IFDEF JPM_DEBUGGING}
  CodeSiteLogging,
