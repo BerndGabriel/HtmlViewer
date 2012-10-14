@@ -186,6 +186,8 @@ type
     procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure ViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out IncludedDocument: TBuffer);
     procedure ViewerScript(Sender: TObject; const Name, ContentType, Src, Script: string);
+    procedure ViewerSectionOver(Sender: TObject; Obj: TSectionBase; Shift: TShiftState; X, Y, IX, IY: Integer);
+    procedure ViewerImageOver(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer);
 {$else}
     procedure HotSpotChange(Sender: TObject; const URL: WideString);
     procedure HotSpotClick(Sender: TObject; const URL: WideString; var Handled: boolean);
@@ -743,6 +745,11 @@ begin
     //MessageDlg(OnClick, mtCustom, [mbOK], 0);
 end;
 
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+procedure TForm1.ViewerImageOver(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer);
+begin
+  Panel1.Caption := 'Mouse over: ' + Obj.Classname + ' ' + TImageObj(Obj).id;
+end;
 
 procedure TForm1.ViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);
 {OnInclude handler}
@@ -967,6 +974,12 @@ end;
 procedure TForm1.ViewerScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 begin
   NLS := Name + '::' + ContentType + '::' + Src + '::'#10#13 + Script;
+end;
+
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+procedure TForm1.ViewerSectionOver(Sender: TObject; Obj: TSectionBase; Shift: TShiftState; X, Y, IX, IY: Integer);
+begin
+  Panel1.Caption := 'Mouse over: ' + Obj.Classname + ' ' + Obj.id;
 end;
 
 {HTML for print header and footer}

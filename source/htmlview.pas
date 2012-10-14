@@ -83,6 +83,8 @@ type
   ThtmlPagePrinted = procedure(Sender: TObject; HFViewer: THtmlViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean) of object;
   TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: ThtString) of object;
   TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
+  TSectionMouseClickEvent = procedure(Sender: TObject; Obj: TSectionBase; Button: TMouseButton; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
+  TSectionMouseMoveEvent  = procedure(Sender: TObject; Obj: TSectionBase; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
 
   THtmlViewerOption = (
     htOverLinksActive, htNoLinkUnderline, htPrintTableBackground,
@@ -221,6 +223,8 @@ type
     //FOnPrinting: THTMLViewPrinting;
     FOnRightClick: TRightClickEvent;
     FOnLoadHistoryItem: TLoadHistoryItem;
+    FOnSectionClick: TSectionMouseClickEvent; //>-- DZ 17.09.2012
+    FOnSectionOver: TSectionMouseMoveEvent; //>-- DZ 17.09.2012
 
     // status info
     FViewerState: THtmlViewerState;
@@ -421,7 +425,8 @@ type
     function NumPrinterPages(out WidthRatio: Double): Integer; overload;
     function NumPrinterPages: Integer; overload;
     function PositionTo(Dest: ThtString): Boolean;
-    function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord}
+    //function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; overload; deprecated; {X, Y, are client coord}
+    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean; overload; {X, Y, are client coord}
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
     procedure AddVisitedLink(const S: ThtString);
@@ -574,6 +579,12 @@ type
     property OnProgress;
     property OnRightClick: TRightClickEvent read FOnRightClick write FOnRightClick;
     property OnScript;
+    // BG, 15.10.2012: TODO: PtInObject not yet working correctly with horizontal scrolling (especially TFloatingObj.DrawYY seems to be wrong).
+    // BG, 15.10.2012: TODO: Add events OnSectionClick and OnSectionOver to TFrameViewer and TFrameBrowser.
+    // BG, 15.10.2012: TODO: I'd prefer OnHtmlNodeClick and OnHtmlNodeOver, which could be fired for
+    //                       any kind of html elements including floating objects like TImageObj.
+    property OnSectionClick: TSectionMouseClickEvent read FOnSectionClick write FOnSectionClick; //>-- DZ 17.09.2012
+    property OnSectionOver: TSectionMouseMoveEvent read FOnSectionOver write FOnSectionOver; //>-- DZ 17.09.2012
     property OnSoundRequest;
     //
     property Align;
@@ -776,6 +787,9 @@ begin
     OnPrintHTMLFooter := Viewer.OnPrintHTMLFooter;
     OnPrintHTMLHeader := Viewer.OnPrintHTMLHeader;
     OnRightClick := Viewer.OnRightClick;
+    OnLoadHistoryItem := Viewer.OnLoadHistoryItem;
+    OnSectionClick := Viewer.OnSectionClick;
+    OnSectionOver := Viewer.OnSectionOver;    
   end;
 end;
 
@@ -1620,12 +1634,20 @@ begin
   end;
 end;
 
-function THtmlViewer.PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord} {css}
-var
-  IX, IY: Integer;
+//function THtmlViewer.PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord} {css}
+//var
+//  IX, IY: Integer;
+//begin
+//  Result := PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
+//end;
+
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+function THtmlViewer.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;
 begin
-  Result := PtInRect(ClientRect, Point(X, Y)) and
-    FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
+  Obj := nil;
+  IX := 0;
+  IY := 0;
+  Result := PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
 end;
 
 procedure THtmlViewer.ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -1672,8 +1694,7 @@ end;
 
 {----------------THtmlViewer.HTMLMouseMove}
 
-procedure THtmlViewer.HTMLMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
+procedure THtmlViewer.HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 var
   UrlTarget: TUrlTarget;
   Url, Target: ThtString;
@@ -1699,10 +1720,13 @@ begin
   end;
 
   UrlTarget := nil;
+  Obj := nil;
   URL := '';
   NextCursor := crArrow;
   FTitleAttr := '';
   guResult := GetURL(X, Y, UrlTarget, FormControl, FTitleAttr);
+  if guControl in guResult then
+    NextCursor := HandCursor;
   if guUrl in guResult then
   begin
     NextCursor := HandCursor;
@@ -1712,10 +1736,12 @@ begin
     FLinkText := GetTextByIndices(UrlTarget.Start, UrlTarget.Last);
     UrlTarget.Free;
   end;
-  if guControl in guResult then
-    NextCursor := HandCursor;
-  if (Assigned(OnImageClick) or Assigned(OnImageOver)) and
-    FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY) then
+
+  //>-- DZ 18.09.2012
+  if Assigned(OnSectionOver) and PtInObject(X, Y, Obj, IX, IY) and (Obj is TSectionBase) then
+    OnSectionOver(Self, TSectionBase( Obj ), Shift, X, Y, IX, IY);
+
+  if (Assigned(OnImageClick) or Assigned(OnImageOver)) and PtInObject(X, Y, Obj, IX, IY) and (Obj is TImageObj) then
   begin
     if NextCursor <> HandCursor then {in case it's also a Link}
       NextCursor := crArrow;
@@ -1777,9 +1803,13 @@ begin
 
   inherited MouseUp(Button, Shift, X, Y);
 
+  //>-- DZ 17.09.2012
+  if Assigned(OnSectionClick) and PtInObject(X, Y, Obj, IX, IY) and (Obj is TSectionBase) then
+    OnSectionClick(Self, TSectionBase( Obj ), Button, Shift, X, Y, IX, IY);
+
   if Assigned(OnImageClick) or Assigned(OnRightClick) then
   begin
-    InImage := FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
+    InImage := PtInObject(X, Y, Obj, IX, IY) and (Obj is TImageObj);
     if Assigned(OnImageClick) and InImage then
       OnImageClick(Self, Obj, Button, Shift, IX, IY);
     if (Button = mbRight) and Assigned(OnRightClick) then
@@ -2983,7 +3013,6 @@ begin
     Exclude(FViewerState, vsBGFixed);
     DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ACanvas.Brush.Color);
   end;
-
   FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
 end;
 

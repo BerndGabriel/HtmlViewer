@@ -1,8 +1,8 @@
 object Form1: TForm1
   Left = 657
   Top = 269
-  Width = 621
-  Height = 489
+  ClientHeight = 431
+  ClientWidth = 605
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -32,8 +32,6 @@ object Form1: TForm1
       Width = 150
       Height = 16
       Align = alRight
-      Min = 0
-      Max = 100
       TabOrder = 0
       Visible = False
     end
@@ -111,11 +109,7 @@ object Form1: TForm1
       Top = 1
       Width = 603
       Height = 378
-      TabStop = True
-      TabOrder = 0
-      Align = alClient
       BorderStyle = htFocused
-      CharSet = DEFAULT_CHARSET
       DefBackground = clWindow
       DefFontColor = clWindowText
       DefFontName = 'Times New Roman'
@@ -124,16 +118,18 @@ object Form1: TForm1
       HistoryMaxCount = 6
       ImageCacheCount = 6
       NoSelect = False
-      PrintMarginBottom = 2
-      PrintMarginLeft = 2
-      PrintMarginRight = 2
-      PrintMarginTop = 2
-      PrintScale = 1
-      OnMouseMove = ViewerMouseMove
+      PrintMarginBottom = 2.000000000000000000
+      PrintMarginLeft = 2.000000000000000000
+      PrintMarginRight = 2.000000000000000000
+      PrintMarginTop = 2.000000000000000000
+      PrintScale = 1.000000000000000000
+      QuirksMode = qmDetect
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange
       OnHotSpotClick = HotSpotClick
       OnHotSpotCovered = HotSpotChange
+      OnSectionOver = ViewerSectionOver
+      OnImageOver = ViewerImageOver
       OnInclude = ViewerInclude
       OnMetaRefresh = MetaRefreshEvent
       OnObjectClick = ObjectClick
@@ -144,6 +140,10 @@ object Form1: TForm1
       OnRightClick = RightClick
       OnScript = ViewerScript
       OnSoundRequest = SoundRequest
+      Align = alClient
+      TabOrder = 0
+      TabStop = True
+      OnMouseMove = ViewerMouseMove
       object MediaPlayer: TMediaPlayer
         Left = 336
         Top = 40

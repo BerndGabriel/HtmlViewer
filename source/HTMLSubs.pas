@@ -79,6 +79,8 @@ uses
 
 type
 
+  //>-- DZ 19.09.2012
+  TDrawRect = TRect;
   TSymbol = Symb;
 
   ThtDocument = class;
@@ -148,6 +150,7 @@ type
     SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
     // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
+    DrawRect: TDrawRect;    //>-- DZ where the section starts (calculated in DrawLogic or Draw1)
 
     constructor Create(OwnerCell: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); virtual;
@@ -162,7 +165,8 @@ type
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; virtual;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): guResultType; virtual;
-    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; virtual;
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean; virtual;
+    function PtInDrawRect(X, Y: Integer; out IX, IY: Integer): Boolean;
     procedure AddSectionsToList; virtual;
     procedure CopyToClipboard; virtual;
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
@@ -173,6 +177,7 @@ type
   private
     function getItem(Index: Integer): TSectionBase;
   public
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
     property Items[Index: Integer]: TSectionBase read getItem; default;
@@ -214,7 +219,6 @@ type
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
     function GetChAtPos(Pos: Integer; var Ch: WideChar; var Obj: TObject): boolean;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; virtual;
-    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
     procedure Add(Item: TSectionBase; TagIndex: Integer);
     procedure AddSectionsToList;
     procedure CopyToClipboard;
@@ -355,6 +359,7 @@ type
     constructor CreateCopy(Document: ThtDocument; Parent: TCellBasic; Source: TFloatingObj); virtual;
     constructor SimpleCreate(Document: ThtDocument; Parent: TCellBasic);
     function Clone(Document: ThtDocument; Parent: TCellBasic): TFloatingObj;
+    function PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean;
     function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
     function TotalWidth: Integer; {$ifdef UseInline} inline; {$endif}
     procedure Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj); virtual; abstract;
@@ -465,7 +470,6 @@ type
     procedure DrawImages;
   end;
 
-
   TFloatingObjList = class(TFreeList) {a list of TImageObj's and TPanelObj's}
   public
     constructor CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TFloatingObjList);
@@ -474,7 +478,7 @@ type
     function GetImageCountAt(Posn: Integer): Integer;
     function GetWidthAt(Posn: Integer; var AAlign: AlignmentType; var HSpcL, HSpcR: Integer; var FlObj: TFloatingObj): Integer;
     function PtInImage(X, Y: Integer; var IX, IY, Posn: Integer; var AMap, UMap: boolean; var MapItem: TMapItem; var ImageObj: TImageObj): boolean;
-    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean;
     procedure Decrement(N: Integer);
   end;
 
@@ -578,7 +582,7 @@ type
     function FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer): Integer;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; override;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
-    function PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
+    function PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
     procedure AddChar(C: WideChar; Index: Integer); virtual;
     procedure AddOpBrk;
     procedure AddPanel1(PO: TPanelObj; Index: Integer);
@@ -675,7 +679,7 @@ type
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; virtual;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; override;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
-    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
     procedure CollapseMargins;
     procedure CopyToClipboard; override;
@@ -1034,8 +1038,7 @@ type
     Url, Target: ThtString;
   public
     constructor CreateCopy(Document: ThtDocument; Parent: TBlock; T: TCellObjCell);
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget;
-      out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
   end;
 
   IntArray = array of Integer;
@@ -1268,7 +1271,7 @@ type
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
-    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
+    function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean; override;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean; override;
@@ -1421,8 +1424,7 @@ type
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
-    function GetURL(Canvas: TCanvas; X, Y: Integer;
-      out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
     procedure CancelActives;
     procedure CheckGIFList(Sender: TObject);
     procedure Clear; override;
@@ -1675,8 +1677,18 @@ end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
+var
+  id: ThtString; //>-- DZ
 begin
-  inherited Create;
+  //>-- DZ
+  if Properties <> nil then
+    id := Properties.PropID
+  else if Attributes <> nil then
+    id := Attributes.TheId
+  else
+    id := '';
+
+  inherited Create(id);
   FOwnerCell := Parent;
   FOwnerBlock := Parent.OwnerBlock;
   FDocument := Parent.Document;
@@ -1687,7 +1699,7 @@ end;
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.CreateCopy(Parent: TCellBasic; Node: THtmlNode);
 begin
-  inherited Create;
+  inherited Create( Node.htmlId );
   FOwnerCell := Parent;
   FOwnerBlock := Parent.OwnerBlock;
   FDocument := Parent.Document;
@@ -3112,32 +3124,23 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 14.10.2012 --
 function TFloatingObjList.PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
 var
-  I, LimX, LimY: Integer;
-  LIY: Integer;
-  Item: TObject;
+  I: Integer;
+  Item: TFloatingObj;
 begin
-  Result := False;
   for I := 0 to Count - 1 do
   begin
-    Item := Items[I];
-    if Item is TImageObj then
-      with TImageObj(Item) do
-      begin
-        IX := X - DrawXX; {these are actual image, box if any is outside}
-        LIY := Y - DrawYY;
-        LimX := ClientWidth - 2 * BorderSize;
-        LimY := ClientHeight - 2 * BorderSize;
-        if (IX >= 0) and (IX < LimX) and (LIY >= 0) and (LIY < LimY) then
-        begin
-          IY := LIY;
-          Result := True;
-          Obj := Item;
-          Exit;
-        end;
-      end;
+    Item := TFloatingObj(Items[I]);
+    if Item.PtInObject(X, Y, IX, IY) then
+    begin
+      Obj := Item;
+      Result := True;
+      Exit;
+    end;
   end;
+  Result := False;
 end;
 
 {----------------ThtmlForm.Create}
@@ -4533,28 +4536,6 @@ begin
   end;
 end;
 
-{----------------TCellBasic.PtInObject}
-
-function TCellBasic.PtInObject(X: Integer; Y: Integer; var Obj: TObject;
-  var IX, IY: Integer): boolean;
-{Y is absolute}
-var
-  I: Integer;
-begin
-  Result := False;
-  Obj := nil;
-  for I := 0 to Count - 1 do
-    with Items[I] do
-    begin
-      if (Y >= DrawTop) and (Y < DrawBot) then
-      begin
-        Result := PtInObject(X, Y, Obj, IX, IY);
-        if Result then
-          Exit;
-      end;
-    end;
-end;
-
 {----------------TCellBasic.FindCursor}
 
 function TCellBasic.FindCursor(Canvas: TCanvas; X: Integer; Y: Integer;
@@ -5079,33 +5060,33 @@ end;
 
 {----------------TBlock.PtInObject}
 
-function TBlock.PtInObject(X: Integer; Y: Integer; out Obj: TObject;
-  out IX, IY: Integer): boolean;
+function TBlock.PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
 {Y is absolute}
 var
   I: Integer;
 begin
   case Display of
-    pdNone: Result := False;
+    pdNone:
+    begin
+      Result := False;
+      Exit;
+    end;
+
 {$ifdef DO_BLOCK_INLINE}
-    pdInline: Result := inherited PtInObject(X, Y, Obj, IX, IY);
+    pdInline: ;
 {$endif}
+
   else
     {check this in z order}
-    Result := False;
-    Obj := nil;
-    with DrawList do
-      for I := Count - 1 downto 0 do
-        with TSectionBase(Items[I]) do
-        begin
-          if (Y >= DrawTop) and (Y < DrawBot) then
-          begin
-            Result := PtInObject(X, Y, Obj, IX, IY);
-            if Result then
-              Exit;
-          end;
-        end;
+    for I := DrawList.Count - 1 downto 0 do
+      if TSectionBase(DrawList.Items[I]).PtInObject(X, Y, Obj, IX, IY) then
+      begin
+        Result := True;
+        Exit;
+      end;
   end;
+
+  Result := inherited PtInObject(X, Y, Obj, IX, IY);
 end;
 
 {----------------TBlock.GetChAtPos}
@@ -5521,6 +5502,12 @@ begin
     if DrawList.Count = 0 then
       DrawSort;
   end;
+
+  //>-- DZ
+  DrawRect.Left   := X;
+  DrawRect.Top    := DrawTop;
+  DrawRect.Right  := NewWidth;
+  DrawRect.Bottom := DrawRect.Top + SectionHeight;
 end;
 
 {----------------TBlock.DrawSort}
@@ -5729,6 +5716,12 @@ begin
   CnRect.Top    := PdRect.Top    + MargArray[PaddingTop];
   CnRect.Right  := PdRect.Right  - MargArray[PaddingRight];
   CnRect.Bottom := PdRect.Bottom - MargArray[PaddingBottom];
+
+  //>-- DZ
+  DrawRect.Top    := MyRect.Top;
+  DrawRect.Left   := MyRect.Left;
+  DrawRect.Bottom := MyRect.Bottom;
+  DrawRect.Right  := MyRect.Right;
 
   IT := Max(0, ARect.Top - 2 - PdRect.Top);
   FT := Max(PdRect.Top, ARect.Top - 2); {top of area drawn, screen coordinates}
@@ -6809,6 +6802,12 @@ begin
   Imgr.CurrentID := Self;
   DrawTheList(Canvas, ARect, NewWidth, X, IMgr.LfEdge, 0);
   Imgr.CurrentID := SaveID;
+
+  //>-- DZ
+  DrawRect.Top    := Y;
+  DrawRect.Left   := X;
+  DrawRect.Right  := DrawRect.Left + NewWidth;
+  DrawRect.Bottom := DrawRect.Top + DrawHeight;
 end;
 
 { ThtDocument }
@@ -9826,6 +9825,12 @@ begin
     YO := Y - YOffset;
 
     DrawX := X;
+
+    //>-- DZ
+    DrawRect.Top    := Y;
+    DrawRect.Left   := X;
+    DrawRect.Right  := DrawRect.Left + TableWidth;
+    DrawRect.Bottom := DrawRect.Top + DrawHeight;
     //DrawY := Y;
 
     if (YO + DrawHeight >= ARect.Top) and (YO < ARect.Bottom) or Document.Printing then
@@ -9885,7 +9890,7 @@ end;
 
 {----------------THtmlTable.PtInObject}
 
-function THtmlTable.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
+function THtmlTable.PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
 
   function GetTableObj(X: Integer; Y: Integer): boolean;
   var
@@ -9905,7 +9910,8 @@ function THtmlTable.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX,
           if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
           begin
             Result := CellObj.Cell.PtInObject(X, Y, Obj, IX, IY);
-            Exit;
+            if Result then //>-- DZ 19.09.2012
+              Exit;
           end;
         end;
         Inc(XX, Widths[I]);
@@ -9915,10 +9921,10 @@ function THtmlTable.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX,
   end;
 
 begin
-  if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) then
-    Result := GetTableObj(X, Y)
+  if (Y >= ContentTop) and (Y < ContentBot) and (X >= DrawX) and (X <= TableWidth + DrawX) and GetTableObj(X, Y) then
+    Result := True
   else
-    Result := False;
+    Result := inherited PtInObject(X, Y, Obj, IX, IY);
 end;
 
 {----------------THtmlTable.FindCursor}
@@ -11932,6 +11938,30 @@ var
   MySelB, MySelE: Integer;
   YOffset, Y, Desc: Integer;
 
+  //>-- DZ 19.09.2012
+  procedure AdjustDrawRect( aTop: integer; const aLeft, aWidth, aHeight: integer ); overload;
+  begin
+     dec( aTop, Document.YOff );
+
+     if DrawRect.Top > aTop then
+       DrawRect.Top:= aTop;
+
+     if DrawRect.Left > aLeft then
+       DrawRect.Left:= aLeft;
+
+     if DrawRect.Right < aLeft + aWidth then
+       DrawRect.Right:= aLeft + aWidth;
+
+     if DrawRect.Bottom < aTop + aHeight then
+       DrawRect.Bottom:= aTop + aHeight;
+  end;
+
+  //>-- DZ 19.09.2012
+  procedure AdjustDrawRect( const aRect: TRect ); overload;
+  begin
+    AdjustDrawRect( aRect.Top, aRect.Left, aRect.Right - aRect.Left, aRect.Bottom - aRect.Top );
+  end;
+
   procedure DrawTheText(LineNo: Integer);
   var
     I, J, J1, J2, J3, J4, Index, Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
@@ -11997,6 +12027,7 @@ var
     CP1x := CPx;
     LR.DrawY := Y - LR.LineHt;
     LR.DrawXX := CPx;
+    AdjustDrawRect( LR.DrawY, LR.DrawXX, LR.DrawWidth, LR.LineHt ); //>-- DZ 19.09.2012
     while Cnt > 0 do
     begin
       I := 1;
@@ -12440,6 +12471,8 @@ var
         BR := BorderRec(LR.BorderList.Items[K]);
         if BR.OpenEnd or (BR.BRect.Right = 0) then
           BR.BRect.Right := CPx;
+
+        AdjustDrawRect(BR.bRect); //>-- DZ 19.09.2012
       end;
   end;
 
@@ -12555,10 +12588,13 @@ end;
 
 {----------------TSection.PtInObject}
 
-function TSection.PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
+function TSection.PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
 {Y is distance from start of section}
 begin
-  Result := (Images.Count > 0) and Images.PtInObject(X, Y, Obj, IX, IY);
+  if Images.PtInObject(X, Y, Obj, IX, IY) then
+    Result := True
+  else
+    Result := inherited PtInObject(X, Y, Obj, IX, IY);
 end;
 
 {----------------TSection.GetURL}
@@ -14262,6 +14298,23 @@ begin
   FDisplay := Prop.Display;
 end;
 
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+function TFloatingObj.PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean;
+var
+  XO, YO, W, H: Integer;
+begin
+  XO := X - DrawXX; {these are actual image, box if any is outside}
+  YO := Y - DrawYY;
+  W := ClientWidth - 2 * BorderSize;
+  H := ClientHeight - 2 * BorderSize;
+  Result := (XO >= 0) and (XO < W) and (YO >= 0) and (YO < H);
+  if Result then
+  begin
+    IX := XO;
+    IY := YO;
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 30.11.2010 --
 procedure TFloatingObj.SetAlt(CodePage: Integer; const Value: ThtString);
 begin
@@ -14307,6 +14360,11 @@ begin
   inherited;
   FDisplay := AProp.Display;
   ContentTop := 999999999; {large number in case it has Display: none; }
+
+  DrawRect.Top    := 999999999;
+  DrawRect.Left   := 999999999;
+  DrawRect.Bottom := 0;
+  DrawRect.Right  := 0;
 end;
 
 constructor TSectionBase.CreateCopy(OwnerCell: TCellBasic; T: TSectionBase);
@@ -14344,6 +14402,12 @@ begin
   YDraw := Y;
   ContentBot := Y + SectionHeight;
   DrawBot := Y + DrawHeight;
+
+  //>-- DZ
+  DrawRect.Top    := DrawTop;
+  DrawRect.Left   := X;
+  DrawRect.Right  := DrawRect.Left + MaxWidth;
+  DrawRect.Bottom := DrawBot;
 end;
 
 function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
@@ -14361,15 +14425,43 @@ begin
   FormControl := nil;
 end;
 
-function TSectionBase.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+function TSectionBase.PtInDrawRect(X, Y: Integer; out IX, IY: Integer): Boolean;
+// inspired by >-- DZ 19.09.2012
 begin
-  Result := False;
-  Obj := nil;
+  case Display of
+    pdNone:
+      Result := False;
+  else
+    // BG, 14.10.2012: why isn't there a Document.XOff representing the horizontal scroll position?
+    // Dec(X, Document.XOff);
+    Dec(Y, Document.YOff);
+    Result := (X >= DrawRect.Left) and (X < DrawRect.Right) and (Y >= DrawRect.Top) and (Y < DrawRect.Bottom);
+    if Result then
+    begin
+      IX := X - DrawRect.Left;
+      IY := Y - DrawRect.Top;
+    end;
+  end;
+  if not Result then
+  begin
+    IX := 0;
+    IY := 0;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+function TSectionBase.PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean;
+begin
+  Result := PtInDrawRect(X, Y, IX, IY);
+  if Result then
+    Obj := Self;
 end;
 
 function TSectionBase.FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
 begin
   Result := -1;
+  InText := False;
 end;
 
 function TSectionBase.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
@@ -14400,6 +14492,7 @@ end;
 function TSectionBase.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject): boolean;
 begin
   Result := False;
+  Ch := #0;
   Obj := nil;
 end;
 
@@ -14460,12 +14553,26 @@ begin
   Result := inherited Items[Index];
 end;
 
+function TSectionBaseList.PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean;
+{Y is absolute}
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+    if Items[I].PtInObject(X, Y, Obj, IX, IY) then
+    begin
+      Result := True;
+      Exit;
+    end;
+  Result := False;
+end;
+
 { TChPosObj }
 
 //-- BG ---------------------------------------------------------- 04.03.2011 --
 constructor TChPosObj.Create(Document: ThtDocument; Pos: Integer);
 begin
-  inherited Create;
+  inherited Create('');
   FChPos := Pos;
   FDocument := Document;
 end;
