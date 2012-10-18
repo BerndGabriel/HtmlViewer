@@ -748,6 +748,7 @@ begin
     10079: FMap := MacIcelandicMap;
     10081: FMap := MacTurkishMap;
     10082: FMap := MacCroatianMap;
+    20866: FMap := KOI8_RMap;
   end;
 end;
 
