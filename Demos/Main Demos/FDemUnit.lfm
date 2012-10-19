@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 1219
+  Left = 1017
   Height = 292
-  Top = 247
+  Top = 186
   Width = 494
   Caption = 'Frame Demo'
   ClientHeight = 272
@@ -13,13 +13,12 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '0.9.30.2'
+  LCLVersion = '1.1'
   object FrameViewer: TFrameViewer
     Left = 0
     Height = 218
     Top = 27
     Width = 494
-    CharSet = DEFAULT_CHARSET
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
@@ -46,6 +45,7 @@ object Form1: TForm1
     PrintMarginRight = 2
     PrintMarginTop = 2
     PrintScale = 1
+    QuirksMode = qmDetect
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
