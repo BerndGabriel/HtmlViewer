@@ -578,7 +578,7 @@ begin
   Add(TBuffConvInfo.Create(     20424, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Hebrew'));
   Add(TBuffConvInfo.Create(     20833, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Korean Extended'));
   Add(TBuffConvInfo.Create(     20838, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Thai'));
-  Add(TBuffConvInfo.Create(     20866, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'Russian (KOI8-R); Cyrillic (KOI8-R)'));
+  Add(TBuffConvInfo.Create(     20866, UNKNOWN_CHARSET,     TBuffConvHighMap,     'Russian (KOI8-R); Cyrillic (KOI8-R)'));
   Add(TBuffConvInfo.Create(     20871, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Icelandic'));
   Add(TBuffConvInfo.Create(     20880, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Cyrillic Russian'));
   Add(TBuffConvInfo.Create(     20905, UNKNOWN_CHARSET,     TBuffConvSingleByte,  'IBM EBCDIC Turkish'));
