@@ -134,12 +134,14 @@ uses
 resourcestring
   // GIF Error messages
   //BG, 01.09.2009: unused: sOutOfData		= 'Premature end of data';
+{$IFDEF PIXELFORMAT_TOO_SLOW}
   sOutOfMemDIB = 'Failed to allocate memory for GIF DIB';
   sDIBCreate = 'Failed to create DIB from Bitmap';
   sNoDIB = 'Image has no DIB';
+  SScanLine = 'Scan line index out of range';
+{$ENDIF PIXELFORMAT_TOO_SLOW}
   sInvalidBitmap = 'Bitmap image is not valid';
   SInvalidPixelFormat = 'Invalid pixel format';
-  SScanLine = 'Scan line index out of range';
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -565,7 +567,9 @@ end;
 
 function TDIBReader.GetScanline(Row: integer): pointer;
 begin
-{$ifndef FPC_TODO}
+{$ifdef FPC_TODO}
+  Result := nil;
+{$else}
   Result := FBitmap.ScanLine[Row];
 {$endif}
 end;

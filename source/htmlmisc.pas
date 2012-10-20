@@ -544,8 +544,11 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 
 implementation
 
+{$IFDEF MSWINDOWS}
+{$ELSE}
 var
   ExpectsUTF8 : Boolean;  {True=widgetset expects to receive UTF8-encoded strings}
+{$ENDIF}
 
  {These functions belong in LclIntf unit}
 
@@ -1165,7 +1168,10 @@ end;
 
 
 initialization
+{$IFDEF MSWINDOWS}
+{$ELSE}
   ExpectsUTF8 := WidgetSet.LCLPlatform in [lpCarbon, lpQt, lpGTK2, lpWin32];
+{$ENDIF}
 
 end.
 

@@ -30,12 +30,12 @@ unit HtmlGlobals;
 interface
 
 uses
-  {$ifdef TScrollStyleInSystemUITypes}
+{$ifdef TScrollStyleInSystemUITypes}
   System.UITypes,
-  {$endif}
-  {$ifdef UseVCLStyles}
+{$endif}
+{$ifdef UseVCLStyles}
   Vcl.Themes,
-  {$endif}
+{$endif}
   Classes, SysUtils, Graphics, Controls,
 {$ifdef MSWINDOWS}
   Windows,
@@ -51,6 +51,7 @@ uses
 {$else}
   Consts,
   StrUtils,
+  StdCtrls, 
   {$ifdef UseTNT}
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
@@ -67,7 +68,6 @@ uses
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses VCL standard controls.'}
     {$endif}
-    StdCtrls,
     Buttons,
     {$ifdef Compiler18_Plus}
       WideStrings,

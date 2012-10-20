@@ -847,10 +847,8 @@ end;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 {return count <= Max which fits in Width.  Return X, the extent of chars that fit}
-type
-  Integers = array[1..1] of Integer;
 var
-  Ints: ^Integers;
+  Ints: array of Integer;
   L, H, I: Integer;
 begin
   Extent.cx := 0;
@@ -861,16 +859,12 @@ begin
 
   if not IsWin32Platform then
   begin
-    GetMem(Ints, Sizeof(Integer) * Max);
-    try
-      if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints^, Extent) then
-        if Result > 0 then
-          Extent.cx := Ints^[Result]
-        else
-          Extent.cx := 0;
-    finally
-      FreeMem(Ints);
-    end;
+    SetLength(Ints, Max);
+    if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent) then
+      if Result > 0 then
+        Extent.cx := Ints[Result - 1]
+      else
+        Extent.cx := 0;
   end
   else {GetTextExtentExPointW not available in win98, 95}
   begin {optimize this by looking for Max to fit first -- it usually does}
@@ -1630,27 +1624,33 @@ begin
 end;
 
 procedure ClipBuffer.CopyToClipboard;
-{Unicode clipboard routine courtesy Mike Lischke}
-var
-  Data: THandle;
-  DataPtr: Pointer;
+{$ifdef LCL}
 begin
-  Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, 2 * BufferLeng);
+  Clipboard.AddFormat(CF_UNICODETEXT, Buffer[0], BufferLeng * sizeof(WIDECHAR));
+end;
+{$else}
+var
+  Len: Integer;
+  Mem: HGLOBAL;
+  Wuf: PWideChar;
+begin
+  Len := BufferLeng;
+  Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
   try
-    DataPtr := GlobalLock(Data);
+    Wuf := GlobalLock(Mem);
     try
-      Move(Buffer^, DataPtr^, 2 * BufferLeng);
-{$ifndef FPC_TODO}
-      Clipboard.SetAsHandle(CF_UNICODETEXT, Data);
-{$endif}
+      Move(Buffer[0], Wuf[0], Len * SizeOf(ThtChar));
+      Wuf[Len] := #0;
+      // BG, 28.06.2012: use API method. The vcl clipboard does not support multiple formats.
+      SetClipboardData(CF_UNICODETEXT, Mem);
     finally
-      GlobalUnlock(Data);
+      GlobalUnlock(Mem);
     end;
   except
-    GlobalFree(Data);
-    raise;
+    GlobalFree(Mem);
   end;
 end;
+{$endif}
 
 function ClipBuffer.Terminate: Integer;
 begin
