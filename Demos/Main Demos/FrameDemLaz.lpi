@@ -40,7 +40,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="59">
+    <Units Count="60">
       <Unit0>
         <Filename Value="FrameDemLaz.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -93,7 +93,6 @@
       <Unit5>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <UnitName Value="HTMLSubs"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
         <TopLine Value="11973"/>
@@ -225,7 +224,7 @@
       <Unit21>
         <Filename Value="..\..\source\htmlgif1.pas"/>
         <UnitName Value="HtmlGif1"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="4"/>
         <WindowIndex Value="0"/>
         <TopLine Value="2182"/>
         <CursorPos X="1" Y="2226"/>
@@ -516,132 +515,144 @@
         <CursorPos X="5" Y="327"/>
         <UsageCount Value="11"/>
       </Unit58>
+      <Unit59>
+        <Filename Value="..\..\package\FrameViewer09.pas"/>
+        <UnitName Value="FrameViewer09"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="3"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="54" Y="11"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit59>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="41" Column="9" TopLine="25"/>
+        <Caret Line="716" Column="1" TopLine="32"/>
       </Position1>
       <Position2>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="716" Column="1" TopLine="32"/>
+        <Caret Line="124" Column="57" TopLine="95"/>
       </Position2>
       <Position3>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="124" Column="57" TopLine="95"/>
+        <Caret Line="716" Column="1" TopLine="628"/>
       </Position3>
       <Position4>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="716" Column="1" TopLine="628"/>
+        <Caret Line="272" Column="8" TopLine="227"/>
       </Position4>
       <Position5>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="272" Column="8" TopLine="227"/>
+        <Caret Line="253" Column="1" TopLine="227"/>
       </Position5>
       <Position6>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="253" Column="1" TopLine="227"/>
+        <Caret Line="40" Column="36" TopLine="7"/>
       </Position6>
       <Position7>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="40" Column="36" TopLine="7"/>
+        <Caret Line="254" Column="23" TopLine="226"/>
       </Position7>
       <Position8>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="254" Column="23" TopLine="226"/>
+        <Caret Line="259" Column="15" TopLine="241"/>
       </Position8>
       <Position9>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="259" Column="15" TopLine="241"/>
+        <Caret Line="684" Column="1" TopLine="630"/>
       </Position9>
       <Position10>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="684" Column="1" TopLine="630"/>
+        <Caret Line="675" Column="30" TopLine="650"/>
       </Position10>
       <Position11>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="675" Column="30" TopLine="650"/>
+        <Filename Value="..\..\source\HTMLSubs.pas"/>
+        <Caret Line="7595" Column="1" TopLine="7544"/>
       </Position11>
       <Position12>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="7595" Column="1" TopLine="7544"/>
+        <Caret Line="168" Column="18" TopLine="140"/>
       </Position12>
       <Position13>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="168" Column="18" TopLine="140"/>
+        <Caret Line="169" Column="29" TopLine="140"/>
       </Position13>
       <Position14>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="169" Column="29" TopLine="140"/>
+        <Caret Line="68" Column="29" TopLine="29"/>
       </Position14>
       <Position15>
-        <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="68" Column="29" TopLine="29"/>
+        <Filename Value="..\..\source\HtmlGlobals.pas"/>
+        <Caret Line="683" Column="36" TopLine="655"/>
       </Position15>
       <Position16>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="683" Column="36" TopLine="655"/>
+        <Caret Line="682" Column="45" TopLine="655"/>
       </Position16>
       <Position17>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="682" Column="45" TopLine="655"/>
+        <Caret Line="678" Column="46" TopLine="655"/>
       </Position17>
       <Position18>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="678" Column="46" TopLine="655"/>
+        <Caret Line="686" Column="1" TopLine="655"/>
       </Position18>
       <Position19>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="686" Column="1" TopLine="655"/>
+        <Caret Line="688" Column="1" TopLine="655"/>
       </Position19>
       <Position20>
-        <Filename Value="..\..\source\HtmlGlobals.pas"/>
-        <Caret Line="688" Column="1" TopLine="655"/>
-      </Position20>
-      <Position21>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <Caret Line="7576" Column="1" TopLine="7548"/>
-      </Position21>
-      <Position22>
+      </Position20>
+      <Position21>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <Caret Line="683" Column="19" TopLine="655"/>
-      </Position22>
-      <Position23>
+      </Position21>
+      <Position22>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
         <Caret Line="7571" Column="1" TopLine="7548"/>
-      </Position23>
-      <Position24>
+      </Position22>
+      <Position23>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <Caret Line="691" Column="1" TopLine="655"/>
-      </Position24>
-      <Position25>
+      </Position23>
+      <Position24>
         <Filename Value="..\..\source\htmlgif1.pas"/>
         <Caret Line="2226" Column="1" TopLine="2182"/>
-      </Position25>
-      <Position26>
+      </Position24>
+      <Position25>
         <Filename Value="..\..\source\HtmlGlobals.pas"/>
         <Caret Line="686" Column="1" TopLine="655"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\..\source\HTMLSubs.pas"/>
+        <Caret Line="7571" Column="15" TopLine="7543"/>
       </Position26>
       <Position27>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="7571" Column="15" TopLine="7543"/>
+        <Caret Line="7550" Column="54" TopLine="7543"/>
       </Position27>
       <Position28>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="7550" Column="54" TopLine="7543"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position28>
       <Position29>
         <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Caret Line="12001" Column="28" TopLine="11965"/>
       </Position29>
       <Position30>
-        <Filename Value="..\..\source\HTMLSubs.pas"/>
-        <Caret Line="12001" Column="28" TopLine="11965"/>
+        <Filename Value="..\..\package\FrameViewer09.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="9"/>
+    <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
       <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FrameDemLaz"/>
@@ -669,54 +680,93 @@
   <Debugging>
     <BreakPoints Count="13">
       <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="D:\source\pascal\lazarus\lcl\lresources.pp"/>
         <Line Value="1463"/>
       </Item1>
       <Item2>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
         <Line Value="1572"/>
       </Item2>
       <Item3>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\vwPrint.pas"/>
         <Line Value="318"/>
       </Item3>
       <Item4>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\vwPrint.pas"/>
         <Line Value="134"/>
       </Item4>
       <Item5>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\GDIPL2A.pas"/>
         <Line Value="255"/>
       </Item5>
       <Item6>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\GDIPL2A.pas"/>
         <Line Value="263"/>
       </Item6>
       <Item7>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\GDIPL2A.pas"/>
         <Line Value="271"/>
       </Item7>
       <Item8>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\GDIPL2A.pas"/>
         <Line Value="218"/>
       </Item8>
       <Item9>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\Htmlsbs1.pas"/>
         <Line Value="282"/>
       </Item9>
       <Item10>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="D:\source\pascal\lazarus\lcl\interfaces\win32\win32winapi.inc"/>
         <Line Value="2505"/>
       </Item10>
       <Item11>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\HTMLGif2.pas"/>
         <Line Value="526"/>
       </Item11>
       <Item12>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="PrintStatusForm.pas"/>
         <Line Value="69"/>
       </Item12>
       <Item13>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsGlobal"/>
+        <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\source\HtmlGlobals.pas"/>
         <Line Value="691"/>
       </Item13>

@@ -1,5 +1,5 @@
 {
-Version   11.3
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2012 by HtmlViewer Team
 
@@ -237,6 +237,8 @@ type
     procedure AKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure AssignY(Y: Integer);
 {$ENDIF}
+    function GetFontInfoIndex: FIIndex;
+    property FontInfoIndex: FIIndex read GetFontInfoIndex;
   public
     Pos: Integer; {0..Len  Index where font takes effect}
     TheFont: TMyFont;
@@ -1591,7 +1593,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.01.2012 --
-procedure SummarizeCountsPerType(
+procedure CountsPerType(
   var CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
@@ -1611,13 +1613,28 @@ function SumOfType(
   const Widths: IntArray;
   StartIndex, EndIndex: Integer): Integer;
   {$ifdef UseInline} inline; {$endif}
-
 var
   I: Integer;
 begin
   Result := 0;
   for I := StartIndex to EndIndex do
     if ColumnSpecs[I] = WidthType then
+      Inc(Result, Widths[I]);
+end;
+
+//-- BG ---------------------------------------------------------- 17.06.2012 --
+function SumOfNotType(
+  WidthType: TWidthType;
+  const ColumnSpecs: TWidthTypeArray;
+  const Widths: IntArray;
+  StartIndex, EndIndex: Integer): Integer;
+  {$ifdef UseInline} inline; {$endif}
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := StartIndex to EndIndex do
+    if ColumnSpecs[I] <> WidthType then
       Inc(Result, Widths[I]);
 end;
 
@@ -1862,15 +1879,7 @@ begin
   if Value <> FVisited then
   begin
     FVisited := Value;
-    if Value then
-      if Hover then
-        ConvertFont(FIArray.Ar[HVFont])
-      else
-        ConvertFont(FIArray.Ar[VFont])
-    else if Hover then
-      ConvertFont(FIArray.Ar[HLFont])
-    else
-      ConvertFont(FIArray.Ar[LFont]);
+    ConvertFont(FIArray.Ar[FontInfoIndex]);
     FontChanged;
   end;
 end;
@@ -1880,15 +1889,7 @@ begin
   if Value <> FHover then
   begin
     FHover := Value;
-    if Value then
-      if FVisited then
-        ConvertFont(FIArray.Ar[HVFont])
-      else
-        ConvertFont(FIArray.Ar[HLFont])
-    else if FVisited then
-      ConvertFont(FIArray.Ar[VFont])
-    else
-      ConvertFont(FIArray.Ar[LFont]);
+    ConvertFont(FIArray.Ar[FontInfoIndex]);
     FontChanged;
   end;
 end;
@@ -1945,6 +1946,21 @@ end;
 function TFontObj.GetOverhang: Integer;
 begin
   Result := Overhang;
+end;
+
+//-- BG ---------------------------------------------------------- 17.06.2012 --
+function TFontObj.GetFontInfoIndex: FIIndex;
+begin
+  if Visited then
+    if Hover then
+      Result := HVFont
+    else
+      Result := VFont
+  else
+    if Hover then
+      Result := HLFont
+    else
+      Result := LFont;
 end;
 
 function TFontObj.GetHeight(var Desc: Integer): Integer;
@@ -3456,7 +3472,6 @@ procedure TFormControlObj.ProcessProperties(Prop: TProperties);
 var
   MargArrayO: TVMarginArray;
   MargArray: TMarginArray;
-  Align: AlignmentType;
   EmSize, ExSize: Integer;
 begin
   Prop.GetVMarginArray(MargArrayO);
@@ -3498,8 +3513,7 @@ begin
       FWidth := MargArray[piWidth];
   if MargArray[piHeight] > 0 then
     FHeight := MargArray[piHeight] - BordT - BordB;
-  if Prop.GetVertAlign(Align) then
-    FormAlign := Align;
+  Prop.GetVertAlign(FormAlign);
   BkColor := Prop.GetBackgroundColor;
 end;
 
@@ -4766,6 +4780,7 @@ begin
   while I < TheCount do
   begin
     try
+      //TODO -oBG, 24.06.2012: merge sections with display=inline etc.  
       Inc(H, Items[I].DrawLogic(Canvas, 0, Y + H, 0, 0, Width, AHeight, BlHt, IMgr, Sw, Curs));
       ScrollWidth := Max(ScrollWidth, Sw);
       Inc(I);
@@ -5040,6 +5055,7 @@ begin
   MargArrayO := TT.MargArrayO;
   if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
     MyCell.IMgr := TIndentManager.Create;
+  BlockTitle := TT.BlockTitle; // Thanks to Nagy Ervin.
 end;
 
 destructor TBlock.Destroy;
@@ -5493,6 +5509,9 @@ var
 var
   IsTiledGpImage: Boolean;
 begin
+  if (IW = 0) or (IH = 0) then
+    exit;
+
   if (BGImage.Image is TBitmap) then
   begin
     TheGpObj := TBitmap(BGImage.Image);
@@ -6143,7 +6162,7 @@ begin
               Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
         end;
 
-        if ImgOK then
+        if ImgOK and (TiledImage <> nil) then
         begin
           if not Document.IsCopy then
             {$IFNDEF NoGDIPlus}
@@ -6942,7 +6961,7 @@ begin
     UlSy, DirSy, MenuSy:
       begin
         FListType := Unordered;
-        if APlain then
+        if APlain or (Display = pdInline) then
           FListStyleType := lbNone
         else
           if Tmp = lbBlank then
@@ -6982,7 +7001,7 @@ begin
     case Sy of
 
       OLSy, ULSy, DirSy, MenuSy:
-        if FListStyleType = lbNone then
+        if APlain then
           MargArrayO[PaddingLeft] := 0
         else
           MargArrayO[PaddingLeft] := ListIndent;
@@ -8389,7 +8408,7 @@ begin
     end;
 
     for J := BorderTopColor to BorderLeftColor do
-      if MargArray[J] = clNone then
+      if MargArray[J] = IntNull {was: clNone} then
         MargArray[J] := clSilver;
 
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);
@@ -8954,7 +8973,7 @@ begin
                 GuessHt := Trunc(SpecHt.Value);
 
               wtPercent:
-                GuessHt := Trunc(SpecHt.Value * AHeight / 100.0);
+                GuessHt := Trunc(SpecHt.Value * AHeight / 1000.0);
             else
               GuessHt := 0;
             end;
@@ -9294,6 +9313,66 @@ procedure THtmlTable.Initialize;
           end;
         end;
       end;
+
+    NumCols := 0;
+    for Rw := 0 to Rows.Count - 1 do
+      NumCols := Max(NumCols, Rows[Rw].Count);
+  end;
+
+  procedure AddDummyCellsForUnequalRowLengths;
+  var
+    Cl: Integer;
+    CellObj: TCellObj;
+    Row: TCellList;
+
+    function IsLastCellOfRow(): Boolean;
+    begin
+      // Is Row[Cl] resp. CellObj a cell in this row? (Cl >= 0)
+      // With respect to rowspans from previous rows is it the last one? (Cl + CellObj.ColSpan >= NumCols)
+      Result := (Cl >= 0) and (Cl + CellObj.ColSpan >= Row.Count);
+    end;
+
+  var
+    Rw, I, K: Integer;
+  begin
+    Rw := 0;
+    while Rw < Rows.Count do
+    begin
+      Row := Rows[Rw];
+      Cl := -1;
+      if Row.Count < NumCols then
+      begin
+        // this row is too short
+
+        // find the spanning column
+        Cl := Row.Count - 1;
+        while Cl >= 0 do
+        begin
+          CellObj := Row[Cl];
+          if CellObj.ColSpan > 0 then
+            break;
+          Dec(Cl);
+        end;
+
+        if IsLastCellOfRow then
+        begin
+          // widen this cell
+          for I := Row.Count to NumCols - 1 do
+          begin
+            Row.Add(DummyCell(CellObj.RowSpan));
+            for K := Rw + 1 to Rw + CellObj.RowSpan - 1 do
+              Rows[K].Add(DummyCell(0));
+          end;
+          CellObj.ColSpan := NumCols - Cl;
+        end;
+      end;
+      
+      // continue with next row not spanned by this cell.
+      if (Cl >= 0) and (CellObj.RowSpan > 0) then
+        Inc(Rw, CellObj.RowSpan)
+      else
+        Inc(Rw);
+    end;
   end;
 
 var
@@ -9305,10 +9384,7 @@ begin
   begin
     AddDummyCellsForColSpansAndInitializeCells;
     AddDummyCellsForRowSpans;
-
-    NumCols := 0;
-    for Rw := 0 to Rows.Count - 1 do
-      NumCols := Max(NumCols, Rows[Rw].Count);
+    AddDummyCellsForUnequalRowLengths;
 
     for Rw := 0 to Rows.Count - 1 do
     begin
@@ -9562,11 +9638,19 @@ var
   SpannedCounts: TIntegerPerWidthType;
 
   procedure IncreaseMinMaxWidthsEvenly(WidthType: TWidthType; StartIndex, EndIndex: Integer);
+  var
+    Untouched: Integer;
   begin
     if CellMin > SpannedMin then
-      IncreaseWidthsEvenly(WidthType, MinWidths, StartIndex, EndIndex, CellMin, SpannedMin, SpannedCounts[WidthType]);
+    begin
+      Untouched := SumOfNotType(WidthType, ColumnSpecs, MinWidths, StartIndex, EndIndex);
+      IncreaseWidthsEvenly(WidthType, MinWidths, StartIndex, EndIndex, CellMin - Untouched, SpannedMin - Untouched, SpannedCounts[WidthType]);
+    end;
     if CellMax > SpannedMax then
-      IncreaseWidthsEvenly(WidthType, MaxWidths, StartIndex, EndIndex, CellMax, SpannedMax, SpannedCounts[WidthType]);
+    begin
+      Untouched := SumOfNotType(WidthType, ColumnSpecs, MinWidths, StartIndex, EndIndex);
+      IncreaseWidthsEvenly(WidthType, MaxWidths, StartIndex, EndIndex, CellMax - Untouched, SpannedMax - Untouched, SpannedCounts[WidthType]);
+    end;
   end;
 
   procedure IncreaseMinMaxWidthsByMinMaxDelta(WidthType: TWidthType; StartIndex, EndIndex: Integer);
@@ -9716,7 +9800,7 @@ begin
                 - Fixed Layout: experiments showed that IExplore and Firefox *do* respect width attributes of <td> and <th>
                   even if there was a <colgroup> definition although W3C specified differently.
               }
-              SummarizeCountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
+              CountsPerType(SpannedCounts, ColumnSpecs, I, EndIndex);
 
               if CellPercent > 0 then
               begin
@@ -9979,7 +10063,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
       begin
         // Expand columns to fit exactly into NewWidth.
         // Prefer widening columns without or with relative specification.
-        SummarizeCountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
+        CountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
         if Counts[wtNone] > 0 then
         begin
           // a) There is at least 1 column without any width constraint: modify this/these.
@@ -11615,6 +11699,7 @@ begin
    {$ENDIF}
     Exit;
   end;
+
   for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
   begin
     Obj := Images[I];
@@ -11643,7 +11728,7 @@ begin
           Min := Math.Max(Min, Width + HSpaceL + HSpaceR);
   end;
 
-  //Max := 0;
+  SoftHyphen := False;
   P := Buff;
   P1 := StrScanW(P, BrkCh); {look for break ThtChar}
   while Assigned(P1) do
@@ -11665,6 +11750,7 @@ begin
     while P^ <> #0 do
     {find the next string of chars that can't be wrapped}
     begin
+      SoftHyphen := False;
       if CanWrap(P1^) and (Brk[I] = 'y') then
       begin
         Inc(P1);
@@ -11736,7 +11822,8 @@ begin
   if RemoveSpaces then
     while True do
       case (Start + N - 1)^ of
-        WideChar(' '), BrkCh:
+        SpcChar,
+        BrkCh:
           Dec(N); {remove spaces on end}
       else
         break;
@@ -11745,7 +11832,7 @@ begin
   begin
     J := Images.GetImageCountAt(Start - Buff);
     J1 := FormControls.GetControlCountAt(Start - Buff);
-    if J = 0 then {it's and image}
+    if J = 0 then {it's an image}
     begin
       Wid := Images.GetWidthAt(Start - Buff, Align, HSpcL, HSpcR, FlObj);
     {Here we count floating images as 1 ThtChar but do not include their width,
@@ -11789,7 +11876,6 @@ var
   I, J, J1, OHang, Wid, HSpcL, HSpcR: Integer;
   Align: AlignmentType;
   FlObj: TFloatingObj;
-  Font: TMyFont;
 begin
   Result := 0;
   while N > 0 do
@@ -11802,25 +11888,22 @@ begin
     {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
       if not (Align in [ALeft, ARight]) then
-      begin
-        Result := Result + Wid + HSpcL + HSpcR;
-      end;
+        Inc(Result, Wid + HSpcL + HSpcR);
       Dec(N); {image counts as one ThtChar}
       Inc(Start);
     end
     else if J1 = 0 then
     begin
-      Result := Result + FormControls.GetWidthAt(Start - Buff, HSpcL, HSpcR);
-      Result := Result + HSpcL + HSpcR;
+      Inc(Result, FormControls.GetWidthAt(Start - Buff, HSpcL, HSpcR) + HSpcL + HSpcR);
       Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
     else
     begin
-      Font := Fonts.GetFontAt(Start - Buff, OHang);
-      Font.AssignToCanvas(Canvas);
+      Fonts.GetFontAt(Start - Buff, OHang).AssignToCanvas(Canvas);
       I := Min(J, J1);
       I := Min(I, Min(Fonts.GetFontCountAt(Start - Buff, Len), N));
+      Assert(I > 0, 'I less than or = 0 in FindTextWidthA');
       Inc(Result, GetXExtent(Canvas.Handle, Start, I) - OHang);
       if I = 0 then
         Break;
@@ -12038,7 +12121,6 @@ var
     FlObj: TFloatingObj;
     LRTextWidth: Integer;
     OHang: Integer;
-
   begin
     DHt := 0; {for the fonts on this line get the maximum height}
     Cnt := 0;
@@ -12064,7 +12146,9 @@ var
       end;
     end;
 
+    Align := ANone;
     if not NoChar then
+    begin
       repeat
         FO := Fonts.GetFontObjAt(PStart - Buff + Cnt, Index);
         Tmp := FO.GetHeight(Desc);
@@ -12073,6 +12157,8 @@ var
         J := Fonts.GetFontCountAt(PStart - Buff + Cnt, Len);
         Inc(Cnt, J);
       until Cnt >= NN;
+      Align := FO.SScript;
+    end;
 
     {if there are images or line-height, then maybe they add extra space}
     SB := 0; // vertical space before DHt / Text
@@ -12341,7 +12427,7 @@ begin {TSection.DrawLogic}
     begin
       //BG, 24.01.2010: do not move down images or trailing spaces.
       P := PStart + N - 1; {the last ThtChar that fits}
-      if ((P^ = ThtChar(' ')) or {(P^ = FmCtl) or} (P^ = ImgPan) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
+      if ((P^ = SpcChar) or {(P^ = FmCtl) or} (P^ = ImgPan) or WrapChar(P^)) and (Brk[P - Buff + 1] <> 'n') or (P^ = BrkCh) then
       begin {move past spaces so as not to print any on next line}
         while (N < MaxChars) and ((P + 1)^ = ' ') do
         begin
@@ -12920,6 +13006,7 @@ var
         begin
           SetBkMode(Canvas.Handle, Opaque);
           Canvas.Brush.Color := Canvas.Font.Color;
+          Canvas.Brush.Style := bsSolid;
           if FO.TheFont.bgColor = clNone then
           begin
             Color := Canvas.Font.Color;
@@ -12941,7 +13028,7 @@ var
         else
         begin
           SetBkMode(Canvas.Handle, Opaque);
-          Canvas.Brush.Style := bsClear;
+          Canvas.Brush.Style := bsSolid;
           Canvas.Brush.Color := ThemedColor(FO.TheFont.BGColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
         end;
 
@@ -14906,8 +14993,8 @@ var
   Align: AlignmentType;
   EmSize, ExSize: Integer;
 begin
-  if Prop.GetVertAlign(Align) then
-    VertAlign := Align;
+  Prop.GetVertAlign(VertAlign);
+  Align := ANone;
   if Prop.GetFloat(Align) and (Align <> ANone) then
   begin
     if HSpaceR = 0 then

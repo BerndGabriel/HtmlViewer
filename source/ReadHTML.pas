@@ -1,5 +1,5 @@
 {
-Version   11.3
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin,
 Copyright (c) 2008-2012 by HtmlViewer Team
 
@@ -72,6 +72,11 @@ ANGUS March 2012 - fixed THtmlParser.DoMeta to handle meta without http-equiv="C
          <meta charset="utf-8"> (used by Goggle)
 
 }
+
+{$define DO_LI_INLINE}
+{$ifdef DO_LI_INLINE}
+{$else}
+{$endif}
 
 unit ReadHTML;
 
@@ -156,7 +161,9 @@ type
     procedure DoCommonSy;
     procedure DoDivEtc(Sym: Symb; const TermSet: SymbSet);
     procedure DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
-    procedure DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
+    procedure DoListItem(
+      {$ifdef DO_LI_INLINE}var LiBlock: TBlockLi; var LiSection: TSection;{$endif}
+      BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
     procedure DoLists(Sym: Symb; const TermSet: SymbSet);
     procedure DoMap;
     procedure DoMeta(Sender: TObject);
@@ -847,12 +854,13 @@ procedure THtmlParser.Next;
         Sy := SaveSy;
       end;
 
-      procedure StrToInteger(const S: ThtString; var Value: Integer);
+      function StrToInteger(const S: ThtString; var Value: Integer): Boolean;
       var
         S1: ThtString;
         I, Code: Integer;
         ValD: Double;
       begin
+        Result := False;
         S1 := Trim(S);
         I := Length(S1);
         if I > 0 then
@@ -879,6 +887,7 @@ procedure THtmlParser.Next;
                 try
                   System.Val(S1, ValD, Code);
                   Value := Round(ValD);
+                  Result := True;
                 except
                 end;
             end;
@@ -929,7 +938,12 @@ procedure THtmlParser.Next;
             GetCh;
           end;
 
-      StrToInteger(S, Val);
+      if not StrToInteger(S, Val) then
+        case Sym of
+          BorderSy:
+            if htLowerCase(S) = 'none' then
+              Val := 0;
+        end;
 
       if (Sym = IDSy) and (S <> '') and Assigned(PropStack.MasterList) and not LinkSearch then
         PropStack.MasterList.AddChPosObjectToIDNameList(S, PropStack.SIndex);
@@ -1279,32 +1293,39 @@ var
   FormBlock, DivBlock: TBlock;
   FieldsetBlock: TFieldsetBlock;
   IsFieldsetLegend: Boolean;
+  IsInline: Boolean;
 begin
+  IsInline := PropStack.Last.Display = pdInline;
   case Sym of
     DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
         CheckForAlign;
-
-        DivBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
-        SectionList.Add(DivBlock, TagIndex);
-        SectionList := DivBlock.MyCell;
-
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
+        if not IsInline then
+        begin
+          DivBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SectionList, Attributes);
+          SectionList.Add(DivBlock, TagIndex);
+          SectionList := DivBlock.MyCell;
+        end
+        else
+          DivBlock := nil;
+        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, not IsInline);
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
         PopAProp(SymbToStr(Sym));
-        if SectionList.CheckLastBottomMargin then
+        if not IsInline then
         begin
-          DivBlock.MargArray[MarginBottom] := ParagraphSpace;
-          DivBlock.BottomAuto := True;
+          if SectionList.CheckLastBottomMargin then
+          begin
+            DivBlock.MargArray[MarginBottom] := ParagraphSpace;
+            DivBlock.BottomAuto := True;
+          end;
+          SectionList := DivBlock.OwnerCell;
         end;
-        SectionList := DivBlock.OwnerCell;
-
-        Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, True);
-        if Sy = DivEndSy then
+        Section := nil; // TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, SectionList, False);
+        if Sy = EndSymbFromSymb(Sym) then
           Next;
       end;
 
@@ -2792,7 +2813,7 @@ var
       while PropStackIndex >= InitialStackIndex do
         PopProp;
       SectionList := PreBlock.OwnerCell;
-      if Sy = PreEndSy then
+      if (Sy = PreEndSy) or (LCh = #0) then
         Next;
     finally
       S.Free;
@@ -3234,78 +3255,95 @@ begin
   Next;
 end;
 
-procedure THtmlParser.DoListItem(var LiBlock: TBlockLi; var LiSection: TSection; BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
+procedure THtmlParser.DoListItem(
+  {$ifdef DO_LI_INLINE}var LiBlock: TBlockLi; var LiSection: TSection;{$endif}
+  BlockType, Sym: Symb; LineCount: Integer; Index: ThtChar; Plain: Boolean; const TermSet: SymbSet);
 var
-  Done: Boolean;
-  //LiBlock: TBlock;
-  //LISection: TSection;
+{$ifdef DO_LI_INLINE}
   IsInline: Boolean;
   IsFirst: Boolean;
+{$else}
+  LiBlock: TBlock;
+  LISection: TSection;
+{$endif}
 begin
+  SectionList.Add(Section, TagIndex);
   PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+{$ifdef DO_LI_INLINE}
   IsInline := PropStack.Last.Display = pdInline;
   IsFirst := not IsInline or (LiSection = nil) or not (LiSection.Display = pdInline);
   if IsFirst then
+{$endif}
   begin
-    SectionList.Add(Section, TagIndex);
     LiBlock := TBlockLI.Create(PropStack.MasterList, PropStack.Last, SectionList, BlockType, Plain, Index, LineCount, ListLevel, Attributes);
     SectionList.Add(LiBlock, TagIndex);
     LiSection := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, LiBlock.MyCell, True);
+    Section := LISection;
+{$ifdef DO_LI_INLINE}
+  end
+  else
+  begin
+    Section := TSection.Create(PropStack.MasterList, nil, PropStack.Last, CurrentUrlTarget, LiBlock.MyCell, True);
+{$endif}
   end;
   SectionList := LiBlock.MyCell;
-  Section := LISection;
 
   SkipWhiteSpace;
   Next;
-  Done := False;
-  while not Done do {handle second part like after a <p>}
+  while true do {handle second part like after a <p>}
     case Sy of
       TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, BSy, ISy, BEndSy, IEndSy,
-        EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
-        CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
-        SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
-        TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
-        SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
-        InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
-        ImageSy, FontSy, BaseFontSy, BrSy, HeadingSy,
-        MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, ObjectSy, ObjectEndSy:
+      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, CiteSy,
+      CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
+      SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
+      TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
+      SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
+      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+      ImageSy, FontSy, BaseFontSy, BrSy, HeadingSy,
+      MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, ObjectSy, ObjectEndSy:
         DoCommonSy;
+
       PSy:
         if BlockType in [OLSy, ULSy, DirSy, MenuSy, DLSy] then
           DoP([])
         else
-          Done := True; {else terminate lone <li>s on <p>}
-      PEndSy: Next;
+          break; {else terminate lone <li>s on <p>}
+
+      PEndSy,
+      CommandSy:
+        Next;
+
       DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
+
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         begin
           DoLists(Sy, TermSet);
           LiBlock.MyCell.CheckLastBottomMargin;
           Next;
         end;
-      CommandSy: Next;
-      TableSy: DoTable;
+
+      TableSy:
+        DoTable;
     else
-      Done := True;
+      break;
     end;
 
   if Assigned(Section) and (Section = LISection) and (Section.Len = 0) then
     Section.AddChar(WideChar(160), TagIndex); {so that bullet will show on blank <li>}
-  if not IsInline then
-  begin
-    SectionList.Add(Section, TagIndex);
-    Section := nil;
-  end;
+  SectionList.Add(Section, TagIndex);
+  Section := nil;
   SectionList.CheckLastBottomMargin;
   PopAProp(SymbToStr(Sym));
   SectionList := LiBlock.OwnerCell;
+{$ifdef DO_LI_INLINE}
   if not IsInline then
   begin
     LiBlock := nil;
     LiSection := nil;
   end;
+{$endif}
 end;
 
 {-------------DoLists}
@@ -3318,11 +3356,11 @@ var
   Index: ThtChar;
   NewBlock: TBlock;
   EndSym: Symb;
+{$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
   LiSection: TSection;
+{$endif}
 begin
-  LiBlock := nil;
-  LiSection := nil ;
   LineCount := 1;
   Index := '1';
   EndSym := EndSymbFromSymb(Sym);
@@ -3366,7 +3404,7 @@ begin
         begin
           if (Sy = LiSy) and Attributes.Find(ValueSy, T) and (T.Value <> 0) then
             LineCount := T.Value;
-          DoListItem(LiBlock, LiSection, Sym, Sy, LineCount, Index, Plain, TermSet);
+          DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}Sym, Sy, LineCount, Index, Plain, TermSet);
           Inc(LineCount);
         end;
       OLSy, ULSy, DirSy, MenuSy, DLSy:
@@ -3615,11 +3653,11 @@ var
   I: Integer;
   Val: TColor;
   AMarginHeight, AMarginWidth: Integer;
+{$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
   LiSection: TSection;
+{$endif}
 begin
-  LiBlock := nil;
-  LiSection := nil;
   repeat
     if Sy in TermSet then
       Exit;
@@ -3706,10 +3744,10 @@ begin
         end;
 
       LISy:
-        DoListItem(LiBlock, LiSection, LiAloneSy, Sy, 1, '1', False, TermSet);
+        DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}LiAloneSy, Sy, 1, '1', False, TermSet);
 
       DDSy, DTSy:
-        DoListItem(LiBlock, LiSection, DLSy, Sy, 1, '1', False, TermSet);
+        DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}DLSy, Sy, 1, '1', False, TermSet);
 
       PSy: DoP(TermSet);
 

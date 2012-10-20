@@ -190,9 +190,9 @@ begin
 
   APath := Trim(APath);
 
-  if (APath <> '') and (APath[1] = '/') then
+  if (Length(APath) >= 1) and (APath[1] = '/') then
   begin {remove path from base and use host only}
-    if APath[2] = '/' then {UNC filename}
+    if (Length(APath) >= 2) and (APath[2] = '/') then {UNC filename}
       if Proto = 'file' then
         Result := 'file:///' + APath
       else
