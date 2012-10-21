@@ -1,5 +1,5 @@
 {
-Version   11.2
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -56,7 +56,11 @@ uses
 {$ifndef MetaFileMissing}
   MetaFilePrinter,
 {$endif}
+{$ifdef UseOldPreviewForm}
   PreviewForm,
+{$else UseOldPreviewForm}
+  BegaHtmlPrintPreviewForm,
+{$endif UseOldPreviewForm}
 {$ifdef UseTNT}
   TntForms,
   TntStdCtrls,
@@ -635,7 +639,7 @@ else
   Dest := '';    {no local destination}
 S := FrameViewer.HTMLExpandFileName(S);
 if FileExists(S) then
-   StartProcess(StrPCopy(PC, '"' + ParamStr(0)+'" "'+S+Dest+'"'), sw_Show);
+   StartProcess(StrPCopy(PC, ParamStr(0)+' "'+S+Dest+'"'), sw_Show);
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
@@ -856,14 +860,24 @@ end;
 
 procedure TForm1.PrintPreviewClick(Sender: TObject);
 var
+{$ifdef UseOldPreviewForm}
   pf: TPreviewForm;
+{$else UseOldPreviewForm}
+  pf: TBegaHtmlPrintPreviewForm;
+{$endif UseOldPreviewForm}
   Viewer: ThtmlViewer;
   Abort: boolean;
 begin
   Viewer := FrameViewer.ActiveViewer;
   if Viewer <> nil then
   begin
+{$ifdef UseOldPreviewForm}
     pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
+{$else UseOldPreviewForm}
+    pf := TBegaHtmlPrintPreviewForm.Create(Self);
+    pf.FrameViewer := FrameViewer;
+    Abort := False;
+{$endif UseOldPreviewForm}
     try
       if not Abort then
         pf.ShowModal;
@@ -978,7 +992,7 @@ end;
 const
   HFText: ThtString =
     '<html><head><style>'+
-    'body  {font: Arial 8pt;}'+
+    'body, td  {font: Arial 8pt;}'+
     '</style></head>'+
     '<body marginwidth="0">'+
     '<table border="0" cellspacing="2" cellpadding="1" width="100%">'+

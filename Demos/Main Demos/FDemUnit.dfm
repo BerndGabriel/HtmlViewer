@@ -24,12 +24,11 @@ object Form1: TForm1
     Top = 27
     Width = 1179
     Height = 782
-    CharSet = DEFAULT_CHARSET
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
-    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvShowVScroll]
+    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
     HistoryIndex = 0
     HistoryMaxCount = 6
     ImageCacheCount = 6
@@ -51,6 +50,7 @@ object Form1: TForm1
     PrintMarginRight = 2
     PrintMarginTop = 2
     PrintScale = 1
+    QuirksMode = qmDetect
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove

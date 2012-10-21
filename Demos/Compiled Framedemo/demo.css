@@ -10,7 +10,7 @@
            margin-bottom: 0;}
   .subtitle  {font: bold 8pt; color: #733737; text-align: center;
               margin: 0;}
-  .maroon {color: maroon; }
+  .maroon {color: maroon; font-weight: bold }
   .heading
     {color: rgb(68, 85, 119); margin-left: -20px; margin-top: 25px; font: bold 12pt;
      background-color: rgb(222,233,243);

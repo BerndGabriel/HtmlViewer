@@ -1,5 +1,5 @@
 {
-Version   11.2
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -56,7 +56,11 @@ uses
 {$ifndef MetaFileMissing}
   MetaFilePrinter,
 {$endif}
+{$ifdef UseOldPreviewForm}
   PreviewForm,
+{$else UseOldPreviewForm}
+  BegaHtmlPrintPreviewForm,
+{$endif UseOldPreviewForm}
 {$ifdef UseTNT}
   TntForms,
   TntStdCtrls,
@@ -340,11 +344,11 @@ if I=1 then
   if Assigned(Viewer) then
     begin
     ID := Copy(URL, 10, Length(URL)-9);
+    Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
     if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
       Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
     else
       Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
-    Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
     Viewer.Reformat;
     end;
   Handled := True;
@@ -602,7 +606,7 @@ begin
   begin
     ReloadButton.Enabled := False;
     Update;
-    Viewer.LoadFromFile(OpenDialog.Filename, TextType);
+    Viewer.LoadTextFile(OpenDialog.Filename);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
@@ -621,7 +625,7 @@ begin
   if OpenDialog.Execute then
   begin
     ReloadButton.Enabled := False;
-    Viewer.LoadFromFile(OpenDialog.Filename, ImgType);
+    Viewer.LoadImageFile(OpenDialog.Filename);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
@@ -861,21 +865,27 @@ if FileExists(NextFile) then
 end;
 
 procedure TForm1.PrintPreviewClick(Sender: TObject);
-{.$ifndef LCL}
 var
+{$ifdef UseOldPreviewForm}
   pf: TPreviewForm;
+{$else UseOldPreviewForm}
+  pf: TBegaHtmlPrintPreviewForm;
+{$endif UseOldPreviewForm}
   Abort: boolean;
-{.$endif}
 begin
-{.$ifndef LCL}
-pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
-try
-  if not Abort then
-    pf.ShowModal;
-finally
-  pf.Free;
+{$ifdef UseOldPreviewForm}
+  pf := TPreviewForm.CreateIt(Self, Viewer, Abort);
+{$else UseOldPreviewForm}
+  pf := TBegaHtmlPrintPreviewForm.Create(Self);
+  pf.HtmlViewer := Viewer;
+  Abort := False;
+{$endif UseOldPreviewForm}
+  try
+    if not Abort then
+      pf.ShowModal;
+  finally
+    pf.Free;
   end;
-{.$endif}
 end;
 
 procedure TForm1.ViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);

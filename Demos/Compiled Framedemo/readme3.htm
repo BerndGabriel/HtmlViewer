@@ -82,67 +82,90 @@ kinds of textual material such as documentation, helpfiles, etc. Graphics are ea
 documents. </p>
 
 <p CLASS="heading"><a NAME="Files">Files Supplied</a></p>
-<pre>DEMO.HTM        This file
-*.HTM           Frame files for DEMO.HTM
-FRAMEDEM.EXE    The TFrameViewer demo program
+<pre>Demo.htm        This file
+*.htm           Frame files for Demo.htm
+FrameDem.exe    The TFrameViewer demo program
 Various image and sound files for demo
-
-Source code for the demo programs
-   FRAMEDEM.DPR    Source for the TFrameViewer demo program for Delphi 6..2007
-   FRAMEDEMW.DPR   Source for the TFrameViewer demo program for Delphi 2009..
-   FRAMEDEMLAZ.DPR Source for the TFrameViewer demo program for Lazarus 0.9..
-   FDEMUNIT.PAS, .DFM, .LFM
-   HTMLDEMO.DPR    Source for the ThtmlViewer demo program
-   DEMOUNIT.PAS, .DFM, .LFM
-   HTMLEDITOR.DPR  Source for the demo editor program
-   HTMLED1.PAS, .DFM
-   HTMLABT.PAS, .DFM
-   FONTDLG.PAS, .DFM
-   SUBMIT.PAS, .DFM, .LFM
-   SUBMITTNT.PAS, .DFM
-   IMGFORM.PAS, .DFM
-   PREVIEWFORM.PAS, .DFM
-   PRINTSTATUSFORM.PAS, .DFM
-   GOPAGE.PAS, .DFM
-   GRID.RES
 
 Source code for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
 
-   FRAMBRWZ.PAS, .DCR
-   FRAMVIEW.PAS, .DCR
-   HTMLVIEW.PAS, .DCR
-   HTMLGLOBALS.PAS
-   HTMLMISC.PAS
-   HTMLBUFFER.PAS
-   HTMLSUBS.PAS
-   HTMLSBS1.PAS
-   READHTML.PAS
-   HTMLUN2.PAS
-   HTMLGIF1.PAS
-   HTMLGIF2.PAS
-   GDIPL2A.PAS
-   URLSUBS.PAS
-   METAFILEPRINTER.PAS
-   DITHERUNIT.PAS
-   VWPRINT.PAS
-   HTMLCOMPEDIT.PAS
-   STYLEUN.PAS
-   STYLEPARS.PAS
-   WIDESTRINGSLCL.PAS
-   COMPILERS.INC
-   HTMLCONS.INC         File of optional compile time constants
-   FRAMEVIEWERREG.PAS
-   FRAMEVIEWER6.DPK, .RES  Delphi 6 Package source file
-   FRAMEVIEWER7.DPK, .RES  Delphi 7 Package source file
-   FRAMEVIEWER2005.DPK, .RES  Delphi 2005 Package source file
-   FRAMEVIEWER2006.DPK, .RES  Delphi 2006 Package source file
-   FRAMEVIEWER2007.DPK, .RES  Delphi 2007 Package source file
-   FRAMEVIEWER2009.DPK, .RES  Delphi 2009 Package source file
-   FRAMEVIEWER2010.DPK, .RES  Delphi 2010 Package source file
-   FRAMEVIEWER09.LPK, .PAS  Lazarus 0.9 Package source file
-   HTML32.RES           Resource file
-   HTMLVIEW.HLP         The help file
-   HTMLVIEW.CNT         Help contents file
+   HtmlView.pas, .dcr           THtmlViewer
+   FramView.pas, .dcr           TFrameViewer
+   FramBrwz.pas, .dcr           TFrameBrowser
+   BuffConv.pas
+   BuffConvArrays.pas
+   DitherUnit.pas
+   GDIPL2A.pas
+   HSLUtils.pas
+   Html32.res
+   HtmlBuffer.pas
+   HtmlCons.inc
+   HtmlGif1.pas
+   HTMLGif2.pas
+   HtmlGlobals.pas
+   HtmlSbs1.pas
+   HTMLSubs.pas
+   HTMLUn2.pas
+   MetaFilePrinter.pas
+   ReadHTML.pas
+   StylePars.pas
+   StyleUn.pas
+   URLSubs.pas
+   VwPrint.pas
+   HtmlMisc.pas                 Lazarus only
+   HtmlComp.lrs                 Lazarus only
+   HtmlUn2.lrs                  Lazarus only
+   WideStringsLcl.pas           Lazarus only
+   HTMLCompEdit.pas             Designtime only
+   FrameViewerReg.pas           Designtime only
+
+   FrameViewer09.lpk, .pas      Lazarus 09 .. 1.1 Package source file.  The younger Lazarus the better it supports HtmlViewer.
+   FrameViewer6.dpk, .res       Delphi 6 Package source file.           Uses TntControls for better unicode support.
+   FrameViewer7.dpk, .res       Delphi 7 Package source file.           Uses TntControls for better unicode support.
+   FrameViewer2005.dpk, .res    Delphi 2005 Package source file.        Uses TntControls for better unicode support.
+   FrameViewer2006.dpk, .res    Delphi 2006 Package source file.        Uses TntControls for better unicode support.
+   FrameViewer2007.dpk, .res    Delphi 2007 Package source file.        Uses TntControls for better unicode support.
+   FrameViewer2009.dpk, .res    Delphi 2009 Package source file.
+   FrameViewer2010.dpk, .res    Delphi 2010 Package source file.
+   FrameViewerXE.dpk, .res      Delphi XE Package source file.
+   FrameViewerXE2.dpk, .res     Delphi XE2 Package source file.
+   FrameViewerXE3.dpk, .res     Delphi XE3 Runtime package source file.
+   DclFrameViewerXE3.dpk, .res  Delphi XE3 Designtime package source file.
+   HtmlView.hlp, .cnt           The help file (Sorry, but it is still version 9.45)
+   
+Source code for the print preview dialog TBegaHtmlPrintPreviewForm
+
+   BegaHtmlPrintPreviewForm.pas
+   BegaMetaFilePrinter.pas
+   BegaPreview.pas, .dfm, .lfm
+   BegaPreviewForm.pas, .dfm, .lfm
+   BegaPreviewPanel.pas
+   BegaScrollBox.pas
+   BegaZoom.pas
+   ZoomAndHandCursor.RES
+
+Source code for the demo programs
+
+   FrameDem.dpr, .res
+   FrameDemW.dpr, .res
+   FrameDemLaz.lpr, .res
+   HtmlDemo.dpr, .res
+   HtmlDemoW.dpr, .res
+   HtmlDemoLaz.lpr, .res
+   DemoSubs.pas
+   demounit.pas, .dfm, .lfm
+   FDemUnit.pas, .dfm, .lfm
+   FontDlg.pas, .dfm, .lfm
+   GoPage.pas, .dfm, .lfm
+   Grid.res
+   Htmlabt.pas, .dfm, .lfm
+   ImgForm.pas, .dfm, .lfm
+   manifest.res
+   PrintStatusForm.pas, .dfm, .lfm
+   Submit.pas, .dfm, .lfm
+   SubmitTNT.pas, .dfm
+
+... and some more demos' source files.
 </pre>
 
 
@@ -159,13 +182,13 @@ be edited from the <b>Tools|Environment</b> Options dialog, <b>Library</b> tab. 
 are set to place the components on the palette page tab named <b>Samples</b>. These can be relocated later from
 the IDE if desired. </p>
 
-<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 4, 5, 6, and 7</a> </p>
+<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 6 and 7</a> </p>
 <p> </p>
 <ol>
 <li>Choose <b>File|Open...</b> from the main menu. Browse through the dialog to find
-<code>FRAMEVIEWER4|5|6|7.DPK</code> (by default in the <code>\HtmlViewer\package</code> directory).
+<code>FRAMEVIEWER6|7.DPK</code> (by default in the <code>\HtmlViewer\package</code> directory).
 <p> </p></li>
-<li>Click <b>Open</b> and in the ensuing dialog, press <b>Compile</b> and then <b>Install</b>.
+<li>Click <b>Open</b> and in the ensuring dialog, press <b>Compile</b> and then <b>Install</b>.
 <p> </p></li>
 <li>When using the HTML components, include the <code>\HtmlViewer\package</code> directory in the searchpath. The
 searchpath can be edited by choosing <b>Project|Options|Directories|Conditionals</b> from the main menu.
@@ -176,14 +199,13 @@ dialog, <b>Library</b> tab.</li>
 </ol>
 <p> </p>
 
-<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 2005|6</a>|7|9|10</p>
+<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 2005 - 2010, XE and later</p>
 <p> </p>
 <ol>
 <li>Choose <b>File|Open...</b> from the main menu. Browse through the dialog to find
-<code>FrameViewer20xx.bdsproj</code> (by default in the <code>\HtmlViewer\package</code> directory).
+<code>FrameViewer20xx.bdsproj</code> resp. <code>FrameViewerXEn.bdsproj</code> (by default in the <code>\HtmlViewer\package</code> directory).
 <p> </p></li>
-<li>Click <b>Project|Compile FrameViewer20xx</b> to compile
-<code>FrameViewer20xx.bpl</code>.
+<li>Click <b>Project|Compile FrameViewer20xx</b> to compile <code>FrameViewer20xx.bpl</code> resp. <code>FrameViewerXEn.bpl</code>.
 <p> </p></li>
 <li>To add the components to the Tool Palette, Choose
 <b>Component|Install packages</b>. Click the <b>Add..</b>. button and select
@@ -198,7 +220,7 @@ dialog, <b>Library</b> tab.</li>
 </ol>
 <p> </p>
 
-<p CLASS="maroon"><a NAME="Delphi345Install">Lazarus&nbsp;0.9</a></p>
+<p CLASS="maroon"><a NAME="Delphi345Install">Lazarus 0.9 and later</a></p>
 <p> </p>
 <ol>
 <li>Choose <b>Package|Open package file...</b> from the main menu. Browse through the dialog to find
@@ -215,7 +237,7 @@ dialog, <b>Library</b> tab.</li>
 <p CLASS="heading"><a NAME="installHelp">Installing the Help File</a></p>
 <p>The file <code>HTMLVIEW.HLP</code> will supply context sensitive help for the HTML components. </p>
 </div>
-<p CLASS="maroon"><a NAME="Delphi3_4Help">Delphi 4, 5, and 6</a> </p>
+<p CLASS="maroon"><a NAME="Delphi3_4Help">Delphi 6</a> </p>
 <p> </p>
 <ol>
 <li><code>HTMLVIEW.HLP</code> and <code>HTMLVIEW.CNT</code> files from the
@@ -309,6 +331,10 @@ World Wide Web: <a HREF="http://code.google.com/p/thtmlviewer/">http://code.goog
 <tr>
     <th>Juha Manninen</th>
     <td>Lazarus port support</td>
+</tr>
+<tr>
+    <th>Alexander Klimov</th>
+    <td>CodePage conversion support</td>
 </tr>
 </table>
 

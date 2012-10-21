@@ -1,5 +1,5 @@
 {
-Version   11.2
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2012 by Bernd Gabriel
@@ -36,10 +36,9 @@ uses
   Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
-  PreviewForm in 'PreviewForm.pas' {PreviewForm},
   PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
   SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
-  FDemUnit in 'FDemUnit.PAS' {Form1};
+  FDemUnit in 'FDemUnit.pas' {Form1};
 
 {$R *.res}
 begin

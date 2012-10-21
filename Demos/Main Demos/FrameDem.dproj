@@ -51,18 +51,15 @@
     <Borland.Personality>Delphi.Personality</Borland.Personality>
     <Borland.ProjectType>VCLApplication</Borland.ProjectType>
     <BorlandProject>
-<BorlandProject><Delphi.Personality><Parameters><Parameters Name="DebugSourceDirs">L:\Bin\lib</Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters></Parameters><VersionInfo><VersionInfo Name="IncludeVerInfo">True</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">11</VersionInfo><VersionInfo Name="MinorVer">0</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">0</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">1033</VersionInfo><VersionInfo Name="CodePage">1252</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName">HtmlViewer Team</VersionInfoKeys><VersionInfoKeys Name="FileDescription"></VersionInfoKeys><VersionInfoKeys Name="FileVersion">11.0.0.0</VersionInfoKeys><VersionInfoKeys Name="InternalName"></VersionInfoKeys><VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys><VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys><VersionInfoKeys Name="ProductName">FrameViewer Demo</VersionInfoKeys><VersionInfoKeys Name="ProductVersion">11.0.0.0</VersionInfoKeys><VersionInfoKeys Name="Comments">meet us at http://code.google.com/p/thtmlviewer/</VersionInfoKeys></VersionInfoKeys><Source><Source Name="MainSource">FrameDem.dpr</Source></Source></Delphi.Personality><ModelSupport>False</ModelSupport></BorlandProject></BorlandProject>
+<BorlandProject><Delphi.Personality><Parameters><Parameters Name="DebugSourceDirs">L:\Bin\lib</Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters></Parameters><VersionInfo><VersionInfo Name="IncludeVerInfo">True</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">11</VersionInfo><VersionInfo Name="MinorVer">3</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">0</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">1033</VersionInfo><VersionInfo Name="CodePage">1252</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName">HtmlViewer Team</VersionInfoKeys><VersionInfoKeys Name="FileDescription"></VersionInfoKeys><VersionInfoKeys Name="FileVersion">11.3.0.0</VersionInfoKeys><VersionInfoKeys Name="InternalName"></VersionInfoKeys><VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys><VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys><VersionInfoKeys Name="ProductName">FrameViewer Demo</VersionInfoKeys><VersionInfoKeys Name="ProductVersion">11.0.0.0</VersionInfoKeys><VersionInfoKeys Name="Comments">meet us at http://code.google.com/p/thtmlviewer/</VersionInfoKeys></VersionInfoKeys><Source><Source Name="MainSource">FrameDem.dpr</Source></Source><Excluded_Packages>
+      <Excluded_Packages Name="C:\Users\Bernd\Documents\RAD Studio\5.0\Bpl\BegaD11D.bpl">Bega - Components @ Design Time</Excluded_Packages>
+    </Excluded_Packages></Delphi.Personality><ModelSupport>False</ModelSupport></BorlandProject></BorlandProject>
   </ProjectExtensions>
   <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
   <ItemGroup>
     <DelphiCompile Include="FrameDem.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="..\..\..\..\FastMM\FastMM4.pas" />
-    <DCCReference Include="..\..\..\..\FastMM\FastMM4Messages.pas" />
-    <DCCReference Include="..\..\source\SubmitTnt.pas">
-      <Form>SubmitFormTnt</Form>
-    </DCCReference>
     <DCCReference Include="DemoSubs.pas" />
     <DCCReference Include="FDemUnit.pas">
       <Form>Form1</Form>
@@ -70,19 +67,16 @@
     <DCCReference Include="Fontdlg.pas">
       <Form>FontForm</Form>
     </DCCReference>
-    <DCCReference Include="GOPAGE.PAS">
+    <DCCReference Include="Gopage.pas">
       <Form>GoPageForm</Form>
     </DCCReference>
     <DCCReference Include="Htmlabt.pas">
       <Form>AboutBox</Form>
     </DCCReference>
-    <DCCReference Include="IMGFORM.PAS">
+    <DCCReference Include="ImgForm.pas">
       <Form>ImageForm</Form>
     </DCCReference>
-    <DCCReference Include="PREVIEWFORM.PAS">
-      <Form>PreviewForm</Form>
-    </DCCReference>
-    <DCCReference Include="PRINTSTATUSFORM.PAS">
+    <DCCReference Include="PrintStatusForm.pas">
       <Form>PrnStatusForm</Form>
     </DCCReference>
     <DCCReference Include="SubmitTnt.pas">
