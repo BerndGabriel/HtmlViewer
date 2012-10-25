@@ -886,7 +886,13 @@ procedure THtmlParser.Next;
               '0'..'9', '+', '-', '.':
                 try
                   System.Val(S1, ValD, Code);
-                  Value := Round(ValD);
+                  if Code = 0 then
+                    if ValD < -MaxInt then
+                      Value := -MaxInt
+                    else if ValD > MaxInt then
+                      Value := MaxInt
+                    else
+                      Value := Round(ValD);
                   Result := True;
                 except
                 end;
