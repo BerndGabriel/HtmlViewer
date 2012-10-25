@@ -3312,8 +3312,12 @@ begin
   Result.DefFontName := DefFontName;
   Result.DefFontSize := DefFontSize;
   Result.DefFontColor := DefFontColor;
-  Result.CharSet := Charset;
+  Result.CodePage := CodePage;
   Result.MarginHeight := 0;
+  if UseQuirksMode then
+    Result.QuirksMode := qmQuirks
+  else
+    Result.QuirksMode := qmStandards;
   with Result.FSectionList do
   begin
     PrintBackground := True;

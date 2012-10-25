@@ -246,6 +246,7 @@ type
     property CurViewer[I: integer]: THtmlViewer read GetCurViewer;
     property OnBitmapRequest: TGetBitmapEvent read FOnBitmapRequest write SetOnBitmapRequest;
     property ServerRoot: ThtString read FServerRoot write SetServerRoot;
+    procedure SetQuirksMode(const AValue: THtQuirksMode); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -4102,6 +4103,16 @@ begin
     for I := 0 to GetCurViewerCount - 1 do
       CurViewer[I].PrintScale := Value;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 25.10.2012 --
+procedure TFVBase.SetQuirksMode(const AValue: THtQuirksMode);
+var
+  I: integer;
+begin
+  inherited;
+  for I := 0 to GetCurViewerCount - 1 do
+    CurViewer[I].QuirksMode := AValue;
 end;
 
 procedure TFVBase.SetMarginWidth(Value: integer);

@@ -50,7 +50,6 @@ object Form1: TForm1
     PrintMarginRight = 2
     PrintMarginTop = 2
     PrintScale = 1
-    QuirksMode = qmDetect
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
@@ -102,9 +101,9 @@ object Form1: TForm1
       OnClick = BackButtonClick
     end
     object Edit2: TEdit
-      Left = 197
+      Left = 200
       Top = 2
-      Width = 988
+      Width = 985
       Height = 24
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 3
@@ -141,14 +140,23 @@ object Form1: TForm1
       Visible = False
     end
     object InfoPanel: TPanel
-      Left = 2
+      Left = 89
       Top = 2
-      Width = 1025
+      Width = 938
       Height = 23
       Align = alClient
       Alignment = taLeftJustify
       BevelOuter = bvLowered
       TabOrder = 1
+    end
+    object QuirksModePanel: TPanel
+      Left = 2
+      Top = 2
+      Width = 87
+      Height = 23
+      Align = alLeft
+      BevelOuter = bvLowered
+      TabOrder = 2
     end
   end
   object MainMenu: TMainMenu
@@ -218,6 +226,29 @@ object Form1: TForm1
       object Fonts: TMenuItem
         Caption = 'Default &Font/Colors'
         OnClick = FontsClick
+      end
+      object mmiQuirksMode: TMenuItem
+        Caption = 'Quirks Mode'
+        object mmiQuirksModeStandards: TMenuItem
+          Caption = 'Standards'
+          Hint = 'Closest to what HTML and CSS are supposed to do'
+          RadioItem = True
+          OnClick = mmiQuirksModeStandardsClick
+        end
+        object mmiQuirksModeDetect: TMenuItem
+          Caption = 'Detect'
+          Hint = 
+            'Emulate quirks, if document is not designed for HTML 4.01 or lat' +
+            'er'
+          RadioItem = True
+          OnClick = mmiQuirksModeDetectClick
+        end
+        object mmiQuirksModeQuirks: TMenuItem
+          Caption = 'Quirks'
+          Hint = 'Emulates quirks of legacy browsers built before HTML 4.01'
+          RadioItem = True
+          OnClick = mmiQuirksModeQuirksClick
+        end
       end
     end
     object HistoryMenuItem: TMenuItem

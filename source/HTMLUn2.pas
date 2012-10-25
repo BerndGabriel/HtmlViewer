@@ -528,7 +528,7 @@ type
     procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
   public
     constructor Create(AOwner: TComponent); override;
-    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
 
     property OnInclude: TIncludeType read FOnInclude write SetOnInclude;
     property OnLink: TLinkType read FOnLink write SetOnLink;
@@ -4215,7 +4215,7 @@ end;
 constructor TViewerBase.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FQuirksMode := qmDetect;
+  FQuirksMode := qmStandards;
 end;
 
 procedure TViewerBase.SetOnInclude(Handler: TIncludeType);

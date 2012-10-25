@@ -139,6 +139,11 @@ type
 {$endif}
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
+    mmiQuirksMode: TMenuItem;
+    mmiQuirksModeDetect: TMenuItem;
+    mmiQuirksModeStandards: TMenuItem;
+    mmiQuirksModeQuirks: TMenuItem;
+    QuirksModePanel: TPanel;
     procedure About1Click(Sender: TObject);
     procedure BackButtonClick(Sender: TObject);
     procedure CopyItemClick(Sender: TObject);
@@ -193,6 +198,9 @@ type
     procedure SoundRequest(Sender: TObject; const SRC: WideString; Loop: Integer; Terminate: Boolean);
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: WideString);
+    procedure mmiQuirksModeDetectClick(Sender: TObject);
+    procedure mmiQuirksModeStandardsClick(Sender: TObject);
+    procedure mmiQuirksModeQuirksClick(Sender: TObject);
 {$endif}
   private
     { Private declarations }
@@ -217,6 +225,8 @@ type
     procedure UpdateCaption;
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
+  protected
+    procedure UpdateActions; override;
   public
   end;
 
@@ -444,13 +454,9 @@ end;
 procedure TForm1.ReloadClick(Sender: TObject);
 {the Reload button was clicked}
 begin
-with FrameViewer do
-  begin
   ReloadButton.Enabled := False;
-  Reload;   {load again}
-  ReloadButton.Enabled := CurrentFile <> '';
+  FrameViewer.Reload;   {load again}
   FrameViewer.SetFocus;
-  end;
 end;
 
 procedure TForm1.CopyItemClick(Sender: TObject);
@@ -1007,10 +1013,10 @@ function ReplaceStr(Const S, FromStr, ToStr: ThtString): string;
 var
   I: integer;
 begin
+  Result := S;
   I := Pos(FromStr, S);
   if I > 0 then
   begin
-    Result := S;
     Delete(Result, I, Length(FromStr));
     Insert(ToStr, Result, I);
   end;
@@ -1064,6 +1070,91 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   CloseAll;
+end;
+
+//-- BG ---------------------------------------------------------- 25.10.2012 --
+procedure TForm1.mmiQuirksModeDetectClick(Sender: TObject);
+begin
+  FrameViewer.QuirksMode := qmDetect;
+  ReloadClick(nil);
+end;
+
+//-- BG ---------------------------------------------------------- 25.10.2012 --
+procedure TForm1.mmiQuirksModeStandardsClick(Sender: TObject);
+begin
+  FrameViewer.QuirksMode := qmStandards;
+  ReloadClick(nil);
+end;
+
+//-- BG ---------------------------------------------------------- 25.10.2012 --
+procedure TForm1.mmiQuirksModeQuirksClick(Sender: TObject);
+begin
+  FrameViewer.QuirksMode := qmQuirks;
+  ReloadClick(nil);
+end;
+
+//-- BG ---------------------------------------------------------- 25.10.2012 --
+procedure TForm1.UpdateActions;
+var
+  Viewer: TViewerBase;
+  QuirksModeMenuItem: TMenuItem;
+  IsDetectedQuirksMode: Boolean;
+  QuirksModePanelCaption: String;
+begin
+  ReloadButton.Enabled := FrameViewer.CurrentFile <> '';
+
+  // update quirks mode panel and quirks mode menu items
+
+  case FrameViewer.QuirksMode of
+    qmStandards: QuirksModeMenuItem := mmiQuirksModeStandards;
+    qmQuirks: QuirksModeMenuItem := mmiQuirksModeQuirks;
+  else
+    //qmDetect:
+    QuirksModeMenuItem := mmiQuirksModeDetect;
+  end;
+  QuirksModeMenuItem.Checked := True;
+
+  IsDetectedQuirksMode := False;
+  Viewer := FrameViewer.ActiveViewer;
+  if Viewer = nil then
+  begin
+    Viewer := FrameViewer;
+    QuirksModePanelCaption := QuirksModeMenuItem.Caption;
+    case Viewer.QuirksMode of
+      qmStandards:  QuirksModePanel.Color := clBtnFace;
+      qmQuirks:     QuirksModePanel.Color := clYellow;
+    else
+      //qmDetect:
+      QuirksModePanel.Color := clLime;
+    end;
+  end
+  else
+  begin
+    if Viewer.UseQuirksMode then
+    begin
+      QuirksModePanelCaption := mmiQuirksModeQuirks.Caption;
+      QuirksModePanel.Color := clYellow;
+    end
+    else
+    begin
+      QuirksModePanelCaption := mmiQuirksModeStandards.Caption;
+      QuirksModePanel.Color := clBtnFace;
+    end;
+    IsDetectedQuirksMode := Viewer.QuirksMode = qmDetect;
+  end;
+
+  QuirksModePanelCaption := ReplaceStr(QuirksModePanelCaption, '&', '');
+  QuirksModePanel.Caption := QuirksModePanelCaption;
+  if IsDetectedQuirksMode then
+  begin
+    QuirksModePanel.Font.Style := QuirksModePanel.Font.Style + [fsItalic];
+    QuirksModePanel.Hint := QuirksModePanelCaption + ' as detected by QuirksMode ''Detect'' selected in Options menu';
+  end
+  else
+  begin
+    QuirksModePanel.Font.Style := QuirksModePanel.Font.Style - [fsItalic];
+    QuirksModePanel.Hint := 'QuirksMode ''' + QuirksModePanelCaption + ''' as selected in Options menu';
+  end;
 end;
 
 end.
