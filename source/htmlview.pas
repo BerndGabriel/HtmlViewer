@@ -624,7 +624,7 @@ type
 //-- BG ---------------------------------------------------------- 23.09.2010 --
 function IsHtmlExt(const Ext: ThtString): Boolean;
 begin
-  Result := (Ext = '.html') or (Ext = '.css') or (Ext = '.htm') or (Ext = '.php') or (Ext = '.xhtml') or (Ext = '.xht');
+  Result := (Ext = '.htm') or (Ext = '.html') or (Ext = '.css') or (Ext = '.xht') or (Ext = '.xhtml') or (Ext = '.php') or (Ext = '.asp') or (Ext = '.shtml')
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
