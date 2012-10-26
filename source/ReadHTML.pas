@@ -1860,7 +1860,8 @@ begin
 
             CellObj := TCellObj.Create(PropStack.MasterList, VAlign, Attributes, PropStack.Last);
             SectionList := CellObj.Cell;
-            if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute)) and Attributes.Find(NoWrapSy, T) then
+            if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute))
+              and (Attributes.Find(NoWrapSy, T) or (PropStack.Last.Props[piWhiteSpace] = 'nowrap')) then
               NoBreak := True {this seems to be what IExplorer does}
             else
               NoBreak := False;
