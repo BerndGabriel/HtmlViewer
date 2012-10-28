@@ -334,6 +334,8 @@ function ThemedColor(const AColor : TColor
   {$ifdef has_StyleElements};const AUseThemes : Boolean{$endif}
   ): TColor; {$ifdef UseInline} inline; {$endif} //overload;
 
+function TextEndsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
+function TextStartsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 implementation
 {$ifdef has_StyleElements}
@@ -816,6 +818,18 @@ begin
     else
       Result := 0;
   end;
+end;
+
+function TextStartsWith(const SubStr, S : ThtString) : Boolean;
+begin
+  Result := Copy(S,1,Length(SubStr)) = SubStr;
+end;
+
+function TextEndsWith(const SubStr, S : ThtString) : Boolean;
+var l : Integer;
+begin
+  l := Length(SubStr);
+  Result := Copy(S,Length(S)-l+1,l) = SubStr;
 end;
 
 { ThtEdit }

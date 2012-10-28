@@ -622,7 +622,9 @@ Scan for the following DOCTYPE declarations:
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
    "http://www.w3.org/TR/html4/frameset.dtd">
 
-}
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
+<!DOCTYPE HTML SYSTEM "http://www.w3.org/TR/REC-html40/strict.dtd">
+   }
 var LId : ThtString;
 
   procedure GetChBasic;
@@ -643,6 +645,25 @@ var LId : ThtString;
       while (LCh <> LessChar) and (LCh <> EofChar) do
         GetChBasic;
     end;
+  end;
+
+  procedure ScanRestOfUnquotedString(out Identifier : ThtString);
+  begin
+    SetLength(Identifier, 0);
+    if LCh = '"' then begin
+      GetChBasic;
+    end;
+    repeat
+      if (LCh = EofChar) then begin
+        break;
+      end;
+      if (LCh = '"') then begin
+        break;
+      end else begin
+        htAppendChr(Identifier, LCh);
+      end;
+      GetChBasic;
+    until False;
   end;
 
   procedure ScanDTDIdentifier(out Identifier : ThtString);
@@ -678,7 +699,7 @@ var LId : ThtString;
     SkipWhiteSpace;
 
     ScanDTDIdentifier(LPart);
-    if htUpperCase(LPart) = htUpperCase('HTML') then
+    if htUpperCase(LPart) = 'HTML' then
     begin
       GetChBasic;
       if LCh = GreaterChar then
@@ -688,39 +709,60 @@ var LId : ThtString;
         exit;
       end;
       ScanDTDIdentifier(LPart);
-      if htUpperCase(LPart) <> htUpperCase('PUBLIC') then
+      if (htUpperCase(LPart) <> 'PUBLIC') and (htUpperCase(LPart) <> 'SYSTEM') then
         exit;
       SkipWhiteSpace;
       if LCh = '"' then
         GetChBasic;
       SkipWhiteSpace;
       ScanDTDIdentifier(LPart);
-      if htUpperCase(LPart) <> htUpperCase('-//W3C//DTD') then
+      if (htUpperCase(LPart) = 'HTTP') then begin
+      //probably a URL pointing to a DTD
+        ScanRestOfUnquotedString(LPart);
+        Result := TextEndsWith('html40/strict.dtd',LPart) or
+          TextEndsWith('xhtml1-strict.dtd',LPart) or
+          TextEndsWith('xhtml-basic11.dtd',LPart) or
+          TextEndsWith('xhtml1-transitional.dtd',LPart) or
+          TextEndsWith('xhtml1-frameset.dtd',LPart) or
+          TextEndsWith('xhtml11.dtd',LPart);
+        if Result then
+          exit;
+      end;
+      if (htUpperCase(LPart) <> '-//W3C//DTD') then
         exit;
       SkipWhiteSpace;
       ScanDTDIdentifier(LPart);
+
       LPart := htUpperCase(LPart);
-      if LPart = htUpperCase('HTML') then
+      if LPart = 'HTML' then
       begin
         SkipWhiteSpace;
         ScanDTDIdentifier(LPart);
-        Result := (LPart = '4.01');
-        exit;
+        Result := TextStartsWith('4.01',LPart);
+        if Result then begin
+           exit;
+        end;
+        Result := TextStartsWith('4.0/',LPart);
+        if Result then begin
+          exit;
+        end;
+        Result := TextStartsWith('4.',LPart);
+        SkipWhiteSpace;
       end;
       if LPart = 'XHTML' then
       begin
         SkipWhiteSpace;
         ScanDTDIdentifier(LPart);
-        if htUpperCase(LPart) = htUpperCase('BASIC') then
+        if htUpperCase(LPart) = 'BASIC' then
         begin
           SkipWhiteSpace;
           ScanDTDIdentifier(LPart);
-          if LPart = '1.1' then
+          if TextStartsWith('1.',LPart) then
             Result := True;
         end
         else
         begin
-          Result := (LPart = '1.0') or (LPart = '1.1')
+          Result := TextStartsWith('1.',LPart);
         end;
       end;
     end;
