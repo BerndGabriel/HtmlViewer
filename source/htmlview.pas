@@ -1005,10 +1005,6 @@ begin
         end else begin
           FUseQuirksMode := False;
         end;
-        Self.FSectionList.UseQuirksMode := FUseQuirksMode;
-             {$ifdef has_StyleElements}
-        Self.FSectionList.StyleElements := Self.StyleElements;
-             {$endif}
         // terminate old document
         InitLoad;
         CaretPos := 0;
