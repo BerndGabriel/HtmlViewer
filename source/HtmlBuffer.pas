@@ -155,18 +155,21 @@ type
     class function Convert(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
     class function Convert(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
     class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
+    constructor Create(const Doc: TBuffer); overload;
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
     constructor Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; Name: TBuffString = ''); overload;
     constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    constructor Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = ''); overload; 
+    constructor Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
     constructor Create(Text: TBuffString; Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE); overload;
+    destructor Destroy; override;
     function AsString: TBuffString; {$ifdef UseInline} inline; {$endif}
     function GetString(FromIndex, UntilIndex: Integer): TBuffString;
     function NextChar: TBuffChar; {$ifdef UseInline} inline; {$endif}
     function PeekChar: TBuffChar; {$ifdef UseInline} inline; {$endif}
     function Size: Integer; {$ifdef UseInline} inline; {$endif}
-    procedure AssignTo(Destin: TObject);
+    procedure Assign(Source: TBuffer); virtual;
+    procedure AssignTo(Destin: TObject); virtual;
     property CodePage: TBuffCodePage read GetCodePage write SetCodePage;
     property Name: TBuffString read FName;
     property Position: Integer read GetPosition write SetPosition;
@@ -1378,6 +1381,16 @@ end;
 
 { TBuffer }
 
+procedure TBuffer.Assign(Source: TBuffer);
+begin
+  FBuffer := Copy(Source.FBuffer);
+  Reset;
+  Inc(FStart.AnsiChr, Source.FStart.AnsiChr - PAnsiChar(Source.FBuffer));
+  FName := Source.FName;
+  FConverter := TBuffConverterClass(Source.FConverter.ClassType).Create(FStart, FEnd, Source.FConverter.FCodePage, Source.FConverter.FInitalCodePage);
+  FState := Source.FState;
+end;
+
 //-- BG ---------------------------------------------------------- 27.12.2010 --
 procedure TBuffer.AssignTo(Destin: TObject);
 var
@@ -1429,6 +1442,13 @@ begin
   FName := Name;
   SetCodePages(CodePage, CP_UTF16LE);
   Include(FState, bsFixedCodePage);
+end;
+
+//-- BG ---------------------------------------------------------- 29.10.2012 --
+constructor TBuffer.Create(const Doc: TBuffer);
+begin
+  inherited Create;
+  Assign(Doc);
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
@@ -1498,6 +1518,12 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2010 --
+destructor TBuffer.Destroy;
+begin
+  FConverter.Free;
+  inherited;
+end;
+
 procedure TBuffer.DetectCodePage;
 var
   ByteCount: Integer;
