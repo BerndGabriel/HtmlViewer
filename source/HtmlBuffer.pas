@@ -1267,6 +1267,7 @@ begin
   Bytes := FEnd.AnsiChr - FPos.AnsiChr;
   if (FCodePage = CP_UTF16LE) and (FInitalCodePage = CP_UTF16LE) then
   begin
+    Bytes := Bytes div 2;
     SetLength(Result, Bytes);
     System.Move(Result[1], FPos.BytePtr^, Bytes);
   end
