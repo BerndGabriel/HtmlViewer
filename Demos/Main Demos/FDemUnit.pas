@@ -41,7 +41,9 @@ uses
 {$else}
   Windows, ShellAPI,
   {$if CompilerVersion >= 15}
+    {$ifndef UseVCLStyles}
     XpMan,
+    {$endif}
   {$ifend}
   {$ifdef Compiler18_Plus}
     WideStrings,
@@ -238,6 +240,9 @@ var
 
 implementation
 
+ {$ifdef TScrollStyleInSystemUITypes}
+uses System.UITypes;
+{$endif}
 {$ifdef LCL}
   {$R *.lfm}
 {$else}
