@@ -2293,7 +2293,6 @@ begin
   Result := False;
   Doc := nil;
   NewName := Src;
-  //TODO -oBG, 27.12.2010: potential memory leaks. Who frees the gotten objects?
   with FrameViewer do
     if Assigned(FOnStringsRequest) then
     begin
@@ -2318,6 +2317,11 @@ begin
     begin
       FOnBufferRequest(Self, Src, Doc);
       Result := Doc <> nil;
+      if Result then
+      begin
+        Doc.Position := 0;
+        Doc := TBuffer.Create(Doc);
+      end;
     end
     else if Assigned(FOnFileRequest) then
     begin
@@ -2431,6 +2435,7 @@ begin
   ft := HTMLType;
   if not MasterSet.RequestEvent then
     ft := GetFileType(FName);
+  EV.Doc := nil;
   if (ft in [ImgType, TextType]) or not TriggerEvent(FName, EV.NewName, EV.Doc) then
   begin
     EV.NewName := ExpandFileName(FName);
@@ -2468,6 +2473,7 @@ begin
     else
     begin
       Frame.Source := EV.NewName;
+      FreeAndNil(EV.Doc);
       EventPointer := nil;
     end;
     Frame.Destination := Dest;

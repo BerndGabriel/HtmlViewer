@@ -1891,7 +1891,7 @@ begin
       Base := BaseWidth;
     end;
     case I of
-      BackgroundColor: //, BorderColor:
+      BackgroundColor, BorderTopColor..BorderLeftColor:
         begin
           if VarType(VM[I]) <= VarNull then
             M[I] := clNone
