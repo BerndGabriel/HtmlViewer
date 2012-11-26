@@ -32,7 +32,7 @@ interface
 
 uses
 {$ifdef VCL}
-  Windows,  // needed to expand inline function htUpCase 
+  Windows,  // needed to expand inline function htUpCase
 {$endif}
   Classes, Graphics, SysUtils,
   HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn;
@@ -69,6 +69,7 @@ type
   protected
     constructor Create(const AUseQuirksMode : Boolean);
     procedure ProcessProperty(const Prop, Value: ThtString); virtual; abstract;
+    procedure ProcessPropertyOrShortHand(Prop, Value: ThtString);
   end;
 
   THtmlStyleTagParser = class(THtmlStyleParser)
@@ -320,18 +321,40 @@ on paths specifiers that contain spaces.  Spaces are legal filename characters.
   Result := 'url("' + Result + '")';
 end;
 
-function FindShortHand(S: ThtString; out Index: TShortHand): boolean;
+//-- BG ---------------------------------------------------------- 26.11.2012 --
+procedure THtmlStyleParser.ProcessPropertyOrShortHand(Prop, Value: ThtString);
+
+  function FindShortHand(S: ThtString; out Index: TShortHand): boolean;
+  var
+    I: TShortHand;
+  begin
+    for I := Low(TShortHand) to High(TShortHand) do
+      if S = ShortHands[I] then
+      begin
+        Result := True;
+        Index := I;
+        Exit;
+      end;
+    Result := False;
+  end;
+
 var
-  I: TShortHand;
+  Value1: String;
+  Index: TShortHand;
 begin
-  for I := Low(TShortHand) to High(TShortHand) do
-    if S = ShortHands[I] then
-    begin
-      Result := True;
-      Index := I;
-      Exit;
-    end;
-  Result := False;
+  Value1 := LowerCase(Trim(Value)); // leave quotes on for font
+  Value := RemoveQuotes(Value1);
+  Prop := LowerCase(Prop);
+  if FindShortHand(Prop, Index) then
+    ProcessShortHand(Index, Prop, Value, Value1)
+  else if Prop = 'font-family' then
+    ProcessProperty(Prop, Value1)
+  else
+  begin
+    if (LinkPath <> '') and (Pos('url(', Value) > 0) then
+      Value := AddPath(Value);
+    ProcessProperty(Prop, Value);
+  end;
 end;
 
 procedure SplitString(Src: ThtString; out Dest: array of ThtString; out Count: integer);
@@ -1154,8 +1177,7 @@ var
   end;
 
 var
-  Prop, Value, Value1: ThtString;
-  Index: TShortHand;
+  Prop, Value: ThtString;
 begin
   if LCh = '{' then
   begin
@@ -1177,18 +1199,8 @@ begin
             Value[Length(Value)] := LCh;
             GetCh;
           end;
-          Value1 := LowerCase(Trim(Value)); {leave quotes on for font}
-          Value := RemoveQuotes(Value1);
 
-          Prop := LowerCase(Prop);
-          if FindShortHand(Prop, Index) then
-            ProcessShortHand(Index, Prop, Value, Value1)
-          else
-          begin
-            if (LinkPath <> '') and (Pos('url(', Value) > 0) then
-              Value := AddPath(Value);
-            ProcessProperty(Prop, Value);
-          end;
+          ProcessPropertyOrShortHand(Prop, Value);
         end;
       end;
 
@@ -1375,8 +1387,7 @@ end;
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleAttrParser.ParseProperties(Doc: TBuffer; Propty: TProperties);
 var
-  Prop, Value, Value1: ThtString;
-  Index: TShortHand;
+  Prop, Value: ThtString;
 begin
   Self.Doc := Doc;
   Self.Propty := Propty;
@@ -1395,7 +1406,6 @@ begin
       else
         break;
       end;
-    Prop := LowerCase(Trim(Prop));
     SkipWhiteSpace;
     if (LCh = ':') or (LCh = '=') then
     begin
@@ -1403,16 +1413,12 @@ begin
       Value := '';
       while not ((LCh = ';') or (LCh = EofChar)) do
       begin
-        Value := Value + LCh;
+        SetLength(Value, Length(Value) + 1);
+        Value[Length(Value)] := LCh;
         GetCh;
       end;
-      Value1 := LowerCase(Trim(Value)); {leave quotes on for font}
-      Value := RemoveQuotes(Value1);
 
-      if FindShortHand(Prop, Index) then
-        ProcessShortHand(Index, Prop, Value, Value1)
-      else
-        ProcessProperty(Prop, Value);
+      ProcessPropertyOrShortHand(Prop, Value);
     end;
     SkipWhiteSpace;
     if LCh = ';' then
