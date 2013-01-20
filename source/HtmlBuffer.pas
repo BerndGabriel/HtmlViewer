@@ -1,6 +1,6 @@
 {
 HtmlViewer Version 11.4
-Copyright (c) 2010-2012 by Bernd Gabriel
+Copyright (c) 2010-2013 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -181,7 +181,7 @@ type
 // Registering an existing converter again updates it.
 //
 // As each code page may have any number of aliases there are 2 sets of un-/register methods.
-// One to register a code page name to code page numner mappings and
+// One to register a code page name to code page number mappings and
 // one to register the converter. 
 
 // Add a name of a code page. Code pages can have many names, but each name names one code page only:
@@ -1269,7 +1269,7 @@ begin
   begin
     Bytes := Bytes div 2;
     SetLength(Result, Bytes);
-    System.Move(Result[1], FPos.BytePtr^, Bytes);
+    System.Move(FPos.BytePtr^, Result[1], Bytes);
   end
   else
   begin

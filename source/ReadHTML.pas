@@ -1,7 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 *********************************************************
 *                                                       *
@@ -249,6 +249,13 @@ var
   AttributeNames: ThtStringList;
   SymbolNames: array [Symb] of ThtString;
 
+procedure SetSymbolName(Sy: Symb; Name: ThtString);
+begin
+  Name := htLowerCase(Name);
+  if SymbolNames[Sy] <> '' then
+    assert(SymbolNames[Sy] = Name, 'Different names for same symbol!');
+  SymbolNames[Sy] := Name;
+end;
 
 function SymbToStr(Sy: Symb): ThtString; {$ifdef UseInline} inline; {$endif}
 begin
@@ -501,7 +508,7 @@ begin {Getch}
   repeat {in case a comment immediately follows another comment}
    {comments may be either '<! stuff >' or '<!-- stuff -->'  }
     Comment := False;
-    GetchBasic;
+    GetChBasic;
     if (LCh = LessChar) and not InScript then
     begin
       case Peek of
@@ -1575,7 +1582,7 @@ procedure THtmlParser.DoTable;
 
       function AlignmentFromString(S: ThtString): AlignmentType;
       begin
-        S := LowerCase(S);
+        S := htLowerCase(S);
         if S = 'top' then
           Result := ATop
         else if (S = 'middle') or (S = 'absmiddle') or (S = 'center') then
@@ -1708,7 +1715,7 @@ var
     Result := Default;
     if Attributes.Find(VAlignSy, T) then
     begin
-      S := LowerCase(T.Name);
+      S := htLowerCase(T.Name);
       if (S = 'top') or (S = 'baseline') then
         Result := ATop
       else if S = 'middle' then
@@ -1818,7 +1825,7 @@ begin
     HFStack := 9999999;
     RowType := TBody;
     Next;
-    while (Sy <> TableEndSy) and (Sy <> EofSy) and (Sy <> CaptionEndSy) do
+    while not (Sy in [TableEndSy, EofSy, CaptionEndSy]) do
       case Sy of
         TDSy, THSy:
           begin
@@ -1858,6 +1865,7 @@ begin
                     VAlign := colVAlign;
                 end;
             end;
+
             CheckForAlign; {see if there is Align override}
             if PropStack.Last.Props[TextAlign] = 'none' then
               if Sy = ThSy then
@@ -1865,18 +1873,19 @@ begin
               else
                 PropStack.Last.Assign('left', TextAlign); {td}
 
-            // BG, 02.02.2012: border
-            for S := BorderTopStyle to BorderLeftStyle do
-            begin
-              V := PropStack.Last.Props[S];
-              if (VarType(V) in varInt) and (V = IntNull) then
-                if VarType(NewBlock.MargArrayO[S]) in varInt then
-                  case BorderStyleType(NewBlock.MargArrayO[S]) of
-                    bssInset:   PropStack.Last.Props[S] := bssOutset;
-                    bssOutset:  PropStack.Last.Props[S] := bssInset;
-                  else
-                    PropStack.Last.Props[S] := BorderStyleType(NewBlock.MargArrayO[S]);
-                  end;
+            // BG, 20.01.2013: translate Rules to cell property defaults:
+            case Table.Rules of
+              trAll:
+                PropStack.Last.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssInset);
+
+              trRows:
+                PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssSolid);
+
+              trCols:
+                PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssSolid);
+
+              trGroups:
+                ; // not yet supported
             end;
 
             for S := BorderTopWidth to BorderLeftWidth do
@@ -1884,12 +1893,10 @@ begin
               V := PropStack.Last.Props[S];
               if (VarType(V) in varInt) and (V = IntNull) then
               begin
-                if Table.brdWidthAttr <= 0 then
-                  if Table.HasBorderWidth then
-                  else
-                    PropStack.Last.Props[S] := 3
+                if Table.BorderWidth > 0 then
+                  PropStack.Last.Props[S] := 1 //Table.BorderWidth
                 else
-                  PropStack.Last.Props[S] := 1
+                  PropStack.Last.Props[S] := 3
               end;
             end;
 
@@ -3921,7 +3928,6 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
-  Self.Doc := Doc;
   FPropStack := ASectionList.PropStack;
   try
     IncludeEvent := AIncludeEvent;
@@ -4041,7 +4047,6 @@ procedure THtmlParser.ParseText(ASectionList: ThtDocument);
 begin
   FPropStack := ASectionList.PropStack;
   try
-  Self.Doc := Doc;
   ParseInit(ASectionList, nil);
   InScript := True;
 
@@ -4107,7 +4112,6 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
 begin
   FPropStack := THTMLPropStack.Create;
   try
-  Self.Doc := Doc;
   FPropStack.MasterList := nil;
   CallingObject := FrameViewer;
   IncludeEvent := FrameViewer.OnInclude;
@@ -4342,9 +4346,9 @@ begin
   end; {while}
 end;
 
-// Taken from http://www.w3.org/TR/REC-html40/sgml/entities.html.
-
+procedure InitEntities;
 const
+  // Taken from http://www.w3.org/TR/REC-html40/sgml/entities.html.
   // Note: the entities will be sorted into a ThtStringList to make binary search possible.
   EntityDefinitions: array[1..253] of TEntity = (
     // ISO 8859-1 characters
@@ -4644,10 +4648,7 @@ const
                                      // lsaquo is proposed but not yet ISO standardized
     (Name: 'rsaquo'; Value: 8250), // single right-pointing angle quotation mark, U+203A ISO proposed
                                      // rsaquo is proposed but not yet ISO standardized
-    (Name: 'euro'; Value: 8364) //  euro sign, U+20AC NEW
-    );
-
-procedure InitEntities;
+    (Name: 'euro'; Value: 8364)); //  euro sign, U+20AC NEW
 var
   I: Integer;
 begin
@@ -4663,6 +4664,7 @@ begin
 end;
 
 
+procedure InitReservedWords;
 const
   ResWordDefinitions: array[1..90] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
@@ -4756,16 +4758,6 @@ const
     (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
     (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
     (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy));
-
-procedure SetSymbolName(Sy: Symb; Name: ThtString);
-begin
-  Name := htLowerCase(Name);
-  if SymbolNames[Sy] <> '' then
-    assert(SymbolNames[Sy] = Name, 'Different names for same symbol!');
-  SymbolNames[Sy] := Name;
-end;
-
-procedure InitReservedWords;
 var
   I: Integer;
   P: PResWord;
@@ -4797,95 +4789,97 @@ begin
   end;
 end;
 
-const
-  AttribDefinitions: array[1..85] of TSymbolRec = (
-    (Name: 'HREF';              Value: HrefSy),
-    (Name: 'NAME';              Value: NameSy),
-    (Name: 'SRC';               Value: SrcSy),
-    (Name: 'ALT';               Value: AltSy),
-    (Name: 'ALIGN';             Value: AlignSy),
-    (Name: 'TEXT';              Value: TextSy),
-    (Name: 'BGCOLOR';           Value: BGColorSy),
-    (Name: 'LINK';              Value: LinkSy),
-    (Name: 'BACKGROUND';        Value: BackgroundSy),
-    (Name: 'COLSPAN';           Value: ColSpanSy),
-    (Name: 'ROWSPAN';           Value: RowSpanSy),
-    (Name: 'BORDER';            Value: BorderSy),
-    (Name: 'CELLPADDING';       Value: CellPaddingSy),
-    (Name: 'CELLSPACING';       Value: CellSpacingSy),
-    (Name: 'VALIGN';            Value: VAlignSy),
-    (Name: 'WIDTH';             Value: WidthSy),
-    (Name: 'START';             Value: StartSy),
-    (Name: 'VALUE';             Value: ValueSy),
-    (Name: 'TYPE';              Value: TypeSy),
-    (Name: 'CHECKBOX';          Value: CheckBoxSy),
-    (Name: 'RADIO';             Value: RadioSy),
-    (Name: 'METHOD';            Value: MethodSy),
-    (Name: 'ACTION';            Value: ActionSy),
-    (Name: 'CHECKED';           Value: CheckedSy),
-    (Name: 'SIZE';              Value: SizeSy),
-    (Name: 'MAXLENGTH';         Value: MaxLengthSy),
-    (Name: 'COLS';              Value: ColsSy),
-    (Name: 'ROWS';              Value: RowsSy),
-    (Name: 'MULTIPLE';          Value: MultipleSy),
-    (Name: 'VALUE';             Value: ValueSy),
-    (Name: 'SELECTED';          Value: SelectedSy),
-    (Name: 'FACE';              Value: FaceSy),
-    (Name: 'COLOR';             Value: ColorSy),
-    (Name: 'TRANSP';            Value: TranspSy),
-    (Name: 'CLEAR';             Value: ClearSy),
-    (Name: 'ISMAP';             Value: IsMapSy),
-    (Name: 'BORDERCOLOR';       Value: BorderColorSy),
-    (Name: 'USEMAP';            Value: UseMapSy),
-    (Name: 'SHAPE';             Value: ShapeSy),
-    (Name: 'COORDS';            Value: CoordsSy),
-    (Name: 'NOHREF';            Value: NoHrefSy),
-    (Name: 'HEIGHT';            Value: HeightSy),
-    (Name: 'PLAIN';             Value: PlainSy),
-    (Name: 'TARGET';            Value: TargetSy),
-    (Name: 'NORESIZE';          Value: NoResizeSy),
-    (Name: 'SCROLLING';         Value: ScrollingSy),
-    (Name: 'HSPACE';            Value: HSpaceSy),
-    (Name: 'LANGUAGE';          Value: LanguageSy),
-    (Name: 'FRAMEBORDER';       Value: FrameBorderSy),
-    (Name: 'MARGINWIDTH';       Value: MarginWidthSy),
-    (Name: 'MARGINHEIGHT';      Value: MarginHeightSy),
-    (Name: 'LOOP';              Value: LoopSy),
-    (Name: 'ONCLICK';           Value: OnClickSy),
-    (Name: 'WRAP';              Value: WrapSy),
-    (Name: 'NOSHADE';           Value: NoShadeSy),
-    (Name: 'HTTP-EQUIV';        Value: HttpEqSy),
-    (Name: 'CONTENT';           Value: ContentSy),
-    (Name: 'ENCTYPE';           Value: EncTypeSy),
-    (Name: 'VLINK';             Value: VLinkSy),
-    (Name: 'OLINK';             Value: OLinkSy),
-    (Name: 'ACTIVE';            Value: ActiveSy),
-    (Name: 'VSPACE';            Value: VSpaceSy),
-    (Name: 'CLASS';             Value: ClassSy),
-    (Name: 'ID';                Value: IDSy),
-    (Name: 'STYLE';             Value: StyleSy),
-    (Name: 'REL';               Value: RelSy),
-    (Name: 'REV';               Value: RevSy),
-    (Name: 'NOWRAP';            Value: NoWrapSy),
-    (Name: 'BORDERCOLORLIGHT';  Value: BorderColorLightSy),
-    (Name: 'BORDERCOLORDARK';   Value: BorderColorDarkSy),
-    (Name: 'CHARSET';           Value: CharSetSy),
-    (Name: 'RATIO';             Value: RatioSy),
-    (Name: 'TITLE';             Value: TitleSy),
-    (Name: 'ONFOCUS';           Value: OnFocusSy),
-    (Name: 'ONBLUR';            Value: OnBlurSy),
-    (Name: 'ONCHANGE';          Value: OnChangeSy),
-    (Name: 'SPAN';              Value: SpanSy),
-    (Name: 'TABINDEX';          Value: TabIndexSy),
-    (Name: 'BGPROPERTIES';      Value: BGPropertiesSy),
-    (Name: 'DISABLED';          Value: DisabledSy),
-    (Name: 'TOPMARGIN';         Value: TopMarginSy),
-    (Name: 'LEFTMARGIN';        Value: LeftMarginSy),
-    (Name: 'LABEL';             Value: LabelSy),
-    (Name: 'READONLY';          Value: ReadonlySy),
-    (Name: 'MEDIA';             Value: MediaSy));
 
 procedure InitAttributes;
+const
+  AttribDefinitions: array[1..87] of TSymbolRec = (
+    (Name: 'ACTION';            Value: ActionSy),
+    (Name: 'ACTIVE';            Value: ActiveSy),
+    (Name: 'ALIGN';             Value: AlignSy),
+    (Name: 'ALT';               Value: AltSy),
+    (Name: 'BACKGROUND';        Value: BackgroundSy),
+    (Name: 'BGCOLOR';           Value: BGColorSy),
+    (Name: 'BGPROPERTIES';      Value: BGPropertiesSy),
+    (Name: 'BORDER';            Value: BorderSy),
+    (Name: 'BORDERCOLOR';       Value: BorderColorSy),
+    (Name: 'BORDERCOLORDARK';   Value: BorderColorDarkSy),
+    (Name: 'BORDERCOLORLIGHT';  Value: BorderColorLightSy),
+    (Name: 'CELLPADDING';       Value: CellPaddingSy),
+    (Name: 'CELLSPACING';       Value: CellSpacingSy),
+    (Name: 'CHARSET';           Value: CharSetSy),
+    (Name: 'CHECKBOX';          Value: CheckBoxSy),
+    (Name: 'CHECKED';           Value: CheckedSy),
+    (Name: 'CLASS';             Value: ClassSy),
+    (Name: 'CLEAR';             Value: ClearSy),
+    (Name: 'COLOR';             Value: ColorSy),
+    (Name: 'COLS';              Value: ColsSy),
+    (Name: 'COLSPAN';           Value: ColSpanSy),
+    (Name: 'CONTENT';           Value: ContentSy),
+    (Name: 'COORDS';            Value: CoordsSy),
+    (Name: 'DISABLED';          Value: DisabledSy),
+    (Name: 'ENCTYPE';           Value: EncTypeSy),
+    (Name: 'FACE';              Value: FaceSy),
+    (Name: 'FRAME';             Value: FrameSy),
+    (Name: 'FRAMEBORDER';       Value: FrameBorderSy),
+    (Name: 'HEIGHT';            Value: HeightSy),
+    (Name: 'HREF';              Value: HrefSy),
+    (Name: 'HSPACE';            Value: HSpaceSy),
+    (Name: 'HTTP-EQUIV';        Value: HttpEqSy),
+    (Name: 'ID';                Value: IDSy),
+    (Name: 'ISMAP';             Value: IsMapSy),
+    (Name: 'LABEL';             Value: LabelSy),
+    (Name: 'LANGUAGE';          Value: LanguageSy),
+    (Name: 'LEFTMARGIN';        Value: LeftMarginSy),
+    (Name: 'LINK';              Value: LinkSy),
+    (Name: 'LOOP';              Value: LoopSy),
+    (Name: 'MARGINHEIGHT';      Value: MarginHeightSy),
+    (Name: 'MARGINWIDTH';       Value: MarginWidthSy),
+    (Name: 'MAXLENGTH';         Value: MaxLengthSy),
+    (Name: 'MEDIA';             Value: MediaSy),
+    (Name: 'METHOD';            Value: MethodSy),
+    (Name: 'MULTIPLE';          Value: MultipleSy),
+    (Name: 'NAME';              Value: NameSy),
+    (Name: 'NOHREF';            Value: NoHrefSy),
+    (Name: 'NORESIZE';          Value: NoResizeSy),
+    (Name: 'NOSHADE';           Value: NoShadeSy),
+    (Name: 'NOWRAP';            Value: NoWrapSy),
+    (Name: 'OLINK';             Value: OLinkSy),
+    (Name: 'ONBLUR';            Value: OnBlurSy),
+    (Name: 'ONCHANGE';          Value: OnChangeSy),
+    (Name: 'ONCLICK';           Value: OnClickSy),
+    (Name: 'ONFOCUS';           Value: OnFocusSy),
+    (Name: 'PLAIN';             Value: PlainSy),
+    (Name: 'RADIO';             Value: RadioSy),
+    (Name: 'RATIO';             Value: RatioSy),
+    (Name: 'READONLY';          Value: ReadonlySy),
+    (Name: 'REL';               Value: RelSy),
+    (Name: 'REV';               Value: RevSy),
+    (Name: 'ROWS';              Value: RowsSy),
+    (Name: 'ROWSPAN';           Value: RowSpanSy),
+    (Name: 'RULES';             Value: RulesSy),
+    (Name: 'SCROLLING';         Value: ScrollingSy),
+    (Name: 'SELECTED';          Value: SelectedSy),
+    (Name: 'SHAPE';             Value: ShapeSy),
+    (Name: 'SIZE';              Value: SizeSy),
+    (Name: 'SPAN';              Value: SpanSy),
+    (Name: 'SRC';               Value: SrcSy),
+    (Name: 'START';             Value: StartSy),
+    (Name: 'STYLE';             Value: StyleSy),
+    (Name: 'TABINDEX';          Value: TabIndexSy),
+    (Name: 'TARGET';            Value: TargetSy),
+    (Name: 'TEXT';              Value: TextSy),
+    (Name: 'TITLE';             Value: TitleSy),
+    (Name: 'TOPMARGIN';         Value: TopMarginSy),
+    (Name: 'TRANSP';            Value: TranspSy),
+    (Name: 'TYPE';              Value: TypeSy),
+    (Name: 'USEMAP';            Value: UseMapSy),
+    (Name: 'VALIGN';            Value: VAlignSy),
+    (Name: 'VALUE';             Value: ValueSy),
+    (Name: 'VALUE';             Value: ValueSy),
+    (Name: 'VLINK';             Value: VLinkSy),
+    (Name: 'VSPACE';            Value: VSpaceSy),
+    (Name: 'WIDTH';             Value: WidthSy),
+    (Name: 'WRAP';              Value: WrapSy));
 var
   I: Integer;
   P: PSymbol;

@@ -1,7 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -155,9 +155,9 @@ type
     FontFamily, FontSize, FontStyle, FontWeight, TextAlign, TextDecoration,
     LetterSpacing, 
     //BG, 12.03.2011 removed: BorderStyle,
-    Color, 
+    Color,
     // these properties are in MarginArrays
-    BackgroundColor, 
+    BackgroundColor,
     //BG, 12.03.2011 removed: BorderColor,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
     piMinHeight, piMinWidth, piMaxHeight, piMaxWidth,
@@ -168,7 +168,7 @@ type
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
     //
-    piWidth, piHeight, TopPos, BottomPos, RightPos, LeftPos, 
+    piWidth, piHeight, TopPos, BottomPos, RightPos, LeftPos,
 
     Visibility, LineHeight, BackgroundImage, BackgroundPosition,
     BackgroundRepeat, BackgroundAttachment, VerticalAlign, Position, ZIndex,
@@ -176,6 +176,8 @@ type
     PageBreakBefore, PageBreakAfter, PageBreakInside, TextTransform,
     WordWrap, FontVariant, BorderCollapse, OverFlow, piDisplay, piEmptyCells,
     piWhiteSpace);
+
+  TPropIndexSet = Set of PropIndices;
 
   TVMarginArray = array[BackgroundColor..LeftPos] of Variant;
   TMarginArray = array[BackgroundColor..LeftPos] of Integer;
@@ -234,6 +236,7 @@ type
     constructor Create; overload; // for use in style list only
     constructor Create(const AUseQuirksMode : Boolean); overload; // for use in style list only
     constructor Create(APropStack: TPropStack; const AUseQuirksMode : Boolean); overload; // for use in property stack
+    constructor CreateCopy(ASource: TProperties);
 
     destructor Destroy; override;
     function BorderStyleNotBlank: Boolean;
@@ -261,6 +264,8 @@ type
     function IsOverflowHidden: Boolean;
     function ShowEmptyCells: Boolean;
     procedure AddPropertyByName(const PropName, PropValue: ThtString);
+    procedure SetPropertyDefault(Index: PropIndices; const Value: Variant);
+    procedure SetPropertyDefaults(Indexes: TPropIndexSet; const Value: Variant);
     procedure Assign(const Item: Variant; Index: PropIndices);
     procedure AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
     procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
@@ -974,7 +979,6 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
-
 constructor TProperties.Create(APropStack: TPropStack; const AUseQuirksMode : Boolean);
 begin
   Create;
@@ -986,6 +990,35 @@ constructor TProperties.Create(const AUseQuirksMode : Boolean);
 begin
   Create;
   FUseQuirksMode := AUseQuirksMode;
+end;
+
+//-- BG ---------------------------------------------------------- 20.01.2013 --
+constructor TProperties.CreateCopy(ASource: TProperties);
+begin
+  PropStack       := ASource.PropStack     ;
+  InLink          := ASource.InLink        ;
+  DefFontname     := ASource.DefFontname   ;
+  FUseQuirksMode  := ASource.FUseQuirksMode;
+  PropTag         := ASource.PropTag       ;
+  PropClass       := ASource.PropClass     ;
+  PropID          := ASource.PropID        ;
+  PropPseudo      := ASource.PropPseudo    ;
+  PropTitle       := ASource.PropTitle     ;
+  PropStyle       := ASource.PropStyle     ;
+  FontBG          := ASource.FontBG        ;
+  FCharSet        := ASource.FCharSet      ;
+  FCodePage       := ASource.FCodePage     ;
+  FEmSize         := ASource.FEmSize       ;
+  FExSize         := ASource.FExSize       ;
+  Props           := ASource.Props         ;
+  Originals       := ASource.Originals     ;
+  FIArray         := ASource.FIArray       ;
+  ID              := ASource.ID            ;
+  if ASource.TheFont <> nil then
+  begin
+    TheFont := TMyFont.Create;
+    TheFont.Assign(ASource.TheFont);
+  end;
 end;
 
 destructor TProperties.Destroy;
@@ -1714,6 +1747,23 @@ begin
     FontBG := Props[BackgroundColor];
 end;
 
+//-- BG ---------------------------------------------------------- 20.01.2013 --
+procedure TProperties.SetPropertyDefault(Index: PropIndices; const Value: Variant);
+begin
+  if (Props[Index] = Unassigned) or ((VarType(Props[Index]) in varInt) and (Props[Index] = IntNull)) then
+    Props[Index] := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 20.01.2013 --
+procedure TProperties.SetPropertyDefaults(Indexes: TPropIndexSet; const Value: Variant);
+var
+  Index: PropIndices;
+begin
+  for Index := Low(Index) to High(Index) do
+    if Index in Indexes then
+      SetPropertyDefault(Index, Value);
+end;
+
 //-- BG ---------------------------------------------------------- 23.11.2009 --
 function TProperties.ShowEmptyCells: Boolean;
 begin
@@ -1861,9 +1911,24 @@ end;
 procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
   BorderWidth: Integer; out AutoCount: Integer; var M: TMarginArray);
 {This routine does not do MarginTop and MarginBottom as they are done by ConvVertMargins}
+
+  function Base(I: PropIndices): Integer;
+  begin
+    case I of
+      BorderTopWidth, BorderBottomWidth,
+      MarginTop, MarginBottom,
+      piMinHeight, piMaxHeight,
+      PaddingTop, PaddingBottom,
+      LineHeight,
+      piHeight, TopPos:
+        Base := BaseHeight
+    else
+      Base := BaseWidth;
+    end;
+  end;
+
 var
   I: PropIndices;
-  Base: Integer;
   LBoxSizing : BoxSizingType;
 begin
   {$IFDEF JPM_DEBUGGING}
@@ -1884,12 +1949,6 @@ begin
   AutoCount := 0; {count of 'auto's in width items}
   for I := Low(VM) to High(VM) do
   begin
-    case I of
-      piHeight, TopPos:
-        Base := BaseHeight
-    else
-      Base := BaseWidth;
-    end;
     case I of
       BackgroundColor, BorderTopColor..BorderLeftColor:
         begin
@@ -1929,7 +1988,7 @@ begin
         begin
           if VarIsStr(VM[I]) then
           begin
-            M[I] := LengthConv(VM[I], False, Base, EmSize, ExSize, 0); {Auto will be 0}
+            M[I] := LengthConv(VM[I], False, Base(I), EmSize, ExSize, 0); {Auto will be 0}
             if Pos('%', VM[I]) > 0 then {include border in % heights}
               M[I] := M[I] - M[BorderTopWidth] - M[BorderBottomWidth] - M[PaddingTop] - M[PaddingBottom];
           end
@@ -1947,7 +2006,7 @@ begin
         begin
           if VarIsStr(VM[I]) then
           begin
-            M[I] := LengthConv(VM[I], False, Base, EmSize, ExSize, 0); {Auto will be 0}
+            M[I] := LengthConv(VM[I], False, Base(I), EmSize, ExSize, 0); {Auto will be 0}
           end
           else if VarType(VM[I]) in varInt then
           begin
@@ -1962,7 +2021,7 @@ begin
       TopPos, RightPos, BottomPos, LeftPos:
         begin
           if VarIsStr(VM[I]) then
-            M[I] := LengthConv(VM[I], False, Base, EmSize, ExSize, Auto) {Auto will be Auto}
+            M[I] := LengthConv(VM[I], False, Base(I), EmSize, ExSize, Auto) {Auto will be Auto}
           else if VarType(VM[I]) in varInt then
           begin
             if VM[I] = IntNull then
@@ -1973,7 +2032,7 @@ begin
           else
             M[I] := Auto;
         end;
-      BoxSizing :
+      BoxSizing:
         if TryStrToBoxSizing(VM[I],LBoxSizing) then begin
            M[I] := Ord(LBoxSizing);
         end else begin
@@ -2003,7 +2062,7 @@ begin
             M[I] := 0;
         end;
       piMinWidth,
-      piMaxWidth :
+      piMaxWidth:
         begin
           if VarIsStr(VM[I]) then
             M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
@@ -2051,7 +2110,7 @@ begin
     else
       begin
         if VarIsStr(VM[I]) then
-          M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, 0)
+          M[I] := LengthConv(VM[I], False, Base(I), EmSize, ExSize, 0)
         else if VarType(VM[I]) in varInt then
         begin
           if VM[I] = IntNull then
@@ -2875,7 +2934,7 @@ begin
   CodeSiteLogging.CodeSite.SendFmtMsg('ADefColor = %s',[LogPropColor( ADefColor )]);
 
   {$ENDIF}
-  for I := Low(Marray) to High(MArray) do
+  for I := Low(MArray) to High(MArray) do
     case I of
       BorderTopStyle..BorderLeftStyle:
       begin
@@ -3269,7 +3328,7 @@ var
   HIndex: Integer;
   Properties: TProperties;
   J: ListTypes;
-  F: Double;
+  //F: Double;
 
 begin
   Clear;
@@ -3473,18 +3532,23 @@ begin
   for HIndex := 1 to 6 do
   begin
     Properties := TProperties.Create(UseQuirksMode);
-    F := PointSize / 12.0;
+    //F := PointSize / 12.0;
     case HIndex of
-      1: Properties.Props[FontSize] := 24.0 * F;
-      2: Properties.Props[FontSize] := 18.0 * F;
-      3: Properties.Props[FontSize] := 14.0 * F;
-      4: Properties.Props[FontSize] := 12.0 * F;
-      5: Properties.Props[FontSize] := 10.0 * F;
-      6: Properties.Props[FontSize] := 8.0 * F;
+      1: Properties.Props[FontSize] := '2em';
+      2: Properties.Props[FontSize] := '1.5em';
+      3: Properties.Props[FontSize] := '1.17em';
+    else
+         Properties.Props[FontSize] := '1em';
     end;
-    Properties.Props[MarginTop] := 19;
+    case HIndex of
+      4: Properties.Props[MarginTop] := '1.67em';
+      5: Properties.Props[MarginTop] := '1.5em';
+      6: Properties.Props[MarginTop] := '1.12em';
+    else
+      Properties.Props[MarginTop] := 19;
+    end;
     Properties.Props[MarginBottom] := Properties.Props[MarginTop];
-    Properties.Props[FontWeight] := 'bold';
+    Properties.Props[FontWeight] := 'bolder';
     AddObject('h' + IntToStr(HIndex), Properties);
   end;
 
