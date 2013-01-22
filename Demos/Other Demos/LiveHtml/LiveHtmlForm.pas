@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   StdCtrls, ExtCtrls, Menus, ClipBrd,
   //
-  HTMLUn2, HtmlView, SynEditHighlighter, SynHighlighterHtml, SynEdit, SynEditOptionsDialog;
+  HtmlGlobals, HTMLUn2, HtmlView, SynEditHighlighter, SynHighlighterHtml, SynEdit, SynEditOptionsDialog, HtmlBuffer;
 
 type
   TFormLiveHtml = class(TForm)
@@ -23,6 +23,8 @@ type
     SynEditOptionsDialog1: TSynEditOptionsDialog;
     PopupMenu1: TPopupMenu;
     Options1: TMenuItem;
+    DocumentSource1: TMenuItem;
+    TestAsString1: TMenuItem;
     procedure MemoChange(Sender: TObject);
     procedure HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: widestring);
     procedure pmSelectAllClick(Sender: TObject);
@@ -30,6 +32,8 @@ type
     procedure pmPasteClick(Sender: TObject);
     procedure NameList1Click(Sender: TObject);
     procedure Options1Click(Sender: TObject);
+    procedure DocumentSource1Click(Sender: TObject);
+    procedure HtmlViewerParseBegin(Sender: TObject; var Source: TBuffer);
   protected
     procedure Loaded; override;
   end;
@@ -41,9 +45,32 @@ implementation
 
 {$R *.dfm}
 
+procedure TFormLiveHtml.DocumentSource1Click(Sender: TObject);
+var
+  SourceList: TStringList;
+begin
+  Memo.Lines.Add(HtmlViewer.DocumentSource);
+//  SourceList := TStringList.Create;
+//  try
+//    SourceList.Text := HtmlViewer.DocumentSource;
+//    SourceList.SaveToFile(ChangeFileExt(Application.ExeName, '.log'));
+//  finally
+//    SourceList.Free;
+//  end;
+end;
+
 procedure TFormLiveHtml.HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: widestring);
 begin
   HtmlViewer.Clear;
+end;
+
+var Str: ThtString;
+procedure TFormLiveHtml.HtmlViewerParseBegin(Sender: TObject; var Source: TBuffer);
+begin
+  if TestAsString1.Checked then
+  begin
+    Str := Source.AsString;
+  end;
 end;
 
 procedure TFormLiveHtml.Loaded;

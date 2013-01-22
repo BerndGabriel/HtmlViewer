@@ -45,8 +45,7 @@ object FormLiveHtml: TFormLiveHtml
     QuirksMode = qmDetect
     ScrollBars = ssNone
     OnObjectClick = HtmlViewerObjectClick
-    ExplicitWidth = 635
-    ExplicitHeight = 344
+    OnParseBegin = HtmlViewerParseBegin
   end
   object Memo: TSynEdit
     Left = 0
@@ -69,12 +68,9 @@ object FormLiveHtml: TFormLiveHtml
     Gutter.Font.Style = []
     HideSelection = True
     Highlighter = SynHTMLSyn1
-    Lines.UnicodeStrings = 'Memo'
     Options = [eoAutoIndent, eoDragDropEditing, eoDropFiles, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces]
     RightEdge = 100
     OnChange = MemoChange
-    ExplicitTop = 247
-    ExplicitWidth = 635
   end
   object PopupMenu: TPopupMenu
     Left = 368
@@ -97,6 +93,14 @@ object FormLiveHtml: TFormLiveHtml
     object NameList1: TMenuItem
       Caption = 'NameList'
       OnClick = NameList1Click
+    end
+    object DocumentSource1: TMenuItem
+      Caption = 'DocumentSource'
+      OnClick = DocumentSource1Click
+    end
+    object TestAsString1: TMenuItem
+      AutoCheck = True
+      Caption = 'Test AsString'
     end
   end
   object SynHTMLSyn1: TSynHTMLSyn
