@@ -114,11 +114,19 @@ begin
 {$ifdef Ver230}
     'Delphi XE2'
 {$endif}
+{$ifdef Ver240}
+    'Delphi XE3'
+{$endif}
 {$ifdef LCL}
     'Lazarus ' + lcl_version
 {$endif}
     ;
-
+{$ifdef win64}
+  Result := Result + '<li>Compiled for Win64</li>';
+{$endif}
+{$ifdef win32}
+  Result := Result + '<li>Compiled for Win32</li>';
+{$endif}
 {$ifdef UseTNT}
   Result := Result + '<li>Using TNT unicode controls.';
 {$else}

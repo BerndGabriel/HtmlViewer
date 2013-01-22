@@ -41,7 +41,9 @@ uses
 {$else}
   Windows, ShellAPI,
   {$if CompilerVersion >= 15}
+    {$ifndef TScrollStyleInSystemUITypes}
     XpMan,
+    {$endif}
   {$ifend}
   {$ifdef Compiler18_Plus}
     WideStrings,
@@ -232,6 +234,11 @@ implementation
   {$if CompilerVersion < 15}
     {$R manifest.res}
   {$ifend}
+{$endif}
+
+{$ifdef TScrollStyleInSystemUITypes}
+uses
+  System.UITypes;
 {$endif}
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -606,7 +613,7 @@ begin
   begin
     ReloadButton.Enabled := False;
     Update;
-    Viewer.LoadTextFile(OpenDialog.Filename);
+    Viewer.LoadFromFile( OpenDialog.Filename, TextType);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;
@@ -625,7 +632,7 @@ begin
   if OpenDialog.Execute then
   begin
     ReloadButton.Enabled := False;
-    Viewer.LoadImageFile(OpenDialog.Filename);
+    Viewer.LoadFromFile( OpenDialog.Filename, ImgType);
     if Viewer.CurrentFile  <> '' then
     begin
       UpdateCaption;

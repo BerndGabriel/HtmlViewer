@@ -346,12 +346,7 @@ begin
   end else begin
     Result := AColor;
   end;
-  if Result < 0 then
-  begin
-    Result := GetSysColor(AColor and $FFFFFF);
-    if Result < 0 then
-      Result := AColor and $FFFFFF;
-  end;
+  Result := ColorToRGB(Result);
 end;
 {$else}
 
@@ -363,12 +358,7 @@ begin
   end else begin
     Result := AColor;
   end;
-  if Result < 0 then
-  begin
-    Result := GetSysColor(AColor and $FFFFFF);
-    if Result < 0 then
-      Result := AColor and $FFFFFF;
-  end;
+  Result := ColorToRGB(Result);
   {$else}
   if AColor < 0 then
     Result := GetSysColor(AColor and $FFFFFF)

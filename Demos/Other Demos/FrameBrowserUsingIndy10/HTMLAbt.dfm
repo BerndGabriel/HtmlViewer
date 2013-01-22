@@ -1,0 +1,75 @@
+object AboutBox: TAboutBox
+  Left = 245
+  Top = 137
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'About'
+  ClientHeight = 261
+  ClientWidth = 383
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -16
+  Font.Name = 'System'
+  Font.Style = []
+  OldCreateOrder = True
+  Position = poScreenCenter
+  PixelsPerInch = 120
+  TextHeight = 20
+  object BitBtn1: TBitBtn
+    Left = 143
+    Top = 213
+    Width = 96
+    Height = 37
+    Margins.Left = 4
+    Margins.Top = 4
+    Margins.Right = 4
+    Margins.Bottom = 4
+    Kind = bkOK
+    NumGlyphs = 2
+    TabOrder = 0
+  end
+  object Panel1: TPanel
+    Left = 0
+    Top = 0
+    Width = 383
+    Height = 201
+    Margins.Left = 4
+    Margins.Top = 4
+    Margins.Right = 4
+    Margins.Bottom = 4
+    Align = alTop
+    BevelInner = bvLowered
+    BevelOuter = bvNone
+    Caption = 'Panel1'
+    TabOrder = 1
+    object Viewer: THtmlViewer
+      Left = 1
+      Top = 1
+      Width = 381
+      Height = 199
+      Margins.Left = 4
+      Margins.Top = 4
+      Margins.Right = 4
+      Margins.Bottom = 4
+      BorderStyle = htSingle
+      CharSet = DEFAULT_CHARSET
+      DefFontName = 'Times New Roman'
+      DefPreFontName = 'Courier New'
+      HistoryMaxCount = 0
+      HtOptions = []
+      NoSelect = True
+      PrintMarginBottom = 2.000000000000000000
+      PrintMarginLeft = 2.000000000000000000
+      PrintMarginRight = 2.000000000000000000
+      PrintMarginTop = 2.000000000000000000
+      PrintScale = 1.000000000000000000
+      QuirksMode = qmDetect
+      ScrollBars = ssNone
+      ViewImages = False
+      Align = alClient
+      Enabled = False
+      TabOrder = 0
+    end
+  end
+end

@@ -26,6 +26,9 @@ unit BegaScrollBox;
 interface
 
 uses
+  {$ifdef UseVCLStyles}
+  Vcl.Themes,
+  {$endif}
   Classes, SysUtils, Messages,
 {$ifdef LCL}
   LclIntf, LclType, LMessages,
@@ -108,6 +111,11 @@ type
   end;
 
   TBegaScrollingWinControl = class(TWinControl)
+   {$ifdef UseVCLStyles}
+  strict private
+    class destructor Destroy;
+    class constructor Create;
+   {$endif}
   private
     FAutoRangeCount: Integer;
     FAutoScroll: Boolean;
@@ -154,7 +162,15 @@ type
     property HorzScrollBar: TBegaScrollBar read FHorzScrollBar write SetHorzScrollBar;
     property VertScrollBar: TBegaScrollBar read FVertScrollBar write SetVertScrollBar;
   end;
+ {$ifdef UseVCLStyles}
+ TBegaScrollingWinControlStyleHook = class(TScrollingStyleHook)
+  strict protected
+    procedure WndProc(var Message: TMessage); override;
+  public
+    constructor Create(AControl: TWinControl); override;
+  end;
 
+ {$endif}
   TBegaScrollBox = class(TBegaScrollingWinControl)
   private
     FBorderStyle: TBorderStyle;
@@ -241,6 +257,11 @@ type
   end;
 
 implementation
+
+ {$ifdef UseVCLStyles}
+ uses
+   System.UITypes;
+ {$endif}
 
 { TBegaScrollBar }
 
@@ -1082,6 +1103,42 @@ begin
   else
     inherited;
 end;
+
+ {$ifdef UseVCLStyles}
+type
+  TWinControlClassHook = class(TWinControl);
+
+class constructor TBegaScrollingWinControl.Create;
+begin
+   TCustomStyleEngine.RegisterStyleHook(TBegaScrollingWinControl, TBegaScrollingWinControlStyleHook);
+end;
+
+class destructor TBegaScrollingWinControl.Destroy;
+begin
+  TCustomStyleEngine.UnRegisterStyleHook(TBegaScrollingWinControl, TBegaScrollingWinControlStyleHook);
+end;
+
+procedure TBegaScrollingWinControlStyleHook.WndProc(var Message: TMessage);
+begin
+  // Reserved for potential updates
+  inherited;
+end;
+
+constructor TBegaScrollingWinControlStyleHook.Create(AControl: TWinControl);
+begin
+  inherited;
+  OverrideEraseBkgnd := True;
+  {$ifdef has_StyleElements}
+  if seClient in Control.StyleElements then
+    Brush.Color := StyleServices.GetStyleColor(scPanel)
+  else
+    Brush.Color :=  TWinControlClassHook(Control).Color;
+  {$else}
+  Brush.Color := StyleServices.GetStyleColor(scListBox);
+  {$Endif}
+end;
+
+ {$endif}
 
 { TBegaScrollBox }
 
