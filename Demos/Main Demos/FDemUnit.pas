@@ -192,9 +192,6 @@ type
     procedure SoundRequest(Sender: TObject; const SRC: String; Loop: Integer; Terminate: Boolean);
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: String);
-    procedure mmiQuirksModeDetectClick(Sender: TObject);
-    procedure mmiQuirksModeStandardsClick(Sender: TObject);
-    procedure mmiQuirksModeQuirksClick(Sender: TObject);
 {$else}
     procedure FrameViewerInclude(Sender: TObject; const Command: WideString; Params: TWideStrings; out IncludedDocument: TBuffer);
     procedure FrameViewerObjectClick(Sender, Obj: TObject; const OnClick: WideString);
@@ -203,10 +200,10 @@ type
     procedure SoundRequest(Sender: TObject; const SRC: WideString; Loop: Integer; Terminate: Boolean);
     procedure SubmitEvent(Sender: TObject; const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
     procedure WindowRequest(Sender: TObject; const Target, URL: WideString);
+{$endif}
     procedure mmiQuirksModeDetectClick(Sender: TObject);
     procedure mmiQuirksModeStandardsClick(Sender: TObject);
     procedure mmiQuirksModeQuirksClick(Sender: TObject);
-{$endif}
   private
     { Private declarations }
     Histories: array[0..MaxHistories-1] of TMenuItem;
