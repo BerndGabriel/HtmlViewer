@@ -1,8 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -981,7 +980,7 @@ begin
       FSectionList.ProgressStart := 75;
       htProgressInit;
       try
-        //handle quirks mode settings
+        // handle quirks mode settings
         if (DocType = HTMLType) then begin
           case QuirksMode of
             qmDetect :
@@ -1011,7 +1010,10 @@ begin
         Sel1 := -1;
         if Assigned(OnSoundRequest) then
           OnSoundRequest(Self, '', 0, True);
-        FreeAndNil(FDocument);
+
+        // one should not offer same document twice, but ... 
+        if FDocument <> Document then
+          FreeAndNil(FDocument);
 
         // load new document
         FDocument := Document;

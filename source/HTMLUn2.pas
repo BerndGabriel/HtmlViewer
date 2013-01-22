@@ -1,7 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -117,8 +117,8 @@ type
     ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
     TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
     THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy,
-	
+    ReadonlySy, EolSy, MediaSy, RulesSy,
+
     {HTML5 elements}
     HeaderSy, HeaderEndSy,
     SectionSy, SectionEndSy,

@@ -1,7 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -542,11 +542,11 @@ type
 
   TBlock = class(TSectionBase)
   protected
-    function getBorderWidth: Integer; virtual;
+    function GetBorderWidth: Integer; virtual;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); virtual;
-    property BorderWidth: Integer read getBorderWidth;
+    property BorderWidth: Integer read GetBorderWidth;
   public
     MyCell: TBlockCell; // the block content
     MargArrayO: TVMarginArray;
@@ -955,6 +955,12 @@ type
 // THtmlTable, a block that represents a html table
 //------------------------------------------------------------------------------
 
+  TTableFrame = (tfVoid, tfAbove, tfBelow, tfHSides, tfLhs, tfRhs, tfVSides, tfBox, tfBorder);
+  TTableRules = (trNone, trGroups, trRows, trCols, trAll);
+  IntArray = array of Integer;
+  TWidthTypeArray = array of TWidthType;
+  TIntegerPerWidthType = array [TWidthType] of Integer;
+
   TCellObjCell = class(TCell)
   private
     MyRect: TRect;
@@ -965,10 +971,6 @@ type
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget;
       out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
   end;
-
-  IntArray = array of Integer;
-  TWidthTypeArray = array of TWidthType;
-  TIntegerPerWidthType = array [TWidthType] of Integer;
 
   TCellObj = class(TObject)
   {holds one cell of the table and some other information}
@@ -1125,7 +1127,7 @@ type
 
   TTableBlock = class(TBlock)
   protected
-    function getBorderWidth: Integer; override;
+    function GetBorderWidth: Integer; override;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); override;
   public
     Table: THtmlTable;
@@ -1199,7 +1201,9 @@ type
     //Indent: Integer;        {table indent}
     BorderWidth: Integer;   {width of border}
     brdWidthAttr: Integer;  {Width attribute as entered}
-    HasBorderWidth: Boolean; {width of border has been set by attr or prop}
+    HasBorderWidthAttr: Boolean; {width of border has been set by attr}
+    Frame: TTableFrame;
+    Rules: TTableRules;
     Float: Boolean;         {if floating}
     NumCols: Integer;       {Number columns in table}
     TableWidth: Integer;    {width of table}
@@ -4867,11 +4871,10 @@ begin
   MyCell.FOwner := Self;
   DrawList := TList.Create;
 
-  if not (Master.UseQuirksMode and (Self is TTableBlock)) then begin
+  if Master.UseQuirksMode and (Self is TTableBlock) then
+    Prop.GetVMarginArrayDefBorder(MargArrayO,clSilver)
+  else
     Prop.GetVMarginArray(MargArrayO);
-  end else begin
-    Prop.GetVMarginArrayDefBorder(MargArrayO,clSilver);
-  end;
   if Prop.GetClear(Clr) then
     ClearAttr := Clr;
   if not Prop.GetFloat(FloatLR) then
@@ -5708,6 +5711,28 @@ begin
     MaxWidth := AWidth;
 
     ConvMargArray(AWidth, AHeight, AutoCount);
+    HasBorderStyle := false;
+    if BorderStyleType(MargArray[BorderTopStyle]) <> bssNone then
+    begin
+      HasBorderStyle := True;
+      //FBrd.Top := MargArray[BorderTopWidth];
+    end;
+    if BorderStyleType(MargArray[BorderRightStyle]) <> bssNone then
+    begin
+      HasBorderStyle := True;
+      //FBrd.Right := MargArray[BorderRightWidth];
+    end;
+    if BorderStyleType(MargArray[BorderBottomStyle]) <> bssNone then
+    begin
+      HasBorderStyle := True;
+      //FBrd.Bottom := MargArray[BorderBottomWidth];
+    end;
+    if BorderStyleType(MargArray[BorderLeftStyle]) <> bssNone then
+    begin
+      HasBorderStyle := True;
+      //FBrd.Left := MargArray[BorderLeftWidth];
+    end;
+
     ApplyBoxSettings(MargArray,Document.UseQuirksMode);
     NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
@@ -6304,9 +6329,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.08.2010 --
-function TBlock.getBorderWidth: Integer;
+function TBlock.GetBorderWidth: Integer;
 begin
-  Result := 1;
+  Result := 3;
 end;
 
 {----------------TTableAndCaptionBlock.Create}
@@ -6475,20 +6500,57 @@ constructor TTableBlock.Create(Master: ThtDocument; Prop: TProperties;
   AnOwnerCell: TCellBasic; ATable: THtmlTable; TableAttr: TAttributeList;
   TableLevel: Integer);
 var
-  I, AutoCount, BorderColor, BorderWidth: Integer;
-  Percent: boolean;
-  S,W,C: PropIndices;
+  I, AutoCount: Integer;
+  BorderWidth: Integer;
+  Percent: Boolean;
+  TheProps, MyProps: TProperties;
 begin
    {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TTableBlock.Create');
    {$ENDIF}
-  inherited Create(Master, Prop, AnOwnerCell, TableAttr);
+
+  // BG, 20.01.2013: translate table attributes to block property defaults:
+  MyProps := TProperties.CreateCopy(Prop);
+  TheProps := MyProps;
+  try
+    if ATable.BorderColor <> clNone then
+      MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], ATable.BorderColor);
+
+    case ATable.Frame of
+      tfBox, tfBorder:
+        MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssOutset);
+
+      tfHSides:
+        MyProps.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssSolid);
+
+      tfVSides:
+        MyProps.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssSolid);
+
+      tfAbove:
+        MyProps.SetPropertyDefault(BorderTopStyle, bssSolid);
+
+      tfBelow:
+        MyProps.SetPropertyDefault(BorderBottomStyle, bssSolid);
+
+      tfLhs:
+        MyProps.SetPropertyDefault(BorderLeftStyle, bssSolid);
+
+      tfRhs:
+        MyProps.SetPropertyDefault(BorderRightStyle, bssSolid);
+    end;
+
+    inherited Create(Master, TheProps, AnOwnerCell, TableAttr);
+  finally
+    MyProps.Free;
+  end;
+
   Table := ATable;
   Justify := NoJustify;
 
   for I := 0 to TableAttr.Count - 1 do
     with TableAttr[I] do
       case Which of
+
         AlignSy:
           if CompareText(Name, 'CENTER') = 0 then
             Justify := Centered
@@ -6502,8 +6564,10 @@ begin
             if FloatLR = ANone then
               FloatLR := ARight;
           end;
+
         BGColorSy:
           BkGnd := ColorFromString(Name, False, BkColor);
+
         BackgroundSy:
           if not Assigned(BGImage) then
           begin
@@ -6513,8 +6577,11 @@ begin
             PRec.X.RepeatD := True;
             PRec.Y := PRec.X;
           end;
+
         HSpaceSy: HSpace := Min(40, Abs(Value));
+
         VSpaceSy: VSpace := Min(200, Abs(Value));
+        
         WidthSy:
           if Pos('%', Name) > 0 then
           begin
@@ -6530,69 +6597,10 @@ begin
             MargArrayO[piHeight] := Name;
       end;
 
-  //BG, 13.06.2010: Issue 5: Table border versus stylesheets:
-  //BG, 02.02.2012: Issue 121: Cell border:
-  TableBorder := False;
-  BorderColor := Table.BorderColor;
-  if BorderColor = clNone then
-    BorderColor := clSilver;
-  if Table.HasBorderWidth then
+  if Table.BorderWidth > 0 then
     BorderWidth := Table.BorderWidth
   else
     BorderWidth := 3;
-  C := BorderTopColor;
-  W := BorderTopWidth;
-  for S := BorderTopStyle to BorderLeftStyle do
-  begin
-    if (MargArrayO[S] = Unassigned) or (MargArrayO[S] = bssNone) then
-    begin
-      // no style specified
-      if Table.BorderWidth > 0 then
-      begin
-        if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
-          // set default style
-          if Table.BorderColor = clNone then
-            MargArrayO[S] := bssOutset
-          else
-            MargArrayO[S] := bssSolid;
-
-        if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
-          // set default width
-          MargArrayO[W] := Table.BorderWidth;
-
-        HasBorderStyle := True;
-        TableBorder := True;
-      end;
-    end
-    else
-    begin
-      // style has been specified
-      TableBorder := not Table.HasBorderWidth or (Table.BorderWidth > 0);
-      if (VarType(MargArrayO[W]) in varInt) and (MargArrayO[W] = IntNull) then
-        // set default width
-        MargArrayO[W] := BorderWidth;
-    end;
-
-    if (VarType(MargArrayO[C]) in varInt) and (MargArrayO[C] = IntNull) then
-      // no color specified, set default color:
-      case BorderStyleType(MargArrayO[S]) of
-        bssOutset:
-          if S in [BorderLeftStyle, BorderTopStyle] then
-            MargArrayO[C] := Table.BorderColorLight
-          else
-            MargArrayO[C] := Table.BorderColorDark;
-        bssInset:
-          if S in [BorderLeftStyle, BorderTopStyle] then
-            MargArrayO[C] := Table.BorderColorDark
-          else
-            MargArrayO[C] := Table.BorderColorLight;
-      else
-        MargArrayO[C] := BorderColor;
-      end;
-
-    Inc(C);
-    Inc(W);
-  end;
 
 {need to see if width is defined in style}
   Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
@@ -6719,9 +6727,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.08.2010 --
-function TTableBlock.getBorderWidth: Integer;
+function TTableBlock.GetBorderWidth: Integer;
 begin
   Result := Table.BorderWidth;
+  if Result = 0 then
+    Result := 3;
 end;
 
 {----------------TTableBlock.FindWidth}
@@ -7108,12 +7118,6 @@ begin
   FListFont.Assign(Value);
 end;
 
-////-- BG ---------------------------------------------------------- 16.09.2009 --
-//function TBlockLI.getDisplay: TPropDisplay;
-//begin
-//  Result := FDisplay;
-//end;
-
 {----------------TBlockLI.Draw}
 
 function TBlockLI.Draw1(Canvas: TCanvas; const ARect: TRect;
@@ -7398,12 +7402,6 @@ begin
   InlineList := T.InlineList; {same list}
   IsCopy := True;
   inherited CreateCopy(Self, T);
-// r14: Added some fixes for object copies done using Move(), re-checked Unicode Support, minor fixes for file structure
-// was: System.Move(T.ShowImages, ShowImages, DWord(@Background) - DWord(@ShowImages) + Sizeof(Integer));
-  //BG, 08.06.2010: Issue 9: Getting black background
-  // this Move() copied 24 fields including a ThtString, not only ShowImages.
-  // re-introduce Move() after moving ThtString out of the moved area between ShowImages and Background.
-  //ShowImages := T.ShowImages;
   System.Move(T.ShowImages, ShowImages, PtrSub(@Background, @ShowImages) + Sizeof(Integer));
   PreFontName := T.PreFontName;
   htmlFormList := TFreeList.Create; {no copy of list made}
@@ -8303,7 +8301,6 @@ var
   Color: TColor;
   BackgroundImage: ThtString;
   Algn: AlignmentType;
-  J: PropIndices;
 begin
  {$ifdef JPM_DEBUGGING}
  CodeSite.EnterMethod(Self,'TCellObj.Create');
@@ -8407,10 +8404,6 @@ begin
       HasBorderStyle := True;
       FBrd.Left := MargArray[BorderLeftWidth];
     end;
-
-    for J := BorderTopColor to BorderLeftColor do
-      if MargArray[J] = IntNull {was: clNone} then
-        MargArray[J] := clSilver;
 
     Prop.GetPageBreaks(BreakBefore, BreakAfter, KeepIntact);
     ShowEmptyCells := Prop.ShowEmptyCells;
@@ -9128,6 +9121,7 @@ constructor THtmlTable.Create(Master: ThtDocument; Attr: TAttributeList;
   Prop: TProperties);
 var
   I: Integer;
+  A: TAttribute;
 begin
   //BG, 08.06.2010: TODO:  Issue 5: Table border versus stylesheets:
   //  Added: BorderColor
@@ -9135,24 +9129,62 @@ begin
   Rows := TRowList.Create;
   CellPadding := 1;
   CellSpacing := 2;
-  HasBorderWidth := Prop.HasBorderWidth;
   BorderColor := clNone;
   BorderColorLight := clBtnHighLight;
   BorderColorDark := clBtnShadow;
+
+  // BG, 20.01.2013: process BorderSy before FrameSy and RulesSy as it implies defaults.
+  HasBorderWidthAttr := Attr.Find(BorderSy, A);
+  if HasBorderWidthAttr then
+  begin
+    //BG, 15.10.2010: issue 5: set border width only, if style does not set any border width:
+    if A.Name = '' then
+      BorderWidth := 1
+    else
+      BorderWidth := Min(100, Max(0, A.Value)); {Border=0 is no border}
+    brdWidthAttr := BorderWidth;
+
+    if BorderWidth <> 0 then
+    begin
+      Frame := tfBorder;
+      Rules := trAll;
+    end;
+  end;
+
   for I := 0 to Attr.Count - 1 do
     with Attr[I] do
       case Which of
-        BorderSy:
-          //BG, 15.10.2010: issue 5: set border width only, if style does not set any border width:
-          if not HasBorderWidth then
-          begin
-            if Name = '' then
-              BorderWidth := 1
-            else
-              BorderWidth := Min(100, Max(0, Value)); {Border=0 is no border}
-            HasBorderWidth := True;
-            brdWidthAttr := BorderWidth;
-          end;
+        FrameSy:
+          if CompareText(Name, 'VOID') = 0 then
+            Frame := tfVoid
+          else if CompareText(Name, 'ABOVE') = 0 then
+            Frame := tfAbove
+          else if CompareText(Name, 'BELOW') = 0 then
+            Frame := tfBelow
+          else if CompareText(Name, 'HSIDES') = 0 then
+            Frame := tfHSides
+          else if CompareText(Name, 'LHS') = 0 then
+            Frame := tfLhs
+          else if CompareText(Name, 'RHS') = 0 then
+            Frame := tfRhs
+          else if CompareText(Name, 'VSIDES') = 0 then
+            Frame := tfVSides
+          else if CompareText(Name, 'BOX') = 0 then
+            Frame := tfBox
+          else if CompareText(Name, 'BORDER') = 0 then
+            Frame := tfBorder;
+
+        RulesSy:
+          if CompareText(Name, 'NONE') = 0 then
+            Rules := trNone
+          else if CompareText(Name, 'GROUPS') = 0 then
+            Rules := trGroups
+          else if CompareText(Name, 'ROWS') = 0 then
+            Rules := trRows
+          else if CompareText(Name, 'COLS') = 0 then
+            Rules := trCols
+          else if CompareText(Name, 'ALL') = 0 then
+            Rules := trAll;
 
         CellSpacingSy:
           CellSpacing := Min(40, Max(-1, Value));
