@@ -1037,6 +1037,7 @@ begin
           FUseQuirksMode := False;
         end;
         Self.FSectionList.UseQuirksMode := FUseQuirksMode;
+
         // terminate old document
         InitLoad;
         CaretPos := 0;
