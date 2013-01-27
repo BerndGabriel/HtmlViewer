@@ -583,7 +583,7 @@ type
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
     // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
     procedure Load(const Url: ThtString); virtual; abstract;
-    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
+    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
     property CodePage: Integer read FCodePage write SetCodePage;
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
@@ -2964,7 +2964,7 @@ begin
   DefFontName := 'Times New Roman';
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
-  FQuirksMode := qmDetect;
+  FQuirksMode := qmStandards;
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --

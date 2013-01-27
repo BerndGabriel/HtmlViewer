@@ -188,6 +188,7 @@ type
     procedure SetPrintMarginRight(const Value: Double); override;
     procedure SetPrintMarginTop(const Value: Double); override;
     procedure SetPrintScale(const Value: double); override;
+    procedure SetQuirksMode(const AValue: THtQuirksMode); override;
     procedure SetVisitedColor(const Value: TColor); override;
     procedure SetVisitedMaxCount(const Value: integer); override;
     property Base: ThtString read GetBase write SetBase;
@@ -3933,6 +3934,16 @@ begin
     for I := 0 to GetCurViewerCount - 1 do
       CurViewer[I].PrintScale := Value;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 25.10.2012 --
+procedure TFVBase.SetQuirksMode(const AValue: THtQuirksMode);
+var
+  I: integer;
+begin
+  inherited;
+  for I := 0 to GetCurViewerCount - 1 do
+    CurViewer[I].QuirksMode := AValue;
 end;
 
 procedure TFVBase.SetMarginWidth(const Value: integer);
