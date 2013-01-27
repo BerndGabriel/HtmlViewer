@@ -361,6 +361,8 @@ type
     L: TFreeList;       // list of left side indentations of type IndentRec.
     R: TFreeList;       // list of right side indentations of type IndentRec.
     CurrentID: TObject; // the current block level (a TBlock pointer)
+    LTopMin: Integer;
+    RTopMin: Integer;
   public
     constructor Create;
     destructor Destroy; override;
@@ -2443,6 +2445,7 @@ begin
   Result.YB := YB;
   Result.X := LeftEdge(YT) + W;
   L.Add(Result);
+  LTopMin := YT;
 end;
 
 //-- BG ---------------------------------------------------------- 05.02.2011 --
@@ -2454,6 +2457,7 @@ begin
   Result.YB := YB;
   Result.X := RightEdge(YT) - W;
   R.Add(Result);
+  RTopMin := YT;
 end;
 
 {----------------TIndentManager.Reset}
@@ -2465,6 +2469,8 @@ begin
   Width  := Wd;
   R.Clear;
   L.Clear;
+  LTopMin := 0;
+  RTopMin := 0;
   CurrentID := nil;
 end;
 
@@ -2630,6 +2636,7 @@ function TIndentManager.AlignLeft(var Y: Integer; W, SpW, SpH: Integer): Integer
 var
   I, CL, CR, LX, RX, XL, XR, YY, MinX: Integer;
 begin
+  Y := Max(Y, LTopMin);
   Result := LeftEdge(Y);
   if Result + W + SpW > RightEdge(Y) then
   begin
@@ -2736,6 +2743,7 @@ function TIndentManager.AlignRight(var Y: Integer; W, SpW, SpH: Integer): Intege
 var
   I, CL, CR, LX, RX, XL, XR, YY, MaxX: Integer;
 begin
+  Y := Max(Y, RTopMin);
   Result := RightEdge(Y) - W;
   if Result < LeftEdge(Y) + SpW then
   begin
