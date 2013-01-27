@@ -2064,6 +2064,11 @@ begin
         Props[WordWrap] := PropValue
       else
         Props[WordWrap] := 'normal';
+    piWhiteSpace:
+      if PropValue = 'nowrap' then
+        Props[piWhiteSpace] := PropValue
+      else if PropValue = 'normal' then
+        Props[piWhiteSpace] := 'normal';
     FontVariant:
       if PropValue = 'small-caps' then
         Props[FontVariant] := PropValue
@@ -2248,6 +2253,11 @@ begin
           Propty.Props[WordWrap] := Value
         else
           Propty.Props[WordWrap] := 'normal';
+      piWhiteSpace:
+        if Value = 'nowrap' then
+          Propty.Props[piWhiteSpace] := Value
+        else if Value = 'normal' then
+          Propty.Props[piWhiteSpace] := 'normal';
       FontVariant:
         if Value = 'small-caps' then
           Propty.Props[FontVariant] := Value
@@ -2338,6 +2348,7 @@ begin
   Properties.Props[TextDecoration] := 'none';
   Properties.Props[TextTransform] := txNone;
   Properties.Props[WordWrap] := 'normal';
+  Properties.Props[piWhiteSpace] := 'normal';
   Properties.Props[FontVariant] := 'normal';
   Properties.Props[Color] := AColor;
   Properties.Props[MarginTop] := MarginHeight;
