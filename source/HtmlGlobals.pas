@@ -332,17 +332,27 @@ function TextEndsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline}
 function TextStartsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 implementation
+{$ifdef has_StyleElements}
+function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
+begin
+  if AUseThemes and TStyleManager.IsCustomStyleActive then begin
+    Result := StyleServices.GetSystemColor(AColor);
+  end else begin
+    Result := AColor;
+  end;
+  Result := ColorToRGB(Result);
+end;
+{$else}
 
 function ThemedColor(const AColor : TColor): TColor;
 begin
   {$ifdef UseVCLStyles}
-  Result := StyleServices.GetSystemColor(AColor);
-  if Result < 0 then
-  begin
-    Result := GetSysColor(AColor and $FFFFFF);
-    if Result < 0 then
-      Result := AColor and $FFFFFF;
+  if TStyleManager.IsCustomStyleActive then begin
+    Result := StyleServices.GetSystemColor(AColor);
+  end else begin
+    Result := AColor;
   end;
+  Result := ColorToRGB(Result);
   {$else}
   if AColor < 0 then
     Result := GetSysColor(AColor and $FFFFFF)
@@ -350,6 +360,7 @@ begin
     Result := AColor and $FFFFFF;
   {$endif}
 end;
+{$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
 var
