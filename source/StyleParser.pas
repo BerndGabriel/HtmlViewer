@@ -465,16 +465,16 @@ procedure THtmlStyleParser.ParseAtRule(Rulesets: TRulesetList);
   procedure DoCharset;
   var
     Charset: ThtString;
-    Info: TBuffCharSetCodePageInfo;
+    CodePage: TBuffCodePage;
   begin
     if GetString(Charset) then
       if FCanCharset then
       begin
-        Info := GetCharSetCodePageInfo(Charset);
-        if Info <> nil then
+        CodePage := StrToCodePage(Charset);
+        if CodePage <> CP_UNKNOWN then
         begin
           //Doc.CharSet := Info.CharSet;
-          Doc.CodePage := Info.CodePage;
+          Doc.CodePage := CodePage;
         end;
         SkipWhiteSpace;
       end;

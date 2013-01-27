@@ -148,7 +148,7 @@ type
     procedure SetNoBreak(const AValue : Boolean);
     procedure GetCh;
 
-    function DoCharSet(Content: ThtString): Boolean;
+    function DoCharSet(const Content: ThtString): Boolean;
     function FindAlignment: ThtString;
     function GetEntityStr(CodePage: Integer): ThtString;
     function GetIdentifier(out Identifier: ThtString): Boolean;
@@ -1531,15 +1531,15 @@ begin
     end;
 end;
 
-function THtmlParser.DoCharSet(Content: ThtString): Boolean;
+function THtmlParser.DoCharSet(const Content: ThtString): Boolean;
 var
-  Info: TBuffCharSetCodePageInfo;
+  CP: TBuffCodePage;
 begin
-  Info := GetCharSetCodePageInfo(Content);
-  Result := Info <> nil;
+  CP := StrToCodePage(Content);
+  Result := CP <> CP_UNKNOWN;
   if Result then
   begin
-    PropStack.Last.CodePage := Info.CodePage;
+    PropStack.Last.CodePage := CP;
     Doc.CodePage := PropStack.Last.CodePage;
   end;
 end;
