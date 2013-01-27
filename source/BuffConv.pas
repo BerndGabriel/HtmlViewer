@@ -54,7 +54,7 @@ are covered by separate copyright notices located in those modules.
 //
 // Especially for HTMLViewer (http://code.google.com/p/thtmlviewer)
 
-{.$I htmlcons.inc}
+{$I htmlcons.inc}
 
 unit BuffConv;
 
@@ -62,6 +62,9 @@ interface
 
 uses
   Windows,
+  {$ifdef LCL}
+    LclIntf, LclType,
+  {$endif}
   HtmlGlobals,
   HtmlBuffer;
 
@@ -1931,7 +1934,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2012 --
-function TBuffConvUTF7.NextChar;
+function TBuffConvUTF7.NextChar: TBuffChar;
 // Specification: RFC 2152 (and old RFC 1641, RFC 1642)
 // The original Base64 encoding is defined in RFC 2045.
 
