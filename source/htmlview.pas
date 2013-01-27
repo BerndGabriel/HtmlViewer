@@ -425,7 +425,7 @@ type
     function NumPrinterPages(out WidthRatio: Double): Integer; overload;
     function NumPrinterPages: Integer; overload;
     function PositionTo(Dest: ThtString): Boolean;
-    //function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; overload; deprecated; {X, Y, are client coord}
+    function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; overload; {deprecated;} {X, Y, are client coord}
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean; overload; {X, Y, are client coord}
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
@@ -1634,12 +1634,12 @@ begin
   end;
 end;
 
-//function THtmlViewer.PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord} {css}
-//var
-//  IX, IY: Integer;
-//begin
-//  Result := PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
-//end;
+function THtmlViewer.PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord} {css}
+var
+  IX, IY: Integer;
+begin
+  Result := PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
+end;
 
 //-- BG ---------------------------------------------------------- 14.10.2012 --
 function THtmlViewer.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;

@@ -7,11 +7,11 @@ package FrameViewer2006;
 {$ALIGN 1}
 {$ASSERTIONS OFF}
 {$BOOLEVAL OFF}
-{$DEBUGINFO ON}
+{$DEBUGINFO OFF}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA OFF}
 {$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
+{$LOCALSYMBOLS OFF}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
 {$OPTIMIZATION ON}
@@ -25,7 +25,7 @@ package FrameViewer2006;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
@@ -33,16 +33,17 @@ requires
   rtl,
   soaprtl,
   vcl,
+  vclx,
   vcljpg,
-  designide,
-  TntUnicodeVcl;
+  vclsmp,
+  designide;
 
 contains
   framview in '..\source\framview.pas',
   htmlview in '..\source\htmlview.pas',
-  readhtml in '..\source\readhtml.pas',
+  Readhtml in '..\source\readhtml.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
-  htmlsubs in '..\source\htmlsubs.pas',
+  Htmlsubs in '..\source\htmlsubs.pas',
   HTMLUn2 in '..\source\HTMLUn2.pas',
   vwPrint in '..\source\vwPrint.pas',
   MetaFilePrinter in '..\source\MetaFilePrinter.pas',
@@ -53,10 +54,22 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   StylePars in '..\source\StylePars.pas',
   HTMLGif2 in '..\source\HTMLGif2.pas',
-  htmlgif1 in '..\source\htmlgif1.pas',
+  HtmlGif1 in '..\source\htmlgif1.pas',
   FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
-  HtmlBuffer in '..\source\HtmlBuffer.pas';
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
+  msimg32 in '..\source\msimg32.pas',
+  HSLUtils in '..\source\HSLUtils.pas',
+  BuffConv in '..\source\BuffConv.pas',
+  BuffConvArrays in '..\source\BuffConvArrays.pas',
+  BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
+  BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
+  BegaPreview in '..\source\BegaPreview.pas' {BegaCustomPreviewFrame: TFrame},
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas' {BegaCustomPrintPreviewForm},
+  BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
+  BegaScrollBox in '..\source\BegaScrollBox.pas',
+  BegaZoom in '..\source\BegaZoom.pas';
 
 end.

@@ -1,9 +1,10 @@
-package FrameViewer2010;
+package FrameViewerXE2;
 
 {$R *.res}
 {$R 'framview.dcr'}
 {$R 'htmlview.dcr'}
 {$R 'frambrwz.dcr'}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
 {$ALIGN 1}
 {$ASSERTIONS OFF}
 {$BOOLEVAL OFF}
@@ -25,6 +26,8 @@ package FrameViewer2010;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
 {$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}

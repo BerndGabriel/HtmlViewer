@@ -128,7 +128,6 @@ object Form1: TForm1
       OnHistoryChange = HistoryChange
       OnHotSpotClick = HotSpotClick
       OnHotSpotCovered = HotSpotChange
-      OnSectionOver = ViewerSectionOver
       OnImageOver = ViewerImageOver
       OnInclude = ViewerInclude
       OnMetaRefresh = MetaRefreshEvent
@@ -139,6 +138,7 @@ object Form1: TForm1
       OnProgress = ViewerProgress
       OnRightClick = RightClick
       OnScript = ViewerScript
+      OnSectionOver = ViewerSectionOver
       OnSoundRequest = SoundRequest
       Align = alClient
       TabOrder = 0

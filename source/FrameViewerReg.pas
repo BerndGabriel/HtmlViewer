@@ -25,6 +25,8 @@ Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
+{$I htmlcons.inc}
+
 unit FrameViewerReg;
 
 interface
@@ -34,7 +36,17 @@ uses
   LResources,
 {$else}
 {$endif}
-  Classes, HTMLView, FramView, FramBrwz;
+  Classes,
+{$ifndef UseOldPreviewForm}
+  BegaPreview,
+  BegaPreviewForm,
+  BegaPreviewPanel,
+  BegaScrollBox,
+  BegaZoom,
+{$endif}
+  HTMLView,
+  FramView,
+  FramBrwz;
 
 procedure Register;
 
@@ -42,7 +54,17 @@ implementation
 
 procedure Register;
 begin
-  RegisterComponents('HtmlViewer/FrameViewer', [THTMLViewer, TFrameViewer, TFrameBrowser]);
+  RegisterComponents('HtmlViewer/FrameViewer', [
+{$ifndef UseOldPreviewForm}
+    TBegaMetafilePreviewPanel,
+    TBegaPreviewFrame,
+    TBegaScrollBox,
+    TBegaZoomBox,
+    TBegaCustomPrintPreviewForm,
+{$endif}
+    THTMLViewer,
+    TFrameViewer,
+    TFrameBrowser]);
 end;
 
 {$ifdef LCL}

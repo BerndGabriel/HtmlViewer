@@ -1,4 +1,4 @@
-package FrameViewer2010;
+package FrameViewerXE;
 
 {$R *.res}
 {$R 'framview.dcr'}

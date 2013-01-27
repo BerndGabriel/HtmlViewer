@@ -36,10 +36,9 @@ uses
   Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
-  PreviewForm in 'PreviewForm.pas' {PreviewForm},
   PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
   SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
-  FDemUnit in 'FDemUnit.PAS' {Form1};
+  FDemUnit in 'FDemUnit.pas' {Form1};
 
 {$R *.res}
 begin

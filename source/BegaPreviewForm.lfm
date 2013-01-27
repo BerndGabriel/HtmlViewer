@@ -1,0 +1,16 @@
+object BegaCustomPrintPreviewForm: TBegaCustomPrintPreviewForm
+  Left = 363
+  Top = 142
+  Caption = 'Print preview'
+  ClientHeight = 602
+  ClientWidth = 854
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Shell Dlg 2'
+  Font.Style = []
+  OldCreateOrder = False
+  PixelsPerInch = 96
+  TextHeight = 13
+end

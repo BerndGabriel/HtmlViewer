@@ -34,7 +34,9 @@ requires
   rtl,
   soaprtl,
   vcl,
+  vclx,
   vcljpg,
+  vclsmp,
   designide,
   TntUnicodeVclD11;
 
@@ -65,6 +67,18 @@ contains
   HtmlStyles in '..\source\HtmlStyles.pas',
   StyleTypes in '..\source\StyleTypes.pas',
   HtmlCaches in '..\source\HtmlCaches.pas',
-  HtmlFonts in '..\source\HtmlFonts.pas';
+  HtmlFonts in '..\source\HtmlFonts.pas',
+  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
+  msimg32 in '..\source\msimg32.pas',
+  HSLUtils in '..\source\HSLUtils.pas',
+  BuffConv in '..\source\BuffConv.pas',
+  BuffConvArrays in '..\source\BuffConvArrays.pas',
+  BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
+  BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
+  BegaPreview in '..\source\BegaPreview.pas',
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas',
+  BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
+  BegaScrollBox in '..\source\BegaScrollBox.pas',
+  BegaZoom in '..\source\BegaZoom.pas';
 
 end.

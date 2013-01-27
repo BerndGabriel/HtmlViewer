@@ -25,14 +25,16 @@ package FrameViewer2009;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DESCRIPTION 'ThtmlViewer, TFrameViewer, and TFrameBrowser'}
+{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$IMPLICITBUILD ON}
 
 requires
   rtl,
   soaprtl,
   vcl,
+  vclx,
   vclimg,
+  vclsmp,
   designide;
 
 contains
@@ -64,7 +66,17 @@ contains
   Parser in '..\source\Parser.pas',
   HtmlCaches in '..\source\HtmlCaches.pas',
   HtmlFonts in '..\source\HtmlFonts.pas',
+  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
+  msimg32 in '..\source\msimg32.pas',
+  HSLUtils in '..\source\HSLUtils.pas',
   BuffConv in '..\source\BuffConv.pas',
-  BuffConvArrays in '..\source\BuffConvArrays.pas';
+  BuffConvArrays in '..\source\BuffConvArrays.pas',
+  BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
+  BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
+  BegaPreview in '..\source\BegaPreview.pas' {BegaCustomPreviewFrame: TFrame},
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas' {BegaCustomPrintPreviewForm},
+  BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
+  BegaScrollBox in '..\source\BegaScrollBox.pas',
+  BegaZoom in '..\source\BegaZoom.pas';
 
 end.
