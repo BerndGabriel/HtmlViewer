@@ -41,7 +41,9 @@ uses
 {$else}
   Windows, ShellAPI,
   {$if CompilerVersion >= 15}
+    {$ifndef TScrollStyleInSystemUITypes}
     XpMan,
+    {$endif}
   {$ifend}
   {$ifdef Compiler18_Plus}
     WideStrings,
@@ -234,6 +236,11 @@ implementation
   {$if CompilerVersion < 15}
     {$R manifest.res}
   {$ifend}
+{$endif}
+
+{$ifdef TScrollStyleInSystemUITypes}
+uses
+  System.UITypes;
 {$endif}
 
 procedure TForm1.FormCreate(Sender: TObject);
