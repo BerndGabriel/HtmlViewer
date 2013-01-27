@@ -63,6 +63,8 @@ contains
   HtmlSymbols in '..\source\HtmlSymbols.pas',
   Parser in '..\source\Parser.pas',
   HtmlCaches in '..\source\HtmlCaches.pas',
-  HtmlFonts in '..\source\HtmlFonts.pas';
+  HtmlFonts in '..\source\HtmlFonts.pas',
+  BuffConv in '..\source\BuffConv.pas',
+  BuffConvArrays in '..\source\BuffConvArrays.pas';
 
 end.
