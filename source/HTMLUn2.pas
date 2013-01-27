@@ -152,6 +152,7 @@ type
     Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
     constructor Create(ASym: Symb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
+    constructor CreateCopy(ASource: TAttribute);
     property AsString: ThtString read Name;
     property AsInteger: Integer read Value;
     property AsDouble: Double read DblValue;
@@ -167,6 +168,7 @@ type
     function GetStyle: TProperties;
     function GetAttribute(Index: Integer): TAttribute; {$ifdef UseInline} inline; {$endif}
   public
+    constructor CreateCopy(ASource: TAttributeList);
     destructor Destroy; override;
     procedure Clear; override;
     function Find(Sy: Symb; out T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
@@ -1368,12 +1370,35 @@ begin
   CodePage := ACodePage;
 end;
 
+//-- BG ---------------------------------------------------------- 27.01.2013 --
+constructor TAttribute.CreateCopy(ASource: TAttribute);
+begin
+  inherited Create;
+  Which := ASource.Which;
+  WhichName := ASource.WhichName;
+  Value := ASource.Value;
+  DblValue := ASource.DblValue;
+  xPercent := ASource.xPercent;
+  Name := ASource.Name;
+  CodePage := ASource.CodePage;
+end;
+
 {----------------TAttributeList}
 
 procedure TAttributeList.Clear;
 begin
   inherited Clear;
   SaveID := '';
+end;
+
+//-- BG ---------------------------------------------------------- 27.01.2013 --
+constructor TAttributeList.CreateCopy(ASource: TAttributeList);
+var
+  I: Integer;
+begin
+  inherited Create;
+  for I := 0 to Count - 1 do
+    Add(TAttribute.CreateCopy(Items[I]));
 end;
 
 function TAttributeList.CreateStringList: ThtStringList;
@@ -1512,7 +1537,7 @@ begin
   end;
 end;
 
-procedure TUrlTarget.Assign(const UT: TUrlTarget); 
+procedure TUrlTarget.Assign(const UT: TUrlTarget);
 begin
   Url := UT.Url;
   Target := UT.Target;

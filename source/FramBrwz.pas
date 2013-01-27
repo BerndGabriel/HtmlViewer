@@ -927,21 +927,20 @@ end;
 procedure TFrameBrowser.HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: boolean);
 var
   I: integer;
-  Viewer: ThtmlViewer;
+  Viewer: THtmlViewer;
   FrameTarget: TFrameBase;
-  S, Dest, FullUrl: ThtString;
+  S, Dest, FullUrl, Target: ThtString;
 begin
   Handled := True;
   if Processing then
     Exit;
 
-  Viewer := (Sender as ThtmlViewer);
-  FURL := AnURL;
-  FTarget := GetActiveTarget;
+  Viewer := Sender as ThtmlViewer;
+  Target := GetActiveTarget;
   FLinkAttributes.Text := Viewer.LinkAttributes.Text;
   FLinkText := Viewer.LinkText;
 
-  SplitDest(AnUrl, S, Dest);
+  SplitDest(AnURL, S, Dest);
   S := ConvDosToHTML(S);
   if S = '' then
     FullUrl := (Viewer.FrameOwner as TbrFrame).Source
@@ -952,20 +951,21 @@ begin
   else
     FullUrl := CombineURL((Viewer.FrameOwner as TbrFrame).URLBase, S);
   FullUrl := Normalize(FullUrl);  // ANGUS
-  if not HotSpotClickHandled(FullUrl + Dest) then
+
+  if not HotSpotClickHandled(FullUrl + Dest, Target) then
   begin
     Handled := True;
-    if (FTarget = '') or (CompareText(FTarget, '_self') = 0) then {no target or _self target}
+    if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
     begin
       FrameTarget := Viewer.FrameOwner as TbrFrame;
       if not Assigned(FrameTarget) then
         Exit;
     end
-    else if CurbrFrameSet.FrameNames.Find(FTarget, I) then
-      FrameTarget := (CurbrFrameSet.FrameNames.Objects[I] as TbrFrame)
-    else if CompareText(FTarget, '_top') = 0 then
+    else if CurbrFrameSet.FrameNames.Find(Target, I) then
+      FrameTarget := CurbrFrameSet.FrameNames.Objects[I] as TFrameBase
+    else if CompareText(Target, '_top') = 0 then
       FrameTarget := CurbrFrameSet
-    else if CompareText(FTarget, '_parent') = 0 then
+    else if CompareText(Target, '_parent') = 0 then
     begin
       FrameTarget := (Viewer.FrameOwner as TbrFrame).Owner as TFrameBase;
       while Assigned(FrameTarget) and not (FrameTarget is TbrFrame)
@@ -978,14 +978,15 @@ begin
       begin
         AddVisitedLink(FullUrl + Dest);
         CheckVisitedLinks;
-        OnBlankWindowRequest(Self, FTarget, FullUrl + Dest);
+        OnBlankWindowRequest(Self, Target, FullUrl + Dest);
         Handled := True;
       end
       else
-        Handled := FTarget <> ''; {true if can't find target window}
+        Handled := Target <> ''; {true if can't find target window}
       Exit;
     end;
 
+    FURL := AnURL;
     BeginProcessing;
     if (FrameTarget is TbrFrame) and (CurbrFrameSet.Viewers.Count = 1) and (S <> '')
       and (CompareText(S, CurbrFrameSet.FCurrentFile) <> 0) then
@@ -995,6 +996,7 @@ begin
         TbrFrame(FrameTarget).frLoadFromBrzFile(FullUrl, Dest, '', '', Viewer.CurrentFile, True, True, False)
       else if FrameTarget is TbrFrameSet then
         LoadURLInternal(FullUrl, Dest, '', '', Viewer.CurrentFile, True, False);
+      AddVisitedLink(FullUrl + Dest);
       CheckVisitedLinks;
     finally
       EndProcessing;

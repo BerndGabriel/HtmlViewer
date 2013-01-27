@@ -1,7 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -129,14 +129,14 @@ type
     function GetBackButtonEnabled: Boolean;
   protected
     FBaseEx: ThtString;
-    FTarget: ThtString;
+//    FTarget: ThtString;
     FURL: ThtString;
     FLinkAttributes: TStringList;
     FLinkText: ThtString;
     FCurFrameSet: TFrameSetBase; {the TFrameSet being displayed}
     ProcessList: TList; {list of viewers that are processing}
     Visited: TStringList; {visited URLs}
-    function CreateViewer(Owner: TComponent): THtmlViewer; virtual;
+    function CreateViewer(Owner: THtmlFrameBase): THtmlViewer; virtual;
     function GetActiveBase: ThtString;
     function GetActiveTarget: ThtString;
     function GetActiveViewer: THtmlViewer;
@@ -157,11 +157,11 @@ type
     function GetSelText: WideString;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: integer): integer;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
-    function GetTarget: ThtString;
+//    function GetTarget: ThtString;
     function GetTitle: ThtString;
     function GetViewerClass: THtmlViewerClass; virtual;
     function GetViewers: TStrings;
-    function HotSpotClickHandled(const FullUrl: ThtString): Boolean;
+    function HotSpotClickHandled(const FullUrl: ThtString; const Target: ThtString {= ''}): Boolean;
     procedure AddVisitedLink(const S: ThtString);
     procedure BeginProcessing; virtual;
     procedure BumpHistory(OldFrameSet: TFrameSetBase; OldPos: integer);
@@ -290,7 +290,7 @@ type
     property SelLength: integer read GetSelLength write SetSelLength;
     property SelStart: integer read GetSelStart write SetSelStart;
     property SelText: WideString read GetSelText;
-    property Target: ThtString read GetTarget;
+//    property Target: ThtString read GetTarget;
     property TitleHistory: TStrings read FTitleHistory;
     property URL: ThtString read GetFURL;
     property Viewers: TStrings read GetViewers;
@@ -381,7 +381,7 @@ type
 
 {TFrameViewer Types}
 
-  TFrameBase = class(TCustomPanel) {base class for other classes}
+  TFrameBase = class(THtmlFrameBase) {base class for other classes}
   private
     FMasterSet: TFrameSetBase; {Points to top (master) TFrameSetBase}
     FOwner: TSubFrameSetBase;
@@ -2713,7 +2713,7 @@ begin
     end;
     FBitmapList.Clear;
     FURL := '';
-    FTarget := '';
+//    FTarget := '';
     FBaseEx := '';
     FHistoryIndex := 0;
     FPosition.Clear;
@@ -2987,13 +2987,13 @@ begin
     OnSoundRequest(Self, '', 0, True);
 end;
 
-{----------------TFVBase.HotSpotClickHandled:}
+{----------------TFVBase.HotSpotClickHandled}
 
-function TFVBase.HotSpotClickHandled(const FullUrl: ThtString): boolean;
+function TFVBase.HotSpotClickHandled(const FullUrl, Target: ThtString): Boolean;
 begin
   Result := False;
   if Assigned(OnHotSpotTargetClick) then
-    OnHotSpotTargetClick(Self, FTarget, FURL, Result);
+    OnHotSpotTargetClick(Self, Target, FullUrl, Result);
 end;
 
 {----------------TFrameViewer.HotSpotClick}
@@ -3003,15 +3003,14 @@ var
   I: integer;
   Viewer: THtmlViewer;
   FrameTarget: TFrameBase;
-  S, Dest, Query: ThtString;
+  S, Dest, Query, Target: ThtString;
 begin
   Handled := True;
   if Processing then
     Exit;
 
   Viewer := (Sender as THtmlViewer);
-  FURL := AnURL;
-  FTarget := GetActiveTarget;
+  Target := GetActiveTarget;
   FLinkAttributes.Text := Viewer.LinkAttributes.Text;
   FLinkText := Viewer.LinkText;
 
@@ -3019,19 +3018,21 @@ begin
   SplitQuery(S, Query);
   if (S <> '') and not CurFrameSet.RequestEvent then
     S := Viewer.HTMLExpandFileName(S);
-  if not HotSpotClickHandled(S) then
+
+  if not HotSpotClickHandled(S, Target) then
   begin
-    if (FTarget = '') or (CompareText(FTarget, '_self') = 0) then {no target or _self target}
+    Handled := True;
+    if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
     begin
       FrameTarget := Viewer.FrameOwner as TViewerFrameBase;
       if not Assigned(FrameTarget) then
         Exit;
     end
-    else if CurFrameSet.FrameNames.Find(FTarget, I) then
+    else if CurFrameSet.FrameNames.Find(Target, I) then
       FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase)
-    else if CompareText(FTarget, '_top') = 0 then
+    else if CompareText(Target, '_top') = 0 then
       FrameTarget := CurFrameSet
-    else if CompareText(FTarget, '_parent') = 0 then
+    else if CompareText(Target, '_parent') = 0 then
     begin
       FrameTarget := (Viewer.FrameOwner as TViewerFrameBase).Owner as TFrameBase;
       while Assigned(FrameTarget) and not (FrameTarget is TViewerFrameBase)
@@ -3044,13 +3045,15 @@ begin
       begin
         AddVisitedLink(S + Query + Dest);
         CheckVisitedLinks;
-        OnBlankWindowRequest(Self, FTarget, AnURL);
+        OnBlankWindowRequest(Self, Target, AnURL);
         Handled := True;
       end
       else
-        Handled := FTarget <> ''; {true if can't find target window}
+        Handled := Target <> ''; {true if can't find target window}
       Exit;
     end;
+
+    FURL := AnURL;
     BeginProcessing;
     if (FrameTarget is TViewerFrameBase) and (CurFrameSet.Viewers.Count = 1) and (S <> '')
       and (CompareText(S, CurFrameSet.FCurrentFile) <> 0) then
@@ -3634,7 +3637,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.01.2010 --
-function TFVBase.CreateViewer(Owner: TComponent): THtmlViewer;
+function TFVBase.CreateViewer(Owner: THtmlFrameBase): THtmlViewer;
 begin
   Result := GetViewerClass.Create(Owner); {the Viewer for the frame}
   Result.FrameOwner := Owner;
@@ -3874,17 +3877,17 @@ begin
   Result := FViewerList;
 end;
 
-{----------------TFVBase.GetFURL}{base class for TFrameViewer and TFrameBrowser}
+{----------------TFVBase.GetFURL}
 
 function TFVBase.GetFURL: ThtString;
 begin
   Result := FURL;
 end;
 
-function TFVBase.GetTarget: ThtString;
-begin
-  Result := FTarget;
-end;
+//function TFVBase.GetTarget: ThtString;
+//begin
+//  Result := FTarget;
+//end;
 
 procedure TFVBase.SetViewImages(Value: boolean);
 var

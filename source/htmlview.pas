@@ -147,6 +147,10 @@ type
     ppSinglePrint,  // THtmlViewer.Print() produces a single print job. Ends the job or cancels it, if no output has been produced.
     ppMultiPrint);  // THtmlViewer.Print() produces the print, but does not end or cancel the job.
 
+  // BG, 25.01.2013: base class for TFrameBase
+  THtmlFrameBase = class(TCustomPanel)
+  end;
+
   THtmlViewer = class(THtmlViewerBase)
   private
     FViewerState: THtmlViewerState;
@@ -382,7 +386,7 @@ type
     procedure SetCursor(Value: TCursor); {$ifdef LCL} override; {$endif LCL}
     procedure SetOnScript(Handler: TScriptEvent); override;
   public
-    FrameOwner: TObject;
+    FrameOwner: THtmlFrameBase; {the TViewerFrameBase that holds this THtmlViewer}
     HScrollBar: TScrollBar;
     Visited: ThtStringList; {visited URLs}
     VScrollBar: TScrollBar;

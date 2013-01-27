@@ -473,6 +473,7 @@ var
     Include: TBuffer;
     Params: ThtStringList;
     SaveLCToken: TokenObj;
+    L: Integer;
   begin
     S := '';
     SaveLCToken := LCToken;
@@ -480,6 +481,16 @@ var
     try
       GetChBasic;
       GetIdentifier(S);
+      if LCh = '>' then
+      begin
+        L := Length(S);
+        if (L > 2) and (S[L-1] = '-') and (S[L] = '-') then
+        begin
+          Doc.Position := Doc.Position - 3;
+          GetChBasic;
+          SetLength(S, L - 2);
+        end;
+      end;
       // BG, 15.12.2011: Issue 88: DoInclude and FreeAndNil of SL
       // Now freeing SL (renamed to Params) here and not
       // relying on cooperative event doing it for us.
@@ -3706,6 +3717,32 @@ end;
 
 procedure THtmlParser.DoBody(const TermSet: SymbSet);
 var
+  HtmlAttributes: TAttributeList;
+
+  procedure PushHtmlPropsIfAny;
+  var
+    PRec: PtPositionRec;
+    Image: ThtString;
+    Val: TColor;
+  begin
+    if HtmlAttributes <> nil then
+    begin
+      PushNewProp('html', HtmlAttributes.TheClass, HtmlAttributes.TheID, '', HtmlAttributes.TheTitle, HtmlAttributes.TheStyle);
+      FreeAndNil(HtmlAttributes);
+
+      // set document background
+      if PropStack.Last.GetBackgroundImage(Image) and (Image <> '') then
+      begin
+        PropStack.Last.GetBackgroundPos(0, 0, PRec);
+        PropStack.MasterList.SetBackgroundBitmap(Image, PRec);
+      end;
+      Val := PropStack.Last.GetBackgroundColor;
+      if Val <> clNone then
+        PropStack.MasterList.SetBackGround(Val or PalRelative);
+    end;
+  end;
+
+var
   I: Integer;
   Val: TColor;
   AMarginHeight, AMarginWidth: Integer;
@@ -3714,11 +3751,15 @@ var
   LiSection: TSection;
 {$endif}
 begin
-  repeat
-    if Sy in TermSet then
-      Exit;
-    case Sy of
-      TextSy, BRSy, HRSy,
+  try
+    repeat
+      if Sy in TermSet then
+        Exit;
+      case Sy of
+        TextSy:
+          DoCommonSy;
+
+        BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
         MarkSy, MarkEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
@@ -3730,116 +3771,160 @@ begin
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
         SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
         ObjectSy, ObjectEndSy:
-        DoCommonSy;
-      BodySy:
-        begin
-          if (BodyBlock.MyCell.Count = 0) and (TableLevel = 0) then {make sure we're at beginning}
           begin
-            PropStack.MasterList.ClearLists;
-            if Assigned(Section) then
-            begin
-              Section.CheckFree;
-              Section.Free; {Will start with a new section}
-            end;
-            PushNewProp('body', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-            AMarginHeight := (CallingObject as ThtmlViewer).MarginHeight;
-            AMarginWidth := (CallingObject as ThtmlViewer).MarginWidth;
-            for I := 0 to Attributes.Count - 1 do
-              with TAttribute(Attributes[I]) do
-                case Which of
-                  BackgroundSy: PropStack.Last.Assign('url(' + Name + ')', BackgroundImage);
-                  TextSy:
-                    if ColorFromString(Name, False, Val) then
-                      PropStack.Last.Assign(Val or PalRelative, Color);
-                  BGColorSy:
-                    if ColorFromString(Name, False, Val) then
-                      PropStack.Last.Assign(Val or PalRelative, BackgroundColor);
-                  LinkSy:
-                    if ColorFromString(Name, False, Val) then
-                      PropStack.MasterList.Styles.ModifyLinkColor('link', Val);
-                  VLinkSy:
-                    if ColorFromString(Name, False, Val) then
-                      PropStack.MasterList.Styles.ModifyLinkColor('visited', Val);
-                  OLinkSy:
-                    if ColorFromString(Name, False, Val) then
-                    begin
-                      PropStack.MasterList.Styles.ModifyLinkColor('hover', Val);
-                      PropStack.MasterList.LinksActive := True;
-                    end;
-                  MarginWidthSy, LeftMarginSy:
-                    AMarginWidth := Min(Max(0, Value), 200);
-                  MarginHeightSy, TopMarginSy:
-                    AMarginHeight := Min(Max(0, Value), 200);
-                  BGPropertiesSy:
-                    if CompareText(Name, 'fixed') = 0 then
-                      PropStack.Last.Assign('fixed', BackgroundAttachment);
-                end;
-            if FUseQuirksMode then begin
-              FPropStack.MasterList.Styles.FixupTableColor(FPropStack.Last);
-            end;
-            PropStack.Last.Assign(AMarginWidth, MarginLeft);
-            PropStack.Last.Assign(AMarginWidth, MarginRight);
-            PropStack.Last.Assign(AMarginHeight, MarginTop);
-            PropStack.Last.Assign(AMarginHeight, MarginBottom);
-
-            SectionList := BodyBlock.OwnerCell;
-            SectionList.Remove(BodyBlock);
-            BodyBlock := TBodyBlock.Create(FPropStack.MasterList, FPropStack.Last, SectionList, Attributes);
-            SectionList.Add(BodyBlock, TagIndex);
-            SectionList := BodyBlock.MyCell;
-
-            Section := TSection.Create(FPropStack.MasterList, nil, FPropStack.Last, nil, SectionList, True);
+            PushHtmlPropsIfAny;
+            DoCommonSy;
           end;
-          Next;
-        end;
-      OLSy, ULSy, DirSy, MenuSy, DLSy:
-        begin
-          DoLists(Sy, TermSet);
-          if not (Sy in TermSet) then
+
+        HtmlSy:
+          begin
+            // BG, 27.01.2013: cannot push html attributes here as html styles may be read later in a style tag before body.
+            if (BodyBlock.MyCell.Count = 0) and (TableLevel = 0) then {make sure we're at beginning}
+              HtmlAttributes := TAttributeList.CreateCopy(Attributes);
             Next;
-        end;
+          end;
 
-      LISy:
-        DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}LiAloneSy, Sy, 1, '1', False, TermSet);
+        BodySy:
+          begin
+            PushHtmlPropsIfAny;
+            if (BodyBlock.MyCell.Count = 0) and (TableLevel = 0) then {make sure we're at beginning}
+            begin
+              PropStack.MasterList.ClearLists;
+              if Assigned(Section) then
+              begin
+                Section.CheckFree;
+                Section.Free; {Will start with a new section}
+              end;
+              PushNewProp('body', Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              AMarginHeight := (CallingObject as ThtmlViewer).MarginHeight;
+              AMarginWidth := (CallingObject as ThtmlViewer).MarginWidth;
+              for I := 0 to Attributes.Count - 1 do
+                with TAttribute(Attributes[I]) do
+                  case Which of
+                    BackgroundSy: PropStack.Last.Assign('url(' + Name + ')', BackgroundImage);
+                    TextSy:
+                      if ColorFromString(Name, False, Val) then
+                        PropStack.Last.Assign(Val or PalRelative, Color);
+                    BGColorSy:
+                      if ColorFromString(Name, False, Val) then
+                        PropStack.Last.Assign(Val or PalRelative, BackgroundColor);
+                    LinkSy:
+                      if ColorFromString(Name, False, Val) then
+                        PropStack.MasterList.Styles.ModifyLinkColor('link', Val);
+                    VLinkSy:
+                      if ColorFromString(Name, False, Val) then
+                        PropStack.MasterList.Styles.ModifyLinkColor('visited', Val);
+                    OLinkSy:
+                      if ColorFromString(Name, False, Val) then
+                      begin
+                        PropStack.MasterList.Styles.ModifyLinkColor('hover', Val);
+                        PropStack.MasterList.LinksActive := True;
+                      end;
+                    MarginWidthSy, LeftMarginSy:
+                      AMarginWidth := Min(Max(0, Value), 200);
+                    MarginHeightSy, TopMarginSy:
+                      AMarginHeight := Min(Max(0, Value), 200);
+                    BGPropertiesSy:
+                      if CompareText(Name, 'fixed') = 0 then
+                        PropStack.Last.Assign('fixed', BackgroundAttachment);
+                  end;
+              if FUseQuirksMode then
+                FPropStack.MasterList.Styles.FixupTableColor(FPropStack.Last);
 
-      DDSy, DTSy:
-        DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}DLSy, Sy, 1, '1', False, TermSet);
+              PropStack.Last.Assign(AMarginWidth, MarginLeft);
+              PropStack.Last.Assign(AMarginWidth, MarginRight);
+              PropStack.Last.Assign(AMarginHeight, MarginTop);
+              PropStack.Last.Assign(AMarginHeight, MarginBottom);
 
-      PSy: DoP(TermSet);
+              SectionList := BodyBlock.OwnerCell;
+              SectionList.Remove(BodyBlock);
+              BodyBlock := TBodyBlock.Create(FPropStack.MasterList, FPropStack.Last, SectionList, Attributes);
+              SectionList.Add(BodyBlock, TagIndex);
+              SectionList := BodyBlock.MyCell;
 
-      FormEndSy:
-        begin
-          CurrentForm := nil;
-          Next;
-        end;
+              Section := TSection.Create(FPropStack.MasterList, nil, FPropStack.Last, nil, SectionList, True);
+            end;
+            Next;
+          end;
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
-       CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
-        DoDivEtc(Sy, TermSet);
+        OLSy, ULSy, DirSy, MenuSy, DLSy:
+          begin
+            PushHtmlPropsIfAny;
+            DoLists(Sy, TermSet);
+            if not (Sy in TermSet) then
+              Next;
+          end;
 
-      TitleSy:
-        DoTitle;
+        LISy:
+          begin
+            PushHtmlPropsIfAny;
+            DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}LiAloneSy, Sy, 1, '1', False, TermSet);
+          end;
 
-      LinkSy:
-        DoStyleLink;
+        DDSy, DTSy:
+          begin
+            PushHtmlPropsIfAny;
+            DoListItem({$ifdef DO_LI_INLINE}LiBlock, LiSection, {$endif}DLSy, Sy, 1, '1', False, TermSet);
+          end;
 
-      StyleSy:
-        begin
-          DoStyle(FPropStack.MasterList.Styles, LCh, Doc, '', False,FUseQuirksMode);
-          Next;
-        end;
+        PSy:
+          begin
+            PushHtmlPropsIfAny;
+            DoP(TermSet);
+          end;
 
-      BgSoundSy:
-        DoSound;
-      MetaSy:
-        DoMeta(CallingObject);
-      BaseSy:
-        DoBase;
-    else
-      Next;
-    end;
-  until (Sy = EofSy);
-  Next;
+        FormEndSy:
+          begin
+            CurrentForm := nil;
+            Next;
+          end;
+
+        DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+        CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
+          begin
+            PushHtmlPropsIfAny;
+            DoDivEtc(Sy, TermSet);
+          end;
+
+        TitleSy:
+          begin
+            DoTitle;
+          end;
+
+        LinkSy:
+          begin
+            DoStyleLink;
+          end;
+
+        StyleSy:
+          begin
+            DoStyle(FPropStack.MasterList.Styles, LCh, Doc, '', False, FUseQuirksMode);
+            Next;
+          end;
+
+        BgSoundSy:
+          begin
+            PushHtmlPropsIfAny;
+            DoSound;
+          end;
+
+        MetaSy:
+          begin
+            DoMeta(CallingObject);
+          end;
+
+        BaseSy:
+          begin
+            DoBase;
+          end;
+      else
+        Next;
+      end;
+    until (Sy = EofSy);
+    Next;
+  finally
+    HtmlAttributes.Free;
+  end;
 end;
 
 procedure THtmlParser.DoFrameSet(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString);
@@ -3969,7 +4054,7 @@ begin
       LinkEvent := ALinkEvent;
       try
         GetCh; {get the reading started}
-        Next;
+        //Next;
         DoBody([]);
       except
         on E: Exception do
