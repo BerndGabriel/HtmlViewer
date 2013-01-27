@@ -1,8 +1,7 @@
 {
 Version   12
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1007,7 +1006,7 @@ begin
 {$ifdef LCL}
   bmp := TLazIntfImage.Create(0,0);
   try
-    bmp.Assign(ABmp);
+    bmp.LoadFromBitmap(ABmp.Handle, 0);
     { alloc initial region data }
     maxRects := AllocUnit;
     GetMem(RgnData, SizeOf(TRgnDataHeader) + (SizeOf(TRect) * maxRects));

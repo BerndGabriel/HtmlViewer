@@ -3778,7 +3778,7 @@ begin
             Done := True;
           OldTop := HTop;
           if not Done and (FPage >= FromPage) and (FPage < ToPage) then
-            // Pages before FromPage aren't printed. Tus no new page required.
+            // Pages before FromPage aren't printed. Thus no new page required.
             Prn.NewPage;
           // Increment page number no matter if we start a new page at the printer, as it does not count
           // the number of sheets printed, but is the number of the currently processed document page.
