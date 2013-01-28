@@ -1,6 +1,6 @@
 {
 HtmlViewer Version 11.4
-Copyright (c) 2010-2012 by Bernd Gabriel
+Copyright (c) 2010-2013 by Bernd Gabriel
 
 This source module is based on code of CodeChangerDecode.pas written by SchwarzKopf-M (SchwarzKopf-M@yandex.ru)
 and the source code library libiconv, which is published under the GNU Library General Public License.
@@ -84,6 +84,18 @@ type
   // BG, 26.09.2012: converts UTF8 to unicode.
   TBuffConvUTF8 = class(TBuffConverter)
   public
+    function NextChar: TBuffChar; override;
+  end;
+
+  // BG, 28.01.2013: converts several single byte code pages using an AnsiCharMap to unicode.
+  TBuffConvSingleByteMap = class(TBuffConverter)
+  private
+    FMap: AnsiCharMap;
+    procedure UpdateMap;
+  protected
+    procedure Assign(Source: TBuffConverter); override;
+  public
+    procedure AfterConstruction; override;
     function NextChar: TBuffChar; override;
   end;
 
@@ -691,6 +703,36 @@ begin
     Result := TBuffChar(Buffer);
 end;
 
+{ TBuffConvSingleByteMap }
+
+//-- BG ---------------------------------------------------------- 28.01.2013 --
+procedure TBuffConvSingleByteMap.AfterConstruction;
+begin
+  inherited;
+  UpdateMap;
+end;
+
+//-- BG ---------------------------------------------------------- 28.01.2013 --
+procedure TBuffConvSingleByteMap.Assign(Source: TBuffConverter);
+begin
+  inherited;
+  UpdateMap;
+end;
+
+//-- BG ---------------------------------------------------------- 28.01.2013 --
+function TBuffConvSingleByteMap.NextChar: TBuffChar;
+begin
+  Result := FMap[GetNext];
+end;
+
+//-- BG ---------------------------------------------------------- 28.01.2013 --
+procedure TBuffConvSingleByteMap.UpdateMap;
+begin
+  case CodePage of
+    29001: FMap := CP29001;
+  end;
+end;
+
 { TBuffConvHighMap }
 
 //-- BG ---------------------------------------------------------- 02.10.2012 --
@@ -1255,7 +1297,7 @@ begin
     c1 := GetNext;
     case c1 of
       $1B:
-        if FEnd.AnsiChr - FPos.AnsiChr > 2 then
+        if FEnd.AnsiChr - FPos.AnsiChr >= 2 then
         begin
           Pos := FPos.AnsiChr;
           case TBuffChar(GetNext) of
@@ -1381,7 +1423,7 @@ begin
     c1 := GetNext;
     case c1 of
       $1B:
-        if FEnd.AnsiChr - FPos.AnsiChr > 2 then
+        if FEnd.AnsiChr - FPos.AnsiChr >= 2 then
         begin
           Pos := FPos.AnsiChr;
           case TBuffChar(GetNext) of
@@ -1464,7 +1506,7 @@ begin
     c1 := GetNext;
     case c1 of
       $1B:
-        if FEnd.AnsiChr - FPos.AnsiChr > 2 then
+        if FEnd.AnsiChr - FPos.AnsiChr >= 2 then
         begin
           Pos := FPos.AnsiChr;
           case TBuffChar(GetNext) of
