@@ -1423,7 +1423,7 @@ procedure TProperties.Combine(Styles: TStyleList;
     OldSize: Double;
     NoHoverVisited: Boolean;
 
-    procedure Merge(Source: TProperties);
+    procedure Merge(Source: TProperties; Reverse: Boolean = False);
     var
       Index: PropIndices;
       I: FIIndex;
@@ -1431,6 +1431,12 @@ procedure TProperties.Combine(Styles: TStyleList;
       S1: ThtString;
     begin
       for Index := Low(Index) to High(PropIndices) do
+      begin
+        if Reverse then
+        begin
+          if (Props[Index] <> Unassigned) and not VarIsIntNull(Props[Index]) then
+            continue;
+        end;
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
           case Index of
             MarginTop..LeftPos:
@@ -1494,7 +1500,7 @@ procedure TProperties.Combine(Styles: TStyleList;
                             iStyle := iStyle + [fsStrikeOut]
                           else if Props[TextDecoration] = 'none' then
                             iStyle := iStyle - [fsStrikeOut, fsUnderline];
-                            
+
                         LetterSpacing:
                           iCharExtra := Props[LetterSpacing];
                       end;
@@ -1505,6 +1511,7 @@ procedure TProperties.Combine(Styles: TStyleList;
               Originals[Index] := True; {it's defined for this item, not inherited}
             end;
           end;
+      end;
     end;
 
     function CheckForContextual(I: Integer): Boolean;
@@ -1657,22 +1664,41 @@ procedure TProperties.Combine(Styles: TStyleList;
       end
     end;
 
-    procedure MergeItems(const Item: ThtString);
+    procedure MergeItems(const Item: ThtString; Reverse: Boolean = False);
     {look up items in the Style list.  If found, merge them in this TProperties.
      Items may be duplicated in which case the last has priority.  Items may be
      simple tags like 'p', 'blockquote', 'em', etc or they may be more complex
      like  p.class, em#id, a.class:link, etc}
     var
-      X: Integer;
+      X, Y: Integer;
     begin
       if Styles.Find(Item, X) then
       begin
-        Merge(Styles.Objects[X] as TProperties);
-        Inc(X);
-        while (X < Styles.Count) and (Styles[X] = Item) do
-        begin //duplicates, last one has highest priority
+        if Reverse then
+        begin
+          // Reverse is used to set unassigned values only.
+          Y := X;
+          Inc(X);
+          while (X < Styles.Count) and (Styles[X] = Item) do
+          begin //duplicates, last one has highest priority
+            Inc(X);
+          end;
+          // merge in reverse order
+          while X > Y do
+          begin
+            Dec(X);
+            Merge(Styles.Objects[X] as TProperties, Reverse);
+          end;
+        end
+        else
+        begin
           Merge(Styles.Objects[X] as TProperties);
           Inc(X);
+          while (X < Styles.Count) and (Styles[X] = Item) do
+          begin //duplicates, last one has highest priority
+            Merge(Styles.Objects[X] as TProperties);
+            Inc(X);
+          end;
         end;
       end;
     end;
@@ -1714,7 +1740,7 @@ procedure TProperties.Combine(Styles: TStyleList;
 
   // in the following, lowest priority on top, highest towards bottom.
 
-    if (Tag = 'a') and (Pseudo <> '') then
+    if (Tag = 'a') and ((Pseudo = 'link') or (Pseudo = 'visited')) then
       MergeItems('::' + Pseudo); {default Pseudo definition}
 
     if NoHoverVisited then
@@ -1808,6 +1834,11 @@ procedure TProperties.Combine(Styles: TStyleList;
 
     if AProp <> nil then //the Style= attribute
       Merge(AProp);
+
+    if (Tag = 'a') and not ((Pseudo = 'hover') or (Pseudo = 'active')) then
+      // BG, 02.02.2013: github-issue 25: Multiple pseudo elements can apply
+      // Just assign defaults for what is still unassigned:
+      MergeItems('::' + Pseudo, True); {default Pseudo definition}
 
     if not (VarType(Props[FontSize]) in varNum) then {if still a ThtString, hasn't been converted}
       Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FUseQuirksMode);
