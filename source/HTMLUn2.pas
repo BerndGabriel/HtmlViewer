@@ -520,6 +520,10 @@ type
     FOnSoundRequest: TSoundType;
     FQuirksMode : THtQuirksMode;
   protected
+    // set to determine if child objects should be in "quirks" mode
+    //This must be protected because it's set directly in a descendant
+    FUseQuirksMode : Boolean;
+  protected
     procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
     procedure SetActiveColor(const Value: TColor); virtual;
     procedure SetCharset(const Value: TFontCharset); virtual;
@@ -584,6 +588,8 @@ type
     // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
     procedure Load(const Url: ThtString); virtual; abstract;
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
+    // set to determine if child objects should be in "quirks" mode
+    property UseQuirksMode : Boolean read FUseQuirksMode;
     property CodePage: Integer read FCodePage write SetCodePage;
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
@@ -653,10 +659,6 @@ type
   end;
 
   THtmlViewerBase = class(TViewerBase)
-  protected
-    // set to determine if child objects should be in "quirks" mode
-    //This must be protected because it's set directly in a descendant
-    FUseQuirksMode : Boolean;
   public
     TablePartRec: TTablePartRec;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
@@ -664,8 +666,6 @@ type
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    // set to determine if child objects should be in "quirks" mode
-    property UseQuirksMode : Boolean read FUseQuirksMode;
   end;
 
   TFrameViewerBase = class(TViewerBase)
