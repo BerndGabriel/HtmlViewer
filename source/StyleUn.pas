@@ -3006,7 +3006,6 @@ the border color.
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
-  LogPropColor();
   LogProperties(Self,'Self');
   {$ENDIF}
   GetVMarginArrayDefBorder(MArray,Props[StyleUn.Color]);
