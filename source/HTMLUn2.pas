@@ -85,6 +85,7 @@ type
     HtmlSy, TitleSy, BodySy, HeadSy, PSy, PEndSy, BSy, BEndSy, ISy, IEndSy,
     HtmlEndSy, TitleEndSy, BodyEndSy, HeadEndSy, BRSy, HeadingSy, HeadingEndSy,
     EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, HRSy,
+    DelSy, DelEndSy, InsSy, InsEndSy,
     CiteSy, VarSy, CiteEndSy, VarEndSy, BaseSy,
        {Keep order}
     TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
@@ -127,7 +128,8 @@ type
     AsideSy, AsideEndSy,
     FooterSy, FooterEndSy,
     HGroupSy, HGroupEndSy,
-    MarkSy, MarkEndSy);
+    MarkSy, MarkEndSy,
+    TimeSy, TimeEndSy);
 
 //------------------------------------------------------------------------------
 

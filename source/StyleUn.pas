@@ -3528,11 +3528,13 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'underline';
   AddObject('u', Properties);
+  AddDuplicate('ins',Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'line-through';
   AddObject('s', Properties);
   AddDuplicate('strike', Properties);
+  AddDuplicate('del',Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextAlign] := 'center';
