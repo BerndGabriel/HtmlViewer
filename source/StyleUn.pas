@@ -3006,7 +3006,6 @@ the border color.
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
-  LogPropColor();
   LogProperties(Self,'Self');
   {$ENDIF}
   GetVMarginArrayDefBorder(MArray,Props[StyleUn.Color]);
@@ -3529,11 +3528,13 @@ begin
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'underline';
   AddObject('u', Properties);
+  AddDuplicate('ins',Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'line-through';
   AddObject('s', Properties);
   AddDuplicate('strike', Properties);
+  AddDuplicate('del',Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextAlign] := 'center';
