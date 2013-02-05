@@ -73,7 +73,7 @@ ANGUS March 2012 - fixed THtmlParser.DoMeta to handle meta without http-equiv="C
 
 }
 
-{$define DO_LI_INLINE}
+{-$define DO_LI_INLINE}
 {$ifdef DO_LI_INLINE}
 {$else}
 {$endif}

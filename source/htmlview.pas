@@ -487,6 +487,7 @@ type
     property Palette: HPalette read GetOurPalette write SetOurPalette;
     property Position: Integer read GetPosition write SetPosition;
     //property Processing: Boolean index vsProcessing read GetViewerStateBit;
+    property PrintedSize: TPoint read FPrintedSize; // PrintedSize is available after calling Print().
     property SectionList: ThtDocument read FSectionList;
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read FCaretPos write SetSelStart;
