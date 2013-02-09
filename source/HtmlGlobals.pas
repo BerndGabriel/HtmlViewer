@@ -26,7 +26,7 @@ are covered by separate copyright notices located in those modules.
 unit HtmlGlobals;
 
 {$I htmlcons.inc}
-
+{$undef UseInline}
 interface
 
 uses
@@ -389,15 +389,25 @@ function Darker(Color : TColor
   ): TColor; {$ifdef UseInline} inline; {$endif}
   {find a somewhat darker color for shading purposes}
 const
-  F = 0.75; // F < 1 makes color darker
+  F =  66;
+  D = 100;
 var
   Red, Green, Blue: Byte;
 begin
-  Color := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
-  Red := Color and $FF;
-  Green := (Color and $FF00) shr 8;
-  Blue := (Color and $FF0000) shr 16;
-  Result := RGB(Round(F * Red), Round(F * Green), Round(F * Blue));
+  if Color = clBtnFace then
+    Result := ThemedColor(clBtnShadow{$ifdef has_StyleElements},AUseThemes{$endif})
+  else
+  begin
+    Result := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+    if Result <> 0 then
+    begin
+      Red   :=  Result and $0000FF;
+      Green := (Result and $00FF00) shr  8;
+      Blue  := (Result and $FF0000) shr 16;
+
+      Result := RGB(MulDiv(Red, F, D), MulDiv(Green, F, D), MulDiv(Blue, F, D));
+    end;
+  end;
 end;
 
 
@@ -406,19 +416,27 @@ function Lighter(Color : TColor
   : TColor; {$ifdef UseInline} inline; {$endif}
 {find a somewhat lighter color for shading purposes}
 const
-  F = 1.15; // F > 1 makes color lighter
+  F = 100;
+  D = 100;
+  C = $A0A0A0;
+  C1 = $80;
 var
   Red, Green, Blue: Byte;
 begin
-  Color := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
-  if Color = 0 then
-    Result := 0
+  if Color = clBtnFace then
+    Result := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},AUseThemes{$endif})
   else
   begin
-    Red := Color and $FF;
-    Green := (Color and $FF00) shr 8;
-    Blue := (Color and $FF0000) shr 16;
-    Result := RGB(Min(255, Round(F * Red)), Min(255, Round(F * Green)), Min(255, Round(F * Blue)));
+    Result := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+    if Result <> 0 then
+    begin
+      Red   :=  Result and $0000FF;
+      Green := (Result and $00FF00) shr  8;
+      Blue  := (Result and $FF0000) shr 16;
+      Result := RGB(Min(255, MulDiv(Red, F, D) + C1), Min(255, MulDiv(Green, F, D) + C1), Min(255, MulDiv(Blue, F, D) + C1));
+    end
+    else
+      Result := Result or C;
   end;
 end;
 

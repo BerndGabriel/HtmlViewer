@@ -1836,8 +1836,13 @@ begin
     HFStack := 9999999;
     RowType := TBody;
     Next;
-    while not (Sy in [TableEndSy, EofSy, CaptionEndSy]) do
+    while True do
       case Sy of
+        TableEndSy,
+        EofSy,
+        CaptionEndSy:
+          break;
+          
         TDSy, THSy:
           begin
             ColOK := False; {no more <colgroup> and <col> tags processed}

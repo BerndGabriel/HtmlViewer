@@ -2745,7 +2745,7 @@ var
 begin
   with SectionList, Canvas do
   begin
-    White := SectionList.Printing or ((Background and $FFFFFF = clWhite) or
+    White := Printing or ((Background and $FFFFFF = clWhite) or
       ((Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF)));
     BlackBorder := Printing and PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
       (GetDeviceCaps(Handle, PLANES) = 1);
@@ -6506,29 +6506,63 @@ begin
   TheProps := MyProps;
   try
     if ATable.BorderColor <> clNone then
-      MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], ATable.BorderColor);
+      MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], ATable.BorderColor)
+    else
+    begin
+      if ATable.HasBorderWidthAttr then
+        MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], clGray)
+      else
+        MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], clNone);
+    end;
+
+    if ATable.HasBorderWidthAttr then
+      MyProps.SetPropertyDefaults([BorderBottomWidth, BorderRightWidth, BorderTopWidth, BorderLeftWidth], ATable.brdWidthAttr);
 
     case ATable.Frame of
       tfBox, tfBorder:
         MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssOutset);
 
       tfHSides:
+      begin
         MyProps.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssSolid);
+        MyProps.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssNone);
+      end;
 
       tfVSides:
+      begin
+        MyProps.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssNone);
         MyProps.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssSolid);
+      end;
 
       tfAbove:
+      begin
         MyProps.SetPropertyDefault(BorderTopStyle, bssSolid);
+        MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderLeftStyle], bssNone);
+      end;
 
       tfBelow:
+      begin
         MyProps.SetPropertyDefault(BorderBottomStyle, bssSolid);
+        MyProps.SetPropertyDefaults([BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssNone);
+      end;
 
       tfLhs:
+      begin
         MyProps.SetPropertyDefault(BorderLeftStyle, bssSolid);
+        MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle], bssNone);
+      end;
 
       tfRhs:
+      begin
         MyProps.SetPropertyDefault(BorderRightStyle, bssSolid);
+        MyProps.SetPropertyDefaults([BorderBottomStyle, BorderTopStyle, BorderLeftStyle], bssNone);
+      end;
+    else
+      if ATable.HasBorderWidthAttr then
+        if ATable.brdWidthAttr > 0 then
+          MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssOutset)
+        else
+          MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssNone);
     end;
 
     inherited Create(Master, TheProps, AnOwnerCell, TableAttr);
@@ -6550,11 +6584,13 @@ begin
           begin
             if FloatLR = ANone then
               FloatLR := ALeft;
+//            Justify := Left;
           end
           else if CompareText(Name, 'RIGHT') = 0 then
           begin
             if FloatLR = ANone then
               FloatLR := ARight;
+//            Justify := Right;
           end;
 
         BGColorSy:
@@ -6872,17 +6908,17 @@ begin
 end;
 
 procedure TTableBlock.DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect);
-var
-  Light, Dark: TColor;
-  C: PropIndices;
+//var
+//  Light, Dark: TColor;
+//  C: PropIndices;
 begin
   //BG, 13.06.2010: Issue 5: Table border versus stylesheets
-  GetRaisedColors(Document, Canvas, Light, Dark);
-  for C := BorderTopColor to BorderLeftColor do
-    if MargArrayO[C] = clBtnHighLight then
-      MargArray[C] := Light
-    else if MargArrayO[C] = clBtnShadow then
-      MargArray[C] := Dark;
+//  GetRaisedColors(Document, Canvas, Light, Dark);
+//  for C := BorderTopColor to BorderLeftColor do
+//    if MargArrayO[C] = clBtnHighLight then
+//      MargArray[C] := Light
+//    else if MargArrayO[C] = clBtnShadow then
+//      MargArray[C] := Dark;
   inherited;
 end;
 
@@ -9107,6 +9143,56 @@ begin
     end;
 end;
 
+//-- BG ---------------------------------------------------------- 09.02.2013 --
+function TryStrToTableFrame(const Str: ThtString; var Frame: TTableFrame): Boolean;
+var
+  Upr: string;
+begin
+  Upr := htUpperCase(Str);
+  Result := True;
+  if CompareStr(Upr, 'VOID') = 0 then
+    Frame := tfVoid
+  else if CompareStr(Upr, 'ABOVE') = 0 then
+    Frame := tfAbove
+  else if CompareStr(Upr, 'BELOW') = 0 then
+    Frame := tfBelow
+  else if CompareStr(Upr, 'HSIDES') = 0 then
+    Frame := tfHSides
+  else if CompareStr(Upr, 'LHS') = 0 then
+    Frame := tfLhs
+  else if CompareStr(Upr, 'RHS') = 0 then
+    Frame := tfRhs
+  else if CompareStr(Upr, 'VSIDES') = 0 then
+    Frame := tfVSides
+  else if CompareStr(Upr, 'BOX') = 0 then
+    Frame := tfBox
+  else if CompareStr(Upr, 'BORDER') = 0 then
+    Frame := tfBorder
+  else
+    Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 09.02.2013 --
+function TryStrToTableRules(const Str: ThtString; var Rules: TTableRules): Boolean;
+var
+  Upr: string;
+begin
+  Upr := htUpperCase(Str);
+  Result := True;
+  if CompareStr(Upr, 'NONE') = 0 then
+    Rules := trNone
+  else if CompareStr(Upr, 'GROUPS') = 0 then
+    Rules := trGroups
+  else if CompareStr(Upr, 'ROWS') = 0 then
+    Rules := trRows
+  else if CompareStr(Upr, 'COLS') = 0 then
+    Rules := trCols
+  else if CompareStr(Upr, 'ALL') = 0 then
+    Rules := trAll
+  else
+    Result := False;
+end;
+
 {----------------THtmlTable.Create}
 
 constructor THtmlTable.Create(Master: ThtDocument; Attr: TAttributeList;
@@ -9114,14 +9200,14 @@ constructor THtmlTable.Create(Master: ThtDocument; Attr: TAttributeList;
 var
   I: Integer;
   A: TAttribute;
+  AName: String;
 begin
-  //BG, 08.06.2010: TODO:  Issue 5: Table border versus stylesheets:
-  //  Added: BorderColor
   inherited Create(Master, Prop);
   Rows := TRowList.Create;
+
   CellPadding := 1;
   CellSpacing := 2;
-  BorderColor := clNone;
+  BorderColor := clBtnFace;
   BorderColorLight := clBtnHighLight;
   BorderColorDark := clBtnShadow;
 
@@ -9140,6 +9226,11 @@ begin
     begin
       Frame := tfBorder;
       Rules := trAll;
+    end
+    else
+    begin
+      Frame := tfVoid;
+      Rules := trNone;
     end;
   end;
 
@@ -9147,36 +9238,10 @@ begin
     with Attr[I] do
       case Which of
         FrameSy:
-          if CompareText(Name, 'VOID') = 0 then
-            Frame := tfVoid
-          else if CompareText(Name, 'ABOVE') = 0 then
-            Frame := tfAbove
-          else if CompareText(Name, 'BELOW') = 0 then
-            Frame := tfBelow
-          else if CompareText(Name, 'HSIDES') = 0 then
-            Frame := tfHSides
-          else if CompareText(Name, 'LHS') = 0 then
-            Frame := tfLhs
-          else if CompareText(Name, 'RHS') = 0 then
-            Frame := tfRhs
-          else if CompareText(Name, 'VSIDES') = 0 then
-            Frame := tfVSides
-          else if CompareText(Name, 'BOX') = 0 then
-            Frame := tfBox
-          else if CompareText(Name, 'BORDER') = 0 then
-            Frame := tfBorder;
+          TryStrToTableFrame(Name, Frame);
 
         RulesSy:
-          if CompareText(Name, 'NONE') = 0 then
-            Rules := trNone
-          else if CompareText(Name, 'GROUPS') = 0 then
-            Rules := trGroups
-          else if CompareText(Name, 'ROWS') = 0 then
-            Rules := trRows
-          else if CompareText(Name, 'COLS') = 0 then
-            Rules := trCols
-          else if CompareText(Name, 'ALL') = 0 then
-            Rules := trAll;
+          TryStrToTableRules(Name, Rules);
 
         CellSpacingSy:
           CellSpacing := Min(40, Max(-1, Value));
