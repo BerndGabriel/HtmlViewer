@@ -1217,7 +1217,7 @@ begin
     begin
       S := Visited[I];
       for J := 0 to Viewer.LinkList.Count - 1 do
-        with TFontObj(Viewer.LinkList[J]) do
+        with Viewer.LinkList[J] do
         begin
           if Url <> '' then
           begin

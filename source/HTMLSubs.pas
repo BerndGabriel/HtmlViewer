@@ -203,7 +203,8 @@ type
 
 //------------------------------------------------------------------------------
 // TFontObj, contains an atomic font info for a part of a section.
-// TFontList, contains all font infos of a section
+// TFontList, contains and owns all font infos of a section
+// TLinkList, references but does not own all link infos of a document. The objects are still owned by their sections.
 //------------------------------------------------------------------------------
 
   TSection = class;
@@ -218,6 +219,8 @@ type
     property OnKeyUp;
   end;
 
+  TFontList = class;
+
   TFontObj = class(TFontObjBase) {font information}
   private
     FSection: TSection; // only used if NoTabLink is not defined.
@@ -228,7 +231,7 @@ type
     procedure SetVisited(Value: boolean);
     procedure SetHover(Value: boolean);
     function GetURL: ThtString;
-    procedure SetAllHovers(List: TList; Value: boolean);
+    procedure SetAllHovers(List: TFontList; Value: boolean);
     procedure CreateFIArray;
 {$IFNDEF NoTabLink}
     procedure EnterEvent(Sender: TObject);
@@ -265,13 +268,23 @@ type
     property YValue: Integer read FYValue;
   end;
 
+  // BG, 10.02.2013: owns its objects.
   TFontList = class(TFreeList) {a list of TFontObj's}
+  private
+    function GetFont(Index: Integer): TFontObj; 
   public
     constructor CreateCopy(ASection: TSection; T: TFontList);
     function GetFontAt(Posn: Integer; out OHang: Integer): TMyFont;
     function GetFontCountAt(Posn, Leng: Integer): Integer;
     function GetFontObjAt(Posn: Integer; out Index: Integer): TFontObj;
     procedure Decrement(N: Integer; Document: ThtDocument);
+    property Items[Index: Integer]: TFontObj read GetFont; default;
+  end;
+
+  // BG, 10.02.2013: does not own its font objects.
+  TLinkList = class(TFontList)
+  public
+    constructor Create;
   end;
 
 //------------------------------------------------------------------------------
@@ -1360,7 +1373,7 @@ type
     PanelList: TList; {List of all TPanelObj's in this SectionList}
     MissingImages: ThtStringList; {images to be supplied later}
     ControlEnterEvent: TNotifyEvent;
-    LinkList: TList; {List of links (TFontObj's)}
+    LinkList: TLinkList; {List of links (TFontObj's)}
     ActiveLink: TFontObj;
     LinksActive: boolean;
     ActiveImage: TImageObj;
@@ -1705,7 +1718,7 @@ end;
 
 procedure TFontObj.EnterEvent(Sender: TObject);
 var
-  List: TList;
+  List: TFontList;
   I, J: Integer;
 begin
   Active := True;
@@ -1714,8 +1727,8 @@ begin
   I := List.IndexOf(Self);
   if I >= 0 then
     for J := I + 1 to List.Count - 1 do
-      if (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) then
-        TFontObj(List[J]).Active := True
+      if (Self.UrlTarget.ID = List[J].UrlTarget.ID) then
+        List[J].Active := True
       else
         Break;
   FSection.Document.ControlEnterEvent(Self);
@@ -1723,7 +1736,7 @@ end;
 
 procedure TFontObj.ExitEvent(Sender: TObject);
 var
-  List: TList;
+  List: TFontList;
   I, J: Integer;
 begin
   Active := False;
@@ -1732,8 +1745,8 @@ begin
   I := List.IndexOf(Self);
   if I >= 0 then
     for J := I + 1 to List.Count - 1 do
-      if (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) then
-        TFontObj(List[J]).Active := False
+      if (Self.UrlTarget.ID = List[J].UrlTarget.ID) then
+        List[J].Active := False
       else
         Break;
   FSection.Document.PPanel.Invalidate;
@@ -1741,7 +1754,7 @@ end;
 
 procedure TFontObj.AssignY(Y: Integer);
 var
-  List: TList;
+  List: TFontList;
   I, J: Integer;
 begin
   if UrlTarget.Url = '' then
@@ -1754,11 +1767,11 @@ begin
     I := List.IndexOf(Self);
     if I >= 0 then
       for J := I - 1 downto 0 do
-        if (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) then
+        if (Self.UrlTarget.ID = List[J].UrlTarget.ID) then
         begin
-          if Assigned(TFontObj(List[J]).TabControl) then
+          if Assigned(List[J].TabControl) then
           begin
-            TFontObj(List[J]).FYValue := Y;
+            List[J].FYValue := Y;
             break;
           end;
         end
@@ -1788,7 +1801,7 @@ procedure TFontObj.CreateTabControl(TabIndex: Integer);
 var
   PntPanel: TWinControl; //TPaintPanel;
   I, J: Integer;
-  List: TList;
+  List: TFontList;
 begin
   if Assigned(TabControl) then
     Exit;
@@ -1797,8 +1810,8 @@ begin
   I := List.IndexOf(Self);
   if I >= 0 then
     for J := I - 1 downto 0 do
-      if (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) then
-        if Assigned(TFontObj(List[J]).TabControl) then
+      if (Self.UrlTarget.ID = List[J].UrlTarget.ID) then
+        if Assigned(List[J].TabControl) then
           Exit;
 
   PntPanel := FSection.Document.PPanel;
@@ -1891,7 +1904,7 @@ begin
   end;
 end;
 
-procedure TFontObj.SetAllHovers(List: TList; Value: boolean);
+procedure TFontObj.SetAllHovers(List: TFontList; Value: boolean);
 {Set/Reset Hover on this item and all adjacent item with the same URL}
 var
   I, J: Integer;
@@ -1901,15 +1914,15 @@ begin
   if I >= 0 then
   begin
     J := I + 1;
-    while (J < List.Count) and (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) do
+    while (J < List.Count) and (Self.UrlTarget.ID = List[J].UrlTarget.ID) do
     begin
-      TFontObj(List[J]).Hover := Value;
+      List[J].Hover := Value;
       Inc(J);
     end;
     J := I - 1;
-    while (J >= 0) and (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) do
+    while (J >= 0) and (Self.UrlTarget.ID = List[J].UrlTarget.ID) do
     begin
-      TFontObj(List[J]).Hover := Value;
+      List[J].Hover := Value;
       Dec(J);
     end;
   end;
@@ -1972,7 +1985,13 @@ var
 begin
   inherited create;
   for I := 0 to T.Count - 1 do
-    Add(TFontObj.CreateCopy(ASection, TFontObj(T.Items[I])));
+    Add(TFontObj.CreateCopy(ASection, T.Items[I]));
+end;
+
+//-- BG ---------------------------------------------------------- 10.02.2013 --
+function TFontList.GetFont(Index: Integer): TFontObj;
+begin
+  Result := Get(Index);
 end;
 
 function TFontList.GetFontAt(Posn: Integer; out OHang: Integer): TMyFont;
@@ -1985,7 +2004,7 @@ begin
   PosX := 0;
   while (I < Count) do
   begin
-    PosX := TFontObj(Items[I]).Pos;
+    PosX := Items[I].Pos;
     Inc(I);
     if PosX >= Posn then
       Break;
@@ -1993,7 +2012,7 @@ begin
   Dec(I);
   if PosX > Posn then
     Dec(I);
-  F := TFontObj(Items[I]);
+  F := Items[I];
   OHang := F.Overhang;
   Result := F.TheFont;
 end;
@@ -2007,7 +2026,7 @@ begin
   PosX := 0;
   while I < Count do
   begin
-    PosX := TFontObj(Items[I]).Pos;
+    PosX := Items[I].Pos;
     if PosX >= Posn then
       Break;
     Inc(I);
@@ -2017,7 +2036,7 @@ begin
   if I = Count then
     Result := Leng - Posn
   else
-    Result := TFontObj(Items[I]).Pos - Posn;
+    Result := Items[I].Pos - Posn;
 end;
 
 {----------------TFontList.GetFontObjAt}
@@ -2032,7 +2051,7 @@ begin
   PosX := 0;
   while (Index < Count) do
   begin
-    PosX := TFontObj(Items[Index]).Pos;
+    PosX := Items[Index].Pos;
     Inc(Index);
     if PosX >= Posn then
       Break;
@@ -2040,7 +2059,7 @@ begin
   Dec(Index);
   if PosX > Posn then
     Dec(Index);
-  Result := TFontObj(Items[Index]);
+  Result := Items[Index];
 end;
 
 {----------------TFontList.Decrement}
@@ -2054,12 +2073,12 @@ begin
   I := 0;
   while I < Count do
   begin
-    FO := TFontObj(Items[I]);
+    FO := Items[I];
     if FO.Pos > N then
       Dec(FO.Pos);
-    if (I > 0) and (TFontObj(Items[I - 1]).Pos = FO.Pos) then
+    if (I > 0) and (Items[I - 1].Pos = FO.Pos) then
     begin
-      FO1 := TFontObj(Items[I - 1]);
+      FO1 := Items[I - 1];
       J := Document.LinkList.IndexOf(FO1);
       if J >= 0 then
         Document.LinkList.Delete(J);
@@ -2084,6 +2103,14 @@ begin
     else
       Inc(I);
   end;
+end;
+
+{ TLinkList }
+
+//-- BG ---------------------------------------------------------- 10.02.2013 --
+constructor TLinkList.Create;
+begin
+  inherited Create(False);
 end;
 
 {----------------TImageObj.Create}
@@ -2745,10 +2772,8 @@ var
 begin
   with SectionList, Canvas do
   begin
-    White := Printing or ((Background and $FFFFFF = clWhite) or
-      ((Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF)));
-    BlackBorder := Printing and PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
-      (GetDeviceCaps(Handle, PLANES) = 1);
+    White := Printing or (ThemedColor(Background{$ifdef has_StyleElements},seFont in SectionList.StyleElements{$endif}) = clWhite);
+    BlackBorder := Printing and PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and (GetDeviceCaps(Handle, PLANES) = 1);
   end;
   if BlackBorder then
   begin
@@ -7408,7 +7433,7 @@ begin
   FormControlList := TFormControlObjList.Create(False);
   MissingImages := ThtStringList.Create;
   MissingImages.Sorted := False;
-  LinkList := TList.Create;
+  LinkList := TLinkList.Create;
   PanelList := TList.Create;
   Styles := THtmlStyleList.Create(Self);
   DrawList := TDrawList.Create;
@@ -9200,7 +9225,6 @@ constructor THtmlTable.Create(Master: ThtDocument; Attr: TAttributeList;
 var
   I: Integer;
   A: TAttribute;
-  AName: String;
 begin
   inherited Create(Master, Prop);
   Rows := TRowList.Create;
@@ -11366,7 +11390,7 @@ begin
 
   if (BuffS <> #8) and (Length(BuffS) > 0) and (BuffS[Length(BuffS)] <> ' ') then
   begin
-    FO := TFontObj(Fonts.Items[Fonts.Count - 1]); {keep font the same for inserted space}
+    FO := Fonts.Items[Fonts.Count - 1]; {keep font the same for inserted space}
     if FO.Pos = Length(BuffS) then
       Inc(FO.Pos);
     BuffS := BuffS + ' ';
@@ -11436,7 +11460,7 @@ var
   NewFont: TMyFont;
   Align: AlignmentType;
 begin
-  FO := TFontObj(Fonts[Fonts.Count - 1]);
+  FO := Fonts[Fonts.Count - 1];
   LastUrl := FO.UrlTarget;
   NewFont := Prop.GetFont;
   if FO.Pos = Len then
@@ -11471,7 +11495,7 @@ var
   NewFont: TMyFont;
   Align: AlignmentType;
 begin
-  FO := TFontObj(Fonts[Fonts.Count - 1]);
+  FO := Fonts[Fonts.Count - 1];
   NewFont := Prop.GetFont;
   if FO.Pos = Len then
     FO.ReplaceFont(NewFont) {fontobj already at this position, modify it}
@@ -12054,7 +12078,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
 
     if (Start = Buff) and (Images.Count = 0) and (FormControls.Count = 0) then
       if Fonts.GetFontCountAt(0, Len) = Len then
-        if MaxChars * TFontObj(Fonts[0]).tmMaxCharWidth <= Width then {try a shortcut}
+        if MaxChars * Fonts[0].tmMaxCharWidth <= Width then {try a shortcut}
         begin {it will all fit}
           Result := MaxChars;
           if FoundBreak then
@@ -13099,12 +13123,7 @@ var
           Canvas.Brush.Style := bsSolid;
           if FO.TheFont.bgColor = clNone then
           begin
-            Color := Canvas.Font.Color;
-            Color := ThemedColor(Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-//            if Color < 0 then
-//              Color := GetSysColor(Color and $FFFFFF)
-//            else
-//              Color := Color and $FFFFFF;
+            Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
             Canvas.Font.Color := Color xor $FFFFFF;
           end
           else
@@ -13127,17 +13146,13 @@ var
           if Document.PrintMonoBlack and
             (GetDeviceCaps(Canvas.Handle, NumColors) in [0..2]) then
           begin
-            Color := Canvas.Font.Color;
-            if Color < 0 then
-              Color := GetSysColor(Color);
-            if Color < 0 then
+            Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+            if Color <> clWhite then
               Canvas.Font.Color := clBlack; {Print black}
           end;
           if not Document.PrintTableBackground then
           begin
-            Color := Canvas.Font.Color;
-            if Color < 0 then
-              Color := GetSysColor(Color);
+            Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
             if (Color and $E0E0) = $E0E0 then
               Canvas.Font.Color := $2A0A0A0; {too near white or yellow, make it gray}
           end;
@@ -14544,10 +14559,8 @@ begin
       begin
         with Document do
         begin
-          White := Printing or ((Background and $FFFFFF = clWhite) or
-            ((Background = clWindow) and (GetSysColor(Color_Window) = $FFFFFF)));
-          BlackBorder := NoShade or (Printing and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
-            (GetDeviceCaps(Handle, PLANES) = 1));
+          White := Printing or (ThemedColor(Background{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif}) = clWhite);
+          BlackBorder := NoShade or (Printing and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and (GetDeviceCaps(Handle, PLANES) = 1));
         end;
         if BlackBorder then
           Pen.Color := clBlack
@@ -14573,7 +14586,7 @@ procedure TPreformated.ProcessText(TagIndex: Integer);
 var
   FO: TFontObj;
 begin
-  FO := TFontObj(Fonts.Items[Fonts.Count - 1]); {keep font the same for inserted space}
+  FO := Fonts.Items[Fonts.Count - 1]; {keep font the same for inserted space}
   if FO.Pos = Length(BuffS) then
     Inc(FO.Pos);
   BuffS := BuffS + ' ';

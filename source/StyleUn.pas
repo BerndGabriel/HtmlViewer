@@ -3746,7 +3746,7 @@ const
     $EBCE87, $CD5A6A, $908070, $FAFAFF, $7FFF00,
     $B48246, $8CB4D2, $D8BFD8, $4763FF, $D0E040,
     $EE82EE, $B3DEF5, $F5F5F5, $32CD9A,
-    clgray, $A9A9A9, $4F4F2F, $696969, $D3D3D3, $998877, $908070,
+    clGray, $A9A9A9, $4F4F2F, $696969, $D3D3D3, $998877, $908070,
     clBackground, clActiveCaption, clInactiveCaption, clMenu, clWindow,
     clWindowFrame, clMenuText, clWindowText, clCaptionText, clActiveBorder,
     clInactiveBorder, clAppWorkSpace, clHighlight, clHighlightText, clBtnFace,
@@ -3928,6 +3928,7 @@ begin
     Result := False;
     Exit;
   end;
+
   S := Lowercase(Trim(S));
   if S = LastS then
   begin {inquiries often come in pairs, this saves some recomputing}
@@ -3935,6 +3936,7 @@ begin
     Result := True;
     Exit;
   end;
+
   I := Pos('hsl',S);
   if I > 0 then begin
     Result := FindHSLColor(Copy(S, I + 3, 255));
@@ -3945,6 +3947,7 @@ begin
     end;
     exit;
   end;
+
   I := Pos('rgb', S);
   if (I = 0) and (S[1] <> '#') then
   begin
@@ -3957,6 +3960,7 @@ begin
       Exit;
     end;
   end;
+
   S1 := S;
   if (I > 0) then
     Result := FindRGBColor(Copy(S, I + 3, 255))

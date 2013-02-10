@@ -3792,7 +3792,7 @@ begin
     begin
       S := Visited[I];
       for J := 0 to Viewer.LinkList.Count - 1 do
-        with TFontObj(Viewer.LinkList[J]) do
+        with Viewer.LinkList[J] do
         begin
           if not RequestEvent then
           begin
@@ -4198,7 +4198,7 @@ begin
       for I := 0 to GetCurViewerCount - 1 do
         with CurViewer[I] do
           for J := 0 to SectionList.LinkList.Count - 1 do
-            TFontObj(LinkList[J]).Visited := False;
+            LinkList[J].Visited := False;
       RePaint;
     end
     else
