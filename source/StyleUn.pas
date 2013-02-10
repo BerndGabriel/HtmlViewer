@@ -2795,7 +2795,7 @@ begin {call only if all things valid}
         end;
         {calculate EmSize with current font rather than inherited}
         SameFont.EmSize := tm.tmHeight - tm.tmInternalLeading;
-        SameFont.ExSize := EmSize div 2; {apparently correlates with what browsers are doing}
+        SameFont.ExSize := SameFont.EmSize div 2; {apparently correlates with what browsers are doing}
         SameFont.tmHeight := tm.tmHeight;
         SameFont.tmDescent := tm.tmDescent;
         SameFont.tmExternalLeading := tm.tmExternalLeading;
@@ -4163,23 +4163,23 @@ begin
       i := 0;
     end;
     if U = 'smaller' then
-      Result := IncFontSize(OldSize, -1) // 0.75 * OldSize
+      Result := IncFontSize(OldSize, -1) // CSS1: 0.75 * OldSize
     else if U = 'larger' then
-      Result := IncFontSize(OldSize,  1) // 1.25 * OldSize
+      Result := IncFontSize(OldSize,  1) // CSS1: 1.25 * OldSize
     else if U = 'xx-small' then
       Result := FontConv[1 + i]
     else if U = 'x-small' then
-      Result := FontConv[2 + i]
+      Result := FontConv[1 + i]         // same size xx-small (IE and Firefox do it). 
     else if U = 'small' then
+      Result := FontConv[2 + i]
+    else if U = 'medium' then           // 'medium' is the user's preferred font size.
       Result := FontConv[3 + i]
-    else if U = 'medium' then
-      Result := FontConv[4 + i]
     else if U = 'large' then
-      Result := FontConv[5 + i]
+      Result := FontConv[4 + i]
     else if U = 'x-large' then
-      Result := FontConv[6 + i]
+      Result := FontConv[5 + i]
     else if U = 'xx-large' then
-      Result := FontConv[7]
+      Result := FontConv[6]
     else
       Result := DefPointSize;
   end;
