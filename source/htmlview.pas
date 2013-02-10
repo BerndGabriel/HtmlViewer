@@ -262,7 +262,7 @@ type
     function GetHScrollPos: Integer;
     function GetIDControl(const ID: ThtString): TIDObject;
     function GetIDDisplay(const ID: ThtString): TPropDisplay;
-    function GetLinkList: TList;
+    function GetLinkList: TFontList;
     function GetNameList: ThtStringList;
     function GetOnBitmapRequest: TGetBitmapEvent;
     function GetOnExpandName: TExpandNameEvent;
@@ -476,7 +476,7 @@ type
     property IDControl[const ID: ThtString]: TIDObject read GetIDControl;
     property IDDisplay[const ID: ThtString]: TPropDisplay read GetIDDisplay write SetIDDisplay;
     property LinkAttributes: ThtStringList read FLinkAttributes;
-    property LinkList: TList read GetLinkList;
+    property LinkList: TFontList read GetLinkList;
     property LinkStart: TPoint read FLinkStart;
     property LinkText: WideString read FLinkText write FLinkText;
     property MaxVertical: Integer read FMaxVertical;
@@ -2598,7 +2598,7 @@ begin
   Result := FNameList;
 end;
 
-function THtmlViewer.GetLinkList: TList;
+function THtmlViewer.GetLinkList: TFontList;
 begin
   Result := FSectionList.LinkList;
 end;

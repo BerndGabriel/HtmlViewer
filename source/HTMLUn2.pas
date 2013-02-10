@@ -136,7 +136,10 @@ type
   { Like TList but frees it's items. Use only descendents of TObject! }
   //BG, 03.03.2011: what about TObjectList?
   TFreeList = class(TList)
+  private
+    FOwnsObjects: Boolean;
   protected
+    constructor Create(OwnsObjects: Boolean = True);
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
   end;
 
@@ -1215,9 +1218,16 @@ begin
 end;
 
 
+//-- BG ---------------------------------------------------------- 10.02.2013 --
+constructor TFreeList.Create(OwnsObjects: Boolean);
+begin
+  inherited Create;
+  FOwnsObjects := OwnsObjects;
+end;
+
 procedure TFreeList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
-  if Action = lnDeleted then
+  if (Action = lnDeleted) and FOwnsObjects then
     TObject(Ptr).Free;
 end;
 

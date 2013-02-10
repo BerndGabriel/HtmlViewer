@@ -394,16 +394,17 @@ const
 var
   Red, Green, Blue: Byte;
 begin
-  if Color = clBtnFace then
-    Result := ThemedColor(clBtnShadow{$ifdef has_StyleElements},AUseThemes{$endif})
-  else
+// BG, 10.02.2013: clBtnHighlight used in Lighter() is white. Looks bad on white background.
+//  if Color = clBtnFace then
+//    Result := ThemedColor(clBtnShadow{$ifdef has_StyleElements},AUseThemes{$endif})
+//  else
   begin
     Result := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
     if Result <> 0 then
     begin
-      Red   :=  Result and $0000FF;
-      Green := (Result and $00FF00) shr  8;
-      Blue  := (Result and $FF0000) shr 16;
+      Red   := Byte(Result       );
+      Green := Byte(Result shr  8);
+      Blue  := Byte(Result shr 16);
 
       Result := RGB(MulDiv(Red, F, D), MulDiv(Green, F, D), MulDiv(Blue, F, D));
     end;
@@ -415,28 +416,46 @@ function Lighter(Color : TColor
   {$ifdef has_StyleElements}; const AUseThemes : Boolean {$endif})
   : TColor; {$ifdef UseInline} inline; {$endif}
 {find a somewhat lighter color for shading purposes}
+
+  function LighterEx(Color: Byte; var IsLight: Integer): Byte;
+  const
+    F = 125;
+    D = 100;
+    M = Byte((255 * 100) div F);
+  begin
+    if Color >= M then
+      Result := 255
+    else
+      Result := MulDiv(Color, F, D);
+    if Result >= $80 then
+      Inc(IsLight);
+  end;
+
 const
-  F = 100;
-  D = 100;
-  C = $A0A0A0;
-  C1 = $80;
+  C0 = $A0A0A0;
+  C1 = $787878;
 var
   Red, Green, Blue: Byte;
+  IsLight: Integer;
 begin
-  if Color = clBtnFace then
-    Result := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},AUseThemes{$endif})
-  else
+// BG, 10.02.2013: clBtnHighlight is white. Looks bad on white background.
+//  if Color = clBtnFace then
+//    Result := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},AUseThemes{$endif})
+//  else
   begin
     Result := ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
     if Result <> 0 then
     begin
-      Red   :=  Result and $0000FF;
-      Green := (Result and $00FF00) shr  8;
-      Blue  := (Result and $FF0000) shr 16;
-      Result := RGB(Min(255, MulDiv(Red, F, D) + C1), Min(255, MulDiv(Green, F, D) + C1), Min(255, MulDiv(Blue, F, D) + C1));
+      IsLight := 0;
+      Red   := LighterEx(Byte(Result       ), IsLight);
+      Green := LighterEx(Byte(Result shr  8), IsLight);
+      Blue  := LighterEx(Byte(Result shr 16), IsLight);
+      Result := RGB(Red, Green, Blue);
+      if IsLight > 0 then
+        Result := Result or C1;
     end
     else
-      Result := Result or C;
+      Result := Result or C0;
   end;
 end;
 
