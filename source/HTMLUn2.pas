@@ -93,6 +93,7 @@ type
     OLSy, OLEndSy, LISy, LIEndSy, ULSy, ULEndSy, DirSy, DirEndSy, MenuSy, MenuEndSy,
     DLSy, DLEndSy, DDSy, DDEndSy, DTSy, DTEndSy, AddressSy, AddressEndSy,
     BlockQuoteSy, BlockQuoteEndSy, PreSy, PreEndSy, ImageSy, Centersy, CenterEndSy,
+    AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy, DfnSy, DfnEndSy,
     OtherAttribute, ASy, AEndSy, HrefSy, NameSy, SrcSy, AltSy, AlignSy,
     OtherChar, OtherSy, CommandSy, TextSy, EofSy, LinkSy, BGColorSy,
     BackgroundSy, TableSy, TableEndSy, TDSy, TDEndSy, TRSy, TREndSy, THSy, THEndSy,

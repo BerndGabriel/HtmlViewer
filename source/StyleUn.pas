@@ -3522,6 +3522,7 @@ begin
   AddDuplicate('em', Properties);
   AddDuplicate('cite', Properties);
   AddDuplicate('var', Properties);
+  AddDuplicate('dfn', Properties);
 
   AddDuplicate('address', Properties);
 
@@ -3593,6 +3594,12 @@ begin
   Properties.Props[BackgroundColor] := $00FFFF;
   Properties.Props[Color] := $000000;
   AddObject('mark', Properties);
+
+  Properties := TProperties.Create(UseQuirksMode);
+  Properties.Props[ StyleUn.BorderBottomStyle ] := 'dotted';
+  Properties.Props[ StyleUn.BorderBottomWidth ] := '1px';
+  AddObject('abbr', Properties);
+  AddDuplicate('acronym',Properties);
 end;
 
 

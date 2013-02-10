@@ -2653,11 +2653,11 @@ var
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
-                  MarkSy, MarkEndSy,
-                  TimeSy, TimeEndSy,
-                BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
+                MarkSy, MarkEndSy,
+                  TimeSy, TimeEndSy, DfnSy, DfnEndSy,
+                  BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
                   USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
-                  InsSy, InsEndSy, DelSy, DelEndSy,
+                  InsSy, InsEndSy, DelSy, DelEndSy, AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy,
                   SSy, SEndSy, StrikeSy, StrikeEndSy, SpanSy, SpanEndSy,
                   SubSy, SubEndSy, SupSy, SupEndSy, BigSy, BigEndSy, SmallSy, SmallEndSy,
                   LabelSy, LabelEndSy:
@@ -2665,8 +2665,9 @@ var
                     Section.AddTokenObj(S);
                     S.Clear;
                     case Sy of
+                      AbbrSy, AccronymSy,
                       MarkSy,
-                      TimeSy,
+                      TimeSy, DfnSy,
                       BSy, ISy, StrongSy, EmSy, CiteSy, VarSy, USy, InsSy, DelSy, SSy, StrikeSy, SpanSy,
                         SubSy, SupSy, BigSy, SmallSy, LabelSy:
                         begin
@@ -2677,8 +2678,8 @@ var
                             PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                         end;
                       MarkEndSy,
-                      TimeEndSy,
-                      BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy, CiteEndSy, VarEndSy, UEndSy,
+                        TimeEndSy, AbbrEndSy, AccronymEndSy,
+                        BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy, CiteEndSy, VarEndSy, UEndSy,
                         SEndSy, StrikeEndSy, SpanEndSy,
                         SubEndSy, SupEndSy, SmallEndSy, BigEndSy, LabelEndSy:
                         PopAProp(EndSymbToStr(Sy));
@@ -2993,14 +2994,14 @@ begin
         Section.AddOpBrk;
         Next;
       end;
-    MarkSy,  MarkEndSy, TimeSy, TimeEndSy,
+    MarkSy,  MarkEndSy, TimeSy, TimeEndSy, DfnSy, DfnEndSy,
     BSy, BEndSy, ISy, IEndSy, StrongSy, StrongEndSy, EmSy, EmEndSy,
-      InsSy, InsEndSy, DelSy, DelEndSy,
+      InsSy, InsEndSy, DelSy, DelEndSy, AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy,
       CiteSy, CiteEndSy, VarSy, VarEndSy, USy, UEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy:
       begin
         case Sy of
           MarkSy,
-          TimeSy,
+          TimeSy, AbbrSy, AccronymSy, DfnSy, DfnEndSy,
           BSy, ISy, StrongSy, EmSy, InsSy, DelSy, CiteSy, VarSy, USy, SSy, StrikeSy:
             begin
               PushNewProp(SymbToStr(Sy), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -3010,7 +3011,7 @@ begin
                 PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
             end;
           MarkEndSy,
-          TimeEndSy,
+          TimeEndSy, AbbrEndSy, AccronymEndSy,
           BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy, CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy:
             PopAProp(EndSymbToStr(Sy));
         end;
@@ -3149,9 +3150,9 @@ begin
         Done := False;
         while not Done do
           case Sy of
-            MarkSy,
-            TimeSy,
-            TextSy, BrSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
+            MarkSy, MarkEndSy, TimeSy, TimeEndSy, AbbrSy, AbbrEndSy,
+              AccronymSy, AccronymEndSy, DfnSy, DfnEndSy,
+              TextSy, BrSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
               EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy,
               InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
               CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
@@ -3271,8 +3272,12 @@ begin
   SectionList := NewBlock.MyCell;
 
   while not (Sy in Termset) and
-    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
-    EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
+    (Sy in [TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy,
+      BSy, ISy, BEndSy, IEndSy,
+      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy,
+      InsSy, InsEndSy, DelSy, DelEndSy, TimeSy, TimeEndSy,
+      AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy, DfnSy, DfnEndSy,
+      CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
@@ -3374,7 +3379,8 @@ begin
   while true do {handle second part like after a <p>}
     case Sy of
       TextSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
-      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
+      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy,
+      AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy, DfnSy, DfnEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
@@ -3505,7 +3511,7 @@ begin
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy,
-        MarkSy, MarkEndSy, TimeSy, TimeEndSy,
+        MarkSy, MarkEndSy, TimeSy, TimeEndSy, DfnSy, DfnEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
@@ -3775,9 +3781,9 @@ begin
 
         BRSy, HRSy,
         NameSy, HRefSy, ASy, AEndSy,
-        MarkSy, MarkEndSy, TimeSy, TimeEndSy,
+        MarkSy, MarkEndSy, TimeSy, TimeEndSy, DfnSy, DfnEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
-        USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
+        USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, AbbrSy, AbbrEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
         TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, SpanSy, SpanEndSy,
         HeadingSy, HeadingEndSy, PreSy, TableSy,
@@ -4765,7 +4771,7 @@ end;
 
 procedure InitReservedWords;
 const
-  ResWordDefinitions: array[1..93] of TResWord = (
+  ResWordDefinitions: array[1..96] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4779,6 +4785,9 @@ const
     //
     (Name: 'INS';         Symbol: InsSy;        EndSym: InsEndSy),
     (Name: 'DEL';         Symbol: DelSy;        EndSym: DelEndSy),
+    (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrEndSy),
+    //ACRONYM not supported in HTML5
+    (Name: 'ACRONYM';     Symbol: AccronymSy;   EndSym: AccronymEndSy),
     //
     (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
     (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
@@ -4786,6 +4795,7 @@ const
     (Name: 'CODE';        Symbol: CodeSy;       EndSym: CodeEndSy),
     (Name: 'KBD';         Symbol: KbdSy;        EndSym: KbdEndSy),
     (Name: 'SAMP';        Symbol: SampSy;       EndSym: SampEndSy),
+    (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),
     (Name: 'OL';          Symbol: OLSy;         EndSym: OLEndSy),
     (Name: 'UL';          Symbol: ULSy;         EndSym: ULEndSy),
     (Name: 'DIR';         Symbol: DirSy;        EndSym: DirEndSy),
