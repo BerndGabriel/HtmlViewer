@@ -49,7 +49,7 @@ begin
     {$ENDIF}
     '</center>'+
     '</body>';
-  Viewer.LoadFromBuffer(@S[1], Length(S));
+  Viewer.LoadFromString(S, '', HtmlType);
 end;
 
 end.

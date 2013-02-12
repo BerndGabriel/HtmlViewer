@@ -244,8 +244,9 @@ type
     procedure HTTPRedirect(Sender: TObject; var Dest: String;
       var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
     procedure SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
-    procedure LoadCookies(ACookieCollection: TIdCookies);
+    procedure LoadCookies(ACookieCollection: TIdCookieManager);
     procedure CloseHints;
+    procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: string);
   public
     { Public declarations }
   {$ifdef UseSSL}
@@ -260,7 +261,7 @@ type
   ESpecialException = class(Exception);
 
 const
-  CookieFile = 'Cookies.txt';
+  CookieFile = 'Cookies.ini';
 var
   HTTPForm: THTTPForm;
   Mon: TextFile;
@@ -276,6 +277,7 @@ uses
  {$ifdef TScrollStyleInSystemUITypes}
   System.UITypes,
 {$endif}
+  IdURI,
   HTMLAbt, ProxyDlg, AuthUnit;
 
 {$R fbHelp32.res}
@@ -333,7 +335,7 @@ begin
 {$endif}
 
   CookieManager := TIdCookieManager.Create(Self);
-  LoadCookies(CookieManager.CookieCollection);
+  LoadCookies(CookieManager);
   CookieManager.OnDestroy := SaveCookies;
 
   AStream := TMemoryStream.Create;
@@ -393,6 +395,7 @@ begin
 {$endif}
   HintWindow := ThtHintWindow.Create(Self);
   HintWindow.Color := $C0FFFF;
+  FrameBrowser.OnFileBrowse := FrameBrowserFileBrowse;
 end;
 
 {----------------THTTPForm.FormDestroy}
@@ -457,7 +460,21 @@ begin
   end;
 end;
 
+{----------------THTTPForm.FrameBrowserFileBrowse}
+//This fires when the user hits a file-browse button on a form.
+
+procedure THTTPForm.FrameBrowserFileBrowse(Sender, Obj: TObject; var S: string);
+var LFile : String;
+begin
+  //
+  if PromptForFileName(LFile,'Any File |*.*','','Select File','',False) then begin
+    S := LFile;
+  end;
+  //
+end;
+
 {----------------THTTPForm.FrameBrowserGetPostRequestEx}
+
 procedure THTTPForm.FrameBrowserGetPostRequestEx(Sender: TObject;
   IsGet: Boolean; const URL, Query, EncType, RefererX: ThtString;
   Reload: Boolean; var NewURL: ThtString; var DocType: ThtmlFileType;
@@ -1782,59 +1799,77 @@ end;
 
 procedure THTTPForm.SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
 var
-  I: integer;
-  CookFile: TextFile;
-  ACookie: TIdCookie; // TIdCookieRFC2109;
+  M : TMemIniFile;
+  sects : TStringList;
+  i : Integer;
+  LU : TIdURI;
 begin
   if Monitor1 then  {write only if first instance}
   begin
-    AssignFile(Cookfile, Cache+CookieFile);
-    try
-      Rewrite(Cookfile);
+      M := TMemIniFile.Create(Cache+CookieFile );
       try
-        for I := 0 to ACookieCollection.Count-1 do
-        begin
-          ACookie := ACookieCollection.Cookies[I]; // ACookieCollection.Items[I];
-    //    if ACookie.Expires <> '' then   {don't save cookies with no expiration}
-    //      begin
-          WriteLn(CookFile, ACookie.CookieText);
-          WriteLn(CookFile, ACookie.Expires);
-    //      end;
-        end;
+        m.Clear;
+          LU := TIdURI.Create;
+          try
+            m.Clear;
+            for i := 0 to ACookieCollection.Count -1 do
+            begin
+              if ACookieCollection[i].Persistent then begin
+                LU.URI := '';
+                LU.Path := ACookieCollection[i].Path;
+                LU.Host := ACookieCollection[i].Domain;
+                if ACookieCollection[i].Secure then  begin
+                  LU.Protocol := 'https'
+                end else begin
+                  LU.Protocol := 'http';
+                end;
+                m.WriteString(LU.URI,IntToStr(i),ACookieCollection[i].ServerCookie );
+              end;
+            end;
+          finally
+            LU.Free;
+          end;
+        m.UpdateFile;
       finally
-        CloseFile(CookFile);
+        m.Free;
       end;
-    except
-    end;
   end;
 end;
 
-procedure THTTPForm.LoadCookies(ACookieCollection: TIdCookies);
+procedure THTTPForm.LoadCookies(ACookieCollection: TIdCookieManager);
 var
-  CookFile: TextFile;
-  ACookie: TIdCookie; //TIdCookieRFC2109;
-  S: string;
+  M : TMemIniFile;
+  sects : TStringList;
+  CookieValues : TStringList;
+  i : Integer;
+  LU : TIdURI;
 begin
   if FileExists(Cache+CookieFile) then
   begin
-    AssignFile(CookFile, Cache+CookieFile);
-    try
-      Reset(CookFile);
+      M := TMemIniFile.Create(Cache+CookieFile );
       try
-        while not EOF(CookFile) do
-        begin
-     //   ACookie := TIdCookieRFC2109.Create(ACookieCollection);
-          ReadLn(CookFile, S);
-      //  ACookie.CookieText := S;
-          ReadLn(CookFile, S);
-       // ACookie.Expires := S;
-      //  ACookieCollection.AddCookie(ACookie);
+        sects := TStringList.Create;
+        try
+          CookieValues := TStringList.Create;
+          LU := TIdURI.Create;
+          try
+            m.ReadSections(sects);
+            for i := 0 to sects.Count - 1 do begin
+              m.ReadSectionValues(sects[i],CookieValues);
+              LU.URI := sects[i];
+              ACookieCollection.AddServerCookies(CookieValues,LU);
+             CookieValues.Clear;
+            end;
+          finally
+            LU.Free;
+            CookieValues.Free;
+          end;
+        finally
+          sects.Free;
         end;
       finally
-        CloseFile(CookFile);
+        m.Free;
       end;
-    except
-    end;
   end;
 end;
 
