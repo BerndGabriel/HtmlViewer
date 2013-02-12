@@ -1,7 +1,8 @@
 
 {To include the Zip: protocol, define "IncludeZip" by removing the "..."}
 {...$Define IncludeZip}
-
+{$define UseSSL}
+{$define UseZLib}
 {*********************************************************}
 {*                     UrlConId.PAS                      *}
 {*                Copyright (c) 1999 by                  *}
@@ -49,6 +50,9 @@ uses   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Form
 {$ifdef UseSSL}
        , IdIntercept, IdSSLOpenSSL, IdLogFile
 {$endif}
+  {$ifdef UseZLib}
+  , IdCompressorZLib
+  {$endif}
 {$ifdef IncludeZip}
        , VCLUnZIp, kpZipObj
 {$endif}
@@ -164,6 +168,9 @@ type
     procedure GetPostInit2(AHttp: TIdHTTP);
     procedure GetPostFinal;
   protected
+    {$ifdef UseZLib}
+    Comp: TIdCompressorZLib;
+    {$endif}
     HTTP: TidHTTP;
     HTTPa: THTTPAsync;
     {$ifdef UseSSL}
@@ -349,6 +356,9 @@ end;
 constructor THTTPConnection.Create;
 begin
   inherited Create;
+    {$ifdef UseZLib}
+    Comp:= TIdCompressorZLib.Create(nil);
+    {$endif}
 end;
 
 {----------------THTTPConnection.Destroy}
@@ -359,6 +369,9 @@ begin
     HTTPa.OnTerminate := Nil;
     HTTPa.Terminate;
   end;
+   {$ifdef UseZLib}
+   Comp.Free;
+   {$endif}
   inherited Destroy;
 end;
 
@@ -378,6 +391,9 @@ begin
   FAborted := False;
   CheckInputStream;
   HTTP := TIdHTTP.Create(Nil);
+ {$ifdef UseZLib}
+  HTTP.Compressor := Comp;
+{$endif}
 {$ifdef LogIt}
   HTTP.Intercept := HTTPForm.Log;
 {$endif}

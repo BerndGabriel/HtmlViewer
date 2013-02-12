@@ -2,7 +2,8 @@ unit HttpAsyncId10;
 {Use thread to make Get Asynchronous }
 
 interface
-
+{$define UseSSL}
+{$define UseZLib}
 uses
   {$ifdef UseZLib}
   IdCompressorZLib,
