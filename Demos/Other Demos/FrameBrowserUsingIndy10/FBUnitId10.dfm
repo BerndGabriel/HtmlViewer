@@ -20,75 +20,6 @@ object HTTPForm: THTTPForm
   OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
-  object Panel2: TPanel
-    Left = 0
-    Top = 171
-    Width = 575
-    Height = 35
-    Margins.Left = 4
-    Margins.Top = 4
-    Margins.Right = 4
-    Margins.Bottom = 4
-    Align = alBottom
-    TabOrder = 0
-    object Status1: TPanel
-      Left = 1
-      Top = 1
-      Width = 266
-      Height = 33
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
-      Align = alLeft
-      Alignment = taLeftJustify
-      BevelInner = bvLowered
-      BevelOuter = bvNone
-      TabOrder = 0
-    end
-    object Status3: TPanel
-      Left = 443
-      Top = 1
-      Width = 131
-      Height = 33
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
-      Align = alClient
-      Alignment = taLeftJustify
-      BevelInner = bvLowered
-      BevelOuter = bvNone
-      TabOrder = 1
-    end
-    object Status2: TPanel
-      Left = 267
-      Top = 1
-      Width = 176
-      Height = 33
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
-      Align = alLeft
-      BevelInner = bvLowered
-      BevelOuter = bvNone
-      TabOrder = 2
-      OnResize = Status2Resize
-      object Gauge: TProgressBar
-        Left = 20
-        Top = 7
-        Width = 139
-        Height = 19
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        TabOrder = 0
-        Visible = False
-      end
-    end
-  end
   object FrameBrowser: TFrameBrowser
     Left = 0
     Top = 44
@@ -290,6 +221,33 @@ object HTTPForm: THTTPForm
         end
       end
     end
+  end
+  object StatusBarMain: TStatusBar
+    Left = 0
+    Top = 148
+    Width = 467
+    Height = 19
+    Panels = <
+      item
+        Width = 216
+      end
+      item
+        Width = 143
+      end
+      item
+        Width = 50
+      end>
+    OnDrawPanel = StatusBarMainDrawPanel
+    ExplicitLeft = 16
+    ExplicitTop = 24
+    ExplicitWidth = 0
+  end
+  object Gauge: TProgressBar
+    Left = 176
+    Top = 160
+    Width = 150
+    Height = 17
+    TabOrder = 3
   end
   object MainMenu1: TMainMenu
     Left = 248

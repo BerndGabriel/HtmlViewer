@@ -91,10 +91,6 @@ type
     File1: TMenuItem;
     Openfile1: TMenuItem;
     OpenDialog: TOpenDialog;
-    Panel2: TPanel;
-    Status1: TPanel;
-    Status3: TPanel;
-    Status2: TPanel;
     Timer: TTimer;
     Options1: TMenuItem;
     DeleteCache1: TMenuItem;
@@ -135,6 +131,7 @@ type
     ImageList1: TImageList;
     Panel3: TPanel;
     Animate1: TAnimate;
+    StatusBarMain: TStatusBar;
     Gauge: TProgressBar;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -164,7 +161,6 @@ type
     procedure SaveURLClick(Sender: TObject);
     procedure HTTPDocData1(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure Status2Resize(Sender: TObject);
     procedure Processing(Sender: TObject; ProcessingOn: Boolean);
     procedure PrintPreviewClick(Sender: TObject);
     procedure File1Click(Sender: TObject);
@@ -187,6 +183,8 @@ type
     procedure GetImageRequest(Sender: TObject; const URL: String; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: String; var Handled: Boolean);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: String);
+    procedure StatusBarMainDrawPanel(StatusBar: TStatusBar; Panel: TStatusPanel;
+      const Rect: TRect);
 {$else}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: WideString);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
@@ -296,6 +294,7 @@ var
   I, J: integer;
   IniFile: TIniFile;
   SL: TStringList;
+  ProgressBarStyle : LongInt;
 begin
   Top := Top div 2;
   if Screen.Width <= 800 then   {make window fit appropriately}
@@ -312,7 +311,7 @@ begin
 
   Cache := ExtractFilePath(Application.ExeName)+'Cache\';
   DiskCache := TDiskCache.Create(Cache);
-  Status1.Caption := '';
+  Self.StatusBarMain.Panels[0].Text := '';
 
 {Monitor1 will be set if this is the first instance opened}
   Monitor1 := True;
@@ -396,6 +395,15 @@ begin
   HintWindow := ThtHintWindow.Create(Self);
   HintWindow.Color := $C0FFFF;
   FrameBrowser.OnFileBrowse := FrameBrowserFileBrowse;
+  Gauge.Parent := Self.StatusBarMain;
+  //remove progress bar border
+  ProgressBarStyle := GetWindowLong(Gauge.Handle,
+                                    GWL_EXSTYLE);
+  ProgressBarStyle := ProgressBarStyle
+                      - WS_EX_STATICEDGE;
+  SetWindowLong(Gauge.Handle,
+                GWL_EXSTYLE,
+                ProgressBarStyle);
 end;
 
 {----------------THTTPForm.FormDestroy}
@@ -448,8 +456,9 @@ procedure THTTPForm.GetButtonClick(Sender: TObject);
 begin
   URLBase := GetUrlBase(URLCombobox.Text);
   DisableControls;
-  Status1.Caption := '';
-  Status2.Caption := '';
+  StatusBarMain.Panels[0].Text := '';
+  StatusBarMain.Panels[1].Style := psText;
+  StatusBarMain.Panels[1].Text := '';
   try
   {the following initiates one or more GetPostRequest's}
     FrameBrowser.LoadURL(Normalize(URLCombobox.Text));
@@ -515,8 +524,8 @@ var
 begin
   CloseHints;   {may be a hint window open}
   Query1 := Query;
-  Status1.Caption := '';
-  Status2.Caption := '';
+  StatusBarMain.Panels[0].Text := '';
+  StatusBarMain.Panels[1].Text := '';
   FName := '';
   Error := False;
   AnAbort := False;
@@ -678,7 +687,7 @@ begin
           Connection := Nil;
       end;
     end;
-    Status1.Caption := 'Received ' + IntToStr(AStream.Size) + ' bytes';
+    StatusBarMain.Panels[0].Text := 'Received ' + IntToStr(AStream.Size) + ' bytes';
     FName := DiskCache.AddNameToCache(LastUrl, NewLocation, DocType, Error);
     if FName <> '' then
       try
@@ -938,12 +947,12 @@ procedure THTTPForm.HotSpotTargetCovered(Sender: TObject; const Target, URL: Tht
 {mouse moved over or away from a hot spot.  Change the status line}
 begin
   if URL = '' then
-    Status3.Caption := ''
+    StatusBarMain.Panels[2].Text := ''
   else
     if Target <> '' then
-      Status3.Caption := 'Target: '+Target+'  URL: '+URL
+      StatusBarMain.Panels[2].Text := 'Target: '+Target+'  URL: '+URL
     else
-      Status3.Caption := 'URL: '+URL
+      StatusBarMain.Panels[2].Text := 'URL: '+URL
 end;
 
 {----------------THTTPForm.HotSpotTargetClick}
@@ -1028,7 +1037,7 @@ begin
       (HTTPList.Count = 0) then
   begin
     EnableControls;
-    Status2.Caption   := 'DONE';
+    StatusBarMain.Panels[1].Text   := 'DONE';
   end;
 end;
 
@@ -1405,8 +1414,8 @@ end;
 
 procedure THTTPForm.HTTPDocData1(Sender: TObject);
 begin
-  Status1.Caption := 'Text: ' + IntToStr(Connection.RcvdCount) + ' bytes';
-  Status1.Update;
+  StatusBarMain.Panels[0].Text := 'Text: ' + IntToStr(Connection.RcvdCount) + ' bytes';
+ // StatusBarMain.Panels[0].Update;
   Progress(Connection.RcvdCount, Connection.ContentLength);
 end;
 
@@ -1426,15 +1435,24 @@ begin
   else
     Percent := (100*Num) div Den;
   Gauge.Position := Percent;
+  Gauge.Max := 100;
+  StatusBarMain.Panels.Items[1].Style := psOwnerDraw;
   Gauge.Update;
 end;
 
-procedure THTTPForm.Status2Resize(Sender: TObject);
+procedure THTTPForm.StatusBarMainDrawPanel(StatusBar: TStatusBar;
+  Panel: TStatusPanel; const Rect: TRect);
 begin
-  Gauge.SetBounds(5, 7, Status2.ClientWidth-10, Status2.ClientHeight-14);
+  if Panel = StatusBar.Panels[1] then
+  with Self.Gauge do begin
+    Top := Rect.Top;
+    Left := Rect.Left;
+    Width := Rect.Right - Rect.Left - 15;
+    Height := Rect.Bottom - Rect.Top;
+  end;
 end;
 
-procedure THTTPForm.CheckException(Sender: TObject; E: Exception);
+Procedure THTTPForm.CheckException(Sender: TObject; E: Exception);
 begin
   if E is ESpecialException then
   begin
@@ -1800,7 +1818,6 @@ end;
 procedure THTTPForm.SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
 var
   M : TMemIniFile;
-  sects : TStringList;
   i : Integer;
   LU : TIdURI;
 begin
