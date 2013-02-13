@@ -51,6 +51,11 @@ uses
     XpMan,
     {$endif}
   {$ifend}
+   {$ifdef UseVCLStyles}
+   Vcl.Styles,
+   Vcl.Themes,
+   Vcl.ActnPopup,
+   {$endif}
   idLogfile,
   HtmlGlobals;
 
@@ -62,6 +67,9 @@ const
   wm_DownLoad = wm_User+125;
 
 type
+  {$ifdef UseVCLStyles}
+  TPopupMenu=class(Vcl.ActnPopup.TPopupActionBar);
+  {$endif}
   ImageRec = class(TObject)
     Viewer: ThtmlViewer;
     ID, URL: string;
@@ -227,7 +235,12 @@ type
     TitleViewer: ThtmlViewer;
     Allow: string;
     FIniFilename: string;
+    {$ifdef UseVCLStyles}
+    sepVCLStyles,
+    VCLStyles1 : TMenuItem;
 
+    procedure VCLStyleClick(Sender: TObject);
+    {$endif}
     procedure EnableControls;
     procedure DisableControls;
     procedure ImageRequestDone(Sender: TObject; RqType: THttpRequest; Error: Word);
@@ -288,6 +301,19 @@ uses
   {$ifend}
 {$endif}
 
+{$ifdef UseVCLStyles}
+procedure THTTPForm.VCLStyleClick(Sender: TObject);
+var
+  s : String;
+  m : TMenuItem;
+begin
+  m :=  (Sender as TMenuItem);
+  s := TStyleManager.StyleNames[m.Tag];
+  TStyleManager.SetStyle(s);
+  m.Checked := True;
+end;
+{$endif}
+
 {----------------THTTPForm.FormCreate}
 procedure THTTPForm.FormCreate(Sender: TObject);
 var
@@ -295,6 +321,9 @@ var
   IniFile: TIniFile;
   SL: TStringList;
   ProgressBarStyle : LongInt;
+    {$ifdef UseVCLStyles}
+  m : TMenuItem;
+    {$endif}
 begin
   Top := Top div 2;
   if Screen.Width <= 800 then   {make window fit appropriately}
@@ -322,6 +351,24 @@ begin
     Monitor1 := False;   {probably open in another instance}
   end;
 
+  {$ifdef UseVCLStyles}
+  sepVCLStyles := TMenuItem.Create(Options1);
+  sepVCLStyles.Caption := '-';
+  Options1.Add(sepVCLStyles);
+  VCLStyles1 := TMenuItem.Create(Options1);
+  VCLStyles1.Caption := '&VCL Styles';
+  Options1.Add(VCLStyles1);
+  if   TStyleManager.Enabled then begin
+    for i := Low(TStyleManager.StyleNames) to High(TStyleManager.StyleNames) do begin
+      m := TMenuItem.Create(VCLStyles1);
+      m.Caption := TStyleManager.StyleNames[i];
+      m.Tag := i;
+      m.OnClick := VCLStyleClick;
+      m.RadioItem := True;
+      VCLStyles1.Add(m);
+    end;
+  end;
+  {$endif}
 {$ifdef LogIt}
   if Monitor1 then
   begin
@@ -1415,7 +1462,6 @@ end;
 procedure THTTPForm.HTTPDocData1(Sender: TObject);
 begin
   StatusBarMain.Panels[0].Text := 'Text: ' + IntToStr(Connection.RcvdCount) + ' bytes';
- // StatusBarMain.Panels[0].Update;
   Progress(Connection.RcvdCount, Connection.ContentLength);
 end;
 
@@ -1437,14 +1483,13 @@ begin
   Gauge.Position := Percent;
   Gauge.Max := 100;
   StatusBarMain.Panels.Items[1].Style := psOwnerDraw;
-  Gauge.Update;
 end;
 
 procedure THTTPForm.StatusBarMainDrawPanel(StatusBar: TStatusBar;
   Panel: TStatusPanel; const Rect: TRect);
 begin
   if Panel = StatusBar.Panels[1] then
-  with Self.Gauge do begin
+  with Gauge do begin
     Top := Rect.Top;
     Left := Rect.Left;
     Width := Rect.Right - Rect.Left - 15;
