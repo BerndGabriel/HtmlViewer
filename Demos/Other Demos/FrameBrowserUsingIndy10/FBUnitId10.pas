@@ -42,7 +42,7 @@ uses
 {$endif UseOldPreviewForm}
   DownLoadId, IniFiles,
   Readhtml, urlconId10, FramBrwz, FramView, MPlayer, IdBaseComponent,
-  IdAntiFreezeBase, IdAntiFreeze, IdGlobal,
+  IdAntiFreezeBase, IdAntiFreeze, IdGlobal, IdGlobalProtocols,
   ImgList, ComCtrls, ToolWin, IdIntercept,
   IdHTTP, IdComponent, IdIOHandler, IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
   IdTCPConnection, IdTCPClient, IdAuthentication,
@@ -1912,6 +1912,7 @@ begin
 
   for i := 0 to AValues.Count - 1 do begin
     s := AValues[i];
+    Fetch(s,'=');
     LC := Fetch(s,'_');
     LA := Fetch(s,'_');
     LCookie := ACookieCollection.CookieCollection.AddServerCookie(s,AURI);
