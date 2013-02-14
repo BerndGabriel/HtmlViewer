@@ -1943,7 +1943,7 @@ begin
             for i := 0 to sects.Count - 1 do begin
               m.ReadSectionValues(sects[i],CookieValues);
               LU.URI := sects[i];
-              ACookieCollection.AddServerCookies(CookieValues,LU);
+              ReadCookieValues(m, LU, CookieValues, ACookieCollection);
              CookieValues.Clear;
             end;
           finally
