@@ -1885,7 +1885,10 @@ begin
                 end else begin
                   LU.Protocol := 'http';
                 end;
-                m.WriteString(LU.URI,IntToStr(i),ACookieCollection[i].ServerCookie );
+                m.WriteString(LU.URI,IntToStr(i),
+                  LocalDateTimeToGMT( ACookieCollection[i].CreatedAt ) + '_' +
+                  LocalDateTimeToGMT( ACookieCollection[i].LastAccessed ) + '_' +
+                  ACookieCollection[i].ServerCookie );
               end;
             end;
           finally
@@ -1895,6 +1898,27 @@ begin
       finally
         m.Free;
       end;
+  end;
+end;
+
+procedure ReadCookieValues(m : TMemIniFile;
+  AURI : TIdURI;
+  AValues : TStrings;
+  ACookieCollection: TIdCookieManager);
+var i : Integer;
+  s, LC, LA : String;
+  LCookie : TIdCookie;
+begin
+
+  for i := 0 to AValues.Count - 1 do begin
+    s := AValues[i];
+    LC := Fetch(s,'_');
+    LA := Fetch(s,'_');
+    LCookie := ACookieCollection.CookieCollection.AddServerCookie(s,AURI);
+    if Assigned(LCookie) then begin
+      LCookie.CreatedAt := GMTToLocalDateTime(LC);
+      LCookie.LastAccessed := GMTToLocalDateTime(LA);
+    end;
   end;
 end;
 
