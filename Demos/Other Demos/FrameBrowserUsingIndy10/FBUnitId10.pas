@@ -1886,8 +1886,8 @@ begin
                   LU.Protocol := 'http';
                 end;
                 m.WriteString(LU.URI,IntToStr(i),
-                  LocalDateTimeToGMT( ACookieCollection[i].CreatedAt ) + '_' +
-                  LocalDateTimeToGMT( ACookieCollection[i].LastAccessed ) + '_' +
+                  LocalDateTimeToGMT( ACookieCollection[i].CreatedAt ) + '|' +
+                  LocalDateTimeToGMT( ACookieCollection[i].LastAccessed ) + '|' +
                   ACookieCollection[i].ServerCookie );
               end;
             end;
@@ -1913,8 +1913,8 @@ begin
   for i := 0 to AValues.Count - 1 do begin
     s := AValues[i];
     Fetch(s,'=');
-    LC := Fetch(s,'_');
-    LA := Fetch(s,'_');
+    LC := Fetch(s,'|');
+    LA := Fetch(s,'|');
     LCookie := ACookieCollection.CookieCollection.AddServerCookie(s,AURI);
     if Assigned(LCookie) then begin
       LCookie.CreatedAt := GMTToLocalDateTime(LC);
