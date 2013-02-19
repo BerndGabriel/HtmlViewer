@@ -139,8 +139,9 @@ type
   private
     FOwnsObjects: Boolean;
   protected
-    constructor Create(OwnsObjects: Boolean = True);
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  public
+    constructor Create(OwnsObjects: Boolean = True);
   end;
 
 //------------------------------------------------------------------------------
