@@ -985,30 +985,71 @@ type
       out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
   end;
 
-  TCellObj = class(TObject)
+  TCellObjBase = class(TObject)
+  protected
+    // BEGIN: this area is copied by move() in AssignTo() - NO string types or any other references like objects allowed!
+    FColSpan: Integer; {column spans for this cell}
+    FRowSpan: Integer; {row spans for this cell}
+    FHzSpace: Integer;
+    FVrSpace: Integer;
+    FSpecWd: TSpecWidth; {Width attribute (percentage or absolute)}
+    FSpecHt: TSpecWidth; {Height as specified}
+    // END: this area is copied by move() in AssignTo()
+    function GetCell: TCellObjCell; virtual; abstract;
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor); virtual; abstract;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer); virtual; abstract;
+  public
+    function Clone(Master: ThtDocument): TCellObjBase; virtual; abstract;
+    procedure AssignTo(Destin: TCellObjBase); virtual;
+    property Cell: TCellObjCell read GetCell;
+    property ColSpan: Integer read FColSpan write FColSpan; {column and row spans for this cell}
+    property RowSpan: Integer read FRowSpan write FRowSpan; {column and row spans for this cell}
+    property HzSpace: Integer read FHzSpace write FHzSpace;
+    property VrSpace: Integer read FVrSpace write FVrSpace;
+    property SpecHt: TSpecWidth read FSpecHt write FSpecHt; {Height as specified}
+// BG, 12.01.2012: not C++-Builder compatible
+//    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
+//    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
+    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Width as specified}
+// BG, 12.01.2012: not C++-Builder compatible
+//    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
+//    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
+  end;
+
+  TDummyCellObj = class(TCellObjBase)
+  {holds one dummy cell of the table}
+  protected
+    function GetCell: TCellObjCell; override;
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor); override;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer); override;
+  public
+    constructor Create(Master: ThtDocument; RSpan: Integer);
+    function Clone(Master: ThtDocument): TCellObjBase; override;
+  end;
+
+  TCellObj = class(TCellObjBase)
   {holds one cell of the table and some other information}
   private
     // BEGIN: this area is copied by move() in CreateCopy() - NO string types allowed!
-    FColSpan, FRowSpan: Integer; {column and row spans for this cell}
     FWd: Integer; {total width (may cover more than one column)}
     FHt: Integer; {total height (may cover more than one row)}
     FVSize: Integer; {Actual vertical size of contents}
-    FSpecWd: TSpecWidth; {Width attribute (percentage or absolute)}
-    FSpecHt: TSpecWidth; {Height as specified}
     FYIndent: Integer; {Vertical indent}
     FVAlign: AlignmentType; {Top, Middle, or Bottom}
     FEmSize, FExSize: Integer;
     FPRec: PtPositionRec; // background image position info
     FPad: TRect;
     FBrd: TRect;
-    FHzSpace, FVrSpace: Integer;
     FHasBorderStyle: Boolean;
     FShowEmptyCells: Boolean;
     // END: this area is copied by move() in CreateCopy()
     FCell: TCellObjCell;
     procedure Initialize(TablePadding: Integer; const BkImageName: ThtString; const APRec: PtPositionRec; Border: Boolean);
-    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor);
-    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+  protected
+    function GetCell: TCellObjCell; override;
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor); override;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer); override;
+  private
 
     // BG, 08.01.2012: Issue 109: C++Builder cannot handle properties that reference record members.
     // - added for legacy support only, will be removed in a near future release.
@@ -1041,8 +1082,10 @@ type
     BreakBefore, BreakAfter, KeepIntact: boolean;
 
     constructor Create(Master: ThtDocument; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
-    constructor CreateCopy(AMasterList: ThtDocument; T: TCellObj);
+    constructor CreateCopy(Master: ThtDocument; T: TCellObj);
     destructor Destroy; override;
+    function Clone(AMasterList: ThtDocument): TCellObjBase; override;
+    procedure AssignTo(Destin: TCellObjBase); override;
 
     property Border: TRect read FBrd write FBrd; //was: BrdTop, BrdRight, BrdBottom, BrdLeft: Integer;
     property BrdBottom: Integer read getBorderBottom write setBorderBottom;
@@ -1050,30 +1093,18 @@ type
     property BrdRight: Integer read getBorderRight write setBorderRight;
     property BrdTop: Integer read getBorderTop write setBorderTop;
     property Cell: TCellObjCell read FCell;
-    property ColSpan: Integer read FColSpan write FColSpan; {column and row spans for this cell}
     property EmSize: Integer read FEmSize write FEmSize;
     property ExSize: Integer read FExSize write FExSize;
     property HasBorderStyle: Boolean read FHasBorderStyle write FHasBorderStyle;
     property Ht: Integer read FHt write FHt; {total height (may cover more than one row)}
-    property HzSpace: Integer read FHzSpace write FHzSpace;
     property Padding: TRect read FPad write FPad; //was: PadTop, PadRight, PadBottom, PadLeft: Integer;
     property PadBottom: Integer read getPaddingBottom write setPaddingBottom;
     property PadLeft: Integer read getPaddingLeft write setPaddingLeft;
     property PadRight: Integer read getPaddingRight write setPaddingRight;
     property PadTop: Integer read getPaddingTop write setPaddingTop;
     property PRec: PtPositionRec read FPRec write FPRec;
-    property RowSpan: Integer read FRowSpan write FRowSpan; {column and row spans for this cell}
     property ShowEmptyCells: Boolean read FShowEmptyCells write FShowEmptyCells;
-    property SpecHt: TSpecWidth read FSpecHt write FSpecHt; {Height as specified}
-// BG, 12.01.2012: not C++-Builder compatible
-//    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
-//    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
-    property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Width as specified}
-// BG, 12.01.2012: not C++-Builder compatible
-//    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
-//    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
     property VAlign: AlignmentType read FVAlign write FVAlign; {Top, Middle, or Bottom}
-    property VrSpace: Integer read FVrSpace write FVrSpace;
     property VSize: Integer read FVSize write FVSize; {Actual vertical size of contents}
     property Wd: Integer read FWd write FWd; {total width (may cover more than one column)}
     property YIndent: Integer read FYIndent write FYIndent; {Vertical indent}
@@ -1082,7 +1113,7 @@ type
   TCellList = class(TFreeList)
   {holds one row of the html table, a list of TCellObj}
   private
-    function getCellObj(Index: Integer): TCellObj;
+    function GetCellObj(Index: Integer): TCellObjBase;
   public
     RowHeight: Integer;
     SpecRowHeight: TSpecWidth;
@@ -1103,8 +1134,8 @@ type
     procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
     function Draw(Canvas: TCanvas; MasterList: ThtDocument; const ARect: TRect; const Widths: IntArray;
       X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
-    procedure Add(CellObj: TCellObj);
-    property Items[Index: Integer]: TCellObj read getCellObj; default;
+    procedure Add(CellObjBase: TCellObjBase);
+    property Items[Index: Integer]: TCellObjBase read GetCellObj; default;
   end;
 
   // BG, 26.12.2011:
@@ -8345,7 +8376,81 @@ begin
     Result := 99999999;
 end;
 
-{----------------TCellObj.Create}
+{ TCellObjBase }
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+procedure TCellObjBase.AssignTo(Destin: TCellObjBase);
+begin
+  Move(FColSpan, Destin.FColSpan, PtrSub(@FSpecHt, @FColSpan) + sizeof(FSpecHt) );
+end;
+
+{ TDummyCellObj }
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+function TDummyCellObj.Clone(Master: ThtDocument): TCellObjBase;
+begin
+  Result := TDummyCellObj.Create(Master, RowSpan);
+  AssignTo(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+constructor TDummyCellObj.Create(Master: ThtDocument; RSpan: Integer);
+begin
+  inherited Create;
+  FColSpan := 0;
+  FRowSpan := RSpan;
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+procedure TDummyCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light,
+  Dark: TColor);
+begin
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+procedure TDummyCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+begin
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+function TDummyCellObj.GetCell: TCellObjCell;
+begin
+  Result := nil;
+end;
+
+{ TCellObj }
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+procedure TCellObj.AssignTo(Destin: TCellObjBase);
+var
+  CellObj: TCellObj absolute Destin;
+begin
+  inherited;
+  if Destin is TCellObj then
+  begin
+    Move(FWd, CellObj.FWd, PtrSub(@FCell, @FWd));
+
+    if CellObj.Cell.MasterList.PrintTableBackground then
+    begin
+      CellObj.Cell.BkGnd := Cell.BkGnd;
+      CellObj.Cell.BkColor := Cell.BkColor;
+      if Assigned(BGImage) then
+        BGImage := TImageObj.CreateCopy(CellObj.Cell.MasterList, BGImage);
+    end
+    else
+      CellObj.Cell.BkGnd := False;
+    CellObj.MargArrayO := MargArrayO;
+    CellObj.MargArray := MargArray;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+function TCellObj.Clone(AMasterList: ThtDocument): TCellObjBase;
+begin
+  Result := TCellObj.CreateCopy(AMasterList, Self);
+end;
 
 constructor TCellObj.Create(Master: ThtDocument; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
 {Note: on entry Attr and Prop may be Nil when dummy cells are being created}
@@ -8466,23 +8571,12 @@ begin
  {$endif}
 end;
 
-constructor TCellObj.CreateCopy(AMasterList: ThtDocument; T: TCellObj);
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+constructor TCellObj.CreateCopy(Master: ThtDocument; T: TCellObj);
 begin
-  inherited create;
-  FCell := TCellObjCell.CreateCopy(AMasterList, T.Cell);
-  Move(T.ColSpan, FColSpan, PtrSub(@Cell, @FColSpan));
-
-  if Cell.MasterList.PrintTableBackground then
-  begin
-    Cell.BkGnd := T.Cell.BkGnd;
-    Cell.BkColor := T.Cell.BkColor;
-  end
-  else
-    Cell.BkGnd := False;
-  if Assigned(T.BGImage) and Cell.MasterList.PrintTableBackground then
-    BGImage := TImageObj.CreateCopy(AMasterList, T.BGImage);
-  MargArrayO := T.MargArrayO;
-  MargArray := T.MargArray;
+  inherited Create;
+  FCell := TCellObjCell.CreateCopy(Master, T.Cell);
+  T.AssignTo(Self);
 end;
 
 destructor TCellObj.Destroy;
@@ -8517,6 +8611,12 @@ end;
 function TCellObj.getBorderTop: Integer;
 begin
   Result := FBrd.Top;
+end;
+
+//-- BG ---------------------------------------------------------- 19.02.2013 --
+function TCellObj.GetCell: TCellObjCell;
+begin
+  Result := FCell;
 end;
 
 //-- BG ---------------------------------------------------------- 08.01.2012 --
@@ -8914,16 +9014,18 @@ begin
   KeepIntact := T.KeepIntact;
   RowType := T.Rowtype;
   for I := 0 to T.Count - 1 do
-    if Assigned(T.Items[I]) then
-      Add(TCellObj.CreateCopy(AMasterList, T.Items[I]))
+    if Assigned(T[I]) then
+      Add(T[I].Clone(AMasterList))
     else
       Add(nil);
 end;
 
-procedure TCellList.Add(CellObj: TCellObj);
+procedure TCellList.Add(CellObjBase: TCellObjBase);
+var
+  CellObj: TCellObj absolute CellObjBase;
 begin
-  inherited Add(CellObj);
-  if Assigned(CellObj) then
+  inherited Add(CellObjBase);
+  if CellObjBase is TCellObj then
   begin
     BreakBefore := BreakBefore or CellObj.BreakBefore;
     BreakAfter := BreakAfter or CellObj.BreakAfter;
@@ -8978,12 +9080,13 @@ var
 begin
   if BkGnd then
     for I := 0 to Count - 1 do
-      with Items[I].Cell do
-        if not BkGnd then
-        begin
-          BkGnd := True;
-          BkColor := Self.BkColor;
-        end;
+      if Items[I] is TCellObj then
+        with TCellObj(Items[I]).Cell do
+          if not BkGnd then
+          begin
+            BkGnd := True;
+            BkColor := Self.BkColor;
+          end;
 end;
 
 {----------------TCellList.DrawLogic1}
@@ -8997,7 +9100,6 @@ function TCellList.DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span,
 var
   I, Dummy: Integer;
   DummyCurs, GuessHt: Integer;
-  CellObj: TCellObj;
 begin
   Result := 0;
   Desired := 0;
@@ -9006,9 +9108,8 @@ begin
   More := False;
   for I := 0 to Count - 1 do
   begin
-    CellObj := TCellObj(Items[I]);
-    if Assigned(CellObj) then
-      with CellObj do
+    if Items[I] is TCellObj then
+      with TCellObj(Items[I]) do
         if ColSpan > 0 then {skip the dummy cells}
         begin
           Wd := Sum(Widths, I, I + ColSpan - 1); {accumulate column widths}
@@ -9059,7 +9160,7 @@ procedure TCellList.DrawLogic2(Canvas: TCanvas; Y: Integer;
 {Calc Y indents. Set up Y positions of all cells.}
 var
   I: Integer;
-  CellObj: TCellObj;
+  CellObj: TCellObjBase;
 begin
    {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
@@ -9070,8 +9171,8 @@ begin
    {$ENDIF}
   for I := 0 to Count - 1 do
   begin
-    CellObj := TCellObj(Items[I]);
-    if Assigned(CellObj) then
+    CellObj := Items[I];
+    if (CellObj <> nil) and (CellObj.ColSpan > 0) and (CellObj.RowSpan > 0) then
       CellObj.DrawLogic2(Canvas, Y, CellSpacing, Curs);
   end;
    {$IFDEF JPM_DEBUGGING}
@@ -9081,9 +9182,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
-function TCellList.getCellObj(Index: Integer): TCellObj;
+function TCellList.GetCellObj(Index: Integer): TCellObjBase;
 begin
-  Result := TCellObj(inherited Items[Index]);
+  Result := inherited Items[Index];
 end;
 
 {----------------TCellList.Draw}
@@ -9093,7 +9194,7 @@ function TCellList.Draw(Canvas: TCanvas; MasterList: ThtDocument; const ARect: T
 var
   I, Spacing: Integer;
   YO: Integer;
-  CellObj: TCellObj;
+  CellObj: TCellObjBase;
 begin
   YO := Y - YOffset;
   Result := RowHeight + Y;
@@ -9354,23 +9455,22 @@ end;
 
 procedure THtmlTable.Initialize;
 
-  function DummyCell(RSpan: Integer): TCellObj;
+  function DummyCell(RSpan: Integer): TCellObjBase;
   begin
-    Result := TCellObj.Create(Document, ATop, nil, nil);
-    Result.ColSpan := 0;
-    Result.RowSpan := RSpan;
-    if BkGnd then {transfer bgcolor to cell if no Table image}
-    begin
-      Result.Cell.BkGnd := True;
-      Result.Cell.BkColor := BkColor;
-    end;
+    Result := TDummyCellObj.Create(Document, RSpan);
+//    if BkGnd then {transfer bgcolor to cell if no Table image}
+//    begin
+//      Result.Cell.BkGnd := True;
+//      Result.Cell.BkColor := BkColor;
+//    end;
   end;
 
   procedure AddDummyCellsForColSpansAndInitializeCells;
   var
     Cl, Rw, RowCount, K: Integer;
     Row: TCellList;
-    CellObj: TCellObj;
+    CellObjBase: TCellObjBase;
+    CellObj: TCellObj absolute CellObjBase;
   begin
     {initialize cells and put dummy cells in rows to make up for ColSpan > 1}
     NumCols := 0;
@@ -9381,7 +9481,7 @@ procedure THtmlTable.Initialize;
       Row.Initialize;
       for Cl := Row.Count - 1 downto 0 do
       begin
-        CellObj := Row[Cl];
+        CellObjBase := Row[Cl];
         CellObj.Initialize(CellPadding, Row.BkImage, Row.APRec, Self.BorderWidth > 0);
         if BkGnd and not CellObj.Cell.BkGnd then {transfer bgcolor to cells if no Table image}
         begin
@@ -9404,7 +9504,7 @@ procedure THtmlTable.Initialize;
   var
     Cl, Rw, RowCount, K: Integer;
     Row: TCellList;
-    CellObj: TCellObj;
+    CellObj: TCellObjBase;
   begin
     RowCount := Rows.Count;
     for Cl := 0 to NumCols - 1 do
@@ -9436,7 +9536,7 @@ procedure THtmlTable.Initialize;
   procedure AddDummyCellsForUnequalRowLengths;
   var
     Cl: Integer;
-    CellObj: TCellObj;
+    CellObj: TCellObjBase;
     Row: TCellList;
 
     function IsLastCellOfRow(): Boolean;
@@ -9492,7 +9592,7 @@ procedure THtmlTable.Initialize;
 var
   Cl, Rw, MaxColSpan, MaxRowSpan: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
+  CellObj: TCellObjBase;
 begin
   if not Initialized then
   begin
@@ -9782,7 +9882,7 @@ var
   //
   I, J, K, Span, EndIndex: Integer;
   Cells: TCellList;
-  CellObj: TCellObj;
+  CellObj: TCellObjBase;
   MaxSpans: IntArray;
   MaxSpan: Integer;
   MultiCount: Integer;
@@ -10395,7 +10495,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
         RowSpanHeight := 0;
         Inc(Result, RowHeight);
         for I := 0 to Count - 1 do
-          if Assigned(Items[I]) then
+          if Items[I] is TCellOBJ then
           begin
             CellObj := TCellObj(Items[I]);
             with CellObj do
@@ -10761,9 +10861,9 @@ function THtmlTable.GetURL(Canvas: TCanvas; X, Y: Integer;
       XX := DrawX;
       for I := 0 to Row.Count - 1 do
       begin
-        CellObj := Row[I];
-        if CellObj <> nil then
+        if Row[I] is TCellObj then
         begin
+          CellObj := TCellObj(Row[I]);
           if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
           begin
             Result := CellObj.Cell.GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
@@ -10801,9 +10901,9 @@ function THtmlTable.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Inte
       XX := DrawX;
       for I := 0 to Row.Count - 1 do
       begin
-        CellObj := Row[I];
-        if CellObj <> nil then
+        if Row[I] is TCellObj then
         begin
+          CellObj := TCellObj(Row[I]);
           if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
           begin
             Result := CellObj.Cell.PtInObject(X, Y, Obj, IX, IY);
@@ -10841,9 +10941,9 @@ function THtmlTable.FindCursor(Canvas: TCanvas; X, Y: Integer;
       XX := DrawX;
       for I := 0 to Row.Count - 1 do
       begin
-        CellObj := Row[I];
-        if CellObj <> nil then
+        if Row[I] is TCellObj then
         begin
+          CellObj := TCellObj(Row[I]);
           if (X >= XX) and (X < XX + CellObj.Wd) and (Y >= CellObj.Cell.DrawYY) and (Y < CellObj.Cell.DrawYY + CellObj.Ht) then
           begin
             Result := CellObj.Cell.FindCursor(Canvas, X, Y, XR, YR, CaretHt, InText);
@@ -10871,7 +10971,6 @@ function THtmlTable.CursorToXY(Canvas: TCanvas; Cursor: Integer; out X, Y: Integ
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   if (len > 0) and (Cursor >= StartCurs) and (Cursor < StartCurs + Len) then
     for J := 0 to Rows.Count - 1 do
@@ -10879,10 +10978,9 @@ begin
       Row := Rows[J];
       for I := 0 to Row.Count - 1 do
       begin
-        CellObj := Row[I];
-        if CellObj <> nil then
+        if Row[I] is TCellObj then
         begin
-          Result := CellObj.Cell.CursorToXy(Canvas, Cursor, X, Y);
+          Result := TCellObj(Row[I]).Cell.CursorToXy(Canvas, Cursor, X, Y);
           if Result then
             Exit;
         end;
@@ -10898,7 +10996,6 @@ function THtmlTable.GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TObject)
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   Obj := nil;
   if (len > 0) and (Pos >= StartCurs) and (Pos < StartCurs + Len) then
@@ -10907,10 +11004,9 @@ begin
       Row := Rows[J];
       for I := 0 to Row.Count - 1 do
       begin
-        CellObj := Row[I];
-        if CellObj <> nil then
+        if Row[I] is TCellObj then
         begin
-          Result := CellObj.Cell.GetChAtPos(Pos, Ch, Obj);
+          Result := TCellObj(Row[I]).Cell.GetChAtPos(Pos, Ch, Obj);
           if Result then
             Exit;
         end;
@@ -10926,17 +11022,15 @@ function THtmlTable.FindString(From: Integer; const ToFind: WideString; MatchCas
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   for J := 0 to Rows.Count - 1 do
   begin
     Row := Rows[J];
     for I := 0 to Row.Count - 1 do
     begin
-      CellObj := Row[I];
-      if CellObj <> nil then
+      if Row[I] is TCellObj then
       begin
-        Result := CellObj.Cell.FindString(From, ToFind, MatchCase);
+        Result := TCellObj(Row[I]).Cell.FindString(From, ToFind, MatchCase);
         if Result >= 0 then
           Exit;
       end;
@@ -10951,17 +11045,15 @@ function THtmlTable.FindStringR(From: Integer; const ToFind: WideString; MatchCa
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   for J := Rows.Count - 1 downto 0 do
   begin
     Row := Rows[J];
     for I := Row.Count - 1 downto 0 do
     begin
-      CellObj := Row[I];
-      if CellObj <> nil then
+      if Row[I] is TCellObj then
       begin
-        Result := CellObj.Cell.FindStringR(From, ToFind, MatchCase);
+        Result := TCellObj(Row[I]).Cell.FindStringR(From, ToFind, MatchCase);
         if Result >= 0 then
           Exit;
       end;
@@ -10976,17 +11068,15 @@ function THtmlTable.FindSourcePos(DocPos: Integer): Integer;
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   for J := 0 to Rows.Count - 1 do
   begin
     Row := Rows[J];
     for I := 0 to Row.Count - 1 do
     begin
-      CellObj := Row[I];
-      if CellObj <> nil then
+      if Row[I] is TCellObj then
       begin
-        Result := CellObj.Cell.FindSourcePos(DocPos);
+        Result := TCellObj(Row[I]).Cell.FindSourcePos(DocPos);
         if Result >= 0 then
           Exit;
       end;
@@ -11001,7 +11091,6 @@ function THtmlTable.FindDocPos(SourcePos: Integer; Prev: boolean): Integer;
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   if not Prev then
     for J := 0 to Rows.Count - 1 do
@@ -11010,10 +11099,9 @@ begin
       if Row <> nil then
         for I := 0 to Row.Count - 1 do
         begin
-          CellObj := Row[I];
-          if CellObj <> nil then
+          if Row[I] is TCellObj then
           begin
-            Result := CellObj.Cell.FindDocPos(SourcePos, Prev);
+            Result := TCellObj(Row[I]).Cell.FindDocPos(SourcePos, Prev);
             if Result >= 0 then
               Exit;
           end;
@@ -11026,10 +11114,9 @@ begin
       if Row <> nil then
         for I := Row.Count - 1 downto 0 do
         begin
-          CellObj := Row[I];
-          if CellObj <> nil then
+          if Row[I] is TCellObj then
           begin
-            Result := CellObj.Cell.FindDocPos(SourcePos, Prev);
+            Result := TCellObj(Row[I]).Cell.FindDocPos(SourcePos, Prev);
             if Result >= 0 then
               Exit;
           end;
@@ -11044,17 +11131,13 @@ procedure THtmlTable.CopyToClipboard;
 var
   I, J: Integer;
   Row: TCellList;
-  CellObj: TCellObj;
 begin
   for J := 0 to Rows.Count - 1 do
   begin
     Row := Rows[J];
     for I := 0 to Row.Count - 1 do
-    begin
-      CellObj := Row[I];
-      if CellObj <> nil then
-        CellObj.Cell.CopyToClipboard;
-    end;
+      if Row[I] is TCellObj then
+        TCellObj(Row[I]).Cell.CopyToClipboard;
   end;
 end;
 
