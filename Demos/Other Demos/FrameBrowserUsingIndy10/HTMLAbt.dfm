@@ -4,56 +4,54 @@ object AboutBox: TAboutBox
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'About'
-  ClientHeight = 261
-  ClientWidth = 383
+  ClientHeight = 234
+  ClientWidth = 338
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -16
+  Font.Height = -13
   Font.Name = 'System'
   Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
-  PixelsPerInch = 120
-  TextHeight = 20
+  DesignSize = (
+    338
+    234)
+  PixelsPerInch = 96
+  TextHeight = 16
   object BitBtn1: TBitBtn
-    Left = 143
-    Top = 213
-    Width = 96
-    Height = 37
-    Margins.Left = 4
-    Margins.Top = 4
-    Margins.Right = 4
-    Margins.Bottom = 4
+    Left = 130
+    Top = 195
+    Width = 77
+    Height = 30
+    Anchors = [akRight, akBottom]
     Kind = bkOK
     NumGlyphs = 2
     TabOrder = 0
+    ExplicitTop = 233
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 383
-    Height = 201
-    Margins.Left = 4
-    Margins.Top = 4
-    Margins.Right = 4
-    Margins.Bottom = 4
+    Width = 338
+    Height = 186
     Align = alTop
+    Anchors = [akLeft, akTop, akRight, akBottom]
     BevelInner = bvLowered
     BevelOuter = bvNone
     Caption = 'Panel1'
     TabOrder = 1
+    ExplicitWidth = 495
+    ExplicitHeight = 253
     object Viewer: THtmlViewer
       Left = 1
       Top = 1
-      Width = 381
-      Height = 199
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
+      Width = 336
+      Height = 184
+      Enabled = False
+      TabOrder = 0
+      Align = alClient
       BorderStyle = htSingle
-      CharSet = DEFAULT_CHARSET
       DefFontName = 'Times New Roman'
       DefPreFontName = 'Courier New'
       HistoryMaxCount = 0
@@ -67,9 +65,8 @@ object AboutBox: TAboutBox
       QuirksMode = qmDetect
       ScrollBars = ssNone
       ViewImages = False
-      Align = alClient
-      Enabled = False
-      TabOrder = 0
+      ExplicitWidth = 493
+      ExplicitHeight = 251
     end
   end
 end

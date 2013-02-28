@@ -1,7 +1,8 @@
 unit ProxyDlg;
 
 interface
-
+{$include htmlcons.inc}
+{$include options.inc}
 uses
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, Buttons;
