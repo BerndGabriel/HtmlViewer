@@ -230,7 +230,7 @@ var
 implementation
 
 uses
-  {$ifdef LogIt}LogWin, {$endif} htmlun2, FBUnitId10;
+  {$ifdef LogIt}LogWin, {$endif} htmlun2, FBUnitId10, IdURI;
 
 constructor TURLConnection.Create;
 begin
@@ -462,7 +462,7 @@ begin
 {$endif}
 
   try
-    HTTP.Get(Url, FInputStream);
+    HTTP.Get(  TIdURI.URLEncode( Url ), FInputStream);
   Finally
     GetPostFinal;
   end;
@@ -480,7 +480,7 @@ begin
 {$endif}
 
   try
-    HTTP.Post(URL, SendStream, FInputStream);
+    HTTP.Post(TIdURI.URLEncode( Url ), SendStream, FInputStream);
   finally
     GetPostFinal;
   end;

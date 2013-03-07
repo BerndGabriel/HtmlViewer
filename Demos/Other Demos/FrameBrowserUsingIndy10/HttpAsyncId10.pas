@@ -37,6 +37,7 @@ type
   end;
 
 implementation
+uses IdURI;
 
 { Important: Methods and properties of objects in VCL can only be used in a
   method called using Synchronize, for example,
@@ -95,7 +96,9 @@ begin
 {$endif}
 
   try
-    HTTP.Get(Url, Stream);
+    //URI's should be encoded as the pathes might contain spaces.
+    //Verified at http://www.easyjet.com/en
+    HTTP.Get( TIdURI.URLEncode( Url ), Stream);
     if Terminated then
       OnTerminate := Nil;
   except
