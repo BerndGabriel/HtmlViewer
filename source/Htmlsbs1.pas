@@ -659,6 +659,7 @@ end;
 
 destructor TTextAreaFormControlObj.Destroy;
 begin
+  FControl.Free;
   inherited Destroy;
 end;
 
