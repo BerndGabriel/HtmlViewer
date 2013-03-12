@@ -735,7 +735,9 @@ end;
 function htLowerCase(Str: ThtString): ThtString;
 begin
   {$ifdef UNICODE}
-    Result := LowerCase(Str);
+    // LowerCase() converts 7bit chars only while AnsiLowerCase() converts UnicodeStrings correctly.
+    // Actually it does the same as we do in the $else part except for Linux.
+    Result := AnsiLowerCase(Str);
   {$else}
     Result := Str;
     if Length(Result) > 0 then
@@ -782,7 +784,9 @@ end;
 function htUpperCase(Str: ThtString): ThtString;
 begin
   {$ifdef UNICODE}
-    Result := UpperCase(Str);
+    // UpperCase() converts 7bit chars only while AnsiUpperCase() converts UnicodeStrings correctly.
+    // Actually it does the same as we do in the $else part except for Linux.
+    Result := AnsiUpperCase(Str);
   {$else}
     Result := Str;
     if Length(Result) > 0 then
