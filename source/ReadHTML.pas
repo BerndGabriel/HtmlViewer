@@ -2770,7 +2770,8 @@ procedure THtmlParser.DoCommonSy;
                       PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                     Section.ChangeFont(PropStack.Last);
                   end;
-
+                AbbrEndSy, AccronymEndSy,
+                DfnEndSy,
                 MarkEndSy, TimeEndSy, BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy,
                 CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy, SpanEndSy,
                 SubEndSy, SupEndSy, BigEndSy, SmallEndSy, LabelEndSy:
@@ -3100,6 +3101,8 @@ begin
         Next;
       end;
 
+    AbbrEndSy, AccronymEndSy,
+    DfnEndSy,
     MarkEndSy, TimeEndSy, BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy,
     CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy, SubEndSy, SupEndSy, SmallEndSy, BigEndSy,
     CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy,
@@ -3288,7 +3291,7 @@ begin
 
   while not (Sy in Termset) and
     (Sy in [StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
-      AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+      AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy,
       DfnSy, DfnEndSy,
       EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
@@ -3391,7 +3394,7 @@ begin
   Next;
   while true do {handle second part like after a <p>}
     case Sy of
-      AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+      AbbrSy,  AbbrEndSy, AccronymSy, AccronymEndSy,
       DfnSy, DfnEndSy,
       StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
       EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
@@ -3524,7 +3527,7 @@ begin
       DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
-      AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+      AbbrSy, AbbrEndSy, AccronymSy,  AccronymEndSy,
       DfnSy, DfnEndSy,
       StringSy, BRSy, HRSy, TableSy,
       MarkSy, MarkEndSy, TimeSy, TimeEndSy,
@@ -3799,7 +3802,7 @@ begin
         BRSy, HRSy,
         //NameSy, HRefSy,
         ASy, AEndSy,
-        AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+        AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy,
         DfnSy, DfnEndSy,
         MarkSy, MarkEndSy, TimeSy, TimeEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
@@ -4811,7 +4814,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..98] of TResWord = (
+  ElementDefinitions: array[1..99] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4833,6 +4836,7 @@ const
     (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrEndSy),
     //ACRONYM not supported in HTML5
     (Name: 'ACRONYM';     Symbol: AccronymSy;   EndSym: AccronymEndSy),
+    (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),
     //
     (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
     (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
