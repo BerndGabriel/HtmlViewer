@@ -501,7 +501,7 @@ type
     constructor Create(AMasterList: ThtDocument; L: TAttributeList; Prop: TProperties; AnURL: TUrlTarget; OwnerCell: TCellBasic; FirstItem: boolean);
     constructor CreateCopy(AMasterList: ThtDocument; T: TSectionBase); override;
     destructor Destroy; override;
-    function AddFormControl(Which: Symb; AMasterList: ThtDocument; L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TFormControlObj;
+    function AddFormControl(Which: TElemSymb; AMasterList: ThtDocument; L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TFormControlObj;
     function AddImage(L: TAttributeList; ACell: TCellBasic; Index: Integer): TImageObj;
     function AddPanel(L: TAttributeList; ACell: TCellBasic; Index: Integer): TPanelObj;
     function CreatePanel(L: TAttributeList; ACell: TCellBasic): TPanelObj;
@@ -529,7 +529,7 @@ type
     procedure CheckFree;
     procedure CopyToClipboard; override;
     procedure Finish;
-    procedure HRef(Sy: Symb; List: ThtDocument; AnURL: TUrlTarget; Attributes: TAttributeList; Prop: TProperties);
+    procedure HRef(IsHRef: Boolean; List: ThtDocument; AnURL: TUrlTarget; Attributes: TAttributeList; Prop: TProperties);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     procedure ProcessText(TagIndex: Integer); virtual;
   end;
@@ -925,7 +925,7 @@ type
     procedure SetListFont(const Value: TFont);
   public
     constructor Create(Master: ThtDocument; Prop: TProperties; AnOwnerCell: TCellBasic;
-      Sy: Symb; APlain: boolean; AIndexType: ThtChar;
+      Sy: TElemSymb; APlain: boolean; AIndexType: ThtChar;
       AListNumb, ListLevel: Integer; Attributes: TAttributeList);
     constructor CreateCopy(AMasterList: ThtDocument; T: TSectionBase); override;
     destructor Destroy; override;
@@ -7039,7 +7039,7 @@ end;
 {----------------TBlockLI.Create}
 
 constructor TBlockLI.Create(Master: ThtDocument; Prop: TProperties; AnOwnerCell: TCellBasic;
-  Sy: Symb; APlain: boolean; AIndexType: ThtChar; AListNumb,
+  Sy: TElemSymb; APlain: boolean; AIndexType: ThtChar; AListNumb,
   ListLevel: Integer; Attributes: TAttributeList);
 var
   Tmp: ListBulletType;
@@ -9362,7 +9362,7 @@ begin
   for I := 0 to Attr.Count - 1 do
     with Attr[I] do
       case Which of
-        FrameSy:
+        FrameAttrSy:
           TryStrToTableFrame(Name, Frame);
 
         RulesSy:
@@ -11571,7 +11571,7 @@ end;
 
 {----------------------TSection.HRef}
 
-procedure TSection.HRef(Sy: Symb; List: ThtDocument; AnURL: TUrlTarget;
+procedure TSection.HRef(IsHRef: Boolean; List: ThtDocument; AnURL: TUrlTarget;
   Attributes: TAttributeList; Prop: TProperties);
 var
   FO: TFontObj;
@@ -11588,7 +11588,7 @@ begin
     Fonts.Add(FO);
   end;
 
-  if Sy = HRefSy then
+  if IsHRef then
   begin
     FO.CreateFIArray;
     Prop.GetFontInfo(FO.FIArray);
@@ -11644,7 +11644,7 @@ end;
 
 {----------------TSection.AddFormControl}
 
-function TSection.AddFormControl(Which: Symb; AMasterList: ThtDocument;
+function TSection.AddFormControl(Which: TElemSymb; AMasterList: ThtDocument;
   L: TAttributeList; ACell: TCellBasic; Index: Integer;
   Prop: TProperties): TFormControlObj;
 var

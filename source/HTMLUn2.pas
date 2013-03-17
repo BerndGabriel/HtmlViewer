@@ -81,55 +81,189 @@ type
   JustifyType = (NoJustify, Left, Centered, Right, FullJustify);
   TRowType = (THead, TBody, TFoot);
 
-  Symb = (
-    HtmlSy, TitleSy, BodySy, HeadSy, PSy, PEndSy, BSy, BEndSy, ISy, IEndSy,
-    HtmlEndSy, TitleEndSy, BodyEndSy, HeadEndSy, BRSy, HeadingSy, HeadingEndSy,
-    EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, HRSy,
-    DelSy, DelEndSy, InsSy, InsEndSy,
-    CiteSy, VarSy, CiteEndSy, VarEndSy, BaseSy,
-       {Keep order}
-    TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
-       {end order}
-    OLSy, OLEndSy, LISy, LIEndSy, ULSy, ULEndSy, DirSy, DirEndSy, MenuSy, MenuEndSy,
-    DLSy, DLEndSy, DDSy, DDEndSy, DTSy, DTEndSy, AddressSy, AddressEndSy,
-    BlockQuoteSy, BlockQuoteEndSy, PreSy, PreEndSy, ImageSy, Centersy, CenterEndSy,
-    OtherAttribute, ASy, AEndSy, HrefSy, NameSy, SrcSy, AltSy, AlignSy,
-    OtherChar, OtherSy, CommandSy, TextSy, EofSy, LinkSy, BGColorSy,
-    BackgroundSy, TableSy, TableEndSy, TDSy, TDEndSy, TRSy, TREndSy, THSy, THEndSy,
-    ColSpanSy, RowSpanSy, BorderSy, CellPaddingSy, CellSpacingSy, VAlignSy,
-    WidthSy, CaptionSy, CaptionEndSy, StartSy, ButtonSy, InputSy, ValueSy,
-    TypeSy, CheckBoxSy, RadioSy, FieldsetSy, FieldsetEndSy, LegendSy, LegendEndSy,
-    FormSy, FormEndSy, MethodSy, ActionSy,
-    CheckedSy, SizeSy, MaxLengthSy, TextAreaSy, TextAreaEndSy, ColsSy,
-    RowsSy, SelectSy, SelectEndSy, OptionSy, OptionEndSy, SelectedSy,
-    MultipleSy, FontSy, FontEndSy, ColorSy, FaceSy, BaseFontSy,
-    TranspSy, SubSy, SubEndSy, SupSy, SupEndSy, ClearSy, IsMapSy,
-    BigSy, BigEndSy, SmallSy, SmallEndSy, BorderColorSy, MapSy, MapEndSy,
-    AreaSy, ShapeSy, CoordsSy, NoHrefSy, UseMapSy, HeightSy, PlainSy,
-    FrameSetSy, FrameSetEndSy, FrameSy, TargetSy, NoFramesSy, NoFramesEndSy,
-    NoResizeSy, ScrollingSy, PageSy, HSpaceSy, VSpaceSy, ScriptSy, ScriptEndSy,
-    LanguageSy, DivSy, DivEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
-    FrameBorderSy, MarginWidthSy, MarginHeightSy, BgSoundSy, LoopSy,
-    OnClickSy, WrapSy, NoShadeSy, MetaSy, HttpEqSy, ContentSy, EncTypeSy,
-    VLinkSy, OLinkSy, ActiveSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-    ClassSy, IDSy, StyleSy, StyleEndSy, SpanSy, SpanEndSy, liAloneSy,
-    RelSy, RevSy, NoWrapSy, BorderColorLightSy, BorderColorDarkSy,
-    CharSetSy, RatioSy, OnFocusSy, OnBlurSy, OnChangeSy, ColSy, ColGroupSy,
-    ColGroupEndSy, TabIndexSy, BGPropertiesSy, DisabledSy,
-    TopMarginSy, LeftMarginSy, LabelSy, LabelEndSy, THeadSy, TBodySy, TFootSy,
-    THeadEndSy, TBodyEndSy, TFootEndSy, ObjectSy, ObjectEndSy, ParamSy,
-    ReadonlySy, EolSy, MediaSy, RulesSy,
+  TElemSymb = (
+    OtherChar, CommandSy, StringSy {was TextSy}, EolSy, EofSy,
 
-    {HTML5 elements}
-    HeaderSy, HeaderEndSy,
-    SectionSy, SectionEndSy,
-    NavSy, NavEndSy,
-    ArticleSy, ArticleEndSy,
-    AsideSy, AsideEndSy,
-    FooterSy, FooterEndSy,
-    HGroupSy, HGroupEndSy,
-    MarkSy, MarkEndSy,
-    TimeSy, TimeEndSy);
+    HtmlSy,    HeadSy,
+    HtmlEndSy, HeadEndSy,
+
+    FrameSetSy, FrameSetEndSy,
+    FrameSy,
+    NoFramesSy, NoFramesEndSy,
+
+    { metadata elements }
+
+    TitleElemSy, TitleEndSy,
+    BaseSy,
+    LinkElemSy,
+    MetaSy,
+    StyleSy, StyleEndSy,
+    ScriptSy, ScriptEndSy,
+
+    { misc elements }
+
+    BaseFontSy,
+    BgSoundSy,
+
+    HRSy,
+    BRSy,
+
+    ImageSy,
+    PanelSy,
+
+    MapSy, MapEndSy,
+    AreaSy,
+
+    PageSy,
+
+    ObjectSy, ObjectEndSy,
+    ParamSy,
+
+    { inline elements }
+
+    SpanSy,    NoBrSy,
+    SpanEndSy, NoBrEndSy,
+
+    WbrSy,
+
+    FontSy,    BSy,    ISy,    SSy,    StrikeSy,    USy,    SubSy,    SupSy,    BigSy,    SmallSy,    TTSy,
+    FontEndSy, BEndSy, IEndSy, SEndSy, StrikeEndSy, UEndSy, SubEndSy, SupEndSy, BigEndSy, SmallEndSy, TTEndSy,
+
+    EmSy,    StrongSy,    CodeSy,    KbdSy,    SampSy,    DelSy,    InsSy,    CiteSy,    VarSy,    MarkSy,    TimeSy,
+    EmEndSy, StrongEndSy, CodeEndSy, KbdEndSy, SampEndSy, DelEndSy, InsEndSy, CiteEndSy, VarEndSy, MarkEndSy, TimeEndSy,
+
+    ASy,
+    AEndSy,
+
+    { block elements }
+
+    BodySy,    PSy,    DivSy,    CenterSy,
+    BodyEndSy, PEndSy, DivEndSy, CenterEndSy,
+
+    ArticleSy,    SectionSy,    NavSy,    AsideSy,
+    ArticleEndSy, SectionEndSy, NavEndSy, AsideEndSy,
+
+    {Keep order} H1Sy,    H2Sy,    H3Sy,    H4Sy,    H5Sy,    H6Sy,    {end order}
+    {Keep order} H1EndSy, H2EndSy, H3EndSy, H4EndSy, H5EndSy, H6EndSy, {end order}
+
+    HGroupSy,    HeaderSy,    FooterSy,    AddressSy,    BlockQuoteSy,    PreSy,
+    HGroupEndSy, HeaderEndSy, FooterEndSy, AddressEndSy, BlockQuoteEndSy, PreEndSy,
+
+    OLSy,    LISy,    ULSy,    DirSy,    MenuSy,    DLSy,    DDSy,    DTSy,
+    OLEndSy, LIEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, DDEndSy, DTEndSy,
+
+    liAloneSy,
+
+    { table elements }
+
+    TableSy, TableEndSy,
+    ColGroupSy, ColGroupEndSy, ColSy,
+    CaptionSy, CaptionEndSy,
+    THeadSy,    TBodySy,    TFootSy,
+    THeadEndSy, TBodyEndSy, TFootEndSy,
+    TRSy, TREndSy,
+    THSy,    TDSy,
+    THEndSy, TDEndSy,
+
+    { form elements }
+
+    FormSy, FormEndSy,
+    FieldsetSy, FieldsetEndSy,
+    LegendSy, LegendEndSy,
+    LabelSy, LabelEndSy,
+    TextAreaSy,    SelectSy,    OptionSy,    ButtonSy, InputSy,
+    TextAreaEndSy, SelectEndSy, OptionEndSy
+  );
+
+  TAttrSymb = (
+    OtherAttribute,
+    ActionSy,
+    ActiveSy,
+    AlignSy,
+    AltSy,
+    BackgroundSy,
+    BGColorSy,
+    BGPropertiesSy,
+    BorderSy,
+    BorderColorSy,
+    BorderColorDarkSy,
+    BorderColorLightSy,
+    CellPaddingSy,
+    CellSpacingSy,
+    CharSetSy,
+    CheckBoxSy,
+    CheckedSy,
+    ClassSy,
+    ClearSy,
+    ColorSy,
+    ColsSy,
+    ColSpanSy,
+    ContentSy,
+    CoordsSy,
+    DisabledSy,
+    EncTypeSy,
+    FaceSy,
+    FrameAttrSy,
+    FrameBorderSy,
+    HeightSy,
+    HrefSy,
+    HSpaceSy,
+    HttpEqSy,
+    IDSy,
+    IsMapSy,
+    LabelAttrSy,
+    LanguageSy,
+    LeftMarginSy,
+    LinkSy,
+    LoopSy,
+    MarginHeightSy,
+    MarginWidthSy,
+    MaxLengthSy,
+    MediaSy,
+    MethodSy,
+    MultipleSy,
+    NameSy,
+    NoHrefSy,
+    NoResizeSy,
+    NoShadeSy,
+    NoWrapSy,
+    OLinkSy,
+    OnBlurSy,
+    OnChangeSy,
+    OnClickSy,
+    OnFocusSy,
+    PlainSy,
+    RadioSy,
+    RatioSy,
+    ReadonlySy,
+    RelSy,
+    RevSy,
+    RowsSy,
+    RowSpanSy,
+    RulesSy,
+    ScrollingSy,
+    SelectedSy,
+    ShapeSy,
+    SizeSy,
+    SpanAttrSy,
+    SrcSy,
+    StartSy,
+    StyleAttrSy,
+    TabIndexSy,
+    TargetSy,
+    TextSy,
+    TitleSy,
+    TopMarginSy,
+    TranspSy,
+    TypeSy,
+    UseMapSy,
+    VAlignSy,
+    ValueSy,
+    VLinkSy,
+    VSpaceSy,
+    WidthSy,
+    WrapSy);
+
 
 //------------------------------------------------------------------------------
 
@@ -150,14 +284,14 @@ type
 
   TAttribute = class(TObject) {holds a tag attribute}
   public
-    Which: Symb; {symbol of attribute such as HrefSy}
+    Which: TAttrSymb; {symbol of attribute such as HrefSy}
     WhichName: ThtString;
     Value: Integer; {numeric value if appropriate}
     DblValue: Double; {numeric value if appropriate}
     xPercent: boolean; {if value is in percent}
     Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
-    constructor Create(ASym: Symb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
+    constructor Create(ASym: TAttrSymb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
     constructor CreateCopy(ASource: TAttribute);
     property AsString: ThtString read Name;
     property AsInteger: Integer read Value;
@@ -177,7 +311,7 @@ type
     constructor CreateCopy(ASource: TAttributeList);
     destructor Destroy; override;
     procedure Clear; override;
-    function Find(Sy: Symb; out T: TAttribute): boolean; {$ifdef UseInline} inline; {$endif}
+    function Find(Sy: TAttrSymb; out T: TAttribute): Boolean; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
@@ -1374,7 +1508,7 @@ end;
 
 { TAttribute }
 
-constructor TAttribute.Create(ASym: Symb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
+constructor TAttribute.Create(ASym: TAttrSymb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
 begin
   inherited Create;
   Which := ASym;
@@ -1432,7 +1566,7 @@ begin
   inherited;
 end;
 
-function TAttributeList.Find(Sy: Symb; out T: TAttribute): boolean;
+function TAttributeList.Find(Sy: TAttrSymb; out T: TAttribute): Boolean;
 var
   I: Integer;
 begin
@@ -1505,7 +1639,7 @@ function TAttributeList.GetStyle: TProperties;
 var
   T: TAttribute;
 begin
-  if Find(StyleSy, T) then
+  if Find(StyleAttrSy, T) then
   begin
     Prop.Free;
     Prop := TProperties.Create;
@@ -1795,8 +1929,8 @@ var
   Shape: (shRect, shCircle, shPoly, shDefault);
   Area: TMapArea;
 begin
-  if FAreas.Count >= 1000 then
-    Exit;
+//  if FAreas.Count >= 1000 then
+//    Exit;
   Area := TMapArea.Create;
   try
     Shape := shRect;
@@ -4383,4 +4517,5 @@ finalization
   WaitStream.Free;
   ErrorStream.Free;
 end.
+
 
