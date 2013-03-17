@@ -43,12 +43,12 @@ Key Variables:
 
   Sy:
       An enumerated type which indicates what the current token is.  For
-      example, a value of TextSy would indicate a hunk of text, PSy that a <P>
+      example, a value of StringSy would indicate a hunk of text, PSy that a <P>
       tag was encountered, etc.
   LCh:
       The next character in the stream to be analyzed.  In mixed case.
   LCToken:
-      A ThtString which is associated with the current token.  If Sy is TextSy,
+      A ThtString which is associated with the current token.  If Sy is StringSy,
       then LCToken contains the text.
   Attributes:
       A list of TAttribute's for tokens such as <img>, <a>, which have
@@ -2757,6 +2757,8 @@ procedure THtmlParser.DoCommonSy;
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
+                AbbrSy, AccronymSy,
+                DfnSy,
                 MarkSy, TimeSy, BSy, ISy, StrongSy, EmSy, InsSy, DelSy,
                 CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                 SubSy, SupSy, BigSy, SmallSy, LabelSy:
@@ -3082,6 +3084,8 @@ begin
         Next;
       end;
 
+    AbbrSy, AccronymSy,
+    DfnSy,
     MarkSy, TimeSy, BSy, ISy, StrongSy, EmSy, InsSy, DelSy,
     CiteSy, VarSy, USy, SSy, StrikeSy, SubSy, SupSy, BigSy, SmallSy,
     CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
@@ -3149,8 +3153,11 @@ begin
         Done := False;
         while not Done do
           case Sy of
+            AbbrSy, AccronymSy,
+            DfnSy,
             MarkSy, TimeSy, StringSy, BrSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
             EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy,
+
             InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
             CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
             SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3281,7 +3288,9 @@ begin
 
   while not (Sy in Termset) and
     (Sy in [StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
-    EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
+      AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+      DfnSy, DfnEndSy,
+      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
@@ -3382,6 +3391,8 @@ begin
   Next;
   while true do {handle second part like after a <p>}
     case Sy of
+      AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+      DfnSy, DfnEndSy,
       StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
       EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
@@ -3513,6 +3524,8 @@ begin
       DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
+      AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+      DfnSy, DfnEndSy,
       StringSy, BRSy, HRSy, TableSy,
       MarkSy, MarkEndSy, TimeSy, TimeEndSy,
       BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
@@ -3786,6 +3799,8 @@ begin
         BRSy, HRSy,
         //NameSy, HRefSy,
         ASy, AEndSy,
+        AbbrSy, AccronymSy, AbbrEndSy, AccronymEndSy,
+        DfnSy, DfnEndSy,
         MarkSy, MarkEndSy, TimeSy, TimeEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
@@ -4796,7 +4811,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..95] of TResWord = (
+  ElementDefinitions: array[1..98] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
