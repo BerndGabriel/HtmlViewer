@@ -41,13 +41,9 @@ type
 implementation
 
 uses
-  {/$ifndef ver140}
-  {/$ifndef ver150}
   {$ifndef Delphi7_Plus}
   FileCtrl,
   {$endif}
-  {/$endif}
-  {/$endif}
   FBUnitId10, htmlun2, urlsubs;
 
 constructor TDiskCache.Create(const ADirectory: string);
@@ -203,7 +199,7 @@ function TDiskCache.MakeName(S: string): string;
 {S is lower case here}
 var
   I: integer;
-  Ext: string[10];
+  Ext: string;
   GoodExt: boolean;
 begin
   Ext := '';

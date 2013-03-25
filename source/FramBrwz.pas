@@ -272,7 +272,7 @@ begin
         else
           Doc := nil;
         try
-          if (TheStreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc) then
+          if ( (TheStreamType = HTMLType) or (TheStreamType = XHtmlType ) ) and MasterSet.FrameViewer.IsFrame(Doc) then
           begin
             FFrameSet := TbrSubFrameSet.CreateIt(Self, MasterSet);
             FrameSet.Align := alClient;
@@ -703,7 +703,7 @@ begin
   Stream.Position := 0;
   Doc := TBuffer.Create(Stream, Url);
   try
-    if (StreamType = HTMLType) and MasterSet.FrameViewer.IsFrame(Doc) then
+    if ( (StreamType = XHtmlType) or (StreamType = HTMLType) ) and MasterSet.FrameViewer.IsFrame(Doc) then
     begin {it's a Frameset html file}
       MasterSet.FrameViewer.ParseFrame(Self, Doc, Url, HandleMeta);
       for I := 0 to List.Count - 1 do

@@ -135,6 +135,12 @@ type
     ASy,
     AEndSy,
 
+    AbbrSy, AccronymSy,
+    AbbrEndSy, AccronymEndSy,
+
+    DfnSy,
+    DfnEndSy,
+
     { block elements }
 
     BodySy,    PSy,    DivSy,    CenterSy,
@@ -4517,5 +4523,4 @@ finalization
   WaitStream.Free;
   ErrorStream.Free;
 end.
-
 

@@ -1,7 +1,8 @@
 unit PrintStatusForm;
 
 interface
-
+{$include htmlcons.inc}
+{$include options.inc}
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, Buttons, HTMLView, MetaFilePrinter;

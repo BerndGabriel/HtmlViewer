@@ -363,22 +363,22 @@ procedure THtmlParser.GetCh;
   begin
     LCh := ReadChar;
     case LCh of {skip a LfChar after a CrChar or a CrChar after a LfChar}
-      ThtChar(^M): if LastChar = lcLF then
+      CrChar: if LastChar = lcLF then
           LCh := ReadChar;
-      ThtChar(^J): if LastChar = lcCR then
+      LfChar: if LastChar = lcCR then
           LCh := ReadChar;
     end;
     case LCh of
-      ThtChar(^I):
+      TabChar:
         LCh := SpcChar;
 
-      ThtChar(^J):
+      LfChar:
         begin
           LastChar := lcLF;
           LCh := CrChar;
         end;
 
-      ThtChar(^M):
+     CrChar:
         LastChar := lcCR;
     else
       begin
@@ -912,7 +912,7 @@ procedure THtmlParser.Next;
             CrChar:
               begin
                 if WantCrLf then
-                  htAppendStr(S, ^M^J);
+                  htAppendStr(S, CrLf); //^M^J);
                 GetCh;
               end;
 
@@ -1297,7 +1297,7 @@ begin
     case Sy of
       EolSy:
         begin
-          TxtArea.AddStr(S + ^M^J);
+          TxtArea.AddStr(S + CrLf); //^M^J);
           SetLength(S, 0);
         end;
     else
@@ -2757,6 +2757,8 @@ procedure THtmlParser.DoCommonSy;
                 PreEndSy, TDEndSy, THEndSy, TableSy:
                   Done := True;
 
+                AbbrSy, AccronymSy,
+                DfnSy,
                 MarkSy, TimeSy, BSy, ISy, StrongSy, EmSy, InsSy, DelSy,
                 CiteSy, VarSy, USy, SSy, StrikeSy, SpanSy,
                 SubSy, SupSy, BigSy, SmallSy, LabelSy:
@@ -2768,7 +2770,8 @@ procedure THtmlParser.DoCommonSy;
                       PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
                     Section.ChangeFont(PropStack.Last);
                   end;
-
+                AbbrEndSy, AccronymEndSy,
+                DfnEndSy,
                 MarkEndSy, TimeEndSy, BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy,
                 CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy, SpanEndSy,
                 SubEndSy, SupEndSy, BigEndSy, SmallEndSy, LabelEndSy:
@@ -2910,7 +2913,7 @@ procedure THtmlParser.DoCommonSy;
               end;
             end;
 
-          ^M:
+          CrChar:
             begin
               NewSection;
               GetCh;
@@ -3082,6 +3085,8 @@ begin
         Next;
       end;
 
+    AbbrSy, AccronymSy,
+    DfnSy,
     MarkSy, TimeSy, BSy, ISy, StrongSy, EmSy, InsSy, DelSy,
     CiteSy, VarSy, USy, SSy, StrikeSy, SubSy, SupSy, BigSy, SmallSy,
     CodeSy, TTSy, KbdSy, SampSy, SpanSy, LabelSy:
@@ -3096,6 +3101,8 @@ begin
         Next;
       end;
 
+    AbbrEndSy, AccronymEndSy,
+    DfnEndSy,
     MarkEndSy, TimeEndSy, BEndSy, IEndSy, StrongEndSy, EmEndSy, InsEndSy, DelEndSy,
     CiteEndSy, VarEndSy, UEndSy, SEndSy, StrikeEndSy, SubEndSy, SupEndSy, SmallEndSy, BigEndSy,
     CodeEndSy, TTEndSy, KbdEndSy, SampEndSy, SpanEndSy, LabelEndSy,
@@ -3149,8 +3156,11 @@ begin
         Done := False;
         while not Done do
           case Sy of
+            AbbrSy, AccronymSy,
+            DfnSy,
             MarkSy, TimeSy, StringSy, BrSy, NoBrSy, NoBrEndSy, WbrSy, BSy, ISy, BEndSy, IEndSy,
             EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy,
+
             InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
             CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
             SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
@@ -3281,7 +3291,9 @@ begin
 
   while not (Sy in Termset) and
     (Sy in [StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
-    EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
+      AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy,
+      DfnSy, DfnEndSy,
+      EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
@@ -3382,6 +3394,8 @@ begin
   Next;
   while true do {handle second part like after a <p>}
     case Sy of
+      AbbrSy,  AbbrEndSy, AccronymSy, AccronymEndSy,
+      DfnSy, DfnEndSy,
       StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
       EmSy, EmEndSy, StrongSy, StrongEndSy, USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy,
       CiteEndSy, VarSy, VarEndSy, SubSy, SubEndSy, SupSy, SupEndSy,
@@ -3513,6 +3527,8 @@ begin
       DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
+      AbbrSy, AbbrEndSy, AccronymSy,  AccronymEndSy,
+      DfnSy, DfnEndSy,
       StringSy, BRSy, HRSy, TableSy,
       MarkSy, MarkEndSy, TimeSy, TimeEndSy,
       BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
@@ -3786,6 +3802,8 @@ begin
         BRSy, HRSy,
         //NameSy, HRefSy,
         ASy, AEndSy,
+        AbbrSy, AbbrEndSy, AccronymSy, AccronymEndSy,
+        DfnSy, DfnEndSy,
         MarkSy, MarkEndSy, TimeSy, TimeEndSy,
         BSy, ISy, BEndSy, IEndSy, EmSy, EmEndSy, StrongSy, StrongEndSy,
         USy, UEndSy, InsSy, InsEndSy, DelSy, DelEndSy, CiteSy, CiteEndSy, VarSy, VarEndSy,
@@ -4134,8 +4152,11 @@ begin
     Done := False;
     while not Done do
       case LCh of
-        ^M:
-          begin NewSection; GetCh; end;
+          CrChar:
+          begin
+            NewSection;
+            GetCh;
+          end;
         #0: Done := True;
       else
         begin {all other chars}
@@ -4163,20 +4184,20 @@ procedure THtmlParser.ParseText(ASectionList: ThtDocument);
 begin
   FPropStack := ASectionList.PropStack;
   try
-  ParseInit(ASectionList, nil);
-  InScript := True;
+    ParseInit(ASectionList, nil);
+    InScript := True;
 
-  try
-    GetCh; {get the reading started}
-    DoText;
+    try
+      GetCh; {get the reading started}
+      DoText;
 
-  finally
-    Attributes.Free;
-    if Assigned(Section) then
-      SectionList.Add(Section, TagIndex);
-    PropStack.Clear;
-    CurrentUrlTarget.Free;
-  end; {finally}
+    finally
+      Attributes.Free;
+      if Assigned(Section) then
+        SectionList.Add(Section, TagIndex);
+      PropStack.Clear;
+      CurrentUrlTarget.Free;
+    end; {finally}
   finally
     FPropStack := nil;
   end;
@@ -4242,31 +4263,31 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
 begin
   FPropStack := THTMLPropStack.Create;
   try
-  FPropStack.MasterList := nil;
-  CallingObject := FrameViewer;
-  IncludeEvent := FrameViewer.OnInclude;
-  SoundEvent := FrameViewer.OnSoundRequest;
-  MetaEvent := AMetaEvent;
-  LinkEvent := FrameViewer.OnLink;
+    FPropStack.MasterList := nil;
+    CallingObject := FrameViewer;
+    IncludeEvent := FrameViewer.OnInclude;
+    SoundEvent := FrameViewer.OnSoundRequest;
+    MetaEvent := AMetaEvent;
+    LinkEvent := FrameViewer.OnLink;
 
-  FBase := '';
-  FBaseTarget := '';
-  InScript := False;
-  NoBreak := False;
-  InComment := False;
-  ListLevel := 0;
+    FBase := '';
+    FBaseTarget := '';
+    InScript := False;
+    NoBreak := False;
+    InComment := False;
+    ListLevel := 0;
 
-  Attributes := TAttributeList.Create;
-  try
+    Attributes := TAttributeList.Create;
     try
-      Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
+      try
+        Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
+    finally
+      Attributes.Free;
     end;
-  finally
-    Attributes.Free;
-  end;
   finally
     FreeAndNil(FPropStack);
   end;
@@ -4796,7 +4817,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..95] of TResWord = (
+  ElementDefinitions: array[1..99] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4815,6 +4836,10 @@ const
     //
     (Name: 'INS';         Symbol: InsSy;        EndSym: InsEndSy),
     (Name: 'DEL';         Symbol: DelSy;        EndSym: DelEndSy),
+    (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrEndSy),
+    //ACRONYM not supported in HTML5
+    (Name: 'ACRONYM';     Symbol: AccronymSy;   EndSym: AccronymEndSy),
+    (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),
     //
     (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
     (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
@@ -4822,6 +4847,7 @@ const
     (Name: 'CODE';        Symbol: CodeSy;       EndSym: CodeEndSy),
     (Name: 'KBD';         Symbol: KbdSy;        EndSym: KbdEndSy),
     (Name: 'SAMP';        Symbol: SampSy;       EndSym: SampEndSy),
+    (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),
     (Name: 'OL';          Symbol: OLSy;         EndSym: OLEndSy),
     (Name: 'UL';          Symbol: ULSy;         EndSym: ULEndSy),
     (Name: 'DIR';         Symbol: DirSy;        EndSym: DirEndSy),
