@@ -363,22 +363,22 @@ procedure THtmlParser.GetCh;
   begin
     LCh := ReadChar;
     case LCh of {skip a LfChar after a CrChar or a CrChar after a LfChar}
-      ThtChar(^M): if LastChar = lcLF then
+      CrChar: if LastChar = lcLF then
           LCh := ReadChar;
-      ThtChar(^J): if LastChar = lcCR then
+      LfChar: if LastChar = lcCR then
           LCh := ReadChar;
     end;
     case LCh of
-      ThtChar(^I):
+      TabChar:
         LCh := SpcChar;
 
-      ThtChar(^J):
+      LfChar:
         begin
           LastChar := lcLF;
           LCh := CrChar;
         end;
 
-      ThtChar(^M):
+     CrChar:
         LastChar := lcCR;
     else
       begin
@@ -912,7 +912,7 @@ procedure THtmlParser.Next;
             CrChar:
               begin
                 if WantCrLf then
-                  htAppendStr(S, ^M^J);
+                  htAppendStr(S, CrLf); //^M^J);
                 GetCh;
               end;
 
@@ -1297,7 +1297,7 @@ begin
     case Sy of
       EolSy:
         begin
-          TxtArea.AddStr(S + ^M^J);
+          TxtArea.AddStr(S + CrLf); //^M^J);
           SetLength(S, 0);
         end;
     else
@@ -2913,7 +2913,7 @@ procedure THtmlParser.DoCommonSy;
               end;
             end;
 
-          ^M:
+          CrChar:
             begin
               NewSection;
               GetCh;
@@ -4152,8 +4152,11 @@ begin
     Done := False;
     while not Done do
       case LCh of
-        ^M:
-          begin NewSection; GetCh; end;
+          CrChar:
+          begin
+            NewSection;
+            GetCh;
+          end;
         #0: Done := True;
       else
         begin {all other chars}
@@ -4181,20 +4184,20 @@ procedure THtmlParser.ParseText(ASectionList: ThtDocument);
 begin
   FPropStack := ASectionList.PropStack;
   try
-  ParseInit(ASectionList, nil);
-  InScript := True;
+    ParseInit(ASectionList, nil);
+    InScript := True;
 
-  try
-    GetCh; {get the reading started}
-    DoText;
+    try
+      GetCh; {get the reading started}
+      DoText;
 
-  finally
-    Attributes.Free;
-    if Assigned(Section) then
-      SectionList.Add(Section, TagIndex);
-    PropStack.Clear;
-    CurrentUrlTarget.Free;
-  end; {finally}
+    finally
+      Attributes.Free;
+      if Assigned(Section) then
+        SectionList.Add(Section, TagIndex);
+      PropStack.Clear;
+      CurrentUrlTarget.Free;
+    end; {finally}
   finally
     FPropStack := nil;
   end;
@@ -4260,31 +4263,31 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
 begin
   FPropStack := THTMLPropStack.Create;
   try
-  FPropStack.MasterList := nil;
-  CallingObject := FrameViewer;
-  IncludeEvent := FrameViewer.OnInclude;
-  SoundEvent := FrameViewer.OnSoundRequest;
-  MetaEvent := AMetaEvent;
-  LinkEvent := FrameViewer.OnLink;
+    FPropStack.MasterList := nil;
+    CallingObject := FrameViewer;
+    IncludeEvent := FrameViewer.OnInclude;
+    SoundEvent := FrameViewer.OnSoundRequest;
+    MetaEvent := AMetaEvent;
+    LinkEvent := FrameViewer.OnLink;
 
-  FBase := '';
-  FBaseTarget := '';
-  InScript := False;
-  NoBreak := False;
-  InComment := False;
-  ListLevel := 0;
+    FBase := '';
+    FBaseTarget := '';
+    InScript := False;
+    NoBreak := False;
+    InComment := False;
+    ListLevel := 0;
 
-  Attributes := TAttributeList.Create;
-  try
+    Attributes := TAttributeList.Create;
     try
-      Parse;
-    except {ignore error}
-      on E: Exception do
-        Assert(False, E.Message);
+      try
+        Parse;
+      except {ignore error}
+        on E: Exception do
+          Assert(False, E.Message);
+      end;
+    finally
+      Attributes.Free;
     end;
-  finally
-    Attributes.Free;
-  end;
   finally
     FreeAndNil(FPropStack);
   end;
