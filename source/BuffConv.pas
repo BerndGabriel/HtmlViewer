@@ -674,33 +674,70 @@ end;
 //-- BG ---------------------------------------------------------- 26.09.2012 --
 function TBuffConvUTF8.NextChar: TBuffChar;
 var
-  Buffer: Word;
-  Chr: Word;
+  Buffer: DWord;
+
+  function NextByte: Boolean;
+  var
+    Chr: Word;
+  begin
+    Chr := GetNext;
+    Result := (Chr and $C0) = $80;
+    Buffer := (Buffer shl 6) + (Chr and $3F);
+  end;
+
 begin
   Buffer := GetNext;
-  if (Buffer and $80) <> 0 then
-  begin
-    Chr := Buffer and $3F;
-    if (Buffer and $20) <> 0 then
+  case Buffer of
+    $00..$7F: // 1 byte
+      ;
+
+    $C0..$DF: // 2 bytes
     begin
-      Buffer := GetNext;
-      if (Buffer and $C0) <> $80 then
-      begin
-        Result := TBuffChar(0);
-        exit;
-      end;
-      Chr := (Chr shl 6) or (Buffer and $3F);
+      Buffer := Buffer and $1F;
+      if not NextByte then
+        Buffer := 0; // invalid
     end;
-    Buffer := GetNext;
-    if (Buffer and $C0) <> $80 then
+
+    $E0..$EF: // 3 bytes
     begin
-      Result := TBuffChar(0);
-      exit;
+      Buffer := Buffer and $0F;
+      if not (NextByte and NextByte) then
+        Buffer := 0; // invalid
     end;
-    Result := TBuffChar((Chr shl 6) or (Buffer and $3F));
-  end
+
+    $F0..$F7: // 4 bytes
+    begin
+      Buffer := Buffer and $07;
+      if not (NextByte and NextByte and NextByte) then
+        Buffer := 0 // invalid
+      else if Buffer > $FFFF then
+        Buffer := $FFFF;
+    end;
+
+    $F8..$FB: // 5 bytes
+    begin
+      Buffer := Buffer and $03;
+      if not (NextByte and NextByte and NextByte and NextByte) then
+        Buffer := 0 // invalid
+      else if Buffer > $FFFF then
+        Buffer := $FFFF;
+    end;
+
+    $FC..$FD: // 6 bytes
+    begin
+      Buffer := Buffer and $01;
+      if not (NextByte and NextByte and NextByte and NextByte and NextByte) then
+        Buffer := 0 // invalid
+      else if Buffer > $FFFF then
+        Buffer := $FFFF;
+    end;
+
   else
-    Result := TBuffChar(Buffer);
+    // $80..$BF, // invalid
+    // $FE..$FF:
+    Buffer := 0;
+  end;
+  Result := TBuffChar(Buffer);
 end;
 
 { TBuffConvSingleByteMap }
