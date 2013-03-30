@@ -120,7 +120,7 @@ type
     procedure Paint; override;
   end;
 
-  THtmlFileType = (HTMLType, TextType, ImgType, OtherType);
+  THtmlFileType = (HTMLType, TextType, ImgType, XHtmlType, OtherType);
 
 {$ifdef NoMetafile}
   //From MetaFilePrinter.pas
@@ -625,6 +625,12 @@ type
     destructor Destroy; override;
   end;
 
+//-- JPM --------------------------------------------------------  13.02.2013 --
+function IsXHtmlExt(const Ext: ThtString): Boolean;
+begin
+  Result := (Ext = '.xht') or (Ext = '.xhtml');
+end;
+
 //-- BG ---------------------------------------------------------- 23.09.2010 --
 function IsHtmlExt(const Ext: ThtString): Boolean;
 begin
@@ -649,8 +655,12 @@ var
   Ext: ThtString;
 begin
   Ext := LowerCase(ExtractFileExt(S));
-  if IsHtmlExt(Ext) then
-    Result := HTMLType
+  if IsHtmlExt(Ext) then begin
+    if IsXHtmlExt(Ext) then
+      Result := XHTMLType
+    else
+      Result := HTMLType
+  end
   else if IsImageExt(Ext) then
     Result := ImgType
   else if IsTextExt(Ext) then
@@ -1029,7 +1039,7 @@ begin
           OnParseBegin(Self, FDocument);
 
         case DocType of
-          HTMLType:
+          HTMLType,XHtmlType:
             ParseHtml;
         else
           ParseText;
@@ -1088,7 +1098,7 @@ begin
   if (vsProcessing in FViewerState) or not Assigned(AStream) then
     Exit;
   AStream.Position := 0;
-  if ft in [HTMLType, TextType] then
+  if ft in [HTMLType, XHtmlType, TextType] then
     LoadDocument(TBuffer.Create(AStream, URL), URL, ft)
   else
     try
@@ -1429,10 +1439,10 @@ begin
       ft := GetFileType(S);
       case ft of
 
-        HTMLType:
+        HTMLType,XHtmlType:
           if S <> FCurrentFile then
           begin
-            LoadFromFile(S + Dest);
+            LoadFromFile(S + Dest,ft);
             AddVisitedLink(S + Dest);
           end
           else if PositionTo(Dest) then {file already loaded, change position}
@@ -4652,6 +4662,8 @@ begin
     Pos := Position;
     if FCurrentFileType = HTMLType then
       LoadFromFile(FCurrentFile)
+    else if FCurrentFileType = XHtmlType then
+      LoadFromFile(FCurrentFile,XHtmlType)
     else if FCurrentFileType = TextType then
       LoadFromFile(FCurrentFile, TextType)
     else

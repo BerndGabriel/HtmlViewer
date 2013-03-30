@@ -1,9 +1,9 @@
 unit DownLoadId;
 {$include htmlcons.inc}
+{$include options.inc}
 interface
 
 uses
-{$define UseSSL}
 {$ifdef Compiler24_Plus}
   System.Types,
 {$endif}

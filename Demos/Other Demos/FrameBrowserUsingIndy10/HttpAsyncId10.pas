@@ -2,7 +2,8 @@ unit HttpAsyncId10;
 {Use thread to make Get Asynchronous }
 
 interface
-
+{$include htmlcons.inc}
+{$include options.inc}
 uses
   {$ifdef UseZLib}
   IdCompressorZLib,
@@ -25,7 +26,7 @@ type
     {$endif}
   protected
     procedure Execute; override;
-    procedure WorkHandler(Sender: TObject; AWorkMode: TWorkMode; const AWorkCount: Integer);
+    procedure WorkHandler(ASender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
   public
     Url: string;
     Stream: TMemoryStream;
@@ -36,6 +37,7 @@ type
   end;
 
 implementation
+uses IdURI;
 
 { Important: Methods and properties of objects in VCL can only be used in a
   method called using Synchronize, for example,
@@ -64,7 +66,7 @@ begin
   Comp := TIdCompressorZLib.Create;
   HTTP.Compressor := Comp;
   {$endif}
-//HTTP.OnWork := WorkHandler;
+  HTTP.OnWork := WorkHandler;
 end;
 
 destructor THTTPAsync.Destroy;
@@ -94,23 +96,23 @@ begin
 {$endif}
 
   try
-    HTTP.Get(Url, Stream);
+    //URI's should be encoded as the pathes might contain spaces.
+    //Verified at http://www.easyjet.com/en
+    HTTP.Get( TIdURI.URLEncode( Url ), Stream);
     if Terminated then
       OnTerminate := Nil;
   except
     HTTP.Disconnect;
-  //HTTP.DisconnectSocket;
   end;
 end;
 
-procedure THTTPAsync.WorkHandler(Sender: TObject; AWorkMode: TWorkMode;
-              const AWorkCount: Integer);
+procedure THTTPAsync.WorkHandler(ASender: TObject; AWorkMode: TWorkMode;
+   AWorkCount: Int64);
 begin
   if Terminated then
   begin
     OnTerminate := Nil;
     HTTP.Disconnect;
- // HTTP.DisconnectSocket;
   end;
 end;
 

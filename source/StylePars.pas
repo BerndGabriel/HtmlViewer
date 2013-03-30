@@ -162,10 +162,10 @@ var
 begin
   LCh := Doc.NextChar;
   case LCh of
-    ThtChar(^M),
-    ThtChar(^J),
-    ThtChar(^I),
-    ThtChar(^L):
+    CrChar,
+    LfChar,
+    TabChar,
+    FfChar:
       LCh := SpcChar;
 
     ThtChar('/'):
@@ -1100,7 +1100,7 @@ begin
   Self.Styles := Styles;
   LinkPath := APath;
 {enter with the first character in C}
-  if C = ^M then
+  if C = CrChar then//^M then
     C := ' ';
 
   LCh := ' '; {This trick is needed if the first ThtChar is part of comment, '/*'}

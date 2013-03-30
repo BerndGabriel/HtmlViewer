@@ -1610,7 +1610,7 @@ var
 
   procedure GetDims;
   const
-    EOL = ^M;
+    EOL = CrChar;
   var
     Ch: ThtChar;
     I, N: integer;

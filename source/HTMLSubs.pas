@@ -4758,7 +4758,7 @@ begin
     if Item is TBlock then
       TBlock(Item).FormTree(Indent, Tree)
     else if Item is TSection then
-      Tree := Tree + Indent + Copy(TSection(Item).BuffS, 1, 10) + ^M + ^J
+      Tree := Tree + Indent + Copy(TSection(Item).BuffS, 1, 10) + CrChar + LfChar
     else
       Tree := Tree + Indent + '----'^M + ^J;
   end;
@@ -6373,7 +6373,7 @@ begin
   MyIndent := Indent + '   ';
   TM := IntToStr(MargArray[MarginTop]);
   BM := IntToStr(MargArray[MarginBottom]);
-  Tree := Tree + Indent + TagClass + '  ' + TM + '  ' + BM + ^M + ^J;
+  Tree := Tree + Indent + TagClass + '  ' + TM + '  ' + BM + CrChar + LfChar;
   MyCell.FormTree(MyIndent, Tree);
 end;
 

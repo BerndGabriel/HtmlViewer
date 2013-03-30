@@ -1,4 +1,4 @@
-unit ProxyDlg;
+unit InfoDlg;
 
 interface
 {$include htmlcons.inc}
@@ -8,17 +8,10 @@ uses
   StdCtrls, Buttons;
 
 type
-  TProxyForm = class(TForm)
-    ProxyEdit: TEdit;
-    PortEdit: TEdit;
+  TInfoForm = class(TForm)
     Label1: TLabel;
-    Label2: TLabel;
     OKBurron: TBitBtn;
-    CancelButton: TBitBtn;
-    ProxyUsername: TEdit;
-    ProxyPassword: TEdit;
-    Label3: TLabel;
-    Label4: TLabel;
+    mmoInfo: TMemo;
   private
     { Private declarations }
   public
@@ -26,7 +19,7 @@ type
   end;
 
 var
-  ProxyForm: TProxyForm;
+  InfoForm: TInfoForm;
 
 implementation
 

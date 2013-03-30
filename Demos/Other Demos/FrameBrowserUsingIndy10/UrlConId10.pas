@@ -1,7 +1,3 @@
-
-{To include the Zip: protocol, define "IncludeZip" by removing the "..."}
-{...$Define IncludeZip}
-
 {*********************************************************}
 {*                     UrlConId.PAS                      *}
 {*                Copyright (c) 1999 by                  *}
@@ -13,6 +9,8 @@
 unit UrlConId10;
 
 interface
+{$include htmlcons.inc}
+{$include options.inc}
 
 {*********************************************************}
 {*                                                       *}
@@ -44,11 +42,16 @@ interface
 {* - version 1.0d1: first version                        *}
 {*********************************************************}
 
+{$include htmlcons.inc}
+{$include options.inc}
 uses   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
        ShellAPI, URLSubs, htmlview, IdHTTP, IdComponent, HTTPAsyncId10, IdCookieManager
 {$ifdef UseSSL}
        , IdIntercept, IdSSLOpenSSL, IdLogFile
 {$endif}
+  {$ifdef UseZLib}
+  , IdCompressorZLib
+  {$endif}
 {$ifdef IncludeZip}
        , VCLUnZIp, kpZipObj
 {$endif}
@@ -64,6 +67,8 @@ type
 
   TURLConnection = class(TObject)
   private
+    FHeaderRequestData : TStrings;
+    FHeaderResponseData : TStrings;
     FInputStream : TMemoryStream;
     FInputStreamOwn : Boolean; { true if the class ownes the stream }
     procedure SetInputStream(Value: TMemoryStream);
@@ -149,6 +154,8 @@ type
     property BasicAuth: boolean read FBasicAuth write FBasicAuth;
     property ContentTypePost: String read FContentTypePost write FContentTypePost;
     property SendStream: TMemoryStream read FSendStream write FSendStream;
+    property HeaderRequestData : TStrings read FHeaderRequestData;
+    property HeaderResponseData : TStrings read FHeaderResponseData;
   end;
 
   THTTPConnection = class(TURLConnection)
@@ -164,14 +171,17 @@ type
     procedure GetPostInit2(AHttp: TIdHTTP);
     procedure GetPostFinal;
   protected
+    {$ifdef UseZLib}
+    Comp: TIdCompressorZLib;
+    {$endif}
     HTTP: TidHTTP;
     HTTPa: THTTPAsync;
     {$ifdef UseSSL}
     SSL: TIdSSLIOHandlerSocketOpenSSL;
     procedure CheckSSL(const Url: string);
     {$endif}
-    procedure WorkBegin(Sender: TObject; AWorkMode: TWorkMode; const AWorkCountMax: Integer);
-    procedure Work(Sender: TObject; AWorkMode: TWorkMode; const AWorkCount: Integer);
+    procedure WorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
+    procedure Work(Sender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
     procedure WorkEnd(Sender: TObject; AWorkMode: TWorkMode);
     procedure Status(axSender: TObject; const axStatus: TIdStatus; const asStatusText: string);
     procedure GetAsyncDone(Sender: TObject);
@@ -220,11 +230,13 @@ var
 implementation
 
 uses
-  htmlun2, FBUnitId10;
+  {$ifdef LogIt}LogWin, {$endif} htmlun2, FBUnitId10, IdURI;
 
 constructor TURLConnection.Create;
 begin
   inherited Create;
+    FHeaderRequestData := TStringList.Create;
+    FHeaderResponseData := TStringList.Create;
      FInputStream := nil;
      SendStream := nil;
      Owner := nil;
@@ -238,6 +250,8 @@ destructor TURLConnection.Destroy;
 begin
      If FInputStreamOwn Then
         FInputStream.Free;
+  FHeaderRequestData.Free;
+  FHeaderResponseData.Free;
   inherited Destroy;
 end;
 
@@ -349,6 +363,9 @@ end;
 constructor THTTPConnection.Create;
 begin
   inherited Create;
+    {$ifdef UseZLib}
+    Comp:= TIdCompressorZLib.Create(nil);
+    {$endif}
 end;
 
 {----------------THTTPConnection.Destroy}
@@ -359,6 +376,9 @@ begin
     HTTPa.OnTerminate := Nil;
     HTTPa.Terminate;
   end;
+   {$ifdef UseZLib}
+   Comp.Free;
+   {$endif}
   inherited Destroy;
 end;
 
@@ -378,6 +398,9 @@ begin
   FAborted := False;
   CheckInputStream;
   HTTP := TIdHTTP.Create(Nil);
+ {$ifdef UseZLib}
+  HTTP.Compressor := Comp;
+{$endif}
 {$ifdef LogIt}
   HTTP.Intercept := HTTPForm.Log;
 {$endif}
@@ -389,9 +412,9 @@ begin
   if FBasicAuth then
     HTTP.Request.BasicAuthentication := True;
   HTTP.Request.Referer := FReferer;
-//HTTP.OnWorkBegin := WorkBegin;
-//HTTP.OnWork := Work;
-//HTTP.OnWorkEnd := WorkEnd;
+  HTTP.OnWorkBegin := WorkBegin;
+  HTTP.OnWork := Work;
+  HTTP.OnWorkEnd := WorkEnd;
   HTTP.OnStatus := Status;
   FState := httpReady;
 end;
@@ -417,6 +440,9 @@ begin
   FContentLength := HTTP.Response.ContentLength;
   FResponseText := HTTP.ResponseText;
   FResponseCode := HTTP.ResponseCode;
+  FHeaderRequestData.AddStrings( HTTP.Request.RawHeaders );
+  FHeaderResponseData.AddStrings( HTTP.Response.RawHeaders );
+  FHeaderResponseData.Add( 'Character Set = '+ HTTP.Response.CharSet );
 {$ifdef UseSSL}
   HTTP.IOHandler := Nil;
 {$endif}
@@ -436,7 +462,7 @@ begin
 {$endif}
 
   try
-    HTTP.Get(Url, FInputStream);
+    HTTP.Get(  TIdURI.URLEncode( Url ), FInputStream);
   Finally
     GetPostFinal;
   end;
@@ -454,7 +480,7 @@ begin
 {$endif}
 
   try
-    HTTP.Post(URL, SendStream, FInputStream);
+    HTTP.Post(TIdURI.URLEncode( Url ), SendStream, FInputStream);
   finally
     GetPostFinal;
   end;
@@ -510,9 +536,12 @@ begin
     Result := ImgType
   else
     if Pos('/plain', Content) > 0 then  {text/plain}
-      Result := TextType         {text/html}
+      Result := TextType
     else
-      Result := HTMLType;
+      if Pos('/xhtml', Content) > 0 then
+        Result := XHTMLType       {application/xhtml+xml}
+      else
+        Result := HTMLType;       {text/html}
 end;
 
 function THTTPConnection.ContentLength: LongInt;
@@ -545,7 +574,6 @@ procedure THTTPConnection.Abort;
 begin
   FAborted := True;
   if Assigned(HTTP) then
-//  HTTP.DisconnectSocket;
     HTTP.Disconnect;
   if Assigned(HTTPa) then
     HTTPa.Terminate;
@@ -553,7 +581,7 @@ end;
 
 {----------------THTTPConnection.WorkBegin}
 procedure THTTPConnection.WorkBegin(Sender: TObject; AWorkMode: TWorkMode;
-             const AWorkCountMax: Integer);
+             AWorkCountMax: Int64);
 var
   LocationFound: boolean;
   S: string;
@@ -586,7 +614,7 @@ begin
 end;
 
 procedure THTTPConnection.Work(Sender: TObject; AWorkMode: TWorkMode;
-            const AWorkCount: Integer);
+            AWorkCount: Int64);
 begin
   FRcvdCount := AWorkCount;
   if Assigned(FOnDocData) then
@@ -645,7 +673,10 @@ begin
        FContentType := ImgType
      else if (Ext = '.txt') then
        FContentType := TextType
-     else FContentType := HTMLType;
+     else if (Ext = '.xht') or (Ext = '.xhtml') then
+       FContentType := XHTMLType
+     else
+       FContentType := HTMLType;
      FContentLength := FInputStream.Size;
 
      FStatusCode := 200;

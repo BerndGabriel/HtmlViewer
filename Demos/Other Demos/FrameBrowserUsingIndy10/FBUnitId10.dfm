@@ -3,12 +3,12 @@ object HTTPForm: THTTPForm
   Top = 261
   ActiveControl = UrlComboBox
   Caption = 'Experimental Browser'
-  ClientHeight = 206
-  ClientWidth = 575
+  ClientHeight = 167
+  ClientWidth = 467
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -14
+  Font.Color = clBtnText
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Menu = MainMenu1
@@ -18,88 +18,14 @@ object HTTPForm: THTTPForm
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
-  object Panel2: TPanel
-    Left = 0
-    Top = 171
-    Width = 575
-    Height = 35
-    Margins.Left = 4
-    Margins.Top = 4
-    Margins.Right = 4
-    Margins.Bottom = 4
-    Align = alBottom
-    TabOrder = 0
-    object Status1: TPanel
-      Left = 1
-      Top = 1
-      Width = 266
-      Height = 33
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
-      Align = alLeft
-      Alignment = taLeftJustify
-      BevelInner = bvLowered
-      BevelOuter = bvNone
-      TabOrder = 0
-    end
-    object Status3: TPanel
-      Left = 443
-      Top = 1
-      Width = 131
-      Height = 33
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
-      Align = alClient
-      Alignment = taLeftJustify
-      BevelInner = bvLowered
-      BevelOuter = bvNone
-      TabOrder = 1
-    end
-    object Status2: TPanel
-      Left = 267
-      Top = 1
-      Width = 176
-      Height = 33
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
-      Align = alLeft
-      BevelInner = bvLowered
-      BevelOuter = bvNone
-      TabOrder = 2
-      OnResize = Status2Resize
-      object Gauge: TProgressBar
-        Left = 20
-        Top = 7
-        Width = 139
-        Height = 19
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        TabOrder = 0
-        Visible = False
-      end
-    end
-  end
+  PixelsPerInch = 96
+  TextHeight = 13
   object FrameBrowser: TFrameBrowser
     Left = 0
-    Top = 44
-    Width = 575
-    Height = 127
-    Margins.Left = 4
-    Margins.Top = 4
-    Margins.Right = 4
-    Margins.Bottom = 4
+    Top = 80
+    Width = 467
+    Height = 68
     CharSet = ANSI_CHARSET
-    DefBackground = clWhite
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
@@ -107,53 +33,51 @@ object HTTPForm: THTTPForm
     HistoryIndex = 0
     HistoryMaxCount = 0
     NoSelect = False
+    OnBlankWindowRequest = BlankWindowRequest
+    OnHistoryChange = HistoryChange
+    OnHotSpotTargetClick = HotSpotTargetClick
+    OnHotSpotTargetCovered = HotSpotTargetCovered
+    OnImageRequest = GetImageRequest
+    OnMeta = FrameBrowserMeta
+    OnPrintFooter = PrintFooter
+    OnPrintHeader = PrintHeader
+    OnProcessing = Processing
+    OnRightClick = RightClick
+    OnScript = FrameBrowserScript
+    OnViewerClear = ViewerClear
     PrintMarginBottom = 3.000000000000000000
     PrintMarginLeft = 2.000000000000000000
     PrintMarginRight = 2.000000000000000000
     PrintMarginTop = 2.000000000000000000
     PrintScale = 1.000000000000000000
     QuirksMode = qmDetect
-    OnBlankWindowRequest = BlankWindowRequest
-    OnHistoryChange = HistoryChange
-    OnHotSpotTargetClick = HotSpotTargetClick
-    OnHotSpotTargetCovered = HotSpotTargetCovered
-    OnImageRequest = GetImageRequest
-    OnPrintFooter = PrintFooter
-    OnPrintHeader = PrintHeader
-    OnProcessing = Processing
-    OnRightClick = RightClick
-    OnViewerClear = ViewerClear
     Align = alClient
-    TabOrder = 1
+    TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
   end
   object CoolBar1: TCoolBar
     Left = 0
     Top = 0
-    Width = 575
-    Height = 44
-    Margins.Left = 4
-    Margins.Top = 4
-    Margins.Right = 4
-    Margins.Bottom = 4
+    Width = 467
+    Height = 80
     AutoSize = True
     Bands = <
       item
         Control = ToolBar2
         ImageIndex = -1
-        MinHeight = 40
+        MinHeight = 37
         MinWidth = 140
-        Width = 157
+        Width = 173
       end
       item
         Break = False
         Control = UrlComboBox
         ImageIndex = -1
-        MinHeight = 24
+        MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 235
+        Width = 284
       end
       item
         Break = False
@@ -161,16 +85,16 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 169
+        Width = 461
       end>
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 144
-      Height = 40
+      Width = 160
+      Height = 37
       AutoSize = True
-      ButtonHeight = 40
-      ButtonWidth = 52
+      ButtonHeight = 37
+      ButtonWidth = 41
       Caption = 'ToolBar2'
       Images = ImageList1
       ShowCaptions = True
@@ -186,14 +110,14 @@ object HTTPForm: THTTPForm
         OnClick = BackButtonClick
       end
       object FwdButton: TToolButton
-        Left = 42
+        Left = 36
         Top = 0
         Caption = 'Fwd'
         ImageIndex = 2
         OnClick = FwdButtonClick
       end
       object ToolButton1: TToolButton
-        Left = 94
+        Left = 77
         Top = 0
         Width = 8
         Caption = 'ToolButton1'
@@ -201,7 +125,7 @@ object HTTPForm: THTTPForm
         Style = tbsSeparator
       end
       object ReloadButton: TToolButton
-        Left = 102
+        Left = 85
         Top = 0
         Caption = 'Reload'
         Enabled = False
@@ -210,39 +134,43 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 205
+      Left = 216
       Top = 8
-      Width = 189
-      Height = 24
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
+      Width = 247
+      Height = 21
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
       TabOrder = 1
       OnClick = URLComboBoxClick
       OnKeyPress = URLComboBoxKeyPress
     end
     object Panel10: TPanel
-      Left = 411
-      Top = 1
-      Width = 160
+      Left = 11
+      Top = 39
+      Width = 452
       Height = 37
-      Margins.Left = 4
-      Margins.Top = 4
-      Margins.Right = 4
-      Margins.Bottom = 4
       Align = alTop
       BevelOuter = bvNone
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBtnText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
       TabOrder = 2
       object ToolBar1: TToolBar
         Left = 0
         Top = 0
-        Width = 118
-        Height = 40
+        Width = 96
+        Height = 37
         Align = alNone
         AutoSize = True
-        ButtonHeight = 40
-        ButtonWidth = 59
+        ButtonHeight = 37
+        ButtonWidth = 48
         Caption = 'ToolBar1'
         Images = ImageList1
         ShowCaptions = True
@@ -257,7 +185,7 @@ object HTTPForm: THTTPForm
           OnClick = CancelButtonClick
         end
         object SaveUrl: TToolButton
-          Left = 59
+          Left = 48
           Top = 0
           Caption = 'Save Url'
           ImageIndex = 9
@@ -265,31 +193,48 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 126
+        Left = 424
         Top = 0
-        Width = 34
+        Width = 28
         Height = 37
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
         object Animate1: TAnimate
-          Left = 4
-          Top = 10
-          Width = 22
-          Height = 22
-          Margins.Left = 4
-          Margins.Top = 4
-          Margins.Right = 4
-          Margins.Bottom = 4
+          Left = 3
+          Top = 8
+          Width = 18
+          Height = 18
           FileName = 'C:\CSS2\BrowserNew\Help\01.AVI'
           StopFrame = 2
         end
       end
     end
+  end
+  object StatusBarMain: TStatusBar
+    Left = 0
+    Top = 148
+    Width = 467
+    Height = 19
+    Panels = <
+      item
+        Width = 216
+      end
+      item
+        Width = 143
+      end
+      item
+        Width = 50
+      end>
+    OnDrawPanel = StatusBarMainDrawPanel
+  end
+  object Gauge: TProgressBar
+    Left = 176
+    Top = 160
+    Width = 150
+    Height = 17
+    TabOrder = 3
+    Visible = False
   end
   object MainMenu1: TMainMenu
     Left = 248
@@ -338,6 +283,17 @@ object HTTPForm: THTTPForm
       object SelectAll1: TMenuItem
         Caption = '&Select all'
         OnClick = SelectAll1Click
+      end
+    end
+    object View1: TMenuItem
+      Caption = '&View'
+      object HTTPHeaders1: TMenuItem
+        Caption = '&HTTP Headers...'
+        OnClick = HTTPHeaders1Click
+      end
+      object PageInfo1: TMenuItem
+        Caption = '&Page Info...'
+        OnClick = PageInfo1Click
       end
     end
     object HistoryMenuItem: TMenuItem
@@ -432,17 +388,13 @@ object HTTPForm: THTTPForm
     Left = 426
     Top = 149
   end
-  object IdAntiFreeze1: TIdAntiFreeze
-    Left = 88
-    Top = 112
-  end
   object ImageList1: TImageList
     Height = 17
     Width = 17
     Left = 40
     Top = 160
     Bitmap = {
-      494C01010D000E00140011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D000E00500011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1051,5 +1003,22 @@ object HTTPForm: THTTPForm
       F0000000FF81FFCEF03FFB9FF0000000FFE1FFF2F0FFFA7FF0000000FFF9FFFC
       F3FFF9FFF0000000FFFFFFFFFFFFFFFFF0000000FFFFFFFFFFFFFFFFF0000000
       00000000000000000000000000000000000000000000}
+  end
+  object PopupMenu1: TPopupMenu
+    Left = 360
+    Top = 105
+    object ViewImage: TMenuItem
+      Caption = '&View Image'
+    end
+    object CopyImagetoclipboard: TMenuItem
+      Caption = '&Copy image to clipboard'
+    end
+    object MenuItem1: TMenuItem
+      Caption = '-'
+    end
+    object MenuItem2: TMenuItem
+      Caption = '&Open in new window'
+      OnClick = OpenInNewWindowClick
+    end
   end
 end

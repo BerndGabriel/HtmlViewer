@@ -1,7 +1,8 @@
 unit HTMLAbt;
 
 interface
-
+{$include htmlcons.inc}
+{$include options.inc}
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, Buttons, Htmlview, ExtCtrls, HTMLUn2;
@@ -49,7 +50,7 @@ begin
     {$ENDIF}
     '</center>'+
     '</body>';
-  Viewer.LoadFromBuffer(@S[1], Length(S));
+  Viewer.LoadFromString(S, '', HtmlType);
 end;
 
 end.

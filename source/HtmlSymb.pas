@@ -81,8 +81,11 @@ type
     FontSy,    BSy,    ISy,    SSy,    StrikeSy,    USy,    SubSy,    SupSy,    BigSy,    SmallSy,    TTSy,
     FontEndSy, BEndSy, IEndSy, SEndSy, StrikeEndSy, UEndSy, SubEndSy, SupEndSy, BigEndSy, SmallEndSy, TTEndSy,
 
-    EmSy,    StrongSy,    CodeSy,    KbdSy,    SampSy,    DelSy,    InsSy,    CiteSy,    VarSy,    MarkSy,    TimeSy,
-    EmEndSy, StrongEndSy, CodeEndSy, KbdEndSy, SampEndSy, DelEndSy, InsEndSy, CiteEndSy, VarEndSy, MarkEndSy, TimeEndSy,
+    EmSy,    StrongSy,    CodeSy,    KbdSy,    SampSy,    CiteSy,    VarSy,    AbbrSy,    AcronymSy,    DfnSy,    
+    EmEndSy, StrongEndSy, CodeEndSy, KbdEndSy, SampEndSy, CiteEndSy, VarEndSy, AbbrEndSy, AcronymEndSy, DfnEndSy,
+
+    DelSy,    InsSy,    MarkSy,    TimeSy,
+    DelEndSy, InsEndSy, MarkEndSy, TimeEndSy,
 
     ASy,
     AEndSy,

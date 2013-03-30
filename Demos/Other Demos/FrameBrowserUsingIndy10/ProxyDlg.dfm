@@ -63,16 +63,18 @@ object ProxyForm: TProxyForm
     Top = 168
     Width = 65
     Height = 25
-    TabOrder = 2
     Kind = bkOK
+    NumGlyphs = 2
+    TabOrder = 2
   end
   object CancelButton: TBitBtn
     Left = 160
     Top = 168
     Width = 65
     Height = 25
-    TabOrder = 3
     Kind = bkCancel
+    NumGlyphs = 2
+    TabOrder = 3
   end
   object ProxyUsername: TEdit
     Left = 24
