@@ -43,7 +43,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="22">
+    <Files Count="23">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -133,6 +133,10 @@
         <Filename Value="..\source\BuffConvArrays.pas"/>
         <UnitName Value="BuffConvArrays"/>
       </Item22>
+      <Item23>
+        <Filename Value="..\source\HtmlSymb.pas"/>
+        <UnitName Value="HtmlSymb"/>
+      </Item23>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">
