@@ -7904,6 +7904,7 @@ begin
   try
     Result := inherited Draw(Canvas, ARect, ClipWidth, X, Y, XRef, YRef);
     DrawList.DrawImages;
+    DrawList.Clear;
   finally
     if OldPal <> 0 then
       SelectPalette(Canvas.Handle, OldPal, True);
@@ -9772,7 +9773,7 @@ begin
       begin
         Dec(Count);
         // MulDiv for each column instead of 1 precalculated width for all columns avoids round off errors.
-        Widths[I] := RemainingWidth - MulDiv(Required, Count, Divisor);
+        Widths[I] := MulDiv(Widths[I], Required, Spanned);
         Dec(RemainingWidth, Widths[I]);
       end
       else
@@ -10230,7 +10231,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
     MaxWidth := Sum(MaxWidths);
 
     {fill in the Widths array}
-    if MinWidth >= NewWidth then
+    if MinWidth > NewWidth then
       // The minimum table width fits exactly or is too wide. Thus use minimum widths, table might expand.
       Widths := Copy(MinWidths)
     else
