@@ -72,6 +72,7 @@ contains
   BegaPreviewForm in '..\source\BegaPreviewForm.pas' {BegaCustomPrintPreviewForm},
   BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
   BegaScrollBox in '..\source\BegaScrollBox.pas',
-  BegaZoom in '..\source\BegaZoom.pas';
+  BegaZoom in '..\source\BegaZoom.pas',
+  HtmlSymb in '..\source\HtmlSymb.pas';
 
 end.

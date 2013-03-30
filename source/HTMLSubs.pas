@@ -69,8 +69,9 @@ uses
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
   HtmlGlobals,
-  HTMLUn2,
+  HtmlSymb,
   StyleUn,
+  HTMLUn2,
   HTMLGif2;
 
 type
@@ -1332,7 +1333,7 @@ type
   private
     MasterList: ThtDocument;
   protected
-    procedure setLinksActive(Value: Boolean); override;
+    procedure SetLinksActive(Value: Boolean); override;
   public
     constructor Create(AMasterList: ThtDocument);
   end;
@@ -1520,9 +1521,9 @@ type
   public
     MasterList: ThtDocument;
     SIndex: Integer; //BG, 26.12.2010: seems, this is the current position in the original html-file.
-    procedure PopAProp(const Tag: ThtString);
+    procedure PopAProp(Sym: TElemSymb);
     procedure PopProp;
-    procedure PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
+    procedure PushNewProp(Sym: TElemSymb; const AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
   end;
 
 function htCompareText(const T1, T2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
@@ -11333,17 +11334,22 @@ var
   C: AnsiChar;
   St, StU: WideString;
   Small: boolean;
+  LastProps: TProperties;
 begin
   if T.Count = 0 then
     Exit;
   { Yunqa.de: Simple hack to support <span style="display:none"> }
-  if Document.PropStack.Last.Display = pdNone then
+  LastProps := Document.PropStack.Last;
+  if (LastProps.Display = pdNone) and (LastProps.PropSym in [
+    SpanSy, NoBrSy, WbrSy, FontSy, BSy, ISy, SSy, StrikeSy, USy, SubSy, SupSy, BigSy, SmallSy, TTSy,
+    EmSy, StrongSy, CodeSy, KbdSy, SampSy, DelSy, InsSy, CiteSy, VarSy, MarkSy, TimeSy, ASy])
+  then
     Exit;
 
   L := Len + T.Count;
   if BuffSize < L + 3 then
     Allocate(L + 500); {L+3 to permit additions later}
-  case Document.PropStack.Last.GetTextTransform of
+  case LastProps.GetTextTransform of
     txUpper:
       St := WideUpperCase1(T.S);
     txLower:
@@ -11359,7 +11365,7 @@ begin
   for I := 1 to T.Count do
     Brk := Brk + C;
 
-  if Document.PropStack.Last.GetFontVariant = 'small-caps' then
+  if LastProps.GetFontVariant = 'small-caps' then
   begin
     StU := WideUpperCase1(St);
     BuffS := BuffS + StU;
@@ -11375,14 +11381,14 @@ begin
         begin
           if StU[I] <> St[I] then
           begin {St[I] was lower case}
-            Document.PropStack.PushNewProp('small', '', '', '', '', nil); {change to smaller font}
+            Document.PropStack.PushNewProp(SmallSy, '', '', '', '', nil); {change to smaller font}
             ChangeFont(Document.PropStack.Last);
             Small := True;
           end;
         end
         else if StU[I] = St[I] then
         begin {St[I] was uppercase and Small is set}
-          Document.PropStack.PopAProp('small');
+          Document.PropStack.PopAProp(SmallSy);
           ChangeFont(Document.PropStack.Last);
           Small := False;
         end;
@@ -11391,7 +11397,7 @@ begin
     end;
     if Small then {change back to regular font}
     begin
-      Document.PropStack.PopAProp('small');
+      Document.PropStack.PopAProp(SmallSy);
       ChangeFont(Document.PropStack.Last);
     end;
   end
@@ -14771,11 +14777,14 @@ end;
 { THtmlPropStack }
 
 { Add a TProperties to the PropStack. }
-procedure THtmlPropStack.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
+procedure THtmlPropStack.PushNewProp(Sym: TElemSymb; const AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
 var
   NewProp: TProperties;
+  Tag: ThtString;
 begin
+  Tag := SymbToStr(Sym);
   NewProp := TProperties.Create(self, Self.MasterList.UseQuirksMode);
+  NewProp.PropSym := Sym;
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
   NewProp.Combine(MasterList.Styles, Tag, AClass, AnID, APseudo, ATitle, AProps, Count - 1);
@@ -14791,14 +14800,14 @@ begin
     Delete(TopIndex);
 end;
 
-procedure THtmlPropStack.PopAProp(const Tag: ThtString);
+procedure THtmlPropStack.PopAProp(Sym: TElemSymb);
 {pop and free a TProperties from the Prop stack.  It should be on top but in
  case of a nesting error, find it anyway}
 var
   I, J: Integer;
 begin
   for I := Count - 1 downto 1 do
-    if Items[I].Proptag = Tag then
+    if Items[I].PropSym = Sym then
     begin
       if Items[I].HasBorderStyle then
       {this would be the end of an inline border}
@@ -14820,7 +14829,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 08.03.2011 --
-procedure THtmlStyleList.setLinksActive(Value: Boolean);
+procedure THtmlStyleList.SetLinksActive(Value: Boolean);
 begin
   inherited;
   MasterList.LinksActive := Value;

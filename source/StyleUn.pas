@@ -37,7 +37,9 @@ uses
   Windows,
 {$endif}
   Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
-  HtmlGlobals, HtmlBuffer;
+  HtmlGlobals,
+  HtmlBuffer,
+  HtmlSymb;
 
 const
   IntNull = -12345678;
@@ -222,6 +224,7 @@ type
     procedure CalcLinkFontInfo(Styles: TStyleList; I: Integer);
     procedure GetSingleFontInfo(var Font: ThtFontInfo);
   public
+    PropSym: TElemSymb;
     PropTag, PropClass, PropID, PropPseudo, PropTitle: ThtString;
     PropStyle: TProperties;
     FontBG: TColor;

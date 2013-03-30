@@ -37,7 +37,14 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
-  UrlSubs, HtmlGlobals, HtmlBuffer, Htmlsubs, Htmlview, HTMLUn2, ReadHTML;
+  UrlSubs,
+  HtmlGlobals,
+  HtmlBuffer,
+  HtmlSymb,
+  HTMLUn2,
+  Htmlsubs,
+  Htmlview,
+  ReadHTML;
 
 type
   {common to TFrameViewer and TFrameBrowser}

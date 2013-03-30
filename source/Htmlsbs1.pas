@@ -42,7 +42,11 @@ uses
   Classes,
   {$endif}
   Graphics, Controls,
-  HtmlGlobals, HTMLUn2, HTMLSubs, StyleUn;
+  HtmlGlobals,
+  HtmlSymb,
+  HTMLUn2,
+  HTMLSubs,
+  StyleUn;
 
 type
 
