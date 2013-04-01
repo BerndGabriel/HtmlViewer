@@ -673,8 +673,10 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.09.2012 --
 function TBuffConvUTF8.NextChar: TBuffChar;
+const
+  MaxChar: LongWord = 65535;
 var
-  Buffer: DWord;
+  Buffer: LongWord;
 
   function NextByte: Boolean;
   var
@@ -688,54 +690,54 @@ var
 begin
   Buffer := GetNext;
   case Buffer of
-    $00..$7F: // 1 byte
+    $00..$7F: // 1 byte, 7 bits
       ;
 
-    $C0..$DF: // 2 bytes
+    $C0..$DF: // 2 bytes, 11 bits
     begin
       Buffer := Buffer and $1F;
       if not NextByte then
         Buffer := 0; // invalid
     end;
 
-    $E0..$EF: // 3 bytes
+    $E0..$EF: // 3 bytes, 16 bits
     begin
       Buffer := Buffer and $0F;
       if not (NextByte and NextByte) then
         Buffer := 0; // invalid
     end;
 
-    $F0..$F7: // 4 bytes
+    $F0..$F7: // 4 bytes, 21 bits
     begin
       Buffer := Buffer and $07;
       if not (NextByte and NextByte and NextByte) then
         Buffer := 0 // invalid
-      else if Buffer > $FFFF then
-        Buffer := $FFFF;
+      else if Buffer > MaxChar then
+        Buffer := MaxChar;
     end;
 
-    $F8..$FB: // 5 bytes
+    $F8..$FB: // 5 bytes, 26 bits
     begin
       Buffer := Buffer and $03;
       if not (NextByte and NextByte and NextByte and NextByte) then
         Buffer := 0 // invalid
-      else if Buffer > $FFFF then
-        Buffer := $FFFF;
+      else if Buffer > MaxChar then
+        Buffer := MaxChar;
     end;
 
-    $FC..$FD: // 6 bytes
+    $FC..$FD: // 6 bytes, 31 bits
     begin
       Buffer := Buffer and $01;
       if not (NextByte and NextByte and NextByte and NextByte and NextByte) then
         Buffer := 0 // invalid
-      else if Buffer > $FFFF then
-        Buffer := $FFFF;
+      else if Buffer > MaxChar then
+        Buffer := MaxChar;
     end;
 
   else
     // $80..$BF, // invalid
     // $FE..$FF:
-    Buffer := 0;
+    Buffer := MaxChar;
   end;
   Result := TBuffChar(Buffer);
 end;
