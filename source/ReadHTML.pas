@@ -2433,8 +2433,8 @@ procedure THtmlParser.DoCommonSy;
     FoundHRef := False;
     Link := '';
     for I := 0 to Attributes.Count - 1 do
-      with TAttribute(Attributes[I]) do
-        if (Which = HRefSy) then
+      with Attributes[I] do
+        if Which = HRefSy then
         begin
           FoundHRef := True;
           if InHref then
@@ -4035,6 +4035,19 @@ begin
   {reset a few things}
       PropStack.SIndex := SaveSIndex;
       Doc.Position := SavePosition;
+      Sy := OtherChar;
+      InHref := False;
+      BaseFontSize := 3;
+      FBase := '';
+      FBaseTarget := '';
+      CurrentStyle := [];
+      CurrentForm := nil;
+      InScript := False;
+      NoBreak := False;
+      InComment := False;
+      ListLevel := 0;
+      TableLevel := 0;
+      LinkSearch := False;
 {$ENDIF}
 
       LinkSearch := False;

@@ -4641,12 +4641,14 @@ begin
   begin
     with Items[I] do
     begin
-      if (Y >= DrawTop) and (Y < DrawBot) then
-      begin
+      // BG, 01.04.2013: cannot reduce workload via DrawTop/DrawBot as
+      // absolutely positioned children may reside beyond these margins.
+      //if (Y >= DrawTop) and (Y < DrawBot) then
+      //begin
         Result := GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
         if Result <> [] then
           Exit;
-      end;
+      //end;
     end;
   end;
 end;
@@ -4663,12 +4665,14 @@ begin
   for I := 0 to Count - 1 do
     with Items[I] do
     begin
-      if (Y >= DrawTop) and (Y < DrawBot) then
-      begin
+      // BG, 01.04.2013: cannot reduce workload via DrawTop/DrawBot as
+      // absolutely positioned children may reside beyond these margins.
+      //if (Y >= DrawTop) and (Y < DrawBot) then
+      //begin
         Result := PtInObject(X, Y, Obj, IX, IY);
         if Result then
           Exit;
-      end;
+      //end;
     end;
 end;
 
@@ -4683,12 +4687,14 @@ begin
   begin
     with Items[I] do
     begin
-      if (Y >= DrawTop) and (Y < DrawBot) then
-      begin
+      // BG, 01.04.2013: cannot reduce workload via DrawTop/DrawBot as
+      // absolutely positioned children may reside beyond these margins.
+      //if (Y >= DrawTop) and (Y < DrawBot) then
+      //begin
         Result := Items[I].FindCursor(Canvas, X, Y, XR, YR, Ht, InText);
         if Result >= 0 then
           Exit;
-      end;
+      //end;
     end;
   end;
   Result := -1;
@@ -5269,12 +5275,14 @@ begin
       for I := Count - 1 downto 0 do
         with TSectionBase(Items[I]) do
         begin
-          if (Y >= DrawTop) and (Y < DrawBot) then
-          begin
+          // BG, 01.04.2013: cannot reduce workload via DrawTop/DrawBot as
+          // absolutely positioned children may reside beyond these margins.
+          //if (Y >= DrawTop) and (Y < DrawBot) then
+          //begin
             Result := FindCursor(Canvas, X, Y, XR, YR, CaretHt, Intext);
             if Result >= 0 then
               Exit;
-          end;
+          //end;
         end;
   end;
 end;
@@ -5304,12 +5312,14 @@ begin
       for I := Count - 1 downto 0 do
         with TSectionBase(Items[I]) do
         begin
-          if (Y >= DrawTop) and (Y < DrawBot) then
-          begin
+          // BG, 01.04.2013: cannot reduce workload via DrawTop/DrawBot as
+          // absolutely positioned children may reside beyond these margins.
+          //if (Y >= DrawTop) and (Y < DrawBot) then
+          //begin
             Result := PtInObject(X, Y, Obj, IX, IY);
             if Result then
               Exit;
-          end;
+          //end;
         end;
   end;
 end;
@@ -9550,7 +9560,7 @@ procedure THtmlTable.Initialize;
     end;
 
   var
-    Rw, I, K: Integer;
+    Rw, I: Integer;
   begin
     Rw := 0;
     while Rw < Rows.Count do
@@ -9757,9 +9767,8 @@ procedure THtmlTable.IncreaseWidthsEvenly(WidthType: TWidthType; var Widths: Int
   StartIndex, EndIndex, Required, Spanned, Count: Integer);
 // Increases width of spanned columns of given type evenly.
 var
-  Divisor, RemainingWidth, I: Integer;
+  RemainingWidth, I: Integer;
 begin
-  Divisor := Count;
   RemainingWidth := Required;
   for I := EndIndex downto StartIndex do
     if ColumnSpecs[I] = WidthType then
