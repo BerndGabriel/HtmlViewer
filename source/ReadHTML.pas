@@ -1727,6 +1727,20 @@ var
         end;
   end;
 
+  function GetDefaultCellBorderStyle(const TableBorderStyle: Variant; DefaultStyle: BorderStyleType): BorderStyleType;
+  begin
+    if (TableBorderStyle = Unassigned) or ((VarType(TableBorderStyle) in varInt) and (TableBorderStyle = IntNull)) then
+      Result := DefaultStyle
+    else
+    begin
+      Result := TableBorderStyle;
+      case (Result) of
+        bssInset: Result := bssOutset;
+        bssOutset: Result := bssInset;
+      end;
+    end;
+  end;
+
 begin
   Inc(TableLevel);
   if TableLevel > 10 then
@@ -1821,13 +1835,24 @@ begin
             // BG, 20.01.2013: translate Rules to cell property defaults:
             case Table.Rules of
               trAll:
-                PropStack.Last.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssInset);
+              begin
+                PropStack.Last.SetPropertyDefault(BorderBottomStyle, GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderBottomStyle], bssInset));
+                PropStack.Last.SetPropertyDefault(BorderRightStyle , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderRightStyle ], bssInset));
+                PropStack.Last.SetPropertyDefault(BorderTopStyle   , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderTopStyle   ], bssInset));
+                PropStack.Last.SetPropertyDefault(BorderLeftStyle  , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderLeftStyle  ], bssInset));
+              end;
 
               trRows:
+              begin
                 PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssSolid);
+                PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssNone);
+              end;
 
               trCols:
+              begin
+                PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssNone);
                 PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssSolid);
+              end;
 
               trGroups:
                 ; // not yet supported

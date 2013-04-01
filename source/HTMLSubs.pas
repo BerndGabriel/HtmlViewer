@@ -9524,7 +9524,8 @@ procedure THtmlTable.Initialize;
               begin {insert dummy cells in following rows if RowSpan > 1}
                 while Rows[K].Count < Cl do {add padding if row is short}
                   Rows[K].Add(DummyCell(0));
-                Rows[K].Insert(Cl, DummyCell(0));
+                if Rows[K].Count < NumCols then // in an invalid table definition spanned cells may overlap and thus required dummies could be present, yet. 
+                  Rows[K].Insert(Cl, DummyCell(0));
               end;
           end;
         end;
@@ -9571,16 +9572,9 @@ procedure THtmlTable.Initialize;
         end;
 
         if IsLastCellOfRow then
-        begin
-          // widen this cell
+          // add missing cells
           for I := Row.Count to NumCols - 1 do
-          begin
-            Row.Add(DummyCell(CellObj.RowSpan));
-            for K := Rw + 1 to Rw + CellObj.RowSpan - 1 do
-              Rows[K].Add(DummyCell(0));
-          end;
-          CellObj.ColSpan := NumCols - Cl;
-        end;
+            Row.Add(DummyCell(1));
       end;
       
       // continue with next row not spanned by this cell.
