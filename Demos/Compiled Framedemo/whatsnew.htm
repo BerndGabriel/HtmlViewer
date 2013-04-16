@@ -21,6 +21,73 @@
 
 <!----------------------------------------------------------------------------->
 
+<p class="heading">Version 11.4</p>
+<h5>Added</h5>
+<ul>
+  <li>Delphi XE3 Support (JPM)
+  <li>Delphi XE3 Styles Support (JPM)
+  <li><b>TBuffer</b> converts most common single and multi byte code pages to unicode on its own (Thanks to SchwarzKopf-M for his extensive programming support and testing).
+  <li><b>FrameDem.exe</b> shows quirks mode infos and has got menu items to select the quirks mode.  
+  <li>New Demo <b>FrameBrowserUsingIndy10.exe</b>: Same as FrameBrowserUsingIndy but using current Indy components of version 10 (Delphi XE+ only)
+  <li>HTML 3.2 Element <b>&lt;dfn&gt;</b>
+  <li>HTML 4 Elements <b>&lt;ins&gt;</b>, <b>&lt;del&gt;</b>, <b>&lt;abbr&gt;</b>, <b>&lt;acronym&gt;</b>
+  <li>HTML 5 Element <b>&lt;time&gt;</b>
+  <li>CSS Property <b>white-space</b>: not a full implementation of white-space, but it removes some serious headaches when exporting HTML tables to spreadsheet applications (Thanks to THM)
+  <li>HTML 4 &lt;table&gt; Attributes <b>frame</b> and <b>rules</b>
+</ul>
+<h5>Enhanced</h5>
+<ul>
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=179"> Issue 179</a>: Frame image - Allow non standard 'none' for attribute 'border'.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=217"> Issue 217</a>: 'Include' is not working correctly 
+    <ul>
+      <li>Allow no space between 'include' identifier and tag end '--&gt;' although '-' is an allowed character in identifiers.
+    </ul>
+  <li>TBegaHtmlPrintPreviewForm replaces and enhances TPreviewForm. 
+    <ul>
+      <li>Shows any number of pages horizontally and vertically
+      <li>Zooms preview
+      <li>Zooms page content (e.g. to fit content into page)
+      <li>Included in the FrameViewer projects
+     </ul>
+  <li>Assume that files *.asp and *.shtml are HTML files
+  <li>Because of too many 'bug reports' about quirks the default for QuirksMode is set (back) to qmStandards.
+  <li>Significantly reduced memory consumption of large tables with lots of and/or huge spans.
+  <li>Unlimited number of map areas (was limited to 1000).
+  <li>Type Symb separated into TElemSymb and TAttrSymb in new unit HtmlSymb.pas. As sets/enums are limited to 256 elements now there is space for about 100 more HTML elements.
+</ul>  
+<h5>Fixed</h5>
+<ul>
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/25"> github-issue 25</a>: Multiple pseudo elements can apply - HtmlViewer 11 does not support completely different styles, only font properties.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=55"> Issue 55</a>: CSS Table Width Overrides vs IE, FF - Maximum column width calculation did not consider the given absolute width.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=105"> Issue 105</a>: Float:Left floats up as well as left - Do not try to place a block above its predecessors.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=162"> Issue 162</a>: Missing zero-termination can lead to General Protection Failure/Access Violation
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=168"> Issue 168</a>: Incorrect min/max section width calculations
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=169"> Issue 169</a>: CSS font-family with quotes does not work
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=172"> Issue 172</a>: Lack of &lt;/pre&gt; hangs processing of the HTML body
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=173"> Issue 173</a>: Text selection shows incorrectly
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=174"> Issue 174</a>: HTMLView mouse wheel not working with Lazarus. - Thanks to Alan Chate.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=177"> Issue 177</a>: Rare crash in TBlockCell.DoLogicX (HTMLSubs.pas) - Missing Owner-Initialization added.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=178"> Issue 178</a>: Overflow or calculation issues in htmlview.pas, Ln 3640 ff
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=203"> Issue 203</a>: Column widths not automatically adjusted when using COLSPAN.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=207"> Issue 207</a>: Error when open html file - Integer overflow in attribute. Now clipped to -MaxInt..MaxInt.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=209"> Issue 209</a>: Table text does not scale in printed headers and footers. 
+    <ul>
+      <li>Use (detected) quirks mode also in print header and footer. 
+      <li>TFVBase.SetQuirksMode() propagates new setting to all contained viewers. 
+    </ul>
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=210"> Issue 210</a>: &lt;html&gt; not body is CSS root element
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=212"> Issue 212</a>: TBuffConverter produce MemoryLeak
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=219"> Issue 219</a>: Full URL not passed to Click handler
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=222"> Issue 222</a>: TBuffer.AsString problem
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=229"> Issue 229</a>: Table Borders Not Displaying
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=231"> Issue 231</a>: Table Column widths are not handled appropriately
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=232"> Issue 232</a>: Large memory leak
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=233"> Issue 233</a>: Loading a document does not remove the previous one - leading to crashes
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=238"> Issue 238</a>: Error Style "underlined text"
+</ul>
+
+<!----------------------------------------------------------------------------->
+
 <p class="heading">Version 11.3</p>
 <h5>Added</h5>
 <ul>

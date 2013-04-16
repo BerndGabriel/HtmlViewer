@@ -4,14 +4,14 @@
 <title></title>
 <link REL="stylesheet" TYPE="text/css" HREF="demo.css">
 <style TYPE="text/css">
-  body      {margin-top: 15;}
-  body, td, th   {font-size: 10pt; font-family: Arial;}
-  .larger   {font-size: larger; background-color: a0b8c8;}
-  th        {background-color: ffffce;}
-  td        {background-color: #f0f0f0; padding-left: 5;}
-  td.note   {background-color: lightBlue;}
-  .head		{font: bold 18pt; color: #a53737;}
-  .red     {color: red; font-weight: bold;}
+  body          {margin-top: 15;}
+  body, td, th  {font-size: 10pt; font-family: Arial;}
+  .larger       {font-size: larger; background-color: a0b8c8;}
+  th            {background-color: ffffce;}
+  td            {background-color: #f0f0f0; padding-left: 5;}
+  td.note       {background-color: lightBlue;}
+  .head		      {font: bold 18pt; color: #a53737;}
+  .red          {color: red; font-weight: bold;}
 </style>
 
 </head>
@@ -283,11 +283,6 @@
 	 <td CLASS="note" WIDTH="50"><a HREF="#note2">Note 2</a></td>
   </tr>
   <tr>
-	 <td>White-space</td>
-	 <td>&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-  </tr>
-  <tr>
 	 <td>Width</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
 	 <td>&nbsp;</td>
@@ -355,6 +350,11 @@
 	 <td>hidden, visible. Block tags only</td>
 	 <td>inherit</td>
   </tr>
+  <tr class="red">
+	 <td>White-space&nbsp;</td>
+	 <td>nowrap, normal</td>
+	 <td>pre, pre-wrap, pre-line</td>
+  </tr>
   <tr>
 	 <td>Word-Wrap&nbsp;</td>
 	 <td>break-word</td>
@@ -373,15 +373,15 @@
 	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
   </tr>
   <tr>
-	 <td WIDTH="15%" ALIGN="center"><a NAME="note1">1</a></td>
+	 <td WIDTH="0*" ALIGN="center" class="note"><a NAME="note1">1</a></td>
 	 <td>Limited support for inline borders.</td>
   </tr>
   <tr>
-	 <td ALIGN="center"><a NAME="note2">2</a></td>
+	 <td ALIGN="center" class="note"><a NAME="note2">2</a></td>
 	 <td>Vertical-Align supported for images and form controls only.</td>
   </tr>
   <tr>
-	 <td ALIGN="center"><a NAME="note3">3</a></td>
+	 <td ALIGN="center" class="note"><a NAME="note3">3</a></td>
 	 <td>Position is supported for block tags only.</td>
   </tr>
 </table>
