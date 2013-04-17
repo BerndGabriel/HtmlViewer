@@ -3733,6 +3733,7 @@ var
 {$endif}
 begin
   try
+    HtmlAttributes := nil;
     repeat
       if Sy in TermSet then
         Exit;
