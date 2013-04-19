@@ -2126,10 +2126,10 @@ procedure THtmlParser.DoScript(Ascript: TScriptEvent);
 var
   Text: ThtString;
 
-  procedure Next1;
+  procedure Next;
     {Special Next routine to get the next token}
 
-    procedure GetTag1; {simplified 'Pick up a Tag' routine}
+    procedure GetTag; {simplified 'Pick up a Tag' routine}
 
       function IsTagChar(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
       begin
@@ -2176,7 +2176,7 @@ var
       end;
       if LCh = GreaterChar then
       begin
-        Text := Text + GreaterChar;
+        htAppendChr(Text, GreaterChar);
         if Sy = ScriptEndSy then
           InScript := False;
         GetCh;
@@ -2196,7 +2196,7 @@ var
         end;
 
       LessChar:
-        GetTag1;
+        GetTag;
 
     else
       Sy := StringSy;
@@ -2241,14 +2241,17 @@ begin
         Src := '';
 
       S := '';
-      Next1;
+      Next;
       while (Sy <> ScriptEndSy) and (Sy <> EofSy) do
       begin
         if Sy = EolSy then
-          S := S + CrChar + LfChar
+        begin
+          htAppendChr(S, CrChar);
+          htAppendChr(S, LfChar);
+        end
         else
-          S := S + Text;
-        Next1;
+          htAppendStr(S, Text);
+        Next;
       end;
       AScript(CallingObject, Name, Lang, Src, S);
     finally
@@ -2259,7 +2262,7 @@ begin
   begin
     GetCh; {make up for not having next character on entry}
     repeat
-      Next1;
+      Next;
     until Sy in [ScriptEndSy, EofSy];
   end;
 end;

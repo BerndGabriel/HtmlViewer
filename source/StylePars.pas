@@ -95,7 +95,7 @@ type
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
 
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; AFromLink: Boolean; const AUseQuirksMode: Boolean);
 procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(S: ThtString): ThtString;
 
@@ -112,13 +112,13 @@ const
   NeedPound = True;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean; const AUseQuirksMode : Boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; AFromLink: Boolean; const AUseQuirksMode: Boolean);
 var
   Parser: THtmlStyleTagParser;
 begin
   Parser := THtmlStyleTagParser.Create(AUseQuirksMode);
   try
-    Parser.DoStyle(Styles, C, Doc, APath, FromLink);
+    Parser.DoStyle(Styles, C, Doc, APath, AFromLink);
   finally
     Parser.Free;
   end;
@@ -1094,41 +1094,89 @@ var
     end;
   end;
 
+var
+  MayCloseCommment: Boolean;
 begin
-  AvailableMedia := [mtAll, mtScreen];
   Self.Doc := Doc;
   Self.Styles := Styles;
-  LinkPath := APath;
-{enter with the first character in C}
-  if C = CrChar then//^M then
-    C := ' ';
+  try
+    AvailableMedia := [mtAll, mtScreen];
+    LinkPath := APath;
 
-  LCh := ' '; {This trick is needed if the first ThtChar is part of comment, '/*'}
-
-  while (LCh = ' ') or (LCh = '<') or (LCh = '>') or (LCh = '!') or (LCh = '-') do {'<' will probably be present from <style>}
-    GetCh;
-  repeat
-    if LCh = '@' then
-      ReadAt
-    else if LCh = '<' then
-    begin {someone left a tag here, ignore it}
-      repeat
-        GetCh;
-      until (LCh = ' ') or (LCh = EOFChar);
-      SkipWhiteSpace;
-    end
-    else
-    begin
-      Selectors.Clear;
-      GetSelectors;
-      GetCollection;
-    end;
-    while (LCh = ' ') or (LCh = '-') or (LCh = '>') do
+    // param C is the '>' of the opening <style> tag. Just ignore it.
+    repeat
       GetCh;
-  until (LCh = EOFChar) or ((LCh = '<') and not FromLink);
-  C := LCh;
-  Self.Styles := nil;
-  Self.Doc := nil;
+      case LCh of
+        ' ', '<', '!', '-', '>':
+          // skip HTML comment opener '<!--' and closer '-->' immediately following the <style> tag.
+          continue;
+      else
+        break;
+      end;
+    until false;
+
+    // read the styles up to single HTML comment closer or start of a HTML tag
+    repeat
+      case LCh of
+        ' ', '-', '>':
+          GetCh;
+
+        EOFChar:
+          break;
+
+        '@':
+          ReadAt;
+
+        '<':
+        begin
+          GetCh;
+          case LCh of
+            '!', '-':
+            begin
+              MayCloseCommment := False;
+              repeat
+                GetCh;
+                case LCh of
+                  EOFChar:
+                    break;
+
+                  '-':
+                    MayCloseCommment := True;
+
+                  '>':
+                  begin
+                    if MayCloseCommment then
+                      break;
+                    MayCloseCommment := False;
+                  end;
+                else
+                  MayCloseCommment := False;
+                end;
+              until false;
+            end;
+
+          else
+            if not FromLink then
+            begin
+              Doc.Position := Doc.Position - 1;
+              LCh := '<';
+              break;
+            end;
+          end;
+        end;
+
+      else
+        // read a style
+        Selectors.Clear;
+        GetSelectors;
+        GetCollection;
+      end;
+    until false;
+    C := LCh;
+  finally
+    Self.Styles := nil;
+    Self.Doc := nil;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
@@ -1391,46 +1439,51 @@ var
 begin
   Self.Doc := Doc;
   Self.Propty := Propty;
-  LinkPath := '';
-  GetCh;
-  repeat
-    Prop := '';
-    SkipWhiteSpace;
-    while True do
-      case LCh of
-        'A'..'Z', 'a'..'z', '0'..'9', '-':
-          begin
-            Prop := Prop + LCh;
-            GetCh;
-          end;
-      else
-        break;
-      end;
-    SkipWhiteSpace;
-    if (LCh = ':') or (LCh = '=') then
-    begin
-      GetCh;
-      Value := '';
-      while not ((LCh = ';') or (LCh = EofChar)) do
-      begin
-        SetLength(Value, Length(Value) + 1);
-        Value[Length(Value)] := LCh;
-        GetCh;
-      end;
-
-      ProcessPropertyOrShortHand(Prop, Value);
-    end;
-    SkipWhiteSpace;
-    if LCh = ';' then
-      GetCh;
-    while True do
-      case LCh of
-        'A'..'Z', 'a'..'z', '0'..'9', '-', EofChar:
+  try
+    LinkPath := '';
+    GetCh;
+    repeat
+      Prop := '';
+      SkipWhiteSpace;
+      while True do
+        case LCh of
+          'A'..'Z', 'a'..'z', '0'..'9', '-':
+            begin
+              Prop := Prop + LCh;
+              GetCh;
+            end;
+        else
           break;
-      else
+        end;
+      SkipWhiteSpace;
+      if (LCh = ':') or (LCh = '=') then
+      begin
         GetCh;
+        Value := '';
+        while not ((LCh = ';') or (LCh = EofChar)) do
+        begin
+          SetLength(Value, Length(Value) + 1);
+          Value[Length(Value)] := LCh;
+          GetCh;
+        end;
+
+        ProcessPropertyOrShortHand(Prop, Value);
       end;
-  until LCh = EofChar;
+      SkipWhiteSpace;
+      if LCh = ';' then
+        GetCh;
+      while True do
+        case LCh of
+          'A'..'Z', 'a'..'z', '0'..'9', '-', EofChar:
+            break;
+        else
+          GetCh;
+        end;
+    until LCh = EofChar;
+  finally
+    Self.Doc := nil;
+    Self.Propty := nil;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
