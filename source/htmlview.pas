@@ -1190,13 +1190,13 @@ procedure THtmlViewer.DoScrollBars;
 var
   ScrollInfo: ThtScrollInfo;
 begin
+  BorderPanel.Visible := True;
   ScrollWidth := Min(ScrollWidth, MaxHScroll);
   ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
   with ScrollInfo do
   begin
-    BorderPanel.Visible := False;
-    if BWidth > 0 then
-      BorderPanel.Visible := True;
+    if BWidth <= 0 then
+      BorderPanel.Visible := False;
 
     PaintPanel.Left := BWidth;
     PaintPanel.Top := BWidth;
