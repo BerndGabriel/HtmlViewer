@@ -735,8 +735,6 @@ begin
   OnMouseUp := FVMouseUp;
   frHistory := TStringList.Create;
   frPositionHistory := TFreeList.Create;
-      {$ifdef has_StyleElements}
-      {$endif}
 end;
 
 {----------------TViewerFrameBase.Destroy}

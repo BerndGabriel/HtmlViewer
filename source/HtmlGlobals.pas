@@ -316,10 +316,10 @@ function PtrSub(P1, P2: Pointer): Integer; {$ifdef UseInline} inline; {$endif}
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer; {$ifdef UseInline} inline; {$endif}
 procedure PtrInc(var P1; Offset: Integer); {$ifdef UseInline} inline; {$endif}
 
-function Darker(Color : TColor
-  {$ifdef has_StyleElements}; const AUseThemes : Boolean{$endif}): TColor; {$ifdef UseInline} inline; {$endif} overload;
-function Lighter(Color : TColor
-  {$ifdef has_StyleElements}; const AUseThemes : Boolean{$endif}): TColor; {$ifdef UseInline} inline; {$endif} overload;
+// BG, 17.04.2013: Color of Darker() and Lighter() must be RGB or palette values. Themed or system colors are not supported!
+function Darker(Color : TColor): TColor; {$ifdef UseInline} inline; {$endif}
+function Lighter(Color : TColor): TColor; {$ifdef UseInline} inline; {$endif}
+
 //code movements from HTMLSubs
 function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer; {$ifdef UseInline} inline; {$endif}
 procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean); {$ifdef UseInline} inline; {$endif}
@@ -383,9 +383,7 @@ begin
   Result := GetDeviceCaps(ADC,SHADEBLENDCAPS) and SB_CONST_ALPHA > 0;
 end;
 
-function Darker(Color : TColor
-  {$ifdef has_StyleElements}; const AUseThemes : Boolean{$endif}
-  ): TColor; {$ifdef UseInline} inline; {$endif}
+function Darker(Color : TColor): TColor; {$ifdef UseInline} inline; {$endif}
   {find a somewhat darker color for shading purposes}
 const
   DarkerColors: array [0..255] of Byte = (
@@ -416,9 +414,7 @@ begin
   Result := RGB(Red, Green, Blue);
 end;
 
-function Lighter(Color : TColor
-  {$ifdef has_StyleElements}; const AUseThemes : Boolean {$endif})
-  : TColor; {$ifdef UseInline} inline; {$endif}
+function Lighter(Color : TColor) : TColor; {$ifdef UseInline} inline; {$endif}
 {find a somewhat lighter color for shading purposes}
 const
   LighterColors: array [0..255] of Byte = (

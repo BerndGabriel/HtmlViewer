@@ -3831,8 +3831,8 @@ end;
 //  Result[3] := P3;
 //end;
 
-procedure DrawOnePolygon(Canvas: TCanvas; P: BorderPointArray; Color: TColor;
-  Side: byte; Printing: boolean {$ifdef has_StyleElements};const AStyleElements : TStyleElements {$endif});
+// BG, 17.04.2013: Color of DrawOnePolygon() must be a real RGB or palette value. Themed or system colors are not supported!
+procedure DrawOnePolygon(Canvas: TCanvas; P: BorderPointArray; Color: TColor; Side: byte; Printing: Boolean);
 {Here we draw a 4 sided polygon (by filling a region).  This represents one
  side (or part of a side) of a border.
  For single pixel thickness, drawing is done by lines for better printing}
@@ -3891,7 +3891,7 @@ begin
       with Canvas do
       begin
         Brush.Style := bsSolid;
-        Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+        Brush.Color := Color;
         FillRgn(Handle, R, Brush.Handle);
       end;
     finally
@@ -3918,7 +3918,7 @@ procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray
 var
   PO, PI, PM, P1, P2, Bnd: BorderPointArray;
   I: Integer;
-  Color: TColor;
+  Cl, Color: TColor;
   MRect: TRect;
   lb: TLogBrush;
   Pn, OldPn: HPen;
@@ -4042,126 +4042,124 @@ begin
 
   try
     for I := 0 to 3 do
-      if S[I] in [bssSolid, bssInset, bssOutset] then
-      begin
-        Bnd[0] := PO[I];
-        Bnd[1] := PO[(I + 1) mod 4];
-        Bnd[2] := PI[(I + 1) mod 4];
-        Bnd[3] := PI[I];
-        Color := C[I] or PalRelative;
-        case S[I] of
-          bssSolid:
-            DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-          bssInset:
-            begin
-              if I in [0, 1] then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
-              else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-            end;
-          bssOutset:
-            begin
-              if (I in [2, 3]) then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
-              else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-            end;
-        end;
-      end
-      else if S[I] in [bssRidge, bssGroove] then
-      begin {ridge or groove}
-        Bnd[0] := PO[I];
-        Bnd[1] := PO[(I + 1) mod 4];
-        Bnd[2] := PM[(I + 1) mod 4];
-        Bnd[3] := PM[I];
-        case S[I] of
-          bssGroove:
-            begin
-              if I in [0, 1] then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
-              else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-            end;
-          bssRidge:
-            begin
-              if (I in [2, 3]) then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
-              else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-            end;
-        end;
-        Bnd[0] := PM[I];
-        Bnd[1] := PM[(I + 1) mod 4];
-        Bnd[2] := PI[(I + 1) mod 4];
-        Bnd[3] := PI[I];
-        case S[I] of
-          bssRidge:
-            begin
-              if I in [0, 1] then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
-              else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-            end;
-          bssGroove:
-            begin
-              if (I in [2, 3]) then
-                Color := Darker(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative
-              else
-                Color := Lighter(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-              DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-            end;
-        end;
-      end
-      else if S[I] = bssDouble then
-      begin
-        Color := ThemedColor(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-        Bnd[0] := PO[I];
-        Bnd[1] := PO[(I + 1) mod 4];
-        Bnd[2] := P1[(I + 1) mod 4];
-        Bnd[3] := P1[I];
-        DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-        Bnd[0] := P2[I];
-        Bnd[1] := P2[(I + 1) mod 4];
-        Bnd[2] := PI[(I + 1) mod 4];
-        Bnd[3] := PI[I];
-        DrawOnePolygon(Canvas, Bnd, Color, I, Print{$ifdef has_StyleElements},AStyleElements{$endif});
-      end
-      else if S[I] in [bssDashed, bssDotted] then
-      begin
-        if not InPath then
+    begin
+      Color := ThemedColor(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+      case S[I] of
+        bssSolid, bssInset, bssOutset:
         begin
-          lb.lbStyle := BS_SOLID;
-          lb.lbColor := ThemedColor(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-          lb.lbHatch := 0;
-          if S[I] = bssDotted then
-            PenType := PS_Dot or ps_EndCap_Round
-          else
-            PenType := PS_Dash or ps_EndCap_Square;
-          Pn := ExtCreatePen(PS_GEOMETRIC or PenType or ps_Join_Miter, W[I], lb, 0, nil);
-          OldPn := SelectObject(Canvas.Handle, Pn);
-          BeginPath(Canvas.Handle);
-          movetoEx(Canvas.Handle, PM[I].x, PM[I].y, nil);
-          Start := I;
-          InPath := True;
+          Bnd[0] := PO[I];
+          Bnd[1] := PO[(I + 1) mod 4];
+          Bnd[2] := PI[(I + 1) mod 4];
+          Bnd[3] := PI[I];
+          case S[I] of
+            bssInset:
+              if I in [0, 1] then
+                Color := Darker(Color)
+              else
+                Color := Lighter(Color);
+
+            bssOutset:
+              if I in [2, 3] then
+                Color := Darker(Color)
+              else
+                Color := Lighter(Color);
+          end;
+          DrawOnePolygon(Canvas, Bnd, Color or PalRelative, I, Print);
         end;
-        LineTo(Canvas.Handle, PM[(I + 1) mod 4].x, PM[(I + 1) mod 4].y);
-        if (I = 3) or (S[I + 1] <> S[I]) or (C[I + 1] <> C[I]) or (W[I + 1] <> W[I]) then
+
+        bssRidge, bssGroove:
+        begin {ridge or groove}
+          Cl := Color;
+          Bnd[0] := PO[I];
+          Bnd[1] := PO[(I + 1) mod 4];
+          Bnd[2] := PM[(I + 1) mod 4];
+          Bnd[3] := PM[I];
+          case S[I] of
+            bssGroove:
+              if I in [0, 1] then
+                Color := Darker(Color)
+              else
+                Color := Lighter(Color);
+
+            bssRidge:
+              if I in [2, 3] then
+                Color := Darker(Color)
+              else
+                Color := Lighter(Color);
+          end;
+          DrawOnePolygon(Canvas, Bnd, Color or PalRelative, I, Print);
+
+          Color := Cl;
+          Bnd[0] := PM[I];
+          Bnd[1] := PM[(I + 1) mod 4];
+          Bnd[2] := PI[(I + 1) mod 4];
+          Bnd[3] := PI[I];
+          case S[I] of
+            bssRidge:
+              if I in [0, 1] then
+                Color := Darker(Color)
+              else
+                Color := Lighter(Color);
+
+            bssGroove:
+              if (I in [2, 3]) then
+                Color := Darker(Color)
+              else
+                Color := Lighter(Color);
+          end;
+          DrawOnePolygon(Canvas, Bnd, Color or PalRelative, I, Print);
+        end;
+
+        bssDouble:
         begin
-          if (I = 3) and (Start = 0) then
-            CloseFigure(Canvas.Handle); {it's a closed path}
-          EndPath(Canvas.Handle);
-          StrokePath(Canvas.Handle);
-          SelectObject(Canvas.Handle, OldPn);
-          DeleteObject(Pn);
-          Pn := 0;
-          InPath := False;
+          Color := Color or PalRelative;
+
+          Bnd[0] := PO[I];
+          Bnd[1] := PO[(I + 1) mod 4];
+          Bnd[2] := P1[(I + 1) mod 4];
+          Bnd[3] := P1[I];
+          DrawOnePolygon(Canvas, Bnd, Color, I, Print);
+
+          Bnd[0] := P2[I];
+          Bnd[1] := P2[(I + 1) mod 4];
+          Bnd[2] := PI[(I + 1) mod 4];
+          Bnd[3] := PI[I];
+          DrawOnePolygon(Canvas, Bnd, Color, I, Print);
+        end;
+
+        bssDashed, bssDotted:
+        begin
+          if not InPath then
+          begin
+            lb.lbStyle := BS_SOLID;
+            lb.lbColor := Color or PalRelative;
+            lb.lbHatch := 0;
+            if S[I] = bssDotted then
+              PenType := PS_Dot or ps_EndCap_Round
+            else
+              PenType := PS_Dash or ps_EndCap_Square;
+            Pn := ExtCreatePen(PS_GEOMETRIC or PenType or ps_Join_Miter, W[I], lb, 0, nil);
+            OldPn := SelectObject(Canvas.Handle, Pn);
+            BeginPath(Canvas.Handle);
+            MoveToEx(Canvas.Handle, PM[I].x, PM[I].y, nil);
+            Start := I;
+            InPath := True;
+          end;
+          LineTo(Canvas.Handle, PM[(I + 1) mod 4].x, PM[(I + 1) mod 4].y);
+          if (I = 3) or (S[I + 1] <> S[I]) or (C[I + 1] <> C[I]) or (W[I + 1] <> W[I]) then
+          begin
+            if (I = 3) and (Start = 0) then
+              CloseFigure(Canvas.Handle); {it's a closed path}
+            EndPath(Canvas.Handle);
+            StrokePath(Canvas.Handle);
+            SelectObject(Canvas.Handle, OldPn);
+            DeleteObject(Pn);
+            Pn := 0;
+            InPath := False;
+          end;
         end;
       end;
+    end;
   finally
     if Pn <> 0 then
     begin
