@@ -692,12 +692,13 @@ begin
   BorderPanel.BevelOuter := bvNone;
   BorderPanel.Align := alClient;
 {$ifndef LCL}
-  BorderPanel.Ctl3D := False;
-  BorderPanel.ParentCtl3D := False;
+//  BorderPanel.Ctl3D := False;
+//  BorderPanel.ParentCtl3D := False;
 {$ifdef delphi7_plus}
   BorderPanel.ParentBackground := False;
 {$endif}
 {$endif}
+  BorderPanel.ControlStyle := BorderPanel.ControlStyle + [csNeedsBorderPaint];
   BorderPanel.Parent := Self;
 
   PaintPanel := TPaintPanel.CreateIt(Self, Self);
