@@ -809,7 +809,7 @@ procedure THtmlParser.Next;
         S := '';
         while True do
           case LCh of
-            'a'..'z', 'A'..'Z', '-', '$', '0'..'9':
+            'a'..'z', 'A'..'Z', '-', '$', '0'..'9', ':':
               begin
                 htAppendChr(S, LCh);
                 GetCh;
