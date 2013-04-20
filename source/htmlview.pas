@@ -1211,7 +1211,7 @@ begin
       HScrollBar.Enabled := HWidth < ScrollWidth;
     end;
     // alwyas set scroll width for scrolling via mouse even without scrollbars.
-    SetPageSizeAndMax(HScrollBar, HWidth, ScrollWidth);
+    SetPageSizeAndMax(HScrollBar, Min(HWidth, ScrollWidth), ScrollWidth);
 
     VScrollBar.Visible := VBar;
     if VBar Or (csDesigning In ComponentState) then
@@ -1221,7 +1221,7 @@ begin
       VScrollBar.Enabled := VHeight < FMaxVertical;
     end;
     // alwyas set scroll height for scrolling via mouse even without scrollbars.
-    SetPageSizeAndMax(VScrollBar, VHeight, FMaxVertical);
+    SetPageSizeAndMax(VScrollBar, Min(VHeight, FMaxVertical), FMaxVertical);
   end;
 end;
 
