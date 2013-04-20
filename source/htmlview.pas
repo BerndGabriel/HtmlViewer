@@ -1209,9 +1209,9 @@ begin
       HScrollBar.SetBounds(PaintPanel.Left, PaintPanel.Top + PaintPanel.Height, PaintPanel.Width, sbWidth);
       HScrollBar.LargeChange := Max(16, HWidth - HScrollBar.SmallChange);
       HScrollBar.Enabled := HWidth < ScrollWidth;
-      if HScrollBar.Enabled then
-        SetPageSizeAndMax(HScrollBar, HWidth, ScrollWidth);
     end;
+    // alwyas set scroll width for scrolling via mouse even without scrollbars.
+    SetPageSizeAndMax(HScrollBar, HWidth, ScrollWidth);
 
     VScrollBar.Visible := VBar;
     if VBar Or (csDesigning In ComponentState) then
@@ -1219,9 +1219,9 @@ begin
       VScrollBar.SetBounds(PaintPanel.Left + PaintPanel.Width, PaintPanel.Top, sbWidth, PaintPanel.Height);
       VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
       VScrollBar.Enabled := VHeight < FMaxVertical;
-      if VScrollBar.Enabled then
-        SetPageSizeAndMax(VScrollBar, VHeight, FMaxVertical);
     end;
+    // alwyas set scroll height for scrolling via mouse even without scrollbars.
+    SetPageSizeAndMax(VScrollBar, VHeight, FMaxVertical);
   end;
 end;
 
