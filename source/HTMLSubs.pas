@@ -13342,7 +13342,7 @@ var
 
       {the following puts a dummy caret at the very end of text if it should be there}
         if Document.ShowDummyCaret and not Inverted
-          and ((MySelB = Len) and (Document.Selb = Document.Len))
+          and ((MySelB = Len) and (Document.SelB = Document.Len))
           and (Cnt = I) and (LineNo = Lines.Count - 1) then
         begin
           Canvas.Pen.Color := Canvas.Font.Color;
@@ -13613,23 +13613,23 @@ var
 begin
   Result := -1;
   I := 0; H := ContentTop; L1 := 0;
+  if H >= Y then
+    Exit;
   LR := nil;
-  with Lines do
+  while I < Lines.Count do
   begin
-    while I < Count do
-    begin
-      LR := LineRec(Lines[I]);
-      with LR do
-        TotalHt := LineHt + SpaceBefore + SpaceAfter;
-      if H + TotalHt > Y then
-        Break;
-      Inc(H, TotalHt);
-      Inc(I);
-      Inc(L1, LR.Ln); {L1 accumulates ThtChar count of previous lines}
-    end;
-    if (I >= Count) then
-      Exit;
+    LR := LineRec(Lines[I]);
+    with LR do
+      TotalHt := LineHt + SpaceBefore + SpaceAfter;
+    if H + TotalHt > Y then
+      Break;
+    Inc(H, TotalHt);
+    Inc(I);
+    Inc(L1, LR.Ln); {L1 accumulates ThtChar count of previous lines}
   end;
+  if (I >= Lines.Count) then
+    Exit;
+
   with LR do
   begin
     if X > LR.DrawXX + LR.DrawWidth then

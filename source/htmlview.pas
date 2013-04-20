@@ -2087,7 +2087,7 @@ begin
         end;
         Pos := Math.Max(0, Math.Min(Pos, FMaxVertical - PaintPanel.Height));
         FSectionList.SetYOffset(Pos);
-        SetPosition(Pos);
+        ScrollTo(Pos);
         DoHilite(Pt.X, Pt.Y);
         PaintPanel.Invalidate;
         GetCursorPos(Pt);
