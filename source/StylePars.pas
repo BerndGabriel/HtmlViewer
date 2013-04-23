@@ -1096,6 +1096,7 @@ var
 
 var
   MayCloseCommment: Boolean;
+  Pos: Integer;
 begin
   Self.Doc := Doc;
   Self.Styles := Styles;
@@ -1129,6 +1130,7 @@ begin
 
         '<':
         begin
+          Pos := Doc.Position;
           GetCh;
           case LCh of
             '!', '-':
@@ -1158,7 +1160,7 @@ begin
           else
             if not FromLink then
             begin
-              Doc.Position := Doc.Position - 1;
+              Doc.Position := Pos;
               LCh := '<';
               break;
             end;
