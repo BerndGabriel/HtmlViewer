@@ -4445,7 +4445,9 @@ begin
           NextCh;
         end
         else if I <= 255 then
-          AddNumericChar(I, True);
+          AddNumericChar(I, True)
+        else
+          Result := Collect;
       end
       else
         Result := Collect;
