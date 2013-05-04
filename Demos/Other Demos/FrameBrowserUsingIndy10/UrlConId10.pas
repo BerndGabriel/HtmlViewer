@@ -509,6 +509,8 @@ begin
   FContentLength := HTTPa.HTTP.Response.ContentLength;
   FResponseText := HTTPa.HTTP.ResponseText;
   FResponseCode := HTTPa.HTTP.ResponseCode;
+  FHeaderRequestData.AddStrings( HTTPa.HTTP.Request.RawHeaders );
+  FHeaderResponseData.AddStrings( HTTPa.HTTP.Response.RawHeaders);
   FInputStream.LoadFromStream(HTTPa.Stream);
 
   HTTPa := Nil;

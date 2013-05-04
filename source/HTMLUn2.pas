@@ -618,7 +618,10 @@ implementation
 
 uses
   Forms, Math,
-  {$ifdef Compiler24_Plus}
+  {$ifdef UseVCLStyles}
+  Vcl.Themes,
+  {$endif}
+  {$ifdef  HasSystemUITypes}
   System.UITypes,
   {$endif}
   {$ifndef FPC_TODO}jpeg, {$endif}

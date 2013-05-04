@@ -168,6 +168,12 @@ type
 implementation
 
 uses
+  {$ifdef UseVCLStyles}
+  Vcl.Themes,
+  {$endif}
+  {$ifdef  HasSystemUITypes}
+  System.UITypes,
+  {$endif}
   SysUtils, Variants, Forms, StdCtrls, Math;
 
 destructor TOptionObj.Destroy;

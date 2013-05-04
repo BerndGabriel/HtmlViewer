@@ -43,6 +43,9 @@ var
   DownLoadForm: TDownLoadForm;
 
 implementation
+{$ifdef HasSystemUITypes}
+uses System.UITypes;
+{$endif}
 
 {$R *.DFM}
 
