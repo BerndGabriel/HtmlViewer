@@ -1,7 +1,6 @@
 object PrnStatusForm: TPrnStatusForm
   Left = 731
   Top = 443
-  AutoScroll = False
   Caption = 'PrnStatusForm'
   ClientHeight = 96
   ClientWidth = 247

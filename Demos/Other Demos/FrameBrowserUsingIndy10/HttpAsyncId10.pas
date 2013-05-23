@@ -62,6 +62,16 @@ begin
   HTTP := TIdHTTP.Create(Nil);
   HTTP.HandleRedirects := True;
   HTTP.ProtocolVersion := pv1_0;
+
+{$ifdef UseSSL}
+//  if Pos('https', Lowercase(Url)) > 0 then
+//  begin
+    SSL := TIdSSLIOHandlerSocketOpenSSL.Create(Nil);
+    SSL.SSLOptions.Method := sslvSSLv23;
+    SSL.SSLOptions.Mode := sslmClient;
+    HTTP.IOHandler := SSL;
+//  end;
+{$endif}
   {$ifdef UseZLib}
   Comp := TIdCompressorZLib.Create;
   HTTP.Compressor := Comp;
@@ -85,16 +95,6 @@ end;
 
 procedure THTTPAsync.Execute;
 begin
-{$ifdef UseSSL}
-  if Pos('https', Lowercase(Url)) > 0 then
-  begin
-    SSL := TIdSSLIOHandlerSocketOpenSSL.Create(Nil);
-    SSL.SSLOptions.Method := sslvSSLv23;
-    SSL.SSLOptions.Mode := sslmClient;
-    HTTP.IOHandler := SSL;
-  end;
-{$endif}
-
   try
     //URI's should be encoded as the pathes might contain spaces.
     //Verified at http://www.easyjet.com/en

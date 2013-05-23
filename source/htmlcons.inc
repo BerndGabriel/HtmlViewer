@@ -35,6 +35,7 @@
 { Identify Delphi Compiler Version:
 
   #   Compiler    Version Compiler Defined Symbol
+  D17 Delphi XE4    25    VER250
   D16 Delphi XE3    24    VER240
   D15 Delphi XE2    23    VER230
   D14 Delphi XE     22    VER220
@@ -100,6 +101,10 @@
                           {$ifdef ver230}
                           {$else}
                             {$define Compiler24_Plus}
+                            {$ifdef ver240}
+                            {$else}
+                                {$define Compiler25_Plus}
+                            {$endif}
                             {$LEGACYIFEND ON}
                           {$endif}
                         {$endif}
@@ -236,6 +241,7 @@
 {$endif}
 
 {$ifdef Compiler23_Plus}
+  {$define HasSystemUITypes}
 {JPM_DEBUGGING define is used for internal debugging using CodeSite Express that is included with
 some versions of RAD Studio XE2.  This should never be used for release software and for component usage.}
   {$ifdef win32}
@@ -245,10 +251,8 @@ some versions of RAD Studio XE2.  This should never be used for release software
 {$endif}
 
 {$ifdef Compiler24_Plus}
-   {$define TScrollStyleInSystemUITypes}
    {$define has_StyleElements}
 {$endif}
-
 {
 Using Third Party Unicode Controls
 

@@ -41,14 +41,14 @@ begin
     '<center>'+
     '<h1>'+ProgName+'</h1>'+
     '<font color="Maroon">A demo program for the '+CompName+' component</font>'+
-    '<p>Version '+VersionNo+
+    '<p>Version '+VersionNo
     {$IFDEF WIN32}
-    ' for '+' Win32'+
+    +' for '+' Win32'
     {$ENDIF}
     {$IFDEF WIN64}
-    ' for '+' Win64'+
+    +' for '+' Win64'
     {$ENDIF}
-    '</center>'+
+   + '</center>'+
     '</body>';
   Viewer.LoadFromString(S, '', HtmlType);
 end;
