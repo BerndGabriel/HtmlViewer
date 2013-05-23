@@ -73,6 +73,7 @@ type
   TPopupMenu=class(Vcl.ActnPopup.TPopupActionBar);
   {$endif}
   ImageRec = class(TObject)
+  public
     Viewer: ThtmlViewer;
     ID, URL: string;
     Stream: TMemorystream;
@@ -150,6 +151,8 @@ type
     View1: TMenuItem;
     HTTPHeaders1: TMenuItem;
     PageInfo1: TMenuItem;
+    N4: TMenuItem;
+    LibraryInformation1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure GetButtonClick(Sender: TObject);
@@ -208,6 +211,7 @@ type
       Script: string);
     procedure HTTPHeaders1Click(Sender: TObject);
     procedure PageInfo1Click(Sender: TObject);
+    procedure LibraryInformation1Click(Sender: TObject);
 {$else}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: WideString);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
@@ -265,6 +269,9 @@ type
    {$endif}
     procedure EnableControls;
     procedure DisableControls;
+    {$ifdef LogIt}
+    procedure LogTStrings(AStrings : TStrings);
+    {$endif}
     procedure ImageRequestDone(Sender: TObject; RqType: THttpRequest; Error: Word);
     procedure HistoryClick(Sender: TObject);
     procedure WMLoadURL(var Message: TMessage); message WM_LoadURL;
@@ -315,9 +322,13 @@ uses
 {$ifdef Compiler24_Plus}
   System.Types,
 {$endif}
- {$ifdef TScrollStyleInSystemUITypes}
+{$ifdef HasSystemUITypes}
   System.UITypes,
 {$endif}
+  {$ifdef UseZLib}
+  IdZLibHeaders,
+  IdCTypes,
+  {$endif}
   IdURI,
   HTMLAbt, ProxyDlg, AuthUnit;
 
@@ -371,6 +382,9 @@ var
   m : TMenuItem;
     {$endif}
 begin
+  {$ifdef UseVCLStyles}
+  TStyleManager.AnimationOnControls := True;
+  {$Endif}
     FHeaderRequestData := TStringList.Create;
     FHeaderResponseData := TStringList.Create;
   {$ifdef LogIt}
@@ -496,7 +510,7 @@ begin
   ProtocolHandler := M4ProtocolHandler;
 {$endif}
   HintWindow := ThtHintWindow.Create(Self);
-  HintWindow.Color := $C0FFFF;
+//  HintWindow.Color := $C0FFFF;
   FrameBrowser.OnFileBrowse := FrameBrowserFileBrowse;
   Gauge.Parent := Self.StatusBarMain;
   //remove progress bar border
@@ -947,6 +961,17 @@ var
 begin
   try
     ImHTTP := (Sender as TImageHTTP);
+      {$ifdef LogIt}
+        LogLine ('=====');
+        LogLine ('');
+         LogLine ('--- Request ---');
+        LogTStrings( ImHTTP.Connection.HeaderRequestData );
+        LogLine ('');
+        LogLine ('--- Response ---');
+        LogTStrings( ImHTTP.Connection.HeaderResponseData );
+        LogLine ('');
+        LogLine ('====');
+      {$endif}
     if (RqType = httpGet) then
     begin
       if (Error = 0) then
@@ -963,6 +988,9 @@ begin
       {this code will cause Error Image to appear if error occured when downloading image}
       begin   {Add the image record to the Pending list to be inserted in the timer
                loop at TimerTimer}
+      {$ifdef LogIt}
+        LogLine ('GetImageRequest Done - Error '+IntToStr(Error));
+      {$endif}
         Pending.Add(ImHTTP.ImRec);
         FreeAndNil(ImHTTP.ImRec.Stream);
         ImHTTP.ImRec := Nil;  {so it won't get free'd below}
@@ -2108,6 +2136,171 @@ begin
   end;
 end;
 
+procedure THTTPForm.LibraryInformation1Click(Sender: TObject);
+var LId : TIdC_ULONG;
+begin
+  //
+  with TInfoForm.Create(Application) do
+  try
+    Caption := 'Library Information';
+    mmoInfo.Lines.Clear;
+    //
+    //       1 -          1 - bit  0
+    //       2 -          2 - bit  1
+    //       4 -          4 - bit  2
+    //       8 -          8 - bit  3
+    //      10 -         16 - bit  4
+    //      20 -         32 - bit  5
+    //      40 -         64 - bit  6
+    //      80 -        128 - bit  7
+
+    //     100 -        256 - bit  8
+    //     200 -        512 - bit  9
+    //     400 -       1024 - bit 10
+    //     800 -       2048 - bit 11
+    //    1000 -       4096 - bit 12
+    //    2000 -       8192 - bit 13
+    //    4000 -      16384 - bit 14
+    //    8000 -      32768 - bit 15
+
+    //   10000 -      65536 - bit 16
+    //   20000 -     131072 - bit 17
+    //   40000 -     262144 - bit 18
+    //   80000 -     524288 - bit 19
+    //  100000 -    1048576 - bit 20
+    //  200000 -    2097152 - bit 21
+    //  400000 -    4194304 - bit 22
+    //  800000 -    8388608 - bit 23
+    // 1000000 -   16777216 - bit 24
+    // 2000000 -   33554432 - bit 25
+    // 4000000 -   67108864 - bit 26
+    // 8000000 -  134217728 - bit 27
+    //10000000 -  268435456 - bit 28
+    //20000000 -  536870912 - bit 29
+    //40000000 - 1073741824 - bit 30
+    //80000000 - 2147483648 - bit 31
+    {$ifdef UseZLib}
+    mmoInfo.Lines.Add('ZLib Version: '+ zlibVersion);
+    LId := zlibCompileFlags;
+    mmoInfo.Lines.Add('Type sizes, two bits each, 00 = 16 bits, 01 = 32, 10 = 64, 11 = other: ');
+    case LId and $03 of
+      0 : mmoInfo.Lines.Add( 'Size of uInt : 16-bit');
+      1 : mmoInfo.Lines.Add( 'Size of uInt : 32-Bit');
+      2 : mmoInfo.Lines.Add( 'Size of uInt : 64-Bit');
+      3 : mmoInfo.Lines.Add( 'Size of uInt : Other');
+    end;
+    case ((LId And $C) div $4) of
+      0 : mmoInfo.Lines.Add( 'Size of uLong : 16-bit');
+      1 : mmoInfo.Lines.Add( 'Size of uLong : 32-Bit');
+      2 : mmoInfo.Lines.Add( 'Size of uLong : 64-Bit');
+      3 : mmoInfo.Lines.Add( 'Size of uLong : Other');
+    end;
+    case ((LId And $30) div $10) of
+      0 : mmoInfo.Lines.Add( 'Size of voidpf : 16-bit');
+      1 : mmoInfo.Lines.Add( 'Size of voidpf : 32-Bit');
+      2 : mmoInfo.Lines.Add( 'Size of voidpf : 64-Bit');
+      3 : mmoInfo.Lines.Add( 'Size of voidpf : Other');
+    end;
+    case ((LId And $C0) div $40) of
+      0 : mmoInfo.Lines.Add( 'Size of z_off_t : 16-bit');
+      1 : mmoInfo.Lines.Add( 'Size of z_off_t : 32-Bit');
+      2 : mmoInfo.Lines.Add( 'Size of z_off_t : 64-Bit');
+      3 : mmoInfo.Lines.Add( 'Size of z_off_t : Other');
+    end;
+    // debug 8
+    mmoInfo.Lines.Add( 'Compiler, assembler, and debug options: ');
+    if LId and $100 > 0 then  begin
+      mmoInfo.Lines.Add( 'DEBUG : True');
+    end else begin
+//      mmoInfo.Lines.Add( 'DEBUG : False');
+    end;
+    // asm 9
+    if LId and $200 > 0 then begin
+      mmoInfo.Lines.Add( 'ASMV or ASMINF - use ASM code : True');
+    end else begin
+//      mmoInfo.Lines.Add( 'ASMV or ASMINF - use ASM code  : False');
+    end;
+    //winapi 10
+    if LId and $400 > 0 then begin
+       mmoInfo.Lines.Add( 'ZLIB_WINAPI - exported functions use the WINAPI calling convention : True');
+    end else begin
+//       mmoInfo.Lines.Add( 'ZLIB_WINAPI - exported functions use the WINAPI calling convention : False');
+    end;
+    //11
+    //12
+    mmoInfo.Lines.Add( 'One-time table building (smaller code, but not thread-safe if true): ');
+    if LId and $1000 > 0 then begin
+      mmoInfo.Lines.Add( 'BUILDFIXED - build static block decoding tables when needed   : True');
+    end else begin
+//      mmoInfo.Lines.Add( 'BUILDFIXED - build static block decoding tables when needed  : False');
+    end;
+    //13
+    if LId and $2000 > 0 then begin
+      mmoInfo.Lines.Add( 'DYNAMIC_CRC_TABLE - build CRC calculation tables when needed : True');
+    end else begin
+//      mmoInfo.Lines.Add( 'DYNAMIC_CRC_TABLE - build CRC calculation tables when needed : False');
+    end;
+    //14
+    //15
+    //16
+    if (LId and ($10000 +$20000)> 0) then begin
+
+    mmoInfo.Lines.Add('Library content (indicates missing functionality): ');
+    if LId and $10000 > 0 then begin
+      mmoInfo.Lines.Add( 'NO_GZCOMPRESS - gz* functions cannot compress (to avoid linking deflate code when not needed)  : True');
+    end else begin
+ //     mmoInfo.Lines.Add( 'NO_GZCOMPRESS - gz* functions cannot compress (to avoid linking deflate code when not needed)  : False');
+    end;
+    //17
+    if LId and $20000 > 0 then begin
+      mmoInfo.Lines.Add( 'NO_GZIP - deflate can''t write gzip streams, and inflate can''t detect and decode gzip streams (to avoid linking crc code)  : True');
+    end else begin
+ //     mmoInfo.Lines.Add( 'NO_GZIP - deflate can''t write gzip streams, and inflate can''t detect and decode gzip streams (to avoid linking crc code)  : False');
+    end;
+    end;
+    //20
+    if (LId and ($100000 + $200000) > 0) then begin
+
+      mmoInfo.Lines.Add('Operation variations (changes in library functionality): ');
+
+      if LId and  $100000 > 0 then begin
+        mmoInfo.Lines.Add( 'PKZIP_BUG_WORKAROUND - slightly more permissive inflate : True');
+      end else begin
+//      mmoInfo.Lines.Add( 'PKZIP_BUG_WORKAROUND - slightly more permissive inflate : False');
+      end;
+    //21
+      if LId and $200000 > 0 then begin
+        mmoInfo.Lines.Add( 'FASTEST - deflate algorithm with only one, lowest compression level : True');
+      end else begin
+ //     mmoInfo.Lines.Add( 'FASTEST - deflate algorithm with only one, lowest compression level  : False');
+      end;
+    end;
+    //24
+    mmoInfo.Lines.Add('The sprintf variant used by gzprintf (zero is best): ');
+    if LId and $1000000 > 0 then begin
+      mmoInfo.Lines.Add( '0 = vs*, 1 = s* - 1 means limited to 20 arguments after the format : True');
+    end else begin
+      mmoInfo.Lines.Add( '0 = vs*, 1 = s* - 1 means limited to 20 arguments after the format : False');
+    end;
+    //25
+    if LId and $2000000 > 0 then begin
+      mmoInfo.Lines.Add( '0 = *nprintf, 1 = *printf - 1 means gzprintf() not secure!  : True');
+    end else begin
+      mmoInfo.Lines.Add( '0 = *nprintf, 1 = *printf - 1 means gzprintf() not secure!  : False');
+    end;
+    //26
+    if LId and $2000000 > 0 then begin
+      mmoInfo.Lines.Add( '0 = returns value, 1 = void - 1 means inferred string length returned  : True');
+    end else begin
+      mmoInfo.Lines.Add( '0 = returns value, 1 = void - 1 means inferred string length returned  : False');
+    end;
+    {$endif}
+    ShowModal;
+  finally
+    Free;
+  end;
+end;
+
 procedure THTTPForm.LoadCookies(ACookieCollection: TIdCookieManager);
 var
   M : TMemIniFile;
@@ -2144,6 +2337,16 @@ begin
       end;
   end;
 end;
+
+      {$ifdef LogIt}
+procedure THTTPForm.LogTStrings(AStrings: TStrings);
+var i : Integer;
+begin
+  for i := 0 to AStrings.Count -1 do begin
+        LogLine (AStrings[i]);
+  end;
+end;
+{$endif}
 
 procedure THTTPForm.AuthorizationEvent(Sender: TObject;
   Authentication: TIdAuthentication; var Handled: Boolean);
