@@ -2382,7 +2382,7 @@ procedure TProperties.Combine(Styles: TStyleList;
     {process contextual selectors}
     var
       J, K, N: Integer;
-      A: array[1..10] of record
+      A: array[1..20] of record
         Tg, Cl, ID, PS: ThtString;
         gt: Boolean;
       end;
@@ -2394,7 +2394,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       begin
         N := 1; {N is number of selectors in contextual ThtString}
         I := Pos(' ', S);
-        while (I > 0) and (N < 10) do
+        while (I > 0) and (N < 20) do
         begin
           A[N].Tg := System.Copy(S, 1, I - 1);
           Delete(S, 1, I);
@@ -3159,8 +3159,15 @@ begin
 end;
 
 function TStyleList.GetSeqNo: ThtString;
-begin {used to help sort contextual items by entry sequence}
-  Result := IntToStr(SeqNo);
+begin
+  {used to help sort contextual items by entry sequence}
+  // BG, 23.05.2013: Without fixed width for the number string entries 12 and 111 are sorted literally:
+  // 'ul 111'
+  // 'ul 12'.
+  // With fixed width the sort order is:
+  // 'ul 00012'
+  // 'ul 00111'
+  Result := Format('%.5d', [SeqNo]);
   Inc(SeqNo);
 end;
 
@@ -3453,7 +3460,7 @@ begin
         Properties.Props[ListStyleType] := 'blank';
         Properties.Props[MarginTop] := AutoParagraph;
         Properties.Props[MarginBottom] := AutoParagraph;
-        Properties.Props[PaddingLeft] := IntNull;
+        Properties.Props[MarginLeft] := IntNull;
       end;
 
       dl:
@@ -3462,21 +3469,21 @@ begin
         Properties.Props[MarginLeft] := 0;
         Properties.Props[MarginTop] := 0;
         Properties.Props[MarginBottom] := 0;
-        Properties.Props[PaddingLeft] := 0;
+        Properties.Props[MarginLeft] := 0;
       end;
 
       blockquote:
       begin
         Properties.Props[MarginTop] := AutoParagraph;
         Properties.Props[MarginBottom] := ParagraphSpace;
-        Properties.Props[PaddingLeft] := ListIndent;
+        Properties.Props[MarginLeft] := ListIndent;
       end;
 
       dd:
       begin
         Properties.Props[MarginTop] := 0;
         Properties.Props[MarginBottom] := 0;
-        Properties.Props[PaddingLeft] := ListIndent;
+        Properties.Props[MarginLeft] := ListIndent;
       end;
     end;
     AddObject(ListStr[J], Properties);

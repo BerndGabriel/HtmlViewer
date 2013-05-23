@@ -55,7 +55,7 @@ type
     fvMetaRefresh, fvNoBorder, fvNoLinkUnderline, fvOverLinksActive,
     fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground,
     fvShowVScroll, fvNoFocusRect, fvShowDummyCaret, fvNoWheelMouse,
-    fvNoLinkHilite);
+    fvNoLinkHilite, fvAllowHotSpotDblClick);
   TFrameViewerOptions = set of fvOptionEnum;
 
   {for TFrameViewer}
@@ -645,16 +645,6 @@ type
     destructor Destroy; override;
   end;
 
-function HasImageFileExt(const S: ThtString): boolean;
-begin
-  Result := IsImageExt(Lowercase(ExtractFileExt(S)));
-end;
-
-function HasTextFileExt(const S: ThtString): boolean;
-begin
-  Result := IsTextExt(Lowercase(ExtractFileExt(S)));
-end;
-
 {----------------FileToString}
 
 function FileToString(const Name: ThtString): AnsiString;
@@ -1048,7 +1038,7 @@ var
   I: integer;
   Upper, Lower: boolean;
   EV: EventRec;
-
+  ft: THtmlFileType;
 begin
   if Source <> '' then
     if Assigned(FrameSet) then
@@ -1066,16 +1056,16 @@ begin
     else if Assigned(Viewer) then
     begin
       Viewer.Base := MasterSet.FBase;
-      if HasImageFileExt(Source) then
-      try
-        Viewer.LoadFromFile(Source, ImgType);
-      except end {leave blank on error}
-      else if HasTextFileExt(Source) then
-      try
-        Viewer.LoadFromFile(Source, TextType);
-      except end
+      ft := GetFileType(Source);
+      case ft of
+        ImgType,
+        TextType:
+          try
+            Viewer.LoadFromFile(Source, ft);
+          except
+            {leave blank on error}
+          end;
       else
-      begin
         try
           if MasterSet.TriggerEvent(Source, EV.NewName, EV.Doc) then
             if EV.Doc <> nil then
@@ -2863,7 +2853,7 @@ end;
 
 procedure TFrameViewer.LoadImageFile(const FName: ThtString);
 begin
-  if HasImageFileExt(FName) then
+  if GetFileType(FName) = ImgType then
     LoadFromFile(FName);
 end;
 
@@ -3546,6 +3536,68 @@ begin
     CurFrameSet.RePaint;
 end;
 
+//-- BG ---------------------------------------------------------- 12.05.2013 --
+function FvOptionsToHtOptions(Value: TFrameViewerOptions; HtOptions: THtmlViewerOptions = []): THtmlViewerOptions;
+begin
+  if (fvOverLinksActive in Value) then
+    Include(HtOptions, htOverLinksActive)
+  else
+    Exclude(HtOptions, htOverLinksActive);
+
+  if (fvNoLinkUnderline in Value) then
+    Include(HtOptions, htNoLinkUnderline)
+  else
+    Exclude(HtOptions, htNoLinkUnderline);
+
+  if (fvPrintTableBackground in Value) then
+    Include(HtOptions, htPrintTableBackground)
+  else
+    Exclude(HtOptions, htPrintTableBackground);
+
+  if (fvPrintBackground in Value) then
+    Include(HtOptions, htPrintBackground)
+  else
+    Exclude(HtOptions, htPrintBackground);
+
+  if (fvPrintMonochromeBlack in Value) then
+    Include(HtOptions, htPrintMonochromeBlack)
+  else
+    Exclude(HtOptions, htPrintMonochromeBlack);
+
+  if (fvShowVScroll in Value) then
+    Include(HtOptions, htShowVScroll)
+  else
+    Exclude(HtOptions, htShowVScroll);
+
+  if (fvNoWheelMouse in Value) then
+    Include(HtOptions, htNoWheelMouse)
+  else
+    Exclude(HtOptions, htNoWheelMouse);
+
+  if (fvShowDummyCaret in Value) then
+    Include(HtOptions, htShowDummyCaret)
+  else
+    Exclude(HtOptions, htShowDummyCaret);
+
+  if (fvNoLinkHilite in Value) then
+    Include(HtOptions, htNoLinkHilite)
+  else
+    Exclude(HtOptions, htNoLinkHilite);
+
+  //BG, 03.01.2010: added fvNoFocusRect handling according to mik kvitchko's patch MK20091107
+  if (fvNoFocusRect in Value) then
+    Include(HtOptions, htNoFocusRect)
+  else
+    Exclude(HtOptions, htNoFocusRect);
+
+  if (fvAllowHotSpotDblClick in Value) then
+    Include(HtOptions, htAllowHotSpotDblClick)
+  else
+    Exclude(HtOptions, htAllowHotSpotDblClick);
+
+  Result := HtOptions;
+end;
+
 procedure TFVBase.SetOptions(Value: TFrameViewerOptions);
 var
   I: integer;
@@ -3566,57 +3618,9 @@ begin
   for I := 0 to CurFrameSet.Viewers.Count - 1 do
     with THtmlViewer(CurFrameSet.Viewers[I]) do
     begin
-      if (fvOverLinksActive in Value) then
-        htOptions := htOptions + [htOverLinksActive]
-      else
-        htOptions := htOptions - [htOverLinksActive];
-
-      if (fvNoLinkUnderline in Value) then
-        htOptions := htOptions + [htNoLinkUnderline]
-      else
-        htOptions := htOptions - [htNoLinkUnderline];
-
-      if (fvPrintTableBackground in Value) then
-        htOptions := htOptions + [htPrintTableBackground]
-      else
-        htOptions := htOptions - [htPrintTableBackground];
-
-      if (fvPrintBackground in Value) then
-        htOptions := htOptions + [htPrintBackground]
-      else
-        htOptions := htOptions - [htPrintBackground];
-
-      if (fvPrintMonochromeBlack in Value) then
-        htOptions := htOptions + [htPrintMonochromeBlack]
-      else
-        htOptions := htOptions - [htPrintMonochromeBlack];
-
-      if (fvShowVScroll in Value) then
-        htOptions := htOptions + [htShowVScroll]
-      else
-        htOptions := htOptions - [htShowVScroll];
-
-      if (fvNoWheelMouse in Value) then
-        htOptions := htOptions + [htNoWheelMouse]
-      else
-        htOptions := htOptions - [htNoWheelMouse];
-
-      if (fvShowDummyCaret in Value) then
-        htOptions := htOptions + [htShowDummyCaret]
-      else
-        htOptions := htOptions - [htShowDummyCaret];
-
-      if (fvNoLinkHilite in Value) then
-        htOptions := htOptions + [htNoLinkHilite]
-      else
-        htOptions := htOptions - [htNoLinkHilite];
+      HtOptions := FvOptionsToHtOptions(Value, HtOptions);
 
       //BG, 03.01.2010: added fvNoFocusRect handling according to mik kvitchko's patch MK20091107
-      if (fvNoFocusRect in Value) then
-        htOptions := htOptions + [htNoFocusRect]
-      else
-        htOptions := htOptions - [htNoFocusRect];
-
       if (fvNoFocusRect in Value) or (fvNoBorder in Value) then
         BorderStyle := htNone
       else
@@ -3659,27 +3663,7 @@ begin
   Result.DefFontName := DefFontName;
   Result.DefPreFontName := DefPreFontName;
   Result.OnBitmapRequest := OnBitmapRequest;
-  if fvOverLinksActive in FOptions then
-    Result.htOptions := Result.htOptions + [htOverLinksActive];
-  if fvNoLinkUnderline in FOptions then
-    Result.htOptions := Result.htOptions + [htNoLinkUnderline];
-  if not (fvPrintTableBackground in FOptions) then
-    Result.htOptions := Result.htOptions - [htPrintTableBackground];
-  if (fvPrintBackground in FOptions) then
-    Result.htOptions := Result.htOptions + [htPrintBackground];
-  if not (fvPrintMonochromeBlack in FOptions) then
-    Result.htOptions := Result.htOptions - [htPrintMonochromeBlack];
-  if fvShowVScroll in FOptions then
-    Result.htOptions := Result.htOptions + [htShowVScroll];
-  if fvNoWheelMouse in FOptions then
-    Result.htOptions := Result.htOptions + [htNoWheelMouse];
-  if fvShowDummyCaret in FOptions then
-    Result.htOptions := Result.htOptions + [htShowDummyCaret];
-  if fvNoLinkHilite in FOptions then
-    Result.htOptions := Result.htOptions + [htNoLinkHilite];
-  //BG, 04.01.2010: added fvNoFocusRect handling according to mik kvitchko's patch MK20091107
-  if fvNoFocusRect in FOptions then
-    Result.htOptions := Result.htOptions + [htNoFocusRect];
+  Result.HtOptions := FvOptionsToHtOptions(FOptions, Result.HtOptions);
   Result.OnImageRequest := DoGetImage;
   Result.OnFormSubmit := DoFormSubmitEvent;
   Result.OnLink := OnLink;

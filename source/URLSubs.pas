@@ -1,6 +1,7 @@
 {
-Version   11
+Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -493,7 +494,9 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.11.2010 --
 procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
-// extracted from several locations spread all over the code.
+// Extracted from several locations spread all over the code.
+// Splits Str at position of Sep into Str and Spall. Spall starts with Sep.
+// If Sep is not in Str, on return Str is unchanged and Spall is empty.
 var
   I: Integer;
 begin

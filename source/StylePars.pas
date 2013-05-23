@@ -1,7 +1,7 @@
 {
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1226,8 +1226,11 @@ var
     end;
   end;
 
+const
+  Important: ThtString = '!important';
 var
   Prop, Value: ThtString;
+  ValueLength: Integer;
 begin
   if LCh = '{' then
   begin
@@ -1248,6 +1251,14 @@ begin
             SetLength(Value, Length(Value) + 1);
             Value[Length(Value)] := LCh;
             GetCh;
+          end;
+
+          // TODO -oBG, 26.04.2013: support !important
+          ValueLength := Length(Value) - Length(Important);
+          if ValueLength >= 0 then
+          begin
+            if htLowerCase(Copy(Value, 1 + ValueLength, Length(Important))) = Important then
+              Value := Trim(Copy(Value, 1, ValueLength));
           end;
 
           ProcessPropertyOrShortHand(Prop, Value);

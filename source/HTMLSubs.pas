@@ -7103,19 +7103,19 @@ begin
       MargArrayO[MarginLeft] := 16;
   end;
 
-  if (VarType(MargArrayO[PaddingLeft]) in varInt) and (MargArrayO[PaddingLeft] = IntNull) then
+  if (VarType(MargArrayO[MarginLeft]) in varInt) and (MargArrayO[MarginLeft] = IntNull) then
     case Sy of
 
       OLSy, ULSy, DirSy, MenuSy:
-        if APlain then
-          MargArrayO[PaddingLeft] := 0
+        if FListStyleType = lbNone then
+          MargArrayO[MarginLeft] := 0
         else
-          MargArrayO[PaddingLeft] := ListIndent;
+          MargArrayO[MarginLeft] := ListIndent;
 
       DLSy:
-        MargArrayO[PaddingLeft] := 0;
+        MargArrayO[MarginLeft] := 0;
     else
-      MargArrayO[PaddingLeft] := ListIndent;
+      MargArrayO[MarginLeft] := ListIndent;
     end;
 
   FListNumb := AListNumb;
@@ -7219,13 +7219,15 @@ function TBlockLI.Draw1(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 
 const
-  MaxRoman = 20;
-  LowRoman: array[1..MaxRoman] of ThtString = ('i', 'ii', 'iii', 'iv', 'v', 'vi',
+  MaxNumb = 26;
+  LowerAlpha: ThtString = 'abcdefghijklmnopqrstuvwxyz';
+  HigherAlpha: ThtString = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  LowerRoman: array[1..MaxNumb] of ThtString = ('i', 'ii', 'iii', 'iv', 'v', 'vi',
     'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii',
-    'xviii', 'xix', 'xx');
-  HighRoman: array[1..MaxRoman] of ThtString = ('I', 'II', 'III', 'IV', 'V', 'VI',
+    'xviii', 'xix', 'xx', 'xxi', 'xxii', 'xxiii', 'xxiv', 'xxv', 'xxvi');
+  HigherRoman: array[1..MaxNumb] of ThtString = ('I', 'II', 'III', 'IV', 'V', 'VI',
     'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII',
-    'XVIII', 'XIX', 'XX');
+    'XVIII', 'XIX', 'XX', 'XXI', 'XXII', 'XXIII', 'XXIV', 'XXV', 'XXVI');
 var
   NStr: ThtString;
   BkMode, TAlign: Integer;
@@ -7248,17 +7250,16 @@ begin
     begin
       Image.DoDraw(Canvas, X - 16, YB - Image.ObjHeight, Image.Image, Image.Mask);
     end
-
     else if not (ListType in [None, Definition]) then
     begin
       if ListStyleType in [lbDecimal, lbLowerAlpha, lbLowerRoman, lbUpperAlpha, lbUpperRoman] then
       begin
-        AlphaNumb := Min(ListNumb - 1, 25);
-        case ListStyleType of
-          lbLowerAlpha: NStr := chr(ord('a') + AlphaNumb);
-          lbUpperAlpha: NStr := chr(ord('A') + AlphaNumb);
-          lbLowerRoman: NStr := LowRoman[Min(ListNumb, MaxRoman)];
-          lbUpperRoman: NStr := HighRoman[Min(ListNumb, MaxRoman)];
+        AlphaNumb := Min(ListNumb, MaxNumb);
+        case FListStyleType of
+          lbLowerAlpha: NStr := LowerAlpha[AlphaNumb];
+          lbUpperAlpha: NStr := HigherAlpha[AlphaNumb];
+          lbLowerRoman: NStr := LowerRoman[AlphaNumb];
+          lbUpperRoman: NStr := HigherRoman[AlphaNumb];
         else
           NStr := IntToStr(ListNumb);
         end;

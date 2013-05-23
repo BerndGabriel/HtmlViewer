@@ -92,7 +92,8 @@ type
     htOverLinksActive, htNoLinkUnderline, htPrintTableBackground,
     htPrintBackground, htPrintMonochromeBlack, htShowDummyCaret,
     htShowVScroll, htNoWheelMouse, htNoLinkHilite,
-    htNoFocusRect //MK20091107
+    htNoFocusRect, //MK20091107
+    htAllowHotSpotDblClick
     );
   THtmlViewerOptions = set of THtmlViewerOption;
   ThtProgressEvent = procedure(Sender: TObject; Stage: TProgressStage;
@@ -597,10 +598,10 @@ type
 {$endif}
   end;
 
-function IsHtmlExt(const Ext: ThtString): Boolean;
-function IsImageExt(const Ext: ThtString): Boolean;
-function IsTextExt(const Ext: ThtString): Boolean;
 function GetFileType(const S: ThtString): THtmlFileType;
+
+var
+  FileTypes: ThtStringList;
 
 implementation
 
@@ -625,46 +626,61 @@ type
     destructor Destroy; override;
   end;
 
-//-- JPM --------------------------------------------------------  13.02.2013 --
-function IsXHtmlExt(const Ext: ThtString): Boolean;
-begin
-  Result := (Ext = '.xht') or (Ext = '.xhtml');
-end;
+  FileTypeRec = record
+    FileExt: ThtString;
+    FileType: THtmlFileType;
+  end;
+  PFileTypeRec = ^FileTypeRec;
 
-//-- BG ---------------------------------------------------------- 23.09.2010 --
-function IsHtmlExt(const Ext: ThtString): Boolean;
-begin
-  Result := (Ext = '.htm') or (Ext = '.html') or (Ext = '.css') or (Ext = '.xht') or (Ext = '.xhtml') or (Ext = '.php') or (Ext = '.asp') or (Ext = '.shtml')
-end;
+//-- BG ---------------------------------------------------------- 12.05.2013 --
+procedure InitFileTypes;
+const
+  FileTypeDefinitions: array [1..14] of FileTypeRec = (
+    (FileExt: '.htm';   FileType: HTMLType),
+    (FileExt: '.html';  FileType: HTMLType),
+    (FileExt: '.xht';   FileType: HTMLType),
+    (FileExt: '.css';   FileType: HTMLType),
+    (FileExt: '.php';   FileType: HTMLType),
+    (FileExt: '.asp';   FileType: HTMLType),
 
-//-- BG ---------------------------------------------------------- 23.09.2010 --
-function IsImageExt(const Ext: ThtString): Boolean;
-begin
-  Result := (Ext = '.gif') or (Ext = '.jpg') or (Ext = '.jpeg') or (Ext = '.png') or (Ext = '.bmp');
-end;
+    (FileExt: '.xhtml'; FileType: XHtmlType),
+    (FileExt: '.shtml'; FileType: XHTMLType),
 
-//-- BG ---------------------------------------------------------- 23.09.2010 --
-function IsTextExt(const Ext: ThtString): Boolean;
+    (FileExt: '.gif';   FileType: ImgType),
+    (FileExt: '.jpg';   FileType: ImgType),
+    (FileExt: '.jpeg';  FileType: ImgType),
+    (FileExt: '.png';   FileType: ImgType),
+    (FileExt: '.bmp';   FileType: ImgType),
+
+    (FileExt: '.txt';   FileType: TextType)
+  );
+var
+  I: Integer;
+  P: PFileTypeRec;
 begin
-  Result := (Ext = '.txt');
+  // Put the Attributes into a sorted StringList for faster access.
+  if FileTypes = nil then
+  begin
+    FileTypes := ThtStringList.Create;
+    FileTypes.CaseSensitive := True;
+    for I := low(FileTypeDefinitions) to high(FileTypeDefinitions) do
+    begin
+      P := @FileTypeDefinitions[I];
+      FileTypes.AddObject(P.FileExt, Pointer(P));
+    end;
+    FileTypes.Sort;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
 function GetFileType(const S: ThtString): THtmlFileType;
 var
   Ext: ThtString;
+  I: Integer;
 begin
   Ext := LowerCase(ExtractFileExt(S));
-  if IsHtmlExt(Ext) then begin
-    if IsXHtmlExt(Ext) then
-      Result := XHTMLType
-    else
-      Result := HTMLType
-  end
-  else if IsImageExt(Ext) then
-    Result := ImgType
-  else if IsTextExt(Ext) then
-    Result := TextType
+  if FileTypes.Find(Ext, I) then
+    Result := PFileTypeRec(FileTypes.Objects[i]).FileType
   else
     Result := OtherType;
 end;
@@ -1040,7 +1056,8 @@ begin
           OnParseBegin(Self, FDocument);
 
         case DocType of
-          HTMLType,XHtmlType:
+          HTMLType,
+          XHtmlType:
             ParseHtml;
         else
           ParseText;
@@ -1087,7 +1104,7 @@ end;
 procedure THtmlViewer.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
   if FImageStream <> nil then
-  	Stream := FImageStream
+    Stream := FImageStream
   else if Assigned(FOnImageRequest) then
     FOnImageRequest(Sender, SRC, Stream);
 end;
@@ -1440,10 +1457,11 @@ begin
       ft := GetFileType(S);
       case ft of
 
-        HTMLType,XHtmlType:
+        HTMLType,
+        XHtmlType:
           if S <> FCurrentFile then
           begin
-            LoadFromFile(S + Dest,ft);
+            LoadFromFile(S + Dest, ft);
             AddVisitedLink(S + Dest);
           end
           else if PositionTo(Dest) then {file already loaded, change position}
@@ -1837,7 +1855,8 @@ begin
               break;
             end;
         UrlTarget.Free;
-        Include(FViewerState, vsHotSpotAction); {prevent Double click action}
+        if not (htAllowHotSpotDblClick in HtOptions) then
+          Include(FViewerState, vsHotSpotAction); {prevent Double click action}
         URLAction;
       {Note:  Self pointer may not be valid after URLAction call (TFrameViewer, HistoryMaxCount=0)}
       end;
@@ -4661,14 +4680,7 @@ begin
   if FCurrentFile <> '' then
   begin
     Pos := Position;
-    if FCurrentFileType = HTMLType then
-      LoadFromFile(FCurrentFile)
-    else if FCurrentFileType = XHtmlType then
-      LoadFromFile(FCurrentFile,XHtmlType)
-    else if FCurrentFileType = TextType then
-      LoadFromFile(FCurrentFile, TextType)
-    else
-      LoadFromFile(FCurrentFile, ImgType);
+    LoadFromFile(FCurrentFile, FCurrentFileType);
     Position := Pos;
   end;
 end;
@@ -5069,4 +5081,8 @@ begin
   inherited;
 end;
 
+initialization
+  InitFileTypes;
+finalization
+  FileTypes.Free;
 end.
