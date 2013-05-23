@@ -712,9 +712,9 @@ begin
 //  BorderPanel.ParentCtl3D := False;
 {$ifdef delphi7_plus}
   BorderPanel.ParentBackground := False;
-{$endif}
-{$endif}
   BorderPanel.ControlStyle := BorderPanel.ControlStyle + [csNeedsBorderPaint];
+{$endif}
+{$endif}
   BorderPanel.Parent := Self;
 
   PaintPanel := TPaintPanel.CreateIt(Self, Self);
