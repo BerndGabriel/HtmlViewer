@@ -59,7 +59,6 @@ contains
   HTMLSubs in '..\source\HTMLSubs.pas',
   htmlun2 in '..\source\htmlun2.pas',
   htmlview in '..\source\htmlview.pas',
-  JPMHtmlControls in '..\source\JPMHtmlControls.pas',
   MetaFilePrinter in '..\source\MetaFilePrinter.pas',
   msimg32 in '..\source\msimg32.pas',
   ReadHTML in '..\source\ReadHTML.pas',
@@ -67,8 +66,6 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
   vwPrint in '..\source\vwPrint.pas',
-  HtmlControls in '..\source\HtmlControls.pas',
-  HTmlGUIUtils in '..\source\HTmlGUIUtils.pas',
   HtmlSymb in '..\source\HtmlSymb.pas';
 
 end.
