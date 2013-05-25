@@ -1,10 +1,10 @@
 object AboutBox: TAboutBox
   Left = 740
   Top = 213
-  Width = 375
-  Height = 291
   BorderIcons = [biSystemMenu]
   Caption = 'About'
+  ClientHeight = 253
+  ClientWidth = 359
   Color = clBtnFace
   Constraints.MinHeight = 265
   Constraints.MinWidth = 375
@@ -16,18 +16,18 @@ object AboutBox: TAboutBox
   OldCreateOrder = True
   Position = poScreenCenter
   DesignSize = (
-    367
-    257)
+    359
+    253)
   PixelsPerInch = 96
   TextHeight = 16
   object BitBtn1: TBitBtn
-    Left = 284
-    Top = 224
+    Left = 276
+    Top = 220
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
-    TabOrder = 0
     Kind = bkOK
+    TabOrder = 0
   end
   object Viewer: THtmlViewer
     Left = 8
@@ -38,17 +38,16 @@ object AboutBox: TAboutBox
     TabOrder = 1
     Anchors = [akLeft, akTop, akRight, akBottom]
     BorderStyle = htNone
-    CharSet = DEFAULT_CHARSET
     DefFontName = 'Times New Roman'
     DefPreFontName = 'Courier New'
     HistoryMaxCount = 0
     HtOptions = []
     NoSelect = True
-    PrintMarginBottom = 2
-    PrintMarginLeft = 2
-    PrintMarginRight = 2
-    PrintMarginTop = 2
-    PrintScale = 1
+    PrintMarginBottom = 2.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
     ScrollBars = ssNone
     ViewImages = False
   end

@@ -31,7 +31,7 @@ interface
 
 uses
 {$ifdef MSWINDOWS}
-  Windows,
+  Windows, SysUtils,
 {$endif}
   HtmlGlobals;
 
