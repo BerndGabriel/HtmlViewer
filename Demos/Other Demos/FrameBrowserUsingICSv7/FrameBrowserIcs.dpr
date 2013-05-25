@@ -1,6 +1,8 @@
 {
-Version   11.3
-Copyright (c) 2012 by HtmlViewer Team
+Version   11.4
+Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Copyright (c) 2012 by Angus Robertson delphi@magsys.co.uk
+Copyright (c) 2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -25,19 +27,21 @@ are covered by separate copyright notices located in those modules.
 
 program FrameBrowserIcs;
 
+{$R 'fbHelp.res' 'Resources\fbHelp.rc'}
+
 uses
   Forms,
   FBUnitIcs in 'FBUnitIcs.pas' {HTTPForm},
   UrlConIcs in 'UrlConIcs.pas',
   AuthUnit in 'AuthUnit.pas' {AuthForm},
-  HTMLAbt in 'HTMLAbt.pas' {AboutBox},
   CachUnitId in 'CachUnitId.pas',
   DownLoadId in 'DownLoadId.pas' {DownLoadForm},
   ProxyDlg in 'ProxyDlg.pas' {ProxyForm},
-  PreviewForm in 'PreviewForm.pas' {PreviewForm},
-  Gopage in 'Gopage.pas' {GoPageForm},
-  PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
-  logwin in 'logwin.pas' {LogForm};
+  logwin in 'logwin.pas' {LogForm},
+  Gopage in '..\..\Main Demos\Gopage.pas' {GoPageForm},
+  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox},
+  PreviewForm in '..\..\Main Demos\PreviewForm.pas' {PreviewForm},
+  PrintStatusForm in '..\..\Main Demos\PrintStatusForm.pas' {PrnStatusForm};
 
 {$R *.RES}
 

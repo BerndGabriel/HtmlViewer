@@ -332,7 +332,6 @@ uses
   IdURI,
   HTMLAbt, ProxyDlg, AuthUnit;
 
-{$R fbHelp32.res}
 {$ifdef LCL}
   {$R *.lfm}
 {$else}

@@ -3,8 +3,8 @@ object HTTPForm: THTTPForm
   Top = 261
   ActiveControl = UrlComboBox
   Caption = 'Experimental Browser'
-  ClientHeight = 167
-  ClientWidth = 467
+  ClientHeight = 231
+  ClientWidth = 570
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clBtnText
@@ -22,9 +22,9 @@ object HTTPForm: THTTPForm
   TextHeight = 13
   object FrameBrowser: TFrameBrowser
     Left = 0
-    Top = 80
-    Width = 467
-    Height = 68
+    Top = 41
+    Width = 570
+    Height = 171
     CharSet = ANSI_CHARSET
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
@@ -55,12 +55,15 @@ object HTTPForm: THTTPForm
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
+    ExplicitTop = 80
+    ExplicitWidth = 467
+    ExplicitHeight = 68
   end
   object CoolBar1: TCoolBar
     Left = 0
     Top = 0
-    Width = 467
-    Height = 80
+    Width = 570
+    Height = 41
     AutoSize = True
     Bands = <
       item
@@ -68,7 +71,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 246
+        Width = 160
       end
       item
         Break = False
@@ -77,7 +80,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 211
+        Width = 220
       end
       item
         Break = False
@@ -85,12 +88,14 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 461
+        Width = 176
       end>
+    ExplicitWidth = 467
+    ExplicitHeight = 80
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 233
+      Width = 147
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -134,25 +139,25 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 289
+      Left = 203
       Top = 8
-      Width = 174
+      Width = 179
       Height = 21
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -11
       Font.Name = 'MS Sans Serif'
       Font.Style = []
-      ItemHeight = 0
+      ItemHeight = 13
       ParentFont = False
       TabOrder = 1
       OnClick = URLComboBoxClick
       OnKeyPress = URLComboBoxKeyPress
     end
     object Panel10: TPanel
-      Left = 11
-      Top = 39
-      Width = 452
+      Left = 399
+      Top = 0
+      Width = 167
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -194,13 +199,14 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 424
+        Left = 139
         Top = 0
         Width = 28
         Height = 37
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
+        ExplicitLeft = 424
         object Animate1: TAnimate
           Left = 3
           Top = 8
@@ -214,8 +220,8 @@ object HTTPForm: THTTPForm
   end
   object StatusBarMain: TStatusBar
     Left = 0
-    Top = 148
-    Width = 467
+    Top = 212
+    Width = 570
     Height = 19
     Panels = <
       item
@@ -228,6 +234,8 @@ object HTTPForm: THTTPForm
         Width = 50
       end>
     OnDrawPanel = StatusBarMainDrawPanel
+    ExplicitTop = 148
+    ExplicitWidth = 467
   end
   object Gauge: TProgressBar
     Left = 176

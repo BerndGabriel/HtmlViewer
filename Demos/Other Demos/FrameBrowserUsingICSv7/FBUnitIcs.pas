@@ -300,7 +300,6 @@ implementation
 
 uses HTMLAbt, ProxyDlg, AuthUnit, LogWin;
 
-{$R fbHelp32.res}
 {$ifdef LCL}
   {$R *.lfm}
 {$else}
@@ -1691,6 +1690,8 @@ LogLine ('FrameBrowserScript, Name=' + Name + ', Src=' + Src + ', Script=' + Scr
 end;
 
 procedure THTTPForm.About1Click(Sender: TObject);
+var
+  AboutBox: TAboutBox;
 begin
 AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser ICSv7 Demo', 'TFrameBrowser');
 try

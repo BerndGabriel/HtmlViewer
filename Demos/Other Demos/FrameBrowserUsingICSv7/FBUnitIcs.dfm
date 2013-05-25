@@ -117,7 +117,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 153
+        Width = 216
       end
       item
         Break = False
@@ -126,7 +126,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 350
+        Width = 268
       end
       item
         Break = False
@@ -134,12 +134,12 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 218
+        Width = 231
       end>
     object ToolBar2: TToolBar
       Left = 9
       Top = 0
-      Width = 140
+      Width = 141
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -183,10 +183,11 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 193
+      Left = 194
       Top = 8
-      Width = 308
+      Width = 227
       Height = 21
+      ItemHeight = 0
       TabOrder = 1
       OnClick = URLComboBoxClick
       OnKeyPress = URLComboBoxKeyPress
@@ -194,9 +195,9 @@ object HTTPForm: THTTPForm
         'http://pc19-web/local/localindex.html')
     end
     object Panel10: TPanel
-      Left = 516
+      Left = 443
       Top = 0
-      Width = 209
+      Width = 282
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -232,14 +233,14 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 181
+        Left = 254
         Top = 0
         Width = 28
         Height = 37
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 245
+        ExplicitLeft = 255
         object Animate1: TAnimate
           Left = 3
           Top = 8
@@ -416,7 +417,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 160
     Bitmap = {
-      494C01010D005800580011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100040011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
