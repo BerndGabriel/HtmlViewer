@@ -30,6 +30,9 @@ unit HtmlSymb;
 interface
 
 uses
+{$ifdef MSWINDOWS}
+  Windows,
+{$endif}
   HtmlGlobals;
 
 type
@@ -254,7 +257,7 @@ function EndSymbToSymb(Sy: TElemSymb): TElemSymb;
 function EndSymbFromSymb(Sy: TElemSymb): TElemSymb;
 
 implementation
-uses SysUtils;
+
 var
   ElementNamesIndex: array [TElemSymb] of Integer;
   ElemSymbolNames: array [TElemSymb] of ThtString;
