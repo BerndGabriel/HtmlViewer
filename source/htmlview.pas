@@ -638,13 +638,14 @@ const
   FileTypeDefinitions: array [1..14] of FileTypeRec = (
     (FileExt: '.htm';   FileType: HTMLType),
     (FileExt: '.html';  FileType: HTMLType),
-    (FileExt: '.xht';   FileType: HTMLType),
+
     (FileExt: '.css';   FileType: HTMLType),
     (FileExt: '.php';   FileType: HTMLType),
     (FileExt: '.asp';   FileType: HTMLType),
+    (FileExt: '.shtml'; FileType: HTMLType),
 
     (FileExt: '.xhtml'; FileType: XHtmlType),
-    (FileExt: '.shtml'; FileType: XHTMLType),
+    (FileExt: '.xht';   FileType: XHTMLType),
 
     (FileExt: '.gif';   FileType: ImgType),
     (FileExt: '.jpg';   FileType: ImgType),
