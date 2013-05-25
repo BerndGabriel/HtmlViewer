@@ -285,7 +285,7 @@ type
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
     //BG, 20.09.2009:
     property Display: TPropDisplay read GetDisplay;
-    property CharSet: TFontCharset read FCharSet; // write AssignCharSet;
+    property CharSet: TFontCharset read FCharSet write FCharSet;
     property CodePage: Integer read FCodePage write AssignCodePage;
     property EmSize: Integer read FEmSize;
     property ExSize: Integer read FExSize;
@@ -312,9 +312,9 @@ type
     procedure Clear; override;
     procedure AddModifyProp(const Selector, Prop, Value: ThtString);
     procedure FixupTableColor(BodyProp: TProperties);
-    procedure Initialize(const FontName, PreFontName: ThtString;
-      PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
-      LinkUnderline: Boolean; ACodePage: TBuffCodePage; MarginHeight, MarginWidth: Integer);
+    procedure Initialize(const FontName, PreFontName: ThtString; PointSize: Integer;
+      AColor, AHotspot, AVisitedColor, AActiveColor: TColor; LinkUnderline: Boolean;
+      ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
   end;
@@ -3360,9 +3360,9 @@ begin
       Props[Color] := AColor;
 end;
 
-procedure TStyleList.Initialize(const FontName, PreFontName: ThtString;
-  PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
-  LinkUnderline: Boolean; ACodePage: TBuffCodePage; MarginHeight, MarginWidth: Integer);
+procedure TStyleList.Initialize(const FontName, PreFontName: ThtString; PointSize: Integer;
+  AColor, AHotspot, AVisitedColor, AActiveColor: TColor; LinkUnderline: Boolean;
+  ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
 type
   ListTypes = (ul, ol, menu, dir, dl, dd, blockquote);
 const
@@ -3399,6 +3399,7 @@ begin
   Properties.Props[LetterSpacing] := 0;
   Properties.Props[BoxSizing] := ContentBox;
   Properties.CodePage := ACodePage;
+  Properties.CharSet := ACharSet;
   AddObject('default', Properties);
   DefProp := Properties;
 

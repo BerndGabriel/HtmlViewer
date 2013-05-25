@@ -723,15 +723,18 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
       end;
     end;
 
-    // set values to properties
-    ProcessProperty('font-style', Values[shStyle]);
-    ProcessProperty('font-variant', Values[shVariant]);
-    ProcessProperty('font-weight', Values[shWeight]);
-    ProcessProperty('font-size', Values[shSize]);
-    ProcessProperty('line-height', Values[shHeight]);
-    // TODO: BG, 04.01.2012: set default font as set in THtmlViewer:
+    // BG, 25.05.2013: You MUST set a font otherwize the property is malformed and ignored:
+    // see: http://www.w3.org/TR/CSS21/fonts.html#propdef-font
     if Values[shFamily] <> '' then
+    begin
+      // set values to properties
+      ProcessProperty('font-style', Values[shStyle]);
+      ProcessProperty('font-variant', Values[shVariant]);
+      ProcessProperty('font-weight', Values[shWeight]);
+      ProcessProperty('font-size', Values[shSize]);
+      ProcessProperty('line-height', Values[shHeight]);
       ProcessProperty('font-family', Values[shFamily]);
+    end;
   end;
 
   procedure DoListStyle(const Value: ThtString);

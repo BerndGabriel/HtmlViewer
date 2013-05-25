@@ -4232,7 +4232,7 @@ begin
   FSectionList.SetFonts(FFontName, FPreFontName, FFontSize, FFontColor,
     FHotSpotColor, FVisitedColor, FOverColor, FBackground,
     htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
-    FCharSet, FMarginHeight, FMarginWidth);
+    FCodePage, FCharSet, FMarginHeight, FMarginWidth);
 end;
 
 {----------------THtmlViewer.Clear}
@@ -4253,7 +4253,7 @@ begin
   FSectionList.SetFonts(FFontName, FPreFontName, FFontSize, FFontColor,
     FHotSpotColor, FVisitedColor, FOverColor, FBackground,
     htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
-    FCharSet, FMarginHeight, FMarginWidth);
+    FCodePage, FCharSet, FMarginHeight, FMarginWidth);
   FBase := '';
   FBaseEx := '';
   FBaseTarget := '';

@@ -69,6 +69,7 @@ uses
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
   HtmlGlobals,
+  HtmlBuffer,
   HtmlSymb,
   StyleUn,
   HTMLUn2,
@@ -1464,9 +1465,8 @@ type
     procedure SetFormcontrolData(T: TFreeList);
     procedure SetYOffset(Y: Integer);
     procedure SetFonts(const Name, PreName: ThtString; ASize: Integer;
-      AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
-      LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
-      MarginHeight, MarginWidth: Integer);
+      AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor; LnksActive, LinkUnderLine: Boolean;
+      ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property PropStack : THtmlPropStack read FPropStack write FPropStack;
 
@@ -7935,12 +7935,11 @@ begin
 end;
 
 procedure ThtDocument.SetFonts(const Name, PreName: ThtString; ASize: Integer;
-  AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
-  LnksActive: boolean; LinkUnderLine: boolean; ACharSet: TFontCharSet;
-  MarginHeight, MarginWidth: Integer);
+  AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor; LnksActive, LinkUnderLine: Boolean;
+  ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
 begin
   Styles.Initialize(Name, PreName, ASize, AColor, AHotspot, AVisitedColor,
-    AActiveColor, LinkUnderLine, ACharSet, MarginHeight, MarginWidth);
+    AActiveColor, LinkUnderLine, ACodePage, ACharSet, MarginHeight, MarginWidth);
   InitializeFontSizes(ASize);
   PreFontName := PreName;
   HotSpotColor := AHotSpot;
