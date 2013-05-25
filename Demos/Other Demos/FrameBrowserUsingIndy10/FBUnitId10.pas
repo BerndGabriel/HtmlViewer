@@ -1905,6 +1905,8 @@ begin
 end;
 
 procedure THTTPForm.About1Click(Sender: TObject);
+var
+  AboutBox: TAboutBox;
 begin
   AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser Indy Demo', 'TFrameBrowser');
   try
