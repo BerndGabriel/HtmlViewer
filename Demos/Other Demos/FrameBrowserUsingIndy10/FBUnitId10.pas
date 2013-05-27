@@ -381,6 +381,7 @@ var
   m : TMenuItem;
     {$endif}
 begin
+  Self.OpenDialog.Filter := GetFileMask;
   {$ifdef UseVCLStyles}
   TStyleManager.AnimationOnControls := True;
   {$Endif}
