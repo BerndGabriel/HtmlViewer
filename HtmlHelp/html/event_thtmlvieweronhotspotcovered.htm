@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnHotSpotCovered Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Links">
+	<PARAM NAME="Keyword" VALUE="OnHotSpotCovered Event">
+</OBJECT>
+
+<P><A NAME="event_thtmlvieweronhotspotcovered"></A><B>OnHotSpotCovered Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> OnHotSpotCovered: <A HREF="type_thotspotevent.htm">THotSpotEvent</A>;</P>
+
+<P><B>Description</B></P>
+
+<P>The OnSpotCovered event occurs when the mouse is moved over or away from an hypertext link.  This event may be used to display the destination <A HREF="url.htm">URL</A> of a hypertext link to allow the user to decide if it should be selected.</P>
+
+<P><B>Example</B></P>
+
+<P>The following code may be used to provide a status line display of the hypertext link at the mouse position:</P>
+
+<P>Viewer.OnHotSpotCovered := HotSpotChange;</P>
+
+<P>...</P>
+
+<P>procedure TForm1.HotSpotChange(Sender: TObject; const URL: string);</P>
+
+<P>begin</P>
+
+<P>Panel1.Caption := <A HREF="url_property.htm">URL</A>;</P>
+
+<P>end;</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="htoptions_property.htm">htOverLinksActive option</A></P>
+
+<P><A HREF="linkattributes_property.htm">LinkAttributes Property</A></P>
+
+<P><A HREF="linktext_property.htm">LinkText Property</A></P>
+
+</BODY>
+</HTML>

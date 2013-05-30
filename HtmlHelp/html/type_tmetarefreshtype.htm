@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TMetaRefreshType</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_tmetarefreshtype"></A><B>Type TMetaRefreshType</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TMetaRefreshType = procedure(Sender: TObject; Delay: integer;</P>
+
+<P>const URL: string) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TMetaRefreshType type points to a method that might process the contents of a <B>&lt;META .Http_Eq="refresh"&gt;</B>  tag.  <I>Delay</I> is  the time delay in seconds and <I>URL</I>, the html document used to refresh the display.  These parameters are parsed from the Contents= attribute.</P>
+
+<P>Note that the Http_Eq="refresh" Meta event is handled internally for <A HREF="tframeviewer_component.htm">TFrameViewer.</A></P>
+
+<P>See also:</P>
+
+<P><A HREF="onmetarefresh_event.htm">OnMetaRefresh Event</A></P>
+
+<P><A HREF="onmeta_event.htm">OnMeta Event</A></P>
+
+</BODY>
+</HTML>

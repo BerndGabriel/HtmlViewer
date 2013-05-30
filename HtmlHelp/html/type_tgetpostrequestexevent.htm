@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TGetPostRequestExEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_tgetpostrequestexevent"></A><B>Type TGetPostRequestExEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TGetPostRequestExEvent = procedure(Sender: TObject; IsGet: boolean;</P>
+
+<P>const URL, Query, EncType, Referer: string; Reload: boolean;</P>
+
+<P>var NewURL: string; var DocType: <A HREF="type_thtmlfiletype.htm">ThtmlFileType</A>;</P>
+
+<P>var Stream: TMemoryStream) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TGetPostRequestExEvent type is the type for the <A HREF="ongetpostrequest_event.htm">OnGetPostRequestEx</A> event.  This event allows a handler to respond with a document or image in stream form when a request is made for a new document.  The parameters are:</P>
+
+<P><I>IsGet</I>Set if the request is a Get (as opposed to Post) request.</P>
+
+<P><I>URL</I>The URL defining the request.  This is a full URL and includes the protocol.</P>
+
+<P><I>Query</I>A possible query string.</P>
+
+<P><I>EncType</I>The EncType attribute of the <B>&lt;form&gt;</B> tag from which a <B>Post</B> was made..</P>
+
+<P><I>Referer</I>The URL from which the request is made.</P>
+
+<P><I>Reload</I>Set if a cached copy is not to be used.</P>
+
+<P><I>NewURL</I>This value is returned if the document had been relocated.  This allows further requests to be made to the correct location.</P>
+
+<P><I>DocType</I>The type of item found, HTMLType, TextType, or ImgType.</P>
+
+<P><I>Stream</I>The requested item in stream form.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="ongetpostrequest_event.htm">OnGetPostRequest and OnGetPostRequestEx Events</A></P>
+
+</BODY>
+</HTML>

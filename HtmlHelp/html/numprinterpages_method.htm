@@ -1,0 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>NumPrinterPages Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="NumPrinterPages">
+	<PARAM NAME="Keyword" VALUE="Printing">
+</OBJECT>
+
+<P><A NAME="numprinterpages_method"></A><B>NumPrinterPages Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P>function NumPrinterPages: integer; overload;</P>
+
+<P>function NumPrinterPages(var WidthRatio: double): integer; overload;</P>
+
+<P><B>Description</B></P>
+
+<P>This function returns the total number of pages which will be printed.</P>
+
+<P>The optional WidthRatio parameter gives an indication if the print output will extend beyond the allowed width.  If WidthRatio is 1.0, the entire print job will fil.  If WidthRatio is 1.25, something in the print job will extend 25% beyond the allowed width.  A WidthRatio value less than 1.0 will not occur.</P>
+
+<P>WidthRatio may be used to set the <A HREF="printscale_property.htm">PrintScale</A> property to insure all printing will be within the margins using code similar to:</P>
+
+<P>if WidthRatio &gt; 1.0 then</P>
+
+<P>Viewer.PrintScale := Viewer.PrintScale * WidthRatio;</P>
+
+<P>Note:  The <B>NumPrinterPages</B> function can be slow in some situations as it simulates the entire print job.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="print_method.htm">Print Method</A></P>
+
+<P><A HREF="printscale_property.htm">PrintScale Property</A></P>
+
+</BODY>
+</HTML>

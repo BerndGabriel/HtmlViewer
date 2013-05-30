@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Things You Should Know</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Compile Options">
+	<PARAM NAME="Keyword" VALUE="DLL">
+	<PARAM NAME="Keyword" VALUE="Images">
+	<PARAM NAME="Keyword" VALUE="Mouseover images">
+	<PARAM NAME="Keyword" VALUE="Options">
+	<PARAM NAME="Keyword" VALUE="Things You Should Know">
+</OBJECT>
+
+<P><A NAME="things_you_should_know"></A><B>Things You Should Know</B></P>
+
+<P><A NAME="1hs.xn."></A><B>PNG Image Support</B></P>
+
+<P>Starting with version 9.4, the HTML Components will use the GDIPLUS.DLL for displaying PNG images if that DLL is present. This will allow proper rendering of PNG images with Alpha transparency. If the GDIPLUS.DLL is not present, PNG images will still be displayed but without the Alpha transparency capability.</P>
+
+<P>The GDIPLUS.DLL is present on all WinXP systems and has often been loaded on other systems by other applications. If it is not present on your system, it can be downloaded (at no charge) at http://www.microsoft.com/downloads/.</P>
+
+<P><A NAME="15dxvo1"></A><B>Version 9 Compile Time Options</B></P>
+
+<P>Version 9 has two compile time options controlled by defining symbols. You can find these in the HTMLCONS.INC file. None of these symbols are initially defined. To make any one (or all) of these symbols active, remove the "." from the {$.Define XXXX} sequence and recompile the code. </P>
+
+<P>The possibilities are: </P>
+
+<P><B>NoOldPNG</B></P>
+
+<P>Defining <B>NoOldPNG</B> removes the backup PNG Image code. This option should not be used unless it is certain that the GDIPLUS.DLL is present or if PNG image capabilies are not required.</P>
+
+<P><B>NoGDIPlus</B></P>
+
+<P>The GDIPLUS.DLL provides alpha transparency support for PNG images.  If, for some reason the use of the gdiplus.dll is undesirable, define <B>NoGDIPlus</B>.</P>
+
+<P><B>NoTabLink</B></P>
+
+<P>Defining <B>NoTabLink</B> disables the ability to Tab between Links. This may be desirable for documents with a great many links.</P>
+
+<P><B>Quirk</B></P>
+
+<P>Defining <B>Quirk</B> makes changes which simulate some of the quirks of other browsers.  It may be desirable to define this constant if you expect to be displaying HTML which might depend on these quirks.  Currently, <B>Quirk</B> forces the font color and size to return to default values in each table cell.</P>
+
+<P><B>UseTNT or UseElpack</B></P>
+
+<P>Defining one of these allows the Unicode TNT or Elpack controls to be substituted for Delphi controls for Form controls. See the file, HTMLCONS.INC, for more details.</P>
+
+<P><B>NoMetafile</B></P>
+
+<P>Metafiles may be displayed by undefining this constant.  <B>NoMetafile is defined by default</B> to emphasize the fact that Metafile display and some printing operations are currently incompatible in Win98.  For applications where printing is unimportant or Win98/95/ME need not be supported, undefining this constant will allow Metafiles to be displayed.</P>
+
+<P><A NAME="ygpqvw"></A><B>OpOnChange</B></P>
+
+<P>Without this definition, the &lt;select&gt; form controls (TListbox and TCombobox) will issue the OnObjectChange event only when the control loses the focus which is according to HTML specs.   Defining OpOnChange simulates the way IExplorer does it, issuing the OnChange event immediately when a change is made.</P>
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Active Images">
+</OBJECT>
+
+<P><A NAME="active_images"></A><B>Mouseover Images</B></P>
+
+<P>A <B><I>Mouseover Image</I></B> is one that changes when the mouse passes over it. The HTML components use a special syntax to implement mouseover images. It's done with the <B>&lt;img&gt;</B> tag as follows: </P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>the SRC="..." attribute should specify an animated GIF image </P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Add an <B>Active</B> attribute </P>
+
+<P>With the <B>Active</B> attribute, the GIF will normally just display the first frame. When the mouse passes over or is clicked, it will display the second or third frame respecively if there are 2 or 3 frames or will animate if there are more than 3 frames. </P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="replaceimage_method.htm">ReplaceImage Method</A></P>
+
+</BODY>
+</HTML>

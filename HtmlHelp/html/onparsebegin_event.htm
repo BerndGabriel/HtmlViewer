@@ -1,0 +1,50 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnParseBegin Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="OnParseBegin Event">
+	<PARAM NAME="Keyword" VALUE="Parse">
+</OBJECT>
+
+<P><A NAME="onparsebegin_event"></A><B>OnParseBegin Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>Type</B> TParseEvent = procedure(Sender: TObject; var Source: string) of Object;</P>
+
+<P><B>property</B> OnParseBegin: TParseEvent;</P>
+
+<P><B>Description</B></P>
+
+<P>The <B>OnParseBegin</B> event occurs just prior to parsing an HTML document.</P>
+
+<P><I>Sender</I>The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> doing the parsing.</P>
+
+<P><I>Source</I>The complete HTML document which will be parsed.  This string may be saved, examined, and/or even modified.  If the document were encrypted, this event could be used to unencrypt it.</P>
+
+<P><B>Usage Restrictions</B></P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>The <A HREF="tframeviewer_component.htm">TFrameViewer</A>/<A HREF="tframebrowser_component.htm">TFrameBrowser</A> <A HREF="viewers_property.htm">Viewers</A> property does not contain valid information at the time of the OnParseBegin event.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>If the source is an image file, Source will contain an empty string.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>This event does not provide any way to handle a linked Style Sheet document.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="documentsource_property.htm">DocumentSource Property</A></P>
+
+<P><A HREF="onparseend_event.htm">OnParseEnd Event</A></P>
+
+</BODY>
+</HTML>

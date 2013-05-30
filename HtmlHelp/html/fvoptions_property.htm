@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>fvOptions Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="fvOptions Property">
+	<PARAM NAME="Keyword" VALUE="Links">
+	<PARAM NAME="Keyword" VALUE="Options">
+</OBJECT>
+
+<P><A NAME="fvoptions_property"></A><B>fvOptions Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframeviewer_component.htm">TFrameViewer</A> and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Description</B></P>
+
+<P>property fvOptions: set of (fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvNoLinkUnderline,</P>
+
+<P>fvPrintTableBackground, fvPrintBackground, fvShowVScroll, fvNoFocusRect,</P>
+
+<P>fvNoWheelMouse);</P>
+
+<P>The fvOptions property currently has the following items:</P>
+
+<P>fvMetaRefresh</P>
+
+<P>Turns on the response to the  &lt;META Http-Equiv="refresh" ...&gt;  tag allowing the document to be replaced as specified by the Contents attribute.</P>
+
+<P>fvNoBorder</P>
+
+<P>Turns off TFrameViewer's extra outer border.  Use in design phase only.</P>
+
+<P>fvNoFocusRect</P>
+
+<P>Turns off the black outer rectangle which appears when a frame has the focus.  Note that this rectangle never shows if fvNoBorder is active.</P>
+
+<P>fvNoLinkUnderline</P>
+
+<P>Turns off underlines on links.</P>
+
+<P><A NAME="1hm33v3"></A>fvOverLinksActive</P>
+
+<P>When set, link color will change when the mouse is over the link.  Color is determined by the special <B>olink</B> attribute of the <A HREF="_body__attributes.htm"><B>&lt;body&gt;</B></A> tag, if present.  If this attribute is absent, the <A HREF="defoverlinkcolor_property.htm">DefOverLinkColor</A> property determines the color.</P>
+
+<P>fvPrintMonchromeBlack</P>
+
+<P>If set, monochrome printers will always print black.  This is set by default since some monochrome printers apparently will not print anything but black.</P>
+
+<P>fvPrintBackground</P>
+
+<P>If set, allows all background images and colors to be printed.  This is off by default.</P>
+
+<P>fvPrintTableBackground</P>
+
+<P>If set, allows Table background colors to be printed.  This is set by default.</P>
+
+<P>fvShowVScroll</P>
+
+<P>htShowVScroll alters the way the vertical scrollbar is displayed.  If fvShowVScroll is not set, no vertical scrollbar is shown if none is needed.  If fvShowVScroll is set, the vertical scrollbar will always be shown but may be shown as disabled.</P>
+
+<P>fvNoWheelMouse</P>
+
+<P>fvNoWheelMouse disables the mouse wheel so that the middle button may be used for other purposes.</P>
+
+<P>fvShowDummyCaret</P>
+
+<P>Shows the current character position when text is not otherwise selected.</P>
+
+<P>fvNoLinkHilite</P>
+
+<P>If set, prevents the selection or highlighting of portions of links.  This can make clicking a link more reliable by avoiding the possibility of making a selection instead.</P>
+
+<P><B>See Also:</B></P>
+
+<P><B></B><A HREF="htoptions_property.htm">htOptions Property</A></P>
+
+</BODY>
+</HTML>

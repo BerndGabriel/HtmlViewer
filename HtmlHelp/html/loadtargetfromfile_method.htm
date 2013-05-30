@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>LoadTargetFromFile Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="LoadTargetFromFile Method">
+</OBJECT>
+
+<P><A NAME="loadtargetfromfile_method"></A><B>LoadTargetFromFile Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframeviewer_component.htm">TFrameViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>procedure LoadTargetFromFile(const Target, Filename: String);</P>
+
+<P><B>Description</B></P>
+
+<P>The LoadTargetFromFile method loads an HTML document into a target frame.  Target is the name of the frame where the document is to be displayed, and Filename is the name of the file to be loaded.</P>
+
+<P>Filename may optionally contain a document position identifier separated from the actual filename by a <B>#</B> sign.</P>
+
+<P><B>Filenames with extensions .bmp, .gif,.jpg, .jpeg,.png, are loaded as images.  Filenames with the extension .txt are loaded as text files.</B></P>
+
+<P><B>Example</B></P>
+
+<P>FrameViewer.LoadTargetFromFile('RightWin', 'MyHTML.htm#Contents');</P>
+
+<P>would load MyHTML.htm into the frame named RightWin and position the view to the location where the "Contents" position was defined.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="loadfromfile_method.htm">LoadFromFile Method</A></P>
+
+<P><A HREF="loadstrings_method.htm">LoadStrings Method</A></P>
+
+<P><A HREF="loadfrombuffer_method.htm">LoadFromBuffer Method</A></P>
+
+<P><A HREF="loadfromstream_method.htm">LoadFromStream Method</A></P>
+
+</BODY>
+</HTML>

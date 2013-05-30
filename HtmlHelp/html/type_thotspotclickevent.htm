@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type THotSpotClickEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_thotspotclickevent"></A><B>Type THotSpotClickEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>THotSpotClickEvent = procedure(Sender: TObject; </P>
+
+<P>const URL: string; var Handled: Boolean) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The THotSpotClickEvent type is the type for hot spot click events.  These events occur when the mouse is clicked on a hypertext link.  URL is the string referenced by the hot spot.</P>
+
+<P>The method which processes the THotSpotClickEvent should returned Handled = True if it wants no further handling of the URL.  If Handled is set to false, ThtmlViewer will perform default handling.</P>
+
+<P><A NAME="ismap"></A><B>IsMap</B></P>
+
+<P>If the URL comes from an image used as an anchor and the <B>IsMap</B> attribute is used, the X, Y pixel position will be passed appended to the URL in the form "?x,y".</P>
+
+<P><B>See also:</B></P>
+
+<P>OnHotSpotClick Event</P>
+
+<P>OnHotSpotCovered Event</P>
+
+</BODY>
+</HTML>

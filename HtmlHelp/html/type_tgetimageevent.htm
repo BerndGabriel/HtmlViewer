@@ -1,0 +1,40 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TGetImageEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="OnImageRequest Event">
+	<PARAM NAME="Keyword" VALUE="TGetImage Type">
+</OBJECT>
+
+<P><A NAME="type_tgetimageevent"></A><B>Type TGetImageEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TGetImageEvent = procedure(Sender: TObject; </P>
+
+<P>const SRC: string; var Stream: TMemoryStream) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TGetImageEvent type points to a method that handles image request events.</P>
+
+<P><I>Sender</I>The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> requesting the image.</P>
+
+<P><I>SRC</I>The <B>SRC=</B> string recovered from the <B>&lt;img&gt;</B> tag.  For <A HREF="tframebrowser_component.htm">TFrameBrowser</A>, <I>SRC</I> has been expanded into a full URL including the protocol.</P>
+
+<P><I>Stream</I>The TMemoryStream returned containing the image.  The TMemoryStream may contain a bitmap, GIF, JPEG, or PNG image.</P>
+
+<P>If a stream can't be supplied because of an error condition, etc., a <B>Nil</B> value should be returned.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onimagerequest_event.htm">OnImageRequest Event</A></P>
+
+</BODY>
+</HTML>

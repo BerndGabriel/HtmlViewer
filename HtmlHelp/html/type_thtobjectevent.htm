@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type ThtObjectEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_thtobjectevent"></A><B>Type ThtObjectEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>ThtObjectEvent = procedure(Sender, Obj: TObject; </P>
+
+<P>const Attribute: string) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The ThtObjectEvent type is the type for <A HREF="onobjectfocus_event.htm">OnObjectFocus</A>, <A HREF="onobjectblur_event.htm">OnObjectBlur</A>, and <A HREF="onobjectchange_event.htm">OnObjectChange</A> events.</P>
+
+<P>In the above:</P>
+
+<P><I>Sender</I>The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> where the Object is located</P>
+
+<P><I>Obj</I>A pointer to the clicked object.</P>
+
+<P><I>Attribute</I>The string assigned to the OnFocus, OnBlur, or OnChange attribute of the object's HTML tag.</P>
+
+<P>Form controls currently support these events.  Form controls are descendents of TFormControlObj.  In particular, the <B>TheControl</B> property can give access to the underlying Delphi controls, such as <B>TEdit</B>, <B>TButton</B>,  and <B>TCheckbox</B> with code similar to:</P>
+
+<P>if (Obj is TFormControlObj) then</P>
+
+<P>with TFormControlObj(Obj) do</P>
+
+<P>if (TheControl is TButton) then .....</P>
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="AttributeValue Property">
+</OBJECT>
+
+<P>TFormControlObj also has an <B>AttributeValue Property</B> with which special user attributes can be accessed:</P>
+
+<P>if (Obj is TFormControlObj) then</P>
+
+<P>AttrValue := TFormControlObj(Obj).AttributeValue['MyAttr'];</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onobjectfocus_event.htm">OnObjectFocus Event</A></P>
+
+<P><A HREF="onobjectblur_event.htm">OnObjectBlur Event</A></P>
+
+<P><A HREF="onobjectchange_event.htm">OnObjectChange Event</A></P>
+
+<P><A HREF="onobjectclick_event.htm">OnObjectClick Event</A></P>
+
+<P><A HREF="onimageclick_event.htm">OnImageClick Event</A></P>
+
+</BODY>
+</HTML>

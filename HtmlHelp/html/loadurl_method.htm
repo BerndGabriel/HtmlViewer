@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>LoadURL Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="LoadURL Method">
+</OBJECT>
+
+<P><A NAME="loadurl_method"></A><B>LoadURL Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframebrowser_component.htm">TFrameBrowser</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>procedure LoadURL(const URL: string);</P>
+
+<P><B>Description</B></P>
+
+<P>The LoadURL method is used to initiate loading a document in <A HREF="tframebrowser_component.htm">TFrameBrowser</A>.  <I>URL</I> must be a full URL and include the protocol.</P>
+
+<P>Following the LoadURL call, one or more <A HREF="ongetpostrequest_event.htm">OnGetPostRequest</A> and <A HREF="onimagerequest_event.htm">OnImageRequest</A> events will occur.  The user must respond to these events by supplying the requested HTML and images in TMemoryStream form.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="ongetpostrequest_event.htm">OnGetPostRequest Event</A></P>
+
+<P><A HREF="onimagerequest_event.htm">OnImageRequest Event</A></P>
+
+<P><A HREF="getpostquery_method.htm">GetPostQuery Method</A></P>
+
+</BODY>
+</HTML>

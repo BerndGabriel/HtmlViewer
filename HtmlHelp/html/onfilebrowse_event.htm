@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnFileBrowse Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="OnFileBrowse Event">
+	<PARAM NAME="Keyword" VALUE="TFileBrowseEvent Type">
+</OBJECT>
+
+<P><A NAME="onfilebrowse_event"></A><B>OnFileBrowse Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>Type</B> TFileBrowseEvent = <B>procedure</B>(Sender, Obj: TObject; <B>var</B> S: string) <B>of Object</B>;</P>
+
+<P><B>property</B> OnFileBrowse: TFileBrowseEvent;</P>
+
+<P><B>Description</B></P>
+
+<P>An <B>&lt;input&gt;</B> tag with a type attribute of <B>file</B>, as</P>
+
+<P>&lt;input type="file" ...&gt;</P>
+
+<P>displays as an edit box with an associated <B>Browse</B> button.  The <B>OnFileBrowse</B> event is triggered when the <B>Browse</B> button is clicked.</P>
+
+<P><I>Sender</I>The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> containing the Browse button.</P>
+
+<P><I>Obj</I>The TEditFormControlObj of the edit box.</P>
+
+<P><I>S</I>On input, <I>S</I> will be the contents of the edit box.  The event handler would presumably display a file dialogbox and return the filename selected in <I>S</I>.</P>
+
+</BODY>
+</HTML>

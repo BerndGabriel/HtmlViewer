@@ -1,0 +1,75 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TPagePrinted</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_tpageprinted"></A><B>Type TPagePrinted</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TPagePrinted = procedure(Sender: TObject; Canvas : TCanvas ;</P>
+
+<P>NumPage, W, H: Integer ;</P>
+
+<P>var StopPrinting : Boolean) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TPagePrinted type is the type for the <A HREF="onprintheader_and_onprintfooter_events.htm">OnPrintHeader</A> and <A HREF="onprintheader_and_onprintfooter_events.htm">OnPrintFooter</A> events.  These events occur as each page is printed allowing the user to add a header and/or footer to the page.</P>
+
+<P><I>Canvas</I> is the drawing canvas on which to draw the header or footer having its origin at the upper left corner of the header or footer area with a width, <I>W</I>, and height, <I>H</I>.  The actual size of the header/footer areas is determined by the <A HREF="printmargin_properties.htm">PrintMarginTop</A> and <A HREF="printmargin_properties.htm">PrintMarginBottom</A> property settings.</P>
+
+<P><I>NumPage</I> is the current page number.  <I>StopPrinting</I> may be set to <B>True</B> to stop printing.</P>
+
+<P><B>Example:</B></P>
+
+<P>This code prints the document title and filename in the header area.</P>
+
+<P>procedure TForm1.PrintHeader(Sender: TObject; const Canvas: TCanvas;</P>
+
+<P>NumPage, W, H: Integer; var StopPrinting: Boolean);</P>
+
+<P>var</P>
+
+<P>AFont: TFont;</P>
+
+<P>begin</P>
+
+<P>AFont := TFont.Create;</P>
+
+<P>AFont.Name := 'Arial';</P>
+
+<P>AFont.Size := 8;</P>
+
+<P>with Canvas do</P>
+
+<P>begin</P>
+
+<P>Font.Assign(AFont);</P>
+
+<P>SetTextAlign(Handle, TA_Top or TA_Left);</P>
+
+<P>TextOut(50, 40, Viewer.DocumentTitle);</P>
+
+<P>SetTextAlign(Handle, TA_Top or TA_Right);</P>
+
+<P>TextOut(W-50, 40, Viewer.CurrentFile);</P>
+
+<P>end;</P>
+
+<P>AFont.Free;</P>
+
+<P>end;</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onprinthtmlheader_and_onprinthtmlfooter_events.htm">OnPrintHTMLHeader</A></P>
+
+<P><A HREF="onprinthtmlheader_and_onprinthtmlfooter_events.htm">OnPrintHTMLFooter</A></P>
+
+</BODY>
+</HTML>

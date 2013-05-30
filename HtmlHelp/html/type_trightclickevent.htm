@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TRightClickEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_trightclickevent"></A><B>Type TRightClickEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TRightClickEvent = procedure(Sender: TObject;</P>
+
+<P>Parameters: TRightClickParameters) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TRightClickEvent type points to a handler for the <A HREF="onrightclick_event.htm">OnRightClick</A> event.  <I>Sender</I> is the <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> where the click occured.  <I>Parameters</I> is a record whose fields contain information for constructing a popup menu.  This form of parameter passing is used to allow additional fields to be added in the future.</P>
+
+<P>Currently TRightClickParameters is defined as follows:</P>
+
+<P>TRightClickParameters = Class(TObject)</P>
+
+<P>URL, Target: string;</P>
+
+<P>Image: TImageObj;</P>
+
+<P>ImageX, ImageY: integer;</P>
+
+<P>ClickWord: string;</P>
+
+<P>end;</P>
+
+<P><I>URL</I> and <I>Target</I> are information about an anchor.  These fields are blank if the mouse is not over an anchor.</P>
+
+<P><I>Image</I> is a pointer to the TImageObject managing an underlying image.  <I>ImageX</I> and <I>ImageY</I> give the X and Y position within the image.</P>
+
+<P><I>ClickWord</I> is the word underneath the mouse pointer, if any.</P>
+
+<P>See also:</P>
+
+<P><A HREF="onrightclick_event.htm">OnRightClick Event</A></P>
+
+<P><A HREF="onimageclick_event.htm">OnImageClick Event</A></P>
+
+<P><A HREF="onobjectclick_event.htm">OnObjectClick Event</A></P>
+
+</BODY>
+</HTML>

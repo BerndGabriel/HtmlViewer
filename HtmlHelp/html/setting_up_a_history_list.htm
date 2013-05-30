@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Setting up a History List</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="History Lists">
+</OBJECT>
+
+<P><A NAME="setting_up_a_history_list"></A><B>Setting up a History List</B></P>
+
+<P>A history list is useful for backtracking to earlier loaded documents or places previously visited in the same document.  From the users point of view, histories are normally accessed as menu items and/or Back/Forward buttons.</P>
+
+<P>The key properties and events relating to history lists are the <A HREF="history_property.htm">History,</A> <A HREF="titlehistory_property.htm">TitleHistory,</A> <A HREF="historyindex_property.htm">HistoryIndex,</A> and <A HREF="historymaxcount_property.htm">HistoryMaxCount</A> properties, the <A HREF="clearhistory_method.htm">ClearHistory</A> method, and the <A HREF="onhistorychange_event.htm">OnHistoryChange</A> event.</P>
+
+<P>1.Set <A HREF="historymaxcount_property.htm">HistoryMaxCount</A> to the number of list items wanted.  HistoryMaxCount should be set to 0 if no history list is desired.</P>
+
+<P>2.<A HREF="history_property.htm">History</A> (TStrings) will be automatically updated with filenames as files are loaded and positions changed.  The History strings may be used as menu items or as listbox contents.  Ordering is such that the current file is at index 0.</P>
+
+<P>3.<A HREF="titlehistory_property.htm">TitleHistory</A> (TStrings) will be automatically updated with document titles as files are loaded and positions changed.  The TitleHistory strings may be used as menu items or as listbox contents.  Ordering is such that the current file is at index 0.</P>
+
+<P>4.An <A HREF="onhistorychange_event.htm">OnHistoryChange</A> event occurs each time the history list changes.  A method responding to this event may be used to determine which buttons and/or menu items are visible, grayed, or checked.</P>
+
+<P>5.The <A HREF="historyindex_property.htm">HistoryIndex</A> property may be read to determine which history list item is currently active.  Setting of the HistoryIndex property to a new value loads and positions the appropriate file.  HistoryIndex can not be set outside the range of the current history list.</P>
+
+<P>6.The <A HREF="clearhistory_method.htm">ClearHistory</A> method may be used to clear the History List.</P>
+
+<P>For <A HREF="tframeviewer_component.htm">TFrameViewer</A>, <A HREF="history_property.htm">History</A> and <A HREF="titlehistory_property.htm">TitleHistory</A> list only changes in the main document, and <A HREF="historyindex_property.htm">HistoryIndex</A> manipulates only the main document history list.  However, <A HREF="tframeviewer_component.htm">TFrameViewer</A> maintains an addtional history structure which keeps track of local changes within the Frames of the current main document.  The key items for the local history list are the <A HREF="gofwd_method.htm">GoFwd</A> and <A HREF="goback_method.htm">GoBack</A> methods and the <A HREF="fwdbuttonenabled_property.htm">FwdButtonEnabled</A> and <A HREF="backbuttonenabled_property.htm">BackButtonEnabled</A> properties.</P>
+
+<P>7.The <A HREF="gofwd_method.htm">GoFwd</A> and <A HREF="goback_method.htm">GoBack</A> methods should be called by forward and back buttons to move through the local history list.  Once the limits of the local history list are reached, these methods will also move through the main history list.</P>
+
+<P>8.The <A HREF="fwdbuttonenabled_property.htm">FwdButtonEnabled</A> and <A HREF="backbuttonenabled_property.htm">BackButtonEnabled</A> properties may be checked in the <A HREF="onhistorychange_event.htm">OnHistoryChange</A> event handler to ascertain if the forward and back buttons should be enabled.</P>
+
+</BODY>
+</HTML>

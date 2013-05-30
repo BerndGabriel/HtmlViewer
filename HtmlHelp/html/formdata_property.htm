@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>FormData Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="FormData Property">
+	<PARAM NAME="Keyword" VALUE="Forms">
+</OBJECT>
+
+<P><A NAME="formdata_property"></A><B>FormData Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> FormData: <A HREF="tfreelist.htm">TFreeList</A>;</P>
+
+<P>The <B>FormData</B> Property is used internally by <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> for storing and restoring HTML Form data in HTML documents.  Users may also use this property for the same purpose or to read and/or modify Form data.</P>
+
+<P>As read from <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, the <B>FormData</B> consists of a list of TStringLists, one TStringList for each Form in the document.  Each string in the TStringList consists of a Name, Value pair separated by an '<B>=</B>' sign:</P>
+
+<P>&lt;name&gt;=&lt;value&gt;</P>
+
+<P>where &lt;name&gt; is the Name attribute assigned to the form control and &lt;value&gt; is the value entered (or the default value if none has been entered).</P>
+
+<P>When an assignment is made to <B>FormData</B>, the same format is used.</P>
+
+<P><B>Example 1:</B></P>
+
+<P>The following shows code for saving and later restoring all the Form data in a document:</P>
+
+<P>var</P>
+
+<P>List: <A HREF="tfreelist.htm">TFreeList</A>;      {htmlun2 must be in Uses clause}</P>
+
+<P>procedure TForm1.SaveButtonClick(Sender: TObject);</P>
+
+<P>begin</P>
+
+<P>List := Viewer.FormData;</P>
+
+<P>end;</P>
+
+<P>procedure TForm1.RestoreButtonClick(Sender: TObject);</P>
+
+<P>begin</P>
+
+<P>if Assigned(List) then</P>
+
+<P>begin</P>
+
+<P>Viewer.FormData := List;</P>
+
+<P>List.Free;</P>
+
+<P>List := Nil;</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P><B>Example 2:</B></P>
+
+<P>In the following, two controls in the first form are modified:</P>
+
+<P>procedure TForm1.Button4Click(Sender: TObject);</P>
+
+<P>var</P>
+
+<P>AList: <A HREF="tfreelist.htm">TFreeList</A>;</P>
+
+<P>St: TStringList;</P>
+
+<P>begin</P>
+
+<P>AList := <A HREF="tfreelist.htm">TFreeList</A>.Create;</P>
+
+<P>St := TStringList.Create;</P>
+
+<P>St.Add('Name=David');</P>
+
+<P>St.Add('Address=144 Sands Point Dr.');</P>
+
+<P>AList.Add(St);</P>
+
+<P>Viewer.FormData := AList;</P>
+
+<P>AList.Free;</P>
+
+<P>end;</P>
+
+<P><B>See Also</B></P>
+
+<P><B><A HREF="formcontrollist_property.htm">FormControlList Property</A></B></P>
+
+<P><B><A HREF="onformsubmit_event.htm">OnFormSubmit Event</A></B></P>
+
+<P><B><A HREF="idcontrol_property.htm">IDControl Property</A></B></P>
+
+</BODY>
+</HTML>

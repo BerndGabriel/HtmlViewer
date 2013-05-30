@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Special HTML Tags and Attributes</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="<PAGE>">
+	<PARAM NAME="Keyword" VALUE="Page Tag">
+	<PARAM NAME="Keyword" VALUE="Printing">
+</OBJECT>
+
+<P><A NAME="special_html_tags_and_attributes"></A><B>Special HTML Tags and Attributes</B></P>
+
+<P>The HTML components use several non-standard Tags which may be used for special purposes.</P>
+
+<P><B>&lt;PAGE&gt;</B></P>
+
+<P><B>Attributes:</B></P>
+
+<P>none</P>
+
+<P>The <B>&lt;PAGE&gt;</B> tag causes printing to end on the current page and a new page started.  It has no effect on the displayed document.</P>
+
+<P><B>Note:</B>  The <B>&lt;PAGE&gt;</B> tag does not work correctly in documents which use CSS absolute positioning.  Use the CSS page-break properties instead.</P>
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="<PANEL>">
+	<PARAM NAME="Keyword" VALUE="Panel Tag">
+</OBJECT>
+
+<P><A NAME="panel_tag"></A><B>&lt;PANEL&gt;</B></P>
+
+<P><B>Attributes:</B></P>
+
+<P>NAME=string</P>
+
+<P>TYPE=string</P>
+
+<P>SRC=string</P>
+
+<P>ALT=string</P>
+
+<P>HEIGHT=n</P>
+
+<P>WIDTH=n</P>
+
+<P>ALIGN=top|middle|bottom|left|right</P>
+
+<P>HSPACE=n</P>
+
+<P>The <B>&lt;PANEL&gt;</B> tag may be used to place a ThvPanel in a displayed HTML document.  The ThvPanel in turn may be used as a base for adding other Delphi VCL components.  For all practical purposes, ThvPanel is equivalent to TPanel.</P>
+
+<P><B>&lt;PANEL&gt;</B> is similar in usage to the <B>&lt;IMG&gt;</B> tag and may be used anywhere an <B>&lt;IMG&gt;</B> might be appropriate.  When the ThvPanel is created at load time, an <A HREF="onpanelcreate_event.htm">OnPanelCreate</A> event is generated.  When the document is disposed of, there is an <A HREF="onpaneldestroy_event.htm">OnPanelDestroy</A> event.  These events allow the programmer to manage the contents of the panel.</P>
+
+<P>The <I>NAME, TYPE,</I> and <I>SRC</I> attributes are passed as parameters in the OnPanelCreate event and <I>NAME</I> is also assigned to the Panel's Name property.  <I>TYPE</I> and <I>SRC</I> are not otherwise used and are there for the programmer's convenience.  The <I>ALT</I> string appears when the document is printed if there is no <A HREF="onpanelprint_event.htm">OnPanelPrint</A> event handler.</P>
+
+<P>The <I>HEIGHT</I>, <I>WIDTH</I>, <I>ALIGN</I>, and <I>HSPACE</I> attributes are similar to those of the <B>&lt;IMG&gt;</B> tag.</P>
+
+<P>By default, the panel is displayed with a white background and a black border.  However, these and other properties may be changed in the <A HREF="onpanelcreate_event.htm">OnPanelCreate</A> event handler.  The only properties which can't be changed at that time are the Top and Left properties.  Even the Height and Width may be changed in the handler.</P>
+
+<P><B>Special Note:</B></P>
+
+<P>The <B>&lt;OBJECT&gt;</B> tag also has a similar <A HREF="onobjecttag_event.htm">OnObjectTag</A> event which produces a ThvPanel to be used as a base for the object.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="onpanelcreate_event.htm">OnPanelCreate Event</A></P>
+
+<P><A HREF="onpaneldestroy_event.htm">OnPanelDestroy Event</A></P>
+
+<P><A HREF="onpanelprint_event.htm">OnPanelPrint Event</A></P>
+
+<P><A HREF="onobjecttag_event.htm">OnObjectTag Event</A></P>
+
+</BODY>
+</HTML>

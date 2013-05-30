@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>&lt;body&gt; attributes</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="<body> Attributes">
+	<PARAM NAME="Keyword" VALUE="Background">
+	<PARAM NAME="Keyword" VALUE="Colors">
+	<PARAM NAME="Keyword" VALUE="Links">
+	<PARAM NAME="Keyword" VALUE="Visited Links">
+</OBJECT>
+
+<P><A NAME="_body__attributes"></A><B>&lt;body&gt; attributes</B></P>
+
+<P>ThtmlViewer supports color and background information attributes entered with the HTML <B>&lt;body&gt;</B> tag.  Thus each document may have a customized appearance.  Color and background information entered in this manner overrides the default information specified by the <A HREF="deffontcolor_property.htm">DefFontColor</A>, <A HREF="defhotspotcolor_property.htm">DefHotSpotColor</A>, <A HREF="defbackground_property.htm">DefBackground</A>, <A HREF="defvisitedlinkcolor_property.htm">DefVisitedLinkColor</A>, <A HREF="defoverlinkcolor_property.htm">DefOverLinkColor</A> properties.</P>
+
+<P>The following <B>&lt;body&gt;</B> attributes are supported in this version:</P>
+
+<P>Text="RRGGBB"</P>
+
+<P>The hex number entered determines the normal text color.</P>
+
+<P>Link="RRGGBB"</P>
+
+<P>The hex number entered determines the link (HotSpot) color.</P>
+
+<P>VLink="RRGGBB"</P>
+
+<P>The hex number entered determines the color of a link which has been previously visited.</P>
+
+<P>OLink="RRGGBB"</P>
+
+<P>The hex number entered determines the link color when the mouse passes over it.  A defined OLink value will make the links active even if <A HREF="fvoptions_property.htm#1hm33v3">fvOverLinksActive</A> or <A HREF="htoptions_property.htm">htOverLinksActive</A> are not set..</P>
+
+<P>BgColor="RRGGBB"</P>
+
+<P>The hex number entered determines the background color.</P>
+
+<P>Background="imagefilename"</P>
+
+<P>The Background attribute specifies an image file.  When <A HREF="viewimages_property.htm">ViewImages</A> is set, this image will be tiled to form the background of the document.</P>
+
+<P>HTML hex entries are 2 digits of red, 2 digits of green, and 2 digits of blue.  Note that this order is the reverse of normal color entries in Windows.  Also, most HTML browsers require all six digits including leading zeros.</P>
+
+<P><B>Example</B></P>
+
+<P>&lt;body text="00FF00" link="FF0000" </P>
+
+<P>bgcolor="000000" background="marble.gif"&gt;</P>
+
+<P>produces green text, red hotspots on a black background.  If <A HREF="viewimages_property.htm">ViewImages</A> is set, marble.gif will be tiled to form the background.</P>
+
+</BODY>
+</HTML>

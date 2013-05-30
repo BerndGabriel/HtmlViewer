@@ -1,0 +1,58 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>IDControl Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Forms">
+	<PARAM NAME="Keyword" VALUE="IDControl Property">
+</OBJECT>
+
+<P><A NAME="idcontrol_property"></A><B>IDControl Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> IDControl[const ID: string]: TObject;</P>
+
+<P>Read only and run time only.  The IDControl Property provides an easy way to get the instance handle of a Form control or image using the ID attribute defined in the control's HTML tag.</P>
+
+<P>For a hidden form control the return is of type THiddenFormControlObj.</P>
+
+<P><B>Example:</B></P>
+
+<P>In the following, clicking Button1 checks the RadioButton control with the ID, "Rad1"</P>
+
+<P>procedure TForm1.Button1Click(Sender: TObject);</P>
+
+<P>var</P>
+
+<P>Obj: TObject;</P>
+
+<P>begin</P>
+
+<P>Obj := Viewer.IDControl['Rad1'];</P>
+
+<P>if (Obj is TRadioButton) then</P>
+
+<P>TRadioButton(Obj).Checked := True;</P>
+
+<P>end;</P>
+
+<P><B>See Also:</B></P>
+
+<P><B><A HREF="formcontrollist_property.htm">FormControlList Property</A></B></P>
+
+<P><B><A HREF="formdata_property.htm">FormData Property</A></B></P>
+
+<P><B><A HREF="onformsubmit_event.htm">OnFormSubmit Event</A></B></P>
+
+</BODY>
+</HTML>

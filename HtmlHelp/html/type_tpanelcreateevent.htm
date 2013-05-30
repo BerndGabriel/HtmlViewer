@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TPanelCreateEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Type TPanelCreateEvent">
+</OBJECT>
+
+<P><A NAME="type_tpanelcreateevent"></A><B>Type TPanelCreateEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TPanelCreateEvent = procedure(Sender: TObject; const AName, AType, SRC: string;</P>
+
+<P>Panel: ThvPanel) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TPanelCreateEvent type is the type for the <A HREF="onpanelcreate_event.htm">OnPanelCreate</A> event.  This event occurs when a <A HREF="special_html_tags_and_attributes.htm#panel_tag">&lt;PANEL&gt;</A> tag is encountered at document load time.</P>
+
+<P><I>Sender</I> is the ThtmlViewer displaying the ThvPanel.</P>
+
+<P><I>Panel</I> is the ThvPanel (similar to TPanel) created for the display.  Its Name property has been assigned to the <I>NAME</I> attribute value and its Height and Width properties have been assigned the values of the <I>HEIGHT</I> and <I>WIDTH</I> attributes.</P>
+
+<P><I>AType</I> and <I>SRC</I> contains the value assigned to the <I>TYPE</I> and <I>SRC</I> attributes.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onpanelcreate_event.htm">OnPanelCreate Event</A></P>
+
+<P><A HREF="special_html_tags_and_attributes.htm#panel_tag">&lt;PANEL&gt; Tag</A></P>
+
+</BODY>
+</HTML>

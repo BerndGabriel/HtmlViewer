@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnImageClick Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="OnImageClick Event">
+</OBJECT>
+
+<P><A NAME="onimageclick_event"></A><B>OnImageClick Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> OnImageClick: <A HREF="type_timageclickevent.htm">TImageClickEvent</A>;</P>
+
+<P><B>Description</B></P>
+
+<P>The OnImageClick event occurs when the mouse is over an image and either mouse button is clicked.  See the <A HREF="type_timageclickevent.htm">TImageClickEvent</A> type for information on the parameters.</P>
+
+<P><B>Example</B></P>
+
+<P>The following code may be used to popup a menu when right clicking on an image:</P>
+
+<P>procedure TForm1.ImageClick(Sender, Obj: TObject;</P>
+
+<P>Button: TMouseButton; Shift: TShiftState; X, Y: Integer);</P>
+
+<P>var</P>
+
+<P>Pt: TPoint;</P>
+
+<P>begin</P>
+
+<P>if Button = mbRight then</P>
+
+<P>if (Obj is TImageObj) then</P>
+
+<P>begin</P>
+
+<P>FoundObject := TImageObj(Obj);</P>
+
+<P>GetCursorPos(Pt);</P>
+
+<P>PopupMenu.Popup(Pt.X, Pt.Y);</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P>Here <I>FoundObject</I> is a <I>TForm1</I> field used to save the calling <I>TImageObj</I> for use after the menu selection has been made.  See the TImageObj type definition in HTMLSUBS.PAS for further imformation on this type.  In particular, the field, <I>TImageObj.Source</I>, holds the image's filename, and the property, <I>TImageObj.Bitmap</I>, can be used to obtain a copy of the bitmap itself.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onimageover_event.htm">OnImageOver Event</A></P>
+
+<P><A HREF="onobjectclick_event.htm">OnObjectClick Event</A></P>
+
+<P><A HREF="onrightclick_event.htm">OnRightClick Event</A></P>
+
+</BODY>
+</HTML>

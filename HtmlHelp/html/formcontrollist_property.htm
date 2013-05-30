@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>FormControlList Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="FormControlList Property">
+	<PARAM NAME="Keyword" VALUE="Forms">
+</OBJECT>
+
+<P><A NAME="formcontrollist_property"></A><B>FormControlList Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> FormControlList: TList;</P>
+
+<P>Read only and run time only.  The FormControlList contains a list of all the Form controls contained in the currently displayed document.  This list enables the programmer to access the controls to read or initialize them while displayed on screen.  Some hints on using this list:</P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>Declare <B>htmlsubs.pas</B> and <B>htmlsbs1</B> in your uses clause.</P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>Study the definition of TFormControlObj and its decendents (in htmlsubs.pas) as you will probably need to access the fields and methods to make use of the FormControlList.</P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>Give any control you want to access a distinctive Name (the <B>Name=</B> item) when defining it in the HTML document.  This name can be used to identify the control when searching through the list.</P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>The FormControlList is used by ThtmlViewer.  Do not <B>Free</B> this list.</P>
+
+<P><B>Examples:</B></P>
+
+<P>In the code below, clicking Button4 causes the first form in the document to be submitted.  (<B>Viewer</B> is the <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> displaying the document.)</P>
+
+<P>procedure TForm1.Button4Click(Sender: TObject);</P>
+
+<P>begin</P>
+
+<P>if Viewer.FormControlList.Count &gt; 0 then</P>
+
+<P>TFormControlObj(Viewer.FormControlList.Items[0]).MyForm.SubmitTheForm('');</P>
+
+<P>end;</P>
+
+<P>In the following, clicking Button5 initializes the TEdit control with the name, "Address"</P>
+
+<P>procedure TForm1.Button5Click(Sender: TObject);</P>
+
+<P>var</P>
+
+<P>I: integer;</P>
+
+<P>begin</P>
+
+<P>with Viewer.FormControlList do</P>
+
+<P>for I := 0 to Count -1 do</P>
+
+<P>if CompareText(TFormControlObj(Items[I]).Name, 'Address') = 0 then</P>
+
+<P>begin</P>
+
+<P>if TFormControlObj(Items[I]).TheControl is TEdit then</P>
+
+<P>TEdit(TFormControlObj(Items[I]).TheControl).Text := '144 Sands Point';</P>
+
+<P>Exit;</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P><B>See Also:</B></P>
+
+<P><B><A HREF="formdata_property.htm">FormData Property</A></B></P>
+
+<P><B><A HREF="onformsubmit_event.htm">OnFormSubmit Event</A></B></P>
+
+<P><B><A HREF="idcontrol_property.htm">IDControl Property</A></B></P>
+
+</BODY>
+</HTML>
