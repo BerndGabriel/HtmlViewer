@@ -637,7 +637,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..95] of TResWord = (
+  ElementDefinitions: array[1..98] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -659,6 +659,10 @@ const
     //
     (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
     (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
+    (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrEndSy),
+    (Name: 'ACRONYM';     Symbol: AcronymSy;    EndSym: AcronymEndSy),
+    (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),
+
     (Name: 'TT';          Symbol: TTSy;         EndSym: TTEndSy),
     (Name: 'CODE';        Symbol: CodeSy;       EndSym: CodeEndSy),
     (Name: 'KBD';         Symbol: KbdSy;        EndSym: KbdEndSy),

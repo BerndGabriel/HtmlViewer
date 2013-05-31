@@ -300,6 +300,7 @@ type
     procedure HTMLTimerTimer(Sender: TObject);
     procedure Layout;
     procedure Parsed(const Title, Base, BaseTarget: ThtString);
+    procedure ParseXHtml;
     procedure ParseHtml;
     procedure ParseText;
     procedure ScrollHorz(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
@@ -603,6 +604,8 @@ function GetFileType(const S: ThtString): THtmlFileType;
 var
   FileTypes: ThtStringList;
 
+function GetFileMask : String;
+
 implementation
 
 uses
@@ -671,6 +674,47 @@ begin
     end;
     FileTypes.Sort;
   end;
+end;
+
+//-- JPM --------------------------------------------------------- 26.05.2013 --
+function GetFileMask : String;
+var i : Integer;
+begin
+  //HTML
+  Result := 'HTML Files|';
+  for i := 0 to FileTypes.Count -1 do
+  begin
+    if (PFileTypeRec(FileTypes.Objects[i]).FileType = HTMLType) or
+     (PFileTypeRec(FileTypes.Objects[i]).FileType = XHTMLType) then
+    begin
+      Result := Result + '*'+ FileTypes[i]+';';
+    end;
+
+  end;
+  Delete(Result,Length(Result),1);
+  //Image
+  Result := Result + '|Image Files|';
+  for I := 0 to FileTypes.Count -1 do
+  begin
+    if (PFileTypeRec(FileTypes.Objects[i]).FileType = ImgType) then
+    begin
+      Result := Result + '*'+ FileTypes[i]+';';
+    end;
+
+  end;
+  Delete(Result,Length(Result),1);
+  //Text File
+  Result := Result + '|Text Files|';
+  for I := 0 to FileTypes.Count -1 do
+  begin
+    if (PFileTypeRec(FileTypes.Objects[i]).FileType = TextType) then
+    begin
+      Result := Result + '*'+ FileTypes[i]+';';
+    end;
+  end;
+  Delete(Result,Length(Result),1);
+  //All Files
+  Result := Result + '|Any Files|*.*';
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
@@ -845,6 +889,21 @@ begin
     DoLogic;
   finally
     Exclude(FViewerState, vsDontDraw);
+  end;
+end;
+
+//-- JPM --------------------------------------------------------- 25.05.2013 --
+procedure THtmlViewer.ParseXHtml;
+var
+  Parser: THtmlParser;
+begin
+  Parser := THtmlParser.Create(FDocument);
+  try
+    Parser.IsXHTML := True;
+    Parser.ParseHtml(FSectionList, OnInclude, OnSoundRequest, HandleMeta, OnLink);
+    Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
+  finally
+    Parser.Free;
   end;
 end;
 
@@ -1057,9 +1116,10 @@ begin
           OnParseBegin(Self, FDocument);
 
         case DocType of
-          HTMLType,
-          XHtmlType:
+          HTMLType:
             ParseHtml;
+          XHtmlType:
+            ParseXHtml;
         else
           ParseText;
         end;

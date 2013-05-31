@@ -60,6 +60,7 @@ begin
   Stream := TMemoryStream.Create;
 
   HTTP := TIdHTTP.Create(Nil);
+  HTTP.HTTPOptions := HTTP.HTTPOptions + [hoNoParseMetaHTTPEquiv];
   HTTP.HandleRedirects := True;
   HTTP.ProtocolVersion := pv1_0;
 

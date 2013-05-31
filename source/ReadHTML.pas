@@ -143,6 +143,7 @@ type
     FUseQuirksMode : Boolean;
     FPropStack: THtmlPropStack;
     FNoBreak : Boolean;
+    FIsXHTML : Boolean;
     procedure SetNoBreak(const AValue : Boolean);
     procedure GetCh;
 
@@ -184,6 +185,7 @@ type
     function Peek: ThtChar;
     function GetTitle: ThtString;
     function PropStackIndex: Integer;
+    function ExtractCharsetFromXMLProlog : Boolean;
   public
     constructor Create(Doc: TBuffer);
     destructor Destroy; override;
@@ -199,6 +201,7 @@ type
     property UseQuirksMode : Boolean read FUseQuirksMode;
     property PropStack: THtmlPropStack read FPropStack;
     property NoBreak : Boolean read FNoBreak write SetNoBreak;
+    property IsXHTML : Boolean read FIsXHTML write FIsXHTML;
   end;
 
 implementation
@@ -230,6 +233,7 @@ begin
   LCToken := TokenObj.Create;
   DocStack := TStack.Create;
   Self.Doc := Doc;
+  FIsXHTML := False;
 end;
 
 destructor THtmlParser.Destroy;
@@ -545,6 +549,146 @@ begin
       Result := True;
   else
     Result := False;
+  end;
+end;
+
+function THtmlParser.ExtractCharsetFromXMLProlog : Boolean;
+
+var LId : ThtString;
+
+  procedure GetChBasic;
+  begin
+     LCh := Doc.NextChar;
+  end;
+
+  procedure ReadToGT; {read to the next GreaterChar }
+  begin
+    while (LCh <> GreaterChar) and (LCh <> EofChar) do
+      GetChBasic;
+    InComment := False;
+  end;
+
+  procedure ReadToLT;  {read to the next LessChar }
+  begin
+    if not InComment then begin
+      while (LCh <> LessChar) and (LCh <> EofChar) do
+        GetChBasic;
+    end;
+  end;
+
+  procedure ScanRestOfUnquotedString(out Identifier : ThtString);
+  begin
+    SetLength(Identifier, 0);
+    if LCh = '"' then begin
+      GetChBasic;
+    end;
+    repeat
+      if (LCh = EofChar) then begin
+        break;
+      end;
+      if (LCh = '"') then begin
+        break;
+      end else begin
+        htAppendChr(Identifier, LCh);
+      end;
+      GetChBasic;
+    until False;
+  end;
+
+  procedure ParseXMLProlog;
+  var LCharset : THtString;
+    CP: TBuffCodePage;
+
+  begin
+    repeat
+      GetChBasic;
+      GetIdentifier(LId);
+      if LId = 'encoding' then begin
+        if LCh='=' then begin
+          GetChBasic;
+          if LCh='"' then begin
+            ScanRestOfUnquotedString(LCharset);
+            //Do not use DoCharSet(LCharset) here because the stack might not be set up
+            CP := StrToCodePage(LCharset);
+            Result := CP <> CP_UNKNOWN;
+            if Result then
+            begin
+              Doc.CodePage := CP;
+            end;
+            exit;
+          end;
+        end;
+      end else begin
+        if LCh='=' then begin
+          GetChBasic;
+          if LCh='"' then begin
+            ScanRestOfUnquotedString(LCharset);
+          end;
+        end;
+      end;
+        if LCh='?' then begin
+           GetChBasic;
+        end;
+        if (LCh = GreaterChar) or (LCh = EofChar) then begin
+          exit;
+        end;
+    until False;
+  end;
+
+ var
+  OldPos: Integer;
+
+begin
+  FPropStack := THTMLPropStack.Create;
+  try
+    OldPos := Doc.Position;
+    Result := True;
+    repeat
+      //loop where parsing code goes
+      ReadToLT;
+      GetChBasic;
+
+      case LCh of
+        '!':
+        begin
+          GetChBasic;
+          GetIdentifier(LId);
+          if htUpperCase(LId) <> 'DOCTYPE' then
+          begin
+            InComment := True;
+            ReadToGT;
+          end
+          else
+          begin
+
+            Result := False;
+            break;
+          end;
+        end;
+        '?':
+        begin
+          GetChBasic;
+          GetIdentifier(LId);
+          if LId = 'xml' then begin
+            //scan for charset
+            ParseXMLProlog;
+            break;
+          end;
+        end;
+        EofChar:
+          break;
+
+      end;
+      GetIdentifier(LId);
+      SkipWhiteSpace;
+      LId := htUpperCase(LId);
+      if (LId = 'HTML') or (LId = 'HEAD') or (LId = 'BODY') then begin
+        break;
+      end;
+    until False;
+    Doc.Position := OldPos;
+  finally
+    FreeAndNil(FPropStack);
   end;
 end;
 
@@ -4006,6 +4150,28 @@ var
   T: TAttribute;
 {$ENDIF}
 begin
+  {Todo:
+  Precedence rules
+
+  In the case of conflict between multiple encoding declarations, precedence rules apply to determine
+  which declaration wins out. For XHTML and HTML, the precedence is as follows, with 1 being the highest.
+
+    HTTP Content-Type header
+    byte-order mark (BOM)
+    XML declaration
+    meta element
+    link charset attribute
+
+  From: http://www.w3.org/International/questions/qa-html-encoding-declarations
+
+  Note that:
+
+  Using the XML declaration for XHTML served as HTML. XHTML served as HTML is parsed as HTML, even though it
+  is based on XML syntax, and therefore an XML declaration should not be recognized by the browser. It is for
+  this reason that you should use a pragma directive to specify the encoding when serving XHTML in this way*.
+   }
+  if Self.IsXHTML then
+    ExtractCharsetFromXMLProlog;
   FPropStack := ASectionList.PropStack;
   try
     IncludeEvent := AIncludeEvent;
