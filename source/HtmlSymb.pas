@@ -659,7 +659,7 @@ const
     //
     (Name: 'CITE';        Symbol: CiteSy;       EndSym: CiteEndSy),
     (Name: 'VAR';         Symbol: VarSy;        EndSym: VarEndSy),
-    (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrSy),
+    (Name: 'ABBR';        Symbol: AbbrSy;       EndSym: AbbrEndSy),
     (Name: 'ACRONYM';     Symbol: AcronymSy;    EndSym: AcronymEndSy),
     (Name: 'DFN';         Symbol: DfnSy;        EndSym: DfnEndSy),
 
