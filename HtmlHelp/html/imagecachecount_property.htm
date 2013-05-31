@@ -1,0 +1,34 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>ImageCacheCount Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Caching">
+	<PARAM NAME="Keyword" VALUE="ImageCacheCount">
+</OBJECT>
+
+<P><A NAME="imagecachecount_property"></A><B>ImageCacheCount  Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> ImageCacheCount: Integer;</P>
+
+<P>To save time in reloading HTML files with images, image caching may be used to save images already loaded.  The ImageCacheCount property determines the extent to which this is done.</P>
+
+<P>With an ImageCacheCount of 5, for instance, images will be saved through 5 document reloads.  If the image is not used during that period, it will be dropped from the cache.  However, anytime an image is used, the count is reset to zero and it will remain for 5 more reloads.</P>
+
+<P>The default value for ImageCacheCount is 5.  A value of 0 indicates no caching.  The cache may be flushed by setting the count to 0 temporarily and then resetting it to the desired value.</P>
+
+<P>Since image storage can use a lot of memory, care should be taken not to overdo the amount of caching.</P>
+
+</BODY>
+</HTML>

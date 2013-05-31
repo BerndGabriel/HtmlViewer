@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>InsertImage Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Images">
+	<PARAM NAME="Keyword" VALUE="InsertImage Method">
+</OBJECT>
+
+<P><A NAME="insertimage_method"></A><B>InsertImage Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>TFrameViewer Declaration</B></P>
+
+<P>function InsertImage(Viewer: ThtmlViewer; const Src: string; Stream: TMemoryStream): boolean;</P>
+
+<P><B>ThtmlViewer Declaration</B></P>
+
+<P>function InsertImage(const Src: string; Stream: TMemoryStream): boolean;</P>
+
+<P><B>Description</B></P>
+
+<P>The <B>InsertImage</B> method allows images previously requested by the <A HREF="onimagerequest_event.htm">OnImageRequest</A> event to be loaded at a later time.  This allows images to be downloaded and inserted when available.  </P>
+
+<P><I>Src</I>The identifier for the image originally obtained from the <A HREF="onimagerequest_event.htm">OnImageRequest</A> event</P>
+
+<P><I>Viewer</I>The destination ThtmlViewer.  This parameter is applicable to the <A HREF="tframeviewer_component.htm">TFrameViewer</A> InsertImage method only.  This parameter is obtained from the <I>Sender</I> parameter of the original <A HREF="onimagerequest_event.htm">OnImageRequest</A> event.</P>
+
+<P><I>Stream</I>The TMemoryStream being returned containing the image.  <I>Stream</I> may contain a bitmap, GIF, JPEG, or PNG image.  Returning a value of <B>Nil</B> will cause and error bitmap to be displayed for the image.</P>
+
+<P><I>Return</I>A <B>True</B> result indicates the image was accepted.  A return of <B>False</B> indicates the image cannot be accepted at this time because something else in being processed.  Another attempt should be made later.</P>
+
+<P>A typical scenario for using the InsertImage method is as follows:</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>The HTML file is loaded.  As this is processed, a series of <A HREF="onimagerequest_event.htm">OnImageRequest</A> events occur.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>The special <A HREF="waitstream.htm"><B>WaitStream</B></A> value is returned to the <A HREF="onimagerequest_event.htm">OnImageRequest</A> event.  This indicates that the image will be provided later.  The <I>Src</I> and <I>Sender</I> parameters are saved.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>The images are then downloaded.  Meanwhile the HTML file is displayed with default images.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>As the image information is obtained, the <B>InsertImage</B> method is called and the image is displayed.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onimagerequest_event.htm">OnImageRequest Event</A></P>
+
+</BODY>
+</HTML>

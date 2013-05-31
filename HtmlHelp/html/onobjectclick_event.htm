@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnObjectClick Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Forms">
+	<PARAM NAME="Keyword" VALUE="OnObjectClick Event">
+</OBJECT>
+
+<P><A NAME="onobjectclick_event"></A><B>OnObjectClick Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> OnObjectClick: <A HREF="type_tobjectclickevent.htm">TObjectClickEvent</A>;</P>
+
+<P><B>Description</B></P>
+
+<P>The OnObjectClick event occurs when the mouse is left clicked on an Object.  Currently, all Form controls support this event.  See the <A HREF="type_tobjectclickevent.htm">TObjectClickEvent</A> type for information on the parameters.</P>
+
+<P><B>Example</B></P>
+
+<P>The following handler will display the status of radio buttons and checkboxes whenever they are changed.  Display only occurs for those controls having the OnClick="display" attribute:</P>
+
+<P>procedure TForm1.ObjectClick(Sender, Obj: TObject; const OnClick: String);</P>
+
+<P>var</P>
+
+<P>S: string;</P>
+
+<P>begin</P>
+
+<P>if OnClick = 'display' then</P>
+
+<P>begin</P>
+
+<P>if Obj is TFormControlObj then</P>
+
+<P>with TFormControlObj(Obj) do</P>
+
+<P>begin</P>
+
+<P>if TheControl is TCheckBox then</P>
+
+<P>with TCheckBox(TheControl) do</P>
+
+<P>begin</P>
+
+<P>S := Value + ' is ';</P>
+
+<P>if Checked then S := S + 'checked'</P>
+
+<P>else S := S + 'unchecked';</P>
+
+<P>MessageDlg(S, mtCustom, [mbOK], 0);</P>
+
+<P>end</P>
+
+<P>else if TheControl is TRadioButton then</P>
+
+<P>with TRadioButton(TheControl) do</P>
+
+<P>begin</P>
+
+<P>S := Value + ' is checked';</P>
+
+<P>MessageDlg(S, mtCustom, [mbOK], 0);</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P>See also:</P>
+
+<P><A HREF="onimageclick_event.htm">OnImageClick Event</A></P>
+
+<P><A HREF="onimageover_event.htm">OnImageOver Event</A></P>
+
+</BODY>
+</HTML>

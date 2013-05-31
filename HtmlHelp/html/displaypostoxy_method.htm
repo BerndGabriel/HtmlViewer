@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>DisplayPosToXY Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="DisplayPosToXY Method">
+</OBJECT>
+
+<P><A NAME="displaypostoxy_method"></A><B>DisplayPosToXY Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>function DisplayPosToXY(DisplayPos: integer; var X, Y: integer): boolean;</P>
+
+<P><B>Description</B></P>
+
+<P>Given a character position in the display, DisplayPosToXY finds the <I>X</I> and <I>Y</I> location of the character on the display.  Dimensions are in pixels relative to the upper left corner of the display.</P>
+
+<P>DisplayPosToXY returns False if the requested position does not exist.</P>
+
+<P><B>Example:</B></P>
+
+<P>The following code will check to see if the selected position is within the currently displayed area  If not it will position the display to insure that it is</P>
+
+<P>if Viewer.DisplayPosToXY(Viewer.<A HREF="selstart_property.htm">SelStart</A>, X, Y) then</P>
+
+<P>begin</P>
+
+<P>VPos := Viewer.<A HREF="vscrollbarposition_property.htm">VScrollBarPosition</A>;</P>
+
+<P>if (Y &lt; VPos) or (Y &gt; VPos +Viewer.ClientHeight-20) then</P>
+
+<P>Viewer.<A HREF="vscrollbarposition_property.htm">VScrollBarPosition</A> := (Y - Viewer.ClientHeight div 2);</P>
+
+<P>end;</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="selstart_property.htm">SelStart Property</A></P>
+
+<P><A HREF="findsourcepos_method.htm">FindSourcePos Method</A></P>
+
+<P><A HREF="finddisplaypos_method.htm">FindDisplayPos Method</A></P>
+
+</BODY>
+</HTML>

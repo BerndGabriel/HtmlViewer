@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnBlankWindowRequest Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="OnBlankWindowRequest Event">
+</OBJECT>
+
+<P><A NAME="onblankwindowrequest_event"></A><B>OnBlankWindowRequest Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> OnBlankWindowRequest: <A HREF="type_twindowrequestevent.htm">TWindowRequestEvent</A>;</P>
+
+<P><B>Description</B></P>
+
+<P>The OnBlankWindowRequest event occurs when the URL Target attribute is either "<B>_blank</B>" or has a window name not defined elsewhere in the HTML document.  The user should then open a new window for the URL.  An easy way to do this is to launch a second instance of the program.</P>
+
+<P><B>Example</B></P>
+
+<P>This event handler opens a new instance of the program and passes it the URL.</P>
+
+<P>procedure TForm1.WindowRequest(Sender: TObject; const Target,</P>
+
+<P>URL: string);</P>
+
+<P>var</P>
+
+<P>S, Dest: string[255];</P>
+
+<P>I: integer;</P>
+
+<P>PC: array[0..255] of char;</P>
+
+<P>begin</P>
+
+<P>S := URL;</P>
+
+<P>I := Pos('#', S);</P>
+
+<P>if I &gt;= 1 then</P>
+
+<P>begin</P>
+
+<P>Dest := System.Copy(S, I, 255);  {local destination}</P>
+
+<P>S := System.Copy(S, 1, I-1);     {the file name}</P>
+
+<P>end</P>
+
+<P>else</P>
+
+<P>Dest := '';    {no local destination}</P>
+
+<P>S := FrameViewer.<A HREF="htmlexpandfilename_method.htm">HTMLExpandFileName</A>(S);</P>
+
+<P>if FileExists(S) then</P>
+
+<P>WinExec(StrPCopy(PC, ParamStr(0)+' '+S+Dest), sw_Show);</P>
+
+<P>end;</P>
+
+</BODY>
+</HTML>

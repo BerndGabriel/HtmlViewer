@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TStreamRequestEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_tstreamrequestevent"></A><B>Type TStreamRequestEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TStreamRequestEvent = procedure(Sender: TObject; const SRC: string;</P>
+
+<P>var Stream: TStream) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TStreamRequestEvent type is the type for the <A HREF="onstreamrequest_event.htm">OnStreamRequest</A> event.  This event allows a handler to respond with an HTML document in stream form when a request is made for a new document.  The parameters are:</P>
+
+<P><I>SRC</I>A string identifying the document requested.  This string will usually be taken from a SRC= attribute.</P>
+
+<P><I>Stream</I>The stream containing the HTML text supplied by the event handler.</P>
+
+<P>The following points are important in writing the event handler:</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>In general, you must respond with a valid <I>Stream </I>parameter<I>.</I>  If <B>NIL</B> is returned for the <I>Stream</I> parameter, <A HREF="tframeviewer_component.htm">TFrameViewer</A> will attempt to load the file identified by <I>SRC</I>.  However, this is unreliable unless <I>SRC </I>contains a filename with the full path.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Only one of the event handlers in the group, <A HREF="onbufferrequest_event.htm">OnBufferRequest</A>, <A HREF="onfilerequest_event.htm">OnFileRequest</A>, <A HREF="onstreamrequest_event.htm">OnStreamRequest</A>, and <A HREF="onstringsrequest_event.htm">OnStringsRequest</A>, may be active at the same time.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onbufferrequest_event.htm">OnBufferRequest Event</A></P>
+
+<P><A HREF="onfilerequest_event.htm">OnFileRequest Event</A></P>
+
+<P><A HREF="onstringsrequest_event.htm">OnStringsRequest Event</A></P>
+
+</BODY>
+</HTML>

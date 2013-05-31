@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Position Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Position">
+	<PARAM NAME="Keyword" VALUE="Positioning">
+</OBJECT>
+
+<P><A NAME="prop_thtmlviewerposition"></A><B>Position Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P>De<B>claration</B></P>
+
+<P><B>property</B> Position: LongInt;</P>
+
+<P><B>Description</B></P>
+
+<P>The Position property is a coded number (LongInt) which specifies the part of the document appearing at the top of the window.  Since this number is relatively independent of document <A HREF="reformatting.htm">reformatting</A>, it may be used to save a position to be returned to at a later time.</P>
+
+<P>Specifying a Position of 0 will take you to the top of the document.  Other values are not easily calculated.</P>
+
+<P>For an alternate method of positioning, see:</P>
+
+<P><A HREF="vscrollbarposition_property.htm">VScrollBarPosition Property</A></P>
+
+<P><A HREF="vscrollbarrange_property.htm">VScrollBarRange Property</A></P>
+
+<P><B>Example</B></P>
+
+<P>var</P>
+
+<P>SavePos: LongInt;</P>
+
+<P>....</P>
+
+<P>SavePos := Viewer.Position; {save the position}</P>
+
+<P>....</P>
+
+<P>{intervening operations which may reformat the document}</P>
+
+<P>....</P>
+
+<P>Viewer.Position := SavePos; {return to original spot in document}</P>
+
+</BODY>
+</HTML>

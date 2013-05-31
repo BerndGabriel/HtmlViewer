@@ -1,0 +1,46 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>MakePagedMetafiles Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="MakePagedMetafiles">
+	<PARAM NAME="Keyword" VALUE="Metafiles">
+</OBJECT>
+
+<P><A NAME="makepagedmetafiles_method"></A><B>MakePagedMetafiles Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>function MakePagedMetafiles(Width, Height: integer): TList;</P>
+
+<P><B>Description</B></P>
+
+<P>The <B>MakePagedMetafiles</B> method produces a series of metafiles of an HTML document divided into pages.</P>
+
+<P><I>Result</I>A TList of TMetafiles.</P>
+
+<P><I>Width</I>The width of the metafiles.</P>
+
+<P><I>Height</I>The height of the metafiles.</P>
+
+<P>This function differs from <A HREF="makemetafile_method.htm">MakeMetafile</A> in that it is sensitive to the CSS Page-Break properties and the <A HREF="special_html_tags_and_attributes.htm">&lt;Page&gt;</A> tag.  It also does not split text lines and makes an attempt to keep from splitting tables.</P>
+
+<P>No extra margins are included in the <I>Width</I> and <I>Height</I> dimension.  If margins are required, they should be added when the metafiles are displayed.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="makemetafile_method.htm">MakeMetafile Method</A></P>
+
+<P><A HREF="makebitmap_method.htm">MakeBitmap Method</A></P>
+
+</BODY>
+</HTML>

@@ -1,0 +1,1252 @@
+<HTML>
+<!-- Sitemap 1.0 -->
+<OBJECT type="text/site properties">
+</OBJECT>
+<UL>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="&lt;body&gt; Attributes">
+		<param name="Name" value="&lt;body&gt; attributes">
+		<param name="Local" value="html/_body__attributes.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="&lt;OBJECT&gt;">
+		<param name="Name" value="OnPanelPrint Event">
+		<param name="Local" value="html/onpanelprint_event.htm">
+		<param name="Name" value="OnObjectTag Event">
+		<param name="Local" value="html/onobjecttag_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="&lt;PAGE&gt;">
+		<param name="Name" value="Special HTML Tags and Attributes">
+		<param name="Local" value="html/special_html_tags_and_attributes.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="&lt;PANEL&gt;">
+		<param name="Name" value="Special HTML Tags and Attributes">
+		<param name="Local" value="html/special_html_tags_and_attributes.htm#panel_tag">
+		<param name="Name" value="OnPanelCreate Event">
+		<param name="Local" value="html/onpanelcreate_event.htm">
+		<param name="Name" value="OnPanelPrint Event">
+		<param name="Local" value="html/onpanelprint_event.htm">
+		<param name="Name" value="OnObjectTag Event">
+		<param name="Local" value="html/onobjecttag_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="AbortPrint">
+		<param name="Name" value="OpenPrint, AbortPrint, and ClosePrint Methods">
+		<param name="Local" value="html/openprint__abortprint__and_closeprint_methods.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Active Images">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm#active_images">
+		<param name="Name" value="ReplaceImage Method">
+		<param name="Local" value="html/replaceimage_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ActiveViewer">
+		<param name="Name" value="ActiveViewer Property">
+		<param name="Local" value="html/activeviewer_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ActiveViewer Property">
+		<param name="Name" value="ActiveViewer Property">
+		<param name="Local" value="html/activeviewer_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="AttributeValue Property">
+		<param name="Name" value="Type TObjectClickEvent">
+		<param name="Local" value="html/type_tobjectclickevent.htm">
+		<param name="Name" value="Type ThtObjectEvent">
+		<param name="Local" value="html/type_thtobjectevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="BackButtonEnabled Property">
+		<param name="Name" value="BackButtonEnabled Property">
+		<param name="Local" value="html/backbuttonenabled_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Background">
+		<param name="Name" value="&lt;body&gt; attributes">
+		<param name="Local" value="html/_body__attributes.htm">
+		<param name="Name" value="DefBackground Property">
+		<param name="Local" value="html/defbackground_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="base">
+		<param name="Name" value="Base Property">
+		<param name="Local" value="html/base_property.htm">
+		<param name="Name" value="HTMLExpandFilename Method">
+		<param name="Local" value="html/htmlexpandfilename_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Base Property">
+		<param name="Name" value="Base Property">
+		<param name="Local" value="html/base_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Base Target Property">
+		<param name="Name" value="BaseTarget Property">
+		<param name="Local" value="html/basetarget_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Bitmaps">
+		<param name="Name" value="OnImageRequest Event">
+		<param name="Local" value="html/onimagerequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="BorderStyle">
+		<param name="Name" value="BorderStyle Property">
+		<param name="Local" value="html/borderstyle_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="BorderStyle Property">
+		<param name="Name" value="BorderStyle Property">
+		<param name="Local" value="html/borderstyle_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Caching">
+		<param name="Name" value="ImageCacheCount Property">
+		<param name="Local" value="html/imagecachecount_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="CaretPos Property">
+		<param name="Name" value="CaretPos Property">
+		<param name="Local" value="html/caretpos_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Charset">
+		<param name="Name" value="Charset Property">
+		<param name="Local" value="html/charset_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Charset Property">
+		<param name="Name" value="Charset Property">
+		<param name="Local" value="html/charset_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Clear Method">
+		<param name="Name" value="Clear Method">
+		<param name="Local" value="html/clear_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ClearHistory Method">
+		<param name="Name" value="ClearHistory Method">
+		<param name="Local" value="html/clearhistory_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Clipboard">
+		<param name="Name" value="CopyToClipboard Method">
+		<param name="Local" value="html/copytoclipboard_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ClosePrint">
+		<param name="Name" value="OpenPrint, AbortPrint, and ClosePrint Methods">
+		<param name="Local" value="html/openprint__abortprint__and_closeprint_methods.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Colors">
+		<param name="Name" value="&lt;body&gt; attributes">
+		<param name="Local" value="html/_body__attributes.htm">
+		<param name="Name" value="DefFontColor Property">
+		<param name="Local" value="html/deffontcolor_property.htm">
+		<param name="Name" value="DefHotSpotColor Property">
+		<param name="Local" value="html/defhotspotcolor_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Compile Options">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Contents">
+		<param name="Name" value="Contents">
+		<param name="Local" value="html/contents.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Copyright">
+		<param name="Name" value="Copyright and Registration">
+		<param name="Local" value="html/copyright.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="CopyToClipboard">
+		<param name="Name" value="CopyToClipboard Method">
+		<param name="Local" value="html/copytoclipboard_method.htm">
+		<param name="Name" value="SelLength Property">
+		<param name="Local" value="html/sellength_property.htm">
+		<param name="Name" value="SelectAll Method">
+		<param name="Local" value="html/selectall_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="CurrentFile Property">
+		<param name="Name" value="CurrentFile Property">
+		<param name="Local" value="html/currentfile_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefBackground Property">
+		<param name="Name" value="DefBackground Property">
+		<param name="Local" value="html/defbackground_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefFontColor">
+		<param name="Name" value="DefFontColor Property">
+		<param name="Local" value="html/deffontcolor_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefFontName">
+		<param name="Name" value="DefFontName Property">
+		<param name="Local" value="html/deffontname_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefFontSize">
+		<param name="Name" value="DefFontSize Property">
+		<param name="Local" value="html/deffontsize_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefHotSpotColor">
+		<param name="Name" value="DefHotSpotColor Property">
+		<param name="Local" value="html/defhotspotcolor_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefOverLinkColor">
+		<param name="Name" value="DefOverLinkColor Property">
+		<param name="Local" value="html/defoverlinkcolor_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefPreFontName">
+		<param name="Name" value="DefPreFontName Property">
+		<param name="Local" value="html/defprefontname_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DefVisitedLinkColor">
+		<param name="Name" value="DefVisitedLinkColor Property">
+		<param name="Local" value="html/defvisitedlinkcolor_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DisplayPosToXY Method">
+		<param name="Name" value="DisplayPosToXY Method">
+		<param name="Local" value="html/displaypostoxy_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Dither Property">
+		<param name="Name" value="Dither Property">
+		<param name="Local" value="html/dither_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DLL">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Document Title">
+		<param name="Name" value="DocumentTitle Property">
+		<param name="Local" value="html/prop_thtmlviewerdocumenttitle.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DocumentSource Property">
+		<param name="Name" value="DocumentSource Property">
+		<param name="Local" value="html/documentsource_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DosPath">
+		<param name="Name" value="Base Property">
+		<param name="Local" value="html/base_property.htm">
+		<param name="Name" value="HTMLExpandFilename Method">
+		<param name="Local" value="html/htmlexpandfilename_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="DosToHTML Function">
+		<param name="Name" value="DosToHTML Function">
+		<param name="Local" value="html/dostohtml_function.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Events">
+		<param name="Name" value="TFrameBrowser Events">
+		<param name="Local" value="html/tframebrowser_events.htm">
+		<param name="Name" value="TFrameViewer Events">
+		<param name="Local" value="html/tframeviewer_events.htm">
+		<param name="Name" value="ThtmlViewer Events">
+		<param name="Local" value="html/thtmlviewer_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Find Method">
+		<param name="Name" value="Find and FindEx Methods">
+		<param name="Local" value="html/find_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="FindDisplayPos Method">
+		<param name="Name" value="FindDisplayPos Method">
+		<param name="Local" value="html/finddisplaypos_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="FindSourcePos Method">
+		<param name="Name" value="FindSourcePos Method">
+		<param name="Local" value="html/findsourcepos_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Fonts">
+		<param name="Name" value="DefFontColor Property">
+		<param name="Local" value="html/deffontcolor_property.htm">
+		<param name="Name" value="DefFontName Property">
+		<param name="Local" value="html/deffontname_property.htm">
+		<param name="Name" value="DefFontSize Property">
+		<param name="Local" value="html/deffontsize_property.htm">
+		<param name="Name" value="DefPreFontName Property">
+		<param name="Local" value="html/defprefontname_property.htm">
+		<param name="Name" value="GetCharAtPos Method">
+		<param name="Local" value="html/getcharatpos_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Footer">
+		<param name="Name" value="OnPrintHeader and OnPrintFooter Events">
+		<param name="Local" value="html/onprintheader_and_onprintfooter_events.htm">
+		<param name="Name" value="OnPrintHTMLHeader and OnPrintHTMLFooter Events">
+		<param name="Local" value="html/onprinthtmlheader_and_onprinthtmlfooter_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="FormControlList Property">
+		<param name="Name" value="FormControlList Property">
+		<param name="Local" value="html/formcontrollist_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="FormData Property">
+		<param name="Name" value="FormData Property">
+		<param name="Local" value="html/formdata_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Forms">
+		<param name="Name" value="FormControlList Property">
+		<param name="Local" value="html/formcontrollist_property.htm">
+		<param name="Name" value="OnFormSubmit Event">
+		<param name="Local" value="html/onformsubmit_event.htm">
+		<param name="Name" value="OnObjectClick Event">
+		<param name="Local" value="html/onobjectclick_event.htm">
+		<param name="Name" value="FormData Property">
+		<param name="Local" value="html/formdata_property.htm">
+		<param name="Name" value="IDControl Property">
+		<param name="Local" value="html/idcontrol_property.htm">
+		<param name="Name" value="OnObjectFocus Event">
+		<param name="Local" value="html/onobjectfocus_event.htm">
+		<param name="Name" value="OnObjectBlur Event">
+		<param name="Local" value="html/onobjectblur_event.htm">
+		<param name="Name" value="OnObjectChange Event">
+		<param name="Local" value="html/onobjectchange_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="FullDisplaySize Method">
+		<param name="Name" value="FullDisplaySize Method">
+		<param name="Local" value="html/fulldisplaysize_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="fvOptions Property">
+		<param name="Name" value="fvOptions Property">
+		<param name="Local" value="html/fvoptions_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="FwdButtonEnabled Property">
+		<param name="Name" value="FwdButtonEnabled Property">
+		<param name="Local" value="html/fwdbuttonenabled_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="GetCharAtPos">
+		<param name="Name" value="CaretPos Property">
+		<param name="Local" value="html/caretpos_property.htm">
+		<param name="Name" value="GetCharAtPos Method">
+		<param name="Local" value="html/getcharatpos_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="GetPostQuery Method">
+		<param name="Name" value="GetPostQuery Method">
+		<param name="Local" value="html/getpostquery_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="GetSelTextBuf method">
+		<param name="Name" value="GetSelTextBuf Method">
+		<param name="Local" value="html/getseltextbuf_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="GetViewerURLBase Method">
+		<param name="Name" value="GetViewerURLBase Method">
+		<param name="Local" value="html/getviewerurlbase_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="GoBack Method">
+		<param name="Name" value="GoBack Method">
+		<param name="Local" value="html/goback_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="GoFwd Method">
+		<param name="Name" value="GoFwd Method">
+		<param name="Local" value="html/gofwd_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Header">
+		<param name="Name" value="OnPrintHeader and OnPrintFooter Events">
+		<param name="Local" value="html/onprintheader_and_onprintfooter_events.htm">
+		<param name="Name" value="OnPrintHTMLHeader and OnPrintHTMLFooter Events">
+		<param name="Local" value="html/onprinthtmlheader_and_onprinthtmlfooter_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Hint Windows">
+		<param name="Name" value="TitleAttr Property">
+		<param name="Local" value="html/titleattr_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="History Lists">
+		<param name="Name" value="BackButtonEnabled Property">
+		<param name="Local" value="html/backbuttonenabled_property.htm">
+		<param name="Name" value="ClearHistory Method">
+		<param name="Local" value="html/clearhistory_method.htm">
+		<param name="Name" value="GoBack Method">
+		<param name="Local" value="html/goback_method.htm">
+		<param name="Name" value="GoFwd Method">
+		<param name="Local" value="html/gofwd_method.htm">
+		<param name="Name" value="FwdButtonEnabled Property">
+		<param name="Local" value="html/fwdbuttonenabled_property.htm">
+		<param name="Name" value="History Property">
+		<param name="Local" value="html/history_property.htm">
+		<param name="Name" value="HistoryIndex Property">
+		<param name="Local" value="html/historyindex_property.htm">
+		<param name="Name" value="HistoryMaxCount Property">
+		<param name="Local" value="html/historymaxcount_property.htm">
+		<param name="Name" value="OnHistoryChange Event">
+		<param name="Local" value="html/onhistorychange_event.htm">
+		<param name="Name" value="Setting up a History List">
+		<param name="Local" value="html/setting_up_a_history_list.htm">
+		<param name="Name" value="TitleHistory Property">
+		<param name="Local" value="html/titlehistory_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="HistoryMaxCount">
+		<param name="Name" value="HistoryMaxCount Property">
+		<param name="Local" value="html/historymaxcount_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="HScrollbar">
+		<param name="Name" value="VScrollBar, HScrollBar Properties">
+		<param name="Local" value="html/vscrollbar__hscrollbar_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="HScrollBarPosition Property">
+		<param name="Name" value="HScrollBarPosition Property">
+		<param name="Local" value="html/hscrollbarposition_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="HScrollBarRange Property">
+		<param name="Name" value="HScrollBarRange Property">
+		<param name="Local" value="html/hscrollbarrange_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="HTMLExpandFilename">
+		<param name="Name" value="HTMLExpandFilename Method">
+		<param name="Local" value="html/htmlexpandfilename_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="HTMLToDos Function">
+		<param name="Name" value="HTMLToDos">
+		<param name="Local" value="html/htmltodos.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="htOptions Property">
+		<param name="Name" value="htOptions Property">
+		<param name="Local" value="html/htoptions_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="IDControl Property">
+		<param name="Name" value="IDControl Property">
+		<param name="Local" value="html/idcontrol_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="IDDisplay Property">
+		<param name="Name" value="IDDisplay Property">
+		<param name="Local" value="html/iddisplay_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ImageCacheCount">
+		<param name="Name" value="ImageCacheCount Property">
+		<param name="Local" value="html/imagecachecount_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Images">
+		<param name="Name" value="InsertImage Method">
+		<param name="Local" value="html/insertimage_method.htm">
+		<param name="Name" value="OnImageRequest Event">
+		<param name="Local" value="html/onimagerequest_event.htm">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm">
+		<param name="Name" value="ViewImages Property">
+		<param name="Local" value="html/viewimages_property.htm">
+		<param name="Name" value="ReplaceImage Method">
+		<param name="Local" value="html/replaceimage_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="InsertImage Method">
+		<param name="Name" value="InsertImage Method">
+		<param name="Local" value="html/insertimage_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LinkAttributes Property">
+		<param name="Name" value="LinkAttributes Property">
+		<param name="Local" value="html/linkattributes_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Links">
+		<param name="Name" value="&lt;body&gt; attributes">
+		<param name="Local" value="html/_body__attributes.htm">
+		<param name="Name" value="DefOverLinkColor Property">
+		<param name="Local" value="html/defoverlinkcolor_property.htm">
+		<param name="Name" value="DefVisitedLinkColor Property">
+		<param name="Local" value="html/defvisitedlinkcolor_property.htm">
+		<param name="Name" value="OnHotSpotClick Event">
+		<param name="Local" value="html/event_thtmlvieweronhotspotclick.htm">
+		<param name="Name" value="OnHotSpotCovered Event">
+		<param name="Local" value="html/event_thtmlvieweronhotspotcovered.htm">
+		<param name="Name" value="OnHotSpotTargetClick Event">
+		<param name="Local" value="html/onhotspottargetclick_event.htm">
+		<param name="Name" value="OnHotSpotTargetCovered Event">
+		<param name="Local" value="html/onhotspottargetcovered_event.htm">
+		<param name="Name" value="VisitedMaxCount Property">
+		<param name="Local" value="html/visitedmaxcount_property.htm">
+		<param name="Name" value="fvOptions Property">
+		<param name="Local" value="html/fvoptions_property.htm">
+		<param name="Name" value="htOptions Property">
+		<param name="Local" value="html/htoptions_property.htm">
+		<param name="Name" value="LinkText Property">
+		<param name="Local" value="html/linktext_property.htm">
+		<param name="Name" value="LinkAttributes Property">
+		<param name="Local" value="html/linkattributes_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LinkText Property">
+		<param name="Name" value="LinkText Property">
+		<param name="Local" value="html/linktext_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Load Method">
+		<param name="Name" value="Load Method">
+		<param name="Local" value="html/load_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadFromBuffer Method">
+		<param name="Name" value="LoadFromBuffer Method">
+		<param name="Local" value="html/loadfrombuffer_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadFromFile">
+		<param name="Name" value="LoadFromFile Method">
+		<param name="Local" value="html/loadfromfile_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadFromStream">
+		<param name="Name" value="LoadFromStream Method">
+		<param name="Local" value="html/loadfromstream_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadFromString">
+		<param name="Name" value="LoadFromString Method">
+		<param name="Local" value="html/loadfromstring_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadImageFile Method">
+		<param name="Name" value="LoadImageFile Method">
+		<param name="Local" value="html/loadimagefile_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadStrings Method">
+		<param name="Name" value="LoadStrings Method">
+		<param name="Local" value="html/loadstrings_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadTargetFromFile Method">
+		<param name="Name" value="LoadTargetFromFile Method">
+		<param name="Local" value="html/loadtargetfromfile_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadTextFile Method">
+		<param name="Name" value="LoadTextFile Method">
+		<param name="Local" value="html/loadtextfile_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadTextStrings Method">
+		<param name="Name" value="LoadTextStrings Method">
+		<param name="Local" value="html/loadtextstrings_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="LoadURL Method">
+		<param name="Name" value="LoadURL Method">
+		<param name="Local" value="html/loadurl_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="MakeBitmap Method">
+		<param name="Name" value="MakeBitmap Method">
+		<param name="Local" value="html/makebitmap_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="MakeMetafile Method">
+		<param name="Name" value="MakeMetafile Method">
+		<param name="Local" value="html/makemetafile_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="MakePagedMetafiles">
+		<param name="Name" value="MakePagedMetafiles Method">
+		<param name="Local" value="html/makepagedmetafiles_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="MarginHeight Property">
+		<param name="Name" value="MarginHeight and MarginWidth Properties">
+		<param name="Local" value="html/marginheight_and_marginwidth_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Margins">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="MarginWidth Property">
+		<param name="Name" value="MarginHeight and MarginWidth Properties">
+		<param name="Local" value="html/marginheight_and_marginwidth_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="MaxVertical Property">
+		<param name="Name" value="MaxVertical Property">
+		<param name="Local" value="html/maxvertical_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Metafiles">
+		<param name="Name" value="MakeMetafile Method">
+		<param name="Local" value="html/makemetafile_method.htm">
+		<param name="Name" value="MakePagedMetafiles Method">
+		<param name="Local" value="html/makepagedmetafiles_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Methods">
+		<param name="Name" value="TFrameBrowser Methods">
+		<param name="Local" value="html/tframebrowser_methods.htm">
+		<param name="Name" value="TFrameViewer Methods">
+		<param name="Local" value="html/tframeviewer_methods.htm">
+		<param name="Name" value="ThtmlViewer Methods">
+		<param name="Local" value="html/thtmlviewer_methods.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Mouseover images">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="NameList Property">
+		<param name="Name" value="NameList Property">
+		<param name="Local" value="html/namelist_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="NoSelect Property">
+		<param name="Name" value="NoSelect Property">
+		<param name="Local" value="html/noselect_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="NumPrinterPages">
+		<param name="Name" value="NumPrinterPages Method">
+		<param name="Local" value="html/numprinterpages_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Object Tag">
+		<param name="Name" value="OnPanelPrint Event">
+		<param name="Local" value="html/onpanelprint_event.htm">
+		<param name="Name" value="OnObjectTag Event">
+		<param name="Local" value="html/onobjecttag_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnBlankWindowRequest Event">
+		<param name="Name" value="OnBlankWindowRequest Event">
+		<param name="Local" value="html/onblankwindowrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnBufferRequest Event">
+		<param name="Name" value="OnBufferRequest Event">
+		<param name="Local" value="html/onbufferrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnFileBrowse Event">
+		<param name="Name" value="OnFileBrowse Event">
+		<param name="Local" value="html/onfilebrowse_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnFileRequest Event">
+		<param name="Name" value="OnFileRequest Event">
+		<param name="Local" value="html/onfilerequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnFormSubmit Event">
+		<param name="Name" value="OnFormSubmit Event">
+		<param name="Local" value="html/onformsubmit_event.htm">
+		<param name="Name" value="Type TFormSubmitEvent">
+		<param name="Local" value="html/type_tformsubmitevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnGetPostRequest Event">
+		<param name="Name" value="OnGetPostRequest Event">
+		<param name="Local" value="html/ongetpostrequest_event.htm">
+		<param name="Name" value="Type TGetPostRequestEvent">
+		<param name="Local" value="html/type_tgetpostrequestevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnGetPostRequestEx Event">
+		<param name="Name" value="OnGetPostRequest Event">
+		<param name="Local" value="html/ongetpostrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnHistoryChange Event">
+		<param name="Name" value="OnHistoryChange Event">
+		<param name="Local" value="html/onhistorychange_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnHotSpotClick Event">
+		<param name="Name" value="OnHotSpotClick Event">
+		<param name="Local" value="html/event_thtmlvieweronhotspotclick.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnHotSpotCovered Event">
+		<param name="Name" value="OnHotSpotCovered Event">
+		<param name="Local" value="html/event_thtmlvieweronhotspotcovered.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnHotSpotTargetClick Event">
+		<param name="Name" value="OnHotSpotTargetClick Event">
+		<param name="Local" value="html/onhotspottargetclick_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnHotSpotTargetCovered Event">
+		<param name="Name" value="OnHotSpotTargetCovered Event">
+		<param name="Local" value="html/onhotspottargetcovered_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnhtStreamRequest Event">
+		<param name="Name" value="OnhtStreamRequest Event">
+		<param name="Local" value="html/onhtstreamrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnImageClick Event">
+		<param name="Name" value="OnImageClick Event">
+		<param name="Local" value="html/onimageclick_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnImageOver Event">
+		<param name="Name" value="OnImageOver Event">
+		<param name="Local" value="html/onimageover_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnImageRequest Event">
+		<param name="Name" value="OnImageRequest Event">
+		<param name="Local" value="html/onimagerequest_event.htm">
+		<param name="Name" value="Type TGetImageEvent">
+		<param name="Local" value="html/type_tgetimageevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnInclude Event">
+		<param name="Name" value="OnInclude Event">
+		<param name="Local" value="html/oninclude_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnLink Event">
+		<param name="Name" value="OnLink Event">
+		<param name="Local" value="html/onlink_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnMeta Event">
+		<param name="Name" value="OnMeta Event">
+		<param name="Local" value="html/onmeta_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnMetaRefresh Event">
+		<param name="Name" value="OnMetaRefresh Event">
+		<param name="Local" value="html/onmetarefresh_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnMouseDouble Event">
+		<param name="Name" value="OnMouseDouble Event">
+		<param name="Local" value="html/onmousedouble_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnObjectBlur Event">
+		<param name="Name" value="OnObjectBlur Event">
+		<param name="Local" value="html/onobjectblur_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnObjectChange Event">
+		<param name="Name" value="OnObjectChange Event">
+		<param name="Local" value="html/onobjectchange_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnObjectClick Event">
+		<param name="Name" value="OnObjectClick Event">
+		<param name="Local" value="html/onobjectclick_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnObjectFocus Event">
+		<param name="Name" value="OnObjectFocus Event">
+		<param name="Local" value="html/onobjectfocus_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnObjectTag Event">
+		<param name="Name" value="OnObjectTag Event">
+		<param name="Local" value="html/onobjecttag_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPanelCreate Event">
+		<param name="Name" value="OnPanelCreate Event">
+		<param name="Local" value="html/onpanelcreate_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPanelDestroy Event">
+		<param name="Name" value="OnPanelDestroy Event">
+		<param name="Local" value="html/onpaneldestroy_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPanelPrint Event">
+		<param name="Name" value="OnPanelPrint Event">
+		<param name="Local" value="html/onpanelprint_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnParseBegin Event">
+		<param name="Name" value="OnParseBegin Event">
+		<param name="Local" value="html/onparsebegin_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnParseEnd Event">
+		<param name="Name" value="OnParseEnd Event">
+		<param name="Local" value="html/onparseend_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPrintFooter Event">
+		<param name="Name" value="OnPrintHeader and OnPrintFooter Events">
+		<param name="Local" value="html/onprintheader_and_onprintfooter_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPrintHeader Event">
+		<param name="Name" value="OnPrintHeader and OnPrintFooter Events">
+		<param name="Local" value="html/onprintheader_and_onprintfooter_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPrintHTMLFooter Event">
+		<param name="Name" value="OnPrintHTMLHeader and OnPrintHTMLFooter Events">
+		<param name="Local" value="html/onprinthtmlheader_and_onprinthtmlfooter_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnPrintHTMLHeader Event">
+		<param name="Name" value="OnPrintHTMLHeader and OnPrintHTMLFooter Events">
+		<param name="Local" value="html/onprinthtmlheader_and_onprinthtmlfooter_events.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnProcessing Event">
+		<param name="Name" value="OnProcessing Event">
+		<param name="Local" value="html/onprocessing_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnProgress Event">
+		<param name="Name" value="OnProgress Event">
+		<param name="Local" value="html/onprogress_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnRightClick Event">
+		<param name="Name" value="OnRightClick Event">
+		<param name="Local" value="html/onrightclick_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnScript Event">
+		<param name="Name" value="OnScript Event">
+		<param name="Local" value="html/onscript_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnSoundRequest Event">
+		<param name="Name" value="OnSoundRequest Event">
+		<param name="Local" value="html/onsoundrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnStreamRequest Event">
+		<param name="Name" value="OnStreamRequest Event">
+		<param name="Local" value="html/onstreamrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnStringsRequest Event">
+		<param name="Name" value="OnStringsRequest Event">
+		<param name="Local" value="html/onstringsrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OnViewerClear Event">
+		<param name="Name" value="OnViewerClear Event">
+		<param name="Local" value="html/onviewerclear_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="OpenPrint">
+		<param name="Name" value="OpenPrint, AbortPrint, and ClosePrint Methods">
+		<param name="Local" value="html/openprint__abortprint__and_closeprint_methods.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Options">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm">
+		<param name="Name" value="fvOptions Property">
+		<param name="Local" value="html/fvoptions_property.htm">
+		<param name="Name" value="htOptions Property">
+		<param name="Local" value="html/htoptions_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Page Tag">
+		<param name="Name" value="Special HTML Tags and Attributes">
+		<param name="Local" value="html/special_html_tags_and_attributes.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Palette Property">
+		<param name="Name" value="Palette Property">
+		<param name="Local" value="html/palette_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Panel Tag">
+		<param name="Name" value="Special HTML Tags and Attributes">
+		<param name="Local" value="html/special_html_tags_and_attributes.htm#panel_tag">
+		<param name="Name" value="OnPanelCreate Event">
+		<param name="Local" value="html/onpanelcreate_event.htm">
+		<param name="Name" value="OnPanelPrint Event">
+		<param name="Local" value="html/onpanelprint_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Parse">
+		<param name="Name" value="OnParseBegin Event">
+		<param name="Local" value="html/onparsebegin_event.htm">
+		<param name="Name" value="OnParseEnd Event">
+		<param name="Local" value="html/onparseend_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Position">
+		<param name="Name" value="Position Property">
+		<param name="Local" value="html/prop_thtmlviewerposition.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Positioning">
+		<param name="Name" value="Position Property">
+		<param name="Local" value="html/prop_thtmlviewerposition.htm">
+		<param name="Name" value="PositionTo Method">
+		<param name="Local" value="html/positionto_method.htm">
+		<param name="Name" value="VScrollBarPosition Property">
+		<param name="Local" value="html/vscrollbarposition_property.htm">
+		<param name="Name" value="VScrollBarRange Property">
+		<param name="Local" value="html/vscrollbarrange_property.htm">
+		<param name="Name" value="HScrollBarPosition Property">
+		<param name="Local" value="html/hscrollbarposition_property.htm">
+		<param name="Name" value="HScrollBarRange Property">
+		<param name="Local" value="html/hscrollbarrange_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PositionTo Method">
+		<param name="Name" value="PositionTo Method">
+		<param name="Local" value="html/positionto_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Print Method">
+		<param name="Name" value="Print Method">
+		<param name="Local" value="html/print_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Printing">
+		<param name="Name" value="NumPrinterPages Method">
+		<param name="Local" value="html/numprinterpages_method.htm">
+		<param name="Name" value="OnPrintHeader and OnPrintFooter Events">
+		<param name="Local" value="html/onprintheader_and_onprintfooter_events.htm">
+		<param name="Name" value="Print Method">
+		<param name="Local" value="html/print_method.htm">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		<param name="Name" value="Special HTML Tags and Attributes">
+		<param name="Local" value="html/special_html_tags_and_attributes.htm">
+		<param name="Name" value="PrintScale Property">
+		<param name="Local" value="html/printscale_property.htm">
+		<param name="Name" value="OnPrintHTMLHeader and OnPrintHTMLFooter Events">
+		<param name="Local" value="html/onprinthtmlheader_and_onprinthtmlfooter_events.htm">
+		<param name="Name" value="OpenPrint, AbortPrint, and ClosePrint Methods">
+		<param name="Local" value="html/openprint__abortprint__and_closeprint_methods.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PrintMargin Properties">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PrintMarginBottom Property">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PrintMarginLeft Property">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PrintMarginRight Property">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PrintMarginTop Property">
+		<param name="Name" value="PrintMargin Properties">
+		<param name="Local" value="html/printmargin_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PrintScale Property">
+		<param name="Name" value="PrintScale Property">
+		<param name="Local" value="html/printscale_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Processing Property">
+		<param name="Name" value="Processing Property">
+		<param name="Local" value="html/processing_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Progress">
+		<param name="Name" value="OnProgress Event">
+		<param name="Local" value="html/onprogress_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Properties">
+		<param name="Name" value="TFrameBrowser Properties">
+		<param name="Local" value="html/tframebrowser_properties.htm">
+		<param name="Name" value="TFrameViewerProperties">
+		<param name="Local" value="html/tframeviewerproperties.htm">
+		<param name="Name" value="ThtmlViewerProperties">
+		<param name="Local" value="html/thtmlviewerproperties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="PtInObject Method">
+		<param name="Name" value="PtInObject Method">
+		<param name="Local" value="html/ptinobject_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Reformat Method">
+		<param name="Name" value="Reformat Method">
+		<param name="Local" value="html/reformat_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Registration">
+		<param name="Name" value="Copyright and Registration">
+		<param name="Local" value="html/copyright.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Reload Method">
+		<param name="Name" value="Reload Method">
+		<param name="Local" value="html/reload_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ReplaceImage Method">
+		<param name="Name" value="ReplaceImage Method">
+		<param name="Local" value="html/replaceimage_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Scripts">
+		<param name="Name" value="OnScript Event">
+		<param name="Local" value="html/onscript_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="SelectAll Method">
+		<param name="Name" value="SelectAll Method">
+		<param name="Local" value="html/selectall_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="SelLength Property">
+		<param name="Name" value="SelLength Property">
+		<param name="Local" value="html/sellength_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="SelStart Property">
+		<param name="Name" value="SelStart Property">
+		<param name="Local" value="html/selstart_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="SelText property">
+		<param name="Name" value="SelText Property">
+		<param name="Local" value="html/seltext_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ServerRoot Property">
+		<param name="Name" value="ServerRoot Property">
+		<param name="Local" value="html/serverroot_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Source">
+		<param name="Name" value="DocumentSource Property">
+		<param name="Local" value="html/documentsource_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Stylesheet">
+		<param name="Name" value="OnhtStreamRequest Event">
+		<param name="Local" value="html/onhtstreamrequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Target">
+		<param name="Name" value="ViewerFromTarget Method">
+		<param name="Local" value="html/viewerfromtarget_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Target Property">
+		<param name="Name" value="Target Property">
+		<param name="Local" value="html/target_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TFileBrowseEvent Type">
+		<param name="Name" value="OnFileBrowse Event">
+		<param name="Local" value="html/onfilebrowse_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TFormSubmitEvent Type">
+		<param name="Name" value="Type TFormSubmitEvent">
+		<param name="Local" value="html/type_tformsubmitevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TFrameBrowser">
+		<param name="Name" value="TFrameBrowser Component">
+		<param name="Local" value="html/tframebrowser_component.htm">
+		<param name="Name" value="Using the TFrameBrowser Component">
+		<param name="Local" value="html/using_the_tframebrowser_component.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TFrameViewer">
+		<param name="Name" value="TFrameViewer Component">
+		<param name="Local" value="html/tframeviewer_component.htm">
+		<param name="Name" value="Using the TFrameViewer Component">
+		<param name="Local" value="html/using_the_tframeviewer_component.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TGetImage Type">
+		<param name="Name" value="Type TGetImageEvent">
+		<param name="Local" value="html/type_tgetimageevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TGetPostRequestEvent Type">
+		<param name="Name" value="Type TGetPostRequestEvent">
+		<param name="Local" value="html/type_tgetpostrequestevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TGetStreamEvent Type">
+		<param name="Name" value="Type TGetStreamEvent">
+		<param name="Local" value="html/type_tgetstreamevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Things You Should Know">
+		<param name="Name" value="Things You Should Know">
+		<param name="Local" value="html/things_you_should_know.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="THotSpotEvent Type">
+		<param name="Name" value="Type THotSpotEvent">
+		<param name="Local" value="html/type_thotspotevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ThtmlFileType">
+		<param name="Name" value="Type ThtmlFileType">
+		<param name="Local" value="html/type_thtmlfiletype.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ThtmlViewer">
+		<param name="Name" value="ThtmlViewer Component">
+		<param name="Local" value="html/thtmlviewer_component.htm">
+		<param name="Name" value="Using The ThtmlViewer Component">
+		<param name="Local" value="html/using_the_thtmlviewer_component.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Title">
+		<param name="Name" value="DocumentTitle Property">
+		<param name="Local" value="html/prop_thtmlviewerdocumenttitle.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="TitleAttr Property">
+		<param name="Name" value="TitleAttr Property">
+		<param name="Local" value="html/titleattr_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Tool Tip Windows">
+		<param name="Name" value="TitleAttr Property">
+		<param name="Local" value="html/titleattr_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Type ThtmlFileType">
+		<param name="Name" value="Type ThtmlFileType">
+		<param name="Local" value="html/type_thtmlfiletype.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Type ThtmlPagePrinted">
+		<param name="Name" value="Type ThtmlPagePrinted">
+		<param name="Local" value="html/type_thtmlpageprinted.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Type TObjectTagEvent">
+		<param name="Name" value="Type TObjectTagEvent">
+		<param name="Local" value="html/type_tobjecttagevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Type TPanelCreateEvent">
+		<param name="Name" value="Type TPanelCreateEvent">
+		<param name="Local" value="html/type_tpanelcreateevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Type TPanelDestroyEvent">
+		<param name="Name" value="Type TPanelDestroyEvent">
+		<param name="Local" value="html/type_tpaneldestroyevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Type TPanelPrintEvent">
+		<param name="Name" value="Type TPanelPrintEvent">
+		<param name="Local" value="html/type_tpanelprintevent.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="URL Property">
+		<param name="Name" value="URL Property">
+		<param name="Local" value="html/url_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ViewerFromTarget Method">
+		<param name="Name" value="ViewerFromTarget Method">
+		<param name="Local" value="html/viewerfromtarget_method.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Viewers Property">
+		<param name="Name" value="Viewers Property">
+		<param name="Local" value="html/viewers_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="ViewImages Property">
+		<param name="Name" value="ViewImages Property">
+		<param name="Local" value="html/viewimages_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="Visited Links">
+		<param name="Name" value="&lt;body&gt; attributes">
+		<param name="Local" value="html/_body__attributes.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="VisitedMaxCount Property">
+		<param name="Name" value="VisitedMaxCount Property">
+		<param name="Local" value="html/visitedmaxcount_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="VScrollbar">
+		<param name="Name" value="VScrollBar, HScrollBar Properties">
+		<param name="Local" value="html/vscrollbar__hscrollbar_properties.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="VScrollBarPosition Property">
+		<param name="Name" value="VScrollBarPosition Property">
+		<param name="Local" value="html/vscrollbarposition_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="VScrollBarRange Property">
+		<param name="Name" value="VScrollBarRange Property">
+		<param name="Local" value="html/vscrollbarrange_property.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="WaitStream">
+		<param name="Name" value="OnImageRequest Event">
+		<param name="Local" value="html/onimagerequest_event.htm">
+		</OBJECT>
+	<LI> <OBJECT type="text/sitemap">
+		<param name="Keyword" value="XYToDisplayPos Method">
+		<param name="Name" value="XYToDisplayPos Method">
+		<param name="Local" value="html/xytodisplaypos_method.htm">
+		</OBJECT>
+</UL></HTML>

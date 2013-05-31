@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TBufferRequestEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_tbufferrequestevent"></A><B>Type TBufferRequestEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TBufferRequestEvent = procedure(Sender: TObject; const SRC: string;</P>
+
+<P>var Buffer: PChar; var BuffSize: LongInt) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TBufferRequestEvent type is the type for the <A HREF="onbufferrequest_event.htm">OnBufferRequest</A> event.  This event allows a handler to respond with an HTML document in buffer form when a request is made for a new document.  The parameters are:</P>
+
+<P><I>SRC</I>A string identifying the document requested.  This string will usually be taken from a SRC= attribute.</P>
+
+<P><I>Buffer</I>The buffer containing the HTML text supplied by the event handler.</P>
+
+<P><I>BuffSize</I>The size of the buffer.  A terminating null is not required.</P>
+
+<P>The following points are important in writing the event handler:</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>TFrameViewer will not change or free the buffer.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>In general, you must respond with a valid <I>Buffer</I>.  If <B>Nil</B> is returned for the <I>Buffer</I> parameter, <A HREF="tframeviewer_component.htm">TFrameViewer</A> will attempt to load the file identified by <I>SRC</I>.  However, this is unreliable unless <I>SRC</I> contains a filename with the full path.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Only one of the event handlers in the group, <A HREF="onbufferrequest_event.htm">OnBufferRequest</A>, <A HREF="onfilerequest_event.htm">OnFileRequest</A>, <A HREF="onstreamrequest_event.htm">OnStreamRequest</A>, and <A HREF="onstringsrequest_event.htm">OnStringsRequest</A>, may be active at the same time.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onfilerequest_event.htm">OnFileRequest Event</A></P>
+
+<P><A HREF="onstreamrequest_event.htm">OnStreamRequest Event</A></P>
+
+<P><A HREF="onstringsrequest_event.htm">OnStringsRequest Event</A></P>
+
+</BODY>
+</HTML>

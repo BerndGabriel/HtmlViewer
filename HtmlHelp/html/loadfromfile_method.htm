@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>LoadFromFile Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="LoadFromFile">
+</OBJECT>
+
+<P><A NAME="loadfromfile_method"></A><B>LoadFromFile Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P>procedure LoadFromFile(const Filename: String);</P>
+
+<P><B>Description</B></P>
+
+<P>The LoadFromFile method loads an HTML document for viewing, where Filename is the name of the file to be loaded.  If Filename has no extension, .HTML is assumed.</P>
+
+<P>Filename may optionally contain a document position identifier separated from the actual filename by a <B>#</B> sign.</P>
+
+<P><A HREF="tframeviewer_component.htm"><B>TFrameViewer</B></A><B> Only</B></P>
+
+<P>Filenames with extensions <B>.bmp, .gif,.jpg, .jpeg,.png</B>, are loaded as images.  Filenames with the extension <B>.txt</B> are loaded as text files.</P>
+
+<P><B>Example</B></P>
+
+<P>Viewer.LoadFromFile('MyHTML#Contents');</P>
+
+<P>would load MyHTML.htm and position the view to the location where the "Contents" target was defined.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="loadstrings_method.htm">LoadStrings Method</A></P>
+
+<P><A HREF="loadfrombuffer_method.htm">LoadFromBuffer Method</A></P>
+
+<P><A HREF="loadfromstream_method.htm">LoadFromStream Method</A></P>
+
+</BODY>
+</HTML>

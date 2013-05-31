@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>ServerRoot Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="ServerRoot Property">
+</OBJECT>
+
+<P><A NAME="serverroot_property"></A><B>ServerRoot Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A> components</P>
+
+<P><B>Description</B></P>
+
+<P>property ServerRoot: string;</P>
+
+<P>The ServerRoot property establishes an effective root directory on disk.  URLs which begin with a slash (or backslash) are considered to be relative to this directory.  If no ServerRoot is specified, the root is taken to be the root directory of the current drive.</P>
+
+<P><B>Example</B></P>
+
+<P>ServerRoot := 'C:\MyDirectory';</P>
+
+<P>The URL:</P>
+
+<P>/images/new.gif</P>
+
+<P>will be now be translated to:</P>
+
+<P>C\MyDirectory\images\new.gif</P>
+
+</BODY>
+</HTML>

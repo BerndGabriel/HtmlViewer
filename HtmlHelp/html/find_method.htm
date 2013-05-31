@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Find and FindEx Methods</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Find Method">
+</OBJECT>
+
+<P><A NAME="find_method"></A><B>Find and FindEx Methods</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P>function Find(const S: WideString; MatchCase: boolean): boolean;</P>
+
+<P>function FindEx(const S: WideString; MatchCase, Reverse: boolean): boolean;</P>
+
+<P><B>Description</B></P>
+
+<P>Use the FindEx method for new programs.  The Find method exists for backwards compatibility only.</P>
+
+<P>The FindEx method searches through the HTML document for the string, <I>S</I>, returning True if the string is found.  If <I>MatchCase</I> is True, a case sensitive search is made.  If <I>Reverse</I> is True, the search is made in the reverse direction.</P>
+
+<P>Text is searched starting at the current caret position.  As each match is found, the text is highlighted, and the caret is placed at the further end of the matched string.</P>
+
+<P>Note that in many cases, the caret will not be visible.  However, it is still possible to place the virtual caret at any position by left clicking with the mouse.</P>
+
+<P>To make the caret visible, see the <A HREF="htoptions_property.htm">htOptions</A> and <A HREF="fvoptions_property.htm">fvOptions</A> propeties.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="seltext_property.htm">SelText Property</A></P>
+
+<P><A HREF="selstart_property.htm">SelStart Property</A></P>
+
+</BODY>
+</HTML>

@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type ThtmlPagePrinted</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Type ThtmlPagePrinted">
+</OBJECT>
+
+<P><A NAME="type_thtmlpageprinted"></A><B>Type ThtmlPagePrinted</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>ThtmlPagePrinted = procedure(Sender: TObject; HFViewer: ThtmlViewer;</P>
+
+<P>NumPage: Integer; LastPage: boolean;</P>
+
+<P>var XL, XR: integer;</P>
+
+<P>var StopPrinting: Boolean) of Object;;</P>
+
+<P><B>Description</B></P>
+
+<P>The ThtmlPagePrinted type is the type for the <A HREF="onprinthtmlheader_and_onprinthtmlfooter_events.htm">OnPrintHTMLHeader</A> and <A HREF="onprinthtmlheader_and_onprinthtmlfooter_events.htm">OnPrintHTMLFooter</A> events.  These events occur as each page is printed allowing the user to add an HTML formatted header and/or footer to the page.</P>
+
+<P><I>Sender</I>The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> which is printing.</P>
+
+<P><I>HFViewer</I>The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> to take the header or footer document.</P>
+
+<P><I>NumPage</I>The current page number.</P>
+
+<P><I>LastPage</I>A boolean set to True for the last page.</P>
+
+<P><I>XL, XR</I>Header/footer left and right pixel boundaries.</P>
+
+<P><I>StopPrinting</I>Set this True to abort the print job.</P>
+
+<P><B>Usage Notes:</B></P>
+
+<P>These events print (or preview) HTML documents which serve as headers and footers for the print job.  This is done by using two ThtmlViewers, one positioned for the header and the other for the footer.  These ThtmlViewers are used only for printing and are never visible.  The user supplies an event handler which loads the desired HTML into the ThtmlViewer (the <I>HFViewer</I> parameter).</P>
+
+<P>The event handler need not be concerned with creating or destroying the ThtmlViewer as this is done automatically.  The ThtmlViewer comes with default settings with the exception of the <B>MarginHeight</B> propertywhich is set at 0.  It's only necessary to load the desired HTML using any of the usual load methods. If the header or footer does not change between pages, it need only be loaded once.  However, if the HTML does change, it can be reloaded for each page.</P>
+
+<P>The header ThtmlViewer is positioned so that it's bottom edge is directly above the print job text.  This is true regardless of the amount of text.  Thus if there is too much text, the early text will disappear off the top of the page.  The user needs to insure that the <B>PrintMarginTop</B> property is set adequately.  Note that the <B>MarginHeight</B> attribute (<B>&lt;body&gt;</B> tag) can be used to set the spacing at the bottom of the header text.</P>
+
+<P>The footer ThtmlViewer is positioned so that it's top is directly below the print job text.  In this case, excessive text will flow off the bottom of the page.  Again, the <B>MarginHeight</B> attribute can be used to control the spacing at the top of the footer. </P>
+
+<P>The <I>XL</I> and <I>XR</I> parameters can be used to control the left and right side positioning of the header or footer.  These parameters are preset to values such that the header or footer will align with the print job.  Hence, in most cases, these parameters can be ignored.  If it's desired to extend the header or footer into the normal margin area, then these parameter would be useful.  Note that for proper text alignment, the <B>MarginWidth</B> attribute (<B>&lt;body&gt;</B> tag) must be the same for both the print job and the header or footer.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="marginheight_and_marginwidth_properties.htm">MarginHeight Property</A></P>
+
+<P><A HREF="marginheight_and_marginwidth_properties.htm">MarginWidth Property</A></P>
+
+<P><A HREF="printmargin_properties.htm">PrintMargin Properties</A></P>
+
+<P><A HREF="onprintheader_and_onprintfooter_events.htm">OnPrintHeader</A></P>
+
+<P><A HREF="onprintheader_and_onprintfooter_events.htm">OnPrintFooter</A></P>
+
+</BODY>
+</HTML>

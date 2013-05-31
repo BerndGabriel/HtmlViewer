@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Viewers Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Viewers Property">
+</OBJECT>
+
+<P><A NAME="viewers_property"></A><B>Viewers Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframeviewer_component.htm">TFrameViewer</A> and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Description</B></P>
+
+<P>property Viewers: TStrings;</P>
+
+<P>Read only and run time only.  The <B>Viewers</B> property lists all the currently displayed <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>s in a Frame HTML document. The <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>s are itemized in the Objects part of the TStrings return.</P>
+
+<P>The String associated with the Object contains information to assist in identifying which viewer is which.  The String portion contains combinations of the letters, <B>l</B>, <B>t</B>, <B>r</B>, and <B>b</B> which indicates if that particular viewer touches the Left, Top, Right, or Bottom sides of the overall Frame.</P>
+
+<P><B>Some Examples:</B></P>
+
+<P>A combination, "<B>tr</B>" would indicate the viewer is in the top right corner.</P>
+
+<P>A combination, "<B>lbr</B>" would indicate the viewer is the one on the bottom.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="activeviewer_property.htm">ActiveViewer Property</A></P>
+
+<P><A HREF="viewerfromtarget_method.htm">ViewerFromTarget Method</A></P>
+
+</BODY>
+</HTML>

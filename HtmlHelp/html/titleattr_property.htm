@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>TitleAttr Property</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Hint Windows">
+	<PARAM NAME="Keyword" VALUE="TitleAttr Property">
+	<PARAM NAME="Keyword" VALUE="Tool Tip Windows">
+</OBJECT>
+
+<P><A NAME="titleattr_property"></A><B>TitleAttr Property</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>  component</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> TitleAttr: String;</P>
+
+<P>Read only and run time only.  The <B>TitleAttr</B> property returns the string defined by a <B>Title="..."</B> attribute in the HTML tag which relates to the current mouse cursor position.  The Title attribute may be added to almost all HTML tags.  An <B>OnMouseMove</B> handler can examine <B>TitleAttr</B> and uses its value in a hint window to provide hints or other <B>tooltip</B> information relevant to portions of the HTML document.</P>
+
+<P><B>Usage Note:</B></P>
+
+<P><B>TitleAttr</B> returns the Alt attribute for <B>&lt;img&gt;</B> tags if no Title attribute is present.</P>
+
+</BODY>
+</HTML>

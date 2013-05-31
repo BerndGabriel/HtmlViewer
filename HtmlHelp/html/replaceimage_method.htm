@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>ReplaceImage Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Active Images">
+	<PARAM NAME="Keyword" VALUE="Images">
+	<PARAM NAME="Keyword" VALUE="ReplaceImage Method">
+</OBJECT>
+
+<P><A NAME="replaceimage_method"></A><B>ReplaceImage Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>procedure ReplaceImage(Const NameID: String; NewImage: TStream);</P>
+
+<P><B>Description</B></P>
+
+<P>ReplaceImage will replace an existing image in the displayed document with a new image.</P>
+
+<P><I>NameId</I>The <I>Name</I> or <I>ID</I> attribute assigned in the relevant <B>&lt;img&gt;</B> tag.</P>
+
+<P><I>NewImage</I>The new image in stream form.  The image format (bmp, gif, etc.) may be in any format currently supported by <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>.</P>
+
+<P><B>Usage Notes:</B></P>
+
+<P>The replaced image will have the same position and size as the original image.  </P>
+
+<P>The NewImage stream is not freed by ReplaceImage.  It may be freed imediately after the call.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="things_you_should_know.htm#active_images">MouseOver images</A></P>
+
+</BODY>
+</HTML>

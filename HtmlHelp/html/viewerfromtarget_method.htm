@@ -1,0 +1,40 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>ViewerFromTarget Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Target">
+	<PARAM NAME="Keyword" VALUE="ViewerFromTarget Method">
+</OBJECT>
+
+<P><A NAME="viewerfromtarget_method"></A><B>ViewerFromTarget Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframeviewer_component.htm">TFrameViewer</A> and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P>function ViewerFromTarget(const Target: String): <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>;</P>
+
+<P><B>Description</B></P>
+
+<P>The ViewerFromTarget method returns a pointer to the <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> contained in the named Frame.  <I>Target</I> is the name of the Frame containing the viewer.</P>
+
+<P><B>Usage notes:</B></P>
+
+<P>Strictly speaking, a Target name refers to a Frame and a Frame may contain more than one <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> or may contain other Frames.  The ViewerFromTarget method returns <B>Nil</B> if the Target Frame contains other than a single <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>.</P>
+
+<P><B>See Also:</B></P>
+
+<P><A HREF="activeviewer_property.htm">ActiveViewer Property</A></P>
+
+<P><A HREF="viewers_property.htm">Viewers Property</A></P>
+
+</BODY>
+</HTML>

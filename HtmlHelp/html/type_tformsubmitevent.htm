@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TFormSubmitEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="OnFormSubmit Event">
+	<PARAM NAME="Keyword" VALUE="TFormSubmitEvent Type">
+</OBJECT>
+
+<P><A NAME="type_tformsubmitevent"></A><B>Types TFormSubmitEvent and TbrFormSubmitEvent</B></P>
+
+<P><A HREF="thtmlviewer_component.htm"><B>ThtmlViewer</B></A><B> and <A HREF="tframeviewer_component.htm">TFrameViewer</A> Declaration</B></P>
+
+<P>TFormSubmitEvent = procedure(Sender: TObject; const Action,</P>
+
+<P>Target, EncType, Method: string; Results: TStringList) of Object;</P>
+
+<P><A HREF="tframebrowser_component.htm"><B>TFrameBrowser</B></A><B> Declaration</B></P>
+
+<P>TbrFormSubmitEvent = procedure(Sender: TObject; Viewer: <A HREF="thtmlviewer_component.htm">ThtmlViewer</A>; const Action,</P>
+
+<P>Target, EncType, Method: string; Results: TStringList; var Handled: boolean) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TFormSubmitEvent and TbrFormSubmitEvent types are the types for the <A HREF="onformsubmit_event.htm">OnFormSubmit</A> event.  This event occurs when the submit button of an HTML Form is depressed.  The first four parameters are specified as attributes to the <B>&lt;form&gt;</B> tag in the HTML document.</P>
+
+<P><I>Action</I>the URL to which the form content is to be sent, </P>
+
+<P><I>Target</I>the destination frame</P>
+
+<P><I>EncType</I>the Mime type encoding for the Post Method</P>
+
+<P><I>Method</I>the HTTP method (GET or POST) for sending information.</P>
+
+<P><I>Results</I>is a TStringList representing the entries of the form's control elements.  Entries in the TStringList are in the form:</P>
+
+<P>NAME=VALUE</P>
+
+<P>In general, NAME is the name attribute found in the control's tag and VALUE is either the value attribute or the field entry the user enters in the form's control.</P>
+
+<P>Handled(<A HREF="tframebrowser_component.htm">TFrameBrowser</A> only) Set <I>Handled</I> to True to prevent the default handling of the <A HREF="onformsubmit_event.htm">OnFormSubmit</A> event.  If <I>Handled</I> is <I>not</I> set to True, <A HREF="tframebrowser_component.htm">TFrameBrowser</A> will handle the Form submission. </P>
+
+<P>Note:  The TStringList, <I>Results</I>, should be freed when the user is finished with the data unless <I>Handled</I> is False.</P>
+
+<P>See also:</P>
+
+<P><A HREF="onformsubmit_event.htm">OnFormSubmit Event</A></P>
+
+</BODY>
+</HTML>

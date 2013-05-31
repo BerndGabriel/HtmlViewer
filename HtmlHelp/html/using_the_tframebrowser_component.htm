@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Using the TFrameBrowser Component</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="TFrameBrowser">
+</OBJECT>
+
+<P><A NAME="using_the_tframebrowser_component"></A><B><IMG SRC="../images/bm2.gif" ALT="" BORDER=0> Using the TFrameBrowser Component</B></P>
+
+<P><A HREF="tframebrowser_component.htm">TFrameBrowser Reference</A></P>
+
+<P>To use the <A HREF="tframebrowser_component.htm">TFrameBrowser</A> component, you must have event handlers that respond to the <A HREF="ongetpostrequest_event.htm">OnGetPostRequest</A> and the <A HREF="onimagerequest_event.htm">OnImageRequest</A> events. These events occur whenever a document or an image for a document is requested. These events require that the document or image be returned in stream form. In some cases, the return of the stream may be delayed to allow for downloading the information. </P>
+
+<P>The general sequence of loading a document is as follows: </P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>Call the <A HREF="loadurl_method.htm">LoadURL</A> method. The URL parameter supplied should be a full URL and include the protocol desired. </P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>An immediate <A HREF="ongetpostrequest_event.htm">OnGetPostRequest</A> event will occur. Respond with the stream requested. </P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>Assuming the document contains images, a number of <A HREF="onimagerequest_event.htm">OnImageRequest</A> events will occur. Again respond with a stream for each. </P>
+
+<P><IMG SRC="../images/bm4.gif" ALT="" BORDER=0>Once the document is loaded, additional events will occur when links are selected, etc. </P>
+
+<P><B>Tasks</B></P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To customize response to clicking on a hotspot, respond to the <A HREF="onhotspottargetclick_event.htm">OnHotSpotTargetClick</A> event.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To implement a status line which shows what <A HREF="url.htm">URL</A> a hot spot corresponds to, respond to the <A HREF="onhotspottargetcovered_event.htm">OnHotSpotTargetCovered</A> event.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To access the properties and methods of the currently active ThtmlViewer, use the <A HREF="activeviewer_property.htm">ActiveViewer</A> Property.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Use the <A HREF="deffontname_property.htm">DefFontName</A>, <A HREF="deffontsize_property.htm">DefFontSize</A>, <A HREF="deffontcolor_property.htm">DefFontColor</A>, <A HREF="defhotspotcolor_property.htm">DefHotSpotColor</A>, and <A HREF="defbackground_property.htm">DefBackground</A> properties to change the default font and color characteristics.for general display.  Use the HTML <A HREF="_body__attributes.htm"><B>&lt;body&gt;</B> tag and it's attributes</A> to specify the appearance of a particular HTML document.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To implement a history list and/or Back|Forward buttons, see <A HREF="setting_up_a_history_list.htm">Setting up a History List</A>.</P>
+
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>GIF and PNG Images designed to be transparent are displayed as such automatically.</P>
+
+</BODY>
+</HTML>

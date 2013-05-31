@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type THotSpotTargetClickEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_thotspottargetclickevent"></A><B>Type THotSpotTargetClickEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>THotSpotTargetClickEvent = procedure(Sender: TObject; </P>
+
+<P>const Target, URL: string; var Handled: Boolean) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The THotSpotTargetClickEvent type is the type for hot spot click events with the <A HREF="tframeviewer_component.htm">TFrameViewer</A> and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components.  These events occur when the mouse is clicked on a hypertext link.</P>
+
+<P><I>URL</I>The string referenced by the hot spot.  For <A HREF="tframebrowser_component.htm">TFrameBrowser</A>, URL is expanded into a full URL.  The original link text may be obtained with the URL property, if necessary.</P>
+
+<P><I>Target</I>The Target attribute (if any) specifying the target window or frame.</P>
+
+<P>The method which processes the THotSpotTargetClickEvent should return Handled equal to True if it wants no further handling of the URL.  If Handled is set to false, default handling will be performed.</P>
+
+<P><B>IsMap</B></P>
+
+<P>If the URL comes from an image used as an anchor and the <B>IsMap</B> attribute is used, the X, Y pixel position will be passed appended to the URL in the form "?x,y".</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onhotspottargetclick_event.htm">OnHotSpotTargetClick Event</A></P>
+
+<P><A HREF="onhotspottargetcovered_event.htm">OnHotSpotTargetCovered Event</A></P>
+
+</BODY>
+</HTML>

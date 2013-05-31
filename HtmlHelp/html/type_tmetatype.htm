@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TMetaType</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<P><A NAME="type_tmetatype"></A><B>Type TMetaType</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TMetaType = procedure(Sender: TObject; const HttpEq, Name,</P>
+
+<P>Content: string) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TMetaType type points to a method that might process the contents of a <B>&lt;META&gt;</B> HTML tag.  <I>Sender</I> is the ThtmlViewer which encounters the <B>&lt;META&gt;</B> tag.  The other three parameters are the values of <B>&lt;META&gt;</B> tag attributes with the same name.</P>
+
+<P>Note that the Http_Eq="refresh" Meta event is handled separately in the OnMetaRefresh event for <A HREF="thtmlviewer_component.htm">ThtmlViewer</A> and internally for <A HREF="tframeviewer_component.htm">TFrameViewer.</A></P>
+
+<P>See also:</P>
+
+<P><A HREF="onmeta_event.htm">OnMeta Event</A></P>
+
+<P><A HREF="onmetarefresh_event.htm">OnMetaRefresh Event</A></P>
+
+</BODY>
+</HTML>

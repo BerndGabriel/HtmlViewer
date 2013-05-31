@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>MakeBitmap Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="MakeBitmap Method">
+</OBJECT>
+
+<P><A NAME="makebitmap_method"></A><B>MakeBitmap Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>function MakeBitmap(YTop, FormatWidth, Width, Height: integer): TBitmap;</P>
+
+<P><B>Description</B></P>
+
+<P>The <B>MakeBitmap</B> method produces a bitmap of a portion of the document currently loaded.</P>
+
+<P><I>YTop</I>The top of the bitmap in pixels.  0 would be the start of the document.</P>
+
+<P><I>FormatWidth</I>The width to which the HTML is to be formatted.  Text would typically wrap at this width.</P>
+
+<P><I>Width</I>The width of the bitmap.  This might be greater than <I>FormatWidth.</I></P>
+
+<P><I>Height</I>The height of the bitmap.</P>
+
+<P><B>Usage Notes</B></P>
+
+<P>The bitmaps generated can be very large.  Currently, the maximum Height allowed is 4000 pixels so some sort of paging is required for large documents.</P>
+
+<P>Before calling MakeBitmap, use the <A HREF="fulldisplaysize_method.htm">FullDisplaySize</A> method to ascertain the overall formatted size so that the MakeBitmap parameters can be properly set.  The Width returned by <A HREF="fulldisplaysize_method.htm">FullDisplaySize</A> may exceed FormatWidth if the contents can't be successfully wrapped.  This Width should be used to specify the bitmap width.  Alternatively, FormatWidth may be set to this Width and FullDisplaySize called again to obtain the new Height.</P>
+
+<P>To make a series of bitmaps that can be pieced together, use values for YTop of 0, Height, 2*Height, etc.</P>
+
+<P>See Also:</P>
+
+<P><A HREF="fulldisplaysize_method.htm">FullDisplaySize Method</A></P>
+
+<P><A HREF="makemetafile_method.htm">MakeMetafile Method</A></P>
+
+</BODY>
+</HTML>

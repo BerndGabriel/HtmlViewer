@@ -1,0 +1,47 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>HTMLExpandFilename Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="base">
+	<PARAM NAME="Keyword" VALUE="DosPath">
+	<PARAM NAME="Keyword" VALUE="HTMLExpandFilename">
+</OBJECT>
+
+<P><A NAME="htmlexpandfilename_method"></A><B>HTMLExpandFilename Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P>function HTMLExpandFilename(const Filename: string): string;</P>
+
+<P><B>Description</B></P>
+
+<P>HTMLExpandFilename converts an HTML style file <A HREF="url.htm">URL</A> to a Dos filename and adds an appropriate path.  The path added depends on:</P>
+
+<P>1.If the URL starts with a <B>'/'</B> or <B>'\'</B>, the path defined by the <A HREF="serverroot_property.htm">ServerRoot property</A> is used.</P>
+
+<P>2.If the &lt;base&gt; tag specifies "DosPath", then no path is added.  Files are then searched for in the usual Dos/Windows manner.</P>
+
+<P>3.If the &lt;base&gt; tag specifies another path then that path will be added.  File locations are then relative to the base path.</P>
+
+<P>4.If there is no &lt;base&gt; tag, then the path of the current HTML file is used.  File locations are then relative to that directory.</P>
+
+<P><B>See also</B></P>
+
+<P><A HREF="base_property.htm">Base Property</A></P>
+
+<P><A HREF="htmltodos.htm">HTMLToDos Function</A></P>
+
+<P><A HREF="serverroot_property.htm">ServerRoot property</A></P>
+
+</BODY>
+</HTML>

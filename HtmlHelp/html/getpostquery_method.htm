@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>GetPostQuery Method</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="GetPostQuery Method">
+</OBJECT>
+
+<P><A NAME="getpostquery_method"></A><B>GetPostQuery Method</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="tframebrowser_component.htm">TFrameBrowser</A> component</P>
+
+<P><B>Declaration</B></P>
+
+<P>procedure GetPostQuery(const URL, Query: string; IsGet: boolean);</P>
+
+<P><B>Description</B></P>
+
+<P>The GetPostQuery method may be used to initiate loading a document in <A HREF="tframebrowser_component.htm">TFrameBrowser</A>.  It is similar to the <A HREF="loadurl_method.htm">LoadURL</A> method but also allows the Posting of Form data.  The parameters are:</P>
+
+<P><I>URL</I>, the document to be loaded.  It must be a full URL and include the protocol.</P>
+
+<P><I>Query</I>, the form data to be submitted.</P>
+
+<P><I>IsGet</I>, True for a Get, False for a Post.</P>
+
+<P>Following the GetPostQuery call, one or more <A HREF="ongetpostrequest_event.htm">OnGetPostRequest</A> and <A HREF="onimagerequest_event.htm">OnImageRequest</A> events will occur.  The user must respond to these events by supplying the requested HTML and images in TMemoryStream form.</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="ongetpostrequest_event.htm">OnGetPostRequest Event</A></P>
+
+<P><A HREF="onimagerequest_event.htm">OnImageRequest Event</A></P>
+
+<P><A HREF="loadurl_method.htm">LoadURL Method</A></P>
+
+</BODY>
+</HTML>

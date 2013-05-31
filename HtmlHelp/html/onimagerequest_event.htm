@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>OnImageRequest Event</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Bitmaps">
+	<PARAM NAME="Keyword" VALUE="Images">
+	<PARAM NAME="Keyword" VALUE="OnImageRequest Event">
+	<PARAM NAME="Keyword" VALUE="WaitStream">
+</OBJECT>
+
+<P><A NAME="onimagerequest_event"></A><B>OnImageRequest Event</B></P>
+
+<P><B>Applies to</B></P>
+
+<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+
+<P><B>Declaration</B></P>
+
+<P><B>property</B> OnImageRequest: <A HREF="type_tgetimageevent.htm">TGetImageEvent</A>;</P>
+
+<P><B>Description</B></P>
+
+<P>The OnImageRequest event occurs when one or the HTML components encounters an image request and the <A HREF="viewimages_property.htm">ViewImages</A> property is set.  You can use the OnImageRequest event to supply an image stored in stream form.  The stream may contain a Bitmap, GIF (including animated), JPEG, or PNG image.</P>
+
+<P>The image may also be supplied at a later time if it is necessary to download it.  To indicate the image will be supplied later, return the special TMemoryStream value, <A HREF="waitstream.htm"><B>WaitStream</B></A>, rather that an actual stream.  The <A HREF="insertimage_method.htm">InsertImage</A> method may be used when the image is available.</P>
+
+<P><B>Usage Note</B></P>
+
+<P><B>The TMemoryStream returned is not freed by the caller.  The User must free this later.</B></P>
+
+<P><B>Example</B></P>
+
+<P>This event handler converts an image file to a TMemoryStream object for test purposes.</P>
+
+<P>var</P>
+
+<P>MStream: TMemoryStream;</P>
+
+<P>......</P>
+
+<P>procedure TForm1.ImageRequest(Sender: TObject; const SRC: string;</P>
+
+<P>var Stream: TMemoryStream);</P>
+
+<P>var</P>
+
+<P>Filename: string[80];</P>
+
+<P>begin</P>
+
+<P>Stream := Nil;        {in case of error}</P>
+
+<P>Filename := FrameViewer.HTMLExpandFilename(SRC);</P>
+
+<P>if FileExists(Filename) then</P>
+
+<P>try</P>
+
+<P>if not Assigned(MStream) then</P>
+
+<P>MStream := TMemoryStream.Create;</P>
+
+<P>MStream.LoadFromFile(FileName);</P>
+
+<P>Stream := MStream;</P>
+
+<P>except</P>
+
+<P>end;</P>
+
+<P>end;</P>
+
+<P><B>See Also</B></P>
+
+<P><B><A HREF="type_tgetimageevent.htm">Type TGetImageEvent</A></B></P>
+
+<P><B><A HREF="insertimage_method.htm">InsertImage Method</A></B></P>
+
+</BODY>
+</HTML>

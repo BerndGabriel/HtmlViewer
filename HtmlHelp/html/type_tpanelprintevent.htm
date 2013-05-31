@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Type TPanelPrintEvent</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Type TPanelPrintEvent">
+</OBJECT>
+
+<P><A NAME="type_tpanelprintevent"></A><B>Type TPanelPrintEvent</B></P>
+
+<P><B>Declaration</B></P>
+
+<P>TPanelPrintEvent = procedure(Sender: TObject; Panel: ThvPanel; const Bitmap: TBitmap) of Object;</P>
+
+<P><B>Description</B></P>
+
+<P>The TPanelPrintEvent type is the type for the <A HREF="onpanelprint_event.htm">OnPanelPrint</A> event.  This event occurs when a <A HREF="special_html_tags_and_attributes.htm#panel_tag">PANEL</A> tag is encountered when the document is printed.</P>
+
+<P><I>Sender</I> is the ThtmlViewer displaying the ThvPanel.</P>
+
+<P><I>Panel</I> is the ThvPanel (similar to TPanel) created for the display.</P>
+
+<P><I>Bitmap</I> is the bitmap that will be printed for the panel.  The event handler should draw the desired results on the bitmap's canvas.</P>
+
+<P><B>Example:</B></P>
+
+<P>The following event handler is satisfactory for panels constructed with VCL controls:</P>
+
+<P>procedure TForm1.ViewerPanelPrint(Sender: TObject; Panel: ThvPanel; const Bitmap: TBitmap);</P>
+
+<P>begin</P>
+
+<P>Bitmap.Canvas.Lock;</P>
+
+<P>Panel.PaintTo(Bitmap.Canvas, 0, 0);</P>
+
+<P>Bitmap.Canvas.Unlock;</P>
+
+<P>end;</P>
+
+<P><B>See also:</B></P>
+
+<P><A HREF="onpanelprint_event.htm">OnPanelPrint Event</A></P>
+
+<P><A HREF="special_html_tags_and_attributes.htm#panel_tag">&lt;PANEL&gt; Tag</A></P>
+
+<P><A HREF="onobjecttag_event.htm">OnObjectTag Event</A></P>
+
+</BODY>
+</HTML>
