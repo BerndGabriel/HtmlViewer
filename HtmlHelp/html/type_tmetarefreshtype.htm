@@ -3,19 +3,21 @@
 <HEAD>
 <META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
 <TITLE>Type TMetaRefreshType</TITLE>
+<link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
 <BODY BGCOLOR="#FFFFFF" TEXT="#000000">
 
-<P><A NAME="type_tmetarefreshtype"></A><B>Type TMetaRefreshType</B></P>
+<H1><A NAME="type_tmetarefreshtype"></A><B>Type TMetaRefreshType</B></H1>
+<HR>
 
-<P><B>Declaration</B></P>
+<H2 class="Declaration">Declaration</H2>
 
 <P>TMetaRefreshType = procedure(Sender: TObject; Delay: integer;</P>
 
 <P>const URL: string) of Object;</P>
 
-<P><B>Description</B></P>
+<H2 class="Description">Description</H2>
 
 <P>The TMetaRefreshType type points to a method that might process the contents of a <B>&lt;META .Http_Eq="refresh"&gt;</B>  tag.  <I>Delay</I> is  the time delay in seconds and <I>URL</I>, the html document used to refresh the display.  These parameters are parsed from the Contents= attribute.</P>
 

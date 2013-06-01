@@ -3,6 +3,7 @@
 <HEAD>
 <META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
 <TITLE>LoadFromBuffer Method</TITLE>
+<link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
 <BODY BGCOLOR="#FFFFFF" TEXT="#000000">
@@ -11,23 +12,24 @@
 	<PARAM NAME="Keyword" VALUE="LoadFromBuffer Method">
 </OBJECT>
 
-<P><A NAME="loadfrombuffer_method"></A><B>LoadFromBuffer Method</B></P>
+<H1><A NAME="loadfrombuffer_method"></A><B>LoadFromBuffer Method</B></H1>
+<HR>
 
-<P><B>Applies to</B></P>
+<H2 class="AppliesTo">Applies to</H2>
 
 <P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
 
-<P><B>Declaration</B></P>
+<H2 class="Declaration">Declaration</H2>
 
 <P>procedure LoadFromBuffer(Buffer: PChar; BufSize: LongInt; const Reference: string = '');</P>
 
-<P><B>Description</B></P>
+<H2 class="Description">Description</H2>
 
 <P>The LoadFromBuffer method loads an HTML document from a memory buffer.  BufSize is the number of characters to be loaded.  A terminating null character is not required.</P>
 
 <P><I>Reference</I> is an optional <A HREF="reference.htm">reference</A> parameter.</P>
 
-<P><B>Example</B></P>
+<H2 class="Example">Example</H2>
 
 <P>Assume an HTML document exists in a TMemo object.  The following code could be used to then copy the document to an ThtmlViewer object:</P>
 

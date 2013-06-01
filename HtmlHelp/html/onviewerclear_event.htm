@@ -3,6 +3,7 @@
 <HEAD>
 <META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
 <TITLE>OnViewerClear Event</TITLE>
+<link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
 <BODY BGCOLOR="#FFFFFF" TEXT="#000000">
@@ -11,17 +12,18 @@
 	<PARAM NAME="Keyword" VALUE="OnViewerClear Event">
 </OBJECT>
 
-<P><A NAME="onviewerclear_event"></A><B>OnViewerClear Event</B></P>
+<H1><A NAME="onviewerclear_event"></A><B>OnViewerClear Event</B></H1>
+<HR>
 
-<P><B>Applies to</B></P>
+<H2 class="AppliesTo">Applies to</H2>
 
 <P><A HREF="tframebrowser_component.htm">TFrameBrowser</A> component</P>
 
-<P><B>Declaration</B></P>
+<H2 class="Declaration">Declaration</H2>
 
 <P><B>property</B> OnViewerClear: TNotifyEvent;</P>
 
-<P><B>Description</B></P>
+<H2 class="Description">Description</H2>
 
 <P>The OnViewerClear event occurs when one of TFrameBrowser's ThtmlViewer panes is being cleared or freed.  Any pending operations for that ThtmlViewer such as images being loaded should be aborted at this time.  The <I>Sender</I> parameter for this event is the ThtmlViewer being cleared.</P>
 

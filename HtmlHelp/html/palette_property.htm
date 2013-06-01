@@ -3,6 +3,7 @@
 <HEAD>
 <META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
 <TITLE>Palette Property</TITLE>
+<link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
 <BODY BGCOLOR="#FFFFFF" TEXT="#000000">
@@ -11,9 +12,10 @@
 	<PARAM NAME="Keyword" VALUE="Palette Property">
 </OBJECT>
 
-<P><A NAME="palette_property"></A><B>Palette Property</B></P>
+<H1><A NAME="palette_property"></A><B>Palette Property</B></H1>
+<HR>
 
-<P><B>Applies to</B></P>
+<H2 class="AppliesTo">Applies to</H2>
 
 <P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
 
@@ -21,7 +23,7 @@
 
 <P><B>property</B> Palette: HPalette;</P>
 
-<P><B>Description</B></P>
+<H2 class="Description">Description</H2>
 
 <P>In order to best display many images each of which may have its own palette, the ThtmlViewer component normally color dithers each image to a compromise rainbow palette.  The Palette property allows the user to access this palette or to change it.</P>
 
@@ -33,7 +35,7 @@
 
 <P>Palettes are copied when read or written.</P>
 
-<P><B>Example</B></P>
+<H2 class="Example">Example</H2>
 
 <P>Assume that all images will use a common palette.  The following shows code in the form's OnCreate event handler which uses the palette from one of those images to change ThtmlViewer's palette.</P>
 
