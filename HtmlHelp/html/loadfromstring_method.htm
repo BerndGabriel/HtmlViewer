@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v114">
 
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="LoadFromString">
@@ -17,39 +17,24 @@
 
 <H2 class="AppliesTo">Applies to</H2>
 
-<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+<P><A HREF="thtmlviewer_component.htm">THtmlViewer</A> component</P>
 
 <H2 class="Declaration">Declaration</H2>
 
-<P>procedure LoadFromString(const S: string; const Reference: string = ''); overload;</P>
-
-<P>procedure LoadFromString(const WS: WideString; const Reference: string = ''); overload;  {Restrictions}</P>
+<P>procedure LoadFromString(const S: <A href="type_thtstring.htm">ThtString</A>; const Reference: <A href="type_thtstring.htm">ThtString</A> = ''; DocType: <A href="type_thtmlfiletype.htm">THtmlFileType</A> = HtmlType);</P>
 
 <H2 class="Description">Description</H2>
 
-<P>The LoadFromString method loads an HTML document from a string.</P>
+<P>The LoadFromString method loads a document of the given type from a string.</P>
 
 <P><I>Reference</I> is an optional <A HREF="reference.htm">reference</A> parameter.</P>
 
-<P><B>Restrictions for Overloaded WideString Version</B></P>
-
-<P>Available only with Delphi 6 and later.</P>
-
-<P>This version of LoadFromString is for Unicode (UTF-16) input only.</P>
-
-<P>The <A HREF="finddisplaypos_method.htm">FindDisplayPos</A> and <A HREF="findsourcepos_method.htm">FindSourcePos</A> methods do not work with Unicode input.</P>
-
-<P><B>See also:</B></P>
-
-<P><A HREF="loadfromfile_method.htm">LoadFromFile Method</A></P>
-
-<P><A HREF="loadstrings_method.htm">LoadStrings Method</A></P>
-
-<P><A HREF="loadfrombuffer_method.htm">LoadFromBuffer Method</A></P>
-
-<P><A HREF="loadfromstream_method.htm">LoadFromStream Method</A></P>
-
-<P><A HREF="onhtstreamrequest_event.htm">OnhtStreamRequest Event</A></P>
+<H2 class"SeeAlso">See also</H2>
+<UL class="SeeAlso">
+<LI><A HREF="loadfromdocument_method.htm">LoadFromDocument Method</A>
+<LI><A HREF="loadfromfile_method.htm">LoadFromFile Method</A>
+<LI><A HREF="loadfromstream_method.htm">LoadFromStream Method</A>
+</UL>
 
 </BODY>
 </HTML>

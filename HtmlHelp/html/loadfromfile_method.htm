@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v114">
 
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="LoadFromFile">
@@ -16,36 +16,31 @@
 <HR>
 
 <H2 class="AppliesTo">Applies to</H2>
-
-<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A> components</P>
+<P><A HREF="thtmlviewer_component.htm">THtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
 
 <H2 class="Declaration">Declaration</H2>
 
-<P>procedure LoadFromFile(const Filename: String);</P>
+<P>procedure LoadFromFile(const FileName: <A href="type_thtstring.htm">ThtString</A>; DocType: <A href="type_thtmlfiletype.htm">THtmlFileType</A> = HtmlType);</P>
 
 <H2 class="Description">Description</H2>
 
-<P>The LoadFromFile method loads an HTML document for viewing, where Filename is the name of the file to be loaded.  If Filename has no extension, .HTML is assumed.</P>
+<P>The LoadFromFile method loads a document of the given type for viewing, where Filename is the name and DocType the type of the file to be loaded.</P>
 
 <P>Filename may optionally contain a document position identifier separated from the actual filename by a <B>#</B> sign.</P>
 
-<P><A HREF="tframeviewer_component.htm"><B>TFrameViewer</B></A><B> Only</B></P>
-
-<P>Filenames with extensions <B>.bmp, .gif,.jpg, .jpeg,.png</B>, are loaded as images.  Filenames with the extension <B>.txt</B> are loaded as text files.</P>
-
 <H2 class="Example">Example</H2>
-
-<P>Viewer.LoadFromFile('MyHTML#Contents');</P>
+<PRE>
+Viewer.LoadFromFile('MyHTML.htm#Contents');
+</PRE>
 
 <P>would load MyHTML.htm and position the view to the location where the "Contents" target was defined.</P>
 
-<P><B>See also:</B></P>
-
-<P><A HREF="loadstrings_method.htm">LoadStrings Method</A></P>
-
-<P><A HREF="loadfrombuffer_method.htm">LoadFromBuffer Method</A></P>
-
-<P><A HREF="loadfromstream_method.htm">LoadFromStream Method</A></P>
+<H2 class"SeeAlso">See also</H2>
+<UL class="SeeAlso">
+<LI><A HREF="loadfromdocument_method.htm">LoadFromDocument Method</A>
+<LI><A HREF="loadfromstream_method.htm">LoadFromStream Method</A>
+<LI><A HREF="loadfromstring_method.htm">LoadFromString Method</A>
+</UL>
 
 </BODY>
 </HTML>

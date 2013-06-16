@@ -2,32 +2,44 @@
 <HTML>
 <HEAD>
 <META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
-<TITLE>Using The ThtmlViewer Component</TITLE>
+<TITLE>Using The THtmlViewer Component</TITLE>
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v114">
 
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-	<PARAM NAME="Keyword" VALUE="ThtmlViewer">
+	<PARAM NAME="Keyword" VALUE="THtmlViewer">
 </OBJECT>
 
-<H1><A NAME="using_the_thtmlviewer_component"></A><B><IMG SRC="../images/bm0.gif" ALT="" BORDER=0>  Using The ThtmlViewer Component</B></H1>
+<H1><A NAME="using_the_thtmlviewer_component"></A><B><IMG SRC="../images/bm0.gif" ALT="" BORDER=0>Using The THtmlViewer Component</B></H1>
 <HR>
 
-<P><A HREF="contents.htm">ThtmlViewer Reference</A></P>
+<P><A HREF="contents.htm">THtmlViewer Reference</A></P>
 
 <P><B>Tasks</B></P>
 
-<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To load an HTML document from a file, use the <A HREF="loadfromfile_method.htm">LoadFromFile</A> method.  To load a document from a TMemo or other memory buffer, use the <A HREF="loadfrombuffer_method.htm">LoadFromBuffer</A> method.</P>
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>
+To load an HTML document from a file, use the <A HREF="loadfromfile_method.htm">LoadFromFile</A> method.  
+To load a document from a stream, use the <A HREF="loadfromstring_method.htm">LoadFromStream</A> method.
+To load a document from a unicode string, use the <A HREF="loadfromstring_method.htm">LoadFromString</A> method.
+To load a document from an ansistring, use a <A HREF="type_tbuffer.htm">TBuffer</A> and the <A HREF="loadfromstring_method.htm">LoadFromBuffer</A> method.
+</P>
 
-<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Use the Position property to save a location in a document and return to it later.  For positioning to a <B>Name</B> field in the document, use the <A HREF="positionto_method.htm">PositionTo</A> method.</P>
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>
+Use the Position property to save a location in a document and return to it later.  
+For positioning to a <B>Name</B> field in the document, use the <A HREF="positionto_method.htm">PositionTo</A> method.
+</P>
 
 <P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To customize response to clicking on a hotspot, respond to the OnHotSpotClick event.</P>
 
 <P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To implement a status line which shows what <A HREF="url.htm">URL</A> a hot spot corresponds to, respond to the OnHotSpotCovered event.</P>
 
-<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Use the <A HREF="deffontname_property.htm">DefFontName</A>, <A HREF="deffontsize_property.htm">DefFontSize</A>, <A HREF="deffontcolor_property.htm">DefFontColor</A>, <A HREF="defhotspotcolor_property.htm">DefHotSpotColor</A>, and <A HREF="defbackground_property.htm">DefBackground</A> properties to change the default font and color characteristics.for general display.  Use the HTML <A HREF="_body__attributes.htm"><B>&lt;body&gt;</B> tag and it's attributes</A> to specify the appearance of a particular HTML document.</P>
+<P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>
+Use the <A HREF="deffontname_property.htm">DefFontName</A>, <A HREF="deffontsize_property.htm">DefFontSize</A>, <A HREF="deffontcolor_property.htm">DefFontColor</A>, <A HREF="defhotspotcolor_property.htm">DefHotSpotColor</A>, 
+and <A HREF="defbackground_property.htm">DefBackground</A> properties to change the default font and color characteristics for general display.  
+Use the HTML <A HREF="_body__attributes.htm"><B>&lt;body&gt;</B> tag and it's attributes</A> to specify the appearance of a particular HTML document.
+</P>
 
 <P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>To implement a history list and/or Back|Forward buttons, see <A HREF="setting_up_a_history_list.htm">Setting up a History List</A>.</P>
 

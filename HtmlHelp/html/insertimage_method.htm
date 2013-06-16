@@ -18,13 +18,13 @@
 
 <H2 class="AppliesTo">Applies to</H2>
 
-<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
+<P><A HREF="thtmlviewer_component.htm">THtmlViewer</A>, <A HREF="tframeviewer_component.htm">TFrameViewer</A>, and <A HREF="tframebrowser_component.htm">TFrameBrowser</A> components</P>
 
 <P><B>TFrameViewer Declaration</B></P>
 
-<P>function InsertImage(Viewer: ThtmlViewer; const Src: string; Stream: TMemoryStream): boolean;</P>
+<P>function InsertImage(Viewer: THtmlViewer; const Src: string; Stream: TMemoryStream): boolean;</P>
 
-<P><B>ThtmlViewer Declaration</B></P>
+<P><B>THtmlViewer Declaration</B></P>
 
 <P>function InsertImage(const Src: string; Stream: TMemoryStream): boolean;</P>
 
@@ -34,7 +34,7 @@
 
 <P><I>Src</I>The identifier for the image originally obtained from the <A HREF="onimagerequest_event.htm">OnImageRequest</A> event</P>
 
-<P><I>Viewer</I>The destination ThtmlViewer.  This parameter is applicable to the <A HREF="tframeviewer_component.htm">TFrameViewer</A> InsertImage method only.  This parameter is obtained from the <I>Sender</I> parameter of the original <A HREF="onimagerequest_event.htm">OnImageRequest</A> event.</P>
+<P><I>Viewer</I>The destination THtmlViewer.  This parameter is applicable to the <A HREF="tframeviewer_component.htm">TFrameViewer</A> InsertImage method only.  This parameter is obtained from the <I>Sender</I> parameter of the original <A HREF="onimagerequest_event.htm">OnImageRequest</A> event.</P>
 
 <P><I>Stream</I>The TMemoryStream being returned containing the image.  <I>Stream</I> may contain a bitmap, GIF, JPEG, or PNG image.  Returning a value of <B>Nil</B> will cause and error bitmap to be displayed for the image.</P>
 

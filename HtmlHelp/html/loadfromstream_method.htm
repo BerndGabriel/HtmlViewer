@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v114">
 
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="LoadFromStream">
@@ -17,29 +17,25 @@
 
 <H2 class="AppliesTo">Applies to</H2>
 
-<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A> component</P>
+<P><A HREF="thtmlviewer_component.htm">THtmlViewer</A> component</P>
 
 <H2 class="Declaration">Declaration</H2>
 
-<P>procedure LoadFromStream(AStream: TStream; const Reference: string = '');</P>
+<P>procedure LoadFromStream(AStream: TStream; const Reference: <A href="type_thtstring.htm">ThtString</A> = ''; DocType: <A href="type_thtmlfiletype.htm">THtmlFileType</A> = HtmlType);</P>
 
 <H2 class="Description">Description</H2>
 
-<P>The LoadFromStream method loads an HTML document from a stream.</P>
+<P>The LoadFromStream method loads a document of the given type from a stream.</P>
 
 <P><I>Reference</I> is an optional <A HREF="reference.htm">reference</A> parameter.</P>
 
-<P>See also:</P>
-
-<P><A HREF="loadfromfile_method.htm">LoadFromFile Method</A></P>
-
-<P><A HREF="loadstrings_method.htm">LoadStrings Method</A></P>
-
-<P><A HREF="loadfrombuffer_method.htm">LoadFromBuffer Method</A></P>
-
-<P><A HREF="loadfromstring_method.htm">LoadFromString Method</A></P>
-
-<P><A HREF="onhtstreamrequest_event.htm">OnhtStreamRequest Event</A></P>
+<H2 class"SeeAlso">See also</H2>
+<UL class="SeeAlso">
+<LI><A HREF="loadfromdocument_method.htm">LoadFromDocument Method</A>
+<LI><A HREF="loadfromfile_method.htm">LoadFromFile Method</A>
+<LI><A HREF="loadfromstring_method.htm">LoadFromString Method</A>
+<LI><A HREF="onhtstreamrequest_event.htm">OnhtStreamRequest Event</A>
+</UL>
 
 </BODY>
 </HTML>

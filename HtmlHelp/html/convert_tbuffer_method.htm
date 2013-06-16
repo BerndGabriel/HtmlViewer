@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>TBuffer.Convert Methods</TITLE>
+<link rel="stylesheet" type="text/css" href="help.css">
+</HEAD>
+
+<BODY class="v114">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Convert">
+</OBJECT>
+
+<H1><A NAME="convert_tbuffer_method"></A><B>Convert Methods</B></H1>
+<HR>
+
+<H2 class="AppliesTo">Applies to</H2>
+
+<P><A HREF="type_tbuffer.htm">TBuffer</A> class</P>
+
+<H2 class="Declaration">Declaration</H2>
+<P>
+class function Convert(Text: PByte; ByteCount: Integer; CodePage: <A HREF="type_tbuffcodepage.htm">TBuffCodePage</A>): <A HREF="type_thtstring.htm">TBuffString</A>; overload; {$ifdef UseInline} inline; {$endif}<BR>
+class function Convert(Text: <A HREF="type_thtstring.htm">TBuffString</A>; CodePage: <A HREF="type_tbuffcodepage.htm">TBuffCodePage</A>): <A HREF="type_thtstring.htm">TBuffString</A>; overload; {$ifdef UseInline} inline; {$endif}<BR>
+class function Convert(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: <A HREF="type_tbuffcodepage.htm">TBuffCodePage</A>): <A HREF="type_thtstring.htm">TBuffString</A>; overload; {$ifdef UseInline} inline; {$endif}<BR>
+</P>
+
+<H2 class="Description">Description</H2>
+<P>The Convert methods convert byte arrays to unicode.</P>
+<P>The 1st method simply converts Text from CodePage to unicode.</P>
+<P>If you have loaded a text into a unicode string, but actually the text is not coded in unicode, then you can use the 2nd method to convert it to unicode.</P> 
+<P>The 3rd method is like the second, but the miscoded string is in a byte array like in the 1st method.</P> 
+
+<H2 class"SeeAlso">See also</H2>
+<UL class="SeeAlso">
+<LI><A HREF="asstring_tbuffer_method.htm">TBuffer.AsString Method</A>
+<LI><A HREF="type_tbuffcodepage.htm">Type TBuffCodePage</A>
+</UL>
+
+</BODY>
+</HTML>

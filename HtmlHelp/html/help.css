@@ -1,4 +1,7 @@
-body  { font: 10pt Verdana; margin-top:30pt; background: url("../images/v945.png") no-repeat}
-body.v114  { background: url("../images/v114.png") no-repeat}
-h1    { font-size: 12pt; }
-h2    { font-size: 11pt; }
+body          { font: 10pt Verdana; margin-top:30pt; }
+body          { background: url("../images/v945.png") no-repeat; }
+body.v114     { background: url("../images/v114.png") no-repeat; }
+h1            { font-size: 12pt; }
+h2            { font-size: 11pt; }
+h2.deprecated { color: red; }
+ul.SeeAlso    { list-style-type: none; }

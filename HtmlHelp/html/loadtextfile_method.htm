@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v114">
 
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="LoadTextFile Method">
@@ -17,23 +17,26 @@
 
 <H2 class="AppliesTo">Applies to</H2>
 
-<P><A HREF="thtmlviewer_component.htm">ThtmlViewer</A>, component</P>
+<P><A HREF="thtmlviewer_component.htm">THtmlViewer</A> component</P>
+
+<H2 class="deprecated">Deprecated</H2>
+<P>Use method <A HREF="LoadFromFile_method.htm">LoadFromFile</A> instead.</P>
 
 <H2 class="Declaration">Declaration</H2>
 
-<P>procedure LoadTextFile(const Filename: String);</P>
+<P>procedure LoadTextFile(const Filename: <A href="type_thtstring.htm">ThtString</A>);</P>
 
 <H2 class="Description">Description</H2>
 
 <P>The LoadTextFile method loads a file for viewing treating it as an ASCII text file.  If the file is an HTML file, it will be displayed as text showing the HTML tags, etc.</P>
 
-<P>See also:</P>
-
-<P><A HREF="loadtextstrings_method.htm">LoadTextStrings Method</A></P>
-
-<P><A HREF="loadimagefile_method.htm">LoadImageFile Method</A></P>
-
-<P><A HREF="loadfromfile_method.htm">LoadFromFile Method</A></P>
+<H2 class"SeeAlso">See also</H2>
+<UL class="SeeAlso">
+<LI><A HREF="loadfromdocument_method.htm">LoadFromDocument Method</A>
+<LI><A HREF="loadfromfile_method.htm">LoadFromFile Method</A>
+<LI><A HREF="loadfromstream_method.htm">LoadFromStream Method</A>
+<LI><A HREF="loadfromstring_method.htm">LoadFromString Method</A>
+</UL>
 
 </BODY>
 </HTML>
