@@ -1886,302 +1886,305 @@ var
   end;
 
 begin
-  Inc(TableLevel);
-  if TableLevel > 10 then
+  if TableLevel > 50 then
   begin
     Next;
     Exit;
   end;
-  if InHref then
-    DoAEnd; {terminate <a>}
-  SectionList.Add(Section, TagIndex);
-  Section := nil;
-  SaveSectionList := SectionList;
-  SaveStyle := CurrentStyle;
-  SaveNoBreak := NoBreak;
-  SaveListLevel := ListLevel;
-  SectionList := nil;
-  CaptionBlock := nil;
-  TopCaption := True;
-  if PropStack.Last.Props[TextAlign] = 'center' then
-    SetJustify := Centered
-  else if PropStack.Last.Props[TextAlign] = 'right' then
-    SetJustify := Right
-  else
-    SetJustify := NoJustify;
-  PushNewProp(TableSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-  Table := ThtmlTable.Create(PropStack.MasterList, Attributes, PropStack.Last);
-  NewBlock := TTableBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Table, Attributes, TableLevel);
-  if (NewBlock.Justify <> Centered) and not (NewBlock.FloatLR in [ALeft, ARight]) then
-    NewBlock.Justify := SetJustify;
-  NewBlock.MyCell.Add(Table, TagIndex); {the only item in the cell}
-  CombineBlock := TTableAndCaptionBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Attributes, NewBlock); {will be needed if Caption found}
-  CM := nil;
-  ColOK := True; {OK to add <col> info}
-  FootList := TList.Create;
+  Inc(TableLevel);
   try
-    Row := nil;
-    RowVAlign := AMiddle;
-    RowStack := PropStackIndex; {to prevent warning message}
-    HFStack := 9999999;
-    RowType := TBody;
-    Next;
-    while True do
-      case Sy of
-        TableEndSy,
-        EofSy,
-        CaptionEndSy:
-          break;
+    if InHref then
+      DoAEnd; {terminate <a>}
+    SectionList.Add(Section, TagIndex);
+    Section := nil;
+    SaveSectionList := SectionList;
+    SaveStyle := CurrentStyle;
+    SaveNoBreak := NoBreak;
+    SaveListLevel := ListLevel;
+    SectionList := nil;
+    CaptionBlock := nil;
+    TopCaption := True;
+    if PropStack.Last.Props[TextAlign] = 'center' then
+      SetJustify := Centered
+    else if PropStack.Last.Props[TextAlign] = 'right' then
+      SetJustify := Right
+    else
+      SetJustify := NoJustify;
+    PushNewProp(TableSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+    Table := ThtmlTable.Create(PropStack.MasterList, Attributes, PropStack.Last);
+    NewBlock := TTableBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Table, Attributes, TableLevel);
+    if (NewBlock.Justify <> Centered) and not (NewBlock.FloatLR in [ALeft, ARight]) then
+      NewBlock.Justify := SetJustify;
+    NewBlock.MyCell.Add(Table, TagIndex); {the only item in the cell}
+    CombineBlock := TTableAndCaptionBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Attributes, NewBlock); {will be needed if Caption found}
+    CM := nil;
+    ColOK := True; {OK to add <col> info}
+    FootList := TList.Create;
+    try
+      Row := nil;
+      RowVAlign := AMiddle;
+      RowStack := PropStackIndex; {to prevent warning message}
+      HFStack := 9999999;
+      RowType := TBody;
+      Next;
+      while True do
+        case Sy of
+          TableEndSy,
+          EofSy,
+          CaptionEndSy:
+            break;
           
-        TDSy, THSy:
-          begin
-            ColOK := False; {no more <colgroup> and <col> tags processed}
-            if InHref then
-              DoAEnd;
-            CurrentStyle := SaveStyle;
-            ListLevel := 0;
-            if not Assigned(Row) then {in case <tr> is missing}
+          TDSy, THSy:
             begin
-              RowVAlign := AMiddle;
+              ColOK := False; {no more <colgroup> and <col> tags processed}
+              if InHref then
+                DoAEnd;
+              CurrentStyle := SaveStyle;
+              ListLevel := 0;
+              if not Assigned(Row) then {in case <tr> is missing}
+              begin
+                RowVAlign := AMiddle;
+                RowStack := PropStackIndex;
+                PushNewProp(TrSy, '', '', '', '', nil);
+                Row := TCellList.Create(nil, PropStack.Last);
+              end
+              else
+              begin
+                AddSection;
+                while PropStackIndex > RowStack + 1 do
+                  PopProp; {back stack off to Row item}
+              end;
+              TdTh := Sy;
+              PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              VAlign := GetVAlign(RowVAlign);
+              if Assigned(CM) then
+              begin
+                CellNum := CM.FindColNum(Table.Rows.Count);
+                if CellNum >= 0 then
+                  with Table.ColSpecs[CellNum] do
+                  begin
+                    if colAlign <> '' then {<col> alignments added here}
+                      PropStack.Last.Assign(colAlign, TextAlign);
+                    if colVAlign <> ANone then
+                      VAlign := colVAlign;
+                  end;
+              end;
+
+              CheckForAlign; {see if there is Align override}
+              if PropStack.Last.Props[TextAlign] = 'none' then
+                if Sy = ThSy then
+                  PropStack.Last.Assign('center', TextAlign) {th}
+                else
+                  PropStack.Last.Assign('left', TextAlign); {td}
+
+              // BG, 20.01.2013: translate Rules to cell property defaults:
+              case Table.Rules of
+                trAll:
+                begin
+                  PropStack.Last.SetPropertyDefault(BorderBottomStyle, GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderBottomStyle], bssInset));
+                  PropStack.Last.SetPropertyDefault(BorderRightStyle , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderRightStyle ], bssInset));
+                  PropStack.Last.SetPropertyDefault(BorderTopStyle   , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderTopStyle   ], bssInset));
+                  PropStack.Last.SetPropertyDefault(BorderLeftStyle  , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderLeftStyle  ], bssInset));
+                end;
+
+                trRows:
+                begin
+                  PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssSolid);
+                  PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssNone);
+                end;
+
+                trCols:
+                begin
+                  PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssNone);
+                  PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssSolid);
+                end;
+
+                trGroups:
+                  ; // not yet supported
+              end;
+
+              for S := BorderTopWidth to BorderLeftWidth do
+              begin
+                V := PropStack.Last.Props[S];
+                if (VarType(V) in varInt) and (V = IntNull) then
+                begin
+                  if Table.BorderWidth > 0 then
+                    PropStack.Last.Props[S] := 1 //Table.BorderWidth
+                  else
+                    PropStack.Last.Props[S] := 3
+                end;
+              end;
+
+              for S := BorderTopColor to BorderLeftColor do
+              begin
+                V := PropStack.Last.Props[S];
+                if (VarType(V) in varInt) and (V = IntNull) then
+                  PropStack.Last.Props[S] := Table.BorderColor;
+              end;
+
+              CellObj := TCellObj.Create(PropStack.MasterList, VAlign, Attributes, PropStack.Last);
+              SectionList := CellObj.Cell;
+              if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute))
+                and (Attributes.Find(NoWrapSy, T) or (PropStack.Last.Props[piWhiteSpace] = 'nowrap')) then
+                NoBreak := True {this seems to be what IExplorer does}
+              else
+                NoBreak := False;
+              SkipWhiteSpace;
+              Next;
+              DoBody(TableTermSet);
+            end;
+          
+          CaptionSy:
+            begin
+              if InHref then
+                DoAEnd;
+              CurrentStyle := SaveStyle;
+              NoBreak := False;
+              AddSection;
+              if Attributes.Find(AlignSy, T) then
+                TopCaption := Lowercase(T.Name) <> 'bottom';
+              PushNewProp(CaptionSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              if not Assigned(CaptionBlock) then
+                CaptionBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Attributes);
+              SectionList := CaptionBlock.MyCell;
+              Next;
+              DoBody(TableTermSet);
+
+              SectionList.Add(Section, TagIndex);
+              PopAProp(CaptionSy);
+              Section := nil;
+              SectionList := nil;
+              if Sy = CaptionEndSy then
+                Next; {else it's TDSy, THSy, etc}
+            end;
+
+          THeadSy, TBodySy, TFootSy, THeadEndSy, TBodyEndSy, TFootEndSy:
+            begin
+              AddRow; {if it hasn't been added already}
+              while PropStackIndex > HFStack do
+                PopProp;
+              HFStack := PropStackIndex;
+              TdTh := OtherChar;
+              case Sy of
+                THeadSy:
+                  if Table.Rows.Count = 0 then
+                  begin
+                    RowType := THead;
+                    TdTh := Sy;
+                  end
+                  else
+                    RowType := TBody;
+
+                TBodySy:
+                  begin
+                    RowType := TBody;
+                    TdTh := Sy;
+                  end;
+
+                TFootSy:
+                  begin
+                    RowType := TFoot;
+                    TdTh := Sy;
+                  end;
+
+                THeadEndSy, TBodyEndSy, TFootEndSy:
+                  RowType := TBody;
+              end;
+              if TdTh <> OtherChar then
+                PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              Next;
+            end;
+
+          TREndSy:
+            begin
+              AddRow;
+              Next;
+            end;
+
+          TRSy:
+            begin
+              AddRow; {if it is still assigned}
               RowStack := PropStackIndex;
-              PushNewProp(TrSy, '', '', '', '', nil);
-              Row := TCellList.Create(nil, PropStack.Last);
-            end
-            else
+              PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              TrDisplay := PropStack.Last.Display; // Yunqa.de.
+              CheckForAlign;
+              Row := TCellList.Create(Attributes, PropStack.Last);
+              RowVAlign := GetVAlign(AMiddle);
+              Next;
+            end;
+
+          TDEndSy, THEndSy:
             begin
               AddSection;
-              while PropStackIndex > RowStack + 1 do
-                PopProp; {back stack off to Row item}
+              Next;
             end;
-            TdTh := Sy;
-            PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-            VAlign := GetVAlign(RowVAlign);
-            if Assigned(CM) then
+
+          ColSy, ColGroupSy:
             begin
-              CellNum := CM.FindColNum(Table.Rows.Count);
-              if CellNum >= 0 then
-                with Table.ColSpecs[CellNum] do
-                begin
-                  if colAlign <> '' then {<col> alignments added here}
-                    PropStack.Last.Assign(colAlign, TextAlign);
-                  if colVAlign <> ANone then
-                    VAlign := colVAlign;
-                end;
+              DoColGroup(Table, ColOK);
+              if not Assigned(CM) and Assigned(Table.ColSpecs) then
+                CM := TCellManager.Create(Table);
             end;
-
-            CheckForAlign; {see if there is Align override}
-            if PropStack.Last.Props[TextAlign] = 'none' then
-              if Sy = ThSy then
-                PropStack.Last.Assign('center', TextAlign) {th}
-              else
-                PropStack.Last.Assign('left', TextAlign); {td}
-
-            // BG, 20.01.2013: translate Rules to cell property defaults:
-            case Table.Rules of
-              trAll:
-              begin
-                PropStack.Last.SetPropertyDefault(BorderBottomStyle, GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderBottomStyle], bssInset));
-                PropStack.Last.SetPropertyDefault(BorderRightStyle , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderRightStyle ], bssInset));
-                PropStack.Last.SetPropertyDefault(BorderTopStyle   , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderTopStyle   ], bssInset));
-                PropStack.Last.SetPropertyDefault(BorderLeftStyle  , GetDefaultCellBorderStyle(NewBlock.MargArrayO[BorderLeftStyle  ], bssInset));
-              end;
-
-              trRows:
-              begin
-                PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssSolid);
-                PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssNone);
-              end;
-
-              trCols:
-              begin
-                PropStack.Last.SetPropertyDefaults([BorderTopStyle, BorderBottomStyle], bssNone);
-                PropStack.Last.SetPropertyDefaults([BorderLeftStyle, BorderRightStyle], bssSolid);
-              end;
-
-              trGroups:
-                ; // not yet supported
-            end;
-
-            for S := BorderTopWidth to BorderLeftWidth do
-            begin
-              V := PropStack.Last.Props[S];
-              if (VarType(V) in varInt) and (V = IntNull) then
-              begin
-                if Table.BorderWidth > 0 then
-                  PropStack.Last.Props[S] := 1 //Table.BorderWidth
-                else
-                  PropStack.Last.Props[S] := 3
-              end;
-            end;
-
-            for S := BorderTopColor to BorderLeftColor do
-            begin
-              V := PropStack.Last.Props[S];
-              if (VarType(V) in varInt) and (V = IntNull) then
-                PropStack.Last.Props[S] := Table.BorderColor;
-            end;
-
-            CellObj := TCellObj.Create(PropStack.MasterList, VAlign, Attributes, PropStack.Last);
-            SectionList := CellObj.Cell;
-            if ((CellObj.SpecWd.Value = 0) or (CellObj.SpecWd.VType <> wtAbsolute))
-              and (Attributes.Find(NoWrapSy, T) or (PropStack.Last.Props[piWhiteSpace] = 'nowrap')) then
-              NoBreak := True {this seems to be what IExplorer does}
+        else
+          begin
+            if ((Sy = StringSy) and (LCToken.S = SpcChar)) or (Sy = CommandSy) then
+              Next {discard single spaces here}
             else
-              NoBreak := False;
-            SkipWhiteSpace;
-            Next;
-            DoBody(TableTermSet);
-          end;
-          
-        CaptionSy:
-          begin
-            if InHref then
-              DoAEnd;
-            CurrentStyle := SaveStyle;
-            NoBreak := False;
-            AddSection;
-            if Attributes.Find(AlignSy, T) then
-              TopCaption := Lowercase(T.Name) <> 'bottom';
-            PushNewProp(CaptionSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-            if not Assigned(CaptionBlock) then
-              CaptionBlock := TBlock.Create(PropStack.MasterList, PropStack.Last, SaveSectionList, Attributes);
-            SectionList := CaptionBlock.MyCell;
-            Next;
-            DoBody(TableTermSet);
-
-            SectionList.Add(Section, TagIndex);
-            PopAProp(CaptionSy);
-            Section := nil;
-            SectionList := nil;
-            if Sy = CaptionEndSy then
-              Next; {else it's TDSy, THSy, etc}
-          end;
-
-        THeadSy, TBodySy, TFootSy, THeadEndSy, TBodyEndSy, TFootEndSy:
-          begin
-            AddRow; {if it hasn't been added already}
-            while PropStackIndex > HFStack do
-              PopProp;
-            HFStack := PropStackIndex;
-            TdTh := OtherChar;
-            case Sy of
-              THeadSy:
-                if Table.Rows.Count = 0 then
-                begin
-                  RowType := THead;
-                  TdTh := Sy;
-                end
-                else
-                  RowType := TBody;
-
-              TBodySy:
-                begin
-                  RowType := TBody;
-                  TdTh := Sy;
-                end;
-
-              TFootSy:
-                begin
-                  RowType := TFoot;
-                  TdTh := Sy;
-                end;
-
-              THeadEndSy, TBodyEndSy, TFootEndSy:
-                RowType := TBody;
+            begin
+              JunkSaveSectionList := SectionList;
+              SectionList := SaveSectionList; {the original one}
+              DoBody(TableTermSet);
+              SectionList.Add(Section, TagIndex);
+              Section := nil;
+              SectionList := JunkSaveSectionList;
             end;
-            if TdTh <> OtherChar then
-              PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-            Next;
           end;
-
-        TREndSy:
+        end;
+      if InHref then
+        DoAEnd;
+      AddSection;
+      AddRow;
+      while PropStackIndex > HFStack do
+        PopProp;
+      for I := 0 to FootList.Count - 1 do {put TFoot on end of table}
+        Table.Rows.Add(FootList[I]);
+    finally
+      FootList.Free;
+      SectionList := SaveSectionList;
+      if Assigned(CaptionBlock) then
+      begin
+        CombineBlock.TopCaption := TopCaption;
+        CombineBlock.CaptionBlock := CaptionBlock;
+        with CombineBlock.MyCell do
+          if TopCaption then
           begin
-            AddRow;
-            Next;
-          end;
-
-        TRSy:
-          begin
-            AddRow; {if it is still assigned}
-            RowStack := PropStackIndex;
-            PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-            TrDisplay := PropStack.Last.Display; // Yunqa.de.
-            CheckForAlign;
-            Row := TCellList.Create(Attributes, PropStack.Last);
-            RowVAlign := GetVAlign(AMiddle);
-            Next;
-          end;
-
-        TDEndSy, THEndSy:
-          begin
-            AddSection;
-            Next;
-          end;
-
-        ColSy, ColGroupSy:
-          begin
-            DoColGroup(Table, ColOK);
-            if not Assigned(CM) and Assigned(Table.ColSpecs) then
-              CM := TCellManager.Create(Table);
-          end;
-      else
-        begin
-          if ((Sy = StringSy) and (LCToken.S = SpcChar)) or (Sy = CommandSy) then
-            Next {discard single spaces here}
+            Add(CaptionBlock, TagIndex);
+            Add(NewBlock, TagIndex);
+          end
           else
           begin
-            JunkSaveSectionList := SectionList;
-            SectionList := SaveSectionList; {the original one}
-            DoBody(TableTermSet);
-            SectionList.Add(Section, TagIndex);
-            Section := nil;
-            SectionList := JunkSaveSectionList;
+            Add(NewBlock, TagIndex);
+            Add(CaptionBlock, TagIndex);
           end;
-        end;
+        SectionList.Add(CombineBlock, TagIndex);
+        NewBlock.OwnerCell := CombineBlock.MyCell;
+      end
+      else
+      begin
+        CombineBlock.CancelUsage;
+        CombineBlock.Free; {wasn't needed}
+        SectionList.Add(NewBlock, TagIndex);
       end;
-    if InHref then
-      DoAEnd;
-    AddSection;
-    AddRow;
-    while PropStackIndex > HFStack do
-      PopProp;
-    for I := 0 to FootList.Count - 1 do {put TFoot on end of table}
-      Table.Rows.Add(FootList[I]);
-  finally
-    FootList.Free;
-    SectionList := SaveSectionList;
-    if Assigned(CaptionBlock) then
-    begin
-      CombineBlock.TopCaption := TopCaption;
-      CombineBlock.CaptionBlock := CaptionBlock;
-      with CombineBlock.MyCell do
-        if TopCaption then
-        begin
-          Add(CaptionBlock, TagIndex);
-          Add(NewBlock, TagIndex);
-        end
-        else
-        begin
-          Add(NewBlock, TagIndex);
-          Add(CaptionBlock, TagIndex);
-        end;
-      SectionList.Add(CombineBlock, TagIndex);
-      NewBlock.OwnerCell := CombineBlock.MyCell;
-    end
-    else
-    begin
-      CombineBlock.CancelUsage;
-      CombineBlock.Free; {wasn't needed}
-      SectionList.Add(NewBlock, TagIndex);
+      PopaProp(TableSy);
+      CurrentStyle := SaveStyle;
+      NoBreak := SaveNoBreak;
+      ListLevel := SaveListLevel;
+      CM.Free;
     end;
-    PopaProp(TableSy);
-    CurrentStyle := SaveStyle;
-    NoBreak := SaveNoBreak;
-    ListLevel := SaveListLevel;
+    Next;
+  finally
     Dec(TableLevel);
-    CM.Free;
   end;
-  Next;
 end;
 
 procedure THtmlParser.GetOptions(Select: TOptionsFormControlObj);

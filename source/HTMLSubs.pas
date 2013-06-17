@@ -113,6 +113,7 @@ type
     SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
     // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
+    TagClass: ThtString; {debugging aid} //BG, 10.03.2011: see also TCellBasic.OwnersTag
 
     constructor Create(AMasterList: ThtDocument; ADisplay: TPropDisplay); overload;
     constructor Create(AMasterList: ThtDocument; AProp: TProperties); overload;
@@ -568,7 +569,6 @@ type
     OwnerCell: TCellBasic; //BG, 10.03.2011: should be in TSectionBase instead of FDocument and FOwner
     BGImage: TImageObj;    //BG, 10.03.2011: see also bkGnd and bkColor in TCellBasic one background should be enough.
     BlockTitle: ThtString;
-    TagClass: ThtString; {debugging aid} //BG, 10.03.2011: see also TCellBasic.OwnersTag
 
     // Notice: styling tag attributes are deprecated by W3C an must be translated
     //         to the corresponding style properties with a very low priority.
@@ -4965,7 +4965,6 @@ begin
   end;
   if (FloatLR in [ALeft, ARight]) and (ZIndex = 0) then
     ZIndex := 1;
-  TagClass := Prop.PropTag + '.' + Prop.PropClass + '#' + Prop.PropID;
   if not (Self is TTableBlock) and not (Self is TTableAndCaptionBlock) then
     CollapseMargins;
   if Assigned(Attributes) and (Attributes.TheID <> '') then
@@ -15306,7 +15305,8 @@ end;
 //-- BG ---------------------------------------------------------- 20.09.2009 --
 constructor TSectionBase.Create(AMasterList: ThtDocument; AProp: TProperties);
 begin
-  create(AMasterList, AProp.Display);
+  Create(AMasterList, AProp.Display);
+  TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
 end;
 
 constructor TSectionBase.CreateCopy(AMasterList: ThtDocument; T: TSectionBase);
