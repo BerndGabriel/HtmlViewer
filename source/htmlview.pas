@@ -1420,18 +1420,18 @@ begin
     DoScrollBars
   else
     Layout;
-  if FMaxVertical < PaintPanel.Height then
-    Position := 0
-  else
-    ScrollTo(VScrollBar.Position); {keep aligned to limits}
-  with HScrollBar do
-    Position := Math.Min(Position, Max - PaintPanel.Width);
+  ScrollTo(VScrollBar.Position); {keep aligned to limits}
+  HScrollBar.Position := Max(0, Min(HScrollBar.Position, HScrollBar.Max - PaintPanel.Width));
+{$ifdef LCL}
+  PaintPanel.Update;
+{$endif}
 end;
 
 procedure THtmlViewer.ScrollHorz(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
 {only the horizontal scrollbar comes here}
 begin
   ScrollPos := Min(ScrollPos, HScrollBar.Max - PaintPanel.Width);
+  FSectionList.XOffChange := True;
   PaintPanel.Invalidate;
 end;
 
@@ -1441,7 +1441,7 @@ begin
   Y := Max(Y, 0);
   VScrollBar.Position := Y;
   FSectionList.SetYOffset(Y);
-  Invalidate;
+  PaintPanel.Invalidate;
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2011 --
@@ -2416,7 +2416,7 @@ begin
     end;
     if Pos < 0 then
       Pos := 0;
-    Pos := Math.Min(Pos, Max - PaintPanel.Width);
+    Pos := Math.Max(0, Math.Min(Pos, Max - PaintPanel.Width));
     
     if Pos <> OrigPos then
     begin
@@ -5045,6 +5045,7 @@ begin
   inherited Create(AOwner);
   FViewer := Viewer;
 {$ifdef OwnPaintPanelDoubleBuffering}
+  DoubleBuffered := False;
 {$else}
   DoubleBuffered := True;
 {$endif}
@@ -5068,7 +5069,6 @@ var
 begin
   if vsDontDraw in FViewer.FViewerState then
     Exit;
-
 {$ifdef OwnPaintPanelDoubleBuffering}
   //BG, 19.02.2011: Issue 57: bypass problems with component's double buffering and XP theme.
   OldPal := 0;

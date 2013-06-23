@@ -1362,6 +1362,7 @@ type
     Printing: boolean; {set if printing -- also see IsCopy}
     YOff: Integer; {marks top of window that's displayed}
     YOffChange: boolean; {when above changes}
+    XOffChange: boolean; {when x offset changes}
     NoPartialLine: boolean; {set when printing if no partial line allowed at page bottom}
     SelB, SelE: Integer;
     LinkVisitedColor, LinkActiveColor, HotSpotColor: TColor;
@@ -7927,6 +7928,13 @@ begin
       with TPanelObj(PanelList[I]) do
         if not ShowIt then
           Panel.Hide;
+  end;
+  if YOffChange or XOffChange then
+  begin
+{$ifdef LCL}
+    PPanel.Invalidate;
+{$endif}
+    XOffChange := False;
     YOffChange := False;
   end;
   if Assigned(Timer) then
