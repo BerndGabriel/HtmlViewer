@@ -3,9 +3,9 @@
   .backcolor  {background-color: #a5cdeb;}
   table, td, th   {font: 10pt Arial; border-color:buttonface}
   th      {font-weight: bold;}
-  :link   {color: #000060;}
-  :hover  {color: #a44;}
-  :visited {color: #7070a0;}
+  a:link   {color: #000060;}
+  a:hover  {color: #a44;}
+  a:visited {color: #7070a0;}
   .title  {font: bold 18pt "Times New Roman"; color: #a53737; text-align: center;
            margin-bottom: 0;}
   .subtitle  {font: bold 8pt; color: #733737; text-align: center;

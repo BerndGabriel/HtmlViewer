@@ -82,92 +82,113 @@ kinds of textual material such as documentation, helpfiles, etc. Graphics are ea
 documents. </p>
 
 <p CLASS="heading"><a NAME="Files">Files Supplied</a></p>
-<pre>Demo.htm        This file
-*.htm           Frame files for Demo.htm
-FrameDem.exe    The TFrameViewer demo program
-Various image and sound files for demo
+<pre>In "Demos\Compiled Framedemo"
 
-Source code for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
+   Demo.htm        This file
+   *.htm           Frame files for Demo.htm
+   FrameDem.exe    The TFrameViewer demo program
+   Various image and sound files for demo
 
-   HtmlView.pas, .dcr           THtmlViewer
-   FramView.pas, .dcr           TFrameViewer
-   FramBrwz.pas, .dcr           TFrameBrowser
-   BuffConv.pas
-   BuffConvArrays.pas
-   DitherUnit.pas
-   GDIPL2A.pas
-   HSLUtils.pas
-   Html32.res
-   HtmlBuffer.pas
-   HtmlCons.inc
-   HtmlGif1.pas
-   HTMLGif2.pas
-   HtmlGlobals.pas
-   HtmlSbs1.pas
-   HTMLSubs.pas
-   HTMLUn2.pas
-   MetaFilePrinter.pas
-   ReadHTML.pas
-   StylePars.pas
-   StyleUn.pas
-   URLSubs.pas
-   VwPrint.pas
-   HtmlMisc.pas                 Lazarus only
-   HtmlComp.lrs                 Lazarus only
-   HtmlUn2.lrs                  Lazarus only
-   WideStringsLcl.pas           Lazarus only
-   HTMLCompEdit.pas             Designtime only
-   FrameViewerReg.pas           Designtime only
+In "HtmlHelp"
 
-   FrameViewer09.lpk, .pas      Lazarus 09 .. 1.1 Package source file.  The younger Lazarus the better it supports HtmlViewer.
-   FrameViewer6.dpk, .res       Delphi 6 Package source file.           Uses TntControls for better unicode support.
-   FrameViewer7.dpk, .res       Delphi 7 Package source file.           Uses TntControls for better unicode support.
-   FrameViewer2005.dpk, .res    Delphi 2005 Package source file.        Uses TntControls for better unicode support.
-   FrameViewer2006.dpk, .res    Delphi 2006 Package source file.        Uses TntControls for better unicode support.
-   FrameViewer2007.dpk, .res    Delphi 2007 Package source file.        Uses TntControls for better unicode support.
-   FrameViewer2009.dpk, .res    Delphi 2009 Package source file.
-   FrameViewer2010.dpk, .res    Delphi 2010 Package source file.
-   FrameViewerXE.dpk, .res      Delphi XE Package source file.
-   FrameViewerXE2.dpk, .res     Delphi XE2 Package source file.
-   FrameViewerXE3.dpk, .res     Delphi XE3 Runtime package source file.
-   DclFrameViewerXE3.dpk, .res  Delphi XE3 Designtime package source file.
-   HtmlView.hlp, .cnt           The help file (Sorry, but it is still version 9.45)
+   THtmlViewer.chm  Help file 
+   html\*.*         Source files of help file
+   images\*.*       Source files of help file
+   Various html help project files
+
+In "Source" 
+
+   sourcecode for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
+
+     HtmlView.pas, .dcr           THtmlViewer
+     FramView.pas, .dcr           TFrameViewer
+     FramBrwz.pas, .dcr           TFrameBrowser
+     BuffConv.pas
+     BuffConvArrays.pas
+     DitherUnit.pas
+     GDIPL2A.pas
+     HSLUtils.pas
+     Html32.res
+     HtmlBuffer.pas
+     HtmlCons.inc
+     HtmlGif1.pas
+     HTMLGif2.pas
+     HtmlGlobals.pas
+     HtmlSbs1.pas
+     HTMLSubs.pas
+     HTMLUn2.pas
+     MetaFilePrinter.pas
+     ReadHTML.pas
+     StylePars.pas
+     StyleUn.pas
+     URLSubs.pas
+     VwPrint.pas
+     HtmlMisc.pas                 Lazarus only
+     HtmlComp.lrs                 Lazarus only
+     HtmlUn2.lrs                  Lazarus only
+     WideStringsLcl.pas           Lazarus only
+     HTMLCompEdit.pas             Designtime only
+     FrameViewerReg.pas           Designtime only
+
+     FrameViewer09.lpk, .pas      Lazarus 09 .. 1.1 Package source file.  The younger Lazarus the better it supports HtmlViewer.
+     FrameViewer6.dpk, .res       Delphi 6 Package source file.           Uses TntControls for better unicode support.
+     FrameViewer7.dpk, .res       Delphi 7 Package source file.           Uses TntControls for better unicode support.
+     FrameViewer2005.dpk, .res    Delphi 2005 Package source file.        Uses TntControls for better unicode support.
+     FrameViewer2006.dpk, .res    Delphi 2006 Package source file.        Uses TntControls for better unicode support.
+     FrameViewer2007.dpk, .res    Delphi 2007 Package source file.        Uses TntControls for better unicode support.
+     FrameViewer2009.dpk, .res    Delphi 2009 Package source file.
+     FrameViewer2010.dpk, .res    Delphi 2010 Package source file.
+     FrameViewerXE.dpk, .res      Delphi XE Package source file.
+     FrameViewerXE2.dpk, .res     Delphi XE2 Package source file.
+     FrameViewerXE3.dpk, .res     Delphi XE3 Runtime package source file.
+     DclFrameViewerXE3.dpk, .res  Delphi XE3 Designtime package source file.
+     FrameViewerXE4.dpk, .res     Delphi XE4 Runtime package source file.
+     DclFrameViewerXE4.dpk, .res  Delphi XE4 Designtime package source file.
+     HtmlView.chm                 The help file (Sorry, but most of it is still version 9.45)
    
-Source code for the print preview dialog TBegaHtmlPrintPreviewForm
+   Source code for the print preview dialog TBegaHtmlPrintPreviewForm
 
-   BegaHtmlPrintPreviewForm.pas
-   BegaMetaFilePrinter.pas
-   BegaPreview.pas, .dfm, .lfm
-   BegaPreviewForm.pas, .dfm, .lfm
-   BegaPreviewPanel.pas
-   BegaScrollBox.pas
-   BegaZoom.pas
-   ZoomAndHandCursor.RES
+     BegaHtmlPrintPreviewForm.pas
+     BegaMetaFilePrinter.pas
+     BegaPreview.pas, .dfm, .lfm
+     BegaPreviewForm.pas, .dfm, .lfm
+     BegaPreviewPanel.pas
+     BegaScrollBox.pas
+     BegaZoom.pas
+     ZoomAndHandCursor.RES
 
-Source code for the demo programs
+In "Demos\Main Demos"
+     
+   Source code for the demo programs
 
-   FrameDem.dpr, .res
-   FrameDemW.dpr, .res
-   FrameDemLaz.lpr, .res
-   HtmlDemo.dpr, .res
-   HtmlDemoW.dpr, .res
-   HtmlDemoLaz.lpr, .res
-   DemoSubs.pas
-   demounit.pas, .dfm, .lfm
-   FDemUnit.pas, .dfm, .lfm
-   FontDlg.pas, .dfm, .lfm
-   GoPage.pas, .dfm, .lfm
-   Grid.res
-   Htmlabt.pas, .dfm, .lfm
-   ImgForm.pas, .dfm, .lfm
-   manifest.res
-   PrintStatusForm.pas, .dfm, .lfm
-   Submit.pas, .dfm, .lfm
-   SubmitTNT.pas, .dfm
+     FrameDem.dpr, .res
+     FrameDemW.dpr, .res
+     FrameDemLaz.lpr, .res
+     HtmlDemo.dpr, .res
+     HtmlDemoW.dpr, .res
+     HtmlDemoLaz.lpr, .res
+     DemoSubs.pas
+     demounit.pas, .dfm, .lfm
+     FDemUnit.pas, .dfm, .lfm
+     FontDlg.pas, .dfm, .lfm
+     GoPage.pas, .dfm, .lfm
+     Grid.res
+     Htmlabt.pas, .dfm, .lfm
+     ImgForm.pas, .dfm, .lfm
+     manifest.res
+     PrintStatusForm.pas, .dfm, .lfm
+     Submit.pas, .dfm, .lfm
+     SubmitTNT.pas, .dfm
 
-... and some more demos' source files.
+In "Demos\Other Demos"     
+
+   Some more demos projects and source files. For example the FrameBrowser demos 
+     
+     FrameBrowserUsingICSv7 
+     FrameBrowserUsingIndy10
+
+in 
 </pre>
-
 
 <div style="page-break-inside: avoid">
 <p CLASS="heading"><a NAME="InstallViewer">Installing The HTML Components</a></p>

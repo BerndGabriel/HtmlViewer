@@ -4,11 +4,10 @@
 <title>What's New</title>
 <link REL="stylesheet" TYPE="text/css" HREF="demo.css">
 <style TYPE="text/css"> <!--
-  h2   {font-size: 18pt; font-weight: bold;}
-  h5   {color: #5f5f5f; font-weight: bold;}
-  .expand {margin-left: 20px; Margin-top: 10px; margin-bottom: 10px;}
-  a.expandhead {text-decoration: none;}
-  li    {Margin-top:2;}
+  h2   {font: 18pt "Comic Sans MS", "Arial Rounded", Arial; font-weight: bold; }
+  h5   {font-variant: small-caps; font-size: 10pt; font-weight: bold; color: #5f5f5f; margin:0px}
+  ul   {margin-top: 5pt}
+  li   {margin-top: 2px}
   -->
 </style>
 <bgsound src="music.mid" balance="0" volume="-600">
@@ -21,7 +20,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 11.4</p>
+<h4 class="heading">Version 11.4</h4>
 <h5>Added</h5>
 <ul>
   <li>Delphi XE3 and XE4 Support (JPM)
@@ -29,6 +28,7 @@
   <li><b>TBuffer</b> converts most common single and multi byte code pages to unicode on its own (Thanks to SchwarzKopf-M for his extensive programming support and testing).
   <li><b>FrameDem.exe</b> shows quirks mode infos and has got menu items to select the quirks mode.  
   <li>New Demo <b>FrameBrowserUsingIndy10.exe</b>: Same as FrameBrowserUsingIndy but using current Indy components of version 10 (Delphi XE+ only)
+  <li>Help file <b>Helpview.hlp</b> has been converted to html help <b>THtmlViewer.chm</b> and all help pages are <a href="../../HtmlHelp/html/contents.htm">available in HTML</a>.
   <li>HTML 3.2 Element <b>&lt;dfn&gt;</b>
   <li>HTML 4 Elements <b>&lt;ins&gt;</b>, <b>&lt;del&gt;</b>, <b>&lt;abbr&gt;</b>, <b>&lt;acronym&gt;</b>
   <li>HTML 5 Element <b>&lt;time&gt;</b>
@@ -44,7 +44,7 @@
     <ul>
       <li>Allow no space between 'include' identifier and tag end '--&gt;' although '-' is an allowed character in identifiers.
     </ul>
-  <li>TBegaHtmlPrintPreviewForm replaces and enhances TPreviewForm. 
+  <li><b>TBegaHtmlPrintPreviewForm</b> replaces and enhances <b>TPreviewForm</b>. 
     <ul>
       <li>Shows any number of pages horizontally and vertically
       <li>Zooms preview
@@ -100,7 +100,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 11.3</p>
+<h4 class="heading">Version 11.3</h4>
 <h5>Added</h5>
 <ul>
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=127">Issue 127</a>:  <b>Embedded Images</b> (image URL starts with 'data:image/', continues with ';base64,' and a lot of gibberish).
@@ -181,7 +181,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 11.2</p>
+<h4 class="heading">Version 11.2</h4>
 <h5>Added</h5>
 <ul>
   <li>Tags <b>&lt;col&gt;</b> and <b>&lt;colspan&gt;</b> support relative widths "n*".
@@ -215,7 +215,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 11.1</p>
+<h4 class="heading">Version 11.1</h4>
 <h5>Fixed and Changed</h5>
 <ul>
   <li>Fixed: Avoid endless loop in GetCollection.
@@ -230,7 +230,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 11</p>
+<h4 class="heading">Version 11</h4>
 <h5>Added</h5>
 <ul>
   <li>HtmlViewer/FrameViewer developement available at <a href="http://github.com/BerndGabriel/HtmlViewer">http://github.com/BerndGabriel/HtmlViewer</a>.
@@ -247,7 +247,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 10</p>
+<h4 class="heading">Version 10</h4>
 <h5>Added</h5>
 <ul>
   <li>HtmlViewer/FrameViewer is public domain at <a href="http://code.google.com/p/thtmlviewer">http://code.google.com/p/thtmlviewer</a>.
@@ -276,7 +276,7 @@
 
 <!----------------------------------------------------------------------------->
 
-<p class="heading">Version 9.45</p>
+<h4 class="heading">Version 9.45</h4>
 <h5>Added</h5>
 <ul>
   <li>Add TPrinterSetupDialog to Frame Demo program.
@@ -289,7 +289,7 @@
   <li>Fix <b>MakePagedMetafiles</b> to properly page.
 </ul>
 
-<p class="heading">Version 9.44</p>
+<h4 class="heading">Version 9.44</h4>
 <h5>Added</h5>
 <ul>
   <li>Add an item to the <b>htOption</b> and <b>fvOption</b> properties to prevent links
@@ -303,7 +303,7 @@
   <li>Fix problem with 3 or more nested <b>&lt;ul&gt;</b>s in a table when the end tags were missing. 
 </ul>
 
-<p class="heading">Version 9.43</p>
+<h4 class="heading">Version 9.43</h4>
 <h5>Fixed and Changed</h5>
 <ul>
   <li>Fix clip region error when printing with high dpi resolution.
@@ -312,7 +312,7 @@
 </ul>
 
 
-<p class="heading">Version 9.42</p>
+<h4 class="heading">Version 9.42</h4>
 <h5>Added</h5>
 <ul>
   <li>Add support for parent child operator (&gt;) in contextual selectors.
@@ -328,7 +328,7 @@
         than its enclosed object if viewer was shrunk.
 </ul>
 
-<p class="heading">Version 9.41</p>
+<h4 class="heading">Version 9.41</h4>
 <h5>Added</h5>
 <ul>
   <li>Limit extremely large font size entries.
@@ -348,7 +348,7 @@
   <li>Fix problems where ThtmlViewer cursors conflicted with user's special cursors.
 </ul>
 
-<p class="heading">Version 9.4</p>
+<h4 class="heading">Version 9.4</h4>
 <h5>Added</h5>
 <ul>
   <li>Add support for alpha transparency in PNG images.
@@ -361,7 +361,7 @@
   <li>Modify Word-wrap: break-word; so that it works like in IExplorer.
  </ul>
 
-<p class="heading">Version 9.32</p>
+<h4 class="heading">Version 9.32</h4>
 <h5>Added</h5>
 <ul>
   <li>Add <b>Delphi 2006</b> to the Delphi versions supported.
@@ -376,7 +376,7 @@
   <li>Permit Floating objects when positioning is Relative.
 </ul>
 
-<p class="heading">Version 9.31</p>
+<h4 class="heading">Version 9.31</h4>
 <h5>Added</h5>
 <ul>
   <li>Add <b>OnObjectTag</b> event to allow user to add support for objects. See the helpfile and
@@ -395,7 +395,7 @@
   <li>Fix several gif and animated gif problems.
 </ul>
 
-<p class="heading">Version 9.3</p>
+<h4 class="heading">Version 9.3</h4>
 <h5>Added</h5>
 <ul>
   <li>Add printing support for <b>&lt;thead&gt;</b>, <b>&lt;tbody&gt;</b>, and <b>&lt;tfoot&gt;</b>.
@@ -408,7 +408,7 @@
   <li>Fix width=100% on images so the width includes the border.
 </ul>
 
-<p class="heading">Version 9.27</p>
+<h4 class="heading">Version 9.27</h4>
 <h5>Added</h5>
 <ul>
   <li>Add support for <b>&amp;shy;</b> the soft hyphen.
@@ -428,7 +428,7 @@
       in the space alloted for display.
 </ul>
 
-<p class="heading">Version 9.26</p>
+<h4 class="heading">Version 9.26</h4>
 <h5>Added</h5>
 <ul>
   <li>New <b>LinkText</b> property gives the text displayed for the link.
@@ -445,7 +445,7 @@
   <li>Detect GIF images by content rather than .GIF file externsion.
 </ul>
 
-<p class="heading">Version 9.25</p>
+<h4 class="heading">Version 9.25</h4>
 <h5>Added</h5>
 <ul>
   <li><b>Delphi 2005</b> Support.
@@ -460,7 +460,7 @@
   <li>Ignore &lt;?xml .....&gt; clauses.
 </ul>
 
-<p class="heading">Version 9.24</p>
+<h4 class="heading">Version 9.24</h4>
 <h5>Added</h5>
 <ul>
   <li>Add HTML <b>CopyToClipboard</b>. This is not a perfect implementation but
@@ -476,7 +476,7 @@
   <li>Fix problem where text was being clipped in form controls when printed.
 </ul>
 
-<p class="heading">Version 9.23</p>
+<h4 class="heading">Version 9.23</h4>
 <h5>Added</h5>
 <ul>
   <li>Parse the "@ media screen..." items for stylesheets.
@@ -495,7 +495,7 @@
   <li>Fix problem with Delphi 7 and XP manifest
 </ul>
 
-<p class="heading">Version 9.22</p>
+<h4 class="heading">Version 9.22</h4>
 <h5>Added</h5>
 <ul>
   <li>New <b>OnPrintHTMLHeader</b> and <b>OnPrintHTMLFooter</b> events allow HTML
@@ -518,7 +518,7 @@
   <li>The positioning accuracy of links was improved.
 </ul>
 
-<p class="heading">Version 9.21</p>
+<h4 class="heading">Version 9.21</h4>
 <h5>Added</h5>
 <ul>
   <li>Make provision for using third party TNT or Elpack Unicode controls
@@ -541,7 +541,7 @@
   <li>Fix a problem with transparency with some PNG images.
 </ul>
 
-<p class="heading">Version 9.2</p>
+<h4 class="heading">Version 9.2</h4>
 <h5>Added</h5>
 <ul>
   <li>Width settings in percentage now supported for Form controls.
@@ -559,7 +559,7 @@
   <li>Fix for certain animated GIF images
 </ul>
 
-<p class="heading">Version 9.13</p>
+<h4 class="heading">Version 9.13</h4>
 <h5>Added</h5>
 <ul>
   <li>Borders now supported for most <span style="BORDER-RIGHT: red thin solid; BORDER-TOP: red thin solid; BORDER-LEFT: red thin solid; BORDER-BOTTOM: red thin solid">inline</span>elements.
@@ -578,7 +578,7 @@
       image display and printing.
 </ul>
 
-<p class="heading">Version 9.12</p>
+<h4 class="heading">Version 9.12</h4>
 <h5>Added</h5>
 <ul>
   <li>Support for <b>TopMargin</b> and <b>LeftMargin</b> attributes in <b>&lt;body&gt;</b> tag.
@@ -595,7 +595,7 @@
   <li>Several animated Gif problems were fixed.
 </ul>
 
-<p class="heading">Version 9.11</p>
+<h4 class="heading">Version 9.11</h4>
 <h5>Added</h5>
 <ul>
   <li>Type="file" now supported for the <b>&lt;input&gt;</b> tag. <b>OnFileBrowse</b> event
@@ -616,7 +616,7 @@
   <li>Faster Radio Buttons.
 </ul>
 
-<p class="heading">Version 9.1</p>
+<h4 class="heading">Version 9.1</h4>
 <h5>Added</h5>
 <ul>
   <li>All CSS border styles now supported. Colors and styles may be separately
@@ -637,7 +637,7 @@
   <li>Limit Tabbing between links to documents with less than 400 links to avoid slow response times.
 </ul>
 
-<p class="heading">Version 9.03</p>
+<h4 class="heading">Version 9.03</h4>
 <h5>Added</h5>
 <ul>
   <li>Delphi 7 support.
@@ -654,7 +654,7 @@
   <li>Fix problem which occured when a background image was used in an empty table cell.
 </ul>
 
-<p class="heading">Version 9.02</p>
+<h4 class="heading">Version 9.02</h4>
 <h5>Added</h5>
 <ul>
   <li>Add tabbing ability for links. Show focus on current link.
@@ -664,7 +664,7 @@
   <li>Fix several Win95 problems with Unicode handling.
 </ul>
 
-<p class="heading">Version 9.01</p>
+<h4 class="heading">Version 9.01</h4>
 <h5>Fixed and Changed</h5>
 <ul>
   <li>Fix problem where very large animated Gifs would cause exceptlions in Win9xx.
@@ -672,7 +672,7 @@
   <li>Fix some problems with <b>&lt;nobr&gt;</b>.
 </ul>
 
-<p class="heading">Version 9</p>
+<h4 class="heading">Version 9</h4>
 <h5>Added</h5>
 <ul>
   <li>Internal manipulation is done in Unicode now. This should 
