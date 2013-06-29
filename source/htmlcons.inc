@@ -72,42 +72,36 @@
     {$ifdef ver140}
     {$else}
       {$define Delphi7_Plus}
-      {$ifdef ver140}
+      {$define Compiler15_Plus}
+      {$ifdef ver150}
       {$else}
-        {$ifdef ver140}
+        {$ifdef ver160}
         {$else}
-          {$define Compiler15_Plus}
-          {$ifdef ver150}
+          {$define Compiler17_Plus}
+          {$ifdef ver170}
           {$else}
-            {$ifdef ver160}
+            {$define Compiler18_Plus}
+            {$ifdef ver180}
             {$else}
-              {$define Compiler17_Plus}
-              {$ifdef ver170}
+              {$define Compiler19_Plus}
+              {$ifdef ver185}
               {$else}
-                {$define Compiler18_Plus}
-                {$ifdef ver180}
+                {$define Compiler20_Plus}
+                {$ifdef ver200}
                 {$else}
-                  {$define Compiler19_Plus}
-                  {$ifdef ver185}
+                  {$ifdef ver210}
                   {$else}
-                    {$define Compiler20_Plus}
-                    {$ifdef ver200}
+                    {$ifdef ver220}
                     {$else}
-                      {$ifdef ver210}
+                      {$define Compiler23_Plus}
+                      {$ifdef ver230}
                       {$else}
-                        {$ifdef ver220}
+                        {$define Compiler24_Plus}
+                        {$ifdef ver240}
                         {$else}
-                          {$define Compiler23_Plus}
-                          {$ifdef ver230}
-                          {$else}
-                            {$define Compiler24_Plus}
-                            {$ifdef ver240}
-                            {$else}
-                                {$define Compiler25_Plus}
-                            {$endif}
-                            {$LEGACYIFEND ON}
-                          {$endif}
+                            {$define Compiler25_Plus}
                         {$endif}
+                        {$LEGACYIFEND ON}
                       {$endif}
                     {$endif}
                   {$endif}
@@ -206,13 +200,6 @@
         the next control that is visible.  With FastRadio on, tabs move to
         the next control even if it is not visible.}
 
-{.$Define Quirk}
-        {Defining Quirk makes changes which simulate some of the
-        quirks of other browsers.  It may be desirable to define this constant
-        if you expect to be displaying HTML which might depend on these quirks.
-        Currently, Quirk forces the font color and size to return to default
-        values in each table cell.}
-
 {.$Define OpOnChange}
         {Without this definition, the <select> form controls (TListbox and
         TCombobox) will issue the OnObjectChange event only when the control
@@ -227,6 +214,7 @@
         This switch reactivates the manual double buffering in TPaintPanel.Paint(), which
         was removed with r118.
         Due to several redraw errors with Delphi, OwnPaintPanelDoubleBuffering now is always set for Delphi.}
+        
 {$Define HalfToneStretching}
         {This makes use of a better stretching methode provided by Windows: HALFTONE.
         So resized graphics (especially smaller ones) look MUCH better}
