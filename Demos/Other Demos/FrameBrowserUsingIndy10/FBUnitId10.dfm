@@ -55,9 +55,6 @@ object HTTPForm: THTTPForm
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
-    ExplicitTop = 80
-    ExplicitWidth = 467
-    ExplicitHeight = 68
   end
   object CoolBar1: TCoolBar
     Left = 0
@@ -71,7 +68,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 160
+        Width = 161
       end
       item
         Break = False
@@ -88,14 +85,12 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 176
+        Width = 175
       end>
-    ExplicitWidth = 467
-    ExplicitHeight = 80
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 147
+      Width = 148
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -139,7 +134,7 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 203
+      Left = 204
       Top = 8
       Width = 179
       Height = 21
@@ -148,16 +143,16 @@ object HTTPForm: THTTPForm
       Font.Height = -11
       Font.Name = 'MS Sans Serif'
       Font.Style = []
-      ItemHeight = 13
+      ItemHeight = 0
       ParentFont = False
       TabOrder = 1
       OnClick = URLComboBoxClick
       OnKeyPress = URLComboBoxKeyPress
     end
     object Panel10: TPanel
-      Left = 399
+      Left = 402
       Top = 0
-      Width = 167
+      Width = 164
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -199,14 +194,14 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 139
+        Left = 136
         Top = 0
         Width = 28
         Height = 37
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 424
+        ExplicitLeft = 138
         object Animate1: TAnimate
           Left = 3
           Top = 8
@@ -234,8 +229,6 @@ object HTTPForm: THTTPForm
         Width = 50
       end>
     OnDrawPanel = StatusBarMainDrawPanel
-    ExplicitTop = 148
-    ExplicitWidth = 467
   end
   object Gauge: TProgressBar
     Left = 176

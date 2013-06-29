@@ -143,7 +143,7 @@ begin
       {$endif}
     {$else}
       {$ifdef LCL}
-        Result := Result + '<li>Using LCL single byte character controls.';
+        Result := Result + '<li>Using LCL multi byte character controls.';
       {$else}
         Result := Result + '<li>Using VCL single byte character controls.';
       {$endif}

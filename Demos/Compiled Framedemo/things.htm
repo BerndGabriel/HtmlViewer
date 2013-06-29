@@ -4,7 +4,8 @@
 <TITLE>Things You Should Know</TITLE>
 <LINK REL="stylesheet" TYPE="text/css" HREF="demo.css"> 
 <STYLE TYPE="text/css"> <!--
-  .indent1 {Margin-left: 35px;}
+  .CompileOptions h5 {color: maroon; margin: 0px}
+  .CompileOptions p  {margin-left: 35px;}
   -->
 </STYLE>
 
@@ -18,7 +19,7 @@
      <UL>
        <LI><A HREF="#Difference">TFrameViewer, THtmlViewer, and TFrameBrowser</A> </LI>
        <LI><A HREF="#PNGSupport">PNG Image Support</A></LI>
-       <LI><A HREF="#CompileOptions">Version 9.45 Compile Time Options</A> </LI>
+       <LI><A HREF="#CompileOptions">Compile Time Options</A> </LI>
        <LI><A HREF="#ActiveImages">Mouseover Images</A> </LI>
        <LI><A HREF="#HeadFoot">Printing Table Headers and Footers</A>
      </UL>
@@ -70,55 +71,50 @@ but without the Alpha transparency capability.
 by other applications.  If it is not present on your system, it can be downloaded 
 (at no charge)  <a href="http://www.microsoft.com/downloads/details.aspx?familyid=6A63AB9C-DF12-4D41-933C-BE590FEAA05A&displaylang=en">here</a>.
 
-<p CLASS="heading"><A NAME="CompileOptions">Version 9.45 Compile Time Options</A></p>
-<P>Version 9.45  has several possible compile time options controlled by defining symbols. You can find these in the
+<p CLASS="heading"><A NAME="CompileOptions">Compile Time Options</A></p>
+<P>Version 11.4 has several possible compile time options controlled by defining symbols. You can find these in the
 <CODE>HTMLCONS.INC</CODE> file. None of these symbols are initially defined. To make any one (or all) of these
 symbols active, remove the &quot;<B>.</B>&quot; from the <CODE>{$.Define XXXX}</CODE> sequence and recompile the
 code. </P>
 <P> The possibilities are: </P>
-<P CLASS="maroon">NoOldPNG</P>
-<P CLASS="indent1">Defining <B>NoOldPNG</B> removes the backup PNG Image code. This option
-  should not be used unless it is certain that the <code>GDIPLUS.DLL</code> is present or if PNG image
-  capabilies are not required.
-</B></P>
-<P CLASS="maroon">NoGDIPlus</P>
-<P CLASS="indent1">The gdiplus.dll provides alpha transparency support for
-        PNG images.  If, for some reason the use of the gdiplus.dll is
-        undesirable, define <b>NoGDIPlus</b>
-</B></P>
-<P CLASS="maroon">NoTabLink</P>
-<P CLASS="indent1">Defining <B>NoTabLink</B> disables the ability to Tab between
-  Links. This may be desirable for documents with a great many links.
-</B></P>
-<P CLASS="maroon">Quirk</P>
-<P CLASS="indent1">Defining <B>Quirk</B> makes changes which simulate some of the
-  quirks of other browsers.  It may be desirable to define this constant
-  if you expect to be displaying HTML which might depend on these quirks.
-  Currently, <B>Quirk</B> forces the font color and size to return to default
-  values in each table cell.
-</B></P>
-<P CLASS="maroon">UseTNT or UseElpack</P>
-<P CLASS="indent1">Defining one of these allows the Unicode TNT or Elpack
-  controls to be substituted for Delphi controls for Form controls.
-  See the file, htmlcons.inc, for more details.
-</B></P>
 
-<P CLASS="maroon">NoMetafile</P>
-<P CLASS="indent1">Metafiles may be displayed by undefining this constant.
-        NoMetaFile is defined by default to emphasize the fact that Metafile
-        display and some printing operations are currently incompatible in Win98.
-        For applications where printing is unimportant or Win98/95/ME need not
-        be supported, undefining this constant will allow Metafiles to be
-        displayed.
-</B></P>
+<div class="CompileOptions">
 
-<P CLASS="maroon"><a name="OpOnChange">OpOnChange</a></P>
-<P CLASS="indent1">Without this definition, the &lt;select&gt; form controls (TListbox and
-        TCombobox) will issue the OnObjectChange event only when the control
-        loses the focus which is according to HTML specs.  Defining OpOnChange
-        simulates the way IExplorer does it, issuing the OnChange event
-        immediately when a change is made.
-</B></P>
+<h5>NoGDIPlus</h5>
+<P>The gdiplus.dll provides alpha transparency support for PNG images.  
+If, for some reason the use of the gdiplus.dll is undesirable, define <b>NoGDIPlus</b>. 
+Defining NoGDIPlus will remove support for PNG images entirely.
+</P>
+
+<h5>NoMetafile</h5>
+<P>Metafiles may be displayed by undefining this constant.
+NoMetaFile is defined by default to emphasize the fact that Metafile
+display and some printing operations are currently incompatible in Win98.
+For applications where printing is unimportant or Win98/95/ME need not
+be supported, undefining this constant will allow Metafiles to be
+displayed.
+</P>
+
+<h5>NoTabLink</h5>
+<P>Defining <B>NoTabLink</B> disables the ability to Tab between Links. 
+This may be desirable for documents with a great many links.
+</P>
+
+<h5>FastRadio</h5>
+<p>if you have a form with a great many radio buttons, you may want to
+define FastRadio to help speed the action.  Note that this option
+changes the way tabbing works.  With FastRadio off, tabs move only to
+the next control that is visible.  With FastRadio on, tabs move to
+the next control even if it is not visible.
+</p>
+
+<h5><a name="OpOnChange">OpOnChange</a></h5>
+<P>Without this definition, the &lt;select&gt; form controls (TListbox and TCombobox) will issue 
+the OnObjectChange event only when the control loses the focus which is according to HTML specs.  
+Defining OpOnChange simulates the way IExplorer does it, issuing the OnChange event immediately when a change is made.
+</P>
+
+</div>
 
 <p CLASS="heading"><A NAME="ActiveImages">Mouseover Images</A></p>
 <P>A<I><B> Mouseover Image</B></I> is one that changes when the mouse passes over it. The HTML components use a
@@ -127,11 +123,11 @@ special syntax to implement mouseover images. It's done with the <B>&lt;img&gt;<
 <LI>the <B>SRC=&quot;...&quot;</B> attribute should specify an animated GIF image </LI>
 <LI>Add an <B>Active</B> attribute </LI>
 </UL>
+
 <P> With the <B>Active</B> attribute, the GIF will normally just display the first frame. When the mouse passes
 over, it will display the second frame and when left clicked will show the
 third frame.  If there are more than 3 frames, the GIF will animate when the 
 mouse passes over. </P>
-
 
 <p CLASS="heading"><A NAME="HeadFoot">Printing Table Headers and Footers</A></p>
 <P>Starting with Version 9.3, <B>&lt;thead&gt;</B>, <B>&lt;tbody&gt;</B>, and <B>&lt;tfoot&gt;</B>

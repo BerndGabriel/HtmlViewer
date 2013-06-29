@@ -1,6 +1,7 @@
 {
-Version   10.2
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.4
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -43,14 +44,16 @@ implementation
 
 procedure StartProcess(CommandLine: string; ShowWindow: Word);
 var
-  PC: array[0..255] of {$ifdef Compiler20_Plus} WideChar {$else} AnsiChar {$endif};
 {$ifdef Compiler20_Plus}
   si: _STARTUPINFO;
   pi: _PROCESS_INFORMATION;
 {$endif}
+  PC: array[0..1023] of {$ifdef Compiler20_Plus} WideChar {$else} AnsiChar {$endif};
 begin
   StrPCopy(PC, CommandLine);
 {$ifdef Compiler20_Plus}
+  FillMemory(@si, SizeOf(si), 0);
+  FillMemory(@pi, SizeOf(pi), 0);
   si.cb := SizeOf(si);
   si.lpReserved := nil;
   si.lpDesktop := nil;

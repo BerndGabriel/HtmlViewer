@@ -2,7 +2,7 @@
 Version   11.4
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2011-2013 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -237,7 +237,7 @@ var
 
 implementation
 
- {$ifdef TScrollStyleInSystemUITypes}
+{$ifdef TScrollStyleInSystemUITypes}
 uses System.UITypes;
 {$endif}
 {$ifdef LCL}
@@ -637,20 +637,24 @@ procedure TForm1.WindowRequest(Sender: TObject; const Target, URL: ThtString);
 var
   S, Dest: string;
   I: integer;
-  PC: array[0..1023] of char;
 begin
-S := URL;
-I := Pos('#', S);
-if I >= 1 then
-  begin
-  Dest := System.Copy(S, I, 255);  {local destination}
-  S := System.Copy(S, 1, I-1);     {the file name}
-  end
-else
-  Dest := '';    {no local destination}
-S := FrameViewer.HTMLExpandFileName(S);
-if FileExists(S) then
-   StartProcess(StrPCopy(PC, ParamStr(0)+' "'+S+Dest+'"'), sw_Show);
+  S := URL;
+  I := Pos('#', S);
+  if I >= 1 then
+    begin
+      Dest := System.Copy(S, I, 255);  {local destination}
+      S := System.Copy(S, 1, I-1);     {the file name}
+    end
+  else
+    Dest := '';    {no local destination}
+  S := FrameViewer.HTMLExpandFileName(S);
+  if FileExists(S) then
+    try
+      StartProcess(ParamStr(0)+' "'+S+Dest+'"', sw_Show);
+    except
+      on e: Exception do
+        ShowMessage('failed to open "'+S+Dest+'"'#13#13'Cause: ' + e.Message );
+    end;
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);

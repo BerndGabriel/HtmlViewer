@@ -9,13 +9,13 @@
 
 <body CLASS="indent">
 <p CLASS="heading"><a NAME="What">What are the HTML Viewer Components?</a></p>
-<p>The HTML component set consists of the <b>ThtmlViewer</b>, <b>TFrameViewer</b>, and <b>TFrameBrowser</b>
+<p>The HTML component set consists of the <b>THtmlViewer</b>, <b>TFrameViewer</b>, and <b>TFrameBrowser</b>
 components. All three are HTML document display components:</p>
 <table WIDTH="100%" CELLSPACING="2" CELLPADDING="2" BORDER="0">
   <tr>
 	 <th WIDTH="2%"></th>
-	 <th CLASS="maroon" VALIGN="top" ALIGN="left">ThtmlViewer</th>
-	 <td VALIGN="top">The basic component. <b>ThtmlViewer</b> displays single (non-frame) documents. It also forms
+	 <th CLASS="maroon" VALIGN="top" ALIGN="left">THtmlViewer</th>
+	 <td VALIGN="top">The basic component. <b>THtmlViewer</b> displays single (non-frame) documents. It also forms
 	    the basis for the other two components.<br>
 	 <br>
 	 </td>
@@ -98,7 +98,7 @@ In "HtmlHelp"
 
 In "Source" 
 
-   sourcecode for the ThtmlViewer, TFrameViewer, and TFrameBrowser components
+   sourcecode for the THtmlViewer, TFrameViewer, and TFrameBrowser components
 
      HtmlView.pas, .dcr           THtmlViewer
      FramView.pas, .dcr           TFrameViewer
@@ -186,8 +186,6 @@ In "Demos\Other Demos"
      
      FrameBrowserUsingICSv7 
      FrameBrowserUsingIndy10
-
-in 
 </pre>
 
 <div style="page-break-inside: avoid">
@@ -203,7 +201,7 @@ be edited from the <b>Tools|Environment</b> Options dialog, <b>Library</b> tab. 
 are set to place the components on the palette page tab named <b>Samples</b>. These can be relocated later from
 the IDE if desired. </p>
 
-<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 6 and 7</a> </p>
+<p CLASS="maroon"><a>Delphi 6 and 7</a> </p>
 <p> </p>
 <ol>
 <li>Choose <b>File|Open...</b> from the main menu. Browse through the dialog to find
@@ -220,17 +218,16 @@ dialog, <b>Library</b> tab.</li>
 </ol>
 <p> </p>
 
-<p CLASS="maroon"><a NAME="Delphi345Install">Delphi 2005 - 2010, XE and later</p>
-<p> </p>
+<p CLASS="maroon"><a>Delphi 2005 - 2010, XE and later</p>
+<p>In the following replace <code>XXX</code> with the Delpi version name.</p>
 <ol>
 <li>Choose <b>File|Open...</b> from the main menu. Browse through the dialog to find
-<code>FrameViewer20xx.bdsproj</code> resp. <code>FrameViewerXEn.bdsproj</code> (by default in the <code>\HtmlViewer\package</code> directory).
+<code>FrameViewerXXX</code> (by default in the <code>\HtmlViewer\package</code> directory).
 <p> </p></li>
-<li>Click <b>Project|Compile FrameViewer20xx</b> to compile <code>FrameViewer20xx.bpl</code> resp. <code>FrameViewerXEn.bpl</code>.
+<li>Click <b>Project|Compile FrameViewerXXX</b> to compile <code>FrameViewerXXX.bpl</code>.
 <p> </p></li>
 <li>To add the components to the Tool Palette, Choose
-<b>Component|Install packages</b>. Click the <b>Add..</b>. button and select
-<code>FrameViewer20xx.bpl</code>.
+<b>Component|Install packages</b>. Click the <b>Add..</b>. button and select<code>FrameViewerXXX.bpl</code>.
 <p> </p></li>
 <li>When using the HTML components, include the <code>\HtmlViewer\package</code> directory in the searchpath. The
 searchpath can be edited by choosing <b>Project|Options|Directories/Conditionals</b> from the main menu.
@@ -241,7 +238,7 @@ dialog, <b>Library</b> tab.</li>
 </ol>
 <p> </p>
 
-<p CLASS="maroon"><a NAME="Delphi345Install">Lazarus 0.9 and later</a></p>
+<p CLASS="maroon"><a>Lazarus 0.9 and later</a></p>
 <p> </p>
 <ol>
 <li>Choose <b>Package|Open package file...</b> from the main menu. Browse through the dialog to find
@@ -254,39 +251,6 @@ dialog, <b>Library</b> tab.</li>
 <b>Project|Compiler Options...</b> from the main menu.</li>
 </ol>
 
-<div style="page-break-inside: avoid">
-<p CLASS="heading"><a NAME="installHelp">Installing the Help File</a></p>
-<p>The file <code>HTMLVIEW.HLP</code> will supply context sensitive help for the HTML components. </p>
-</div>
-<p CLASS="maroon"><a NAME="Delphi3_4Help">Delphi 6</a> </p>
-<p> </p>
-<ol>
-<li><code>HTMLVIEW.HLP</code> and <code>HTMLVIEW.CNT</code> files from the
-<code>BORLAND\DELPHIX\HELP</code> directory. It's no longer necessary to move the new files to this directory.
-<p>
-</p></li>
-<li>Edit the <code>DELPHI.CNT</code> file (in the <code>BORLAND\DELPHIX\HELP</code> directory. Load the file into
-an editor and add the following line at the end: <pre>   :include HTMLVIEW.CNT
-</pre>
-You'll find other similar lines already there.
-<p>
-</p></li>
-<li>For Delphi 6, add the same line to the <code>DEL6VCL.CNT</code> file also.
-</li>
-</ol>
-<p>If you later decide to remove the HTML Components, this added information to the <code>DELPHI.CNT</code> file
-will simply be ignored.
-</p>
-<p CLASS="maroon">Delphi 7 </p>
-<ol>
-<li>Edit both the <code>D7.CNT</code> and <code>D7VCL.CNT</code> files (in the <code>BORLAND\DELPHI7\HELP</code> directory. Load the files into
-an editor and add the following line at the end: <pre>   :include HTMLVIEW.CNT
-</pre>
-You'll find other similar lines already there.
-<p>
-</p>
-</li>
-</ol>
 <p CLASS="heading"><a NAME="UnInstall">UnInstalling the Components</a></p>
 <p>To uninstall the HTML components from Windows: </p>
 <ul>
@@ -359,7 +323,7 @@ World Wide Web: <a HREF="http://code.google.com/p/thtmlviewer/">http://code.goog
 </tr>
 </table>
 
-<p CLASS="heading"><a NAME="Copyright">Copyright &copy; 1995-2008 by L. David Baldwin</a>, 2008-2012 by HtmlViewer Team</p>
+<p CLASS="heading"><a NAME="Copyright">Copyright &copy; 1995-2008 by L. David Baldwin</a>, 2008-2013 by HtmlViewer Team</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to

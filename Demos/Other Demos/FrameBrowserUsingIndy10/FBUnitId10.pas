@@ -1,6 +1,7 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.4
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -485,6 +486,11 @@ begin
   ProxyPort := '80';
   IniFile := TIniFile.Create(FIniFileName);
   try
+    Top := IniFile.ReadInteger('HTTPForm', 'Top', Top);
+    Left := IniFile.ReadInteger('HTTPForm', 'Left',   Left);
+    Width := IniFile.ReadInteger('HTTPForm', 'Width',  Width);
+    Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
+    ShowDiagWindow.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
     Proxy := IniFile.ReadString('Proxy', 'ProxyHost', '');
     ProxyPort := IniFile.ReadString('Proxy', 'ProxyPort', '80');
     ProxyUser := IniFile.ReadString('Proxy', 'ProxyUsername', '');
@@ -554,6 +560,11 @@ begin
   begin       {save only if this is the first instance}
     IniFile := TIniFile.Create(FIniFileName);
     try
+      IniFile.WriteInteger('HTTPForm', 'Top', Top);
+      IniFile.WriteInteger('HTTPForm', 'Left', Left);
+      IniFile.WriteInteger('HTTPForm', 'Width', Width);
+      IniFile.WriteInteger('HTTPForm', 'Height', Height);
+      IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
       IniFile.WriteString('Proxy', 'ProxyHost', Proxy);
       IniFile.WriteString('Proxy', 'ProxyPort', ProxyPort);
       IniFile.WriteString('Proxy', 'ProxyUsername', ProxyUser);
