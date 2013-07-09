@@ -57,11 +57,11 @@ uses   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Form
 {$endif}
        ;
 type
-    THttpRequest     = (httpAbort, httpGET, httpPOST, httpHEAD);
-    THttpState       = (httpReady,         httpNotConnected, httpConnected,
+  THttpRequest     = (httpAbort, httpGET, httpPOST, httpHEAD);
+  THttpState       = (httpReady,         httpNotConnected, httpConnected,
                         httpDnsLookup,     httpDnsLookupDone,
                         httpWaitingHeader, httpWaitingBody,  httpAborting);
-    THttpRequestDone = procedure (Sender : TObject;
+  THttpRequestDone = procedure (Sender : TObject;
                                   RqType : THttpRequest;
                                   Error  : Word) of object;
 
@@ -202,6 +202,8 @@ type
   end;
 
   TFileConnection = class(TURLConnection)
+  protected
+    procedure MakeDirOutput(AStream : TStream; const ADirName : String);
   public
     procedure Get(const URl: String); override;
   end;
@@ -230,7 +232,7 @@ var
 implementation
 
 uses
-  {$ifdef LogIt}LogWin, {$endif} htmlun2, FBUnitId10, IdURI;
+  {$ifdef LogIt}LogWin, {$endif} htmlun2, FBUnitId10, IdURI, IdGlobal;
 
 constructor TURLConnection.Create;
 begin
@@ -642,11 +644,99 @@ begin
   end;
 end;
 
+procedure TFileConnection.MakeDirOutput(AStream: TStream;
+  const ADirName: String);
+{This is for generating HTML from a directory listing including
+special dir entries.  Note that I realize a lot of the markup is probably
+unnecessary but it's a good idea to include it anyway to encourage
+good HTML habits.}
+var
+  F : TSearchRec;
+  LEnc : IIdTextEncoding;
+begin
+  {$ifdef Compiler24_Plus}
+  LEnc := IndyTextEncoding_UTF8;
+  {$else}
+  LEnc := enUTF8;
+  {$endif}
+  WriteStringToStream(AStream,'<!DOCTYPE html>'+ EOL +
+    '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">'+EOL+
+    '<head>'+EOL+
+    '<meta charset="utf-8" />'+EOL+
+    '<base href="file://'+ DosToHTML(ADirName) +'" />'+EOL+
+    '<title>'+ADirName+'</title>'+EOL+
+    '<style type="text/css" media="screen">'+EOL+
+    '.fn {text-align:left; font-weight:normal;}'+EOL+
+    '.tm {text-align:center;}'+EOL+
+    '.sz {text-align:right;}'+EOL+
+    'table {width: 100%}'+EOL+
+    '</style>'+EOL+
+    '</head>'+EOL,LEnc);
+  WriteStringToStream(AStream,'<body>'+EOL+
+    '<h1>'+ADirName+'</h1>'+EOL,LEnc);
+  if (FindFirst( IncludeTrailingPathDelimiter( ADirName)+'*.*',faAnyFile,F) = 0) then begin
+    WriteStringToStream(AStream,'<table>'+EOL+
+    '<thead>'+EOL+
+    '<tr>'+EOL+
+    '<th scope="col">&nbsp;&nbsp;&nbsp;File Name&nbsp;&nbsp;&nbsp;</th>'+EOL+
+    '<th scope="col">&nbsp;&nbsp;&nbsp;Last Modified&nbsp;&nbsp;&nbsp;</th>'+EOL+
+    '<th scope="col">Size<br /></th>'+EOL+
+    '</tr>'+EOL+
+    '</thead>'+EOL+
+    '<tbody>'+EOL,LEnc);
+    repeat
+      WriteStringToStream(AStream,'<tr>'+EOL+
+       '<th class="fn" scope="row"><a href="',LEnc);
+      case IdGlobal.PosInStrArray(F.Name,['.','..']) of
+      0 : begin   //'.'
+            WriteStringToStream(AStream,
+            'file://'+DosToHtml( ADirName )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+              '<td class="sz">DIR<br /></td>'+EOL+
+              '</tr>'+EOL,LEnc);
+          end;
+      1 : begin   //'..'
+            WriteStringToStream(AStream,
+            'file://'+DosToHtml( ExtractFileDir(ADirName) )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+              '<td class="sz">DIR<br /></td>'+EOL+
+              '</tr>'+EOL,LEnc);
+          end;
+      else
+        begin
+          if F.Attr and faDirectory <> 0 then
+          begin
+            WriteStringToStream(AStream,
+            DosToHtml( F.Name )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+              '<td class="sz">DIR<br /></td>'+EOL+
+              '</tr>'+EOL,LEnc);
+          end
+          else
+          begin
+            WriteStringToStream(AStream,
+            DosToHtml( F.Name )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+            '<td class="tm">&nbsp;&nbsp;&nbsp;'+DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+            '<td class="sz">'+IntToStr(F.Size)+'<br /></td>'+EOL+
+            '</tr>'+EOL,LEnc);
+          end;
+        end;
+      end;
+    until FindNext(F) <> 0;
+    WriteStringToStream(AStream,'</tbody>'+EOL+
+      '</table>'+EOL,LEnc);
+    FindClose(F);
+  end;
+  WriteStringToStream(AStream,'</body>'+EOL+
+    '</html>'+EOL,LEnc);
+end;
+
 {----------------TFileConnection.Get}
 procedure TFileConnection.Get(const URl: String);
 var
    thefile, Ext : String;
    error, I : integer;
+
 begin
   error := 1;
   try
@@ -666,7 +756,11 @@ begin
         Delete(thefile,1,1);
      end;
      TheFile := HTMLtoDOS(TheFile);
-     FInputStream.LoadFromFile(thefile);
+     if DirectoryExists( thefile) then begin
+       MakeDirOutput(FInputStream,thefile);
+     end else begin
+       FInputStream.LoadFromFile(thefile);
+     end;
      error := 0;
 
      Ext := Lowercase(ExtractFileExt(TheFile));
