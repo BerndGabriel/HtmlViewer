@@ -260,6 +260,9 @@ implementation
 
  {$ifdef UseVCLStyles}
  uses
+   {$ifndef HasSystemUITypes}
+   Vcl.Styles,
+   {$endif}
    System.UITypes;
  {$endif}
 
@@ -1109,13 +1112,27 @@ type
   TWinControlClassHook = class(TWinControl);
 
 class constructor TBegaScrollingWinControl.Create;
+{Workaround for an issue calling TCustomStyleEngine.RegisterStyleHook in Delphi XE2.
+It turns out that an abstract method TCustomStyleEngine.Notification was being called
+by TCustomStyleEngine.UnRegisterStyleHook . This could cause the program to raise an
+Abstract Method exception when exiting.  This is the exact same issue as described
+at http://code.google.com/p/virtual-treeview/issues/detail?id=345 .
+}
 begin
+   {$ifdef HasSystemUITypes}
    TCustomStyleEngine.RegisterStyleHook(TBegaScrollingWinControl, TBegaScrollingWinControlStyleHook);
+   {$else}
+   TStyleEngine.RegisterStyleHook(TBegaScrollingWinControl, TBegaScrollingWinControlStyleHook);
+   {$endif}
 end;
 
 class destructor TBegaScrollingWinControl.Destroy;
 begin
+  {$ifdef HasSystemUITypes}
   TCustomStyleEngine.UnRegisterStyleHook(TBegaScrollingWinControl, TBegaScrollingWinControlStyleHook);
+   {$else}
+  TStyleEngine.UnRegisterStyleHook(TBegaScrollingWinControl, TBegaScrollingWinControlStyleHook);
+  {$endif}
 end;
 
 procedure TBegaScrollingWinControlStyleHook.WndProc(var Message: TMessage);

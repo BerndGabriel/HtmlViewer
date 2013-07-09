@@ -154,6 +154,7 @@ type
     PageInfo1: TMenuItem;
     N4: TMenuItem;
     LibraryInformation1: TMenuItem;
+    Source1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure GetButtonClick(Sender: TObject);
@@ -213,6 +214,7 @@ type
     procedure HTTPHeaders1Click(Sender: TObject);
     procedure PageInfo1Click(Sender: TObject);
     procedure LibraryInformation1Click(Sender: TObject);
+    procedure Source1Click(Sender: TObject);
 {$else}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: WideString);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
@@ -256,6 +258,7 @@ type
     Allow: string;
     FHeaderRequestData : TStrings;
     FHeaderResponseData : TStrings;
+    FMetaInfo : TStrings;
     {$ifdef LogIt}
     ShowDiagWindow: TMenuItem;
     {$endif}
@@ -383,7 +386,8 @@ var
     {$endif}
 begin
   Self.OpenDialog.Filter := GetFileMask;
-  {$ifdef UseVCLStyles}
+  FMetaInfo := TStringList.Create;
+  {$ifdef has_StyleElements}
   TStyleManager.AnimationOnControls := True;
   {$Endif}
     FHeaderRequestData := TStringList.Create;
@@ -1316,6 +1320,22 @@ begin
   ShowImages.Checked := FrameBrowser.ViewImages;
 end;
 
+procedure THTTPForm.Source1Click(Sender: TObject);
+
+begin
+  if Self.FrameBrowser.ActiveViewer <> nil then begin
+    with TInfoForm.Create(Application) do
+    try
+      Caption := 'HTTP Headers';
+      mmoInfo.Clear;
+      mmoInfo.Lines.Text := FrameBrowser.ActiveViewer.DocumentSource;
+      ShowModal;
+    finally
+      Free;
+    end;
+  end;
+end;
+
 procedure THTTPForm.ReloadClick(Sender: TObject);
 {the Reload button was clicked}
 begin
@@ -1485,8 +1505,10 @@ end;
 
 procedure THTTPForm.URLComboBoxClick(Sender: TObject);
 begin
-  if URLComboBox.Text <> '' then
+  if URLComboBox.Text <> '' then begin
+    FMetaInfo.Clear;
     GetButtonClick(Self);
+  end;
 end;
 
 {----------------THTTPForm.RightClick}
@@ -1851,11 +1873,16 @@ begin
     mmoInfo.Clear;
     if FrameBrowser.UseQuirksMode then  begin
       mmoInfo.Lines.Add( FrameBrowser.DocumentTitle );
- //     Self.FrameBrowser.ActiveViewer.SectionList.
       mmoInfo.Lines.Add( 'Render Mode: Quirks Mode');
     end else begin
       mmoInfo.Lines.Add( FrameBrowser.DocumentTitle );
       mmoInfo.Lines.Add( 'Render Mode: Standards Mode');
+    end;
+    if Self.FMetaInfo.Count >0 then begin
+      mmoInfo.Lines.Add ( 'Meta Information');
+      mmoInfo.Lines.Add ( '---');
+      mmoInfo.Lines.AddStrings( Self.FMetaInfo );
+      mmoInfo.Lines.Add ( '---');
     end;
     ShowModal;
   finally
@@ -1959,6 +1986,7 @@ begin
   {$ifdef LogIt}
 LogLine ('FrameBrowserMeta, HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content);
   {$endif}
+  FMetaInfo.Add('HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content);
 end;
 
 procedure THTTPForm.FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
