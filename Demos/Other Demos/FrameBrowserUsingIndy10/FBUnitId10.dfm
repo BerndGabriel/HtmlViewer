@@ -297,6 +297,10 @@ object HTTPForm: THTTPForm
         Caption = '&Page Info...'
         OnClick = PageInfo1Click
       end
+      object Source1: TMenuItem
+        Caption = '&Source'
+        OnClick = Source1Click
+      end
     end
     object HistoryMenuItem: TMenuItem
       Caption = '&History'
