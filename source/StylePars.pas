@@ -1249,8 +1249,17 @@ begin
           SkipWhiteSpace;
 
           SetLength(Value, 0);
-          while not ((LCh = ';') or IsTermChar(LCh)) do
+          { The ';' inside a quotation should not end a CSS value.  }
+          while not (((LCh = ';') and (Top = EofChar)) or IsTermChar(LCh)) do
           begin
+            case LCh of
+            '"', '''':
+              if LCh = Top then
+                Pop
+              else
+                Push(LCh);
+            end;
+
             SetLength(Value, Length(Value) + 1);
             Value[Length(Value)] := LCh;
             GetCh;
