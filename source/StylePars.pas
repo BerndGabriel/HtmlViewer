@@ -342,13 +342,13 @@ var
   Value1: String;
   Index: TShortHand;
 begin
-  Value1 := LowerCase(Trim(Value)); // leave quotes on for font
+  Value1 := LowerCaseUnquotedStr(Trim(Value)); // leave quotes on for font
   Value := RemoveQuotes(Value1);
   Prop := LowerCase(Prop);
   if FindShortHand(Prop, Index) then
     ProcessShortHand(Index, Prop, Value, Value1)
   else if Prop = 'font-family' then
-    ProcessProperty(Prop, Value1)
+    ProcessProperty(Prop, LowerCase(Value1))
   else
   begin
     if (LinkPath <> '') and (Pos('url(', Value) > 0) then
