@@ -213,30 +213,33 @@ begin
   I := 1;
   J := 1;
   N := Length(Str);
-  while J <= N do
+  if N > 0 then
   begin
-    if Str[J] <> Sep then
+    while J <= N do
     begin
-      if Str[I] = Sep then
-        I := J;
-    end
-    else
-    begin
-      if Str[I] <> Sep then
+      if Str[J] <> Sep then
       begin
-        Inc(L);
-        SetLength(Result, L);
-        Result[L - 1] := Copy(Str, I, J - I);
-        I := J;
+        if Str[I] = Sep then
+          I := J;
+      end
+      else
+      begin
+        if Str[I] <> Sep then
+        begin
+          Inc(L);
+          SetLength(Result, L);
+          Result[L - 1] := Copy(Str, I, J - I);
+          I := J;
+        end;
       end;
+      Inc(J);
     end;
-    Inc(J);
-  end;
-  if Str[I] <> Sep then
-  begin
-    Inc(L);
-    SetLength(Result, L);
-    Result[L - 1] := Copy(Str, I, J - I);
+    if Str[I] <> Sep then
+    begin
+      Inc(L);
+      SetLength(Result, L);
+      Result[L - 1] := Copy(Str, I, J - I);
+    end;
   end;
 end;
 
