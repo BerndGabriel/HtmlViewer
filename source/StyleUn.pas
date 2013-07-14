@@ -2861,7 +2861,7 @@ begin
     Result := Result + Copy(LTmp,1,i);
     Delete(LTmp,1,i);
   end;
-  Result := LowerCaseUnquotedStr(LTmp);
+  Result := Result + LowerCaseUnquotedStr(LTmp);
 end;
 
 {----------------RemoveQuotes}
