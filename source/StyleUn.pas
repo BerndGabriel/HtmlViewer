@@ -425,6 +425,7 @@ function ColorAndOpacityFromString(S: ThtString; NeedPound: Boolean; out Color: 
 
 function ReadURL(Item: Variant): ThtString;
 
+function LowerCaseUnquotedStr(const S : THtString) : THtString;
 function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
@@ -2828,6 +2829,39 @@ begin {call only if all things valid}
   end;
   Result := TMyFont.Create;
   Result.Assign(TheFont);
+end;
+
+{----------------LowerCaseUnquotedStr}
+{Imporant:  In many CSS values, a quoted string should be
+left in it's original case.  The reason is that quoted values may
+be filenames on a case-sensitive file system or something like
+base64 data from a data url.  In a Base64 data URL, you need to retain
+the original case or binary data gets corrupted and I've seen that happen.}
+function LowerCaseUnquotedStr(const S : THtString) : THtString;
+var i, j : Integer;
+   LTmp : THtString;
+   LDelin : THtString;
+begin
+  i := Pos('''',S);
+  j := Pos('"',S);
+  if (i = 0) and (j = 0) then begin
+    Result := LowerCase(S);
+    exit;
+  end;
+  LTmp := S;
+  i := Max(i,j);
+  Result := LowerCase(Copy(LTmp,1,i));
+  LDelin := LTmp[i];
+  Delete(LTmp,1,i);
+  i := Pos(LDelin,LTmp);
+  if i = 0 then begin
+    Result := Result + LTmp;
+    exit;
+  end else begin
+    Result := Result + Copy(LTmp,1,i);
+    Delete(LTmp,1,i);
+  end;
+  Result := LowerCaseUnquotedStr(LTmp);
 end;
 
 {----------------RemoveQuotes}
