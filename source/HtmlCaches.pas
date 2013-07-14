@@ -163,8 +163,11 @@ end;
 function ThtCache.GetCachable(I: Integer): ThtCachable;
 begin
   Result := Objects[I];
-  Result.AccessCount := 0;
-  Inc(Result.UsageCount);
+  if Result <> nil then
+  begin
+    Result.AccessCount := 0;
+    Inc(Result.UsageCount);
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 06.03.2011 --
