@@ -1,5 +1,5 @@
 {
-Version   11.4
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2013 by HtmlViewer Team
 
@@ -41,16 +41,18 @@ uses
 {$else}
   Windows,
 {$endif}
-  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, SysUtils,
+  Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Contnrs, SysUtils,
 {$ifndef NoMetafile}
   MetaFilePrinter, vwPrint,
 {$endif}
   URLSubs,
   HtmlGlobals,
   HtmlBuffer,
+  HtmlImages,
   HTMLUn2,
   ReadHTML,
   HTMLSubs,
+  StyleTypes,
   StyleUn;
 
 const
@@ -72,20 +74,16 @@ type
     URL, Target: ThtString;
     Image: TImageObj;
     ImageX, ImageY: Integer;
-    ClickWord: WideString;
+    ClickWord: UnicodeString;
   end;
+  TCreateIFrameControlEvent = function(Sender: TObject; Owner: TComponent): TViewerBase of object;
   TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
   THotSpotEvent = procedure(Sender: TObject; const SRC: ThtString) of object;
   THotSpotClickEvent = procedure(Sender: TObject; const SRC: ThtString; var Handled: Boolean) of object;
-  TProcessingEvent = procedure(Sender: TObject; ProcessingOn: Boolean) of object;
-  TPagePrinted = procedure(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer;
-    var StopPrinting: Boolean) of object;
-  ThtmlPagePrinted = procedure(Sender: TObject; HFViewer: THtmlViewer; NumPage: Integer; LastPage: Boolean;
-    var XL, XR: Integer; var StopPrinting: Boolean) of object;
-  TImageClickEvent = procedure(Sender, Obj: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer) of object;
-  TImageOverEvent = procedure(Sender, Obj: TObject; Shift: TShiftState; X, Y: Integer) of object;
+  ThtmlPagePrinted = procedure(Sender: TObject; HFViewer: THtmlViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean) of object;
   TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: ThtString) of object;
-  TParseEvent = procedure(Sender: TObject; var Source: TBuffer) of object;
+  TSectionMouseClickEvent = procedure(Sender: TObject; Obj: TSectionBase; Button: TMouseButton; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
+  TSectionMouseMoveEvent  = procedure(Sender: TObject; Obj: TSectionBase; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
   TFilenameExpanded = procedure(Sender: TObject; var Filename: ThtString) of object;
 
   THtmlViewerOption = (
@@ -96,11 +94,6 @@ type
     htAllowHotSpotDblClick
     );
   THtmlViewerOptions = set of THtmlViewerOption;
-  ThtProgressEvent = procedure(Sender: TObject; Stage: TProgressStage;
-    PercentDone: Integer) of object;
-
-  THTMLViewPrinted = TNotifyEvent;
-  THTMLViewPrinting = procedure(Sender: TObject; var StopPrinting: Boolean) of object;
 
   ThtScrollInfo = record
     BWidth: Integer;   // single border width of paintpanel
@@ -119,6 +112,7 @@ type
   public
     constructor CreateIt(AOwner: TComponent; Viewer: THtmlViewer);
     procedure Paint; override;
+    property ParentViewer: THtmlViewer read FViewer;
   end;
 
   THtmlFileType = (HTMLType, TextType, ImgType, XHtmlType, OtherType);
@@ -133,13 +127,59 @@ type
     vsDontDraw,
     vsCreating,
     vsProcessing,
-    vsLocalBitmapList,
+    vsLocalImageCache,
     vsHotSpotAction,
     vsMouseScrolling,
     vsLeftButtonDown,
     vsMiddleScrollOn,
     vsHiliting);
   THtmlViewerState = set of THtmlViewerStateBit;
+
+  THistoryItem = class(TObject)
+  private
+    FUrl: ThtString;
+    FTitle: ThtString;
+    FPosition: Integer;
+    FFileType: THtmlFileType;
+  public
+    property FileType: THtmlFileType read FFileType write FFileType;
+    property Position: Integer read FPosition write FPosition;
+    property Title: ThtString read FTitle write FTitle;
+    property Url: ThtString read FUrl write FUrl;
+  end;
+
+  THistory = class(TObject)
+  private
+    FHistory: TObjectList;
+    FIndex: Integer;
+    function GetItem(Index: Integer): THistoryItem;
+    function GetCount: Integer;
+    function GetLowestIndexOfUrl(const Url: ThtString; Start: Integer): Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure Delete(Index: Integer);
+    procedure Insert(Index: Integer; Item: THistoryItem);
+    property Index: Integer read FIndex write FIndex;
+    property Items[Index: Integer]: THistoryItem read GetItem; default;
+    property Count: Integer read GetCount;
+  end;
+
+  ThvHistoryItem = class(THistoryItem)
+  private
+    FFormData: TFreeList;
+  public
+    destructor Destroy; override;
+    property FormData: TFreeList read FFormData write FFormData;
+  end;
+
+  ThvHistory = class(THistory)
+  private
+    function GetItem(Index: Integer): ThvHistoryItem;
+  public
+    property Items[Index: Integer]: ThvHistoryItem read GetItem; default;
+  end;
 
   ThtPrintPreviewMode = (
     ppAuto,         // THtmlViewer.Print() selects ppPreview, if Prn is a TMetaFilePrinter or selects ppMultiPrint else.
@@ -149,155 +189,128 @@ type
     ppMultiPrint);  // THtmlViewer.Print() produces the print, but does not end or cancel the job.
 
   // BG, 25.01.2013: base class for TFrameBase
-  THtmlFrameBase = class(TCustomPanel)
+  THtmlFrameBase = class(ThtControlBase)
   end;
+
+  TLoadHistoryItem = procedure(Sender: TObject; HI: ThvHistoryItem; var Handled: Boolean) of object;
 
   THtmlViewer = class(THtmlViewerBase)
   private
-    FViewerState: THtmlViewerState;
-    FBackGround: TColor;
+    // child components
+    FBorderPanel: TPanel;
+    FPaintPanel: TPaintPanel;
+    FHTMLTimer: TTimer;
+    FHScrollBar: TScrollBar;
+    FVScrollBar: TScrollBar;
+    sbWidth: Integer; // cached scroll bar width.
+
+    // constructed stuff
+    FFrameOwner: THtmlFrameBase; {the TViewerFrameBase that holds this THtmlViewer}
+    FVisited: ThtStringList; {visited URLs}
+
+    // stuff copied in CreateCopy
     FBase: ThtString;
     FBaseEx: ThtString;
     FBaseTarget: ThtString;
     FBorderStyle: THTMLBorderStyle;
-    FCaretPos: Integer;
-    FCharset: TFontCharset; {see htmlun2.pas for Delphi 2 TFontCharSet definition}
-    FCodePage: Integer;
-    FCurrentFile: ThtString;
-    FCurrentFileType: ThtmlFileType;
-    FDocument: TBuffer;
-    FFontColor: TColor;
-    FFontName: TFontName;
-    FFontSize: Integer;
-    FHistory, FTitleHistory: ThtStrings;
-    FHistoryIndex: Integer;
-    FHistoryMaxCount: Integer;
-    FHotSpotColor, FVisitedColor, FOverColor: TColor;
-    FImageCacheCount: Integer;
-    FImageStream: TStream;
-    FLinkAttributes: ThtStringList;
-    FLinkStart: TPoint;
-    FLinkText: WideString;
-    FMarginHeight, FMarginWidth: Integer;
-    FMaxVertical: Integer;
-    FNameList: ThtStringList;
-    FNoSelect: Boolean;
-    FOnDragDrop: TDragDropEvent;
-    FOnDragOver: TDragOverEvent;
+    FScrollBars: ThtScrollStyle;
+    FOptions: THtmlViewerOptions;
+
+    // events (also copied in CreateCopy)
+    FOnCreateIFrameControl: TCreateIFrameControlEvent;
     FOnFilenameExpanded: TFilenameExpanded; //BG, 19.09.2010: Issue 7: Slow UNC Lookups for Images
     FOnFormSubmit: TFormSubmitEvent;
-    FOnHistoryChange: TNotifyEvent;
     FOnHotSpotClick: THotSpotClickEvent;
     FOnHotSpotCovered: THotSpotEvent;
     FOnhtStreamRequest: TGetStreamEvent;
-    FOnImageClick: TImageClickEvent;
-    FOnImageOver: TImageOverEvent;
-    FOnImageRequest: TGetImageEvent;
-    FOnInclude: TIncludeType;
-    FOnLink: TLinkType;
     FOnLinkDrawn: TLinkDrawnEvent;
-    FOnMeta: TMetaType;
     FOnMetaRefresh: TMetaRefreshType;
-    FOnMouseDouble: TMouseEvent;
-    FOnObjectTag: TObjectTagEvent;
     FOnPageEvent: TPageEvent;
-    FOnParseBegin: TParseEvent;
-    FOnParseEnd: TNotifyEvent;
-    FOnPrinted: THTMLViewPrinted;
-    FOnPrintHeader, FOnPrintFooter: TPagePrinted;
     FOnPrintHTMLHeader, FOnPrintHTMLFooter: ThtmlPagePrinted;
-    FOnPrinting: THTMLViewPrinting;
-    FOnProcessing: TProcessingEvent;
-    FOnProgress: ThtProgressEvent;
     FOnRightClick: TRightClickEvent;
-    FOnSoundRequest: TSoundType;
-    FOptions: THtmlViewerOptions;
-    FPage: Integer;
-    FPositionHistory: TFreeList;
-    FPreFontName: ThtString;
-    FPrintedSize: TPoint;
-    FPrintMarginBottom: Double;
-    FPrintMarginLeft: Double;
-    FPrintMarginRight: Double;
-    FPrintMarginTop: Double;
-    FPrintMaxHPages: Integer;
-    FPrintScale: Double;
+    FOnLoadHistoryItem: TLoadHistoryItem;
+    FOnSectionClick: TSectionMouseClickEvent; //>-- DZ 17.09.2012
+    FOnSectionOver: TSectionMouseMoveEvent; //>-- DZ 17.09.2012
+
+    // status info
+    FViewerState: THtmlViewerState;
+    FHistory: ThvHistory;
+
+    // document related stuff
+    FSectionList: ThtDocument;
+    FCurrentFile: ThtString;
+    FCurrentFileType: ThtmlFileType;
+    FDocument: TBuffer;
     FRefreshDelay: Integer;
     FRefreshURL: ThtString;
-    FScrollBars: ThtScrollStyle;
-    FSectionList: ThtDocument;
-    FServerRoot: ThtString;
-    FTarget: ThtString;
     FTitle: ThtString;
-    FTitleAttr: ThtString;
-    FURL: ThtString;
-    FVisitedMaxCount: Integer;
+    // document related status stuff
+    FCaretPos: Integer;
+    FLinkAttributes: ThtStringList;
+    FLinkStart: TPoint;
+    FLinkText: UnicodeString;
+    FMaxVertical: Integer;
+    FNameList: ThtStringList;
+    FScrollWidth: Integer;
+    // BG, 10.08.2011 speed up inserting images
+    FInsertedImages: ThtStrings;
+    FImagesInserted: TTimer;
+    FImagesReformat: Boolean;
+
+    // print/preview status
+    FPage: Integer;
+    FPrintedSize: TPoint;
     FWidthRatio: Double;
-    HTMLTimer: TTimer;
+
+    // mouse move status
+    FTarget: ThtString;
+    FURL: ThtString;
+    FTitleAttr: ThtString;
     MiddleY: Integer;
     NoJump: Boolean;
-    sbWidth: Integer;
-// child components
-    BorderPanel: TPanel;
-    PaintPanel: TPaintPanel;
-//
-    Sel1: Integer;
-// These fields are set in SubmitForm and read in WMFormSubmit
+    Sel1: Integer; // text selection status
+
+    // set in LoadStream and read in doImage to get the image into the document.
+    FImageStream: TStream;
+
+    // set in SubmitForm and read in WMFormSubmit
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
-//
+
+    //
 {$ifndef NoMetafile}
     vwP: TvwPrinter;
 {$endif}
     function CreateHeaderFooter: THtmlViewer;
-    function GetBase: ThtString;
-    function GetBaseTarget: ThtString;
-    function GetCurrentFile: ThtString;
     function GetCursor: TCursor;
     function GetDocumentSource: ThtString;
-    function GetDragDrop: TDragDropEvent;
-    function GetDragOver: TDragOverEvent;
     function GetFormControlList: TFormControlObjList;
     function GetFormData: TFreeList;
     function GetHScrollBarRange: Integer;
     function GetHScrollPos: Integer;
     function GetIDControl(const ID: ThtString): TIDObject;
     function GetIDDisplay(const ID: ThtString): TPropDisplay;
-    function GetLinkList: TFontList;
+    function GetLinkList: TLinkList;
     function GetNameList: ThtStringList;
-    function GetOnBitmapRequest: TGetBitmapEvent;
     function GetOnExpandName: TExpandNameEvent;
     function GetOnFileBrowse: TFileBrowseEvent;
-    function GetOnImageRequested: TGottenImageEvent;
-    function GetOnObjectBlur: ThtObjectEvent;
-    function GetOnObjectChange: ThtObjectEvent;
-    function GetOnObjectClick: TObjectClickEvent;
-    function GetOnObjectFocus: ThtObjectEvent;
-    function GetOnPanelCreate: TPanelCreateEvent;
-    function GetOnPanelDestroy: TPanelDestroyEvent;
-    function GetOnPanelPrint: TPanelPrintEvent;
-    function GetOnScript: TScriptEvent;
     function GetOurPalette: HPalette;
     function GetPosition: Integer;
-    function GetPreFontName: TFontName;
     function GetScrollBarRange: Integer;
+    function GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
     function GetScrollPos: Integer;
     function GetSelLength: Integer;
-    function GetSelText: WideString;
-    function GetTitle: ThtString;
-    //function GetViewerStateBit(Index: THtmlViewerStateBit): Boolean;
+    function GetSelText: UnicodeString;
     function GetViewImages: Boolean;
-    function GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
+    function GetWordAtCursor(X, Y: Integer; var St, En: Integer; out AWord: UnicodeString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
     procedure DoLogic;
     procedure DoScrollBars;
-    procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
     procedure DrawBorder;
     procedure FormControlEnterEvent(Sender: TObject);
-    procedure HTMLDragDrop(Sender, Source: TObject; X, Y: Integer);
-    procedure HTMLDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure HTMLTimerTimer(Sender: TObject);
+    procedure ImagesInsertedTimer(Sender: TObject);
     procedure Layout;
     procedure Parsed(const Title, Base, BaseTarget: ThtString);
     procedure ParseXHtml;
@@ -306,50 +319,26 @@ type
     procedure ScrollHorz(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
     procedure ScrollTo(Y: Integer);
     procedure ScrollVert(Sender: TObject; ScrollCode: TScrollCode; var ScrollPos: Integer);
-    procedure SetActiveColor(Value: TColor);
     procedure SetBase(Value: ThtString);
     procedure SetBorderStyle(Value: THTMLBorderStyle);
     procedure SetCaretPos(Value: Integer);
-    procedure SetCharset(Value: TFontCharset);
-    procedure SetDefBackground(Value: TColor);
-    procedure SetDragDrop(const Value: TDragDropEvent);
-    procedure SetDragOver(const Value: TDragOverEvent);
-    procedure SetFontSize(Value: Integer);
     procedure SetFormData(T: TFreeList);
     procedure SetHistoryIndex(Value: Integer);
-    procedure SetHistoryMaxCount(Value: Integer);
-    procedure SetHotSpotColor(Value: TColor);
     procedure SetHScrollPos(Value: Integer);
     procedure SetIDDisplay(const ID: ThtString; Value: TPropDisplay);
-    procedure SetImageCacheCount(Value: Integer);
-    procedure SetNoSelect(Value: Boolean);
-    procedure SetOnBitmapRequest(Handler: TGetBitmapEvent);
     procedure SetOnExpandName(Handler: TExpandNameEvent);
     procedure SetOnFileBrowse(Handler: TFileBrowseEvent);
     procedure SetOnFormSubmit(Handler: TFormSubmitEvent);
-    procedure SetOnImageRequested(Handler: TGottenImageEvent);
-    procedure SetOnObjectBlur(Handler: ThtObjectEvent);
-    procedure SetOnObjectChange(Handler: ThtObjectEvent);
-    procedure SetOnObjectClick(Handler: TObjectClickEvent);
-    procedure SetOnObjectFocus(Handler: ThtObjectEvent);
-    procedure SetOnPanelCreate(Handler: TPanelCreateEvent);
-    procedure SetOnPanelDestroy(Handler: TPanelDestroyEvent);
-    procedure SetOnPanelPrint(Handler: TPanelPrintEvent);
     procedure SetOptions(Value: THtmlViewerOptions);
     procedure SetOurPalette(Value: HPalette);
     procedure SetPosition(Value: Integer);
-    procedure SetPreFontName(Value: TFontName);
-    procedure SetPrintScale(Value: Double);
     procedure SetProcessing(Value: Boolean);
     procedure SetScrollBars(Value: ThtScrollStyle);
     procedure SetScrollPos(Value: Integer);
     procedure SetSelLength(Value: Integer);
     procedure SetSelStart(Value: Integer);
-    procedure SetServerRoot(Value: ThtString);
     procedure SetViewerStateBit(Index: THtmlViewerStateBit; Value: Boolean);
     procedure SetViewImages(Value: Boolean);
-    procedure SetVisitedColor(Value: TColor);
-    procedure SetVisitedMaxCount(Value: Integer);
     procedure SubmitForm(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList);
     procedure UpdateImageCache;
     procedure WMFormSubmit(var Message: TMessage); message WM_FormSubmit;
@@ -357,21 +346,23 @@ type
     procedure WMMouseScroll(var Message: TMessage); message WM_MouseScroll;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure WMUrlAction(var Message: TMessage); message WM_UrlAction;
-    function GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
+    function GetHistoryIndex: Integer;
+    procedure InsertImages;
+    property HTMLTimer: TTimer read FHTMLTimer;
+    property BorderPanel: TPanel read FBorderPanel;
+    property PaintPanel: TPaintPanel read FPaintPanel;
   protected
-    ScrollWidth: Integer;
-    {$ifdef has_StyleElements}
+{$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
-    {$endif}
+{$endif}
     function GetPalette: HPALETTE; override;
     function HotSpotClickHandled: Boolean; dynamic;
     function IsProcessing: Boolean;
+    function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     procedure DoBackground1(ACanvas: TCanvas; ATop, AWidth, AHeight, FullHeight: Integer);
     procedure DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
-    procedure DrawBackground2(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
-      Image: TGpObject; Mask: TBitmap; BW, BH: Integer; BGColor: TColor);
     procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
-    function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
+    procedure DoLoadHistoryItem(HI: ThvHistoryItem);
     procedure HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString); virtual;
     procedure HTMLMouseDblClk(Message: TWMMouse);
     procedure HTMLMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual;
@@ -385,25 +376,46 @@ type
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
     procedure LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
     procedure PaintWindow(DC: HDC); override;
+    procedure SetActiveColor(const Value: TColor); override;
+//    procedure SetCharset(const Value: TFontCharset); override;
     procedure SetCursor(Value: TCursor); {$ifdef LCL} override; {$endif LCL}
-    procedure SetOnScript(Handler: TScriptEvent); override;
+    procedure SetDefBackground(const Value: TColor); override;
+    procedure SetHistoryMaxCount(const Value: Integer); override;
+    procedure SetHotSpotColor(const Value: TColor); override;
+    procedure SetImageCacheCount(const Value: Integer); override;
+    procedure SetNoSelect(const Value: Boolean); override;
+    procedure SetOnBitmapRequest(const Handler: TGetBitmapEvent); override;
+    procedure SetOnDragDrop(const Value: TDragDropEvent); override;
+    procedure SetOnDragOver(const Value: TDragOverEvent); override;
+    procedure SetOnImageRequest(const Handler: TGetImageEvent); override;
+    procedure SetOnImageRequested(const Handler: TGottenImageEvent); override;
+    procedure SetOnObjectBlur(const Handler: ThtObjectEvent); override;
+    procedure SetOnObjectChange(const Handler: ThtObjectEvent); override;
+    procedure SetOnObjectClick(const Handler: TObjectClickEvent); override;
+    procedure SetOnObjectFocus(const Handler: ThtObjectEvent); override;
+    procedure SetOnPanelCreate(const Handler: TPanelCreateEvent); override;
+    procedure SetOnPanelDestroy(const Handler: TPanelDestroyEvent); override;
+    procedure SetOnPanelPrint(const Handler: TPanelPrintEvent); override;
+    procedure SetOnScript(const Handler: TScriptEvent); override;
+    procedure SetPreFontName(const Value: TFontName); override;
+    procedure SetPrintScale(const Value: Double); override;
+    procedure SetVisitedColor(const Value: TColor); override;
+    procedure SetVisitedMaxCount(const Value: Integer); override;
+    property ScrollWidth: Integer read FScrollWidth;
   public
-    FrameOwner: THtmlFrameBase; {the TViewerFrameBase that holds this THtmlViewer}
-    HScrollBar: TScrollBar;
-    Visited: ThtStringList; {visited URLs}
-    VScrollBar: TScrollBar;
-
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(Owner: TComponent); override;
+    constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     destructor Destroy; override;
+    function CreateIFrameControl: TViewerBase;
     function DisplayPosToXy(DisplayPos: Integer; var X, Y: Integer): Boolean;
-    function Find(const S: WideString; MatchCase: Boolean): Boolean;
+    function Find(const S: UnicodeString; MatchCase: Boolean): Boolean;
     function FindDisplayPos(SourcePos: Integer; Prev: Boolean): Integer;
-    function FindEx(const S: WideString; MatchCase, Reverse: Boolean): Boolean;
+    function FindEx(const S: UnicodeString; MatchCase, Reverse: Boolean): Boolean;
     function FindSourcePos(DisplayPos: Integer): Integer;
     function FullDisplaySize(FormatWidth: Integer): TSize;
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTextByIndices(AStart, ALast: Integer): WideString;
+    function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
     function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
@@ -423,11 +435,14 @@ type
     function NumPrinterPages(out WidthRatio: Double): Integer; overload;
     function NumPrinterPages: Integer; overload;
     function PositionTo(Dest: ThtString): Boolean;
-    function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y, are client coord}
+    function PtInObject(X, Y: Integer; var Obj: TObject): Boolean; overload; {deprecated;} {X, Y, are client coord}
+    function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean; overload; {X, Y, are client coord}
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
     procedure AddVisitedLink(const S: ThtString);
     procedure BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
+    procedure HistoryBack;
+    procedure HistoryForward;
     procedure CheckVisitedLinks;
     procedure Clear; virtual;
     procedure ClearHistory;
@@ -435,11 +450,12 @@ type
     procedure CopyToClipboard;
     procedure DoEnter; override;
     procedure DoExit; override;
+    procedure Draw(Canvas: TCanvas; YTop, FormatWidth, Width, Height: Integer);
     procedure htProgress(Percent: Integer); override;
     procedure htProgressEnd;
     procedure htProgressInit;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-
+    procedure Load(const Url: ThtString); override;
     //
     procedure LoadFromDocument(Document: TBuffer; const Reference: ThtString; DocType: THtmlFileType = HtmlType);
     procedure LoadFromFile(const FileName: ThtString; DocType: THtmlFileType = HtmlType);
@@ -458,91 +474,145 @@ type
     procedure Repaint; override;
     procedure ReplaceImage(const NameID: ThtString; NewImage: TStream);
     procedure SelectAll;
-    procedure SetStringBitmapList(BitmapList: TStringBitmapList);
+    procedure SetImageCache(ImageCache: ThtImageCache);
     procedure TriggerUrlAction;
     procedure UrlAction;
-
-    property Base: ThtString read GetBase write SetBase;
-    property BaseTarget: ThtString read GetBaseTarget;
+    property Base: ThtString read FBase write SetBase;
+    property BaseTarget: ThtString read FBaseTarget;
     property CaretPos: Integer read FCaretPos write SetCaretPos;
-    property CodePage: Integer read FCodePage write FCodePage;
-    property CurrentFile: ThtString read GetCurrentFile;
+    property CurrentFile: ThtString read FCurrentFile;
     property DocumentSource: ThtString read GetDocumentSource;
-    property DocumentTitle: ThtString read GetTitle;
+    property DocumentTitle: ThtString read FTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
     property FormData: TFreeList read GetFormData write SetFormData;
-    property History: ThtStrings read FHistory;
-    property HistoryIndex: Integer read FHistoryIndex write SetHistoryIndex;
+    property History: ThvHistory read FHistory;
+    property HistoryIndex: Integer read GetHistoryIndex write SetHistoryIndex;
     property HScrollBarPosition: Integer read GetHScrollPos write SetHScrollPos;
     property HScrollBarRange: Integer read GetHScrollBarRange;
     property IDControl[const ID: ThtString]: TIDObject read GetIDControl;
     property IDDisplay[const ID: ThtString]: TPropDisplay read GetIDDisplay write SetIDDisplay;
     property LinkAttributes: ThtStringList read FLinkAttributes;
-    property LinkList: TFontList read GetLinkList;
+    property LinkList: TLinkList read GetLinkList;
     property LinkStart: TPoint read FLinkStart;
-    property LinkText: WideString read FLinkText write FLinkText;
+    property LinkText: UnicodeString read FLinkText write FLinkText;
     property MaxVertical: Integer read FMaxVertical;
     property NameList: ThtStringList read GetNameList;
+    property OnCreateIFrameControl: TCreateIFrameControlEvent read FOnCreateIFrameControl write FOnCreateIFrameControl;
     property OnExpandName: TExpandNameEvent read GetOnExpandName write SetOnExpandName;
     property OnLinkDrawn: TLinkDrawnEvent read FOnLinkDrawn write FOnLinkDrawn;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
     property Palette: HPalette read GetOurPalette write SetOurPalette;
     property Position: Integer read GetPosition write SetPosition;
-    //property Processing: Boolean index vsProcessing read GetViewerStateBit;
+    //property Processing: Boolean index vsProcessing read GetViewerStateBit; //BG, 25.11.2010: C++Builder fails handling enumeration indexed properties
     property PrintedSize: TPoint read FPrintedSize; // PrintedSize is available after calling Print().
     property SectionList: ThtDocument read FSectionList;
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read FCaretPos write SetSelStart;
-    property SelText: WideString read GetSelText;
+    property SelText: UnicodeString read GetSelText;
     property Target: ThtString read FTarget write FTarget;
     property TitleAttr: ThtString read FTitleAttr;
-    property TitleHistory: ThtStrings read FTitleHistory;
     property URL: ThtString read FURL write FURL;
     property ViewerState: THtmlViewerState read FViewerState;
     property VScrollBarPosition: Integer read GetScrollPos write SetScrollPos;
     property VScrollBarRange: Integer read GetScrollBarRange;
+    property FrameOwner: THtmlFrameBase read FFrameOwner;
+    property HScrollBar: TScrollBar read FHScrollBar;
+    property Visited: ThtStringList read FVisited; {visited URLs}
+    property VScrollBar: TScrollBar read FVScrollBar;
   published
-    property Enabled;
-    property TabStop;
-    property TabOrder;
-    property Align;
-    property Name;
-    property Tag;
-    property PopupMenu;
-    property ShowHint;
-    property Anchors;
-    property Height default 150;
-    property Width default 150;
-    property Visible;
     property BorderStyle: THTMLBorderStyle read FBorderStyle write SetBorderStyle;
-    property CharSet: TFontCharset read FCharSet write SetCharset default DEFAULT_CHARSET;
-    property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
-    property DefFontColor: TColor read FFontColor write FFontColor default clBtnText;
-    property DefFontName: TFontName read FFontName write FFontName;
-    property DefFontSize: Integer read FFontSize write SetFontSize default 12;
-    property DefHotSpotColor: TColor read FHotSpotColor write SetHotSpotColor default clBlue;
-    property DefOverLinkColor: TColor read FOverColor write SetActiveColor default clBlue;
-    property DefPreFontName: TFontName read GetPreFontName write SetPreFontName;
-    property DefVisitedLinkColor: TColor read FVisitedColor write SetVisitedColor default clPurple;
-    property HistoryMaxCount: Integer read FHistoryMaxCount write SetHistoryMaxCount;
-    property HtOptions: THtmlViewerOptions read FOptions write SetOptions
-      default [htPrintTableBackground, htPrintMonochromeBlack];
-    property ImageCacheCount: Integer read FImageCacheCount write SetImageCacheCount default 5;
-    property MarginHeight: Integer read FMarginHeight write FMarginHeight default 5;
-    property MarginWidth: Integer read FMarginWidth write FMarginWidth default 10;
-    property NoSelect: Boolean read FNoSelect write SetNoSelect;
-    property PrintMarginBottom: Double read FPrintMarginBottom write FPrintMarginBottom;
-    property PrintMarginLeft: Double read FPrintMarginLeft write FPrintMarginLeft;
-    property PrintMarginRight: Double read FPrintMarginRight write FPrintMarginRight;
-    property PrintMarginTop: Double read FPrintMarginTop write FPrintMarginTop;
-    property PrintMaxHPages: Integer read FPrintMaxHPages write FPrintMaxHPages default 2;
-    property PrintScale: Double read FPrintScale write SetPrintScale;
+    property CharSet default DEFAULT_CHARSET;
+    property DefBackground;
+    property DefFontColor;
+    property DefFontName;
+    property DefFontSize;
+    property DefHotSpotColor;
+    property DefOverLinkColor;
+    property DefPreFontName;
+    property DefVisitedLinkColor;
+    property HistoryMaxCount;
+    property HtOptions: THtmlViewerOptions read FOptions write SetOptions default [htPrintTableBackground, htPrintMonochromeBlack];
+    property ImageCacheCount;
+    property MarginHeight;
+    property MarginWidth;
+    property NoSelect;
+    property PrintMarginBottom;
+    property PrintMarginLeft;
+    property PrintMarginRight;
+    property PrintMarginTop;
+    property PrintMaxHPages;
+    property PrintScale;
     property QuirksMode;
     property ScrollBars: ThtScrollStyle read FScrollBars write SetScrollBars default ssBoth;
-    property ServerRoot: ThtString read FServerRoot write SetServerRoot;
+    property ServerRoot;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
-    property VisitedMaxCount: Integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
-
+    property VisitedMaxCount;
+    //
+    property OnBitmapRequest;
+    property OnDragDrop;
+    property OnDragOver;
+    property OnFileBrowse: TFileBrowseEvent read GetOnFileBrowse write SetOnFileBrowse;
+    property OnFilenameExpanded: TFilenameExpanded read FOnFilenameExpanded write FOnFilenameExpanded;
+    property OnFormSubmit: TFormSubmitEvent read FOnFormSubmit write SetOnFormSubmit;
+    property OnHistoryChange;
+    property OnHotSpotClick: THotSpotClickEvent read FOnHotSpotClick write FOnHotSpotClick;
+    property OnHotSpotCovered: THotSpotEvent read FOnHotSpotCovered write FOnHotSpotCovered;
+    property OnhtStreamRequest: TGetStreamEvent read FOnhtStreamRequest write FOnhtStreamRequest;
+    property OnLoadHistoryItem: TLoadHistoryItem read FOnLoadHistoryItem write FOnLoadHistoryItem;
+    property OnImageClick;
+    property OnImageOver;
+    property OnImageRequest;
+    property OnImageRequested;
+    property OnInclude;
+    property OnLink;
+    property OnMeta;
+    property OnMetaRefresh: TMetaRefreshType read FOnMetaRefresh write FOnMetaRefresh;
+    property OnMouseDouble;
+    property OnObjectBlur;
+    property OnObjectChange;
+    property OnObjectClick;
+    property OnObjectFocus;
+    property OnObjectTag;
+    property OnPanelCreate;
+    property OnPanelDestroy;
+    property OnPanelPrint;
+    property OnParseBegin;
+    property OnParseEnd;
+    property OnPrinted;
+    property OnPrintFooter;
+    property OnPrintHeader;
+    property OnPrintHTMLFooter: ThtmlPagePrinted read FOnPrintHTMLFooter write FOnPrintHTMLFooter;
+    property OnPrintHTMLHeader: ThtmlPagePrinted read FOnPrintHTMLHeader write FOnPrintHTMLHeader;
+    property OnPrinting;
+    property OnProcessing;
+    property OnProgress;
+    property OnRightClick: TRightClickEvent read FOnRightClick write FOnRightClick;
+    property OnScript;
+    // BG, 15.10.2012: TODO: PtInObject not yet working correctly with horizontal scrolling (especially TFloatingObj.DrawYY seems to be wrong).
+    // BG, 15.10.2012: TODO: Add events OnSectionClick and OnSectionOver to TFrameViewer and TFrameBrowser.
+    // BG, 15.10.2012: TODO: I'd prefer OnHtmlNodeClick and OnHtmlNodeOver, which could be fired for
+    //                       any kind of html elements including floating objects like TImageObj.
+    property OnSectionClick: TSectionMouseClickEvent read FOnSectionClick write FOnSectionClick; //>-- DZ 17.09.2012
+    property OnSectionOver: TSectionMouseMoveEvent read FOnSectionOver write FOnSectionOver; //>-- DZ 17.09.2012
+    property OnSoundRequest;
+    //
+    property Align;
+    property Anchors;
+{$ifdef LCL}
+    property Cursor default crIBeam;
+{$else}
+    property Cursor: TCursor read GetCursor write SetCursor default crIBeam;
+{$endif}
+    property Enabled;
+    property Height default 150;
+    property Name;
+    property PopupMenu;
+    property ShowHint;
+    property TabOrder;
+    property TabStop;
+    property Tag;
+    property Visible;
+    property Width default 150;
     property OnEnter;
     property OnExit;
     property OnKeyDown;
@@ -552,52 +622,8 @@ type
     property OnMouseUp;
     property OnMouseDown;
     property OnMouseWheel;
-    property OnBitmapRequest: TGetBitmapEvent read GetOnBitmapRequest write SetOnBitmapRequest;
-    property OnDragDrop: TDragDropEvent read GetDragDrop write SetDragDrop;
-    property OnDragOver: TDragOverEvent read GetDragOver write SetDragOver;
-    property OnFileBrowse: TFileBrowseEvent read GetOnFileBrowse write SetOnFileBrowse;
-    property OnFilenameExpanded: TFilenameExpanded read FOnFilenameExpanded write FOnFilenameExpanded;
-    property OnFormSubmit: TFormSubmitEvent read FOnFormSubmit write SetOnFormSubmit;
-    property OnHistoryChange: TNotifyEvent read FOnHistoryChange write FOnHistoryChange;
-    property OnHotSpotClick: THotSpotClickEvent read FOnHotSpotClick write FOnHotSpotClick;
-    property OnHotSpotCovered: THotSpotEvent read FOnHotSpotCovered write FOnHotSpotCovered;
-    property OnhtStreamRequest: TGetStreamEvent read FOnhtStreamRequest write FOnhtStreamRequest;
-    property OnImageClick: TImageClickEvent read FOnImageClick write FOnImageClick;
-    property OnImageOver: TImageOverEvent read FOnImageOver write FOnImageOver;
-    property OnImageRequest: TGetImageEvent read FOnImageRequest write FOnImageRequest;
-    property OnImageRequested: TGottenImageEvent read GetOnImageRequested write SetOnImageRequested;
-    property OnInclude: TIncludeType read FOnInclude write FOnInclude;
-    property OnLink: TLinkType read FOnLink write FOnLink;
-    property OnMeta: TMetaType read FOnMeta write FOnMeta;
-    property OnMetaRefresh: TMetaRefreshType read FOnMetaRefresh write FOnMetaRefresh;
-    property OnMouseDouble: TMouseEvent read FOnMouseDouble write FOnMouseDouble;
-    property OnObjectBlur: ThtObjectEvent read GetOnObjectBlur write SetOnObjectBlur;
-    property OnObjectChange: ThtObjectEvent read GetOnObjectChange write SetOnObjectChange;
-    property OnObjectClick: TObjectClickEvent read GetOnObjectClick write SetOnObjectClick;
-    property OnObjectFocus: ThtObjectEvent read GetOnObjectFocus write SetOnObjectFocus;
-    property OnObjectTag: TObjectTagEvent read FOnObjectTag write FOnObjectTag;
-    property OnPanelCreate: TPanelCreateEvent read GetOnPanelCreate write SetOnPanelCreate;
-    property OnPanelDestroy: TPanelDestroyEvent read GetOnPanelDestroy write SetOnPanelDestroy;
-    property OnPanelPrint: TPanelPrintEvent read GetOnPanelPrint write SetOnPanelPrint;
-    property OnParseBegin: TParseEvent read FOnParseBegin write FOnParseBegin;
-    property OnParseEnd: TNotifyEvent read FOnParseEnd write FOnParseEnd;
-    property OnPrinted: THTMLViewPrinted read FOnPrinted write FOnPrinted;
-    property OnPrintFooter: TPagePrinted read FOnPrintFooter write FOnPrintFooter;
-    property OnPrintHeader: TPagePrinted read FOnPrintHeader write FOnPrintHeader;
-    property OnPrintHTMLFooter: ThtmlPagePrinted read FOnPrintHTMLFooter write FOnPrintHTMLFooter;
-    property OnPrintHTMLHeader: ThtmlPagePrinted read FOnPrintHTMLHeader write FOnPrintHTMLHeader;
-    property OnPrinting: THTMLViewPrinting read FOnPrinting write FOnPrinting;
-    property OnProcessing: TProcessingEvent read FOnProcessing write FOnProcessing;
-    property OnProgress: ThtProgressEvent read FOnProgress write FOnProgress;
-    property OnRightClick: TRightClickEvent read FOnRightClick write FOnRightClick;
-    property OnScript: TScriptEvent read GetOnScript write SetOnScript;
-    property OnSoundRequest: TSoundType read FOnSoundRequest write FOnSoundRequest;
-{$ifdef LCL}
-    property Cursor default crIBeam;
-{$else}
-    property Cursor: TCursor read GetCursor write SetCursor default crIBeam;
-{$endif}
   end;
+  THtmlViewerClass = class of THtmlViewer;
 
 function GetFileType(const S: ThtString): THtmlFileType;
 
@@ -730,71 +756,61 @@ begin
     Result := OtherType;
 end;
 
-constructor THtmlViewer.Create(AOwner: TComponent);
+constructor THtmlViewer.Create(Owner: TComponent);
 begin
-  inherited Create(AOwner);
+  inherited Create(Owner);
+  if Owner is THtmlFrameBase then
+    FFrameOwner := THtmlFrameBase(Owner);
   ControlStyle := [csAcceptsControls, csCaptureMouse, csClickEvents, csSetCaption, csDoubleClicks];
   Include(FViewerState, vsCreating);
   Height := 150;
   Width := 150;
   SetCursor(crIBeam);
-  FPrintMarginLeft := 2.0;
-  FPrintMarginRight := 2.0;
-  FPrintMarginTop := 2.0;
-  FPrintMarginBottom := 2.0;
-  FPrintMaxHPages := 2;
-  FPrintScale := 1.0;
-  FCharset := DEFAULT_CHARSET;
-  FMarginHeight := 5;
-  FMarginWidth := 10;
 
-  BorderPanel := TPanel.Create(Self);
-  BorderPanel.BevelInner := bvNone;
-  BorderPanel.BevelOuter := bvNone;
-  BorderPanel.Align := alClient;
+  FBorderPanel := TPanel.Create(Self);
+  FBorderPanel.BevelInner := bvNone;
+  FBorderPanel.BevelOuter := bvNone;
+  FBorderPanel.Align := alClient;
 {$ifndef LCL}
 //  BorderPanel.Ctl3D := False;
 //  BorderPanel.ParentCtl3D := False;
 {$ifdef delphi7_plus}
-  BorderPanel.ParentBackground := False;
-  BorderPanel.ControlStyle := BorderPanel.ControlStyle + [csNeedsBorderPaint];
+  FBorderPanel.ParentBackground := False;
+  FBorderPanel.ControlStyle := BorderPanel.ControlStyle + [csNeedsBorderPaint];
 {$endif}
 {$endif}
-  BorderPanel.Parent := Self;
+  FBorderPanel.Parent := Self;
 
-  PaintPanel := TPaintPanel.CreateIt(Self, Self);
-  PaintPanel.ParentFont := False;
-  PaintPanel.Parent := self;
-  PaintPanel.BevelOuter := bvNone;
-  PaintPanel.BevelInner := bvNone;
+  FPaintPanel := TPaintPanel.CreateIt(Self, Self);
+  FPaintPanel.ParentFont := False;
+  FPaintPanel.Parent := self;
+  FPaintPanel.BevelOuter := bvNone;
+  FPaintPanel.BevelInner := bvNone;
 {$ifndef LCL}
-  PaintPanel.Ctl3D := False;
+  FPaintPanel.Ctl3D := False;
 {$endif}
-{$ifdef has_StyleElements}
-  PaintPanel.StyleElements := StyleElements;
-{$endif}
-  //PaintPanel.OnPaint := HTMLPaint;
-  PaintPanel.OnMouseDown := HTMLMouseDown;
-  PaintPanel.OnMouseMove := HTMLMouseMove;
-  PaintPanel.OnMouseUp := HTMLMouseUp;
-  PaintPanel.OnMouseWheel := HtmlMouseWheel; // BG, 25.09.2012: issue 174. Thanks to Alan Chate
+  //FPaintPanel.OnPaint := HTMLPaint;
+  FPaintPanel.OnMouseDown := HTMLMouseDown;
+  FPaintPanel.OnMouseMove := HTMLMouseMove;
+  FPaintPanel.OnMouseUp := HTMLMouseUp;
+  FPaintPanel.OnMouseWheel := HtmlMouseWheel; // BG, 25.09.2012: issue 174. Thanks to Alan Chate
 
-  VScrollBar := TScrollBar.Create(Self);
-  VScrollBar.Kind := sbVertical;
-  VScrollBar.SmallChange := 16;
-  VScrollBar.OnScroll := ScrollVert;
-  VScrollBar.Visible := False;
-  VScrollBar.TabStop := False;
-  sbWidth := VScrollBar.Width;
-  VScrollBar.Parent := Self;
+  FVScrollBar := TScrollBar.Create(Self);
+  FVScrollBar.Kind := sbVertical;
+  FVScrollBar.SmallChange := 16;
+  FVScrollBar.OnScroll := ScrollVert;
+  FVScrollBar.Visible := False;
+  FVScrollBar.TabStop := False;
+  sbWidth := FVScrollBar.Width;
+  FVScrollBar.Parent := Self;
 
-  HScrollBar := TScrollBar.Create(Self);
-  HScrollBar.Kind := sbHorizontal;
-  HScrollBar.SmallChange := 15;
-  HScrollBar.OnScroll := ScrollHorz;
-  HScrollBar.Visible := False;
-  HScrollBar.TabStop := False;
-  HScrollBar.Parent := Self;
+  FHScrollBar := TScrollBar.Create(Self);
+  FHScrollBar.Kind := sbHorizontal;
+  FHScrollBar.SmallChange := 15;
+  FHScrollBar.OnScroll := ScrollHorz;
+  FHScrollBar.Visible := False;
+  FHScrollBar.TabStop := False;
+  FHScrollBar.Parent := Self;
 
   FScrollBars := ssBoth;
 
@@ -805,34 +821,64 @@ begin
   FSectionList.GetImage := DoGetImage;
   FNameList := FSectionList.IDNameList;
 
-  DefBackground := clBtnFace;
-  DefFontColor := clBtnText;
-  DefHotSpotColor := clBlue;
-  DefOverLinkColor := clBlue;
-  DefVisitedLinkColor := clPurple;
-  FVisitedMaxCount := 50;
-  DefFontSize := 12;
-  DefFontName := 'Times New Roman';
-  DefPreFontName := 'Courier New';
-  SetImageCacheCount(5);
   SetOptions([htPrintTableBackground, htPrintMonochromeBlack]);
 
-  FHistory := ThtStringList.Create;
-  FPositionHistory := TFreeList.Create;
-  FTitleHistory := ThtStringList.Create;
+  FHistory := ThvHistory.Create;
+  FVisited := ThtStringList.Create;
 
-  Visited := ThtStringList.Create;
-  HTMLTimer := TTimer.Create(Self);
-  HTMLTimer.Enabled := False;
-  HTMLTimer.Interval := 200;
-  HTMLTimer.OnTimer := HTMLTimerTimer;
+  FHTMLTimer := TTimer.Create(Self);
+  FHTMLTimer.Enabled := False;
+  FHTMLTimer.Interval := 200;
+  FHTMLTimer.OnTimer := HTMLTimerTimer;
   FLinkAttributes := ThtStringList.Create;
 
+  FInsertedImages := ThtStringList.Create;
+  FImagesInserted := TTimer.Create(Self);
+  FImagesInserted.Enabled := False;
+  FImagesInserted.Interval := 100;
+  FImagesInserted.OnTimer := ImagesInsertedTimer;
 {$ifdef LCL}
   // BG, 24.10.2010: there is no initial WMSize message, thus size child components now:
   DoScrollBars;
 {$endif}
   Exclude(FViewerState, vsCreating);
+end;
+
+//-- BG ---------------------------------------------------------- 23.11.2011 --
+constructor THtmlViewer.CreateCopy(Owner: TComponent; Source: TViewerBase);
+var
+  Viewer: THtmlViewer absolute Source;
+begin
+  inherited CreateCopy(Owner, Viewer);
+  if Owner is THtmlFrameBase then
+    FFrameOwner := THtmlFrameBase(Owner);
+  if Source is THtmlViewer then
+  begin
+    Self.QuirksMode := Viewer.QuirksMode;
+    FBase := Viewer.FBase;
+    FBaseEx := Viewer.FBaseEx;
+    FBaseTarget := Viewer.FBaseTarget;
+    FBorderStyle := Viewer.FBorderStyle;
+    FScrollBars := Viewer.FScrollBars;
+    HtOptions := Viewer.HtOptions;
+
+    OnCreateIFrameControl := Viewer.OnCreateIFrameControl;
+    OnFilenameExpanded := Viewer.OnFilenameExpanded; //BG, 19.09.2010 := Viewer.Issue 7 := Viewer.Slow UNC Lookups for Images
+    OnFormSubmit := Viewer.OnFormSubmit;
+    OnHistoryChange := Viewer.OnHistoryChange;
+    OnHotSpotClick := Viewer.OnHotSpotClick;
+    OnHotSpotCovered := Viewer.OnHotSpotCovered;
+    OnhtStreamRequest := Viewer.OnhtStreamRequest;
+    OnLinkDrawn := Viewer.OnLinkDrawn;
+    OnMetaRefresh := Viewer.OnMetaRefresh;
+    OnPageEvent := Viewer.OnPageEvent;
+    OnPrintHTMLFooter := Viewer.OnPrintHTMLFooter;
+    OnPrintHTMLHeader := Viewer.OnPrintHTMLHeader;
+    OnRightClick := Viewer.OnRightClick;
+    OnLoadHistoryItem := Viewer.OnLoadHistoryItem;
+    OnSectionClick := Viewer.OnSectionClick;
+    OnSectionOver := Viewer.OnSectionOver;    
+  end;
 end;
 
 {$ifdef has_StyleElements}
@@ -851,22 +897,26 @@ end;
 {$endif}
 
 destructor THtmlViewer.Destroy;
+var
+  I: Integer;
 begin
 {$ifndef NoMetaFile}
   AbortPrint;
 {$endif}
+  FImagesInserted.Free;
+  for I := 0 to FInsertedImages.Count - 1 do
+    FInsertedImages.Objects[I].Free;
+  FInsertedImages.Free;
+  FHTMLTimer.Free;
   Exclude(FViewerState, vsMiddleScrollOn);
-  if vsLocalBitmapList in FViewerState then
+  if vsLocalImageCache in FViewerState then
   begin
     FSectionList.Clear;
-    FSectionList.BitmapList.Free;
+    FSectionList.ImageCache.Free;
   end;
   FSectionList.Free;
   FHistory.Free;
-  FPositionHistory.Free;
-  FTitleHistory.Free;
-  Visited.Free;
-  HTMLTimer.Free;
+  FVisited.Free;
   FLinkAttributes.Free;
   FDocument.Free;
   inherited Destroy;
@@ -880,8 +930,8 @@ begin
   else
     FBase := FBaseEx;
   FBaseTarget := BaseTarget;
-  if Assigned(FOnParseEnd) then
-    FOnParseEnd(Self);
+  if Assigned(OnParseEnd) then
+    OnParseEnd(Self);
   try
     Include(FViewerState, vsDontDraw);
     {Load the background bitmap if any and if ViewImages set}
@@ -962,7 +1012,7 @@ var
   OldType: ThtmlFileType;
   OldFormData: TFreeList;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   if Filename <> '' then
   begin
@@ -1044,12 +1094,20 @@ end;
 
 {----------------THtmlViewer.LoadString}
 
+//-- BG ---------------------------------------------------------- 24.11.2011 --
+procedure THtmlViewer.Load(const Url: ThtString);
+begin
+  inherited;
+  LoadFromFile(Url);
+end;
+
+//-- BG ---------------------------------------------------------- 01.01.2012 --
 procedure THtmlViewer.LoadDocument(Document: TBuffer; const DocName: ThtString; DocType: THtmlFileType);
 var
   Dest, Name, OldFile: ThtString;
   OldCursor: TCursor;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
 
   SplitDest(DocName, Name, Dest);
@@ -1096,6 +1154,8 @@ begin
         end else begin
           FUseQuirksMode := False;
         end;
+        Self.FSectionList.UseQuirksMode := FUseQuirksMode;
+
         // terminate old document
         InitLoad;
         CaretPos := 0;
@@ -1165,16 +1225,16 @@ end;
 procedure THtmlViewer.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
   if FImageStream <> nil then
-    Stream := FImageStream
-  else if Assigned(FOnImageRequest) then
-    FOnImageRequest(Sender, SRC, Stream);
+  	Stream := FImageStream
+  else if Assigned(OnImageRequest) then
+    OnImageRequest(Sender, SRC, Stream);
 end;
 
 {----------------THtmlViewer.LoadStream}
 
 procedure THtmlViewer.LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
 begin
-  if (vsProcessing in FViewerState) or not Assigned(AStream) then
+  if IsProcessing or not Assigned(AStream) then
     Exit;
   AStream.Position := 0;
   if ft in [HTMLType, XHtmlType, TextType] then
@@ -1270,7 +1330,7 @@ var
   ScrollInfo: ThtScrollInfo;
 begin
   BorderPanel.Visible := True;
-  ScrollWidth := Min(ScrollWidth, MaxHScroll);
+  FScrollWidth := Min(ScrollWidth, MaxHScroll);
   ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
   with ScrollInfo do
   begin
@@ -1283,7 +1343,7 @@ begin
     PaintPanel.Height := VHeight;
 
     HScrollBar.Visible := HBar;
-    if HBar Or (csDesigning In ComponentState) then
+    if HBar or (csDesigning in ComponentState) then
     begin
       HScrollBar.SetBounds(PaintPanel.Left, PaintPanel.Top + PaintPanel.Height, PaintPanel.Width, sbWidth);
       HScrollBar.LargeChange := Max(16, HWidth - HScrollBar.SmallChange);
@@ -1293,7 +1353,7 @@ begin
     SetPageSizeAndMax(HScrollBar, Min(HWidth, ScrollWidth), ScrollWidth);
 
     VScrollBar.Visible := VBar;
-    if VBar Or (csDesigning In ComponentState) then
+    if VBar or (csDesigning in ComponentState) then
     begin
       VScrollBar.SetBounds(PaintPanel.Left + PaintPanel.Width, PaintPanel.Top, sbWidth, PaintPanel.Height);
       VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
@@ -1315,6 +1375,16 @@ var
   LogicDonePos: array [0..3] of integer;
   LogicDoneNeg: array [0..3] of integer;
 
+procedure THtmlViewer.DoLoadHistoryItem(HI: ThvHistoryItem);
+var Handled: Boolean;
+begin
+  Handled := False;
+  if Assigned(FOnLoadHistoryItem) then
+    FOnLoadHistoryItem(Self, HI, Handled);
+  if not Handled then
+    LoadFile(HI.Url, HI.FileType);
+end;
+
 procedure THtmlViewer.DoLogic;
 
   procedure SectionListDoLogic(Width, Height: Integer);
@@ -1322,8 +1392,8 @@ procedure THtmlViewer.DoLogic;
     Curs: Integer;
   begin
     Curs := 0;
-    ScrollWidth := 0;
-    FMaxVertical := FSectionList.DoLogic(PaintPanel.Canvas, 0, Width, Height, 0, ScrollWidth, Curs);
+    FScrollWidth := 0;
+    FMaxVertical := FSectionList.DoLogic(PaintPanel.Canvas, 0, Width, Height, 0, FScrollWidth, Curs);
   end;
 
 var
@@ -1416,7 +1486,7 @@ begin
   inherited;
   if vsCreating in FViewerState then
     Exit;
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     DoScrollBars
   else
     Layout;
@@ -1464,7 +1534,7 @@ procedure THtmlViewer.Layout;
 var
   OldPos: Integer;
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   SetProcessing(True);
   try
@@ -1544,7 +1614,7 @@ var
   I, J: Integer;
   S1, UrlTmp: ThtString;
 begin
-  if Assigned(FrameOwner) or (FVisitedMaxCount = 0) then
+  if Assigned(FrameOwner) or (VisitedMaxCount = 0) then
     Exit; {TFrameViewer will take care of visited links}
   I := Visited.IndexOf(S);
   if I = 0 then
@@ -1570,7 +1640,7 @@ begin
   else
     Visited.Delete(I); {thus moving it to the top}
   Visited.Insert(0, S);
-  for I := Visited.Count - 1 downto FVisitedMaxCount do
+  for I := Visited.Count - 1 downto VisitedMaxCount do
     Visited.Delete(I);
 end;
 
@@ -1589,7 +1659,7 @@ var
   I, J: Integer;
   S, S1: ThtString;
 begin
-  if FVisitedMaxCount = 0 then
+  if VisitedMaxCount = 0 then
     Exit;
   for I := 0 to Visited.Count - 1 do
   begin
@@ -1694,8 +1764,16 @@ function THtmlViewer.PtInObject(X, Y: Integer; var Obj: TObject): Boolean; {X, Y
 var
   IX, IY: Integer;
 begin
-  Result := PtInRect(ClientRect, Point(X, Y)) and
-    FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
+  Result := PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
+end;
+
+//-- BG ---------------------------------------------------------- 14.10.2012 --
+function THtmlViewer.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;
+begin
+  Obj := nil;
+  IX := 0;
+  IY := 0;
+  Result := PtInRect(ClientRect, Point(X, Y)) and FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
 end;
 
 procedure THtmlViewer.ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -1718,7 +1796,7 @@ begin
     end;
 end;
 
-function THtmlViewer.GetTextByIndices(AStart, ALast: Integer): WideString;
+function THtmlViewer.GetTextByIndices(AStart, ALast: Integer): UnicodeString;
 var
   SaveSelB: Integer;
   SaveSelE: Integer;
@@ -1742,8 +1820,7 @@ end;
 
 {----------------THtmlViewer.HTMLMouseMove}
 
-procedure THtmlViewer.HTMLMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
+procedure THtmlViewer.HTMLMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 var
   UrlTarget: TUrlTarget;
   Url, Target: ThtString;
@@ -1769,10 +1846,13 @@ begin
   end;
 
   UrlTarget := nil;
+  Obj := nil;
   URL := '';
   NextCursor := crArrow;
   FTitleAttr := '';
   guResult := GetURL(X, Y, UrlTarget, FormControl, FTitleAttr);
+  if guControl in guResult then
+    NextCursor := HandCursor;
   if guUrl in guResult then
   begin
     NextCursor := HandCursor;
@@ -1782,15 +1862,17 @@ begin
     FLinkText := GetTextByIndices(UrlTarget.Start, UrlTarget.Last);
     UrlTarget.Free;
   end;
-  if guControl in guResult then
-    NextCursor := HandCursor;
-  if (Assigned(FOnImageClick) or Assigned(FOnImageOver)) and
-    FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY) then
+
+  //>-- DZ 18.09.2012
+  if Assigned(OnSectionOver) and PtInObject(X, Y, Obj, IX, IY) and (Obj is TSectionBase) then
+    OnSectionOver(Self, TSectionBase( Obj ), Shift, X, Y, IX, IY);
+
+  if (Assigned(OnImageClick) or Assigned(OnImageOver)) and PtInObject(X, Y, Obj, IX, IY) and (Obj is TImageObj) then
   begin
     if NextCursor <> HandCursor then {in case it's also a Link}
       NextCursor := crArrow;
-    if Assigned(FOnImageOver) then
-      FOnImageOver(Self, Obj, Shift, IX, IY);
+    if Assigned(OnImageOver) then
+      OnImageOver(Self, Obj, Shift, IX, IY);
   end
   else if (FSectionList.FindCursor(PaintPanel.Canvas, X, Y + FSectionList.YOff, XR, YR, CaretHt, InText) >= 0)
     and InText and (NextCursor <> HandCursor) then
@@ -1815,7 +1897,7 @@ begin
     Include(FViewerState, vsMouseScrolling);
     PostMessage(Handle, wm_MouseScroll, 0, 0);
   end;
-  if (ssLeft in Shift) and not FNoSelect then
+  if (ssLeft in Shift) and not NoSelect then
     DoHilite(X, Y);
 end;
 
@@ -1828,7 +1910,7 @@ var
   IX, IY: Integer;
   InImage, TmpLeft: Boolean;
   Parameters: TRightClickParameters;
-  AWord: WideString;
+  AWord: UnicodeString;
   St, En: Integer;
   guResult: guResultType;
   I, ThisID: Integer;
@@ -1847,12 +1929,16 @@ begin
 
   inherited MouseUp(Button, Shift, X, Y);
 
-  if Assigned(FOnImageClick) or Assigned(FOnRightClick) then
+  //>-- DZ 17.09.2012
+  if Assigned(OnSectionClick) and PtInObject(X, Y, Obj, IX, IY) and (Obj is TSectionBase) then
+    OnSectionClick(Self, TSectionBase( Obj ), Button, Shift, X, Y, IX, IY);
+
+  if Assigned(OnImageClick) or Assigned(OnRightClick) then
   begin
-    InImage := FSectionList.PtInObject(X, Y + FSectionList.YOff, Obj, IX, IY);
-    if Assigned(FOnImageClick) and InImage then
-      FOnImageClick(Self, Obj, Button, Shift, IX, IY);
-    if (Button = mbRight) and Assigned(FOnRightClick) then
+    InImage := PtInObject(X, Y, Obj, IX, IY) and (Obj is TImageObj);
+    if Assigned(OnImageClick) and InImage then
+      OnImageClick(Self, Obj, Button, Shift, IX, IY);
+    if (Button = mbRight) and Assigned(OnRightClick) then
     begin
       Parameters := TRightClickParameters.Create;
       try
@@ -1871,7 +1957,7 @@ begin
         if GetWordAtCursor(X, Y, St, En, AWord) then
           Parameters.ClickWord := AWord;
         HTMLTimer.Enabled := False;
-        FOnRightClick(Self, Parameters);
+        OnRightClick(Self, Parameters);
       finally
         HTMLTimer.Enabled := True;
         Parameters.Free;
@@ -1984,14 +2070,14 @@ end;
 
 {----------------THtmlViewer.GetWordAtCursor}
 
-function THtmlViewer.GetWordAtCursor(X, Y: Integer; out St, En: Integer; out AWord: WideString): Boolean;
+function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; out AWord: UnicodeString): Boolean;
 var
   XR, X1, CaretHt: Integer;
   YR, Y1: Integer;
   Obj: TObject;
   Ch: WideChar;
   InText: Boolean;
-  Tmp: WideString;
+  Tmp: UnicodeString;
 
   function AlphaNum(Ch: WideChar): Boolean;
   begin
@@ -2063,21 +2149,21 @@ end;
 procedure THtmlViewer.HTMLMouseDblClk(Message: TWMMouse);
 var
   st, en: Integer;
-  AWord: WideString;
+  AWord: UnicodeString;
 begin
   FSectionList.LButtonDown(True);
   if FViewerState * [vsProcessing, vsHotSpotAction] <> [] then
     Exit;
-  if not FNoSelect and GetWordAtCursor(Message.XPos, Message.YPos, St, En, AWord) then
+  if not NoSelect and GetWordAtCursor(Message.XPos, Message.YPos, St, En, AWord) then
   begin
     FSectionList.SelB := st + 1;
     FSectionList.SelE := en;
     FCaretPos := st + 1;
     InvalidateRect(PaintPanel.Handle, nil, True);
   end;
-  if Assigned(FOnMouseDouble) then
+  if Assigned(OnMouseDouble) then
     with Message do
-      FOnMouseDouble(Self, mbLeft, KeysToShiftState(Keys), XPos, YPos);
+      OnMouseDouble(Self, mbLeft, KeysToShiftState(Keys), XPos, YPos);
 end;
 
 procedure THtmlViewer.DoHilite(X, Y: Integer);
@@ -2091,7 +2177,7 @@ begin
     begin
       YWin := Min(Max(0, Y), Height);
       Curs := FindCursor(PaintPanel.Canvas, X, YWin + YOff, XR, YR, CaretHt, InText);
-      if (Curs >= 0) and not FNoSelect then
+      if (Curs >= 0) and not NoSelect then
       begin
         if Curs > Sel1 then
         begin
@@ -2203,8 +2289,8 @@ begin
       ScrollTo(TIDObject(Obj).YPosition);
 
     HScrollBar.Position := 0;
-    Result := True;
     AddVisitedLink(FCurrentFile + '#' + Dest);
+    Result := True;
   end;
 end;
 
@@ -2228,8 +2314,8 @@ var
   OldPos: Integer;
   OldCursor: TCursor;
 begin
-  if vsProcessing in FViewerState then
-    exit;
+  if IsProcessing then
+    Exit;
   if Value <> FSectionList.ShowImages then
   begin
     OldCursor := Screen.Cursor;
@@ -2253,37 +2339,96 @@ begin
 end;
 
 {----------------THtmlViewer.InsertImage}
-
 function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
 var
-  OldPos: Integer;
-  ReFormat: Boolean;
+  MS: TMemoryStream;
+  ImageReformat: Boolean;
 begin
-  Result := False;
-  if vsProcessing in FViewerState then
-    Exit;
-  try
+  if IsProcessing then
+  begin
+    // insert later. Requires a copy of the stream as caller might free it before we use it.
+    if Stream <> nil then
+    begin
+      MS := TMemoryStream.Create;
+      try
+        MS.LoadFromStream(Stream);
+        FInsertedImages.AddObject(Src, MS);
+      except
+        MS.Free;
+        raise;
+      end;
+    end
+    else
+      FInsertedImages.AddObject(Src, nil);
+    FImagesInserted.Enabled := True;
+    Result := True;
+  end
+  else
+  begin
+    // insert now. No copy required.
     SetProcessing(True);
-    FSectionList.InsertImage(Src, Stream, Reformat);
+    try
+      FSectionList.InsertImage(Src, Stream, ImageReformat);
+      if ImageReformat then
+      begin
+        FImagesReformat := True;
+        FImagesInserted.Enabled := True;
+      end
+      else
+        Invalidate;
+      Result := True;
+    finally
+      SetProcessing(False);
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 10.08.2011 --
+procedure THtmlViewer.InsertImages;
+var
+  OldPos: Integer;
+  Reformat, ImageReformat: Boolean;
+begin
+  SetProcessing(True);
+  try
+    Reformat := FImagesReformat;
+    FImagesReformat := False;
+    while FInsertedImages.Count > 0 do
+    begin
+      FSectionList.InsertImage(FInsertedImages[0], TStream(FInsertedImages.Objects[0]), ImageReformat);
+      if ImageReformat then
+        Reformat := True;
+      FInsertedImages.Objects[0].Free;
+      FInsertedImages.Delete(0);
+    end;
     FSectionList.GetBackgroundBitmap; {in case it's the one placed}
     if Reformat then
+    begin
       if FSectionList.Count > 0 then
       begin
-        FSectionList.GetBackgroundBitmap; {load any background bitmap}
+        //has been done 5 lines above: FSectionList.GetBackgroundBitmap; {load any background bitmap}
         OldPos := Position;
         DoLogic;
         Position := OldPos;
       end;
+    end;
     Invalidate;
   finally
     SetProcessing(False);
-    Result := True;
   end;
 end;
 
-function THtmlViewer.GetBase: ThtString;
+//-- BG ---------------------------------------------------------- 10.08.2011 --
+procedure THtmlViewer.ImagesInsertedTimer(Sender: TObject);
 begin
-  Result := FBase;
+  if not IsProcessing then
+  begin
+    FImagesInserted.Enabled := False;
+    InsertImages;
+  end;
+  if FInsertedImages.Count > 0 then
+    // try again later:
+    FImagesInserted.Enabled := True;
 end;
 
 procedure THtmlViewer.SetBase(Value: ThtString);
@@ -2292,33 +2437,20 @@ begin
   FBaseEx := Value;
 end;
 
-function THtmlViewer.GetBaseTarget: ThtString;
-begin
-  Result := FBaseTarget;
-end;
-
-function THtmlViewer.GetTitle: ThtString;
-begin
-  Result := FTitle;
-end;
-
-function THtmlViewer.GetCurrentFile: ThtString;
-begin
-  Result := FCurrentFile;
-end;
-
 function THtmlViewer.GetViewImages: Boolean;
 begin
   Result := FSectionList.ShowImages;
 end;
 
-procedure THtmlViewer.SetDefBackground(Value: TColor);
+procedure THtmlViewer.SetDefBackground(const Value: TColor);
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
-  FBackground := Value;
-  FSectionList.Background := Value;
-  PaintPanel.Color := Value;
+  inherited;
+  if FSectionList <> nil then
+    FSectionList.Background := Value;
+  if PaintPanel <> nil then
+    PaintPanel.Color := Value;
   Invalidate;
 end;
 
@@ -2416,7 +2548,7 @@ begin
     end;
     if Pos < 0 then
       Pos := 0;
-    Pos := Math.Max(0, Math.Min(Pos, Max - PaintPanel.Width));
+    Pos := Math.Min(Pos, Max - PaintPanel.Width);
     
     if Pos <> OrigPos then
     begin
@@ -2493,6 +2625,12 @@ begin
   Invalidate;
 end;
 
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THtmlViewer.GetHistoryIndex: Integer;
+begin
+  Result := History.Index;
+end;
+
 function THtmlViewer.GetHScrollBarRange: Integer;
 begin
   Result := HScrollBar.Max - PaintPanel.Width;
@@ -2514,7 +2652,7 @@ begin
     Result := Filename
   else
   begin
-    Result := HTMLServerToDos(Filename, FServerRoot);
+    Result := HTMLServerToDos(Filename, ServerRoot);
     if Pos('\', Result) = 1 then
       Result := ExpandFilename(Result)
     else if (Pos(':', Result) <> 2) and (Pos('\\', Result) <> 1) then
@@ -2522,7 +2660,7 @@ begin
       else if FBase <> '' then
         Result := CombineDos(HTMLToDos(FBase), Result)
       else
-        Result := ExpandFilename(ExtractFilePath(FCurrentFile) + Result);
+        Result := ExpandFilename(ExtractFilePath(HTMLToDos(FCurrentFile)) + Result);
   end;
 
   //BG, 19.09.2010: Issue 7: Slow UNC Lookups for Images
@@ -2536,109 +2674,93 @@ end;
 procedure THtmlViewer.BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
 var
   I: Integer;
-  PO: PositionObj;
   SameName: Boolean;
+  HI: ThvHistoryItem;
 begin
   SameName := OldFileName = FCurrentFile;
-  if (FHistoryMaxCount > 0) and (FCurrentFile <> '') and
-    ((not SameName) or (FCurrentFileType <> OldDocType) or (OldPos <> Position)) then
-    with FHistory do
+  if (HistoryMaxCount > 0) and (FCurrentFile <> '') and ((not SameName) or (FCurrentFileType <> OldDocType) or (OldPos <> Position)) then
+  begin
+    // update current history item
+    HI := FHistory[FHistory.Index];
+    if (HI <> nil) and (OldFilename <> '') then
     begin
-      if (Count > 0) and (OldFileName <> '') then
-      begin
-        Strings[FHistoryIndex] := OldFileName;
-        with PositionObj(FPositionHistory[FHistoryIndex]) do
-        begin
-          Pos := OldPos;
-          FileType := OldDocType;
-          if not SameName then {only stored when documents changed}
-            FormData := OldFormData
-          else
-            OldFormData.Free;
-        end;
-        FTitleHistory[FHistoryIndex] := OldTitle;
-        for I := 0 to FHistoryIndex - 1 do
-        begin
-          Delete(0);
-          FTitleHistory.Delete(0);
-          FPositionHistory.Delete(0);
-        end;
-      end;
-      FHistoryIndex := 0;
-      Insert(0, FCurrentFile);
-      PO := PositionObj.Create;
-      PO.Pos := Position;
-      PO.FileType := FCurrentFileType;
-      FPositionHistory.Insert(0, PO);
-      FTitleHistory.Insert(0, FTitle);
-      if Count > FHistoryMaxCount then
-      begin
-        Delete(HistoryMaxCount);
-        FTitleHistory.Delete(HistoryMaxCount);
-        FPositionHistory.Delete(HistoryMaxCount);
-      end;
-      if Assigned(FOnHistoryChange) then
-        FOnHistoryChange(Self);
-    end
+      HI.Url := OldFilename;
+      HI.Title := OldTitle;
+      HI.Position := OldPos;
+      HI.FileType := OldDocType;
+      if not SameName then {only stored when documents changed}
+        HI.FormData := OldFormData
+      else
+        OldFormData.Free;
+      // remove items up to the top item (which is at index 0)
+      for I := 0 to FHistory.Index - 1 do
+        FHistory.Delete(0);
+    end;
+
+    // insert new history item
+    FHistory.Index := 0;
+    HI := ThvHistoryItem.Create;
+    HI.Url := FCurrentFile;
+    HI.Title := FTitle;
+    HI.Position := Position;
+    HI.FileType := FCurrentFileType;
+    FHistory.Insert(0, HI);
+
+    // delete excessive history items
+    while FHistory.Count > HistoryMaxCount do
+      FHistory.Delete(HistoryMaxCount);
+
+    // notify
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end
   else
     OldFormData.Free;
 end;
 
 procedure THtmlViewer.SetHistoryIndex(Value: Integer);
 var
-  I: Integer;
-
-  function GetLowestSameFileIndex(Start: Integer): Integer;
-  begin
-    Result := Start;
-    while (Result > 0) and (FHistory[Result - 1] = FCurrentFile) do
-      Dec(Result);
-  end;
-
+  HI: ThvHistoryItem;
 begin
-  if vsProcessing in FViewerState then
-    exit;
-  with FHistory do
-    if (Value <> FHistoryIndex) and (Value >= 0) and (Value < Count) then
-    begin
-      if FCurrentFile <> '' then
-      begin {save the current information}
-        Strings[FHistoryIndex] := FCurrentFile;
-        with PositionObj(FPositionHistory[FHistoryIndex]) do
-        begin
-          Pos := Position;
-          FileType := FCurrentFileType;
-          I := GetLowestSameFileIndex(FHistoryIndex);
-          PositionObj(FPositionHistory[I]).FormData := GetFormData;
-        end;
-        FTitleHistory[FHistoryIndex] := FTitle;
-      end;
-      with PositionObj(FPositionHistory[Value]) do
-      begin {reestablish the new desired history position}
-        if (FCurrentFile <> Strings[Value]) or (FCurrentFileType <> FileType) then
-          Self.LoadFile(Strings[Value], FileType);
-        Position := Pos;
-        I := GetLowestSameFileIndex(Value);
-        with PositionObj(FPositionHistory[I]) do
-        begin
-          SetFormData(FormData); {reload the forms if any}
-          FormData.Free;
-          FormData := nil;
-        end;
-      end;
-      FHistoryIndex := Value;
-      if Assigned(FOnHistoryChange) then
-        FOnHistoryChange(Self);
+  if IsProcessing then
+    Exit;
+  if (Value <> FHistory.Index) and (Value >= 0) and (Value < FHistory.Count) then
+  begin
+    // update current history item
+    if FCurrentFile <> '' then
+    begin {save the current information}
+      HI := FHistory[FHistory.Index];
+      HI.Url := FCurrentFile;
+      HI.Title := FTitle;
+      HI.Position := Position;
+      HI.FileType := FCurrentFileType;
+      FHistory[FHistory.GetLowestIndexOfUrl(FCurrentFile, FHistory.Index)].FormData := GetFormData;
     end;
+
+    {reestablish the new desired history position}
+    HI := FHistory[Value];
+    FHistory.Index := Value;  // the following handler will have actual index value
+    if (FCurrentFile <> HI.Url) or (FCurrentFileType <> HI.FileType) then
+      DoLoadHistoryItem(HI);
+    Position := HI.Position;
+    HI := FHistory[FHistory.GetLowestIndexOfUrl(HI.Url, Value)];
+    SetFormData(HI.FormData); {reload the forms if any}
+    HI.FormData.Free;
+    HI.FormData := nil;
+
+    // notify
+    if Assigned(OnHistoryChange) then
+      OnHistoryChange(Self);
+  end;
 end;
 
-procedure THtmlViewer.SetHistoryMaxCount(Value: Integer);
+procedure THtmlViewer.SetHistoryMaxCount(const Value: Integer);
 begin
-  if (Value = FHistoryMaxCount) or (Value < 0) then
+  if (Value = HistoryMaxCount) or (Value < 0) then
     Exit;
-  if Value < FHistoryMaxCount then
+  if Value < HistoryMaxCount then
     ClearHistory;
-  FHistoryMaxCount := Value;
+  inherited;
 end;
 
 procedure THtmlViewer.ClearHistory;
@@ -2647,36 +2769,19 @@ var
 begin
   CountWas := FHistory.Count;
   FHistory.Clear;
-  FTitleHistory.Clear;
-  FPositionHistory.Clear;
-  FHistoryIndex := 0;
   FCurrentFile := '';
-  if (CountWas > 0) and Assigned(FOnHistoryChange) then
-    FOnHistoryChange(Self);
+  if (CountWas > 0) and Assigned(OnHistoryChange) then
+    OnHistoryChange(Self);
 end;
 
-function THtmlViewer.GetPreFontName: TFontName;
+procedure THtmlViewer.SetPreFontName(const Value: TFontName);
 begin
-  Result := FPreFontName;
-end;
-
-procedure THtmlViewer.SetPreFontName(Value: TFontName);
-begin
-  if CompareText(Value, FSectionList.PreFontName) <> 0 then
+  if CompareText(Value, DefPreFontName) <> 0 then
   begin
-    FPreFontName := Value;
-    FSectionList.PreFontName := Value;
+    inherited;
+    if FSectionList <> nil then
+      FSectionList.PreFontName := DefPreFontname;
   end;
-end;
-
-procedure THtmlViewer.SetFontSize(Value: Integer);
-begin
-  FFontSize := Value;
-end;
-
-procedure THtmlViewer.SetCharset(Value: TFontCharset);
-begin
-  FCharset := Value;
 end;
 
 function THtmlViewer.GetFormControlList: TFormControlObjList;
@@ -2689,50 +2794,60 @@ begin
   Result := FNameList;
 end;
 
-function THtmlViewer.GetLinkList: TFontList;
+function THtmlViewer.GetLinkList: TLinkList;
 begin
   Result := FSectionList.LinkList;
 end;
 
-procedure THtmlViewer.SetHotSpotColor(Value: TColor);
+procedure THtmlViewer.SetHotSpotColor(const Value: TColor);
 begin
-  FHotSpotColor := Value;
-  FSectionList.HotSpotColor := Value;
+  inherited;
+  if FSectionList <> nil then
+    FSectionList.HotSpotColor := Value;
 end;
 
-procedure THtmlViewer.SetVisitedColor(Value: TColor);
+procedure THtmlViewer.SetVisitedColor(const Value: TColor);
 begin
-  FVisitedColor := Value;
-  FSectionList.LinkVisitedColor := Value;
+  inherited;
+  if FSectionList <> nil then
+    FSectionList.LinkVisitedColor := Value;
 end;
 
-procedure THtmlViewer.SetActiveColor(Value: TColor);
+procedure THtmlViewer.SetActiveColor(const Value: TColor);
 begin
-  FOverColor := Value;
-  FSectionList.LinkActiveColor := Value;
+  inherited;
+  if FSectionList <> nil then
+    FSectionList.LinkActiveColor := Value;
 end;
 
-procedure THtmlViewer.SetVisitedMaxCount(Value: Integer);
+procedure THtmlViewer.SetVisitedMaxCount(const Value: Integer);
 var
   I: Integer;
 begin
-  Value := Max(Value, 0);
-  if Value <> FVisitedMaxCount then
+  // avoid setting count < 0
+  if Value < 0 then
   begin
-    FVisitedMaxCount := Value;
-    if FVisitedMaxCount = 0 then
-    begin
-      Visited.Clear;
-      for I := 0 to SectionList.LinkList.Count - 1 do
-        TFontObj(LinkList[I]).Visited := False;
-      Invalidate;
-    end
-    else
-    begin
-      FVisitedMaxCount := Value;
-      for I := Visited.Count - 1 downto FVisitedMaxCount do
-        Visited.Delete(I);
-    end;
+    SetVisitedMaxCount(0);
+    exit;
+  end;
+
+  // Value is >= 0 here
+  if Value <> VisitedMaxCount then
+  begin
+    inherited;
+    if Visited <> nil then
+      if VisitedMaxCount = 0 then
+      begin
+        Visited.Clear;
+        for I := 0 to SectionList.LinkList.Count - 1 do
+          TFontObj(LinkList[I]).Visited := False;
+        Invalidate;
+      end
+      else
+      begin
+        for I := Visited.Count - 1 downto VisitedMaxCount do
+          Visited.Delete(I);
+      end;
   end;
 end;
 
@@ -2793,242 +2908,21 @@ begin
   end;
 end;
 
-{----------------DrawBackground}
-
-procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
-  Image: TGpObject; Mask: TBitmap; AniGif: TGifImage; BW, BH: Integer; BGColor: TColor
-  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
-{draw the background color and any tiled images on it}
-{ARect, the cliprect, drawing outside this will not show but images may overhang
- XStart, YStart are first image position already calculated for the cliprect and parameters.
- XLast, YLast   Tiling stops here.
- BW, BH  bitmap dimensions.
-}
-var
-  X, Y: Integer;
-  OldBrush: HBrush;
-  OldPal: HPalette;
-  DC: HDC;
-  OldBack, OldFore: TColor;
-  Bitmap: TBitmap;
-  {$IFNDEF NoGDIPlus}
-  Graphics: TGpGraphics;
-  {$ENDIF NoGDIPlus}
-begin
-  DC := ACanvas.handle;
-  if DC <> 0 then
-  begin
-    OldPal := SelectPalette(DC, ThePalette, False);
-    RealizePalette(DC);
-    ACanvas.Brush.Color := ThemedColor(BGColor {$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
-    OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
-    OldBack := SetBkColor(DC, clWhite);
-    OldFore := SetTextColor(DC, clBlack);
-    try
-      ACanvas.FillRect(ARect); {background color}
-      if Assigned(AniGif) then {tile the animated gif}
-      begin
-        Y := YStart;
-        while Y < YLast do
-        begin
-          X := XStart;
-          while X < XLast do
-          begin
-            AniGif.Draw(ACanvas, X, Y, BW, BH);
-            Inc(X, BW);
-          end;
-          Inc(Y, BH);
-        end;
-      end
-      else if Assigned(Image) then {tile the bitmap}
-        if Image is TBitmap then
-        begin
-          Bitmap := TBitmap(Image);
-          Y := YStart;
-          while Y < YLast do
-          begin
-            X := XStart;
-            while X < XLast do
-            begin
-              if Mask = nil then
-                BitBlt(DC, X, Y, BW, BH, Bitmap.Canvas.Handle, 0, 0, SRCCOPY)
-              else
-              begin
-                BitBlt(dc, X, Y, BW, BH, Bitmap.Canvas.Handle, 0, 0, SrcInvert);
-                BitBlt(dc, X, Y, BW, BH, Mask.Canvas.Handle, 0, 0, SrcAnd);
-                BitBlt(dc, X, Y, BW, BH, Bitmap.Canvas.Handle, 0, 0, SrcPaint);
-              end;
-              Inc(X, BW);
-            end;
-            Inc(Y, BH);
-          end;
-        end
-{$IFNDEF NoMetafile}
-        else if Image is ThtMetafile then
-        begin
-          Y := YStart;
-          try
-            while Y < YLast do
-            begin
-              X := XStart;
-              while X < XLast do
-              begin
-                ACanvas.Draw(X, Y, ThtMetaFile(Image));
-                Inc(X, BW);
-              end;
-              Inc(Y, BH);
-            end;
-          except
-          end;
-        end
-{$ENDIF !NoMetafile}
-{$IFNDEF NoGDIPlus}
-        else
-        begin
-          Y := YStart;
-          graphics := TGPGraphics.Create(DC);
-          try
-            while Y < YLast do
-            begin
-              X := XStart;
-              while X < XLast do
-              begin
-                graphics.DrawImage(TGpImage(Image), X, Y, BW, BH);
-                Inc(X, BW);
-              end;
-              Inc(Y, BH);
-            end;
-          except
-          end;
-          Graphics.Free;
-        end;
-{$ENDIF !NoGDIPlus}
-    finally
-      SelectObject(DC, OldBrush);
-      SelectPalette(DC, OldPal, False);
-      RealizePalette(DC);
-      SetBkColor(DC, OldBack);
-      SetTextColor(DC, OldFore);
-    end;
-  end;
-end;
-
-{----------------THtmlViewer.DrawBackground2}
-
-procedure THtmlViewer.DrawBackground2(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
-  Image: TGpObject; Mask: TBitmap; BW, BH: Integer; BGColor: TColor);
-{Called by DoBackground2 (Print and PrintPreview)}
-{draw the background color and any tiled images on it}
-{ARect, the cliprect, drawing outside this will not show but images may overhang
- XStart, YStart are first image position already calculated for the cliprect and parameters.
- XLast, YLast   Tiling stops here.
- BW, BH  Image dimensions.
-}
-var
-  X, Y: Integer;
-  OldBrush: HBrush;
-  OldPal: HPalette;
-  DC: HDC;
-  OldBack, OldFore: TColor;
-  Bitmap: TBitmap;
-begin
-  DC := ACanvas.handle;
-  if DC <> 0 then
-  begin
-    OldPal := SelectPalette(DC, ThePalette, False);
-    RealizePalette(DC);
-    ACanvas.Brush.Color := ThemedColor(BGColor{$ifdef has_StyleElements},seClient in StyleElements {$endif}) or PalRelative;
-    OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
-    OldBack := SetBkColor(DC, clWhite);
-    OldFore := SetTextColor(DC, clBlack);
-    try
-      ACanvas.FillRect(ARect); {background color}
-      if Assigned(Image) then {tile the Image}
-        if Image is TBitmap then
-        begin
-          Bitmap := TBitmap(Image);
-          Y := YStart;
-          while Y < YLast do
-          begin
-            X := XStart;
-            while X < XLast do
-            begin
-              if Mask = nil then
-                PrintBitmap(ACanvas, X, Y, BW, BH, Bitmap)
-              else
-              begin
-                PrintTransparentBitmap3(ACanvas, X, Y, BW, BH, Bitmap, Mask, 0, Bitmap.Height);
-              end;
-              Inc(X, BW);
-            end;
-            Inc(Y, BH);
-          end;
-        end
-{$IFNDEF NoMetafile}
-        else if Image is ThtMetafile then
-        begin
-          Y := YStart;
-          try
-            while Y < YLast do
-            begin
-              X := XStart;
-              while X < XLast do
-              begin
-                ACanvas.Draw(X, Y, ThtMetaFile(Image));
-                Inc(X, BW);
-              end;
-              Inc(Y, BH);
-            end;
-          except
-          end;
-        end
-{$ENDIF !NoMetafile}
-{$IFNDEF NoGDIPlus}
-        else
-        begin
-          Y := YStart;
-          try
-            while Y < YLast do
-            begin
-              X := XStart;
-              while X < XLast do
-              begin
-                StretchPrintGpImageOnColor(ACanvas, TGPImage(Image), X, Y, BW, BH, BGColor);
-                Inc(X, BW);
-              end;
-              Inc(Y, BH);
-            end;
-          except
-          end;
-        end
-        {$ENDIF !NoGDIPlus};
-    finally
-      SelectObject(DC, OldBrush);
-      SelectPalette(DC, OldPal, False);
-      RealizePalette(DC);
-      SetBkColor(DC, OldBack);
-      SetTextColor(DC, OldFore);
-    end;
-  end;
-end;
-
 procedure THtmlViewer.DoBackground1(ACanvas: TCanvas; ATop, AWidth, AHeight, FullHeight: Integer);
 var
   ARect: TRect;
-  Image: TGpObject;
-  Mask: TBitmap;
+  Image: ThtImage;
   PRec: PtPositionRec;
   BW, BH, X, Y, X2, Y2, IW, IH, XOff, YOff: Integer;
   Fixed: Boolean;
 
 begin
   ARect := Rect(0, 0, AWidth, AHeight);
-  Image := FSectionList.BackgroundBitmap;
+  Image := FSectionList.BackgroundImage;
   if FSectionList.ShowImages and Assigned(Image) then
   begin
-    Mask := FSectionList.BackgroundMask;
-    BW := GetImageWidth(Image);
-    BH := GetImageHeight(Image);
+    BW := Image.Width;
+    BH := Image.Height;
     PRec := FSectionList.BackgroundPRec;
     Fixed := PRec.X.Fixed;
     if Fixed then
@@ -3049,32 +2943,69 @@ begin
   {Calculate where the tiled background images go}
     CalcBackgroundLocationAndTiling(PRec, ARect, XOff, YOff, IW, IH, BW, BH, X, Y, X2, Y2);
 
-    DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, nil, BW, BH, PaintPanel.Color{$ifdef has_StyleElements},StyleElements{$endif});
+    DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, BW, BH, PaintPanel.Color);
   end
   else
   begin {no background image, show color only}
-    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, PaintPanel.Color{$ifdef has_StyleElements},StyleElements{$endif});
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, PaintPanel.Color);
   end;
 end;
 
 procedure THtmlViewer.DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
+
+  procedure DrawBackground2(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
+    Image: ThtImage; BGColor: TColor);
+  {Called by DoBackground2 (Print and PrintPreview)}
+  {draw the background color and any tiled images on it}
+  {ARect, the cliprect, drawing outside this will not show but images may overhang
+   XStart, YStart are first image position already calculated for the cliprect and parameters.
+   XLast, YLast   Tiling stops here.
+  }
+  var
+    OldBrush: HBrush;
+    OldPal: HPalette;
+    DC: HDC;
+    OldBack, OldFore: TColor;
+  begin
+    DC := ACanvas.handle;
+    if DC <> 0 then
+    begin
+      OldPal := SelectPalette(DC, ThePalette, False);
+      RealizePalette(DC);
+//      ACanvas.Brush.Color := BGColor or PalRelative;
+      ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
+      OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
+      OldBack := SetBkColor(DC, clWhite);
+      OldFore := SetTextColor(DC, clBlack);
+      try
+        ACanvas.FillRect(ARect); {background color}
+        if Assigned(Image) then {tile the Image}
+          Image.PrintTiled(ACanvas, XStart, YStart, XLast, YLast, Image.Width, Image.Height, BGColor);
+      finally
+        SelectObject(DC, OldBrush);
+        SelectPalette(DC, OldPal, False);
+        RealizePalette(DC);
+        SetBkColor(DC, OldBack);
+        SetTextColor(DC, OldFore);
+      end;
+    end;
+  end;
+
 {called by Print and PrintPreview}
 var
   ARect: TRect;
-  Image: TGpObject;
-  Mask: TBitmap;
+  Image: ThtImage;
   PRec: PtPositionRec;
   BW, BH, X, Y, X2, Y2, IW, IH, XOff, YOff: Integer;
   NewBitmap, NewMask: TBitmap;
-
+  NewImage: ThtImage;
 begin
   ARect := Rect(ALeft, ATop, ALeft + AWidth, ATop + AHeight);
-  Image := FSectionList.BackgroundBitmap;
+  Image := FSectionList.BackgroundImage;
   if FSectionList.ShowImages and Assigned(Image) then
   begin
-    Mask := FSectionList.BackgroundMask;
-    BW := GetImageWidth(Image);
-    BH := GetImageHeight(Image);
+    BW := Image.Width;
+    BH := Image.Height;
     PRec := FSectionList.BackgroundPRec;
     XOff := -ALeft;
     YOff := -ATop;
@@ -3086,27 +3017,33 @@ begin
 
     if (BW = 1) or (BH = 1) then
     begin {this is for people who try to tile 1 pixel images}
+      NewMask := nil;
       NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y);
       try
-        if Assigned(Mask) then
-          NewMask := TBitmap(EnlargeImage(Mask, X2 - X, Y2 - Y))
+        if Assigned(Image.Mask) then
+          NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y)
         else
           NewMask := nil;
+        NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, LLCorner);
+        // NewBitmap and NewMask will be freed with NewImage
+        NewBitmap := nil;
+        NewMask := nil;
         try
-          DrawBackground2(ACanvas, ARect, X, Y, X2, Y2, NewBitmap, NewMask, NewBitmap.Width, NewBitmap.Height, AColor);
+          DrawBackground2(ACanvas, ARect, X, Y, X2, Y2, NewImage, AColor);
         finally
-          NewMask.Free;
+          NewImage.Free;
         end;
       finally
+        NewMask.Free;
         NewBitmap.Free;
       end;
     end
     else
-      DrawBackground2(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, BW, BH, AColor);
+      DrawBackground2(ACanvas, ARect, X, Y, X2, Y2, Image, AColor);
   end
   else
   begin {no background image, show color only}
-    DrawBackground2(ACanvas, ARect, 0, 0, 0, 0, nil, nil, 0, 0, AColor);
+    DrawBackground2(ACanvas, ARect, 0, 0, 0, 0, nil, AColor);
   end;
 end;
 
@@ -3134,23 +3071,20 @@ end;
 
 procedure THtmlViewer.HTMLPaint(ACanvas: TCanvas; const ARect: TRect);
 var
-  Image: TGpObject;
-  Mask, NewBitmap, NewMask: TBitmap;
+  Image: ThtImage;
+  NewBitmap, NewMask: TBitmap;
   PRec: PtPositionRec;
   BW, BH, X, Y, X2, Y2, IW, IH, XOff, YOff: Integer;
-  AniGif: TGifImage;
-
+  NewImage: ThtImage;
 begin
-
   if FSectionList.Printing then
     Exit; {no background}
 
-  Image := FSectionList.BackgroundBitmap;
+  Image := FSectionList.BackgroundImage;
   if FSectionList.ShowImages and Assigned(Image) then
   begin
-    Mask := FSectionList.BackgroundMask;
-    BW := GetImageWidth(Image);
-    BH := GetImageHeight(Image);
+    BW := Image.Width;
+    BH := Image.Height;
     PRec := FSectionList.BackgroundPRec;
     SetViewerStateBit(vsBGFixed, PRec.X.Fixed);
     if vsBGFixed in FViewerState then
@@ -3173,31 +3107,32 @@ begin
 
     if (BW = 1) or (BH = 1) then
     begin {this is for people who try to tile 1 pixel images}
+      NewMask := nil;
       NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y); // as TBitmap;
       try
-        if Assigned(Mask) then
-          NewMask := TBitmap(EnlargeImage(Mask, X2 - X, Y2 - Y))
-        else
-          NewMask := nil;
+        if Assigned(Image.Mask) then
+          NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y);
+
+        NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, LLCorner);
+        NewMask := nil;
+        NewBitmap := nil;
         try
-          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewBitmap, NewMask, nil, NewBitmap.Width, NewBitmap.Height, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
+          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewImage, NewImage.Width, NewImage.Height, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
         finally
-          NewMask.Free;
+          NewImage.Free;
         end;
       finally
+        NewMask.Free;
         NewBitmap.Free;
       end;
     end
     else {normal situation}
-    begin
-      AniGif := FSectionList.BackgroundAniGif;
-      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, Mask, AniGif, BW, BH, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
-    end;
+      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, BW, BH, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
   end
   else
   begin {no background image, show color only}
     Exclude(FViewerState, vsBGFixed);
-    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, nil, nil, 0, 0, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
   end;
 
   FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
@@ -3206,7 +3141,7 @@ end;
 function THtmlViewer.MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 begin
   Result := nil;
-  if (vsProcessing in FViewerState) or (FSectionList.Count = 0) then
+  if IsProcessing or (FSectionList.Count = 0) then
     Exit;
   if Height > 4000 then
     raise EExcessiveSizeError.Create('Vertical Height exceeds 4000');
@@ -3231,7 +3166,7 @@ var
   Canvas: TMetaFileCanvas;
 begin
   Result := nil;
-  if (vsProcessing in FViewerState) or (FSectionList.Count = 0) then
+  if IsProcessing or (FSectionList.Count = 0) then
     Exit;
   if Height > 4000 then
     raise EExcessiveSizeError.Create('Vertical Height exceeds 4000');
@@ -3276,7 +3211,7 @@ begin
   Done := False;
   Result := nil;
   TablePartRec := nil;
-  if (vsProcessing in FViewerState) or (SectionList.Count = 0) then
+  if IsProcessing or (SectionList.Count = 0) then
     Exit;
   CopyList := ThtDocument.CreateCopy(SectionList);
   try
@@ -3408,18 +3343,31 @@ begin
   Result.DefFontColor := DefFontColor;
   Result.CodePage := CodePage;
   Result.MarginHeight := 0;
+
   if UseQuirksMode then
     Result.QuirksMode := qmQuirks
   else
     Result.QuirksMode := qmStandards;
+
   with Result.FSectionList do
   begin
     PrintBackground := True;
     PrintTableBackground := True;
   end;
+
   {$ifdef has_StyleElements}
   Result.StyleElements := StyleElements;
   {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 16.11.2011 --
+function THtmlViewer.CreateIFrameControl: TViewerBase;
+begin
+  if assigned(FOnCreateIFrameControl) then
+    Result := FOnCreateIFrameControl(Self, PaintPanel)
+  else
+    Result := THtmlViewerClass(ClassType).CreateCopy(PaintPanel, Self);
+  Result.Left := -4000; {so will be invisible until placed}
 end;
 
 {$ifndef NoMetafile}
@@ -3705,11 +3653,11 @@ begin
   TablePartRec := nil;
   if Assigned(FOnPageEvent) then
     FOnPageEvent(Self, 0, Done);
-  if (vsProcessing in FViewerState) or (SectionList.Count = 0) then
+  if IsProcessing or (SectionList.Count = 0) then
     Exit;
   PrintList := ThtDocument.CreateCopy(SectionList);
   PrintList.SetYOffset(0);
-  SavePrintMarginTop := FPrintMarginTop;
+  SavePrintMarginTop := PrintMarginTop;
   try
     SavedFont := TFont.Create;
     SavedPen := TPen.Create;
@@ -3814,7 +3762,7 @@ begin
         OrigTopPixelsPrn := TopPixelsPrn;
         OrigHPrn := HPrn;
         OrigH := H;
-        LastPrintMarginTop := FPrintMarginTop;
+        LastPrintMarginTop := PrintMarginTop;
 
         //BG, 05.03.2006
         HPages := ceil(ScrollWidth / W);
@@ -3996,7 +3944,7 @@ begin
       SavedBrush.Free;
     end;
   finally
-    FPrintMarginTop := SavePrintMarginTop;
+    PrintMarginTop := SavePrintMarginTop;
     PrintList.Free;
   end;
   Result := FPage;
@@ -4008,15 +3956,9 @@ begin
   PaintPanel.Color := (Sender as ThtDocument).Background or PalRelative;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnBitmapRequest: TGetBitmapEvent;
+procedure THtmlViewer.SetOnBitmapRequest(const Handler: TGetBitmapEvent);
 begin
-  Result := FSectionList.GetBitmap;
-end;
-
-procedure THtmlViewer.SetOnBitmapRequest(Handler: TGetBitmapEvent);
-begin
-  //FOnBitmapRequest := Handler;
+  inherited;
   FSectionList.GetBitmap := Handler;
 end;
 
@@ -4028,7 +3970,6 @@ end;
 
 procedure THtmlViewer.SetOnExpandName(Handler: TExpandNameEvent);
 begin
-  //FOnExpandName := Handler;
   FSectionList.ExpandName := Handler;
 end;
 
@@ -4040,115 +3981,66 @@ end;
 
 procedure THtmlViewer.SetOnFileBrowse(Handler: TFileBrowseEvent);
 begin
-  //FOnFileBrowse := Handler;
   FSectionList.FileBrowse := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnImageRequested: TGottenImageEvent;
+procedure THtmlViewer.SetOnImageRequest(const Handler: TGetImageEvent);
 begin
-  Result := FSectionList.GottenImage;
+  inherited;
+  FSectionList.GetImage := Handler;
 end;
 
-procedure THtmlViewer.SetOnImageRequested(Handler: TGottenImageEvent);
+procedure THtmlViewer.SetOnImageRequested(const Handler: TGottenImageEvent);
 begin
-  //FOnImageRequested := Handler;
+  inherited;
   FSectionList.GottenImage := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnObjectBlur: ThtObjectEvent;
+procedure THtmlViewer.SetOnObjectBlur(const Handler: ThtObjectEvent);
 begin
-  Result := FSectionList.ObjectBlur;
-end;
-
-procedure THtmlViewer.SetOnObjectBlur(Handler: ThtObjectEvent);
-begin
-  //FOnObjectBlur := Handler;
+  inherited;
   FSectionList.ObjectBlur := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnObjectChange: ThtObjectEvent;
+procedure THtmlViewer.SetOnObjectChange(const Handler: ThtObjectEvent);
 begin
-  Result := FSectionList.ObjectChange;
-end;
-
-procedure THtmlViewer.SetOnObjectChange(Handler: ThtObjectEvent);
-begin
-  //FOnObjectChange := Handler;
+  inherited;
   FSectionList.ObjectChange := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnObjectClick: TObjectClickEvent;
+procedure THtmlViewer.SetOnObjectClick(const Handler: TObjectClickEvent);
 begin
-  Result := FSectionList.ObjectClick;
-end;
-
-procedure THtmlViewer.SetOnObjectClick(Handler: TObjectClickEvent);
-begin
-  //FOnObjectClick := Handler;
+  inherited;
   FSectionList.ObjectClick := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnObjectFocus: ThtObjectEvent;
+procedure THtmlViewer.SetOnObjectFocus(const Handler: ThtObjectEvent);
 begin
-  Result := FSectionList.ObjectFocus;
-end;
-
-procedure THtmlViewer.SetOnObjectFocus(Handler: ThtObjectEvent);
-begin
-  //FOnObjectFocus := Handler;
+  inherited;
   FSectionList.ObjectFocus := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnPanelCreate: TPanelCreateEvent;
+procedure THtmlViewer.SetOnPanelCreate(const Handler: TPanelCreateEvent);
 begin
-  Result := FSectionList.PanelCreateEvent;
-end;
-
-procedure THtmlViewer.SetOnPanelCreate(Handler: TPanelCreateEvent);
-begin
-  //FOnPanelCreate := Handler;
+  inherited;
   FSectionList.PanelCreateEvent := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnPanelDestroy: TPanelDestroyEvent;
+procedure THtmlViewer.SetOnPanelDestroy(const Handler: TPanelDestroyEvent);
 begin
-  Result := FSectionList.PanelDestroyEvent;
-end;
-
-procedure THtmlViewer.SetOnPanelDestroy(Handler: TPanelDestroyEvent);
-begin
-  //FOnPanelDestroy := Handler;
+  inherited;
   FSectionList.PanelDestroyEvent := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnPanelPrint: TPanelPrintEvent;
+procedure THtmlViewer.SetOnPanelPrint(const Handler: TPanelPrintEvent);
 begin
-  Result := FSectionList.PanelPrintEvent;
-end;
-
-procedure THtmlViewer.SetOnPanelPrint(Handler: TPanelPrintEvent);
-begin
-  //FOnPanelPrint := Handler;
+  inherited;
   FSectionList.PanelPrintEvent := Handler;
 end;
 
-//-- BG ---------------------------------------------------------- 20.11.2010 --
-function THtmlViewer.GetOnScript: TScriptEvent;
+procedure THtmlViewer.SetOnScript(const Handler: TScriptEvent);
 begin
-  Result := FSectionList.ScriptEvent;
-end;
-
-procedure THtmlViewer.SetOnScript(Handler: TScriptEvent);
-begin
-  //FOnScript := Handler;
+  inherited;
   FSectionList.ScriptEvent := Handler;
 end;
 
@@ -4183,17 +4075,17 @@ begin
   FOnFormSubmit(Self, FAction, FFormTarget, FEncType, FMethod, FStringList);
 end; {user disposes of the ThtStringList}
 
-function THtmlViewer.Find(const S: WideString; MatchCase: Boolean): Boolean;
+function THtmlViewer.Find(const S: UnicodeString; MatchCase: Boolean): Boolean;
 begin
   Result := FindEx(S, MatchCase, False);
 end;
 
-function THtmlViewer.FindEx(const S: WideString; MatchCase, Reverse: Boolean): Boolean;
+function THtmlViewer.FindEx(const S: UnicodeString; MatchCase, Reverse: Boolean): Boolean;
 var
   Curs: Integer;
   X: Integer;
   Y, Pos: Integer;
-  S1: WideString;
+  S1: UnicodeString;
 begin
   Result := False;
   if S = '' then
@@ -4203,7 +4095,7 @@ begin
     if MatchCase then
       S1 := S
     else
-      S1 := WideLowerCase1(S);
+      S1 := htLowerCase(S);
     if Reverse then
       Curs := FindStringR(CaretPos, S1, MatchCase)
     else
@@ -4263,7 +4155,7 @@ end;
 procedure THtmlViewer.SelectAll;
 begin
   with FSectionList do
-    if (Count > 0) and not FNoSelect then
+    if (Count > 0) and not NoSelect then
     begin
       SelB := 0;
       with TSectionBase(Items[Count - 1]) do
@@ -4276,23 +4168,24 @@ end;
 
 procedure THtmlViewer.InitLoad;
 begin
-  if not Assigned(FSectionList.BitmapList) then
+  if not Assigned(FSectionList.ImageCache) then
   begin
-    FSectionList.BitmapList := TStringBitmapList.Create;
-    FSectionList.BitmapList.Sorted := True;
-    FSectionList.BitmapList.SetCacheCount(FImageCacheCount);
-    Include(FViewerState, vsLocalBitmapList);
+    FSectionList.ImageCache := ThtImageCache.Create;
+    FSectionList.ImageCache.Sorted := True;
+    FSectionList.ImageCache.SetCacheCount(ImageCacheCount);
+    Include(FViewerState, vsLocalImageCache);
   end;
   FSectionList.Clear;
   FSectionList.UseQuirksMode := FUseQuirksMode;
-     {$ifdef has_StyleElements}
+{$ifdef has_StyleElements}
   FSectionList.StyleElements := Self.StyleElements;
-     {$endif}
+{$endif}
   UpdateImageCache;
-  FSectionList.SetFonts(FFontName, FPreFontName, FFontSize, FFontColor,
-    FHotSpotColor, FVisitedColor, FOverColor, FBackground,
+  FSectionList.SetFonts(
+    DefFontName, DefPreFontName, DefFontSize, DefFontColor,
+    DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
     htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
-    FCodePage, FCharSet, FMarginHeight, FMarginWidth);
+    CodePage, CharSet, MarginHeight, MarginWidth);
 end;
 
 {----------------THtmlViewer.Clear}
@@ -4300,20 +4193,22 @@ end;
 procedure THtmlViewer.Clear;
 {Note: because of Frames do not clear history list here}
 begin
-  if vsProcessing in FViewerState then
+  if IsProcessing then
     Exit;
   HTMLTimer.Enabled := False;
   FSectionList.UseQuirksMode := FUseQuirksMode;
-     {$ifdef has_StyleElements}
+{$ifdef has_StyleElements}
   FSectionList.StyleElements := Self.StyleElements;
-     {$endif}
+{$endif}
   FSectionList.Clear;
-  if vsLocalBitmapList in FViewerState then
-    FSectionList.BitmapList.Clear;
-  FSectionList.SetFonts(FFontName, FPreFontName, FFontSize, FFontColor,
-    FHotSpotColor, FVisitedColor, FOverColor, FBackground,
+  if vsLocalImageCache in FViewerState then
+    FSectionList.ImageCache.Clear;
+
+  FSectionList.SetFonts(
+    DefFontName, DefPreFontName, DefFontSize, DefFontColor,
+    DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
     htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
-    FCodePage, FCharSet, FMarginHeight, FMarginWidth);
+    CodePage, CharSet, MarginHeight, MarginWidth);
   FBase := '';
   FBaseEx := '';
   FBaseTarget := '';
@@ -4322,8 +4217,8 @@ begin
   HScrollBar.Visible := False;
   CaretPos := 0;
   Sel1 := -1;
-  if Assigned(FOnSoundRequest) then
-    FOnSoundRequest(Self, '', 0, True);
+  if Assigned(OnSoundRequest) then
+    OnSoundRequest(Self, '', 0, True);
   Invalidate;
 end;
 
@@ -4592,7 +4487,7 @@ begin
     Result := FSectionList.GetSelTextBuf(Buffer, BufSize);
 end;
 
-function THtmlViewer.GetSelText: WideString;
+function THtmlViewer.GetSelText: UnicodeString;
 var
   Len: Integer;
 begin
@@ -4644,11 +4539,11 @@ begin
   end;
 end;
 
-procedure THtmlViewer.SetNoSelect(Value: Boolean);
+procedure THtmlViewer.SetNoSelect(const Value: Boolean);
 begin
-  if Value <> FNoSelect then
+  if Value <> NoSelect then
   begin
-    FNoSelect := Value;
+    inherited;
     if Value = True then
     begin
       FSectionList.SelB := -1;
@@ -4660,25 +4555,35 @@ end;
 
 procedure THtmlViewer.UpdateImageCache;
 begin
-  FSectionList.BitmapList.BumpAndCheck;
+  FSectionList.ImageCache.BumpAndCheck;
 end;
 
-procedure THtmlViewer.SetImageCacheCount(Value: Integer);
+procedure THtmlViewer.SetImageCacheCount(const Value: Integer);
 begin
-  Value := Max(0, Value);
-  Value := Min(20, Value);
-  if Value <> FImageCacheCount then
+  if Value < 0 then
   begin
-    FImageCacheCount := Value;
-    if Assigned(FSectionList.BitmapList) then
-      FSectionList.BitmapList.SetCacheCount(FImageCacheCount);
+    SetImageCacheCount(0);
+    exit;
+  end;
+  if Value > 20 then
+  begin
+    SetImageCacheCount(20);
+    exit;
+  end;
+
+  // at this point Value is between 0 and 20 incl.
+  if Value <> ImageCacheCount then
+  begin
+    inherited;
+    if Assigned(FSectionList) and Assigned(FSectionList.ImageCache) then
+      FSectionList.ImageCache.SetCacheCount(ImageCacheCount);
   end;
 end;
 
-procedure THtmlViewer.SetStringBitmapList(BitmapList: TStringBitmapList);
+procedure THtmlViewer.SetImageCache(ImageCache: ThtImageCache);
 begin
-  FSectionList.BitmapList := BitmapList;
-  Exclude(FViewerState, vsLocalBitmapList);
+  FSectionList.ImageCache := ImageCache;
+  Exclude(FViewerState, vsLocalImageCache);
 end;
 
 procedure THtmlViewer.DrawBorder;
@@ -4804,23 +4709,18 @@ begin
   if (vsProcessing in FViewerState) <> Value then
   begin
     SetViewerStateBit(vsProcessing, Value);
-    if Assigned(FOnProcessing) and not (csLoading in ComponentState) then
-      FOnProcessing(Self, vsProcessing in FViewerState);
+    if Assigned(OnProcessing) and not (csLoading in ComponentState) then
+      OnProcessing(Self, vsProcessing in FViewerState);
   end;
-end;
-
-procedure THtmlViewer.SetServerRoot(Value: ThtString);
-begin
-  FServerRoot := ExcludeTrailingPathDelimiter(Trim(Value));
 end;
 
 procedure THtmlViewer.HandleMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
 var
   DelTime, I: Integer;
 begin
-  if Assigned(FOnMeta) then
-    FOnMeta(Self, HttpEq, Name, Content);
-  if Assigned(FOnMetaRefresh) then
+  if Assigned(OnMeta) then
+    OnMeta(Self, HttpEq, Name, Content);
+  if Assigned(OnMetaRefresh) then
     if CompareText(Lowercase(HttpEq), 'refresh') = 0 then
     begin
       I := Pos(';', Content);
@@ -4839,6 +4739,17 @@ begin
         FRefreshURL := '';
       FRefreshDelay := DelTime;
     end;
+end;
+
+procedure THtmlViewer.HistoryBack;
+begin
+  HistoryIndex := HistoryIndex + 1;
+end;
+
+procedure THtmlViewer.HistoryForward;
+begin
+  if HistoryIndex > 0 then
+    HistoryIndex := HistoryIndex - 1;
 end;
 
 procedure THtmlViewer.SetOptions(Value: ThtmlViewerOptions);
@@ -4869,45 +4780,22 @@ begin
   inherited Repaint;
 end;
 
-function THtmlViewer.GetDragDrop: TDragDropEvent;
+procedure THtmlViewer.SetOnDragDrop(const Value: TDragDropEvent);
 begin
-  Result := FOnDragDrop;
-end;
-
-procedure THtmlViewer.SetDragDrop(const Value: TDragDropEvent);
-begin
-  FOnDragDrop := Value;
+  inherited;
   if Assigned(Value) then
-    PaintPanel.OnDragDrop := HTMLDragDrop
+    PaintPanel.OnDragDrop := ViewerDragDrop
   else
     PaintPanel.OnDragDrop := nil;
 end;
 
-procedure THtmlViewer.HTMLDragDrop(Sender, Source: TObject; X, Y: Integer);
+procedure THtmlViewer.SetOnDragOver(const Value: TDragOverEvent);
 begin
-  if Assigned(FOnDragDrop) then
-    FOnDragDrop(Self, Source, X, Y);
-end;
-
-function THtmlViewer.GetDragOver: TDragOverEvent;
-begin
-  Result := FOnDragOver;
-end;
-
-procedure THtmlViewer.SetDragOver(const Value: TDragOverEvent);
-begin
-  FOnDragOver := Value;
+  inherited;
   if Assigned(Value) then
-    PaintPanel.OnDragOver := HTMLDragOver
+    PaintPanel.OnDragOver := ViewerDragOver
   else
     PaintPanel.OnDragOver := nil;
-end;
-
-procedure THtmlViewer.HTMLDragOver(Sender, Source: TObject; X, Y: Integer;
-  State: TDragState; var Accept: Boolean);
-begin
-  if Assigned(FOnDragOver) then
-    FOnDragOver(Self, Source, X, Y, State, Accept);
 end;
 
 function THtmlViewer.GetFormData: TFreeList;
@@ -4933,7 +4821,7 @@ begin
     if FNameList.Objects[I] is TImageObj then
     begin
       TImageObj(FNameList.Objects[I]).ReplaceImage(NewImage);
-      if not TImageObj(FNameList.Objects[I]).ImageKnown then
+      if not TImageObj(FNameList.Objects[I]).ClientSizeKnown then
         if FSectionList.Count > 0 then
         begin
           FSectionList.GetBackgroundBitmap; {load any background bitmap}
@@ -4995,7 +4883,7 @@ begin
     end;
 end;
 
-procedure THtmlViewer.SetPrintScale(Value: Double);
+procedure THtmlViewer.SetPrintScale(const Value: Double);
 //BG, 29.08.2009: changed zoom factor limits from 0.25..4 to 0.125..8
 //BG, 07.10.2009: constants for min/max zoom factor. 
 const
@@ -5003,11 +4891,11 @@ const
   CMaxPrintScale = 8.0;
 begin
   if Value > CMaxPrintScale then
-    FPrintScale := CMaxPrintScale
+    SetPrintScale(CMaxPrintScale)
   else if Value < CMinPrintScale then
-    FPrintScale := CMinPrintScale
+    SetPrintScale(CMinPrintScale)
   else
-    FPrintScale := Value;
+    inherited;
 end;
 
 procedure THtmlViewer.Reformat;
@@ -5022,20 +4910,20 @@ end;
 
 procedure THtmlViewer.htProgressInit;
 begin
-  if Assigned(FOnProgress) then
-    FOnProgress(Self, psStarting, 0);
+  if Assigned(OnProgress) then
+    OnProgress(Self, psStarting, 0);
 end;
 
 procedure THtmlViewer.htProgress(Percent: Integer);
 begin
-  if Assigned(FOnProgress) then
-    FOnProgress(Self, psRunning, Percent);
+  if Assigned(OnProgress) then
+    OnProgress(Self, psRunning, Percent);
 end;
 
 procedure THtmlViewer.htProgressEnd;
 begin
-  if Assigned(FOnProgress) then
-    FOnProgress(Self, psEnding, 100);
+  if Assigned(OnProgress) then
+    OnProgress(Self, psEnding, 100);
 end;
 
 { TPaintPanel }
@@ -5069,6 +4957,7 @@ var
 begin
   if vsDontDraw in FViewer.FViewerState then
     Exit;
+
 {$ifdef OwnPaintPanelDoubleBuffering}
   //BG, 19.02.2011: Issue 57: bypass problems with component's double buffering and XP theme.
   OldPal := 0;
@@ -5140,6 +5029,83 @@ destructor PositionObj.Destroy;
 begin
   FormData.Free;
   inherited;
+end;
+
+{ ThvHistoryItem }
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+destructor ThvHistoryItem.Destroy;
+begin
+  FFormData.Free;
+  inherited;
+end;
+
+{ THistoryBase }
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+procedure THistory.Clear;
+begin
+  FIndex := 0;
+  FHistory.Clear;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+constructor THistory.Create;
+begin
+  inherited Create;
+  FHistory := TObjectList.Create;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+procedure THistory.Delete(Index: Integer);
+begin
+  FHistory.Delete(Index);
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+destructor THistory.Destroy;
+begin
+  FHistory.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THistory.GetCount: Integer;
+begin
+  Result := FHistory.Count;
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THistory.GetItem(Index: Integer): THistoryItem;
+begin
+  if Count = 0 then
+    Result := nil
+  else
+    Result := THistoryItem(FHistory[Index]);
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function THistory.GetLowestIndexOfUrl(const Url: ThtString; Start: Integer): Integer;
+// extracted from THtmlViewer.SetHistoryIndex
+begin
+  Result := Start;
+  while (Result > 0) and (Items[Result - 1].Url = Url) do
+    Dec(Result);
+end;
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+procedure THistory.Insert(Index: Integer; Item: THistoryItem);
+begin
+  FHistory.Insert(Index, Item);
+end;
+
+
+{ ThvHistory }
+
+//-- BG ---------------------------------------------------------- 02.01.2012 --
+function ThvHistory.GetItem(Index: Integer): ThvHistoryItem;
+begin
+  Result := ThvHistoryItem(inherited getItem(Index));
 end;
 
 initialization

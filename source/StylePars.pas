@@ -1,5 +1,5 @@
 {
-Version   11.4
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2013 by HtmlViewer Team
 
@@ -35,7 +35,7 @@ uses
   Windows,  // needed to expand inline function htUpCase
 {$endif}
   Classes, Graphics, SysUtils,
-  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn;
+  HtmlGlobals, HtmlBuffer, UrlSubs, StyleUn, StyleTypes;
 
 
 {---------  Detect Shorthand syntax }
@@ -514,7 +514,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
-      if ColorFromString(S[I], NeedPound, Dummy) then
+      if TryStrToColor(S[I], NeedPound, Dummy) then
       begin
         Values[shColor] := S[I];
         S[I] := '';
@@ -610,13 +610,13 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
 
     ExtractParn(Value, S, Count);
     for I := 0 to Count - 1 do
-      if ColorFromString(S[I], NeedPound, Dummy) then
+      if TryStrToColor(S[I], NeedPound, Dummy) then
         Values[shColor] := S[I];
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin
-      if ColorFromString(S[I], NeedPound, Dummy) then
+      if TryStrToColor(S[I], NeedPound, Dummy) then
         Values[shColor] := S[I]
       else if FindStyle(S[I]) then
         Values[shStyle] := S[I]

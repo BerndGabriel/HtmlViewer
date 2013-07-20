@@ -157,11 +157,13 @@ type
   ThtRadioButton = TRadioButton;
   ThtHintWindow = THintWindow;
 {$endif}
-  {$ifdef HasSystemUITypes}
+
+{$ifdef HasSystemUITypes}
    ThtScrollStyle = System.UITypes.TScrollStyle;
-  {$else}
+{$else}
   ThtScrollStyle = TScrollStyle;
-  {$endif}
+{$endif}
+
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)
   public

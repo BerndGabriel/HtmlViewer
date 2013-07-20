@@ -453,10 +453,11 @@ end;
 procedure TForm1.HistoryChange(Sender: TObject);
 {This event occurs when something changes history list}
 var
-  I: Integer;
+  I: integer;
   Cap: ThtString;
+  HI: THistoryItem;
 begin
-  with Sender as THtmlViewer do
+    with Sender as THtmlViewer do
   begin
     {check to see which buttons are to be enabled}
     FwdButton.Enabled := HistoryIndex > 0;
@@ -467,10 +468,11 @@ begin
     for I := 0 to MaxHistories-1 do
       with Histories[I] do
         if I < History.Count then
-        Begin
-          Cap := History.Strings[I];
-          if TitleHistory[I] <> '' then
-            Cap := Cap + '--' + TitleHistory[I];
+        begin
+          HI := History[I];
+          Cap := HI.Url;
+          if HI.Title <> '' then
+            Cap := Cap + '--' + HI.Title;
           Caption := Cap;    {Cap limits string to 80 char}
           Visible := True;
           Checked := I = HistoryIndex;

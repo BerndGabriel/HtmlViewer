@@ -1,6 +1,8 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.5
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2012 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -39,30 +41,21 @@ uses
   HtmlGlobals, htmlgif1;
 
 type
-  TRGBColor = packed record
-    Red,
-      Green,
-      Blue: Byte;
-  end;
-
-  TDisposalType = (dtUndefined, {Take no action}
-    dtDoNothing, {Leave graphic, next frame goes on top of it}
-    dtToBackground, {restore original background for next frame}
-    dtToPrevious); {restore image as it existed before this frame}
-
-type
   ThtBitmap = class(TBitmap)
   protected
     htMask: TBitmap;
     htTransparent: boolean;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
-    procedure StretchDraw(ACanvas: TCanvas; const DestRect,
-      SrcRect: TRect);
+    procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
   public
     destructor Destroy; override;
   end;
 
-  TGIFImage = class;
+  TDisposalType = (
+    dtUndefined,    {Take no action}
+    dtDoNothing,    {Leave graphic, next frame goes on top of it}
+    dtToBackground, {Restore original background for next frame}
+    dtToPrevious);  {Restore image as it existed before this frame}
 
   TgfFrame = class
   private
@@ -94,7 +87,6 @@ type
 
   TGIFImage = class(TPersistent)
   private
-    { Private declarations }
     FAnimated: Boolean;
     FCurrentFrame: Integer;
     FImageWidth: Integer;
@@ -131,7 +123,6 @@ type
     ShowIt: boolean;
     IsCopy: boolean; {set if this is a copy of one in Cache}
 
-    { Public declarations }
     constructor Create;
     constructor CreateCopy(Item: TGIFImage);
     destructor Destroy; override;
@@ -153,32 +144,36 @@ type
     property Visible: Boolean read FVisible write FVisible;
   end;
 
-function CreateAGifFromStream(Stream: TStream): TGifImage;
-// BG, 01.04.2012: unused: function CreateAGif(const Name: string; var NonAnimated: boolean): TGifImage;
+function LoadGifFromStream(out NonAnimated: boolean; Stream: TStream): TGifImage;
+//function LoadGifFromFile(const Name: string; var NonAnimated: boolean): TGifImage;
 
 implementation
 
-function CreateBitmap(Width, Height: integer): TBitmap;
-begin
-  Result := TBitmap.Create;
-  Result.Width := Width;
-  Result.Height := Height;
-end;
+//function CreateBitmap(Width, Height: integer): TBitmap;
+//begin
+//  Result := TBitmap.Create;
+//  Result.Width := Width;
+//  Result.Height := Height;
+//end;
 
-function CreateAGifFromStream(Stream: TStream): TGifImage;
+function LoadGifFromStream(out NonAnimated: boolean; Stream: TStream): TGifImage;
 var
   AGif: TGif;
   Frame: TgfFrame;
   I: integer;
   ABitmap, AMask: TBitmap;
 begin
-  AGif := TGif.Create;
+  Result := nil;
   try
-    AGif.LoadFromStream(Stream);
-    Result := TGifImage.Create;
+    NonAnimated := True;
+    AGif := TGif.Create;
     try
+      AGif.LoadFromStream(Stream);
+      Result := TGifImage.Create;
+
       Result.FNumFrames := AGif.ImageCount;
       Result.FAnimated := Result.FNumFrames > 1;
+      NonAnimated := not Result.FAnimated;
       Result.FImageWidth := AGif.Width;
       Result.FImageHeight := AGif.Height;
       Result.FNumIterations := AGif.LoopCount;
@@ -222,17 +217,15 @@ begin
       end;
       if Result.IsAnimated then
         Result.WasDisposal := dtToBackground;
-    except
-      Result.Free;
-      raise;
+    finally
+      AGif.Free;
     end;
-  finally
-    AGif.Free;
+  except
+    FreeAndNil(Result);
   end;
 end;
 
-// BG, 01.04.2012: unused:
-//function CreateAGif(const Name: string; var NonAnimated: boolean): TGifImage;
+//function LoadGifFromFile(const Name: string; var NonAnimated: boolean): TGifImage;
 //var
 //  Stream: TFileStream;
 //begin
@@ -240,7 +233,7 @@ end;
 //  try
 //    Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
 //    try
-//      Result := CreateAGifFromStream(NonAnimated, Stream);
+//      Result := LoadGifFromStream(NonAnimated, Stream);
 //    finally
 //      Stream.Free;
 //    end;

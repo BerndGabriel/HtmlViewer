@@ -170,7 +170,7 @@ type
     procedure Clear; override;
     procedure Delete(Index: integer); override;
     procedure Exchange(Index1, Index2: integer); override;
-    function Find(const S: WideString; out Index: integer): boolean; virtual;
+    function Find(const S: WideString; var Index: integer): boolean; virtual;
     function IndexOf(const S: WideString): integer; override;
     procedure Insert(Index: integer; const S: WideString); override;
     procedure Sort; virtual;
@@ -1245,7 +1245,7 @@ begin
     Result := AnsiCompareText(s1, s2);
 end;
 
-function TWideStringList.Find(const S: WideString; out Index: integer): boolean;
+function TWideStringList.Find(const S: WideString; var Index: integer): boolean;
 var
   L, R, I: integer;
   CompareRes: PtrInt;

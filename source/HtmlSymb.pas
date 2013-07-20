@@ -65,6 +65,7 @@ type
 
     ImageSy,
     PanelSy,
+    IFrameSy, IFrameEndSy,
 
     MapSy, MapEndSy,
     AreaSy,
@@ -637,7 +638,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..98] of TResWord = (
+  ElementDefinitions: array[1..99] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -716,6 +717,7 @@ const
     (Name: 'BR';          Symbol: BRSy;         EndSym: CommandSy),
     (Name: 'HR';          Symbol: HRSy;         EndSym: CommandSy),
     (Name: 'IMG';         Symbol: ImageSy;      EndSym: CommandSy),
+    (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy),
     (Name: 'BASE';        Symbol: BaseSy;       EndSym: CommandSy),
     (Name: 'BUTTON';      Symbol: ButtonSy;     EndSym: CommandSy),
     (Name: 'INPUT';       Symbol: InputSy;      EndSym: CommandSy),
