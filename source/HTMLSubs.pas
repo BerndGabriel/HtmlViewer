@@ -15224,6 +15224,7 @@ constructor TSectionBase.Create(OwnerCell: TCellBasic; Attributes: TAttributeLis
 begin
   inherited;
   FDisplay := AProp.Display;
+  TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
   ContentTop := 999999999; {large number in case it has Display: none; }
 
   DrawRect.Top    := 999999999;
