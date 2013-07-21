@@ -6374,7 +6374,7 @@ var
   I, AutoCount: Integer;
   BorderWidth: Integer;
   Percent: Boolean;
-  MyProps: TProperties;
+  TheProps, MyProps: TProperties;
 begin
    {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TTableBlock.Create');
@@ -6382,7 +6382,7 @@ begin
 
   // BG, 20.01.2013: translate table attributes to block property defaults:
   MyProps := TProperties.CreateCopy(Prop);
-//  TheProps := MyProps;
+  TheProps := MyProps;
   try
     if ATable.BorderColor <> clNone then
       MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], ATable.BorderColor)
@@ -6444,7 +6444,7 @@ begin
           MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssNone);
     end;
 
-    inherited Create(OwnerCell, Attr, Prop);
+    inherited Create(OwnerCell, Attr, TheProps);
   finally
     MyProps.Free;
   end;
