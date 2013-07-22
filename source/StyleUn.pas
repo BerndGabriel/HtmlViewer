@@ -2901,13 +2901,8 @@ begin
         end;
         'A'..'Z' :
         begin
-          if Top = EofChar then begin
-           {$IFDEF UNICODE}
-            LCh := Char(Word(LCh) or $0020);
-           {$ELSE}
-            LCh := Char(Byte(LCh) or $20);
-           {$ENDIF}
-          end;
+          if Top = EofChar then
+            LCh := ThtChar(Word(LCh) or $0020);
         end;
     end;
     Result[idx] := LCh;
