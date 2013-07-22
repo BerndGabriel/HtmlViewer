@@ -494,7 +494,9 @@ begin
     Left := IniFile.ReadInteger('HTTPForm', 'Left',   Left);
     Width := IniFile.ReadInteger('HTTPForm', 'Width',  Width);
     Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
+    {$ifdef LogIt}
     ShowDiagWindow.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
+    {$endif}
     Proxy := IniFile.ReadString('Proxy', 'ProxyHost', '');
     ProxyPort := IniFile.ReadString('Proxy', 'ProxyPort', '80');
     ProxyUser := IniFile.ReadString('Proxy', 'ProxyUsername', '');
@@ -568,7 +570,9 @@ begin
       IniFile.WriteInteger('HTTPForm', 'Left', Left);
       IniFile.WriteInteger('HTTPForm', 'Width', Width);
       IniFile.WriteInteger('HTTPForm', 'Height', Height);
+      {$ifdef LogIt}
       IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
+      {$endif}
       IniFile.WriteString('Proxy', 'ProxyHost', Proxy);
       IniFile.WriteString('Proxy', 'ProxyPort', ProxyPort);
       IniFile.WriteString('Proxy', 'ProxyUsername', ProxyUser);
