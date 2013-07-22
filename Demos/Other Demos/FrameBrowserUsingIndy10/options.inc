@@ -12,7 +12,7 @@ LogIt - set this to support a diagnostic window.
 
 {$define UseZLib}
 
-{$define LogIt}
+{.$define LogIt}
 
 {To include the Zip: protocol, define "IncludeZip" by removing the "..."}
 {...$Define IncludeZip}
