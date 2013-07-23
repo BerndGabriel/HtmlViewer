@@ -205,16 +205,8 @@ type
     procedure GetImageRequest(Sender: TObject; const URL: String; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: String; var Handled: Boolean);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: String);
-    procedure StatusBarMainDrawPanel(StatusBar: TStatusBar; Panel: TStatusPanel;
-      const Rect: TRect);
-    procedure FrameBrowserMeta(Sender: TObject; const HttpEq, Name,
-      Content: string);
-    procedure FrameBrowserScript(Sender: TObject; const Name, ContentType, Src,
-      Script: string);
-    procedure HTTPHeaders1Click(Sender: TObject);
-    procedure PageInfo1Click(Sender: TObject);
-    procedure LibraryInformation1Click(Sender: TObject);
-    procedure Source1Click(Sender: TObject);
+    procedure FrameBrowserMeta(Sender: TObject; const HttpEq, Name, Content: string);
+    procedure FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: string);
 {$else}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: WideString);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
@@ -224,7 +216,14 @@ type
     procedure GetImageRequest(Sender: TObject; const URL: WideString; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: WideString; var Handled: Boolean);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: WideString);
+    procedure FrameBrowserMeta(Sender: TObject; const HttpEq, Name, Content: WideString);
+    procedure FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: WideString);
 {$endif}
+    procedure StatusBarMainDrawPanel(StatusBar: TStatusBar; Panel: TStatusPanel; const Rect: TRect);
+    procedure HTTPHeaders1Click(Sender: TObject);
+    procedure PageInfo1Click(Sender: TObject);
+    procedure LibraryInformation1Click(Sender: TObject);
+    procedure Source1Click(Sender: TObject);
   private
     { Private declarations }
     URLBase: String;
@@ -290,7 +289,7 @@ type
     procedure SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
     procedure LoadCookies(ACookieCollection: TIdCookieManager);
     procedure CloseHints;
-    procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: string);
+    procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
   public
     { Public declarations }
   {$ifdef UseSSL}
@@ -612,7 +611,7 @@ end;
 {----------------THTTPForm.FrameBrowserFileBrowse}
 //This fires when the user hits a file-browse button on a form.
 
-procedure THTTPForm.FrameBrowserFileBrowse(Sender, Obj: TObject; var S: string);
+procedure THTTPForm.FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
 var LFile : String;
 begin
   //
@@ -1984,8 +1983,7 @@ begin
   GetButtonClick(Self);
 end;
 
-procedure THTTPForm.FrameBrowserMeta(Sender: TObject; const HttpEq, Name,
-  Content: string);
+procedure THTTPForm.FrameBrowserMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
 begin
   {$ifdef LogIt}
 LogLine ('FrameBrowserMeta, HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content);
@@ -2410,8 +2408,7 @@ begin
     inherited;
 end;
 
-procedure THTTPForm.FrameBrowserScript(Sender: TObject; const Name, ContentType,
-  Src, Script: string);
+procedure THTTPForm.FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 begin
   {$ifdef LogIt}
    LogLine ('FrameBrowserScript, Name=' + Name + ', Src=' + Src + ', Script=' + Script);
