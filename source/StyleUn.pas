@@ -42,6 +42,8 @@ uses
   HtmlSymb;
 
 const
+  CurColor_Val = 'currentColor';
+  CurColorStr = 'currentcolor';
   IntNull = -12345678;
   Auto = -12348765;
   AutoParagraph = -12348766;
@@ -3044,6 +3046,7 @@ var
   I: PropIndices;
   BS: BorderStyleType;
   NewColor : TColor;
+  LVal : THtString;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArrayDefBorder');
@@ -3064,7 +3067,13 @@ begin
         if ColorFromString(Props[I],False,NewColor) then begin
           MArray[I] := Props[I]
         end else begin
-          MArray[I] := ADefColor;
+          LVal := Props[I];
+          if LVal = CurColor_Val then begin
+            // 'currentColor'
+            MArray[I] := Props[StyleUn.Color];
+          end else begin
+            MArray[I] := ADefColor;
+          end;
         end;
       end
     else
@@ -3120,8 +3129,13 @@ begin
 //        Props[BorderBottomColor] := NewColor;
 //      end;
     BorderTopColor..BorderLeftColor:
-      if ColorFromString(PropValue, False, NewColor) then
+      if ColorFromString(PropValue, False, NewColor) then begin
         Props[Index] := NewColor;
+      end else begin
+        if LowerCase(PropValue) = CurColorStr then begin
+          Props[Index] := CurColor_Val;
+        end;
+      end;
     Color, BackgroundColor:
       if ColorFromString(PropValue, False, NewColor) then
         Props[Index] := NewColor
@@ -3341,8 +3355,12 @@ CodeSiteLogging.CodeSite.AddSeparator;
 //          Propty.Props[BorderBottomColor] := NewColor;
 //        end;
       BorderTopColor..BorderLeftColor:
-        if ColorFromString(Value, False, NewColor) then
+        if ColorFromString(Value, False, NewColor) then begin
           Propty.Props[PropIndex] := NewColor;
+        end else begin
+          if LowerCase(Value) = CurColorStr then
+            Propty.Props[PropIndex] := CurColor_Val;
+        end;
       BackgroundColor:
         if ColorFromString(Value, False, NewColor) then
           Propty.Props[PropIndex] := NewColor
