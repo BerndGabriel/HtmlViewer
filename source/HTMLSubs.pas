@@ -2560,53 +2560,57 @@ var
   TmpImage: ThtImage;
   I: Integer;
 begin
-  Transparent := NotTransp;
-  TmpImage := LoadImageFromStream(NewImage, Transparent);
-  if Assigned(TmpImage) then
-  begin
-    // remove current image
-    if not Swapped then
+  try
+    Transparent := NotTransp;
+    TmpImage := LoadImageFromStream(NewImage, Transparent);
+    if Assigned(TmpImage) then
     begin
-    {OrigImage is left in cache and kept}
-      if Image is ThtGifImage then
-        Document.AGifList.Remove(ThtGifImage(Image).Gif);
-      Swapped := True;
-    end
-    else {swapped already}
-    begin
-      if Image is ThtGifImage then
-        Document.AGifList.Remove(ThtGifImage(Image).Gif);
-      FImage.Free;
-    end;
-
-    // set new image
-    FImage := TmpImage;
-    if Image is ThtGifImage then
-    begin
-      if not FHoverImage then
+      // remove current image
+      if not Swapped then
       begin
-        ThtGifImage(Image).Gif.Animate := True;
-        Document.AGifList.Add(ThtGifImage(Image).Gif);
+      {OrigImage is left in cache and kept}
+        if Image is ThtGifImage then
+          Document.AGifList.Remove(ThtGifImage(Image).Gif);
+        Swapped := True;
       end
-      else
+      else {swapped already}
       begin
-        ThtGifImage(Image).Gif.Animate := False;
-        SetHover(hvOff);
+        if Image is ThtGifImage then
+          Document.AGifList.Remove(ThtGifImage(Image).Gif);
+        FImage.Free;
       end;
-    end;
-    if Missing then
-    begin {if waiting for image, no longer want it}
-      with Document.MissingImages do
-        for I := 0 to count - 1 do
-          if Objects[I] = Self then
-          begin
-            Delete(I);
-            break;
-          end;
-      Missing := False;
-    end;
 
-    Document.PPanel.Invalidate;
+      // set new image
+      FImage := TmpImage;
+      if Image is ThtGifImage then
+      begin
+        if not FHoverImage then
+        begin
+          ThtGifImage(Image).Gif.Animate := True;
+          Document.AGifList.Add(ThtGifImage(Image).Gif);
+        end
+        else
+        begin
+          ThtGifImage(Image).Gif.Animate := False;
+          SetHover(hvOff);
+        end;
+      end;
+      if Missing then
+      begin {if waiting for image, no longer want it}
+        with Document.MissingImages do
+          for I := 0 to count - 1 do
+            if Objects[I] = Self then
+            begin
+              Delete(I);
+              break;
+            end;
+        Missing := False;
+      end;
+
+      Document.PPanel.Invalidate;
+    end;
+  except
+    // replacing image failed
   end;
 end;
 
@@ -7455,12 +7459,12 @@ begin
       Frame := ThtGifImage(BackgroundImage).Gif.CurrentFrame;
   end;
   for I := 0 to AGifList.Count - 1 do
-    with TGifImage(AGifList.Items[I]) do
+    with TGifImage(AGifList[I]) do
       if ShowIt then
         CheckTime(PPanel);
   if IsAniGifBackground then
     if Frame <> ThtGifImage(BackgroundImage).Gif.CurrentFrame then
-    PPanel.Invalidate;
+      PPanel.Invalidate;
   Timer.Interval := 40;
 end;
 
@@ -7470,10 +7474,9 @@ var
 begin
   {After next Draw, hide all formcontrols that aren't to be shown}
   for I := 0 to htmlFormList.Count - 1 do
-    with ThtmlForm(htmlFormList.Items[I]) do
+    with ThtmlForm(htmlFormList[I]) do
       for J := 0 to ControlList.Count - 1 do
-        with TFormControlObj(ControlList.Items[J]) do
-          ShowIt := False;
+        ControlList[J].ShowIt := False;
   for I := 0 to PanelList.Count - 1 do
     TPanelObj(PanelList[I]).ShowIt := False; {same for panels}
 end;

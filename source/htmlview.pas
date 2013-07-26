@@ -2548,7 +2548,7 @@ begin
     end;
     if Pos < 0 then
       Pos := 0;
-    Pos := Math.Min(Pos, Max - PaintPanel.Width);
+    Pos := Math.Max(0, Math.Min(Pos, Max - PaintPanel.Width));
     
     if Pos <> OrigPos then
     begin

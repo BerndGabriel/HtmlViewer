@@ -4070,7 +4070,7 @@ begin
           with CurViewer[I] do
             for J := 0 to SectionList.LinkList.Count - 1 do
               TFontObj(LinkList[J]).Visited := False;
-        Invalidate; //RePaint;
+        RePaint;
       end
       else
       begin
