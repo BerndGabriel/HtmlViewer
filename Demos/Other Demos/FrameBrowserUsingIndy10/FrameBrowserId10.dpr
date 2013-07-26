@@ -28,6 +28,8 @@ program FrameBrowserId10;
 {$R 'fbHelp.res' 'Resources\fbHelp.rc'}
 
 uses
+  madExcept,
+  madLinkDisAsm,
   Forms,
   FBUnitId10 in 'FBUnitId10.pas' {HTTPForm},
   HttpAsyncId10 in 'HttpAsyncId10.pas',
