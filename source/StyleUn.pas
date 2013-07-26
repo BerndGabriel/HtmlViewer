@@ -1,4 +1,4 @@
-{
+﻿{
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin,
 Copyright (c) 2008-2013 by HtmlViewer Team
@@ -43,6 +43,14 @@ uses
   HtmlGlobals,
   HtmlSymb,
   StyleTypes;
+
+const
+  CurColor_Val = 'currentColor';
+  CurColorStr = 'currentcolor';
+  varInt = [varInteger, varByte, varSmallInt, varShortInt, varWord, varLongWord, varInt64];
+  varFloat = [varSingle, varDouble, varCurrency];
+  varNum = varInt + varFloat;
+  CrLf = #$D#$A;
 
 //BG, 16.09.2010: CSS2.2: same sizes like html font size:
 type
@@ -2682,6 +2690,7 @@ var
   I: PropIndices;
   BS: BorderStyleType;
   NewColor : TColor;
+  LVal : THtString;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArrayDefBorder');
@@ -2702,7 +2711,13 @@ begin
         if TryStrToColor(Props[I],False,NewColor) then begin
           MArray[I] := Props[I]
         end else begin
-          MArray[I] := ADefColor;
+          LVal := Props[I];
+          if LVal = CurColor_Val then begin
+            // 'currentColor'
+            MArray[I] := Props[StyleUn.Color];
+          end else begin
+            MArray[I] := ADefColor;
+          end;
         end;
       end
     else
@@ -2759,7 +2774,10 @@ begin
 //      end;
     BorderTopColor..BorderLeftColor:
       if TryStrToColor(PropValue, False, NewColor) then
-        Props[Index] := NewColor;
+        Props[Index] := NewColor
+      else if LowerCase(PropValue) = CurColorStr then
+        Props[Index] := CurColor_Val;
+
     Color, BackgroundColor:
       if TryStrToColor(PropValue, False, NewColor) then
         Props[Index] := NewColor
@@ -2767,41 +2785,45 @@ begin
         Props[Index] := clBlack
       else
         Props[Index] := clNone;
+
     MarginTop..BorderLeftWidth, piWidth..LeftPos:
       Props[Index] := PropValue;
+
     FontSize:
       Props[FontSize] := PropValue;
+
     Visibility:
-      begin
-        if PropValue = 'visible' then
-          Props[Visibility] := viVisible
-        else if PropValue = 'hidden' then
-          Props[Visibility] := viHidden;
-      end;
+      if PropValue = 'visible' then
+        Props[Visibility] := viVisible
+      else if PropValue = 'hidden' then
+        Props[Visibility] := viHidden;
+
     TextTransform:
-      begin
-        if PropValue = 'uppercase' then
-          Props[TextTransform] := txUpper
-        else if PropValue = 'lowercase' then
-          Props[TextTransform] := txLower
-        else
-          Props[TextTransform] := txNone;
-      end;
+      if PropValue = 'uppercase' then
+        Props[TextTransform] := txUpper
+      else if PropValue = 'lowercase' then
+        Props[TextTransform] := txLower
+      else
+        Props[TextTransform] := txNone;
+
     WordWrap:
       if PropValue = 'break-word' then
         Props[WordWrap] := PropValue
       else
         Props[WordWrap] := 'normal';
+
     piWhiteSpace:
       if PropValue = 'nowrap' then
         Props[piWhiteSpace] := PropValue
       else if PropValue = 'normal' then
         Props[piWhiteSpace] := 'normal';
+
     FontVariant:
       if PropValue = 'small-caps' then
         Props[FontVariant] := PropValue
       else if PropValue = 'normal' then
         Props[FontVariant] := 'normal';
+
     BorderTopStyle..BorderLeftStyle:
       begin
 //        if PropValue <> 'none' then
@@ -2979,45 +3001,51 @@ CodeSiteLogging.CodeSite.AddSeparator;
 //          Propty.Props[BorderRightColor] := NewColor;
 //          Propty.Props[BorderBottomColor] := NewColor;
 //        end;
+
       BorderTopColor..BorderLeftColor:
         if TryStrToColor(Value, False, NewColor) then
-          Propty.Props[PropIndex] := NewColor;
+          Propty.Props[PropIndex] := NewColor
+        else if LowerCase(Value) = CurColorStr then
+          Propty.Props[PropIndex] := CurColor_Val;
+
       BackgroundColor:
         if TryStrToColor(Value, False, NewColor) then
           Propty.Props[PropIndex] := NewColor
         else
           Propty.Props[PropIndex] := clNone;
+
       Visibility:
-        begin
-          if Value = 'visible' then
-            Propty.Props[Visibility] := viVisible
-          else if Value = 'hidden' then
-            Propty.Props[Visibility] := viHidden;
-        end;
+        if Value = 'visible' then
+          Propty.Props[Visibility] := viVisible
+        else if Value = 'hidden' then
+          Propty.Props[Visibility] := viHidden;
+
       TextTransform:
-        begin
-          if Value = 'uppercase' then
-            Propty.Props[TextTransform] := txUpper
-          else if Value = 'lowercase' then
-            Propty.Props[TextTransform] := txLower
-          else
-            Propty.Props[TextTransform] := txNone;
-        end;
+        if Value = 'uppercase' then
+          Propty.Props[TextTransform] := txUpper
+        else if Value = 'lowercase' then
+          Propty.Props[TextTransform] := txLower
+        else
+          Propty.Props[TextTransform] := txNone;
+
       WordWrap:
         if Value = 'break-word' then
           Propty.Props[WordWrap] := Value
         else
           Propty.Props[WordWrap] := 'normal';
+
       piWhiteSpace:
         if Value = 'nowrap' then
           Propty.Props[piWhiteSpace] := Value
         else if Value = 'normal' then
           Propty.Props[piWhiteSpace] := 'normal';
+
       FontVariant:
         if Value = 'small-caps' then
           Propty.Props[FontVariant] := Value
         else if Value = 'normal' then
           Propty.Props[FontVariant] := 'normal';
+          
       BorderTopStyle..BorderLeftStyle:
         begin
 //          if Value <> 'none' then
