@@ -1258,6 +1258,18 @@ begin
                 Pop
               else
                 Push(LCh);
+            '(' :
+              Push(')');
+            ')' :
+            begin
+              if LCh = Top then
+                Pop;
+              if Top = EofChar then begin
+                 SetLength(Value, Length(Value) + 1);
+                  Value[Length(Value)] := LCh;
+                  break;
+                end;
+              end;
             end;
 
             SetLength(Value, Length(Value) + 1);
