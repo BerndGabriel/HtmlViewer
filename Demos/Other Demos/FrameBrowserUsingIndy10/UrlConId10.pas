@@ -666,7 +666,7 @@ begin
     '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">'+EOL+
     '<head>'+EOL+
     '<meta charset="utf-8" />'+EOL+
-    '<base href="file://'+ DosToHTML(ADirName) +'" />'+EOL+
+    '<base href="file://'+ TIdURI.PathEncode(DosToHTML(ADirName)) +'" />'+EOL+
     '<title>'+ADirName+'</title>'+EOL+
     '<style type="text/css" media="screen">'+EOL+
     '.fn {text-align:left; font-weight:normal;}'+EOL+
@@ -698,14 +698,14 @@ begin
       case IdGlobal.PosInStrArray(F.Name,['.','..']) of
       0 : begin   //'.'
             WriteStringToStream(AStream,
-            'file://'+DosToHtml( ADirName )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+            'file://'+TIdURI.PathEncode( DosToHtml( ADirName ))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
               '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
               '<td class="sz">DIR<br /></td>'+EOL+
               '</tr>'+EOL,LEnc);
           end;
       1 : begin   //'..'
             WriteStringToStream(AStream,
-            'file://'+DosToHtml( ExtractFileDir(ADirName) )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+            'file://'+TIdURI.PathEncode(DosToHtml( ExtractFileDir(ADirName) ))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
               '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
               '<td class="sz">DIR<br /></td>'+EOL+
               '</tr>'+EOL,LEnc);
@@ -715,7 +715,7 @@ begin
           if F.Attr and faDirectory <> 0 then
           begin
             WriteStringToStream(AStream,
-            DosToHtml( F.Name )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+              TIdURI.PathEncode(DosToHtml( F.Name))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
               '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
               '<td class="sz">DIR<br /></td>'+EOL+
               '</tr>'+EOL,LEnc);
@@ -723,7 +723,7 @@ begin
           else
           begin
             WriteStringToStream(AStream,
-            DosToHtml( F.Name )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
+            TIdURI.PathEncode(DosToHtml( F.Name ))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
             '<td class="tm">&nbsp;&nbsp;&nbsp;'+DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
             '<td class="sz">'+IntToStr(F.Size)+'<br /></td>'+EOL+
             '</tr>'+EOL,LEnc);
