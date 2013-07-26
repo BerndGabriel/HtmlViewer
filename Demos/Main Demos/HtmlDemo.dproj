@@ -39,7 +39,6 @@
     <DCC_DcuOutput>lib\Delphi2007</DCC_DcuOutput>
     <DCC_ObjOutput>lib\Delphi2007</DCC_ObjOutput>
     <DCC_HppOutput>lib\Delphi2007</DCC_HppOutput>
-    <DCC_Define>madExcept</DCC_Define>
     <DCC_MapFile>3</DCC_MapFile>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" Condition="Exists('$(MSBuildBinPath)\Borland.Delphi.Targets')" />
