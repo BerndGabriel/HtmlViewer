@@ -1341,8 +1341,11 @@ begin
             begin
               if LCh = Top then
                 Pop;
-              if Top = EofChar then
-                break;
+              if Top = EofChar then begin
+                 SetLength(Value, Length(Value) + 1);
+                  Value[Length(Value)] := LCh;
+                  break;
+                end;
               end;
             end;
 
