@@ -3,7 +3,7 @@ object HTTPForm: THTTPForm
   Top = 261
   ActiveControl = UrlComboBox
   Caption = 'Experimental Browser'
-  ClientHeight = 231
+  ClientHeight = 251
   ClientWidth = 570
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -24,8 +24,9 @@ object HTTPForm: THTTPForm
     Left = 0
     Top = 41
     Width = 570
-    Height = 171
+    Height = 191
     CharSet = ANSI_CHARSET
+    CodePage = 0
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
@@ -33,6 +34,12 @@ object HTTPForm: THTTPForm
     HistoryIndex = 0
     HistoryMaxCount = 0
     NoSelect = False
+    PrintMarginBottom = 3.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
+    QuirksMode = qmDetect
     OnBlankWindowRequest = BlankWindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -45,12 +52,6 @@ object HTTPForm: THTTPForm
     OnRightClick = RightClick
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
-    PrintMarginBottom = 3.000000000000000000
-    PrintMarginLeft = 2.000000000000000000
-    PrintMarginRight = 2.000000000000000000
-    PrintMarginTop = 2.000000000000000000
-    PrintScale = 1.000000000000000000
-    QuirksMode = qmDetect
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
@@ -68,7 +69,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 161
+        Width = 162
       end
       item
         Break = False
@@ -85,12 +86,12 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 175
+        Width = 174
       end>
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 148
+      Width = 149
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -134,7 +135,7 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 204
+      Left = 205
       Top = 8
       Width = 179
       Height = 21
@@ -201,7 +202,6 @@ object HTTPForm: THTTPForm
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 138
         object Animate1: TAnimate
           Left = 3
           Top = 8
@@ -215,7 +215,7 @@ object HTTPForm: THTTPForm
   end
   object StatusBarMain: TStatusBar
     Left = 0
-    Top = 212
+    Top = 232
     Width = 570
     Height = 19
     Panels = <
@@ -407,7 +407,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 120
     Bitmap = {
-      494C01010D001100040011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D0011000C0011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

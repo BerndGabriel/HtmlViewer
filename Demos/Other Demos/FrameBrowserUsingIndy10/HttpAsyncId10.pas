@@ -15,6 +15,7 @@ uses
   {$endif}
 
 type
+
   THTTPAsync = class(TThread)
   private
     { Private declarations }
@@ -60,7 +61,9 @@ begin
   Stream := TMemoryStream.Create;
 
   HTTP := TIdHTTP.Create(Nil);
+{$ifdef HasHoNoParseMetaHTTPEquiv}
   HTTP.HTTPOptions := HTTP.HTTPOptions + [hoNoParseMetaHTTPEquiv];
+{$endif}
   HTTP.HandleRedirects := True;
   HTTP.ProtocolVersion := pv1_0;
 
@@ -107,8 +110,7 @@ begin
   end;
 end;
 
-procedure THTTPAsync.WorkHandler(ASender: TObject; AWorkMode: TWorkMode;
-   AWorkCount: Int64);
+procedure THTTPAsync.WorkHandler(ASender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
 begin
   if Terminated then
   begin

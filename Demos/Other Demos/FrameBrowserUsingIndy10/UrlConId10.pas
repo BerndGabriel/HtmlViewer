@@ -653,6 +653,7 @@ good HTML habits.}
 var
   F : TSearchRec;
   LEnc : IIdTextEncoding;
+  TimeStamp: TDateTime;
 begin
   {$ifdef Compiler24_Plus}
   LEnc := IndyTextEncoding_UTF8;
@@ -687,18 +688,23 @@ begin
     repeat
       WriteStringToStream(AStream,'<tr>'+EOL+
        '<th class="fn" scope="row"><a href="',LEnc);
+{$ifdef TSearchRecHasNoTimestamp}
+        TimeStamp := FileDateToDateTime(F.Time);
+{$else}
+        TimeStamp := F.TimeStamp;
+{$endif}
       case IdGlobal.PosInStrArray(F.Name,['.','..']) of
       0 : begin   //'.'
             WriteStringToStream(AStream,
             'file://'+DosToHtml( ADirName )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
               '<td class="sz">DIR<br /></td>'+EOL+
               '</tr>'+EOL,LEnc);
           end;
       1 : begin   //'..'
             WriteStringToStream(AStream,
             'file://'+DosToHtml( ExtractFileDir(ADirName) )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
               '<td class="sz">DIR<br /></td>'+EOL+
               '</tr>'+EOL,LEnc);
           end;
@@ -708,7 +714,7 @@ begin
           begin
             WriteStringToStream(AStream,
             DosToHtml( F.Name )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
               '<td class="sz">DIR<br /></td>'+EOL+
               '</tr>'+EOL,LEnc);
           end
@@ -716,7 +722,7 @@ begin
           begin
             WriteStringToStream(AStream,
             DosToHtml( F.Name )+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-            '<td class="tm">&nbsp;&nbsp;&nbsp;'+DateTimeToStr ( F.TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
+            '<td class="tm">&nbsp;&nbsp;&nbsp;'+DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
             '<td class="sz">'+IntToStr(F.Size)+'<br /></td>'+EOL+
             '</tr>'+EOL,LEnc);
           end;
