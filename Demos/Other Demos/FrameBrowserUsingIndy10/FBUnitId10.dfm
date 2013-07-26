@@ -298,7 +298,7 @@ object HTTPForm: THTTPForm
         OnClick = PageInfo1Click
       end
       object Source1: TMenuItem
-        Caption = '&Source'
+        Caption = '&Source...'
         OnClick = Source1Click
       end
     end
