@@ -69,6 +69,7 @@ uses
       {$message 'HtmlViewer uses VCL standard controls.'}
     {$endif}
     Buttons,
+    Messages,
     {$ifdef Compiler18_Plus}
       WideStrings,
     {$else}
@@ -150,7 +151,19 @@ type
   ThtHintWindow = TTntHintWindow;
 {$else}
   ThtButton = TBitBtn; //BG, 25.12.2010: TBitBtn uses correct charset, but TButton does not.
-  ThtMemo = TMemo;
+  {Hack solution based on:
+  http://stackoverflow.com/questions/1465845/cuetext-equivalent-for-a-tmemo
+  }
+  ThtMemo = class(TMemo)
+  protected
+     FTextHint: TStrings;
+     FCanvas : TCanvas;
+     procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
+  public
+     constructor Create(AOwner : TComponent); override;
+     destructor Destroy; override;
+     property TextHint: TStrings read FTextHint write FTextHint;
+  end;
   ThtCombobox = TCombobox;
   ThtListbox = TListbox;
   ThtCheckBox = TCheckBox;
@@ -377,6 +390,44 @@ function TextEndsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline}
 function TextStartsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 implementation
+
+{$ifndef UseTNT}
+constructor THtMemo.Create(AOwner: TComponent);
+begin
+  inherited;
+  FTextHint             := TStringList.Create;
+  FCanvas               := TControlCanvas.Create;
+//  FTextHintFont         := TFont.Create;
+//  FTextHintFont.Color   := clGrayText;
+  TControlCanvas(FCanvas).Control := Self;
+end;
+
+destructor THtMemo.Destroy;
+begin
+//  FreeAndNil(FTextHintFont);
+  FreeAndNil(FCanvas);
+  FTextHint.Clear;
+  FreeAndNil(FTextHint);
+ inherited;
+end;
+
+procedure THtMemo.WMPaint(var Message: TWMPaint);
+Var
+  i            : integer;
+  TextHeight   : Integer;
+begin
+  inherited;
+  if  (Text = '') and (not Focused) then
+  begin
+  FCanvas.Font := Font;//FTextHintFont;
+  FCanvas.Font.Color := clGrayText;
+  TextHeight:=FCanvas.TextHeight('MLZ'); //Dummy Text to determine Height
+    for i := 0 to FTextHint.Count - 1 do
+    FCanvas.TextOut(1, 1+(i*TextHeight), FTextHint[i]);
+  end;
+end;
+{$endif}
+
 {$ifdef has_StyleElements}
 function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
 begin

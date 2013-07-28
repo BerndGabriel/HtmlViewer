@@ -89,6 +89,7 @@
                 {$define Compiler20_Plus}
                 {$ifdef ver200}
                 {$else}
+                   {$define Compiler21_Plus}
                   {$ifdef ver210}
                   {$else}
                     {$ifdef ver220}
@@ -123,6 +124,14 @@
     {$else}
       {$define UseInline}
     {$endif}
+  {$endif}
+
+  {$ifdef Compiler20_Plus}
+  {$define TeditHasTextHint}
+  {$endif}
+
+  {$ifdef Compiler21_Plus}
+  {$define TComboBoxHasTextHint}
   {$endif}
 
   {$ifdef Compiler23_Plus}
