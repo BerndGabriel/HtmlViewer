@@ -146,6 +146,7 @@ type
     EnterContents: ThtString;
       {$ifndef UseTNT}
     FPlaceholder : THtString;
+    FMaxLength : Integer;
       {$endif}
     function GetLine(Index: Integer): ThtString;
     function GetText: ThtString;
@@ -684,6 +685,10 @@ begin
   if L.Find(PlaceholderSy, T) then begin
       FPlaceholder := T.Name;
      FControl.TextHint.Add( FPlaceholder);
+  end;
+  if L.Find(MaxLengthSy, T) then begin
+      FMaxLength := T.Value;
+      FControl.MaxLength := T.Value;
   end;
   {$endif}
 end;
