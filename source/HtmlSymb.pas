@@ -191,6 +191,7 @@ type
     OnChangeSy,
     OnClickSy,
     OnFocusSy,
+    PlaceholderSy,
     PlainSy,
     RadioSy,
     RatioSy,
@@ -774,7 +775,7 @@ end;
 
 procedure InitAttributes;
 const
-  AttribDefinitions: array[1..87] of TSymbolRec = (
+  AttribDefinitions: array[1..88] of TSymbolRec = (
     (Name: 'ACTION';            Value: ActionSy),
     (Name: 'ACTIVE';            Value: ActiveSy),
     (Name: 'ALIGN';             Value: AlignSy),
@@ -830,6 +831,7 @@ const
     (Name: 'ONCHANGE';          Value: OnChangeSy),
     (Name: 'ONCLICK';           Value: OnClickSy),
     (Name: 'ONFOCUS';           Value: OnFocusSy),
+    (Name: 'PLACEHOLDER';       Value: PlaceholderSy),
     (Name: 'PLAIN';             Value: PlainSy),
     (Name: 'RADIO';             Value: RadioSy),
     (Name: 'RATIO';             Value: RatioSy),
