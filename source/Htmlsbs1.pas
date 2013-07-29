@@ -117,9 +117,7 @@ type
   private
     FControl: ThtCombobox;
     EnterIndex: integer;
-    {$ifdef TeditHasTextHint}
     FPlaceholder : ThtString;
-    {$endif}
 {$IFDEF OpOnChange}
     procedure OptionalOnChange(Sender: TObject);
 {$ENDIF}
@@ -144,10 +142,8 @@ type
   private
     FControl: ThtMemo;
     EnterContents: ThtString;
-      {$ifndef UseTNT}
     FPlaceholder : THtString;
     FMaxLength : Integer;
-      {$endif}
     function GetLine(Index: Integer): ThtString;
     function GetText: ThtString;
     procedure SetText(const AValue: ThtString);
@@ -492,12 +488,11 @@ begin
 {$endif}
   end;
   FControl.Parent := PntPanel;
-{$ifdef TComboBoxHasTextHint}
-    if L.Find(PlaceholderSy, T) then begin
-      FPlaceholder := T.Name;
-      FControl.TextHint := FPlaceholder;
-    end;
-{$endif}
+  if L.Find(PlaceholderSy, T) then
+  begin
+    FPlaceholder := T.Name;
+    FControl.TextHint := FPlaceholder;
+  end;
 end;
 
 procedure TComboFormControlObj.ResetToValue;
@@ -680,17 +675,17 @@ begin
      {$endif}
   end;
   FControl.Parent := PntPanel;
-  {$ifndef UseTNT}
   FControl.TextHint.Clear;
-  if L.Find(PlaceholderSy, T) then begin
-      FPlaceholder := T.Name;
-     FControl.TextHint.Add( FPlaceholder);
+  if L.Find(PlaceholderSy, T) then
+  begin
+    FPlaceholder := T.Name;
+    FControl.TextHint.Add( FPlaceholder);
   end;
-  if L.Find(MaxLengthSy, T) then begin
+  if L.Find(MaxLengthSy, T) then
+  begin
       FMaxLength := T.Value;
       FControl.MaxLength := T.Value;
   end;
-  {$endif}
 end;
 
 destructor TTextAreaFormControlObj.Destroy;
