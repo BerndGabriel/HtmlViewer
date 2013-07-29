@@ -673,6 +673,7 @@ begin
     PreviewBox.HorzScrollBar.Visible := True;
     PreviewBox.VertScrollBar.Visible := True;
   end;
+
 end;
 
 //- BG ----------------------------------------------------------- 06.03.2006 --
@@ -849,6 +850,13 @@ begin
 
   FitHeight.Down  := ZoomBox.ItemIndex = 1;
   FitWidth.Down := ZoomBox.ItemIndex = 2;
+
+  Panning.Enabled := PreviewBox.VertScrollBar.Visible or PreviewBox.HorzScrollBar.Visible or (PreviewPanel.Left <> 0) or (PreviewPanel.Top <> 0);
+  if not Panning.Enabled then
+  begin
+    Panning.Down := False;
+    PanningClick(Panning);
+  end;
 end;
 
 //- BG ----------------------------------------------------------- 06.11.2006 --
@@ -1045,6 +1053,7 @@ begin
   begin
     Pos := TControl(Sender).ClientToParent(Point(X, Y), PreviewBox);
     PreviewBox.MouseMove(Shift, Pos.X, Pos.Y);
+    PreviewPanel.UpdatePreview;
   end;
 end;
 
@@ -1054,9 +1063,13 @@ procedure TBegaCustomPreviewFrame.PreviewPanelMouseUp(Sender: TObject;
 var
   Pos: TPoint;
 begin
-  Pos := TControl(Sender).ClientToParent(Point(X, Y), PreviewBox);
-  PreviewBox.MouseUp(Button, Shift, Pos.X, Pos.Y);
-  Moving := False;
+  if Moving then
+  begin
+    Moving := False;
+    Pos := TControl(Sender).ClientToParent(Point(X, Y), PreviewBox);
+    PreviewBox.MouseUp(Button, Shift, Pos.X, Pos.Y);
+    PreviewPanel.UpdatePreview;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 31.08.2009 --

@@ -135,6 +135,7 @@ type
     procedure WMHScroll(var Message: TWMHScroll); message WM_HSCROLL;
     procedure WMVScroll(var Message: TWMVScroll); message WM_VSCROLL;
     procedure CMBiDiModeChanged(var Message: TMessage); message CM_BIDIMODECHANGED;
+    function GetMaxScroll: TPoint;
   protected
     function AutoScrollEnabled: Boolean; virtual;
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
@@ -1080,13 +1081,34 @@ begin
     inherited;
 end;
 
+//-- BG ---------------------------------------------------------- 29.07.2013 --
+function TBegaScrollingWinControl.GetMaxScroll(): TPoint;
+var
+  I: Integer;
+  Control: TControl;
+begin
+  // Do not scroll topest leftest corner of all child controls into my client rect.
+  Result.X := 0;
+  Result.Y := 0;
+  for I := 0 to ControlCount - 1 do
+  begin
+    Control := Controls[I];
+    Result.X := Max(Result.X, -Control.Left);
+    Result.Y := Max(Result.Y, -Control.Top);
+  end;
+end;
+
 //- BG ----------------------------------------------------------- 13.07.2006 --
-procedure TBegaScrollingWinControl.MouseMove(Shift: TShiftState; X,
-  Y: Integer);
+procedure TBegaScrollingWinControl.MouseMove(Shift: TShiftState; X, Y: Integer);
+var
+  Scroll: TPoint;
 begin
   if FPanning then
   begin
-    ScrollBy(X - FPanningStart.X, Y- FPanningStart.Y);
+    Scroll := GetMaxScroll;
+    Scroll.X := Min(Scroll.X, X - FPanningStart.X);
+    Scroll.Y := Min(Scroll.Y, Y - FPanningStart.Y);
+    ScrollBy(Scroll.X, Scroll.Y);
     FPanningStart.X := X;
     FPanningStart.Y := Y;
   end
@@ -1097,10 +1119,15 @@ end;
 //- BG ----------------------------------------------------------- 13.07.2006 --
 procedure TBegaScrollingWinControl.MouseUp(Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+var
+  Scroll: TPoint;
 begin
   if FPanning then
   begin
-    ScrollBy(X - FPanningStart.X, Y- FPanningStart.Y);
+    Scroll := GetMaxScroll;
+    Scroll.X := Min(Scroll.X, X - FPanningStart.X);
+    Scroll.Y := Min(Scroll.Y, Y - FPanningStart.Y);
+    ScrollBy(Scroll.X, Scroll.Y);
     FPanning := False;
   end
   else
