@@ -158,11 +158,14 @@ type
   protected
      FTextHint: TStrings;
      FCanvas : TCanvas;
+     FMaxLength : Integer;
+     procedure SetMaxLength(const AValue : Integer);
      procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
   public
      constructor Create(AOwner : TComponent); override;
      destructor Destroy; override;
      property TextHint: TStrings read FTextHint write FTextHint;
+     property MaxLength: Integer read FMaxLength write SetMaxLength;
   end;
   ThtCombobox = TCombobox;
   ThtListbox = TListbox;
@@ -402,6 +405,7 @@ begin
 //  FTextHintFont         := TFont.Create;
 //  FTextHintFont.Color   := clGrayText;
   TControlCanvas(FCanvas).Control := Self;
+  FMaxLength := 0;
 end;
 
 destructor THtMemo.Destroy;
@@ -426,6 +430,14 @@ begin
   TextHeight:=FCanvas.TextHeight('MLZ'); //Dummy Text to determine Height
     for i := 0 to FTextHint.Count - 1 do
     FCanvas.TextOut(1, 1+(i*TextHeight), FTextHint[i]);
+  end;
+end;
+
+procedure THtMemo.SetMaxLength(const AValue : Integer);
+begin
+  if AValue <> FMaxLength then begin
+    FMaxLength := AValue;
+    SendMessage(Handle, EM_LIMITTEXT, AValue, 0);
   end;
 end;
 {$endif}
