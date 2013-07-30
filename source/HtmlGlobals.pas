@@ -56,6 +56,7 @@ uses
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
     {$endif}
+    Messages,
     TntControls,
     TntStdCtrls,
     {$ifdef Compiler18_Plus}
@@ -139,35 +140,57 @@ type
   ThtEdit = class({$ifdef UseTNT} TTntEdit {$else} TEdit {$endif})
   protected
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+{$ifndef TEditHasTextHint}
+  private
+    FTextHint: ThtString;
+    FCanvas : TControlCanvas;
+    procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    property TextHint: ThtString read FTextHint write FTextHint;
+{$endif}
+  end;
+
+  ThtComboBox = class({$ifdef UseTNT} TTntComboBox {$else} TComboBox {$endif})
+{$ifndef TComboBoxHasTextHint}
+  private
+    FTextHint: ThtString;
+    FCanvas : TControlCanvas;
+    procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    property TextHint: ThtString read FTextHint write FTextHint;
+{$endif}
+  end;
+
+  {Hack solution based on:
+  http://stackoverflow.com/questions/1465845/cuetext-equivalent-for-a-tmemo
+  }
+  ThtMemo = class({$ifdef UseTNT} TTntMemo {$else} TMemo {$endif})
+  private
+    FTextHint: TStrings;
+    FCanvas : TControlCanvas;
+    FMaxLength : Integer;
+    procedure SetMaxLength(const AValue: Integer);
+    procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    property TextHint: TStrings read FTextHint {write FTextHint};  // BG, 29.07.2013: "write FTextHint" would produce memory leaks!!!
+    property MaxLength: Integer read FMaxLength write SetMaxLength;
   end;
 
 {$ifdef UseTNT}
   ThtButton = TTntButton;
-  ThtMemo = TTntMemo;
-  ThtCombobox = TTntComboBox;
+  ThtMemoBase = TTntMemo;
   ThtListbox = TTntListBox;
   ThtCheckBox = TTntCheckBox;
   ThtRadioButton = TTntRadioButton;
   ThtHintWindow = TTntHintWindow;
 {$else}
   ThtButton = TBitBtn; //BG, 25.12.2010: TBitBtn uses correct charset, but TButton does not.
-  {Hack solution based on:
-  http://stackoverflow.com/questions/1465845/cuetext-equivalent-for-a-tmemo
-  }
-  ThtMemo = class(TMemo)
-  protected
-     FTextHint: TStrings;
-     FCanvas : TCanvas;
-     FMaxLength : Integer;
-     procedure SetMaxLength(const AValue : Integer);
-     procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
-  public
-     constructor Create(AOwner : TComponent); override;
-     destructor Destroy; override;
-     property TextHint: TStrings read FTextHint write FTextHint;
-     property MaxLength: Integer read FMaxLength write SetMaxLength;
-  end;
-  ThtCombobox = TCombobox;
   ThtListbox = TListbox;
   ThtCheckBox = TCheckBox;
   ThtRadioButton = TRadioButton;
@@ -396,7 +419,64 @@ function TextStartsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInlin
 
 implementation
 
-{$ifndef UseTNT}
+{$ifndef TEditHasTextHint}
+constructor ThtEdit.Create(AOwner: TComponent);
+begin
+  inherited;
+  FCanvas := TControlCanvas.Create;
+//  FTextHintFont         := TFont.Create;
+//  FTextHintFont.Color   := clGrayText;
+  FCanvas.Control := Self;
+end;
+
+destructor ThtEdit.Destroy;
+begin
+//  FreeAndNil(FTextHintFont);
+  FreeAndNil(FCanvas);
+ inherited;
+end;
+
+procedure ThtEdit.WMPaint(var Message: TWMPaint);
+begin
+  inherited;
+  if  (Text = '') and (not Focused) then
+  begin
+    FCanvas.Font := Font;//FTextHintFont;
+    FCanvas.Font.Color := clGrayText;
+    FCanvas.TextOut(1, 1, FTextHint);
+  end;
+end;
+{$endif}
+
+{$ifndef TComboBoxHasTextHint}
+constructor ThtComboBox.Create(AOwner: TComponent);
+begin
+  inherited;
+  FCanvas := TControlCanvas.Create;
+//  FTextHintFont         := TFont.Create;
+//  FTextHintFont.Color   := clGrayText;
+  FCanvas.Control := Self;
+end;
+
+destructor ThtComboBox.Destroy;
+begin
+//  FreeAndNil(FTextHintFont);
+  FreeAndNil(FCanvas);
+ inherited;
+end;
+
+procedure ThtComboBox.WMPaint(var Message: TWMPaint);
+begin
+  inherited;
+  if  (Text = '') and (not Focused) then
+  begin
+    FCanvas.Font := Font;//FTextHintFont;
+    FCanvas.Font.Color := clGrayText;
+    FCanvas.TextOut(1, 1, FTextHint);
+  end;
+end;
+{$endif}
+
 constructor THtMemo.Create(AOwner: TComponent);
 begin
   inherited;
@@ -425,11 +505,11 @@ begin
   inherited;
   if  (Text = '') and (not Focused) then
   begin
-  FCanvas.Font := Font;//FTextHintFont;
-  FCanvas.Font.Color := clGrayText;
-  TextHeight:=FCanvas.TextHeight('MLZ'); //Dummy Text to determine Height
+    FCanvas.Font := Font;//FTextHintFont;
+    FCanvas.Font.Color := clGrayText;
+    TextHeight := FCanvas.TextHeight('MLZ'); //Dummy Text to determine Height
     for i := 0 to FTextHint.Count - 1 do
-    FCanvas.TextOut(1, 1+(i*TextHeight), FTextHint[i]);
+      FCanvas.TextOut(1, 1+(i*TextHeight), FTextHint[i]);
   end;
 end;
 
@@ -440,7 +520,6 @@ begin
     SendMessage(Handle, EM_LIMITTEXT, AValue, 0);
   end;
 end;
-{$endif}
 
 {$ifdef has_StyleElements}
 function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
@@ -456,19 +535,19 @@ end;
 
 function ThemedColor(const AColor : TColor): TColor;
 begin
-  {$ifdef UseVCLStyles}
+{$ifdef UseVCLStyles}
   if TStyleManager.IsCustomStyleActive then begin
     Result := StyleServices.GetSystemColor(AColor);
   end else begin
     Result := AColor;
   end;
   Result := ColorToRGB(Result);
-  {$else}
+{$else}
   if AColor < 0 then
     Result := GetSysColor(AColor and $FFFFFF)
   else
     Result := AColor and $FFFFFF;
-  {$endif}
+{$endif}
 end;
 {$endif}
 

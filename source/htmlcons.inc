@@ -127,11 +127,8 @@
   {$endif}
 
   {$ifdef Compiler20_Plus}
-  {$define TeditHasTextHint}
-  {$endif}
-
-  {$ifdef Compiler21_Plus}
-  {$define TComboBoxHasTextHint}
+    {$define TEditHasTextHint}
+    {$define TComboBoxHasTextHint}
   {$endif}
 
   {$ifdef Compiler23_Plus}
