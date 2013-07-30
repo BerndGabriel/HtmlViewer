@@ -118,6 +118,9 @@ type
   private
     FControl: ThtCombobox;
     EnterIndex: integer;
+    {$ifdef TeditHasTextHint}
+    FPlaceholder : ThtString;
+    {$endif}
 {$IFDEF OpOnChange}
     procedure OptionalOnChange(Sender: TObject);
 {$ENDIF}
@@ -142,6 +145,9 @@ type
   private
     FControl: ThtMemo;
     EnterContents: ThtString;
+      {$ifndef UseTNT}
+    FPlaceholder : THtString;
+      {$endif}
     function GetLine(Index: Integer): ThtString;
     function GetText: ThtString;
     procedure SetText(const AValue: ThtString);
@@ -453,6 +459,7 @@ constructor TComboFormControlObj.Create(Document: ThtDocument; Parent: TCellBasi
 var
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: ThtFont;
+  T : TAttribute;
 begin
   inherited;
   CodePage := Prop.CodePage;
@@ -483,6 +490,12 @@ begin
 {$endif}
   end;
   FControl.Parent := PntPanel;
+{$ifdef TComboBoxHasTextHint}
+    if L.Find(PlaceholderSy, T) then begin
+      FPlaceholder := T.Name;
+      FControl.TextHint := FPlaceholder;
+    end;
+{$endif}
 end;
 
 procedure TComboFormControlObj.ResetToValue;
@@ -612,8 +625,9 @@ constructor TTextAreaFormControlObj.Create(Document: ThtDocument; Parent: TCellB
 var
   PntPanel: TWinControl; //TPaintPanel;
   I: integer;
-  SB: TScrollStyle;
+  SB: ThtScrollStyle;
   Tmp: ThtFont;
+  T : TAttribute;
 begin
   inherited;
   CodePage := Prop.CodePage;
@@ -663,6 +677,13 @@ begin
      {$endif}
   end;
   FControl.Parent := PntPanel;
+  {$ifndef UseTNT}
+  FControl.TextHint.Clear;
+  if L.Find(PlaceholderSy, T) then begin
+      FPlaceholder := T.Name;
+     FControl.TextHint.Add( FPlaceholder);
+  end;
+  {$endif}
 end;
 
 destructor TTextAreaFormControlObj.Destroy;
