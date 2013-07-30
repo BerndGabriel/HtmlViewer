@@ -441,6 +441,7 @@ begin
   inherited;
   if  (Text = '') and (not Focused) then
   begin
+    FCanvas.Handle := Message.DC;
     FCanvas.Font := Font;//FTextHintFont;
     FCanvas.Font.Color := clGrayText;
     FCanvas.TextOut(1, 1, FTextHint);
@@ -470,6 +471,7 @@ begin
   inherited;
   if  (Text = '') and (not Focused) then
   begin
+    FCanvas.Handle := Message.DC;
     FCanvas.Font := Font;//FTextHintFont;
     FCanvas.Font.Color := clGrayText;
     FCanvas.TextOut(1, 1, FTextHint);
@@ -505,6 +507,7 @@ begin
   inherited;
   if  (Text = '') and (not Focused) then
   begin
+    FCanvas.Handle := Message.DC;
     FCanvas.Font := Font;//FTextHintFont;
     FCanvas.Font.Color := clGrayText;
     TextHeight := FCanvas.TextHeight('MLZ'); //Dummy Text to determine Height
