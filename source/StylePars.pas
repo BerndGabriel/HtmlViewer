@@ -1330,25 +1330,19 @@ begin
           while not (((LCh = ';') and (Top = EofChar)) or IsTermChar(LCh)) do
           begin
             case LCh of
-            '"', '''':
-              if LCh = Top then
-                Pop
-              else
-                Push(LCh);
-            '(' :
-              Push(')');
-            ')' :
-            begin
-              if LCh = Top then
-                Pop;
-              if Top = EofChar then begin
-                 SetLength(Value, Length(Value) + 1);
-                  Value[Length(Value)] := LCh;
-                  break;
-                end;
-              end;
-            end;
+              '"', '''':
+                if LCh = Top then
+                  Pop
+                else
+                  Push(LCh);
 
+              '(' :
+                Push(')');
+
+              ')' :
+                if LCh = Top then
+                  Pop;
+            end;
             SetLength(Value, Length(Value) + 1);
             Value[Length(Value)] := LCh;
             GetCh;
