@@ -1,6 +1,11 @@
 body          { font: 10pt Verdana; margin-top:30pt; }
 body          { background: url("../images/v945.png") no-repeat; }
 body.v114     { background: url("../images/v114.png") no-repeat; }
+body.v115     { background: url("../images/v115.png") no-repeat; }
+body.v116     { background: url("../images/v116.png") no-repeat; }
+body.v117     { background: url("../images/v117.png") no-repeat; }
+body.v118     { background: url("../images/v118.png") no-repeat; }
+body.v119     { background: url("../images/v119.png") no-repeat; }
 h1            { font-size: 12pt; }
 h2            { font-size: 11pt; }
 h2.deprecated { color: red; }
