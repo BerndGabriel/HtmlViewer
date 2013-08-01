@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Class Hierarchy</TITLE>
+<link rel="stylesheet" type="text/css" href="help.css">
+<style type="text/css">
+  .tree { border-collapse: collapse; vertical-align: top}
+  .tree .tree { height: 100% }
+  .tree td { padding: 0pt; border: 1px solid green; text-align: center; height: 100% }
+  .tree td p { margin: 8pt }
+  .class { }
+  td.htmlun2  {background-color: rgb(255, 255, 200)}
+  td.htmlview {background-color: rgb(200, 255, 200)}
+  td.framview {background-color: rgb(200, 255, 255)}
+  td.frambrwz {background-color: rgb(200, 200, 255)}
+</style>
+</HEAD>
+
+<BODY class="v115">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Contents">
+</OBJECT>
+
+<H1><A NAME="codepage_tbuffer_property"></A><B>Class Hierarchy</B></H1>
+<HR>
+
+<table class="tree root" align="center">
+  <tr>
+    <td class="htmlun2" colspan="3">
+      <p><a class="class" href="">ThtControlBase</a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <table class="tree">
+        <tr>
+          <td class="htmlun2" colspan="2">
+            <p><a class="class" href="">TViewerBase</a>
+            <p>The components&apos; base class
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table class="tree">
+              <tr>
+                <td class="htmlun2">
+                  <p><a class="class" href="">THtmlViewerBase</a>
+                </td>
+              </tr>
+              <tr>
+                <td class="htmlview">
+                  <p><a class="class" href="">THtmlViewer</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td>
+            <table class="tree">
+              <tr>
+                <td class="htmlun2">
+                  <p><a class="class" href="">TFrameViewerBase</a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <table class="tree">
+                    <tr>
+                      <td class="framview" colspan="2">
+                        <p><a class="class" href="">TFVBase</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="framview">
+                        <p><a class="class" href="">TFrameViewer</a>
+                      </td>
+                      <td class="frambrwz">
+                        <p><a class="class" href="">TFrameBrowser</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+    <td width="10"></td>
+    <td>
+      <table class="tree">
+        <tr>
+          <td class="htmlview">
+            <p><a class="class" href="">THtmlFrameBase</a>
+            <p>Allows THtmlViewer to realize it is embedded in a TFrame
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table class="tree">
+              <tr>
+                <td class="framview" colspan="2">
+                  <p><a class="class" href="">TFrameBase</a>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <table class="tree">
+                    <tr>
+                      <td class="framview" colspan="2">
+                        <p><a class="class" href="">TViewerFrameBase</a>
+                        <p>holds a THtmlViewer or TSubFrameSetBase
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="framview">
+                        <p><a class="class" href="">TfvFrame</a>
+                      </td>
+                      <td class="frambrwz">
+                        <p><a class="class" href="">TbrFrame</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td>
+                  <table class="tree">
+                    <tr>
+                      <td class="framview" colspan="3">
+                        <p><a class="class" href="">TSubFrameSetBase</a>
+                        <p>Can contain one or more TFrames and/or TSubFrameSets
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="framview">
+                        <p><a class="class" href="">TSubFrameSet</a>
+                      </td>
+                      <td class="frambrwz">
+                        <p><a class="class" href="">TbrSubFrameSet</a>
+                      </td>
+                      <td>
+                        <table class="tree">
+                          <tr>
+                            <td class="framview" colspan="2">
+                              <p><a class="class" href="">TFrameSetBase</a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="framview">
+                              <p><a class="class" href="">TFrameSet</a>
+                            </td>
+                            <td class="frambrwz">
+                              <p><a class="class" href="">TbrFrameSet</a>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<p>
+<table class="tree root" align="center">
+  <tr><td><p>Class implemented in unit:
+  <td class="htmlun2"><p>HtmlUn2.pas
+  <td class="htmlview"><p>HtmlView.pas
+  <td class="framview"><p>FramView.pas
+  <td class="frambrwz"><p>FramBrwz.pas
+</table>
+</BODY>
+</HTML>

@@ -6,7 +6,11 @@ body.v116     { background: url("../images/v116.png") no-repeat; }
 body.v117     { background: url("../images/v117.png") no-repeat; }
 body.v118     { background: url("../images/v118.png") no-repeat; }
 body.v119     { background: url("../images/v119.png") no-repeat; }
+
 h1            { font-size: 12pt; }
 h2            { font-size: 11pt; }
 h2.deprecated { color: red; }
+
 ul.SeeAlso    { list-style-type: none; }
+ul.level1     { list-style-image: url(../images/bm3.gif) }
+ul.level2     { list-style-image: url(../images/bm4.gif) }
