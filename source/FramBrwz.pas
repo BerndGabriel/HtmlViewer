@@ -922,7 +922,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
-// concentrate all FOnGetPostRequet* calls here:
+// concentrate all FOnGetPostRequest* calls here:
 procedure TFrameBrowser.PostRequest(Sender: TObject; IsGet: boolean; const Source, Query, EncType,
   Referer: ThtString; Reload: boolean; out NewURL: ThtString; out DocType: ThtmlFileType;
   out Stream: TMemoryStream);
