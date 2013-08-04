@@ -28,7 +28,7 @@ object Form1: TForm1
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
-    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
+    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
     HistoryIndex = 0
     HistoryMaxCount = 6
     ImageCacheCount = 6

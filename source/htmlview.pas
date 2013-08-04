@@ -2052,10 +2052,9 @@ end;
 
 {----------------THtmlViewer.GetCharAtPos}
 
-function THtmlViewer.GetCharAtPos(Pos: Integer; var Ch: WideChar;
-  var Font: TFont): Boolean;
+function THtmlViewer.GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
 var
-  Obj: TObject;
+  Obj: TSectionBase;
   FO: TFontObj;
   Index: Integer;
 begin
@@ -2074,7 +2073,7 @@ function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; out AWo
 var
   XR, X1, CaretHt: Integer;
   YR, Y1: Integer;
-  Obj: TObject;
+  Obj: TSectionBase;
   Ch: WideChar;
   InText: Boolean;
   Tmp: UnicodeString;
@@ -2094,7 +2093,7 @@ var
   function GetCh(Pos: Integer): WideChar;
   var
     Ch: WideChar;
-    Obj1: TObject;
+    Obj1: TSectionBase;
   begin
     Result := ' ';
     if not FSectionList.GetChAtPos(Pos, Ch, Obj1) or (Obj1 <> Obj) then

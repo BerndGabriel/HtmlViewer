@@ -139,9 +139,9 @@
   { Set Delphi Compiler Switches }
 
   {$ifdef ver150}  {Delphi 7}
-  {$WARN Unsafe_Type off}
-  {$WARN Unsafe_Code off}
-  {$WARN Unsafe_Cast off}
+  {$warn Unsafe_Type off}
+  {$warn Unsafe_Code off}
+  {$warn Unsafe_Cast off}
   {$endif}
 
   {$A+,B-,F-,G+,I+,P+,T-,V+,X+,R-}
@@ -173,57 +173,62 @@
     {$endif}
   {$endif}
 
-  {$Warn Symbol_Platform Off}
+  {$warn Symbol_Platform Off}
 
-  {$Define OwnPaintPanelDoubleBuffering}
+  {$define OwnPaintPanelDoubleBuffering}
 
 {$endif}
 
 { Define Aspects Of HtmlViewer }
 
-{.$Define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
+{.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
         PNG images.  If, for some reason the use of the gdiplus.dll is
         undesirable, define "NoGDIPlus" by removing the '.'.
         Defining NoGDIPlus will remove support for PNG images entirely.}
 
-{.$Define NoMetaFile} {Metafiles may be displayed by undefining this constant.
+{.$define NoMetaFile} {Metafiles may be displayed by undefining this constant.
         NoMetaFile is defined by default to emphasize the fact that Metafile
         display and some printing operations are currently incompatible in Win98.
         For applications where printing is unimportant or Win98/95/ME need not
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
 
-{.$Define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
+{.$define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
         removing the '.'.  For documents with hundreds of links, tabbing may not
         be desirable and also may cause delays in loading.  Even when NoTabLink
         is not defined, there is another constant, MaxTab, which eliminates
         tabbing to MaxTab links.  MaxTab is defined in readhtml.pas}
 
-{$Define FastRadio}
+{$define FastRadio}
        {if you have a form with a great many radio buttons, you may want to
         define FastRadio to help speed the action.  Note that this option
         changes the way tabbing works.  With FastRadio off, tabs move only to
         the next control that is visible.  With FastRadio on, tabs move to
         the next control even if it is not visible.}
 
-{.$Define OpOnChange}
+{.$define OpOnChange}
         {Without this definition, the <select> form controls (TListbox and
         TCombobox) will issue the OnObjectChange event only when the control
         loses the focus which is according to HTML specs.  Defining OpOnChange
         simulates the way IExplorer does it, issuing the OnChange event
         immediately when a change is made.}
 
-{.$Define OwnPaintPanelDoubleBuffering}
+{.$define OwnPaintPanelDoubleBuffering}
         {Issue 57: Delphi 7? or Russian? Locale? + XP-Manifest produce misplaced
         button captions, which I (BG) cannot reproduce with D6, D2007 or D2009.
         But SchwarzK...@yandex.ru reports, that this issue appears only since r118.
         This switch reactivates the manual double buffering in TPaintPanel.Paint(), which
         was removed with r118.
         Due to several redraw errors with Delphi, OwnPaintPanelDoubleBuffering now is always set for Delphi.}
-        
-{$Define HalfToneStretching}
+
+{$define HalfToneStretching}
         {This makes use of a better stretching methode provided by Windows: HALFTONE.
         So resized graphics (especially smaller ones) look MUCH better}
+
+{.$define UseGlobalObjectId}
+        {This gives each HTML element an application wide unique ID even if there
+        is no ID or NAME attribute given in the HTML document. The unique ID is
+        composed of 'GOID-' and a consecutive number starting with 1}
 
 {$ifdef Compiler20_Plus}
 {$else}

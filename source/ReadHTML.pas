@@ -2451,7 +2451,7 @@ begin
         Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
       PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
       Prop := PropStack.Last;
-      PO := Section.CreatePanel(Attributes, SectionList);
+      PO := Section.CreatePanel(Attributes, SectionList, Prop);
       PO.ProcessProperties(PropStack.Last);
       WantPanel := False;
       Params := ThtStringList.Create;
@@ -2627,7 +2627,7 @@ procedure THtmlParser.DoCommonSy;
   var
     IO: TFloatingObj;
   begin
-    IO := Section.AddImage(Attributes, SectionList, TagIndex);
+    IO := Section.AddImage(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);
   end;
 
@@ -2635,7 +2635,7 @@ procedure THtmlParser.DoCommonSy;
   var
     IO: TFloatingObj;
   begin
-    IO := Section.AddPanel(Attributes, SectionList, TagIndex);
+    IO := Section.AddPanel(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);
   end;
 
@@ -2643,7 +2643,7 @@ procedure THtmlParser.DoCommonSy;
   var
     IO: TFloatingObj;
   begin
-    IO := Section.AddFrame(Attributes, SectionList, TagIndex);
+    IO := Section.AddFrame(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);
   end;
 

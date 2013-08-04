@@ -346,7 +346,7 @@ type
 
   TIDObject = class(TObject)
   private
-    function GetID(): ThtString; //>-- DZ
+    function GetId(): ThtString; //>-- DZ
   protected
     FHtmlId: ThtString; //>-- DZ real ID from HTML if any
     FGlobalId: ThtString; //>-- DZ global unique ID
@@ -358,7 +358,7 @@ type
     procedure AfterConstruction(); override;//>-- DZ
 
     property YPosition: Integer read GetYPosition;
-    property id: ThtString read getID; //>-- DZ if FhtmlId then FglobalId will be returned as result
+    property Id: ThtString read GetId; //>-- DZ if FhtmlId then FglobalId will be returned as result
     property HtmlId: ThtString read FHtmlId; //>-- DZ
     property GlobalId: ThtString read FGlobalId; //>-- DZ
   end;
@@ -709,8 +709,11 @@ uses
 type
   EGDIPlus = class(Exception);
 
+{$ifdef UseGlobalObjectId}
 var
-  GlobalObjectID: Cardinal; //>-- DZ, counter for TIDObject.FGlobalID
+  GlobalObjectIdPrefix: ThtString;
+  GlobalObjectIdCount: Cardinal; //>-- DZ, counter for TIDObject.FGlobalId
+{$endif}
 
 {$ifdef UseASMx86}
 
@@ -3390,23 +3393,27 @@ begin
 end;
 
 //>-- DZ 18.09.2011
-constructor TIDObject.Create(const AHtmlID: ThtString);
+constructor TIDObject.Create(const AHtmlId: ThtString);
 begin
-  FHtmlID:= Trim(AHtmlID);
+  FHtmlID:= Trim(AHtmlId);
 end;
 
 procedure TIDObject.AfterConstruction();
 begin
-  Inc(GlobalObjectID);
-  FGlobalId:= IntToStr(GlobalObjectID);
+  inherited;
+{$ifdef UseGlobalObjectId}
+  Inc(GlobalObjectIdCount);
+  FGlobalId := GlobalObjectIdPrefix + IntToStr(GlobalObjectIdCount);
+{$endif}
 end;
 
-function TIDObject.GetID(): ThtString;
+function TIDObject.GetId(): ThtString;
 begin
-  if FHtmlID <> '' then
-    Result:= FHtmlID
-  else
-    Result:= FGlobalId;
+  Result := FHtmlId;
+{$ifdef UseGlobalObjectId}
+  if Length(Result) = 0 then
+    Result := FGlobalId;
+{$endif}
 end;
 //<-- DZ
 
@@ -3425,6 +3432,9 @@ begin
 end;
 
 initialization
-  GlobalObjectID := 0; //>-- DZ
+{$ifdef UseGlobalObjectId}
+  GlobalObjectIdPrefix := 'GOID-';
+  GlobalObjectIdCount := 0; //>-- DZ
+{$endif}
 end.
 

@@ -571,14 +571,14 @@ begin
     Style := csDropDownList;
     OnEnter := EnterEvent;
     OnExit := ExitEvent;
-{$IFDEF OpOnChange}
+{$ifdef OpOnChange}
     OnChange := OptionalOnChange;
-{$ELSE}
+{$else}
     OnClick := FormControlClick;
-{$ENDIF}
-{$IFDEF UseElpack} {others don't have onmousemove}
+{$endif}
+{$ifdef UseElPack} {others don't have onmousemove}
     OnMouseMove := HandleMouseMove;
-{$ENDIF}
+{$endif}
     OnDropDown := FormControlClick;
     Enabled := not Disabled;
 {$ifdef has_StyleElements}
@@ -1315,9 +1315,9 @@ begin
      {$endif}
   end;
   FControl.Parent := PntPanel;
-{$IFDEF UseElPack}
+{$ifdef UseElPack}
   FControl.Color := clBtnFace;
-{$ENDIF}
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
