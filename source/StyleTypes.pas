@@ -53,7 +53,6 @@ type
     aJustify,
     aSub,
     aSuper);
-  BoxSizingType = (ContentBox, BorderBox);
 
 const
   CAlignmentStyle: array[TAlignmentStyle] of ThtString = (
@@ -67,6 +66,11 @@ const
     'justify',
     'sub',
     'super');
+
+type
+  BoxSizingType = (
+    ContentBox,
+    BorderBox);
 
 const
   CBoxSizing: array[BoxSizingType] of ThtString = (

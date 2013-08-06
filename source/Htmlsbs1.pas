@@ -59,19 +59,19 @@ type
   THiddenFormControlObj = class(TFormControlObj)
   protected
     function GetControl: TWinControl; override;
-    function GetHeight: Integer; override;
-    function GetLeft: Integer; override;
+    function GetClientHeight: Integer; override;
+    function GetClientLeft: Integer; override;
     function GetTabOrder: Integer; override;
     function GetTabStop: Boolean; override;
-    function GetTop: Integer; override;
-    function GetWidth: Integer; override;
+    function GetClientTop: Integer; override;
+    function GetClientWidth: Integer; override;
     function IsHidden: Boolean; override;
-    procedure SetHeight(Value: Integer); override;
-    procedure SetLeft(Value: Integer); override;
+    procedure SetClientHeight(Value: Integer); override;
+    procedure SetClientLeft(Value: Integer); override;
     procedure SetTabOrder(Value: Integer); override;
     procedure SetTabStop(Value: Boolean); override;
-    procedure SetTop(Value: Integer); override;
-    procedure SetWidth(Value: Integer); override;
+    procedure SetClientTop(Value: Integer); override;
+    procedure SetClientWidth(Value: Integer); override;
   public
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Hide; override;
@@ -990,13 +990,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetHeight: Integer;
+function THiddenFormControlObj.GetClientHeight: Integer;
 begin
   Result := 0;
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetLeft: Integer;
+function THiddenFormControlObj.GetClientLeft: Integer;
 begin
   Result := -4000;
 end;
@@ -1022,13 +1022,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetTop: Integer;
+function THiddenFormControlObj.GetClientTop: Integer;
 begin
   Result := 0;
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetWidth: Integer;
+function THiddenFormControlObj.GetClientWidth: Integer;
 begin
   Result := 0;
 end;
@@ -1051,12 +1051,12 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-procedure THiddenFormControlObj.SetHeight(Value: Integer);
+procedure THiddenFormControlObj.SetClientHeight(Value: Integer);
 begin
 // do nothing
 end;
 
-procedure THiddenFormControlObj.SetLeft(Value: Integer);
+procedure THiddenFormControlObj.SetClientLeft(Value: Integer);
 begin
 // do nothing
 end;
@@ -1074,13 +1074,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-procedure THiddenFormControlObj.SetTop(Value: Integer);
+procedure THiddenFormControlObj.SetClientTop(Value: Integer);
 begin
 // do nothing
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-procedure THiddenFormControlObj.SetWidth(Value: Integer);
+procedure THiddenFormControlObj.SetClientWidth(Value: Integer);
 begin
 // do nothing
 end;
@@ -1432,7 +1432,7 @@ begin
   inherited;
   if Value = '' then
     Value := 'on';
-  FormAlign := ABaseline;
+  VertAlign := ABaseline;
   if L.Find(CheckedSy, T) then
     IsChecked := True;
   PntPanel := Document.PPanel;
