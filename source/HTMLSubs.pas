@@ -358,6 +358,7 @@ type
     VertAlign: AlignmentType;
     HSpaceL, HSpaceR: Integer; {horizontal extra space}
     VSpaceT, VSpaceB: Integer; {vertical extra space}
+    Indent: Integer;           {Indentation of floated object}
     PercentWidth: Boolean; {if width is percent}
     PercentHeight: Boolean; {if height is percent}
     // end copy by move()
@@ -366,6 +367,8 @@ type
     function GetClientHeight: Integer; virtual; abstract;
     function GetClientWidth: Integer; virtual; abstract;
   public
+    DrawYY: Integer;
+    DrawXX: Integer;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Document: ThtDocument; Parent: TCellBasic; Source: TFloatingObjBase); virtual;
     function PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean; virtual;
@@ -376,14 +379,20 @@ type
   end;
   TFloatingObjBaseClass = class of TFloatingObjBase;
 
-  TFloatingObjBaseList = class(TFreeList) {a list of TFloatingObjBase's}
+  TFloatingObjBaseList = class(TFreeList)   {a list of TFloatingObjBase's}
+  private
+    function GetItem(Index: Integer): TFloatingObjBase;
+    procedure SetItem(Index: Integer; const Item: TFloatingObjBase);
   public
     constructor CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TFloatingObjBaseList);
+    procedure Decrement(N: Integer); {$ifdef UseInline} inline; {$endif}
+    function FindObject(Posn: Integer): TFloatingObjBase; {$ifdef UseInline} inline; {$endif}
     // GetObjectAt() returns number of positions from Posn to next object.
     // If it returns 0, Obj is at Posn.
     function GetObjectAt(Posn: Integer; out Obj): Integer;
     function PtInImage(X, Y: Integer; out IX, IY, Posn: Integer; out AMap, UMap: Boolean; out MapItem: TMapItem; out ImageObj: TImageObj): Boolean;
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean;
+    property Items[Index: Integer]: TFloatingObjBase read GetItem write SetItem; default;
   end;
 
 
@@ -394,9 +403,8 @@ type
     FClientWidth: Integer; {does not include HSpace}
   public
     ClientSizeKnown: boolean; {know size of image}
-    Indent: Integer;
-    SpecWidth: Integer; {as specified by <img or panel> tag}
-    SpecHeight: Integer; {as specified by <img or panel> tag}
+    SpecWidth: Integer; {as specified by <img, panel, object, or iframe> tag}
+    SpecHeight: Integer; {as specified by <img, panel, object, or iframe> tag}
     Title: ThtString;
   protected
     FDisplay: TPropDisplay; // how it is displayed
@@ -405,8 +413,6 @@ type
     function GetClientHeight: Integer; override;
     function GetClientWidth: Integer; override;
   public
-    DrawYY: Integer;
-    DrawXX: Integer;
     NoBorder: boolean; {set if don't want blue border}
     BorderSize: Integer;
     constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
@@ -422,11 +428,7 @@ type
     property ClientWidth write FClientWidth;
   end;
 
-  TFloatingObjList = class(TFloatingObjBaseList) {a list of TImageObj's and TPanelObj's}
-  public
-    constructor CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TFloatingObjList);
-    function FindImage(Posn: Integer): TFloatingObj;
-    procedure Decrement(N: Integer);
+  TFloatingObjList = class(TFloatingObjBaseList) {a list of TImageObj's, TPanelObj's , and TFrameObj's}
   end;
 
 
@@ -848,13 +850,10 @@ type
   end;
 
   //BG, 15.01.2011:
-  TFormControlObjList = class(TObjectList)
+  TFormControlObjList = class(TFloatingObjBaseList)
   private
     function GetItem(Index: Integer): TFormControlObj;
   public
-    function GetObjectAt(Posn: Integer; out Obj): Integer;
-    procedure Decrement(N: Integer);
-
     procedure ActivateTabbing;
     procedure DeactivateTabbing;
     property Items[Index: Integer]: TFormControlObj read GetItem; default;
@@ -3031,42 +3030,6 @@ begin
     end;
 end;
 
-{----------------TFloatingObjList.CreateCopy}
-
-constructor TFloatingObjList.CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TFloatingObjList);
-var
-  I: Integer;
-  Item: TFloatingObj;
-begin
-  inherited Create;
-  if T <> nil then
-    for I := 0 to T.Count - 1 do
-    begin
-      Item := T.Items[I];
-      Add(Item.Clone(AMasterList, Parent));
-    end;
-end;
-
-function TFloatingObjList.FindImage(Posn: Integer): TFloatingObj;
-{find the image at a given character position}
-begin
-  if GetObjectAt(Posn, Result) <> 0 then
-    Result := nil;
-end;
-
-{----------------TFloatingObjList.Decrement}
-
-procedure TFloatingObjList.Decrement(N: Integer);
-{called when a character is removed to change the Position figure}
-var
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do
-    with TFloatingObj(Items[I]) do
-      if Pos > N then
-        Dec(Pos);
-end;
-
 {----------------ThtmlForm.Create}
 
 constructor ThtmlForm.Create(AMasterList: ThtDocument; L: TAttributeList);
@@ -3395,6 +3358,8 @@ begin
   if MargArray[piHeight] > 0 then
     FHeight := MargArray[piHeight] - BordT - BordB;
   Prop.GetVertAlign(VertAlign);
+  Prop.GetFloat(Floating);
+
   BkColor := Prop.GetBackgroundColor;
 end;
 
@@ -6651,24 +6616,20 @@ end;
 {$ifdef has_StyleElements}
 procedure ThtDocument.SetStyleElements(const AValue : TStyleElements);
 begin
-  if AValue <> FStyleElements then begin
+  if AValue <> FStyleElements then
+  begin
     FStyleElements := AValue;
     Self.UpdateStyleElements;
   end;
 end;
 
 procedure ThtDocument.UpdateStyleElements;
-var i : Integer;
-  LControl : TControl;
+var
+  i: Integer;
 begin
-  if Assigned(FormControlList) then begin
-    if (FormControlList.Count > 0) then begin
-      for i := 0 to FormControlList.Count -1 do begin
-        LControl := FormControlList[i].TheControl;
-        LControl.StyleElements := FStyleElements;
-      end;
-    end;
-  end;
+  if FormControlList <> nil then
+    for i := 0 to FormControlList.Count - 1 do
+      FormControlList[i].TheControl.StyleElements := FStyleElements;
 end;
 {$endif}
 
@@ -10556,7 +10517,7 @@ begin
 
       {After floating images at start, delete an annoying space}
       for I := Length(BuffS) - 1 downto 1 do
-        if (BuffS[I] = ImgPan) and (Images.FindImage(I - 1).Floating in [ALeft, ARight])
+        if (BuffS[I] = ImgPan) and (Images.FindObject(I - 1).Floating in [ALeft, ARight])
           and (BuffS[I + 1] = ' ') then
           Remove(I + 1);
 
@@ -10897,7 +10858,8 @@ begin
     end
     else if J3 = 0 then
     begin
-      Inc(XX, FcObj.TotalWidth);
+      if not (FcObj.Floating in [ALeft, ARight]) then
+        Inc(XX, FcObj.TotalWidth);
       I := 1; J := 1;
       Picture := True;
       if XX > Width then
@@ -11172,7 +11134,8 @@ begin
     end
     else if J1 = 0 then
     begin
-      Inc(Result, FcObj.TotalWidth);
+      if not (FcObj.Floating in [ALeft, ARight]) then
+        Inc(Result, FcObj.TotalWidth);
       Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
@@ -11221,7 +11184,8 @@ begin
     end
     else if J1 = 0 then
     begin
-      Inc(Result, FcObj.TotalWidth);
+      if not (FcObj.Floating in [ALeft, ARight]) then
+        Inc(Result, FcObj.TotalWidth);
       Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
@@ -11253,8 +11217,60 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
   //BG, 06.02.2011: Why are there 2 methods and why can't GetURL and FindCursor use the formatting results of DrawLogic?
   //  FindCountThatFits1() is part of TSection.DrawLogic() and fills IMgr with the embedded floating images.
   //  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
+
+
+  type
+    TResultCode = (rsOk, rsContinue, rsBreak);
+
+    function DrawLogicOfObject(FlObj: TFloatingObjBase; var XX, YY, Width, Cnt, FloatingImageCount: Integer): TResultCode;
+    var
+      X1, X2, W, H: Integer;
+    begin
+      Result := rsOk;
+      if FlObj.Floating in [ALeft, ARight] then
+      begin
+        if Start > DoneFlObjPos then
+        begin
+          ImgY := Max(Y, ImgY);
+          W := FlObj.TotalWidth;
+          H := FlObj.TotalHeight;
+          case FlObj.Floating of
+            ALeft:
+            begin
+              IMgr.AlignLeft(ImgY, W, XX, YY);
+              FlObj.Indent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
+            end;
+
+            ARight:
+            begin
+              IMgr.AlignRight(ImgY, W, XX, YY);
+              FlObj.Indent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
+            end;
+          end;
+          FlObj.DrawYY := ImgY + FlObj.VSpaceT;
+          ImgHt := Max(ImgHt, H);
+          DoneFlObjPos := Start;
+
+          // go on with the line:
+          X1 := IMgr.LeftIndent(Y);
+          X2 := IMgr.RightSide(Y);
+          Width := X2 - X1;
+          Inc(FloatingImageCount);
+          if Cnt >= FloatingImageCount then
+            Result := rsContinue;
+        end;
+      end
+      else
+      begin
+        ImgHt := Max(ImgHt, FlObj.TotalHeight);
+        Inc(XX, FlObj.TotalWidth);
+        if XX > Width then
+          Result := rsBreak;
+      end;
+    end;
+
   var
-    Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, W, H, OHang, Width: Integer;
+    Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, OHang, Width: Integer;
     Picture: boolean;
     FlObj: TFloatingObj;
     FcObj: TFormControlObj;
@@ -11319,50 +11335,16 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         I := 1;
         J := 1;
         Picture := True;
-        if FlObj.Floating in [ALeft, ARight] then
-        begin
-          if Start > DoneFlObjPos then
+        case DrawLogicOfObject(FlObj, XX, YY, Width, Cnt, FloatingImageCount) of
+          rsContinue:
           begin
-            ImgY := Max(Y, ImgY);
-            W := FlObj.TotalWidth;
-            H := FlObj.TotalHeight;
-            case FlObj.Floating of
-              ALeft:
-              begin
-                IMgr.AlignLeft(ImgY, W, XX, YY);
-                FlObj.Indent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
-              end;
-
-              ARight:
-              begin
-                IMgr.AlignRight(ImgY, W, XX, YY);
-                FlObj.Indent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
-              end;
-            end;
-            FlObj.DrawYY := ImgY + FlObj.VSpaceT;
-            ImgHt := Max(ImgHt, H);
-            DoneFlObjPos := Start;
-
-            // go on with the line:
-            X1 := IMgr.LeftIndent(Y);
-            X2 := IMgr.RightSide(Y);
-            Width := X2 - X1;
-            Inc(FloatingImageCount);
-            if Cnt >= FloatingImageCount then
-            begin
-              Start := TheStart;
-              Cnt := 0;
-              XX := 0;
-              continue;
-            end;
+            Start := TheStart;
+            Cnt := 0;
+            XX := 0;
+            continue;
           end;
-        end
-        else
-        begin
-          ImgHt := Max(ImgHt, FlObj.TotalHeight);
-          Inc(XX, FlObj.TotalWidth);
-          if XX > Width then
-            break;
+
+          rsBreak: break;
         end;
       end
       else if J3 = 0 then
@@ -11370,9 +11352,16 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         I := 1;
         J := 1;
         Picture := True;
-        Inc(XX, FcObj.TotalWidth);
-        if XX > Width then
-          break;
+        case DrawLogicOfObject(FcObj, XX, YY, Width, Cnt, FloatingImageCount) of
+          rsContinue:
+          begin
+            Start := TheStart;
+            Cnt := 0;
+            XX := 0;
+            continue;
+          end;
+          rsBreak: break;
+        end;
       end
       else
       begin
@@ -11443,7 +11432,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       FormAlign: AlignmentType;
       NoChar: boolean;
       P: PWideChar;
-      FCO: TFormControlObj;
+      FcObj: TFormControlObj;
       FlObj: TFloatingObj;
       LRTextWidth: Integer;
       OHang: Integer;
@@ -11530,7 +11519,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
 
       Cnt := 0;
       repeat
-        Cnt := Cnt + Images.GetObjectAt(PStart - Buff + Cnt, FlObj);
+        Inc(Cnt, Images.GetObjectAt(PStart - Buff + Cnt, FlObj));
         if Cnt < NN then
         begin
           H := FlObj.TotalHeight;
@@ -11565,27 +11554,29 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
 
       Cnt := 0; {now check on form controls}
       repeat
-        Inc(Cnt, FormControls.GetObjectAt(PStart - Buff + Cnt, FCO));
+        Inc(Cnt, FormControls.GetObjectAt(PStart - Buff + Cnt, FcObj));
         if Cnt < NN then
         begin
-          //FCO := FormControls.FindControl(PStart - Buff + Cnt);
-          //H := FCO.Height;
-          case FCO.VertAlign of
-            ATop:
-              SA := Max(SA, FCO.TotalHeight - Dht);
-            AMiddle:
-              begin
-                Tmp := (FCO.Height - DHt) div 2;
-                SA := Max(SA, Tmp + FCO.VSpaceB);
-                SB := Max(SB, (FCO.Height - DHt - Tmp + FCO.VSpaceT));
-              end;
-            ABaseline:
-              SB := Max(SB, FCO.TotalHeight - (DHt - LR.Descent));
-            ABottom:
-              SB := Max(SB, FCO.TotalHeight - DHt);
+          H := FcObj.TotalHeight;
+          if FcObj.Floating = ANone then
+          begin
+            case FcObj.VertAlign of
+              ATop:
+                SA := Max(SA, H - Dht);
+              AMiddle:
+                begin
+                  Tmp := (FcObj.Height - DHt) div 2;
+                  SA := Max(SA, Tmp + FcObj.VSpaceB);
+                  SB := Max(SB, (FcObj.Height - DHt - Tmp + FcObj.VSpaceT));
+                end;
+              ABaseline:
+                SB := Max(SB, H - (DHt - LR.Descent));
+              ABottom:
+                SB := Max(SB, H - DHt);
+            end;
           end;
-          if Assigned(FCO) and not IsCopy then
-            FCO.FYValue := Y;
+          if Assigned(FcObj) and not IsCopy then
+            FcObj.FYValue := Y;
         end;
         Inc(Cnt); {to skip by the control}
       until Cnt >= NN;
@@ -12179,7 +12170,6 @@ var
       Canvas.Font.Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
       if J2 = -1 then
       begin {it's an image or panel}
-        //Obj := Images.FindImage(Start - Buff);
         if FlObj is TImageObj then
         begin
           if FlObj.Floating in [ALeft, ARight] then
@@ -12276,17 +12266,15 @@ var
           begin
             LeftT := CPx + FlObj.HSpaceL;
             case FlObj.VertAlign of
-              ATop, ANone:
-                TopP := Y  - LR.LineHt + FlObj.VSpaceT;
+              ANone,
+              ATop:      TopP := Y - LR.LineHt + FlObj.VSpaceT;
 
-              AMiddle:
-                TopP := Y - FO.tmHeight div 2 - (FlObj.ClientHeight - FlObj.VSpaceT + FlObj.VSpaceB) div 2;
+              AMiddle:   TopP := Y - FO.tmHeight div 2 - (FlObj.ClientHeight - FlObj.VSpaceT + FlObj.VSpaceB) div 2;
 
-              ABottom, ABaseline:
-                TopP := Y - Descent - FlObj.ClientHeight - FlObj.VSpaceB;
-
+              ABottom,
+              ABaseline: TopP := Y - Descent - FlObj.ClientHeight - FlObj.VSpaceB;
             else
-              TopP := 0; {to eliminate warning msg}
+                         TopP := 0; {to eliminate warning msg}
             end;
           {Check for border on inline panel}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -12334,22 +12322,34 @@ var
       end
       else if J4 = -1 then
       begin {it's a form control}
-        //FcObj := FormControls.FindControl(Start - Buff);
         if not FcObj.Hidden then
+        begin
+          FcObj.ShowIt := True;
+          if FcObj.Floating in [ALeft, ARight] then
+          begin
+            LeftT := IMgr.LfEdge + FcObj.Indent;
+            TopP := FcObj.DrawYY;
+            {check for border.  For floating panel, remove it}
+            if LR.FirstDraw and Assigned(LR.BorderList) then
+              for K := LR.BorderList.Count - 1 downto 0 do
+              begin
+                BR := BorderRec(LR.BorderList.Items[K]);
+                if (Start - Buff = BR.BStart) and (BR.BEnd = BR.BStart + 1) then
+                  LR.BorderList.Delete(K);
+              end;
+          end
+          else
           with FcObj do
           begin
-            ShowIt := True;
+            LeftT := CPx + FcObj.HSpaceL;
             case VertAlign of
-              ATop:
-                TopP := LR.DrawY + VSpaceT - YOffset;
-              AMiddle:
-                TopP := Y - ((LR.LineHt + Height) div 2) - YOffset;
-              ABaseline:
-                TopP := Y - Height - VSpaceB - Descent - YOffset; {sits on baseline}
-              ABottom:
-                TopP := Y - Height - VSpaceB - YOffset;
+              ANone,
+              ATop:      TopP := LR.DrawY + VSpaceT - YOffset;
+              AMiddle:   TopP := Y - ((LR.LineHt + Height) div 2) - YOffset;
+              ABaseline: TopP := Y - Height - VSpaceB - Descent - YOffset; {sits on baseline}
+              ABottom:   TopP := Y - Height - VSpaceB - YOffset;
             else
-              TopP := Y; {never get here}
+                         TopP := Y; {never get here}
             end;
             if FcObj is TRadioButtonFormControlObj then
               Inc(Topp, 2)
@@ -12378,14 +12378,17 @@ var
                   end;
                 end;
               end;
+          end;
 
+          with FcObj do
+          begin
             if Self.IsCopy then
-              FcObj.Draw(Canvas, CPx + FcObj.HSpaceL, TopP)
+              FcObj.Draw(Canvas, LeftT, TopP)
             else
             begin
               Show;
               Top := TopP;
-              Left := CPx + FcObj.HSpaceL;
+              Left := LeftT;
               if FcObj is TRadioButtonFormControlObj then
                 with TRadioButtonFormControlObj(FcObj) do
                 begin
@@ -12418,6 +12421,7 @@ var
             Inc(CPx, Width + FcObj.HSpaceL + FcObj.HSpaceR);
             NewCP := True;
           end;
+        end;
       end
       else
       begin
@@ -14068,36 +14072,36 @@ begin
   Result := Get(Index);
 end;
 
-function TFormControlObjList.GetObjectAt(Posn: Integer; out Obj): Integer;
-{Return count of chars before the next form control.  0 if at the control,
- 999999 if no controls after Posn}
-var
-  I: integer;
-begin
-  for I := 0 to Count - 1 do
-  begin
-    Result := TFloatingObjBase(Items[I]).Pos - Posn;
-    if Result >= 0 then
-    begin
-      TFloatingObjBase(Obj) := Items[I];
-      Exit;
-    end;
-  end;
-
-  TFloatingObjBase(Obj) := nil;
-  Result := 99999999;
-end;
-
-procedure TFormControlObjList.Decrement(N: integer);
-{called when a character is removed to change the Position figure}
-var
-  I: integer;
-begin
-  for I := 0 to Count - 1 do
-    with Items[I] do
-      if Pos > N then
-        Dec(Pos);
-end;
+//function TFormControlObjList.GetObjectAt(Posn: Integer; out Obj): Integer;
+//{Return count of chars before the next form control.  0 if at the control,
+// 999999 if no controls after Posn}
+//var
+//  I: integer;
+//begin
+//  for I := 0 to Count - 1 do
+//  begin
+//    Result := TFloatingObjBase(Items[I]).Pos - Posn;
+//    if Result >= 0 then
+//    begin
+//      TFloatingObjBase(Obj) := Items[I];
+//      Exit;
+//    end;
+//  end;
+//
+//  TFloatingObjBase(Obj) := nil;
+//  Result := 99999999;
+//end;
+//
+//procedure TFormControlObjList.Decrement(N: integer);
+//{called when a character is removed to change the Position figure}
+//var
+//  I: integer;
+//begin
+//  for I := 0 to Count - 1 do
+//    with Items[I] do
+//      if Pos > N then
+//        Dec(Pos);
+//end;
 
 { TFloatingObj }
 
@@ -14158,8 +14162,6 @@ var
   S: ThtString;
 begin
   inherited Create(Document, Parent, Position, L, Prop);
-  VertAlign := ABottom; {default}
-  Floating := ANone; {default}
   NewSpace := -1;
   SpecHeight := -1;
   SpecWidth := -1;
@@ -14256,13 +14258,10 @@ var
 begin
   inherited CreateCopy(Document, Parent, T);
   BorderSize := T.BorderSize;
-  DrawXX := T.DrawXX;
-  DrawYY := T.DrawYY;
   FAlt := T.FAlt;
   FClientHeight := T.FClientHeight;
   FClientWidth := T.FClientWidth;
   ClientSizeKnown := T.ClientSizeKnown;
-  Indent := T.Indent;
   NoBorder := T.NoBorder;
   SpecHeight := T.SpecHeight;
   SpecWidth := T.SpecWidth;
@@ -14949,6 +14948,8 @@ constructor TFloatingObjBase.Create(
 begin
   inherited Create(Parent, L, Prop);
   Pos := Position;
+  VertAlign := ABottom; {default}
+  Floating := ANone; {default}
 end;
 
 //-- BG ---------------------------------------------------------- 04.08.2013 --
@@ -14956,6 +14957,8 @@ constructor TFloatingObjBase.CreateCopy(Document: ThtDocument; Parent: TCellBasi
 begin
   inherited CreateCopy(Parent, Source);
   System.Move(Source.Pos, Pos, PtrSub(@PercentHeight, @Pos) + SizeOf(PercentHeight));
+  DrawXX := Source.DrawXX;
+  DrawYY := Source.DrawYY;
 end;
 
 //-- BG ---------------------------------------------------------- 06.08.2013 --
@@ -14983,15 +14986,39 @@ end;
 constructor TFloatingObjBaseList.CreateCopy(AMasterList: ThtDocument; Parent: TCellBasic; T: TFloatingObjBaseList);
 var
   I: Integer;
-  Item: TFloatingObjBase;
 begin
   inherited Create;
   if T <> nil then
     for I := 0 to T.Count - 1 do
-    begin
-      Item := T.Items[I];
-      Add(Item.Clone(AMasterList, Parent));
-    end;
+      Add(T.Items[I].Clone(AMasterList, Parent));
+end;
+
+//-- BG ---------------------------------------------------------- 07.08.2013 --
+procedure TFloatingObjBaseList.Decrement(N: Integer);
+{called when a character is removed to change the Position figure}
+var
+  I: Integer;
+begin
+  for I := Count - 1 downto 0 do
+    with Items[I] do
+      if Pos > N then
+        Dec(Pos)
+      else
+        break;
+end;
+
+//-- BG ---------------------------------------------------------- 07.08.2013 --
+function TFloatingObjBaseList.FindObject(Posn: Integer): TFloatingObjBase;
+{find the object at a given character position}
+begin
+  if GetObjectAt(Posn, Result) <> 0 then
+    Result := nil;
+end;
+
+//-- BG ---------------------------------------------------------- 07.08.2013 --
+function TFloatingObjBaseList.GetItem(Index: Integer): TFloatingObjBase;
+begin
+  Result := Get(Index);
 end;
 
 //-- BG ---------------------------------------------------------- 05.08.2013 --
@@ -15001,7 +15028,7 @@ var
 begin
   for I := 0 to Count - 1 do
   begin
-    Result := TFloatingObjBase(Items[I]).Pos - Posn;
+    Result := Items[I].Pos - Posn;
     if Result >= 0 then
     begin
       TFloatingObjBase(Obj) := Items[I];
@@ -15062,7 +15089,7 @@ end;
 function TFloatingObjBaseList.PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean;
 var
   I: Integer;
-  Item: TFloatingObj;
+  Item: TFloatingObjBase;
 begin
   for I := 0 to Count - 1 do
   begin
@@ -15075,6 +15102,12 @@ begin
     end;
   end;
   Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 07.08.2013 --
+procedure TFloatingObjBaseList.SetItem(Index: Integer; const Item: TFloatingObjBase);
+begin
+  Put(Index, Item);
 end;
 
 initialization
