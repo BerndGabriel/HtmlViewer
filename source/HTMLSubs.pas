@@ -2336,7 +2336,7 @@ begin
     Exit;
   if Image is TGifImage then
     Result := TGifImage(Image).Bitmap
-  else if (Image is TBitmap) {$IFNDEF NoGDIPlus}or (Image is TGpBitmap){$ENDIF} then
+  else if (Image is TBitmap) {$IFNDEF NoGDIPlus}or (Image is THtGpBitmap){$ENDIF} then
   begin
     if FBitmap = nil then
     begin
@@ -2349,7 +2349,7 @@ begin
       end
 {$IFNDEF NoGDIPlus}
       else {it's a TGpBitmap}
-        FBitmap := TGpBitmap(Image).GetBitmap
+        FBitmap := THtGpBitmap(Image).GetBitmap
 {$ENDIF NoGDIPlus}
         ;
     end;
@@ -2711,14 +2711,14 @@ begin
   DC := Canvas.Handle;
 
   {$IFNDEF NoGDIPlus}
-  if TObject(ddImage) is TGPImage then
+  if TObject(ddImage) is THtGPImage then
   begin
     if not Document.Printing then
-      StretchDrawGpImage(DC, TGPImage(ddImage), XX, Y, ObjWidth, ObjHeight)
+      StretchDrawGpImage(DC, THtGPImage(ddImage), XX, Y, ObjWidth, ObjHeight)
     else if not Document.PrintBackground and (Positioning = posStatic) then {Printing}
-      StretchPrintGpImageOnColor(Canvas, TGpImage(ddImage), XX, Y, ObjWidth, ObjHeight)
+      StretchPrintGpImageOnColor(Canvas, THtGpImage(ddImage), XX, Y, ObjWidth, ObjHeight)
     else
-      StretchPrintGpImageDirect(DC, TGPImage(ddImage), XX, Y, ObjWidth, ObjHeight,
+      StretchPrintGpImageDirect(DC, THtGPImage(ddImage), XX, Y, ObjWidth, ObjHeight,
         Document.ScaleX, Document.ScaleY);
     Exit;
   end;
@@ -5529,7 +5529,7 @@ var
   TheMask, NewBitmap, NewMask: TBitmap;
   TheGpObj: TGpObject;
   {$IFNDEF NoGDIPlus}
-  g: TgpGraphics;
+  g: THtGpGraphics;
   {$ENDIF !NoGDIPlus}
 
   procedure Tile(Bitmap, Mask: TBitmap; W, H: Integer);
@@ -5549,15 +5549,15 @@ var
   end;
 
   {$IFNDEF NoGDIPlus}
-  procedure TileGpImage(Image: TgpImage; W, H: Integer);
+  procedure TileGpImage(Image: THtGpImage; W, H: Integer);
   var
     ImW, ImH: Integer;
-    graphics: TgpGraphics;
+    graphics: THtGpGraphics;
   begin
     ImW := Image.Width;
     ImH := Image.Height;
     try
-      graphics := TGPGraphics.Create(TgpImage(TiledImage));
+      graphics := THtGPGraphics.Create(THtGpImage(TiledImage));
       try
         repeat {tile Image in the various dc's}
           XX := X;
@@ -5610,14 +5610,14 @@ begin
   OH := GetImageHeight(BGImage.Image);
 
   {$IFNDEF NoGDIPlus}
-  if (BGImage.Image is TgpImage) and not ((OW = 1) or (OH = 1)) then
+  if (BGImage.Image is THtGpImage) and not ((OW = 1) or (OH = 1)) then
   begin {TiledImage will be a TGpBitmap unless Image needs to be enlarged}
-    with TgpBitmap(TiledImage) do
-      if Assigned(TiledImage) and ((IW <> Width) or (IH <> Height)) then
+    with THtGpBitmap(TiledImage) do
+      if Assigned(TiledImage) and ((Cardinal(IW) <> Width) or (Cardinal(IH) <> Height)) then
         FreeAndNil(TiledImage);
     if not Assigned(TiledImage) then
-      TiledImage := TgpBitmap.Create(IW, IH);
-    g := TgpGraphics.Create(TgpBitmap(TiledImage));
+      TiledImage := THtGpBitmap.Create(IW, IH);
+    g := THtGpGraphics.Create(THtGpBitmap(TiledImage));
     g.Clear(0); {clear to transparent black}
     g.Free;
     IsTiledGpImage := False;
@@ -5686,7 +5686,7 @@ begin
     Tile(TBitmap(TheGpObj), TheMask, OW, OH)
     {$IFNDEF NoGDIPlus}
   else
-    TileGpImage(TgpImage(TheGpObj), OW, OH)
+    TileGpImage(THtGpImage(TheGpObj), OW, OH)
     {$ENDIF !NoGDIPlus}
     ;
 end;
@@ -6257,9 +6257,9 @@ begin
         begin
           if not Document.IsCopy then
             {$IFNDEF NoGDIPlus}
-            if TiledImage is TgpBitmap then
+            if TiledImage is THtGpBitmap then
             //DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, PT)
-              DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, FT, 0, IT, IW, IH)
+              DrawGpImage(Canvas.Handle, THtGpImage(TiledImage), PdRect.Left, FT, 0, IT, IW, IH)
             //BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right-PdRect.Left, IH, TiledImage.Canvas.Handle, 0, IT, SrcCopy)
             else
             {$ENDIF !NoGDIPlus}
@@ -6276,15 +6276,15 @@ begin
             end
           else
           {$IFNDEF NoGDIPlus}
-          if TiledImage is TGpBitmap then {printing}
+          if TiledImage is THtGpBitmap then {printing}
           begin
             if HasBackgroundColor then
             begin
-              DrawGpImage(FullBg.Canvas.Handle, TgpImage(TiledImage), 0, 0);
+              DrawGpImage(FullBg.Canvas.Handle, THtGpImage(TiledImage), 0, 0);
               PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
             end
             else
-              PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, PdRect.Top,
+              PrintGpImageDirect(Canvas.Handle, THtGpImage(TiledImage), PdRect.Left, PdRect.Top,
                 Document.ScaleX, Document.ScaleY);
           end
           else
@@ -8225,7 +8225,7 @@ begin
         BitmapName := Rslt;
       end;
       TmpResult := GetTheImage(BitmapName, Dummy1, Mask, FromCache, Delay); {might be Nil}
-      if (TmpResult is TBitmap) {$IFNDEF NoGDIPlus}or (TmpResult is TGpImage){$ENDIF !NoGDIPlus} then
+      if (TmpResult is TBitmap) {$IFNDEF NoGDIPlus}or (TmpResult is THtGpImage){$ENDIF !NoGDIPlus} then
       begin
         BackgroundBitmap := TmpResult;
         BackgroundMask := Mask;
@@ -8843,8 +8843,8 @@ begin
     begin
       if not Cell.MasterList.IsCopy then
         {$IFNDEF NoGDIPlus}
-        if TiledImage is TgpBitmap then
-          DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PL, FT, 0, IT, PR - PL, IH)
+        if TiledImage is THtGpBitmap then
+          DrawGpImage(Canvas.Handle, THtGpImage(TiledImage), PL, FT, 0, IT, PR - PL, IH)
         else
         {$ENDIF !NoGDIPlus}
         if NoMask then
@@ -8860,15 +8860,15 @@ begin
         end
       else
       {$IFNDEF NoGDIPlus}
-      if TiledImage is TGpBitmap then {printing}
+      if TiledImage is THtGpBitmap then {printing}
       begin
         if Cell.BkGnd then
         begin
-          DrawGpImage(FullBg.Canvas.Handle, TgpImage(TiledImage), 0, 0);
+          DrawGpImage(FullBg.Canvas.Handle, THtGpImage(TiledImage), 0, 0);
           PrintBitmap(Canvas, PL, FT, PR - PL, IH, FullBG);
         end
         else
-          PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PL, PT,
+          PrintGpImageDirect(Canvas.Handle, THtGpImage(TiledImage), PL, PT,
             Cell.MasterList.ScaleX, Cell.MasterList.ScaleY);
       end
       else

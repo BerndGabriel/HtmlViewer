@@ -579,16 +579,16 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer; Bitmap, Mask: TBitmap; YI, HI: Integer);
 
 {$IFNDEF NoGDIPlus}
-procedure DrawGpImage(Handle: THandle; Image: TGPImage; DestX, DestY: Integer); overload;
-procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+procedure DrawGpImage(Handle: THandle; Image: THtGPImage; DestX, DestY: Integer); overload;
+procedure DrawGpImage(Handle: THandle; Image: THtGpImage; DestX, DestY,
   SrcX, SrcY, SrcW, SrcH: Integer); overload;
-procedure StretchDrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY, DestW, DestH: Integer);
-procedure PrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY: Integer;
+procedure StretchDrawGpImage(Handle: THandle; Image: THtGpImage; DestX, DestY, DestW, DestH: Integer);
+procedure PrintGpImageDirect(Handle: THandle; Image: THtGpImage; DestX, DestY: Integer;
   ScaleX, ScaleY: single);
-procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage;
+procedure StretchPrintGpImageDirect(Handle: THandle; Image: THtGpImage;
   DestX, DestY, DestW, DestH: Integer;
   ScaleX, ScaleY: single);
-procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
+procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: THtGpImage;
   DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 {$ENDIF NoGDIPlus}
 
@@ -1985,7 +1985,7 @@ function LoadImageFromStream(Stream: TStream; var Transparent: Transparency; var
 {$IFNDEF NoGDIPlus}
     if GDIPlusActive then
     begin
-      Result := TgpImage.Create(Stream);
+      Result := THtGpImage.Create(Stream);
       Transparent := NotTransp;
       exit;
     end;
@@ -3524,8 +3524,8 @@ var
 begin
   Result := TBitmap.Create;
   {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    NewBitmap := TGpImage(Image).GetBitmap
+  if Image is THtGpImage then
+    NewBitmap := THtGpImage(Image).GetBitmap
   else {$ENDIF !NoGDIPlus}
     NewBitmap := Image as TBitmap;
   Result.Assign(NewBitmap);
@@ -3539,7 +3539,7 @@ begin
     Result.Height := NewBitmap.Height;
   Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), NewBitmap);
   {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
+  if Image is THtGpImage then
     NewBitmap.Free;
   {$ENDIF NoGDIPlus}
 end;
@@ -3734,12 +3734,12 @@ type
 
 {$IFNDEF NoGDIPlus}
 
-procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY: Integer);
+procedure DrawGpImage(Handle: THandle; Image: THtGpImage; DestX, DestY: Integer);
 {Draws the entire image as specified at the point specified}
 var
-  g: TGpGraphics;
+  g: THtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := THtGPGraphics.Create(Handle);
   try
     g.DrawImage(Image, DestX, DestY, Image.Width, Image.Height);
   except
@@ -3747,13 +3747,13 @@ begin
   g.Free;
 end;
 
-procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+procedure DrawGpImage(Handle: THandle; Image: THtGpImage; DestX, DestY,
   SrcX, SrcY, SrcW, SrcH: Integer);
 {Draw a portion of the image at DestX, DestY.  No stretching}
 var
-  g: TGpGraphics;
+  g: THtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := THtGPGraphics.Create(Handle);
   try
     g.DrawImage(Image, DestX, DestY, SrcX, SrcY, SrcW, SrcH);
   except
@@ -3761,13 +3761,13 @@ begin
   g.Free;
 end;
 
-procedure StretchDrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+procedure StretchDrawGpImage(Handle: THandle; Image: THtGpImage; DestX, DestY,
   DestW, DestH: Integer);
 {Draws the entire image in the rectangle specified}
 var
-  g: TGpGraphics;
+  g: THtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := THtGPGraphics.Create(Handle);
   try
     g.DrawImage(Image, DestX, DestY, DestW, DestH);
   except
@@ -3775,14 +3775,14 @@ begin
   g.Free;
 end;
 
-procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage;
+procedure StretchPrintGpImageDirect(Handle: THandle; Image: THtGpImage;
   DestX, DestY, DestW, DestH: Integer;
   ScaleX, ScaleY: single);
 {Prints the entire image at the point specified with the height and width specified}
 var
-  g: TGpGraphics;
+  g: THtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := THtGPGraphics.Create(Handle);
   try
     g.ScaleTransform(ScaleX, ScaleY);
     g.DrawImage(Image, DestX, DestY, DestW, DestH);
@@ -3791,31 +3791,31 @@ begin
   g.Free;
 end;
 
-procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
+procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: THtGpImage;
   DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 var
-  g: TGpGraphics;
+  g: THtGpGraphics;
   bg: TBitmap;
 begin {Draw image on white background first, then print}
   bg := TBitmap.Create;
-  bg.Width := TGPImage(Image).Width;
-  bg.Height := TGPImage(Image).Height;
+  bg.Width := THtGPImage(Image).Width;
+  bg.Height := THtGPImage(Image).Height;
   bg.Canvas.Brush.Color := Color;
   bg.Canvas.FillRect(Rect(0, 0, bg.Width, bg.Height));
-  g := TGPGraphics.Create(bg.Canvas.Handle);
-  g.DrawImage(TGPImage(Image), 0, 0, bg.Width, bg.Height);
+  g := THtGPGraphics.Create(bg.Canvas.Handle);
+  g.DrawImage(Image, 0, 0, bg.Width, bg.Height);
   g.Free;
   Canvas.StretchDraw(Rect(DestX, DestY, DestX + DestW, DestY + DestH), bg);
   bg.Free;
 end;
 
-procedure PrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY: Integer;
+procedure PrintGpImageDirect(Handle: THandle; Image: THtGpImage; DestX, DestY: Integer;
   ScaleX, ScaleY: single);
 {Prints the entire image as specified at the point specified}
 var
-  g: TGpGraphics;
+  g: THtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := THtGPGraphics.Create(Handle);
   try
     g.ScaleTransform(ScaleX, ScaleY);
     g.DrawImage(Image, DestX, DestY, Image.Width, Image.Height);
@@ -4179,8 +4179,8 @@ begin
   if Image is TBitmap then
     Result := TBitmap(Image).Height
   else {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    Result := TGpImage(Image).Height
+  if Image is THtGpImage then
+    Result := THtGpImage(Image).Height
   else {$ENDIF !NoGDIPlus}
   if Image is TGifImage then
     Result := TGifImage(Image).Height
@@ -4197,8 +4197,8 @@ begin
   if Image is TBitmap then
     Result := TBitmap(Image).Width
   else {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    Result := TGpImage(Image).Width
+  if Image is THtGpImage then
+    Result := THtGpImage(Image).Width
   else {$ENDIF !NoGDIPlus}
   if Image is TGifImage then
     Result := TGifImage(Image).Width
