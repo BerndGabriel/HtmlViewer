@@ -270,6 +270,10 @@ type
   TFontList = class;
 
   TFontObj = class(TFontObjBase) {font information}
+  // BG, 10.08.2013: deprecated
+  // Is used to handle the link states, but the full range of CSS
+  // properties can be applied to :link, :hover, :visited, etc.
+  // 
   private
 {$IFNDEF NoTabLink}
     FSection: TSection; // only used if NoTabLink is not defined.
@@ -772,7 +776,7 @@ type
 
   TFormControlObj = class(TFloatingObjBase)
   private
-    FYValue: Integer;
+    //FYValue: Integer;
     Active: boolean;
     AttributeList: ThtStringList;
     FName: ThtString;
@@ -846,7 +850,7 @@ type
     property Top: Integer read GetClientTop write SetClientTop;
     property Value: ThtString read FValue write SetValue;
     property Width: Integer read GetClientWidth write SetClientWidth;
-    property YValue: Integer read FYValue;
+//    property YValue: Integer read FYValue;
   end;
 
   //BG, 15.01.2011:
@@ -3309,7 +3313,7 @@ end;
 
 function TFormControlObj.GetYPosition: Integer;
 begin
-  Result := YValue;
+  Result := DrawYY; //YValue;
 end;
 
 procedure TFormControlObj.ProcessProperties(Prop: TProperties);
@@ -11270,7 +11274,9 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     end;
 
   var
-    Cnt, XX, YY, I, J, J1, J2, J3, X1, X2, OHang, Width: Integer;
+    Cnt, I, J, J1, J2, J3, X1, X2, OHang, Width, D, H: Integer;
+    XX: Integer; // current width of row in pixels (== current horizontal position).
+    YY: Integer; // current height of row in pixels.
     Picture: boolean;
     FlObj: TFloatingObj;
     FcObj: TFormControlObj;
@@ -11280,13 +11286,18 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     FoundBreak: boolean;
     HyphenWidth: Integer;
     FloatingImageCount: Integer;
+    InitialFloatingLeftCount: Integer;
+    InitialFloatingRightCount: Integer;
   begin
     LastFont := nil;
     TheStart := Start;
     ImgHt := 0;
+    InitialFloatingLeftCount := IMgr.L.Count;
+    InitialFloatingRightCount := IMgr.R.Count;
 
     BrChr := StrScanW(TheStart, BrkCh); {see if a break char}
-    if Assigned(BrChr) and (BrChr - TheStart < MaxChars) then
+    FoundBreak := Assigned(BrChr) and (BrChr - TheStart < MaxChars);
+    if FoundBreak then
     begin
       MaxChars := BrChr - TheStart;
       if MaxChars = 0 then
@@ -11294,10 +11305,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
         Result := 1;
         Exit; {single character fits}
       end;
-      FoundBreak := True;
-    end
-    else
-      FoundBreak := False;
+    end;
 
     X1 := IMgr.LeftIndent(Y);
     if Start = Buff then
@@ -11396,8 +11404,35 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       Inc(Start, I);
     end;
     Result := Cnt;
+
     if FoundBreak and (Cnt = MaxChars) then
       Inc(Result);
+
+    // adjust floating objects top position, in case they have been moved down and line height has been changed.
+    H := Max(YY, ImgHt);
+    IMgr.AdjustY(InitialFloatingLeftCount, InitialFloatingRightCount, Y, H);
+
+    D := 0;
+    for I := 0 to Images.Count - 1 do
+      with Images[I] do
+        if Floating in [ALeft, ARight] then
+          if DrawYY > Y + VSpaceT then
+          begin
+            if DrawYY < Y + H + VSpaceT then
+              D := Y + H + VSpaceT - DrawYY;
+            Inc(DrawYY, D);
+          end;
+
+    D := 0;
+    for I := 0 to FormControls.Count - 1 do
+      with FormControls[I] do
+        if Floating in [ALeft, ARight] then
+          if DrawYY > Y + VSpaceT then
+          begin
+            if DrawYY < Y + H + VSpaceT then
+              D := Y + H + VSpaceT - DrawYY; // FYValue;
+            Inc(DrawYY, D);
+          end;
   end;
 
   procedure DoDrawLogic;
@@ -11527,7 +11562,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           begin
             FlObj.DrawYY := Y; {approx y dimension}
             if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
-              TImageObj(FLObj).MyFormControl.FYValue := Y;
+              TImageObj(FLObj).MyFormControl.DrawYY := Y; // FYValue := Y;
             case FlObj.VertAlign of
               aTop:
                 SA := Max(SA, H - DHt);
@@ -11574,9 +11609,9 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
               ABottom:
                 SB := Max(SB, H - DHt);
             end;
+            if not IsCopy then
+              FcObj.DrawYY := Y; //FYValue := Y;
           end;
-          if Assigned(FcObj) and not IsCopy then
-            FcObj.FYValue := Y;
         end;
         Inc(Cnt); {to skip by the control}
       until Cnt >= NN;
@@ -12339,15 +12374,14 @@ var
               end;
           end
           else
-          with FcObj do
           begin
             LeftT := CPx + FcObj.HSpaceL;
-            case VertAlign of
+            case FcObj.VertAlign of
               ANone,
-              ATop:      TopP := LR.DrawY + VSpaceT - YOffset;
-              AMiddle:   TopP := Y - ((LR.LineHt + Height) div 2) - YOffset;
-              ABaseline: TopP := Y - Height - VSpaceB - Descent - YOffset; {sits on baseline}
-              ABottom:   TopP := Y - Height - VSpaceB - YOffset;
+              ATop:      TopP := LR.DrawY + FcObj.VSpaceT - YOffset;
+              AMiddle:   TopP := Y - ((LR.LineHt + FcObj.Height) div 2) - YOffset;
+              ABaseline: TopP := Y - FcObj.Height - FcObj.VSpaceB - Descent - YOffset; {sits on baseline}
+              ABottom:   TopP := Y - FcObj.Height - FcObj.VSpaceB - YOffset;
             else
                          TopP := Y; {never get here}
             end;
@@ -12365,45 +12399,45 @@ var
                   if (Start - Buff = BR.BStart) then
                   begin {border starts with Form control}
                     BR.bRect.Top := ToPP + YOffSet;
-                    BR.bRect.Left := CPx + HSpaceL;
+                    BR.bRect.Left := CPx + FcObj.HSpaceL;
                     if BR.BEnd = BR.BStart + 1 then {border is confined to form control}
-                      BR.bRect.Right := BR.bRect.Left + Width;
-                    BR.bRect.Bottom := TopP + YOffSet + Height;
+                      BR.bRect.Right := BR.bRect.Left + FcObj.Width;
+                    BR.bRect.Bottom := TopP + YOffSet + FcObj.Height;
                   end
                   else if Start - Buff = BR.BEnd then
                   else
                   begin {form control is included in border}
                     BR.bRect.Top := Min(BR.bRect.Top, ToPP + YOffSet);
-                    BR.bRect.Bottom := Max(BR.bRect.Bottom, TopP + YOffSet + Height);
+                    BR.bRect.Bottom := Max(BR.bRect.Bottom, TopP + YOffSet + FcObj.Height);
                   end;
                 end;
               end;
           end;
 
-          with FcObj do
+          if IsCopy then
+            FcObj.Draw(Canvas, LeftT, TopP)
+          else
           begin
-            if Self.IsCopy then
-              FcObj.Draw(Canvas, LeftT, TopP)
-            else
-            begin
-              Show;
-              Top := TopP;
-              Left := LeftT;
-              if FcObj is TRadioButtonFormControlObj then
-                with TRadioButtonFormControlObj(FcObj) do
-                begin
-                  Show;
-                  if OwnerCell.BkGnd then
-                    Color := OwnerCell.BkColor
-                  else
-                    Color := Document.Background;
-                end;
-              if FcObj.Active and ((FcObj is TRadioButtonFormControlObj) or
-                (FcObj is TCheckBoxFormControlObj)) then
+            FcObj.Show;
+            FcObj.Top := TopP;
+            FcObj.Left := LeftT;
+
+            if FcObj is TRadioButtonFormControlObj then
+              with TRadioButtonFormControlObj(FcObj) do
               begin
-                Canvas.Brush.Color := clWhite;
-                //SaveColor := SetTextColor(Handle, clBlack);
-                if Document.TheOwner.ShowFocusRect then //MK20091107
+                Show;
+                if OwnerCell.BkGnd then
+                  Color := OwnerCell.BkColor
+                else
+                  Color := Document.Background;
+              end;
+
+            if FcObj.Active and ((FcObj is TRadioButtonFormControlObj) or (FcObj is TCheckBoxFormControlObj)) then
+            begin
+              Canvas.Brush.Color := clWhite;
+              //SaveColor := SetTextColor(Handle, clBlack);
+              if Document.TheOwner.ShowFocusRect then //MK20091107
+                with FcObj do
                 begin
                   if (FcObj is TRadioButtonFormControlObj) then
                   begin
@@ -12415,10 +12449,13 @@ var
                   else
                     Canvas.DrawFocusRect(Rect(Left - 3, Top - 3, Left + 16, Top + 16));
                 end;
-                //SetTextColor(Handle, SaveColor);
-              end;
+              //SetTextColor(Handle, SaveColor);
             end;
-            Inc(CPx, Width + FcObj.HSpaceL + FcObj.HSpaceR);
+          end;
+
+          if not (FcObj.Floating in [ALeft, ARight]) then
+          begin
+            Inc(CPx, FcObj.TotalWidth);
             NewCP := True;
           end;
         end;

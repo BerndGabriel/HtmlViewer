@@ -276,6 +276,10 @@ type
     procedure GetClearY(out CL, CR: Integer);
     procedure Init(Lf, Wd: Integer);
     procedure Reset(Lf: Integer);
+    // AdjustY() is called after an inline row has been produced. If floating objects have been moved
+    // down before the actual height of the entire row was computed, their Y coordinates aren't too
+    // small now. AdjustY() moves them down below given Y + Height.
+    procedure AdjustY(FirstLeftIndex, FirstRightIndex, Y, Height: Integer);
   end;
 
 //------------------------------------------------------------------------------
@@ -1847,6 +1851,39 @@ begin
   Result.X := RightEdge(YT) - W;
   R.Add(Result);
   RTopMin := YT;
+end;
+
+//-- BG ---------------------------------------------------------- 12.08.2013 --
+procedure TIndentManager.AdjustY(FirstLeftIndex, FirstRightIndex, Y, Height: Integer);
+var
+  I, D: Integer;
+  IR: IndentRec;
+begin
+  D := 0;
+  for I := FirstLeftIndex to L.Count - 1 do
+  begin
+    IR := L.Items[I];
+    if IR.YT > Y then
+    begin
+      if IR.YT < Y + Height then
+        D := Y + Height - IR.YT;
+      Inc(IR.YT, D);
+      Inc(IR.YB, D);
+    end;
+  end;
+
+  D := 0;
+  for I := FirstRightIndex to R.Count - 1 do
+  begin
+    IR := R.Items[I];
+    if IR.YT > Y then
+    begin
+      if IR.YT < Y + Height then
+        D := Y + Height - IR.YT;
+      Inc(IR.YT, D);
+      Inc(IR.YB, D);
+    end;
+  end;
 end;
 
 {----------------TIndentManager.Reset}

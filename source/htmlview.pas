@@ -4131,7 +4131,7 @@ var
 begin
   if Sender is TFormControlObj then
   begin
-    Y := TFormControlObj(Sender).YValue;
+    Y := TFormControlObj(Sender).DrawYY;
     Pos := VScrollBarPosition;
     if (Y < Pos) or (Y > Pos + ClientHeight - 20) then
     begin
