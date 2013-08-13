@@ -1497,7 +1497,7 @@ type
     NoShade: boolean;
     BkGnd: boolean;
     Width, Indent: Integer;
-
+    UseDefBorder : Boolean;
     constructor Create(AMasterList: ThtDocument; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(AMasterList: ThtDocument; T: TSectionBase); override;
     procedure CopyToClipboard; override;
@@ -14663,26 +14663,28 @@ begin
       end
       else
       begin
-        with Document do
-        begin
-          White := Printing or (ThemedColor(Background{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif}) = clWhite);
-          BlackBorder := NoShade or (Printing and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and (GetDeviceCaps(Handle, PLANES) = 1));
+        if UseDefBorder then begin
+          with Document do
+          begin
+            White := Printing or (ThemedColor(Background{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif}) = clWhite);
+            BlackBorder := NoShade or (Printing and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and (GetDeviceCaps(Handle, PLANES) = 1));
+          end;
+          if BlackBorder then
+            Pen.Color := clBlack
+          else if White then
+            Pen.Color := clSilver
+          else
+            Pen.Color := ThemedColor(clBtnHighLight {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+          MoveTo(XR, YT);
+          LineTo(XR, YT + VSize - 1);
+          LineTo(X, YT + VSize - 1);
+          if BlackBorder then
+            Pen.Color := clBlack
+          else
+            Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+          LineTo(X, YT);
+          LineTo(XR, YT);
         end;
-        if BlackBorder then
-          Pen.Color := clBlack
-        else if White then
-          Pen.Color := clSilver
-        else
-          Pen.Color := ThemedColor(clBtnHighLight {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
-        MoveTo(XR, YT);
-        LineTo(XR, YT + VSize - 1);
-        LineTo(X, YT + VSize - 1);
-        if BlackBorder then
-          Pen.Color := clBlack
-        else
-          Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-        LineTo(X, YT);
-        LineTo(XR, YT);
       end;
       Document.FirstPageItem := False; {items after this will not be first on page}
     end;
