@@ -155,6 +155,12 @@ type
   ThtHintWindow = THintWindow;
 {$endif}
 
+{$ifdef HasSystemUITypes}
+   ThtScrollStyle = System.UITypes.TScrollStyle;
+{$else}
+  ThtScrollStyle = TScrollStyle;
+{$endif}
+
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)
   public

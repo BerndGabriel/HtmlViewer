@@ -51,7 +51,7 @@ uses
   UrlSubs;
 
 const
-  VersionNo = '11.5';
+  VersionNo = '11.6';
   MaxHScroll = 100000; {max horizontal display in pixels}
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
@@ -132,8 +132,12 @@ type
   { Like TList but frees it's items. Use only descendents of TObject! }
   //BG, 03.03.2011: what about TObjectList?
   TFreeList = class(TList)
+  private
+    FOwnsObjects: Boolean;
   protected
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  public
+    constructor Create(OwnsObjects: Boolean = True);
   end;
 
 //------------------------------------------------------------------------------
@@ -279,6 +283,7 @@ type
 //------------------------------------------------------------------------------
 
   IndentRec = class(TObject)
+  public
     X: Integer;   // left or right indentation relative to LfEdge.
     YT: Integer;  // top Y inclusive coordinate for this record relative to document top.
     YB: Integer;  // bottom Y exclusive coordinate for this record relative to document top.
@@ -298,6 +303,8 @@ type
     L: TFreeList;       // list of left side indentations of type IndentRec.
     R: TFreeList;       // list of right side indentations of type IndentRec.
     CurrentID: TObject; // the current block level (a TBlock pointer)
+    LTopMin: Integer;
+    RTopMin: Integer;
   public
     constructor Create;
     destructor Destroy; override;
@@ -378,26 +385,26 @@ type
 // a TIDObjectList, where they can be obtained from by ID.
 // Their Y coordinates can be retrieved and HtmlViewer can scroll to them.
 //
-// Most decendents are objects representing an HTML tag, except TChPosObj.
+// Most descendants are objects representing an HTML tag, except TChPosObj.
 //------------------------------------------------------------------------------
 
   TIDObject = class(TObject)
   private
-    function getID(): ThtString; //>-- DZ
+    function GetID(): ThtString; //>-- DZ
   protected
-    FhtmlId: ThtString; //>-- DZ real ID from HTML if any
-    FglobalId: ThtString; //>-- DZ global unique ID
+    FHtmlId: ThtString; //>-- DZ real ID from HTML if any
+    FGlobalId: ThtString; //>-- DZ global unique ID
 
     function GetYPosition: Integer; virtual; abstract;
     function FreeMe: Boolean; virtual; // some objects the TIDObjectsList owns, some others not.
   public
-    constructor Create(const AhtmlID: ThtString);
+    constructor Create(const AHtmlID: ThtString);
     procedure AfterConstruction(); override;//>-- DZ
 
     property YPosition: Integer read GetYPosition;
     property id: ThtString read getID; //>-- DZ if FhtmlId then FglobalId will be returned as result
-    property htmlId: ThtString read FhtmlId; //>-- DZ
-    property globalId: ThtString read FglobalId; //>-- DZ
+    property HtmlId: ThtString read FHtmlId; //>-- DZ
+    property GlobalId: ThtString read FGlobalId; //>-- DZ
   end;
 
   //BG, 04.03.2011: TIDNameList renamed to TIDObjectList and used TObject changed to TIDObject.
@@ -652,6 +659,7 @@ type
 
   TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
   TTablePartRec = class
+  public
     TablePart: TablePartType;
     PartStart: Integer;
     PartHeight: Integer;
@@ -731,7 +739,7 @@ type
   EGDIPlus = class(Exception);
 
 var
-  GlobalObjectID: cardinal; //>-- DZ, counter for TIDObject.FglobalID
+  GlobalObjectID: Cardinal; //>-- DZ, counter for TIDObject.FGlobalID
 
 {$ifdef UseASMx86}
 
@@ -1258,9 +1266,16 @@ begin
 end;
 
 
+//-- BG ---------------------------------------------------------- 10.02.2013 --
+constructor TFreeList.Create(OwnsObjects: Boolean);
+begin
+  inherited Create;
+  FOwnsObjects := OwnsObjects;
+end;
+
 procedure TFreeList.Notify(Ptr: Pointer; Action: TListNotification);
 begin
-  if Action = lnDeleted then
+  if (Action = lnDeleted) and FOwnsObjects then
     TObject(Ptr).Free;
 end;
 
@@ -1678,8 +1693,8 @@ var
   Shape: (shRect, shCircle, shPoly, shDefault);
   Area: TMapArea;
 begin
-  if FAreas.Count >= 1000 then
-    Exit;
+//  if FAreas.Count >= 1000 then
+//    Exit;
   Area := TMapArea.Create;
   try
     Shape := shRect;
@@ -1821,6 +1836,7 @@ begin
   Result.YB := YB;
   Result.X := LeftEdge(YT) + W;
   L.Add(Result);
+  LTopMin := YT;
 end;
 
 //-- BG ---------------------------------------------------------- 05.02.2011 --
@@ -1832,6 +1848,7 @@ begin
   Result.YB := YB;
   Result.X := RightEdge(YT) - W;
   R.Add(Result);
+  RTopMin := YT;
 end;
 
 {----------------TIndentManager.Reset}
@@ -1843,6 +1860,8 @@ begin
   Width  := Wd;
   R.Clear;
   L.Clear;
+  LTopMin := 0;
+  RTopMin := 0;
   CurrentID := nil;
 end;
 
@@ -2008,6 +2027,7 @@ function TIndentManager.AlignLeft(var Y: Integer; W, SpW, SpH: Integer): Integer
 var
   I, CL, CR, LX, RX, XL, XR, YY, MinX: Integer;
 begin
+  Y := Max(Y, LTopMin);
   Result := LeftEdge(Y);
   if Result + W + SpW > RightEdge(Y) then
   begin
@@ -2114,6 +2134,7 @@ function TIndentManager.AlignRight(var Y: Integer; W, SpW, SpH: Integer): Intege
 var
   I, CL, CR, LX, RX, XL, XR, YY, MaxX: Integer;
 begin
+  Y := Max(Y, RTopMin);
   Result := RightEdge(Y) - W;
   if Result < LeftEdge(Y) + SpW then
   begin
@@ -2420,7 +2441,7 @@ begin
   StringOK := True;
 end;
 
-function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): Ansistring;
+function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
 var
   NewLen, Len: Integer;
 begin
@@ -2606,8 +2627,7 @@ type
 //  Result[3] := P3;
 //end;
 
-procedure DrawOnePolygon(Canvas: TCanvas; P: BorderPointArray; Color: TColor;
-  Side: byte; Printing: boolean);
+procedure DrawOnePolygon(Canvas: TCanvas; P: BorderPointArray; Color: TColor; Side: byte; Printing: Boolean);
 {Here we draw a 4 sided polygon (by filling a region).  This represents one
  side (or part of a side) of a border.
  For single pixel thickness, drawing is done by lines for better printing}
@@ -3362,23 +3382,23 @@ begin
 end;
 
 //>-- DZ 18.09.2011
-constructor TIDObject.Create(const AhtmlID: ThtString);
+constructor TIDObject.Create(const AHtmlID: ThtString);
 begin
-  FhtmlID:= trim(AhtmlID);
+  FHtmlID:= Trim(AHtmlID);
 end;
 
 procedure TIDObject.AfterConstruction();
 begin
-  FglobalId:= IntToStr(GlobalObjectID);
-  inc(GlobalObjectID);
+  Inc(GlobalObjectID);
+  FGlobalId:= IntToStr(GlobalObjectID);
 end;
 
-function TIDObject.getID(): ThtString;
+function TIDObject.GetID(): ThtString;
 begin
-  if FhtmlID <> '' then
-    Result:= FhtmlID
+  if FHtmlID <> '' then
+    Result:= FHtmlID
   else
-    Result:= FglobalId;
+    Result:= FGlobalId;
 end;
 //<-- DZ
 

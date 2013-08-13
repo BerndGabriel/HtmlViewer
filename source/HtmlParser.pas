@@ -284,7 +284,12 @@ function THtmlToken.CreateElement(Parent: THtmlElement): THtmlElement;
 var
   Attribute: THtmlAttribute;
 begin
-  Result := THtmlElement.Create(Parent, FSymbol, FDocPos);
+  case FSymbol of
+    TextSy: Result := THtmlTextElement.Create(Parent, FSymbol, FDocPos, S);
+  else
+    Result := THtmlElement.Create(Parent, FSymbol, FDocPos);
+  end;
+
   Attribute := Attributes.First;
   while Attribute <> nil do
   begin

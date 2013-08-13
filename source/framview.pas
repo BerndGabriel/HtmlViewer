@@ -1,8 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -38,7 +37,14 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
-  UrlSubs, HtmlGlobals, HtmlBuffer, HtmlImages, Htmlsubs, Htmlview, HTMLUn2, ReadHTML;
+  UrlSubs, 
+  HtmlGlobals, 
+  HtmlBuffer, 
+  HtmlImages, 
+  Htmlsubs, 
+  Htmlview, 
+  HTMLUn2, 
+  ReadHTML;
 
 type
   {common to TFrameViewer and TFrameBrowser}
@@ -91,11 +97,11 @@ type
     procedure SetCursor(Value: TCursor); reintroduce;
     procedure SetHistoryIndex(Value: integer);
     procedure SetOnFileBrowse(Handler: TFileBrowseEvent);
+    procedure SetOnPrintHtmlFooter(Handler: THtmlPagePrinted);
+    procedure SetOnPrintHtmlHeader(Handler: THtmlPagePrinted);
     procedure SetOnRightClick(Handler: TRightClickEvent);
     procedure SetOptions(Value: TFrameViewerOptions);
     procedure SetOurPalette(Value: HPalette);
-    procedure SetOnPrintHtmlFooter(Handler: THtmlPagePrinted);
-    procedure SetOnPrintHtmlHeader(Handler: THtmlPagePrinted);
     procedure SetProcessing(Local, Viewer: boolean);
     procedure SetSelLength(Value: integer);
     procedure SetSelStart(Value: integer);
@@ -331,7 +337,7 @@ type
 
 {TFrameViewer Types}
 
-  TFrameBase = class(ThtControlBase) {base class for other classes}
+  TFrameBase = class(THtmlFrameBase) {base class for other classes}
   private
     FMasterSet: TFrameSetBase; {Points to top (master) TFrameSetBase}
     FOwner: TSubFrameSetBase;
@@ -369,6 +375,9 @@ type
     RefreshTimer: TTimer;
     NextFile: ThtString;
   protected
+{$ifdef has_StyleElements}
+    procedure UpdateStyleElements; override;
+{$endif}
     function CheckNoResize(out Lower, Upper: boolean): boolean; override;
     function ExpandSourceName(Base, Path, S: ThtString): ThtString; virtual; abstract;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
@@ -566,15 +575,22 @@ type
 
     property OnBitmapRequest;
     property ServerRoot;
+{$ifdef has_StyleElements}
+    property StyleElements;
+{$endif}
   end;
 
 implementation
+{$ifdef Compiler24_Plus}
+uses System.Types;
+{$endif}
 
 const
   Sequence: integer = 10;
 
 type
   PositionObj = class(TObject)
+  public
     Pos: integer;
     Seq: integer;
     FormData: TFreeList;
@@ -600,6 +616,19 @@ begin
 end;
 
 {----------------TViewerFrameBase.CreateIt}
+
+{$ifdef has_StyleElements}
+procedure TViewerFrameBase.UpdateStyleElements;
+var i : Integer;
+begin
+  inherited UpdateStyleElements;
+  if Assigned(MasterSet.Viewers) then begin
+    for i := 0 to MasterSet.Viewers.Count - 1 do begin
+      (MasterSet.FrameViewer as TFrameViewer).StyleElements := StyleElements;
+    end;
+  end;
+end;
+{$endif}
 
 constructor TViewerFrameBase.CreateIt(AOwner: TComponent; L: TAttributeList;
   Master: TFrameSetBase; const Path: ThtString);
@@ -806,7 +835,6 @@ begin
   Viewer.MarginWidth := frMarginWidth;
   Viewer.MarginHeight := frMarginHeight;
   Viewer.OnEnter := MasterSet.CheckActive;
-
 end;
 
 {----------------TViewerFrameBase.LoadFiles}
@@ -841,7 +869,6 @@ var
   Item: TFrameBase;
   I: integer;
   Upper, Lower: Boolean;
-  //Image, Tex: boolean;
   EV: EventRec;
   Src: ThtString;
   Stream: TStream;
@@ -989,9 +1016,10 @@ begin
         ImgType,
         TextType:
           try
-            Viewer.LoadFromFile(Source, ft)
+            Viewer.LoadFromFile(Source, ft);
           except
-          end {leave blank on error}
+            {leave blank on error}
+          end;
       else
         try
           if MasterSet.TriggerEvent(Source, EV.NewName, EV.Doc) then
@@ -1157,7 +1185,7 @@ begin
         else
           Viewer.Base := MasterSet.FBase;
           if EV.Doc <> nil then
-            Viewer.LoadFromDocument(EV.Doc, Dest, ft)
+            Viewer.LoadFromDocument(EV.Doc, EV.NewName + Dest, ft)
           else
             Viewer.LoadFromFile(EV.NewName + Dest, ft);
         end;
@@ -1227,11 +1255,11 @@ begin
         case ft of
           ImgType,
           TextType:
-            Viewer.LoadFromFile(EV.NewName, ft)
+            Viewer.LoadFromFile(EV.NewName + Dest, ft)
         else
           Viewer.Base := MasterSet.FBase;
           if EV.Doc <> nil then
-            Viewer.LoadFromDocument(EV.Doc, Dest, ft)
+            Viewer.LoadFromDocument(EV.Doc, EV.NewName + Dest, ft)
           else
             Viewer.LoadFromFile(EV.NewName + Dest, ft);
         end;
@@ -1447,6 +1475,9 @@ begin
   ParentBackground := False;
 {$ENDIF}
   ParentColor := True;
+{$ifdef has_StyleElements}
+  StyleElements := FMasterSet.StyleElements;
+{$endif}
 end;
 
 {----------------TSubFrameSetBase.ClearFrameNames}
@@ -1523,7 +1554,7 @@ var
 
   procedure GetDims;
   const
-    EOL = ^M;
+    EOL = CrChar;
   var
     Ch: ThtChar;
     I, N: integer;
@@ -1562,7 +1593,7 @@ var
           begin
             while IsDigit(Ch) do
             begin
-              Numb := Numb + Ch;
+              htAppendChr(Numb, Ch);
               GetCh;
             end;
             N := Max(1, StrToInt(Numb)); {no zeros}
@@ -2715,7 +2746,7 @@ begin
   finally
     SendMessage(Handle, wm_SetRedraw, 1, 0);
     EndProcessing;
-    Invalidate; //Repaint;
+    Repaint;
   end;
 end;
 
@@ -2894,7 +2925,7 @@ begin
     OnSoundRequest(Self, '', 0, True);
 end;
 
-{----------------TFVBase.HotSpotClickHandled:}
+{----------------TFVBase.HotSpotClickHandled}
 
 function TFVBase.HotSpotClickHandled(const FullUrl: ThtString): boolean;
 begin
@@ -2928,17 +2959,17 @@ begin
     S := Viewer.HTMLExpandFileName(S);
   if not HotSpotClickHandled(S) then
   begin
-    if (FTarget = '') or (CompareText(FTarget, '_self') = 0) then {no target or _self target}
+    if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
     begin
       FrameTarget := Viewer.FrameOwner as TViewerFrameBase;
       if not Assigned(FrameTarget) then
         Exit;
     end
-    else if CurFrameSet.FrameNames.Find(FTarget, I) then
+    else if CurFrameSet.FrameNames.Find(Target, I) then
       FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase)
-    else if CompareText(FTarget, '_top') = 0 then
+    else if CompareText(Target, '_top') = 0 then
       FrameTarget := CurFrameSet
-    else if CompareText(FTarget, '_parent') = 0 then
+    else if CompareText(Target, '_parent') = 0 then
     begin
       FrameTarget := (Viewer.FrameOwner as TViewerFrameBase).Owner as TFrameBase;
       while Assigned(FrameTarget) and not (FrameTarget is TViewerFrameBase)
@@ -2951,11 +2982,11 @@ begin
       begin
         AddVisitedLink(S + Query + Dest);
         CheckVisitedLinks;
-        OnBlankWindowRequest(Self, FTarget, AnURL);
+        OnBlankWindowRequest(Self, Target, AnURL);
         Handled := True;
       end
       else
-        Handled := FTarget <> ''; {true if can't find target window}
+        Handled := Target <> ''; {true if can't find target window}
       Exit;
     end;
 
@@ -3590,7 +3621,6 @@ begin
     OnImageRequest(Sender, SRC, Stream);
 end;
 
-
 //-- BG ---------------------------------------------------------- 03.01.2010 --
 procedure TFrameViewer.DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType,
   Method: ThtString; Results: ThtStringList);
@@ -3638,7 +3668,7 @@ begin
     begin
       S := Visited[I];
       for J := 0 to Viewer.LinkList.Count - 1 do
-        with TFontObj(Viewer.LinkList[J]) do
+        with Viewer.LinkList[J] do
         begin
           if not RequestEvent then
           begin
@@ -3722,8 +3752,6 @@ begin
   end;
   Result := FViewerList;
 end;
-
-{----------------TFVBase.GetFURL}{base class for TFrameViewer and TFrameBrowser}
 
 procedure TFVBase.SetViewImages(Value: boolean);
 var

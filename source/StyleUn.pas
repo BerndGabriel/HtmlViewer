@@ -1,8 +1,7 @@
 {
 Version   11.5
-Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 1995-2008 by L. David Baldwin,
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -214,8 +213,8 @@ type
     //this must be protected so that the property can be changed in
     //a descendant while being read only.
     FUseQuirksMode : Boolean;
-    procedure setLinksActive(Value: Boolean); virtual; abstract;
-    property LinksActive: Boolean write setLinksActive;
+    procedure SetLinksActive(Value: Boolean); virtual; abstract;
+    property LinksActive: Boolean write SetLinksActive;
   public
     constructor Create; overload;
     constructor Create(const AUseQuirksMode : Boolean); overload;
@@ -254,8 +253,9 @@ const
 
   EastEurope8859_2 = 31; {for 8859-2}
 
-// BG, 25.04.2012: added:
-function IsAuto(const Value: Variant): Boolean;
+
+// BG, 25.04.2012: Added:
+function IsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
 
 //BG, 05.10.2010: added:
 function VarIsIntNull(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -344,19 +344,20 @@ begin
   FUseQuirksMode := False;
 end;
 
+//-- BG ---------------------------------------------------------- 12.09.2010 --
+constructor TProperties.Create(APropStack: TPropStack; const AUseQuirksMode : Boolean);
+begin
+  Create;
+  Self.PropStack := APropStack;
+  FUseQuirksMode := AUseQuirksMode;
+end;
+
 constructor TProperties.Create(const AUseQuirksMode : Boolean);
 begin
   Create;
   FUseQuirksMode := AUseQuirksMode;
 end;
 
-//-- BG ---------------------------------------------------------- 12.09.2010 --
-constructor TProperties.Create(APropStack: TPropStack; const AUseQuirksMode : Boolean);
-begin
-  Create;
-  self.PropStack := APropStack;
-  FUseQuirksMode := AUseQuirksMode;
-end;
 
 destructor TProperties.Destroy;
 begin
@@ -1121,6 +1122,7 @@ begin
        AMarg[PaddingTop] + AMarg[PaddingBottom]);
   end;
 end;
+
 {----------------ConvMargArray}
 
 procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
@@ -1223,7 +1225,7 @@ begin
           else
             M[I] := Auto;
         end;
-      BoxSizing :
+      BoxSizing:
         if TryStrToBoxSizing(VM[I],LBoxSizing) then begin
            M[I] := Ord(LBoxSizing);
         end else begin
@@ -1253,7 +1255,7 @@ begin
             M[I] := 0;
         end;
       piMinWidth,
-      piMaxWidth :
+      piMaxWidth:
         begin
           if VarIsStr(VM[I]) then
             M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
@@ -2351,9 +2353,9 @@ begin
       Props[Color] := AColor;
 end;
 
-procedure TStyleList.Initialize(const FontName, PreFontName: ThtString;
-  PointSize: Integer; AColor, AHotspot, AVisitedColor, AActiveColor: TColor;
-  LinkUnderline: Boolean; ACodePage: TBuffCodePage; MarginHeight, MarginWidth: Integer);
+procedure TStyleList.Initialize(const FontName, PreFontName: ThtString; PointSize: Integer; 
+  AColor, AHotspot, AVisitedColor, AActiveColor: TColor; LinkUnderline: Boolean; 
+  ACodePage: TBuffCodePage; MarginHeight, MarginWidth: Integer);
 type
   ListTypes = (ul, ol, menu, dir, dl, dd, blockquote);
 const
@@ -2451,7 +2453,7 @@ begin
         Properties.Props[ListStyleType] := 'blank';
         Properties.Props[MarginTop] := AutoParagraph;
         Properties.Props[MarginBottom] := AutoParagraph;
-        Properties.Props[PaddingLeft] := IntNull;
+        Properties.Props[MarginLeft] := IntNull;
       end;
 
       dl:
@@ -2460,21 +2462,21 @@ begin
         Properties.Props[MarginLeft] := 0;
         Properties.Props[MarginTop] := 0;
         Properties.Props[MarginBottom] := 0;
-        Properties.Props[PaddingLeft] := 0;
+        Properties.Props[MarginLeft] := 0;
       end;
 
       blockquote:
       begin
         Properties.Props[MarginTop] := AutoParagraph;
         Properties.Props[MarginBottom] := ParagraphSpace;
-        Properties.Props[PaddingLeft] := ListIndent;
+        Properties.Props[MarginLeft] := ListIndent;
       end;
 
       dd:
       begin
         Properties.Props[MarginTop] := 0;
         Properties.Props[MarginBottom] := 0;
-        Properties.Props[PaddingLeft] := ListIndent;
+        Properties.Props[MarginLeft] := ListIndent;
       end;
     end;
     AddObject(ListStr[J], Properties);
@@ -2523,17 +2525,20 @@ begin
   AddDuplicate('em', Properties);
   AddDuplicate('cite', Properties);
   AddDuplicate('var', Properties);
+  AddDuplicate('dfn', Properties);
 
   AddDuplicate('address', Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'underline';
   AddObject('u', Properties);
+  AddDuplicate('ins',Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextDecoration] := 'line-through';
   AddObject('s', Properties);
   AddDuplicate('strike', Properties);
+  AddDuplicate('del',Properties);
 
   Properties := TProperties.Create(UseQuirksMode);
   Properties.Props[TextAlign] := 'center';
@@ -2732,23 +2737,23 @@ begin
       i := 0;
     end;
     if U = 'smaller' then
-      Result := IncFontSize(OldSize, -1) // 0.75 * OldSize
+      Result := IncFontSize(OldSize, -1) // CSS1: 0.75 * OldSize
     else if U = 'larger' then
-      Result := IncFontSize(OldSize,  1) // 1.25 * OldSize
+      Result := IncFontSize(OldSize,  1) // CSS1: 1.25 * OldSize
     else if U = 'xx-small' then
       Result := FontConv[1 + i]
     else if U = 'x-small' then
-      Result := FontConv[2 + i]
+      Result := FontConv[1 + i]         // same size xx-small (IE and Firefox do it). 
     else if U = 'small' then
+      Result := FontConv[2 + i]
+    else if U = 'medium' then           // 'medium' is the user's preferred font size.
       Result := FontConv[3 + i]
-    else if U = 'medium' then
-      Result := FontConv[4 + i]
     else if U = 'large' then
-      Result := FontConv[5 + i]
+      Result := FontConv[4 + i]
     else if U = 'x-large' then
-      Result := FontConv[6 + i]
+      Result := FontConv[5 + i]
     else if U = 'xx-large' then
-      Result := FontConv[7]
+      Result := FontConv[6]
     else
       Result := DefPointSize;
   end;

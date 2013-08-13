@@ -1,8 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -71,26 +70,28 @@ type
 
   THTMLBorderStyle = (htFocused, htNone, htSingle);
   TRightClickParameters = class(TObject)
+  public
     URL, Target: ThtString;
     Image: TImageObj;
     ImageX, ImageY: Integer;
     ClickWord: UnicodeString;
   end;
   TCreateIFrameControlEvent = function(Sender: TObject; Owner: TComponent): TViewerBase of object;
-  TFilenameExpanded = procedure(Sender: TObject; var Filename: ThtString) of object;
-  THotSpotClickEvent = procedure(Sender: TObject; const SRC: ThtString; var Handled: Boolean) of object;
+  TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
   THotSpotEvent = procedure(Sender: TObject; const SRC: ThtString) of object;
+  THotSpotClickEvent = procedure(Sender: TObject; const SRC: ThtString; var Handled: Boolean) of object;
   ThtmlPagePrinted = procedure(Sender: TObject; HFViewer: THtmlViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean) of object;
   TMetaRefreshType = procedure(Sender: TObject; Delay: Integer; const URL: ThtString) of object;
-  TRightClickEvent = procedure(Sender: TObject; Parameters: TRightClickParameters) of object;
   TSectionMouseClickEvent = procedure(Sender: TObject; Obj: TSectionBase; Button: TMouseButton; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
   TSectionMouseMoveEvent  = procedure(Sender: TObject; Obj: TSectionBase; Shift: TShiftState; X, Y, IX, IY: Integer) of object; //>-- DZ 17.09.2012
+  TFilenameExpanded = procedure(Sender: TObject; var Filename: ThtString) of object;
 
   THtmlViewerOption = (
     htOverLinksActive, htNoLinkUnderline, htPrintTableBackground,
     htPrintBackground, htPrintMonochromeBlack, htShowDummyCaret,
     htShowVScroll, htNoWheelMouse, htNoLinkHilite,
-    htNoFocusRect //MK20091107
+    htNoFocusRect, //MK20091107
+    htAllowHotSpotDblClick
     );
   THtmlViewerOptions = set of THtmlViewerOption;
 
@@ -187,6 +188,10 @@ type
     ppSinglePrint,  // THtmlViewer.Print() produces a single print job. Ends the job or cancels it, if no output has been produced.
     ppMultiPrint);  // THtmlViewer.Print() produces the print, but does not end or cancel the job.
 
+  // BG, 25.01.2013: base class for TFrameBase
+  THtmlFrameBase = class(ThtControlBase)
+  end;
+
   TLoadHistoryItem = procedure(Sender: TObject; HI: ThvHistoryItem; var Handled: Boolean) of object;
 
   THtmlViewer = class(THtmlViewerBase)
@@ -200,13 +205,15 @@ type
     sbWidth: Integer; // cached scroll bar width.
 
     // constructed stuff
-    FFrameOwner: TComponent;
+    FFrameOwner: THtmlFrameBase; {the TViewerFrameBase that holds this THtmlViewer}
     FVisited: ThtStringList; {visited URLs}
 
     // stuff copied in CreateCopy
-    FBase, FBaseEx, FBaseTarget: ThtString;
+    FBase: ThtString;
+    FBaseEx: ThtString;
+    FBaseTarget: ThtString;
     FBorderStyle: THTMLBorderStyle;
-    FScrollBars: TScrollStyle;
+    FScrollBars: ThtScrollStyle;
     FOptions: THtmlViewerOptions;
 
     // events (also copied in CreateCopy)
@@ -220,7 +227,6 @@ type
     FOnMetaRefresh: TMetaRefreshType;
     FOnPageEvent: TPageEvent;
     FOnPrintHTMLHeader, FOnPrintHTMLFooter: ThtmlPagePrinted;
-    //FOnPrinting: THTMLViewPrinting;
     FOnRightClick: TRightClickEvent;
     FOnLoadHistoryItem: TLoadHistoryItem;
     FOnSectionClick: TSectionMouseClickEvent; //>-- DZ 17.09.2012
@@ -271,11 +277,11 @@ type
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 
+    //
 {$ifndef NoMetafile}
     vwP: TvwPrinter;
 {$endif}
     function CreateHeaderFooter: THtmlViewer;
-    function GetBaseTarget: ThtString;
     function GetCursor: TCursor;
     function GetDocumentSource: ThtString;
     function GetFormControlList: TFormControlObjList;
@@ -284,7 +290,7 @@ type
     function GetHScrollPos: Integer;
     function GetIDControl(const ID: ThtString): TIDObject;
     function GetIDDisplay(const ID: ThtString): TPropDisplay;
-    function GetLinkList: TList;
+    function GetLinkList: TLinkList;
     function GetNameList: ThtStringList;
     function GetOnExpandName: TExpandNameEvent;
     function GetOnFileBrowse: TFileBrowseEvent;
@@ -296,7 +302,7 @@ type
     function GetSelLength: Integer;
     function GetSelText: UnicodeString;
     function GetViewImages: Boolean;
-    function GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
+    function GetWordAtCursor(X, Y: Integer; var St, En: Integer; out AWord: UnicodeString): Boolean;
     procedure BackgroundChange(Sender: TObject);
     procedure DoHilite(X, Y: Integer); virtual;
     procedure DoLogic;
@@ -326,7 +332,7 @@ type
     procedure SetOurPalette(Value: HPalette);
     procedure SetPosition(Value: Integer);
     procedure SetProcessing(Value: Boolean);
-    procedure SetScrollBars(Value: TScrollStyle);
+    procedure SetScrollBars(Value: ThtScrollStyle);
     procedure SetScrollPos(Value: Integer);
     procedure SetSelLength(Value: Integer);
     procedure SetSelStart(Value: Integer);
@@ -345,10 +351,10 @@ type
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
   protected
-    function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     function GetPalette: HPALETTE; override;
     function HotSpotClickHandled: Boolean; dynamic;
     function IsProcessing: Boolean;
+    function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     procedure DoBackground1(ACanvas: TCanvas; ATop, AWidth, AHeight, FullHeight: Integer);
     procedure DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeight: Integer; AColor: TColor);
     procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
@@ -393,7 +399,7 @@ type
     procedure SetVisitedMaxCount(const Value: Integer); override;
     property ScrollWidth: Integer read FScrollWidth;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(Owner: TComponent); override;
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     destructor Destroy; override;
     function CreateIFrameControl: TViewerBase;
@@ -468,8 +474,7 @@ type
     procedure TriggerUrlAction;
     procedure UrlAction;
     property Base: ThtString read FBase write SetBase;
-    property BaseEx: ThtString read FBaseEx write FBaseEx;
-    property BaseTarget: ThtString read GetBaseTarget;
+    property BaseTarget: ThtString read FBaseTarget;
     property CaretPos: Integer read FCaretPos write SetCaretPos;
     property CurrentFile: ThtString read FCurrentFile;
     property DocumentSource: ThtString read GetDocumentSource;
@@ -483,7 +488,7 @@ type
     property IDControl[const ID: ThtString]: TIDObject read GetIDControl;
     property IDDisplay[const ID: ThtString]: TPropDisplay read GetIDDisplay write SetIDDisplay;
     property LinkAttributes: ThtStringList read FLinkAttributes;
-    property LinkList: TList read GetLinkList;
+    property LinkList: TLinkList read GetLinkList;
     property LinkStart: TPoint read FLinkStart;
     property LinkText: UnicodeString read FLinkText write FLinkText;
     property MaxVertical: Integer read FMaxVertical;
@@ -501,12 +506,11 @@ type
     property SelText: UnicodeString read GetSelText;
     property Target: ThtString read FTarget write FTarget;
     property TitleAttr: ThtString read FTitleAttr;
-    //property TitleHistory: ThtStrings read FTitleHistory;
     property URL: ThtString read FURL write FURL;
     property ViewerState: THtmlViewerState read FViewerState;
     property VScrollBarPosition: Integer read GetScrollPos write SetScrollPos;
     property VScrollBarRange: Integer read GetScrollBarRange;
-    property FrameOwner: TComponent read FFrameOwner;
+    property FrameOwner: THtmlFrameBase read FFrameOwner;
     property HScrollBar: TScrollBar read FHScrollBar;
     property Visited: ThtStringList read FVisited; {visited URLs}
     property VScrollBar: TScrollBar read FVScrollBar;
@@ -534,7 +538,7 @@ type
     property PrintMaxHPages;
     property PrintScale;
     property QuirksMode;
-    property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
+    property ScrollBars: ThtScrollStyle read FScrollBars write SetScrollBars default ssBoth;
     property ServerRoot;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
     property VisitedMaxCount;
@@ -632,6 +636,7 @@ const
 
 type
   PositionObj = class(TObject)
+  public
     Pos: Integer;
     FileType: ThtmlFileType;
     FormData: TFreeList;
@@ -672,10 +677,11 @@ begin
     Result := OtherType;
 end;
 
-constructor THtmlViewer.Create(AOwner: TComponent);
+constructor THtmlViewer.Create(Owner: TComponent);
 begin
-  inherited Create(AOwner);
-  FFrameOwner := AOwner;
+  inherited Create(Owner);
+  if Owner is THtmlFrameBase then
+    FFrameOwner := THtmlFrameBase(Owner);
   ControlStyle := [csAcceptsControls, csCaptureMouse, csClickEvents, csSetCaption, csDoubleClicks];
   Include(FViewerState, vsCreating);
   Height := 150;
@@ -764,6 +770,8 @@ var
   Viewer: THtmlViewer absolute Source;
 begin
   inherited CreateCopy(Owner, Viewer);
+  if Owner is THtmlFrameBase then
+    FFrameOwner := THtmlFrameBase(Owner);
   if Source is THtmlViewer then
   begin
     Self.QuirksMode := Viewer.QuirksMode;
@@ -813,7 +821,7 @@ begin
   end;
   FSectionList.Free;
   FHistory.Free;
-  Visited.Free;
+  FVisited.Free;
   FLinkAttributes.Free;
   FDocument.Free;
   inherited Destroy;
@@ -825,7 +833,7 @@ begin
   if Base <> '' then
     FBase := Base
   else
-    FBase := BaseEx;
+    FBase := FBaseEx;
   FBaseTarget := BaseTarget;
   if Assigned(OnParseEnd) then
     OnParseEnd(Self);
@@ -1012,7 +1020,7 @@ begin
       FSectionList.ProgressStart := 75;
       htProgressInit;
       try
-        //handle quirks mode settings
+        // handle quirks mode settings
         if (DocType = HTMLType) then begin
           case QuirksMode of
             qmDetect :
@@ -1044,7 +1052,10 @@ begin
         Sel1 := -1;
         if Assigned(OnSoundRequest) then
           OnSoundRequest(Self, '', 0, True);
-        FreeAndNil(FDocument);
+
+        // one should not offer same document twice, but ... 
+        if FDocument <> Document then
+          FreeAndNil(FDocument);
 
         // load new document
         FDocument := Document;
@@ -1098,6 +1109,7 @@ begin
   LoadStream(Reference, AStream, DocType);
 end;
 
+//-- BG ---------------------------------------------------------- 23.03.2012 --
 procedure THtmlViewer.DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 begin
   if FImageStream <> nil then
@@ -1877,7 +1889,8 @@ begin
               break;
             end;
         UrlTarget.Free;
-        Include(FViewerState, vsHotSpotAction); {prevent Double click action}
+        if not (htAllowHotSpotDblClick in HtOptions) then
+          Include(FViewerState, vsHotSpotAction); {prevent Double click action}
         URLAction;
       {Note:  Self pointer may not be valid after URLAction call (TFrameViewer, HistoryMaxCount=0)}
       end;
@@ -1924,11 +1937,6 @@ begin
     Result := -1;
 end;
 
-function THtmlViewer.GetBaseTarget: ThtString;
-begin
-
-end;
-
 {----------------THtmlViewer.GetCharAtPos}
 
 function THtmlViewer.GetCharAtPos(Pos: Integer; var Ch: WideChar;
@@ -1949,7 +1957,7 @@ end;
 
 {----------------THtmlViewer.GetWordAtCursor}
 
-function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; var AWord: UnicodeString): Boolean;
+function THtmlViewer.GetWordAtCursor(X, Y: Integer; var St, En: Integer; out AWord: UnicodeString): Boolean;
 var
   XR, X1, CaretHt: Integer;
   YR, Y1: Integer;
@@ -2133,7 +2141,7 @@ begin
         end;
         Pos := Math.Max(0, Math.Min(Pos, FMaxVertical - PaintPanel.Height));
         FSectionList.SetYOffset(Pos);
-        SetPosition(Pos);
+        ScrollTo(Pos);
         DoHilite(Pt.X, Pt.Y);
         PaintPanel.Invalidate;
         GetCursorPos(Pt);
@@ -2313,7 +2321,7 @@ end;
 procedure THtmlViewer.SetBase(Value: ThtString);
 begin
   FBase := Value;
-  BaseEx := Value;
+  FBaseEx := Value;
 end;
 
 function THtmlViewer.GetViewImages: Boolean;
@@ -2550,8 +2558,7 @@ end;
 
 {----------------THtmlViewer.BumpHistory}
 
-procedure THtmlViewer.BumpHistory(const OldFileName, OldTitle: ThtString;
-  OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
+procedure THtmlViewer.BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
 var
   I: Integer;
   SameName: Boolean;
@@ -2674,7 +2681,7 @@ begin
   Result := FNameList;
 end;
 
-function THtmlViewer.GetLinkList: TList;
+function THtmlViewer.GetLinkList: TLinkList;
 begin
   Result := FSectionList.LinkList;
 end;
@@ -3014,6 +3021,7 @@ begin
     Exclude(FViewerState, vsBGFixed);
     DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ACanvas.Brush.Color);
   end;
+
   FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
 end;
 
@@ -4489,7 +4497,7 @@ begin
   DrawBorder;
 end;
 
-procedure THtmlViewer.SetScrollBars(Value: TScrollStyle);
+procedure THtmlViewer.SetScrollBars(Value: ThtScrollStyle);
 begin
   if (Value <> FScrollBars) then
   begin
@@ -4809,6 +4817,7 @@ begin
   inherited Create(AOwner);
   FViewer := Viewer;
 {$ifdef OwnPaintPanelDoubleBuffering}
+  DoubleBuffered := False;
 {$else}
   DoubleBuffered := True;
 {$endif}

@@ -198,7 +198,13 @@ type
 
 implementation
 
-uses MetaFilePrinter;
+uses
+{$ifdef UseVCLStyles}
+  System.Types,
+  System.UITypes,
+  Vcl.Themes,
+{$endif}
+  MetaFilePrinter;
 
 { TBegaCustomPreviewPanel }
 

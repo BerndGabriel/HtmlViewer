@@ -257,6 +257,13 @@ procedure loadPreviewCursors;
 
 implementation
 
+{$ifdef UseVCLStyles}
+uses
+  System.Types,
+  System.UITypes,
+  Vcl.Themes;
+{$endif}
+
 {$ifdef LCL}
   {$R *.lfm}
 {$else}

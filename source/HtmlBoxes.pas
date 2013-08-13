@@ -103,6 +103,12 @@ type
     function GetWidth: Integer;
     procedure SetFont(const Value: ThtFont);
     procedure SetProperties(const Value: TResultingPropertyMap);
+//    function GetBottom: Integer;
+//    function GetLeft: Integer;
+//    function GetRight: Integer;
+//    function GetTop: Integer;
+//    procedure SetLeft(const Value: Integer);
+//    procedure SetTop(const Value: Integer);
   protected
     function Clipping: Boolean;
     function IsVisible: Boolean; virtual;
@@ -134,6 +140,10 @@ type
     property RelativeOffset: TRect read FRelativeOffset write FRelativeOffset;
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
+//    property Left: Integer read GetLeft write SetLeft;
+//    property Right: Integer read GetRight;
+//    property Top: Integer read GetTop write SetTop;
+//    property Bottom: Integer read GetBottom;
     property Visible: Boolean read IsVisible;
     //
     property Margins: TRectIntegers read FMargins write FMargins;
@@ -485,6 +495,12 @@ begin
   Child.FParent := nil;
 end;
 
+////-- BG ---------------------------------------------------------- 13.08.2013 --
+//function THtmlBox.GetBottom: Integer;
+//begin
+//  Result := FBounds.Bottom;
+//end;
+
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 function THtmlBox.GetContentRect: TRect;
 begin
@@ -498,6 +514,24 @@ function THtmlBox.GetHeight: Integer;
 begin
   Result := FBounds.Bottom - FBounds.Top;
 end;
+
+////-- BG ---------------------------------------------------------- 13.08.2013 --
+//function THtmlBox.GetLeft: Integer;
+//begin
+//  Result := FBounds.Left;
+//end;
+//
+////-- BG ---------------------------------------------------------- 13.08.2013 --
+//function THtmlBox.GetRight: Integer;
+//begin
+//  Result := FBounds.Right;
+//end;
+//
+////-- BG ---------------------------------------------------------- 13.08.2013 --
+//function THtmlBox.GetTop: Integer;
+//begin
+//  Result := FBounds.Top;
+//end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
 function THtmlBox.GetWidth: Integer;
@@ -709,6 +743,12 @@ begin
   end;
 end;
 
+////-- BG ---------------------------------------------------------- 13.08.2013 --
+//procedure THtmlBox.SetLeft(const Value: Integer);
+//begin
+//  FBounds.Left := Value;
+//end;
+
 procedure THtmlBox.SetProperties(const Value: TResultingPropertyMap);
 begin
   if FProperties <> Value then
@@ -718,6 +758,12 @@ begin
     FProperties := Value;
   end;
 end;
+
+////-- BG ---------------------------------------------------------- 13.08.2013 --
+//procedure THtmlBox.SetTop(const Value: Integer);
+//begin
+//  FBounds.Top := Value;
+//end;
 
 //-- BG ---------------------------------------------------------- 14.12.2011 --
 procedure THtmlBox.SortChildren;

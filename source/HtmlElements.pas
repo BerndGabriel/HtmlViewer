@@ -178,6 +178,18 @@ type
 
   THtmlElementClass = class of THtmlElement;
 
+  THtmlTextElement = class(THtmlElement)
+  private
+    FText: ThtString;
+  public
+    constructor Create(
+      Parent: THtmlElement;
+      Symbol: THtmlElementSymbol;
+      DocPos: Integer;
+      Text: ThtString);
+    property Text: ThtString read FText;
+  end;
+
   THtmlElementDescription = record
     Name: ThtString;
     Symbol: THtmlElementSymbol;
@@ -1065,6 +1077,15 @@ begin
     Next.FPrev := Prev;
     Element.FNext := nil;
   end;
+end;
+
+{ THtmlTextElement }
+
+//-- BG ---------------------------------------------------------- 13.08.2013 --
+constructor THtmlTextElement.Create(Parent: THtmlElement; Symbol: THtmlElementSymbol; DocPos: Integer; Text: ThtString);
+begin
+  inherited Create(Parent, Symbol, DocPos);
+  FText := Text;
 end;
 
 initialization

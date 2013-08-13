@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2012 by HtmlViewer Team
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -178,7 +178,7 @@ type
     function getItem(Index: Integer): TSectionBase;
   public
     function PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): Boolean;
-    function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean; virtual;
+    function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
     property Items[Index: Integer]: TSectionBase read getItem; default;
   end;
@@ -258,6 +258,8 @@ type
     destructor Destroy; override;
   end;
 
+  TFontList = class;
+
   TFontObj = class(TFontObjBase) {font information}
   private
 {$IFNDEF NoTabLink}
@@ -270,7 +272,7 @@ type
     procedure SetVisited(Value: boolean);
     procedure SetHover(Value: boolean);
     function GetURL: ThtString;
-    procedure SetAllHovers(List: TList; Value: boolean);
+    procedure SetAllHovers(List: TFontList; Value: boolean);
     procedure CreateFIArray;
 {$IFNDEF NoTabLink}
     procedure EnterEvent(Sender: TObject);
@@ -307,13 +309,23 @@ type
     property YValue: Integer read FYValue;
   end;
 
-  TFontList = class(TFreeList) {a list of TFontObj's}
+  // BG, 10.02.2013: owns its objects.
+  TFontList = class(TFreeList)
+  private
+    function GetFont(Index: Integer): TFontObj;
   public
     constructor CreateCopy(ASection: TSection; T: TFontList);
     function GetFontAt(Posn: Integer; var OHang: Integer): ThtFont;
     function GetFontCountAt(Posn, Leng: Integer): Integer;
     function GetFontObjAt(Posn: Integer; var Index: Integer): TFontObj;
     procedure Decrement(N: Integer; Document: ThtDocument);
+    property Items[Index: Integer]: TFontObj read GetFont; default;
+  end;
+
+  // BG, 10.02.2013: does not own its font objects.
+  TLinkList = class(TFontList)
+  public
+    constructor Create;
   end;
 
 //------------------------------------------------------------------------------
@@ -517,6 +529,7 @@ type
   PXArray = ^XArray;
 
   IndexObj = class
+  public
     Pos: Integer;
     Index: Integer;
   end;
@@ -1029,6 +1042,10 @@ type
 // THtmlTable, a block that represents a html table
 //------------------------------------------------------------------------------
 
+  IntArray = array of Integer;
+  TWidthTypeArray = array of TWidthType;
+  TIntegerPerWidthType = array [TWidthType] of Integer;
+
   TTableBlock = class;
   
   TCellObjCell = class(TCell)
@@ -1041,9 +1058,6 @@ type
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
   end;
 
-  IntArray = array of Integer;
-  TWidthTypeArray = array of TWidthType;
-  TIntegerPerWidthType = array [TWidthType] of Integer;
 
   TCellObj = class(TObject)
   {holds one cell of the table and some other information}
@@ -1316,7 +1330,7 @@ type
   private
     Document: ThtDocument;
   protected
-    procedure setLinksActive(Value: Boolean); override;
+    procedure SetLinksActive(Value: Boolean); override;
   public
     constructor Create(AMasterList: ThtDocument);
   end;
@@ -1381,7 +1395,7 @@ type
     PanelList: TList; {List of all TPanelObj's in this SectionList}
     MissingImages: ThtStringList; {images to be supplied later}
     ControlEnterEvent: TNotifyEvent;
-    LinkList: TList; {List of links (TFontObj's)}
+    LinkList: TLinkList; {List of links (TFontObj's)}
     ActiveLink: TFontObj;
     LinksActive: boolean;
     ActiveImage: TImageObj;
@@ -1440,8 +1454,7 @@ type
     procedure SetFormcontrolData(T: TFreeList);
     procedure SetYOffset(Y: Integer);
     procedure SetFonts(const Name, PreName: ThtString; ASize: Integer;
-      AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
-      LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
+      AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor; LnksActive, LinkUnderLine: boolean; ACharSet: TFontCharSet;
       MarginHeight, MarginWidth: Integer);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property PropStack : THtmlPropStack read FPropStack write FPropStack;
@@ -1461,6 +1474,7 @@ type
   end;
 
   THorzLine = class(TSectionBase) {a horizontal line, <hr>}
+  public
     VSize: Integer;
     Color: TColor;
     Align: JustifyType;
@@ -2097,7 +2111,7 @@ begin
   end;
 end;
 
-procedure TFontObj.SetAllHovers(List: TList; Value: boolean);
+procedure TFontObj.SetAllHovers(List: TFontList; Value: boolean);
 {Set/Reset Hover on this item and all adjacent item with the same URL}
 var
   I, J: Integer;
@@ -2107,15 +2121,15 @@ begin
   if I >= 0 then
   begin
     J := I + 1;
-    while (J < List.Count) and (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) do
+    while (J < List.Count) and (Self.UrlTarget.ID = List[J].UrlTarget.ID) do
     begin
-      TFontObj(List[J]).Hover := Value;
+      List[J].Hover := Value;
       Inc(J);
     end;
     J := I - 1;
-    while (J >= 0) and (Self.UrlTarget.ID = TFontObj(List[J]).UrlTarget.ID) do
+    while (J >= 0) and (Self.UrlTarget.ID = List[J].UrlTarget.ID) do
     begin
-      TFontObj(List[J]).Hover := Value;
+      List[J].Hover := Value;
       Dec(J);
     end;
   end;
@@ -2181,8 +2195,13 @@ begin
     Add(TFontObj.CreateCopy(ASection, TFontObj(T.Items[I])));
 end;
 
-function TFontList.GetFontAt(Posn: Integer;
-  var OHang: Integer): ThtFont;
+//-- BG ---------------------------------------------------------- 10.02.2013 --
+function TFontList.GetFont(Index: Integer): TFontObj;
+begin
+  Result := Get(Index);
+end;
+
+function TFontList.GetFontAt(Posn: Integer; var OHang: Integer): ThtFont;
 {given a character index, find the font that's effective there}
 var
   I, PosX: Integer;
@@ -2293,6 +2312,14 @@ begin
   end;
 end;
 
+{ TLinkList }
+
+//-- BG ---------------------------------------------------------- 10.02.2013 --
+constructor TLinkList.Create;
+begin
+  inherited Create(False);
+end;
+
 {----------------TImageObj.Create}
 constructor TImageObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList);
 var
@@ -2390,7 +2417,6 @@ begin
     if (OrigImage is ThtGifImage) and ThtGifImage(OrigImage).Gif.IsCopy then
       OrigImage.Free;
   end;
-//  FBitmap.Free;
   inherited Destroy;
 end;
 
@@ -2402,14 +2428,6 @@ begin
       Result := nil
     else
     begin
-//      if FBitmap = nil then
-//      begin
-//        FBitmap := TBitmap.Create;
-//        FBitmap.Assign(TBitmap(Image));
-//        if ColorBits = 8 then
-//          FBitmap.Palette := CopyPalette(ThePalette);
-//      end;
-//      Result := FBitmap;
       Result := Image.Bitmap;
     end
   end
@@ -2448,12 +2466,6 @@ begin
       Document.PPanel.Invalidate;
     end;
 end;
-
-//procedure TImageObj.SetImage(const AValue: ThtImage);
-//begin
-//  if FImage = AValue then exit;
-//  FImage := AValue;
-//end;
 
 {----------------TImageObj.ReplaceImage}
 
@@ -2965,11 +2977,11 @@ begin
       Brush.Color := clWhite;
       case VertAlign of
         ATop, ANone:
-            Rectangle(X, TopY + VSpaceT, X + ClientWidth, TopY + VSpaceT + ClientHeight);
-          AMiddle:
-            Rectangle(X, MiddleAlignTop, X + ClientWidth, MiddleAlignTop + ClientHeight);
-          ABottom, ABaseline:
-            Rectangle(X, YBaseLine - ClientHeight - VSpaceB, X + ClientWidth, YBaseLine - VSpaceB);
+          ARect := Rect(X, TopY + VSpaceT, X + ClientWidth, TopY + VSpaceT + ClientHeight);
+        AMiddle:
+          ARect := Rect(X, MiddleAlignTop, X + ClientWidth, MiddleAlignTop + ClientHeight);
+        ABottom, ABaseline:
+          ARect := Rect(X, YBaseLine - ClientHeight - VSpaceB, X + ClientWidth, YBaseLine - VSpaceB);
       end;
       if not Document.IsCopy then
       begin
@@ -2990,7 +3002,7 @@ var
   I: Integer;
   Item: TFloatingObj;
 begin
-  inherited create;
+  inherited Create;
   if T <> nil then
     for I := 0 to T.Count - 1 do
     begin
@@ -3013,8 +3025,7 @@ begin
   Result := nil;
 end;
 
-function TFloatingObjList.GetHeightAt(Posn: Integer; var AAlign: AlignmentType;
-  var FlObj: TFloatingObj): Integer;
+function TFloatingObjList.GetHeightAt(Posn: Integer; var AAlign: AlignmentType; var FlObj: TFloatingObj): Integer;
 begin
   FLObj := FindImage(Posn);
   if Assigned(FLObj) then
@@ -3026,8 +3037,7 @@ begin
     Result := -1;
 end;
 
-function TFloatingObjList.GetWidthAt(Posn: Integer; var AAlign: AlignmentType;
-  var HSpcL, HSpcR: Integer; var FlObj: TFloatingObj): Integer;
+function TFloatingObjList.GetWidthAt(Posn: Integer; var AAlign: AlignmentType; var HSpcL, HSpcR: Integer; var FlObj: TFloatingObj): Integer;
 begin
   FLObj := FindImage(Posn);
   if Assigned(FLObj) then
@@ -4623,7 +4633,7 @@ begin
     if Item is TBlock then
       TBlock(Item).FormTree(Indent, Tree)
     else if Item is TSection then
-      Tree := Tree + Indent + Copy(TSection(Item).BuffS, 1, 10) + ^M + ^J
+      Tree := Tree + Indent + Copy(TSection(Item).BuffS, 1, 10) + CrChar + LfChar
     else
       Tree := Tree + Indent + '----'^M + ^J;
   end;
@@ -4977,7 +4987,7 @@ end;
 
 {----------------TBlock.GetURL}
 
-function TBlock.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
+function TBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
 begin
   UrlTarg := nil;
@@ -5060,7 +5070,7 @@ end;
 
 {----------------TBlock.PtInObject}
 
-function TBlock.PtInObject(X: Integer; Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
+function TBlock.PtInObject(X, Y: Integer; var Obj: TObject; var IX, IY: Integer): boolean;
 {Y is absolute}
 var
   I: Integer;
@@ -5104,7 +5114,7 @@ begin
   end;
 end;
 
-function TBlock.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean;
+function TBlock.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean;
 begin
   case Display of
     pdNone:   Result := False;
@@ -5260,7 +5270,6 @@ begin
       end;
   end;
   Result := MargArray[piWidth];
-
 end;
 
 {----------------TBlock.DrawLogic}
@@ -5923,7 +5932,7 @@ begin
   MyIndent := Indent + '   ';
   TM := IntToStr(MargArray[MarginTop]);
   BM := IntToStr(MargArray[MarginBottom]);
-  Tree := Tree + Indent + TagClass + '  ' + TM + '  ' + BM + ^M + ^J;
+  Tree := Tree + Indent + TagClass + '  ' + TM + '  ' + BM + CrChar + LfChar;
   MyCell.FormTree(MyIndent, Tree);
 end;
 
@@ -6646,56 +6655,55 @@ begin
       Exit;
     if Assigned(Image) and (Image.Image <> DefImage) and Document.ShowImages then
       Image.DoDraw(Canvas, X - 16, YB - Image.ObjHeight, Image.Image)
-    else
-      if not (ListType in [None, Definition]) then
+    else if not (ListType in [None, Definition]) then
+    begin
+      if ListStyleType in [lbDecimal, lbLowerAlpha, lbLowerRoman, lbUpperAlpha, lbUpperRoman] then
       begin
-        if ListStyleType in [lbDecimal, lbLowerAlpha, lbLowerRoman, lbUpperAlpha, lbUpperRoman] then
+        AlphaNumb := Min(ListNumb - 1, 25);
+        case ListStyleType of
+          lbLowerAlpha: NStr := chr(ord('a') + AlphaNumb);
+          lbUpperAlpha: NStr := chr(ord('A') + AlphaNumb);
+          lbLowerRoman: NStr := LowRoman[Min(ListNumb, MaxRoman)];
+          lbUpperRoman: NStr := HighRoman[Min(ListNumb, MaxRoman)];
+        else
+          NStr := IntToStr(ListNumb);
+        end;
+        Canvas.Font := ListFont;
+        Canvas.Font.Color := ThemedColor(ListFont.Color);
+        NStr := NStr + '.';
+        BkMode := SetBkMode(Canvas.Handle, Transparent);
+        TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
+        Canvas.TextOut(X - 10 - Canvas.TextWidth(NStr), YB, NStr);
+        SetTextAlign(Canvas.Handle, TAlign);
+        SetBkMode(Canvas.Handle, BkMode);
+      end
+      else if (ListStyleType in [lbCircle, lbDisc, lbSquare]) then
+        with Canvas do
         begin
-          AlphaNumb := Min(ListNumb - 1, 25);
+          PenColor := Pen.Color;
+          PenStyle := Pen.Style;
+          Pen.Color := ThemedColor(ListFont.Color);
+          Pen.Style := psSolid;
+          BrushStyle := Brush.Style;
+          BrushColor := Brush.Color;
+          Brush.Style := bsSolid;
+          Brush.Color := ThemedColor(ListFont.Color);
           case ListStyleType of
-            lbLowerAlpha: NStr := chr(ord('a') + AlphaNumb);
-            lbUpperAlpha: NStr := chr(ord('A') + AlphaNumb);
-            lbLowerRoman: NStr := LowRoman[Min(ListNumb, MaxRoman)];
-            lbUpperRoman: NStr := HighRoman[Min(ListNumb, MaxRoman)];
-          else
-            NStr := IntToStr(ListNumb);
+            lbCircle:
+              begin
+                Brush.Style := bsClear;
+                Circle(Canvas,X - 16, YB, 7);
+              end;
+            lbDisc:
+              Circle(Canvas,X - 15, YB - 1, 5);
+            lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
           end;
-          Canvas.Font := ListFont;
-          Canvas.Font.Color := ThemedColor(ListFont.Color);
-          NStr := NStr + '.';
-          BkMode := SetBkMode(Canvas.Handle, Transparent);
-          TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
-          Canvas.TextOut(X - 10 - Canvas.TextWidth(NStr), YB, NStr);
-          SetTextAlign(Canvas.Handle, TAlign);
-          SetBkMode(Canvas.Handle, BkMode);
-        end
-        else if (ListStyleType in [lbCircle, lbDisc, lbSquare]) then
-          with Canvas do
-          begin
-            PenColor := Pen.Color;
-            PenStyle := Pen.Style;
-            Pen.Color := ThemedColor(ListFont.Color);
-            Pen.Style := psSolid;
-            BrushStyle := Brush.Style;
-            BrushColor := Brush.Color;
-            Brush.Style := bsSolid;
-            Brush.Color := ThemedColor(ListFont.Color);
-            case ListStyleType of
-              lbCircle:
-                begin
-                  Brush.Style := bsClear;
-                  Circle(Canvas,X - 16, YB, 7);
-                end;
-              lbDisc:
-                Circle(Canvas,X - 15, YB - 1, 5);
-              lbSquare: Rectangle(X - 15, YB - 6, X - 10, YB - 1);
-            end;
-            Brush.Color := BrushColor;
-            Brush.Style := BrushStyle;
-            Pen.Color := PenColor;
-            Pen.Style := PenStyle;
-          end;
-      end;
+          Brush.Color := BrushColor;
+          Brush.Style := BrushStyle;
+          Pen.Color := PenColor;
+          Pen.Style := PenStyle;
+        end;
+    end;
   end;
 end;
 
@@ -6833,7 +6841,7 @@ begin
   FormControlList := TFormControlObjList.Create(False);
   MissingImages := ThtStringList.Create;
   MissingImages.Sorted := False;
-  LinkList := TList.Create;
+  LinkList := TLinkList.Create;
   PanelList := TList.Create;
   Styles := THtmlStyleList.Create(Self);
   DrawList := TDrawList.Create;
@@ -6895,7 +6903,7 @@ begin
   FPropStack.Free;
 end;
 
-function ThtDocument.GetURL(Canvas: TCanvas; X: Integer; Y: Integer;
+function ThtDocument.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
   out ATitle: ThtString): guResultType;
 var
@@ -7267,9 +7275,8 @@ begin
 end;
 
 procedure ThtDocument.SetFonts(const Name, PreName: ThtString; ASize: Integer;
-  AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor;
-  LnksActive: boolean; LinkUnderLine: boolean; ACharSet: TFontCharSet;
-  MarginHeight, MarginWidth: Integer);
+  AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor; LnksActive, LinkUnderLine: Boolean; 
+  ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
 begin
 
   Styles.Initialize(Name, PreName, ASize, AColor, AHotspot, AVisitedColor,
@@ -7345,8 +7352,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.GetTheImage(
-  const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
+function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
 {Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
 {Transparent may be set to NotTransp or LLCorner on entry but may discover it's TGif here}
 
@@ -7460,8 +7466,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.FindSectionAtPosition(Pos: Integer;
-  var TopPos: Integer; var Index: Integer): TSectionBase;
+function ThtDocument.FindSectionAtPosition(Pos: Integer; var TopPos, Index: Integer): TSectionBase;
 var
   I: Integer;
 begin
@@ -7555,8 +7560,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer;
-  var Y: Integer): boolean;
+function ThtDocument.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean;
 var
   Beyond: boolean;
 begin
@@ -7781,7 +7785,7 @@ end;
 
 constructor TCellObj.CreateCopy(AMasterList: ThtDocument; Parent: TBlock; T: TCellObj);
 begin
-  inherited create;
+  inherited Create;
   FCell := TCellObjCell.CreateCopy(AMasterList, Parent, T.Cell);
   Move(T.ColSpan, FColSpan, PtrSub(@Cell, @FColSpan));
 
@@ -7995,8 +7999,7 @@ begin
           PrintBitmap(Canvas, PL, FT, PR - PL, IH, FullBG);
         end
         else
-          PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PL, PT,
-            Cell.Document.ScaleX, Cell.Document.ScaleY);
+          PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PL, PT, Cell.Document.ScaleX, Cell.Document.ScaleY);
       end
       else
       {$ENDIF !NoGDIPlus}
@@ -9932,8 +9935,7 @@ end;
 function THtmlTable.FindCursor(Canvas: TCanvas; X, Y: Integer;
   out XR, YR, CaretHt: Integer; out Intext: boolean): Integer;
 
-  function GetTableCursor(X: Integer; Y: Integer; var XR: Integer;
-    var YR: Integer; var CaretHt: Integer; var Intext: boolean): Integer;
+  function GetTableCursor(X, Y: Integer; var XR, YR, CaretHt: Integer; var Intext: boolean): Integer;
   var
     I, J, XX: Integer;
     Row: TCellList;
@@ -11989,7 +11991,7 @@ var
       Result[N + 1] := WideChar('-');
     end;
 
-    function ChkInversion(Start: PWideChar; var Count: Integer): boolean;
+    function ChkInversion(Start: PWideChar; out Count: Integer): boolean;
     var
       LongCount, C: Integer;
     begin
@@ -12450,7 +12452,7 @@ var
 
       {the following puts a dummy caret at the very end of text if it should be there}
         if Document.ShowDummyCaret and not Inverted
-          and ((MySelB = Len) and (Document.Selb = Document.Len))
+          and ((MySelB = Len) and (Document.SelB = Document.Len))
           and (Cnt = I) and (LineNo = Lines.Count - 1) then
         begin
           Canvas.Pen.Color := Canvas.Font.Color;
@@ -12959,8 +12961,7 @@ end;
 
 {----------------TSection.CursorToXY}
 
-function TSection.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer;
-  var Y: Integer): boolean;
+function TSection.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X: Integer; var Y: Integer): boolean;
 var
   I, Curs: Integer;
   LR: LineRec;
@@ -13100,7 +13101,7 @@ constructor TPanelObj.CreateCopy(Document: ThtDocument; Parent: TCellBasic; Sour
 var
   T: TPanelObj absolute Source;
 begin
-  inherited CreateCopy(Document, Parent, T); //TODO -oBG, 24.03.2011: add parent
+  inherited CreateCopy(Document, Parent, T);
   Panel := ThvPanel.Create(nil);
   with T.Panel do
     Panel.SetBounds(Left, Top, Width, Height);
@@ -13123,7 +13124,7 @@ begin
 end;
 
 procedure TPanelObj.Draw(Canvas: TCanvas; X: Integer; TopY, YBaseline: Integer; FO: TFontObj);
-var
+var	
   Bitmap: TBitmap;
   OldHeight, OldWidth: Integer;
 begin
@@ -13302,6 +13303,7 @@ end;
 
 type
   TImageRec = class(TObject)
+  public
     AObj: TImageObj;
     ACanvas: TCanvas;
     AX, AY: Integer;
@@ -13688,7 +13690,7 @@ procedure THtmlPropStack.PushNewProp(const Tag, AClass, AnID, APseudo, ATitle: T
 var
   NewProp: TProperties;
 begin
-  NewProp := TProperties.Create(self, Document.UseQuirksMode);
+  NewProp := TProperties.Create(Self, Document.UseQuirksMode);
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
   NewProp.Combine(Document.Styles, Tag, AClass, AnID, APseudo, ATitle, AProps, Count - 1);
@@ -13733,7 +13735,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 08.03.2011 --
-procedure THtmlStyleList.setLinksActive(Value: Boolean);
+procedure THtmlStyleList.SetLinksActive(Value: Boolean);
 begin
   inherited;
   Document.LinksActive := Value;

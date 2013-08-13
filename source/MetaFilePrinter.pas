@@ -1,8 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 ***************************************************************
 *                                                             *
@@ -77,7 +76,7 @@ type
 
     procedure Assign(Source: TPersistent); override;
 
-    procedure Clear;
+    procedure Clear; {$ifdef LCL} override; {$endif}
     procedure LoadFromFile(const Filename: String); override;
     procedure LoadFromStream(Stream: TStream); override;
     procedure SaveToFile(const Filename: String); override;
@@ -348,6 +347,9 @@ end;
 
 procedure TMetafile.Clear;
 begin
+{$ifdef LCL}
+  inherited Clear;
+{$endif}
   DeleteImage;
 end;
 

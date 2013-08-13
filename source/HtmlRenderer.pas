@@ -160,7 +160,8 @@ type
     procedure SetPropertiesToBox(
       Element: THtmlElement;
       Box: THtmlBox;
-      Properties: TResultingPropertyMap);
+      Properties: TResultingPropertyMap;
+      Top: Integer);
     //
     function CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
     procedure CreateChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
@@ -176,7 +177,7 @@ type
       DefaultFont: ThtFont;
       Width, Height: Integer);
     destructor Destroy; override;
-    procedure RenderBox(Box: THtmlBox);
+    procedure RenderBox(Box: THtmlBox; Top: Integer);
     procedure RenderChildren(ParentBox: THtmlBox);
     procedure RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
     property ControlOfElementMap: THtmlControlOfElementMap read FControls;
@@ -385,6 +386,12 @@ begin
         Result.Tiled := True;
       end;
 
+      TextSy:
+      begin
+        Result := THtmlElementBox.Create;
+        Result.Text := (Element as THtmlTextElement).Text;
+      end;
+
     else
       // create an ordinary Result
       Result := THtmlElementBox.Create;
@@ -585,9 +592,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.12.2011 --
-procedure THtmlVisualRenderer.RenderBox(Box: THtmlBox);
+procedure THtmlVisualRenderer.RenderBox(Box: THtmlBox; Top: Integer);
 begin
-  SetPropertiesToBox(Box.Element, Box, Box.Properties);
+  SetPropertiesToBox(Box.Element, Box, Box.Properties, Top);
   RenderChildren(Box);
 end;
 
@@ -595,11 +602,14 @@ end;
 procedure THtmlVisualRenderer.RenderChildren(ParentBox: THtmlBox);
 var
   Box: THtmlBox;
+  Top: Integer;
 begin
   Box := ParentBox.Children.First;
+  Top := 0; //ParentBox.Margins[reTop] + ParentBox.BorderWidths[reTop] + ParentBox.Paddings[reTop];
   while Box <> nil do
   begin
-    RenderBox(Box);
+    RenderBox(Box, Top);
+    Inc(Top, Box.Height);
     Box := Box.Next;
   end;
 end;
@@ -622,7 +632,8 @@ end;
 procedure THtmlVisualRenderer.SetPropertiesToBox(
   Element: THtmlElement;
   Box: THtmlBox;
-  Properties: TResultingPropertyMap);
+  Properties: TResultingPropertyMap;
+  Top: Integer);
 
   procedure GetStaticBounds(psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
   begin
@@ -700,7 +711,7 @@ begin
   Font := AllMyFonts.GetFontLike(FontInfo);
   Box.Font := Font;
   EmBase := Font.EmSize;
-  freeAndNil(Font);
+  FreeAndNil(Font);
 
   Box.Color         := Properties[BackgroundColor].GetColor(ParentBox.Color, clNone);
   Box.Image         := GetImage(Properties[BackgroundImage], ParentBox.Image, nil);
@@ -723,6 +734,7 @@ begin
       begin
         GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        OffsetRect(Rect, Classes.Rect(0, Top, 0, Top));
         case Element.Symbol of
           BodySy:
           begin
@@ -738,6 +750,7 @@ begin
       begin
         GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        OffsetRect(Rect, Classes.Rect(0, Top, 0, Top));
         GetRelativeOffset(psLeft, psRight, ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetRelativeOffset(psTop, psBottom, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
       end;
