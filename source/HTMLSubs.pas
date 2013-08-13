@@ -14560,7 +14560,7 @@ begin
           end;
         NoShadeSy: NoShade := True;
       end;
-
+  UseDefBorder := not Prop.BorderStyleNotBlank;
   Prop.Assign(VSize, piHeight); {assigns if no property exists yet}
   TmpColor := Prop.GetOriginalForegroundColor;
   if TmpColor <> clNone then
