@@ -140,10 +140,10 @@ type
     procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
     procedure WMVScroll(var Message: TWMVScroll); message WM_VSCROLL;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    property Canvas: TScalingCanvas read FCanvas;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    property Canvas: TScalingCanvas read FCanvas;
     property ContentHeight: Integer read GetContentHeight;
     property ContentPosition: TPoint read GetContentPosition write SetContentPosition;
     property ContentPositionLeft: Integer read GetContentPositionX write SetContentPositionLeft;

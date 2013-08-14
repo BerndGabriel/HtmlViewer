@@ -134,7 +134,6 @@ type
     //--------------------------------------
     // settings / environment
     //--------------------------------------
-
     // general
     FHeight: Integer;         // height of destination viewport in pixels
     FControls: THtmlControlOfElementMap;
@@ -148,6 +147,9 @@ type
     //--------------------------------------
     // status
     //--------------------------------------
+
+    // current canvas of (parental) box
+    FCanvas: TCanvas;
 
     // positioning
     FSketchMapStack: TSketchMapStack;
@@ -337,6 +339,7 @@ var
   Properties: TResultingPropertyMap;
   Info: THtmlElementBoxingInfo;
   Control: THtmlBodyControl;
+  OldCanvas: TCanvas;
 begin
   if ParentBox = nil then
     raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil.');
@@ -593,9 +596,18 @@ end;
 
 //-- BG ---------------------------------------------------------- 18.12.2011 --
 procedure THtmlVisualRenderer.RenderBox(Box: THtmlBox; Top: Integer);
+var
+  OldCanvas: TCanvas;
 begin
-  SetPropertiesToBox(Box.Element, Box, Box.Properties, Top);
-  RenderChildren(Box);
+  OldCanvas := FCanvas;
+  try
+    if Box is THtmlScrollControlBox then
+      FCanvas := THtmlScrollControlBox(Box).Control.Canvas;
+    SetPropertiesToBox(Box.Element, Box, Box.Properties, Top);
+    RenderChildren(Box);
+  finally
+    FCanvas := OldCanvas;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 18.12.2011 --
@@ -634,6 +646,12 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(
   Box: THtmlBox;
   Properties: TResultingPropertyMap;
   Top: Integer);
+
+  function GetTextSize(Text: String; out TextSize: TSize): Integer;
+  begin
+    FCanvas.Font := Box.Font;
+    GetTSize(FCanvas.Handle, PWideChar(Text), Length(Text), TextSize);
+  end;
 
   procedure GetStaticBounds(psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
   begin
@@ -699,6 +717,7 @@ var
   Font: ThtFont;
   ParentWidth, ParentHeight: Integer;
   Rect: TRect;
+  TextSize: TSize;
 begin
   ParentBox := Box.Parent;
   while ParentBox is THtmlAnonymousBox do
@@ -734,7 +753,19 @@ begin
       begin
         GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        OffsetRect(Rect, Classes.Rect(0, Top, 0, Top));
+        if (Rect.Right = 0) or (Rect.Bottom = 0) then
+        begin
+          if Length(Box.Text) > 0 then
+          begin
+            GetTextSize(Box.Text, TextSize);
+            Rect.Right := TextSize.cx;
+            Rect.Bottom := TextSize.cy;
+          end;
+        end;
+        InflateRect(Rect, Rect, Box.Margins);
+        InflateRect(Rect, Rect, Box.BorderWidths);
+        InflateRect(Rect, Rect, Box.Paddings);
+        OffsetRect(Rect, Classes.Rect(- Rect.Left, Top - Rect.Top, -Rect.Left, Top - Rect.Top));
         case Element.Symbol of
           BodySy:
           begin
@@ -750,16 +781,16 @@ begin
       begin
         GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        OffsetRect(Rect, Classes.Rect(0, Top, 0, Top));
         GetRelativeOffset(psLeft, psRight, ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetRelativeOffset(psTop, psBottom, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        OffsetRect(Rect, Classes.Rect(0, Top, 0, Top));
       end;
 
       posFixed:
       begin
         GetAbsoluteBounds(psLeft, psRight, psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetAbsoluteBounds(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        //TODO: add viewport origin to keep it at a scroll indeendent position:
+        //TODO: add viewport origin to keep it at a scroll independent position:
       end;
     else
       //posAbsolute:

@@ -39,6 +39,7 @@ uses
   HtmlGlobals,
   HtmlImages,
   HtmlStyles,
+  HtmlSymbols,
   StyleTypes;
 
 type
@@ -202,6 +203,14 @@ type
     procedure Paint; override;
   end;
 
+  THtmlScrollControlBox = class(THtmlControlBox)
+  protected
+    function GetControl: TControl; override;
+    function GetScrollControl: THtmlScrollControl; virtual; abstract;
+  public
+    property Control: THtmlScrollControl read GetScrollControl;
+  end;
+
 //------------------------------------------------------------------------------
 // THtmlFramesetBox
 //------------------------------------------------------------------------------
@@ -209,11 +218,11 @@ type
   THtmlFramesetControl = class(THtmlScrollControl)
   end;
 
-  THtmlFramesetBox = class(THtmlControlBox)
+  THtmlFramesetBox = class(THtmlScrollControlBox)
   private
     FControl: THtmlFramesetControl;
   protected
-    function GetControl: TControl; override;
+    function GetScrollControl: THtmlScrollControl; override;
   public
     constructor Create(Control: THtmlFramesetControl);
     procedure Rescaled(const NewScale: Double); override;
@@ -227,11 +236,11 @@ type
   THtmlBodyControl = class(THtmlScrollControl)
   end;
 
-  THtmlBodyBox = class(THtmlControlBox)
+  THtmlBodyBox = class(THtmlScrollControlBox)
   private
     FControl: THtmlBodyControl;
   protected
-    function GetControl: TControl; override;
+    function GetScrollControl: THtmlScrollControl; override;
   public
     constructor Create(Control: THtmlBodyControl);
     procedure Rescaled(const NewScale: Double); override;
@@ -555,12 +564,14 @@ end;
 //-- BG ---------------------------------------------------------- 04.04.2011 --
 procedure THtmlBox.Paint(Canvas: TScalingCanvas);
 
+{$ifdef DEBUG}
   procedure DrawTestOutline(const Rect: TRect);
   begin
     Canvas.Brush.Style := bsSolid;
     Canvas.Brush.Color := clBlack;
     Canvas.FrameRect(Rect);
   end;
+{$endif}
 
   function CreateClipRegion(Clipping: Boolean; const Rect: TRect; out ExistingRegion, ClippingRegion: Integer): Boolean;
   {
@@ -639,7 +650,11 @@ var
 begin
   if not Visible then
     exit;
+
   Rect := BoundsRect;
+  if Element.Symbol <> BodySy then
+    DeflateRect(Rect, Margins);
+
   if Position = posRelative then
     OffsetRect(Rect, RelativeOffset);
 
@@ -655,7 +670,9 @@ begin
 {$endif}
   if Image <> nil then
     DrawImage(Rect);
-  DeflateRect(Rect, Margins);
+
+  if Element.Symbol = BodySy then
+    DeflateRect(Rect, Margins);
 
   // border
   DrawBorder(Canvas, Rect, BorderWidths, BorderColors, BorderStyles, clNone);
@@ -668,7 +685,9 @@ begin
       if Length(Text) > 0 then
       begin
         // text
+{$ifdef DEBUG}
         DrawTestOutline(Rect);
+{$endif}
         case Alignment of
           taLeftJustify: Flags := DT_LEFT;
           taRightJustify: Flags := DT_RIGHT;
@@ -831,6 +850,14 @@ begin
   FBox.Paint(Canvas);
 end;
 
+{ THtmlScrollControlBox }
+
+//-- BG ---------------------------------------------------------- 14.08.2013 --
+function THtmlScrollControlBox.GetControl: TControl;
+begin
+  Result := GetScrollControl;
+end;
+
 { THtmlFramesetBox }
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
@@ -842,7 +869,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-function THtmlFramesetBox.GetControl: TControl;
+function THtmlFramesetBox.GetScrollControl: THtmlScrollControl;
 begin
   Result := FControl;
 end;
@@ -865,7 +892,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.04.2011 --
-function THtmlBodyBox.GetControl: TControl;
+function THtmlBodyBox.GetScrollControl: THtmlScrollControl;
 begin
   Result := FControl;
 end;
