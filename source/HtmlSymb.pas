@@ -129,7 +129,7 @@ type
     FieldsetSy, FieldsetEndSy,
     LegendSy, LegendEndSy,
     LabelSy, LabelEndSy,
-    TextAreaSy,    SelectSy,    OptionSy,    ButtonSy, InputSy,
+    TextAreaSy,    SelectSy,    OptionSy,    ButtonSy, ButtonEndSy, InputSy,
     TextAreaEndSy, SelectEndSy, OptionEndSy
   );
   TElemSymbSet = set of TElemSymb;
@@ -718,7 +718,7 @@ const
     (Name: 'HR';          Symbol: HRSy;         EndSym: CommandSy),
     (Name: 'IMG';         Symbol: ImageSy;      EndSym: CommandSy),
     (Name: 'BASE';        Symbol: BaseSy;       EndSym: CommandSy),
-    (Name: 'BUTTON';      Symbol: ButtonSy;     EndSym: CommandSy),
+    (Name: 'BUTTON';      Symbol: ButtonSy;     EndSym: ButtonEndSy),
     (Name: 'INPUT';       Symbol: InputSy;      EndSym: CommandSy),
     (Name: 'BASEFONT';    Symbol: BaseFontSy;   EndSym: CommandSy),
     (Name: 'AREA';        Symbol: AreaSy;       EndSym: CommandSy),

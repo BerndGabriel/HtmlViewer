@@ -2952,7 +2952,20 @@ procedure THtmlParser.DoCommonSy;
                     Section := TPreFormated.Create(PropStack.MasterList, nil, PropStack.Last,
                       CurrentUrlTarget, SectionList, False);
                   end;
-
+                ButtonSy:
+                  begin
+                    DoBeforeSy(SaveSy);
+                    Prop := PropStack.Last;
+                    Prop.SetFontBG;
+                    if Prop.HasBorderStyle then {start of inline border}
+                      PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
+                    Section.ChangeFont(PropStack.Last);
+                  end;
+                ButtonEndSy:
+                  begin
+                    DoAfterEndSy(Sy);
+                    Section.ChangeFont(PropStack.Last);
+                  end;
                 InputSy:
                   begin
                     DoBeforeSy(SaveSy);
@@ -3142,12 +3155,23 @@ begin
         DoInput;
         DoAfterSy(SaveSy);
       end;
-
-    SelectSy:
+    ButtonSy:
       begin
-        DoBeforeSy(SaveSy);
-        DoSelect;
-        DoAfterSy(SaveSy);
+        PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        Prop := TProperties(PropStack.Last);
+        Prop.SetFontBG;
+        if Prop.HasBorderStyle then {start of inline border}
+          PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
+        if Assigned(Section) then
+          Section.ChangeFont(PropStack.Last);
+        Next;
+      end;
+    ButtonEndSy:
+      begin
+        PopAProp(EndSymbToSymb(Sy));
+        if Assigned(Section) then
+          Section.ChangeFont(PropStack.Last);
+        Next;
       end;
 
     TextAreaSy:
@@ -3266,7 +3290,7 @@ begin
             BigEndSy, SmallEndSy, LabelEndSy, AbbrEndSy, AcronymEndSy, DfnEndSy,
             CodeEndSy, TTEndSy, KbdEndSy, SampEndSy,
             StringSy, ASy, AEndSy, BrSy, NoBrSy, NoBrEndSy, WbrSy,
-            InputSy, TextAreaSy, TextAreaEndSy, SelectSy,
+            InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy,
             ImageSy, FontSy, FontEndSy, BaseFontSy,
             ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
               DoCommonSy;
@@ -3394,7 +3418,7 @@ begin
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
       SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
-      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+      InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BRSy, ObjectSy, ObjectEndSy,
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, CommandSy])
   do
@@ -3497,7 +3521,7 @@ begin
       SSy, SEndSy, StrikeSy, StrikeEndSy, TTSy, CodeSy, KbdSy, SampSy,
       TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, FontEndSy, BigEndSy,
       SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
-      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+      InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BrSy, H1Sy..H6Sy,
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, ObjectSy, ObjectEndSy:
         DoCommonSy;
@@ -3629,7 +3653,7 @@ begin
       TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy,
       ASy, AEndSy, SpanSy, SpanEndSy,
       H1Sy..H6Sy, H1EndSy..H6EndSy, PreSy,
-      InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+      InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
       SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
       ObjectSy, ObjectEndSy:
@@ -3901,7 +3925,7 @@ begin
         SubSy, SubEndSy, SupSy, SupEndSy, SSy, SEndSy, StrikeSy, StrikeEndSy,
         TTSy, CodeSy, KbdSy, SampSy, TTEndSy, CodeEndSy, KbdEndSy, SampEndSy, SpanSy, SpanEndSy,
         H1Sy..H6Sy, H1EndSy..H6EndSy, PreSy, TableSy,
-        InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
+        InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
         SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
         ObjectSy, ObjectEndSy:
