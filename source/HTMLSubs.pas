@@ -304,8 +304,10 @@ type
 //
 // Base class for TImageObj and TPanelObj
 //------------------------------------------------------------------------------
+  TFloatingObjBase = class(TIDObject)
+  end;
 
-  TFloatingObj = class(TIDObject)
+  TFloatingObj = class(TFloatingObjBase)
   public
     Pos: Integer; {0..Len  index of image position}
     ImageHeight, {does not include VSpace}

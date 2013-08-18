@@ -129,6 +129,9 @@
   {$ifdef Compiler20_Plus}
     {$define TEditHasTextHint}
     {$define TComboBoxHasTextHint}
+  {$endif}
+
+  {$ifdef Compiler21_Plus}
     {$define HasGDIPlus}
   {$endif}
 

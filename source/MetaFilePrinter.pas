@@ -1,6 +1,7 @@
 {
-Version   11
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.4
+Copyright (c) 1995-2008 by L. David Baldwin,
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 ***************************************************************
 *                                                             *
@@ -37,7 +38,7 @@ unit MetaFilePrinter;
 interface
 
 uses
-  Windows, Classes, Graphics, Printers,
+  Windows, Classes, Graphics, Printers, SysUtils, Forms,
   vwPrint;
 
 type
@@ -147,8 +148,10 @@ type
 
 implementation
 
+{$ifndef NoGDIPlus}
 uses
-  SysUtils, Forms {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF NoGDIPlus};
+  GDIPL2A;
+{$endif NoGDIPlus}
 
 const
   INCH_TO_CM = 2.54;
