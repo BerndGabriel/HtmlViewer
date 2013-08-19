@@ -5328,9 +5328,9 @@ begin
         begin
           if not IsCopy then
             {$IFNDEF NoGDIPlus}
-            if TiledImage is TgpBitmap then
+            if TiledImage is THtGpBitmap then
             //DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, PT)
-              DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, FT, 0, IT, IW, IH)
+              DrawGpImage(Canvas.Handle, THtGpImage(TiledImage), PdRect.Left, FT, 0, IT, IW, IH)
             //BitBlt(Canvas.Handle, PdRect.Left, FT, PdRect.Right-PdRect.Left, IH, TiledImage.Canvas.Handle, 0, IT, SrcCopy)
             else
             {$ENDIF !NoGDIPlus}
@@ -5347,15 +5347,15 @@ begin
             end
           else
           {$IFNDEF NoGDIPlus}
-          if TiledImage is TGpBitmap then {printing}
+          if TiledImage is THtGpBitmap then {printing}
           begin
             if HasBackgroundColor then
             begin
-              DrawGpImage(FullBg.Canvas.Handle, TgpImage(TiledImage), 0, 0);
+              DrawGpImage(FullBg.Canvas.Handle, THtGpImage(TiledImage), 0, 0);
               PrintBitmap(Canvas, PdRect.Left, FT, IW, IH, FullBG);
             end
             else
-              PrintGpImageDirect(Canvas.Handle, TgpImage(TiledImage), PdRect.Left, PdRect.Top,
+              PrintGpImageDirect(Canvas.Handle, THtGpImage(TiledImage), PdRect.Left, PdRect.Top,
                 Document.ScaleX, Document.ScaleY);
           end
           else
@@ -7850,8 +7850,8 @@ begin
     begin
       if not Cell.IsCopy then
         {$IFNDEF NoGDIPlus}
-        if TiledImage is TgpBitmap then
-          DrawGpImage(Canvas.Handle, TgpImage(TiledImage), PL, FT, 0, IT, PR - PL, IH)
+        if TiledImage is THtGpBitmap then
+          DrawGpImage(Canvas.Handle, THtGpImage(TiledImage), PL, FT, 0, IT, PR - PL, IH)
         else
         {$ENDIF !NoGDIPlus}
         if NoMask then
@@ -7867,11 +7867,11 @@ begin
         end
       else
       {$IFNDEF NoGDIPlus}
-      if TiledImage is TGpBitmap then {printing}
+      if TiledImage is THtGpBitmap then {printing}
       begin
         if Cell.BkGnd then
         begin
-          DrawGpImage(FullBg.Canvas.Handle, TgpImage(TiledImage), 0, 0);
+          DrawGpImage(FullBg.Canvas.Handle, THtGpImage(TiledImage), 0, 0);
           PrintBitmap(Canvas, PL, FT, PR - PL, IH, FullBG);
         end
         else
