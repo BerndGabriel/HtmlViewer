@@ -1493,10 +1493,10 @@ type
     VSize: Integer;
     Color: TColor;
     Align: JustifyType;
-    NoShade: boolean;
-    BkGnd: boolean;
+    UseDefBorder: Boolean;
+    NoShade: Boolean;
+    BkGnd: Boolean;
     Width, Indent: Integer;
-    UseDefBorder : Boolean;
 
     constructor Create(OwnerCell: TCellBasic; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); override;
@@ -13697,7 +13697,7 @@ begin
           end;
         NoShadeSy: NoShade := True;
       end;
-
+  UseDefBorder := not Prop.BorderStyleNotBlank;
   Prop.Assign(VSize, piHeight); {assigns if no property exists yet}
   TmpColor := Prop.GetOriginalForegroundColor;
   if TmpColor <> clNone then
