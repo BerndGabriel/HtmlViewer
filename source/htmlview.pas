@@ -640,8 +640,14 @@ uses
   System.UITypes,
   Vcl.Themes,
 {$endif}
-  Math, Clipbrd, Forms, Printers, {$IFDEF UNICODE}AnsiStrings, {$ENDIF}
-  HTMLGif2 {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF};
+  Math, Clipbrd, Forms, Printers,
+{$ifdef UNICODE}
+  AnsiStrings,
+{$endif}
+{$ifndef NoGDIPlus}
+  GDIPL2A,
+{$endif}
+  HTMLGif2;
 
 const
   ScrollGap = 20;

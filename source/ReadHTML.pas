@@ -2967,7 +2967,7 @@ procedure THtmlParser.DoCommonSy;
                     Prop := PropStack.Last;
                     Prop.SetFontBG;
                     if Prop.HasBorderStyle then {start of inline border}
-                      PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
+                      PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
                     Section.ChangeFont(PropStack.Last);
                   end;
                 ButtonEndSy:
@@ -3179,7 +3179,7 @@ begin
         Prop := TProperties(PropStack.Last);
         Prop.SetFontBG;
         if Prop.HasBorderStyle then {start of inline border}
-          PropStack.MasterList.ProcessInlines(PropStack.SIndex, Prop, True);
+          PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
         if Assigned(Section) then
           Section.ChangeFont(PropStack.Last);
         Next;

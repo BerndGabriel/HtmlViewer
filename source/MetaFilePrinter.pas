@@ -38,7 +38,7 @@ unit MetaFilePrinter;
 interface
 
 uses
-  Windows, Classes, Graphics, Printers,
+  Windows, Classes, Graphics, Printers, SysUtils, Forms,
   vwPrint;
 
 type
@@ -148,8 +148,10 @@ type
 
 implementation
 
+{$ifndef NoGDIPlus}
 uses
-  SysUtils, Forms {$IFNDEF NoGDIPlus}, GDIPL2A{$ENDIF NoGDIPlus};
+  GDIPL2A;
+{$endif NoGDIPlus}
 
 const
   INCH_TO_CM = 2.54;

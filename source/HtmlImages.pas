@@ -168,7 +168,7 @@ type
   //BG, 09.04.2011
   ThtPngImage = class(ThtImage)
   private
-    Png: TGpImage;
+    Png: ThtGpImage;
   protected
     function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
@@ -176,7 +176,7 @@ type
     function GetImageWidth: Integer; override;
     function GetMask: TBitmap; override;
   public
-    constructor Create(AImage: TGpImage); overload;
+    constructor Create(AImage: ThtGpImage); overload;
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); override;
@@ -250,7 +250,7 @@ procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, 
  BW, BH  bitmap dimensions.
 }
 
-procedure DoImageStuff(Canvas: TCanvas; IW, IH: Integer; BGImage: ThtImage; PRec: PtPositionRec;
+procedure DoImageStuff(Canvas: TCanvas; IW, IH: Cardinal; BGImage: ThtImage; PRec: PtPositionRec;
   var TiledImage: TGpObject; var TiledMask: TBitmap; var NoMask: boolean);
 {Set up for the background image. Allow for tiling, and transparency
   BGImage is the image
@@ -260,12 +260,12 @@ procedure DoImageStuff(Canvas: TCanvas; IW, IH: Integer; BGImage: ThtImage; PRec
 
 
 {$IFNDEF NoGDIPlus}
-procedure DrawGpImage(Handle: THandle; Image: TGPImage; DestX, DestY: Integer); overload;
-procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY, SrcX, SrcY, SrcW, SrcH: Integer); overload;
-procedure StretchDrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY, DestW, DestH: Integer);
-procedure PrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY: Integer; ScaleX, ScaleY: single);
-procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY, DestW, DestH: Integer; ScaleX, ScaleY: Single);
-procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage; DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
+procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer); overload;
+procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY, SrcX, SrcY, SrcW, SrcH: Integer); overload;
+procedure StretchDrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer);
+procedure PrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer; ScaleX, ScaleY: single);
+procedure StretchPrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; ScaleX, ScaleY: Single);
+procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 {$ENDIF NoGDIPlus}
 
 //------------------------------------------------------------------------------
@@ -579,7 +579,7 @@ var
 //            finally
 //              F.Free;
 //            end;
-//            Result := ThtImage.Create(TgpImage.Create(Filename, True)); {True because it's a temporary file}
+//            Result := ThtImage.Create(ThtGpImage.Create(Filename, True)); {True because it's a temporary file}
 //            Exit;
 //          except
 //          end;
@@ -683,7 +683,7 @@ var
 {$IFNDEF NoGDIPlus}
   Filename: string;
   F: TFileStream;
-  Png: TgpImage;
+  Png: ThtGpImage;
 {$ENDIF !NoGDIPlus}
   NonAnimated: boolean;
   Gif: TGifImage;
@@ -769,7 +769,7 @@ begin
           finally
             F.Free;
           end;
-          Png := TgpImage.Create(Filename, True); {True because it's a temporary file}
+          Png := ThtGpImage.Create(Filename, True); {True because it's a temporary file}
           Result := ThtPngImage.Create(Png);
           Exit;
         end;
@@ -1251,7 +1251,7 @@ end;
 
 //BG, 07.04.2011: same as CalcBackgroundLocationAndTiling plus DrawBackground ?
 //TODO: let the better version win, but keep it in 2 separate methods for THtmlViewer.
-procedure DoImageStuff(Canvas: TCanvas; IW, IH: Integer; BGImage: ThtImage; PRec: PtPositionRec;
+procedure DoImageStuff(Canvas: TCanvas; IW, IH: Cardinal; BGImage: ThtImage; PRec: PtPositionRec;
   var TiledImage: TGpObject; var TiledMask: TBitmap; var NoMask: boolean);
 {Set up for the background image. Allow for tiling, and transparency
   BGImage is the image
@@ -1259,11 +1259,12 @@ procedure DoImageStuff(Canvas: TCanvas; IW, IH: Integer; BGImage: ThtImage; PRec
   IW, IH, the width and height of the background
 }
 var
-  OW, OH, X, XX, Y, X2, Y2: Integer;
+  OW, OH: Cardinal;
+  X, XX, Y, X2, Y2: Integer;
   TheMask, NewBitmap, NewMask: TBitmap;
   TheGpObj: TBitmap;
 {$IFNDEF NoGDIPlus}
-  g: TgpGraphics;
+  g: ThtGpGraphics;
 {$ENDIF !NoGDIPlus}
 
 //----------------------------------------------------------
@@ -1286,15 +1287,15 @@ var
   end;
 
 {$IFNDEF NoGDIPlus}
-  procedure TileGpImage(Image: TgpImage; W, H: Integer);
+  procedure TileGpImage(Image: ThtGpImage; W, H: Cardinal);
   var
     ImW, ImH: Integer;
-    graphics: TgpGraphics;
+    graphics: ThtGpGraphics;
   begin
     ImW := Image.Width;
     ImH := Image.Height;
     try
-      graphics := TGPGraphics.Create(TgpImage(TiledImage));
+      graphics := ThtGpGraphics.Create(ThtGpImage(TiledImage));
       try
         repeat {tile Image in the various dc's}
           XX := X;
@@ -1327,12 +1328,12 @@ begin
   if (BGImage is ThtPngImage) and not ((OW = 1) or (OH = 1)) then
   begin {TiledImage will be a TGpBitmap unless Image needs to be enlarged}
     if Assigned(TiledImage) then
-      with TgpBitmap(TiledImage) do
+      with ThtGpBitmap(TiledImage) do
         if (IW <> Width) or (IH <> Height) then
           FreeAndNil(TiledImage);
     if not Assigned(TiledImage) then
-      TiledImage := TgpBitmap.Create(IW, IH);
-    g := TgpGraphics.Create(TgpBitmap(TiledImage));
+      TiledImage := ThtGpBitmap.Create(IW, IH);
+    g := ThtGpGraphics.Create(ThtGpBitmap(TiledImage));
     g.Clear(0); {clear to transparent black}
     g.Free;
   end
@@ -1390,7 +1391,7 @@ begin
   end
 {$IFNDEF NoGDIPlus}
   else if (BGImage is ThtPngImage) then
-    TileGpImage(TgpImage(BGImage.GetGpObject), OW, OH)
+    TileGpImage(ThtGpImage(BGImage.GetGpObject), OW, OH)
 {$ENDIF !NoGDIPlus}
   else
     Tile(TBitmap(TheGpObj), TheMask, OW, OH)
@@ -1415,9 +1416,9 @@ begin
 {$IFNDEF NoGDIPlus}
     OwnsBitmap := Image is ThtPngImage;
   end
-  else if Image is TGpImage then
+  else if Image is ThtGpImage then
   begin
-    TmpBitmap := TGpImage(Image).GetBitmap;
+    TmpBitmap := ThtGpImage(Image).GetBitmap;
     OwnsBitmap := True;
 {$ENDIF !NoGDIPlus}
   end
@@ -1444,8 +1445,8 @@ begin
   if Image is TBitmap then
     Result := TBitmap(Image).Height
   else {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    Result := TGpImage(Image).Height
+  if Image is ThtGpImage then
+    Result := ThtGpImage(Image).Height
   else {$ENDIF !NoGDIPlus}
   if Image is TGifImage then
     Result := TGifImage(Image).Height
@@ -1454,7 +1455,7 @@ begin
     Result := ThtMetaFile(Image).Height
 {$ENDIF}
   else
-    raise(EInvalidArgument.Create('Not a TBitmap, TGifImage, TMetafile, or TGpImage'));
+    raise(EInvalidArgument.Create('Not a TBitmap, TGifImage, TMetafile, or ThtGpImage'));
 end;
 
 function GetImageWidth(Image: TGpObject): Integer;
@@ -1462,8 +1463,8 @@ begin
   if Image is TBitmap then
     Result := TBitmap(Image).Width
   else {$IFNDEF NoGDIPlus}
-  if Image is TGpImage then
-    Result := TGpImage(Image).Width
+  if Image is ThtGpImage then
+    Result := ThtGpImage(Image).Width
   else {$ENDIF !NoGDIPlus}
   if Image is TGifImage then
     Result := TGifImage(Image).Width
@@ -1472,7 +1473,7 @@ begin
     Result := ThtMetaFile(Image).Width
 {$ENDIF}
   else
-    raise(EInvalidArgument.Create('Not a TBitmap, TGifImage, TMetafile, or TGpImage'));
+    raise(EInvalidArgument.Create('Not a TBitmap, TGifImage, TMetafile, or ThtGpImage'));
 end;
 
 
@@ -1662,12 +1663,12 @@ end;
 
 {$IFNDEF NoGDIPlus}
 
-procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY: Integer);
+procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer);
 {Draws the entire image as specified at the point specified}
 var
-  g: TGpGraphics;
+  g: ThtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := ThtGpGraphics.Create(Handle);
   try
     g.DrawImage(Image, DestX, DestY, Image.Width, Image.Height);
   except
@@ -1675,13 +1676,13 @@ begin
   g.Free;
 end;
 
-procedure DrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY,
   SrcX, SrcY, SrcW, SrcH: Integer);
 {Draw a portion of the image at DestX, DestY.  No stretching}
 var
-  g: TGpGraphics;
+  g: ThtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := ThtGpGraphics.Create(Handle);
   try
     g.DrawImage(Image, DestX, DestY, SrcX, SrcY, SrcW, SrcH);
   except
@@ -1689,13 +1690,13 @@ begin
   g.Free;
 end;
 
-procedure StretchDrawGpImage(Handle: THandle; Image: TGpImage; DestX, DestY,
+procedure StretchDrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY,
   DestW, DestH: Integer);
 {Draws the entire image in the rectangle specified}
 var
-  g: TGpGraphics;
+  g: ThtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := ThtGpGraphics.Create(Handle);
   try
     g.DrawImage(Image, DestX, DestY, DestW, DestH);
   except
@@ -1703,14 +1704,14 @@ begin
   g.Free;
 end;
 
-procedure StretchPrintGpImageDirect(Handle: THandle; Image: TGpImage;
+procedure StretchPrintGpImageDirect(Handle: THandle; Image: ThtGpImage;
   DestX, DestY, DestW, DestH: Integer;
   ScaleX, ScaleY: single);
 {Prints the entire image at the point specified with the height and width specified}
 var
-  g: TGpGraphics;
+  g: ThtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := ThtGpGraphics.Create(Handle);
   try
     g.ScaleTransform(ScaleX, ScaleY);
     g.DrawImage(Image, DestX, DestY, DestW, DestH);
@@ -1719,31 +1720,31 @@ begin
   g.Free;
 end;
 
-procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: TGpImage;
+procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: ThtGpImage;
   DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 var
-  g: TGpGraphics;
+  g: ThtGpGraphics;
   bg: TBitmap;
 begin {Draw image on white background first, then print}
   bg := TBitmap.Create;
-  bg.Width := TGPImage(Image).Width;
-  bg.Height := TGPImage(Image).Height;
+  bg.Width := ThtGpImage(Image).Width;
+  bg.Height := ThtGpImage(Image).Height;
   bg.Canvas.Brush.Color := Color;
   bg.Canvas.FillRect(Rect(0, 0, bg.Width, bg.Height));
-  g := TGPGraphics.Create(bg.Canvas.Handle);
-  g.DrawImage(TGPImage(Image), 0, 0, bg.Width, bg.Height);
+  g := ThtGpGraphics.Create(bg.Canvas.Handle);
+  g.DrawImage(ThtGpImage(Image), 0, 0, bg.Width, bg.Height);
   g.Free;
   Canvas.StretchDraw(Rect(DestX, DestY, DestX + DestW, DestY + DestH), bg);
   bg.Free;
 end;
 
-procedure PrintGpImageDirect(Handle: THandle; Image: TGpImage; DestX, DestY: Integer;
+procedure PrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer;
   ScaleX, ScaleY: single);
 {Prints the entire image as specified at the point specified}
 var
-  g: TGpGraphics;
+  g: ThtGpGraphics;
 begin
-  g := TGPGraphics.Create(Handle);
+  g := ThtGpGraphics.Create(Handle);
   try
     g.ScaleTransform(ScaleX, ScaleY);
     g.DrawImage(Image, DestX, DestY, Image.Width, Image.Height);
@@ -2170,7 +2171,7 @@ end;
 { ThtPngImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-constructor ThtPngImage.Create(AImage: TGpImage);
+constructor ThtPngImage.Create(AImage: ThtGpImage);
 begin
   inherited Create(TrPng);
   Png := AImage;
@@ -2186,9 +2187,9 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 procedure ThtPngImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 var
-  Graphics: TGPGraphics;
+  Graphics: ThtGpGraphics;
 begin
-  Graphics := TGPGraphics.Create(Canvas.Handle);
+  Graphics := ThtGpGraphics.Create(Canvas.Handle);
   try
     Graphics.DrawImage(Png, X, Y, W, H);
   finally
@@ -2200,10 +2201,10 @@ end;
 procedure ThtPngImage.DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer);
 var
   X, Y: Integer;
-  Graphics: TGPGraphics;
+  Graphics: ThtGpGraphics;
 begin
   Y := YStart;
-  Graphics := TGPGraphics.Create(Canvas.Handle);
+  Graphics := ThtGpGraphics.Create(Canvas.Handle);
   try
     while Y < YEnd do
     begin
