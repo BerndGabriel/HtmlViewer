@@ -155,14 +155,13 @@ type
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
     // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
     DrawRect: TDrawRect;    //>-- DZ where the section starts (calculated in DrawLogic or Draw1)
-    TagClass: ThtString; {debugging aid} //BG, 10.03.2011: see also TCellBasic.OwnersTag
+    TagClass: ThtString; {debugging aid}
 
     constructor Create(OwnerCell: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); virtual;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; virtual;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; virtual;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; virtual;
+    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
     function FindSourcePos(DocPos: Integer): Integer; virtual;
@@ -206,7 +205,6 @@ type
     IMgr: TIndentManager;   // Each tag displayed as a block needs an indent manager.
     BkGnd: boolean;
     BkColor: TColor;
-    OwnersTag: ThtString;   // TODO -oBG, 10.03.2011: move to Owner
     // Y coordinates calculated in DrawLogic() are still valid in Draw1()
     YValue: Integer;        // vertical position at top of cell. As this is a simple container, YValue is same as Self[0].YDraw.
     tcDrawTop: Integer;
@@ -2402,7 +2400,7 @@ begin
         NameSy:
           Document.IDNameList.AddObject(Name, Self);
       end;
-      
+
   if L.Find(TitleSy, T) then
     Title := T.Name; {has higher priority than Alt loaded above}
 end;
@@ -3817,7 +3815,6 @@ begin
   inherited Create;
   FOwnerBlock := OwnerBlock;
   FDocument := MasterList;
-  OwnersTag := T.OwnersTag;
   for I := 0 to T.Count - 1 do
   begin
     Tmp := T.Items[I];
@@ -4163,9 +4160,7 @@ begin
   CodeSite.AddSeparator;
   {$ENDIF}
   inherited Create(OwnerCell, Attributes, Prop);
-
   MyCell := TBlockCell.Create(Document, Self);
-  MyCell.OwnersTag := Prop.PropTag;
   DrawList := TList.Create;
 
   if Document.UseQuirksMode and (Self is TTableBlock) then
@@ -4227,7 +4222,7 @@ var
   TopAuto: boolean;
   TB: TSectionBase;
   LastMargin, Negs, I: Integer;
-  Tag: ThtString;
+  Tag: TElemSymb;
 begin
   ConvVertMargins(MargArrayO, 400, {height not known at this point}
     EmSize, ExSize, MargArray, TopAuto, BottomAuto);
@@ -4239,7 +4234,7 @@ begin
   else if FloatLR in [ALeft, ARight] then {do nothing}
   else if Display = pdNone then {do nothing}
   else
-    with OwnerCell do
+    //with OwnerCell do
     begin
       I := OwnerCell.Count - 1; {find the preceding block that isn't absolute positioning}
       while I >= 0 do
@@ -4250,49 +4245,40 @@ begin
             break;
         Dec(I);
       end;
-      Tag := OwnerCell.OwnersTag;
+      if OwnerCell.OwnerBlock <> nil then
+        Tag := OwnerCell.OwnerBlock.Symbol
+      else
+        Tag := OtherChar;
       if I < 0 then
       begin {no previous non absolute block, remove any Auto paragraph space}
-        if TopAuto then
-        begin
-          if (Tag = 'li') then
-          begin
+        case Tag of
+          BodySy:
+            MargArray[MarginTop] := Max(0, MargArray[MarginTop] - OwnerBlock.MargArray[MarginTop]);
+        else
+          if TopAuto then
             MargArray[MarginTop] := 0;
-          end
-          else
-            MargArray[MarginTop] := 0;
-        end
-        else if (Tag = 'default') or (Tag = 'body') then
-          MargArray[MarginTop] := Max(0, MargArray[MarginTop] - OwnerBlock.MargArray[MarginTop]);
+        end;
       end
       else
       begin
-        TB := OwnerCell[I];
-        if ((TB is TTableBlock) or (TB is TTableAndCaptionBlock)) and
-          (TBlock(TB).FloatLR in [ALeft, ARight])
-          and TopAuto then
+        if ((TB is TTableBlock) or (TB is TTableAndCaptionBlock)) and (TBlock(TB).FloatLR in [ALeft, ARight]) and TopAuto then
           MargArray[MarginTop] := 0
         else if (TB is TBlock) then
         begin
           LastMargin := TBlock(TB).MargArray[MarginBottom];
           TBlock(TB).MargArray[MarginBottom] := 0;
-          if LastMargin >= 0 then {figure out how many are negative}
-            if MargArray[MarginTop] >= 0 then
-              Negs := 0
-            else
-              Negs := 1
-          else if MargArray[MarginTop] >= 0 then
-            Negs := 1
-          else
-            Negs := 2;
+          Negs := 0;
+          if LastMargin < 0 then {figure out how many are negative}
+            Inc(Negs);
+          if MargArray[MarginTop] < 0 then
+            Inc(Negs);
           case Negs of
             0: MargArray[MarginTop] := Max(MargArray[MarginTop], LastMargin);
-            1: MargArray[MarginTop] := MargArray[MarginTop] + LastMargin;
+            1: MargArray[MarginTop] :=     MargArray[MarginTop] + LastMargin;
             2: MargArray[MarginTop] := Min(MargArray[MarginTop], LastMargin);
           end;
         end
-        else if (Tag = 'li') and TopAuto
-          and ((Pos('ul.', TagClass) = 1) or (Pos('ol.', TagClass) = 1)) then
+        else if (Tag = LISy) and TopAuto and (Symbol in [ULSy, OLSy]) then
           MargArray[MarginTop] := 0; {removes space from nested lists}
       end;
     end;
@@ -14825,6 +14811,7 @@ begin
           NoScroll := CompareText(Name, 'NO') = 0; {auto and yes work the same}
 
       end;
+
   CreateFrame;
   UpdateFrame;
   SetWidth := FViewer.Width;
@@ -14855,10 +14842,13 @@ begin
   HtmlViewer := PaintPanel.ParentViewer;
   FViewer := HtmlViewer.CreateIFrameControl;
   FViewer.Parent := PaintPanel;
-  if Assigned(HtmlViewer.OnExpandName) then
-    HtmlViewer.OnExpandName(HtmlViewer, FSource, FUrl)
-  else
-    FUrl := HtmlViewer.HtmlExpandFilename(FSource);
+  if FSource <> '' then
+  begin
+    if Assigned(HtmlViewer.OnExpandName) then
+      HtmlViewer.OnExpandName(HtmlViewer, FSource, FUrl)
+    else
+      FUrl := HtmlViewer.HtmlExpandFilename(FSource);
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 12.11.2011 --
@@ -14924,19 +14914,22 @@ var
   LPropStack: THtmlPropStack;
   LNoBreak: boolean; {set when in <NoBr>}
 begin
-  LCurrentForm := Document.CurrentForm;
-  LCurrentStyle := Document.CurrentStyle;
-  LNoBreak := Document.NoBreak;
-  LPropStack := Document.PropStack;
-  Document.PropStack := THtmlPropStack.Create;
-  try
-    FViewer.Load(FUrl);
-  finally
-    Document.PropStack.Free;
-    Document.PropStack := LPropStack;
-    Document.CurrentForm := LCurrentForm;
-    Document.CurrentStyle := LCurrentStyle;
-    Document.NoBreak := LNoBreak;
+  if FUrl <> '' then
+  begin
+    LCurrentForm := Document.CurrentForm;
+    LCurrentStyle := Document.CurrentStyle;
+    LNoBreak := Document.NoBreak;
+    LPropStack := Document.PropStack;
+    Document.PropStack := THtmlPropStack.Create;
+    try
+      FViewer.Load(FUrl);
+    finally
+      Document.PropStack.Free;
+      Document.PropStack := LPropStack;
+      Document.CurrentForm := LCurrentForm;
+      Document.CurrentStyle := LCurrentStyle;
+      Document.NoBreak := LNoBreak;
+    end;
   end;
 end;
 
