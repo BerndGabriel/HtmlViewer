@@ -1910,7 +1910,7 @@ begin
     PushNewProp(TableSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
     Table := ThtmlTable.Create(SaveSectionList, Attributes, PropStack.Last);
     NewBlock := TTableBlock.Create(SaveSectionList, Attributes, PropStack.Last, Table, TableLevel);
-    if (NewBlock.Justify <> Centered) and not (NewBlock.FloatLR in [ALeft, ARight]) then
+    if (NewBlock.Justify <> Centered) and not (NewBlock.Floating in [ALeft, ARight]) then
       NewBlock.Justify := SetJustify;
     NewBlock.MyCell.Add(Table, TagIndex); {the only item in the cell}
     CombineBlock := TTableAndCaptionBlock.Create(SaveSectionList, Attributes, PropStack.Last, NewBlock); {will be needed if Caption found}

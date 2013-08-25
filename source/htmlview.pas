@@ -2062,13 +2062,12 @@ function THtmlViewer.GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFon
 var
   Obj: TSectionBase;
   FO: TFontObj;
-  Index: Integer;
 begin
   Result := FSectionList.GetChAtPos(Pos, Ch, Obj);
   if Result and (Obj is TSection) then
     with TSection(Obj) do
     begin
-      FO := Fonts.GetFontObjAt(Pos - StartCurs, Index);
+      FO := Fonts.GetFontObjAt(Pos - StartCurs);
       Font := FO.TheFont;
     end;
 end;
@@ -4147,7 +4146,7 @@ begin
   end
   else if Sender is TFontObj and not NoJump then
   begin
-    Y := TFontObj(Sender).YValue;
+    Y := TFontObj(Sender).DrawYY;
     Pos := VScrollBarPosition;
     if (Y < Pos) then
       VScrollBarPosition := Y
