@@ -94,7 +94,7 @@ type
   public
     EditSize: Integer;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
+    constructor Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -116,7 +116,7 @@ type
     Which: WhichType;
     MyEdit: TEditFormControlObj;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
+    constructor Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
     destructor Destroy; override;
     procedure ButtonClick(Sender: TObject);
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -151,7 +151,7 @@ type
     FFont: TFont;
     LBSize, Longest: integer;
   public
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
     property TheOptions: ThtOptionStringList read FOptions;
@@ -175,7 +175,7 @@ type
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -202,7 +202,7 @@ type
     procedure SaveContents; override;
   public
     IsChecked: boolean;
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -226,7 +226,7 @@ type
     procedure DoOnChange; override;
     procedure SaveContents; override;
   public
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -255,7 +255,7 @@ type
     Wrap: (wrOff, wrSoft, wrHard);
     Rows, Cols: integer;
     TheText: ThtString;
-    constructor Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
@@ -326,7 +326,7 @@ end;
 
 {----------------TListBoxFormControlObj.Create}
 
-constructor TListBoxFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
+constructor TListBoxFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
   Multiple: boolean;
@@ -551,7 +551,7 @@ end;
 
 {----------------TComboFormControlObj.Create}
 
-constructor TComboFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); 
+constructor TComboFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: ThtFont;
@@ -716,7 +716,7 @@ end;
 
 {----------------TTextAreaFormControlObj.Create}
 
-constructor TTextAreaFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
+constructor TTextAreaFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
   I: integer;
@@ -962,7 +962,7 @@ begin
   Longest := Max(Longest, ExtS.cx);
 end;
 
-constructor TOptionsFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
+constructor TOptionsFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
 begin
@@ -1093,15 +1093,14 @@ end;
 
 {----------------TEditFormControlObj.Create}
 
-constructor TEditFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer;
-  const Typ: ThtString; L: TAttributeList; Prop: TProperties);
+constructor TEditFormControlObj.Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
   PntPanel: TWinControl; //TPaintPanel;
   I: Integer;
   Tmp: ThtFont;
 begin
-  inherited Create(Document, Parent, Position, L, Prop);
+  inherited Create(Parent, Position, L, Prop);
   CodePage := Prop.CodePage;
   EditSize := 15;
   if L.Find(SizeSy, T) then
@@ -1261,13 +1260,12 @@ end;
 
 {----------------TButtonFormControlObj.Create}
 
-constructor TButtonFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer;
-  const Typ: ThtString; L: TAttributeList; Prop: TProperties);
+constructor TButtonFormControlObj.Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties);
 var
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: ThtFont;
 begin
-  inherited Create(Document, Parent, Position, L, Prop);
+  inherited Create(Parent, Position, L, Prop);
   if Typ = 'submit' then
   begin
     Which := Submit;
@@ -1424,7 +1422,7 @@ type
   THtmlFormOpener = class(THtmlForm)
   end;
 
-constructor TCheckBoxFormControlObj.Create(Document: ThtDocument; Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
+constructor TCheckBoxFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
   PntPanel: TWinControl; //TPaintPanel;

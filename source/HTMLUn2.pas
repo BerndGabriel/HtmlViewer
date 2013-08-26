@@ -3403,7 +3403,7 @@ procedure TViewerBase.UpdateStyleElements;
 begin
   inherited UpdateStyleElements;
 end;
-{$endif
+{$endif}
 
 { THtmlViewerBase }
 
@@ -3432,6 +3432,7 @@ end;
 //>-- DZ 18.09.2011
 constructor TIDObject.Create(const AHtmlId: ThtString);
 begin
+  inherited Create;
   FHtmlID:= Trim(AHtmlId);
 end;
 
