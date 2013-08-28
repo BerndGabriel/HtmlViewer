@@ -3173,6 +3173,12 @@ begin
         DoInput;
         DoAfterSy(SaveSy);
       end;
+    SelectSy:
+      begin
+        DoBeforeSy(SaveSy);
+        DoSelect;
+        DoAfterSy(SaveSy);
+      end;
     ButtonSy:
       begin
         PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);

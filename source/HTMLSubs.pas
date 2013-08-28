@@ -377,6 +377,7 @@ type
     DrawXX: Integer; // where the object starts.
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); virtual;
+    procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     function PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean; virtual;
     property ClientHeight: Integer read GetClientHeight;
     property ClientWidth: Integer read GetClientWidth;
@@ -425,7 +426,6 @@ type
     constructor SimpleCreate(Parent: TCellBasic);
     function PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean; override;
     procedure Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); virtual; abstract;
-    procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     procedure ProcessProperties(Prop: TProperties);
     procedure SetAlt(CodePage: Integer; const Value: ThtString);
     property Alt: ThtString read FAlt;
@@ -699,7 +699,6 @@ type
     Indent: Integer;
 
     ClearAttr: ClearAttrType;
-// BG, 25.03.2012: unused:    IsListBlock: boolean;
     PRec: PtPositionRec; // background image position
     Visibility: VisibilityType;
     BottomAuto: boolean;
@@ -827,6 +826,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; virtual;
+    procedure DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); virtual;
     procedure EnterEvent(Sender: TObject); {these two would be better private}
     procedure ExitEvent(Sender: TObject);
@@ -2308,24 +2308,19 @@ end;
 {----------------TFontList.GetFontObjAt}
 
 function TFontList.GetFontObjAt(Posn: Integer): TFontObj;
-{Given a position, returns the FontObj which applies there and the index of
- the FontObj in the list}
+{Given a position, returns the FontObj which applies there}
 var
-  Index, PosX: Integer;
+  I: Integer;
 begin
-  Index := 0;
-  PosX := 0;
-  while (Index < Count) do
+  I := Count;
+  while I > 0 do
   begin
-    PosX := Items[Index].Pos;
-    Inc(Index);
-    if PosX >= Posn then
-      Break;
+    Dec(I);
+    Result := Items[I];
+    if Result.Pos <= Posn then
+      Exit;
   end;
-  Dec(Index);
-  if PosX > Posn then
-    Dec(Index);
-  Result := Items[Index];
+  Result := nil;
 end;
 
 {----------------TFontList.Decrement}
@@ -3432,10 +3427,22 @@ begin
 end;
 
 procedure TFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
-begin end;
+begin
+end;
+
+//-- BG ---------------------------------------------------------- 28.08.2013 --
+procedure TFormControlObj.DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
+begin
+  inherited;
+  if PercentWidth then
+    Width := Max(10, Min(MulDiv(FWidth, AvailableWidth, 100), AvailableWidth - HSpaceL - HSpaceR));
+  if PercentHeight then
+    Height := Max(10, Min(MulDiv(FWidth, AvailableHeight, 100), AvailableHeight - VSpaceT - VSpaceB));
+end;
 
 procedure TFormControlObj.ResetToValue;
-begin end;
+begin
+end;
 
 function TFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
 begin
@@ -4083,13 +4090,12 @@ end;
 
 function TCellBasic.DoLogic(Canvas: TCanvas; Y, Width, AHeight, BlHt: Integer;
   var ScrollWidth: Integer; var Curs: Integer): Integer;
-{Do the entire layout of the cell or document.  Return the total document
- pixel height}
+{Do the entire layout of the cell or document.  Return the total cell or document pixel height}
 var
   I, Sw, TheCount: Integer;
   H: Integer;
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TCellBasic.DoLogic');
   CodeSite.SendFmtMsg('Y = [%d]',[Y]);
   CodeSite.SendFmtMsg('Width = [%d]',[Width]);
@@ -4098,8 +4104,7 @@ begin
   CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
   CodeSite.SendFmtMsg('Curs = [%d]',[Curs]);
   CodeSite.AddSeparator;
-   {$ENDIF}
-//  YValue := Y;
+{$ENDIF}
   StartCurs := Curs;
   H := 0;
   ScrollWidth := 0;
@@ -4108,7 +4113,7 @@ begin
   while I < TheCount do
   begin
     try
-      //TODO -oBG, 24.06.2012: merge sections with display=inline etc.  
+      //TODO -oBG, 24.06.2012: merge sections with display=inline etc.
       Inc(H, Items[I].DrawLogic(Canvas, 0, Y + H, 0, 0, Width, AHeight, BlHt, IMgr, Sw, Curs));
       ScrollWidth := Max(ScrollWidth, Sw);
       Inc(I);
@@ -4124,12 +4129,12 @@ begin
   end;
   Len := Curs - StartCurs;
   Result := H;
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('ScrollWidth = [%d]',[ScrollWidth]);
   CodeSite.SendFmtMsg('Curs = [%d]',[Curs]);
-   CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
   CodeSite.ExitMethod(Self,'TCellBasic.DoLogic');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TCellBasic.MinMaxWidth}
@@ -10921,10 +10926,29 @@ end;
 procedure TSection.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 {Min is the width the section would occupy when wrapped as tightly as possible.
  Max, the width if no wrapping were used.}
+
+  procedure MinMaxWidthOfBlocks(Objects: TFloatingObjBaseList);
+  var
+    I: Integer;
+    Obj: TFloatingObjBase;
+  begin
+    for I := 0 to Objects.Count - 1 do {call drawlogic for all the objects}
+    begin
+      Obj := Objects[I];
+      Obj.DrawLogic(Document, Canvas, Fonts.GetFontObjAt(Obj.StartCurs), 0, 0);
+      if not Obj.PercentWidth then
+        if Obj.Floating in [ALeft, ARight] then
+        begin
+          Inc(Max, Obj.TotalWidth);
+          Brk[Obj.StartCurs] := twYes; {allow break after floating object}
+          Min := Math.Max(Min, Obj.TotalWidth);
+        end
+        else
+          Min := Math.Max(Min, Obj.ClientWidth);
+    end;
+  end;
+
 var
-  I, FloatMin: Integer;
-  P, P1: PWideChar;
-  Obj: TFloatingObjBase;
   SoftHyphen: Boolean;
 
   function FindTextWidthB(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
@@ -10939,13 +10963,16 @@ var
       Result := Result + Canvas.TextWidth('-');
   end;
 
+var
+  I, FloatMin: Integer;
+  P, P1: PWideChar;
+//  Obj: TFloatingObjBase;
+
 begin
+  Min := 0;
+  Max := 0;
   if Len = 0 then
-  begin
-    Min := 0;
-    Max := 0;
     Exit;
-  end;
 
   if not BreakWord and (WhiteSpaceStyle in [wsPre, wsNoWrap]) then
   begin
@@ -10960,59 +10987,25 @@ begin
     Exit;
   end;
 
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TSection.MinMaxWidth');
   CodeSite.AddSeparator;
-   {$ENDIF}
+{$ENDIF}
   if (StoredMin > 0) and (Images.Count = 0) then
   begin
     Min := StoredMin;
     Max := StoredMax;
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
-  CodeSiteLogging.CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
-   {$ENDIF}
-    Exit;
-  end;
-  Min := 0;
-  Max := 0;
-  if Len = 0 then begin
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
-  CodeSiteLogging.CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
-   {$ENDIF}
+{$IFDEF JPM_DEBUGGING}
+    CodeSite.SendFmtMsg('Stored Min = [%d]',[Min]);
+    CodeSite.SendFmtMsg('Stored Max = [%d]',[Max]);
+    CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
+{$ENDIF}
     Exit;
   end;
 
-  for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
-  begin
-    Obj := Images[I];
-    with TFloatingObj(Obj) do
-    begin
-      DrawLogic(Self.Document, Canvas, Fonts.GetFontObjAt(StartCurs), 0, 0);
-      if not PercentWidth then
-        if Floating in [ALeft, ARight] then
-        begin
-          Max := Max + TotalWidth;
-          Brk[StartCurs] := twYes; {allow break after floating image}
-          Min := Math.Max(Min, TotalWidth);
-        end
-        else
-          Min := Math.Max(Min, ClientWidth);
-    end;
-  end;
+  MinMaxWidthOfBlocks(Images);
+  MinMaxWidthOfBlocks(FormControls);
   FloatMin := Min;
-
-  for I := 0 to FormControls.Count - 1 do {get Min for form controls}
-  begin
-    Obj := FormControls[I];
-    if Obj is TFormControlObj then
-      with TFormControlObj(FormControls[I]) do
-        if not PercentWidth then
-          Min := Math.Max(Min, Width + HSpaceL + HSpaceR);
-  end;
 
   SoftHyphen := False;
   P := Buff;
@@ -11083,11 +11076,11 @@ begin
   Min := Math.Max(FloatMin, Min);
   StoredMin := Min;
   StoredMax := Max;
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+{$IFDEF JPM_DEBUGGING}
+  CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+  CodeSite.SendFmtMsg('Max = [%d]',[Max]);
   CodeSite.ExitMethod(Self,'TSection.MinMaxWidth');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TSection.FindTextWidth}
@@ -11710,7 +11703,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
     begin
       Obj := TFloatingObj(Images[I]);
-      Obj.DrawLogic(Self.Document, Canvas, Fonts.GetFontObjAt(Obj.StartCurs), Width, HtRef);
+      Obj.DrawLogic(Document, Canvas, Fonts.GetFontObjAt(Obj.StartCurs), Width, HtRef);
       // BG, 28.08.2011:
       if OwnerBlock.HideOverflow then
       begin
@@ -11720,12 +11713,11 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       else
         MaxWidth := Max(MaxWidth, Obj.ClientWidth); {HScrollBar for wide images}
     end;
-    
+
     for I := 0 to FormControls.Count - 1 do
     begin
       Ctrl := FormControls[I];
-      if Ctrl.PercentWidth then
-        Ctrl.Width := Max(10, Min(MulDiv(Ctrl.FWidth, Width, 100), Width - Ctrl.HSpaceL - Ctrl.HSpaceR));
+      Ctrl.DrawLogic(Document, Canvas, Fonts.GetFontObjAt(Ctrl.StartCurs), Width, HtRef);
       // BG, 28.08.2011:
       if OwnerBlock.HideOverflow then
       begin
@@ -12355,7 +12347,7 @@ var
           if FcObj.Floating in [ALeft, ARight] then
           begin
             LeftT := IMgr.LfEdge + FcObj.Indent;
-            TopP := FcObj.DrawYY;
+            TopP := FcObj.DrawYY - YOffset;
             {check for border.  For floating panel, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := LR.BorderList.Count - 1 downto 0 do
@@ -14965,6 +14957,12 @@ begin
   DrawXX := Source.DrawXX;
   DrawYY := Source.DrawYY;
 end;
+
+//-- BG ---------------------------------------------------------- 28.08.2013 --
+//procedure TFloatingObjBase.DrawLogic(SectionList: ThtDocument; Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
+//begin
+//  // override me
+//end;
 
 //-- BG ---------------------------------------------------------- 06.08.2013 --
 function TFloatingObjBase.PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean;
