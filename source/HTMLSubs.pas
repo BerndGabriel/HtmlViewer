@@ -3559,7 +3559,7 @@ begin
     OnClick := ImageClick;
     Enabled := not Disabled;
     {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
     {$endif}
   end;
   FControl.Parent := PntPanel;
@@ -3685,7 +3685,7 @@ begin
     Checked := IsChecked; {must precede setting OnClick}
     OnClick := RadioClick;
     {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
     {$endif}
   end;
 end;
@@ -3732,7 +3732,7 @@ begin
     MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
       (GetDeviceCaps(Handle, PLANES) = 1);
     if Disabled and not MonoBlack then
-      Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in MasterList.StyleElements{$endif})
+      Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif})
     else
       Brush.Color := clWhite;
     Pen.Color := clWhite;
@@ -3747,11 +3747,11 @@ begin
     else
     begin
       Pen.Width := 2;
-      Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in MasterList.StyleElements{$endif});
+      Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
     end;
     Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
     if not MonoBlack then
-      Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in MasterList.StyleElements{$endif});//clSilver;
+      Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});//clSilver;
     Arc(X1, Y1, XW, YH, X1, YH, XW, Y1);
     if Checked then
     begin
@@ -10040,7 +10040,7 @@ end;
 
 {----------------THtmlTable.FindString}
 
-function THtmlTable.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function THtmlTable.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 var
   I, J: Integer;
   Row: TCellList;
@@ -10063,7 +10063,7 @@ end;
 
 {----------------THtmlTable.FindStringR}
 
-function THtmlTable.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function THtmlTable.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 var
   I, J: Integer;
   Row: TCellList;
@@ -13178,7 +13178,7 @@ begin
 {$endif}
     ParentFont := False;
 {$ifdef has_StyleElements}
-    Panel.StyleElements := AMasterList.StyleElements;
+    Panel.StyleElements := Document.StyleElements;
 {$endif}
   end;
 
@@ -14697,8 +14697,8 @@ begin
   OldBrushStyle := Canvas.Brush.Style; {save style first}
   OldBrushColor := Canvas.Brush.Color;
   OldPenColor := Canvas.Pen.Color;
-  Canvas.Pen.Color := ThemedColor(FO.TheFont.Color);
-  Canvas.Brush.Color := ThemedColor(BackgroundColor);
+  Canvas.Pen.Color := ThemedColor(FO.TheFont.Color{$ifdef has_StyleElements},seClient in Document.StyleElements {$endif} );
+  Canvas.Brush.Color := ThemedColor(BackgroundColor{$ifdef has_StyleElements},seClient in Document.StyleElements {$endif});
   Canvas.Brush.Style := bsSolid;
   try
     // paint a rectangular placeholder

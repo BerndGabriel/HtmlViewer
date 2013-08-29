@@ -360,7 +360,7 @@ begin
     OnMouseMove := HandleMouseMove;
     Enabled := not Disabled;
 {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
 {$endif}
   end;
 end;
@@ -582,7 +582,7 @@ begin
     OnDropDown := FormControlClick;
     Enabled := not Disabled;
 {$ifdef has_StyleElements}
-    FControl.StyleElements := AMasterList.StyleElements;
+    FControl.StyleElements := Document.StyleElements;
 {$endif}
   end;
   FControl.Parent := PntPanel;
@@ -768,7 +768,7 @@ begin
     Enabled := not Disabled;
     ReadOnly := Self.Readonly;
      {$ifdef has_StyleElements}
-    FControl.StyleElements := AMasterList.StyleElements;
+    FControl.StyleElements := Document.StyleElements;
      {$endif}
   end;
   FControl.Parent := PntPanel;
@@ -1141,7 +1141,7 @@ begin
     Enabled := not Disabled;
     ReadOnly := Self.Readonly;
     {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
     {$endif}
     if L.Find(PlaceholderSy, T) then
     begin
@@ -1309,7 +1309,7 @@ begin
     OnMouseMove := HandleMouseMove;
     Enabled := not Disabled;
      {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
      {$endif}
   end;
   FControl.Parent := PntPanel;
@@ -1449,7 +1449,7 @@ begin
     Checked := IsChecked; {must precede setting OnClick}
     OnClick := FormControlClick;
     {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
     {$endif}
   end;
 end;

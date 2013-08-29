@@ -1231,7 +1231,7 @@ begin
   begin
     OldPal := SelectPalette(DC, ThePalette, False);
     RealizePalette(DC);
-    ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
+    ACanvas.Brush.Color :=BGColor;// ThemedColor(BGColor {$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
     OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
     OldBack := SetBkColor(DC, clWhite);
     OldFore := SetTextColor(DC, clBlack);
@@ -1930,7 +1930,7 @@ begin
        one not likely in the metafile}
         GetPaletteEntries(Tmp.Palette, 115, 1, pe);
         Color := pe.peBlue shl 16 or pe.peGreen shl 8 or pe.peRed;
-        Tmp.Canvas.Brush.Color := ThemedColor( Color );
+        Tmp.Canvas.Brush.Color := Color; //ThemedColor( Color );
         Tmp.Canvas.FillRect(Rect(0, 0, Width, Height));
         Tmp.Canvas.Draw(0, 0, Self);
 

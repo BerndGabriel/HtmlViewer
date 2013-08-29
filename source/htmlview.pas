@@ -2977,7 +2977,7 @@ procedure THtmlViewer.DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeig
       OldPal := SelectPalette(DC, ThePalette, False);
       RealizePalette(DC);
 //      ACanvas.Brush.Color := BGColor or PalRelative;
-      ACanvas.Brush.Color := ThemedColor(BGColor) or PalRelative;
+      ACanvas.Brush.Color := ThemedColor(BGColor {$ifdef has_StyleElements},seClient in StyleElements {$endif}) or PalRelative;
       OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
       OldBack := SetBkColor(DC, clWhite);
       OldFore := SetTextColor(DC, clBlack);
@@ -3121,7 +3121,7 @@ begin
         NewMask := nil;
         NewBitmap := nil;
         try
-          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewImage, NewImage.Width, NewImage.Height, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
+          DrawBackground(ACanvas, ARect, X, Y, X2, Y2, NewImage, NewImage.Width, NewImage.Height, ACanvas.Brush.Color);
         finally
           NewImage.Free;
         end;
@@ -3131,12 +3131,12 @@ begin
       end;
     end
     else {normal situation}
-      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, BW, BH, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
+      DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, BW, BH, ACanvas.Brush.Color);
   end
   else
   begin {no background image, show color only}
     Exclude(FViewerState, vsBGFixed);
-    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ACanvas.Brush.Color{$ifdef has_StyleElements},StyleElements{$endif});
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ACanvas.Brush.Color);
   end;
 
   FSectionList.Draw(ACanvas, ARect, MaxHScroll, -HScrollBar.Position, 0, 0, 0);
