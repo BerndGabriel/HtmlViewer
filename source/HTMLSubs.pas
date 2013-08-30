@@ -88,7 +88,7 @@ type
   TBlock = class;
   TCellBasic = class;
   THtmlPropStack = class;
-  
+
 //------------------------------------------------------------------------------
 // THtmlNode is base class for all objects in the HTML document tree.
 //------------------------------------------------------------------------------
@@ -271,7 +271,7 @@ type
   // BG, 10.08.2013: deprecated
   // Is used to handle the link states, but the full range of CSS
   // properties can be applied to :link, :hover, :visited, etc.
-  // 
+  //
   private
 {$IFNDEF NoTabLink}
     FSection: TSection; // only used if NoTabLink is not defined.
@@ -323,7 +323,7 @@ type
   // BG, 10.02.2013: owns its objects.
   TFontList = class(TFreeList) {a list of TFontObj's}
   private
-    function GetFont(Index: Integer): TFontObj; 
+    function GetFont(Index: Integer): TFontObj;
   public
     constructor CreateCopy(ASection: TSection; T: TFontList);
     function GetFontAt(Posn: Integer; out OHang: Integer): ThtFont;
@@ -425,7 +425,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
     constructor SimpleCreate(Parent: TCellBasic);
     function PtInObject(X, Y: Integer; var IX, IY: Integer): Boolean; override;
-    procedure Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); virtual; abstract;
+    procedure Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); virtual;
     procedure ProcessProperties(Prop: TProperties);
     procedure SetAlt(CodePage: Integer; const Value: ThtString);
     property Alt: ThtString read FAlt;
@@ -779,15 +779,15 @@ type
   TFormControlObj = class(TFloatingObjBase)
   private
     //FYValue: Integer;
-    Active: boolean;
-    AttributeList: ThtStringList;
+    //FAttributeList: ThtStringList;
     FName: ThtString;
     FID: ThtString;
     FTitle: ThtString;
     FValue: ThtString;
-    function GetAttribute(const AttrName: ThtString): ThtString;
+    //function GetAttribute(const AttrName: ThtString): ThtString;
     procedure SetValue(const Value: ThtString);
   protected
+    Active: Boolean;
     CodePage: Integer;
     PaintBitmap: TBitmap;
     function GetClientHeight: Integer; override;
@@ -840,7 +840,7 @@ type
     procedure SetHeightWidth(Canvas: TCanvas); virtual;
     procedure Show; virtual;
 
-    property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
+    //property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
     property Height: Integer read GetClientHeight write SetClientHeight;
     property Hidden: Boolean read IsHidden;
     property ID: ThtString read FID write FID; {ID attribute of control}
@@ -875,6 +875,7 @@ type
   public
     XPos, YPos, XTmp, YTmp: Integer; {click position}
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure ImageClick(Sender: TObject);
@@ -910,6 +911,7 @@ type
     IsChecked: boolean;
     //xMyCell: TCellBasic;
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -994,7 +996,7 @@ type
   TIntegerPerWidthType = array [TWidthType] of Integer;
 
   TTableBlock = class;
-  
+
   TCellObjCell = class(TCell)
   private
     MyRect: TRect;
@@ -2927,7 +2929,7 @@ begin
     Ofst := 4
   else
     Ofst := 0;
-    
+
   if VertAlign = AMiddle then
     MiddleAlignTop := YBaseLine + FO.Descent - (FO.tmHeight div 2) - ((ClientHeight - VSpaceT + VSpaceB) div 2)
   else
@@ -3292,7 +3294,7 @@ begin
 
       end;
 
-  AttributeList := L.CreateStringList;
+  //FAttributeList := L.CreateStringList;
   VertAlign := ABottom; {ABaseline set individually}
   MyForm.InsertControl(Self);
 end;
@@ -3309,7 +3311,7 @@ end;
 
 destructor TFormControlObj.Destroy;
 begin
-  AttributeList.Free;
+  //FAttributeList.Free;
   PaintBitmap.Free;
   inherited Destroy;
 end;
@@ -3428,6 +3430,12 @@ end;
 
 procedure TFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
 begin
+  if not IsCopy then
+  begin
+    Show;
+    Left := X1;
+    Top := Y1;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 28.08.2013 --
@@ -3455,10 +3463,10 @@ begin
     Document.ObjectClick(Document.TheOwner, Self, OnClickMessage);
 end;
 
-function TFormControlObj.GetAttribute(const AttrName: ThtString): ThtString;
-begin
-  Result := AttributeList.Values[AttrName];
-end;
+//function TFormControlObj.GetAttribute(const AttrName: ThtString): ThtString;
+//begin
+//  Result := FAttributeList.Values[AttrName];
+//end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
 function TFormControlObj.GetClientHeight: Integer;
@@ -3581,10 +3589,23 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
+constructor TImageFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+var
+  T: TImageFormControlObj absolute Source;
+begin
+  inherited;
+  FControl := T.FControl;
+  MyImage := T.MyImage;
+end;
+
 destructor TImageFormControlObj.Destroy;
 begin
-  FControl.Parent := nil;
-  FControl.Free;
+  if not IsCopy then
+  begin
+    FControl.Parent := nil;
+    FControl.Free;
+    // TODO: BG, 29.08.2013: ... and MyImage??? Who owns it???
+  end;
   inherited;
 end;
 
@@ -3721,53 +3742,70 @@ var
   OldBrushStyle: TBrushStyle;
   MonoBlack: boolean;
 begin
-  with Canvas do
-  begin
-    XW := X1 + 14;
-    YH := Y1 + 14;
-    OldStyle := Pen.Style;
-    OldWidth := Pen.Width;
-    OldBrushStyle := Brush.Style;
-    OldBrushColor := Brush.Color;
-    MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
-      (GetDeviceCaps(Handle, PLANES) = 1);
-    if Disabled and not MonoBlack then
-      Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif})
-    else
-      Brush.Color := clWhite;
-    Pen.Color := clWhite;
-    Ellipse(X1, Y1, XW, YH);
+  inherited;
+  if IsCopy then
+    with Canvas do
+    begin
+      XW := X1 + 14;
+      YH := Y1 + 14;
+      OldStyle := Pen.Style;
+      OldWidth := Pen.Width;
+      OldBrushStyle := Brush.Style;
+      OldBrushColor := Brush.Color;
+      MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
+        (GetDeviceCaps(Handle, PLANES) = 1);
+      if Disabled and not MonoBlack then
+        Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif})
+      else
+        Brush.Color := clWhite;
+      Pen.Color := clWhite;
+      Ellipse(X1, Y1, XW, YH);
 
-    Pen.Style := psInsideFrame;
-    if MonoBlack then
-    begin
-      Pen.Width := 1;
-      Pen.Color := clBlack;
+      Pen.Style := psInsideFrame;
+      if MonoBlack then
+      begin
+        Pen.Width := 1;
+        Pen.Color := clBlack;
+      end
+      else
+      begin
+        Pen.Width := 2;
+        Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+      end;
+      Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
+      if not MonoBlack then
+        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});//clSilver;
+      Arc(X1, Y1, XW, YH, X1, YH, XW, Y1);
+      if Checked then
+      begin
+        Pen.Color := clBlack;
+        OldColor := Brush.Color;
+        Brush.Color := clBlack;
+        Brush.Style := bsSolid;
+        XC := X1 + 7;
+        YC := Y1 + 7;
+        Ellipse(XC - 2, YC - 2, XC + 2, YC + 2);
+        Brush.Color := OldColor;
+      end;
+      Pen.Width := OldWidth;
+      Pen.Style := OldStyle;
+      Brush.Color := OldBrushColor;
+      Brush.Style := OldBrushStyle;
     end
+  else
+  begin
+    if OwnerCell.BkGnd then
+      Color := OwnerCell.BkColor
     else
+      Color := Document.Background;
+    if Active and Document.TheOwner.ShowFocusRect then //MK20091107
     begin
-      Pen.Width := 2;
-      Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+      Canvas.Brush.Color := clWhite;
+      if Screen.PixelsPerInch > 100 then
+        Canvas.DrawFocusRect(Rect(Left - 2, Top - 2, Left + 18, Top + 18))
+      else
+        Canvas.DrawFocusRect(Rect(Left - 3, Top - 2, Left + 16, Top + 16));
     end;
-    Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
-    if not MonoBlack then
-      Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});//clSilver;
-    Arc(X1, Y1, XW, YH, X1, YH, XW, Y1);
-    if Checked then
-    begin
-      Pen.Color := clBlack;
-      OldColor := Brush.Color;
-      Brush.Color := clBlack;
-      Brush.Style := bsSolid;
-      XC := X1 + 7;
-      YC := Y1 + 7;
-      Ellipse(XC - 2, YC - 2, XC + 2, YC + 2);
-      Brush.Color := OldColor;
-    end;
-    Pen.Width := OldWidth;
-    Pen.Style := OldStyle;
-    Brush.Color := OldBrushColor;
-    Brush.Style := OldBrushStyle;
   end;
 end;
 
@@ -3808,11 +3846,25 @@ begin
   FControl.Color := Value;
 end;
 
+//-- BG ---------------------------------------------------------- 30.08.2013 --
+constructor TRadioButtonFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+var
+  T: TRadioButtonFormControlObj absolute Source;
+begin
+  inherited;
+  FControl := T.FControl;
+  WasChecked := T.WasChecked;
+  IsChecked := T.IsChecked;
+end;
+
 //-- BG ---------------------------------------------------------- 15.01.2011 --
 destructor TRadioButtonFormControlObj.Destroy;
 begin
-  FControl.Parent := nil;
-  FControl.Free;
+  if not IsCopy then
+  begin
+    FControl.Parent := nil;
+    FControl.Free;
+  end;
   inherited;
 end;
 
@@ -3865,7 +3917,7 @@ begin
   if Assigned(Item) then
   begin
     if Item is TSection then
-      if Length(Section.XP) <> 0 then 
+      if Length(Section.XP) <> 0 then
       begin
         Section.ProcessText(TagIndex);
         if not (Section.WhiteSpaceStyle in [wsPre, wsPreWrap, wsPreLine]) and (Section.Len = 0)
@@ -5747,7 +5799,7 @@ begin
         HSpaceSy: HSpace := Min(40, Abs(Value));
 
         VSpaceSy: VSpace := Min(200, Abs(Value));
-        
+
         WidthSy:
           if Pos('%', Name) > 0 then
           begin
@@ -7542,7 +7594,7 @@ begin
       Valign := Algn;
     if Parent.Document.UseQuirksMode then
       Prop.GetVMarginArrayDefBorder(MargArrayO, clSilver)
-    else 
+    else
       Prop.GetVMarginArray(MargArrayO);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
@@ -8546,7 +8598,7 @@ procedure THtmlTable.Initialize;
               begin {insert dummy cells in following rows if RowSpan > 1}
                 while Rows[K].Count < Cl do {add padding if row is short}
                   Rows[K].Add(DummyCell(0));
-                if Rows[K].Count < NumCols then // in an invalid table definition spanned cells may overlap and thus required dummies could be present, yet. 
+                if Rows[K].Count < NumCols then // in an invalid table definition spanned cells may overlap and thus required dummies could be present, yet.
                   Rows[K].Insert(Cl, DummyCell(0));
               end;
           end;
@@ -8598,7 +8650,7 @@ procedure THtmlTable.Initialize;
           for I := Row.Count to NumCols - 1 do
             Row.Add(DummyCell(1));
       end;
-      
+
       // continue with next row not spanned by this cell.
       if (Cl >= 0) and (CellObj.RowSpan > 0) then
         Inc(Rw, CellObj.RowSpan)
@@ -10008,7 +10060,7 @@ begin
         end;
       end;
     end;
-    
+
   Result := False;
 end;
 
@@ -10282,8 +10334,9 @@ begin
   //TODO -oBG, 24.03.2011: TSection has no Cell, but owns images. Thus Parent must be a THtmlNode.
   //  and ThtDocument should become a TBodyBlock instead of a SectionList.
   Images := TFloatingObjList.CreateCopy(OwnerCell {must be Self}, TT.Images);
-  FormControls := TFormControlObjList.Create(False);
-  FormControls.Assign(TT.FormControls);
+  FormControls := TFormControlObjList.CreateCopy(OwnerCell, TT.FormControls);
+//  FormControls := TFormControlObjList.Create(False);
+//  FormControls.Assign(TT.FormControls);
   Lines := TFreeList.Create;
   Justify := TT.Justify;
   ClearAttr := TT.ClearAttr;
@@ -10566,7 +10619,7 @@ begin
   begin
     SetLength(Brk, Length(Brk) + 1);
     Brk[Length(Brk) - 1] := twYes;
-    if not IsCopy then 
+    if not IsCopy then
     begin
       Last := 0; {to prevent warning msg}
       SIndexList := TFreeList.Create;
@@ -10769,7 +10822,7 @@ begin
   end;
 
   case FCT of
-  
+
     fctImage:
     begin
       IO := AddImage(L, ACell, Index, Prop); {leave out of FormControlList}
@@ -11823,12 +11876,12 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           LineComplete(N);
         end
         else
-        begin 
+        begin
           {non space, wrap it by backing off to previous wrappable char}
           while P > PStart do
           begin
             case Brk[P - Buff] of
-              twNo: ; 
+              twNo: ;
 
               twSoft,
               twOptional:
@@ -11857,7 +11910,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
                   twNo: ; // must not wrap after this char.
                 else
                   case (P + 1)^ of
-                    ' ', FmCtl, ImgPan, BrkCh: 
+                    ' ', FmCtl, ImgPan, BrkCh:
                       break; // can wrap before this char.
                   else
                     if WrapChar((P + 1)^) then
@@ -12322,21 +12375,8 @@ var
             NewCP := True;
           end;
 
-          if IsCopy then
-            FlObj.Draw(Canvas, LeftT, TopP - YOffset, TopP - YOffset - Descent, FO)
-          else if FlObj is TControlObj then
-          begin
-            TControlObj(FlObj).ClientControl.Top := TopP - YOffset;
-            TControlObj(FlObj).ClientControl.Left := LeftT;
-            if FlObj is TPanelObj then
-            begin
-              if TPanelObj(FlObj).Panel.FVisible then
-                TPanelObj(FlObj).Panel.Show
-              else
-                TPanelObj(FlObj).Panel.Hide;
-            end;
-          end;
-          FlObj.DrawXX := LeftT;
+          FlObj.Draw(Canvas, LeftT, TopP - YOffset, TopP - YOffset - Descent, FO)
+
         end;
       end
       else if J4 = -1 then
@@ -12373,6 +12413,7 @@ var
               Inc(Topp, 2)
             else if FcObj is TCheckBoxFormControlObj then
               Inc(Topp, 1);
+
           {Check for border}
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
@@ -12398,44 +12439,7 @@ var
               end;
           end;
 
-          if IsCopy then
-            FcObj.Draw(Canvas, LeftT, TopP)
-          else
-          begin
-            FcObj.Show;
-            FcObj.Top := TopP;
-            FcObj.Left := LeftT;
-
-            if FcObj is TRadioButtonFormControlObj then
-              with TRadioButtonFormControlObj(FcObj) do
-              begin
-                Show;
-                if OwnerCell.BkGnd then
-                  Color := OwnerCell.BkColor
-                else
-                  Color := Document.Background;
-              end;
-
-            if FcObj.Active and ((FcObj is TRadioButtonFormControlObj) or (FcObj is TCheckBoxFormControlObj)) then
-            begin
-              Canvas.Brush.Color := clWhite;
-              //SaveColor := SetTextColor(Handle, clBlack);
-              if Document.TheOwner.ShowFocusRect then //MK20091107
-                with FcObj do
-                begin
-                  if (FcObj is TRadioButtonFormControlObj) then
-                  begin
-                    if Screen.PixelsPerInch > 100 then
-                      Canvas.DrawFocusRect(Rect(Left - 2, Top - 2, Left + 18, Top + 18))
-                    else
-                      Canvas.DrawFocusRect(Rect(Left - 3, Top - 2, Left + 16, Top + 16));
-                  end
-                  else
-                    Canvas.DrawFocusRect(Rect(Left - 3, Top - 3, Left + 16, Top + 16));
-                end;
-              //SetTextColor(Handle, SaveColor);
-            end;
-          end;
+          FcObj.Draw(Canvas, LeftT, TopP);
 
           if not (FcObj.Floating in [ALeft, ARight]) then
           begin
@@ -13215,7 +13219,7 @@ begin
             BorderSize := Min(Max(0, Value), 10);
           end;
 
-        TypeSy: 
+        TypeSy:
           AType := Name;
       end;
 
@@ -13261,24 +13265,35 @@ var
   Bitmap: TBitmap;
   OldHeight, OldWidth: Integer;
 begin
-  if Panel.FVisible then
-    if Assigned(PanelPrintEvent) then
+  inherited;
+  if IsCopy then
+  begin
+    if Panel.FVisible then
     begin
-      Bitmap := TBitmap.Create;
-      OldHeight := Opanel.Height;
-      OldWidth := Opanel.Width;
-      try
-        Bitmap.Height := ClientHeight;
-        Bitmap.Width := ClientWidth;
-        OPanel.SetBounds(OPanel.Left, OPanel.Top, ClientWidth, ClientHeight);
-        PanelPrintEvent(OSender, OPanel, Bitmap);
-        PrintBitmap(Canvas, X, Y, ClientWidth, ClientHeight, Bitmap);
-      finally
-        OPanel.SetBounds(OPanel.Left, OPanel.Top, OldWidth, OldHeight);
+      if Assigned(PanelPrintEvent) then
+      begin
+        Bitmap := TBitmap.Create;
+        OldHeight := Opanel.Height;
+        OldWidth := Opanel.Width;
+        try
+          Bitmap.Height := ClientHeight;
+          Bitmap.Width := ClientWidth;
+          OPanel.SetBounds(OPanel.Left, OPanel.Top, ClientWidth, ClientHeight);
+          PanelPrintEvent(OSender, OPanel, Bitmap);
+          PrintBitmap(Canvas, X, Y, ClientWidth, ClientHeight, Bitmap);
+        finally
+          OPanel.SetBounds(OPanel.Left, OPanel.Top, OldWidth, OldHeight);
+        end;
       end;
-    end
+    end;
+  end
+  else
+  begin
+    if Panel.FVisible then
+      Panel.Show
     else
-      inherited;
+      Panel.Hide;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 15.12.2011 --
@@ -14263,6 +14278,13 @@ begin
   Title := T.Title;
 end;
 
+//-- BG ---------------------------------------------------------- 30.08.2013 --
+procedure TFloatingObj.Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+begin
+  if not IsCopy then
+    DrawXX := X;
+end;
+
 //-- BG ---------------------------------------------------------- 06.08.2013 --
 function TFloatingObj.GetClientHeight: Integer;
 begin
@@ -14427,7 +14449,7 @@ end;
 constructor TSectionBase.CreateCopy(OwnerCell: TCellBasic; T: TSectionBase);
 begin
   inherited CreateCopy(OwnerCell, T);
-  FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed 
+  FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed
   SectionHeight := T.SectionHeight;
   ZIndex := T.ZIndex;
 end;
@@ -14694,33 +14716,42 @@ var
   OldPenColor: TColor;
   SaveFont: TFont;
 begin
-  OldBrushStyle := Canvas.Brush.Style; {save style first}
-  OldBrushColor := Canvas.Brush.Color;
-  OldPenColor := Canvas.Pen.Color;
-  Canvas.Pen.Color := ThemedColor(FO.TheFont.Color{$ifdef has_StyleElements},seClient in Document.StyleElements {$endif} );
-  Canvas.Brush.Color := ThemedColor(BackgroundColor{$ifdef has_StyleElements},seClient in Document.StyleElements {$endif});
-  Canvas.Brush.Style := bsSolid;
-  try
-    // paint a rectangular placeholder
-    Canvas.Rectangle(X, Y, X + ClientWidth, Y + ClientHeight);
-    if FAlt <> '' then
-    begin
-      // show the alternative text.
-      SaveFont := TFont.Create;
-      try
-        SaveFont.Assign(Canvas.Font);
-        Canvas.Font.Size := 8;
-        Canvas.Font.Name := 'Arial';
-        WrapTextW(Canvas, X + 5, Y + 5, X + ClientWidth - 5, Y + ClientHeight - 5, FAlt);
-      finally
-        Canvas.Font := SaveFont;
-        SaveFont.Free;
+  inherited;
+  if IsCopy then
+  begin
+    OldBrushStyle := Canvas.Brush.Style; {save style first}
+    OldBrushColor := Canvas.Brush.Color;
+    OldPenColor := Canvas.Pen.Color;
+    Canvas.Pen.Color := ThemedColor(FO.TheFont.Color {$ifdef has_StyleElements},seFont in Document.StyleElements{$endif} );
+    Canvas.Brush.Color := ThemedColor(BackgroundColor {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+    Canvas.Brush.Style := bsSolid;
+    try
+      // paint a rectangular placeholder
+      Canvas.Rectangle(X, Y, X + ClientWidth, Y + ClientHeight);
+      if FAlt <> '' then
+      begin
+        // show the alternative text.
+        SaveFont := TFont.Create;
+        try
+          SaveFont.Assign(Canvas.Font);
+          Canvas.Font.Size := 8;
+          Canvas.Font.Name := 'Arial';
+          WrapTextW(Canvas, X + 5, Y + 5, X + ClientWidth - 5, Y + ClientHeight - 5, FAlt);
+        finally
+          Canvas.Font := SaveFont;
+          SaveFont.Free;
+        end;
       end;
+    finally
+      Canvas.Brush.Color := OldBrushColor;
+      Canvas.Brush.Style := OldBrushStyle; {style after color as color changes style}
+      Canvas.Pen.Color := OldPenColor;
     end;
-  finally
-    Canvas.Brush.Color := OldBrushColor;
-    Canvas.Brush.Style := OldBrushStyle; {style after color as color changes style}
-    Canvas.Pen.Color := OldPenColor;
+  end
+  else
+  begin
+    ClientControl.Left := X;
+    ClientControl.Top := Y;
   end;
 end;
 
@@ -15130,3 +15161,4 @@ finalization
   WaitStream.Free;
   ErrorStream.Free;
 end.
+
