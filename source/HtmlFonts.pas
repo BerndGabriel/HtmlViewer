@@ -32,6 +32,11 @@ unit HtmlFonts;
 interface
 
 uses
+{$ifdef UseVCLStyles}
+  System.Types,
+  System.UITypes,
+  Vcl.Themes,
+{$endif}
   Windows, SysUtils,
   Graphics, Classes, Forms, Contnrs, Variants,
   //
