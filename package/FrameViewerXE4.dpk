@@ -66,6 +66,10 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
   vwPrint in '..\source\vwPrint.pas',
-  HtmlSymb in '..\source\HtmlSymb.pas';
+  HtmlSymb in '..\source\HtmlSymb.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas',
+  StyleTypes in '..\source\StyleTypes.pas',
+  HtmlImages in '..\source\HtmlImages.pas';
 
 end.

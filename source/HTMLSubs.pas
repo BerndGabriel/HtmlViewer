@@ -88,7 +88,7 @@ type
   TBlock = class;
   TCellBasic = class;
   THtmlPropStack = class;
-  
+
 //------------------------------------------------------------------------------
 // THtmlNode is base class for all objects in the HTML document tree.
 //------------------------------------------------------------------------------
@@ -271,7 +271,7 @@ type
   // BG, 10.08.2013: deprecated
   // Is used to handle the link states, but the full range of CSS
   // properties can be applied to :link, :hover, :visited, etc.
-  // 
+  //
   private
 {$IFNDEF NoTabLink}
     FSection: TSection; // only used if NoTabLink is not defined.
@@ -323,7 +323,7 @@ type
   // BG, 10.02.2013: owns its objects.
   TFontList = class(TFreeList) {a list of TFontObj's}
   private
-    function GetFont(Index: Integer): TFontObj; 
+    function GetFont(Index: Integer): TFontObj;
   public
     constructor CreateCopy(ASection: TSection; T: TFontList);
     function GetFontAt(Posn: Integer; out OHang: Integer): ThtFont;
@@ -996,7 +996,7 @@ type
   TIntegerPerWidthType = array [TWidthType] of Integer;
 
   TTableBlock = class;
-  
+
   TCellObjCell = class(TCell)
   private
     MyRect: TRect;
@@ -3567,7 +3567,7 @@ begin
     OnClick := ImageClick;
     Enabled := not Disabled;
     {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
     {$endif}
   end;
   FControl.Parent := PntPanel;
@@ -3604,7 +3604,7 @@ begin
   begin
     FControl.Parent := nil;
     FControl.Free;
-    // TODO: BG, 29.08.2013: ... and MyImage??? Who owns it??? 
+    // TODO: BG, 29.08.2013: ... and MyImage??? Who owns it???
   end;
   inherited;
 end;
@@ -3706,7 +3706,7 @@ begin
     Checked := IsChecked; {must precede setting OnClick}
     OnClick := RadioClick;
     {$ifdef has_StyleElements}
-    StyleElements := AMasterList.StyleElements;
+    StyleElements := Document.StyleElements;
     {$endif}
   end;
 end;
@@ -3755,7 +3755,7 @@ begin
       MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
         (GetDeviceCaps(Handle, PLANES) = 1);
       if Disabled and not MonoBlack then
-        Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in MasterList.StyleElements{$endif})
+        Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif})
       else
         Brush.Color := clWhite;
       Pen.Color := clWhite;
@@ -3770,11 +3770,11 @@ begin
       else
       begin
         Pen.Width := 2;
-        Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in MasterList.StyleElements{$endif});
+        Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
       end;
       Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
       if not MonoBlack then
-        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in MasterList.StyleElements{$endif});//clSilver;
+        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});//clSilver;
       Arc(X1, Y1, XW, YH, X1, YH, XW, Y1);
       if Checked then
       begin
@@ -3917,7 +3917,7 @@ begin
   if Assigned(Item) then
   begin
     if Item is TSection then
-      if Length(Section.XP) <> 0 then 
+      if Length(Section.XP) <> 0 then
       begin
         Section.ProcessText(TagIndex);
         if not (Section.WhiteSpaceStyle in [wsPre, wsPreWrap, wsPreLine]) and (Section.Len = 0)
@@ -5799,7 +5799,7 @@ begin
         HSpaceSy: HSpace := Min(40, Abs(Value));
 
         VSpaceSy: VSpace := Min(200, Abs(Value));
-        
+
         WidthSy:
           if Pos('%', Name) > 0 then
           begin
@@ -7594,7 +7594,7 @@ begin
       Valign := Algn;
     if Parent.Document.UseQuirksMode then
       Prop.GetVMarginArrayDefBorder(MargArrayO, clSilver)
-    else 
+    else
       Prop.GetVMarginArray(MargArrayO);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
@@ -8598,7 +8598,7 @@ procedure THtmlTable.Initialize;
               begin {insert dummy cells in following rows if RowSpan > 1}
                 while Rows[K].Count < Cl do {add padding if row is short}
                   Rows[K].Add(DummyCell(0));
-                if Rows[K].Count < NumCols then // in an invalid table definition spanned cells may overlap and thus required dummies could be present, yet. 
+                if Rows[K].Count < NumCols then // in an invalid table definition spanned cells may overlap and thus required dummies could be present, yet.
                   Rows[K].Insert(Cl, DummyCell(0));
               end;
           end;
@@ -8650,7 +8650,7 @@ procedure THtmlTable.Initialize;
           for I := Row.Count to NumCols - 1 do
             Row.Add(DummyCell(1));
       end;
-      
+
       // continue with next row not spanned by this cell.
       if (Cl >= 0) and (CellObj.RowSpan > 0) then
         Inc(Rw, CellObj.RowSpan)
@@ -10060,7 +10060,7 @@ begin
         end;
       end;
     end;
-    
+
   Result := False;
 end;
 
@@ -10092,7 +10092,7 @@ end;
 
 {----------------THtmlTable.FindString}
 
-function THtmlTable.FindString(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function THtmlTable.FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 var
   I, J: Integer;
   Row: TCellList;
@@ -10115,7 +10115,7 @@ end;
 
 {----------------THtmlTable.FindStringR}
 
-function THtmlTable.FindStringR(From: Integer; const ToFind: WideString; MatchCase: boolean): Integer;
+function THtmlTable.FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
 var
   I, J: Integer;
   Row: TCellList;
@@ -10619,7 +10619,7 @@ begin
   begin
     SetLength(Brk, Length(Brk) + 1);
     Brk[Length(Brk) - 1] := twYes;
-    if not IsCopy then 
+    if not IsCopy then
     begin
       Last := 0; {to prevent warning msg}
       SIndexList := TFreeList.Create;
@@ -10822,7 +10822,7 @@ begin
   end;
 
   case FCT of
-  
+
     fctImage:
     begin
       IO := AddImage(L, ACell, Index, Prop); {leave out of FormControlList}
@@ -11876,12 +11876,12 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
           LineComplete(N);
         end
         else
-        begin 
+        begin
           {non space, wrap it by backing off to previous wrappable char}
           while P > PStart do
           begin
             case Brk[P - Buff] of
-              twNo: ; 
+              twNo: ;
 
               twSoft,
               twOptional:
@@ -11910,7 +11910,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
                   twNo: ; // must not wrap after this char.
                 else
                   case (P + 1)^ of
-                    ' ', FmCtl, ImgPan, BrkCh: 
+                    ' ', FmCtl, ImgPan, BrkCh:
                       break; // can wrap before this char.
                   else
                     if WrapChar((P + 1)^) then
@@ -13182,7 +13182,7 @@ begin
 {$endif}
     ParentFont := False;
 {$ifdef has_StyleElements}
-    Panel.StyleElements := AMasterList.StyleElements;
+    Panel.StyleElements := Document.StyleElements;
 {$endif}
   end;
 
@@ -13219,7 +13219,7 @@ begin
             BorderSize := Min(Max(0, Value), 10);
           end;
 
-        TypeSy: 
+        TypeSy:
           AType := Name;
       end;
 
@@ -14449,7 +14449,7 @@ end;
 constructor TSectionBase.CreateCopy(OwnerCell: TCellBasic; T: TSectionBase);
 begin
   inherited CreateCopy(OwnerCell, T);
-  FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed 
+  FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed
   SectionHeight := T.SectionHeight;
   ZIndex := T.ZIndex;
 end;
@@ -14722,8 +14722,8 @@ begin
     OldBrushStyle := Canvas.Brush.Style; {save style first}
     OldBrushColor := Canvas.Brush.Color;
     OldPenColor := Canvas.Pen.Color;
-    Canvas.Pen.Color := ThemedColor(FO.TheFont.Color);
-    Canvas.Brush.Color := ThemedColor(BackgroundColor);
+    Canvas.Pen.Color := ThemedColor(FO.TheFont.Color {$ifdef has_StyleElements},seFont in Document.StyleElements{$endif} );
+    Canvas.Brush.Color := ThemedColor(BackgroundColor {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
     Canvas.Brush.Style := bsSolid;
     try
       // paint a rectangular placeholder
@@ -15161,3 +15161,4 @@ finalization
   WaitStream.Free;
   ErrorStream.Free;
 end.
+
