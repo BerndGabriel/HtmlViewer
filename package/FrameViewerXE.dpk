@@ -71,6 +71,10 @@ contains
   BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
   BegaScrollBox in '..\source\BegaScrollBox.pas',
   BegaZoom in '..\source\BegaZoom.pas',
-  HtmlSymb in '..\source\HtmlSymb.pas';
+  HtmlSymb in '..\source\HtmlSymb.pas',
+  HtmlImages in '..\source\HtmlImages.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  StyleTypes in '..\source\StyleTypes.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas';
 
 end.
