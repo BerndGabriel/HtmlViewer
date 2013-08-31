@@ -588,7 +588,7 @@ type
     property OnProgress;
     property OnRightClick: TRightClickEvent read FOnRightClick write FOnRightClick;
     property OnScript;
-    // BG, 15.10.2012: TODO: PtInObject not yet working correctly with horizontal scrolling (especially TFloatingObj.DrawYY seems to be wrong).
+    // BG, 15.10.2012: TODO: PtInObject not yet working correctly with horizontal scrolling (especially TSizeableObj.DrawYY seems to be wrong).
     // BG, 15.10.2012: TODO: Add events OnSectionClick and OnSectionOver to TFrameViewer and TFrameBrowser.
     // BG, 15.10.2012: TODO: I'd prefer OnHtmlNodeClick and OnHtmlNodeOver, which could be fired for
     //                       any kind of html elements including floating objects like TImageObj.

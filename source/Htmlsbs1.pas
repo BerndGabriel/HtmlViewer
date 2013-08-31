@@ -95,7 +95,7 @@ type
     EditSize: Integer;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
     constructor Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -118,7 +118,7 @@ type
     MyEdit: TEditFormControlObj;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
     constructor Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     procedure ButtonClick(Sender: TObject);
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -154,7 +154,7 @@ type
     LBSize, Longest: integer;
   public
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
     property TheOptions: ThtOptionStringList read FOptions;
@@ -179,7 +179,7 @@ type
     procedure SaveContents; override;
   public
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -207,7 +207,7 @@ type
   public
     IsChecked: Boolean;
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): Boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
@@ -232,7 +232,7 @@ type
     procedure SaveContents; override;
   public
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
@@ -262,7 +262,7 @@ type
     Rows, Cols: integer;
     TheText: ThtString;
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
-    constructor CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase); override;
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
@@ -373,7 +373,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.08.2013 --
-constructor TListBoxFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TListBoxFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TListBoxFormControlObj absolute Source;
 begin
@@ -728,7 +728,7 @@ end;
 {$ENDIF}
 
 //-- BG ---------------------------------------------------------- 30.08.2013 --
-constructor TComboFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TComboFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TComboFormControlObj absolute Source;
 begin
@@ -829,7 +829,7 @@ begin
   end;
 end;
 
-constructor TTextAreaFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TTextAreaFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TTextAreaFormControlObj absolute Source;
 begin
@@ -1041,7 +1041,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.08.2013 --
-constructor TOptionsFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TOptionsFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TOptionsFormControlObj absolute Source;
 begin
@@ -1328,7 +1328,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
-constructor TEditFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TEditFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TEditFormControlObj absolute Source;
 begin
@@ -1417,7 +1417,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.08.2013 --
-constructor TButtonFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TButtonFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TButtonFormControlObj absolute Source;
 begin
@@ -1644,7 +1644,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.08.2013 --
-constructor TCheckBoxFormControlObj.CreateCopy(Parent: TCellBasic; Source: TFloatingObjBase);
+constructor TCheckBoxFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TCheckBoxFormControlObj absolute Source;
 begin

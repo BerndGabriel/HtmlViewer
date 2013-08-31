@@ -2446,36 +2446,42 @@ begin
     if Assigned(THtmlViewer(CallingObject).OnObjectTag) then
     begin
       Sym := Sy;
+
       SL := Attributes.CreateStringList;
-      if not Assigned(Section) then
-        Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
-      PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
-      Prop := PropStack.Last;
-      PO := Section.CreatePanel(Attributes, SectionList, Prop);
-      PO.ProcessProperties(PropStack.Last);
-      WantPanel := False;
-      Params := ThtStringList.Create;
-      Params.Sorted := False;
-      repeat
-        SavePosition;
-        SkipWhiteSpace;
-        Next;
-        if Sy = ParamSy then
-          with Attributes do
-            if Find(NameSy, T) then
-            begin
-              S := T.Name;
-              if Find(ValueSy, T) then
-                S := S + '=' + T.Name;
-              Params.Add(S);
-            end;
-      until (Sy <> ParamSy);
       try
-        ThtmlViewer(CallingObject).OnObjectTag(CallingObject, PO.Panel, SL, Params, WantPanel);
+        if not Assigned(Section) then
+          Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
+        PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        Prop := PropStack.Last;
+        PO := Section.CreatePanel(Attributes, SectionList, Prop);
+        PO.ProcessProperties(PropStack.Last);
+        WantPanel := False;
+
+        Params := ThtStringList.Create;
+        try
+          Params.Sorted := False;
+          repeat
+            SavePosition;
+            SkipWhiteSpace;
+            Next;
+            if Sy = ParamSy then
+              with Attributes do
+                if Find(NameSy, T) then
+                begin
+                  S := T.Name;
+                  if Find(ValueSy, T) then
+                    S := S + '=' + T.Name;
+                  Params.Add(S);
+                end;
+          until (Sy <> ParamSy);
+          ThtmlViewer(CallingObject).OnObjectTag(CallingObject, PO.Panel, SL, Params, WantPanel);
+        finally
+          Params.Free;
+        end;
       finally
         SL.Free;
-        Params.Free;
       end;
+
       if WantPanel then
       begin
         if Prop.HasBorderStyle then {start of inline border}
@@ -2625,7 +2631,7 @@ procedure THtmlParser.DoCommonSy;
 
   procedure DoImage();
   var
-    IO: TFloatingObj;
+    IO: TSizeableObj;
   begin
     IO := Section.AddImage(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);
@@ -2633,7 +2639,7 @@ procedure THtmlParser.DoCommonSy;
 
   procedure DoPanel();
   var
-    IO: TFloatingObj;
+    IO: TSizeableObj;
   begin
     IO := Section.AddPanel(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);
@@ -2641,7 +2647,7 @@ procedure THtmlParser.DoCommonSy;
 
   procedure DoIFrame();
   var
-    IO: TFloatingObj;
+    IO: TSizeableObj;
   begin
     IO := Section.AddFrame(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);

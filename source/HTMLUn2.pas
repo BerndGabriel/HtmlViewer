@@ -1801,34 +1801,6 @@ begin
   inherited Destroy;
 end;
 
-////------------------------------------------------------------------------------
-//function TIndentManager.AddImage(Y: Integer; Img: TFloatingObj): IndentRec;
-//{Given a new floating image, update the edge information.  Fills  Img.Indent,
-// the distance from the left edge to the upper left corner of the image}
-//var
-//  IH, IW: Integer;
-//begin
-//  Result := nil;
-//  if Assigned(Img) then
-//  begin
-//    IW := Img.HSpaceL + Img.ImageWidth  + Img.HSpaceR;
-//    IH := Img.VSpaceT + Img.ImageHeight + Img.VSpaceB;
-//    case Img.Floating of
-//      ALeft:
-//      begin
-//        Result := AddLeft(Y, Y + IH, IW);
-//        Img.Indent := Result.X - IW + Img.HSpaceL;
-//      end;
-//
-//      ARight:
-//      begin
-//        Result := AddRight(Y, Y + IH, IW);
-//        Img.Indent := Result.X + Img.HSpaceL;
-//      end;
-//    end;
-//  end;
-//end;
-
 //-- BG ---------------------------------------------------------- 05.02.2011 --
 function TIndentManager.AddLeft(YT, YB, W: Integer): IndentRec;
 // For a floating block, update the left edge information.
