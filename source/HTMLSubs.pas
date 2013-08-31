@@ -7115,11 +7115,11 @@ begin
     case Sy of
 
       OLSy, ULSy, DirSy, MenuSy:
-        if FListStyleType = lbNone then
-          MargArrayO[MarginLeft] := 0
-        else
-          MargArrayO[MarginLeft] := ListIndent;
-
+//        if FListStyleType = lbNone then
+//          MargArrayO[MarginLeft] := 0
+//        else
+//          MargArrayO[MarginLeft] := ListIndent;
+        MargArrayO[MarginLeft] := 0; // indention is done by the Sy tag's padding-left (see TStyleList.Initialize)
       DLSy:
         MargArrayO[MarginLeft] := 0;
     else
