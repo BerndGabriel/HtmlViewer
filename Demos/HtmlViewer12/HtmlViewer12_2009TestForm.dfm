@@ -31,7 +31,7 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     Height = 21
     Align = alTop
     DropDownCount = 32
-    ItemHeight = 0
+    ItemHeight = 13
     TabOrder = 0
     OnKeyPress = cbFilesKeyPress
     RegistryKey = 'Software\Fast Function Factory\BegaViewer\BrowseURL'
@@ -58,10 +58,6 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     TabOrder = 2
     object HtmlTab: TTabSheet
       Caption = 'Html'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object vtDocument: TBegaVirtualStringTree
         Left = 0
         Top = 0
@@ -69,7 +65,6 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
         Height = 604
         Align = alClient
         Header.AutoSizeIndex = -1
-        Header.DefaultHeight = 17
         Header.Font.Charset = DEFAULT_CHARSET
         Header.Font.Color = clWindowText
         Header.Font.Height = -11
@@ -129,10 +124,6 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     object CssTab: TTabSheet
       Caption = 'Css'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object CssMemo: TMemo
         Left = 0
         Top = 0
@@ -151,7 +142,13 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
       Caption = 'File'
       object menuFileOpen: TMenuItem
         Caption = 'Open...'
+        ShortCut = 16463
         OnClick = menuFileOpenClick
+      end
+      object menuFileRefresh: TMenuItem
+        Caption = 'Refresh'
+        ShortCut = 116
+        OnClick = menuFileRefreshClick
       end
     end
   end
