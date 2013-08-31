@@ -289,7 +289,7 @@ type
     function GetHScrollBarRange: Integer;
     function GetHScrollPos: Integer;
     function GetIDControl(const ID: ThtString): TIDObject;
-    function GetIDDisplay(const ID: ThtString): TPropDisplay;
+    function GetIDDisplay(const ID: ThtString): ThtDisplayStyle;
     function GetLinkList: TLinkList;
     function GetNameList: ThtStringList;
     function GetOnExpandName: TExpandNameEvent;
@@ -325,7 +325,7 @@ type
     procedure SetFormData(T: TFreeList);
     procedure SetHistoryIndex(Value: Integer);
     procedure SetHScrollPos(Value: Integer);
-    procedure SetIDDisplay(const ID: ThtString; Value: TPropDisplay);
+    procedure SetIDDisplay(const ID: ThtString; Value: ThtDisplayStyle);
     procedure SetOnExpandName(Handler: TExpandNameEvent);
     procedure SetOnFileBrowse(Handler: TFileBrowseEvent);
     procedure SetOnFormSubmit(Handler: TFormSubmitEvent);
@@ -490,7 +490,7 @@ type
     property HScrollBarPosition: Integer read GetHScrollPos write SetHScrollPos;
     property HScrollBarRange: Integer read GetHScrollBarRange;
     property IDControl[const ID: ThtString]: TIDObject read GetIDControl;
-    property IDDisplay[const ID: ThtString]: TPropDisplay read GetIDDisplay write SetIDDisplay;
+    property IDDisplay[const ID: ThtString]: ThtDisplayStyle read GetIDDisplay write SetIDDisplay;
     property LinkAttributes: ThtStringList read FLinkAttributes;
     property LinkList: TLinkList read GetLinkList;
     property LinkStart: TPoint read FLinkStart;
@@ -4854,7 +4854,7 @@ begin
     end;
 end;
 
-function THtmlViewer.GetIDDisplay(const ID: ThtString): TPropDisplay;
+function THtmlViewer.GetIDDisplay(const ID: ThtString): ThtDisplayStyle;
 var
   I: Integer;
   Obj: TIDObject;
@@ -4869,7 +4869,7 @@ begin
     end;
 end;
 
-procedure THtmlViewer.SetIDDisplay(const ID: ThtString; Value: TPropDisplay);
+procedure THtmlViewer.SetIDDisplay(const ID: ThtString; Value: ThtDisplayStyle);
 var
   I: Integer;
   Obj: TIDObject;

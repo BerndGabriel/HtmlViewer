@@ -382,7 +382,7 @@ type
   TImageType = (NoImage, Bmp, Gif, {Gif89,} Png, Jpg);
 
   htColorArray = packed array[0..3] of TColor;
-  htBorderStyleArray = packed array[0..3] of BorderStyleType;
+  htBorderStyleArray = packed array[0..3] of ThtBorderStyle;
 
 //BG, 11.09.2010: moved to this unit to reduce circular dependencies:
 
@@ -2756,7 +2756,7 @@ var
   W, D: array[0..3] of Integer;
   InPath: boolean;
   PenType, Start: Integer;
-  StyleSet: set of BorderStyleType;
+  StyleSet: set of ThtBorderStyle;
   OuterRegion, InnerRegion: THandle;
   Brush: TBrush;
 

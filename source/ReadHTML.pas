@@ -1667,9 +1667,9 @@ procedure THtmlParser.DoTable;
   procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
   {reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's Cols list}
 
-    procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: AlignmentType; var Align: ThtString; var Span: Integer);
+    procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: ThtAlignmentStyle; var Align: ThtString; var Span: Integer);
 
-      function AlignmentFromString(S: ThtString): AlignmentType;
+      function AlignmentFromString(S: ThtString): ThtAlignmentStyle;
       begin
         S := htLowerCase(S);
         if TryStrToAlignmentStyle(S, Result) then
@@ -1683,7 +1683,7 @@ procedure THtmlParser.DoTable;
 
     var
       I: Integer;
-      Algn: AlignmentType;
+      Algn: ThtAlignmentStyle;
     begin
       for I := 0 to Attributes.Count - 1 do
         with Attributes[I] do
@@ -1718,7 +1718,7 @@ procedure THtmlParser.DoTable;
   var
     xSpan, cSpan: Integer;
     xWidth, cWidth: TSpecWidth;
-    xVAlign, cVAlign: AlignmentType;
+    xVAlign, cVAlign: ThtAlignmentStyle;
     xAlign, cAlign: ThtString;
   begin
     xWidth := SpecWidth(0, wtNone);
@@ -1765,7 +1765,7 @@ var
   SaveStyle: TFontStyles;
   SaveNoBreak: Boolean;
   SaveListLevel: Integer;
-  RowVAlign, VAlign: AlignmentType;
+  RowVAlign, VAlign: ThtAlignmentStyle;
   Row: TCellList;
   CellObj: TCellObj;
   T: TAttribute;
@@ -1783,11 +1783,11 @@ var
   HFStack: Integer;
   FootList: TList;
   I: Integer;
-  TrDisplay: TPropDisplay; // Yunqa.de.
+  TrDisplay: ThtDisplayStyle; // Yunqa.de.
   S: PropIndices;
   V: Variant;
 
-  function GetVAlign(Default: AlignmentType): AlignmentType;
+  function GetVAlign(Default: ThtAlignmentStyle): ThtAlignmentStyle;
   var
     S: ThtString;
     T: TAttribute;
@@ -1864,7 +1864,7 @@ var
         end;
   end;
 
-  function GetDefaultCellBorderStyle(const TableBorderStyle: Variant; DefaultStyle: BorderStyleType): BorderStyleType;
+  function GetDefaultCellBorderStyle(const TableBorderStyle: Variant; DefaultStyle: ThtBorderStyle): ThtBorderStyle;
   begin
     if (TableBorderStyle = Unassigned) or ((VarType(TableBorderStyle) in varInt) and (TableBorderStyle = IntNull)) then
       Result := DefaultStyle

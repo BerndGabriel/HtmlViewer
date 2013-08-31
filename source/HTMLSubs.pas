@@ -135,7 +135,7 @@ type
 
   TSectionBase = class(THtmlNode)
   private
-    FDisplay: TPropDisplay; // how it is displayed
+    FDisplay: ThtDisplayStyle; // how it is displayed
   protected
     function GetYPosition: Integer; override;
     procedure SetDocument(List: ThtDocument);
@@ -174,7 +174,7 @@ type
     procedure AddSectionsToList; virtual;
     procedure CopyToClipboard; virtual;
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
-    property Display: TPropDisplay read FDisplay write FDisplay;
+    property Display: ThtDisplayStyle read FDisplay write FDisplay;
   end;
 
   TSectionBaseList = class(TFreeList)
@@ -303,7 +303,7 @@ type
       tmMaxCharWidth,
       Overhang,
       Descent: Integer;
-    SScript: AlignmentType;
+    SScript: ThtAlignmentStyle;
     TabControl: ThtTabControl;
     constructor Create(ASection: TSection; F: ThtFont; Position: Integer);
     constructor CreateCopy(ASection: TSection; T: TFontObj);
@@ -358,11 +358,11 @@ type
     // source buffer reference
     StartCurs: Integer; {position of image in source buffer}
 
-    Positioning: PositionType;
-    Floating: AlignmentType;
+    Positioning: ThtBoxPositionStyle;
+    Floating: ThtAlignmentStyle;
     Indent: Integer;           {Indentation of floated object}
 
-    VertAlign: AlignmentType;
+    VertAlign: ThtAlignmentStyle;
     HSpaceL, HSpaceR: Integer; {horizontal extra space}
     VSpaceT, VSpaceB: Integer; {vertical extra space}
     PercentWidth: Boolean; {if width is percent}
@@ -409,11 +409,11 @@ type
     FClientWidth: Integer; {does not include HSpace}
   public
     ClientSizeKnown: boolean; {know size of image}
-    SpecWidth: Integer; {as specified by <img, panel, object, or iframe> tag}
-    SpecHeight: Integer; {as specified by <img, panel, object, or iframe> tag}
+    SpecWidth: Integer; {as specified by <img, applet, panel, object, or iframe> tag}
+    SpecHeight: Integer; {as specified by <img, applet, panel, object, or iframe> tag}
     Title: ThtString;
   protected
-    FDisplay: TPropDisplay; // how it is displayed
+    FDisplay: ThtDisplayStyle; // how it is displayed
     function GetYPosition: Integer; override;
     procedure CalcSize(AvailableWidth, AvailableHeight, SetWidth, SetHeight: Integer; IsClientSizeSpecified: Boolean);
     function GetClientHeight: Integer; override;
@@ -613,9 +613,9 @@ type
 
     Fonts: TFontList; {List of FontObj's in this section}
     Justify: JustifyType; {Left, Centered, Right}
-    ClearAttr: ClearAttrType;
+    ClearAttr: ThtClearStyle;
     TextWidth: Integer;
-    WhiteSpaceStyle: TWhiteSpaceStyle;
+    WhiteSpaceStyle: ThtWhiteSpaceStyle;
   public
     constructor Create(OwnerCell: TCellBasic; Attr: TAttributeList; Prop: TProperties; AnURL: TUrlTarget; FirstItem: boolean);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); override;
@@ -694,13 +694,13 @@ type
     EmSize, ExSize, FGColor: Integer;
     HasBorderStyle: Boolean;
 
-    Positioning: PositionType;
-    Floating: AlignmentType; {ALeft or ARight if floating}
+    Positioning: ThtBoxPositionStyle;
+    Floating: ThtAlignmentStyle; {ALeft or ARight if floating}
     Indent: Integer;
 
-    ClearAttr: ClearAttrType;
+    ClearAttr: ThtClearStyle;
     PRec: PtPositionRec; // background image position
-    Visibility: VisibilityType;
+    Visibility: ThtVisibilityStyle;
     BottomAuto: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
     HideOverflow: boolean;
@@ -940,7 +940,7 @@ type
   private
     FListType: ListTypeType;
     FListNumb: Integer;
-    FListStyleType: ListBulletType;
+    FListStyleType: ThtBulletStyle;
     FListFont: TFont;
     Image: TImageObj;
     FirstLineHt: Integer;
@@ -955,7 +955,7 @@ type
       var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     property ListNumb: Integer read FListNumb write FListNumb;
-    property ListStyleType: ListBulletType read FListStyleType write FListStyleType;
+    property ListStyleType: ThtBulletStyle read FListStyleType write FListStyleType;
     property ListType: ListTypeType read FListType write FListType;
     property ListFont: TFont read FListFont write SetListFont;
   end;
@@ -1057,7 +1057,7 @@ type
     FHt: Integer; {total height (may cover more than one row)}
     FVSize: Integer; {Actual vertical size of contents}
     FYIndent: Integer; {Vertical indent}
-    FVAlign: AlignmentType; {Top, Middle, or Bottom}
+    FVAlign: ThtAlignmentStyle; {Top, Middle, or Bottom}
     FEmSize, FExSize: Integer;
     FPRec: PtPositionRec; // background image position info
     FPad: TRect;
@@ -1103,7 +1103,7 @@ type
     NoMask: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
 
-    constructor Create(Parent: TTableBlock; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
+    constructor Create(Parent: TTableBlock; AVAlign: ThtAlignmentStyle; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TBlock; T: TCellObj);
     destructor Destroy; override;
     function Clone(Parent: TBlock): TCellObjBase; override;
@@ -1126,7 +1126,7 @@ type
     property PadTop: Integer read getPaddingTop write setPaddingTop;
     property PRec: PtPositionRec read FPRec write FPRec;
     property ShowEmptyCells: Boolean read FShowEmptyCells write FShowEmptyCells;
-    property VAlign: AlignmentType read FVAlign write FVAlign; {Top, Middle, or Bottom}
+    property VAlign: ThtAlignmentStyle read FVAlign write FVAlign; {Top, Middle, or Bottom}
     property VSize: Integer read FVSize write FVSize; {Actual vertical size of contents}
     property Wd: Integer read FWd write FWd; {total width (may cover more than one column)}
     property YIndent: Integer read FYIndent write FYIndent; {Vertical indent}
@@ -1171,13 +1171,13 @@ type
   private
     FWidth: TSpecWidth;
     FAlign: ThtString;
-    FVAlign: AlignmentType;
+    FVAlign: ThtAlignmentStyle;
   public
-    constructor Create(const Width: TSpecWidth; Align: ThtString; VAlign: AlignmentType);
+    constructor Create(const Width: TSpecWidth; Align: ThtString; VAlign: ThtAlignmentStyle);
     constructor CreateCopy(const ColSpec: TColSpec);
     property ColWidth: TSpecWidth read FWidth;
     property ColAlign: ThtString read FAlign;
-    property ColVAlign: AlignmentType read FVAlign;
+    property ColVAlign: ThtAlignmentStyle read FVAlign;
   end;
 
   // BG, 26.12.2011:
@@ -1289,7 +1289,7 @@ type
     constructor Create(OwnerCell: TCellBasic; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; T: TSectionBase); override;
     destructor Destroy; override;
-    procedure DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
+    procedure DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: ThtAlignmentStyle; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
       var MaxWidth, Curs: Integer): Integer; override;
@@ -2825,7 +2825,7 @@ end;
 //BG, 15.10.2010: issue 28: Borland C++ Builder does not accept an array as a result of a function.
 // Thus move htStyles and htColors from HtmlUn2.pas to HtmlSubs.pas the only unit where they are used
 
-function htStyles(P0, P1, P2, P3: BorderStyleType): htBorderStyleArray;
+function htStyles(P0, P1, P2, P3: ThtBorderStyle): htBorderStyleArray;
  {$ifdef UseInline} inline; {$endif}
 begin
   Result[0] := P0;
@@ -4234,7 +4234,7 @@ end;
 
 constructor TBlock.Create(OwnerCell: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
 var
-  Clr: ClearAttrType;
+  Clr: ThtClearStyle;
   S: ThtString;
 begin
   {$IFDEF JPM_DEBUGGING}
@@ -4824,7 +4824,7 @@ var
   BlockHeight: Integer;
   IB, Xin: Integer;
 
-  function GetClearSpace(ClearAttr: ClearAttrType): Integer;
+  function GetClearSpace(ClearAttr: ThtClearStyle): Integer;
   var
     CL, CR: Integer;
   begin
@@ -4897,12 +4897,12 @@ begin
 
     ConvMargArray(AWidth, AHeight, AutoCount);
     HasBorderStyle :=
-      (BorderStyleType(MargArray[BorderTopStyle]) <> bssNone) or
-      (BorderStyleType(MargArray[BorderRightStyle]) <> bssNone) or
-      (BorderStyleType(MargArray[BorderBottomStyle]) <> bssNone) or
-      (BorderStyleType(MargArray[BorderLeftStyle]) <> bssNone);
+      (ThtBorderStyle(MargArray[BorderTopStyle]) <> bssNone) or
+      (ThtBorderStyle(MargArray[BorderRightStyle]) <> bssNone) or
+      (ThtBorderStyle(MargArray[BorderBottomStyle]) <> bssNone) or
+      (ThtBorderStyle(MargArray[BorderLeftStyle]) <> bssNone);
 
-    ApplyBoxSettings(MargArray,Document.UseQuirksMode);
+    ApplyBoxSettings(MargArray, Document.UseQuirksMode);
     NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
     LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
     RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
@@ -4910,8 +4910,8 @@ begin
     TotalWidth  := MiscWidths + NewWidth;
 
     Indent := LeftWidths;
-    TopP := MargArray[TopPos];
-    LeftP := MargArray[LeftPos];
+    TopP := MargArray[piTop];
+    LeftP := MargArray[piLeft];
     case Positioning of
       posRelative:
       begin
@@ -4926,8 +4926,8 @@ begin
         if TopP = Auto then
           TopP := 0;
         if (LeftP = Auto) then
-          if (MargArray[RightPos] <> Auto) and (AutoCount = 0) then
-            LeftP := AWidth - MargArray[RightPos] - MargArray[piWidth] - LeftWidths - RightWidths
+          if (MargArray[piRight] <> Auto) and (AutoCount = 0) then
+            LeftP := AWidth - MargArray[piRight] - MargArray[piWidth] - LeftWidths - RightWidths
           else
             LeftP := 0;
         X := LeftP;
@@ -5471,7 +5471,7 @@ begin
     if (ORect.Left <> IRect.Left) or (ORect.Top <> IRect.Top) or (ORect.Right <> IRect.Right) or (ORect.Bottom <> IRect.Bottom) then
       DrawBorder(Canvas, ORect, IRect,
         htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
-        htStyles(BorderStyleType(MargArray[BorderLeftStyle]), BorderStyleType(MargArray[BorderTopStyle]), BorderStyleType(MargArray[BorderRightStyle]), BorderStyleType(MargArray[BorderBottomStyle])),
+        htStyles(ThtBorderStyle(MargArray[BorderLeftStyle]), ThtBorderStyle(MargArray[BorderTopStyle]), ThtBorderStyle(MargArray[BorderRightStyle]), ThtBorderStyle(MargArray[BorderBottomStyle])),
         MargArray[BackgroundColor], Document.Printing{$ifdef has_StyleElements}, Document.StyleElements {$endif})
 end;
 
@@ -6179,7 +6179,7 @@ end;
 constructor TBlockLI.Create(OwnerCell: TCellBasic; Attributes: TAttributeList; Prop: TProperties;
   Sy: TElemSymb; APlain: boolean; AIndexType: ThtChar; AListNumb, ListLevel: Integer);
 var
-  Tmp: ListBulletType;
+  Tmp: ThtBulletStyle;
   S: ThtString;
   TmpFont: ThtFont;
 begin
@@ -7536,13 +7536,13 @@ begin
   Result := TCellObj.CreateCopy(Parent, Self);
 end;
 
-constructor TCellObj.Create(Parent: TTableBlock; AVAlign: AlignmentType; Attr: TAttributeList; Prop: TProperties);
+constructor TCellObj.Create(Parent: TTableBlock; AVAlign: ThtAlignmentStyle; Attr: TAttributeList; Prop: TProperties);
 {Note: on entry Attr and Prop may be Nil when dummy cells are being created}
 var
   I, AutoCount: Integer;
   Color: TColor;
   BackgroundImage: ThtString;
-  Algn: AlignmentType;
+  Algn: ThtAlignmentStyle;
 begin
  {$ifdef JPM_DEBUGGING}
  CodeSite.EnterMethod(Self,'TCellObj.Create');
@@ -7625,22 +7625,22 @@ begin
     FPad.Left := MargArray[PaddingLeft];
 
     HasBorderStyle := False;
-    if BorderStyleType(MargArray[BorderTopStyle]) <> bssNone then
+    if ThtBorderStyle(MargArray[BorderTopStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
       FBrd.Top := MargArray[BorderTopWidth];
     end;
-    if BorderStyleType(MargArray[BorderRightStyle]) <> bssNone then
+    if ThtBorderStyle(MargArray[BorderRightStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
       FBrd.Right := MargArray[BorderRightWidth];
     end;
-    if BorderStyleType(MargArray[BorderBottomStyle]) <> bssNone then
+    if ThtBorderStyle(MargArray[BorderBottomStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
       FBrd.Bottom := MargArray[BorderBottomWidth];
     end;
-    if BorderStyleType(MargArray[BorderLeftStyle]) <> bssNone then
+    if ThtBorderStyle(MargArray[BorderLeftStyle]) <> bssNone then
     begin
       HasBorderStyle := True;
       FBrd.Left := MargArray[BorderLeftWidth];
@@ -7992,7 +7992,7 @@ begin
     try
       DrawBorder(Canvas, Rect(BL, BT, BR, BB), Rect(PL, PT, PR, PB),
         htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
-        htStyles(BorderStyleType(MargArray[BorderLeftStyle]), BorderStyleType(MargArray[BorderTopStyle]), BorderStyleType(MargArray[BorderRightStyle]), BorderStyleType(MargArray[BorderBottomStyle])),
+        htStyles(ThtBorderStyle(MargArray[BorderLeftStyle]), ThtBorderStyle(MargArray[BorderTopStyle]), ThtBorderStyle(MargArray[BorderRightStyle]), ThtBorderStyle(MargArray[BorderBottomStyle])),
         MargArray[BackgroundColor], Cell.Document.Printing{$ifdef has_StyleElements},Cell.Document.StyleElements{$endif});
     except
     end;
@@ -8515,7 +8515,7 @@ end;
 
 {----------------THtmlTable.DoColumns}
 
-procedure THtmlTable.DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: AlignmentType; const Align: ThtString);
+procedure THtmlTable.DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: ThtAlignmentStyle; const Align: ThtString);
 {add the <col> / <colgroup> info to the Cols list}
 var
   I: Integer;
@@ -10222,7 +10222,7 @@ var
   FO: TFontObj;
   T: TAttribute;
   S: ThtString;
-  Clr: ClearAttrType;
+  Clr: ThtClearStyle;
   Percent: boolean;
 begin
   {$IFDEF JPM_DEBUGGING}
@@ -10298,7 +10298,7 @@ begin
   else
     WhiteSpaceStyle := wsNormal;
   if VarIsOrdinal(Prop.Props[piWhiteSpace]) then
-    WhiteSpaceStyle := TWhiteSpaceStyle(Prop.Props[piWhiteSpace])
+    WhiteSpaceStyle := ThtWhiteSpaceStyle(Prop.Props[piWhiteSpace])
   else if VarIsStr(Prop.Props[piWhiteSpace]) then
   begin
     if Prop.Props[piWhiteSpace] = 'pre' then
@@ -10659,7 +10659,7 @@ var
   FO: TFontObj;
   LastUrl: TUrlTarget;
   NewFont: ThtFont;
-  Align: AlignmentType;
+  Align: ThtAlignmentStyle;
 begin
   FO := Fonts[Fonts.Count - 1];
   LastUrl := FO.UrlTarget;
@@ -10694,7 +10694,7 @@ procedure TSection.HRef(IsHRef: Boolean; List: ThtDocument; AnURL: TUrlTarget;
 var
   FO: TFontObj;
   NewFont: ThtFont;
-  Align: AlignmentType;
+  Align: ThtAlignmentStyle;
 begin
   FO := Fonts[Fonts.Count - 1];
   NewFont := Prop.GetFont;
@@ -11485,7 +11485,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     LR: LineRec;
     AccumImgBot: Integer;
 
-    function GetClearSpace(ClearAttr: ClearAttrType): Integer;
+    function GetClearSpace(ClearAttr: ThtClearStyle): Integer;
     var
       CL, CR: Integer;
     begin
@@ -11505,7 +11505,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     var
       I, J, DHt, Desc, Tmp, TmpRt, Cnt, H, SB, SA: Integer;
       FO: TFontObj;
-      Align: AlignmentType;
+      Align: ThtAlignmentStyle;
       NoChar: boolean;
       P: PWideChar;
       FcObj: TFormControlObj;
@@ -13633,7 +13633,7 @@ begin
 
   DrawBorder(Canvas, ORect, IRect,
     htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
-    htStyles(BorderStyleType(MargArray[BorderLeftStyle]), BorderStyleType(MargArray[BorderTopStyle]), BorderStyleType(MargArray[BorderRightStyle]), BorderStyleType(MargArray[BorderBottomStyle])),
+    htStyles(ThtBorderStyle(MargArray[BorderLeftStyle]), ThtBorderStyle(MargArray[BorderTopStyle]), ThtBorderStyle(MargArray[BorderRightStyle]), ThtBorderStyle(MargArray[BorderBottomStyle])),
     MargArray[BackgroundColor], Printing{$ifdef has_StyleElements},AStyleElements{$endif})
 end;
 
@@ -14180,7 +14180,7 @@ begin
         begin
           if System.Pos('%', Name) = 0 then
           begin
-            SpecHeight := Value;
+              SpecHeight := Value;
           end
           else if (Value >= 0) and (Value <= 100) then
           begin
@@ -14308,7 +14308,7 @@ const
 var
   MargArrayO: TVMarginArray;
   MargArray: TMarginArray;
-  Align: AlignmentType;
+  Align: ThtAlignmentStyle;
   EmSize, ExSize: Integer;
 begin
   if Prop.GetVertAlign(Align) then
@@ -14949,7 +14949,7 @@ end;
 { TColSpec }
 
 //-- BG ---------------------------------------------------------- 12.01.2012 --
-constructor TColSpec.Create(const Width: TSpecWidth; Align: ThtString; VAlign: AlignmentType);
+constructor TColSpec.Create(const Width: TSpecWidth; Align: ThtString; VAlign: ThtAlignmentStyle);
 begin
   inherited Create;
   FWidth := Width;

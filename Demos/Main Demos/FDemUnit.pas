@@ -1,8 +1,7 @@
 {
-Version   11.4
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2013 by Bernd Gabriel
+Copyright (c) 2008-2013 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -73,7 +72,7 @@ uses
   HtmlGlobals,
   HtmlBuffer,
   URLSubs,
-  StyleUn,
+  StyleTypes,
   ReadHTML,
   HTMLSubs,
   HTMLSbs1,
@@ -364,8 +363,8 @@ if I=1 then
   if Assigned(Viewer) then
     begin
     ID := Copy(URL, 10, Length(URL)-9);
-    if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
-      Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
+    if Viewer.IDDisplay[ID+'Minus'] = High(ThtDisplayStyle) then
+      Viewer.IDDisplay[ID+'Minus'] := Low(ThtDisplayStyle)
     else
       Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
     Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
