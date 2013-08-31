@@ -11,12 +11,12 @@
   .tree td p, .tree td ul { margin: 8pt }
   .tree td ul { text-align: left }
   .class { }
-  td.htmlun2  {background-color: rgb(255, 255, 200)}
-  td.htmlsubs {background-color: rgb(255, 224, 212)}
-  td.htmlsbs1 {background-color: rgb(255, 200, 255)}
-  td.htmlview {background-color: rgb(212, 255, 212)}
-  td.framview {background-color: rgb(200, 255, 255)}
-  td.frambrwz {background-color: rgb(212, 224, 255)}
+  .htmlun2  {background-color: rgb(255, 255, 200)}
+  .htmlsubs {background-color: rgb(255, 224, 212)}
+  .htmlsbs1 {background-color: rgb(255, 200, 255)}
+  .htmlview {background-color: rgb(212, 255, 212)}
+  .framview {background-color: rgb(200, 255, 255)}
+  .frambrwz {background-color: rgb(212, 224, 255)}
 </style>
 </HEAD>
 
@@ -172,89 +172,39 @@
 
 <table class="tree root" align="center">
   <tr>
-    <td class="htmlun2" colspan="4">
+    <td class="htmlun2" colspan="6">
       <p><a class="class" href="">TIDObject</a>
       <p>Any document part, that has a name and a position and thus can be addressed via '#id' resp. '#name'.
     </td>
   </tr>
   <tr>
-    <td class="htmlsubs" colspan="3">
+    <td class="htmlsubs" colspan="5">
       <p><a class="class" href="">THtmlNode</a>
       <p>
     </td>
-    <td class="htmlsubs" rowspan="4">
+    <td class="htmlsubs" rowspan="3">
       <p><a class="class" href="">TChPosObj</a>
       <p>Deprecated.
     </td>
   </tr>
   <tr>
-    <td class="htmlsubs" rowspan="3">
-      <p><a class="class" href="#TSectionBase">TSectionBase</a>
-      <p>
-    </td>
-    <td class="htmlsubs" colspan="2">
-      <p><a class="class" href="#TFloatingObj">TFloatingObjBase</a>
-      <p>
-    </td>
-  </tr>
-  <tr>
-    <td class="htmlsubs" rowspan="2">
-      <p><a class="class" href="#TFloatingObj">TFloatingObj</a>
-      <p>
-    </td>
-    <td class="htmlsubs">
-      <p><a class="class" href="#TFormControlObj">TFormControlObj</a>
-      <p>Derivates:
-      <ul>
-        <li><a class="class" href="">TImage&shy;Form&shy;ControlObj</a>
-        <li><a class="class" href="">TRadioButton&shy;Form&shy;ControlObj</a>
-      </ul>
-    </td>
-  </tr>
-  <tr>
-    <td class="htmlsbs1 ">
-      <ul>
-        <li><a class="class" href="">THidden&shy;Form&shy;ControlObj</a>
-        <li><a class="class" href="">TEdit&shy;Form&shy;ControlObj</a>
-        <li><a class="class" href="">TButton&shy;Form&shy;ControlObj</a>
-        <li><a class="class" href="">TCheckBox&shy;Form&shy;ControlObj</a>
-        <li><a class="class" href="">TOptions&shy;Form&shy;ControlObj</a>
-        <li><a class="class" href="">TTextArea&shy;Form&shy;ControlObj</a>
-      </ul>
-    </td>
-  </tr>
-</table>
-
-<!-- html document section classes -->
-
-<p>&nbsp;
-<table class="tree root" align="center">
-  <tr>
     <td class="htmlsubs" colspan="5">
-      <p><a name="TSectionBase" class="class" href="">TSectionBase</a>
+      <p><a class="class" href="">TSectionBase</a>
       <p>
     </td>
   </tr>
   <tr>
     <td class="htmlsubs">
       <p><a class="class" href="">TSection</a>
-      <p>Inline content. Text with embedded inline objects of type<br><a class="class" href="#TFloatingObj">TFloatingObj</a> or <a class="class" href="#TFormControlObj">TFormControlObj</a>.
+      <p>Inline content. Text with embedded inline objects of type<br><a class="class" href="#TFloatingObj">TFloatingObj</a>.
       <p>Derivate:
       <ul>
         <li>TPreFormated
       </ul>
     </td>
     <td class="htmlsubs">
-      <p><a class="class" href="">TBlock</a>
-      <p>Derivates:
-      <ul>
-        <li><a class="class" href="">THRBlock</a>
-        <li><a class="class" href="">TBlockLI</a>
-        <li><a class="class" href="">TFieldsetBlock</a>
-        <li><a class="class" href="">TBodyBlock</a>
-        <li><a class="class" href="">TTableBlock</a>
-        <li><a class="class" href="">TTableAndCaptionBlock</a>
-      </ul>
+      <p><a class="class" href="#TBlockBase">TBlockBase</a>
+      <p>
     </td>
     <td class="htmlsubs">
       <p><a class="class" href="">THtmlTable</a>
@@ -271,14 +221,56 @@
   </tr>
 </table>
 
-<!-- html document floating object classes -->
+<!-- html document block elements -->
 
 <p>&nbsp;
 <table class="tree root" align="center">
   <tr>
+    <td class="htmlsubs" colspan="5">
+      <p><a name="TBlockBase" class="class" href="">TBlockBase</a>
+      <p>
+    </td>
+  </tr>
+  <tr>
+    <td class="htmlsubs" rowspan="4">
+      <p><a class="class" href="">TBlock</a>
+      <p>Derivates:
+      <ul>
+        <li><a class="class" href="">THRBlock</a>
+        <li><a class="class" href="">TBlockLI</a>
+        <li><a class="class" href="">TFieldsetBlock</a>
+        <li><a class="class" href="">TBodyBlock</a>
+        <li><a class="class" href="">TTableBlock</a>
+        <li><a class="class" href="">TTableAndCaptionBlock</a>
+      </ul>
+    </td>
+    <td class="htmlsubs" colspan="5">
+      <p><a class="class" href="#TFloatingObj">TFloatingObj</a>
+      <p>
+    </td>
+</tr>
+  <tr>
     <td class="htmlsubs" colspan="3">
-      <p><a name="TFloatingObj" class="class" href="">TFloatingObj</a>
-      <p> 
+      <p><a class="class" href="#TSizeableObj">TSizeableObj</a>
+      <p>
+    </td>
+    <td class="htmlsubs" rowspan="3">
+      <p><a class="class" href="#TFormControlObj">TFormControlObj</a>
+      <p>Derivates:
+      <ul>
+        <li><a class="class" href="">TImage&shy;Form&shy;ControlObj</a>
+        <li><a class="class" href="">TRadioButton&shy;Form&shy;ControlObj</a>
+      </ul>
+      <div class="htmlsbs1">
+        <ul>
+          <li><a class="class" href="">THidden&shy;Form&shy;ControlObj</a>
+          <li><a class="class" href="">TEdit&shy;Form&shy;ControlObj</a>
+          <li><a class="class" href="">TButton&shy;Form&shy;ControlObj</a>
+          <li><a class="class" href="">TCheckBox&shy;Form&shy;ControlObj</a>
+          <li><a class="class" href="">TOptions&shy;Form&shy;ControlObj</a>
+          <li><a class="class" href="">TTextArea&shy;Form&shy;ControlObj</a>
+        </ul>
+      </div>
     </td>
   </tr>
   <tr>
