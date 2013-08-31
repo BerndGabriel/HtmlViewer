@@ -42,7 +42,7 @@ const
   varNum = varInt + varFloat;
 
 type
-  TAlignmentStyle = (
+  ThtAlignmentStyle = (
     aNone,
     aTop,
     aMiddle,
@@ -55,7 +55,7 @@ type
     aSuper);
 
 const
-  CAlignmentStyle: array[TAlignmentStyle] of ThtString = (
+  CAlignmentStyle: array[ThtAlignmentStyle] of ThtString = (
     'none',
     'top',
     'middle',
@@ -68,17 +68,17 @@ const
     'super');
 
 type
-  BoxSizingType = (
+  ThtBoxSizing = (
     ContentBox,
     BorderBox);
 
 const
-  CBoxSizing: array[BoxSizingType] of ThtString = (
+  CBoxSizing: array[ThtBoxSizing] of ThtString = (
     'content-box',
     'border-box');
 
 type
-  TBackgroundPosition = (
+  ThtBackgroundPosition = (
     bpTop,
     bpCenter,
     bpBottom,
@@ -88,7 +88,7 @@ type
     bpDim);
 
   PositionRec = record
-    PosType: TBackgroundPosition;
+    PosType: ThtBackgroundPosition;
     Value: Integer;
     RepeatD: Boolean;
     Fixed: Boolean;
@@ -99,14 +99,14 @@ type
   end;
 
 type
-  TBoxFloatStyle = (
+  ThtBoxFloatStyle = (
     flNone,
     flLeft,
     flRight,
     flTop,
     flBottom);
 const
-  CBoxFloatStyle: array[TBoxFloatStyle] of ThtString = (
+  CBoxFloatStyle: array[ThtBoxFloatStyle] of ThtString = (
     'none',
     'left',
     'right',
@@ -114,20 +114,20 @@ const
     'bottom');
 
 type
-  TBoxPositionStyle = (
+  ThtBoxPositionStyle = (
     posStatic,
     posRelative,
     posAbsolute,
     posFixed);
 const
-  CBoxPositionStyle: array[TBoxPositionStyle] of ThtString = (
+  CBoxPositionStyle: array[ThtBoxPositionStyle] of ThtString = (
     'static',
     'relative',
     'absolute',
     'fixed');
 
 type
-  TBorderStyle = (
+  ThtBorderStyle = (
     bssNone,
     bssSolid,
     bssInset,
@@ -138,7 +138,7 @@ type
     bssDotted,
     bssDouble);
 const
-  CBorderStyle: array[TBorderStyle] of ThtString = (
+  CBorderStyle: array[ThtBorderStyle] of ThtString = (
     'none',
     'solid',
     'inset',
@@ -150,7 +150,7 @@ const
     'double');
 
 type
-  TBulletStyle = (
+  ThtBulletStyle = (
     lbBlank,
     lbCircle,
     lbDecimal,
@@ -162,7 +162,7 @@ type
     lbUpperAlpha,
     lbUpperRoman);
 const
-  CBulletStyle: array[TBulletStyle] of ThtString = (
+  CBulletStyle: array[ThtBulletStyle] of ThtString = (
     'blank',
     'circle',
     'decimal',
@@ -175,14 +175,14 @@ const
     'upper-roman');
 
 type
-  TClearStyle = (
+  ThtClearStyle = (
     clrNone,
     clLeft,
     clRight,
     clAll);
 
 type
-  TDisplayStyle = (
+  ThtDisplayStyle = (
     pdUnassigned,
     pdInline,
     pdBlock,
@@ -202,7 +202,7 @@ type
     pdTableCaption,
     pdNone);
 const
-  CDisplayStyle: array [TDisplayStyle] of ThtString = (
+  CDisplayStyle: array [ThtDisplayStyle] of ThtString = (
     '',
     'inline',
     'block',
@@ -222,7 +222,7 @@ const
     'table-caption',
     'none');
 
-  CRootDisplayStyle: array[TDisplayStyle] of TDisplayStyle = (
+  CRootDisplayStyle: array[ThtDisplayStyle] of ThtDisplayStyle = (
     pdUnassigned,
     pdBlock,
     pdBlock,
@@ -242,23 +242,23 @@ const
     pdBlock,
     pdNone);
 
-function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle; {$ifdef UseInline} inline; {$endif}
+function ToRootDisplayStyle(Display: ThtDisplayStyle): ThtDisplayStyle; {$ifdef UseInline} inline; {$endif}
 
 type
-  TTextTransformStyle = (
+  ThtTextTransformStyle = (
     txNone,
     txUpper,
     txLower,
     txCaps);
 
 type
-  TVisibilityStyle = (
+  ThtVisibilityStyle = (
     viInherit,
     viHidden,
     viVisible);
 
 type
-  TWhiteSpaceStyle = (
+  ThtWhiteSpaceStyle = (
     wsNormal,
     wsPre,
     wsNoWrap,
@@ -267,26 +267,26 @@ type
 
 //BG, 16.09.2010: CSS2.2: same sizes like html font size:
 type
-  TFontSizeIncrement = -6..6;
-  TFontConvBase = array[0..7] of Double;
-  TFontConv = array[1..7] of Double;
+  ThtFontSizeIncrement = -6..6;
+  ThtFontConvBase = array[0..7] of Double;
+  ThtFontConv = array[1..7] of Double;
 const
-  FontConvBase:    TFontConvBase = (0.5833, 0.75,   0.8333, 1.0,    1.1667, 1.5,  2.0,    3.0);
-  PreFontConvBase: TFontConvBase = (0.5,    0.5833, 0.75,   0.8333, 1.0,    1.25, 1.6667, 2.5);
+  FontConvBase:    ThtFontConvBase = (0.5833, 0.75,   0.8333, 1.0,    1.1667, 1.5,  2.0,    3.0);
+  PreFontConvBase: ThtFontConvBase = (0.5,    0.5833, 0.75,   0.8333, 1.0,    1.25, 1.6667, 2.5);
 
 type
-  TRectEdge     = (reLeft, reTop, reRight, reBottom);
-  TRectIntegers = packed array[TRectEdge] of Integer;
-  TRectColors   = packed array[TRectEdge] of TColor;
-  TRectStyles   = packed array[TRectEdge] of TBorderStyle;
+  ThtRectEdge     = (reLeft, reTop, reRight, reBottom);
+  ThtRectIntegers = packed array[ThtRectEdge] of Integer;
+  ThtRectColors   = packed array[ThtRectEdge] of TColor;
+  ThtRectStyles   = packed array[ThtRectEdge] of ThtBorderStyle;
 const
-  NullIntegers: TRectIntegers = (0, 0, 0, 0);
-  NoneColors: TRectColors = (clNone, clNone, clNone, clNone);
-  NoneStyles: TRectStyles = (bssNone, bssNone, bssNone, bssNone);
+  NullIntegers: ThtRectIntegers = (0, 0, 0, 0);
+  NoneColors: ThtRectColors = (clNone, clNone, clNone, clNone);
+  NoneStyles: ThtRectStyles = (bssNone, bssNone, bssNone, bssNone);
 
-function RectIntegers(Left, Top, Right, Bottom: Integer): TRectIntegers;
-function RectColors(Left, Top, Right, Bottom: TColor): TRectColors;
-function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
+function htRectIntegers(Left, Top, Right, Bottom: Integer): ThtRectIntegers;
+function htRectColors(Left, Top, Right, Bottom: TColor): ThtRectColors;
+function htRectStyles(Left, Top, Right, Bottom: ThtBorderStyle): ThtRectStyles;
 
 //------------------------------------------------------------------------------
 // media types
@@ -294,7 +294,7 @@ function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
 
 type
   // http://www.w3.org/TR/2010/WD-CSS2-20101207/media.html
-  TMediaType = (
+  ThtMediaType = (
     mtAll,        // Suitable for all devices.
     mtBraille,    // Intended for braille tactile feedback devices.
     mtEmbossed,   // Intended for paged braille printers.
@@ -306,10 +306,10 @@ type
     mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
     mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
   );
-  TMediaTypes = set of TMediaType;
+  ThtMediaTypes = set of ThtMediaType;
 
 const
-  CMediaTypes: array[TMediaType] of ThtString = (
+  CMediaTypes: array[ThtMediaType] of ThtString = (
     'all',
     'braille',
     'embossed',
@@ -321,7 +321,7 @@ const
     'tty',
     'tv'
   );
-  AllMediaTypes: TMediaTypes = [
+  AllMediaTypes: ThtMediaTypes = [
     //mtAll,        // Suitable for all devices.
     mtBraille,    // Intended for braille tactile feedback devices.
     mtEmbossed,   // Intended for paged braille printers.
@@ -334,25 +334,25 @@ const
     mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
   ];
 
-function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
-function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
-function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
-function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): Boolean;
+function MediaTypesToStr(const MediaTypes: ThtMediaTypes): ThtString;
+function TranslateMediaTypes(const MediaTypes: ThtMediaTypes): ThtMediaTypes;
+function TryStrToMediaType(const Str: ThtString; out MediaType: ThtMediaType): Boolean;
+function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: ThtMediaTypes): Boolean;
 
 function StrToFontName(const Str: ThtString): ThtString;
-function StrToFontSize(const Str: ThtString; const FontConvBase: TFontConvBase; DefaultFontSize, Base, Default: Double): Double; overload;
-function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, Default: Double): Double; overload;
+function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double): Double; overload;
+function StrToFontSize(const Str: ThtString; const FontConv: ThtFontConv; Base, Default: Double): Double; overload;
 function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
 
-function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlignmentStyle): Boolean;
-function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: BoxSizingType): Boolean;
-function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
-function TryStrToBoxFloatStyle(const Str: ThtString; out Float: TBoxFloatStyle): Boolean;
-function TryStrToBoxPositionStyle(const Str: ThtString; out Position: TBoxPositionStyle): Boolean;
-function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: TBulletStyle): Boolean;
-function TryStrToDisplayStyle(const Str: ThtString; out Display: TDisplayStyle): Boolean;
+function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: ThtAlignmentStyle): Boolean;
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: ThtBoxSizing): Boolean;
+function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: ThtBorderStyle): Boolean;
+function TryStrToBoxFloatStyle(const Str: ThtString; out Float: ThtBoxFloatStyle): Boolean;
+function TryStrToBoxPositionStyle(const Str: ThtString; out Position: ThtBoxPositionStyle): Boolean;
+function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: ThtBulletStyle): Boolean;
+function TryStrToDisplayStyle(const Str: ThtString; out Display: ThtDisplayStyle): Boolean;
 
-function GetPositionInRange(Which: TBackgroundPosition; Where, Range: Integer): Integer;
+function GetPositionInRange(Which: ThtBackgroundPosition; Where, Range: Integer): Integer;
 {
  Returns a positon according to the given settings.
  Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.
@@ -392,7 +392,7 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
 implementation
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
-function RectIntegers(Left, Top, Right, Bottom: Integer): TRectIntegers;
+function htRectIntegers(Left, Top, Right, Bottom: Integer): ThtRectIntegers;
 begin
   Result[reTop] := Top;
   Result[reLeft] := Left;
@@ -401,7 +401,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
-function RectColors(Left, Top, Right, Bottom: TColor): TRectColors;
+function htRectColors(Left, Top, Right, Bottom: TColor): ThtRectColors;
 begin
   Result[reTop] := Top;
   Result[reLeft] := Left;
@@ -410,7 +410,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
-function RectStyles(Left, Top, Right, Bottom: TBorderStyle): TRectStyles;
+function htRectStyles(Left, Top, Right, Bottom: ThtBorderStyle): ThtRectStyles;
 begin
   Result[reTop] := Top;
   Result[reLeft] := Left;
@@ -419,9 +419,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-function MediaTypesToStr(const MediaTypes: TMediaTypes): ThtString;
+function MediaTypesToStr(const MediaTypes: ThtMediaTypes): ThtString;
 var
-  I: TMediaType;
+  I: ThtMediaType;
 begin
   SetLength(Result, 0);
   for I := low(I) to high(I) do
@@ -435,7 +435,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-function TranslateMediaTypes(const MediaTypes: TMediaTypes): TMediaTypes;
+function TranslateMediaTypes(const MediaTypes: ThtMediaTypes): ThtMediaTypes;
 begin
   if mtAll in MediaTypes then
     Result := AllMediaTypes
@@ -444,9 +444,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
-function TryStrToMediaType(const Str: ThtString; out MediaType: TMediaType): Boolean;
+function TryStrToMediaType(const Str: ThtString; out MediaType: ThtMediaType): Boolean;
 var
-  I: TMediaType;
+  I: ThtMediaType;
 begin
   for I := low(I) to high(I) do
     if CMediaTypes[I] = Str then
@@ -459,10 +459,10 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.04.2011 --
-function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): Boolean;
+function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: ThtMediaTypes): Boolean;
 var
   I, J: Integer;
-  MediaType: TMediaType;
+  MediaType: ThtMediaType;
 begin
   Result := False;
   MediaTypes := [];
@@ -482,9 +482,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
-function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlignmentStyle): Boolean;
+function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: ThtAlignmentStyle): Boolean;
 var
-  I: TAlignmentStyle;
+  I: ThtAlignmentStyle;
 begin
   for I := low(I) to high(I) do
     if CAlignmentStyle[I] = Str then
@@ -498,9 +498,9 @@ end;
 
 //-- JPM --------------------------------------------------------- 03.02-2012 --
 
-function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: BoxSizingType): Boolean;
+function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: ThtBoxSizing): Boolean;
 var
-  I: BoxSizingType;
+  I: ThtBoxSizing;
 begin
   for I := low(I) to high(I) do
     if CBoxSizing[I] = Str then
@@ -513,9 +513,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.03.2011 --
-function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: TBorderStyle): Boolean;
+function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: ThtBorderStyle): Boolean;
 var
-  I: TBorderStyle;
+  I: ThtBorderStyle;
 begin
   for I := low(I) to high(I) do
     if CBorderStyle[I] = Str then
@@ -528,9 +528,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function TryStrToBoxFloatStyle(const Str: ThtString; out Float: TBoxFloatStyle): Boolean;
+function TryStrToBoxFloatStyle(const Str: ThtString; out Float: ThtBoxFloatStyle): Boolean;
 var
-  I: TBoxFloatStyle;
+  I: ThtBoxFloatStyle;
 begin
   for I := low(I) to high(I) do
     if CBoxFloatStyle[I] = Str then
@@ -543,9 +543,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function TryStrToBoxPositionStyle(const Str: ThtString; out Position: TBoxPositionStyle): Boolean;
+function TryStrToBoxPositionStyle(const Str: ThtString; out Position: ThtBoxPositionStyle): Boolean;
 var
-  I: TBoxPositionStyle;
+  I: ThtBoxPositionStyle;
 begin
   for I := low(I) to high(I) do
     if CBoxPositionStyle[I] = Str then
@@ -559,9 +559,9 @@ end;
 
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
-function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: TBulletStyle): Boolean;
+function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: ThtBulletStyle): Boolean;
 var
-  I: TBulletStyle;
+  I: ThtBulletStyle;
 begin
   for I := low(I) to high(I) do
     if CBulletStyle[I] = Str then
@@ -574,9 +574,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.03.2011 --
-function TryStrToDisplayStyle(const Str: ThtString; out Display: TDisplayStyle): Boolean;
+function TryStrToDisplayStyle(const Str: ThtString; out Display: ThtDisplayStyle): Boolean;
 var
-  I: TDisplayStyle;
+  I: ThtDisplayStyle;
 begin
   for I := low(I) to high(I) do
     if CDisplayStyle[I] = Str then
@@ -589,7 +589,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function ToRootDisplayStyle(Display: TDisplayStyle): TDisplayStyle; {$ifdef UseInline} inline; {$endif}
+function ToRootDisplayStyle(Display: ThtDisplayStyle): ThtDisplayStyle; {$ifdef UseInline} inline; {$endif}
 begin
   Result := CRootDisplayStyle[Display];
 end;
@@ -733,7 +733,7 @@ const
   PointsPerPixel = PointsPerInch / PixelsPerInch;
 
 type
-  TLengthUnitInfo = record
+  ThtLengthUnitInfo = record
     Name: ThtString;
     Factor: Double; // factor of length unit
     Index: Integer; // index of font size
@@ -744,11 +744,11 @@ type
     fsNone, fsSmaller, fsLarger,
     fsXxSmall, fsXSmall, fsSmall, fsMedium, fsLarge, fsXLarge, fsXxLarge);
 
-  TLengthUnit = luNone..luMm;
-  TFontSize = fsNone..fsXxLarge;
+  ThtLengthUnit = luNone..luMm;
+  ThtFontSize = fsNone..fsXxLarge;
 
 const
-  CUnitInfo: array [ThtUnit] of TLengthUnitInfo = (
+  CUnitInfo: array [ThtUnit] of ThtLengthUnitInfo = (
     // length units
     (Name: '';   Factor: 1.00; IsAbsolute: True),
     (Name: 'em'; Factor: 1.00; IsAbsolute: False),
@@ -774,10 +774,10 @@ const
   );
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function TryStrToLenthUnit(const Str: ThtString; out LengthUnit: TLengthUnit): Boolean;
+function TryStrToLenthUnit(const Str: ThtString; out LengthUnit: ThtLengthUnit): Boolean;
 var
   L: ThtString;
-  I: TLengthUnit;
+  I: ThtLengthUnit;
 begin
   L := htLowerCase(Str);
   for I := low(I) to high(I) do
@@ -791,10 +791,10 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
-function TryStrToFontSize(const Str: ThtString; out FontSize: TFontSize): Boolean;
+function TryStrToFontSize(const Str: ThtString; out FontSize: ThtFontSize): Boolean;
 var
   L: ThtString;
-  I: TFontSize;
+  I: ThtFontSize;
 begin
   L := htLowerCase(Str);
   for I := low(I) to high(I) do
@@ -818,7 +818,7 @@ function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Defa
 var
   V: Double;
   U: ThtString;
-  LU: TLengthUnit;
+  LU: ThtLengthUnit;
 begin
   Result := Default;
   if DecodeSize(Str, V, U) then
@@ -842,10 +842,10 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, Default: Double): Double;
+function StrToFontSize(const Str: ThtString; const FontConv: ThtFontConv; Base, Default: Double): Double;
 {given a font-size ThtString, return the point size}
 
-  function IncFontSize(Increment: TFontSizeIncrement): Double;
+  function IncFontSize(Increment: ThtFontSizeIncrement): Double;
   var
     OldIndex, NewIndex: Byte;
     D1, D2: Double;
@@ -907,8 +907,8 @@ function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, De
 var
   V: Double;
   U: ThtString;
-  LU: TLengthUnit;
-  FS: TFontSize;
+  LU: ThtLengthUnit;
+  FS: ThtFontSize;
 begin
   Result := Default;
   if DecodeSize(Str, V, U) then
@@ -932,10 +932,10 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function StrToFontSize(const Str: ThtString; const FontConvBase: TFontConvBase; DefaultFontSize, Base, Default: Double): Double;
+function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double): Double;
 {given a font-size ThtString, return the point size}
 
-  function IncFontSize(Increment: TFontSizeIncrement): Double;
+  function IncFontSize(Increment: ThtFontSizeIncrement): Double;
   var
     OldIndex, NewIndex: Byte;
     D1, D2: Double;
@@ -997,8 +997,8 @@ function StrToFontSize(const Str: ThtString; const FontConvBase: TFontConvBase; 
 var
   V: Double;
   U: ThtString;
-  LU: TLengthUnit;
-  FS: TFontSize;
+  LU: ThtLengthUnit;
+  FS: ThtFontSize;
 begin
   Result := Default;
   if DecodeSize(Str, V, U) then
@@ -1022,7 +1022,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 07.04.2011 --
-function GetPositionInRange(Which: TBackgroundPosition; Where, Range: Integer): Integer;
+function GetPositionInRange(Which: ThtBackgroundPosition; Where, Range: Integer): Integer;
 {
  Returns a positon according to the given settings.
  Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.

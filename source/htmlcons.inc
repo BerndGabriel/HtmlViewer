@@ -234,6 +234,10 @@
         is no ID or NAME attribute given in the HTML document. The unique ID is
         composed of 'GOID-' and a consecutive number starting with 1}
 
+{.define UseOldStyleTypes}
+        {Style types have been renamed to Tht.. to meet the Delphi style guide that types should start with a 'T'.
+        As long as you did not change your code accordingly you can define this symbol.}
+
 {$ifdef Compiler20_Plus}
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}

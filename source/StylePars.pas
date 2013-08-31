@@ -933,17 +933,17 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
-procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: Boolean);
 var
-  AvailableMedia: TMediaTypes;
+  AvailableMedia: ThtMediaTypes;
 
   procedure ReadAt;
   {read @import and @media}
 
-    function GetMediaTypes: TMediaTypes;
+    function GetMediaTypes: ThtMediaTypes;
     var
       Identifier: ThtString;
-      MediaType: TMediaType;
+      MediaType: ThtMediaType;
     begin
       Result := [];
       SkipWhiteSpace;
@@ -988,7 +988,7 @@ var
 
     procedure DoMedia;
     var
-      Media: TMediaTypes;
+      Media: ThtMediaTypes;
     begin
       Media := GetMediaTypes;
       if Media = [] then
@@ -1035,7 +1035,7 @@ var
     var
       Result: Boolean;
       URL: ThtString;
-      Media: TMediaTypes;
+      Media: ThtMediaTypes;
     begin
       Result := False;
       SkipWhiteSpace;
