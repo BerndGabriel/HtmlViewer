@@ -3209,6 +3209,7 @@ begin
         Properties.Props[MarginTop] := AutoParagraph;
         Properties.Props[MarginBottom] := AutoParagraph;
         Properties.Props[MarginLeft] := IntNull;
+        Properties.Props[PaddingLeft] := ListIndent;
       end;
 
       dl:
