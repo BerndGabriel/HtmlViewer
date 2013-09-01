@@ -14454,8 +14454,13 @@ end;
 constructor TSectionBase.Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
 begin
   inherited;
-  FDisplay := AProp.Display;
-  TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
+  if AProp <> nil then begin
+    FDisplay := AProp.Display;
+    TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
+  end else begin
+    FDisplay := pdUnassigned;
+    TagClass := '.#';
+  end;
   ContentTop := 999999999; {large number in case it has Display: none; }
 
   DrawRect.Top    := 999999999;
@@ -15153,9 +15158,14 @@ constructor TBlockBase.Create(Parent: TCellBasic; Position: Integer; L: TAttribu
 begin
   inherited Create(Parent, L, Prop);
   StartCurs := Position;
-  if not Prop.GetFloat(Floating) then
+  if Prop <> nil then begin
+    if not Prop.GetFloat(Floating) then
+      Floating := ANone;
+    Positioning := Prop.GetPosition;
+  end else begin
     Floating := ANone;
-  Positioning := Prop.GetPosition;
+    Positioning := posStatic;
+  end;
   if Positioning = posAbsolute then
     Floating := ANone;
   
