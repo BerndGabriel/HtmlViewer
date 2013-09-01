@@ -349,13 +349,13 @@ end;
 
 function LogPropDisplay(const AInt : Integer): String; overload;
 begin
-  Result := CPropDisplay[ TPropDisplay(AInt)];
+  Result := CDisplayStyle[ ThtDisplayStyle(AInt)];
 end;
 
 function LogPropDisplay(const AVar : Variant): String; overload;
 begin
   if Variants.VarIsOrdinal(AVar) then begin
-    Result := CPropDisplay[ TPropDisplay(AVar)]  + ' int = '+ IntToStr(AVar);;
+    Result := CDisplayStyle[ ThtDisplayStyle(AVar)]  + ' int = '+ IntToStr(AVar);;
   end else begin
     Result := VarToStr( AVar );
   end;
@@ -375,26 +375,62 @@ end;
 function LogPropBoxSizing(const AVar : Variant): String; overload;
 begin
   if Variants.VarIsOrdinal(AVar) then begin
-    Result := CBoxSizing[BoxSizingType (AVar)]  + ' int = '+ IntToStr(AVar);;
+    Result := CBoxSizing[ThtBoxSizing (AVar)]  + ' int = '+ IntToStr(AVar);
   end else begin
     Result := VarToStr( AVar );
   end;
 end;
 
-function LogPropBorderStyle(const AVar : Variant): String;
+function LogPropBorderStyle(const AInt : Integer): String; overload;
+begin
+  case AInt of
+    0 : Result := CBorderStyle[bssNone ];
+    1 : Result := CBorderStyle[bssSolid ];
+    2 : Result := CBorderStyle[ bssInset ];
+    3 : Result := CBorderStyle[ bssOutset ];
+    4 : Result := CBorderStyle[ bssGroove ];
+    5 : Result := CBorderStyle[ bssRidge ];
+    6 : Result := CBorderStyle[ bssDashed ];
+    7 : Result := CBorderStyle[ bssDotted ];
+    8 : Result := CBorderStyle[ bssDouble ];
+  else
+    Result := 'Error value is '+IntToStr(AInt);
+  end;
+end;
+
+function LogPropBorderStyle(const AVar : Variant): String; overload;
 begin
   if Variants.VarIsOrdinal(AVar) then begin
-    Result := CBorderStyle[ ThtBorderStyle ( AVar )]  + ' int = '+ IntToStr(AVar);;
+    Result := CBorderStyle[ ThtBorderStyle ( AVar )]  + ' int = '+ IntToStr(AVar);
   end else begin
     Result := VarToStr( AVar);
   end;
 
 end;
 
-function LogPropListStyle(const AVar : Variant): String;
+function LogPropListStyle(const AInt : Integer): String; overload;
+begin
+  case AInt of
+    0 : Result := CBulletStyle[ lbBlank ];
+    1 : Result := CBulletStyle[ lbCircle ];
+    2 : Result := CBulletStyle[ lbDecimal ];
+    3 : Result := CBulletStyle[ lbDisc ];
+    4 : Result := CBulletStyle[ lbLowerAlpha ];
+    5 : Result := CBulletStyle[ lbLowerRoman ];
+    6 : Result := CBulletStyle[ lbNone ];
+    7 : Result := CBulletStyle[ lbSquare ];
+    8 : Result := CBulletStyle[ lbUpperAlpha ];
+    9 : Result := CBulletStyle[ lbUpperRoman ];
+  else
+    Result := 'Error value is '+IntToStr(AInt);
+  end;
+//  Result := CBoxSizing[BoxSizingType (AInt)];
+end;
+
+function LogPropListStyle(const AVar : Variant): String; overload;
 begin
   if Variants.VarIsOrdinal(AVar) then begin
-    Result := CListStyleType[ ListBulletType ( AVar )]  + ' int = '+ IntToStr(AVar);;
+    Result := CBulletStyle[ ThtBulletStyle ( AVar )]  + ' int = '+ IntToStr(AVar);;
   end else begin
     Result := VarToStr( AVar);
   end;
