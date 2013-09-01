@@ -35,6 +35,7 @@ uses
   HtmlBoxes,
   HtmlDocument,
   HtmlElements,
+  HtmlFonts,
   HtmlImages,
   HtmlRenderer,
   StyleTypes;
@@ -215,6 +216,7 @@ end;
 procedure TCustomHtmlViewer.UpdateDocument;
 // Rebuild internal representation after document/structure or client rect has changed.
 var
+  DefaultFont: ThtFont;
   Renderer: THtmlVisualRenderer;
 begin
   if vsDocumentChanged in FState then
@@ -226,13 +228,20 @@ begin
       // setting bounds rect may have called Resize and thus has updated the document already.
       if vsDocumentChanged in FState then
       begin
-        Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, FImageCache, mtScreen, nil, ClientWidth, ClientHeight);
+        DefaultFont := ThtFont.Create;
         try
-          Renderer.MediaCapabilities := [mcFrames];
-          Renderer.RenderDocument(Self, FView);
+          DefaultFont.Assign(Font);
+          DefaultFont.bgColor := Color;
+          Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, FImageCache, mtScreen, DefaultFont, ClientWidth, ClientHeight);
+          try
+            Renderer.MediaCapabilities := [mcFrames];
+            Renderer.RenderDocument(Self, FView);
+          finally
+            Include(FState, vsViewChanged);
+            Renderer.Free;
+          end;
         finally
-          Include(FState, vsViewChanged);
-          Renderer.Free;
+          DefaultFont.Free;
         end;
       end;
     end;

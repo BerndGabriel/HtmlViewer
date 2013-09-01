@@ -30,7 +30,7 @@ unit HtmlRenderer;
 interface
 
 uses
-  Windows, SysUtils,
+  Windows, Types, SysUtils,
   Classes, Controls, Contnrs, Graphics, Variants, Math,
   //
   BegaClasses,
@@ -159,11 +159,7 @@ type
     function GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
     function SketchMap: TSketchMap; {$ifdef UseInline} inline; {$endif}
     procedure GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
-    procedure SetPropertiesToBox(
-      Element: THtmlElement;
-      Box: THtmlBox;
-      Properties: TResultingPropertyMap;
-      Top: Integer);
+    procedure SetPropertiesToBox(Box: THtmlBox; Top: Integer);
     //
     function CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
     procedure CreateChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
@@ -330,6 +326,7 @@ begin
   FControls := ControlMap;
   FImages := ImageCache;
   FDefaultFont := DefaultFont;
+  FDefaultFont.AssignToFontInfo(FDefaultFontInfo);
   FHeight := Height;
 end;
 
@@ -339,7 +336,6 @@ var
   Properties: TResultingPropertyMap;
   Info: THtmlElementBoxingInfo;
   Control: THtmlBodyControl;
-  OldCanvas: TCanvas;
 begin
   if ParentBox = nil then
     raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil.');
@@ -535,8 +531,8 @@ procedure THtmlVisualRenderer.GetFontInfo(Props: TResultingPropertyMap; out Font
 var
   Style: TFontStyles;
 begin
-  Font.ibgColor := Props[BackgroundColor].GetColor(Parent.ibgColor, Default.ibgColor);
-  Font.iColor := Props[Color].GetColor(Parent.iColor, Default.iColor);
+  Font.ibgColor := Props.GetColor(BackgroundColor, Parent.ibgColor, Default.ibgColor);
+  Font.iColor := Props.GetColor(Color, Parent.iColor, Default.iColor);
 
   Style := [];
   if Props[FontWeight].GetFontWeight(Parent.iWeight, Default.iWeight) >= 600 then
@@ -603,7 +599,7 @@ begin
   try
     if Box is THtmlScrollControlBox then
       FCanvas := THtmlScrollControlBox(Box).Control.Canvas;
-    SetPropertiesToBox(Box.Element, Box, Box.Properties, Top);
+    SetPropertiesToBox(Box, Top);
     RenderChildren(Box);
   finally
     FCanvas := OldCanvas;
@@ -641,13 +637,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
-procedure THtmlVisualRenderer.SetPropertiesToBox(
-  Element: THtmlElement;
-  Box: THtmlBox;
+procedure THtmlVisualRenderer.SetPropertiesToBox(Box: THtmlBox; Top: Integer);
+var
   Properties: TResultingPropertyMap;
-  Top: Integer);
 
-  function GetTextSize(Text: String; out TextSize: TSize): Integer;
+  procedure GetTextSize(Text: String; out TextSize: TSize);
   begin
     FCanvas.Font := Box.Font;
     GetTSize(FCanvas.Handle, PWideChar(Text), Length(Text), TextSize);
@@ -712,6 +706,7 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(
 
 var
   ParentBox: THtmlBox;
+  ParentFontInfo: ThtFontInfo;
   FontInfo: ThtFontInfo;
   EmBase: Integer;
   Font: ThtFont;
@@ -719,6 +714,9 @@ var
   Rect: TRect;
   TextSize: TSize;
 begin
+  Properties := Box.Properties;
+
+  // Get non-anonymous parent box. Anonymous boxes aren't defined by author, but added by renderer.
   ParentBox := Box.Parent;
   while ParentBox is THtmlAnonymousBox do
     ParentBox := ParentBox.Parent;
@@ -726,7 +724,12 @@ begin
     ParentBox := DefaultBox;
 
   // Font
-  GetFontInfo(Properties, FontInfo, FDefaultFontInfo, FDefaultFontInfo);
+  if ParentBox <> nil then
+    ParentBox.Font.AssignToFontInfo(ParentFontInfo)
+  else
+    ParentFontInfo := FDefaultFontInfo;
+
+  GetFontInfo(Properties, FontInfo, ParentFontInfo, FDefaultFontInfo);
   Font := AllMyFonts.GetFontLike(FontInfo);
   Box.Font := Font;
   EmBase := Font.EmSize;
@@ -766,7 +769,7 @@ begin
         InflateRect(Rect, Rect, Box.BorderWidths);
         InflateRect(Rect, Rect, Box.Paddings);
         OffsetRect(Rect, Classes.Rect(- Rect.Left, Top - Rect.Top, -Rect.Left, Top - Rect.Top));
-        case Element.Symbol of
+        case Box.Element.Symbol of
           BodySy:
           begin
             if Rect.Right < ParentWidth then

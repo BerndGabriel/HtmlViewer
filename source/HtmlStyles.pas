@@ -371,7 +371,7 @@ type
     function GetFontName(Parent, Default: ThtString): ThtString;
     function GetFontSize(DefaultFontSize, Parent, Default: Double): Double;
     function GetFontWeight(Parent, Default: Integer): Integer;
-    function GetLength(Parent, Base, EmBase, Default: Double): Double;
+    function GetLength(Parent, HundredPercent, EmBase, Default: Double): Double;
     function GetPosition(Parent, Default: TBoxPositionStyle): TBoxPositionStyle;
     function GetTextDecoration(Parent, Default: TFontStyles): TFontStyles;
     function GetValue(Parent, Default: Variant): Variant;
@@ -407,6 +407,7 @@ type
   public
     destructor Destroy; override;
     function Get(Index: TStylePropertySymbol): TResultingProperty; {$ifdef UseInline} inline; {$endif}
+    function GetColor(Sy: TPropertySymbol; Parent, Default: TColor): TColor;
     function GetColors(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectColors): TRectColors;
     function GetLengths(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectIntegers; BaseSize: Integer): TRectIntegers;
     function GetStyles(Left, Top, Right, Bottom: TPropertySymbol; const Parent, Default: TRectStyles): TRectStyles;
@@ -1200,7 +1201,7 @@ function TResultingProperty.GetFontName(Parent, Default: ThtString): ThtString;
   end;
 
 begin
-  Result := Default;
+  Result := Parent;
   if Self <> nil then
     if Prop.Value = Inherit then
       Result := Parent
@@ -1214,7 +1215,7 @@ end;
 //-- BG ---------------------------------------------------------- 03.05.2011 --
 function TResultingProperty.GetFontSize(DefaultFontSize, Parent, Default: Double): Double;
 begin
-  Result := Default;
+  Result := Parent;
   if Self <> nil then
     if Prop.Value = Inherit then
       Result := Parent
@@ -1235,7 +1236,7 @@ function TResultingProperty.GetFontWeight(Parent, Default: Integer): Integer;
 // bolder  | 400 400 400 700 700 900 900 900 900
 // lighter | 100 100 100 100 100 400 400 700 700
 begin
-  Result := Default;
+  Result := Parent;
   if Self <> nil then
     if Prop.Value = Inherit then
       Result := Parent
@@ -1268,7 +1269,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --
-function TResultingProperty.GetLength(Parent, Base, EmBase, Default: Double): Double;
+function TResultingProperty.GetLength(Parent, HundredPercent, EmBase, Default: Double): Double;
 {
  Return the calculated length.
  if Relative is true,
@@ -1282,8 +1283,8 @@ begin
       Result := Prop.Value
     else if VarIsStr(Prop.Value) then
     begin
-      Result := StrToLength(Prop.Value, False, Parent, EmBase, Default);
-      Prop.Value := Result;
+      Result := StrToLength(Prop.Value, False, HundredPercent, EmBase, Default);
+      //Prop.Value := Result;
     end;
 end;
 
@@ -1444,6 +1445,20 @@ begin
   Result[reTop]    := Properties[Top].   GetColor(Parent[reTop],    Default[reTop]   );
   Result[reRight]  := Properties[Right]. GetColor(Parent[reRight],  Default[reRight] );
   Result[reBottom] := Properties[Bottom].GetColor(Parent[reBottom], Default[reBottom]);
+end;
+
+//-- BG ---------------------------------------------------------- 01.09.2013 --
+function TResultingPropertyMap.GetColor(Sy: TPropertySymbol; Parent, Default: TColor): TColor;
+var
+  Prop: TResultingProperty;
+begin
+  Prop := Properties[Sy];
+  if Prop <> nil then
+    Result := Prop.GetColor(Parent, Default)
+  else if IsPropertyInherited(Sy) then
+    Result := Parent
+  else
+    Result := Default;
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --

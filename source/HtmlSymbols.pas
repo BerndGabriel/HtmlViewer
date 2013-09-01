@@ -404,6 +404,7 @@ function TryStrToLinkType(const Str: ThtString; out LinkType: THtmlLinkType): Bo
 function AttributeSymbolToStr(Sy: THtmlAttributeSymbol): ThtString;
 function TryStrToAttributeSymbol(const Str: ThtString; out Sy: THtmlAttributeSymbol): Boolean;
 
+function IsPropertyInherited(Sy: TPropertySymbol): Boolean;
 function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
 function TryStrToPropertySymbol(const Str: ThtString; out Sy: TPropertySymbol): Boolean;
 
@@ -766,85 +767,86 @@ type
   TPropertyDescription = record
     Name: ThtString;
     Symbol: TPropertySymbol;
+    Inherit: Boolean;
   end;
 
 const
   CPropertyDescriptions: array [1..73] of TPropertyDescription = (
-    (Name: 'font-family';              Symbol: FontFamily),
-    (Name: 'font-size';                Symbol: FontSize),
-    (Name: 'font-style';               Symbol: FontStyle),
-    (Name: 'font-weight';              Symbol: FontWeight),
-    (Name: 'text-align';               Symbol: TextAlign),
-    (Name: 'text-decoration';          Symbol: TextDecoration),
-    (Name: 'letter-spacing';           Symbol: LetterSpacing),
-    (Name: 'color';                    Symbol: Color),
-    (Name: 'background-color';         Symbol: BackgroundColor),
-    (Name: 'margin-top';               Symbol: MarginTop),
-    (Name: 'margin-right';             Symbol: MarginRight),
-    (Name: 'margin-bottom';            Symbol: MarginBottom),
-    (Name: 'margin-left';              Symbol: MarginLeft),
-    (Name: 'padding-top';              Symbol: PaddingTop),
-    (Name: 'padding-right';            Symbol: PaddingRight),
-    (Name: 'padding-bottom';           Symbol: PaddingBottom),
-    (Name: 'padding-left';             Symbol: PaddingLeft),
-    (Name: 'border-top-width';         Symbol: BorderTopWidth),
-    (Name: 'border-right-width';       Symbol: BorderRightWidth),
-    (Name: 'border-bottom-width';      Symbol: BorderBottomWidth),
-    (Name: 'border-left-width';        Symbol: BorderLeftWidth),
-    (Name: 'border-top-color';         Symbol: BorderTopColor),
-    (Name: 'border-right-color';       Symbol: BorderRightColor),
-    (Name: 'border-bottom-color';      Symbol: BorderBottomColor),
-    (Name: 'border-left-color';        Symbol: BorderLeftColor),
-    (Name: 'border-top-style';         Symbol: BorderTopStyle),
-    (Name: 'border-right-style';       Symbol: BorderRightStyle),
-    (Name: 'border-bottom-style';      Symbol: BorderBottomStyle),
-    (Name: 'border-left-style';        Symbol: BorderLeftStyle),
-    (Name: 'width';                    Symbol: psWidth),
-    (Name: 'height';                   Symbol: psHeight),
-    (Name: 'top';                      Symbol: psTop),
-    (Name: 'bottom';                   Symbol: psBottom),
-    (Name: 'right';                    Symbol: psRight),
-    (Name: 'left';                     Symbol: psLeft),
-    (Name: 'visibility';               Symbol: Visibility),
-    (Name: 'line-height';              Symbol: LineHeight),
-    (Name: 'background-image';         Symbol: BackgroundImage),
-    (Name: 'background-position';      Symbol: BackgroundPosition),
-    (Name: 'background-repeat';        Symbol: BackgroundRepeat),
-    (Name: 'background-attachment';    Symbol: BackgroundAttachment),
-    (Name: 'vertical-align';           Symbol: VerticalAlign),
-    (Name: 'position';                 Symbol: psPosition),
-    (Name: 'z-index';                  Symbol: ZIndex),
-    (Name: 'list-style-type';          Symbol: ListStyleType),
-    (Name: 'list-style-image';         Symbol: ListStyleImage),
-    (Name: 'float';                    Symbol: psFloat),
-    (Name: 'clear';                    Symbol: psClear),
-    (Name: 'text-indent';              Symbol: TextIndent),
-    (Name: 'page-break-before';        Symbol: PageBreakBefore),
-    (Name: 'page-break-after';         Symbol: PageBreakAfter),
-    (Name: 'page-break-inside';        Symbol: PageBreakInside),
-    (Name: 'text-transform';           Symbol: TextTransform),
-    (Name: 'word-wrap';                Symbol: WordWrap),
-    (Name: 'font-variant';             Symbol: FontVariant),
-    (Name: 'border-collapse';          Symbol: BorderCollapse),
-    (Name: 'overflow';                 Symbol: OverFlow),
-    (Name: 'display';                  Symbol: psDisplay),
-    (Name: 'empty-cells';              Symbol: psEmptyCells),
-    (Name: 'white-space';              Symbol: psWhiteSpace),
+    (Name: 'background-attachment';    Symbol: BackgroundAttachment;  Inherit: False),
+    (Name: 'background-color';         Symbol: BackgroundColor;       Inherit: False),
+    (Name: 'background-image';         Symbol: BackgroundImage;       Inherit: False),
+    (Name: 'background-position';      Symbol: BackgroundPosition;    Inherit: False),
+    (Name: 'background-repeat';        Symbol: BackgroundRepeat;      Inherit: False),
+    (Name: 'border-bottom-color';      Symbol: BorderBottomColor;     Inherit: False),
+    (Name: 'border-bottom-style';      Symbol: BorderBottomStyle;     Inherit: False),
+    (Name: 'border-bottom-width';      Symbol: BorderBottomWidth;     Inherit: False),
+    (Name: 'border-collapse';          Symbol: BorderCollapse;        Inherit: True),
+    (Name: 'border-left-color';        Symbol: BorderLeftColor;       Inherit: False),
+    (Name: 'border-left-style';        Symbol: BorderLeftStyle;       Inherit: False),
+    (Name: 'border-left-width';        Symbol: BorderLeftWidth;       Inherit: False),
+    (Name: 'border-right-color';       Symbol: BorderRightColor;      Inherit: False),
+    (Name: 'border-right-style';       Symbol: BorderRightStyle;      Inherit: False),
+    (Name: 'border-right-width';       Symbol: BorderRightWidth;      Inherit: False),
+    (Name: 'border-top-color';         Symbol: BorderTopColor;        Inherit: False),
+    (Name: 'border-top-style';         Symbol: BorderTopStyle;        Inherit: False),
+    (Name: 'border-top-width';         Symbol: BorderTopWidth;        Inherit: False),
+    (Name: 'bottom';                   Symbol: psBottom;              Inherit: False),
+    (Name: 'clear';                    Symbol: psClear;               Inherit: False),
+    (Name: 'color';                    Symbol: Color;                 Inherit: True),
+    (Name: 'display';                  Symbol: psDisplay;             Inherit: False),
+    (Name: 'empty-cells';              Symbol: psEmptyCells;          Inherit: True),
+    (Name: 'float';                    Symbol: psFloat;               Inherit: False),
+    (Name: 'font-family';              Symbol: FontFamily;            Inherit: True),
+    (Name: 'font-size';                Symbol: FontSize;              Inherit: True),
+    (Name: 'font-style';               Symbol: FontStyle;             Inherit: True),
+    (Name: 'font-variant';             Symbol: FontVariant;           Inherit: True),
+    (Name: 'font-weight';              Symbol: FontWeight;            Inherit: True),
+    (Name: 'height';                   Symbol: psHeight;              Inherit: False),
+    (Name: 'left';                     Symbol: psLeft;                Inherit: False),
+    (Name: 'letter-spacing';           Symbol: LetterSpacing;         Inherit: True),
+    (Name: 'line-height';              Symbol: LineHeight;            Inherit: True),
+    (Name: 'list-style-image';         Symbol: ListStyleImage;        Inherit: True),
+    (Name: 'list-style-type';          Symbol: ListStyleType;         Inherit: True),
+    (Name: 'margin-bottom';            Symbol: MarginBottom;          Inherit: False),
+    (Name: 'margin-left';              Symbol: MarginLeft;            Inherit: False),
+    (Name: 'margin-right';             Symbol: MarginRight;           Inherit: False),
+    (Name: 'margin-top';               Symbol: MarginTop;             Inherit: False),
+    (Name: 'overflow';                 Symbol: OverFlow;              Inherit: False),
+    (Name: 'padding-bottom';           Symbol: PaddingBottom;         Inherit: False),
+    (Name: 'padding-left';             Symbol: PaddingLeft;           Inherit: False),
+    (Name: 'padding-right';            Symbol: PaddingRight;          Inherit: False),
+    (Name: 'padding-top';              Symbol: PaddingTop;            Inherit: False),
+    (Name: 'page-break-after';         Symbol: PageBreakAfter;        Inherit: False),
+    (Name: 'page-break-before';        Symbol: PageBreakBefore;       Inherit: False),
+    (Name: 'page-break-inside';        Symbol: PageBreakInside;       Inherit: False),
+    (Name: 'position';                 Symbol: psPosition;            Inherit: False),
+    (Name: 'right';                    Symbol: psRight;               Inherit: False),
+    (Name: 'text-align';               Symbol: TextAlign;             Inherit: True),
+    (Name: 'text-decoration';          Symbol: TextDecoration;        Inherit: False),
+    (Name: 'text-indent';              Symbol: TextIndent;            Inherit: True),
+    (Name: 'text-transform';           Symbol: TextTransform;         Inherit: True),
+    (Name: 'top';                      Symbol: psTop;                 Inherit: False),
+    (Name: 'vertical-align';           Symbol: VerticalAlign;         Inherit: False),
+    (Name: 'visibility';               Symbol: Visibility;            Inherit: True),
+    (Name: 'white-space';              Symbol: psWhiteSpace;          Inherit: True),
+    (Name: 'width';                    Symbol: psWidth;               Inherit: False),
+    (Name: 'word-wrap';                Symbol: WordWrap;              Inherit: False),
+    (Name: 'z-index';                  Symbol: ZIndex;                Inherit: False),
 
     // short hand names
-    (Name: 'margin';                   Symbol: MarginX),
-    (Name: 'padding';                  Symbol: PaddingX),
-    (Name: 'border-width';             Symbol: BorderWidthX),
-    (Name: 'border';                   Symbol: BorderX),
-    (Name: 'border-top';               Symbol: BorderTX),
-    (Name: 'border-right';             Symbol: BorderRX),
-    (Name: 'border-bottom';            Symbol: BorderBX),
-    (Name: 'border-left';              Symbol: BorderLX),
-    (Name: 'font';                     Symbol: FontX),
-    (Name: 'background';               Symbol: BackgroundX),
-    (Name: 'list-style';               Symbol: ListStyleX),
-    (Name: 'border-color';             Symbol: BorderColorX),
-    (Name: 'border-style';             Symbol: BorderStyleX)
+    (Name: 'margin';                   Symbol: MarginX;               Inherit: False),
+    (Name: 'padding';                  Symbol: PaddingX;              Inherit: False),
+    (Name: 'border-width';             Symbol: BorderWidthX;          Inherit: False),
+    (Name: 'border';                   Symbol: BorderX;               Inherit: False),
+    (Name: 'border-top';               Symbol: BorderTX;              Inherit: False),
+    (Name: 'border-right';             Symbol: BorderRX;              Inherit: False),
+    (Name: 'border-bottom';            Symbol: BorderBX;              Inherit: False),
+    (Name: 'border-left';              Symbol: BorderLX;              Inherit: False),
+    (Name: 'font';                     Symbol: FontX;                 Inherit: True),
+    (Name: 'background';               Symbol: BackgroundX;           Inherit: False),
+    (Name: 'list-style';               Symbol: ListStyleX;            Inherit: True),
+    (Name: 'border-color';             Symbol: BorderColorX;          Inherit: False),
+    (Name: 'border-style';             Symbol: BorderStyleX;          Inherit: False)
   );
 
 var
@@ -896,6 +898,12 @@ end;
 function PropertySymbolToStr(Sy: TPropertySymbol): ThtString;
 begin
   Result := PPropertyDescription(PropertyDescriptions.Objects[PropertyDescriptionsIndex[Sy]]).Name;
+end;
+
+//-- BG ---------------------------------------------------------- 27.03.2011 --
+function IsPropertyInherited(Sy: TPropertySymbol): Boolean;
+begin
+  Result := PPropertyDescription(PropertyDescriptions.Objects[PropertyDescriptionsIndex[Sy]]).Inherit;
 end;
 
 //------------------------------------------------------------------------------

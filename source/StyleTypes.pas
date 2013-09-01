@@ -338,7 +338,7 @@ function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): 
 function StrToFontName(const Str: ThtString): ThtString;
 function StrToFontSize(const Str: ThtString; const FontConvBase: TFontConvBase; DefaultFontSize, Base, Default: Double): Double; overload;
 function StrToFontSize(const Str: ThtString; const FontConv: TFontConv; Base, Default: Double): Double; overload;
-function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+function StrToLength(const Str: ThtString; Relative: Boolean; HundredPercent, EmBase, Default: Double): Double;
 
 function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: TAlignmentStyle): Boolean;
 function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: BoxSizingType): Boolean;
@@ -804,7 +804,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+function StrToLength(const Str: ThtString; Relative: Boolean; HundredPercent, EmBase, Default: Double): Double;
 {
  Given a length string, return the appropriate pixel value.
  Base is the base value for a relative value without unit or with percentage.
@@ -823,14 +823,14 @@ begin
     if U = '' then
     begin
       if Relative then
-        Result := V * Base;
+        Result := V * HundredPercent;
     end
     else if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
         if IsAbsolute then
           Result := V * Factor
         else if LU = luPercent then
-          Result := V * Factor * Base
+          Result := V * Factor * HundredPercent
         else
           Result := V * Factor * EmBase
     else

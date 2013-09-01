@@ -79,7 +79,9 @@ type
     constructor Create; {$ifdef LCL} override; {$endif}
     procedure Assign(const Info: ThtFontInfo); reintroduce; overload;
     procedure Assign(Source: TPersistent); overload; override;
+    procedure AssignToFontInfo(var Info: ThtFontInfo);
     procedure AssignToCanvas(Canvas: TCanvas);
+    procedure UpdateFontMetrix;
   end;
 
   ThtFontCache = class
@@ -121,8 +123,11 @@ end;
 {----------------TMyFont.Assign}
 
 procedure ThtFont.Assign(Source: TPersistent);
+var
+  Updated: Boolean;
 begin
-  if Source is ThtFont then
+  Updated := Source is ThtFont;
+  if Updated then
   begin
     bgColor := ThtFont(Source).bgColor;
     tmHeight := ThtFont(Source).tmHeight;
@@ -136,6 +141,8 @@ begin
     ExSize := ThtFont(Source).ExSize;
   end;
   inherited Assign(Source);
+  if not Updated and (Source is TFont) then
+    UpdateFontMetrix;
 end;
 
 //-- BG ---------------------------------------------------------- 12.03.2011 --
@@ -147,6 +154,7 @@ begin
   bgColor := Info.ibgColor;
   Color := Info.iColor;
   CharSet := Info.iCharSet;
+  UpdateFontMetrix;
 end;
 
 procedure ThtFont.AssignToCanvas(Canvas: TCanvas);
@@ -155,10 +163,73 @@ begin
   SetTextCharacterExtra(Canvas.Handle, CharExtra);
 end;
 
+//-- BG ---------------------------------------------------------- 01.09.2013 --
+procedure ThtFont.AssignToFontInfo(var Info: ThtFontInfo);
+begin
+  Info.iName := Name;
+  Info.iSize := Round((-Height * 72) / Screen.PixelsPerInch);
+  Info.iStyle := Style;
+  Info.ibgColor := bgColor;
+  Info.iColor := Color;
+  Info.iCharSet := CharSet;
+  if fsBold in Style then
+    Info.iWeight := 600
+  else
+    Info.iWeight := 400;
+end;
+
 constructor ThtFont.Create;
 begin
   inherited;
   Charset := DEFAULT_CHARSET;
+end;
+
+//-- BG ---------------------------------------------------------- 01.09.2013 --
+procedure ThtFont.UpdateFontMetrix;
+var
+  Save: THandle;
+  SaveCharSet: TFontCharSet;
+  tm: TTextmetric;
+  DC: HDC;
+begin
+  // If this is a Symbol charset, then keep it that way.
+  // To check the font's real charset, use Default_Charset
+  SaveCharSet := CharSet;
+  CharSet := Default_Charset;
+  DC := GetDC(0);
+  try
+    Save := SelectObject(DC, Handle);
+    try
+      GetTextMetrics(DC, tm);
+    finally
+      SelectObject(DC, Save);
+    end;
+    if tm.tmCharset = Symbol_Charset then
+      Charset := Symbol_CharSet
+    else
+      Charset := SaveCharSet;
+    {now get the info on the finalized font}
+    if Charset <> Default_Charset then {else already have the textmetrics}
+    begin
+      Save := SelectObject(DC, Handle);
+      try
+        GetTextMetrics(DC, tm);
+      finally
+        SelectObject(DC, Save);
+      end;
+    end;
+  finally
+    ReleaseDC(0, DC);
+  end;
+  {calculate EmSize with current font rather than inherited}
+  EmSize := tm.tmHeight - tm.tmInternalLeading;
+  ExSize := EmSize div 2; {apparently correlates with what browsers are doing}
+  tmHeight := tm.tmHeight;
+  tmDescent := tm.tmDescent;
+  tmExternalLeading := tm.tmExternalLeading;
+  tmMaxCharWidth := tm.tmMaxCharWidth;
+  tmAveCharWidth := tm.tmAveCharWidth;
+  tmCharset := tm.tmCharset;
 end;
 
 { TMyFontCache }
@@ -236,60 +307,14 @@ end;
 function ThtFontCache.GetFontLike(var Font: ThtFontInfo): ThtFont;
 var
   SameFont: ThtFont;
-  Save: THandle;
-  SaveCharSet: TFontCharSet;
-  tm: TTextmetric;
-  DC: HDC;
   V: Variant;
 begin
   SameFont := Find(Font);
   if SameFont = nil then
   begin
     SameFont := ThtFont.Create;
-    SameFont.Name := Font.iName;
-    SameFont.Height := -Round(Font.iSize * Screen.PixelsPerInch / 72);
-    SameFont.Style := Font.iStyle;
-    SameFont.Charset := Font.iCharSet;
+    SameFont.Assign(Font);
     Add(SameFont);
-
-    // If this is a Symbol charset, then keep it that way.
-    // To check the font's real charset, use Default_Charset
-    SaveCharSet := SameFont.CharSet;
-    SameFont.CharSet := Default_Charset;
-    DC := GetDC(0);
-    try
-      Save := SelectObject(DC, SameFont.Handle);
-      try
-        GetTextMetrics(DC, tm);
-      finally
-        SelectObject(DC, Save);
-      end;
-      if tm.tmCharset = Symbol_Charset then
-        SameFont.Charset := Symbol_CharSet
-      else
-        SameFont.Charset := SaveCharSet;
-      {now get the info on the finalized font}
-      if SameFont.Charset <> Default_Charset then {else already have the textmetrics}
-      begin
-        Save := SelectObject(DC, SameFont.Handle);
-        try
-          GetTextMetrics(DC, tm);
-        finally
-          SelectObject(DC, Save);
-        end;
-      end;
-    finally
-      ReleaseDC(0, DC);
-    end;
-    {calculate EmSize with current font rather than inherited}
-    SameFont.EmSize := tm.tmHeight - tm.tmInternalLeading;
-    SameFont.ExSize := SameFont.EmSize div 2; {apparently correlates with what browsers are doing}
-    SameFont.tmHeight := tm.tmHeight;
-    SameFont.tmDescent := tm.tmDescent;
-    SameFont.tmExternalLeading := tm.tmExternalLeading;
-    SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
-    SameFont.tmAveCharWidth := tm.tmAveCharWidth;
-    SameFont.tmCharset := tm.tmCharset;
   end;
 
   Result := ThtFont.Create;
