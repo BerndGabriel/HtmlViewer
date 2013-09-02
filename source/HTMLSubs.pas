@@ -10447,7 +10447,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
               end;
             end;
         end
-        else
+        else if TotalDesHt > 0 then
         begin {expand desired hts to fit}
           Sum := 0;
           F := AHeight / TotalDesHt;
@@ -10458,7 +10458,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           end;
           Heights[Rows.Count - 1] := AHeight - Sum; {last row is the difference}
         end
-      else
+      else if TotalDesHt - TotalMinHt <> 0 then 
       begin
         Sum := 0;
         F := (AHeight - TotalMinHt) / (TotalDesHt - TotalMinHt);
