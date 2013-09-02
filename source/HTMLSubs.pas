@@ -7167,14 +7167,14 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
       else if Stream = ErrorStream then
         Result := nil
       else if Stream <> nil then
+      begin
         try
           Result := LoadImageFromStream(Stream, Transparent);
         finally
           if Assigned(GottenImage) then
             GottenImage(TheOwner, BMName, Stream);
-        end
-      else
-        Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent);
+        end;
+      end;
     end;
   end;
 
@@ -7229,16 +7229,17 @@ begin
     {The image is not loaded yet, need to get it}
       if Copy(Name, 1, 11) = 'data:image/' then
         GetTheBase64(Name)
-      else if Assigned(GetBitmap) or Assigned(GetImage) then
+      else
       begin
         GetTheBitmap;
-        GetTheStream;
-      end
-      else
-        Result := LoadImageFromFile(BMName, Transparent);
+        if Result = nil then
+          GetTheStream;
+        if (Result = nil) and not Delay then
+          Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent);
+      end;
 
       if Result <> nil then {put in Image List for use later also}
-        ImageCache.AddObject(UName, Result); {put new bitmap in list}
+        ImageCache.AddObject(UName, Result); {put new image in list}
     end;
   end;
 end;
