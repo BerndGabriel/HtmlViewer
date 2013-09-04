@@ -672,7 +672,7 @@ begin
   NumImageDone := 0;
   Progress(0, 0);
   Gauge.Visible := True;
-  URL1 := Normalize(URL);
+  URL1 := DecodeURL(Normalize(URL));
 (*URLComboBox.Text := URL1; *)    {Probably don't want this}
   URLBase := GetUrlBase(URL1);
   DisableControls;
