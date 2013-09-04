@@ -2936,7 +2936,7 @@ function TFVBase.HotSpotClickHandled(const FullUrl: ThtString; const Target: Tht
 begin
   Result := False;
   if Assigned(OnHotSpotTargetClick) then
-    OnHotSpotTargetClick(Self, Target, FURL, Result);
+    OnHotSpotTargetClick(Self, Target, FullUrl, Result);
 end;
 
 {----------------TFrameViewer.HotSpotClick}
