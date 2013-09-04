@@ -313,7 +313,6 @@ procedure LogProperties(AProp : TProperties; const APropName : String);
 {$endif}
 
 procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
-procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
 procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
 
 implementation
@@ -1554,62 +1553,65 @@ begin
   {Important!!!
 
   You have to do this with settings.  This is only for FindWidth methods}
-  if not AUseQuirksMode then begin
-    if AMarg[piMaxWidth] > 0 then begin
+  if not AUseQuirksMode then
+  begin
+    if AMarg[piMaxWidth] > 0 then
+    begin
       VMaxWidth := AMarg[piMaxWidth];
-      AMarg[piWidth] := Min(AMarg[piMaxWidth],AMarg[piWidth]);
+      AMarg[piWidth] := Min(AMarg[piMaxWidth], AMarg[piWidth]);
     end;
-    if AMarg[piMinWidth] > 0 then begin
-      AMarg[piWidth] := Max(AMarg[piMinWidth],AMarg[piWidth]);
+
+    if AMarg[piMinWidth] > 0 then
+    begin
+      AMarg[piWidth] := Max(AMarg[piMinWidth], AMarg[piWidth]);
       VMinWidth := AMarg[piWidth];
     end;
   end;
 end;
 
 procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
+
+  procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
+  begin
+    if AMarg[piWidth] > -1 then
+      Dec(AMarg[piWidth], AMarg[BorderLeftWidth] + AMarg[PaddingLeft] + AMarg[PaddingRight] + AMarg[BorderRightWidth]);
+
+    if AMarg[piHeight] > -1 then
+      Dec(AMarg[piHeight], AMarg[BorderTopWidth] + AMarg[PaddingTop] + AMarg[PaddingBottom] + AMarg[BorderBottomWidth]);
+  end;
+
 begin
-  if AUseQuirksMode then begin
-    ApplyBorderBoxModel(AMarg);
-  end else begin
+  if AUseQuirksMode then
+    ApplyBorderBoxModel(AMarg)
+  else
+  begin
     {JPM:  This test is here to prevent AMarg[piWidth] from being ruined
     if it is set to Auto.  If it is ruined, AutoCount might be incremented
     correctly causing a rendering bug. }
-    if AMarg[piWidth] > -1 then begin
-    //width
-      if AMarg[piMaxWidth] > 0 then begin
-        AMarg[piWidth] := Min(AMarg[piWidth],AMarg[piMaxWidth]);
-      end;
 
-      if AMarg[piMinWidth] > 0 then begin
-        AMarg[piWidth] := Max(AMarg[piWidth],AMarg[piMinWidth]);
-      end;
-    end;
-    //height
-    if AMarg[piMaxHeight] > 0 then begin
-      AMarg[piHeight] := Min(AMarg[piHeight],AMarg[piMaxHeight]);
-    end;
-    if AMarg[piMinHeight] > 0 then begin
-      AMarg[piHeight] := Max(AMarg[piHeight],AMarg[piMinHeight]);
-    end;
-    case AMarg[BoxSizing] of
-        0 : ;
-        1 : ApplyBorderBoxModel(AMarg);
-    else
-    end;
-  end;
-end;
+    //min max width
+    if AMarg[piWidth] > -1 then
+    begin
+      if AMarg[piMaxWidth] > 0 then
+        AMarg[piWidth] := Min(AMarg[piWidth], AMarg[piMaxWidth]);
 
-procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
-begin
-  if AMarg[piWidth] > -1 then begin
-    AMarg[piWidth] := AMarg[piWidth] -
-      (AMarg[BorderLeftWidth] + AMarg[BorderRightWidth] +
-       AMarg[PaddingLeft] + AMarg[PaddingRight]);
-  end;
-  if AMarg[piHeight] > -1 then begin
-    AMarg[piHeight] := AMarg[piHeight] -
-      (AMarg[BorderTopWidth] + AMarg[BorderBottomWidth] +
-       AMarg[PaddingTop] + AMarg[PaddingBottom]);
+      if AMarg[piMinWidth] > 0 then
+        AMarg[piWidth] := Max(AMarg[piWidth], AMarg[piMinWidth]);
+    end;
+
+    //min max height
+    if AMarg[piHeight] > -1 then
+    begin
+      if AMarg[piMaxHeight] > 0 then
+        AMarg[piHeight] := Min(AMarg[piHeight], AMarg[piMaxHeight]);
+
+      if AMarg[piMinHeight] > 0 then
+        AMarg[piHeight] := Max(AMarg[piHeight], AMarg[piMinHeight]);
+    end;
+
+    case ThtBoxSizing(AMarg[BoxSizing]) of
+      BorderBox: ApplyBorderBoxModel(AMarg);
+    end;
   end;
 end;
 
