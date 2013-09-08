@@ -227,13 +227,15 @@ type
   protected
     function GetYPosition: Integer; override;
     procedure SetDocument(List: ThtDocument);
+    function CalcDisplayExtern: ThtDisplayStyle; virtual;
+    function CalcDisplayIntern: ThtDisplayStyle; virtual;
   public
     // source buffer reference
     StartCurs: Integer;     // where the section starts in the source buffer.
     Len: Integer;           // number of bytes in source buffer the section represents.
     // Z coordinates are calculated in Create()
     ZIndex: Integer;
-    // Y coordinates calculated in DrawLogic() are still valid in Draw1()
+    // Y coordinates calculated in DrawLogic1() are still valid in Draw1()
     YDraw: Integer;         // where the section starts.
     DrawTop: Integer;       // where the border starts.  In case of a block this is YDraw + MarginTop
     ContentTop: Integer;    // where the content starts. In case of a block this is YDraw + MarginTop + BorderTopWidth + PaddingTop
@@ -241,15 +243,15 @@ type
     DrawBot: Integer;       // where the border ends.    In case of a block this is Max(Block.ClientContentBot, MyCell.tcDrawBot) + PaddingBottom + BorderBottomWidth
     SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
-    // X coordinates calculated in DrawLogic() may be shifted in Draw1(), if section is centered or right aligned
-    DrawRect: TRect;    //>-- DZ where the section starts (calculated in DrawLogic or Draw1)
+    // X coordinates calculated in DrawLogic1() may be shifted in Draw1(), if section is centered or right aligned
+    DrawRect: TRect;    //>-- DZ where the section starts (calculated in DrawLogic1 or Draw1)
     TagClass: ThtString; {debugging aid}
 
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; virtual;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual; abstract;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; virtual;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
     function FindSourcePos(DocPos: Integer): Integer; virtual;
@@ -310,7 +312,8 @@ type
     DrawXX: Integer; // where the object starts.
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
-//    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
+    function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X: Integer; XRef: Integer; YRef: Integer): Integer; override;
     procedure DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     property ClientHeight: Integer read GetClientHeight write SetClientHeight;
     property ClientWidth: Integer read GetClientWidth write SetClientWidth;
@@ -346,6 +349,8 @@ type
   private
     FDocument: ThtDocument; // the document it belongs to
     FOwnerBlock: TBlock;    // the parental block it is placed in
+  protected
+    function CalcDisplayExtern: ThtDisplayStyle; // returns either pdInline or pdBlock
   public
     // source buffer reference
     StartCurs: Integer;     // where the section starts in the source buffer.
@@ -575,30 +580,37 @@ type
     Index: Integer;
   end;
 
-  TTextWrap = (
+  ThtTextWrap = (
     twNo,      // 'n'
     twYes,     // 'y'
     twSoft,    // 's'
     twOptional // 'a'
     );
-  TTextWrapArray = array of TTextWrap;
 
+  ThtTextWrapArray = array of ThtTextWrap;
+
+  // TODO: stop creating TSections, which mix up several inline elements into one instance.
+  // Therefore we cannot control individual properties/attributes of single elements in it.
+  // TSection has to be reduced to a simple inline block for text of a single inline element
+  // resp. to an anonymous block for text of a block element.
+  // Also remove rendering code as soon as rendering done by TInlineSection.
+  // As a document is a TSectionList, TInlineSection will do it.
   TSection = class(TSectionBase)
   {TSection holds and renders inline content. Mainly text and floating images, panel, frames, and form controls.}
   private
-    BreakWord: boolean;
+    BreakWord: Boolean;
     DrawWidth: Integer;
     FirstLineIndent: Integer;
     FLPercent: Integer;
     LineHeight: Integer;
-    StoredMin, StoredMax: Integer;
+    StoredMin, StoredMax: TSize;
 
     SectionNumber: Integer;
     ThisCycle: Integer;
 
-    BuffS: UnicodeString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section}
+    BuffS: ThtString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section}
     Buff: PWideChar;    {same as above}
-    Brk: TTextWrapArray; //string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One entry per character in BuffS
+    Brk: ThtTextWrapArray; //string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One entry per character in BuffS
     SIndexList: TFreeList; {list of Source index changes}
     Lines: TFreeList; {List of LineRecs,  info on all the lines in section}
 
@@ -627,15 +639,14 @@ type
     function CreatePanel(L: TAttributeList; ACell: TCellBasic; Prop: TProperties): TPanelObj;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWideChar; Max: Integer): Integer;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
-    function FindTextWidth(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
+    function FindTextSize(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): TSize;
     function FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer): Integer;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TSectionBase): boolean; override;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
@@ -676,6 +687,7 @@ type
   TBlock = class(TBlockBase)
   protected
     function GetBorderWidth: Integer; virtual;
+    function CalcDisplayIntern: ThtDisplayStyle; override;
     procedure ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
     procedure ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer); virtual;
     procedure DrawBlockBorder(Canvas: TCanvas; const ORect, IRect: TRect); virtual;
@@ -722,8 +734,7 @@ type
     destructor Destroy; override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
@@ -947,8 +958,7 @@ type
       AListNumb, ListLevel: Integer);
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     property ListNumb: Integer read FListNumb write FListNumb;
     property ListStyleType: ThtBulletStyle read FListStyleType write FListStyleType;
@@ -966,8 +976,7 @@ type
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     property Legend: TBlockCell read FLegend;
   end;
@@ -976,8 +985,7 @@ type
   public
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
   end;
 
@@ -1146,9 +1154,9 @@ type
     constructor Create(Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TBlock; T: TCellList);
     procedure Initialize;
-    function DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span, CellSpacing, AHeight, Rows: Integer;
+    function DrawLogicA(Canvas: TCanvas; const Widths: IntArray; Span, CellSpacing, AHeight, Rows: Integer;
       out Desired: Integer; out Spec, More: boolean): Integer;
-    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+    procedure DrawLogicB(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
     function Draw(Canvas: TCanvas; Document: ThtDocument; const ARect: TRect; const Widths: IntArray;
       X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
     procedure Add(CellObjBase: TCellObjBase);
@@ -1204,8 +1212,7 @@ type
 
     constructor Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; ATable: THtmlTable; TableLevel: Integer);
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; override;
@@ -1287,8 +1294,7 @@ type
     destructor Destroy; override;
     procedure DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: ThtAlignmentStyle; const Align: ThtString);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType; override;
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
@@ -1496,6 +1502,7 @@ type
   TPage = class(TSectionBase)
   public
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
+    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
   end;
 
   THorzLine = class(TSectionBase) {a horizontal line, <hr>}
@@ -1511,8 +1518,7 @@ type
     constructor Create(Parent: TCellBasic; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     procedure CopyToClipboard; override;
-    function DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-      var MaxWidth, Curs: Integer): Integer; override;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
   end;
 
@@ -3930,6 +3936,21 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 07.09.2013 --
+function TCellBasic.CalcDisplayExtern: ThtDisplayStyle;
+var
+  I: Integer;
+begin
+  // a list of elements is displayed inline, if all elements' are displayed inline.
+  for I := Count - 1 downto 0 do
+    if Items[i].CalcDisplayExtern <> pdInline then
+    begin
+      Result := pdBlock;
+      Exit;
+    end;
+  Result := pdInline;
+end;
+
 function TCellBasic.CheckLastBottomMargin: boolean;
 {Look at the last item in this cell.  If its bottom margin was set to Auto,
  set it to 0}
@@ -4163,7 +4184,7 @@ begin
   begin
     try
       //TODO -oBG, 24.06.2012: merge sections with display=inline etc.
-      Inc(H, Items[I].DrawLogic(Canvas, 0, Y + H, 0, 0, Width, AHeight, BlHt, IMgr, Sw, Curs));
+      Inc(H, Items[I].DrawLogic1(Canvas, 0, Y + H, 0, 0, Width, AHeight, BlHt, IMgr, Sw, Curs));
       ScrollWidth := Max(ScrollWidth, Sw);
       Inc(I);
     except
@@ -4630,6 +4651,17 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 07.09.2013 --
+function TBlock.CalcDisplayIntern: ThtDisplayStyle;
+begin
+  Result := inherited CalcDisplayIntern;
+  case Result of
+    pdNone:;
+  else
+    Result := MyCell.CalcDisplayExtern;
+  end;
+end;
+
 function TBlock.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean;
 begin
   case Display of
@@ -4803,7 +4835,7 @@ end;
 
 {----------------TBlock.DrawLogic}
 
-function TBlock.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function TBlock.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 var
   ScrollWidth, YClear: Integer;
@@ -4838,47 +4870,10 @@ var
       Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
   end;
 
-var
-  LIndent, RIndent: Integer;
-begin
-  {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TBlock.DrawLogic');
-  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
-  CodeSite.SendFmtMsg('X        = [%d]',[X]);
-  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
-  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
-  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
-  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
-  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
-  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
-  if Assigned(IMgr) then begin
-    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
-    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
-    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
-  end else begin
-    CodeSite.SendMsg('IMgr      = nil');
-  end;
-  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
-  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
-  CodeSite.AddSeparator;
-  {$ENDIF}
-  case Display of
-    pdNone:
-    begin
-      SectionHeight := 0;
-      DrawHeight := 0;
-      ContentBot := 0;
-      DrawBot := 0;
-      MaxWidth := 0;
-      Result := 0;
-    end;
-
-{$ifdef DO_BLOCK_INLINE}
-    pdInline:
-      Result := inherited DrawLogic(Canvas, X, Y, XRef, YREf, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
-{$endif}
-
-  else
+  procedure DrawLogicAsBlock;
+  var
+    LIndent, RIndent: Integer;
+  begin
     YDraw := Y;
     Xin := X;
     ClearAddOn := GetClearSpace(ClearAttr);
@@ -5062,8 +5057,68 @@ begin
     IMgr.CurrentID := SaveID;
     if DrawList.Count = 0 then
       DrawSort;
+
+    //>-- DZ
+    DrawRect.Left   := X - LeftWidths + MargArray[MarginLeft];
+    DrawRect.Top    := DrawTop;
+    DrawRect.Right  := DrawRect.Left + NewWidth;
+    DrawRect.Bottom := DrawRect.Top + SectionHeight;
   end;
-   {$IFDEF JPM_DEBUGGING}
+
+  procedure DrawLogicInline;
+  begin
+    DrawLogicAsBlock;
+    DrawRect.Right := DrawRect.Left + MyCell.TextWidth;
+  end;
+
+begin {TBlock.DrawLogic}
+{$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TBlock.DrawLogic');
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end else begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+{$ENDIF}
+
+  case CalcDisplayIntern of
+
+    pdInline:
+      DrawLogicInline;
+
+    pdBlock:
+      DrawLogicAsBlock;
+
+  else
+    //pdNone:
+    SectionHeight := 0;
+    DrawHeight := 0;
+    ContentBot := 0;
+    DrawBot := 0;
+    MaxWidth := 0;
+    Result := 0;
+
+    //>-- DZ
+    DrawRect.Left   := X;
+    DrawRect.Top    := DrawTop;
+    DrawRect.Right  := DrawRect.Left + NewWidth;
+    DrawRect.Bottom := DrawRect.Top + SectionHeight;
+  end;
+
+{$IFDEF JPM_DEBUGGING}
   if Assigned(IMgr) then begin
     CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
     CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
@@ -5075,13 +5130,7 @@ begin
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
   CodeSite.ExitMethod(Self,'TBlock.DrawLogic');
-   {$ENDIF}
-
-  //>-- DZ
-  DrawRect.Left   := X;
-  DrawRect.Top    := DrawTop;
-  DrawRect.Right  := DrawRect.Left + NewWidth;
-  DrawRect.Bottom := DrawRect.Top + SectionHeight;
+{$ENDIF}
 end;
 
 {----------------TBlock.DrawSort}
@@ -5135,16 +5184,12 @@ end;
 {----------------TBlock.Draw1}
 
 function TBlock.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
-var
-  Y, YO: Integer;
-  HeightNeeded, Spacing: Integer;
-begin
-  case Display of
-    pdNone:   Result := 0;
-{$ifdef DO_BLOCK_INLINE}
-    pdInline: Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
-{$endif}
-  else
+
+  procedure DrawAsBlock;
+  var
+    Y, YO: Integer;
+    HeightNeeded, Spacing: Integer;
+  begin
     Y := YDraw;
     YO := Y - Document.YOff;
     Result := Y + SectionHeight;
@@ -5229,6 +5274,25 @@ begin
         DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef)
       else
         DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef);
+    end;
+
+  procedure DrawInline;
+  begin
+    DrawAsBlock;
+  end;
+
+begin
+  case CalcDisplayIntern of
+
+    pdInline:
+      DrawInline;
+
+    pdBlock:
+      DrawAsBlock;
+
+  else
+    //pdNone:
+    Result := 0;
   end;
 end;
 
@@ -5262,8 +5326,10 @@ begin
       YB := ContentBot - MargArray[MarginBottom];
     end;
   else
-    RefX := X + MargArray[MarginLeft];
-    X := X + Indent;
+//    RefX := X + MargArray[MarginLeft];
+//    X := X + Indent;
+    RefX := DrawRect.Left;
+    X := RefX - MargArray[MarginLeft] + Indent;
     XR := X + NewWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
     RefY := Y + ClearAddon + MargArray[MarginTop];
     YB := ContentBot - MargArray[MarginBottom];
@@ -6030,8 +6096,8 @@ begin
   end;
 end;
 
-function TTableBlock.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer;
-  IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer;
+function TTableBlock.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+  var MaxWidth, Curs: Integer): Integer;
 var
   X1, Tmp: Integer;
 begin
@@ -6065,7 +6131,7 @@ begin
     X1 := Min(Tmp + AWidth, IMgr.RightSide(Y));
     AWidth := X1 - X;
   end;
-  Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
+  Result := inherited DrawLogic1(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
    {$IFDEF JPM_DEBUGGING}
   if Assigned(IMgr) then begin
     CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
@@ -6220,14 +6286,9 @@ begin
   if (VarType(MargArrayO[MarginLeft]) in varInt) and (MargArrayO[MarginLeft] = IntNull) then
     case Sy of
 
-      OLSy, ULSy, DirSy, MenuSy:
-//        if FListStyleType = lbNone then
-//          MargArrayO[MarginLeft] := 0
-//        else
-//          MargArrayO[MarginLeft] := ListIndent;
-        MargArrayO[MarginLeft] := 0; // indention is done by the Sy tag's padding-left (see TStyleList.Initialize)
-      DLSy:
+      OLSy, ULSy, DirSy, MenuSy, DLSy:
         MargArrayO[MarginLeft] := 0;
+        
     else
       MargArrayO[MarginLeft] := ListIndent;
     end;
@@ -6264,7 +6325,7 @@ begin
   inherited;
 end;
 
-function TBlockLI.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function TBlockLI.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 begin
   {$IFDEF JPM_DEBUGGING}
@@ -6298,7 +6359,7 @@ begin
   Document.FirstLineHtPtr := @FirstLineHt;
   FirstLineHt := 0;
   try
-    Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
+    Result := inherited DrawLogic1(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
   finally
     Document.FirstLineHtPtr := nil;
   end;
@@ -6451,7 +6512,7 @@ end;
 
 {----------------TBodyBlock.DrawLogic}
 
-function TBodyBlock.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function TBodyBlock.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 var
   ScrollWidth: Integer;
@@ -8157,8 +8218,8 @@ end;
 
 {----------------TCellList.DrawLogic1}
 
-function TCellList.DrawLogic1(Canvas: TCanvas; const Widths: IntArray; Span,
-  CellSpacing, AHeight, Rows: Integer; out Desired: Integer; out Spec, More: boolean): Integer;
+function TCellList.DrawLogicA(Canvas: TCanvas; const Widths: IntArray; Span, CellSpacing, AHeight, Rows: Integer;
+  out Desired: Integer; out Spec, More: boolean): Integer;
 {Find vertical size of each cell, Row height of this row.  But final Y position
  is not known at this time.
  Rows is number rows in table.
@@ -8221,29 +8282,29 @@ end;
 
 {----------------TCellList.DrawLogic2}
 
-procedure TCellList.DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+procedure TCellList.DrawLogicB(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
 {Calc Y indents. Set up Y positions of all cells.}
 var
   I: Integer;
   CellObj: TCellObjBase;
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
   CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
   CodeSite.SendFmtMsg('CellSpacing = [%d]',[CellSpacing]);
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
   CodeSite.AddSeparator;
-   {$ENDIF}
+{$ENDIF}
   for I := 0 to Count - 1 do
   begin
     CellObj := Items[I];
     if (CellObj <> nil) and (CellObj.ColSpan > 0) and (CellObj.RowSpan > 0) then
       CellObj.DrawLogic2(Canvas, Y, CellSpacing, Curs);
   end;
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
   CodeSite.ExitMethod(Self,'TCellObj.DrawLogic2');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2010 --
@@ -8392,6 +8453,8 @@ var
   A: TAttribute;
 begin
   inherited Create(Parent, Attr, Prop);
+  if FDisplay = pdUnassigned then
+    FDisplay := pdTable;
   Rows := TRowList.Create;
 
   CellPadding := 1;
@@ -9194,7 +9257,7 @@ end;
 
 {----------------THtmlTable.DrawLogic}
 
-function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 
   function FindTableWidth: Integer;
@@ -9401,7 +9464,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
           begin
             if J + Span > Rows.Count then
               Break; {otherwise will overlap}
-            H := DrawLogic1(Canvas, Widths, Span, CellSpacing, Max(0, AHeight - Rows.Count * CellSpacing),
+            H := DrawLogicA(Canvas, Widths, Span, CellSpacing, Max(0, AHeight - Rows.Count * CellSpacing),
               Rows.Count, Desired, IsSpeced, Mr) + CellSpacing;
             Inc(Desired, Cellspacing);
             More := More or Mr;
@@ -9563,12 +9626,12 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
                 RowSpanHeight := Ht;
             end;
           end;
-      {DrawLogic2 is only called in nested tables if the outer table is calling DrawLogic2}
+      {DrawLogicB is only called in nested tables if the outer table is calling DrawLogic2}
         if Document.TableNestLevel = 1 then
           Document.InLogic2 := True;
         try
           if Document.InLogic2 then
-            DrawLogic2(Canvas, Y, CellSpacing, Curs);
+            DrawLogicB(Canvas, Y, CellSpacing, Curs);
         finally
           if Document.TableNestLevel = 1 then
             Document.InLogic2 := False;
@@ -9582,7 +9645,7 @@ function THtmlTable.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
 var
   TopY: Integer;
   FirstLinePtr: PInteger;
-begin
+begin {THtmlTable.DrawLogic}
   {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'THtmlTable.DrawLogic');
 
@@ -10218,6 +10281,8 @@ begin
   CodeSite.AddSeparator;
   {$ENDIF}
   inherited Create(Parent, Attr, Prop);
+  if FDisplay = pdUnassigned then
+    FDisplay := pdInline;
   Buff := PWideChar(BuffS);
   Len := 0;
   Fonts := TFontList.Create;
@@ -10410,7 +10475,7 @@ end;
 procedure TSection.AddTokenObj(T: TokenObj);
 var
   L, I, J: Integer;
-  C: TTextWrap;
+  C: ThtTextWrap;
   St, StU: WideString;
   Small: boolean;
   LastProps: TProperties;
@@ -10503,7 +10568,7 @@ var
   procedure Remove(I: Integer);
   begin
     Move(XP[I], XP[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
-    Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(TTextWrap));
+    Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(ThtTextWrap));
     SetLength(Brk, Length(Brk) - 1);
     System.Delete(BuffS, I, 1);
     FormControls.Decrement(I - 1);
@@ -10556,18 +10621,18 @@ begin
           and (BuffS[I + 1] = ' ') then
           Remove(I + 1);
 
-      I := WidePos(UnicodeString(' ' + #8), BuffS); {#8 is break char}
+      I := WidePos(UnicodeString(' '#8), BuffS); {#8 is break char}
       while I > 0 do
       begin
         Remove(I);
-        I := WidePos(UnicodeString(' ' + #8), BuffS);
+        I := WidePos(UnicodeString(' '#8), BuffS);
       end;
 
-      I := WidePos(UnicodeString(#8 + ' '), BuffS);
+      I := WidePos(UnicodeString(#8' '), BuffS);
       while I > 0 do
       begin
         Remove(I + 1);
-        I := WidePos(UnicodeString(#8 + ' '), BuffS);
+        I := WidePos(UnicodeString(#8' '), BuffS);
       end;
 
       if (Length(BuffS) > 1) and (BuffS[Length(BuffS)] = #8) then
@@ -10988,23 +11053,21 @@ procedure TSection.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   SoftHyphen: Boolean;
 
-  function FindTextWidthB(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
+  function FindTextWidthB(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): TSize;
   begin
-    Result := FindTextWidth(Canvas, Start, N, RemoveSpaces);
+    Result := FindTextSize(Canvas, Start, N, RemoveSpaces);
     if Start = Buff then
       if FLPercent = 0 then {not a percent}
-        Inc(Result, FirstLineIndent)
+        Inc(Result.cx, FirstLineIndent)
       else
-        Result := (100 * Result) div (100 - FLPercent);
+        Result.cx := (100 * Result.cx) div (100 - FLPercent);
     if SoftHyphen then
-      Result := Result + Canvas.TextWidth('-');
+      Inc(Result.cx, Canvas.TextWidth('-'));
   end;
 
 var
   I, FloatMin: Integer;
   P, P1: PWideChar;
-//  Obj: TFloatingObj;
-
 begin
   Min := 0;
   Max := 0;
@@ -11013,13 +11076,13 @@ begin
 
   if not BreakWord and (WhiteSpaceStyle in [wsPre, wsNoWrap]) then
   begin
-    if StoredMax = 0 then
+    if StoredMax.cx = 0 then
     begin
-      Max := FindTextWidth(Canvas, Buff, Len - 1, False);
-      StoredMax := Max;
+      StoredMax := FindTextSize(Canvas, Buff, Len - 1, False);
+      Max := StoredMax.cx;
     end
     else
-      Max := StoredMax;
+      Max := StoredMax.cx;
     Min := Math.Min(MaxHScroll, Max);
     Exit;
   end;
@@ -11028,10 +11091,10 @@ begin
   CodeSite.EnterMethod(Self,'TSection.MinMaxWidth');
   CodeSite.AddSeparator;
 {$ENDIF}
-  if (StoredMin > 0) and (Images.Count = 0) then
+  if (StoredMin.cx > 0) and (Images.Count = 0) then
   begin
-    Min := StoredMin;
-    Max := StoredMax;
+    Min := StoredMin.cx;
+    Max := StoredMax.cx;
 {$IFDEF JPM_DEBUGGING}
     CodeSite.SendFmtMsg('Stored Min = [%d]',[Min]);
     CodeSite.SendFmtMsg('Stored Max = [%d]',[Max]);
@@ -11046,15 +11109,15 @@ begin
 
   SoftHyphen := False;
   P := Buff;
-  P1 := StrScanW(P, BrkCh); {look for break ThtChar}
+  P1 := StrScanW(P, BrkCh); {look for break char}
   while Assigned(P1) do
   begin
-    Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, False));
+    Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, False).cx);
     P := P1 + 1;
     P1 := StrScanW(P, BrkCh);
   end;
   P1 := StrScanW(P, #0); {look for the end}
-  Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, True)); // + FloatMin;
+  Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, True).cx); // + FloatMin;
 
   P := Buff;
   if not BreakWord then
@@ -11089,7 +11152,7 @@ begin
           Inc(I);
         end;
       end;
-      Min := Math.Max(Min, FindTextWidthB(Canvas, P, P1 - P, True));
+      Min := Math.Max(Min, FindTextWidthB(Canvas, P, P1 - P, True).cx);
       while True do
         case P1^ of
           WideChar(' '), ImgPan, FmCtl, BrkCh:
@@ -11106,13 +11169,15 @@ begin
   else
     while P^ <> #0 do
     begin
-      Min := Math.Max(Min, FindTextWidthB(Canvas, P, 1, True));
+      Min := Math.Max(Min, FindTextWidthB(Canvas, P, 1, True).cx);
       Inc(P);
     end;
 
   Min := Math.Max(FloatMin, Min);
-  StoredMin := Min;
-  StoredMax := Max;
+  StoredMin.cx := Min;
+  StoredMax.cx := Max;
+  StoredMin.cy := 0;
+  StoredMax.cy := 0;
 {$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
@@ -11122,7 +11187,7 @@ end;
 
 {----------------TSection.FindTextWidth}
 
-function TSection.FindTextWidth(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): Integer;
+function TSection.FindTextSize(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): TSize;
 {find actual line width of N chars starting at Start.  If RemoveSpaces set,
  don't count spaces on right end}
 var
@@ -11135,7 +11200,8 @@ begin
   CodeSite.EnterMethod(Self,'TSection.FindTextWidth');
   CodeSite.AddSeparator;
    {$ENDIF}
-  Result := 0;
+  Result.cx := 0;
+  Result.cy := 0;
   if RemoveSpaces then
     while True do
       case (Start + N - 1)^ of
@@ -11154,14 +11220,20 @@ begin
     {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
       if not (FlObj.Floating in [ALeft, ARight]) then
-        Inc(Result, FlObj.TotalWidth);
+      begin
+        Inc(Result.cx, FlObj.TotalWidth);
+        Result.cy := Max(Result.cy, FlObj.TotalHeight);
+      end;
       Dec(N); {image counts as one ThtChar}
       Inc(Start);
     end
     else if J1 = 0 then
     begin
       if not (FcObj.Floating in [ALeft, ARight]) then
-        Inc(Result, FcObj.TotalWidth);
+      begin
+        Inc(Result.cx, FcObj.TotalWidth);
+        Result.cy := Max(Result.cy, FcObj.TotalHeight);
+      end;
       Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
@@ -11172,7 +11244,11 @@ begin
       I := Min(I, Min(Fonts.GetFontObjAt(Start - Buff, Len, FO), N));
       FO.TheFont.AssignToCanvas(Canvas);
       //Assert(I > 0, 'I less than or = 0 in FindTextWidth');
-      Inc(Result, GetXExtent(Canvas.Handle, Start, I) + FO.Overhang);
+      with GetTextExtent(Canvas.Handle, Start, I) do
+      begin
+        Inc(Result.cx, cx + FO.Overhang);
+        Result.cy := Max(Result.cy, cy);
+      end;
       if I = 0 then
         Break;
       Dec(N, I);
@@ -11222,7 +11298,7 @@ begin
       I := Min(Min(J, J1), Min(Fonts.GetFontObjAt(Start - Buff, Len, FO), N));
       FO.TheFont.AssignToCanvas(Canvas);
       Assert(I > 0, 'I less than or = 0 in FindTextWidthA');
-      Inc(Result, GetXExtent(Canvas.Handle, Start, I) - FO.Overhang);
+      Inc(Result, GetTextExtent(Canvas.Handle, Start, I).cx - FO.Overhang);
       if I = 0 then
         Break;
       Dec(N, I);
@@ -11233,7 +11309,7 @@ end;
 
 {----------------TSection.DrawLogic}
 
-function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 {returns height of the section}
 
@@ -11682,7 +11758,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       if PStart = Buff then
         Tmp := Tmp + FirstLineIndent;
 
-      LRTextWidth := FindTextWidth(Canvas, PStart, NN, True);
+      LRTextWidth := FindTextSize(Canvas, PStart, NN, True).cx;
       if LR.Shy then
       begin {take into account the width of the hyphen}
         Fonts.GetFontAt(PStart - Buff + NN - 1, OHang).AssignToCanvas(Canvas);
@@ -11725,17 +11801,11 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     PDoneFlObj: PWideChar;
     YDoneFlObj: Integer;
   begin {DoDrawLogic}
-    YDraw := Y;
+    SectionHeight := 0;
     AccumImgBot := 0;
     TopY := Y;
-    ContentTop := Y;
-    DrawTop := Y;
-    StartCurs := Curs;
     PStart := Buff;
     Last := Buff + Len - 1;
-    SectionHeight := 0;
-    Lines.Clear;
-    TextWidth := 0;
     if Len = 0 then
     begin
       Result := GetClearSpace(ClearAttr);
@@ -11745,6 +11815,11 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
       DrawBot := ContentBot;
       MaxWidth := 0;
       DrawWidth := 0;
+
+      DrawRect.Left   := X;
+      DrawRect.Top    := DrawTop;
+      DrawRect.Right  := DrawRect.Left + DrawWidth;
+      DrawRect.Bottom := DrawBot;
       Exit;
     end;
     if FLPercent <> 0 then
@@ -11944,7 +12019,7 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
               end
               else
               begin {line is too long but do it anyway}
-                MaxWidth := Max(MaxWidth, FindTextWidth(Canvas, PStart, P - PStart + 1, True));
+                MaxWidth := Max(MaxWidth, FindTextSize(Canvas, PStart, P - PStart + 1, True).cx);
                 Finished := P = Last;
                 LineComplete(P - PStart + 1);
               end;
@@ -11991,13 +12066,18 @@ function TSection.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, 
     if OwnerBlock.HideOverflow then
       if MaxWidth > Width then
         MaxWidth := Width;
+
+    DrawRect.Left   := X;
+    DrawRect.Top    := DrawTop;
+    DrawRect.Right  := DrawRect.Left + MaxWidth;
+    DrawRect.Bottom := DrawBot;
   end; { DoDrawLogic}
 
 var
   Dummy: Integer;
   Save: Integer;
 begin {TSection.DrawLogic}
-  {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TSection.DrawLogic');
   CodeSite.SendFmtMsg('X        = [%d]',[X]);
   CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
@@ -12006,30 +12086,43 @@ begin {TSection.DrawLogic}
   CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
   CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
   CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
-  if Assigned(IMgr) then begin
+  if Assigned(IMgr) then
+  begin
     CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
     CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
     CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
-  end else begin
+  end
+  else
+  begin
     CodeSite.SendMsg('IMgr      = nil');
   end;
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.AddSeparator;
-  {$ENDIF}
+{$ENDIF}
+
+  YDraw := Y;
+  DrawTop := Y;
+  ContentTop := Y;
+  StartCurs := Curs;
+  Lines.Clear;
+  TextWidth := 0;
 
   if WhiteSpaceStyle in [wsPre, wsNoWrap] then
   begin
     if Len = 0 then
     begin
-      ContentTop := Y;
       Result := Fonts.GetFontObjAt(0).FontHeight;
       SectionHeight := Result;
       MaxWidth := 0;
-      YDraw := Y;
       DrawHeight := Result;
       ContentBot := Y + Result;
       DrawBot := ContentBot;
+
+      DrawRect.Left   := X;
+      DrawRect.Top    := DrawTop;
+      DrawRect.Right  := DrawRect.Left + MaxWidth;
+      DrawRect.Bottom := DrawRect.Top + SectionHeight;
       exit;
     end;
 
@@ -12041,12 +12134,14 @@ begin {TSection.DrawLogic}
       DoDrawLogic;
       IMgr.Width := Save;
       MinMaxWidth(Canvas, Dummy, MaxWidth); {return MaxWidth}
+      DrawRect.Right := DrawRect.Left + MaxWidth;
       exit;
     end;
   end;
+
   DoDrawLogic;
 
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   if Assigned(IMgr) then begin
     CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
     CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
@@ -12058,7 +12153,7 @@ begin {TSection.DrawLogic}
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
   CodeSite.ExitMethod(Self,'TSection.DrawLogic');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TSection.CheckForInlines}
@@ -12532,7 +12627,7 @@ var
           begin {so will clip in Table cells}
             ARect := Rect(IMgr.LfEdge, Y - LR.LineHt - LR.SpaceBefore - YOffset, X + IMgr.ClipWidth, Y - YOffset + 1);
             ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil);
-            CP1x := CPx + GetXExtent(Canvas.Handle, Start, Tmp);
+            CP1x := CPx + GetTextExtent(Canvas.Handle, Start, Tmp).cx;
           end
           else
           begin
@@ -12546,19 +12641,19 @@ var
               begin
                 St := AddHyphen(Start, Tmp);
                 TextOutW(Canvas.Handle, CPx, CPy, PWideChar(St), Length(St));
-                CP1x := CPx + GetXExtent(Canvas.Handle, PWideChar(St), Length(St));
+                CP1x := CPx + GetTextExtent(Canvas.Handle, PWideChar(St), Length(St)).cx;
               end
               else
               begin
                 TextOutW(Canvas.Handle, CPx, CPy, Start, Tmp);
-                CP1x := CPx + GetXExtent(Canvas.Handle, Start, Tmp);
+                CP1x := CPx + GetTextExtent(Canvas.Handle, Start, Tmp).cx;
               end
             end
             else
             begin {Win95}
             {Win95 has bug which extends text underline for proportional font in TextOutW.
              Use clipping to clip the extra underline.}
-              CP1x := CPx + GetXExtent(Canvas.Handle, Start, Tmp);
+              CP1x := CPx + GetTextExtent(Canvas.Handle, Start, Tmp).cx;
               ARect := Rect(CPx, Y - LR.LineHt - LR.SpaceBefore - YOffset, CP1x, Y - YOffset + 1);
               ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil)
             end;
@@ -12908,7 +13003,7 @@ begin
     if (Justify = FullJustify) and (Spaces > 0) then
       SetTextJustification(Canvas.Handle, Extra, Spaces);
     L := FindCountThatFits(Canvas, Width, Start, Ln);
-    W := FindTextWidth(Canvas, Start, L, False);
+    W := FindTextSize(Canvas, Start, L, False).cx;
     XR := DrawXX + W;
     if L < Ln then
     begin {check to see if passed 1/2 character mark}
@@ -13135,7 +13230,7 @@ begin
   begin
     if LR.Spaces > 0 then
       SetTextJustification(Canvas.Handle, LR.Extra, LR.Spaces);
-    X := LR.DrawXX + FindTextWidth(Canvas, LR.Start, Curs, False);
+    X := LR.DrawXX + FindTextSize(Canvas, LR.Start, Curs, False).cx;
     if LR.Spaces > 0 then
       SetTextJustification(Canvas.Handle, 0, 0);
   end
@@ -13433,10 +13528,87 @@ end;
 function TBlockCell.DoLogicX(Canvas: TCanvas; X, Y, XRef, YRef, Width, AHeight, BlHt: Integer;
   out ScrollWidth: Integer; var Curs: Integer): Integer;
 {Do the entire layout of the this cell.  Return the total pixel height}
-var
-  I, Sw, TheCount: Integer;
-  H, Tmp: Integer;
-  SB: TSectionBase;
+
+  function DoBlockLogic: Integer;
+  // Returns CellHeight
+  var
+    I, Sw, Tmp: Integer;
+    SB: TSectionBase;
+  begin
+    Result := 0;
+    for I := 0 to Count - 1 do
+    begin
+      SB := Items[I];
+      Tmp := SB.DrawLogic1(Canvas, X, Y + Result, XRef, YRef, Width, AHeight, BlHt, IMgr, Sw, Curs);
+      Inc(Result, Tmp);
+      if OwnerBlock.HideOverflow then
+        ScrollWidth := Width
+      else
+        ScrollWidth := Max(ScrollWidth, Sw);
+      if SB is TSection then
+        TextWidth := Max(TextWidth, TSection(SB).TextWidth);
+      if not (SB is TBlock) or (TBlock(SB).Positioning <> posAbsolute) then
+        tcContentBot := Max(tcContentBot, SB.ContentBot);
+      tcDrawTop := Min(tcDrawTop, SB.DrawTop);
+      tcDrawBot := Max(tcDrawBot, SB.DrawBot);
+    end;
+  end;
+
+  function DoInlineLogic: Integer;
+  // Returns CellHeight
+  var
+    I, Sw, Tmp: Integer;
+    LineSize: TSize;
+    SB: TSectionBase;
+    SC: TSection;
+  begin
+    Result := 0;
+    LineSize.cx := 0;
+    LineSize.cy := 0;
+    for I := 0 to Count - 1 do
+    begin
+      SB := Items[I];
+      if SB is TSection then
+        SC := TSection(SB)
+      else
+        SC := nil;
+      Tmp := SB.DrawLogic1(Canvas, X + LineSize.cx, Y + Result, XRef, YRef, Width, AHeight, BlHt, IMgr, Sw, Curs);
+      if (SC <> nil) {and (SC.WhiteSpaceStyle in [wsPre, wsNoWrap])} then
+      begin
+        // Each section accumulates elements up to complete lines.
+        Inc(Result, Tmp);
+        if OwnerBlock.HideOverflow then
+          ScrollWidth := Width
+        else
+          ScrollWidth := Max(ScrollWidth, Sw);
+        TextWidth := Max(TextWidth, TSection(SB).TextWidth);
+      end
+      else
+      begin
+        if LineSize.cy < Tmp then
+          LineSize.cy := Tmp;
+        Inc(LineSize.cx, SB.DrawRect.Right - SB.DrawRect.Left);
+        if LineSize.cx > Width then
+        begin
+          Inc(Result, LineSize.cy);
+          if OwnerBlock.HideOverflow then
+            ScrollWidth := Width
+          else
+            ScrollWidth := Max(ScrollWidth, LineSize.cx);
+          if TextWidth < LineSize.cx then
+            TextWidth := LineSize.cx;
+          LineSize.cx := 0;
+          LineSize.cy := 0;
+        end;
+      end;
+      if not (SB is TBlock) or (TBlock(SB).Positioning <> posAbsolute) then
+        tcContentBot := Max(tcContentBot, SB.ContentBot);
+      tcDrawTop := Min(tcDrawTop, SB.DrawTop);
+      tcDrawBot := Max(tcDrawBot, SB.DrawBot);
+    end;
+    Inc(Result, LineSize.cy);
+  end;
+
 begin
    {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TBlockCell.DoLogicX');
@@ -13450,35 +13622,20 @@ begin
    {$ENDIF}
 //  YValue := Y;
   StartCurs := Curs;
-  H := 0;
+
   ScrollWidth := 0;
   TextWidth := 0;
   tcContentBot := 0;
   tcDrawTop := 990000;
   tcDrawBot := 0;
-  TheCount := Count;
-  I := 0;
-  while I < TheCount do
-  begin
-    SB := Items[I];
-    Tmp := SB.DrawLogic(Canvas, X, Y + H, XRef, YRef, Width, AHeight, BlHt, IMgr, Sw, Curs);
-    Inc(H, Tmp);
-    if OwnerBlock.HideOverflow then
-      ScrollWidth := Width
-    else
-      ScrollWidth := Max(ScrollWidth, Sw);
-    if SB is TSection then
-      TextWidth := Max(TextWidth, TSection(SB).TextWidth);
-    if (SB is TBlock) and (TBlock(SB).Positioning = posAbsolute) then
-    else
-      tcContentBot := Max(tcContentBot, SB.ContentBot);
-    tcDrawTop := Min(tcDrawTop, SB.DrawTop);
-    tcDrawBot := Max(tcDrawBot, SB.DrawBot);
-    Inc(I);
-  end;
+
+  if CalcDisplayExtern = pdBlock then
+    CellHeight := DoBlockLogic
+  else
+    CellHeight := DoInlineLogic;
+
   Len := Curs - StartCurs;
-  Result := H;
-  CellHeight := Result;
+  Result := CellHeight;
   {$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Curs = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result = [%d]',[Result]);
@@ -13644,6 +13801,13 @@ end;
 
 {----------------TPage.Draw1}
 
+constructor TPage.Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
+begin
+  inherited;
+  if FDisplay = pdUnassigned then
+    FDisplay := pdBlock;
+end;
+
 function TPage.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
   YOffset, Y: Integer;
@@ -13667,6 +13831,8 @@ var
   TmpColor: TColor;
 begin
   inherited Create(Parent, L, Prop);
+  if FDisplay = pdUnassigned then
+    FDisplay := pdBlock;
   VSize := 2;
   Align := Centered;
   Color := clNone;
@@ -13726,7 +13892,7 @@ begin
   Document.CB.AddTextCR('', 0);
 end;
 
-function THorzLine.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function THorzLine.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth: Integer; var Curs: Integer): Integer;
 begin
   {$IFDEF JPM_DEBUGGING}
@@ -13981,7 +14147,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
-function TFieldsetBlock.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer;
+function TFieldsetBlock.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer;
   IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer;
 var
   BorderWidth: TRect;
@@ -14047,7 +14213,7 @@ begin
     IMgr.FreeRightIndentRec(RI);
     IMgr.CurrentID := SaveID;
 
-    Result := inherited DrawLogic(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
+    Result := inherited DrawLogic1(Canvas, X, Y, XRef, YRef, AWidth, AHeight, BlHt, IMgr, MaxWidth, Curs);
   end;
    {$IFDEF JPM_DEBUGGING}
   if Assigned(IMgr) then begin
@@ -14455,10 +14621,13 @@ end;
 constructor TSectionBase.Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
 begin
   inherited;
-  if AProp <> nil then begin
+  if AProp <> nil then
+  begin
     FDisplay := AProp.Display;
     TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
-  end else begin
+  end
+  else
+  begin
     FDisplay := pdUnassigned;
     TagClass := '.#';
   end;
@@ -14480,6 +14649,32 @@ begin
   ZIndex := T.ZIndex;
 end;
 
+//-- BG ---------------------------------------------------------- 07.09.2013 --
+function TSectionBase.CalcDisplayExtern: ThtDisplayStyle;
+begin
+  case FDisplay of
+    pdInlineBlock,
+    pdInlineTable:
+      Result := pdInline;
+  else
+    Result := FDisplay;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.09.2013 --
+function TSectionBase.CalcDisplayIntern: ThtDisplayStyle;
+begin
+  case FDisplay of
+    pdInlineTable:
+      Result := pdTable;
+
+    pdInlineBlock:
+      Result := pdBlock;
+  else
+    Result := FDisplay;
+  end;
+end;
+
 procedure TSectionBase.CopyToClipboard;
 begin
 end;
@@ -14489,64 +14684,71 @@ begin
   Result := ContentTop;
 end;
 
-function TSectionBase.DrawLogic(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-  var MaxWidth, Curs: Integer): Integer;
-// Computes all coordinates of the section.
+//function TSectionBase.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+//  var MaxWidth, Curs: Integer): Integer;
+//// Computes all coordinates of the section.
+////
+//// Normal sections, absolutely positioned blocks and floating blocks start at given (X,Y) relative to document origin.
+//// Table cells start at given (X,Y) coordinates relative to the outmost containing block.
+////
+//// Returns the nominal height of the section (without overhanging floating blocks)
+//begin
+//{$IFDEF JPM_DEBUGGING}
+//  CodeSite.EnterMethod(Self,'TSectionBase.DrawLogic');
+//  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+//  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+//  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+//  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+//  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+//  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+//  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+//  if Assigned(IMgr) then
+//  begin
+//    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+//    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+//    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+//  end
+//  else
+//  begin
+//    CodeSite.SendMsg('IMgr      = nil');
+//  end;
+//  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+//  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+//  CodeSite.AddSeparator;
+//{$ENDIF}
+//  StartCurs := Curs;
+//  Len := 0;
+//  Result := SectionHeight;
+//  DrawHeight := SectionHeight;
+//  MaxWidth := 0;
+//  ContentTop := Y;
+//  DrawTop := Y;
+//  YDraw := Y;
+//  ContentBot := Y + SectionHeight;
+//  DrawBot := Y + DrawHeight;
 //
-// Normal sections, absolutely positioned blocks and floating blocks start at given (X,Y) relative to document origin.
-// Table cells start at given (X,Y) coordinates relative to the outmost containing block.
-//
-// Returns the nominal height of the section (without overhanging floating blocks)
-begin
-  {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TSectionBase.DrawLogic');
-  CodeSite.SendFmtMsg('X        = [%d]',[X]);
-  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
-  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
-  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
-  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
-  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
-  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
-  if Assigned(IMgr) then begin
-    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
-    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
-    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
-  end else begin
-    CodeSite.SendMsg('IMgr      = nil');
-  end;
-  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
-  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
-  CodeSite.AddSeparator;
-  {$ENDIF}
-  StartCurs := Curs;
-  Result := SectionHeight;
-  DrawHeight := SectionHeight;
-  MaxWidth := 0;
-  ContentTop := Y;
-  DrawTop := Y;
-  YDraw := Y;
-  ContentBot := Y + SectionHeight;
-  DrawBot := Y + DrawHeight;
-
-  //>-- DZ
-  DrawRect.Top    := DrawTop;
-  DrawRect.Left   := X;
-  DrawRect.Right  := DrawRect.Left + MaxWidth;
-  DrawRect.Bottom := DrawBot;
-   {$IFDEF JPM_DEBUGGING}
-  if Assigned(IMgr) then begin
-    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
-    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
-    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
-  end else begin
-    CodeSite.SendMsg('IMgr      = nil');
-  end;
-  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
-  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
-  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TSectionBase.DrawLogic');
-   {$ENDIF}
-end;
+//  //>-- DZ
+//  DrawRect.Top    := DrawTop;
+//  DrawRect.Left   := X;
+//  DrawRect.Right  := DrawRect.Left + MaxWidth;
+//  DrawRect.Bottom := DrawBot;
+//{$IFDEF JPM_DEBUGGING}
+//  if Assigned(IMgr) then
+//  begin
+//    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+//    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+//    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+//  end
+//  else
+//  begin
+//    CodeSite.SendMsg('IMgr      = nil');
+//  end;
+//  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+//  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+//  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+//  CodeSite.ExitMethod(Self,'TSectionBase.DrawLogic');
+//{$ENDIF}
+//end;
 
 function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 // returns the pixel row, where the section ends.
@@ -15010,6 +15212,19 @@ begin
   DrawYY := T.DrawYY;
 end;
 
+//-- BG ---------------------------------------------------------- 08.09.2013 --
+function TFloatingObj.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
+begin
+  Result := ContentBot;
+end;
+
+//-- BG ---------------------------------------------------------- 08.09.2013 --
+function TFloatingObj.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+  var MaxWidth, Curs: Integer): Integer;
+begin
+  Result := SectionHeight;
+end;
+
 //-- BG ---------------------------------------------------------- 02.03.2011 --
 function TFloatingObj.TotalHeight: Integer;
 begin
@@ -15158,12 +15373,17 @@ end;
 constructor TBlockBase.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 begin
   inherited Create(Parent, L, Prop);
+  if FDisplay = pdUnassigned then
+    FDisplay := pdBlock;
   StartCurs := Position;
-  if Prop <> nil then begin
+  if Prop <> nil then
+  begin
     if not Prop.GetFloat(Floating) then
       Floating := ANone;
     Positioning := Prop.GetPosition;
-  end else begin
+  end
+  else
+  begin
     Floating := ANone;
     Positioning := posStatic;
   end;

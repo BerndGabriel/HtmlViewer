@@ -158,7 +158,7 @@ begin
   if Assigned(jpm_AlphaBlend) then begin
     if (AOpacity = $FF)  then begin
       Windows.TextOutW(ACanvas.Handle, AX, AY, ATxt, ALen);
-      Result := AX + GetXExtent(ACanvas.Handle, ATxt, ALen);
+      Result := AX + GetTextExtent(ACanvas.Handle, ATxt, ALen).cx;
     end else begin
       GetTSize(ACanvas.Handle,PWideChar(ATxt), ALen,LSize);
       LB := SetupAlphaBlendBmp(ACanvas, LSize.cx, AHeight );
@@ -177,7 +177,7 @@ begin
     end;
   end else begin
     TextOutW(ACanvas.Handle, AX, AY, PWideChar(ATxt), ALen);
-    Result := AX + GetXExtent(ACanvas.Handle, PWideChar(ATxt), ALen);
+    Result := AX + GetTextExtent(ACanvas.Handle, PWideChar(ATxt), ALen).cx;
   end;
 end;
 
