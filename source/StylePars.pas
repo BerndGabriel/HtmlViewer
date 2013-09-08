@@ -40,11 +40,11 @@ uses
 
 {---------  Detect Shorthand syntax }
 type
-  TShortHand = (
-    MarginX, PaddingX, BorderWidthX, BorderX,
-    BorderTX, BorderRX, BorderBX, BorderLX,
-    FontX, BackgroundX, ListStyleX, BorderColorX,
-    BorderStyleX);
+//  TShortHand = (
+//    MarginX, PaddingX, BorderWidthX, BorderX,
+//    BorderTX, BorderRX, BorderBX, BorderLX,
+//    FontX, BackgroundX, ListStyleX, BorderColorX,
+//    BorderStyleX);
 
   EParseError = class(Exception);
 
@@ -100,13 +100,6 @@ procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(S: ThtString): ThtString;
 
 implementation
-
-const
-  ShortHands: array[Low(TShortHand)..High(TShortHand)] of ThtString = (
-    'margin', 'padding', 'border-width', 'border',
-    'border-top', 'border-right', 'border-bottom', 'border-left',
-    'font', 'background', 'list-style', 'border-color',
-    'border-style');
 
 const
   NeedPound = True;
@@ -329,7 +322,7 @@ procedure THtmlStyleParser.ProcessPropertyOrShortHand(Prop, Value: ThtString);
     I: TShortHand;
   begin
     for I := Low(TShortHand) to High(TShortHand) do
-      if S = ShortHands[I] then
+      if S = PropWords[I] then
       begin
         Result := True;
         Index := I;
