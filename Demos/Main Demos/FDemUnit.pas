@@ -237,7 +237,7 @@ var
 
 implementation
 
-{$ifdef TScrollStyleInSystemUITypes}
+{$ifdef HasSystemUITypes}
 uses System.UITypes;
 {$endif}
 {$ifdef LCL}

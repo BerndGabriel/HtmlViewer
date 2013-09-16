@@ -1501,6 +1501,7 @@ type
 
   TPage = class(TSectionBase)
   public
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
   end;
@@ -11381,7 +11382,8 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     FcObj: TFormControlObj;
     FO: TFontObj;
     BrChr, TheStart: PWideChar;
-    Font, LastFont: ThtFont;
+    //Font,
+    LastFont: ThtFont;
     Save: TSize;
     FoundBreak: boolean;
     HyphenWidth: Integer;
@@ -12247,7 +12249,9 @@ var
 
   procedure DrawTheText(LineNo: Integer);
   var
-    I, J, J1, J2, J3, J4, Index, Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
+    I, J, J1, J2, J3, J4,
+    //Index,
+    Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
     FlObj: TSizeableObj;
     FcObj: TFormControlObj;
     FO: TFontObj;
@@ -13806,6 +13810,11 @@ begin
   inherited;
   if FDisplay = pdUnassigned then
     FDisplay := pdBlock;
+end;
+
+function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer;
+begin
+  Result := 0;
 end;
 
 function TPage.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
