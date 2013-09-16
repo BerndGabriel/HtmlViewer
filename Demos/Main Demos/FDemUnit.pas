@@ -363,8 +363,8 @@ if I=1 then
   if Assigned(Viewer) then
     begin
     ID := Copy(URL, 10, Length(URL)-9);
-    if Viewer.IDDisplay[ID+'Minus'] = High(ThtDisplayStyle) then
-      Viewer.IDDisplay[ID+'Minus'] := Low(ThtDisplayStyle)
+    if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
+      Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
     else
       Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
     Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
