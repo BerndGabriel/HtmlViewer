@@ -35,6 +35,7 @@
 { Identify Delphi Compiler Version:
 
   #   Compiler    Version Compiler Defined Symbol
+  D18 Delphi XE5    26    VER260
   D17 Delphi XE4    25    VER250
   D16 Delphi XE3    24    VER240
   D15 Delphi XE2    23    VER230
@@ -100,7 +101,11 @@
                         {$define Compiler24_Plus}
                         {$ifdef ver240}
                         {$else}
-                            {$define Compiler25_Plus}
+                           {$define Compiler25_Plus}
+                           {$ifdef ver250}
+                           {$else}
+                           {$define Compiler26_Plus}
+                           {$endif}
                         {$endif}
                         {$LEGACYIFEND ON}
                       {$endif}
