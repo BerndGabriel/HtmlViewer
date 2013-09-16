@@ -313,8 +313,9 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
-    function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X: Integer; XRef: Integer; YRef: Integer): Integer; override;
+    function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     procedure DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); virtual; abstract;
     property ClientHeight: Integer read GetClientHeight write SetClientHeight;
     property ClientWidth: Integer read GetClientWidth write SetClientWidth;
     function TotalHeight: Integer; {$ifdef UseInline} inline; {$endif}
@@ -432,7 +433,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     constructor SimpleCreate(Parent: TCellBasic);
     function PtInDrawRect(X, Y: Integer; var IX, IY: Integer): Boolean; override;
-    procedure Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); virtual;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
     procedure ProcessProperties(Prop: TProperties);
     procedure SetAlt(CodePage: Integer; const Value: ThtString);
     property Alt: ThtString read FAlt;
@@ -453,7 +454,7 @@ type
   public
     ShowIt: Boolean;
     procedure DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
-    procedure Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
   end;
 
 
@@ -471,7 +472,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    procedure Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
   end;
 
 
@@ -492,7 +493,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    procedure Draw(Canvas: TCanvas; X, Y: Integer; YBaseline: Integer; FO: TFontObj); override;
+    procedure DrawInline(Canvas: TCanvas; X, Y: Integer; YBaseline: Integer; FO: TFontObj); override;
   end;
 
 
@@ -526,7 +527,7 @@ type
     destructor Destroy; override;
     procedure DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
     procedure DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: ThtImage);
-    procedure Draw(Canvas: TCanvas; X: Integer; Y, YBaseline: Integer; FO: TFontObj); override;
+    procedure DrawInline(Canvas: TCanvas; X: Integer; Y, YBaseline: Integer; FO: TFontObj); override;
     function InsertImage(const UName: ThtString; Error: boolean; out Reformat: boolean): boolean;
 
     property Bitmap: TBitmap read GetBitmap;
@@ -834,7 +835,8 @@ type
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; virtual;
     procedure DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: Integer); virtual;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: Integer); virtual;
     procedure EnterEvent(Sender: TObject); {these two would be better private}
     procedure ExitEvent(Sender: TObject);
     procedure FormControlClick(Sender: TObject);
@@ -848,7 +850,7 @@ type
     procedure Show; virtual;
 
     //property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
-    property Height: Integer read GetClientHeight write SetClientHeight;
+//    property Height: Integer read GetClientHeight write SetClientHeight;
     property Hidden: Boolean read IsHidden;
     property ID: ThtString read FID write FID; {ID attribute of control}
     property Left: Integer read GetClientLeft write SetClientLeft;
@@ -859,7 +861,7 @@ type
     property Title: ThtString read FTitle write FTitle;
     property Top: Integer read GetClientTop write SetClientTop;
     property Value: ThtString read FValue write SetValue;
-    property Width: Integer read GetClientWidth write SetClientWidth;
+//    property Width: Integer read GetClientWidth write SetClientWidth;
 //    property YValue: Integer read FYValue;
   end;
 
@@ -921,7 +923,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure RadioClick(Sender: TObject);
     procedure ResetToValue; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
@@ -2890,7 +2892,7 @@ begin
     htStyles(bssSolid, bssSolid, bssSolid, bssSolid));
 end;
 
-procedure TImageObj.Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+procedure TImageObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
 var
   TmpImage: ThtImage;
   MiddleAlignTop: Integer;
@@ -3430,7 +3432,7 @@ procedure TFormControlObj.DoOnChange;
 begin
 end;
 
-procedure TFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
+procedure TFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 begin
   if not IsCopy then
   begin
@@ -3440,14 +3442,20 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 16.09.2013 --
+procedure TFormControlObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+begin
+  DrawInline1(Canvas, X, Y);
+end;
+
 //-- BG ---------------------------------------------------------- 28.08.2013 --
 procedure TFormControlObj.DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
 begin
   inherited;
   if PercentWidth then
-    Width := Max(10, Min(MulDiv(FWidth, AvailableWidth, 100), AvailableWidth - HSpaceL - HSpaceR));
+    ClientWidth := Max(10, Min(MulDiv(FWidth, AvailableWidth, 100), AvailableWidth - HSpaceL - HSpaceR));
   if PercentHeight then
-    Height := Max(10, Min(MulDiv(FWidth, AvailableHeight, 100), AvailableHeight - VSpaceT - VSpaceB));
+    ClientHeight := Max(10, Min(MulDiv(FWidth, AvailableHeight, 100), AvailableHeight - VSpaceT - VSpaceB));
 end;
 
 procedure TFormControlObj.ResetToValue;
@@ -3736,7 +3744,7 @@ begin
   Checked := IsChecked;
 end;
 
-procedure TRadioButtonFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
+procedure TRadioButtonFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 var
   OldStyle: TPenStyle;
   OldWidth, XW, YH, XC, YC: Integer;
@@ -10931,8 +10939,8 @@ function TSection.FindCountThatFits(Canvas: TCanvas; Width: Integer; Start: PWid
 var
   Cnt, XX, YY, I, J, J1, J2, J3: Integer;
   Picture: boolean;
-  FlObj: TSizeableObj;
-  FcObj: TFormControlObj;
+  FlObj: TFloatingObj; //TSizeableObj;
+  FcObj: TFloatingObj; //TFormControlObj;
   FO: TFontObj;
   Extent: TSize;
 const
@@ -11201,8 +11209,8 @@ function TSection.FindTextSize(Canvas: TCanvas; Start: PWideChar; N: Integer; Re
  don't count spaces on right end}
 var
   I, J, J1: Integer;
-  FlObj: TSizeableObj;
-  FcObj: TFormControlObj;
+  FlObj: TFloatingObj; //TSizeableObj;
+  FcObj: TFloatingObj; //TFormControlObj;
   FO: TFontObj;
 begin
    {$IFDEF JPM_DEBUGGING}
@@ -11277,8 +11285,8 @@ function TSection.FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer):
  BG: The only difference to FindTextWidth is the '- OHang' when incrementing the result.}
 var
   I, J, J1: Integer;
-  FlObj: TSizeableObj;
-  FcObj: TFormControlObj;
+  FlObj: TFloatingObj; //TSizeableObj;
+  FcObj: TFloatingObj; //TFormControlObj;
   FO: TFontObj;
 begin
   Result := 0;
@@ -11386,8 +11394,8 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     XX: Integer; // current width of row in pixels (== current horizontal position).
     YY: Integer; // current height of row in pixels.
     Picture: boolean;
-    FlObj: TSizeableObj;
-    FcObj: TFormControlObj;
+    FlObj: TFloatingObj; //TSizeableObj;
+    FcObj: TFloatingObj; //TFormControlObj;
     FO: TFontObj;
     BrChr, TheStart: PWideChar;
     //Font,
@@ -11599,8 +11607,8 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       Align: ThtAlignmentStyle;
       NoChar: boolean;
       P: PWideChar;
-      FcObj: TFormControlObj;
-      FlObj: TSizeableObj;
+      FlObj: TFloatingObj; //TSizeableObj;
+      FcObj: TFloatingObj; //TFormControlObj;
       LRTextWidth: Integer;
       OHang: Integer;
 
@@ -11731,9 +11739,9 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
                 SA := Max(SA, H - Dht);
               AMiddle:
                 begin
-                  Tmp := (FcObj.Height - DHt) div 2;
+                  Tmp := (FcObj.ClientHeight - DHt) div 2;
                   SA := Max(SA, Tmp + FcObj.VSpaceB);
-                  SB := Max(SB, (FcObj.Height - DHt - Tmp + FcObj.VSpaceT));
+                  SB := Max(SB, (FcObj.ClientHeight - DHt - Tmp + FcObj.VSpaceT));
                 end;
               ABaseline:
                 SB := Max(SB, H - (DHt - LR.Descent));
@@ -11804,9 +11812,9 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     MaxChars: Integer;
     N, NN, Width, I: Integer;
     Tmp: Integer;
-    Obj: TSizeableObj;
+    Obj: TFloatingObj;
     TopY, HtRef: Integer;
-    Ctrl: TFormControlObj;
+    //Ctrl: TFormControlObj;
     //BG, 06.02.2011: floating objects:
     PDoneFlObj: PWideChar;
     YDoneFlObj: Integer;
@@ -11845,7 +11853,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
 
     for I := 0 to Images.Count - 1 do {call drawlogic for all the images}
     begin
-      Obj := TSizeableObj(Images[I]);
+      Obj := Images[I];
       Obj.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Obj.StartCurs), Width, HtRef);
       // BG, 28.08.2011:
       if OwnerBlock.HideOverflow then
@@ -11859,16 +11867,16 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
 
     for I := 0 to FormControls.Count - 1 do
     begin
-      Ctrl := FormControls[I];
-      Ctrl.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Ctrl.StartCurs), Width, HtRef);
+      Obj := FormControls[I];
+      Obj.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Obj.StartCurs), Width, HtRef);
       // BG, 28.08.2011:
       if OwnerBlock.HideOverflow then
       begin
-        if Ctrl.Width > Width then
-          Ctrl.Width := Width;
+        if Obj.ClientWidth > Width then
+          Obj.ClientWidth := Width;
       end
       else
-        MaxWidth := Max(MaxWidth, Ctrl.Width);
+        MaxWidth := Max(MaxWidth, Obj.ClientWidth);
     end;
 
     YDoneFlObj := Y;
@@ -12260,7 +12268,7 @@ var
     I, J, J1, J2, J3, J4,
     //Index,
     Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
-    FlObj: TSizeableObj;
+    FlObj: TFloatingObj;
     FcObj: TFormControlObj;
     FO: TFontObj;
     DC: HDC;
@@ -12386,7 +12394,7 @@ var
               FlObj.Positioning := OwnerBlock.Positioning
             else
               FlObj.Positioning := posStatic;
-            TImageObj(FlObj).Draw(Canvas, CPx + FlObj.HSpaceL, LR.DrawY, Y - Descent, FO);
+            TImageObj(FlObj).DrawInline(Canvas, CPx + FlObj.HSpaceL, LR.DrawY, Y - Descent, FO);
           {see if there's an inline border for the image}
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
@@ -12487,7 +12495,7 @@ var
             NewCP := True;
           end;
 
-          FlObj.Draw(Canvas, LeftT, TopP - YOffset, TopP - YOffset - Descent, FO)
+          FlObj.DrawInline(Canvas, LeftT, TopP - YOffset, TopP - YOffset - Descent, FO);
 
         end;
       end
@@ -12515,9 +12523,9 @@ var
             case FcObj.VertAlign of
               ANone,
               ATop:      TopP := LR.DrawY + FcObj.VSpaceT - YOffset;
-              AMiddle:   TopP := Y - ((LR.LineHt + FcObj.Height) div 2) - YOffset;
-              ABaseline: TopP := Y - FcObj.Height - FcObj.VSpaceB - Descent - YOffset; {sits on baseline}
-              ABottom:   TopP := Y - FcObj.Height - FcObj.VSpaceB - YOffset;
+              AMiddle:   TopP := Y - ((LR.LineHt + FcObj.ClientHeight) div 2) - YOffset;
+              ABaseline: TopP := Y - FcObj.ClientHeight - FcObj.VSpaceB - Descent - YOffset; {sits on baseline}
+              ABottom:   TopP := Y - FcObj.ClientHeight - FcObj.VSpaceB - YOffset;
             else
                          TopP := Y; {never get here}
             end;
@@ -12538,20 +12546,20 @@ var
                     BR.bRect.Top := ToPP + YOffSet;
                     BR.bRect.Left := CPx + FcObj.HSpaceL;
                     if BR.BEnd = BR.BStart + 1 then {border is confined to form control}
-                      BR.bRect.Right := BR.bRect.Left + FcObj.Width;
-                    BR.bRect.Bottom := TopP + YOffSet + FcObj.Height;
+                      BR.bRect.Right := BR.bRect.Left + FcObj.ClientWidth;
+                    BR.bRect.Bottom := TopP + YOffSet + FcObj.ClientHeight;
                   end
                   else if Start - Buff = BR.BEnd then
                   else
                   begin {form control is included in border}
                     BR.bRect.Top := Min(BR.bRect.Top, ToPP + YOffSet);
-                    BR.bRect.Bottom := Max(BR.bRect.Bottom, TopP + YOffSet + FcObj.Height);
+                    BR.bRect.Bottom := Max(BR.bRect.Bottom, TopP + YOffSet + FcObj.ClientHeight);
                   end;
                 end;
               end;
           end;
 
-          FcObj.Draw(Canvas, LeftT, TopP);
+          FcObj.DrawInline(Canvas, LeftT, TopP, TopP - Descent, FO);
 
           if not (FcObj.Floating in [ALeft, ARight]) then
           begin
@@ -13372,7 +13380,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TPanelObj.Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+procedure TPanelObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
 var
   Bitmap: TBitmap;
   OldHeight, OldWidth: Integer;
@@ -13693,7 +13701,7 @@ begin
     Item := Items[I];
     if (Item is TImageRec) then
       with TImageRec(Item) do
-        AObj.Draw(ACanvas, AX, AY, AYBaseline, AFO);
+        AObj.DrawInline(ACanvas, AX, AY, AYBaseline, AFO);
     Inc(I);
   end;
 end;
@@ -13820,10 +13828,10 @@ begin
     FDisplay := pdBlock;
 end;
 
-function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer;
-begin
-  Result := 0;
-end;
+//function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer;
+//begin
+//  Result := 0;
+//end;
 
 function TPage.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
@@ -14468,7 +14476,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.08.2013 --
-procedure TSizeableObj.Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+procedure TSizeableObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
 begin
   if not IsCopy then
     DrawXX := X;
@@ -14736,6 +14744,7 @@ begin
 {$ENDIF}
   StartCurs := Curs;
   Len := 0;
+  SectionHeight := 0;
   Result := SectionHeight;
   DrawHeight := SectionHeight;
   MaxWidth := 0;
@@ -14950,7 +14959,7 @@ end;
 { TControlObj }
 
 //-- BG ---------------------------------------------------------- 12.11.2011 --
-procedure TControlObj.Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+procedure TControlObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
 var
   OldBrushStyle: TBrushStyle;
   OldBrushColor: TColor;
@@ -15097,7 +15106,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
-procedure TFrameObj.Draw(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+procedure TFrameObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
 var
   HtmlViewer: THtmlViewer;
   Bitmap: TBitmap;

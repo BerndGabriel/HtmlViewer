@@ -98,7 +98,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
@@ -121,7 +121,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     procedure ButtonClick(Sender: TObject);
-    procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure SetHeightWidth(Canvas: TCanvas); override;
   end;
 
@@ -182,7 +182,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
     procedure SetData(Index: integer; const V: ThtString); override;
@@ -210,7 +210,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: Integer; out S: ThtString): Boolean; override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: Integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ResetToValue; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
     procedure SetDataInit; override;
@@ -235,7 +235,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
     procedure SetData(Index: integer; const V: ThtString); override;
@@ -266,7 +266,7 @@ type
     destructor Destroy; override;
     function GetSubmission(Index: integer; out S: ThtString): boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
-    procedure Draw(Canvas: TCanvas; X1, Y1: integer); override;
+    procedure DrawInline1(Canvas: TCanvas; X1, Y1: integer); override;
     procedure AddStr(const S: ThtString);
     procedure ResetToValue; override;
     procedure SetHeightWidth(Canvas: TCanvas); override;
@@ -400,7 +400,7 @@ begin
     FControl.Color := BkColor;
 end;
 
-procedure TListBoxFormControlObj.Draw(Canvas: TCanvas; X1, Y1: integer);
+procedure TListBoxFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: integer);
 var
   H2, I, Addon: integer;
   ARect: TRect;
@@ -644,7 +644,7 @@ begin
     FControl.Color := BkColor;
 end;
 
-procedure TComboFormControlObj.Draw(Canvas: TCanvas; X1, Y1: integer);
+procedure TComboFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: integer);
 var
   ARect: TRect;
 begin
@@ -861,7 +861,7 @@ begin
     FControl.Color := BkColor;
 end;
 
-procedure TTextAreaFormControlObj.Draw(Canvas: TCanvas; X1, Y1: integer);
+procedure TTextAreaFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: integer);
 var
   H2, I, Addon: integer;
   ARect: TRect;
@@ -1243,7 +1243,7 @@ begin
   Text := Value;
 end;
 
-procedure TEditFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
+procedure TEditFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 var
   H2, Addon: Integer;
   ARect: TRect;
@@ -1437,7 +1437,7 @@ begin
   inherited;
 end;
 
-procedure TButtonFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
+procedure TButtonFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 var
   H2: Integer;
   MonoBlack: boolean;
@@ -1572,7 +1572,7 @@ begin
   FControl.Checked := IsChecked;
 end;
 
-procedure TCheckBoxFormControlObj.Draw(Canvas: TCanvas; X1, Y1: Integer);
+procedure TCheckBoxFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 var
   x, y: Integer;
 begin
