@@ -716,13 +716,13 @@ type
     Converted: boolean;
     // END: this area is copied by move() in CreateCopy()
 
-    NewWidth: Integer;
+    ContentWidth: Integer;
     ClearAddon: Integer;
     NeedDoImageStuff: boolean;
     TiledImage: TgpObject;
     TiledMask, FullBG: TBitmap;
     TopP, LeftP: Integer;
-    DrawList: TList;
+    DrawList: TSectionBaseList;
     NoMask: boolean;
     ClientContentBot: Integer;
     MyRect: TRect;
@@ -4261,7 +4261,7 @@ begin
   {$ENDIF}
   inherited Create(Parent, 0, Attributes, Prop);
   MyCell := TBlockCell.Create(Self);
-  DrawList := TList.Create;
+  DrawList := TSectionBaseList.Create(False);
 
   if Document.UseQuirksMode and (Self is TTableBlock) then
     Prop.GetVMarginArrayDefBorder(MargArrayO, clSilver)
@@ -4382,39 +4382,41 @@ end;
 //-- BG ---------------------------------------------------------- 09.10.2010 --
 procedure TBlock.ContentMinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TBlock.ContentMinMaxWidth');
   CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
-
   CodeSite.AddSeparator;
-   {$ENDIF}
+{$ENDIF}
+
   MyCell.MinMaxWidth(Canvas, Min, Max);
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+
+{$IFDEF JPM_DEBUGGING}
+  CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+  CodeSite.SendFmtMsg('Max = [%d]',[Max]);
   CodeSite.ExitMethod(Self,'TBlock.ContentMinMaxWidth');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TBlock.ConvMargArray');
-   CodeSite.SendFmtMsg('BaseWidth       = [%d]',[BaseWidth]);
-   CodeSite.SendFmtMsg('BaseHeight      = [%d]',[BaseHeight]);
+  CodeSite.SendFmtMsg('BaseWidth       = [%d]',[BaseWidth]);
+  CodeSite.SendFmtMsg('BaseHeight      = [%d]',[BaseHeight]);
   CodeSite.SendFmtMsg('Self.EmSize      = [%d]',[EmSize]);
   CodeSite.SendFmtMsg('Self.ExSize      = [%d]',[ExSize]);
   CodeSite.SendFmtMsg('Self.BorderWidth = [%d]',[BorderWidth]);
   CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
-   CodeSite.AddSeparator;
-   {$ENDIF}
+  CodeSite.AddSeparator;
+{$ENDIF}
+
   StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
 
-  {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
   CodeSite.ExitMethod(Self,'TBlock.ConvMargArray');
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TBlock.CreateCopy}
@@ -4426,7 +4428,7 @@ begin
   inherited;
   System.Move(T.MargArray, MargArray, PtrSub(@Converted, @MargArray) + Sizeof(Converted));
   MyCell := TBlockCell.CreateCopy(Self, T.MyCell);
-  DrawList := TList.Create;
+  DrawList := TSectionBaseList.Create(False);
   if Assigned(T.BGImage) and Document.PrintTableBackground then
     BGImage := TImageObj.CreateCopy(MyCell, T.BGImage);
   MargArrayO := T.MargArrayO;
@@ -4590,7 +4592,7 @@ begin
     Result := -1;
     with DrawList do
       for I := Count - 1 downto 0 do
-        with TSectionBase(Items[I]) do
+        with Items[I] do
         begin
           // BG, 01.04.2013: cannot reduce workload via DrawTop/DrawBot as
           // absolutely positioned children may reside beyond these margins.
@@ -4626,11 +4628,12 @@ begin
   else
     {check this in z order}
     for I := DrawList.Count - 1 downto 0 do
-      if TSectionBase(DrawList.Items[I]).PtInObject(X, Y, Obj, IX, IY) then
+      if DrawList.Items[I].PtInObject(X, Y, Obj, IX, IY) then
       begin
         Result := True;
         Exit;
       end;
+
   end;
 
   Result := inherited PtInObject(X, Y, Obj, IX, IY);
@@ -4753,15 +4756,15 @@ var
   end;
 
 begin
-  {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TBlock.FindWidth');
   CodeSite.SendFmtMsg('AWidth    = [%d]',[AWidth]);
   CodeSite.SendFmtMsg('AHeight   = [%d]',[AHeight]);
   CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
   CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
-
   CodeSite.AddSeparator;
-  {$ENDIF}
+{$ENDIF}
+
   ContentMinMaxWidth(Canvas, MinWidth, MaxWidth);
   HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
   case AutoCount of
@@ -4827,10 +4830,11 @@ begin
       end;
   end;
   Result := MargArray[piWidth];
-  {$IFDEF JPM_DEBUGGING}
+
+{$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Result = [%d]',[Result]);
   CodeSite.ExitMethod(Self,'TBlock.FindWidth');
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TBlock.DrawLogic}
@@ -4888,11 +4892,11 @@ var
       (ThtBorderStyle(MargArray[BorderLeftStyle]) <> bssNone);
 
     ApplyBoxSettings(MargArray, Document.UseQuirksMode);
-    NewWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
-    LeftWidths  := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
-    RightWidths := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
-    MiscWidths  := LeftWidths + RightWidths;
-    TotalWidth  := MiscWidths + NewWidth;
+    ContentWidth := FindWidth(Canvas, AWidth, AHeight, AutoCount);
+    LeftWidths   := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
+    RightWidths  := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+    MiscWidths   := LeftWidths + RightWidths;
+    TotalWidth   := MiscWidths + ContentWidth;
 
     Indent := LeftWidths;
     TopP := MargArray[piTop];
@@ -4951,7 +4955,7 @@ var
         MyCell.IMgr := MyIMgr;
       end;
       IMgr := MyCell.IMgr;
-      IMgr.Init(0, NewWidth);
+      IMgr.Init(0, ContentWidth);
     end
     else
     begin
@@ -4962,7 +4966,7 @@ var
     IMgr.CurrentID := Self;
 
     LIndex := IMgr.SetLeftIndent(X, YClear);
-    RIndex := IMgr.SetRightIndent(X + NewWidth, YClear);
+    RIndex := IMgr.SetRightIndent(X + ContentWidth, YClear);
 
     if MargArray[piHeight] > 0 then
       BlockHeight := MargArray[piHeight]
@@ -4979,7 +4983,7 @@ var
           ContentTop + TopP,
           XRef,
           ContentTop + TopP,
-          NewWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
+          ContentWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
         MaxWidth := ScrollWidth + MiscWidths - MargArray[MarginRight] + LeftP - Xin;
         ClientContentBot := GetClientContentBot(MyCell.tcContentBot - TopP);
       end;
@@ -4991,7 +4995,7 @@ var
           ContentTop,
           XRef + LeftP + MargArray[MarginLeft] + MargArray[BorderLeftWidth],
           YRef + TopP + MargArray[MarginTop] + MargArray[BorderTopWidth],
-          NewWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
+          ContentWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
         MaxWidth := ScrollWidth + MiscWidths - MargArray[MarginRight] + LeftP - Xin;
         ClientContentBot := GetClientContentBot(MyCell.tcContentBot);
         IB := IMgr.ImageBottom; {check for image overhang}
@@ -5005,7 +5009,7 @@ var
         ContentTop,
         XRef,
         YRef,
-        NewWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
+        ContentWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
       MaxWidth := Indent + ScrollWidth + RightWidths;
       ClientContentBot := GetClientContentBot(MyCell.tcContentBot);
     end;
@@ -5061,7 +5065,7 @@ var
     //>-- DZ
     DrawRect.Left   := X - LeftWidths + MargArray[MarginLeft];
     DrawRect.Top    := DrawTop;
-    DrawRect.Right  := DrawRect.Left + NewWidth;
+    DrawRect.Right  := DrawRect.Left + ContentWidth;
     DrawRect.Bottom := DrawRect.Top + SectionHeight;
   end;
 
@@ -5114,7 +5118,7 @@ begin {TBlock.DrawLogic}
     //>-- DZ
     DrawRect.Left   := X;
     DrawRect.Top    := DrawTop;
-    DrawRect.Right  := DrawRect.Left + NewWidth;
+    DrawRect.Right  := DrawRect.Left + ContentWidth;
     DrawRect.Bottom := DrawRect.Top + SectionHeight;
   end;
 
@@ -5147,7 +5151,7 @@ var
   begin
     Inserted := False;
     for J := I1 to I2 - 1 do
-      if SBZIndex < TSectionBase(DrawList[J]).ZIndex then
+      if SBZIndex < DrawList[J].ZIndex then
       begin
         DrawList.Insert(J, SB);
         Inserted := True;
@@ -5321,16 +5325,18 @@ begin
       //X := IMgr.LfEdge + Indent;
       X := X + Indent;
       RefX := X - MargArray[PaddingLeft] - MargArray[BorderLeftWidth];
-      XR := X + NewWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth];
+      XR := X + ContentWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth];
       RefY := DrawTop;
       YB := ContentBot - MargArray[MarginBottom];
     end;
   else
-//    RefX := X + MargArray[MarginLeft];
-//    X := X + Indent;
-    RefX := DrawRect.Left;
-    X := RefX - MargArray[MarginLeft] + Indent;
-    XR := X + NewWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
+// BG, 08.09.2013: inline vs block:
+//  X of centered blocks may differ from (DrawRect.Left - MargArray[MarginLeft]) calculated in DrawLogic1().
+    RefX := X + MargArray[MarginLeft];
+    X := X + Indent;
+//    RefX := DrawRect.Left;
+//    X := RefX - MargArray[MarginLeft] + Indent;
+    XR := X + ContentWidth + MargArray[PaddingRight] + MargArray[BorderRightWidth]; {current right edge}
     RefY := Y + ClearAddon + MargArray[MarginTop];
     YB := ContentBot - MargArray[MarginBottom];
     case Positioning of
@@ -5389,7 +5395,7 @@ begin
             else
               TmpHt := ClientContentBot - ContentTop + MargArray[PaddingTop] + MargArray[PaddingBottom];
 
-            DoImageStuff(Canvas, MargArray[PaddingLeft] + NewWidth + MargArray[PaddingRight],
+            DoImageStuff(Canvas, MargArray[PaddingLeft] + ContentWidth + MargArray[PaddingRight],
               TmpHt, BGImage.Image, PRec, TiledImage, TiledMask, NoMask);
             if IsCopy and (TiledImage is TBitmap) then
               TBitmap(TiledImage).HandleType := bmDIB;
@@ -5491,15 +5497,15 @@ begin
       SaveID := IMgr.CurrentID;
       Imgr.CurrentID := Self;
       if Positioning = posRelative then
-        DrawTheList(Canvas, ARect, NewWidth, X,
+        DrawTheList(Canvas, ARect, ContentWidth, X,
           RefX + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
           Y + MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop])
       else if Positioning = posAbsolute then
-        DrawTheList(Canvas, ARect, NewWidth, X,
+        DrawTheList(Canvas, ARect, ContentWidth, X,
           RefX + MargArray[BorderLeftWidth],
           Y + MargArray[MarginTop] + MargArray[BorderTopWidth])
       else
-        DrawTheList(Canvas, ARect, NewWidth, X, XRef, YRef);
+        DrawTheList(Canvas, ARect, ContentWidth, X, XRef, YRef);
       Imgr.CurrentID := SaveID;
     finally
       if HideOverflow then {restore any previous clip region}
@@ -5547,7 +5553,7 @@ begin
   else
     MyCell.IMgr.ClipWidth := ClipWidth;
   for I := 0 to DrawList.Count - 1 do
-    TSectionBase(DrawList[I]).Draw1(Canvas, ARect, MyCell.IMgr, X, XRef, YRef);
+    DrawList[I].Draw1(Canvas, ARect, MyCell.IMgr, X, XRef, YRef);
 end;
 
 {$ifdef UseFormTree}
@@ -6188,15 +6194,16 @@ var
   LeftSide, RightSide, SWidth: Integer;
   Diff: Integer;
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'THRBlock.FindWidth');
-    CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
+  CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
 
   CodeSite.SendFmtMsg('AWidth = [%d]',[AWidth]);
   CodeSite.SendFmtMsg('AHeight = [%d]',[AHeight]);
   CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
   CodeSite.AddSeparator;
-   {$ENDIF}
+{$ENDIF}
+
   if Positioning = posAbsolute then
     Align := Left;
   LeftSide := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
@@ -6222,10 +6229,11 @@ of TBlock}
   end;
   if not IsCopy then
     THorzline(MyHRule).VSize := MargArray[piHeight];
-   {$IFDEF JPM_DEBUGGING}
+
+{$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Result = [%d]',[Result]);
   CodeSite.ExitMethod(Self,'THRBlock.FindWidth');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TBlockLI.Create}
@@ -6549,7 +6557,7 @@ begin
   ApplyBoxSettings(MargArray,Document.UseQuirksMode);
 
   X := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
-  NewWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
+  ContentWidth := IMgr.Width - (X + MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
 
   DrawTop := MargArray[MarginTop];
 
@@ -6558,10 +6566,10 @@ begin
   SaveID := IMgr.CurrentID;
   Imgr.CurrentID := Self;
   LIndex := IMgr.SetLeftIndent(X, Y);
-  RIndex := IMgr.SetRightIndent(X + NewWidth, Y);
+  RIndex := IMgr.SetRightIndent(X + ContentWidth, Y);
 
   ContentTop := Y + MargArray[MarginTop] + MargArray[PaddingTop] + MargArray[BorderTopWidth];
-  MyCell.DoLogicX(Canvas, X, ContentTop, 0, 0, NewWidth,
+  MyCell.DoLogicX(Canvas, X, ContentTop, 0, 0, ContentWidth,
     AHeight - MargArray[MarginTop] - MargArray[MarginBottom], BlHt, ScrollWidth, Curs);
 
   Len := Curs - StartCurs;
@@ -6581,7 +6589,7 @@ begin
   Imgr.CurrentID := SaveID;
   if DrawHeight < SectionHeight then
     DrawHeight := SectionHeight;
-  MaxWidth := Max(IMgr.Width, Max(ScrollWidth, NewWidth) + MargArray[MarginLeft] + MargArray[MarginRight]);
+  MaxWidth := Max(IMgr.Width, Max(ScrollWidth, ContentWidth) + MargArray[MarginLeft] + MargArray[MarginRight]);
   if DrawList.Count = 0 then
     DrawSort;
   {$IFDEF JPM_DEBUGGING}
@@ -6612,13 +6620,13 @@ begin
   X := IMgr.LfEdge + MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
   SaveID := IMgr.CurrentID;
   Imgr.CurrentID := Self;
-  DrawTheList(Canvas, ARect, NewWidth, X, IMgr.LfEdge, 0);
+  DrawTheList(Canvas, ARect, ContentWidth, X, IMgr.LfEdge, 0);
   Imgr.CurrentID := SaveID;
 
   //>-- DZ
   DrawRect.Top    := Y;
   DrawRect.Left   := X;
-  DrawRect.Right  := DrawRect.Left + NewWidth;
+  DrawRect.Right  := DrawRect.Left + ContentWidth;
   DrawRect.Bottom := DrawRect.Top + DrawHeight;
 end;
 
@@ -14139,7 +14147,7 @@ begin
     Rect.Right := Rect.Left + Legend.TextWidth + 4;
     Rect.Top := YDraw - Document.YOff;
     Rect.Bottom := Rect.Top + Legend.CellHeight;
-    Legend.Draw(Canvas, ARect, NewWidth, Rect.Left + 2, YDraw, XRef, YRef);
+    Legend.Draw(Canvas, ARect, ContentWidth, Rect.Left + 2, YDraw, XRef, YRef);
     Rect := CalcClipRect(Canvas, Rect, Document.Printing);
     ExcludeClipRect(Canvas.Handle, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
     Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
@@ -14201,14 +14209,14 @@ begin
       BlockHeight := BlHt;
 
     L := X + BorderWidth.Left;
-    NewWidth := AWidth - BorderWidth.Left - BorderWidth.Right;
+    ContentWidth := AWidth - BorderWidth.Left - BorderWidth.Right;
 
     SaveID := IMgr.CurrentID;
     IMgr.CurrentID := Self;
     Legend.IMgr := IMgr;
     LI := IMgr.SetLeftIndent(L, Y);
-    RI := IMgr.SetRightIndent(L + NewWidth, Y);
-    Legend.DoLogicX(Canvas, X + BorderWidth.Left, Y, XRef, YRef, NewWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
+    RI := IMgr.SetRightIndent(L + ContentWidth, Y);
+    Legend.DoLogicX(Canvas, X + BorderWidth.Left, Y, XRef, YRef, ContentWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
     IMgr.FreeLeftIndentRec(LI);
     IMgr.FreeRightIndentRec(RI);
     IMgr.CurrentID := SaveID;
