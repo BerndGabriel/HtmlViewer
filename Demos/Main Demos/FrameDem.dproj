@@ -1,86 +1,158 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <ProjectGuid>{e8f2416f-36f0-4431-9dac-a546113c084a}</ProjectGuid>
-    <MainSource>FrameDem.dpr</MainSource>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-    <DCC_DependencyCheckOutputName>bin\Delphi2007\FrameDem.exe</DCC_DependencyCheckOutputName>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Version>7.0</Version>
-    <DCC_WriteableConstants>True</DCC_WriteableConstants>
-    <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-    <DCC_MapFile>3</DCC_MapFile>
-    <DCC_DcuOutput>lib\Delphi2007</DCC_DcuOutput>
-    <DCC_ObjOutput>lib\Delphi2007</DCC_ObjOutput>
-    <DCC_HppOutput>lib\Delphi2007</DCC_HppOutput>
-    <DCC_BplOutput>L:\lib</DCC_BplOutput>
-    <DCC_DcpOutput>L:\lib</DCC_DcpOutput>
-    <DCC_UnitSearchPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_UnitSearchPath>
-    <DCC_ResourcePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_ResourcePath>
-    <DCC_ObjPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_ObjPath>
-    <DCC_IncludePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_IncludePath>
-    <DCC_Define>RELEASE</DCC_Define>
-    <DCC_Description>Fast Function Factory - Components</DCC_Description>
-    <DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
-    <DCC_ExeOutput>bin\Delphi2007</DCC_ExeOutput>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <Version>7.0</Version>
-    <DCC_WriteableConstants>True</DCC_WriteableConstants>
-    <DCC_Optimize>False</DCC_Optimize>
-    <DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
-    <DCC_RangeChecking>True</DCC_RangeChecking>
-    <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-    <DCC_MapFile>3</DCC_MapFile>
-    <DCC_DcuOutput>lib\Delphi2007</DCC_DcuOutput>
-    <DCC_ObjOutput>lib\Delphi2007</DCC_ObjOutput>
-    <DCC_HppOutput>lib\Delphi2007</DCC_HppOutput>
-    <DCC_UnitSearchPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_UnitSearchPath>
-    <DCC_ResourcePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_ResourcePath>
-    <DCC_ObjPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_ObjPath>
-    <DCC_IncludePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_IncludePath>
-    <DCC_Define>DEBUG;madExcept</DCC_Define>
-    <DCC_Description>Fast Function Factory - Components</DCC_Description>
-    <DCC_ExeOutput>bin\Delphi2007</DCC_ExeOutput>
-    <DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
-  </PropertyGroup>
-  <ProjectExtensions>
-    <Borland.Personality>Delphi.Personality</Borland.Personality>
-    <Borland.ProjectType>VCLApplication</Borland.ProjectType>
-    <BorlandProject>
-<BorlandProject><Delphi.Personality><Parameters><Parameters Name="DebugSourceDirs">L:\Bin\lib</Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters><Parameters Name="RunParams">"C:\v50\pascal\HtmlViewer\Demos\Compiled Framedemo\demo.htm"</Parameters></Parameters><VersionInfo><VersionInfo Name="IncludeVerInfo">True</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">11</VersionInfo><VersionInfo Name="MinorVer">2</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">0</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">1033</VersionInfo><VersionInfo Name="CodePage">1252</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName">HtmlViewer Team</VersionInfoKeys><VersionInfoKeys Name="FileDescription"></VersionInfoKeys><VersionInfoKeys Name="FileVersion">11.2.0.0</VersionInfoKeys><VersionInfoKeys Name="InternalName"></VersionInfoKeys><VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys><VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys><VersionInfoKeys Name="ProductName">FrameViewer Demo</VersionInfoKeys><VersionInfoKeys Name="ProductVersion">11.0.0.0</VersionInfoKeys><VersionInfoKeys Name="Comments">meet us at http://code.google.com/p/thtmlviewer/</VersionInfoKeys></VersionInfoKeys><Source><Source Name="MainSource">FrameDem.dpr</Source></Source><Excluded_Packages>
-      <Excluded_Packages Name="C:\Users\Bernd\Documents\RAD Studio\5.0\Bpl\BegaD11D.bpl">Bega - Components @ Design Time</Excluded_Packages>
-    </Excluded_Packages></Delphi.Personality><ModelSupport>False</ModelSupport></BorlandProject></BorlandProject>
-  </ProjectExtensions>
-  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
-  <ItemGroup>
-    <DelphiCompile Include="FrameDem.dpr">
-      <MainSource>MainSource</MainSource>
-    </DelphiCompile>
-    <DCCReference Include="DemoSubs.pas" />
-    <DCCReference Include="FDemUnit.pas">
-      <Form>Form1</Form>
-    </DCCReference>
-    <DCCReference Include="Fontdlg.pas">
-      <Form>FontForm</Form>
-    </DCCReference>
-    <DCCReference Include="Gopage.pas">
-      <Form>GoPageForm</Form>
-    </DCCReference>
-    <DCCReference Include="Htmlabt.pas">
-      <Form>AboutBox</Form>
-    </DCCReference>
-    <DCCReference Include="ImgForm.pas">
-      <Form>ImageForm</Form>
-    </DCCReference>
-    <DCCReference Include="PrintStatusForm.pas">
-      <Form>PrnStatusForm</Form>
-    </DCCReference>
-    <DCCReference Include="SubmitTnt.pas">
-      <Form>SubmitFormTnt</Form>
-    </DCCReference>
-  </ItemGroup>
-</Project>
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{e8f2416f-36f0-4431-9dac-a546113c084a}</ProjectGuid>
+			<MainSource>FrameDem.dpr</MainSource>
+			<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+			<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+			<DCC_DependencyCheckOutputName>bin\Delphi2007\FrameDem.exe</DCC_DependencyCheckOutputName>
+			<ProjectVersion>12.0</ProjectVersion>
+			<Config Condition="'$(Config)'==''">Release</Config>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_DependencyCheckOutputName>FrameDem.exe</DCC_DependencyCheckOutputName>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_DependencyCheckOutputName>bin\Delphi2007\FrameDem.exe</DCC_DependencyCheckOutputName>
+			<Version>7.0</Version>
+			<DCC_WriteableConstants>True</DCC_WriteableConstants>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_DcuOutput>lib\Delphi2007</DCC_DcuOutput>
+			<DCC_ObjOutput>lib\Delphi2007</DCC_ObjOutput>
+			<DCC_HppOutput>lib\Delphi2007</DCC_HppOutput>
+			<DCC_BplOutput>L:\lib</DCC_BplOutput>
+			<DCC_DcpOutput>L:\lib</DCC_DcpOutput>
+			<DCC_UnitSearchPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_ResourcePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;$(DCC_ResourcePath)</DCC_ResourcePath>
+			<DCC_ObjPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;$(DCC_ObjPath)</DCC_ObjPath>
+			<DCC_IncludePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;$(DCC_IncludePath)</DCC_IncludePath>
+			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+			<DCC_Description>Fast Function Factory - Components</DCC_Description>
+			<DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
+			<DCC_ExeOutput>bin\Delphi2007</DCC_ExeOutput>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_DependencyCheckOutputName>bin\Delphi2007\FrameDem.exe</DCC_DependencyCheckOutputName>
+			<Version>7.0</Version>
+			<DCC_WriteableConstants>True</DCC_WriteableConstants>
+			<DCC_Optimize>False</DCC_Optimize>
+			<DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
+			<DCC_RangeChecking>True</DCC_RangeChecking>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_DcuOutput>lib\Delphi2007</DCC_DcuOutput>
+			<DCC_ObjOutput>lib\Delphi2007</DCC_ObjOutput>
+			<DCC_HppOutput>lib\Delphi2007</DCC_HppOutput>
+			<DCC_UnitSearchPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_ResourcePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source;$(DCC_ResourcePath)</DCC_ResourcePath>
+			<DCC_ObjPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source;$(DCC_ObjPath)</DCC_ObjPath>
+			<DCC_IncludePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source;$(DCC_IncludePath)</DCC_IncludePath>
+			<DCC_Define>DEBUG;madExcept;$(DCC_Define)</DCC_Define>
+			<DCC_Description>Fast Function Factory - Components</DCC_Description>
+			<DCC_ExeOutput>bin\Delphi2007</DCC_ExeOutput>
+			<DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
+		</PropertyGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
+			<Borland.ProjectType>VCLApplication</Borland.ProjectType>
+			<BorlandProject>
+				<Delphi.Personality>
+					<Parameters>
+						<Parameters Name="DebugSourceDirs">L:\Bin\lib</Parameters>
+						<Parameters Name="UseLauncher">False</Parameters>
+						<Parameters Name="LoadAllSymbols">True</Parameters>
+						<Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
+						<Parameters Name="RunParams">&quot;C:\v50\pascal\HtmlViewer\Demos\Compiled Framedemo\demo.htm&quot;</Parameters>
+					</Parameters>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
+						<VersionInfo Name="MajorVer">11</VersionInfo>
+						<VersionInfo Name="MinorVer">2</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">1033</VersionInfo>
+						<VersionInfo Name="CodePage">1252</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName">HtmlViewer Team</VersionInfoKeys>
+						<VersionInfoKeys Name="FileDescription"/>
+						<VersionInfoKeys Name="FileVersion">11.2.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName"/>
+						<VersionInfoKeys Name="LegalCopyright"/>
+						<VersionInfoKeys Name="LegalTrademarks"/>
+						<VersionInfoKeys Name="OriginalFilename"/>
+						<VersionInfoKeys Name="ProductName">FrameViewer Demo</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">11.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments">meet us at http://code.google.com/p/thtmlviewer/</VersionInfoKeys>
+					</VersionInfoKeys>
+					<Source>
+						<Source Name="MainSource">FrameDem.dpr</Source>
+					</Source>
+					<Excluded_Packages>
+						<Excluded_Packages Name="C:\Users\Bernd\Documents\RAD Studio\5.0\Bpl\BegaD11D.bpl">Bega - Components @ Design Time</Excluded_Packages>
+					</Excluded_Packages>
+				</Delphi.Personality>
+				<ModelSupport>False</ModelSupport>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+		<ItemGroup>
+			<DelphiCompile Include="FrameDem.dpr">
+				<MainSource>MainSource</MainSource>
+			</DelphiCompile>
+			<DCCReference Include="DemoSubs.pas"/>
+			<DCCReference Include="Fontdlg.pas">
+				<Form>FontForm</Form>
+			</DCCReference>
+			<DCCReference Include="Gopage.pas">
+				<Form>GoPageForm</Form>
+			</DCCReference>
+			<DCCReference Include="Htmlabt.pas">
+				<Form>AboutBox</Form>
+			</DCCReference>
+			<DCCReference Include="ImgForm.pas">
+				<Form>ImageForm</Form>
+			</DCCReference>
+			<DCCReference Include="PrintStatusForm.pas">
+				<Form>PrnStatusForm</Form>
+			</DCCReference>
+			<DCCReference Include="SubmitTnt.pas">
+				<Form>SubmitFormTnt</Form>
+			</DCCReference>
+			<DCCReference Include="FDemUnit.pas">
+				<Form>Form1</Form>
+			</DCCReference>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+	</Project>

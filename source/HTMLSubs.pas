@@ -1501,6 +1501,7 @@ type
 
   TPage = class(TSectionBase)
   public
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
   end;
@@ -14692,71 +14693,72 @@ begin
   Result := ContentTop;
 end;
 
-//function TSectionBase.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
-//  var MaxWidth, Curs: Integer): Integer;
-//// Computes all coordinates of the section.
-////
-//// Normal sections, absolutely positioned blocks and floating blocks start at given (X,Y) relative to document origin.
-//// Table cells start at given (X,Y) coordinates relative to the outmost containing block.
-////
-//// Returns the nominal height of the section (without overhanging floating blocks)
-//begin
-//{$IFDEF JPM_DEBUGGING}
-//  CodeSite.EnterMethod(Self,'TSectionBase.DrawLogic');
-//  CodeSite.SendFmtMsg('X        = [%d]',[X]);
-//  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
-//  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
-//  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
-//  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
-//  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
-//  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
-//  if Assigned(IMgr) then
-//  begin
-//    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
-//    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
-//    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
-//  end
-//  else
-//  begin
-//    CodeSite.SendMsg('IMgr      = nil');
-//  end;
-//  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
-//  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
-//  CodeSite.AddSeparator;
-//{$ENDIF}
-//  StartCurs := Curs;
-//  Len := 0;
-//  Result := SectionHeight;
-//  DrawHeight := SectionHeight;
-//  MaxWidth := 0;
-//  ContentTop := Y;
-//  DrawTop := Y;
-//  YDraw := Y;
-//  ContentBot := Y + SectionHeight;
-//  DrawBot := Y + DrawHeight;
+function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+  var MaxWidth, Curs: Integer): Integer;
+// This was TSectionBase.DrawLogic1, but actually TPage was the only descendant, that uses it.
+// Computes all coordinates of the section.
 //
-//  //>-- DZ
-//  DrawRect.Top    := DrawTop;
-//  DrawRect.Left   := X;
-//  DrawRect.Right  := DrawRect.Left + MaxWidth;
-//  DrawRect.Bottom := DrawBot;
-//{$IFDEF JPM_DEBUGGING}
-//  if Assigned(IMgr) then
-//  begin
-//    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
-//    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
-//    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
-//  end
-//  else
-//  begin
-//    CodeSite.SendMsg('IMgr      = nil');
-//  end;
-//  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
-//  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
-//  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-//  CodeSite.ExitMethod(Self,'TSectionBase.DrawLogic');
-//{$ENDIF}
-//end;
+// Normal sections, absolutely positioned blocks and floating blocks start at given (X,Y) relative to document origin.
+// Table cells start at given (X,Y) coordinates relative to the outmost containing block.
+//
+// Returns the nominal height of the section (without overhanging floating blocks)
+begin
+{$IFDEF JPM_DEBUGGING}
+  CodeSite.EnterMethod(Self,'TPage.DrawLogic');
+  CodeSite.SendFmtMsg('X        = [%d]',[X]);
+  CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
+  CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
+  CodeSite.SendFmtMsg('YRef     = [%d]',[YRef]);
+  CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
+  CodeSite.SendFmtMsg('AHeight  = [%d]',[AHeight]);
+  CodeSite.SendFmtMsg('BlHt     = [%d]',[BlHt]);
+  if Assigned(IMgr) then
+  begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end
+  else
+  begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.AddSeparator;
+{$ENDIF}
+  StartCurs := Curs;
+  Len := 0;
+  Result := SectionHeight;
+  DrawHeight := SectionHeight;
+  MaxWidth := 0;
+  ContentTop := Y;
+  DrawTop := Y;
+  YDraw := Y;
+  ContentBot := Y + SectionHeight;
+  DrawBot := Y + DrawHeight;
+
+  //>-- DZ
+  DrawRect.Top    := DrawTop;
+  DrawRect.Left   := X;
+  DrawRect.Right  := DrawRect.Left + MaxWidth;
+  DrawRect.Bottom := DrawBot;
+{$IFDEF JPM_DEBUGGING}
+  if Assigned(IMgr) then
+  begin
+    CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
+    CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
+    CodeSite.SendFmtMsg('IMgr.ClipWidth = [%d]',[ IMgr.ClipWidth ] );
+  end
+  else
+  begin
+    CodeSite.SendMsg('IMgr      = nil');
+  end;
+  CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
+  CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
+  CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
+  CodeSite.ExitMethod(Self,'TPage.DrawLogic');
+{$ENDIF}
+end;
 
 function TSectionBase.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 // returns the pixel row, where the section ends.
