@@ -483,12 +483,12 @@ begin
   GDICheck('ThtGpBitmap.SetPixel', GdipBitmapSetPixel(fHandle, X, Y, Color));
 end;
 
-{$ifndef HasGDIPlus}
 var
+  GDIPlusCount: integer;
+{$ifndef HasGDIPlus}
   InitToken: DWord;
   Startup: GdiplusStartupInput;
   LibHandle: THandle;
-  GDIPlusCount: integer;
 {$endif}
 
 procedure CheckInitGDIPlus;
@@ -497,9 +497,9 @@ var
   Err: GpStatus;
 {$endif}
 begin
-{$ifndef HasGDIPlus}
   if GDIPlusCount = 0 then
   begin
+{$ifndef HasGDIPlus}
     LibHandle := LoadLibrary(GdiPlusLib);
     if LibHandle <> 0 then
     begin
@@ -539,19 +539,19 @@ begin
         Libhandle := 0;
       end;
     end;
+{$else}
+    GDIPlusActive := True;
+{$endif HasGDIPlus}
   end;
   Inc(GDIPlusCount);
-{$else}
-  GDIPlusActive := True;
-{$endif HasGDIPlus}
 end;
 
 procedure CheckExitGDIPlus;
 begin
-{$ifndef HasGDIPlus}
   Dec(GDIPlusCount);
   if GDIPlusCount = 0 then
   begin
+{$ifndef HasGDIPlus}
     if GDIPlusActive then
     begin
       GdiplusShutdown(InitToken);
@@ -562,10 +562,10 @@ begin
       FreeLibrary(LibHandle);
       LibHandle := 0;
     end;
-  end;
 {$else}
-  GDIPlusActive := False;
+    GDIPlusActive := False;
 {$endif HasGDIPlus}
+  end;
 end;
 
 {$endif NoGDIPlus}
