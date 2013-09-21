@@ -192,7 +192,8 @@
 { Define Aspects Of HtmlViewer }
 
 {.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
-        PNG images.  If, for some reason the use of the gdiplus.dll is
+        PNG images and provides support for TIFF images.
+        If, for some reason the use of the gdiplus.dll is
         undesirable, define "NoGDIPlus" by removing the '.'.
         Defining NoGDIPlus will remove support for PNG images entirely.}
 

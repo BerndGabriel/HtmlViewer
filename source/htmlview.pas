@@ -670,7 +670,7 @@ type
 //-- BG ---------------------------------------------------------- 12.05.2013 --
 procedure InitFileTypes;
 const
-  FileTypeDefinitions: array [1..14] of FileTypeRec = (
+  FileTypeDefinitions: array [1..14 {$IFNDEF NoGDIPlus}+2{$ENDIF !NoGDIPlus}] of FileTypeRec = (
     (FileExt: '.htm';   FileType: HTMLType),
     (FileExt: '.html';  FileType: HTMLType),
 
@@ -687,7 +687,10 @@ const
     (FileExt: '.jpeg';  FileType: ImgType),
     (FileExt: '.png';   FileType: ImgType),
     (FileExt: '.bmp';   FileType: ImgType),
-
+      {$IFNDEF NoGDIPlus}
+    (FileExt: '.tiff';  FileType: ImgType),
+    (FileExt: '.tif';  FileType: ImgType),
+     {$ENDIF !NoGDIPlus}
     (FileExt: '.txt';   FileType: TextType)
   );
 var

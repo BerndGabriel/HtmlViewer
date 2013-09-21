@@ -189,9 +189,7 @@ implementation
   var
     GdiplusStartup: function(out Token: ULONG; const Input : PGdiplusStartupInput; const Output: PGdiplusStartupOutput): GpStatus stdcall;
     GdiplusShutdown: procedure(Token: ULONG) stdcall;
-
     // GpGraphics methods
-
     GdipCreateFromHDC: function(hdc: HDC; out Graphics: GpGraphics): GpStatus stdcall;
     GdipScaleWorldTransform: function(graphics: GpGraphics; sx, sy: Single; order: GpMatrixOrder): GpStatus stdcall;
 
