@@ -11335,7 +11335,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
   {Given a width, find the count of chars (<= Max) which will fit allowing for font changes.
     Line wrapping will be done later}
   //BG, 06.02.2011: Why are there 2 methods and why can't GetURL and FindCursor use the formatting results of DrawLogic?
-  //  FindCountThatFits1() is part of TSection.DrawLogic() and fills IMgr with the embedded floating images.
+  //  FindCountThatFits1() is part of TSection.DrawLogic() and fills IMgr with the embedded floating objects.
   //  TSection.FindCountThatFits() is used in TSection.GetURL() and TSection.FindCursor().
 
 
