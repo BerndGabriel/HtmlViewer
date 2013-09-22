@@ -770,8 +770,17 @@ begin
      error := 0;
 
      Ext := Lowercase(ExtractFileExt(TheFile));
-     if (Ext = '.bmp') or (Ext = '.gif') or (Ext = '.jpg') or (Ext = '.jpeg')
-           or (Ext = '.png') then
+     if (Ext = '.bmp') or (Ext = '.rle') or (Ext = '.dib')
+           or (Ext = '.gif')
+           or (Ext = '.jpg') or (Ext = '.jpeg') or (Ext = '.jpe') or (Ext = '.jfif')
+           or (Ext = '.png')
+    {$IFNDEF NoMetafile}
+           or (Ext = '.emf') or (Ext = '.wmf')
+    {$ENDIF !NoMetafile}
+             {$IFNDEF NoGDIPlus}
+             or (Ext = '.tiff') or (Ext = '.tif')
+             {$ENDIF NoGDIPlus}
+            then
        FContentType := ImgType
      else if (Ext = '.txt') then
        FContentType := TextType
@@ -830,8 +839,15 @@ begin
         FContentType := HTMLType;
      end
      else
-       if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG')
-            or (Ext = 'PNG') or (Ext = 'BMP') then
+       if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG') or (Ext = 'JFIF') or (Ext = 'JPE')
+            or (Ext = 'PNG') or (Ext = 'BMP') or (Ext = 'RLE') or (Ext = 'DIB')
+    {$IFNDEF NoMetafile}
+           or (Ext = 'EMF') or (Ext = 'WMF')
+    {$ENDIF !NoMetafile}
+              {$IFNDEF NoGDIPlus}
+            or (Ext = 'TIF') or (Ext = 'TIFF')
+              {$ENDIF NoGDIPlus}
+            then
         begin
           GoodType := PChar(Ext);
           FContentType := ImgType;
@@ -919,8 +935,15 @@ begin
 
          Ext := Uppercase(GetURLExtension(URL));
          FContentType := HTMLType;
-         if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG')
-                or (Ext = 'PNG') or (Ext = 'BMP') then
+         if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG') or (Ext = 'JFIF') or (Ext = 'JPE')
+            or (Ext = 'PNG') or (Ext = 'BMP') or (Ext = 'RLE') or (Ext = 'DIB')
+    {$IFNDEF NoMetafile}
+           or (Ext = 'EMF') or (Ext = 'WMF')
+    {$ENDIF !NoMetafile}
+              {$IFNDEF NoGDIPlus}
+            or (Ext = 'TIF') or (Ext = 'TIFF')
+              {$ENDIF NoGDIPlus}
+         then
             FContentType := ImgType
          else
             if (Ext = 'TXT') then

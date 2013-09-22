@@ -82,7 +82,7 @@ type
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
-  TImageType = (itNone, itBmp, itGif, itPng, itJpg, itMetafile);
+  TImageType = (itNone, itBmp, itGif, itPng, itJpg, {$IFNDEF NoGDIPlus} itTiff, {$ENDIF NoGDIPlus} itMetafile);
   TTransparency = (NotTransp, LLCorner, TrGif, TrPng);
 
   //BG, 09.04.2011
@@ -165,6 +165,22 @@ type
   end;
 
 {$IFNDEF NoGDIPlus}
+  ThtTiffImage = class(ThtImage)
+  private
+    Tiff: ThtGpImage;
+  protected
+    function GetGpObject: TGpObject; override;
+    function GetBitmap: TBitmap; override;
+    function GetImageHeight: Integer; override;
+    function GetImageWidth: Integer; override;
+    function GetMask: TBitmap; override;
+  public
+    constructor Create(AImage: ThtGpImage); overload;
+    destructor Destroy; override;
+    procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
+    procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); override;
+    procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
+  end;
   //BG, 09.04.2011
   ThtPngImage = class(ThtImage)
   private
@@ -328,6 +344,18 @@ begin
       case WMagic of
         $4D42: Result := itBmp;
         $D8FF: Result := itJpg;
+         {$IFNDEF NoGDIPlus}
+         // .TIFF little endian (II - Intell)
+        $4949: if (Magic and $2A0000)=$2A0000 then
+                 Result := itTiff
+               else
+                 Result := itNone;
+         // .TIFF big endian (MM - Motorola)
+        $4D4D: if (Magic and $2A000000)=$2A000000 then
+                 Result := itTiff
+               else
+                 Result := itNone;
+         {$ENDIF !NoGDIPlus}
       else
         Result := itNone;
       end;
@@ -684,6 +712,7 @@ var
   Filename: string;
   F: TFileStream;
   Png: ThtGpImage;
+  Tiff: ThtGpImage;
 {$ENDIF !NoGDIPlus}
   NonAnimated: boolean;
   Gif: TGifImage;
@@ -728,7 +757,29 @@ begin
             Exit;
           end;
       end;
-
+ {$IFNDEF NoGDIPlus}
+      itTiff:
+        if GDIPlusActive then
+        begin
+          if not TempPathInited then
+          begin
+            GetTempPath(Max_Path, TempPath);
+            TempPathInited := True;
+          end;
+          SetLength(Filename, Max_Path+1);
+          GetTempFilename(TempPath, 'tif', 0, PChar(Filename));
+          SetLength(Filename, Pos(#0, Filename) - 1);
+          F := TFileStream.Create(Filename, fmCreate, fmShareExclusive);
+          try
+            F.CopyFrom(Stream, Stream.Size);
+          finally
+            F.Free;
+          end;
+          Tiff := ThtGpImage.Create(Filename, True); {True because it's a temporary file}
+          Result := ThtTiffImage.Create(Tiff);
+          Exit;
+        end;
+ {$ENDIF !NoGDIPlus}
       itPng:
       begin
 {$ifdef LCL}
@@ -1409,7 +1460,9 @@ var
 {$ENDIF !NoGDIPlus}
 begin
   Result := TBitmap.Create;
+  {$IFNDEF NoGDIPlus}
   OwnsBitmap := False;
+  {$ENDIF !NoGDIPlus}
   if Image is ThtImage then
   begin
     TmpBitmap := ThtImage(Image).GetBitmap;
@@ -2168,6 +2221,90 @@ begin
   Result := Gif.Mask;
 end;
 
+{$IFNDEF NoGDIPlus}
+
+{JPM - This is actually the same implementation as PNG.
+
+It turns out that GDI+ supports TIF in addition to PNG.
+}
+{ ThtTiffImage }
+
+function ThtTiffImage.GetGpObject: TGpObject;
+begin
+  Result := Tiff;
+end;
+
+function ThtTiffImage.GetBitmap: TBitmap;
+begin
+  Result := Tiff.GetBitmap;
+end;
+
+function ThtTiffImage.GetImageHeight: Integer;
+begin
+  Result := Tiff.Height;
+end;
+
+function ThtTiffImage.GetImageWidth: Integer;
+begin
+  Result := Tiff.Width;
+end;
+
+function ThtTiffImage.GetMask: TBitmap;
+begin
+  Result := nil;
+end;
+
+constructor ThtTiffImage.Create(AImage: ThtGpImage);
+begin
+  inherited Create(TrPng);
+  Tiff := AImage;
+end;
+destructor ThtTiffImage.Destroy;
+begin
+  Tiff.Free;
+  inherited;
+end;
+
+procedure ThtTiffImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
+var
+  Graphics: ThtGpGraphics;
+begin
+  Graphics := ThtGpGraphics.Create(Canvas.Handle);
+  try
+    Graphics.DrawImage(Tiff, X, Y, W, H);
+  finally
+    Graphics.Free;
+  end;
+end;
+
+procedure ThtTiffImage.DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer);
+var
+  X, Y: Integer;
+  Graphics: ThtGpGraphics;
+begin
+  Y := YStart;
+  Graphics := ThtGpGraphics.Create(Canvas.Handle);
+  try
+    while Y < YEnd do
+    begin
+      X := XStart;
+      while X < XEnd do
+      begin
+        Graphics.DrawImage(Tiff, X, Y, W, H);
+        Inc(X, W);
+      end;
+      Inc(Y, H);
+    end;
+  finally
+    Graphics.Free;
+  end;
+end;
+
+procedure ThtTiffImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
+begin
+  StretchPrintGpImageOnColor(Canvas, Tiff, X, Y, W, H, BGColor);
+end;
+
 { ThtPngImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -2255,6 +2392,8 @@ procedure ThtPngImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColo
 begin
   StretchPrintGpImageOnColor(Canvas, Png, X, Y, W, H, BGColor);
 end;
+
+{$ENDIF NoGDIPlus}
 
 {$IFNDEF NoMetafile}
 
