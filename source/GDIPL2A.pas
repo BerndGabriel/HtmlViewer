@@ -189,9 +189,7 @@ implementation
   var
     GdiplusStartup: function(out Token: ULONG; const Input : PGdiplusStartupInput; const Output: PGdiplusStartupOutput): GpStatus stdcall;
     GdiplusShutdown: procedure(Token: ULONG) stdcall;
-
     // GpGraphics methods
-
     GdipCreateFromHDC: function(hdc: HDC; out Graphics: GpGraphics): GpStatus stdcall;
     GdipScaleWorldTransform: function(graphics: GpGraphics; sx, sy: Single; order: GpMatrixOrder): GpStatus stdcall;
 
@@ -310,40 +308,33 @@ var
   BM1, BM2: ThtGpBitmap;
   W, H: integer;
 begin
-  g1 := nil;
-  g2 := nil;
-  BM1 := nil;
-  BM2 := nil;
+  {new bitmap with extra row and column}
+  W := Image.Width + 1;
+  H := Image.Height + 1;
+  BM1 := THtGpBitmap.Create(W, H);
+  g1 := THtGpGraphics.Create(BM1);
   try
-    {new bitmap with extra row and column}
-    W := Image.Width + 1;
-    H := Image.Height + 1;
-    BM1 := ThtGpBitmap.Create(W, H);
-    g1 := ThtGpGraphics.Create(BM1);
-
     {draw the original image to BM1}
     g1.DrawImage(Image, 0, 0);
-
     {copy the additional column inside BM1}
     g1.DrawImage(BM1, W - 1,     0, 1, H - 1,  W - 2,     0, 1, H - 1);
-
     {copy the additional row incl. additional pixel inside BM1}
     g1.DrawImage(BM1,     0, H - 1, W,     1,      0, H - 2, W,     1);
-
     BM2 := ThtGpBitmap.Create(Width, Height);
     g2 := ThtGpGraphics.Create(BM2);
-
-    // BG, 25.12.2011: Issue 59: Image scaling error
-    // - With InterpolationMode = NearestNeighbor only 50% of the stretch is visible.
-    // - Not setting it stretches the small image to the full width/height.
-    // GdipSetInterpolationMode(g2.fGraphics, NearestNeighbor);
-
-    {now draw the image stretched where needed}
-    g2.DrawImage(BM1, 0, 0, Width, Height, 0, 0, Image.Width, Image.Height);
-    DrawImage(BM2, X, Y); {now draw the stretched image}
+    try
+   // BG, 25.12.2011: Issue 59: Image scaling error
+   // - With InterpolationMode = NearestNeighbor only 50% of the stretch is visible.
+   // - Not setting it stretches the small image to the full width/height.
+   // GdipSetInterpolationMode(g2.fGraphics, NearestNeighbor);
+      {now draw the image stretched where needed}
+      g2.DrawImage(BM1, 0, 0, Width, Height, 0, 0, Image.Width, Image.Height);
+      DrawImage(BM2, X, Y); {now draw the stretched image}
+    finally
+      g2.Free;
+      BM2.Free;
+    end;
   finally
-    g2.Free;
-    BM2.Free;
     g1.Free;
     BM1.Free;
   end;
@@ -483,12 +474,12 @@ begin
   GDICheck('ThtGpBitmap.SetPixel', GdipBitmapSetPixel(fHandle, X, Y, Color));
 end;
 
-{$ifndef HasGDIPlus}
 var
+  GDIPlusCount: integer;
+{$ifndef HasGDIPlus}
   InitToken: DWord;
   Startup: GdiplusStartupInput;
   LibHandle: THandle;
-  GDIPlusCount: integer;
 {$endif}
 
 procedure CheckInitGDIPlus;
@@ -497,9 +488,9 @@ var
   Err: GpStatus;
 {$endif}
 begin
-{$ifndef HasGDIPlus}
   if GDIPlusCount = 0 then
   begin
+{$ifndef HasGDIPlus}
     LibHandle := LoadLibrary(GdiPlusLib);
     if LibHandle <> 0 then
     begin
@@ -539,19 +530,19 @@ begin
         Libhandle := 0;
       end;
     end;
+{$else}
+    GDIPlusActive := True;
+{$endif HasGDIPlus}
   end;
   Inc(GDIPlusCount);
-{$else}
-  GDIPlusActive := True;
-{$endif HasGDIPlus}
 end;
 
 procedure CheckExitGDIPlus;
 begin
-{$ifndef HasGDIPlus}
   Dec(GDIPlusCount);
   if GDIPlusCount = 0 then
   begin
+{$ifndef HasGDIPlus}
     if GDIPlusActive then
     begin
       GdiplusShutdown(InitToken);
@@ -562,10 +553,10 @@ begin
       FreeLibrary(LibHandle);
       LibHandle := 0;
     end;
-  end;
 {$else}
-  GDIPlusActive := False;
+    GDIPlusActive := False;
 {$endif HasGDIPlus}
+  end;
 end;
 
 {$endif NoGDIPlus}
