@@ -310,12 +310,12 @@ var
   BM1, BM2: THtGpBitmap;
   W, H: integer;
 begin
+  {new bitmap with extra row and column}
+  W := Image.Width + 1;
+  H := Image.Height + 1;
+  BM1 := THtGpBitmap.Create(W, H);
+  g1 := THtGpGraphics.Create(BM1);
   try
-    {new bitmap with extra row and column}
-    W := Image.Width + 1;
-    H := Image.Height + 1;
-    BM1 := THtGpBitmap.Create(W, H);
-    g1 := THtGpGraphics.Create(BM1);
 
     {draw the original image to BM1}
     g1.DrawImage(Image, 0, 0);
@@ -328,18 +328,20 @@ begin
 
     BM2 := THtGpBitmap.Create(Width, Height);
     g2 := THtGpGraphics.Create(BM2);
+    try
+      // BG, 25.12.2011: Issue 59: Image scaling error
+      // - With InterpolationMode = NearestNeighbor only 50% of the stretch is visible.
+      // - Not setting it stretches the small image to the full width/height.
+      // GdipSetInterpolationMode(g2.fGraphics, NearestNeighbor);
 
-    // BG, 25.12.2011: Issue 59: Image scaling error
-    // - With InterpolationMode = NearestNeighbor only 50% of the stretch is visible.
-    // - Not setting it stretches the small image to the full width/height.
-    // GdipSetInterpolationMode(g2.fGraphics, NearestNeighbor);
-
-    {now draw the image stretched where needed}
-    g2.DrawImage(BM1, 0, 0, Width, Height, 0, 0, Image.Width, Image.Height);
-    DrawImage(BM2, X, Y); {now draw the stretched image}
+      {now draw the image stretched where needed}
+      g2.DrawImage(BM1, 0, 0, Width, Height, 0, 0, Image.Width, Image.Height);
+      DrawImage(BM2, X, Y); {now draw the stretched image}
+    finally
+      g2.Free;
+      BM2.Free;
+    end;
   finally
-    g2.Free;
-    BM2.Free;
     g1.Free;
     BM1.Free;
   end;
