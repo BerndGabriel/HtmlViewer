@@ -10091,8 +10091,8 @@ function THtmlTable.FindCursor(Canvas: TCanvas; X, Y: Integer;
             if Result >= 0 then
               Exit;
           end;
-          Inc(XX, Widths[I]);
         end;
+        Inc(XX, Widths[I]);
       end;
     end;
     Result := -1;
