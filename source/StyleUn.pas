@@ -306,7 +306,7 @@ type
   public
     DefProp: TProperties;
     constructor Create; overload;
-    constructor Create(const AUseQuirksMode : Boolean); overload;
+    constructor Create(AUseQuirksMode : Boolean); overload;
     destructor Destroy; override;
     function AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
     function AddObject(const S: ThtString; AObject: TObject): Integer; override;
@@ -3228,8 +3228,10 @@ begin
   SeqNo := 10;
 end;
 
-constructor TStyleList.Create(const AUseQuirksMode: Boolean);
+constructor TStyleList.Create(AUseQuirksMode: Boolean);
 begin
+  // Do not call the inherited constructor with 1 boolean parameter!
+  // It's purpose is different (OwnsObjects: Boolean)!
   Create;
   DefProp := nil;
   FUseQuirksMode := AUseQuirksMode;
