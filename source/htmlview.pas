@@ -416,7 +416,7 @@ type
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
-    function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
+    function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
@@ -653,7 +653,7 @@ const
   ScrollGap = 20;
 
 type
-  PositionObj = class(TObject)
+  TPositionObj = class(TObject)
   public
     Pos: Integer;
     FileType: ThtmlFileType;
@@ -661,16 +661,16 @@ type
     destructor Destroy; override;
   end;
 
-  FileTypeRec = record
+  TFileTypeRec = record
     FileExt: ThtString;
     FileType: THtmlFileType;
   end;
-  PFileTypeRec = ^FileTypeRec;
+  PFileTypeRec = ^TFileTypeRec;
 
 //-- BG ---------------------------------------------------------- 12.05.2013 --
 procedure InitFileTypes;
 const
-  FileTypeDefinitions: array [1..19  {$IFNDEF NoMetafile}+2{$ENDIF !NoMetafile} {$IFNDEF NoGDIPlus}+2{$ENDIF !NoGDIPlus}] of FileTypeRec = (
+  FileTypeDefinitions: array [1..19  {$IFNDEF NoMetafile}+2{$ENDIF !NoMetafile} {$IFNDEF NoGDIPlus}+2{$ENDIF !NoGDIPlus}] of TFileTypeRec = (
     (FileExt: '.htm';   FileType: HTMLType),
     (FileExt: '.html';  FileType: HTMLType),
 
@@ -1851,7 +1851,7 @@ var
   YR: Integer;
   InText: Boolean;
   NextCursor: TCursor;
-  guResult: guResultType;
+  guResult: TguResultType;
 begin
   inherited MouseMove(Shift, X, Y);
 
@@ -1932,7 +1932,7 @@ var
   Parameters: TRightClickParameters;
   AWord: UnicodeString;
   St, En: Integer;
-  guResult: guResultType;
+  guResult: TguResultType;
   I, ThisID: Integer;
   ParentForm: TCustomForm;
 begin
@@ -2313,7 +2313,7 @@ begin
 end;
 
 function THtmlViewer.GetURL(X, Y: Integer; out UrlTarg: TUrlTarget;
-  out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): guResultType;
+  out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType;
 begin
   Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff, UrlTarg, FormControl, ATitle);
 end;
@@ -3214,7 +3214,7 @@ var
   VPixels: Integer;
   Canvas: TMetaFileCanvas;
   MF: TMetaFile;
-  TablePart: TablePartType;
+  TablePart: TTablePartType;
   SavePageBottom: Integer;
   hrgnClip1: hRgn;
 
@@ -3638,7 +3638,7 @@ var
   LastPrintMarginTop: Double;
   SavePageBottom: Integer;
   MLeftSide: Integer;
-  TablePart: TablePartType;
+  TablePart: TTablePartType;
 
   HPages: Integer;
   HPageIndex: Integer;
@@ -5043,7 +5043,7 @@ end;
 
 { PositionObj }
 
-destructor PositionObj.Destroy;
+destructor TPositionObj.Destroy;
 begin
   FormData.Free;
   inherited;

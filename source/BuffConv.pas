@@ -90,7 +90,7 @@ type
   // BG, 28.01.2013: converts several single byte code pages using an AnsiCharMap to unicode.
   TBuffConvSingleByteMap = class(TBuffConverter)
   private
-    FMap: AnsiCharMap;
+    FMap: TAnsiCharMap;
     procedure UpdateMap;
   protected
     procedure Assign(Source: TBuffConverter); override;
@@ -102,7 +102,7 @@ type
   // BG, 02.10.2012: converts several single byte code pages using an AnsiCharHighMap to unicode.
   TBuffConvHighMap = class(TBuffConverter)
   private
-    FMap: AnsiCharHighMap;
+    FMap: TAnsiCharHighMap;
     procedure UpdateMap;
   protected
     procedure Assign(Source: TBuffConverter); override;
@@ -114,7 +114,7 @@ type
   // BG, 02.10.2012: converts the single byte code of ISO 8859 using an AnsiCharIsoMap to unicode.
   TBuffConvIsoMap = class(TBuffConverter)
   private
-    FMap: AnsiCharISOMap;
+    FMap: TAnsiCharISOMap;
     procedure UpdateMap;
   protected
     procedure Assign(Source: TBuffConverter); override;

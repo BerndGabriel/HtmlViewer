@@ -779,7 +779,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
   var
     S: array[0..3] of ThtString;
     I, Count: integer;
-    Index: array[0..3] of PropIndices;
+    Index: array[0..3] of TPropIndices;
 
   begin
     if Value = '' then

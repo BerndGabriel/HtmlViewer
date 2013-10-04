@@ -106,7 +106,7 @@ type
     property Text: ThtString read getText write setText;
   end;
 
-  WhichType = (Submit, ResetB, Button, Browse);
+  TWhichType = (Submit, ResetB, Button, Browse);
 
   TButtonFormControlObj = class(TFormControlObj)
   private
@@ -114,7 +114,7 @@ type
   protected
     function GetControl: TWinControl; override;
   public
-    Which: WhichType;
+    Which: TWhichType;
     MyEdit: TEditFormControlObj;
     //TODO -oBG, 24.03.2011: remove param Typ and activate override
     constructor Create(Parent: TCellBasic; Position: Integer; const Typ: ThtString; L: TAttributeList; Prop: TProperties); reintroduce;//override;

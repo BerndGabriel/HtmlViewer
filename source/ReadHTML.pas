@@ -99,7 +99,7 @@ uses
   StyleUn;
 
 type
-  LoadStyleType = (lsFile, lsString, lsInclude);
+  TLoadStyleType = (lsFile, lsString, lsInclude);
 
   { THtmlParser }
 
@@ -112,7 +112,7 @@ type
 
     LCh: ThtChar;
     LastChar: (lcOther, lcCR, lcLF);
-    LCToken: TokenObj;
+    LCToken: TTokenObj;
 
     Doc: TBuffer;
     DocStack: TStack;
@@ -232,7 +232,7 @@ const
 constructor THtmlParser.Create(Doc: TBuffer);
 begin
   inherited Create;
-  LCToken := TokenObj.Create;
+  LCToken := TTokenObj.Create;
   DocStack := TStack.Create;
   Self.Doc := Doc;
   FIsXHTML := False;
@@ -422,12 +422,12 @@ var
     S, Name, Value: ThtString;
     Include: TBuffer;
     Params: ThtStringList;
-    SaveLCToken: TokenObj;
+    SaveLCToken: TTokenObj;
     L: Integer;
   begin
     S := '';
     SaveLCToken := LCToken;
-    LCToken := TokenObj.Create;
+    LCToken := TTokenObj.Create;
     try
       GetChBasic;
       GetIdentifier(S);
@@ -1771,7 +1771,7 @@ var
   T: TAttribute;
   RowStack: Integer;
   NewBlock: TTableBlock;
-  SetJustify: JustifyType;
+  SetJustify: TJustifyType;
   CM: TCellManager;
   CellNum: Integer;
   TdTh: TElemSymb;
@@ -1784,7 +1784,7 @@ var
   FootList: TList;
   I: Integer;
   TrDisplay: ThtDisplayStyle; // Yunqa.de.
-  S: PropIndices;
+  S: TPropIndices;
   V: Variant;
 
   function GetVAlign(Default: ThtAlignmentStyle): ThtAlignmentStyle;
@@ -1852,7 +1852,7 @@ var
 
   function HasBorderProps(const P: TProperties): Boolean;
   var
-    I: PropIndices;
+    I: TPropIndices;
   begin
     Result := False;
     if P <> nil then
@@ -2681,7 +2681,7 @@ procedure THtmlParser.DoCommonSy;
 
   procedure DoPre;
   var
-    S: TokenObj;
+    S: TTokenObj;
     InForm, InP: Boolean;
     PreBlock, FormBlock, PBlock: TBlock;
 
@@ -2796,7 +2796,7 @@ procedure THtmlParser.DoCommonSy;
   begin
     InForm := False;
     InP := False;
-    S := TokenObj.Create;
+    S := TTokenObj.Create;
     FormBlock := nil;
     try
       SectionList.Add(Section, TagIndex);
@@ -4307,7 +4307,7 @@ end;
 
 procedure THtmlParser.DoText;
 var
-  S: TokenObj;
+  S: TTokenObj;
   Done: Boolean;
   PreBlock: TBlock;
 
@@ -4320,7 +4320,7 @@ var
   end;
 
 begin
-  S := TokenObj.Create;
+  S := TTokenObj.Create;
   try
     SectionList.Add(Section, TagIndex);
     PushNewProp(PreSy, Attributes.TheClass, Attributes.TheID, '', '', Attributes.TheStyle);

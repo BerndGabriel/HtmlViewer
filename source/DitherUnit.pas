@@ -833,8 +833,8 @@ type
   //BGRArray = array[0..0] of TRGBTriple;
   //PBGRArray = ^BGRArray;
 
-  PalArray = array[byte] of TPaletteEntry;
-  PPalArray = ^PalArray;
+  TPalArray = array[byte] of TPaletteEntry;
+  PPalArray = ^TPalArray;
 
   // TFastColorLookup implements a simple but reasonably fast generic color
   // mapper. It trades precision for speed by reducing the size of the color
