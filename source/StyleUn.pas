@@ -246,7 +246,7 @@ type
     property LinksActive: Boolean write SetLinksActive;
   public
     constructor Create; overload;
-    constructor Create(const AUseQuirksMode : Boolean); overload;
+    constructor Create(AUseQuirksMode : Boolean); overload;
     destructor Destroy; override;
     function AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
     function AddObject(const S: ThtString; AObject: TObject): Integer; override;
@@ -2856,8 +2856,10 @@ begin
   FUseQuirksMode := False;
 end;
 
-constructor TStyleList.Create(const AUseQuirksMode: Boolean);
+constructor TStyleList.Create(AUseQuirksMode: Boolean);
 begin
+  // Do not call the inherited constructor with 1 boolean parameter!
+  // It's purpose is different (OwnsObjects: Boolean)!
   Create;
   FDefProp := nil;
   FUseQuirksMode := AUseQuirksMode;
