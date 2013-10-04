@@ -12944,6 +12944,7 @@ var
     Descent := LR.Descent;
 
     NewCP := True;
+    CPy := Y + LR.DrawY;  //Todo: Someone needs to find a sensible default value.
     CPx := X + LR.LineIndent;
     CP1x := CPx;
     LR.DrawY := Y - LR.LineHt;

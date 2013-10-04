@@ -92,6 +92,7 @@
                    {$define Compiler21_Plus}
                   {$ifdef ver210}
                   {$else}
+                    {$define Compiler22_Plus}
                     {$ifdef ver220}
                     {$else}
                       {$define Compiler23_Plus}
