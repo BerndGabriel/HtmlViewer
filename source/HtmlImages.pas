@@ -82,7 +82,7 @@ type
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
-  TImageType = (itNone, itBmp, itGif, itPng, itJpg, {$IFNDEF NoGDIPlus} itTiff, {$ENDIF NoGDIPlus} itMetafile);
+  ThtImageFormat = (itNone, itBmp, itGif, itPng, itJpg, {$IFNDEF NoGDIPlus} itTiff, {$ENDIF NoGDIPlus} itMetafile);
   TTransparency = (NotTransp, LLCorner, TrGif, TrPng);
 
   //BG, 09.04.2011
@@ -244,7 +244,7 @@ type
 
 function LoadImageFromFile(const FName: ThtString; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
 function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
-//function KindOfImage(Stream: TStream): TImageType;
+//function KindOfImage(Stream: TStream): ThtImageFormat;
 
 function GetImageHeight(Image: TGpObject): Integer;
 function GetImageWidth(Image: TGpObject): Integer;
@@ -319,7 +319,7 @@ type
 
 //------------------------------------------------------------------------------
 
-function KindOfImage(Stream: TStream): TImageType;
+function KindOfImage(Stream: TStream): ThtImageFormat;
 var
   Pos: Int64;
   Magic: DWord;

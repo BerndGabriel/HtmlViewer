@@ -258,7 +258,7 @@ type
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; virtual;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TSectionBase): boolean; virtual;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): TguResultType; virtual;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; virtual;
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean; virtual;
     function PtInDrawRect(X, Y: Integer; var IX, IY: Integer): Boolean; virtual;
     procedure AddSectionsToList; virtual;
@@ -376,7 +376,7 @@ type
     function FindString(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TSectionBase): boolean;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType; virtual;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; virtual;
     function IsCopy: Boolean;
     procedure Add(Item: TSectionBase; TagIndex: Integer);
     procedure AddSectionsToList;
@@ -497,7 +497,7 @@ type
   end;
 
 
-  THoverType = (hvOff, hvOverUp, hvOverDown);
+  ThtHover = (hvOff, hvOverUp, hvOverDown);
 
   TImageFormControlObj = class;
 
@@ -508,11 +508,11 @@ type
     FImage: ThtImage;
     OrigImage: ThtImage; {same as above unless swapped}
     Transparent: TTransparency; {None, Lower Left Corner, or Transp GIF}
-    FHover: THoverType;
+    FHover: ThtHover;
     FHoverImage: boolean;
     AltHeight, AltWidth: Integer;
     function GetBitmap: TBitmap;
-    procedure SetHover(Value: THoverType);
+    procedure SetHover(Value: ThtHover);
   public
     ObjHeight, ObjWidth: Integer; {width as drawn}
     IsMap, UseMap: boolean;
@@ -531,7 +531,7 @@ type
     function InsertImage(const UName: ThtString; Error: boolean; out Reformat: boolean): boolean;
 
     property Bitmap: TBitmap read GetBitmap;
-    property Hover: THoverType read FHover write SetHover;
+    property Hover: ThtHover read FHover write SetHover;
     property Image: ThtImage read FImage ; //write SetImage;
     property Source: ThtString read FSource; {the src= attribute}
     procedure ReplaceImage(NewImage: TStream);
@@ -551,7 +551,7 @@ type
   TFormControlObj =  class;
   TFormControlObjList = class;
 
-  LineRec = class(TObject) {holds info on a line of text}
+  ThtLineRec = class(TObject) {holds info on a line of text}
   private
     Start: PWideChar;
     SpaceBefore, SpaceAfter,
@@ -563,7 +563,7 @@ type
     DrawXX, DrawWidth: Integer;
     DrawY: Integer;
     Spaces, Extra: Integer;
-    BorderList: TFreeList; {List of inline borders (BorderRec's) in this Line}
+    BorderList: TFreeList; {List of inline borders (ThtBorderRec's) in this Line}
     FirstDraw: boolean; {set if border processing needs to be done when first drawn}
     FirstX: Integer; {x value at FirstDraw}
     Shy: boolean;
@@ -575,7 +575,7 @@ type
 
   PXArray = array of Integer;
 
-  IndexObj = class
+  ThtIndexObj = class
   public
     Pos: Integer;
     Index: Integer;
@@ -613,11 +613,11 @@ type
     Buff: PWideChar;    {same as above}
     Brk: ThtTextWrapArray; //string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One entry per character in BuffS
     SIndexList: TFreeList; {list of Source index changes}
-    Lines: TFreeList; {List of LineRecs,  info on all the lines in section}
+    Lines: TFreeList; {List of ThtLineRecs,  info on all the lines in section}
 
-    function GetIndexObj(I: Integer): IndexObj;
-    property PosIndex[I: Integer]: IndexObj read GetIndexObj;
-    procedure CheckForInlines(LR: Linerec);
+    function GetThtIndexObj(I: Integer): ThtIndexObj;
+    property PosIndex[I: Integer]: ThtIndexObj read GetThtIndexObj;
+    procedure CheckForInlines(LR: ThtLineRec);
   public
     Images: TSizeableObjList; {list of TSizeableObj's, the images, panels and iframes in section}
     FormControls: TFormControlObjList; {list of TFormControls in section}
@@ -625,7 +625,7 @@ type
     AnchorName: boolean;
 
     Fonts: TFontList; {List of FontObj's in this section}
-    Justify: TJustifyType; {Left, Centered, Right}
+    Justify: ThtJustify; {Left, Centered, Right}
     ClearAttr: ThtClearStyle;
     TextWidth: Integer;
     WhiteSpaceStyle: ThtWhiteSpaceStyle;
@@ -650,7 +650,7 @@ type
     function FindTextSize(Canvas: TCanvas; Start: PWideChar; N: Integer; RemoveSpaces: boolean): TSize;
     function FindTextWidthA(Canvas: TCanvas; Start: PWideChar; N: Integer): Integer;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TSectionBase): boolean; override;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): TguResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     function PtInObject(X: Integer; Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddChar(C: WideChar; Index: Integer); virtual;
     procedure AddOpBrk;
@@ -695,7 +695,7 @@ type
     property BorderWidth: Integer read GetBorderWidth;
   public
     MyCell: TBlockCell; // the block content
-    MargArrayO: TVMarginArray;
+    MargArrayO: ThtVMarginArray;
     BGImage: TImageObj;    //TODO -oBG, 10.03.2011: see also bkGnd and bkColor in TCellBasic one background should be enough.
     BlockTitle: ThtString;
 
@@ -703,7 +703,7 @@ type
     //         to the corresponding style properties with a very low priority.
 
     // BEGIN: this area is copied by move() in CreateCopy() - NO string types allowed!
-    MargArray: TMarginArray;
+    MargArray: ThtMarginArray;
     EmSize, ExSize, FGColor: Integer;
     HasBorderStyle: Boolean;
 
@@ -713,7 +713,7 @@ type
     BottomAuto: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
     HideOverflow: boolean;
-    Justify: TJustifyType;
+    Justify: ThtJustify;
     Converted: boolean;
     // END: this area is copied by move() in CreateCopy()
 
@@ -743,7 +743,7 @@ type
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: boolean): Integer; override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; virtual;
     function GetChAtPos(Pos: Integer; out Ch: WideChar; out Obj: TSectionBase): boolean; override;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
     procedure CollapseMargins;
@@ -931,7 +931,7 @@ type
     property Color: TColor read GetColor write SetColor;
   end;
 
-  TListTypeType = (None, Ordered, Unordered, Definition, liAlone);
+  ThtListType = (None, Ordered, Unordered, Definition, liAlone);
 
 //------------------------------------------------------------------------------
 // some blocks
@@ -939,7 +939,7 @@ type
 
   THRBlock = class(TBlock)
   public
-    Align: TJustifyType;
+    Align: ThtJustify;
     MyHRule: TSectionBase;
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; override;
@@ -947,7 +947,7 @@ type
 
   TBlockLI = class(TBlock)
   private
-    FListType: TListTypeType;
+    FListType: ThtListType;
     FListNumb: Integer;
     FListStyleType: ThtBulletStyle;
     FListFont: TFont;
@@ -964,7 +964,7 @@ type
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     property ListNumb: Integer read FListNumb write FListNumb;
     property ListStyleType: ThtBulletStyle read FListStyleType write FListStyleType;
-    property ListType: TListTypeType read FListType write FListType;
+    property ListType: ThtListType read FListType write FListType;
     property ListFont: TFont read FListFont write SetListFont;
   end;
 
@@ -986,7 +986,7 @@ type
   TBodyBlock = class(TBlock)
   public
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
   end;
@@ -1010,7 +1010,7 @@ type
     Url, Target: ThtString;
   public
     constructor CreateCopy(Parent: TBlock; T: TCellObjCell);
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
   end;
 
   TCellObjBase = class(TObject)
@@ -1104,8 +1104,8 @@ type
     BGImage: TImageObj;
     TiledImage: TGpObject;
     TiledMask, FullBG: TBitmap;
-    MargArray: TMarginArray;
-    MargArrayO: TVMarginArray;
+    MargArray: ThtMarginArray;
+    MargArrayO: ThtVMarginArray;
     NoMask: boolean;
     BreakBefore, BreakAfter, KeepIntact: boolean;
 
@@ -1209,7 +1209,7 @@ type
     HSpace, VSpace: Integer;
     HasCaption: boolean;
     TableBorder: boolean;
-    Justify: TJustifyType;
+    Justify: ThtJustify;
     TableIndent: Integer;
 
     constructor Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; ATable: THtmlTable; TableLevel: Integer);
@@ -1229,7 +1229,7 @@ type
     TopCaption: boolean;
     TableBlock: TTableBlock;
     FCaptionBlock: TBlock;
-    Justify: TJustifyType;
+    Justify: ThtJustify;
     TableID: ThtString;
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Prop: TProperties; ATableBlock: TTableBlock);
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
@@ -1298,7 +1298,7 @@ type
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
@@ -1443,7 +1443,7 @@ type
     TabOrderList: ThtStringList;
     FirstPageItem: boolean;
     StopTab: boolean;
-    InlineList: TFreeList; {actually TInlineList, a list of InlineRec's}
+    InlineList: TFreeList; {actually TInlineList, a list of ThtInThtLineRec's}
     TableNestLevel: Integer;
     InLogic2: boolean;
     LinkDrawnEvent: TLinkDrawnEvent;
@@ -1467,7 +1467,7 @@ type
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
-    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType; override;
+    function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     procedure CancelActives;
     procedure CheckGIFList(Sender: TObject);
     procedure Clear; override;
@@ -1512,7 +1512,7 @@ type
   public
     VSize: Integer;
     Color: TColor;
-    Align: TJustifyType;
+    Align: ThtJustify;
     UseDefBorder: Boolean;
     NoShade: Boolean;
     BkGnd: Boolean;
@@ -1930,23 +1930,23 @@ type
   EProcessError = class(Exception);
 
 type
-  BorderRec = class {record for inline borders}
+  ThtBorderRec = class {record for inline borders}
   private
     BStart, BEnd: Integer;
     OpenStart, OpenEnd: boolean;
     BRect: TRect;
-    MargArray: TMarginArray;
+    MargArray: ThtMarginArray;
     procedure DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: boolean
       {$ifdef has_StyleElements}; const AStyleElements : TStyleElements{$endif}); //overload;
   end;
 
-  InlineRec = class
+  ThtInThtLineRec = class
   private
     StartB, EndB, IDB, StartBDoc, EndBDoc: Integer;
-    MargArray: TMarginArray;
+    MargArray: ThtMarginArray;
   end;
 
-  TInlineList = class(TFreeList) {a list of InlineRec's}
+  TInlineList = class(TFreeList) {a list of ThtInThtLineRec's}
   private
     NeedsConverting: boolean;
     Owner: ThtDocument;
@@ -2496,7 +2496,7 @@ begin
     Result := nil;
 end;
 
-procedure TImageObj.SetHover(Value: THoverType);
+procedure TImageObj.SetHover(Value: ThtHover);
 begin
   if (Value <> FHover) and FHoverImage and (Image is ThtGifImage) then
     with ThtGifImage(Image).Gif do
@@ -3344,8 +3344,8 @@ end;
 
 procedure TFormControlObj.ProcessProperties(Prop: TProperties);
 var
-  MargArrayO: TVMarginArray;
-  MargArray: TMarginArray;
+  MargArrayO: ThtVMarginArray;
+  MargArray: ThtMarginArray;
   EmSize, ExSize: Integer;
 begin
   Prop.GetVMarginArray(MargArrayO);
@@ -3998,7 +3998,7 @@ end;
 
 function TCellBasic.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
-  out ATitle: ThtString): TguResultType;
+  out ATitle: ThtString): ThtguResultType;
 {Y is absolute}
 var
   I: Integer;
@@ -4538,7 +4538,7 @@ end;
 {----------------TBlock.GetURL}
 
 function TBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
-  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType;
+  out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
 begin
   UrlTarg := nil;
   FormControl := nil;
@@ -6517,7 +6517,7 @@ end;
 
 function TBodyBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
-  out ATitle: ThtString): TguResultType;
+  out ATitle: ThtString): ThtguResultType;
 begin
   Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
   if (BlockTitle <> '') then
@@ -6749,7 +6749,7 @@ end;
 
 function ThtDocument.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
-  out ATitle: ThtString): TguResultType;
+  out ATitle: ThtString): ThtguResultType;
 var
   OldLink: TFontObj;
   OldImage: TImageObj;
@@ -7433,8 +7433,8 @@ procedure ThtDocument.ProcessInlines(SIndex: Integer; Prop: TProperties; Start: 
 {called when an inline property is found to specify a border}
 var
   I, EmSize, ExSize: Integer;
-  Result: InlineRec;
-  MargArrayO: TVMarginArray;
+  Result: ThtInThtLineRec;
+  MargArrayO: ThtVMarginArray;
   Dummy1: Integer;
 begin
  {$ifdef JPM_DEBUGGING}
@@ -7444,7 +7444,7 @@ begin
   begin
     if Start then
     begin {this is for border start}
-      Result := InlineRec.Create;
+      Result := ThtInThtLineRec.Create;
       InlineList.Add(Result);
       with Result do
       begin
@@ -7460,7 +7460,7 @@ begin
     else {this call has end information}
       for I := Count - 1 downto 0 do {the record we want is probably the last one}
       begin
-        Result := InlineRec(Items[I]);
+        Result := ThtInThtLineRec(Items[I]);
         if Prop.ID = Result.IDB then {check the ID to make sure}
         begin
           Result.EndBDoc := SIndex; {the source position of the border end}
@@ -7494,7 +7494,7 @@ var
   I: Integer;
 begin
   for I := 0 to Count - 1 do
-    with InlineRec(Items[I]) do
+    with ThtInThtLineRec(Items[I]) do
     begin
       StartB := Owner.FindDocPos(StartBDoc, False);
       EndB := Owner.FindDocPos(EndBDoc, False);
@@ -7509,7 +7509,7 @@ begin
   if NeedsConverting then
     AdjustValues;
   if (I < Count) and (I >= 0) then
-    Result := InlineRec(Items[I]).StartB
+    Result := ThtInThtLineRec(Items[I]).StartB
   else
     Result := 99999999;
 end;
@@ -7519,7 +7519,7 @@ begin
   if NeedsConverting then
     AdjustValues;
   if (I < Count) and (I >= 0) then
-    Result := InlineRec(Items[I]).EndB
+    Result := ThtInThtLineRec(Items[I]).EndB
   else
     Result := 99999999;
 end;
@@ -9989,9 +9989,9 @@ end;
 
 function THtmlTable.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj};
-  out ATitle: ThtString): TguResultType;
+  out ATitle: ThtString): ThtguResultType;
 
-  function GetTableURL(X: Integer; Y: Integer): TguResultType;
+  function GetTableURL(X: Integer; Y: Integer): ThtguResultType;
   var
     I, J, XX: Integer;
     Row: TCellList;
@@ -10473,7 +10473,7 @@ begin
   Tok.Free;
 end;
 
-function TSection.GetIndexObj(I: Integer): IndexObj;
+function TSection.GetThtIndexObj(I: Integer): ThtIndexObj;
 begin
   Result := SIndexList[I];
 end;
@@ -10677,7 +10677,7 @@ procedure TSection.Finish;
 {complete some things after all information added}
 var
   Last, I: Integer;
-  IO: IndexObj;
+  IO: ThtIndexObj;
 begin
   Buff := PWideChar(BuffS);
   Len := Length(BuffS);
@@ -10693,7 +10693,7 @@ begin
       begin
         if (I = 0) or (XP[I] <> Last + 1) then
         begin
-          IO := IndexObj.Create;
+          IO := ThtIndexObj.Create;
           IO.Pos := I;
           IO.Index := XP[I];
           SIndexList.Add(IO);
@@ -11581,7 +11581,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     PStart, Last: PWideChar;
     ImgHt: Integer;
     Finished: boolean;
-    LR: LineRec;
+    LR: ThtLineRec;
     AccumImgBot: Integer;
 
     function GetClearSpace(ClearAttr: ThtClearStyle): Integer;
@@ -11886,7 +11886,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       MaxChars := Last - PStart + 1;
       if MaxChars <= 0 then
         Break;
-      LR := LineRec.Create(Document); {a new line}
+      LR := ThtLineRec.Create(Document); {a new line}
       if Lines.Count = 0 then
       begin {may need to move down past floating image}
         Tmp := GetClearSpace(ClearAttr);
@@ -11898,7 +11898,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
           LR.Start := PStart;
           Inc(Y, Tmp);
           Lines.Add(LR);
-          LR := LineRec.Create(Document);
+          LR := ThtLineRec.Create(Document);
         end;
       end;
 
@@ -12062,7 +12062,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     Curs := StartCurs + Len;
 
     if Assigned(Document.FirstLineHtPtr) and (Lines.Count > 0) then {used for List items}
-      with LineRec(Lines[0]) do
+      with ThtLineRec(Lines[0]) do
         if (Document.FirstLineHtPtr^ = 0) then
           Document.FirstLineHtPtr^ := YDraw + LineHt - Descent + SpaceBefore;
 
@@ -12176,12 +12176,12 @@ end;
 
 {----------------TSection.CheckForInlines}
 
-procedure TSection.CheckForInlines(LR: Linerec);
+procedure TSection.CheckForInlines(LR: ThtLineRec);
 {called before each line is drawn the first time to check if there are any
  inline borders in the line}
 var
   I: Integer;
-  BR: BorderRec;
+  BR: ThtBorderRec;
   StartBI, EndBI, LineStart: Integer;
 begin
   with LR do
@@ -12200,11 +12200,11 @@ begin
             BorderList := TFreeList.Create;
             FirstDraw := True; {there will be more processing needed}
           end;
-          BR := BorderRec.Create;
+          BR := ThtBorderRec.Create;
           BorderList.Add(BR);
           with BR do
           begin
-            BR.MargArray := InlineRec(Document.InlineList.Items[I]).MargArray; {get border data}
+            BR.MargArray := ThtInThtLineRec(Document.InlineList.Items[I]).MargArray; {get border data}
             if StartBI < LineStart then
             begin
               OpenStart := True; {continuation of border on line above, end is open}
@@ -12276,8 +12276,8 @@ var
     Inverted, NewCP: boolean;
     Color: TColor;
     CPx, CPy, CP1x: Integer;
-    BR: BorderRec;
-    LR: LineRec;
+    BR: ThtBorderRec;
+    LR: ThtLineRec;
     Start: PWideChar;
     Cnt, Descent: Integer;
     St: UnicodeString;
@@ -12320,7 +12320,7 @@ var
     end;
 
   begin {Y is at bottom of line here}
-    LR := LineRec(Lines[LineNo]);
+    LR := ThtLineRec(Lines[LineNo]);
     Start := LR.Start;
     Cnt := LR.Ln;
     Descent := LR.Descent;
@@ -12343,7 +12343,7 @@ var
       if LR.FirstDraw and Assigned(LR.BorderList) then
         for K := 0 to LR.BorderList.Count - 1 do {may be several inline borders}
         begin
-          BR := BorderRec(LR.BorderList.Items[K]);
+          BR := ThtBorderRec(LR.BorderList.Items[K]);
           if (Start - Buff = BR.BStart) then
           begin {this is it's start}
             BR.bRect.Top := Y - FO.GetHeight(Desc) - Descent + Desc + 1;
@@ -12383,7 +12383,7 @@ var
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := LR.BorderList.Count - 1 downto 0 do
               begin
-                BR := BorderRec(LR.BorderList.Items[K]);
+                BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff = BR.BStart) and (BR.BEnd = BR.BStart + 1) then
                   LR.BorderList.Delete(K);
               end;
@@ -12400,7 +12400,7 @@ var
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
               begin
-                BR := BorderRec(LR.BorderList.Items[K]);
+                BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff >= BR.BStart) and (Start - Buff <= BR.BEnd) then
                 begin {there is a border here, find the image dimensions}
                   case FlObj.VertAlign of
@@ -12450,7 +12450,7 @@ var
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := LR.BorderList.Count - 1 downto 0 do
               begin
-                BR := BorderRec(LR.BorderList.Items[K]);
+                BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff = BR.BStart) and (BR.BEnd = BR.BStart + 1) then
                   LR.BorderList.Delete(K);
               end;
@@ -12473,7 +12473,7 @@ var
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
               begin
-                BR := BorderRec(LR.BorderList.Items[K]);
+                BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff >= BR.BStart) and (Start - Buff <= BR.BEnd) then
                 begin
                   if (Start - Buff = BR.BStart) then
@@ -12513,7 +12513,7 @@ var
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := LR.BorderList.Count - 1 downto 0 do
               begin
-                BR := BorderRec(LR.BorderList.Items[K]);
+                BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff = BR.BStart) and (BR.BEnd = BR.BStart + 1) then
                   LR.BorderList.Delete(K);
               end;
@@ -12539,7 +12539,7 @@ var
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
               begin
-                BR := BorderRec(LR.BorderList.Items[K]);
+                BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff >= BR.BStart) and (Start - Buff <= BR.BEnd) then
                 begin
                   if (Start - Buff = BR.BStart) then
@@ -12728,7 +12728,7 @@ var
     if LR.FirstDraw and Assigned(LR.BorderList) then
       for K := 0 to LR.BorderList.Count - 1 do
       begin
-        BR := BorderRec(LR.BorderList.Items[K]);
+        BR := ThtBorderRec(LR.BorderList.Items[K]);
         if BR.OpenEnd or (BR.BRect.Right = 0) then
           BR.BRect.Right := CPx;
 
@@ -12739,16 +12739,16 @@ var
   procedure DoDraw(I: Integer);
   {draw the Ith line in this section}
   var
-    BR: BorderRec;
+    BR: ThtBorderRec;
     K: Integer;
     XOffset: Integer;
   begin
-    with LineRec(Lines[I]) do
+    with ThtLineRec(Lines[I]) do
     begin
       Inc(Y, LineHt + SpaceBefore);
       if FirstDraw then
       begin {see if any inline borders in this line}
-        CheckForInlines(LineRec(Lines[I]));
+        CheckForInlines(ThtLineRec(Lines[I]));
         if FirstDraw then {if there are, need a first pass to get boundaries}
         begin
           FirstX := X;
@@ -12760,7 +12760,7 @@ var
       if Assigned(BorderList) then {draw any borders found in this line}
         for K := 0 to BorderList.Count - 1 do
         begin
-          BR := BorderRec(BorderList.Items[K]);
+          BR := ThtBorderRec(BorderList.Items[K]);
           BR.DrawTheBorder(Canvas, XOffset, YOffSet, Document.Printing{$ifdef has_StyleElements}, Document.StyleElements{$endif});
         end;
       DrawTheText(I); {draw the text, etc., in this line}
@@ -12787,7 +12787,7 @@ begin {TSection.Draw}
     MySelE := Document.SelE - StartCurs;
     for I := 0 to Lines.Count - 1 do
       if Document.Printing then
-        with LineRec(Lines[I]) do
+        with ThtLineRec(Lines[I]) do
         begin
           if (Y + LineImgHt <= Document.PageBottom) then
           begin
@@ -12807,7 +12807,7 @@ begin {TSection.Draw}
           end;
         end
       else
-        with LineRec(Lines[I]) do
+        with ThtLineRec(Lines[I]) do
           if ((Y - YOffset + LineImgHt + 40 >= ARect.Top) and (Y - YOffset - 40 < ARect.Bottom)) then
             DoDraw(I)
           else {do not completely draw extremely long paragraphs}
@@ -12825,7 +12825,7 @@ begin
   MySelB := Document.SelB - StartCurs;
   MySelE := Document.SelE - StartCurs;
   for I := 0 to Lines.Count - 1 do
-    with LineRec(Lines.Items[I]) do
+    with ThtLineRec(Lines.Items[I]) do
     begin
       Strt := Start - Buff;
       if (MySelE <= Strt) or (MySelB > Strt + Ln) then
@@ -12861,12 +12861,12 @@ end;
 
 function TSection.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj};
-  out ATitle: ThtString): TguResultType;
+  out ATitle: ThtString): ThtguResultType;
  {Y is absolute}
 var
   I, L, Width, IX, IY, Posn: Integer;
   FO: TFontObj;
-  LR: LineRec;
+  LR: ThtLineRec;
   IMap, UMap: boolean;
   MapItem: TMapItem;
   ImageObj: TImageObj;
@@ -12936,7 +12936,7 @@ begin
     begin
       while I < Count do
       begin
-        LR := LineRec(Lines[I]);
+        LR := ThtLineRec(Lines[I]);
         if (Y > LR.DrawY) and (Y <= LR.DrawY + LR.LineHt) then
           Break;
         Inc(I);
@@ -12983,7 +12983,7 @@ function TSection.FindCursor(Canvas: TCanvas; X, Y: Integer;
  section}
 var
   I, H, L, Width, TotalHt, L1, W, Delta, OHang: Integer;
-  LR: LineRec;
+  LR: ThtLineRec;
 
 begin
   Result := -1;
@@ -12993,7 +12993,7 @@ begin
   LR := nil;
   while I < Lines.Count do
   begin
-    LR := LineRec(Lines[I]);
+    LR := ThtLineRec(Lines[I]);
     with LR do
       TotalHt := LineHt + SpaceBefore + SpaceAfter;
     if H + TotalHt > Y then
@@ -13123,7 +13123,7 @@ end;
 function TSection.FindSourcePos(DocPos: Integer): Integer;
 var
   I: Integer;
-  IO: IndexObj;
+  IO: ThtIndexObj;
 begin
   Result := -1;
   if (Len = 0) or (DocPos >= StartCurs + Len) then
@@ -13147,7 +13147,7 @@ function TSection.FindDocPos(SourcePos: Integer; Prev: boolean): Integer;
  previous}
 var
   I: Integer;
-  IO, IOPrev: IndexObj;
+  IO, IOPrev: ThtIndexObj;
 begin
   Result := -1;
   if Len = 0 then
@@ -13180,7 +13180,7 @@ begin
       end;
       IOPrev := IO;
     end;
-  {after the last IndexObj in list}
+  {after the last ThtIndexObj in list}
     Result := StartCurs + IOPrev.Pos + (SourcePos - IOPrev.Index);
   end
   else {prev  -- we're iterating from the end of ThtDocument}
@@ -13210,7 +13210,7 @@ begin
       end;
       IOPrev := IO;
     end;
-  {after the last IndexObj in list}
+  {after the last ThtIndexObj in list}
     Result := StartCurs + IOPrev.Pos + (SourcePos - IOPrev.Index);
   end;
 end;
@@ -13220,7 +13220,7 @@ end;
 function TSection.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean;
 var
   I, Curs: Integer;
-  LR: LineRec;
+  LR: ThtLineRec;
 begin
   Result := False;
   if (Len = 0) or (Cursor > StartCurs + Len) then
@@ -13234,7 +13234,7 @@ begin
   begin
     while I < Count do
     begin
-      LR := LineRec(Lines[I]);
+      LR := ThtLineRec(Lines[I]);
       with LR do
       begin
         if Curs < Ln then
@@ -13523,7 +13523,7 @@ end;
 {----------------TCellObjCell.GetUrl}
 
 function TCellObjCell.GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget;
-  out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): TguResultType;
+  out FormControl: TIDObject{TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
 {Y is absolute}
 begin
   Result := inherited GetUrl(Canvas, X, Y, UrlTarg, FormControl, ATitle);
@@ -13765,29 +13765,29 @@ begin
   Message.Result := DLGC_WantArrows; {this to eat the arrow keys}
 end;
 
-{----------------LineRec.Create}
+{----------------ThtLineRec.Create}
 
-constructor LineRec.Create(SL: ThtDocument);
+constructor ThtLineRec.Create(SL: ThtDocument);
 begin
   inherited Create;
   if SL.InlineList.Count > 0 then
     FirstDraw := True;
 end;
 
-procedure LineRec.Clear;
+procedure ThtLineRec.Clear;
 begin
   FreeAndNil(BorderList);
 end;
 
-destructor LineRec.Destroy;
+destructor ThtLineRec.Destroy;
 begin
   BorderList.Free;
   inherited Destroy;
 end;
 
-{----------------BorderRec.DrawTheBorder}
+{----------------ThtBorderRec.DrawTheBorder}
 
-procedure BorderRec.DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: boolean
+procedure ThtBorderRec.DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: boolean
       {$ifdef has_StyleElements}; const AStyleElements : TStyleElements {$endif});
 var
   IRect, ORect: TRect;
@@ -14078,7 +14078,7 @@ end;
 //-- BG ---------------------------------------------------------- 08.03.2011 --
 procedure THtmlStyleList.SetLinksActive(Value: Boolean);
 begin
-  inherited SetLinksActive(Value);
+//  inherited SetLinksActive(Value);
   Document.LinksActive := Value;
 end;
 
@@ -14115,7 +14115,7 @@ end;
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 constructor TFieldsetBlock.Create(Parent: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
 var
-  Index: TPropIndices;
+  Index: ThtPropIndices;
 begin
   inherited Create(Parent,Attributes,Prop);
   HasBorderStyle := True;
@@ -14504,8 +14504,8 @@ procedure TSizeableObj.ProcessProperties(Prop: TProperties);
 const
   DummyHtWd = 200;
 var
-  MargArrayO: TVMarginArray;
-  MargArray: TMarginArray;
+  MargArrayO: ThtVMarginArray;
+  MargArray: ThtMarginArray;
   Align: ThtAlignmentStyle;
   EmSize, ExSize: Integer;
 begin
@@ -14786,7 +14786,7 @@ end;
 
 function TSectionBase.GetURL(Canvas: TCanvas; X, Y: Integer;
   out UrlTarg: TUrlTarget; out FormControl: TIDObject{TImageFormControlObj};
-  out ATitle: ThtString): TguResultType;
+  out ATitle: ThtString): ThtguResultType;
 begin
   Result := [];
   UrlTarg := nil;

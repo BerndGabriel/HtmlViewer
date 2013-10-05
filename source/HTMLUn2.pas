@@ -76,7 +76,7 @@ type
     VType: TWidthType; // treat wtNone like "0*" (Value = 0.0, CType = wtRelative)
   end;
 
-  TJustifyType = (NoJustify, Left, Centered, Right, FullJustify);
+  ThtJustify = (NoJustify, Left, Centered, Right, FullJustify);
   TRowType = (THead, TBody, TFoot);
 
 //------------------------------------------------------------------------------
@@ -379,14 +379,12 @@ type
     property Objects[Index: Integer]: TIDObject read GetObject; default;
   end;
 
-  TImageType = (NoImage, Bmp, Gif, {Gif89,} Png, Jpg);
-
   ThtColorArray = packed array[0..3] of TColor;
   ThtBorderStyleArray = packed array[0..3] of ThtBorderStyle;
 
 //BG, 11.09.2010: moved to this unit to reduce circular dependencies:
 
-  TguResultType = set of (guUrl, guControl, guTitle);
+  ThtguResultType = set of (guUrl, guControl, guTitle);
 
 //------------------------------------------------------------------------------
 // ThvPanel is base class for panels held in TPanelObj

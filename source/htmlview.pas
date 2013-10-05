@@ -416,7 +416,7 @@ type
     function GetCharAtPos(Pos: Integer; var Ch: WideChar; var Font: TFont): Boolean;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
-    function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType;
+    function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
@@ -653,7 +653,7 @@ const
   ScrollGap = 20;
 
 type
-  TPositionObj = class(TObject)
+  ThtPositionObj = class(TObject)
   public
     Pos: Integer;
     FileType: ThtmlFileType;
@@ -1851,7 +1851,7 @@ var
   YR: Integer;
   InText: Boolean;
   NextCursor: TCursor;
-  guResult: TguResultType;
+  guResult: ThtguResultType;
 begin
   inherited MouseMove(Shift, X, Y);
 
@@ -1932,7 +1932,7 @@ var
   Parameters: TRightClickParameters;
   AWord: UnicodeString;
   St, En: Integer;
-  guResult: TguResultType;
+  guResult: ThtguResultType;
   I, ThisID: Integer;
   ParentForm: TCustomForm;
 begin
@@ -2313,7 +2313,7 @@ begin
 end;
 
 function THtmlViewer.GetURL(X, Y: Integer; out UrlTarg: TUrlTarget;
-  out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): TguResultType;
+  out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
 begin
   Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff, UrlTarg, FormControl, ATitle);
 end;
@@ -5043,7 +5043,7 @@ end;
 
 { PositionObj }
 
-destructor TPositionObj.Destroy;
+destructor ThtPositionObj.Destroy;
 begin
   FormData.Free;
   inherited;

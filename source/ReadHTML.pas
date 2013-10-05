@@ -1771,7 +1771,7 @@ var
   T: TAttribute;
   RowStack: Integer;
   NewBlock: TTableBlock;
-  SetJustify: TJustifyType;
+  SetJustify: ThtJustify;
   CM: TCellManager;
   CellNum: Integer;
   TdTh: TElemSymb;
@@ -1784,7 +1784,7 @@ var
   FootList: TList;
   I: Integer;
   TrDisplay: ThtDisplayStyle; // Yunqa.de.
-  S: TPropIndices;
+  S: ThtPropIndices;
   V: Variant;
 
   function GetVAlign(Default: ThtAlignmentStyle): ThtAlignmentStyle;
@@ -1852,7 +1852,7 @@ var
 
   function HasBorderProps(const P: TProperties): Boolean;
   var
-    I: TPropIndices;
+    I: ThtPropIndices;
   begin
     Result := False;
     if P <> nil then
