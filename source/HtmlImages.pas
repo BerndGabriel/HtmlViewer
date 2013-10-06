@@ -1533,7 +1533,8 @@ end;
 {----------------PrintBitmap}
 
 type
-  AllocRec = class(TObject)
+  ThtAllocRec = class(TObject)
+  public
     Ptr: Pointer;
     ASize: Integer;
     AHandle: THandle;
@@ -1542,9 +1543,9 @@ type
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}
 
-  function Allocate(Size: Integer): AllocRec;
+  function Allocate(Size: Integer): ThtAllocRec;
   begin
-    Result := AllocRec.Create;
+    Result := ThtAllocRec.Create;
     with Result do
     begin
       ASize := Size;
@@ -1560,7 +1561,7 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
     end;
   end;
 
-  procedure DeAllocate(AR: AllocRec);
+  procedure DeAllocate(AR: ThtAllocRec);
   begin
     with AR do
       if ASize < $FF00 then
@@ -1579,7 +1580,7 @@ var
   OldPal: HPalette;
   DC: HDC;
   Info: PBitmapInfo;
-  Image: AllocRec;
+  Image: ThtAllocRec;
   ImageSize: DWord;
   InfoSize: DWord;
 {$endif}
