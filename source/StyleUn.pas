@@ -82,7 +82,7 @@ type
   //
   // Some code relies on this order.
   //
-  TPropertyIndex = (
+  ThtPropertyIndex = (
     FontFamily, FontSize, FontStyle, FontWeight,
     TextAlign, TextDecoration, LetterSpacing, Color,
 
@@ -113,16 +113,16 @@ type
 
   TShortHand = MarginX..BorderStyleX;
 
-  PropIndices = FontFamily..piWhiteSpace;
-  TPropertyArray = array [PropIndices] of Variant;
-  TPropIndexSet = Set of PropIndices;
+  ThtPropIndices = FontFamily..piWhiteSpace;
+  ThtPropertyArray = array [ThtPropIndices] of Variant;
+  ThtPropIndexSet = Set of ThtPropIndices;
 
-  MarginIndices = BackgroundColor..piLeft;
-  TVMarginArray = array [MarginIndices] of Variant;
-  TMarginArray = array [MarginIndices] of Integer;
+  ThtMarginIndices = BackgroundColor..piLeft;
+  ThtVMarginArray = array [ThtMarginIndices] of Variant;
+  ThtMarginArray = array [ThtMarginIndices] of Integer;
 
 const
-  PropWords: array [TPropertyIndex] of ThtString = (
+  PropWords: array [ThtPropertyIndex] of ThtString = (
     'font-family', 'font-size', 'font-style', 'font-weight',
     'text-align', 'text-decoration', 'letter-spacing', 'color',
 
@@ -160,7 +160,7 @@ type
     InLink: Boolean;
     DefFontname: ThtString;
     FUseQuirksMode : Boolean;
-    procedure AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
+    procedure AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString);
 //    procedure AssignCharSet(CS: TFontCharset);
     procedure AssignCodePage(const CP: Integer);
     procedure CalcLinkFontInfo(Styles: TStyleList; I: Integer);
@@ -173,8 +173,8 @@ type
     FCharSet: TFontCharSet;
     FCodePage: Integer;
     FEmSize, FExSize: Integer; {# pixels for Em and Ex dimensions}
-    Props: TPropertyArray;
-    Originals: array[PropIndices] of Boolean;
+    Props: ThtPropertyArray;
+    Originals: array[ThtPropIndices] of Boolean;
     FIArray: TFontInfoArray;
     ID: Integer;
 
@@ -188,7 +188,7 @@ type
     function Collapse: Boolean;
     function GetBackgroundColor: TColor;
     function GetBackgroundImage(var Image: ThtString): Boolean;
-    function GetBorderStyle(Index: PropIndices; var BorderStyle: ThtBorderStyle): Boolean;
+    function GetBorderStyle(Index: ThtPropIndices; var BorderStyle: ThtBorderStyle): Boolean;
     function GetClear(var Clr: ThtClearStyle): Boolean;
     function GetDisplay: ThtDisplayStyle; //BG, 15.09.2009
     function GetFloat(var Align: ThtAlignmentStyle): Boolean;
@@ -209,9 +209,9 @@ type
     function IsOverflowHidden: Boolean;
     function ShowEmptyCells: Boolean;
     procedure AddPropertyByName(const PropName, PropValue: ThtString);
-    procedure SetPropertyDefault(Index: PropIndices; const Value: Variant);
-    procedure SetPropertyDefaults(Indexes: TPropIndexSet; const Value: Variant);
-    procedure Assign(const Item: Variant; Index: PropIndices);
+    procedure SetPropertyDefault(Index: ThtPropIndices; const Value: Variant);
+    procedure SetPropertyDefaults(Indexes: ThtPropIndexSet; const Value: Variant);
+    procedure Assign(const Item: Variant; Index: ThtPropIndices);
     procedure AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
     procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
     procedure Copy(Source: TProperties);
@@ -220,8 +220,8 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : ThtBoxSizing) : Boolean;
-    procedure GetVMarginArrayDefBorder(var MArray: TVMarginArray; const ADefColor : Variant);
-    procedure GetVMarginArray(var MArray: TVMarginArray);
+    procedure GetVMarginArrayDefBorder(var MArray: ThtVMarginArray; const ADefColor : Variant);
+    procedure GetVMarginArray(var MArray: ThtVMarginArray);
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -290,10 +290,10 @@ function VarIsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$
 
 function VMargToMarg(const Value: Variant; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
 
-procedure ConvInlineMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer; {BStyle: ThtBorderStyle;} out M: TMarginArray);
-procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; out AutoCount: Integer; var M: TMarginArray);
-procedure ConvMargArrayForCellPadding(const VM: TVMarginArray; EmSize, ExSize: Integer; var M: TMarginArray);
-procedure ConvVertMargins(const VM: TVMarginArray;  BaseHeight, EmSize, ExSize: Integer; var M: TMarginArray; out TopAuto, BottomAuto: Boolean);
+procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
+procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; out AutoCount: Integer; var M: ThtMarginArray);
+procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize, ExSize: Integer; var M: ThtMarginArray);
+procedure ConvVertMargins(const VM: ThtVMarginArray;  BaseHeight, EmSize, ExSize: Integer; var M: ThtMarginArray; out TopAuto, BottomAuto: Boolean);
 
 
 function OpacityFromStr(S : ThtString) : Byte;
@@ -312,8 +312,8 @@ function ReadFontName(S: ThtString): ThtString;
 procedure LogProperties(AProp : TProperties; const APropName : String);
 {$endif}
 
-procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
-procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
+procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Boolean);
 
 implementation
 uses
@@ -444,8 +444,8 @@ begin
   end;
 end;
 
-procedure LogTVMarginArray(const AMarg : TVMarginArray; const AMargName : String);
-var i : PropIndices;
+procedure LogTVMarginArray(const AMarg : ThtVMarginArray; const AMargName : String);
+var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
         case I of
@@ -468,8 +468,8 @@ begin
         end;
 end;
 
-procedure LogTMarginArray(AMarg : TMarginArray; const AMargName : String);
-var i : PropIndices;
+procedure LogThtMarginArray(AMarg : ThtMarginArray; const AMargName : String);
+var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
     if VarIsIntNull(AMarg[I]) then begin
@@ -503,7 +503,7 @@ end;
 
 procedure LogProperties(AProp : TProperties; const APropName : String);
 
-var i : PropIndices;
+var i : ThtPropIndices;
 begin
   if not Assigned(AProp) then begin
     CodeSiteLogging.CodeSite.SendFmtMsg('%s = nil',[APropName]);
@@ -681,7 +681,7 @@ var
 
 function StyleProperties: ThtStringList;
 var
-  I: TPropertyIndex;
+  I: ThtPropertyIndex;
 begin
   // Put the Properties into a sorted StringList for faster access.
   if PropertyStrings = nil then
@@ -695,17 +695,17 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
-function TryStrToPropIndex(const PropWord: ThtString; var PropIndex: PropIndices): Boolean;
+function TryStrToPropIndex(const PropWord: ThtString; var PropIndex: ThtPropIndices): Boolean;
 var
   I: Integer;
-  P: TPropertyIndex;
+  P: ThtPropertyIndex;
 begin
   I := StyleProperties.IndexOf(PropWord);
   Result := I >= 0;
   if Result then
   begin
-    P := TPropertyIndex(StyleProperties.Objects[I]);
-    Result := P in [Low(PropIndices)..High(PropIndices)];
+    P := ThtPropertyIndex(StyleProperties.Objects[I]);
+    Result := P in [Low(ThtPropIndices)..High(ThtPropIndices)];
     if Result then
       PropIndex := P;
   end;
@@ -718,7 +718,7 @@ var
 
 constructor TProperties.Create;
 var
-  I: PropIndices;
+  I: ThtPropIndices;
 begin
   inherited Create;
   ID := Sequence;
@@ -788,7 +788,7 @@ end;
 
 procedure TProperties.Copy(Source: TProperties);
 var
-  I: PropIndices;
+  I: ThtPropIndices;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'Copy');
@@ -808,7 +808,7 @@ end;
 
 procedure TProperties.CopyDefault(Source: TProperties);
 var
-  I: PropIndices;
+  I: ThtPropIndices;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'CopyDefault');
@@ -830,7 +830,7 @@ end;
 procedure TProperties.Inherit(Tag: ThtString; Source: TProperties);
 {copy the properties that are inheritable}
 var
-  I: PropIndices;
+  I: ThtPropIndices;
   Span, HBF: Boolean;
   isTable: Boolean;
 begin
@@ -900,7 +900,7 @@ end;
 procedure TProperties.Update(Source: TProperties; Styles: TStyleList; I: Integer);
 {Change the inherited properties for this item to those of Source}
 var
-  Index: PropIndices;
+  Index: ThtPropIndices;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.Update');
@@ -930,7 +930,7 @@ end;
 
 {----------------TProperties.Assign}
 
-procedure TProperties.Assign(const Item: Variant; Index: PropIndices);
+procedure TProperties.Assign(const Item: Variant; Index: ThtPropIndices);
 {Assignment should be made in order of importance as the first one in
  predominates}
 var
@@ -1387,7 +1387,7 @@ begin {return a color only if it hasn't been inherited}
 end;
 
 //-- BG ---------------------------------------------------------- 12.03.2011 --
-function TProperties.GetBorderStyle(Index: PropIndices; var BorderStyle: ThtBorderStyle): Boolean;
+function TProperties.GetBorderStyle(Index: ThtPropIndices; var BorderStyle: ThtBorderStyle): Boolean;
 // Returns True, if there is a valid border style property.
 begin
   Result := False;
@@ -1454,16 +1454,16 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.01.2013 --
-procedure TProperties.SetPropertyDefault(Index: PropIndices; const Value: Variant);
+procedure TProperties.SetPropertyDefault(Index: ThtPropIndices; const Value: Variant);
 begin
   if (Props[Index] = Unassigned) or ((VarType(Props[Index]) in varInt) and (Props[Index] = IntNull)) then
     Props[Index] := Value;
 end;
 
 //-- BG ---------------------------------------------------------- 20.01.2013 --
-procedure TProperties.SetPropertyDefaults(Indexes: TPropIndexSet; const Value: Variant);
+procedure TProperties.SetPropertyDefaults(Indexes: ThtPropIndexSet; const Value: Variant);
 var
-  Index: PropIndices;
+  Index: ThtPropIndices;
 begin
   for Index := Low(Index) to High(Index) do
     if Index in Indexes then
@@ -1476,9 +1476,9 @@ begin
   Result := (VarIsStr(Props[piEmptyCells])) and (Props[piEmptyCells] = 'show');
 end;
 
-procedure ConvVertMargins(const VM: TVMarginArray;
+procedure ConvVertMargins(const VM: ThtVMarginArray;
   BaseHeight, EmSize, ExSize: Integer;
-  var M: TMarginArray; out TopAuto, BottomAuto: Boolean);
+  var M: ThtMarginArray; out TopAuto, BottomAuto: Boolean);
 
   function Convert(V: Variant; out IsAutoParagraph: Boolean): Integer;
   begin
@@ -1515,7 +1515,7 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   CodeSiteLogging.CodeSite.ExitMethod('ConvVertMargins');
-  StyleUn.LogTMarginArray(M,'M');
+  StyleUn.LogThtMarginArray(M,'M');
   {$ENDIF}
 end;
 
@@ -1548,7 +1548,7 @@ begin
     Result := Default;
 end;
 
-procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
 begin
   {Important!!!
 
@@ -1569,9 +1569,9 @@ begin
   end;
 end;
 
-procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
+procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Boolean);
 
-  procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
+  procedure ApplyBorderBoxModel(var AMarg : ThtMarginArray);
   begin
     if AMarg[piWidth] > -1 then
       Dec(AMarg[piWidth], AMarg[BorderLeftWidth] + AMarg[PaddingLeft] + AMarg[PaddingRight] + AMarg[BorderRightWidth]);
@@ -1617,11 +1617,11 @@ end;
 
 {----------------ConvMargArray}
 
-procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
-  BorderWidth: Integer; out AutoCount: Integer; var M: TMarginArray);
+procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
+  BorderWidth: Integer; out AutoCount: Integer; var M: ThtMarginArray);
 {This routine does not do MarginTop and MarginBottom as they are done by ConvVertMargins}
 
-  function Base(I: PropIndices): Integer;
+  function Base(I: ThtPropIndices): Integer;
   begin
     case I of
       BorderTopWidth, BorderBottomWidth,
@@ -1637,7 +1637,7 @@ procedure ConvMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize, 
   end;
 
 var
-  I: PropIndices;
+  I: ThtPropIndices;
   LBoxSizing : ThtBoxSizing;
 begin
   {$IFDEF JPM_DEBUGGING}
@@ -1668,7 +1668,7 @@ begin
         end;
       BorderTopWidth..BorderLeftWidth:
         begin
-          if VM[PropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))] = bssNone then
+          if VM[ThtPropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))] = bssNone then
             M[I] := 0
           else
           begin
@@ -1835,17 +1835,17 @@ begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
-  LogTMarginArray(M,'M');
+  LogThtMarginArray(M,'M');
   CodeSiteLogging.CodeSite.Send('AutoCount  = [%d]',[AutoCount]);
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArray');
   {$ENDIF}
 end;
 
-procedure ConvMargArrayForCellPadding(const VM: TVMarginArray; EmSize,
-  ExSize: Integer; var M: TMarginArray);
+procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize,
+  ExSize: Integer; var M: ThtMarginArray);
 {Return negative for no entry or percent entry}
 var
-  I: PropIndices;
+  I: ThtPropIndices;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod('ConvMargArrayForCellPadding');
@@ -1868,18 +1868,18 @@ begin
       M[I] := -1;
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
-  LogTMarginArray(M,'M');
+  LogThtMarginArray(M,'M');
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArrayForCellPadding');
   {$ENDIF}
 end;
 
 {----------------ConvInlineMargArray}
 
-procedure ConvInlineMargArray(const VM: TVMarginArray; BaseWidth, BaseHeight, EmSize,
-  ExSize: Integer; {BStyle: ThtBorderStyle;} out M: TMarginArray);
+procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize,
+  ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
 {currently for images, form controls.  BaseWidth/Height and BStyle currently not supported}
 var
-  I: PropIndices;
+  I: ThtPropIndices;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod('ConvInlineMargArray');
@@ -1924,7 +1924,7 @@ begin
         end;
       BorderTopWidth..BorderLeftWidth:
         begin
-          if VM[PropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))] = bssNone then
+          if VM[ThtPropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))] = bssNone then
             M[I] := 0
           else
           begin
@@ -1953,7 +1953,7 @@ begin
     end;
   {$IFDEF JPM_DEBUGGING}
    CodeSiteLogging.CodeSite.AddSeparator;
-   LogTMarginArray(M,'M');
+   LogThtMarginArray(M,'M');
    CodeSiteLogging.CodeSite.ExitMethod('ConvInlineMargArray');
   {$ENDIF}
 end;
@@ -1977,7 +1977,7 @@ procedure TProperties.Combine(Styles: TStyleList;
 
     procedure Merge(Source: TProperties; Reverse: Boolean = False);
     var
-      Index: PropIndices;
+      Index: ThtPropIndices;
       I: FIIndex;
       Wt: Integer;
       S1: ThtString;
@@ -1988,7 +1988,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       CodeSiteLogging.CodeSite.AddSeparator;
       LogProperties(Source,'Source');
 {$endif}
-      for Index := Low(Index) to High(PropIndices) do
+      for Index := Low(Index) to High(ThtPropIndices) do
       begin
         if Reverse then
         begin
@@ -2666,9 +2666,9 @@ begin
   AFI.Assign(FIArray);
 end;
 
-procedure TProperties.GetVMarginArrayDefBorder(var MArray: TVMarginArray; const ADefColor : Variant);
+procedure TProperties.GetVMarginArrayDefBorder(var MArray: ThtVMarginArray; const ADefColor : Variant);
 var
-  I: PropIndices;
+  I: ThtPropIndices;
   BS: ThtBorderStyle;
   NewColor : TColor;
   LVal : THtString;
@@ -2711,7 +2711,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TProperties.GetVMarginArray(var MArray: TVMarginArray);
+procedure TProperties.GetVMarginArray(var MArray: ThtVMarginArray);
 {From: http://www.w3.org/TR/CSS21/box.html#x49
 
 If an element's border color is not specified with a
@@ -2732,7 +2732,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TProperties.AddPropertyByIndex(Index: PropIndices; PropValue: ThtString);
+procedure TProperties.AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString);
 var
   NewColor: TColor;
 begin
@@ -2833,7 +2833,7 @@ end;
 
 procedure TProperties.AddPropertyByName(const PropName, PropValue: ThtString);
 var
-  Index: PropIndices;
+  Index: ThtPropIndices;
 begin
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByName');
@@ -2895,7 +2895,7 @@ begin
 end;
 
 procedure FixBordProps(AProp, BodyProp : TProperties);
-var i : PropIndices;
+var i : ThtPropIndices;
 begin
   for i := BorderTopColor to BorderLeftColor do
     AProp.Props[I] := BodyProp.Props[I];
@@ -2936,7 +2936,7 @@ procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
 {strings are all lowercase here}
 var
   I: Integer;
-  PropIndex: PropIndices;
+  PropIndex: ThtPropIndices;
   Propty: TProperties;
   NewColor: TColor;
   NewProp: Boolean;

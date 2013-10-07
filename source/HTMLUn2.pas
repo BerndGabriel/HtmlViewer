@@ -76,7 +76,7 @@ type
     VType: TWidthType; // treat wtNone like "0*" (Value = 0.0, CType = wtRelative)
   end;
 
-  JustifyType = (NoJustify, Left, Centered, Right, FullJustify);
+  ThtJustify = (NoJustify, Left, Centered, Right, FullJustify);
   TRowType = (THead, TBody, TFoot);
 
 //------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ type
 // copy to clipboard support
 //------------------------------------------------------------------------------
 
-  SelTextCount = class(TObject)
+  TSelTextCount = class(TObject)
   private
     Buffer: PWideChar;
     BufferLeng: Integer;
@@ -149,14 +149,14 @@ type
     function Terminate: Integer; virtual;
   end;
 
-  SelTextBuf = class(SelTextCount)
+  TSelTextBuf = class(TSelTextCount)
   public
     constructor Create(ABuffer: PWideChar; Size: Integer);
     procedure AddText(P: PWideChar; Size: Integer); override;
     function Terminate: Integer; override;
   end;
 
-  ClipBuffer = class(SelTextBuf)
+  TClipBuffer = class(TSelTextBuf)
   private
     procedure CopyToClipboard;
   public
@@ -235,7 +235,7 @@ type
 // indentation manager
 //------------------------------------------------------------------------------
 
-  IndentRec = class(TObject)
+  TIndentRec = class(TObject)
   public
     X: Integer;   // left or right indentation relative to LfEdge.
     YT: Integer;  // top Y inclusive coordinate for this record relative to document top.
@@ -261,8 +261,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function AddLeft(YT, YB, W: Integer): IndentRec;
-    function AddRight(YT, YB, W: Integer): IndentRec;
+    function AddLeft(YT, YB, W: Integer): TIndentRec;
+    function AddRight(YT, YB, W: Integer): TIndentRec;
     function AlignLeft(var Y: Integer; W: Integer; SpW: Integer = 0; SpH: Integer = 0): Integer;
     function AlignRight(var Y: Integer; W: Integer; SpW: Integer = 0; SpH: Integer = 0): Integer;
     function GetNextWiderY(Y: Integer): Integer;
@@ -314,7 +314,7 @@ type
 
   { TokenObj }
 
-  TokenObj = class
+  TTokenObj = class
   private
     St: UnicodeString;
     StringOK: boolean;
@@ -379,14 +379,12 @@ type
     property Objects[Index: Integer]: TIDObject read GetObject; default;
   end;
 
-  TImageType = (NoImage, Bmp, Gif, {Gif89,} Png, Jpg);
-
-  htColorArray = packed array[0..3] of TColor;
-  htBorderStyleArray = packed array[0..3] of ThtBorderStyle;
+  ThtColorArray = packed array[0..3] of TColor;
+  ThtBorderStyleArray = packed array[0..3] of ThtBorderStyle;
 
 //BG, 11.09.2010: moved to this unit to reduce circular dependencies:
 
-  guResultType = set of (guUrl, guControl, guTitle);
+  ThtguResultType = set of (guUrl, guControl, guTitle);
 
 //------------------------------------------------------------------------------
 // ThvPanel is base class for panels held in TPanelObj
@@ -625,10 +623,10 @@ type
 
   TViewerBaseClass = class of TViewerBase;
 
-  TablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
+  TTablePartType = (Normal, DoHead, DoBody1, DoBody2, DoBody3, DoFoot);
   TTablePartRec = class
   public
-    TablePart: TablePartType;
+    TablePart: TTablePartType;
     PartStart: Integer;
     PartHeight: Integer;
     FootHeight: Integer;
@@ -692,8 +690,8 @@ procedure GetClippingRgn(Canvas: TCanvas; const ARect: TRect; Printing: boolean;
 procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
 procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor
   {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
-  const S: htBorderStyleArray; BGround: TColor; Print: boolean
+procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
+  const S: ThtBorderStyleArray; BGround: TColor; Print: boolean
   {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
 
 implementation
@@ -1484,9 +1482,9 @@ begin
         Break;
 end;
 
-{----------------SelTextCount}
+{----------------TSelTextCount}
 
-procedure SelTextCount.AddText(P: PWideChar; Size: Integer);
+procedure TSelTextCount.AddText(P: PWideChar; Size: Integer);
 var
   I: Integer;
 begin
@@ -1499,27 +1497,27 @@ begin
     end;
 end;
 
-procedure SelTextCount.AddTextCR(P: PWideChar; Size: Integer);
+procedure TSelTextCount.AddTextCR(P: PWideChar; Size: Integer);
 begin
   AddText(P, Size);
   AddText(#13#10, 2);
 end;
 
-function SelTextCount.Terminate: Integer;
+function TSelTextCount.Terminate: Integer;
 begin
   Result := Leng;
 end;
 
 {----------------SelTextBuf.Create}
 
-constructor SelTextBuf.Create(ABuffer: PWideChar; Size: Integer);
+constructor TSelTextBuf.Create(ABuffer: PWideChar; Size: Integer);
 begin
   inherited Create;
   Buffer := ABuffer;
   BufferLeng := Size;
 end;
 
-procedure SelTextBuf.AddText(P: PWideChar; Size: Integer);
+procedure TSelTextBuf.AddText(P: PWideChar; Size: Integer);
 var
   SizeM1: Integer;
   I: Integer;
@@ -1538,7 +1536,7 @@ begin
     end;
 end;
 
-function SelTextBuf.Terminate: Integer;
+function TSelTextBuf.Terminate: Integer;
 begin
   Buffer[Leng] := #0;
   Result := Leng + 1;
@@ -1546,21 +1544,21 @@ end;
 
 {----------------ClipBuffer.Create}
 
-constructor ClipBuffer.Create(Leng: Integer);
+constructor TClipBuffer.Create(Leng: Integer);
 begin
   inherited Create(nil, 0);
   BufferLeng := Leng;
   Getmem(Buffer, BufferLeng * 2);
 end;
 
-destructor ClipBuffer.Destroy;
+destructor TClipBuffer.Destroy;
 begin
   if Assigned(Buffer) then
     FreeMem(Buffer);
   inherited Destroy;
 end;
 
-procedure ClipBuffer.CopyToClipboard;
+procedure TClipBuffer.CopyToClipboard;
 {$ifdef LCL}
 begin
   Clipboard.AddFormat(CF_UNICODETEXT, Buffer[0], BufferLeng * sizeof(WIDECHAR));
@@ -1589,7 +1587,7 @@ begin
 end;
 {$endif}
 
-function ClipBuffer.Terminate: Integer;
+function TClipBuffer.Terminate: Integer;
 begin
   Buffer[Leng] := #0;
   Result := Leng + 1;
@@ -1799,10 +1797,10 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.02.2011 --
-function TIndentManager.AddLeft(YT, YB, W: Integer): IndentRec;
+function TIndentManager.AddLeft(YT, YB, W: Integer): TIndentRec;
 // For a floating block, update the left edge information.
 begin
-  Result := IndentRec.Create;
+  Result := TIndentRec.Create;
   Result.YT := YT;
   Result.YB := YB;
   Result.X := LeftEdge(YT) + W;
@@ -1811,10 +1809,10 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 05.02.2011 --
-function TIndentManager.AddRight(YT, YB, W: Integer): IndentRec;
+function TIndentManager.AddRight(YT, YB, W: Integer): TIndentRec;
 // For a floating block, update the right edge information.
 begin
-  Result := IndentRec.Create;
+  Result := TIndentRec.Create;
   Result.YT := YT;
   Result.YB := YB;
   Result.X := RightEdge(YT) - W;
@@ -1826,7 +1824,7 @@ end;
 procedure TIndentManager.AdjustY(FirstLeftIndex, FirstRightIndex, Y, Height: Integer);
 var
   I, D: Integer;
-  IR: IndentRec;
+  IR: TIndentRec;
 begin
   D := 0;
   for I := FirstLeftIndex to L.Count - 1 do
@@ -1884,7 +1882,7 @@ function TIndentManager.LeftEdge(Y: Integer): Integer;
 // If there are no left indentations at Y, returns 0.
 var
   I: Integer;
-  IR: IndentRec;
+  IR: TIndentRec;
   MinX: Integer;
 begin
   Result := -MaxInt;
@@ -1916,7 +1914,7 @@ function TIndentManager.RightEdge(Y: Integer): Integer;
 // If there are no indentations at Y, returns Width.
 var
   I: Integer;
-  IR: IndentRec;
+  IR: TIndentRec;
   MinX: Integer;
 begin
   Result := MaxInt;
@@ -1959,11 +1957,11 @@ var
 begin
   Result := 0;
   for I := 0 to L.Count - 1 do
-    with IndentRec(L.Items[I]) do
+    with TIndentRec(L.Items[I]) do
       if (ID = nil) and (YB > Result) then
         Result := YB;
   for I := 0 to R.Count - 1 do
-    with IndentRec(R.Items[I]) do
+    with TIndentRec(R.Items[I]) do
       if (ID = nil) and (YB > Result) then
         Result := YB;
 end;
@@ -1975,12 +1973,12 @@ var
 begin
   CL := -1;
   for I := 0 to L.Count - 1 do
-    with IndentRec(L.Items[I]) do
+    with TIndentRec(L.Items[I]) do
       if (ID = nil) and (YB > CL) then
         CL := YB;
   CR := -1;
   for I := 0 to R.Count - 1 do
-    with IndentRec(R.Items[I]) do
+    with TIndentRec(R.Items[I]) do
       if (ID = nil) and (YB > CR) then
         CR := YB;
   Inc(CL);
@@ -2050,7 +2048,7 @@ begin
       CL := Y;
       XL := Result; // valium for the compiler
       for I := L.Count - 1 downto 0 do
-        with IndentRec(L.Items[I]) do
+        with TIndentRec(L.Items[I]) do
         begin
           if ID = CurrentID then
           begin
@@ -2078,7 +2076,7 @@ begin
       CR := Y;
       XR := Result; // valium for the compiler
       for I := R.Count - 1 downto 0 do
-        with IndentRec(R.Items[I]) do
+        with TIndentRec(R.Items[I]) do
         begin
           if ID = CurrentID then
             break;
@@ -2156,7 +2154,7 @@ begin
       CL := Y;
       XL := Result; // valium for the compiler
       for I := L.Count - 1 downto 0 do
-        with IndentRec(L.Items[I]) do
+        with TIndentRec(L.Items[I]) do
         begin
           if ID = CurrentID then
             break;
@@ -2181,7 +2179,7 @@ begin
       CR := Y;
       XR := Result; // valium for the compiler
       for I := R.Count - 1 downto 0 do
-        with IndentRec(R.Items[I]) do
+        with TIndentRec(R.Items[I]) do
         begin
           if ID = CurrentID then
           begin
@@ -2247,12 +2245,12 @@ var
 begin
   CL := Y;
   for I := 0 to L.Count - 1 do
-    with IndentRec(L.Items[I]) do
+    with TIndentRec(L.Items[I]) do
       if not Assigned(ID) and (YB > Y) and ((YB < CL) or (CL = Y)) then
         CL := YB;
   CR := Y;
   for I := 0 to R.Count - 1 do
-    with IndentRec(R.Items[I]) do
+    with TIndentRec(R.Items[I]) do
       if not Assigned(ID) and (YB > Y) and ((YB < CR) or (CR = Y)) then
         CR := YB;
   if CL = Y then
@@ -2265,9 +2263,9 @@ end;
 
 function TIndentManager.SetLeftIndent(XLeft, Y: Integer): Integer;
 var
-  IR: IndentRec;
+  IR: TIndentRec;
 begin
-  IR := IndentRec.Create;
+  IR := TIndentRec.Create;
   with IR do
   begin
     YT := Y;
@@ -2280,9 +2278,9 @@ end;
 
 function TIndentManager.SetRightIndent(XRight, Y: Integer): Integer;
 var
-  IR: IndentRec;
+  IR: TIndentRec;
 begin
-  IR := IndentRec.Create;
+  IR := TIndentRec.Create;
   with IR do
   begin
     YT := Y;
@@ -2418,7 +2416,7 @@ end;
 
 { TokenObj }
 
-constructor TokenObj.Create;
+constructor TTokenObj.Create;
 begin
   inherited;
   Capacity := TokenLeng;
@@ -2427,7 +2425,7 @@ begin
   StringOK := True;
 end;
 
-procedure TokenObj.AddUnicodeChar(Ch: WideChar; Ind: Integer);
+procedure TTokenObj.AddUnicodeChar(Ch: WideChar; Ind: Integer);
 {Ch must be Unicode in this method}
 begin
   if Capacity <= Count then
@@ -2438,7 +2436,7 @@ begin
   StringOK := False;
 end;
 
-procedure TokenObj.Clear;
+procedure TTokenObj.Clear;
 begin
   FCount := 0;
   St := '';
@@ -2487,7 +2485,7 @@ end;
 //    end;
 //end;
 
-procedure TokenObj.AddString(S: TCharCollection);
+procedure TTokenObj.AddString(S: TCharCollection);
 var
   K: Integer;
 begin
@@ -2538,13 +2536,13 @@ end;
 //  end;
 //end;
 
-function TokenObj.GetCapacity: Integer;
+function TTokenObj.GetCapacity: Integer;
 begin
   Result := Length(C) - 1;
 end;
 
 //-- BG ---------------------------------------------------------- 20.01.2011 --
-procedure TokenObj.SetCapacity(NewCapacity: Integer);
+procedure TTokenObj.SetCapacity(NewCapacity: Integer);
 begin
   if NewCapacity <> Capacity then
   begin
@@ -2559,7 +2557,7 @@ begin
   end;
 end;
 
-function TokenObj.GetString: UnicodeString;
+function TTokenObj.GetString: UnicodeString;
 begin
   if not StringOK then
   begin
@@ -2703,8 +2701,8 @@ end;
 {----------------DrawBorder}
  {$ifdef has_StyleElements}
 
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
-  const S: htBorderStyleArray; BGround: TColor; Print: boolean;
+procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
+  const S: ThtBorderStyleArray; BGround: TColor; Print: boolean;
   const AStyleElements : TStyleElements);
 
  {$else}
@@ -3407,7 +3405,7 @@ end;
 
 procedure TIDObject.AfterConstruction();
 begin
-  inherited;
+  inherited AfterConstruction;
 {$ifdef UseGlobalObjectId}
   Inc(GlobalObjectIdCount);
   FGlobalId := GlobalObjectIdPrefix + IntToStr(GlobalObjectIdCount);

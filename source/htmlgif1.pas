@@ -1928,11 +1928,11 @@ end;
 
 {----------------TGif.GetStripBitmap}
 type
-  LayoutType = packed record
+  ThtLayoutType = packed record
     BFH: TBitmapFileHeader;
     BIH: TBitmapInfoHeader;
   end;
-  PLayoutType = ^LayoutType;
+  PLayoutType = ^ThtLayoutType;
 
 {$ifdef LCL}
 function CreateMask(Bitmap: TBitmap; AColor: TColor): TBitmap;
@@ -2000,7 +2000,7 @@ begin
   if FullWidth and $3 <> 0 then {make sure it is DWord boundary}
     FullWidth := (FullWidth and $FFFFFFFC) + $4;
   PixelSize := FullWidth * Height;
-  FileSize := Sizeof(LayoutType) + PixelSize;
+  FileSize := Sizeof(ThtLayoutType) + PixelSize;
   if (FileSize > 200000000) or Transparent and (FileSize > 100000000) then
     GIF_Error(25);
   Stream := TMemoryStream.Create;
@@ -2015,7 +2015,7 @@ begin
       bfSize := FileSize;
       bfReserved1 := 0;
       bfReserved2 := 0;
-      bfOffBits := Sizeof(LayoutType);
+      bfOffBits := Sizeof(ThtLayoutType);
     end;
     with PL^.BIH do
     begin {and the bitmap info header}
@@ -2032,7 +2032,7 @@ begin
       biClrImportant := 0;
     end;
 
-    Pix := PByte(PtrInt(PL) + Sizeof(LayoutType)); {where pixels start}
+    Pix := PByte(PtrInt(PL) + Sizeof(ThtLayoutType)); {where pixels start}
 
     IsTransparent := Transparent;
     if IsTransparent then
@@ -2041,7 +2041,7 @@ begin
       MStream.Size := FileSize;
       MPL := MStream.Memory;
       Move(PL^, MPL^, FileSize); {for now, this is a direct copy}
-      MPix := PByte(PtrInt(MPL) + Sizeof(LayoutType)); {where mask pixels start}
+      MPix := PByte(PtrInt(MPL) + Sizeof(ThtLayoutType)); {where mask pixels start}
       FillChar(MPix^, PixelSize, $FF); {Need to make first frame totally transparent}
     end;
 
