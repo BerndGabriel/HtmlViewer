@@ -478,7 +478,7 @@ function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: TMediaTypes): 
 procedure LogProperties(AProp : TProperties; const APropName : String);
 {$endif}
 
-  procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
 
 procedure ApplyBorderBoxModel(var AMarg : TMarginArray);
 procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
@@ -1852,22 +1852,26 @@ begin
     Result := Default;
 end;
 
-  procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
-  begin
-    {Important!!!
+procedure ApplyBoxWidthSettings(var AMarg : TMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+begin
+  {Important!!!
 
-    You have to do this with settings.  This is only for FindWidth methods}
-    if not AUseQuirksMode then begin
-      if AMarg[piMaxWidth] > 0 then begin
-        VMaxWidth := AMarg[piMaxWidth];
-        AMarg[piWidth] := Min(AMarg[piMaxWidth],AMarg[piWidth]);
-      end;
-      if AMarg[piMinWidth] > 0 then begin
-        AMarg[piWidth] := Max(AMarg[piMinWidth],AMarg[piWidth]);
-        VMinWidth := AMarg[piWidth];
-      end;
+  You have to do this with settings.  This is only for FindWidth methods}
+  if not AUseQuirksMode then
+  begin
+    if AMarg[piMaxWidth] > 0 then
+    begin
+      AMarg[piWidth] := Min(AMarg[piMaxWidth], AMarg[piWidth]);
+      VMaxWidth := Min(AMarg[piMaxWidth], VMaxWidth);
+    end;
+
+    if AMarg[piMinWidth] > 0 then
+    begin
+      AMarg[piWidth] := Max(AMarg[piMinWidth], AMarg[piWidth]);
+      VMinWidth := Max(AMarg[piMinWidth], VMinWidth);
     end;
   end;
+end;
 
 procedure ApplyBoxSettings(var AMarg : TMarginArray; const AUseQuirksMode : Boolean);
 begin
