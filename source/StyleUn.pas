@@ -444,8 +444,8 @@ begin
   end;
 end;
 
-procedure LogTVMarginArray(const AMarg : TVMarginArray; const AMargName : String);
-var i : PropIndices;
+procedure LogTVMarginArray(const AMarg : ThtVMarginArray; const AMargName : String);
+var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
         case I of
@@ -469,7 +469,7 @@ begin
 end;
 
 procedure LogThtMarginArray(AMarg : ThtMarginArray; const AMargName : String);
-var i : PropIndices;
+var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
     if VarIsIntNull(AMarg[I]) then begin
@@ -503,7 +503,7 @@ end;
 
 procedure LogProperties(AProp : TProperties; const APropName : String);
 
-var i : PropIndices;
+var i : ThtPropIndices;
 begin
   if not Assigned(AProp) then begin
     CodeSiteLogging.CodeSite.SendFmtMsg('%s = nil',[APropName]);

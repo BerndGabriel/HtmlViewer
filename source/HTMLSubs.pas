@@ -3451,7 +3451,7 @@ end;
 //-- BG ---------------------------------------------------------- 28.08.2013 --
 procedure TFormControlObj.DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer);
 begin
-  inherited DrawLogicInline(Canvas,FO,AvailableWidth,AvailableHeight);
+//  inherited DrawLogicInline(Canvas,FO,AvailableWidth,AvailableHeight);
   if PercentWidth then
     ClientWidth := Max(10, Min(MulDiv(FWidth, AvailableWidth, 100), AvailableWidth - HSpaceL - HSpaceR));
   if PercentHeight then
@@ -3875,7 +3875,7 @@ begin
     FControl.Parent := nil;
     FControl.Free;
   end;
-  inherited; Destroy
+  inherited Destroy;
 end;
 
 procedure TRadioButtonFormControlObj.DoOnChange;
@@ -11273,7 +11273,8 @@ begin
     end;
   end;
   {$IFDEF JPM_DEBUGGING}
-  CodeSite.SendFmtMsg('Result = [%d]',[Result]);
+  CodeSite.SendFmtMsg('Result.cx = [%d]',[Result.cx ]);
+  CodeSite.SendFmtMsg('Result.cy = [%d]',[Result.cy ]);
   CodeSite.ExitMethod(Self,'TSection.FindTextWidth');
   {$ENDIF}
 end;
