@@ -1557,14 +1557,14 @@ begin
   begin
     if AMarg[piMaxWidth] > 0 then
     begin
-      VMaxWidth := AMarg[piMaxWidth];
       AMarg[piWidth] := Min(AMarg[piMaxWidth], AMarg[piWidth]);
+      VMaxWidth := Min(AMarg[piMaxWidth], VMaxWidth);
     end;
 
     if AMarg[piMinWidth] > 0 then
     begin
       AMarg[piWidth] := Max(AMarg[piMinWidth], AMarg[piWidth]);
-      VMinWidth := AMarg[piWidth];
+      VMinWidth := Max(AMarg[piMinWidth], VMinWidth);
     end;
   end;
 end;
