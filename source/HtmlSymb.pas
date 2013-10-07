@@ -99,8 +99,8 @@ type
     BodySy,    PSy,    DivSy,    CenterSy,
     BodyEndSy, PEndSy, DivEndSy, CenterEndSy,
 
-    ArticleSy,    SectionSy,    NavSy,    AsideSy,
-    ArticleEndSy, SectionEndSy, NavEndSy, AsideEndSy,
+    ArticleSy,    SectionSy,    MainSy, NavSy,    AsideSy,
+    ArticleEndSy, SectionEndSy, MainEndSy, NavEndSy, AsideEndSy,
 
     {Keep order} H1Sy,    H2Sy,    H3Sy,    H4Sy,    H5Sy,    H6Sy,    {end order}
     {Keep order} H1EndSy, H2EndSy, H3EndSy, H4EndSy, H5EndSy, H6EndSy, {end order}
@@ -639,7 +639,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..99] of TResWord = (
+  ElementDefinitions: array[1..100] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -734,6 +734,7 @@ const
     (Name: 'COL';         Symbol: ColSy;        EndSym: CommandSy),
     (Name: 'PARAM';       Symbol: ParamSy;      EndSym: CommandSy),
     {HTML5 }
+    (Name: 'MAIN';        Symbol: MainSy;       EndSym: MainEndSy),
     (Name: 'HEADER';      Symbol: HeaderSy;     EndSym: HeaderEndSy),
     (Name: 'SECTION';     Symbol: SectionSy;    EndSym: SectionEndSy),
     (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),

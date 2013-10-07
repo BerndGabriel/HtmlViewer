@@ -1439,7 +1439,7 @@ var
 begin
   IsInline := PropStack.Last.Display = pdInline;
   case Sym of
-    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
+    DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -3330,7 +3330,7 @@ begin
             PSy:
               DoP([]);
 
-            DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
+            DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
               DoDivEtc(Sy, [SaveEndSy]);
           else
             Done := True;
@@ -3567,7 +3567,7 @@ begin
       CommandSy:
         Next;
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
 
@@ -3673,7 +3673,7 @@ begin
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
+      DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
       AbbrSy, AbbrEndSy, AcronymSy, AcronymEndSy, DfnSy, DfnEndSy,
@@ -4074,7 +4074,7 @@ begin
             Next;
           end;
 
-        DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+        DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
         CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
           begin
             PushHtmlPropsIfAny;
