@@ -135,7 +135,8 @@ type
     // settings / environment
     //--------------------------------------
     // general
-    FHeight: Integer;         // height of destination viewport in pixels
+    FViewportOffset: TPoint;  // destination viewport's offset into document in pixels.
+    FWidth, FHeight: Integer; // destination viewport's size in pixels.
     FControls: THtmlControlOfElementMap;
     // fonts
     FDefaultFont: ThtFont;
@@ -328,6 +329,7 @@ begin
   FDefaultFont := DefaultFont;
   FDefaultFont.AssignToFontInfo(FDefaultFontInfo);
   FHeight := Height;
+  FWidth := Width;
 end;
 
 //-- BG ---------------------------------------------------------- 29.08.2011 --
@@ -342,19 +344,11 @@ begin
 
   Properties := GetResultingProperties(Element);
   try
-    case Element.Symbol of
-      BodySy:
-      begin
-        Info.Display := pdBlock;
-        Info.Position := posStatic;
-        Info.Float := flNone;
-      end;
-    else
-      Info.Display := ParentBox.Display;
-      Info.Position := ParentBox.Position;
-      Info.Float := ParentBox.Float;
-    end;
+    Info.Display := ParentBox.Display;
+    Info.Position := ParentBox.Position;
+    Info.Float := ParentBox.Float;
     Properties.GetElementBoxingInfo(Info);
+    
     case Info.Display of
       pdUnassigned:
         raise EHtmlRendererException.CreateFmt(
@@ -379,10 +373,12 @@ begin
           Control := THtmlBodyControl.Create(Owner);
           ControlOfElementMap.Put(Element, Control);
         end;
+        FViewportOffset := Control.ContentPosition;
 
         // create the body Result
         Result := THtmlBodyBox.Create(Control);
         Result.Tiled := True;
+        Result.BoundsRect := Control.ClientRect;
       end;
 
       TextSy:
@@ -484,8 +480,22 @@ end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 function THtmlVisualRenderer.CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+var
+  Child: THtmlElement;
 begin
   case Element.Symbol of
+    HtmlSy:
+    begin
+      // render first displayed child:
+      Result := nil;
+      Child := Element.FirstChild;
+      while (Result = nil) and (Child <> nil) do
+      begin
+        Result := CreateElement(Owner, ParentBox, Child);
+        Child := Child.Next;
+      end
+    end;
+
     FrameSetSy:
       Result := CreateFrameset(Owner, ParentBox, Element);
   else
@@ -641,13 +651,13 @@ procedure THtmlVisualRenderer.SetPropertiesToBox(Box: THtmlBox; Top: Integer);
 var
   Properties: TResultingPropertyMap;
 
-  procedure GetTextSize(Text: String; out TextSize: TSize);
+  procedure GetTextSize(Text: ThtString; out TextSize: TSize);
   begin
     FCanvas.Font := Box.Font;
     GetTSize(FCanvas.Handle, PWideChar(Text), Length(Text), TextSize);
   end;
 
-  procedure GetStaticBounds(psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
+  procedure GetStaticBounds(psWidth: TPropertySymbol; ParentWidth: Integer; EmBase: Double; out Left, Right: Integer);
   begin
     Left := 0;
     if Properties[psWidth].HasValue then
@@ -656,7 +666,7 @@ var
       Right := Left;
   end;
 
-  procedure GetAbsoluteBounds(psLeft, psRight, psWidth: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
+  procedure GetAbsoluteBounds(psLeft, psRight, psWidth: TPropertySymbol; ParentWidth: Integer; EmBase: Double; out Left, Right: Integer);
   begin
     // Prefer left over right
     if Properties[psLeft].HasValue then
@@ -691,17 +701,32 @@ var
       Right := Left;
   end;
 
-  procedure GetRelativeOffset(psLeft, psRight: TPropertySymbol; ParentWidth, EmBase: Double; out Left, Right: Integer);
+  procedure GetRelativeOffset(psLeft, psRight, psWidth: TPropertySymbol; ParentWidth: Integer; EmBase: Double; out Left, Right: Integer);
   begin
+    // Prefer left over right
     if Properties[psLeft].HasValue then
-      Left := Trunc(Properties[psLeft].GetLength(0.0, ParentWidth, EmBase, 0.0))
+    begin
+      Inc(Left, Trunc(Properties[psLeft].GetLength(0.0, ParentWidth, EmBase, 0.0)));
+      // prefer width over right
+      if Properties[psWidth].HasValue then
+        Right := Left + Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+      else if Properties[psRight].HasValue then
+        // right is relative to current right
+        Dec(Right, Trunc(Properties[psRight].GetLength(0.0, ParentWidth, EmBase, 0.0)))
+    end
+    else if Properties[psRight].HasValue then
+    begin
+      Dec(Right, Trunc(Properties[psRight].GetLength(0.0, ParentWidth, EmBase, 0.0)));
+      if Properties[psWidth].HasValue then
+        Left := Right - Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+    end
     else
-      Left := 0;
-
-    if Properties[psRight].HasValue then
-      Right := Trunc(Properties[psRight].GetLength(0.0, ParentWidth, EmBase, 0.0))
-    else
-      Right := 0;
+    begin
+      if Properties[psWidth].HasValue then
+        Right := Left + Trunc(Properties[psWidth].GetLength(0.0, ParentWidth, EmBase, 0.0))
+    end;
+    if Right < Left then
+      Right := Left;
   end;
 
 var
@@ -752,7 +777,8 @@ begin
     ParentHeight := ParentBox.ContentRect.Bottom - ParentBox.ContentRect.Top;
     case Box.Position of
 
-      posStatic:
+      posStatic,
+      posRelative:
       begin
         GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
@@ -764,12 +790,26 @@ begin
             GetTextSize(Box.Text, TextSize);
             Rect.Right := TextSize.cx;
             Rect.Bottom := TextSize.cy;
+//          end
+//          else if Box.Display = pdBlock then
+//          begin
+//            if Rect.Right = 0 then
+//              Rect.Right := Rect.Left + ParentWidth - Box.Margins[reLeft] - Box.Paddings[reLeft] - Box.BorderWidths[reLeft] - Box.BorderWidths[reRight] - Box.Paddings[reRight] - Box.Margins[reRight];
+//            if Rect.Bottom = 0 then
+//              Rect.Bottom := Rect.Top + ParentHeight - Box.Margins[reTop] - Box.Paddings[reTop] - Box.BorderWidths[reTop] - Box.BorderWidths[reBottom] - Box.Paddings[reBottom] - Box.Margins[reBottom];
           end;
         end;
         InflateRect(Rect, Rect, Box.Margins);
         InflateRect(Rect, Rect, Box.BorderWidths);
         InflateRect(Rect, Rect, Box.Paddings);
         OffsetRect(Rect, Classes.Rect(- Rect.Left, Top - Rect.Top, -Rect.Left, Top - Rect.Top));
+
+        if Box.Position = posRelative then
+        begin
+          GetRelativeOffset(psLeft, psRight, psWidth, ParentWidth,  EmBase, Rect.Left, Rect.Right);
+          GetRelativeOffset(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+        end;
+
         case Box.Element.Symbol of
           BodySy:
           begin
@@ -781,20 +821,11 @@ begin
         end;
       end;
 
-      posRelative:
-      begin
-        GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
-        GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        GetRelativeOffset(psLeft, psRight, ParentWidth,  EmBase, Rect.Left, Rect.Right);
-        GetRelativeOffset(psTop, psBottom, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        OffsetRect(Rect, Classes.Rect(0, Top, 0, Top));
-      end;
-
       posFixed:
       begin
         GetAbsoluteBounds(psLeft, psRight, psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetAbsoluteBounds(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
-        //TODO: add viewport origin to keep it at a scroll independent position:
+        OffsetRect(Rect, Classes.Rect(FViewportOffset.X, FViewportOffset.Y, FViewportOffset.X, FViewportOffset.Y));
       end;
 
     else
