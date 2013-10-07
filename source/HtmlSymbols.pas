@@ -98,28 +98,30 @@ type
     EolSy,
 
     // real html elements
-    ASy,          AEndSy,
     AbbrSy,       AbbrEndSy,      // since12
     AcronymSy,    AcronymEndSy,   // since12
     AddressSy,    AddressEndSy,
     AppletSy,     AppletEndSy,    // since12
     AreaSy,
-    BSy,          BEndSy,
-    BaseSy,
+    ArticleSy,    ArticleEndSy,
+    AsideSy,      AsideEndSy,
+    ASy,          AEndSy,
     BaseFontSy,
-    BgSoundSy,                    // extension
+    BaseSy,
     BdoSy,        BdoEndSy,       // since12
+    BgSoundSy,                    // extension
     BigSy,        BigEndSy,
     BlockQuoteSy, BlockQuoteEndSy,
     BodySy,       BodyEndSy,
     BRSy,
+    BSy,          BEndSy,
     ButtonSy,
     CaptionSy,    CaptionEndSy,
     CenterSy,     CenterEndSy,
     CiteSy,       CiteEndSy,
     CodeSy,       CodeEndSy,
-    ColSy,
     ColGroupSy,   ColGroupEndSy,
+    ColSy,
     DDSy,         DDEndSy,
     DelSy,        DelEndSy,       // since12
     DfnSy,        DfnEndSy,       // since12
@@ -127,36 +129,42 @@ type
     DivSy,        DivEndSy,
     DLSy,         DLEndSy,
     DTSy,         DTEndSy,
-    EmSy,         EmEndSy,
     EmbedSy,      EmbedEndSy,     // extension, since12 
+    EmSy,         EmEndSy,
     FieldsetSy,   FieldsetEndSy,
     FontSy,       FontEndSy,
+    FooterSy,     FooterEndSy,
     FormSy,       FormEndSy,
-    FrameSy,
     FrameSetSy,   FrameSetEndSy,
+    FrameSy,
     H1Sy,         H1EndSy,
     H2Sy,         H2EndSy,
     H3Sy,         H3EndSy,
     H4Sy,         H4EndSy,
     H5Sy,         H5EndSy,
     H6Sy,         H6EndSy,
+    HeaderSy,     HeaderEndSy,
     HeadSy,       HeadEndSy,
+    HGroupSy,     HGroupEndSy,
     HRSy,
     HtmlSy,       HtmlEndSy,
-    ISy,          IEndSy,
     IFrameSy,     IFrameEndSy,    // since12
     ImageSy,
     InputSy,
     InsSy,        InsEndSy,       // since12
     IsIndexSy,                    // since12
+    ISy,          IEndSy,
     KbdSy,        KbdEndSy,
     LabelSy,      LabelEndSy,
     LegendSy,     LegendEndSy,
-    LISy,         LIEndSy,
     LinkSy,
+    LISy,         LIEndSy,
+    MainSy,       MainEndSy,
     MapSy,        MapEndSy,
+    MarkSy,       MarkEndSy,
     MenuSy,       MenuEndSy,
     MetaSy,
+    NavSy,        NavEndSy,
     NoBrSy,       NoBrEndSy,      // extension
     NoEmbedSy,    NoEmbedEndSy,   // extension, since12
     NoFramesSy,   NoFramesEndSy,
@@ -165,20 +173,21 @@ type
     OLSy,         OLEndSy,
     OptGroupSy,   OptGroupEndSy,  // since12
     OptionSy,     OptionEndSy,
-    PSy,          PEndSy,
     PageSy,                       // extension
     PanelSy,                      // extension
     ParamSy,
     PreSy,        PreEndSy,
+    PSy,          PEndSy,
     QSy,          QEndSy,         // since12
     ReadonlySy,                   // extension
-    SSy,          SEndSy,
     SampSy,       SampEndSy,
     ScriptSy,     ScriptEndSy,
-    SelectSy,     SelectEndSy,
+    SectionSy,    SectionEndSy,
     SelectedSy,                   // extension
+    SelectSy,     SelectEndSy,
     SmallSy,      SmallEndSy,
     SpanSy,       SpanEndSy,
+    SSy,          SEndSy,
     StrikeSy,     StrikeEndSy,
     StrongSy,     StrongEndSy,
     StyleSy,      StyleEndSy,
@@ -189,13 +198,13 @@ type
     TDSy,         TDEndSy,
     TextAreaSy,   TextAreaEndSy,
     TFootSy,      TFootEndSy,
-    THSy,         THEndSy,
     THeadSy,      THeadEndSy,
+    THSy,         THEndSy,
     TitleSy,      TitleEndSy,
     TRSy,         TREndSy,
     TTSy,         TTEndSy,
-    USy,          UEndSy,
     ULSy,         ULEndSy,
+    USy,          UEndSy,
     VarSy,        VarEndSy,
     WbrSy,                        // extension
     WrapSy);                      // extension

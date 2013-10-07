@@ -1134,9 +1134,9 @@ procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
     end;
   end;
 
-  procedure ParseTree;
+  procedure ParseTree(Elem: THtmlElement);
   begin
-    GetChildren(Document.Tree);
+    GetChildren(Elem);
   end;
 
   procedure ProcessBase;
@@ -1202,7 +1202,6 @@ procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
   procedure ParseHead;
   begin
     //TODO -5 -oBG, 29.03.2011: process the attributes of element 'head'
-    Next;
     repeat
       case LCToken.Symbol of
         BaseSy:
@@ -1267,6 +1266,7 @@ procedure THtmlParser.ParseHtmlDocument(Document: THtmlDocument);
 
 var
   Ed: THtmlElementDescription;
+  Elem: THtmlElement;
 begin
   FDocument := Document;
   FDocument.Name := Doc.Name;
@@ -1279,11 +1279,15 @@ begin
           HtmlSy:
           begin
             //TODO -5 -oBG, 28.03.2011: process the attributes of element 'html'
+            Document.Tree := LCToken.CreateElement(nil);
             Next;
           end;
 
           HeadSy:
+          begin
+            Next;
             ParseHead;
+          end;
 
           UnknownSy,
           HeadEndSy:
@@ -1305,9 +1309,11 @@ begin
           FrameSetSy:
           begin
             // the main document starts now:
-            Document.Tree := LCToken.CreateElement(nil);
+            Elem := LCToken.CreateElement(Document.Tree);
+            if Document.Tree = nil then
+              Document.Tree := Elem;
             Next;
-            ParseTree;
+            ParseTree(Elem);
             break;
           end;
 
@@ -1317,18 +1323,20 @@ begin
             // html document without explicit <body> or <frameset> tag.
             // We found an unempty text element or any other element.
             // Embed the document into the appropriate root element:
+
             Ed := ElementSymbolToElementDescription(BodySy);
             if LCToken.Symbol in Ed.Content then
             begin
               Document.Tree := CreateRootElement(Ed);
-              ParseTree;
+              ParseTree(Document.Tree);
               break;
             end;
+
             Ed := ElementSymbolToElementDescription(FrameSetSy);
             if LCToken.Symbol in Ed.Content then
             begin
               Document.Tree := CreateRootElement(Ed);
-              ParseTree;
+              ParseTree(Document.Tree);
               break;
             end;
           end;

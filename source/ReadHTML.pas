@@ -1372,7 +1372,7 @@ var
 begin
   IsInline := PropStack.Last.Display = pdInline;
   case Sym of
-    DivSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
+    DivSy, HeaderSy, MainSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(SymbToStr(Sym), Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -3158,7 +3158,7 @@ begin
             PSy:
               DoP([]);
 
-            DivSy, HeaderSy, NavSy, ArticleSy,AsideSy,FooterSy, HGroupSy:
+            DivSy, HeaderSy, MainSy, NavSy, ArticleSy,AsideSy,FooterSy, HGroupSy:
               DoDivEtc(Sy, [HeadingEndSy]);
           else
             Done := True;
@@ -3397,7 +3397,7 @@ begin
       CommandSy:
         Next;
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      DivSy, HeaderSy, MainSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
 
@@ -3502,7 +3502,7 @@ begin
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
+      DivSy, HeaderSy, MainSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
       TextSy, BRSy, HRSy, TableSy, MarkSy, MarkEndSy,
@@ -3842,7 +3842,7 @@ begin
           Next;
         end;
 
-      DivSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      DivSy, HeaderSy, MainSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
         DoDivEtc(Sy, TermSet);
 
@@ -4713,7 +4713,7 @@ end;
 
 
 const
-  ResWordDefinitions: array[1..91] of TResWord = (
+  ResWordDefinitions: array[1..92] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleSy;      EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -4799,6 +4799,7 @@ const
     (Name: 'IFRAME';      Symbol: IFrameSy;     EndSym: IFrameEndSy),
     {HTML5 }
     (Name: 'HEADER';      Symbol: HeaderSy;     EndSym: HeaderEndSy),
+    (Name: 'MAIN';        Symbol: MainSy;       EndSym: MainEndSy),
     (Name: 'SECTION';     Symbol: SectionSy;    EndSym: SectionEndSy),
     (Name: 'NAV';         Symbol: NavSy;        EndSym: NavEndSy),
     (Name: 'ARTICLE';     Symbol: ArticleSy;    EndSym: ArticleEndSy),

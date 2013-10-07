@@ -119,6 +119,7 @@ type
     ReadonlySy, EolSy, MediaSy, IFrameSy, IFrameEndSy,
     {HTML5 elements}
     HeaderSy, HeaderEndSy,
+    MainSy, MainEndSy,
     SectionSy, SectionEndSy,
     NavSy, NavEndSy,
     ArticleSy, ArticleEndSy,
@@ -702,8 +703,6 @@ function WideSameStr1(const S1, S2: UnicodeString): boolean;  {$ifdef UseInline}
 
 function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
 
-function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
-function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
 procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 
 //------------------------------------------------------------------------------
@@ -920,49 +919,6 @@ end;
 {$endif}
 
 
-{----------------FitText}
-
-function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
-{return count <= Max which fits in Width.  Return X, the extent of chars that fit}
-var
-  Ints: array of Integer;
-  L, H, I: Integer;
-begin
-  Extent.cx := 0;
-  Extent.cy := 0;
-  Result := 0;
-  if (Width <= 0) or (Max = 0) then
-    Exit;
-
-  if not IsWin32Platform then
-  begin
-    SetLength(Ints, Max);
-    if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent) then
-      if Result > 0 then
-        Extent.cx := Ints[Result - 1]
-      else
-        Extent.cx := 0;
-  end
-  else {GetTextExtentExPointW not available in win98, 95}
-  begin {optimize this by looking for Max to fit first -- it usually does}
-    L := 0;
-    H := Max;
-    I := H;
-    while L <= H do
-    begin
-      GetTextExtentPoint32W(DC, S, I, Extent);
-      if Extent.cx < Width then
-        L := I + 1
-      else
-        H := I - 1;
-      if Extent.cx = Width then
-        Break;
-      I := (L + H) shr 1;
-    end;
-    Result := I;
-  end;
-end;
-
 {----------------WidePos}
 
 function WidePos(SubStr, S: UnicodeString): Integer;
@@ -1139,19 +1095,6 @@ begin
   ARect := Rect(X1, Y1, X2, Y2);
   DrawTextW(Canvas.Handle, PWideChar(S), Length(S), ARect, DT_Wordbreak);
   SetTextAlign(Canvas.Handle, TAlign);
-end;
-
-function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
-var
-  ExtS: TSize;
-  Dummy: Integer;
-
-begin
-  if not IsWin32Platform then
-    GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, ExtS)
-  else
-    GetTextExtentPoint32W(DC, P, N, ExtS); {win95, 98 ME}
-  Result := ExtS.cx;
 end;
 
 procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);

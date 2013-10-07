@@ -291,14 +291,18 @@ const
 
   FontStyleElements = [TTSy, ISy, BSy, USy, SSy, StrikeSy, BigSy, SmallSy];
 
-  PhraseElements = [EmSy, StrongSy, DfnSy, CodeSy, SampSy, KbdSy, VarSy, CiteSy, AbbrSy, AcronymSy];
+  PhraseElements = [EmSy, StrongSy, DfnSy, CodeSy, SampSy, KbdSy, VarSy, CiteSy, AbbrSy, AcronymSy, MarkSy];
+
+  SectioningElements = [ArticleSy, AsideSy, NavSy, MainSy];
+
+  GroupingElements = [HeaderSy, SectionSy, FooterSy];
 
   SpecialElements = [ASy, ImageSy, AppletSy, ObjectSy, FontSy, BaseFontSy, BRSy, ScriptSy, MapSy,
     QSy, SubSy, SupSy, SpanSy, BdoSy, IFrameSy, NoBrSy];
 
   FormControlElements = [InputSy, SelectSy, TextAreaSy, LabelSy, ButtonSy];
 
-  InlineElements = [TextSy] + FontStyleElements + PhraseElements + SpecialElements + FormControlElements;
+  InlineElements = [TextSy] + FontStyleElements + PhraseElements + SectioningElements + GroupingElements + SpecialElements + FormControlElements;
 
   // block elements
 
@@ -317,18 +321,20 @@ const
 
   ButtonExcludedElements = FormControlElements + [ASy, FormSy, IsIndexSy, FieldsetSy, IFrameSy];
 
-  CElementDescriptions: array [1..100] of THtmlElementDescription = (
+  CElementDescriptions: array [1..109] of THtmlElementDescription = (
     (Name: 'A';           Symbol: ASy;          Content: InlineElements;  EndSym: AEndSy),
     (Name: 'ABBR';        Symbol: AbbrSy;       Content: InlineElements;  EndSym: AbbrEndSy),     // since12
     (Name: 'ACRONYM';     Symbol: AcronymSy;    Content: InlineElements;  EndSym: AcronymEndSy),  // since12
     (Name: 'ADDRESS';     Symbol: AddressSy;    Content: InlineElements + [PSy]; EndSym: AddressEndSy),
     (Name: 'APPLET';      Symbol: AppletSy;     Content: FlowElements + [ParamSy];  EndSym: AppletEndSy),   // since12
     (Name: 'AREA';        Symbol: AreaSy;       EndSym: NoEndSy),
+    (Name: 'ARTICLE';     Symbol: ArticleSy;    Content: FlowElements - SectioningElements;  EndSym: ArticleEndSy),
+    (Name: 'ASIDE';       Symbol: AsideSy;      Content: FlowElements - SectioningElements;  EndSym: AsideEndSy),
     (Name: 'B';           Symbol: BSy;          Content: InlineElements;  EndSym: BEndSy),
     (Name: 'BASE';        Symbol: BaseSy;       EndSym: NoEndSy),
     (Name: 'BASEFONT';    Symbol: BaseFontSy;   EndSym: NoEndSy),
-    (Name: 'BGSOUND';     Symbol: BgSoundSy;    EndSym: NoEndSy),       // extension
     (Name: 'BDO';         Symbol: BdoSy;        Content: InlineElements;  EndSym: BdoEndSy),      // since12
+    (Name: 'BGSOUND';     Symbol: BgSoundSy;    EndSym: NoEndSy),       // extension
     (Name: 'BIG';         Symbol: BigSy;        Content: InlineElements;  EndSym: BigEndSy),
     (Name: 'BLOCKQUOTE';  Symbol: BlockQuoteSy; Content: FlowElements;  EndSym: BlockQuoteEndSy),
     (Name: 'BODY';        Symbol: BodySy;       Content: FlowElements;  EndSym: BodyEndSy),
@@ -349,8 +355,9 @@ const
     (Name: 'DT';          Symbol: DTSy;         Content: InlineElements;  EndSym: DTEndSy),
     (Name: 'EM';          Symbol: EmSy;         Content: InlineElements;  EndSym: EmEndSy),
     (Name: 'EMBED';       Symbol: EmbedSy;      Content: FlowElements;  EndSym: EmbedEndSy),  // extension, since12
-    (Name: 'FIELDSET';    Symbol: FieldsetSy;   Content: FlowElements + [TextSy, LegendSy];  EndSym: FieldsetEndSy),
+    (Name: 'FIELDSET';    Symbol: FieldsetSy;   Content: FlowElements + [LegendSy];  EndSym: FieldsetEndSy),
     (Name: 'FONT';        Symbol: FontSy;       Content: InlineElements;  EndSym: FontEndSy),
+    (Name: 'FOOTER';      Symbol: FooterSy;     Content: FlowElements - GroupingElements;  EndSym: FooterEndSy),
     (Name: 'FORM';        Symbol: FormSy;       Content: FlowElements - [FormSy];  EndSym: FormEndSy),
     (Name: 'FRAME';       Symbol: FrameSy;      EndSym: NoEndSy),
     (Name: 'FRAMESET';    Symbol: FrameSetSy;   Content: [FrameSetSy, FrameSy, NoFramesSy];  EndSym: FrameSetEndSy),
@@ -361,6 +368,8 @@ const
     (Name: 'H5';          Symbol: H5Sy;         Content: InlineElements;  EndSym: H5EndSy),
     (Name: 'H6';          Symbol: H6Sy;         Content: InlineElements;  EndSym: H6EndSy),
     (Name: 'HEAD';        Symbol: HeadSy;       Content: HeadMiscElements + [TitleSy, IsIndexSy, BaseSy];  EndSym: HeadEndSy),
+    (Name: 'HEADER';      Symbol: HeaderSy;     Content: FlowElements - GroupingElements;  EndSym: HeaderEndSy),
+    (Name: 'HGROUP';      Symbol: HGroupSy;     Content: HeadingElements;  EndSym: HGroupEndSy),  // HTML 5, obsolete
     (Name: 'HR';          Symbol: HRSy;         EndSym: NoEndSy),
     (Name: 'HTML';        Symbol: HtmlSy;       Content: [HeadSy, BodySy, FrameSetSy];  EndSym: HtmlEndSy),
     (Name: 'I';           Symbol: ISy;          Content: InlineElements;  EndSym: IEndSy),
@@ -373,9 +382,12 @@ const
     (Name: 'LEGEND';      Symbol: LegendSy;     Content: InlineElements;  EndSym: LegendEndSy),
     (Name: 'LI';          Symbol: LISy;         Content: FlowElements;  EndSym: LIEndSy),
     (Name: 'LINK';        Symbol: LinkSy;       EndSym: NoEndSy),
+    (Name: 'MAIN';        Symbol: MainSy;       Content: FlowElements - SectioningElements;  EndSym: MainEndSy),
     (Name: 'MAP';         Symbol: MapSy;        Content: BlockElements;  EndSym: MapEndSy),
+    (Name: 'MARK';        Symbol: MarkSy;       Content: InlineElements;  EndSym: MarkEndSy),
     (Name: 'MENU';        Symbol: MenuSy;       Content: [LiSy];  EndSym: MenuEndSy),
     (Name: 'META';        Symbol: MetaSy;       EndSym: NoEndSy),
+    (Name: 'NAV';         Symbol: NavSy;        Content: FlowElements - SectioningElements;  EndSym: NavEndSy),
     (Name: 'NOBR';        Symbol: NoBrSy;       Content: InlineElements;  EndSym: NoBrEndSy),       // extension
     (Name: 'NOEMBED';     Symbol: NoEmbedSy;    Content: FlowElements;  EndSym: NoEmbedEndSy),      // extension, since12
     (Name: 'NOFRAMES';    Symbol: NoFramesSy;   Content: FlowElements;  EndSym: NoFramesEndSy),
@@ -394,6 +406,7 @@ const
     (Name: 'S';           Symbol: SSy;          Content: InlineElements;  EndSym: SEndSy),
     (Name: 'SAMP';        Symbol: SampSy;       Content: InlineElements;  EndSym: SampEndSy),
     (Name: 'SCRIPT';      Symbol: ScriptSy;     EndSym: ScriptEndSy),
+    (Name: 'SECTION';     Symbol: SectionSy;    Content: FlowElements - GroupingElements;  EndSym: SectionEndSy),
     (Name: 'SELECT';      Symbol: SelectSy;     Content: [OptGroupSy, OptionSy];  EndSym: SelectEndSy),
     (Name: 'SELECTED';    Symbol: SelectedSy;   EndSym: NoEndSy),       // extension
     (Name: 'SMALL';       Symbol: SmallSy;      Content: InlineElements;  EndSym: SmallEndSy),

@@ -48,6 +48,7 @@ uses
 {$else}
   Consts,
   StrUtils,
+  StdCtrls, 
   {$ifdef UseTNT}
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
@@ -331,6 +332,8 @@ procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer); {$ifdef UseInline
 function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);  {$ifdef UseInline} inline; {$endif}
+function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
+function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 
 function ThemedColor(const AColor : TColor): TColor; {$ifdef UseInline} inline; {$endif} //overload;
 
@@ -376,6 +379,62 @@ begin
     GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, VSize)
   else
     GetTextExtentPoint32W(DC, P, N, VSize); {win95, 98 ME}
+end;
+
+function GetXExtent(DC: HDC; P: PWideChar; N: Integer): Integer;
+var
+  ExtS: TSize;
+  Dummy: Integer;
+
+begin
+  if not IsWin32Platform then
+    GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, ExtS)
+  else
+    GetTextExtentPoint32W(DC, P, N, ExtS); {win95, 98 ME}
+  Result := ExtS.cx;
+end;
+
+{----------------FitText}
+
+function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
+{return count <= Max which fits in Width.  Return X, the extent of chars that fit}
+var
+  Ints: array of Integer;
+  L, H, I: Integer;
+begin
+  Extent.cx := 0;
+  Extent.cy := 0;
+  Result := 0;
+  if (Width <= 0) or (Max = 0) then
+    Exit;
+
+  if not IsWin32Platform then
+  begin
+    SetLength(Ints, Max);
+    if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent) then
+      if Result > 0 then
+        Extent.cx := Ints[Result - 1]
+      else
+        Extent.cx := 0;
+  end
+  else {GetTextExtentExPointW not available in win98, 95}
+  begin {optimize this by looking for Max to fit first -- it usually does}
+    L := 0;
+    H := Max;
+    I := H;
+    while L <= H do
+    begin
+      GetTextExtentPoint32W(DC, S, I, Extent);
+      if Extent.cx < Width then
+        L := I + 1
+      else
+        H := I - 1;
+      if Extent.cx = Width then
+        Break;
+      I := (L + H) shr 1;
+    end;
+    Result := I;
+  end;
 end;
 
 function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}

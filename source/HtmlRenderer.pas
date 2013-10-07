@@ -756,6 +756,7 @@ begin
       begin
         GetStaticBounds(psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
         GetStaticBounds(psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
+
         if (Rect.Right = 0) or (Rect.Bottom = 0) then
         begin
           if Length(Box.Text) > 0 then
@@ -795,6 +796,7 @@ begin
         GetAbsoluteBounds(psTop, psBottom, psHeight, ParentHeight, EmBase, Rect.Top, Rect.Bottom);
         //TODO: add viewport origin to keep it at a scroll independent position:
       end;
+
     else
       //posAbsolute:
       GetAbsoluteBounds(psLeft, psRight, psWidth,  ParentWidth,  EmBase, Rect.Left, Rect.Right);
