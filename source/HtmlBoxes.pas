@@ -262,11 +262,20 @@ type
 //------------------------------------------------------------------------------
 // THtmlAnonymousBox
 //------------------------------------------------------------------------------
-// The renderer generates THtmlAnonymousBoxes to group lines of inline elements
-// and text.
+// Anonymous boxes aren't defined by author, but added by renderer.
 //------------------------------------------------------------------------------
 
   THtmlAnonymousBox = class(THtmlBox)
+  end;
+
+//------------------------------------------------------------------------------
+// THtmlInlineBox
+//------------------------------------------------------------------------------
+// The renderer generates THtmlInlineBoxes to group lines of inline elements
+// and text.
+//------------------------------------------------------------------------------
+
+  THtmlInlineBox = class(THtmlAnonymousBox)
   end;
 
 implementation

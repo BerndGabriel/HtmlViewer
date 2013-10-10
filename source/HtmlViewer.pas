@@ -70,6 +70,7 @@ type
     procedure SetViewerOptions(const Value: THtmlViewerOptions);
     procedure SetViewerState(const Value: THtmlViewerState);
     procedure SetScale(const Value: Double);
+    procedure ScrollControlScrolled(Sender: TObject);
   protected
     procedure UpdateDocument;
     procedure UpdateView;
@@ -152,6 +153,7 @@ end;
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 procedure TCustomHtmlViewer.ClearView;
 begin
+  FView.Element := nil;
   FView.Children.Clear;
 end;
 
@@ -159,6 +161,13 @@ end;
 procedure TCustomHtmlViewer.Resize;
 begin
   inherited;
+  Include(FState, vsDocumentChanged);
+  UpdateDocument;
+end;
+
+//-- BG ---------------------------------------------------------- 10.10.2013 --
+procedure TCustomHtmlViewer.ScrollControlScrolled(Sender: TObject);
+begin
   Include(FState, vsDocumentChanged);
   UpdateDocument;
 end;
@@ -218,30 +227,44 @@ procedure TCustomHtmlViewer.UpdateDocument;
 var
   DefaultFont: ThtFont;
   Renderer: THtmlVisualRenderer;
+  I: Integer;
+  Ctrl: TControl;
 begin
   if vsDocumentChanged in FState then
   try
     FView.Children.Clear;
     if FDocument <> nil then
-    begin                                                                      //TODO -1 -oBG, 02.05.2011:  Defaultfont parameter
+    begin                                                                       //TODO -1 -oBG, 02.05.2011:  Defaultfont parameter
       FView.BoundsRect := ClientRect;
+      
       // setting bounds rect may have called Resize and thus has updated the document already.
       if vsDocumentChanged in FState then
       begin
+        // render document
         DefaultFont := ThtFont.Create;
         try
           DefaultFont.Assign(Font);
           DefaultFont.bgColor := Color;
-          Renderer := THtmlVisualRenderer.Create(FDocument, FControlMap, FImageCache, mtScreen, DefaultFont, ClientWidth, ClientHeight);
+          Renderer := THtmlVisualRenderer.Create(Self, FDocument, FControlMap, FImageCache, mtScreen, DefaultFont, ClientWidth, ClientHeight);
           try
             Renderer.MediaCapabilities := [mcFrames];
-            Renderer.RenderDocument(Self, FView);
+            Renderer.RenderDocument(FView);
           finally
             Include(FState, vsViewChanged);
             Renderer.Free;
           end;
         finally
           DefaultFont.Free;
+        end;
+
+        // set event handlers
+        for I := 0 to FControlMap.Count - 1 do
+        begin
+          Ctrl := FControlMap.Controls[I];
+
+          // set scroll handler
+          if Ctrl is THtmlScrollControl then
+            THtmlScrollControl(Ctrl).OnScrolled := ScrollControlScrolled;
         end;
       end;
     end;
@@ -258,7 +281,7 @@ begin
   begin
     Exclude(FState, vsViewChanged);
     //TODO -1 -oBG, 04.04.2011: update display structure after any visually relevant changes except document changes.
-
+    UpdateDocument;
   end;
 end;
 

@@ -119,6 +119,7 @@ type
     FScrollIncrement: Integer; // how far to scroll with arrow buttons, window units
     FScrollBars: TScrollStyle; // which scrollbars are enabled?
     FScrollInfos: ThtScrollInfos; // used by UpdateScrollbars to remember the scrollbar settings.
+    FOnScrolled: TNotifyEvent;
     function GetContentPosition: TPoint;
     function GetContentPositionX: Integer;
     function GetContentPositionY: Integer;
@@ -149,6 +150,7 @@ type
     property ContentPositionLeft: Integer read GetContentPositionX write SetContentPositionLeft;
     property ContentPositionTop: Integer read GetContentPositionY write SetContentPositionTop;
     property ContentWidth: Integer read GetContentWidth;
+    property OnScrolled: TNotifyEvent read FOnScrolled write FOnScrolled;
     property Scale: Double read GetScale write SetScale;
     property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssBoth;
   end;
@@ -682,6 +684,8 @@ begin
   finally
     Exclude(FState, sbsUpdating);
   end;
+  if Assigned(FOnScrolled) then
+    FOnScrolled(Self);
   Invalidate;
 end;
 

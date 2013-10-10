@@ -2,8 +2,8 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
   Left = 0
   Top = 0
   Caption = 'HtmlViewer 12 Test'
-  ClientHeight = 693
-  ClientWidth = 1083
+  ClientHeight = 921
+  ClientWidth = 1408
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,17 +18,18 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
   PixelsPerInch = 96
   TextHeight = 13
   object BegaSplitter1: TSplitter
-    Left = 395
+    Left = 600
     Top = 21
     Width = 8
-    Height = 672
+    Height = 900
     ResizeStyle = rsUpdate
+    ExplicitLeft = 395
     ExplicitHeight = 632
   end
   object cbFiles: TBegaCombobox
     Left = 0
     Top = 0
-    Width = 1083
+    Width = 1408
     Height = 21
     Align = alTop
     DropDownCount = 32
@@ -37,40 +38,49 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     OnKeyPress = cbFilesKeyPress
     RegistryKey = 'Software\Fast Function Factory\BegaViewer\BrowseURL'
     RegistryValuePrefix = 'URL'
+    ExplicitWidth = 1083
   end
   object HtmlViewer: THtmlViewer12
-    Left = 403
+    Left = 608
     Top = 21
-    Width = 680
-    Height = 672
+    Width = 800
+    Height = 900
     Align = alClient
     Color = clBtnFace
     DoubleBuffered = False
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'Times New Roman'
+    Font.Style = []
     ParentColor = False
+    ParentFont = False
     TabOrder = 1
     ViewerOptions = []
-    ExplicitHeight = 652
+    ExplicitLeft = 403
+    ExplicitWidth = 680
+    ExplicitHeight = 672
   end
   object PageControl: TPageControl
     Left = 0
     Top = 21
-    Width = 395
-    Height = 672
+    Width = 600
+    Height = 900
     ActivePage = HtmlTab
     Align = alLeft
     TabOrder = 2
-    ExplicitHeight = 652
+    ExplicitHeight = 672
     object HtmlTab: TTabSheet
       Caption = 'Html'
-      ExplicitHeight = 624
+      ExplicitWidth = 387
+      ExplicitHeight = 644
       object vtDocument: TBegaVirtualStringTree
         Left = 0
         Top = 0
-        Width = 387
-        Height = 644
+        Width = 592
+        Height = 872
         Align = alClient
         Header.AutoSizeIndex = -1
-        Header.DefaultHeight = 17
         Header.Font.Charset = DEFAULT_CHARSET
         Header.Font.Color = clWindowText
         Header.Font.Height = -11
@@ -83,46 +93,51 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
         OnGetText = vtDocumentGetText
         OnInitChildren = vtDocumentInitChildren
         OnInitNode = vtDocumentInitNode
-        ExplicitHeight = 624
+        ExplicitWidth = 387
+        ExplicitHeight = 644
         Columns = <
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
             Position = 0
-            Width = 91
+            Width = 234
             WideText = 'Element'
           end
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
             Position = 1
-            Width = 91
+            Width = 125
             WideText = 'Class'
           end
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
             Position = 2
-            Width = 91
+            Width = 125
             WideText = 'Id'
           end
           item
             Position = 3
+            WideText = 'Display'
+          end
+          item
+            Position = 4
             Width = 60
             WideText = 'DocPos'
           end
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
-            Position = 4
-            Width = 91
+            Position = 5
+            Width = 125
             WideText = 'Style'
           end
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
-            Position = 5
-            Width = 91
+            Position = 6
+            Width = 125
             WideText = 'Props'
           end
           item
             Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAutoSpring, coAllowFocus]
-            Position = 6
+            Position = 7
             Width = 10
             WideText = 'Attrs'
           end>
@@ -131,16 +146,18 @@ object FormHtmlViewer12Test: TFormHtmlViewer12Test
     object CssTab: TTabSheet
       Caption = 'Css'
       ImageIndex = 1
-      ExplicitHeight = 624
+      ExplicitWidth = 387
+      ExplicitHeight = 644
       object CssMemo: TMemo
         Left = 0
         Top = 0
-        Width = 387
-        Height = 644
+        Width = 592
+        Height = 872
         Align = alClient
         ScrollBars = ssBoth
         TabOrder = 0
-        ExplicitHeight = 624
+        ExplicitWidth = 387
+        ExplicitHeight = 644
       end
     end
   end

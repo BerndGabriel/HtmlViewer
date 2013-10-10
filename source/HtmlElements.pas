@@ -156,6 +156,8 @@ type
     // css styles
     function IsMatching(Selector: TStyleSelector): Boolean;
     //
+    function GetResultingProperties(RuleSets: TRulesetList; MediaType: TMediaType): TResultingPropertyMap;
+
 {$ifdef UseEnhancedRecord}
     property FirstChild: THtmlElement read FChildren.FFirst;
     property LastChild: THtmlElement read FChildren.FLast;
@@ -809,6 +811,44 @@ end;
 function THtmlElement.GetPseudos: TPseudos;
 begin
   Result := [];
+end;
+
+//-- BG ---------------------------------------------------------- 17.04.2011 --
+function THtmlElement.GetResultingProperties(RuleSets: TRulesetList; MediaType: TMediaType): TResultingPropertyMap;
+var
+  I: Integer;
+  Ruleset: TRuleset;
+  Selector: TStyleSelector;
+begin
+  Result := TResultingPropertyMap.Create;
+
+  // 1) Fill map with properties from style attribute (highest prio),
+  Result.UpdateFromAttributes(StyleProperties, True);
+
+  // 2) Walk through ruleset list in reverse order. If a selector of the ruleset matches,
+  //    then call UpdateFromProperties() with the ruleset's properties and if the combination has a
+  //    higher cascading order, this becomes the new resulting value.
+  if RuleSets <> nil then
+    for I := RuleSets.Count - 1 downto 0 do
+    begin
+      Ruleset := RuleSets[I];
+      if MediaType in Ruleset.MediaTypes then
+      begin
+        Selector := Ruleset.Selectors.First;
+        while Selector <> nil do
+        begin
+          if IsMatching(Selector) then
+          begin
+            Result.UpdateFromProperties(Ruleset.Properties, Selector);
+            break;
+          end;
+          Selector := Selector.Next;
+        end;
+      end;
+    end;
+
+  // 3) Fill up missing properties with other tag attributes (like color, width, height, ...).
+  Result.UpdateFromAttributes(AttributeProperties, False);
 end;
 
 //-- BG ---------------------------------------------------------- 31.03.2011 --

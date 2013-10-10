@@ -116,7 +116,6 @@ type
     FOnGetBuffer: TGetBufferEvent;
     FLog: THtmlRendererLog;
 
-    function GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
     function GetBaseUrl: ThtString;
   protected
     function GetBuffer(const Url: ThtString): ThtBuffer;
@@ -135,6 +134,7 @@ type
     // settings / environment
     //--------------------------------------
     // general
+    FOwner: TWinControl;
     FViewportOffset: TPoint;  // destination viewport's offset into document in pixels.
     FWidth, FHeight: Integer; // destination viewport's size in pixels.
     FControls: THtmlControlOfElementMap;
@@ -157,18 +157,19 @@ type
 
     function DefaultFontSize: Double;
     function GetControl(const Element: THtmlElement): TControl;
-    function GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
+    procedure GetImage(const Url: ThtString; var Image: ThtImage); overload;
+    function GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage; overload;
     function SketchMap: TSketchMap; {$ifdef UseInline} inline; {$endif}
     procedure GetFontInfo(Props: TResultingPropertyMap; out Font: ThtFontInfo; const Parent, Default: ThtFontInfo);
     procedure SetPropertiesToBox(Box: THtmlBox; Top: Integer);
     //
-    function CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
-    procedure CreateChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
+    procedure CreateChildren(Box: THtmlBox; Element: THtmlElement);
   protected
-    function CreateBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
-    function CreateFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlFramesetBox;
+    function CreateBox(ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+    function CreateFrameset(ParentBox: THtmlBox; Element: THtmlElement): THtmlFramesetBox;
   public
     constructor Create(
+      Owner: TWinControl;
       Document: THtmlDocument;
       ControlMap: THtmlControlOfElementMap;
       ImageCache: ThtImageCache;
@@ -178,7 +179,7 @@ type
     destructor Destroy; override;
     procedure RenderBox(Box: THtmlBox; Top: Integer);
     procedure RenderChildren(ParentBox: THtmlBox);
-    procedure RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
+    procedure RenderDocument(ParentBox: THtmlBox);
     property ControlOfElementMap: THtmlControlOfElementMap read FControls;
     property OnGetImage: TGetImageEvent read FOnGetImage write FOnGetImage;
   end;
@@ -252,7 +253,7 @@ var
   Filename: ThtString;
   Stream: TStream;
 begin
-  if assigned(FOnGetBuffer) then
+  if Assigned(FOnGetBuffer) then
     Result := FOnGetBuffer(Self, Url)
   else
   begin
@@ -271,48 +272,11 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 17.04.2011 --
-function THtmlRenderer.GetResultingProperties(Element: THtmlElement): TResultingPropertyMap;
-var
-  I: Integer;
-  Ruleset: TRuleset;
-  Selector: TStyleSelector;
-begin
-  Result := TResultingPropertyMap.Create;
-
-  // 1) Fill map with properties from style attribute (highest prio),
-  Result.UpdateFromAttributes(Element.StyleProperties, True);
-
-  // 2) Walk through ruleset list in reverse order. If a selector of the ruleset matches,
-  //    then call UpdateFromProperties() with the ruleset's properties and if the combination has a
-  //    higher cascading order, this becomes the new resulting value.
-  if FDocument.RuleSets <> nil then
-    for I := FDocument.RuleSets.Count - 1 downto 0 do
-    begin
-      Ruleset := FDocument.RuleSets[I];
-      if FMediaType in Ruleset.MediaTypes then
-      begin
-        Selector := Ruleset.Selectors.First;
-        while Selector <> nil do
-        begin
-          if Element.IsMatching(Selector) then
-          begin
-            Result.UpdateFromProperties(Ruleset.Properties, Selector);
-            break;
-          end;
-          Selector := Selector.Next;
-        end;
-      end;
-    end;
-
-  // 3) Fill up missing properties with other tag attributes (like color, width, height, ...).
-  Result.UpdateFromAttributes(Element.AttributeProperties, False);
-end;
-
 { THtmlVisualRenderer }
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
 constructor THtmlVisualRenderer.Create(
+  Owner: TWinControl;
   Document: THtmlDocument;
   ControlMap: THtmlControlOfElementMap;
   ImageCache: ThtImageCache;
@@ -321,6 +285,7 @@ constructor THtmlVisualRenderer.Create(
   Width, Height: Integer);
 begin
   inherited Create(Document, MediaType);
+  FOwner := Owner; 
   FSketchMapStack := TSketchMapStack.Create;
   FSketchMapStack.Push(TSketchMap.Create(Width));
   FCapabilities := [mcFrames];
@@ -333,89 +298,94 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.08.2011 --
-function THtmlVisualRenderer.CreateBox(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
+function THtmlVisualRenderer.CreateBox(ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
 var
   Properties: TResultingPropertyMap;
   Info: THtmlElementBoxingInfo;
   Control: THtmlBodyControl;
 begin
-  if ParentBox = nil then
-    raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil.');
+  case Element.Symbol of
+    FrameSetSy:
+      Result := CreateFrameset(ParentBox, Element);
+  else
+    if ParentBox = nil then
+      raise EHtmlRendererException.Create('RenderBox() requires a parent box <> nil.');
 
-  Properties := GetResultingProperties(Element);
-  try
-    Info.Display := ParentBox.Display;
-    Info.Position := ParentBox.Position;
-    Info.Float := ParentBox.Float;
-    Properties.GetElementBoxingInfo(Info);
-    
-    case Info.Display of
-      pdUnassigned:
-        raise EHtmlRendererException.CreateFmt(
-          'No "Display" assigned for element "%s" at document position %d.',
-          [ElementSymbolToStr(Element.Symbol), Element.DocPos]);
-
-      pdNone:
-      begin
-        Result := nil;
-        Exit; // do not create a Result at all for display:none
-      end;
-    end;
-
-    case Element.Symbol of
-      BodySy:
-      begin
-        // get or create the body control
-        Info.Display := ToRootDisplayStyle(Info.Display);
-        Control := GetControl(Element) as THtmlBodyControl;
-        if Control = nil then
-        begin
-          Control := THtmlBodyControl.Create(Owner);
-          ControlOfElementMap.Put(Element, Control);
-        end;
-        FViewportOffset := Control.ContentPosition;
-
-        // create the body Result
-        Result := THtmlBodyBox.Create(Control);
-        Result.Tiled := True;
-        Result.BoundsRect := Control.ClientRect;
-      end;
-
-      TextSy:
-      begin
-        Result := THtmlElementBox.Create;
-        Result.Text := (Element as THtmlTextElement).Text;
-      end;
-
-    else
-      // create an ordinary Result
-      Result := THtmlElementBox.Create;
-    end;
-
+    Properties := Element.GetResultingProperties(FDocument.RuleSets, FMediaType);
     try
-      Result.Display := Info.Display;
-      Result.Float := Info.Float;
-      Result.Position := Info.Position;
-      Result.Element := Element;
-      Result.Properties := Properties;
-      Properties := nil; // now Result owns the properties. Don't free on exception, as Result will do it.
-      CreateChildren(Owner, Result, Element);
+      Info.Display := ParentBox.Display;
+      Info.Position := ParentBox.Position;
+      Info.Float := ParentBox.Float;
+      Properties.GetElementBoxingInfo(Info);
+
+      case Info.Display of
+        pdUnassigned:
+          raise EHtmlRendererException.CreateFmt(
+            'No "Display" assigned for element "%s" at document position %d.',
+            [ElementSymbolToStr(Element.Symbol), Element.DocPos]);
+
+        pdNone:
+        begin
+          Result := nil;
+          Exit; // do not create a Result at all for display:none
+        end;
+      end;
+
+      case Element.Symbol of
+        BodySy:
+        begin
+          // get or create the body control
+          Info.Display := ToRootDisplayStyle(Info.Display);
+          Control := GetControl(Element) as THtmlBodyControl;
+          if Control = nil then
+          begin
+            Control := THtmlBodyControl.Create(FOwner);
+            ControlOfElementMap.Put(Element, Control);
+          end;
+          FViewportOffset := Control.ContentPosition;
+
+          // create the body Result
+          Result := THtmlBodyBox.Create(Control);
+          Result.Tiled := True;
+          Result.BoundsRect := Control.ClientRect;
+        end;
+
+        TextSy:
+        begin
+          Result := THtmlElementBox.Create;
+          Result.Text := (Element as THtmlTextElement).Text;
+        end;
+
+      else
+        // create an ordinary Result
+        Result := THtmlElementBox.Create;
+      end;
+
+      try
+        Result.Display := Info.Display;
+        Result.Float := Info.Float;
+        Result.Position := Info.Position;
+        Result.Element := Element;
+        Result.Properties := Properties;
+        Properties := nil; // now Result owns the properties. Don't free on exception, as Result will do it.
+        CreateChildren(Result, Element);
+      except
+        Result.Free;
+        raise;
+      end;
     except
-      Result.Free;
-      raise;
-    end;
-  except
-    on E: Exception do
-    begin
-      FLog.AddObject(E.Message, Element);
-      Properties.Free;
-      raise;
+      on E: Exception do
+      begin
+        FLog.AddObject(E.Message, Element);
+        Properties.Free;
+        raise;
+      end;
     end;
   end;
 end;
 
 //-- BG ---------------------------------------------------------- 14.12.2011 --
-procedure THtmlVisualRenderer.CreateChildren(Owner: TWinControl; Box: THtmlBox; Element: THtmlElement);
+procedure THtmlVisualRenderer.CreateChildren(Box: THtmlBox; Element: THtmlElement);
 
   function GetFirstBlockBox(Box: THtmlBox): THtmlBox;
   begin
@@ -443,7 +413,7 @@ begin
   while Child <> nil do
   begin
     try
-      ChildBox := CreateElement(Owner, Box, Child);
+      ChildBox := CreateBox(Box, Child);
       if ChildBox <> nil then
         Box.AppendChild(ChildBox);
     except
@@ -479,32 +449,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2011 --
-function THtmlVisualRenderer.CreateElement(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlBox;
-var
-  Child: THtmlElement;
-begin
-  case Element.Symbol of
-    HtmlSy:
-    begin
-      // render first displayed child:
-      Result := nil;
-      Child := Element.FirstChild;
-      while (Result = nil) and (Child <> nil) do
-      begin
-        Result := CreateElement(Owner, ParentBox, Child);
-        Child := Child.Next;
-      end
-    end;
-
-    FrameSetSy:
-      Result := CreateFrameset(Owner, ParentBox, Element);
-  else
-    Result := CreateBox(Owner, ParentBox, Element);
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 25.04.2011 --
-function THtmlVisualRenderer.CreateFrameset(Owner: TWinControl; ParentBox: THtmlBox; Element: THtmlElement): THtmlFramesetBox;
+function THtmlVisualRenderer.CreateFrameset(ParentBox: THtmlBox; Element: THtmlElement): THtmlFramesetBox;
 begin
   raise EHtmlRendererException.Create('CreateFrameset not yet implemented.');
 end;
@@ -560,44 +505,55 @@ begin
   Font.iCharExtra := Props[LetterSpacing].GetValue(Parent.iCharExtra, Default.iCharExtra);
 end;
 
+//-- BG ---------------------------------------------------------- 10.10.2013 --
+procedure THtmlVisualRenderer.GetImage(const Url: ThtString; var Image: ThtImage);
+var
+  Filename: ThtString;
+  Stream: TStream;
+begin
+  if Assigned(FOnGetImage) then
+    Image := FOnGetImage(Self, Url)
+  else
+  begin
+    Filename := HTMLToDos(Url);
+    if FileExists(Filename) then
+    begin
+      try
+        Stream := TFileStream.Create(Filename, fmOpenRead + fmShareDenyWrite);
+        try
+          Image := LoadImageFromStream(Stream, NotTransp);
+        finally
+          Stream.Free;
+        end;
+      except
+        Image := nil;
+      end;
+    end;
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 30.04.2011 --
 function THtmlVisualRenderer.GetImage(Prop: TResultingProperty; Parent, Default: ThtImage): ThtImage;
 var
-  ImageName: ThtString;
+  Url: ThtString;
   ImageIndex: Integer;
-  FileName: ThtString;
-  Stream: TStream;
 begin
   Result := Default;
-  if Prop <> nil then
-    if Prop.Prop.Value = Inherit then
-      Result := Parent
-    else
+  if Prop = nil then
+    Exit;
+
+  if Prop.Prop.Value = Inherit then
+    Result := Parent
+  else
+  begin
+    Url := RemoveQuotes(Prop.Prop.Value);
+    if not FImages.Find(Url, ImageIndex) then
     begin
-      ImageName := RemoveQuotes(Prop.Prop.Value);
-      if FImages.Find(ImageName, ImageIndex) then
-        Result := FImages.GetImage(ImageIndex)
-      else
-      begin
-        if assigned(FOnGetImage) then
-          Result := FOnGetImage(Self, ImageName)
-        else
-        begin
-          FileName := HTMLToDos(ImageName);
-          try
-            Stream := TFileStream.Create(FileName, fmOpenRead + fmShareDenyWrite);
-            try
-              Result := LoadImageFromStream(Stream, NotTransp);
-            finally
-              Stream.Free;
-            end;
-          except
-            Result := nil;
-          end;
-        end;
-        FImages.InsertImage(ImageIndex, ImageName, Result);
-      end;
+      GetImage(Url, Result);
+      if (Result <> nil) and (Result <> Default) then
+        FImages.InsertImage(ImageIndex, Url, Result);
     end;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 18.12.2011 --
@@ -633,17 +589,30 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.04.2011 --
-procedure THtmlVisualRenderer.RenderDocument(Owner: TWinControl; ParentBox: THtmlBox);
+procedure THtmlVisualRenderer.RenderDocument(ParentBox: THtmlBox);
 var
+  Element: THtmlElement;
   Box: THtmlBox;
 begin
-  Box := CreateElement(Owner, ParentBox, FDocument.Tree);
-  if Box <> nil then
+  Element := FDocument.Tree;
+  if Element = nil then
+    Exit;
+
+  // Create boxes
+  if Element.Symbol = HtmlSy then
   begin
-    ParentBox.AppendChild(Box);
-    RenderChildren(ParentBox);
-    //ParentBox.BoundsRect := Box.BoundsRect;
+    ParentBox.Element := Element;
+    CreateChildren(ParentBox, Element);
+  end
+  else
+  begin
+    ParentBox.Element := nil;
+    Box := CreateBox(ParentBox, Element);
+    if Box <> nil then
+      ParentBox.AppendChild(Box);
   end;
+
+  RenderChildren(ParentBox);
 end;
 
 //-- BG ---------------------------------------------------------- 30.04.2011 --

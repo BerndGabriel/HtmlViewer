@@ -68,6 +68,7 @@ type
     procedure GetChSkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
     procedure SkipComment;
     procedure SkipWhiteSpace;
+    function SkipSequence(const Sequence: ThtString): Boolean;
 
     // token retrieving methods. They do not skip trailing white spaces.
     function GetIdentifier(out Identifier: ThtString): Boolean;
@@ -1227,7 +1228,9 @@ begin
     case LCh of
       '@': ParseAtRule(Rulesets);
 
-      '<', EofChar: break;
+      '-',
+      '<',
+      EofChar: break;
     else
       FCanImport := False;
       if ParseRuleset(Ruleset) then
@@ -1264,8 +1267,18 @@ begin
   Self.LCh := LCh;
   FCanCharset := False;
   FCanImport := False;
+
+  // ignore HTML comment start
   SkipWhiteSpace;
+  if SkipSequence('<!--') then
+    SkipWhiteSpace;
+
   ParseSheet(Rulesets);
+
+  // ignore HTML comment end
+  if SkipSequence('-->') then
+    SkipWhiteSpace;
+
   LCh := Self.LCh;
 end;
 
@@ -1295,6 +1308,25 @@ begin
     if LCh = EofChar then
       raise EParseError.Create('Unterminated comment in style file: ' + Doc.Name);
   until (LCh = '/') and (LastCh = '*');
+end;
+
+//-- BG ---------------------------------------------------------- 10.10.2013 --
+function THtmlStyleParser.SkipSequence(const Sequence: ThtString): Boolean;
+var
+  P, I: Integer;
+begin
+  P := Doc.Position;
+  for I := 1 to Length(Sequence) do
+  begin
+    if LCh <> Sequence[I] then
+    begin
+      Doc.Position := P;
+      Result := False;
+      Exit;
+    end;
+    LCh := Doc.NextChar;
+  end;
+  Result := True;
 end;
 
 //-- BG ---------------------------------------------------------- 14.03.2011 --

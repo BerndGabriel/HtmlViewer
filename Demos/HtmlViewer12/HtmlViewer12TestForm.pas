@@ -29,8 +29,9 @@ uses
   HtmlGlobals,
   HtmlImages,
   HtmlParser,
+  HtmlStyles,
   HtmlSymbols,
-  HtmlUri,
+  HtmlUri,              
   HtmlViewer,
   StyleTypes;
 
@@ -100,15 +101,30 @@ procedure TFormHtmlViewer12Test.vtDocumentGetText(Sender: TBaseVirtualTree; Node
 var
   Elem: THtmlElement;
   Ed: THtmlElementDescription;
+  Properties: TResultingPropertyMap;
+  Info: THtmlElementBoxingInfo;
 begin
   Elem := THtmlElement(vtDocument.Objects[Node]);
   case Column of
     1: CellText := Implode(Elem.Classes, ' ');
     2: CellText := Implode(Elem.Ids, ' ');
-    3: CellText := IntToStr(Elem.DocPos);
-    4: CellText := Elem.StyleProperties.ToString;
-    5: CellText := Elem.AttributeProperties.ToString;
-    6: CellText := Elem.OtherAttributes.ToString;
+    3:
+    begin
+      Properties := Elem.GetResultingProperties(FDocument.RuleSets, mtScreen);
+      try
+        Info.Display := pdUnassigned;
+        Info.Position := posStatic;
+        Info.Float := flNone;
+        Properties.GetElementBoxingInfo(Info);
+        CellText := CDisplayStyle[Info.Display];
+      finally
+        Properties.Free;
+      end;
+    end;
+    4: CellText := IntToStr(Elem.DocPos);
+    5: CellText := Elem.StyleProperties.ToString;
+    6: CellText := Elem.AttributeProperties.ToString;
+    7: CellText := Elem.OtherAttributes.ToString;
   else
     Ed := ElementSymbolToElementDescription(Elem.Symbol);
     CellText := Ed.Name;
