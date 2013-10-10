@@ -2706,8 +2706,8 @@ procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArra
   const AStyleElements : TStyleElements);
 
  {$else}
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: htColorArray;
-  const S: htBorderStyleArray; BGround: TColor; Print: boolean);
+procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
+  const S: ThtBorderStyleArray; BGround: TColor; Print: boolean);
   {$endif}
 {Draw the 4 sides of a border.  The sides may be of different styles or colors.
  The side indices, 0,1,2,3, represent left, top, right, bottom.
