@@ -289,7 +289,7 @@ uses
 destructor TOptionObj.Destroy;
 begin
   Attributes.Free;
-  inherited;
+  inherited Destroy;
 end;
 
 function ThtOptionStringList.GetValue(Index: integer): ThtString;
@@ -328,7 +328,7 @@ var
 begin
   for I := 0 to Count - 1 do
     TOptionObj(Objects[I]).Free;
-  inherited;
+  inherited Destroy;
 end;
 
 {----------------TListBoxFormControlObj.Create}
@@ -340,7 +340,7 @@ var
   PntPanel: TWinControl; //TPaintPanel;
   Tmp: ThtFont;
 begin
-  inherited;
+  inherited Create(Parent,Position,L,Prop);
   CodePage := Prop.CodePage;
   Multiple := L.Find(MultipleSy, T);
   PntPanel := Document.PPanel;
@@ -377,7 +377,7 @@ constructor TListBoxFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlN
 var
   T: TListBoxFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FControl := T.FControl;
   EnterItems := T.EnterItems;
   EnterSelected := T.EnterSelected;
@@ -395,7 +395,7 @@ end;
 
 procedure TListboxFormControlObj.ProcessProperties(Prop: TProperties);
 begin
-  inherited;
+  inherited ProcessProperties(Prop);
   if BkColor <> clNone then
     FControl.Color := BkColor;
 end;
@@ -405,7 +405,7 @@ var
   H2, I, Addon: integer;
   ARect: TRect;
 begin
-  inherited;
+  inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
   begin
     ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
@@ -583,7 +583,7 @@ var
   Tmp: ThtFont;
   T : TAttribute;
 begin
-  inherited;
+  inherited Create(Parent,Position,L,Prop);
   CodePage := Prop.CodePage;
   PntPanel := Document.PPanel;
   FControl := ThtCombobox.Create(PntPanel);
@@ -639,7 +639,7 @@ end;
 
 procedure TComboFormControlObj.ProcessProperties(Prop: TProperties);
 begin
-  inherited;
+  inherited  ProcessProperties(Prop);
   if BkColor <> clNone then
     FControl.Color := BkColor;
 end;
@@ -648,7 +648,7 @@ procedure TComboFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: integer);
 var
   ARect: TRect;
 begin
-  inherited;
+  inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
   begin
     ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
@@ -732,7 +732,7 @@ constructor TComboFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNod
 var
   T: TComboFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FControl := T.FControl;
   EnterIndex := T.EnterIndex;
   FPlaceholder := T.FPlaceholder;
@@ -746,7 +746,7 @@ begin
     FControl.Parent := nil;
     FControl.Free;
   end;
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TComboFormControlObj.DoOnChange;
@@ -768,7 +768,7 @@ var
   Tmp: ThtFont;
   T : TAttribute;
 begin
-  inherited;
+  inherited Create(Parent,Position,L,Prop);
   CodePage := Prop.CodePage;
   Rows := 5;
   Cols := 30;
@@ -833,7 +833,7 @@ constructor TTextAreaFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtml
 var
   T: TTextAreaFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FControl := T.FControl;
   EnterContents := T.EnterContents;
   FPlaceholder := T.FPlaceholder;
@@ -856,7 +856,7 @@ end;
 
 procedure TTextAreaFormControlObj.ProcessProperties(Prop: TProperties);
 begin
-  inherited;
+  inherited ProcessProperties(Prop);
   if BkColor <> clNone then
     FControl.Color := BkColor;
 end;
@@ -866,7 +866,7 @@ var
   H2, I, Addon: integer;
   ARect: TRect;
 begin
-  inherited;
+  inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
     with FControl do
     begin
@@ -1031,7 +1031,7 @@ constructor TOptionsFormControlObj.Create(Parent: TCellBasic; Position: Integer;
 var
   T: TAttribute;
 begin
-  inherited;
+  inherited Create(Parent,Position,L,Prop);
   FOptions := ThtOptionStringList.Create;
   if L.Find(SizeSy, T) then
     LBSize := T.Value
@@ -1045,7 +1045,7 @@ constructor TOptionsFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlN
 var
   T: TOptionsFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FOptions := T.FOptions;
   FFont := T.FFont;
   LBSize := T.LBSize;
@@ -1058,7 +1058,7 @@ begin
   begin
     FOptions.Free;
   end;
-  inherited;
+  inherited Destroy;
 end;
 
 {----------------THiddenFormControlObj.GetSubmission}
@@ -1233,7 +1233,7 @@ end;
 
 procedure TEditFormControlObj.ProcessProperties(Prop: TProperties);
 begin
-  inherited;
+  inherited ProcessProperties(Prop);
   if BkColor <> clNone then
     FControl.Color := BkColor;
 end;
@@ -1248,7 +1248,7 @@ var
   H2, Addon: Integer;
   ARect: TRect;
 begin
-  inherited;
+  inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
   begin
     if FControl.BorderStyle <> bsNone then
@@ -1332,7 +1332,7 @@ constructor TEditFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode
 var
   T: TEditFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FControl := T.FControl;
   EnterContents := T.EnterContents;
   tmAveCharWidth := T.tmAveCharWidth;
@@ -1346,7 +1346,7 @@ begin
     FControl.Parent := nil;
     FControl.Free;
   end;
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TEditFormControlObj.DoOnChange;
@@ -1412,7 +1412,7 @@ begin
   end;
   FControl.Parent := PntPanel;
 {$ifdef UseElPack}
-  FControl.Color := clBtnFace;
+      FControl.Color := clBtnFace;
 {$endif}
 end;
 
@@ -1421,7 +1421,7 @@ constructor TButtonFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtmlNo
 var
   T: TButtonFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FControl := T.FControl;
   Which := T.Which;
 end;
@@ -1434,7 +1434,7 @@ begin
     FControl.Parent := nil;
     FControl.Free;
   end;
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TButtonFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
@@ -1442,7 +1442,7 @@ var
   H2: Integer;
   MonoBlack: boolean;
 begin
-  inherited;
+  inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
     with FControl do
     begin
@@ -1540,7 +1540,7 @@ var
   T: TAttribute;
   PntPanel: TWinControl; //TPaintPanel;
 begin
-  inherited;
+  inherited Create(Parent,Position,L,Prop);
   if Value = '' then
     Value := 'on';
   VertAlign := ABaseline;
@@ -1576,7 +1576,7 @@ procedure TCheckBoxFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 var
   x, y: Integer;
 begin
-  inherited;
+  inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
     with FControl do
     begin
@@ -1648,7 +1648,7 @@ constructor TCheckBoxFormControlObj.CreateCopy(Parent: TCellBasic; Source: THtml
 var
   T: TCheckBoxFormControlObj absolute Source;
 begin
-  inherited;
+  inherited CreateCopy(Parent,Source);
   FControl := T.FControl;
   WasChecked := T.WasChecked;
   IsChecked := T.IsChecked;
@@ -1662,7 +1662,7 @@ begin
     FControl.Parent := nil;
     FControl.Free;
   end;
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TCheckBoxFormControlObj.DoOnChange;
