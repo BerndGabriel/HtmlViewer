@@ -3883,4 +3883,5 @@ end;
 initialization
 finalization
   FreeAndNil(ColorStrings);
+  FreeAndNil(PropertyStrings);
 end.
