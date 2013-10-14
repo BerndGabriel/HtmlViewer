@@ -1607,7 +1607,7 @@ function TCellManager.FindColNum(Row: Integer): Integer;
 {given the row of insertion, returns the column number where the next cell will
  go or -1 if out of range.  Columns beyond any <col> definitions are ignored}
 begin
-  if Row = Count then
+  while Count <= Row do
     Add(StringOfChar('o', Table.ColSpecs.Count));
   Result := Pos('o', Strings[Row]) - 1;
 end;
