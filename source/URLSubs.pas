@@ -112,6 +112,7 @@ uses
 {----------------GetURLBase}
 
 function GetURLBase(const URL: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {Given an URL, get the base directory}
 var
   I, J, Q: integer;
@@ -133,12 +134,14 @@ begin
 end;
 
 function GetBase(const URL: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := GetURLBase(URL);
 end;
 
 {----------------Combine}
 function CombineDos(const Base, Path: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 var
   L: Integer;
 begin
@@ -156,11 +159,13 @@ begin
 end;
 
 function Combine(Base, APath: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := CombineURL(Base, APath);
 end;
 
 function CombineURL(Base, APath: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {combine a base and a path taking into account that overlap might exist}
 {needs work for cases where directories might overlap}
 var
@@ -231,6 +236,7 @@ begin
 end;
 
 function Normalize(const URL: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {trim, and make sure a '/' terminates a hostname and http:// is present.
  In other words, if there is only 2 /'s, put one on the end}
 var
@@ -267,6 +273,7 @@ begin
 end;
 
 function IsFullURL(const URL: ThtString): boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   N: integer;
   S: ThtString;
@@ -287,6 +294,7 @@ begin
 end;
 
 function GetProtocol(const URL: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 var
   User, Pass, Port, Host, Path: ThtString;
   S: ThtString;
@@ -302,6 +310,7 @@ begin
 end;
 
 function GetURLExtension(const URL: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 var
   I, N: integer;
 begin
@@ -323,6 +332,7 @@ begin
 end;
 
 function GetURLFilenameAndExt(const URL: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: integer;
 begin
@@ -494,6 +504,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.11.2010 --
 procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
+ {$ifdef UseInline} inline; {$endif}
 // Extracted from several locations spread all over the code.
 // Splits Str at position of Sep into Str and Spall. Spall starts with Sep.
 // If Sep is not in Str, on return Str is unchanged and Spall is empty.
@@ -511,11 +522,13 @@ begin
 end;
 
 procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   SplitString(Src, '#', Dest);
 end;
 
 procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload;
+ {$ifdef UseInline} inline; {$endif}
 {Split an URL into filename and Destination}
 begin
   Name := Src;
@@ -523,11 +536,13 @@ begin
 end;
 
 procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   SplitString(Src, '?', Query);
 end;
 
 procedure SplitQuery(const Src: ThtString; out Name, Query: ThtString); overload;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Name := Src;
   SplitString(Name, '?', Query);
@@ -560,6 +575,7 @@ begin
 end;
 
 function DosToHtmlNoSharp(FName: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {convert a Dos style filename to one for HTML.  Does not add the file:///.
  use where "#" is not being used as a local position but rather is part of filename.}
 var
@@ -700,6 +716,7 @@ begin
 end;
 
 function HTMLServerToDos(FName, Root: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {Add Prefix Root only if first character is '\' but not '\\'}
 begin
   Result := Trim(HTMLToDos(FName));

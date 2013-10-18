@@ -155,6 +155,7 @@ type
 
   TProperties = class
   private
+    FDefPointSize : Double;
     PropStack: TPropStack; // owner
     TheFont: ThtFont;
     InLink: Boolean;
@@ -229,6 +230,7 @@ type
     property Display: ThtDisplayStyle read GetDisplay;
     property CharSet: TFontCharset read FCharSet write FCharSet;
     property CodePage: Integer read FCodePage write AssignCodePage;
+    property DefPointSize : Double read FDefPointSize write FDefPointSize;
     property EmSize: Integer read FEmSize;
     property ExSize: Integer read FExSize;
     property UseQuirksMode : Boolean read FUseQuirksMode;
@@ -239,6 +241,7 @@ type
     SeqNo: Integer;
     FDefProp: TProperties;
   protected
+    FDefPointSize : Double;
     //this must be protected so that the property can be changed in
     //a descendant while being read only.
     FUseQuirksMode : Boolean;
@@ -260,6 +263,7 @@ type
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
+    property DefPointSize : Double read FDefPointSize write FDefPointSize;
   end;
 
   TPropStack = class(TObjectList)
@@ -317,6 +321,8 @@ procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Bo
 
 //here for inlining
 function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
+function FontSizeConv(const Str: ThtString; OldSize, DefPointSize: Double; const AUseQuirksMode : Boolean): Double; forward;
+function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
 
 implementation
 uses
@@ -329,7 +335,7 @@ uses
  HSLUtils;
 
 var
-  DefPointSize: Double;
+//  DefPointSize: Double;
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
 
 {$ifdef JPM_DEBUGGING}
@@ -565,8 +571,6 @@ begin
 end;
 {$endif}
 
-function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double; forward;
-function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
 
 
 //-- BG ---------------------------------------------------------- 17.02.2011 --
@@ -755,6 +759,7 @@ end;
 //-- BG ---------------------------------------------------------- 20.01.2013 --
 constructor TProperties.CreateCopy(ASource: TProperties);
 begin
+  FDefPointSize   := ASource.DefPointSize;
   PropStack       := ASource.PropStack     ;
   InLink          := ASource.InLink        ;
   DefFontname     := ASource.DefFontname   ;
@@ -803,6 +808,7 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Source,'Source');
   {$ENDIF}
+  FDefPointSize := Source.DefPointSize;
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
   {$IFDEF JPM_DEBUGGING}
@@ -827,6 +833,7 @@ begin
     Props[I] := Source.Props[I];
   CodePage := Source.CodePage;
   DefFontname := Source.DefFontname;
+  FDefPointSize := Source.DefPointSize;
   PropTag := 'default';
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
@@ -1551,6 +1558,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 function VMargToMarg(const Value: Variant; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   if VarIsStr(Value) then
     Result := LengthConv(Value, Relative, Base, EmSize, ExSize, Default)
@@ -1890,6 +1898,7 @@ end;
 
 procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize,
   ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
+ {$ifdef UseInline} inline; {$endif}
 {currently for images, form controls.  BaseWidth/Height and BStyle currently not supported}
 var
   I: ThtPropIndices;
@@ -2038,7 +2047,7 @@ procedure TProperties.Combine(Styles: TStyleList;
                           end;
 
                         FontSize:
-                          iSize := FontSizeConv(Props[FontSize], iSize, FUseQuirksMode);
+                          iSize := FontSizeConv(Props[FontSize], iSize, DefPointSize, FUseQuirksMode);
 
                         Color:
                           iColor := Props[Color];
@@ -2417,7 +2426,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       MergeItems('::' + Pseudo, True); {default Pseudo definition}
 
     if not (VarType(Props[FontSize]) in varNum) then {if still a ThtString, hasn't been converted}
-      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FUseQuirksMode);
+      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FDefPointSize, FUseQuirksMode);
   end;
 
 var
@@ -2971,6 +2980,7 @@ CodeSiteLogging.CodeSite.AddSeparator;
     begin
       NewProp := True;
       Propty := TProperties.Create(); {newly created property}
+      Propty.DefPointSize := FDefPointSize;
     end
     else
     begin
@@ -3086,6 +3096,7 @@ function TStyleList.AddObject(const S: ThtString; AObject: TObject): Integer;
 begin
   Result := inherited AddObject(S, AObject);
   TProperties(AObject).PropTag := S;
+  TProperties(AObject).FDefPointSize := DefPointSize;
 end;
 
 function TStyleList.AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
@@ -3729,6 +3740,7 @@ const
   f_pc = 1.0 / 100.0;
 
 function IncFontSize(OldSize: Double; Increment: ThtFontSizeIncrement): Double;
+ {$ifdef UseInline} inline; {$endif}
 var
   OldIndex, NewIndex: Byte;
   D1, D2: Double;
@@ -3787,7 +3799,8 @@ begin
     Result := OldSize * FontConv[NewIndex] / FontConv[OldIndex];
 end;
 
-function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double;
+function FontSizeConv(const Str: ThtString; OldSize, DefPointSize : Double; const AUseQuirksMode : Boolean): Double;
+ {$ifdef UseInline} inline; {$endif}
 {given a font-size ThtString, return the point size}
 var
   V: extended;
@@ -3854,6 +3867,7 @@ end;
 
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize,
   Default: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 {given a length ThtString, return the appropriate pixel value.  Base is the
  base value for percentage. EmSize, ExSize for units relative to the font.
  Relative makes a numerical entry relative to Base.

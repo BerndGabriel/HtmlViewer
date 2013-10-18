@@ -541,6 +541,7 @@ begin
 end;
 
 function IsWhiteSpace(Ch: ThtChar): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   case Ch of
     SpcChar,
