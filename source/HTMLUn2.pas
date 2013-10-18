@@ -30,6 +30,7 @@ unit HTMLUn2;
 
 interface
 uses
+   {$ifdef UseInline} Math, {$endif}
 {$ifdef LCL}
   LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
 {$else}
@@ -694,10 +695,13 @@ procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArra
   const S: ThtBorderStyleArray; BGround: TColor; Print: boolean
   {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
 
+type
+  THtBorderPointArray = array[0..3] of TPoint;
+
 implementation
 
 uses
-  Forms, Math,
+  Forms,  {$ifndef UseInline} Math, {$endif}
   {$ifdef UseVCLStyles}
   Vcl.Themes,
   {$endif}
@@ -828,6 +832,7 @@ end;
 
 // Pascal-ized equivalents of assembler functions.
 function StrLenW(Str: PWideChar): Cardinal;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := 0;
   if Str <> nil then
@@ -836,6 +841,7 @@ begin
 end;
 
 function StrPosW(Str, SubStr: PWideChar): PWideChar;
+ {$ifdef UseInline} inline; {$endif}
 var
   StrPos    : PWideChar;
   SubstrPos : PWideChar;
@@ -865,6 +871,7 @@ begin
 end;
 
 function StrRScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := StrScanW(Str, #0);
   if Chr = #0 then  // Null-terminating char considered part of string.
@@ -879,6 +886,7 @@ begin
 end;
 
 function StrScanW(const Str: PWideChar; Chr: WideChar): PWideChar;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := Str;
   while Result^ <> #0 do
@@ -899,6 +907,7 @@ end;
 {----------------FitText}
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
+ {$ifdef UseInline} inline; {$endif}
 {return count <= Max which fits in Width.  Return X, the extent of chars that fit}
 var
   Ints: array of Integer;
@@ -942,6 +951,7 @@ end;
 {----------------WidePos}
 
 function WidePos(SubStr, S: UnicodeString): Integer;
+ {$ifdef UseInline} inline; {$endif}
 // Unicode equivalent for Pos() function.
 var
   P: PWideChar;
@@ -1018,17 +1028,20 @@ end;
 //{$endif}
 
 function WideSameText1(const S1, S2: UnicodeString): boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := htUpperCase(S1) = htUpperCase(S2);
 end;
 
 function WideSameStr1(const S1, S2: UnicodeString): boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := S1 = S2;
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 function ScaleRect(const Rect: TRect; ScaleX, ScaleY: Double): TRect;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result.Left := Round(Rect.Left * ScaleX);
   Result.Right := Round(Rect.Right * ScaleX);
@@ -1038,6 +1051,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 function CalcClipRect(Canvas: TCanvas; const Rect: TRect; Printing: boolean): TRect;
+ {$ifdef UseInline} inline; {$endif}
 var
   Point: TPoint;
   SizeV, SizeW: TSize;
@@ -1054,6 +1068,7 @@ begin
 end;
 
 procedure GetClippingRgn(Canvas: TCanvas; const ARect: TRect; Printing: boolean; var Rgn, SaveRgn: HRgn);
+ {$ifdef UseInline} inline; {$endif}
 var
   Point: TPoint;
   SizeV, SizeW: TSize;
@@ -1088,6 +1103,7 @@ begin
 end;
 
 function WideTrim(const S: UnicodeString): UnicodeString;
+ {$ifdef UseInline} inline; {$endif}
 var
   I, L: Integer;
 begin
@@ -1106,6 +1122,7 @@ begin
 end;
 
 procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
+ {$ifdef UseInline} inline; {$endif}
 {Wraps text in a clipping rectangle. Font must be set on entry}
 var
   ARect: TRect;
@@ -1118,6 +1135,7 @@ begin
 end;
 
 function GetTextExtent(DC: HDC; P: PWideChar; N: Integer): TSize;
+ {$ifdef UseInline} inline; {$endif}
 var
   Dummy: Integer;
 begin
@@ -1129,6 +1147,7 @@ end;
 
 procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor
  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
+ {$ifdef UseInline} inline; {$endif}
 var
   OldBrushStyle: TBrushStyle;
   OldBrushColor: TColor;
@@ -1152,6 +1171,7 @@ procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, 
 {$else}
 procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor);
 {$endif}
+ {$ifdef UseInline} inline; {$endif}
 {Draws lowered rectangles for form control printing}
 var
   OldStyle: TPenStyle;
@@ -1225,6 +1245,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
 function SpecWidth(Value: Integer; VType: TWidthType): TSpecWidth;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result.Value := Value;
   Result.VType := VType;
@@ -1235,6 +1256,7 @@ function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
 // Return a TSpecWidth prepared with values given in AsInteger *and* AsString.
 // AsString is used to evaluate the type while AsInteger is used to evaluate the value.
 // BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Integer.
+ {$ifdef UseInline} inline; {$endif}
 begin
   if Pos('%', AsString) > 0 then
   begin
@@ -2302,6 +2324,7 @@ begin
 end;
 
 function CopyPalette(Source: hPalette): hPalette;
+ {$ifdef UseInline} inline; {$endif}
 var
   LP: ^TLogPalette;
   NumEntries: Integer;
@@ -2444,6 +2467,7 @@ begin
 end;
 
 function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
+ {$ifndef UseInline} inline; {$endif}
 var
   NewLen, Len: Integer;
 begin
@@ -2618,10 +2642,9 @@ begin
   Result := TIDObject(inherited GetObject(Index));
 end;
 
-type
-  BorderPointArray = array[0..3] of TPoint;
 
-//function Points(P0, P1, P2, P3: TPoint): BorderPointArray;
+
+//function Points(P0, P1, P2, P3: TPoint): THtBorderPointArray;
 //begin
 //  Result[0] := P0;
 //  Result[1] := P1;
@@ -2630,7 +2653,8 @@ type
 //end;
 
 // BG, 17.04.2013: Color of DrawOnePolygon() must be a real RGB or palette value. Themed or system colors are not supported!
-procedure DrawOnePolygon(Canvas: TCanvas; P: BorderPointArray; Color: TColor; Side: byte; Printing: Boolean);
+procedure DrawOnePolygon(Canvas: TCanvas; P: THtBorderPointArray; Color: TColor; Side: byte; Printing: Boolean);
+ {$ifdef UseInline} inline; {$endif}
 {Here we draw a 4 sided polygon (by filling a region).  This represents one
  side (or part of a side) of a border.
  For single pixel thickness, drawing is done by lines for better printing}
@@ -2709,12 +2733,13 @@ procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArra
 procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
   const S: ThtBorderStyleArray; BGround: TColor; Print: boolean);
   {$endif}
+ {$ifdef UseInline} inline; {$endif}
 {Draw the 4 sides of a border.  The sides may be of different styles or colors.
  The side indices, 0,1,2,3, represent left, top, right, bottom.
  ORect is the outside rectangle of the border, IRect the inside Rectangle.
  BGround is the background color used for the bssDouble style}
 var
-  PO, PI, PM, P1, P2, Bnd: BorderPointArray;
+  PO, PI, PM, P1, P2, Bnd: THtBorderPointArray;
   I: Integer;
   Cl, Color: TColor;
   MRect: TRect;

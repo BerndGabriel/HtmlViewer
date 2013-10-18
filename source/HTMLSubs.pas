@@ -60,6 +60,9 @@ unit HTMLSubs;
 interface
 
 uses
+ {$ifdef UseInline}
+ HtmlCaches,
+ {$endif}
 {$ifdef VCL}
   Windows,
   EncdDecd,
@@ -1566,6 +1569,7 @@ uses
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntArray; StartIndex, EndIndex: Integer): Integer; overload;
+ {$ifdef UseInline} inline; {$endif}
 // Return sum of array elements from StartIndex to EndIndex.
 var
   I: Integer;
@@ -2805,6 +2809,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
 procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);  {$ifdef UseInline} inline; {$endif}
+ {$ifdef UseInline} inline; {$endif}
 var
   White, BlackBorder: boolean;
 begin
@@ -8414,6 +8419,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 09.02.2013 --
 function TryStrToTableFrame(const Str: ThtString; var Frame: TTableFrame): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   Upr: string;
 begin
@@ -8443,6 +8449,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 09.02.2013 --
 function TryStrToTableRules(const Str: ThtString; var Rules: TTableRules): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   Upr: string;
 begin
@@ -10854,7 +10861,7 @@ begin
       begin
         S := LowerCase(T.Name);
         if (S = 'submit') or (S = 'reset') or (S = 'button') then
-          FCO := TButtonFormControlObj.Create(ACell, Len, S, L, Prop)
+          FCO := TButtonFormControlObj.Create(ACell, Len, L, Prop)
         else if S = 'radio' then
           FCO := TRadioButtonFormControlObj.Create(ACell, Len, L, Prop)
         else if S = 'checkbox' then
@@ -10869,11 +10876,11 @@ begin
         else if S = 'file' then
         begin
           FCT := fctFile;
-          FCO := TEditFormControlObj.Create(ACell, Len, S, L, Prop);
+          FCO := TEditFormControlObj.Create(ACell, Len, L, Prop);
         end;
       end;
       if FCO = nil then
-        FCO := TEditFormControlObj.Create(ACell, Len, S, L, Prop);
+        FCO := TEditFormControlObj.Create(ACell, Len, L, Prop);
     end;
 
     SelectSy:
@@ -10901,7 +10908,7 @@ begin
       FormControls.Add(FCO);
       AddChar(FmCtl, Index); {marker for FormControl}
       Brk[Len - 1] := twNo; {don't allow break between these two controls}
-      ButtonControl := TButtonFormControlObj.Create(ACell, Len, S, L, Prop);
+      ButtonControl := TButtonFormControlObj.Create(ACell, Len, L, Prop);
       ButtonControl.MyEdit := TEditFormControlObj(FCO);
       FormControls.Add(ButtonControl);
     {the following fixup puts the ID on the TEdit and deletes it from the Button}
@@ -11014,12 +11021,14 @@ begin
 end;
 
 function WrapChar(C: WideChar): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := Ord(C) >= $3000;
 end;
 
 //-- BG ---------------------------------------------------------- 27.01.2012 --
 function CanWrapAfter(C: WideChar): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   case C of
     WideChar('-'), WideChar('/'), WideChar('?'):
@@ -11031,6 +11040,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 20.09.2010 --
 function CanWrap(C: WideChar): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   case C of
     WideChar(' '), WideChar('-'), WideChar('/'), WideChar('?'), ImgPan, FmCtl, BrkCh:

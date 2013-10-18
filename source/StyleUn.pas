@@ -315,6 +315,9 @@ procedure LogProperties(AProp : TProperties; const APropName : String);
 procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
 procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Boolean);
 
+//here for inlining
+function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
+
 implementation
 uses
 {$ifdef Compiler24_Plus}
@@ -568,6 +571,7 @@ function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSiz
 
 //-- BG ---------------------------------------------------------- 17.02.2011 --
 function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   while I <= L do
   begin
@@ -586,6 +590,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.02.2011 --
 function FindChar(const S: ThtString; C: ThtChar; I, L: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   while (I <= L) and (S[I] <> C) do
     Inc(I);
@@ -595,6 +600,7 @@ end;
 {----------------ReadURL}
 
 function ReadURL(Item: Variant): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {
   If Item is a string try to find and parse:
 
@@ -680,6 +686,7 @@ var
   PropertyStrings: ThtStringList;
 
 function StyleProperties: ThtStringList;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtPropertyIndex;
 begin
@@ -696,6 +703,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
 function TryStrToPropIndex(const PropWord: ThtString; var PropIndex: ThtPropIndices): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
   P: ThtPropertyIndex;
@@ -979,6 +987,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
 function TranslateCharset(CS: TFontCharset): TFontCharset;
+ {$ifdef UseInline} inline; {$endif}
 // extracted from TProperties.AssignCharSetAndCodePage()
 var
   Save: THandle;
@@ -1521,18 +1530,21 @@ end;
 
 //-- BG ---------------------------------------------------------- 25.04.2012 --
 function IsAuto(const Value: Variant): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := Value = Auto;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 function VarIsIntNull(const Value: Variant): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := (VarType(Value) in varInt) and (Value = IntNull);
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 function VarIsAuto(const Value: Variant): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := (VarType(Value) in varInt) and (Value = Auto);
 end;
@@ -1549,6 +1561,7 @@ begin
 end;
 
 procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+ {$ifdef UseInline} inline; {$endif}
 begin
   {Important!!!
 
@@ -2539,6 +2552,7 @@ end;
 {----------------RemoveQuotes}
 
 function RemoveQuotes(const S: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
 var
   L: Integer;
@@ -2895,6 +2909,7 @@ begin
 end;
 
 procedure FixBordProps(AProp, BodyProp : TProperties);
+ {$ifdef UseInline} inline; {$endif}
 var i : ThtPropIndices;
 begin
   for i := BorderTopColor to BorderLeftColor do
@@ -3450,6 +3465,7 @@ begin
 end;
 
 function OpacityFromStr(S : ThtString) : Byte;
+ {$ifdef UseInline} inline; {$endif}
 var LErr : Integer;
   LR : Real;
 begin
@@ -3462,6 +3478,7 @@ begin
 end;
 
 function TryStrToColor(S: ThtString; NeedPound: Boolean; out Color: TColor): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var LDummy : Byte;
 begin
   Result := ColorAndOpacityFromString(S,NeedPound,Color,LDummy);
@@ -3681,6 +3698,7 @@ end;
 
 //BG, 14.07.2010:
 function decodeSize(const Str: ThtString; out V: extended; out U: ThtString): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I, J, L: Integer;
 begin

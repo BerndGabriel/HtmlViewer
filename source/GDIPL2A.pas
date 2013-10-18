@@ -186,6 +186,34 @@ implementation
     //TImageCodecInfo = ImageCodecInfo;
     //PImageCodecInfo = ^TImageCodecInfo;
 
+const
+  PixelFormatIndexed   = $00010000; // Indexes into a palette
+  PixelFormatGDI       = $00020000; // Is a GDI-supported format
+  PixelFormatAlpha     = $00040000; // Has an alpha component
+  PixelFormatPAlpha    = $00080000; // Pre-multiplied alpha
+  PixelFormatExtended  = $00100000; // Extended color 16 bits/channel
+  PixelFormatCanonical = $00200000;
+
+  PixelFormatUndefined = 0;
+  PixelFormatDontCare  = 0;
+
+  PixelFormat1bppIndexed = (1 or ( 1 shl 8) or PixelFormatIndexed or PixelFormatGDI);
+  PixelFormat4bppIndexed = (2 or ( 4 shl 8) or PixelFormatIndexed or PixelFormatGDI);
+  PixelFormat8bppIndexed = (3 or ( 8 shl 8) or PixelFormatIndexed or PixelFormatGDI);
+  PixelFormat16bppGrayScale = (4 or (16 shl 8) or PixelFormatExtended);
+  PixelFormat16bppRGB555 = (5 or (16 shl 8) or PixelFormatGDI);
+  PixelFormat16bppRGB565 = (6 or (16 shl 8) or PixelFormatGDI);
+  PixelFormat16bppARGB1555 = (7 or (16 shl 8) or PixelFormatAlpha or PixelFormatGDI);
+  PixelFormat24bppRGB = (8 or (24 shl 8) or PixelFormatGDI);
+  PixelFormat32bppRGB = (9 or (32 shl 8) or PixelFormatGDI);
+  PixelFormat32bppARGB   = (10 or (32 shl 8) or PixelFormatAlpha or PixelFormatGDI or PixelFormatCanonical);
+  PixelFormat32bppPARGB  = (11 or (32 shl 8) or PixelFormatAlpha or PixelFormatPAlpha or PixelFormatGDI);
+  PixelFormat48bppRGB  = (12 or (48 shl 8) or PixelFormatExtended);
+  PixelFormat64bppARGB = (13 or (64 shl 8) or PixelFormatAlpha or PixelFormatCanonical or PixelFormatExtended);
+  PixelFormat64bppPARGB = (14 or (64 shl 8) or PixelFormatAlpha or PixelFormatPAlpha or PixelFormatExtended);
+  PixelFormat32bppCMYK = (15 or (32 shl 8));
+  PixelFormatMax = 16;
+
   var
     GdiplusStartup: function(out Token: ULONG; const Input : PGdiplusStartupInput; const Output: PGdiplusStartupOutput): GpStatus stdcall;
     GdiplusShutdown: procedure(Token: ULONG) stdcall;
@@ -237,6 +265,31 @@ implementation
   begin
     Result := Format('%d', [AErr]);
   end;
+
+function GetPixelFormatSize(const pixfmt : PixelFormat) : Cardinal; inline;
+begin
+  Result := (pixfmt shr 8) and $ff;
+end;
+
+function IsIndexedPixelFormat(const PixelFormat pixfmt) : Boolean; inline;
+begin
+  Result := (pixfmt and PixelFormatIndexed) <> 0;
+end;
+
+function IsAlphaPixelFormat(const pixfmt : PixelFormat) : Boolean; inline;
+begin
+  Result := (pixfmt and PixelFormatAlpha) <> 0;
+end;
+
+function IsExtendedPixelFormat(const pixfmt : PixelFormat) : Boolean; inline;
+begin
+  Result := (pixfmt and PixelFormatExtended) <> 0;
+end;
+
+function IsCanonicalPixelFormat(const  pixfmt : PixelFormat) : Boolean; inline;
+begin
+  Result := (pixfmt and PixelFormatCanonical) <> 0;
+end;
 
 {$endif HasGDIPlus}
 
@@ -436,11 +489,8 @@ begin
 end;
 
 constructor ThtGpBitmap.Create(W, H: integer);
-const
-  PixelFormatGDI = $00020000; // Is a GDI-supported format
-  PixelFormatAlpha = $00040000; // Has an alpha component
-  PixelFormatCanonical = $00200000;
-  PixelFormat32bppARGB = (10 or (32 shl 8) or PixelFormatAlpha or PixelFormatGDI or PixelFormatCanonical);
+
+
 begin
   inherited Create;
   GDICheck(Format('Can''t create bitmap of size %d x %d.', [W, H]), GdipCreateBitmapFromScan0(W, H, 0, PixelFormat32bppARGB, nil, fHandle));
