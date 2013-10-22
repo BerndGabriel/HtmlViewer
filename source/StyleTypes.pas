@@ -265,6 +265,14 @@ type
     wsPreWrap,
     wsPreLine{, wsInherit});
 
+const
+  CWhiteSpace: array [ThtWhiteSpaceStyle] of ThtString = (
+    'normal',
+    'nowrap',
+    'pre',
+    'pre-wrap',
+    'pre-line');
+
 //BG, 16.09.2010: CSS2.2: same sizes like html font size:
 type
   ThtFontSizeIncrement = -6..6;
@@ -351,7 +359,7 @@ function TryStrToBoxFloatStyle(const Str: ThtString; out Float: ThtBoxFloatStyle
 function TryStrToBoxPositionStyle(const Str: ThtString; out Position: ThtBoxPositionStyle): Boolean;
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: ThtBulletStyle): Boolean;
 function TryStrToDisplayStyle(const Str: ThtString; out Display: ThtDisplayStyle): Boolean;
-
+function TryStrToWhiteSpace(const Str: ThtString; out AWhiteSpace: ThtWhiteSpaceStyle): Boolean;
 function GetPositionInRange(Which: ThtBackgroundPosition; Where, Range: Integer): Integer;
 {
  Returns a positon according to the given settings.
@@ -566,6 +574,23 @@ begin
     begin
       Result := True;
       ABoxSizing := I;
+      exit;
+    end;
+  Result := False;
+end;
+
+//-- JPM --------------------------------------------------------- 03.02-2012 --
+
+function TryStrToWhiteSpace(const Str: ThtString; out AWhiteSpace: ThtWhiteSpaceStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
+var
+  I: ThtWhiteSpaceStyle;
+begin
+  for I := low(I) to high(I) do
+    if CWhiteSpace[I] = Str then
+    begin
+      Result := True;
+      AWhiteSpace := I;
       exit;
     end;
   Result := False;

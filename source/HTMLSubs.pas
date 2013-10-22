@@ -10377,16 +10377,19 @@ begin
     WhiteSpaceStyle := ThtWhiteSpaceStyle(Prop.Props[piWhiteSpace])
   else if VarIsStr(Prop.Props[piWhiteSpace]) then
   begin
-    if Prop.Props[piWhiteSpace] = 'pre' then
-      WhiteSpaceStyle := wsPre
-    else if Prop.Props[piWhiteSpace] = 'nowrap' then
-      WhiteSpaceStyle := wsNoWrap
-    else if Prop.Props[piWhiteSpace] = 'pre-wrap' then
-      WhiteSpaceStyle := wsPreWrap
-    else if Prop.Props[piWhiteSpace] = 'pre-line' then
-      WhiteSpaceStyle := wsPreLine
-    else if Prop.Props[piWhiteSpace] = 'normal' then
-      WhiteSpaceStyle := wsNormal;
+    if not TryStrToWhiteSpace(Prop.Props[piWhiteSpace],WhiteSpaceStyle) then
+    begin
+    end;
+//    if Prop.Props[piWhiteSpace] = 'pre' then
+//      WhiteSpaceStyle := wsPre
+//    else if Prop.Props[piWhiteSpace] = 'nowrap' then
+//      WhiteSpaceStyle := wsNoWrap
+//    else if Prop.Props[piWhiteSpace] = 'pre-wrap' then
+//      WhiteSpaceStyle := wsPreWrap
+//    else if Prop.Props[piWhiteSpace] = 'pre-line' then
+//      WhiteSpaceStyle := wsPreLine
+//    else if Prop.Props[piWhiteSpace] = 'normal' then
+ //     WhiteSpaceStyle := wsNormal;
   end;
   {$IFDEF JPM_DEBUGGING}
   CodeSite.ExitMethod(Self,'TSection.Create');

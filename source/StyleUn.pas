@@ -313,7 +313,11 @@ function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
 {$ifdef JPM_DEBUGGING}
+const
+    CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
+
 procedure LogProperties(AProp : TProperties; const APropName : String);
+procedure LogThtMarginArray(AMarg : ThtMarginArray; const AMargName : String);
 {$endif}
 
 procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
@@ -339,15 +343,15 @@ var
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
 
 {$ifdef JPM_DEBUGGING}
-const
-    CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
 
 function LogPropColor(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   Result := Graphics.ColorToString( AInt);
 end;
 
 function LogPropColor(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then
     Result := Graphics.ColorToString( AVar)
@@ -356,11 +360,13 @@ begin
 end;
 
 function LogPropDisplay(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   Result := CDisplayStyle[ ThtDisplayStyle(AInt)];
 end;
 
 function LogPropDisplay(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CDisplayStyle[ ThtDisplayStyle(AVar)]  + ' int = '+ IntToStr(AVar);;
@@ -370,6 +376,7 @@ begin
 end;
 
 function LogPropBoxSizing(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   case AInt of
     0 : Result := CBoxSizing[ContentBox];
@@ -381,6 +388,7 @@ begin
 end;
 
 function LogPropBoxSizing(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CBoxSizing[ThtBoxSizing (AVar)]  + ' int = '+ IntToStr(AVar);
@@ -390,6 +398,7 @@ begin
 end;
 
 function LogPropBorderStyle(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   case AInt of
     0 : Result := CBorderStyle[bssNone ];
@@ -407,6 +416,7 @@ begin
 end;
 
 function LogPropBorderStyle(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CBorderStyle[ ThtBorderStyle ( AVar )]  + ' int = '+ IntToStr(AVar);
@@ -417,6 +427,7 @@ begin
 end;
 
 function LogPropListStyle(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   case AInt of
     0 : Result := CBulletStyle[ lbBlank ];
@@ -436,6 +447,7 @@ begin
 end;
 
 function LogPropListStyle(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CBulletStyle[ ThtBulletStyle ( AVar )]  + ' int = '+ IntToStr(AVar);;
@@ -445,6 +457,7 @@ begin
 end;
 
 function LogVisibility(const AVar : Variant): String;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CVis[Integer( AVar )] + ' int = '+ IntToStr(AVar);
@@ -454,6 +467,7 @@ begin
 end;
 
 procedure LogTVMarginArray(const AMarg : ThtVMarginArray; const AMargName : String);
+{$ifdef UseInline} inline; {$endif}
 var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
@@ -478,6 +492,7 @@ begin
 end;
 
 procedure LogThtMarginArray(AMarg : ThtMarginArray; const AMargName : String);
+{$ifdef UseInline} inline; {$endif}
 var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
@@ -889,6 +904,7 @@ begin
       else
         Props[I] := Source.Props[I];
       end;
+  DefPointSize := Source.DefPointSize;
   DefFontname := Source.DefFontname;
   FontBG := Source.FontBG;
   CodePage := Source.CodePage;
@@ -2758,6 +2774,7 @@ end;
 procedure TProperties.AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString);
 var
   NewColor: TColor;
+  WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByIndex');
@@ -2817,10 +2834,14 @@ begin
         Props[WordWrap] := 'normal';
 
     piWhiteSpace:
-      if PropValue = 'nowrap' then
-        Props[piWhiteSpace] := PropValue
-      else if PropValue = 'normal' then
-        Props[piWhiteSpace] := 'normal';
+      if TryStrToWhiteSpace(PropValue,WhiteSpaceStyle) then
+      begin
+        Props[piWhiteSpace] := PropValue;
+      end;
+//      if PropValue = 'nowrap' then
+//        Props[piWhiteSpace] := PropValue
+//      else if PropValue = 'normal' then
+//        Props[piWhiteSpace] := 'normal';
 
     FontVariant:
       if PropValue = 'small-caps' then
@@ -2964,6 +2985,7 @@ var
   Propty: TProperties;
   NewColor: TColor;
   NewProp: Boolean;
+  WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TStyleList.AddModifyProp');
@@ -2972,7 +2994,7 @@ begin
   CodeSiteLogging.CodeSite.SendFmtMsg('Selector = %s',[Selector]);
   CodeSiteLogging.CodeSite.SendFmtMsg('Prop = %s',[Prop]);
   CodeSiteLogging.CodeSite.SendFmtMsg('Value = %s',[Value]);
-CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.AddSeparator;
   {$endif}
   if TryStrToPropIndex(Prop, PropIndex) then
   begin
@@ -3043,10 +3065,14 @@ CodeSiteLogging.CodeSite.AddSeparator;
           Propty.Props[WordWrap] := 'normal';
 
       piWhiteSpace:
-        if Value = 'nowrap' then
-          Propty.Props[piWhiteSpace] := Value
-        else if Value = 'normal' then
-          Propty.Props[piWhiteSpace] := 'normal';
+        if TryStrToWhiteSpace(Value,WhiteSpaceStyle) then
+        begin
+          Propty.Props[piWhiteSpace] := Value;
+        end;
+//        if Value = 'nowrap' then
+//          Propty.Props[piWhiteSpace] := Value
+//        else if Value = 'normal' then
+//          Propty.Props[piWhiteSpace] := 'normal';
 
       FontVariant:
         if Value = 'small-caps' then
