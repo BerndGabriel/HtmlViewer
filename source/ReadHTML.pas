@@ -187,6 +187,9 @@ type
     function PropStackIndex: Integer;
     procedure PopProp; 
     function ExtractCharsetFromXMLProlog : Boolean;
+    procedure CollectPreText(S: TTokenObj);
+    procedure CollectNormalText(S: TTokenObj);
+    procedure CollectText(S: TTokenObj; AWhiteSpace : ThtWhiteSpaceStyle);
   public
     constructor Create(Doc: TBuffer);
     destructor Destroy; override;
@@ -1194,54 +1197,6 @@ procedure THtmlParser.Next;
       GetCh;
   end;
 
-  procedure CollectText;
-  // Considers the current data as pure text and collects everything until
-  // the input end or one of the reserved tokens is found.
-  var
-    Buffer: TCharCollection;
-    CodePage, SaveIndex: Integer;
-    Entity: ThtString;
-  begin
-    CodePage := PropStack.Last.CodePage;
-    Buffer := TCharCollection.Create;
-    try
-      while True do
-      begin
-        case LCh of
-          #1..#8, EOFChar, LessChar:
-            break;
-
-          AmperChar:
-            begin
-              SaveIndex := PropStack.SIndex;
-              Entity := GetEntityStr(CodePage);
-              if not LinkSearch then
-//                if Length(Entity) = 1 then
-//                  Buffer.Add(Entity[1], SaveIndex)
-//                else
-                  Buffer.Add(Entity, SaveIndex);
-            end;
-
-          SpcChar, CrChar, LfChar, TabChar:
-            begin
-              if not LinkSearch then
-                Buffer.Add(SpcChar, PropStack.SIndex);
-              GetCh;
-              // Skip other white spaces.
-              SkipWhiteSpace;
-            end;
-        else
-          if not LinkSearch then
-            Buffer.Add(LCh, PropStack.SIndex);
-          GetCh;
-        end;
-      end;
-      if Buffer.Size > 0 then
-        LCToken.AddString(Buffer);
-    finally
-      Buffer.Free;
-    end;
-  end;
 
 begin {already have fresh character loaded here}
   LCToken.Clear;
@@ -1259,7 +1214,7 @@ begin {already have fresh character loaded here}
       Sy := EofSy;
   else
     Sy := StringSy;
-    CollectText;
+    CollectNormalText(LCToken);
   end;
 end;
 
@@ -2506,6 +2461,105 @@ begin
     Next1;
 end;
 
+procedure THtmlParser.CollectNormalText(S: TTokenObj);
+// Considers the current data as pure text and collects everything until
+// the input end or one of the reserved tokens is found.
+var
+  Buffer: TCharCollection;
+  CodePage, SaveIndex: Integer;
+  Entity: ThtString;
+begin
+  CodePage := PropStack.Last.CodePage;
+  Buffer := TCharCollection.Create;
+  try
+    while True do
+    begin
+      case LCh of
+        #1..#8, EOFChar, LessChar:
+          break;
+
+        AmperChar:
+          begin
+            SaveIndex := PropStack.SIndex;
+            Entity := GetEntityStr(CodePage);
+            if not LinkSearch then
+//              if Length(Entity) = 1 then
+//                Buffer.Add(Entity[1], SaveIndex)
+//              else
+                Buffer.Add(Entity, SaveIndex);
+          end;
+
+        SpcChar, CrChar, LfChar, TabChar:
+          begin
+            if not LinkSearch then
+              Buffer.Add(SpcChar, PropStack.SIndex);
+            GetCh;
+            // Skip other white spaces.
+            SkipWhiteSpace;
+          end;
+      else
+        if not LinkSearch then
+          Buffer.Add(LCh, PropStack.SIndex);
+        GetCh;
+      end;
+    end;
+    if Buffer.Size > 0 then
+      S.AddString(Buffer);
+  finally
+    Buffer.Free;
+  end;
+end;
+
+procedure THtmlParser.CollectPreText(S: TTokenObj);
+// Considers the current data as pure text and collects everything until
+// the input ends or one of the reserved tokens is found.
+var
+  Buffer: TCharCollection;
+  CodePage, SaveIndex: Integer;
+  Entity: ThtString;
+begin
+  CodePage := PropStack.Last.CodePage;
+  Buffer := TCharCollection.Create;
+  try
+    while True do
+      case LCh of
+        #1..#8, EOFChar, LessChar, CrChar:
+          break;
+
+        AmperChar:
+        begin
+          SaveIndex := PropStack.SIndex;
+          Entity := GetEntityStr(CodePage);
+          if not LinkSearch then
+            Buffer.Add(Entity, SaveIndex);
+        end;
+
+    else
+      {Get any normal text, including spaces}
+      if not LinkSearch then
+        Buffer.Add(LCh, PropStack.SIndex);
+      GetCh;
+    end;
+
+    if Buffer.Size > 0 then
+      S.AddString(Buffer);
+  finally
+    Buffer.Free;
+  end;
+end;
+
+procedure THtmlParser.CollectText(S: TTokenObj; AWhiteSpace : ThtWhiteSpaceStyle);
+begin
+  case AWhiteSpace of
+    wsNormal : CollectNormalText(S);
+    wsPre : CollectPreText(S);
+    //TODO:  research these
+    wsNoWrap : CollectNormalText(S);
+    wsPreWrap : CollectNormalText(S);
+    wsPreLine : CollectNormalText(S);
+  end;
+end;
+
 {----------------DoCommonSy}
 
 procedure THtmlParser.DoCommonSy;
@@ -2686,44 +2740,6 @@ procedure THtmlParser.DoCommonSy;
     InForm, InP: Boolean;
     PreBlock, FormBlock, PBlock: TBlock;
 
-    procedure CollectPreText;
-    // Considers the current data as pure text and collects everything until
-    // the input ends or one of the reserved tokens is found.
-    var
-      Buffer: TCharCollection;
-      CodePage, SaveIndex: Integer;
-      Entity: ThtString;
-    begin
-      CodePage := PropStack.Last.CodePage;
-      Buffer := TCharCollection.Create;
-      try
-        while True do
-          case LCh of
-            #1..#8, EOFChar, LessChar, CrChar:
-              break;
-
-            AmperChar:
-              begin
-                SaveIndex := PropStack.SIndex;
-                Entity := GetEntityStr(CodePage);
-                if not LinkSearch then
-                  Buffer.Add(Entity, SaveIndex);
-              end;
-
-          else
-            {Get any normal text, including spaces}
-            if not LinkSearch then
-              Buffer.Add(LCh, PropStack.SIndex);
-            GetCh;
-          end;
-
-        if Buffer.Size > 0 then
-          S.AddString(Buffer);
-      finally
-        Buffer.Free;
-      end;
-    end;
-
     procedure FormEnd;
     begin
       PropStack.Document.CurrentForm := nil;
@@ -2793,6 +2809,7 @@ procedure THtmlParser.DoCommonSy;
     C: ThtChar;
     N, IX: Integer;
     Before, After, Intact: Boolean;
+    LW : ThtWhiteSpaceStyle;
 
   begin
     InForm := False;
@@ -2804,6 +2821,8 @@ procedure THtmlParser.DoCommonSy;
       PushNewProp(PreSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
       InitialStackIndex := PropStackIndex;
       PreBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
+      if not StyleTypes.TryStrToWhiteSpace(PropStack.Last.Props[piWhiteSpace],LW) then
+        LW :=  wsNormal;
       SectionList.Add(PreBlock, TagIndex);
       SectionList := PreBlock.MyCell;
       Section := TPreformated.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
@@ -3057,7 +3076,7 @@ procedure THtmlParser.DoCommonSy;
           #0:
             Done := True;
         else
-          CollectPreText;
+          CollectText(S,LW);
         end;
       if InForm then
         FormEnd
