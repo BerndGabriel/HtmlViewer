@@ -9713,6 +9713,7 @@ procedure THtmlTable.IncreaseWidthsByMinMaxDelta(WidthType: TWidthType; var Widt
 // Increases width of spanned columns relative to difference between min and max widths.
 var
   AddedExcess, AddedDelta, I, Add: Integer;
+  WidthSum, K, Remaining: Integer;
 begin
   AddedExcess := 0;
   AddedDelta := 0;
@@ -9728,6 +9729,30 @@ begin
       end
       else
       begin
+        // BG, 16.11.2013: thanks to Andreas Hausladen for spreading Excess:
+        if WidthType = wtNone then
+        begin
+          WidthSum := 0;
+          for K := EndIndex downto StartIndex do
+            if ColumnSpecs[K] = WidthType then
+              Inc(WidthSum, Widths[K] + Deltas[K]);
+
+          // spread the remaining pixels to all columns by their width percentage
+          Remaining := (Excess - AddedExcess) - DeltaWidth;
+          if (Remaining > 0) and (WidthSum > 0) then // wrong display is better than crash
+          begin
+            for K := EndIndex downto StartIndex + 1 do
+            begin
+              if ColumnSpecs[K] = WidthType then
+              begin
+                Add := ((Widths[K] + Deltas[K]) * Remaining) div WidthSum;
+                Inc(Widths[K], Add);
+                Inc(AddedExcess, Add);
+              end;
+            end;
+          end;
+        end;
+
         // add the remaining pixels to the first column's width.
         Inc(Widths[I], Excess - AddedExcess);
         break;
@@ -9877,7 +9902,7 @@ var
 
   procedure IncreaseMinMaxWidthsEvenly(WidthType: TWidthType; StartIndex, EndIndex: Integer);
   var
-    Untouched: Integer;
+    Untouched, I: Integer;
   begin
     if CellMin > SpannedMin then
     begin
@@ -9889,17 +9914,28 @@ var
       Untouched := SumOfNotType(WidthType, ColumnSpecs, MinWidths, StartIndex, EndIndex);
       IncreaseWidthsEvenly(WidthType, MaxWidths, StartIndex, EndIndex, CellMax - Untouched, SpannedMax - Untouched, SpannedCounts[WidthType]);
     end;
+
+    // Prevent MinWidths from getting larger than MaxWidths, otherwise the calculation goes crazy
+    for I := StartIndex to EndIndex do
+      if MinWidths[I] > MaxWidths[I] then
+        MaxWidths[I] := MinWidths[I];
   end;
 
   procedure IncreaseMinMaxWidthsByMinMaxDelta(WidthType: TWidthType; StartIndex, EndIndex: Integer);
   var
     Deltas: IntArray;
+    I: Integer;
   begin
     Deltas := SubArray(MaxWidths, MinWidths);
     if CellMin > SpannedMin then
       IncreaseWidthsByMinMaxDelta(WidthType, MinWidths, StartIndex, EndIndex, CellMin - SpannedMin, SpannedMax - SpannedMin, SpannedCounts[WidthType], Deltas);
     if CellMax > SpannedMax then
       IncreaseWidthsByMinMaxDelta(WidthType, MaxWidths, StartIndex, EndIndex, CellMax - SpannedMax, SpannedMax - SpannedMin, SpannedCounts[WidthType], Deltas);
+
+    // Prevent MinWidths from getting larger than MaxWidths, otherwise the calculation goes crazy
+    for I := StartIndex to EndIndex do
+      if MinWidths[I] > MaxWidths[I] then
+        MaxWidths[I] := MinWidths[I];
   end;
 
 var
