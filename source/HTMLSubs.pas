@@ -5121,7 +5121,10 @@ begin
     BGImage := TImageObj.CreateCopy(AMasterList, TT.BGImage);
   MargArrayO := TT.MargArrayO;
   if (Positioning in [posAbsolute, posFixed]) or (FloatLR in [ALeft, ARight]) then
-    MyCell.IMgr := TIndentManager.Create;
+  begin
+    MyIMgr := TIndentManager.Create;
+    MyCell.IMgr := MyIMgr;
+  end;
   BlockTitle := TT.BlockTitle; // Thanks to Nagy Ervin.
 end;
 
