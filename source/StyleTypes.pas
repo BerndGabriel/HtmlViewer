@@ -265,6 +265,14 @@ type
     wsPreWrap,
     wsPreLine{, wsInherit});
 
+const
+  CWhiteSpace: array [ThtWhiteSpaceStyle] of ThtString = (
+    'normal',
+    'nowrap',
+    'pre',
+    'pre-wrap',
+    'pre-line');
+
 //BG, 16.09.2010: CSS2.2: same sizes like html font size:
 type
   ThtFontSizeIncrement = -6..6;
@@ -351,7 +359,7 @@ function TryStrToBoxFloatStyle(const Str: ThtString; out Float: ThtBoxFloatStyle
 function TryStrToBoxPositionStyle(const Str: ThtString; out Position: ThtBoxPositionStyle): Boolean;
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: ThtBulletStyle): Boolean;
 function TryStrToDisplayStyle(const Str: ThtString; out Display: ThtDisplayStyle): Boolean;
-
+function TryStrToWhiteSpace(const Str: ThtString; out AWhiteSpace: ThtWhiteSpaceStyle): Boolean;
 function GetPositionInRange(Which: ThtBackgroundPosition; Where, Range: Integer): Integer;
 {
  Returns a positon according to the given settings.
@@ -389,10 +397,61 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
    get drawn.  They're calculated so that only images within ARect are drawn.
 }
 
+{Internal stuff we expose for inlining}
+
+const
+// CSS 2.1 defines a fixed ratio between pt and px at 96 dpi: 1px = 0.75pt.
+// (see http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-length for details).
+  PixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
+  PointsPerInch = 72.0;
+  PointsPerPixel = PointsPerInch / PixelsPerInch;
+
+type
+  ThtLengthUnitInfo = record
+    Name: ThtString;
+    Factor: Double; // factor of length unit
+    Index: Integer; // index of font size
+    IsAbsolute: Boolean;
+  end;
+  ThtUnit = (
+    luNone, luEm, luEx, luPercent, luPt, luPx, luPc, luIn, luCm, luMm,
+    fsNone, fsSmaller, fsLarger,
+    fsXxSmall, fsXSmall, fsSmall, fsMedium, fsLarge, fsXLarge, fsXxLarge);
+
+  ThtLengthUnit = luNone..luMm;
+  ThtFontSize = fsNone..fsXxLarge;
+
+const
+  CUnitInfo: array [ThtUnit] of ThtLengthUnitInfo = (
+    // length units
+    (Name: '';   Factor: 1.00; IsAbsolute: True),
+    (Name: 'em'; Factor: 1.00; IsAbsolute: False),
+    (Name: 'ex'; Factor: 0.50; IsAbsolute: False),
+    (Name: '%' ; Factor: 0.01; IsAbsolute: False),
+    (Name: 'pt'; Factor: 0.75; IsAbsolute: True),
+    (Name: 'px'; Factor: 1.00; IsAbsolute: True),
+    (Name: 'pc'; Factor: 9.00; IsAbsolute: True),
+    (Name: 'in'; Factor: PixelsPerInch       ; IsAbsolute: True),
+    (Name: 'cm'; Factor: PixelsPerInch / 2.54; IsAbsolute: True),
+    (Name: 'mm'; Factor: PixelsPerInch / 25.4; IsAbsolute: True),
+    // css font sizes
+    (Name: '';          Index:  3; IsAbsolute: True),
+    (Name: 'smaller';   Index: -1; IsAbsolute: False),
+    (Name: 'larger';    Index:  1; IsAbsolute: False),
+    (Name: 'xx-small';  Index:  0; IsAbsolute: True),
+    (Name: 'x-small';   Index:  1; IsAbsolute: True),
+    (Name: 'small';     Index:  2; IsAbsolute: True),
+    (Name: 'medium';    Index:  3; IsAbsolute: True),
+    (Name: 'large';     Index:  4; IsAbsolute: True),
+    (Name: 'x-large';   Index:  5; IsAbsolute: True),
+    (Name: 'xx-large';  Index:  6; IsAbsolute: True)
+  );
+
 implementation
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 function htRectIntegers(Left, Top, Right, Bottom: Integer): ThtRectIntegers;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[reTop] := Top;
   Result[reLeft] := Left;
@@ -402,6 +461,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 function htRectColors(Left, Top, Right, Bottom: TColor): ThtRectColors;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[reTop] := Top;
   Result[reLeft] := Left;
@@ -411,6 +471,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 05.04.2011 --
 function htRectStyles(Left, Top, Right, Bottom: ThtBorderStyle): ThtRectStyles;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result[reTop] := Top;
   Result[reLeft] := Left;
@@ -420,6 +481,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 function MediaTypesToStr(const MediaTypes: ThtMediaTypes): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtMediaType;
 begin
@@ -436,6 +498,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 function TranslateMediaTypes(const MediaTypes: ThtMediaTypes): ThtMediaTypes;
+ {$ifdef UseInline} inline; {$endif}
 begin
   if mtAll in MediaTypes then
     Result := AllMediaTypes
@@ -445,6 +508,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
 function TryStrToMediaType(const Str: ThtString; out MediaType: ThtMediaType): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtMediaType;
 begin
@@ -460,6 +524,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.04.2011 --
 function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: ThtMediaTypes): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I, J: Integer;
   MediaType: ThtMediaType;
@@ -483,6 +548,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
 function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: ThtAlignmentStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtAlignmentStyle;
 begin
@@ -499,6 +565,7 @@ end;
 //-- JPM --------------------------------------------------------- 03.02-2012 --
 
 function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: ThtBoxSizing): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtBoxSizing;
 begin
@@ -512,8 +579,26 @@ begin
   Result := False;
 end;
 
+//-- JPM --------------------------------------------------------- 03.02-2012 --
+
+function TryStrToWhiteSpace(const Str: ThtString; out AWhiteSpace: ThtWhiteSpaceStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
+var
+  I: ThtWhiteSpaceStyle;
+begin
+  for I := low(I) to high(I) do
+    if CWhiteSpace[I] = Str then
+    begin
+      Result := True;
+      AWhiteSpace := I;
+      exit;
+    end;
+  Result := False;
+end;
+
 //-- BG ---------------------------------------------------------- 16.03.2011 --
 function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: ThtBorderStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtBorderStyle;
 begin
@@ -529,6 +614,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
 function TryStrToBoxFloatStyle(const Str: ThtString; out Float: ThtBoxFloatStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtBoxFloatStyle;
 begin
@@ -544,6 +630,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
 function TryStrToBoxPositionStyle(const Str: ThtString; out Position: ThtBoxPositionStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtBoxPositionStyle;
 begin
@@ -560,6 +647,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: ThtBulletStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtBulletStyle;
 begin
@@ -575,6 +663,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 16.03.2011 --
 function TryStrToDisplayStyle(const Str: ThtString; out Display: ThtDisplayStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtDisplayStyle;
 begin
@@ -590,6 +679,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
 function ToRootDisplayStyle(Display: ThtDisplayStyle): ThtDisplayStyle; {$ifdef UseInline} inline; {$endif}
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := CRootDisplayStyle[Display];
 end;
@@ -696,6 +786,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 14.07.2010 --
 function DecodeSize(const Str: ThtString; out V: Double; out U: ThtString): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 {
  Get a mandatory numerical value and an optional unit string from given Str.
  Returns true, if at least the numerical value has been parsed from Str.
@@ -725,56 +816,10 @@ begin
   end;
 end;
 
-const
-// CSS 2.1 defines a fixed ratio between pt and px at 96 dpi: 1px = 0.75pt.
-// (see http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-length for details).
-  PixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
-  PointsPerInch = 72.0;
-  PointsPerPixel = PointsPerInch / PixelsPerInch;
-
-type
-  ThtLengthUnitInfo = record
-    Name: ThtString;
-    Factor: Double; // factor of length unit
-    Index: Integer; // index of font size
-    IsAbsolute: Boolean;
-  end;
-  ThtUnit = (
-    luNone, luEm, luEx, luPercent, luPt, luPx, luPc, luIn, luCm, luMm,
-    fsNone, fsSmaller, fsLarger,
-    fsXxSmall, fsXSmall, fsSmall, fsMedium, fsLarge, fsXLarge, fsXxLarge);
-
-  ThtLengthUnit = luNone..luMm;
-  ThtFontSize = fsNone..fsXxLarge;
-
-const
-  CUnitInfo: array [ThtUnit] of ThtLengthUnitInfo = (
-    // length units
-    (Name: '';   Factor: 1.00; IsAbsolute: True),
-    (Name: 'em'; Factor: 1.00; IsAbsolute: False),
-    (Name: 'ex'; Factor: 0.50; IsAbsolute: False),
-    (Name: '%' ; Factor: 0.01; IsAbsolute: False),
-    (Name: 'pt'; Factor: 0.75; IsAbsolute: True),
-    (Name: 'px'; Factor: 1.00; IsAbsolute: True),
-    (Name: 'pc'; Factor: 9.00; IsAbsolute: True),
-    (Name: 'in'; Factor: PixelsPerInch       ; IsAbsolute: True),
-    (Name: 'cm'; Factor: PixelsPerInch / 2.54; IsAbsolute: True),
-    (Name: 'mm'; Factor: PixelsPerInch / 25.4; IsAbsolute: True),
-    // css font sizes
-    (Name: '';          Index:  3; IsAbsolute: True),
-    (Name: 'smaller';   Index: -1; IsAbsolute: False),
-    (Name: 'larger';    Index:  1; IsAbsolute: False),
-    (Name: 'xx-small';  Index:  0; IsAbsolute: True),
-    (Name: 'x-small';   Index:  1; IsAbsolute: True),
-    (Name: 'small';     Index:  2; IsAbsolute: True),
-    (Name: 'medium';    Index:  3; IsAbsolute: True),
-    (Name: 'large';     Index:  4; IsAbsolute: True),
-    (Name: 'x-large';   Index:  5; IsAbsolute: True),
-    (Name: 'xx-large';  Index:  6; IsAbsolute: True)
-  );
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
 function TryStrToLenthUnit(const Str: ThtString; out LengthUnit: ThtLengthUnit): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   L: ThtString;
   I: ThtLengthUnit;
@@ -792,6 +837,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --
 function TryStrToFontSize(const Str: ThtString; out FontSize: ThtFontSize): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   L: ThtString;
   I: ThtFontSize;
@@ -809,6 +855,7 @@ end;
 
 //------------------------------------------------------------------------------
 function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+ {$ifdef UseInline} inline; {$endif}
 {
  Given a length string, return the appropriate pixel value.
  Base is the base value for a relative value without unit or with percentage.
@@ -1023,6 +1070,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 07.04.2011 --
 function GetPositionInRange(Which: ThtBackgroundPosition; Where, Range: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 {
  Returns a positon according to the given settings.
  Which: which position in the range to get. pLeft and pTop return 0, pBottom and pRight return Range.
@@ -1057,6 +1105,7 @@ end;
 //-- BG ---------------------------------------------------------- 07.04.2011 --
 procedure AdjustForTiling(Tiled: Boolean; TileAreaMin, TileAreaMax, TileSize: Integer;
   var Pos: Integer; out TiledEnd: Integer);
+   {$ifdef UseInline} inline; {$endif}
 {
  Returns the start and end value for tiling a tile of given size.
  Tiled: if false returns a TiledEnd according to unmodified Pos, that allows to pass the tiling
@@ -1093,6 +1142,7 @@ end;
 //-- BG ---------------------------------------------------------- 07.04.2011 --
 procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRect;
   XOff, YOff, IW, IH, BW, BH: Integer; out X, Y, X2, Y2: Integer);
+ {$ifdef UseInline} inline; {$endif}
 {
  PRec has the CSS information on the background image, it's starting location and
  whether it is tiled in x, y, neither, or both.

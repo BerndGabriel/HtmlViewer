@@ -207,6 +207,7 @@ type
     ShapeSy,
     SizeSy,
     SpanAttrSy,
+    SpellCheckSy,
     SrcSy,
     StartSy,
     StyleAttrSy,
@@ -778,7 +779,7 @@ end;
 
 procedure InitAttributes;
 const
-  AttribDefinitions: array[1..88] of TSymbolRec = (
+  AttribDefinitions: array[1..89] of TSymbolRec = (
     (Name: 'ACTION';            Value: ActionSy),
     (Name: 'ACTIVE';            Value: ActiveSy),
     (Name: 'ALIGN';             Value: AlignSy),
@@ -849,6 +850,7 @@ const
     (Name: 'SHAPE';             Value: ShapeSy),
     (Name: 'SIZE';              Value: SizeSy),
     (Name: 'SPAN';              Value: SpanAttrSy),
+    (Name: 'SPELLCHECK';        Value: spellcheckSy),
     (Name: 'SRC';               Value: SrcSy),
     (Name: 'START';             Value: StartSy),
     (Name: 'STYLE';             Value: StyleAttrSy),

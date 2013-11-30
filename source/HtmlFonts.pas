@@ -107,6 +107,7 @@ var
 
 //-- BG ---------------------------------------------------------- 02.05.2011 --
 function AllMyFonts: ThtFontCache;
+ {$ifndef UseInline} inline; {$endif}
 begin
   if VFontCache = nil then
     VFontCache := ThtFontCache.Create;

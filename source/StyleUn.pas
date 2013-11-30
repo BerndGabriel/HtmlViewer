@@ -155,6 +155,7 @@ type
 
   TProperties = class
   private
+    FDefPointSize : Double;
     PropStack: TPropStack; // owner
     TheFont: ThtFont;
     InLink: Boolean;
@@ -229,6 +230,7 @@ type
     property Display: ThtDisplayStyle read GetDisplay;
     property CharSet: TFontCharset read FCharSet write FCharSet;
     property CodePage: Integer read FCodePage write AssignCodePage;
+    property DefPointSize : Double read FDefPointSize write FDefPointSize;
     property EmSize: Integer read FEmSize;
     property ExSize: Integer read FExSize;
     property UseQuirksMode : Boolean read FUseQuirksMode;
@@ -239,6 +241,7 @@ type
     SeqNo: Integer;
     FDefProp: TProperties;
   protected
+    FDefPointSize : Double;
     //this must be protected so that the property can be changed in
     //a descendant while being read only.
     FUseQuirksMode : Boolean;
@@ -260,6 +263,7 @@ type
     procedure ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property DefProp: TProperties read FDefProp;
+    property DefPointSize : Double read FDefPointSize write FDefPointSize;
   end;
 
   TPropStack = class(TObjectList)
@@ -309,11 +313,20 @@ function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
 {$ifdef JPM_DEBUGGING}
+const
+    CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
+
 procedure LogProperties(AProp : TProperties; const APropName : String);
+procedure LogThtMarginArray(AMarg : ThtMarginArray; const AMargName : String);
 {$endif}
 
 procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
 procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Boolean);
+
+//here for inlining
+function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
+function FontSizeConv(const Str: ThtString; OldSize, DefPointSize: Double; const AUseQuirksMode : Boolean): Double; forward;
+function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
 
 implementation
 uses
@@ -326,19 +339,19 @@ uses
  HSLUtils;
 
 var
-  DefPointSize: Double;
+//  DefPointSize: Double;
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
 
 {$ifdef JPM_DEBUGGING}
-const
-    CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
 
 function LogPropColor(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   Result := Graphics.ColorToString( AInt);
 end;
 
 function LogPropColor(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then
     Result := Graphics.ColorToString( AVar)
@@ -347,11 +360,13 @@ begin
 end;
 
 function LogPropDisplay(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   Result := CDisplayStyle[ ThtDisplayStyle(AInt)];
 end;
 
 function LogPropDisplay(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CDisplayStyle[ ThtDisplayStyle(AVar)]  + ' int = '+ IntToStr(AVar);;
@@ -361,6 +376,7 @@ begin
 end;
 
 function LogPropBoxSizing(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   case AInt of
     0 : Result := CBoxSizing[ContentBox];
@@ -372,6 +388,7 @@ begin
 end;
 
 function LogPropBoxSizing(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CBoxSizing[ThtBoxSizing (AVar)]  + ' int = '+ IntToStr(AVar);
@@ -381,6 +398,7 @@ begin
 end;
 
 function LogPropBorderStyle(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   case AInt of
     0 : Result := CBorderStyle[bssNone ];
@@ -398,6 +416,7 @@ begin
 end;
 
 function LogPropBorderStyle(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CBorderStyle[ ThtBorderStyle ( AVar )]  + ' int = '+ IntToStr(AVar);
@@ -408,6 +427,7 @@ begin
 end;
 
 function LogPropListStyle(const AInt : Integer): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   case AInt of
     0 : Result := CBulletStyle[ lbBlank ];
@@ -427,6 +447,7 @@ begin
 end;
 
 function LogPropListStyle(const AVar : Variant): String; overload;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CBulletStyle[ ThtBulletStyle ( AVar )]  + ' int = '+ IntToStr(AVar);;
@@ -436,6 +457,7 @@ begin
 end;
 
 function LogVisibility(const AVar : Variant): String;
+{$ifdef UseInline} inline; {$endif}
 begin
   if Variants.VarIsOrdinal(AVar) then begin
     Result := CVis[Integer( AVar )] + ' int = '+ IntToStr(AVar);
@@ -445,6 +467,7 @@ begin
 end;
 
 procedure LogTVMarginArray(const AMarg : ThtVMarginArray; const AMargName : String);
+{$ifdef UseInline} inline; {$endif}
 var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
@@ -469,6 +492,7 @@ begin
 end;
 
 procedure LogThtMarginArray(AMarg : ThtMarginArray; const AMargName : String);
+{$ifdef UseInline} inline; {$endif}
 var i : ThtPropIndices;
 begin
   for i := Low(AMarg) to High(AMarg) do
@@ -562,12 +586,11 @@ begin
 end;
 {$endif}
 
-function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double; forward;
-function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
 
 
 //-- BG ---------------------------------------------------------- 17.02.2011 --
 function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   while I <= L do
   begin
@@ -586,6 +609,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 17.02.2011 --
 function FindChar(const S: ThtString; C: ThtChar; I, L: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   while (I <= L) and (S[I] <> C) do
     Inc(I);
@@ -595,6 +619,7 @@ end;
 {----------------ReadURL}
 
 function ReadURL(Item: Variant): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {
   If Item is a string try to find and parse:
 
@@ -680,6 +705,7 @@ var
   PropertyStrings: ThtStringList;
 
 function StyleProperties: ThtStringList;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: ThtPropertyIndex;
 begin
@@ -696,6 +722,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
 function TryStrToPropIndex(const PropWord: ThtString; var PropIndex: ThtPropIndices): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
   P: ThtPropertyIndex;
@@ -747,6 +774,7 @@ end;
 //-- BG ---------------------------------------------------------- 20.01.2013 --
 constructor TProperties.CreateCopy(ASource: TProperties);
 begin
+  FDefPointSize   := ASource.DefPointSize;
   PropStack       := ASource.PropStack     ;
   InLink          := ASource.InLink        ;
   DefFontname     := ASource.DefFontname   ;
@@ -795,6 +823,7 @@ begin
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Source,'Source');
   {$ENDIF}
+  FDefPointSize := Source.DefPointSize;
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
   {$IFDEF JPM_DEBUGGING}
@@ -819,6 +848,7 @@ begin
     Props[I] := Source.Props[I];
   CodePage := Source.CodePage;
   DefFontname := Source.DefFontname;
+  FDefPointSize := Source.DefPointSize;
   PropTag := 'default';
   {$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
@@ -874,6 +904,7 @@ begin
       else
         Props[I] := Source.Props[I];
       end;
+  DefPointSize := Source.DefPointSize;
   DefFontname := Source.DefFontname;
   FontBG := Source.FontBG;
   CodePage := Source.CodePage;
@@ -979,6 +1010,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
 function TranslateCharset(CS: TFontCharset): TFontCharset;
+ {$ifdef UseInline} inline; {$endif}
 // extracted from TProperties.AssignCharSetAndCodePage()
 var
   Save: THandle;
@@ -1521,24 +1553,28 @@ end;
 
 //-- BG ---------------------------------------------------------- 25.04.2012 --
 function IsAuto(const Value: Variant): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := Value = Auto;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 function VarIsIntNull(const Value: Variant): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := (VarType(Value) in varInt) and (Value = IntNull);
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 function VarIsAuto(const Value: Variant): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := (VarType(Value) in varInt) and (Value = Auto);
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
 function VMargToMarg(const Value: Variant; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
   if VarIsStr(Value) then
     Result := LengthConv(Value, Relative, Base, EmSize, ExSize, Default)
@@ -1549,6 +1585,7 @@ begin
 end;
 
 procedure ApplyBoxWidthSettings(var AMarg : ThtMarginArray; var VMinWidth, VMaxWidth : Integer; const AUseQuirksMode : Boolean);
+ {$ifdef UseInline} inline; {$endif}
 begin
   {Important!!!
 
@@ -1877,6 +1914,7 @@ end;
 
 procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize,
   ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
+ {$ifdef UseInline} inline; {$endif}
 {currently for images, form controls.  BaseWidth/Height and BStyle currently not supported}
 var
   I: ThtPropIndices;
@@ -2025,7 +2063,7 @@ procedure TProperties.Combine(Styles: TStyleList;
                           end;
 
                         FontSize:
-                          iSize := FontSizeConv(Props[FontSize], iSize, FUseQuirksMode);
+                          iSize := FontSizeConv(Props[FontSize], iSize, DefPointSize, FUseQuirksMode);
 
                         Color:
                           iColor := Props[Color];
@@ -2404,7 +2442,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       MergeItems('::' + Pseudo, True); {default Pseudo definition}
 
     if not (VarType(Props[FontSize]) in varNum) then {if still a ThtString, hasn't been converted}
-      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FUseQuirksMode);
+      Props[FontSize] := FontSizeConv(Props[FontSize], OldSize, FDefPointSize, FUseQuirksMode);
   end;
 
 var
@@ -2539,6 +2577,7 @@ end;
 {----------------RemoveQuotes}
 
 function RemoveQuotes(const S: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
 var
   L: Integer;
@@ -2735,6 +2774,7 @@ end;
 procedure TProperties.AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString);
 var
   NewColor: TColor;
+  WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByIndex');
@@ -2794,10 +2834,14 @@ begin
         Props[WordWrap] := 'normal';
 
     piWhiteSpace:
-      if PropValue = 'nowrap' then
-        Props[piWhiteSpace] := PropValue
-      else if PropValue = 'normal' then
-        Props[piWhiteSpace] := 'normal';
+      if TryStrToWhiteSpace(PropValue,WhiteSpaceStyle) then
+      begin
+        Props[piWhiteSpace] := PropValue;
+      end;
+//      if PropValue = 'nowrap' then
+//        Props[piWhiteSpace] := PropValue
+//      else if PropValue = 'normal' then
+//        Props[piWhiteSpace] := 'normal';
 
     FontVariant:
       if PropValue = 'small-caps' then
@@ -2895,6 +2939,7 @@ begin
 end;
 
 procedure FixBordProps(AProp, BodyProp : TProperties);
+ {$ifdef UseInline} inline; {$endif}
 var i : ThtPropIndices;
 begin
   for i := BorderTopColor to BorderLeftColor do
@@ -2940,6 +2985,7 @@ var
   Propty: TProperties;
   NewColor: TColor;
   NewProp: Boolean;
+  WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
 {$ifdef JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TStyleList.AddModifyProp');
@@ -2948,7 +2994,7 @@ begin
   CodeSiteLogging.CodeSite.SendFmtMsg('Selector = %s',[Selector]);
   CodeSiteLogging.CodeSite.SendFmtMsg('Prop = %s',[Prop]);
   CodeSiteLogging.CodeSite.SendFmtMsg('Value = %s',[Value]);
-CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.AddSeparator;
   {$endif}
   if TryStrToPropIndex(Prop, PropIndex) then
   begin
@@ -2956,6 +3002,7 @@ CodeSiteLogging.CodeSite.AddSeparator;
     begin
       NewProp := True;
       Propty := TProperties.Create(); {newly created property}
+      Propty.DefPointSize := FDefPointSize;
     end
     else
     begin
@@ -3018,10 +3065,14 @@ CodeSiteLogging.CodeSite.AddSeparator;
           Propty.Props[WordWrap] := 'normal';
 
       piWhiteSpace:
-        if Value = 'nowrap' then
-          Propty.Props[piWhiteSpace] := Value
-        else if Value = 'normal' then
-          Propty.Props[piWhiteSpace] := 'normal';
+        if TryStrToWhiteSpace(Value,WhiteSpaceStyle) then
+        begin
+          Propty.Props[piWhiteSpace] := Value;
+        end;
+//        if Value = 'nowrap' then
+//          Propty.Props[piWhiteSpace] := Value
+//        else if Value = 'normal' then
+//          Propty.Props[piWhiteSpace] := 'normal';
 
       FontVariant:
         if Value = 'small-caps' then
@@ -3071,6 +3122,7 @@ function TStyleList.AddObject(const S: ThtString; AObject: TObject): Integer;
 begin
   Result := inherited AddObject(S, AObject);
   TProperties(AObject).PropTag := S;
+  TProperties(AObject).FDefPointSize := DefPointSize;
 end;
 
 function TStyleList.AddDuplicate(const Tag: ThtString; Prop: TProperties): TProperties;
@@ -3450,6 +3502,7 @@ begin
 end;
 
 function OpacityFromStr(S : ThtString) : Byte;
+ {$ifdef UseInline} inline; {$endif}
 var LErr : Integer;
   LR : Real;
 begin
@@ -3462,6 +3515,7 @@ begin
 end;
 
 function TryStrToColor(S: ThtString; NeedPound: Boolean; out Color: TColor): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var LDummy : Byte;
 begin
   Result := ColorAndOpacityFromString(S,NeedPound,Color,LDummy);
@@ -3681,6 +3735,7 @@ end;
 
 //BG, 14.07.2010:
 function decodeSize(const Str: ThtString; out V: extended; out U: ThtString): Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var
   I, J, L: Integer;
 begin
@@ -3711,6 +3766,7 @@ const
   f_pc = 1.0 / 100.0;
 
 function IncFontSize(OldSize: Double; Increment: ThtFontSizeIncrement): Double;
+ {$ifdef UseInline} inline; {$endif}
 var
   OldIndex, NewIndex: Byte;
   D1, D2: Double;
@@ -3769,7 +3825,8 @@ begin
     Result := OldSize * FontConv[NewIndex] / FontConv[OldIndex];
 end;
 
-function FontSizeConv(const Str: ThtString; OldSize: Double; const AUseQuirksMode : Boolean): Double;
+function FontSizeConv(const Str: ThtString; OldSize, DefPointSize : Double; const AUseQuirksMode : Boolean): Double;
+ {$ifdef UseInline} inline; {$endif}
 {given a font-size ThtString, return the point size}
 var
   V: extended;
@@ -3836,6 +3893,7 @@ end;
 
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize,
   Default: Integer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 {given a length ThtString, return the appropriate pixel value.  Base is the
  base value for percentage. EmSize, ExSize for units relative to the font.
  Relative makes a numerical entry relative to Base.

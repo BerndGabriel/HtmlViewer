@@ -537,6 +537,7 @@ end;
 {$else}
 
 function ThemedColor(const AColor : TColor): TColor;
+ {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef UseVCLStyles}
   if TStyleManager.IsCustomStyleActive then begin
@@ -555,6 +556,7 @@ end;
 {$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+ {$ifdef UseInline} inline; {$endif}
 var
     Dummy: Integer;
 begin
@@ -594,6 +596,7 @@ begin
 end;
 
 function FindSpaces(PStart : PWideChar; const ACount : Integer) : Integer;
+ {$ifdef UseInline} inline; {$endif}
 var
   I: Integer;
 begin
@@ -604,6 +607,7 @@ begin
 end;
 
 procedure InitFullBg(var FullBG : Graphics.TBitmap; const W, H: Integer; const AIsCopy : Boolean);
+ {$ifdef UseInline} inline; {$endif}
 begin
   if not Assigned(FullBG) then
   begin
@@ -620,12 +624,14 @@ begin
 end;
 
 procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer);
+ {$ifdef UseInline} inline; {$endif}
 begin
     ACanvas.Ellipse(X, Y - Rad, X + Rad, Y);
 end;
 
 //-- BG ------------------------------------------------------------------------
 function PtrSub(P1, P2: Pointer): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef FPC}
   Result := P1 - P2;
@@ -636,6 +642,7 @@ end;
 
 //-- BG ------------------------------------------------------------------------
 function PtrAdd(P1: Pointer; Offset: Integer): Pointer;
+ {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef FPC}
   Result := P1 + Offset;
@@ -646,6 +653,7 @@ end;
 
 //-- BG ------------------------------------------------------------------------
 procedure PtrInc(var P1; Offset: Integer);
+ {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef FPC}
   Inc(PAnsiChar(P1), Offset);
@@ -655,6 +663,7 @@ begin
 end;
 
 procedure CalcPalette(DC: HDC);
+ {$ifdef UseInline} inline; {$endif}
 {calculate a rainbow palette, one with equally spaced colors}
 const
   Values: array[0..5] of integer = (55, 115, 165, 205, 235, 255);
@@ -724,6 +733,7 @@ end;
 // The handle to a new palette.
 //
 function CopyPalette(Palette: HPALETTE): HPALETTE;
+ {$ifdef UseInline} inline; {$endif}
 var
   PaletteSize: Integer;
   LogPal: TMaxLogPalette;
@@ -836,6 +846,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendChr(var Dest: ThtString; C: ThtChar);
+ {$ifdef UseInline} inline; {$endif}
 begin
   SetLength(Dest, Length(Dest) + 1);
   Dest[Length(Dest)] := C;
@@ -843,6 +854,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendStr(var Dest: ThtString; const S: ThtString);
+ {$ifdef UseInline} inline; {$endif}
 var
   L, N: Integer;
 begin
@@ -857,6 +869,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
 function htCompareString(S1, S2: ThtString): Integer;
+ {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef UNICODE}
   Result := CompareStr(S1, S2);
@@ -867,6 +880,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htLowerCase(Str: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 begin
   {$ifdef UNICODE}
     // LowerCase() converts 7bit chars only while AnsiLowerCase() converts UnicodeStrings correctly.
@@ -881,6 +895,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer);
+ {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef UNICODE}
   SetString(Dest, Chr, Len);
@@ -892,6 +907,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 09.08.2011 --
 function htTrim(Str: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {$ifdef UNICODE}
 begin
   Result := Trim(Str);
@@ -916,6 +932,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
 function htUpperCase(Str: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 begin
   {$ifdef UNICODE}
     // UpperCase() converts 7bit chars only while AnsiUpperCase() converts UnicodeStrings correctly.
@@ -953,6 +970,7 @@ end;
 {----------------RemoveQuotes}
 
 function RemoveQuotes(const S: ThtString): ThtString;
+ {$ifdef UseInline} inline; {$endif}
 {if ThtString is a quoted ThtString, remove the quotes (either ' or ")}
 begin
   Result := S;
@@ -967,6 +985,7 @@ begin
 end;
 
 function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+ {$ifdef UseInline} inline; {$endif}
 {find substring in S starting at Offset}
 var
   S1: ThtString;
@@ -986,11 +1005,13 @@ begin
 end;
 
 function TextStartsWith(const SubStr, S : ThtString) : Boolean;
+ {$ifdef UseInline} inline; {$endif}
 begin
   Result := Copy(S,1,Length(SubStr)) = SubStr;
 end;
 
 function TextEndsWith(const SubStr, S : ThtString) : Boolean;
+ {$ifdef UseInline} inline; {$endif}
 var l : Integer;
 begin
   l := Length(SubStr);
