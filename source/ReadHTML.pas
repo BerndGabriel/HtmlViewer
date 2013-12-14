@@ -716,6 +716,7 @@ non-quirks mode
 Scan for the following DOCTYPE declarations:
 
 <!DOCTYPE html>
+<!DOCTYPE html SYSTEM "about:legacy-compat">
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN"
@@ -828,6 +829,11 @@ var LId : ThtString;
         GetChBasic;
       SkipWhiteSpace;
       ScanDTDIdentifier(LPart);
+      if (htUpperCase(LPart) = 'ABOUT') then begin
+        //HTML5 - don't use quirks mode
+        Result := True;
+        exit;
+      end;
       if (htUpperCase(LPart) = 'HTTP') then begin
       //probably a URL pointing to a DTD
         ScanRestOfUnquotedString(LPart);
