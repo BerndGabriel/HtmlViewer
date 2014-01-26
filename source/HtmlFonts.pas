@@ -107,7 +107,7 @@ var
 
 //-- BG ---------------------------------------------------------- 02.05.2011 --
 function AllMyFonts: ThtFontCache;
- {$ifndef UseInline} inline; {$endif}
+// do not inline as it would required to move local var to interface section. {$ifndef UseInline} inline; {$endif}
 begin
   if VFontCache = nil then
     VFontCache := ThtFontCache.Create;
