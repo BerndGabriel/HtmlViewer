@@ -6158,6 +6158,7 @@ var
   Rgn, SaveRgn, SaveRgn1: HRgn;
   OpenRgn: Boolean;
   PdRect: TRect;
+  NegativeMargins: Boolean;
 begin
   if Document.Printing and not Document.PrintBackground then
     NeedDoImageStuff := False;
@@ -6199,8 +6200,9 @@ begin
   IH := Min(PdRect.Bottom, ARect.Bottom) - FT; {height of area actually drawn}
   IW := PdRect.Right - PdRect.Left;
 
+  NegativeMargins := (MargArray[MarginLeft] < 0) or (MargArray[MarginTop] < 0) or (MargArray[MarginBottom] < 0) or (MargArray[MarginRight] < 0);
   SaveRgn1 := 0;
-  OpenRgn := (Positioning <> PosStatic) and (Document.TableNestLevel > 0);
+  OpenRgn := ((Positioning <> PosStatic) or NegativeMargins) and (Document.TableNestLevel > 0);
   if OpenRgn then
   begin
     SaveRgn1 := CreateRectRgn(0, 0, 1, 1);
