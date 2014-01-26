@@ -271,7 +271,7 @@ begin
   Result := (pixfmt shr 8) and $ff;
 end;
 
-function IsIndexedPixelFormat(const PixelFormat pixfmt) : Boolean; inline;
+function IsIndexedPixelFormat(const pixfmt : PixelFormat) : Boolean; inline;
 begin
   Result := (pixfmt and PixelFormatIndexed) <> 0;
 end;
