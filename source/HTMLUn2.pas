@@ -287,7 +287,7 @@ type
 // parser
 //------------------------------------------------------------------------------
 
-  {Simplified variant of TokenObj, to temporarily keep a ThtString of ANSI
+  {Simplified variant of TokenObj, to temporarily keep a ThtString of unicode
    characters along with their original indices.}
 
   { TCharCollection }

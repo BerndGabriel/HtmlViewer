@@ -63,6 +63,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     property InputType : THtString read FInputType;
   end;
+
   THiddenFormControlObj = class(TFormControlObj)
   protected
     function GetControl: TWinControl; override;
@@ -98,6 +99,7 @@ type
     property SpellCheck : Boolean read FSpellCheck;
     property MaxLength : Integer read FMaxLength;
   end;
+  
   TEditFormControlObj = class(TEditBaseFormControlObj)
   private
     FControl: ThtEdit;

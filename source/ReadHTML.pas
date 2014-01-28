@@ -1399,12 +1399,12 @@ var
   IsFieldsetLegend: Boolean;
   IsInline: Boolean;
 begin
-  IsInline := PropStack.Last.Display = pdInline;
   case Sym of
     DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        IsInline := PropStack.Last.Display = pdInline;
         CheckForAlign;
 
         if not IsInline then
@@ -2559,7 +2559,7 @@ begin
   case AWhiteSpace of
     wsNormal : CollectNormalText(S);
     wsPre : CollectPreText(S);
-    //TODO:  research these
+    //TODO:  research these. see also TSection.AddTokenObj()
     wsNoWrap : CollectNormalText(S);
     wsPreWrap : CollectNormalText(S);
     wsPreLine : CollectNormalText(S);
@@ -3082,7 +3082,7 @@ procedure THtmlParser.DoCommonSy;
           #0:
             Done := True;
         else
-          CollectText(S,LW);
+          CollectText(S, LW);
         end;
       if InForm then
         FormEnd
