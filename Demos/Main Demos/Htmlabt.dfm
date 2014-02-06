@@ -27,6 +27,7 @@ object AboutBox: TAboutBox
     Height = 25
     Anchors = [akRight, akBottom]
     Kind = bkOK
+    NumGlyphs = 2
     TabOrder = 0
   end
   object Viewer: THtmlViewer

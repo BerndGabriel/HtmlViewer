@@ -34,6 +34,9 @@ unit FDemUnit;
 interface
 
 uses
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
@@ -237,9 +240,6 @@ var
 
 implementation
 
-{$ifdef TScrollStyleInSystemUITypes}
-uses System.UITypes;
-{$endif}
 {$ifdef LCL}
   {$R *.lfm}
 {$else}
