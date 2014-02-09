@@ -40,7 +40,6 @@ contains
   BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
   BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
   BegaPreview in '..\source\BegaPreview.pas',
-  BegaPreviewForm in '..\source\BegaPreviewForm.pas' {BegaCustomPrintPreviewForm},
   BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
   BegaScrollBox in '..\source\BegaScrollBox.pas',
   BegaZoom in '..\source\BegaZoom.pas',
@@ -66,6 +65,7 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
   vwPrint in '..\source\vwPrint.pas',
-  HtmlSymb in '..\source\HtmlSymb.pas';
+  HtmlSymb in '..\source\HtmlSymb.pas',
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas';
 
 end.
