@@ -242,10 +242,10 @@
 
 {$ifdef Compiler23_Plus}
   {$define UseVCLStyles}
-  {$define HasSystemUITypes}
 {$endif}
 
 {$ifdef Compiler24_Plus}
+  {$define HasSystemUITypes}
 {JPM_DEBUGGING define is used for internal debugging using CodeSite Express that is included with
 some versions of RAD Studio XE2.  This should never be used for release software and for component usage.}
   {$ifdef win32}
