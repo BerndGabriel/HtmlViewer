@@ -40,7 +40,7 @@ contains
   BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
   BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
   BegaPreview in '..\source\BegaPreview.pas',
-  BegaPreviewForm in '..\source\BegaPreviewForm.pas' {BegaCustomPrintPreviewForm},
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas',
   BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
   BegaScrollBox in '..\source\BegaScrollBox.pas',
   BegaZoom in '..\source\BegaZoom.pas',
