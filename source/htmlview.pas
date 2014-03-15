@@ -2761,7 +2761,7 @@ begin
   if FDocument <> nil then
   begin
     Pos := FDocument.Position;
-    FDocument.Position := 0;
+    FDocument.Position := FDocument.BomLength;
     Result := FDocument.AsString;
     FDocument.Position := Pos;
   end
@@ -4341,6 +4341,14 @@ begin
   HScrollbar.RePaint;
 end;
 
+//BG, 26.01.2014: debug stuff:
+var
+    AStr: AnsiString;
+    StartPos: Integer;
+    EndPos: Integer;
+    LenFrag: Integer;
+//BG, 26.01.2014: end of debug stuff:
+
 procedure THtmlViewer.CopyToClipboard;
 
   procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
@@ -4364,14 +4372,20 @@ procedure THtmlViewer.CopyToClipboard;
       L: Integer;
       CF_HTML: UINT;
     begin
-      Len := Length(Source);
+      Len := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), nil, 0, nil, nil);;
       CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-      Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len * 4 + 1);
+      Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len + 1);
       try
         Buf := GlobalLock(Mem);
         try
           L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
           Buf[L] := #0;
+//BG, 26.01.2014: debug stuff:
+          AStr := Buf;
+          StartPos := Pos('<!--StartFragment-->', AStr);
+          EndPos := Pos('<!--EndFragment-->', AStr);
+          LenFrag := EndPos - StartPos;
+//BG, 26.01.2014: end of debug stuff:
           SetClipboardData(CF_HTML, Mem);
         finally
           GlobalUnlock(Mem);
