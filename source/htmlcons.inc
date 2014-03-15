@@ -35,12 +35,12 @@
 { Identify Delphi Compiler Version:
 
   #   Compiler    Version Compiler Defined Symbol
-  D18 Delphi XE5    26    VER260
-  D17 Delphi XE4    25    VER250
-  D16 Delphi XE3    24    VER240
-  D15 Delphi XE2    23    VER230
-  D14 Delphi XE     22    VER220
-  D13 Delphi 2010   21    VER210
+  D19 Delphi XE5    26    VER260
+  D18 Delphi XE4    25    VER250
+  D17 Delphi XE3    24    VER240
+  D16 Delphi XE2    23    VER230
+  D15 Delphi XE     22    VER220
+  D14 Delphi 2010   21    VER210
   D12 Delphi 2009   20    VER200
   D11 Delphi 2007   18.5  VER185
   D10 Delphi 2006   18    VER180
@@ -63,6 +63,10 @@
   NOTICE: HtmlViewer no longer supports versions before Delphi 6
   BG, 20.11.2010: HtmlViewer sources use neither ver100_plus nor ver120_plus any more.
   We keep the defines alive for custom code which might still use them.
+
+  A complete list of version numbers can be found at:
+  
+  http://docwiki.embarcadero.com/RADStudio/XE5/de/Compiler-Versionen
 }
 
   {$define VCL}
