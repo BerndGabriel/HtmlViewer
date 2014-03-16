@@ -57,6 +57,12 @@ unit HTMLSubs;
 {$ifdef DO_BLOCK_INLINE}
 {$endif}
 
+//TODO -oBG, 15.03.2014: support display:inline
+{-$define DO_PD_INLINE}
+//TODO -oBG, 15.03.2014: support display:inline
+{$ifdef DO_PD_INLINE}
+{$endif}
+
 interface
 
 uses
@@ -4230,6 +4236,8 @@ begin
   CodeSite.AddSeparator;
 {$ENDIF}
 
+//TODO -oBG, 15.03.2014: support display:inline
+{$ifdef DO_PD_INLINE}
 //  //TODO -oBG, 24.06.2012: merge sections with display=inline etc.
 //  //TODO -oBG, 30.11.2013: To be more precise:
 //  // Reading the HTML file must produce the actual document tree rather than preprocessing inline elements to TSections.
@@ -4239,8 +4247,8 @@ begin
 //  // added to the processing list directly. This ends up in a list of block level elements, just like TCellBasic has
 //  // been before property Display was introduced.
 //  //
-//  // Actually TInlineSection collects content of TSections of consecutive inline elements and must draw borders and
-//  // background of the inlined elements.
+//  // Actually TInlineSection is intended to collect content of TSections of consecutive inline elements and must draw
+//  // borders and background of the inlined elements.
 //  InlineSection := nil;
 //  FRenderList.Clear;
 //  for I := 0 to Count - 1 do
@@ -4262,6 +4270,7 @@ begin
 //      FRenderList.Add(Items[I]);
 //    end;
 //  end;
+{$endif}
 
   StartCurs := Curs;
   H := 0;
@@ -4548,35 +4557,25 @@ var
   MinCell, MaxCell: Integer;
   LeftSide, RightSide, AutoCount: Integer;
 begin
-  {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TBlock.MinMaxWidth');
   CodeSite.SendFmtMsg('Self.TagClass = [%s]',[TagClass ]);
 
   CodeSite.AddSeparator;
-  {$ENDIF}
+  try
+{$ENDIF}
+
   if (Display = pdNone) or (Positioning = PosAbsolute) then
   begin
     Min := 0;
     Max := 0;
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
-
-  CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
-   {$ENDIF}
     Exit;
   end;
+
 {$ifdef DO_BLOCK_INLINE}
   if Display = pdInline then
   begin
     inherited MinMaxWidth(Canvas,Min,Max);
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
-
-  CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
-   {$ENDIF}
-
     exit;
   end;
 {$endif}
@@ -4608,12 +4607,15 @@ begin
     Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
     Max := Math.Max(MaxCell, MargArray[piWidth]) + LeftSide + RightSide;
   end;
-   {$IFDEF JPM_DEBUGGING}
-   CodeSite.SendFmtMsg('Min = [%d]',[Min]);
-   CodeSite.SendFmtMsg('Max = [%d]',[Max]);
 
-  CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
-   {$ENDIF}
+{$IFDEF JPM_DEBUGGING}
+  finally
+    CodeSite.SendFmtMsg('Min = [%d]',[Min]);
+    CodeSite.SendFmtMsg('Max = [%d]',[Max]);
+
+    CodeSite.ExitMethod(Self,'TBlock.MinMaxWidth');
+  end;
+{$ENDIF}
 end;
 
 {----------------TBlock.GetURL}
@@ -5171,8 +5173,9 @@ var
 
   procedure DrawLogicInline;
   begin
+    //TODO -oBG, 15.03.2014: draw logic inline
     DrawLogicAsBlock;
-    DrawRect.Right := DrawRect.Left + MyCell.TextWidth;
+    //DrawRect.Right := DrawRect.Left + MyCell.TextWidth;
   end;
 
 begin {TBlock.DrawLogic}
@@ -10417,7 +10420,7 @@ end;
 constructor TSection.Create(Parent: TCellBasic);
 begin
   inherited Create(Parent, nil, nil);
-  FDisplay := pdInline;
+  FDisplay := pdInline; // A section is always inline as the section is intended to handle consecutive inline elements.  
   Buff := PWideChar(BuffS);
   Fonts := TFontList.Create;
   Images := TSizeableObjList.Create;
@@ -13728,60 +13731,63 @@ function TBlockCell.DoLogicX(Canvas: TCanvas; X, Y, XRef, YRef, Width, AHeight, 
     end;
   end;
 
-  function DoInlineLogic: Integer;
-  // Returns CellHeight
-  var
-    I, Sw, Tmp: Integer;
-    LineSize: TSize;
-    SB: TSectionBase;
-    SC: TSection;
-  begin
-    Result := 0;
-    LineSize.cx := 0;
-    LineSize.cy := 0;
-    for I := 0 to Count - 1 do
-    begin
-      SB := Items[I];
-      if SB is TSection then
-        SC := TSection(SB)
-      else
-        SC := nil;
-      Tmp := SB.DrawLogic1(Canvas, X + LineSize.cx, Y + Result, XRef, YRef, Width, AHeight, BlHt, IMgr, Sw, Curs);
-      if (SC <> nil) {and (SC.WhiteSpaceStyle in [wsPre, wsNoWrap])} then
-      begin
-        // Each section accumulates elements up to complete lines.
-        Inc(Result, Tmp);
-        if OwnerBlock.HideOverflow then
-          ScrollWidth := Width
-        else
-          ScrollWidth := Max(ScrollWidth, Sw);
-        TextWidth := Max(TextWidth, TSection(SB).TextWidth);
-      end
-      else
-      begin
-        if LineSize.cy < Tmp then
-          LineSize.cy := Tmp;
-        Inc(LineSize.cx, SB.DrawRect.Right - SB.DrawRect.Left);
-        if LineSize.cx > Width then
-        begin
-          Inc(Result, LineSize.cy);
-          if OwnerBlock.HideOverflow then
-            ScrollWidth := Width
-          else
-            ScrollWidth := Max(ScrollWidth, LineSize.cx);
-          if TextWidth < LineSize.cx then
-            TextWidth := LineSize.cx;
-          LineSize.cx := 0;
-          LineSize.cy := 0;
-        end;
-      end;
-      if not (SB is TBlock) or (TBlock(SB).Positioning <> posAbsolute) then
-        tcContentBot := Max(tcContentBot, SB.ContentBot);
-      tcDrawTop := Min(tcDrawTop, SB.DrawTop);
-      tcDrawBot := Max(tcDrawBot, SB.DrawBot);
-    end;
-    Inc(Result, LineSize.cy);
-  end;
+//TODO -oBG, 15.03.2014: support display:inline
+{$ifdef DO_PD_INLINE}
+//  function DoInlineLogic: Integer;
+//  // Returns CellHeight
+//  var
+//    I, Sw, Tmp: Integer;
+//    LineSize: TSize;
+//    SB: TSectionBase;
+//    SC: TSection;
+//  begin
+//    Result := 0;
+//    LineSize.cx := 0;
+//    LineSize.cy := 0;
+//    for I := 0 to Count - 1 do
+//    begin
+//      SB := Items[I];
+//      if SB is TSection then
+//        SC := TSection(SB)
+//      else
+//        SC := nil;
+//      Tmp := SB.DrawLogic1(Canvas, X + LineSize.cx, Y + Result, XRef, YRef, Width, AHeight, BlHt, IMgr, Sw, Curs);
+//      if (SC <> nil) {and (SC.WhiteSpaceStyle in [wsPre, wsNoWrap])} then
+//      begin
+//        // Each section accumulates elements up to complete lines.
+//        Inc(Result, Tmp);
+//        if OwnerBlock.HideOverflow then
+//          ScrollWidth := Width
+//        else
+//          ScrollWidth := Max(ScrollWidth, Sw);
+//        TextWidth := Max(TextWidth, TSection(SB).TextWidth);
+//      end
+//      else
+//      begin
+//        if LineSize.cy < Tmp then
+//          LineSize.cy := Tmp;
+//        Inc(LineSize.cx, SB.DrawRect.Right - SB.DrawRect.Left);
+//        if LineSize.cx > Width then
+//        begin
+//          Inc(Result, LineSize.cy);
+//          if OwnerBlock.HideOverflow then
+//            ScrollWidth := Width
+//          else
+//            ScrollWidth := Max(ScrollWidth, LineSize.cx);
+//          if TextWidth < LineSize.cx then
+//            TextWidth := LineSize.cx;
+//          LineSize.cx := 0;
+//          LineSize.cy := 0;
+//        end;
+//      end;
+//      if not (SB is TBlock) or (TBlock(SB).Positioning <> posAbsolute) then
+//        tcContentBot := Max(tcContentBot, SB.ContentBot);
+//      tcDrawTop := Min(tcDrawTop, SB.DrawTop);
+//      tcDrawBot := Max(tcDrawBot, SB.DrawBot);
+//    end;
+//    Inc(Result, LineSize.cy);
+//  end;
+{$endif}
 
 begin
    {$IFDEF JPM_DEBUGGING}
@@ -13803,10 +13809,13 @@ begin
   tcDrawTop := 990000;
   tcDrawBot := 0;
 
-  if CalcDisplayExtern = pdBlock then
-    CellHeight := DoBlockLogic
+//TODO -oBG, 15.03.2014: support display:inline
+{$ifdef DO_PD_INLINE}
+  if CalcDisplayExtern = pdInline then
+    CellHeight := DoInlineLogic
   else
-    CellHeight := DoInlineLogic;
+{$endif}
+    CellHeight := DoBlockLogic;
 
   Len := Curs - StartCurs;
   Result := CellHeight;

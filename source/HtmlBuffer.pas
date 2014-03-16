@@ -142,6 +142,7 @@ type
     FName: TBuffString;
     FConverter: TBuffConverter;
     FState: TBufferState;
+    FBomLength: Cardinal;
 
     function GetCodePage: TBuffCodePage;  {$ifdef UseInline} inline; {$endif}
     function GetPosition: Integer; {$ifdef UseInline} inline; {$endif}
@@ -173,6 +174,7 @@ type
     property CodePage: TBuffCodePage read GetCodePage write SetCodePage;
     property Name: TBuffString read FName;
     property Position: Integer read GetPosition write SetPosition;
+    property BomLength: Cardinal read FBomLength;
   end;
 
 // BG, 13.10.2012: Code Page Management
@@ -1389,6 +1391,7 @@ begin
   FName := Source.FName;
   FConverter := TBuffConverterClass(Source.FConverter.ClassType).Create(FStart, FEnd, Source.FConverter.FCodePage, Source.FConverter.FInitalCodePage);
   FState := Source.FState;
+  FBomLength := Source.FBomLength;
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
@@ -1565,6 +1568,7 @@ begin
           CodePage := CP_UTF16LE;
           Include(FState, bsFixedCodePage);
           // TODO: if followed by $0000, this is UTF-32-LE
+          FBomLength := 2;
           Exit;
         end;
 
@@ -1576,6 +1580,7 @@ begin
           CodePage := CP_UTF16BE;
           Include(FState, bsFixedCodePage);
           // TODO: if followed by $0000, this is UTF-32-3412
+          FBomLength := 2;
           Exit;
         end;
 
@@ -1589,6 +1594,7 @@ begin
             Inc(FStart.BytePtr);
             CodePage := CP_UTF8;
             Include(FState, bsFixedCodePage);
+            FBomLength := 3;
             Exit;
           end;
           Dec(FStart.WordPtr);
