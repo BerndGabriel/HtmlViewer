@@ -615,9 +615,6 @@ uses
   Vcl.Themes,
 {$endif}
   Math, Clipbrd, Forms, Printers,
-{$ifdef UNICODE}
-  AnsiStrings,
-{$endif}
 {$ifndef NoGDIPlus}
   GDIPL2A,
 {$endif}
@@ -4341,51 +4338,36 @@ begin
   HScrollbar.RePaint;
 end;
 
-//BG, 26.01.2014: debug stuff:
-var
-    AStr: AnsiString;
-    StartPos: Integer;
-    EndPos: Integer;
-    LenFrag: Integer;
-//BG, 26.01.2014: end of debug stuff:
-
 procedure THtmlViewer.CopyToClipboard;
 
   procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
 
-    procedure CopyToClipBoard(const Source: ThtString);
+    procedure CopyToClipBoard(const Utf8: AnsiString; Len: Integer);
     // Put SOURCE on the clipboard, using FORMAT as the clipboard format
   {$ifdef LCL}
     var
-      Utf8: UTF8String;
+//      Len: Integer;
+//      Utf8: UTF8String;
       CF_HTML: UINT;
     begin
       CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-      Utf8 := UTF8Encode(Source);
-      Clipboard.AddFormat(CF_HTML, Utf8, Length(Utf8));
+//      Len := Length(Utf8);
+//      Utf8 := UTF8Encode(Source);
+      Clipboard.AddFormat(CF_HTML, Utf8, Len);
     end;
   {$else}
     var
-      Len: Integer;
       Mem: HGLOBAL;
       Buf: PAnsiChar;
-      L: Integer;
       CF_HTML: UINT;
     begin
-      Len := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), nil, 0, nil, nil);;
       CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
       Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len + 1);
       try
         Buf := GlobalLock(Mem);
         try
-          L := WideCharToMultiByte(CP_UTF8, 0, PWideChar(Source), Length(Source), Buf, Len, nil, nil);
-          Buf[L] := #0;
-//BG, 26.01.2014: debug stuff:
-          AStr := Buf;
-          StartPos := Pos('<!--StartFragment-->', AStr);
-          EndPos := Pos('<!--EndFragment-->', AStr);
-          LenFrag := EndPos - StartPos;
-//BG, 26.01.2014: end of debug stuff:
+          Move(Utf8[1], Buf[0], Len);
+          Buf[Len] := #0;
           SetClipboardData(CF_HTML, Mem);
         finally
           GlobalUnlock(Mem);
@@ -4400,47 +4382,66 @@ procedure THtmlViewer.CopyToClipboard;
       // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
       StartFrag: ThtString = '<!--StartFragment-->';
       EndFrag: ThtString = '<!--EndFragment-->';
-      DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
 
-    function GetHeader(const HTML: ThtString): ThtString;
+    function GetCopy(const HTML: ThtString): AnsiString;
     const
-      Version = 'Version:1.0'#13#10;
-      StartHTML = 'StartHTML:';
-      EndHTML = 'EndHTML:';
-      StartFragment = 'StartFragment:';
-      EndFragment = 'EndFragment:';
-      SourceURL = 'SourceURL:';
-      NumberLengthAndCR = 10;
+      PreliminaryHeader: ThtString =
+        'Version:1.0'#13#10 +
+        'StartHTML:'#13#10 +
+        'EndHTML:'#13#10 +
+        'StartFragment:'#13#10 +
+        'EndFragment:'#13#10 +
+        'SourceURL:'#13#10;
+      IndexLength = 10;
 
-      // Let the compiler determine the description length.
-      PreliminaryLength = Length(Version) + Length(StartHTML) +
-        Length(EndHTML) + Length(StartFragment) +
-        Length(EndFragment) + 4 * NumberLengthAndCR +
-        2; {2 for last CRLF}
+      procedure InsertAfter(var Str: ThtString; const SubStr, InsStr: ThtString);
+      var
+        I: Integer;
+      begin
+        I := Pos(SubStr, Str);
+        Assert(I > 0, Format('"%s" not found in "%s"', [SubStr, Str]));
+        Inc(I, Length(SubStr));
+        Insert(InsStr, Str, I);
+      end;
+
     var
+      Header: ThtString;
       URLString: ThtString;
-      StartHTMLIndex,
-        EndHTMLIndex,
-        StartFragmentIndex,
-        EndFragmentIndex: Integer;
-    begin
-      if CurrentFile = '' then
-        UrlString := SourceURL + 'unsaved:///THtmlViewer.htm'
-      else if Pos('://', CurrentFile) > 0 then
-        URLString := SourceURL + CurrentFile {already has protocol}
-      else
-        URLString := SourceURL + 'file://' + CurrentFile;
-      StartHTMLIndex := PreliminaryLength + Length(URLString);
-      EndHTMLIndex := StartHTMLIndex + Length(HTML);
-      StartFragmentIndex := StartHTMLIndex + Pos(StartFrag, HTML) + Length(StartFrag) - 1;
-      EndFragmentIndex := StartHTMLIndex + Pos(EndFrag, HTML) - 1;
+      Utf8Header: AnsiString;
+      Utf8Html: AnsiString;
 
-      Result := Version +
-        SysUtils.Format('%s%.8d', [StartHTML, StartHTMLIndex]) + #13#10 +
-        SysUtils.Format('%s%.8d', [EndHTML, EndHTMLIndex]) + #13#10 +
-        SysUtils.Format('%s%.8d', [StartFragment, StartFragmentIndex]) + #13#10 +
-        SysUtils.Format('%s%.8d', [EndFragment, EndFragmentIndex]) + #13#10 +
-        URLString + #13#10;
+      StartHTMLIndex,
+      EndHTMLIndex,
+      StartFragmentIndex,
+      EndFragmentIndex: Integer;
+
+    begin
+      // prepare header (without indexes yet):
+      if CurrentFile = '' then
+        UrlString := 'unsaved:///THtmlViewer.htm'
+      else if Pos('://', CurrentFile) > 0 then
+        URLString := CurrentFile {already has protocol}
+      else
+        URLString := 'file://' + CurrentFile;
+      Header := PreliminaryHeader;
+      InsertAfter(Header, 'SourceURL:', URLString);
+
+      // calculate indexes into utf8 clipboard text:
+      Utf8Header := UTF8Encode(Header);
+      Utf8Html := UTF8Encode(HTML);
+      StartHTMLIndex      := Length(Utf8Header) + 4 * IndexLength;
+      EndHTMLIndex        := StartHTMLIndex + Length(Utf8Html);
+      StartFragmentIndex  := StartHTMLIndex + Pos(AnsiString(StartFrag), Utf8Html) + Length(StartFrag) - 1;
+      EndFragmentIndex    := StartHTMLIndex + Pos(AnsiString(EndFrag), Utf8Html) - 1;
+
+      // insert indexes into header:        IndexLength must match the format width:
+      InsertAfter(Header, 'StartHTML:'    , Format('%.10d', [StartHTMLIndex]));
+      InsertAfter(Header, 'EndHTML:'      , Format('%.10d', [EndHTMLIndex]));
+      InsertAfter(Header, 'StartFragment:', Format('%.10d', [StartFragmentIndex]));
+      InsertAfter(Header, 'EndFragment:'  , Format('%.10d', [EndFragmentIndex]));
+
+      // return the complete clipboard text
+      Result := UTF8Encode(Header) + Utf8Html;
     end;
 
     procedure RemoveTag(const Tag: ThtString);
@@ -4538,6 +4539,10 @@ procedure THtmlViewer.CopyToClipboard;
       Result := Copy(HTML, 1, I); {truncate the tags}
     end;
 
+  const
+    DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
+  var
+    Utf8String: AnsiString;
   begin
   {Truncate beyond EnSrc}
     HTML := Copy(HTML, 1, EnSrc - 1);
@@ -4557,9 +4562,8 @@ procedure THtmlViewer.CopyToClipboard;
   {Add Doctype tag at start and append the EndFrag ThtString}
     HTML := DocType + HTML + EndFrag;
   {Add the header to start}
-    HTML := GetHeader(HTML) + HTML;
-
-    CopyToClipBoard(HTML);
+    Utf8String := GetCopy(HTML);
+    CopyToClipBoard(Utf8String, Length(Utf8String));
   end;
 
 var
@@ -4578,11 +4582,16 @@ begin
     HTML := DocumentSource;
     StSrc := FindSourcePos(FSectionList.SelB);
     EnSrc := FindSourcePos(FSectionList.SelE);
-    if (FDocument <> nil) and ((FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE)) then
+    if (FDocument <> nil) then
     begin
-      StSrc := StSrc div 2;
-      if EnSrc > 0 then
-        EnSrc := EnSrc div 2;
+      Dec(StSrc, FDocument.BomLength);
+      Dec(EnSrc, FDocument.BomLength);
+      if (FDocument.CodePage = CP_UTF16LE) or (FDocument.CodePage = CP_UTF16BE) then
+      begin
+        StSrc := StSrc div 2;
+        if EnSrc > 0 then
+          EnSrc := EnSrc div 2;
+      end;
     end;
     Inc(StSrc);
 
