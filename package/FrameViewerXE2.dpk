@@ -28,8 +28,7 @@ package FrameViewerXE2;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
-{$DESIGNONLY}
+{$RUNONLY}
 {$IMPLICITBUILD ON}
 
 requires
@@ -38,8 +37,7 @@ requires
   vcl,
   vclx,
   vclimg,
-  vclsmp,
-  designide;
+  vclsmp;
 
 contains
   framview in '..\source\framview.pas',
@@ -53,12 +51,10 @@ contains
   URLSubs in '..\source\URLSubs.pas',
   FramBrwz in '..\source\FramBrwz.pas',
   DitherUnit in '..\source\DitherUnit.pas',
-  HTMLCompEdit in '..\source\HTMLCompEdit.pas',
   StyleUn in '..\source\StyleUn.pas',
   StylePars in '..\source\StylePars.pas',
   HTMLGif2 in '..\source\HTMLGif2.pas',
   htmlgif1 in '..\source\htmlgif1.pas',
-  FrameViewerReg in '..\source\FrameViewerReg.pas',
   GDIPL2A in '..\source\GDIPL2A.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
   HtmlBuffer in '..\source\HtmlBuffer.pas',
