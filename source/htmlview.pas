@@ -2771,7 +2771,7 @@ begin
   if Value = OldThickIBeamCursor then {no longer used}
     Value := crIBeam;
 {$ifdef LCL}
-  inherited setCursor(Value);
+  inherited SetCursor(Value);
 {$else}
   inherited Cursor := Value;
 {$endif}
@@ -3784,6 +3784,7 @@ begin
         HTop := 0;
         OldTop := 0;
         Curs := 0;
+        ScrollWidth := 0;
         VPixels := PrintList.DoLogic(Prn.Canvas, 0, W, H, 0, ScrollWidth, Curs);
         if Mode in [ppNoOutput, ppPreview] then
         begin
@@ -4342,17 +4343,13 @@ procedure THtmlViewer.CopyToClipboard;
 
   procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
 
-    procedure CopyToClipBoard(const Utf8: AnsiString; Len: Integer);
+    procedure CopyToClipBoard(Utf8: AnsiString; Len: Integer);
     // Put SOURCE on the clipboard, using FORMAT as the clipboard format
   {$ifdef LCL}
     var
-//      Len: Integer;
-//      Utf8: UTF8String;
       CF_HTML: UINT;
     begin
       CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-//      Len := Length(Utf8);
-//      Utf8 := UTF8Encode(Source);
       Clipboard.AddFormat(CF_HTML, Utf8, Len);
     end;
   {$else}
