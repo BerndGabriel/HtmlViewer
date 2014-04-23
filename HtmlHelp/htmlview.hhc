@@ -81,6 +81,10 @@
             </OBJECT>
         </UL>
       <LI> <OBJECT type="text/sitemap">
+        <param name="Name" value="Class Hierarchie">
+        <param name="Local" value="html/class_hierarchy.htm">
+        </OBJECT>
+      <LI> <OBJECT type="text/sitemap">
         <param name="Name" value="Things You Should Know">
         <param name="Local" value="html/things_you_should_know.htm">
         </OBJECT>
