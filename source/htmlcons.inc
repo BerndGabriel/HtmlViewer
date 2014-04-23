@@ -141,6 +141,10 @@
     {$define TComboBoxHasTextHint}
   {$endif}
 
+  {$ifdef Compiler21_Plus}
+    {$define HasGestures}
+  {$endif}
+
   {$ifdef Compiler22_Plus}
     {$define HasGDIPlus}
   {$endif}

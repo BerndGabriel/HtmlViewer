@@ -622,6 +622,10 @@ type
     property OnMouseUp;
     property OnMouseDown;
     property OnMouseWheel;
+{$ifdef HasGestures}
+    property Touch;
+    property OnGesture;
+{$endif}
   end;
   THtmlViewerClass = class of THtmlViewer;
 
@@ -2643,7 +2647,7 @@ end;
 //-- BG ---------------------------------------------------------- 02.01.2012 --
 function THtmlViewer.GetHistoryIndex: Integer;
 begin
-  Result := History.Index;
+  Result := FHistory.Index;
 end;
 
 function THtmlViewer.GetHScrollBarRange: Integer;
