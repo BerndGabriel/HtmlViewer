@@ -16,7 +16,6 @@
   {$H+}
 
   {$define FPC_TODO}
-  {$define FPC_TODO_PRINTING}
 
   {.$define NoGDIPlus}
 
