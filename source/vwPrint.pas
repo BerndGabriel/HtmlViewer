@@ -40,6 +40,12 @@ unit vwPrint;
 interface
 
 uses
+  {$ifdef FPC}
+    RtlConsts, WinUtilPrn,
+  {$else}
+    Consts,
+  {$endif}
+  SysUtils, Forms, Contnrs,
   Windows, Classes, Graphics, Printers,
   HtmlGlobals;
 
@@ -114,14 +120,6 @@ type
   end;
 
 implementation
-
-uses
-{$ifdef FPC}
-  RtlConsts,
-{$else}
-  Consts,
-{$endif}
-  SysUtils, Forms, Contnrs;
 
 type
   // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
@@ -382,8 +380,10 @@ type
   TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar; InitData: PDeviceMode): HDC stdcall;
 var
   CreateHandleFunc: TCreateHandleFunc;
-{$ifndef FPC_TODO_PRINTING}
   Driver, Device, Port: array[0..100] of char;
+{$ifdef LCL}
+  PrnDev: TPrinterDevice;
+{$else}
   TmpDeviceMode: THandle;
 {$endif}
 begin
@@ -415,7 +415,13 @@ begin
     end;
     if Assigned(CreateHandleFunc) then
     begin
-{$ifndef FPC_TODO_PRINTING}
+{$ifdef LCL}
+      PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
+      DevMode := PrnDev.DevMode;
+      StrCopy(Device, PChar(PrnDev.Device));
+      StrCopy(Driver, PChar(PrnDev.Driver));
+      StrCopy(Port, PChar(PrnDev.Port));
+{$else}
       Printers.Printer.GetPrinter(Device, Driver, Port, TmpDeviceMode);
       if DeviceMode <> 0 then
       begin
@@ -429,6 +435,7 @@ begin
         if DeviceMode <> 0 then
           DevMode := GlobalLock(DeviceMode);
       end;
+{$endif}
 
       DC := CreateHandleFunc(Driver, Device, Port, DevMode);
       if DC = 0 then
@@ -436,7 +443,6 @@ begin
       if FCanvas <> nil then
         FCanvas.Handle := DC;
 
-{$endif}
     end;
     State := Value;
   end;
