@@ -16,7 +16,6 @@
   {$H+}
 
   {$define FPC_TODO}
-  {$define FPC_TODO_PRINTING}
 
   {.$define NoGDIPlus}
 
@@ -139,6 +138,10 @@
   {$ifdef Compiler20_Plus}
     {$define TEditHasTextHint}
     {$define TComboBoxHasTextHint}
+  {$endif}
+
+  {$ifdef Compiler21_Plus}
+    {$define HasGestures}
   {$endif}
 
   {$ifdef Compiler22_Plus}
