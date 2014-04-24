@@ -8847,7 +8847,7 @@ begin
         Canvas.FillRect(BRect);
       end;
     end;
-    if ImgOK then
+    if ImgOK and (TiledImage <> nil) then
     begin
       if not Cell.MasterList.IsCopy then
         {$IFNDEF NoGDIPlus}
