@@ -942,6 +942,9 @@ procedure THtmlViewer.LoadFile(const FileName: ThtString; ft: ThtmlFileType);
 var
   Dest, Name: ThtString;
   Stream: TStream;
+{$ifdef FPC}
+  ShortName: ThtString;
+{$endif}
 begin
   IOResult; {eat up any pending errors}
   SplitDest(FileName, Name, Dest);
@@ -949,7 +952,16 @@ begin
     Name := ExpandFileName(Name);
   FCurrentFile := Name; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
   if not FileExists(Name) then
+  begin
+{$ifdef FPC}
+    //BG, 24.04.2014: workaround for non ansi file names:
+    ShortName := ExtractShortPathName(UTF8Decode(Name));
+    if FileExists(ShortName) then
+      Name := ShortName
+    else
+{$endif}
     raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
+  end;
   Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
   try
     LoadStream(Name + Dest, Stream, ft);
