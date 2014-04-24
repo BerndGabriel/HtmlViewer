@@ -1,0 +1,71 @@
+package FrameViewerXE6;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$RUNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl,
+  vclimg,
+  soaprtl,
+  VclSmp;
+
+contains
+  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
+  BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
+  BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
+  BegaPreview in '..\source\BegaPreview.pas',
+  BegaPreviewPanel in '..\source\BegaPreviewPanel.pas',
+  BegaScrollBox in '..\source\BegaScrollBox.pas',
+  BegaZoom in '..\source\BegaZoom.pas',
+  BuffConv in '..\source\BuffConv.pas',
+  BuffConvArrays in '..\source\BuffConvArrays.pas',
+  DitherUnit in '..\source\DitherUnit.pas',
+  FramBrwz in '..\source\FramBrwz.pas',
+  framview in '..\source\framview.pas',
+  GDIPL2A in '..\source\GDIPL2A.pas',
+  HSLUtils in '..\source\HSLUtils.pas',
+  HtmlBuffer in '..\source\HtmlBuffer.pas',
+  htmlgif1 in '..\source\htmlgif1.pas',
+  HTMLGif2 in '..\source\HTMLGif2.pas',
+  HtmlGlobals in '..\source\HtmlGlobals.pas',
+  Htmlsbs1 in '..\source\Htmlsbs1.pas',
+  HTMLSubs in '..\source\HTMLSubs.pas',
+  htmlun2 in '..\source\htmlun2.pas',
+  htmlview in '..\source\htmlview.pas',
+  MetaFilePrinter in '..\source\MetaFilePrinter.pas',
+  msimg32 in '..\source\msimg32.pas',
+  ReadHTML in '..\source\ReadHTML.pas',
+  StylePars in '..\source\StylePars.pas',
+  StyleUn in '..\source\StyleUn.pas',
+  URLSubs in '..\source\URLSubs.pas',
+  vwPrint in '..\source\vwPrint.pas',
+  HtmlSymb in '..\source\HtmlSymb.pas',
+  BegaPreviewForm in '..\source\BegaPreviewForm.pas';
+
+end.
