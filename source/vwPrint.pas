@@ -41,7 +41,10 @@ interface
 
 uses
   {$ifdef FPC}
-    RtlConsts, WinUtilPrn,
+    RtlConsts,
+    {$IFDEF MSWindows}
+    WinUtilPrn,
+    {$endif}
   {$else}
     Consts,
   {$endif}
