@@ -2690,12 +2690,24 @@ end;
 procedure TFrameViewer.LoadFromFile(const FileName: ThtString);
 var
   Name, Dest: ThtString;
+{$ifdef FPC}
+  ShortName: ThtString;
+{$endif}
 begin
   if Processing then
     exit;
   SplitDest(FileName, Name, Dest);
   if not FileExists(Name) then
-    raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
+  begin
+{$ifdef FPC}
+    // BG, 24.04.2014: workaround for non ansi file names:
+    ShortName := ExtractShortPathName(UTF8Decode(S));
+    if FileExists(ShortName) then
+      Name := ShortName
+    else
+{$endif}
+    raise(EhtLoadError.Create('Can''t locate file: ' + Name));
+  end;
   LoadFromFileInternal(Name, Dest);
 end;
 
