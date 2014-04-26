@@ -1472,6 +1472,8 @@ begin
   begin {scroll background into opposite direction to keep it in a fixed position in the viewport.}
     ScrollWindow(PaintPanel.Handle, 0, VScrollBar.Position - ScrollPos, nil, nil);
     PaintPanel.Update;
+    //BG, 26.04.2014: To keep the animated GIFs animated, we must invalidate the panel:
+    PaintPanel.Invalidate;
   end;
 end;
 
