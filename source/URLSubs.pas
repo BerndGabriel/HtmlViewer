@@ -102,6 +102,12 @@ function HTMLServerToDos(FName, Root: ThtString): ThtString;
 function CombineDos(const Base, Path: ThtString): ThtString;
 {combine a base and a path}
 
+{***************************************************************************************************
+ * both URL and Resource processing methods
+ **************************************************************************************************}
+
+function HTMLToRes(URL: ThtString; out AType: ThtString): ThtString;
+{convert an (% encoded) URL like res:[/]*<name>.<type> to resource name and type}
 
 {**************************************************************************************************}
 implementation
@@ -731,4 +737,38 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 02.04.2014 --
+function HTMLToRes(URL: ThtString; out AType: ThtString): ThtString;
+{convert an URL like res:[/]*<name>.<type> to resource name and type
+  Any number of '/' between 'res:' and 'name.ext' are allowed and ignored.
+  On return Result is <name> and AType is <type>.
+}
+var
+  I: integer;
+
+begin
+  Result := DecodeURL(URL);
+
+  I := 1;
+  if htLowerCase(Copy(Result, 1, 4)) = 'res:' then
+    I := 5;
+
+  while (I <= Length(Result)) and (Result[I] = '/') do
+    Inc(I);
+
+  if I > 1 then
+    System.Delete(Result, 1, I - 1);
+
+  SetLength(AType, 0);
+  for I := Length(Result) downto 1 do
+    if Result[I] = '.' then
+    begin
+      AType := Copy(Result, I + 1, MaxInt);
+      SetLength(Result, I - 1);
+      break;
+    end;
+
+end;
+
 end.
+
