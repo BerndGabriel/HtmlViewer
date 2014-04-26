@@ -348,6 +348,7 @@ type
     procedure WMUrlAction(var Message: TMessage); message WM_UrlAction;
     function GetHistoryIndex: Integer;
     procedure InsertImages;
+    function GetDocumentCodePage: Integer;
     property HTMLTimer: TTimer read FHTMLTimer;
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
@@ -481,6 +482,7 @@ type
     property BaseTarget: ThtString read FBaseTarget;
     property CaretPos: Integer read FCaretPos write SetCaretPos;
     property CurrentFile: ThtString read FCurrentFile;
+    property DocumentCodePage: Integer read GetDocumentCodePage;
     property DocumentSource: ThtString read GetDocumentSource;
     property DocumentTitle: ThtString read FTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
@@ -2893,6 +2895,15 @@ end;
 function THtmlViewer.GetCursor: TCursor;
 begin
   Result := inherited Cursor;
+end;
+
+//-- BG ---------------------------------------------------------- 26.04.2014 --
+function THtmlViewer.GetDocumentCodePage: Integer;
+begin
+  if FDocument <> nil then
+    Result := FDocument.CodePage
+  else
+    Result := CodePage;
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
