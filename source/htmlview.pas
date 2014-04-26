@@ -358,6 +358,7 @@ type
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure WMUrlAction(var Message: TMessage); message WM_UrlAction;
     function GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
+    function GetDocumentCodePage: Integer;
   protected
     ScrollWidth: Integer;
     {$ifdef has_StyleElements}
@@ -467,6 +468,7 @@ type
     property CaretPos: Integer read FCaretPos write SetCaretPos;
     property CodePage: Integer read FCodePage write FCodePage;
     property CurrentFile: ThtString read GetCurrentFile;
+    property DocumentCodePage: Integer read GetDocumentCodePage;
     property DocumentSource: ThtString read GetDocumentSource;
     property DocumentTitle: ThtString read GetTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
@@ -2762,6 +2764,15 @@ end;
 function THtmlViewer.GetCursor: TCursor;
 begin
   Result := inherited Cursor;
+end;
+
+//-- BG ---------------------------------------------------------- 26.04.2014 --
+function THtmlViewer.GetDocumentCodePage: Integer;
+begin
+  if FDocument <> nil then
+    Result := FDocument.CodePage
+  else
+    Result := CodePage;
 end;
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
