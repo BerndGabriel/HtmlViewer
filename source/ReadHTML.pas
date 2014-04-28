@@ -204,6 +204,9 @@ type
     property IsXHTML : Boolean read FIsXHTML write FIsXHTML;
   end;
 
+function IsWhiteSpace(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
+function ReplaceEntities(const Str: ThtString; CodePage: Integer): ThtString;
+
 implementation
 
 uses
@@ -933,7 +936,7 @@ end;
 function THtmlParser.GetTitle: ThtString;
 begin
   if TitleEnd > TitleStart then
-    Result := Doc.GetString(TitleStart, TitleEnd)
+    Result := ReplaceEntities(Doc.GetString(TitleStart, TitleEnd), Doc.CodePage)
   else
     Result := '';
 end;
@@ -4654,6 +4657,171 @@ begin
         Result := Collect;
     end; {case}
   end; {while}
+end;
+
+//-- BG ---------------------------------------------------------- 27.04.2014 --
+function ReplaceEntities(const Str: ThtString; CodePage: Integer): ThtString;
+{Result: Str with all entities converted to widechars.}
+var
+  PPos, PEnd: PhtChar;
+  LCh: ThtChar;
+
+  procedure GetCh;
+  begin
+    if PPos < PEnd then
+    begin
+      LCh := PPos^;
+      Inc(PPos);
+    end
+    else
+      LCh := #0;
+  end;
+
+  function GetEntityStr: ThtString;
+
+    procedure AddNumericChar(I: Integer; ForceUnicode: Boolean);
+    // Adds the given value as new ThtChar to the ThtString.
+    var
+      Buf: array[0..10] of ThtChar;
+    begin
+      if I = 9 then
+        Result := SpcChar
+      else if I < ord(SpcChar) then {control ThtChar}
+        Result := '?' {is there an error symbol to use here?}
+      else if (I >= 127) and (I <= 159) and not ForceUnicode then
+      begin
+        {127 to 159 not valid Unicode}
+        if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) = 0 then
+          Buf[0] := ThtChar(I);
+        SetString(Result, Buf, 1);
+      end
+      else
+        Result := WideChar(I);
+    end;
+
+  var
+    Collect: ThtString;
+
+    procedure NextCh;
+    begin
+      SetLength(Collect, Length(Collect) + 1);
+      Collect[Length(Collect)] := LCh;
+      GetCh;
+    end;
+
+  var
+    I, N: Integer;
+    Entity: ThtString;
+  begin
+    // A mask character. This introduces special characters and must be followed
+    // by a '#' ThtChar or one of the predefined (named) entities.
+    Collect := '';
+    NextCh;
+    case LCh of
+      '#': // Numeric value.
+      begin
+        NextCh;
+        N := 0;
+        I := 0;
+        case LCh of
+          'x', 'X':
+          begin
+            // Hex digits given.
+            NextCh;
+            repeat
+              case LCh of
+                '0'..'9': I := 16 * I + (Ord(LCh) - Ord('0'));
+                'A'..'Z': I := 16 * I + (Ord(LCh) - Ord('A') + 10);
+                'a'..'z': I := 16 * I + (Ord(LCh) - Ord('a') + 10);
+              else
+                break;
+              end;
+              Inc(N);
+              NextCh;
+            until False;
+          end;
+        else
+          // Decimal digits given.
+          repeat
+            case LCh of
+              '0'..'9': I := 10 * I + (Ord(LCh) - Ord('0'));
+            else
+              break;
+            end;
+            Inc(N);
+            NextCh;
+          until False;
+        end;
+        if N > 0 then
+        begin
+          AddNumericChar(I, False);
+          // Skip the trailing semicolon.
+          if LCh = ';' then
+            GetCh;
+        end
+        else
+          Result := Collect;
+      end;
+    else
+      // Must be a predefined (named) entity.
+      Entity := '';
+      N := 0;
+      // Pick up the entity name.
+      repeat
+        case LCh of
+          'a'..'z',
+          'A'..'Z',
+          '0'..'9':
+            htAppendChr(Entity, LCh);
+        else
+          break;
+        end;
+        Inc(N);
+        NextCh;
+      until N > 10;
+
+      // Now convert entity ThtString into a character value. If there is no
+      // entity with that name simply add all characters as they are.
+      if Entities.Find(Entity, I) then
+      begin
+        I := PEntity(Entities.Objects[I]).Value;
+        if LCh = ';' then
+        begin
+          AddNumericChar(I, True);
+          // Advance current pointer to first character after the semicolon.
+          NextCh;
+        end
+        else if I <= 255 then
+          AddNumericChar(I, True)
+        else
+          Result := Collect;
+      end
+      else
+        Result := Collect;
+    end; {case}
+  end;
+
+begin
+  SetLength(Result, 0);
+  if Length(Str) > 0 then
+  begin
+    PPos := @Str[1];
+    PEnd := PPos + Length(Str) - 1;
+    GetCh;
+    while true do
+    begin
+      case LCh of
+        #0:
+          break;
+
+        AmperChar:
+          htAppendStr(Result, GetEntityStr);
+      else
+        htAppendChr(Result, LCh);
+        GetCh;
+      end;
+    end;
+  end;
 end;
 
 end.
