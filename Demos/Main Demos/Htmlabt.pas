@@ -122,6 +122,9 @@ begin
 {$ifdef Ver260}
     'Delphi XE5'
 {$endif}
+{$ifdef Ver270}
+    'Delphi XE6'
+{$endif}
 {$ifdef LCL}
     'Lazarus ' + lcl_version
 {$endif}
