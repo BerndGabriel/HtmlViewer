@@ -33,6 +33,9 @@ unit DemoUnit;
 interface
 
 uses
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
