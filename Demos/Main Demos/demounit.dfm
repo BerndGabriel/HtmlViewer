@@ -108,7 +108,7 @@ object Form1: TForm1
       Left = 1
       Top = 1
       Width = 603
-      Height = 378
+      Height = 377
       BorderStyle = htFocused
       DefBackground = clWindow
       DefFontColor = clWindowText
@@ -142,6 +142,8 @@ object Form1: TForm1
       TabOrder = 0
       TabStop = True
       OnMouseMove = ViewerMouseMove
+      Touch.InteractiveGestures = [igPan, igPressAndTap]
+      Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoParentPassthrough]
       object MediaPlayer: TMediaPlayer
         Left = 336
         Top = 40

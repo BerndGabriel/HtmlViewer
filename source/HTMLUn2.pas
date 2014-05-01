@@ -3018,6 +3018,10 @@ begin
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
   QuirksMode := qmStandards;
+{$ifdef HasGestures}
+  Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
+  Touch.InteractiveGestures := [igPan];
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
@@ -3092,6 +3096,11 @@ begin
   OnMouseDown := OnMouseDown;
   OnMouseMove := OnMouseMove;
   OnMouseUp := OnMouseUp;
+
+{$ifdef HasGestures}
+  Touch := Source.Touch;
+  OnGesture := Source.OnGesture;
+{$endif}
 end;
 
 procedure TViewerBase.SetActiveColor(const Value: TColor);
