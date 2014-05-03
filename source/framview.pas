@@ -333,9 +333,14 @@ type
     property OnMouseDown;
     property OnMouseMove;
     property OnMouseUp;
+    property OnMouseWheel;
     property OnKeyDown;
     property OnKeyUp;
     property OnKeyPress;
+{$ifdef HasGestures}
+    property Touch;
+    property OnGesture;
+{$endif}
   end;
 
 {TFrameViewer Types}

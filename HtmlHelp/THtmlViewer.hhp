@@ -216,7 +216,9 @@ html\vscrollbarrange_property.htm
 html\waitstream.htm
 html\xytodisplaypos_method.htm
 images\v114.png
+images\v115.png
 images\v945.png
+images\smallcheck.gif
 html\assign_tbuffer_method.htm
 html\assignto_tbuffer_method.htm
 html\asstring_tbuffer_method.htm
@@ -229,6 +231,8 @@ html\codepage_tbuffer_property.htm
 html\name_tbuffer_property.htm
 html\position_tbuffer_property.htm
 html\type_tbuffcodepage.htm
+html\supported_elements.htm
+html\supported_properties.htm
 
 [ALIAS]
 DocumentTitle_Property = html\prop_thtmlviewerdocumenttitle.htm

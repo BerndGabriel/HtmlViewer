@@ -55,6 +55,8 @@ object Form1: TForm1
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
+    Touch.InteractiveGestures = [igPan, igPressAndTap]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerVertical, igoPanInertia, igoParentPassthrough]
     OnFormSubmit = SubmitEvent
   end
   object Panel1: TPanel

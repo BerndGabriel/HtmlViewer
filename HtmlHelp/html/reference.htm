@@ -8,16 +8,21 @@
 
 <BODY BGCOLOR="#FFFFFF" TEXT="#000000">
 
-<H1><A NAME="reference"></A>The <I>Reference</I> parameter defines a path for partial filenames found in the document.  Path information is often required if the document is loaded from something other than a file.  Generally, this parameter would be a filename or path name where images or linked documents could be found.</H1>
+<H1><A NAME="reference"></A>Reference Parameter</H1>
 <HR>
+<P>
+The <I>Reference</I> parameter defines a path for partial filenames found in the document.  
+Path information is often required if the document is loaded from something other than a file.  
+Generally, this parameter would be a filename or path name where images or linked documents could be found.
+</P>
 
-<P><B>Usage Example:</B></P>
+<H2><B>Usage Example:</B></H2>
 
-<P>Viewer.LoadFromString(S, 'C:\MyDirectory\');</P>
+<CODE>Viewer.LoadFromString(S, 'C:\MyDirectory\');</CODE>
 
 <P>will load the document in String, <I>S</I>, and add the path, 'C:\MyDirectory\', to any partial filenames found in the document.</P>
 
-<P>The <I>Reference</I> parameter is optional except when using Delphi 3.</P>
+<P>The <I>Reference</I> parameter is optional.</P>
 
 </BODY>
 </HTML>
