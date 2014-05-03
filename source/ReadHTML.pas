@@ -2708,6 +2708,14 @@ procedure THtmlParser.DoCommonSy;
     IO.ProcessProperties(PropStack.Last);
   end;
 
+  procedure DoProgress();
+  var
+    IO: TSizeableObj;
+  begin
+    IO := Section.AddProgress(Attributes, SectionList, TagIndex, PropStack.Last);
+    IO.ProcessProperties(PropStack.Last);
+  end;
+
   procedure DoTextArea();
   var
     FormControl: TFormControlObj;
@@ -2724,7 +2732,7 @@ procedure THtmlParser.DoCommonSy;
     FormControl := Section.AddFormControl(InputSy, PropStack.Document, Attributes, SectionList, TagIndex, PropStack.Last);
     FormControl.ProcessProperties(PropStack.Last);
   end;
-
+  
   procedure DoSelect();
   var
     FormControl: TFormControlObj;
@@ -2964,6 +2972,13 @@ procedure THtmlParser.DoCommonSy;
                     DoAfterSy(SaveSy);
                   end;
 
+                ProgressSy:
+                  begin
+                    DoBeforeSy(SaveSy);
+                    DoProgress;
+                    DoAfterSy(SaveSy);
+                  end;
+
                 ObjectSy:
                   begin
                     Section.AddTokenObj(S);
@@ -3187,6 +3202,16 @@ begin
         DoAfterSy(SaveSy);
       end;
 
+    ProgressSy:
+      begin
+        DoBeforeSy(SaveSy);
+        Prop := PropStack.Last;
+        if Prop.HasBorderStyle then {start of inline border}
+          PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
+        DoProgress;
+        DoAfterSy(SaveSy);
+      end;  
+
     ObjectSy:
       DoObjectTag(C, N, IX);
 
@@ -3339,7 +3364,7 @@ begin
             BigEndSy, SmallEndSy, LabelEndSy, AbbrEndSy, AcronymEndSy, DfnEndSy,
             CodeEndSy, TTEndSy, KbdEndSy, SampEndSy,
             StringSy, ASy, AEndSy, BrSy, NoBrSy, NoBrEndSy, WbrSy,
-            InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy,
+            InputSy, ButtonSy, ButtonEndSy, ProgressSy, TextAreaSy, TextAreaEndSy, SelectSy,
             ImageSy, FontSy, FontEndSy, BaseFontSy,
             ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
               DoCommonSy;
@@ -3471,6 +3496,7 @@ begin
       InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BRSy,
       ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ButtonSy, ButtonEndSy,
+      ProgressSy, ProgressEndSy, 
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, CommandSy])
   do
     if Sy <> CommandSy then
@@ -3574,7 +3600,7 @@ begin
       InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BrSy, H1Sy..H6Sy,
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, 
-      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
+      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy:
         DoCommonSy;
 
       PSy:
@@ -3707,7 +3733,7 @@ begin
       InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
       SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
+      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy:
         DoCommonSy;
     else
       if Sy in TermSet then {exit below}
@@ -3979,7 +4005,7 @@ begin
         InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
         SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy:
+        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy:
           begin
             PushHtmlPropsIfAny;
             DoCommonSy;
