@@ -1,4 +1,4 @@
-﻿{
+{
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin,
 Copyright (c) 2008-2013 by HtmlViewer Team

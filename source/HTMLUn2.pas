@@ -2467,7 +2467,7 @@ begin
 end;
 
 function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
- {$ifndef UseInline} inline; {$endif}
+ {$ifdef UseInline} inline; {$endif}
 var
   NewLen, Len: Integer;
 begin
