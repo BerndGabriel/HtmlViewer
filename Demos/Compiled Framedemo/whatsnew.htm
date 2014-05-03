@@ -20,6 +20,54 @@
 
 <!----------------------------------------------------------------------------->
 
+<h4 class="heading">Version 11.5</h4>
+<h5>Added</h5>
+<ul>
+  <li>Delphi XE5 and XE6 Support
+  <li>Lazarus Printing Support
+  <li>Delphi 2010 - XE6 Gesture Support. Built-in panning support
+  <li>HTML 4 Element <b>&lt;iframe&gt;</b>
+  <li>HTML 5 Element <b>&lt;main&gt;</b>
+  <li>CSS Property <b>BorderColor</b> accepts <b>currentColor</b> keyword
+  <li><b>TIFF</b> support for <b>&lt;img&gt;</b> (requires GDI+) (by JPM)
+  <li>Property THtmlViewer.DocumentCodePage reflects the documents codepage while property THtmlViewer.CodePage is the default codepage if a document comes without it
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=261"> Issue 261</a>: <b>placeholder</b> attribute should be recognized
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=262"> Issue 262</a>: <b>maxlength</b> attribute should be recognized in text areas
+</ul>
+<h5>Enhanced</h5>
+<ul>
+  <li>Restructured element class hierarchy
+  <li>Reduced code duplicates
+  <li>Simplified image handling via new base class ThtImage
+  <li>Indicate support for further file types and extension
+  <li>Renamed various types to start with the <b>T</b> resp. <b>Tht</b> prefix
+  <li>Performance
+  <li>Supports &lt;pre style="white-space: normal"&gt; (by JPM)
+  <li>Lazarus demos can load files with non-ANSI names
+</ul>  
+<h5>Fixed</h5>
+<ul>
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=257"> Issue 257</a>: StyleUn.hpp fails to build in C++Builder XE4
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=270"> Issue 270</a>: Print preview hand button sends previewed page into oblivion
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=277"> Issue 277</a>: URLs aren't decoded in demo application
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=285"> Issue 285</a>: Border of &lt;hr&gt;s always visible
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=296"> Issue 296</a>: OnBitmapRequest's Result seems to be discarded
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=297"> Issue 297</a>: Divide by zero in THtmlTable.DrawLogic
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=299"> Issue 299</a>: List item indention comes from wrong style attribute
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=303"> Issue 303</a>: Attribute <b>rowspan</b> disables mouse click
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=305"> Issue 305</a>: HtmlViewer.DocumentSource returns broken string
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=308"> Issue 308</a>: Right alignment does always work properly
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=309"> Issue 309</a>: TCellManager.FindColNum throws "Index out of bounds"
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=311"> Issue 311</a>: Table width calculation bug where MinWidths become larger than MaxWidths
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=312"> Issue 312</a>: Animated gif error
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=313"> Issue 313</a>: Memory leak when printing/print previewing (by wildcroftsecurity)
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=319"> Issue 319</a>: THtmlViewer.CopyToClipboard error
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=320"> Issue 320</a>: &lt;div&gt; with negative margins in a &lt;td&gt; is clipped
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=347"> Issue 347</a>: Entities in DocumentTitle are not converted 
+</ul>
+
+<!----------------------------------------------------------------------------->
+
 <h4 class="heading">Version 11.4</h4>
 <h5>Added</h5>
 <ul>
