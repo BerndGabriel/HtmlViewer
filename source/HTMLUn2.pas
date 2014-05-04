@@ -405,24 +405,26 @@ type
   TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: ThtString) of object;
   ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: ThtString) of object;
 
+{$ifndef Compiler20_Plus}
 const
   PBS_MARQUEE  = $08;
   PBM_SETMARQUEE = WM_USER + 10;
 
 type
-{$IFNDEF Compiler18_Plus}  // TODO: I am taking a guess at this. I can see on EMBARCARDERO that TProgressBar.Style was in 2010
+  TProgressBarStyle = (pbstNormal, pbstMarquee);
+
   ThvProgressBar = class(TProgressBar)
   private
-    FIndeterminate: Boolean;
-    procedure SetIndeterminate(const Value: Boolean);
+    FStyle: TProgressBarStyle;
+    procedure SetStyle(Value: TProgressBarStyle);
   protected
     procedure CreateParams(var Params: TCreateParams); override;
   published
-    property Indeterminate: Boolean read FIndeterminate write SetIndeterminate;
+    property Style: TProgressBarStyle read FStyle write SetStyle;
   end;
-{$ELSE}
-  ThvProgressBar = TProgressBar;  
-{$ENDIF}
+{$else}
+  ThvProgressBar = TProgressBar;
+{$endif}
 
 
 //------------------------------------------------------------------------------
@@ -3492,28 +3494,31 @@ end;
 
 { ThvProgressBar }
 
-{$IFNDEF Compiler18_Plus}
+{$ifndef Compiler20_Plus}
 procedure ThvProgressBar.CreateParams(var Params: TCreateParams);
 begin
   inherited;
 
-  if FIndeterminate then
+  if FStyle = pbstMarquee then
     Params.Style := Params.Style or PBS_MARQUEE;
 end;
-        
-procedure ThvProgressBar.SetIndeterminate(const Value: Boolean);
-begin
-  FIndeterminate := Value;
 
-  // need to recreate so we set the Params.Style before sending the message
-  RecreateWnd;
-  
-  if Value then
-    SendMessage(Self.Handle, PBM_SETMARQUEE, 1, 100) // switch on marquee animation
-  else
-    SendMessage(Self.Handle, PBM_SETMARQUEE, 0, 0);  // switch off marquee animation
+procedure ThvProgressBar.SetStyle(Value: TProgressBarStyle);
+begin
+  if FStyle <> Value then
+  begin
+    FStyle := Value;
+
+    // need to recreate so we set the Params.Style before sending the message
+    RecreateWnd;
+
+    case Value of
+      pbstNormal:  SendMessage(Self.Handle, PBM_SETMARQUEE, 0,   0); // switch off marquee animation
+      pbstMarquee: SendMessage(Self.Handle, PBM_SETMARQUEE, 1, 100); // switch on marquee animation
+    end;
+  end;
 end;
-{$ENDIF}
+{$endif}
 
 initialization
 {$ifdef UseGlobalObjectId}

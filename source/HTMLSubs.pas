@@ -73,7 +73,7 @@ uses
   Windows,
   EncdDecd,
 {$endif}
-  Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs,
+  Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs, ComCtrls,
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
@@ -13633,7 +13633,7 @@ begin
     Width := 100;
     Visible := True;
 {$ifdef has_StyleElements}
-    Progress.StyleElements := Document.StyleElements; // TODO: does this work? Cannot see in Delphi 6
+    StyleElements := Document.StyleElements; // TODO: does this work? Cannot see in Delphi 6
 {$endif}
   end;
 
@@ -13653,18 +13653,17 @@ begin
         begin
           Progress.Position := StrToIntDef( Name, 0 );
           PositionSet := true;
-        end;  
+        end;
       end;
 
   SetWidth := Progress.Width;
   SetHeight := Progress.Height;
 
-  // if the value attribute is not set, then the progressbar goes to an indeterminate state.
-{$IFNDEF Compiler18_Plus}
-  Progress.Indeterminate := not PositionSet;
-{$ELSE}
-  Progress.Style := pbstMarquee;  
-{$ENDIF}  
+  // if the value attribute is not set, then the progressbar goes to the indeterminate state 'pbstMarquee'.
+  if PositionSet then
+    Progress.Style := pbstNormal
+  else
+    Progress.Style := pbstMarquee;
 end;
 
 constructor TProgressObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
