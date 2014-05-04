@@ -4705,7 +4705,7 @@ var
 
   procedure GetCh;
   begin
-    if PPos < PEnd then
+    if PPos <= PEnd then
     begin
       LCh := PPos^;
       Inc(PPos);
