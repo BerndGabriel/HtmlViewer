@@ -1,8 +1,8 @@
 object Form1: TForm1
   Left = 657
   Top = 269
-  Width = 621
-  Height = 489
+  ClientHeight = 430
+  ClientWidth = 605
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,7 +18,7 @@ object Form1: TForm1
   TextHeight = 16
   object Panel1: TPanel
     Left = 0
-    Top = 413
+    Top = 412
     Width = 605
     Height = 18
     Align = alBottom
@@ -32,8 +32,6 @@ object Form1: TForm1
       Width = 150
       Height = 16
       Align = alRight
-      Min = 0
-      Max = 100
       TabOrder = 0
       Visible = False
     end
@@ -100,7 +98,7 @@ object Form1: TForm1
     Left = 0
     Top = 33
     Width = 605
-    Height = 380
+    Height = 379
     Align = alClient
     BevelInner = bvLowered
     BevelOuter = bvNone
@@ -110,10 +108,7 @@ object Form1: TForm1
       Left = 1
       Top = 1
       Width = 603
-      Height = 378
-      TabStop = True
-      TabOrder = 0
-      Align = alClient
+      Height = 377
       BorderStyle = htFocused
       DefBackground = clWindow
       DefFontColor = clWindowText
@@ -123,13 +118,12 @@ object Form1: TForm1
       HistoryMaxCount = 6
       ImageCacheCount = 6
       NoSelect = False
-      PrintMarginBottom = 2
-      PrintMarginLeft = 2
-      PrintMarginRight = 2
-      PrintMarginTop = 2
-      PrintScale = 1
+      PrintMarginBottom = 2.000000000000000000
+      PrintMarginLeft = 2.000000000000000000
+      PrintMarginRight = 2.000000000000000000
+      PrintMarginTop = 2.000000000000000000
+      PrintScale = 1.000000000000000000
       QuirksMode = qmDetect
-      OnMouseMove = ViewerMouseMove
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange
       OnHotSpotClick = HotSpotClick
@@ -144,6 +138,10 @@ object Form1: TForm1
       OnRightClick = RightClick
       OnScript = ViewerScript
       OnSoundRequest = SoundRequest
+      Align = alClient
+      TabOrder = 0
+      TabStop = True
+      OnMouseMove = ViewerMouseMove
       object MediaPlayer: TMediaPlayer
         Left = 336
         Top = 40

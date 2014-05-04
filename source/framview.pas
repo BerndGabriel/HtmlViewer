@@ -333,9 +333,14 @@ type
     property OnMouseDown;
     property OnMouseMove;
     property OnMouseUp;
+    property OnMouseWheel;
     property OnKeyDown;
     property OnKeyUp;
     property OnKeyPress;
+{$ifdef HasGestures}
+    property Touch;
+    property OnGesture;
+{$endif}
   end;
 
 {TFrameViewer Types}
@@ -644,10 +649,11 @@ begin
     LocalCodePage := TSubFrameSetBase(AOwner).LocalCodePage;
   FOwner := AOwner as TSubFrameSetBase;
   FMasterSet := Master;
-  BevelInner := bvNone;
   QuirksMode := MasterSet.FrameViewer.QuirksMode;
   frMarginWidth := MasterSet.FrameViewer.MarginWidth;
   frMarginHeight := MasterSet.FrameViewer.MarginHeight;
+{$ifndef LCL}
+  BevelInner := bvNone;
   if LOwner.BorderSize = 0 then
     BevelOuter := bvNone
   else
@@ -655,6 +661,7 @@ begin
     BevelOuter := bvLowered;
     BevelWidth := LOwner.BorderSize;
   end;
+{$endif}
   ParentColor := True;
   if Assigned(L) then
     for I := 0 to L.Count - 1 do
@@ -925,7 +932,9 @@ begin
         FrameSet.SendToBack;
         FrameSet.Visible := True;
         MasterSet.FrameViewer.ParseFrame(FrameSet, EV.Doc, EV.NewName, FrameSet.HandleMeta);
-        Self.BevelOuter := bvNone;
+{$ifndef LCL}
+        BevelOuter := bvNone;
+{$endif}
         frBumpHistory1(Source, 0);
         with FrameSet do
         begin
@@ -1235,7 +1244,9 @@ begin
         FrameSet.Visible := True;
         MasterSet.FrameViewer.ParseFrame(FrameSet, EV.Doc, EV.NewName, FrameSet.HandleMeta);
         MasterSet.FrameViewer.AddVisitedLink(EV.NewName);
-        Self.BevelOuter := bvNone;
+{$ifndef LCL}
+        BevelOuter := bvNone;
+{$endif}
         with FrameSet do
         begin
           for I := 0 to List.Count - 1 do
@@ -1279,6 +1290,7 @@ begin
         end;
       if Assigned(Viewer) then
       begin
+{$ifndef LCL}
         if MasterSet.BorderSize = 0 then
           BevelOuter := bvNone
         else
@@ -1286,6 +1298,7 @@ begin
           BevelOuter := bvLowered;
           BevelWidth := MasterSet.BorderSize;
         end;
+{$endif}
         if (Dest <> '') then
           Viewer.PositionTo(Dest);
       end;
@@ -1663,11 +1676,13 @@ begin
     begin
       BorderSize := T.Value;
       OuterBorder := Max(2 - BorderSize, 0);
+{$ifndef LCL}
       if OuterBorder >= 1 then
       begin
         BevelWidth := OuterBorder;
         BevelOuter := bvLowered;
       end;
+{$endif}
     end
     else
       BorderSize := 2;
@@ -2179,7 +2194,9 @@ begin
     BorderSize := 0
   else
     BorderSize := 2;
+{$ifndef LCL}
   BevelOuter := bvNone;
+{$endif}
   FTitle := '';
   FCurrentFile := '';
   FrameNames := TStringList.Create;
@@ -2582,13 +2599,17 @@ begin
   if fvNoBorder in FOptions then
   begin
     CurFrameSet.OuterBorder := 0;
+{$ifndef LCL}
     CurFrameSet.BevelOuter := bvNone;
+{$endif}
   end
   else
   begin
     CurFrameSet.OuterBorder := 2;
+{$ifndef LCL}
     CurFrameSet.BevelWidth := 2;
     CurFrameSet.BevelOuter := bvLowered;
+{$endif}
   end;
   CurFrameSet.Align := alClient;
   CurFrameSet.OnDragDrop := OnDragDrop;
@@ -2668,8 +2689,10 @@ begin
     with CurFrameSet do
     begin
       Clear;
+{$ifndef LCL}
       BevelOuter := bvLowered;
       BevelWidth := 2;
+{$endif}
     end;
     FImageCache.Clear;
     FURL := '';
@@ -2701,7 +2724,7 @@ begin
   begin
 {$ifdef FPC}
     // BG, 24.04.2014: workaround for non ansi file names:
-    ShortName := ExtractShortPathName(UTF8Decode(S));
+    ShortName := ExtractShortPathName(UTF8Decode(Name));
     if FileExists(ShortName) then
       Name := ShortName
     else
@@ -3549,13 +3572,17 @@ begin
     if fvNoBorder in Value then
     begin
       CurFrameSet.OuterBorder := 0;
+{$ifndef LCL}
       CurFrameSet.BevelOuter := bvNone;
+{$endif}
       CurFrameSet.BorderSize := 0;
     end
     else
     begin
+{$ifndef LCL}
       CurFrameSet.BevelWidth := 2;
       CurFrameSet.BevelOuter := bvLowered;
+{$endif}
       CurFrameSet.BorderSize := 2;
     end;
   for I := 0 to CurFrameSet.Viewers.Count - 1 do

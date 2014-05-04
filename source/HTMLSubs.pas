@@ -73,7 +73,7 @@ uses
   Windows,
   EncdDecd,
 {$endif}
-  Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs,
+  Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs, ComCtrls,
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, types,
 {$endif}
@@ -470,7 +470,7 @@ type
   end;
 
 
-  // base class for inline panel and frame node
+  // base class for inline panel, frame and progress node
   TControlObj = class(TSizeableObj)
   protected
     SetWidth, SetHeight: Integer;
@@ -521,6 +521,18 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     procedure DrawInline(Canvas: TCanvas; X, Y: Integer; YBaseline: Integer; FO: TFontObj); override;
+  end;
+
+  // inline progress (object) node
+  TProgressObj = class(TControlObj)
+  protected
+    function GetControl: TWinControl; override;
+  public
+    Progress: ThvProgressBar;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
+    destructor Destroy; override;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
   end;
 
 
@@ -666,6 +678,7 @@ type
     function AddFrame(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TFrameObj;
     function AddImage(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TImageObj;
     function AddPanel(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TPanelObj;
+    function AddProgress(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TProgressObj;
     function CreatePanel(L: TAttributeList; ACell: TCellBasic; Prop: TProperties): TPanelObj;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -7649,13 +7662,13 @@ end;
 procedure TDummyCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light,
   Dark: TColor);
 begin
-  inherited Draw(Canvas,ARect,X,Y,CellSpacing,Border,Light,Dark);
+  //abstract: inherited Draw(Canvas,ARect,X,Y,CellSpacing,Border,Light,Dark);
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2013 --
 procedure TDummyCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
 begin
-  inherited DrawLogic2(Canvas,Y,CellSpacing,Curs);
+  //abstract: inherited DrawLogic2(Canvas,Y,CellSpacing,Curs);
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2013 --
@@ -10970,6 +10983,13 @@ begin
   AddChar(ImgPan, Index); {marker for panel}
 end;
 
+function TSection.AddProgress(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TProgressObj;
+begin
+  Result := TProgressObj.Create(ACell, Len, L, Prop, False);
+  Images.Add(Result);
+  AddChar(ImgPan, Index); {marker for progress}
+end;
+
 function TSection.CreatePanel(L: TAttributeList; ACell: TCellBasic; Prop: TProperties): TPanelObj;
 {Used by object tag}
 begin
@@ -13586,6 +13606,101 @@ end;
 function TPanelObj.GetControl: TWinControl;
 begin
   Result := Panel;
+end;
+
+{----------------TProgressObj.Create}
+
+constructor TProgressObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
+var
+  PntPanel: TWinControl; //TPaintPanel;
+  I: Integer;
+  PositionSet: Boolean;
+begin
+  inherited Create(Parent, Position, L, Prop);
+  PositionSet := false;
+  VertAlign := ABottom; {default}
+  Floating := ANone;
+  PntPanel := Document.PPanel;
+  Progress := ThvProgressBar.Create(PntPanel);
+  with Progress do
+  begin
+    Left := -4000;
+    Top := -4000;
+    Parent := PntPanel;
+    Max := 100;  // making sure this is the default
+    Smooth := true;
+    Height := 20;
+    Width := 100;
+    Visible := True;
+{$ifdef has_StyleElements}
+    StyleElements := Document.StyleElements; // TODO: does this work? Cannot see in Delphi 6
+{$endif}
+  end;
+
+  if not PercentWidth and (SpecWidth > 0) then
+    Progress.Width := SpecWidth;
+
+  if not PercentHeight and (SpecHeight > 0) then
+    Progress.Height := SpecHeight;
+
+  for I := 0 to L.Count - 1 do
+    with L[I] do
+      case Which of
+        MaxSy:
+          Progress.Max := StrToIntDef( Name, 100 );
+
+        ValueSy:
+        begin
+          Progress.Position := StrToIntDef( Name, 0 );
+          PositionSet := true;
+        end;
+      end;
+
+  SetWidth := Progress.Width;
+  SetHeight := Progress.Height;
+
+  // if the value attribute is not set, then the progressbar goes to the indeterminate state 'pbstMarquee'.
+  if PositionSet then
+    Progress.Style := pbstNormal
+  else
+    Progress.Style := pbstMarquee;
+end;
+
+constructor TProgressObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
+var
+  T: TProgressObj absolute Source;
+begin
+  inherited CreateCopy(Parent,Source);
+  Progress := ThvProgressBar.Create(nil);
+  with T.Progress do
+    Progress.SetBounds(Left, Top, Width, Height);
+  Progress.Visible := T.Progress.Visible;
+  Progress.Parent := Document.PPanel;
+  Progress.Max := T.Progress.Max;
+  Progress.Position := T.Progress.Position;
+  SetHeight := T.SetHeight;
+  SetWidth := T.SetWidth;
+end;
+
+destructor TProgressObj.Destroy;
+begin
+  Progress.Free;
+  inherited Destroy;
+end;
+
+procedure TProgressObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+begin
+  inherited DrawInline(Canvas,X,Y,YBaseline,FO);
+
+  if Progress.Visible then
+    Progress.Show
+  else
+    Progress.Hide;
+end;
+
+function TProgressObj.GetControl: TWinControl;
+begin
+  Result := Progress;
 end;
 
 {----------------TCell.Create}

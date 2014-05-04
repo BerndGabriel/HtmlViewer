@@ -36,7 +36,7 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types,
+  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types, ComCtrls,
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
@@ -404,6 +404,28 @@ type
   TObjectTagEvent = procedure(Sender: TObject; Panel: ThvPanel; const Attributes, Params: ThtStringList; var WantPanel: boolean) of object;
   TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: ThtString) of object;
   ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: ThtString) of object;
+
+{$ifndef Compiler20_Plus}
+const
+  PBS_MARQUEE  = $08;
+  PBM_SETMARQUEE = WM_USER + 10;
+
+type
+  TProgressBarStyle = (pbstNormal, pbstMarquee);
+
+  ThvProgressBar = class(TProgressBar)
+  private
+    FStyle: TProgressBarStyle;
+    procedure SetStyle(Value: TProgressBarStyle);
+  protected
+    procedure CreateParams(var Params: TCreateParams); override;
+  published
+    property Style: TProgressBarStyle read FStyle write SetStyle;
+  end;
+{$else}
+  ThvProgressBar = TProgressBar;
+{$endif}
+
 
 //------------------------------------------------------------------------------
 // ThtControlBase is base class for TViewerBase and TFrameBase
@@ -2467,7 +2489,7 @@ begin
 end;
 
 function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
- {$ifndef UseInline} inline; {$endif}
+ {$ifdef UseInline} inline; {$endif}
 var
   NewLen, Len: Integer;
 begin
@@ -3018,6 +3040,10 @@ begin
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
   QuirksMode := qmStandards;
+{$ifdef HasGestures}
+  Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
+  Touch.InteractiveGestures := [igPan];
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
@@ -3092,6 +3118,11 @@ begin
   OnMouseDown := OnMouseDown;
   OnMouseMove := OnMouseMove;
   OnMouseUp := OnMouseUp;
+
+{$ifdef HasGestures}
+  Touch := Source.Touch;
+  OnGesture := Source.OnGesture;
+{$endif}
 end;
 
 procedure TViewerBase.SetActiveColor(const Value: TColor);
@@ -3460,6 +3491,38 @@ begin
       Hide;
   end;
 end;
+
+{ ThvProgressBar }
+
+{$ifndef Compiler20_Plus}
+procedure ThvProgressBar.CreateParams(var Params: TCreateParams);
+begin
+  inherited;
+
+  if FStyle = pbstMarquee then
+    Params.Style := Params.Style or PBS_MARQUEE;
+end;
+
+procedure ThvProgressBar.SetStyle(Value: TProgressBarStyle);
+begin
+  if FStyle <> Value then
+  begin
+    FStyle := Value;
+
+    // need to recreate so we set the Params.Style before sending the message
+{$ifdef LCL}
+    RecreateWnd(Self);
+{$else}
+    RecreateWnd;
+{$endif}
+
+    case Value of
+      pbstNormal:  SendMessage(Self.Handle, PBM_SETMARQUEE, 0,   0); // switch off marquee animation
+      pbstMarquee: SendMessage(Self.Handle, PBM_SETMARQUEE, 1, 100); // switch on marquee animation
+    end;
+  end;
+end;
+{$endif}
 
 initialization
 {$ifdef UseGlobalObjectId}

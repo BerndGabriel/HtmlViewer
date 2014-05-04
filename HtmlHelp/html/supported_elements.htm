@@ -1,0 +1,342 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Final//EN">
+<HTML>
+
+<HEAD>
+<TITLE>Supported HTML Tags and Attributes</TITLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="help.css">
+<STYLE TYPE="text/css"> <!--
+  .new     {color: blue; font-weight: bold;}
+  -->
+</STYLE>
+
+</HEAD>
+
+<body class="v115">
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Tags">
+	<PARAM NAME="Keyword" VALUE="Elements">
+	<PARAM NAME="Keyword" VALUE="Attributes">
+	<PARAM NAME="Keyword" VALUE="Supported HTML Tags">
+	<PARAM NAME="Keyword" VALUE="Supported HTML Elements">
+	<PARAM NAME="Keyword" VALUE="Supported HTML Attributes">
+</OBJECT>
+
+<H1><A NAME="class_hierarchy"></A><B>Summary of Supported Tags and Attributes</B></H1>
+<HR>
+<br>
+<div CLASS="subtitle" STYLE="color: 373737">Version 11 additions are shown in <span CLASS="new">blue</span></div>
+<br>
+<TABLE WIDTH="75%" CELLPADDING="2" ALIGN="CENTER">
+  <TR>
+	 <TD VALIGN="TOP"><UL>
+	 <LI><A HREF="#Document">Document Tags</A> </LI>
+	 <LI><A HREF="#Physical">Physical Phrase Markup Tags</A> </LI>
+	 <LI><A HREF="#Logical">Logical Phrase Markup Tags</A> </LI>
+	 <LI><A HREF="#Block">Block Tags</A> </LI>
+	 <LI><A HREF="#Lists">Lists</A> </LI>
+	 <LI><A HREF="#Description">Description List</A> </LI>
+	 <LI><A HREF="#Tables">Tables</A> </LI>
+	 </UL>
+	 </TD>
+	 <TD VALIGN="TOP"><UL>
+	 <LI><A HREF="#Forms">Forms</A> </LI>
+	 <LI><A HREF="#Character">Character Level Elements</A> </LI>
+	 <LI><A HREF="#Anchors">Anchors</A> </LI>
+	 <LI><A HREF="#Maps">Client Side Image Maps</A> </LI>
+	 <LI><A HREF="#Miscellaneous">Miscellaneous</A> </LI>
+	 <LI><A HREF="#Frames">Frame Syntax</A> </LI>
+	 <LI><A HREF="#colors">Color Syntax</A></LI>
+	 </UL>
+	 </TD>
+  </TR>
+</TABLE>
+<h2><A NAME="Document">Document Tags</A></h2>
+<PRE>&lt;HTML&gt;...&lt;/HTML&gt;
+&lt;HEAD&gt;...&lt;/HEAD&gt;
+&lt;STYLE&gt;...&lt;/STYLE&gt;
+&lt;BASE&gt;
+   HREF=base
+&lt;TITLE&gt;...&lt;/TITLE&gt;
+&lt;BODY&gt;...&lt;/BODY&gt;
+   BACKGROUND=bitmap
+   TEXT=<A HREF="#Colors">color</A>
+   BGCOLOR=<A HREF="#Colors">color</A>
+   LINK=<A HREF="#Colors">color</A>
+   VLINK=<A HREF="#Colors">color</A>
+   OLINK=<A HREF="#Colors">color</A>
+   MARGINWIDTH=n
+   MARGINHEIGHT=n
+   BGPROPERTIES=fixed
+   TOPMARGIN=n
+   LEFTMARGIN=n</PRE>
+
+<h2><A NAME="Physical">Physical Phrase Markup Tags</A></h2>
+<PRE>&lt;B&gt;...&lt;/B&gt;
+&lt;I&gt;...&lt;/I&gt;
+&lt;U&gt;...&lt;/U&gt;
+&lt;TT&gt;...&lt;/TT&gt;
+&lt;S&gt;...&lt;/S&gt;
+&lt;FONT&gt;...&lt;/FONT&gt;
+   SIZE=n  (n=1..7) or SIZE=+-n (incremental change)
+   COLOR=<A HREF="#Colors">color</A>
+   FACE=facename
+&lt;SUB&gt;...&lt;/SUB&gt;
+&lt;SUP&gt;...&lt;/SUP&gt;
+&lt;BIG&gt;...&lt;/BIG&gt;
+&lt;SMALL&gt;...&lt;/SMALL&gt;
+&lt;STRIKE&gt;...&lt;/STRIKE&gt;
+&lt;NOBR&gt;...&lt;/NOBR&gt;
+</PRE>
+
+<h2><A NAME="Logical">Logical Phrase Markup Tags</A></h2>
+<PRE>&lt;EM&gt;...&lt;/EM&gt;
+&lt;STRONG&gt;...&lt;/STRONG&gt;
+&lt;CITE&gt;...&lt;/CITE&gt;
+&lt;VAR&gt;...&lt;/VAR&gt;
+&lt;CODE&gt;...&lt;/CODE&gt;
+&lt;KBD&gt;...&lt;/KBD&gt;
+&lt;SAMP&gt;...&lt;/SAMP&gt;
+<span class="new">&lt;MARK&gt;</span>...<span class="new">&lt;/MARK&gt;</span>
+<span class="new">&lt;DFN&gt;</span>...<span class="new">&lt;/DFN&gt;</span>
+<span class="new">&lt;ABBR&gt;</span>...<span class="new">&lt;/ABBR&gt;</span>
+<span class="new">&lt;ACRONYM&gt;</span>...<span class="new">&lt;/ACRONYM&gt;</span>
+<span class="new">&lt;INS&gt;</span>...<span class="new">&lt;/MARK&gt;</span>
+<span class="new">&lt;DEL&gt;</span>...<span class="new">&lt;/DEL&gt;</span>
+</PRE>
+
+<h2><A NAME="Block">Block Tags</A></h2>
+<PRE>&lt;P&gt;...(&lt;/P&gt;)
+    ALIGN=left|center|right|justify
+&lt;ADDRESS&gt;...&lt;/ADDRESS&gt;
+&lt;BLOCKQUOTE&gt;...&lt;/BLOCKQUOTE&gt;
+&lt;PRE&gt;...&lt;/PRE&gt;
+&lt;CENTER&gt;...&lt;/CENTER&gt;
+&lt;DIV&gt;...&lt;/DIV&gt;
+    ALIGN=left|center|right|justify
+<span class="new">&lt;HEADER&gt;</span>...<span class="new">&lt;/HEADER&gt;</span>
+    ALIGN=left|center|right|justify
+<span class="new">&lt;FOOTER&gt;</span>...<span class="new">&lt;/FOOTER&gt;</span>
+    ALIGN=left|center|right|justify
+<span class="new">&lt;SECTION&gt;</span>...<span class="new">&lt;/SECTION&gt;</span>
+    ALIGN=left|center|right|justify
+<span class="new">&lt;ARTICLE&gt;</span>...<span class="new">&lt;/ARTICLE&gt;</span>
+    ALIGN=left|center|right|justify
+<span class="new">&lt;NAV&gt;</span>...<span class="new">&lt;/NAV&gt;</span>
+    ALIGN=left|center|right|justify
+<span class="new">&lt;ASIDE&gt;</span>...<span class="new">&lt;ASIDE/&gt;</span>
+    ALIGN=left|center|right|justify
+<span class="new">&lt;HGROUP&gt;</span>...<span class="new">&lt;/HGROUP&gt;</span>    
+    ALIGN=left|center|right|justify
+</PRE>
+
+<h2><A NAME="Lists">Lists</A></h2>
+<PRE>&lt;OL&gt;...&lt;/OL&gt;
+   START=value
+   TYPE=1|a|A|i|I
+&lt;UL&gt;...&lt;/UL&gt;
+   PLAIN
+   TYPE=plain|none
+&lt;DIR&gt;...&lt;/DIR&gt;
+&lt;MENU&gt;...&lt;/MENU&gt;
+  &lt;LI&gt;...(&lt;/LI&gt;)
+    VALUE=n</PRE>
+
+<h2><A NAME="Description">Description List</A></h2>
+<PRE>&lt;DL&gt;...&lt;/DL&gt;
+  &lt;DD&gt;...&lt;/DD&gt;
+  &lt;DT&gt;...&lt;/DT&gt;</PRE>
+
+<h2><A NAME="Tables">Tables</A></h2>
+<PRE>&lt;TABLE&gt;...&lt;TABLE&gt;
+   BORDER or BORDER=n
+   <span class="new">FRAME=void|above|below|hsides|lhs|rhs|vsides|box|border</span>
+   <span class="new">RULES=none|rows|cols|all</span>
+   ALIGN=left|center|right
+   CELLSPACING=value
+   CELLPADDING=value
+   WIDTH=n|n%
+   BACKGROUND=image
+   BGCOLOR=<A HREF="#Colors">color</A>
+   BORDERCOLOR=<A HREF="#Colors">color</A>
+   BORDERCOLORLIGHT=<A HREF="#Colors">color</A>
+   BORDERCOLORDARK=<A HREF="#Colors">color</A>
+   HSPACE=n
+   VSPACE=n
+   HEIGHT=n|n%
+&lt;COLGROUP&gt;...&lt;/COLGROUP&gt;
+   VALIGN=top|center|bottom
+   ALIGN=left|center|right
+   WIDTH=n|n%|<span class="new">n*</span>
+&lt;COL&gt;
+   VALIGN=top|center|bottom
+   ALIGN=left|center|right
+   WIDTH=n|n%|<span class="new">n*</span>
+   SPAN=n
+&lt;CAPTION&gt;...&lt;/CAPTION&gt;
+   ALIGN=top|bottom
+&lt;TR&gt;...&lt;/TR&gt;
+   VALIGN=top|center|bottom
+   ALIGN=left|center|right
+   BGCOLOR=<A HREF="#Colors">color</A>
+   HEIGHT=n|n%
+&lt;TH&gt;...&lt;/TH&gt;, &lt;TD&gt;...&lt;/TD&gt;
+   ROWSPAN=n
+   COLSPAN=n
+   WIDTH=n|n%
+   HEIGHT=n|n%
+   VALIGN=top|center|bottom
+   ALIGN=left|center|right
+   BGCOLOR=<A HREF="#Colors">color</A>
+   NOWRAP
+&lt;THEAD&gt;&lt;TBODY&gt;&lt;TFOOT&gt;   (printing)</PRE>
+
+<h2><A NAME="Forms">Forms</A></h2>
+<PRE>&lt;FORM&gt;...&lt;/FORM&gt;
+   METHOD=post|get
+   ACTION=url
+&lt;FIELDSET&gt;...&lt;/FIELDSET&gt;
+&lt;LEGEND&gt;...&lt;/LEGEND&gt;
+&lt;INPUT&gt;...&lt;/INPUT&gt;
+   TYPE=text|password|submit|reset|radio|checkbox|hidden|image|button|file
+   NAME=string
+   VALUE=string
+   <span CLASS="new">PLACEHOLDER=string</span>
+   SIZE=chars       (text, password)
+   MAXLENGTH=chars  (text, password)
+   CHECKED          (radio, checkbox)
+   ONCLICK=string   (button, radio, checkbox, edit)
+   TABINDEX=n
+   DISABLE
+&lt;SELECT&gt;...&lt;/SELECT&gt;
+   NAME=string
+   <span CLASS="new">PLACEHOLDER=string</span>
+   MULTIPLE
+   SIZE=lines
+   OnClick
+   &lt;OPTION&gt;...(&lt;/OPTION&gt;)
+      SELECTED
+      VALUE=string
+   TABINDEX=n
+   DISABLE
+&lt;TEXTAREA&gt;...&lt;/TEXTAREA&gt;
+   NAME=string
+   <span CLASS="new">PLACEHOLDER=string</span>
+   ROWS=n
+   COLS=n
+   WRAP=off|soft|hard
+   OnClick
+   TABINDEX=n
+   DISABLE
+&lt;OPTION&gt;...&lt;/OPTION&gt;</PRE>
+
+<h2><A NAME="Character">Character Level Elements</A></h2>
+<PRE>&lt;BR&gt;
+   CLEAR=left|right
+&lt;WBR&gt;
+&lt;IMG&gt;
+   SRC=image
+   ALT=string
+   ALIGN=top|middle|bottom|left|right
+   BORDER=n
+   WIDTH=n,n%
+   HEIGHT=n,n%
+   TRANSP   (non-standard, Lower Left pixel defines transparent color
+   IMAGEMAP
+   USEMAP=url (local URL only)
+   HSPACE=n
+   VSPACE=n
+   ACTIVE
+&lt;OBJECT&gt;...&lt;/OBJECT&gt;
+   ALT=string
+   ALIGN=top|middle|bottom|left|right
+   WIDTH=n,n%
+   HEIGHT=n,n%
+   HSPACE=n
+   VSPACE=n
+&lt;PARAM&gt;
+   NAME=string
+   VALUE=string</PRE>
+
+<h2><A NAME="Anchors">Anchors</A></h2>
+<PRE>&lt;A&gt;...&lt;/A&gt;
+   HREF=url
+   NAME=string
+   TABINDEX=n</PRE>
+
+<h2><A NAME="Maps">Client Side Image Maps</A></h2>
+<PRE>&lt;MAP&gt;...&lt;/MAP&gt;
+   NAME=string
+&lt;AREA&gt;
+   SHAPE=RECT|CIRC|CIRCLE|POLY|POLYGON
+   COORDS=&quot;n1, n2, ...., nn&quot;
+   HREF=url
+   NOHREF
+   TITLE=title
+</PRE>
+
+<h2><A NAME="Miscellaneous">Miscellaneous</A></h2>
+<PRE>&lt;Hn&gt;...&lt;/Hn&gt;   n = 1..6
+   ALIGN=left|center|right
+&lt;HR&gt;
+   SIZE=n
+   WIDTH=n|n%
+   COLOR=<A HREF="#colors">color</A>
+   ALIGN=left|center|right
+   NOSHADE
+&lt;BASEFONT&gt;
+   SIZE=n  (n=1..7) or SIZE=+-n (incremental change)
+&lt;BGSOUND&gt;
+   SRC=filename
+   LOOP=n
+&lt;Span&gt;
+   Style</PRE>
+
+<h2><A NAME="Frames"> Frame Syntax</A></h2>
+<PRE>&lt;FRAMESET&gt;...&lt;/FRAMESET&gt;
+   ROWS|COLS=n1, n2, .., nn  (absolute, %, or *)
+   BORDER=n         (Main FRAMESET only)
+   FRAMEBORDER=n    (Main FRAMESET only)
+&lt;FRAME&gt;
+   SRC=filename
+   NAME=windowname
+   SCROLLING=yes|no|auto
+   NORESIZE
+   MARGINHEIGHT=n
+   MARGINWIDTH=n
+&lt;NOFRAMES&gt;...&lt;/NOFRAMES&gt;
+</PRE>
+
+<h2><A NAME="colors">Color Syntax</A></h2>
+<P>Color information may consist of 
+<ul>
+<li>a hexidecimal red, green, and blue value such as #FF8000 or 
+<li>a decimal color triple like RGB(255, 128, 0) or
+<li><span class="new">via hue, saturation and luminance like HSL(180, 255, 128) or</span>
+<li>be one of the
+following identifiers: </P>
+<P STYLE="font-family: 'courier new'; margin: 0 25px;"> Black, Maroon, Green, Olive, Navy, Purple, Teal, Gray,
+Silver, Red, Lime, Yellow, Blue, Fuchsia, Aqua, white, Aliceblue, Antiquewhite, Aquamarine, Azure, Beige, Bisque,
+Blanchedalmond, Blueviolet, Brown, Burlywood, Cadetblue, Chartreuse, Chocolate, Coral, Cornflowerblue, Cornsilk,
+Crimson, Cyan, Darkblue, Darkcyan, Darkgoldenrod, Darkgray, Darkgreen, Darkkhaki, Darkmagenta, Darkolivegreen,
+Darkorange, Darkorchid, Darkred, Darksalmon, Darkseagreen, Darkslateblue, Darkslategray, Darkturquoise,
+Darkviolet, Deeppink, Deepskyblue, Dimgray, Dodgerblue, Firebrick, Floralwhite, Forestgreen, Gainsboro,
+Ghostwhite, Gold, Goldenrod, Greenyellow, Honeydew, Hotpink, Indianred, Indigo, Ivory, Khaki, Lavender,
+Lavenderblush, Lawngreen, Lemonchiffon, Lightblue, Lightcoral, Lightcyan, Lightgoldenrodyellow, Lightgreen,
+Lightgrey, Lightpink, Lightsalmon, Lightseagreen, Lightskyblue, Lightslategray, Lightsteelblue, Lightyellow,
+Limegreen, Linen, Magenta, Mediumaquamarine, Mediumblue, Mediumorchid, Mediumpurple, Mediumseagreen,
+Mediumslateblue, Mediumspringgreen, Mediumturquoise, Mediumvioletred, Midnightblue, Mintcream, Mistyrose,
+Moccasin, Navajowhite, Oldlace, Olivedrab, Orange, Orangered, Orchid, Palegoldenrod, Palegreen, Paleturquoise,
+Palevioletred, Papayawhip, Peachpuff, Peru, Pink, Plum, Powderblue, Rosybrown, Royalblue, Saddlebrown, Salmon,
+Sandybrown, Seagreen, Seashell, Sienna, Skyblue, Slateblue, Slategray, Snow, Springgreen, Steelblue, Tan, Thistle,
+Tomato, Turquoise, Violet, Wheat, Whitesmoke, Yellowgreen,
+
+background, activecaption, inactivecaption, menu, window,
+windowframe, menutext, windowtext, captiontext, activeborder,
+inactiveborder, appworkSpace, highlight, hightlighttext, buttonface,
+buttonshadow, graytext, buttontext, inactivecaptiontext, buttonhighlight,
+threeddarkshadow, threedlightshadow, infotext, infobackground, scrollbar,
+threedface, threedhighlight, threedshadow.</p>
+</ul>
+</BODY>
+</HTML>
+

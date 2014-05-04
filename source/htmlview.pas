@@ -277,6 +277,11 @@ type
     FAction, FFormTarget, FEncType, FMethod: ThtString;
     FStringList: ThtStringList;
 
+{$ifdef HasGestures}
+    // use in HtmlGesture
+    FLastEventInfo: TGestureEventInfo;
+{$endif}
+
     //
 {$ifndef NoMetafile}
     vwP: TvwPrinter;
@@ -349,6 +354,9 @@ type
     function GetHistoryIndex: Integer;
     procedure InsertImages;
     function GetDocumentCodePage: Integer;
+{$ifdef HasGestures}
+    procedure HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
+{$endif}
     property HTMLTimer: TTimer read FHTMLTimer;
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
@@ -402,6 +410,7 @@ type
     procedure SetPrintScale(const Value: Double); override;
     procedure SetVisitedColor(const Value: TColor); override;
     procedure SetVisitedMaxCount(const Value: Integer); override;
+    procedure Loaded; override;
     property ScrollWidth: Integer read FScrollWidth;
   public
     constructor Create(Owner: TComponent); override;
@@ -474,6 +483,7 @@ type
     procedure Reload;
     procedure Repaint; override;
     procedure ReplaceImage(const NameID: ThtString; NewImage: TStream);
+    procedure ScrollXY(const Delta: TSize);
     procedure SelectAll;
     procedure SetImageCache(ImageCache: ThtImageCache);
     procedure TriggerUrlAction;
@@ -817,7 +827,10 @@ begin
   FPaintPanel.OnMouseMove := HTMLMouseMove;
   FPaintPanel.OnMouseUp := HTMLMouseUp;
   FPaintPanel.OnMouseWheel := HtmlMouseWheel; // BG, 25.09.2012: issue 174. Thanks to Alan Chate
-
+{$ifdef HasGestures}
+  FPaintPanel.Touch := Touch;
+  FPaintPanel.OnGesture := HtmlGesture;
+{$endif}
   FVScrollBar := TScrollBar.Create(Self);
   FVScrollBar.Kind := sbVertical;
   FVScrollBar.SmallChange := 16;
@@ -873,6 +886,15 @@ var
   Viewer: THtmlViewer absolute Source;
 begin
   inherited CreateCopy(Owner, Viewer);
+
+{$ifdef HasGestures}
+  FPaintPanel.Touch := Touch;
+  if Assigned(OnGesture) then
+    FPaintPanel.OnGesture := OnGesture
+  else
+    FPaintPanel.OnGesture := HtmlGesture;
+{$endif}
+
   if Owner is THtmlFrameBase then
     FFrameOwner := THtmlFrameBase(Owner);
   if Source is THtmlViewer then
@@ -900,7 +922,7 @@ begin
     OnRightClick := Viewer.OnRightClick;
     OnLoadHistoryItem := Viewer.OnLoadHistoryItem;
     OnSectionClick := Viewer.OnSectionClick;
-    OnSectionOver := Viewer.OnSectionOver;    
+    OnSectionOver := Viewer.OnSectionOver;
   end;
 end;
 
@@ -1240,6 +1262,19 @@ begin
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
 
+//-- BG ---------------------------------------------------------- 28.04.2014 --
+procedure THtmlViewer.Loaded;
+begin
+  inherited;
+{$ifdef HasGestures}
+  FPaintPanel.Touch := Touch;
+  if Assigned(OnGesture) then
+    FPaintPanel.OnGesture := OnGesture
+  else
+    FPaintPanel.OnGesture := HtmlGesture;
+{$endif}
+end;
+
 {----------------THtmlViewer.LoadString}
 
 procedure THtmlViewer.LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
@@ -1566,6 +1601,56 @@ begin
     PaintPanel.Invalidate;
   end;
 end;
+
+//-- BG ---------------------------------------------------------- 28.04.2014 --
+procedure THtmlViewer.ScrollXY(const Delta: TSize);
+var
+  ScrollPos: Integer;
+begin
+  if Delta.cy <> 0 then
+  begin
+    ScrollPos := VScrollBar.Position + Delta.cy;
+    ScrollVert(nil, scPosition, ScrollPos);
+    VScrollBar.Position := ScrollPos;
+  end;
+
+  if Delta.cx <> 0 then
+  begin
+    ScrollPos := HScrollBar.Position + Delta.cx;
+    ScrollHorz(nil, scPosition, ScrollPos);
+    HScrollBar.Position := ScrollPos;
+  end;
+end;
+
+{$ifdef HasGestures}
+//-- BG ---------------------------------------------------------- 28.04.2014 --
+procedure THtmlViewer.HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
+var
+  Delta: TSize;
+begin
+  case EventInfo.GestureID of
+    igiPan:
+    begin
+      if not (gfBegin in EventInfo.Flags) then
+      begin
+        if igoPanSingleFingerHorizontal in PaintPanel.Touch.InteractiveGestureOptions then
+          Delta.cx := FLastEventInfo.Location.X - EventInfo.Location.X
+        else
+          Delta.cx := 0;
+
+        if igoPanSingleFingerVertical in PaintPanel.Touch.InteractiveGestureOptions then
+          Delta.cy := FLastEventInfo.Location.Y - EventInfo.Location.Y
+        else
+          Delta.cy := 0;
+
+        ScrollXY(Delta);
+        Handled := True;
+      end;
+      FLastEventInfo := EventInfo;
+    end;
+  end;
+end;
+{$endif}
 
 procedure THtmlViewer.Layout;
 var

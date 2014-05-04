@@ -66,6 +66,7 @@ type
     ImageSy,
     PanelSy,
     IFrameSy, IFrameEndSy,
+    ProgressSy, ProgressEndSy,
 
     MapSy, MapEndSy,
     AreaSy,
@@ -130,8 +131,8 @@ type
     FieldsetSy, FieldsetEndSy,
     LegendSy, LegendEndSy,
     LabelSy, LabelEndSy,
-    TextAreaSy,    SelectSy,    OptionSy,    ButtonSy, ButtonEndSy, InputSy,
-    TextAreaEndSy, SelectEndSy, OptionEndSy
+    TextAreaSy,    SelectSy,     OptionSy,    ButtonSy, ButtonEndSy, InputSy,
+    TextAreaEndSy, SelectEndSy,  OptionEndSy
   );
   TElemSymbSet = set of TElemSymb;
 
@@ -178,6 +179,7 @@ type
     LoopSy,
     MarginHeightSy,
     MarginWidthSy,
+    MaxSy,
     MaxLengthSy,
     MediaSy,
     MethodSy,
@@ -640,7 +642,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..100] of TResWord = (
+  ElementDefinitions: array[1..101] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -744,7 +746,8 @@ const
     (Name: 'FOOTER';      Symbol: FooterSy;     EndSym: FooterEndSy),
     (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
     (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy),
-    (Name: 'TIME';        Symbol: TimeSy;       EndSym: TimeEndSy));
+    (Name: 'TIME';        Symbol: TimeSy;       EndSym: TimeEndSy),
+    (Name: 'PROGRESS';    Symbol: ProgressSy;   EndSym: ProgressEndSy));
 var
   I: Integer;
   P: PResWord;
@@ -821,6 +824,7 @@ const
     (Name: 'LOOP';              Value: LoopSy),
     (Name: 'MARGINHEIGHT';      Value: MarginHeightSy),
     (Name: 'MARGINWIDTH';       Value: MarginWidthSy),
+    (Name: 'MAX';               Value: MaxSy),
     (Name: 'MAXLENGTH';         Value: MaxLengthSy),
     (Name: 'MEDIA';             Value: MediaSy),
     (Name: 'METHOD';            Value: MethodSy),
@@ -863,7 +867,6 @@ const
     (Name: 'TYPE';              Value: TypeSy),
     (Name: 'USEMAP';            Value: UseMapSy),
     (Name: 'VALIGN';            Value: VAlignSy),
-    (Name: 'VALUE';             Value: ValueSy),
     (Name: 'VALUE';             Value: ValueSy),
     (Name: 'VLINK';             Value: VLinkSy),
     (Name: 'VSPACE';            Value: VSpaceSy),

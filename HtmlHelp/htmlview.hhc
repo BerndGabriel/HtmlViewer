@@ -7,11 +7,11 @@
 <BODY>
 <UL>
 	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="HtmlViewer Version 11.4">
+		<param name="Name" value="HtmlViewer Version 11.5">
 		</OBJECT>
     <UL>
       <LI> <OBJECT type="text/sitemap">
-        <param name="Name" value="Contents">
+        <param name="Name" value="Introduction">
         <param name="Local" value="html/contents.htm">
         </OBJECT>
       <LI> <OBJECT type="text/sitemap">
@@ -92,6 +92,14 @@
         <param name="Name" value="HTML And CSS">
         </OBJECT>
         <UL>
+          <LI> <OBJECT type="text/sitemap">
+            <param name="Name" value="Supported HTML Tags And Attributes">
+            <param name="Local" value="html/supported_elements.htm">
+            </OBJECT>
+          <LI> <OBJECT type="text/sitemap">
+            <param name="Name" value="Supported CSS Properties">
+            <param name="Local" value="html/supported_properties.htm">
+            </OBJECT>
           <LI> <OBJECT type="text/sitemap">
             <param name="Name" value="Special HTML Tags and Attributes">
             <param name="Local" value="html/special_html_tags_and_attributes.htm">
