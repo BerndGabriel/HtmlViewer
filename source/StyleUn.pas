@@ -325,8 +325,8 @@ procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Bo
 
 //here for inlining
 function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
-function FontSizeConv(const Str: ThtString; OldSize, DefPointSize: Double; const AUseQuirksMode : Boolean): Double; forward;
-function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer; forward;
+function FontSizeConv(const Str: ThtString; OldSize, DefPointSize: Double; const AUseQuirksMode : Boolean): Double;
+function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
 
 implementation
 uses

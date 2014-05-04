@@ -7662,13 +7662,13 @@ end;
 procedure TDummyCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light,
   Dark: TColor);
 begin
-  inherited Draw(Canvas,ARect,X,Y,CellSpacing,Border,Light,Dark);
+  //abstract: inherited Draw(Canvas,ARect,X,Y,CellSpacing,Border,Light,Dark);
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2013 --
 procedure TDummyCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
 begin
-  inherited DrawLogic2(Canvas,Y,CellSpacing,Curs);
+  //abstract: inherited DrawLogic2(Canvas,Y,CellSpacing,Curs);
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2013 --

@@ -791,13 +791,13 @@ begin
             pngImage.PixelFormat := pf8bit
           else
             pngImage.PixelFormat := pf24bit;
-          Result := TBitmap.Create;
-          Result.Assign(pngImage);
+          Bitmap := TBitmap.Create;
+          Bitmap.Assign(pngImage);
           pngImage.Mask(clDefault);
           if pngImage.MaskHandleAllocated then
           begin
-            AMask := TBitmap.Create;
-            AMask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
+            Mask := TBitmap.Create;
+            Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
           end;
         finally
           pngImage.Free;

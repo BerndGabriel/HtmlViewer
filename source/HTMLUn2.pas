@@ -3510,7 +3510,11 @@ begin
     FStyle := Value;
 
     // need to recreate so we set the Params.Style before sending the message
+{$ifdef LCL}
+    RecreateWnd(Self);
+{$else}
     RecreateWnd;
+{$endif}
 
     case Value of
       pbstNormal:  SendMessage(Self.Handle, PBM_SETMARQUEE, 0,   0); // switch off marquee animation
