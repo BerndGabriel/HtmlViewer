@@ -266,27 +266,27 @@ const
     Result := Format('%d', [AErr]);
   end;
 
-function GetPixelFormatSize(const pixfmt : PixelFormat) : Cardinal; inline;
+function GetPixelFormatSize(const pixfmt : PixelFormat) : Cardinal; {$ifdef UseInline} inline; {$endif}
 begin
   Result := (pixfmt shr 8) and $ff;
 end;
 
-function IsIndexedPixelFormat(const pixfmt : PixelFormat) : Boolean; inline;
+function IsIndexedPixelFormat(const pixfmt : PixelFormat) : Boolean; {$ifdef UseInline} inline; {$endif}
 begin
   Result := (pixfmt and PixelFormatIndexed) <> 0;
 end;
 
-function IsAlphaPixelFormat(const pixfmt : PixelFormat) : Boolean; inline;
+function IsAlphaPixelFormat(const pixfmt : PixelFormat) : Boolean; {$ifdef UseInline} inline; {$endif}
 begin
   Result := (pixfmt and PixelFormatAlpha) <> 0;
 end;
 
-function IsExtendedPixelFormat(const pixfmt : PixelFormat) : Boolean; inline;
+function IsExtendedPixelFormat(const pixfmt : PixelFormat) : Boolean; {$ifdef UseInline} inline; {$endif}
 begin
   Result := (pixfmt and PixelFormatExtended) <> 0;
 end;
 
-function IsCanonicalPixelFormat(const  pixfmt : PixelFormat) : Boolean; inline;
+function IsCanonicalPixelFormat(const  pixfmt : PixelFormat) : Boolean; {$ifdef UseInline} inline; {$endif}
 begin
   Result := (pixfmt and PixelFormatCanonical) <> 0;
 end;

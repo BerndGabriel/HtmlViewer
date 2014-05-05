@@ -248,13 +248,17 @@ procedure TForm1.FormCreate(Sender: TObject);
 var
   I: integer;
 begin
-if Screen.Width <= 640 then
-  Position := poDefault;  {keeps form on screen better}
+  if Screen.Width <= 640 then
+    Position := poDefault;  {keeps form on screen better}
 
-OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
+  OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 
-ShowImages.Checked := Viewer.ViewImages;
-Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
+  ShowImages.Checked := Viewer.ViewImages;
+  Viewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
+{$ifdef HasGestures}
+  Viewer.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
+  Viewer.Touch.InteractiveGestures := [igPan];
+{$endif}
 
   for I := 0 to MaxHistories-1 do
   begin      {create the MenuItems for the history list}

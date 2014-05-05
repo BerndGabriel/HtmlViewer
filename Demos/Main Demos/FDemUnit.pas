@@ -258,8 +258,11 @@ begin
   Width := (Screen.Width * 8) div 10;
   Height := (Screen.Height * 6) div 8;
 
-
   FrameViewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
+{$ifdef HasGestures}
+  FrameViewer.Touch.InteractiveGestureOptions := [{igoPanSingleFingerHorizontal,} igoPanSingleFingerVertical, igoPanInertia];
+  FrameViewer.Touch.InteractiveGestures := [igPan];
+{$endif}
 
   for I := 0 to MaxHistories-1 do
   begin      {create the MenuItems for the history list}
