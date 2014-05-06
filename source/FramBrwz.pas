@@ -283,7 +283,9 @@ begin
             FrameSet.SendToBack;
             FrameSet.Visible := True;
             MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
-            Self.BevelOuter := bvNone;
+{$ifndef LCL}
+            BevelOuter := bvNone;
+{$endif}
             frBumpHistory1(Source, 0);
             with FrameSet do
             begin
@@ -513,7 +515,9 @@ begin
           FrameSet.Visible := True;
           MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
           MasterSet.FrameViewer.AddVisitedLink(URL);
-          Self.BevelOuter := bvNone;
+{$ifndef LCL}
+          BevelOuter := bvNone;
+{$endif}
           with FrameSet do
           begin
             for I := 0 to List.Count - 1 do
@@ -546,6 +550,7 @@ begin
           end;
         if Assigned(Viewer) then
         begin
+{$ifndef LCL}
           if MasterSet.BorderSize = 0 then
             BevelOuter := bvNone
           else
@@ -553,6 +558,7 @@ begin
             BevelOuter := bvLowered;
             BevelWidth := MasterSet.BorderSize;
           end;
+{$endif}
           if (Dest <> '') then
             Viewer.PositionTo(Dest);
         end;

@@ -7333,9 +7333,9 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
       GetBitmap(TheOwner, BMName, Bitmap, Color);
       if Bitmap <> nil then
         if Color <> -1 then
-          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(TBitmap(Result), True, Color), TrGif)
+          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(Bitmap, True, Color), TrGif)
         else if Transparent = LLCorner then
-          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(TBitmap(Result), False, 0), LLCorner)
+          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(Bitmap, False, 0), LLCorner)
         else
           Result := ThtBitmapImage.Create(Bitmap, nil, NotTransp);
     end;
