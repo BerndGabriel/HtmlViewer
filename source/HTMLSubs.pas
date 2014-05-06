@@ -535,6 +535,18 @@ type
     procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
   end;
 
+  // inline meter (object) node
+  TMeterObj = class(TControlObj)
+  protected
+    function GetControl: TWinControl; override;
+  public
+    Meter: ThvMeter;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
+    destructor Destroy; override;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
+  end;
+
 
   ThtHover = (hvOff, hvOverUp, hvOverDown);
 
@@ -679,6 +691,7 @@ type
     function AddImage(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TImageObj;
     function AddPanel(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TPanelObj;
     function AddProgress(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TProgressObj;
+    function AddMeter(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TMeterObj;
     function CreatePanel(L: TAttributeList; ACell: TCellBasic; Prop: TProperties): TPanelObj;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -10990,6 +11003,13 @@ begin
   AddChar(ImgPan, Index); {marker for progress}
 end;
 
+function TSection.AddMeter(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TMeterObj;
+begin
+  Result := TMeterObj.Create(ACell, Len, L, Prop, False);
+  Images.Add(Result);
+  AddChar(ImgPan, Index); {marker for progress}
+end;
+
 function TSection.CreatePanel(L: TAttributeList; ACell: TCellBasic; Prop: TProperties): TPanelObj;
 {Used by object tag}
 begin
@@ -13702,6 +13722,113 @@ function TProgressObj.GetControl: TWinControl;
 begin
   Result := Progress;
 end;
+
+
+{----------------TMeterObj.Create}
+
+constructor TMeterObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
+var
+  PntPanel: TWinControl; //TPaintPanel;
+  I: Integer;
+  PositionSet: Boolean;
+begin
+  inherited Create(Parent, Position, L, Prop);
+  PositionSet := false;
+  VertAlign := ABottom; {default}
+  Floating := ANone;
+  PntPanel := Document.PPanel;
+  Meter := ThvMeter.Create(PntPanel);
+  with Meter do
+  begin
+    Left := -4000;
+    Top := -4000;
+    Parent := PntPanel;
+    Max := 100;  // making sure this is the default
+    Smooth := true;
+    Height := 20;
+    Width := 100;
+    Visible := True;
+{$ifdef has_StyleElements}
+    StyleElements := Document.StyleElements; // TODO: does this work? Cannot see in Delphi 6
+{$endif}
+  end;
+
+  if not PercentWidth and (SpecWidth > 0) then
+    Meter.Width := SpecWidth;
+
+  if not PercentHeight and (SpecHeight > 0) then
+    Meter.Height := SpecHeight;
+
+  for I := 0 to L.Count - 1 do
+    with L[I] do
+      case Which of
+        HighSy:
+          Meter.High := StrToIntDef( Name, 100 );
+
+        LowSy:
+          Meter.Low := StrToIntDef( Name, 0 );
+
+        MaxSy:
+          Meter.Max := StrToIntDef( Name, 100 );
+
+        MinSy:
+          Meter.Min := StrToIntDef( Name, 0 );
+
+        OptimumSy:
+          Meter.Optimum := StrToIntDef( Name, 50 );
+
+        ValueSy:
+        begin
+          Meter.Position := StrToIntDef( Name, 0 );
+          PositionSet := true;
+        end;
+      end;
+
+  SetWidth := Meter.Width;
+  SetHeight := Meter.Height;
+
+
+  Meter.Style := pbstNormal;
+end;
+
+constructor TMeterObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
+var
+  T: TMeterObj absolute Source;
+begin
+  inherited CreateCopy(Parent,Source);
+  Meter := ThvMeter.Create(nil);
+  with T.Meter do
+    Meter.SetBounds(Left, Top, Width, Height);
+  Meter.Visible := T.Meter.Visible;
+  Meter.Parent := Document.PPanel;
+  Meter.Max := T.Meter.Max;
+  Meter.Position := T.Meter.Position;
+  SetHeight := T.SetHeight;
+  SetWidth := T.SetWidth;
+end;
+
+destructor TMeterObj.Destroy;
+begin
+  Meter.Free;
+  inherited Destroy;
+end;
+
+procedure TMeterObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+begin
+  inherited DrawInline(Canvas,X,Y,YBaseline,FO);
+
+  if Meter.Visible then
+    Meter.Show
+  else
+    Meter.Hide;
+end;
+
+function TMeterObj.GetControl: TWinControl;
+begin
+  Result := Meter;
+end;
+
+
 
 {----------------TCell.Create}
 
