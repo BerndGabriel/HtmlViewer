@@ -960,12 +960,12 @@ var
   FrameTarget: TFrameBase;
   S, Dest, FullUrl, Target: ThtString;
 begin
-  Handled := True;
-  if Processing then
+  Handled := Processing;
+  if Handled then
     Exit;
 
   Viewer := Sender as ThtmlViewer;
-  Target := GetActiveTarget;
+  Target := GetViewerTarget(Viewer);
   FLinkAttributes.Text := Viewer.LinkAttributes.Text;
   FLinkText := Viewer.LinkText;
 

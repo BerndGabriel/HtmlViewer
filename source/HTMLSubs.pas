@@ -1774,9 +1774,9 @@ var
   id: ThtString; //>-- DZ
 begin
   //>-- DZ
-  if Properties <> nil then
+  {if Properties <> nil then
     id := Properties.PropID
-  else if Attributes <> nil then
+  else} if Attributes <> nil then
     id := Attributes.TheId
   else
     id := '';
@@ -14927,13 +14927,19 @@ begin
   if AProp <> nil then
   begin
     FDisplay := AProp.Display;
-    TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
-  end
-  else
-  begin
-    FDisplay := pdUnassigned;
-    TagClass := '.#';
+    TagClass := AProp.PropTag;
+//  end
+//  else
+//  begin
+//    FDisplay := pdUnassigned;
+//    TagClass := '';
   end;
+
+  if Attributes <> nil then
+  begin
+    htAppendStr(TagClass, '.' + Attributes.TheClass + '#' + Attributes.TheID);
+  end;
+
   ContentTop := 999999999; {large number in case it has Display: none; }
 
   DrawRect.Top    := 999999999;
