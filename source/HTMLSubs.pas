@@ -7110,6 +7110,7 @@ begin
   for I := 0 to AGifList.Count - 1 do
     with TGifImage(AGifList.Items[I]) do
     begin
+      ShowIt := False; // when gif is drawn, it will set it to true again. Avoids animating invisible gifs.
       Animate := False; {starts iteration count from 1}
       if not Self.IsCopy then
         Animate := True;
@@ -7196,11 +7197,6 @@ begin
 
   if Assigned(Timer) then
     Timer.Enabled := False;
-  for I := 0 to AGifList.Count - 1 do
-    with TGifImage(AGifList.Items[I]) do
-    begin
-      ShowIt := False;
-    end;
   if (BackgroundImage is ThtGifImage) and not IsCopy then
     ThtGifImage(BackgroundImage).Gif.ShowIt := True;
   if (ColorBits <= 8) then
