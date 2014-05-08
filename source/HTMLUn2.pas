@@ -30,16 +30,21 @@ unit HTMLUn2;
 
 interface
 uses
-   {$ifdef UseInline} Math, {$endif}
+{$ifdef UseInline}
+  Math,
+{$endif}
 {$ifdef LCL}
   LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
 {$else}
   Windows,
 {$endif}
   SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types, ComCtrls,
-{$IFNDEF NoGDIPlus}
+{$ifdef Compiler20_Plus}
+  CommCtrl,
+{$endif}
+{$ifndef NoGDIPlus}
   GDIPL2A,
-{$ENDIF}
+{$endif}
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
