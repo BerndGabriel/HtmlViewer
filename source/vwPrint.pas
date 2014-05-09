@@ -425,7 +425,7 @@ begin
       DevMode := PrnDev.DevModeA;
 {$else}
       DevMode := PrnDev.DevMode;
-{$endif}
+{$ifend}
       StrCopy(Device, PChar(PrnDev.Device));
       StrCopy(Driver, PChar(PrnDev.Driver));
       StrCopy(Port, PChar(PrnDev.Port));
