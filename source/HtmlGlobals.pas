@@ -81,8 +81,12 @@ uses
 {$endif}
   Math;
 
-type
+{$ifndef LCL}
+const
+  lcl_fullversion = 0;
+{$endif}
 
+type
 {$IFNDEF DOTNET}
   {$IFNDEF FPC}
      //needed so that in FreePascal, we can use pointers of different sizes
