@@ -45,6 +45,7 @@ uses
     {$IFDEF MSWindows}
     WinUtilPrn,
     {$endif}
+    LCLVersion,
   {$else}
     Consts,
   {$endif}
@@ -420,7 +421,11 @@ begin
     begin
 {$ifdef LCL}
       PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
+{$if lcl_fullversion >= 1020200}
+      DevMode := PrnDev.DevModeA;
+{$else}
       DevMode := PrnDev.DevMode;
+{$ifend}
       StrCopy(Device, PChar(PrnDev.Device));
       StrCopy(Driver, PChar(PrnDev.Driver));
       StrCopy(Port, PChar(PrnDev.Port));

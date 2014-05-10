@@ -343,83 +343,62 @@ var
   S, Params: ThtString;
   Ext: string;
   I, J, K: integer;
-  ID: string;
-
 begin
-Handled := False;
+  Handled := False;
 
-{The following looks for a link of the form, "IDExpand_XXX".  This is interpreted
- as meaning a block with an ID="XXXPlus" or ID="XXXMinus" attribute should
- have its Display property toggled.
-}
-I := Pos('IDEXPAND_', Uppercase(URL));
-if I=1 then
-  begin
-  if Assigned(Viewer) then
-    begin
-    ID := Copy(URL, 10, Length(URL)-9);
-    Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
-    if Viewer.IDDisplay[ID+'Minus'] = High(ThtDisplayStyle) then
-      Viewer.IDDisplay[ID+'Minus'] := Low(ThtDisplayStyle)
-    else
-      Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
-    Viewer.Reformat;
-    end;
-  Handled := True;
-  Exit;
-  end;
-
-{check for various file types}
-I := Pos(':', URL);
-J := Pos('FILE:', UpperCase(URL));
-if (I <= 2) or (J > 0) then
+  {check for various file types}
+  I := Pos(':', URL);
+  J := Pos('FILE:', UpperCase(URL));
+  if (I <= 2) or (J > 0) then
   begin                      {apparently the URL is a filename}
-  S := URL;
-  K := Pos(' ', S);     {look for parameters}
-  if K = 0 then K := Pos('?', S);  {could be '?x,y' , etc}
-  if K > 0 then
-    begin
-    Params := Copy(S, K+1, 255); {save any parameters}
-    setLength(S, K-1);            {truncate S}
-    end
-  else Params := '';
-  S := (Sender as THtmlViewer).HTMLExpandFileName(S);
-  Ext := Uppercase(ExtractFileExt(S));
-  if Ext = '.WAV' then
-    begin
-    Handled := True;
-{$ifndef MultiMediaMissing}
-    sndPlaySound(StrPCopy(PC, S), snd_ASync);
-{$endif}
-    end
-  else if Ext = '.EXE' then
-    begin
-    Handled := True;
-    StartProcess(S + ' ' + Params, SW_SHOW);
-    end
-  else if (Ext = '.MID') or (Ext = '.AVI')  then
-    begin
-    Handled := True;
-    StartProcess('MPlayer.exe /play /close ' + S, SW_SHOW);
-    end;
-  {else ignore other extensions}
-  Edit1.Text := URL;
-  Exit;
+    S := URL;
+    K := Pos(' ', S);     {look for parameters}
+    if K = 0 then K := Pos('?', S);  {could be '?x,y' , etc}
+    if K > 0 then
+      begin
+      Params := Copy(S, K+1, 255); {save any parameters}
+      setLength(S, K-1);            {truncate S}
+      end
+    else Params := '';
+    S := (Sender as THtmlViewer).HTMLExpandFileName(S);
+    Ext := Uppercase(ExtractFileExt(S));
+    if Ext = '.WAV' then
+      begin
+      Handled := True;
+  {$ifndef MultiMediaMissing}
+      sndPlaySound(StrPCopy(PC, S), snd_ASync);
+  {$endif}
+      end
+    else if Ext = '.EXE' then
+      begin
+      Handled := True;
+      StartProcess(S + ' ' + Params, SW_SHOW);
+      end
+    else if (Ext = '.MID') or (Ext = '.AVI')  then
+      begin
+      Handled := True;
+      StartProcess('MPlayer.exe /play /close ' + S, SW_SHOW);
+      end;
+    {else ignore other extensions}
+    Edit1.Text := URL;
+    Exit;
   end;
-I := Pos('MAILTO:', UpperCase(URL));
-J := Pos('HTTP://', UpperCase(URL));
-if (I > 0) or (J > 0) then
+
+  I := Pos('MAILTO:', UpperCase(URL));
+  J := Pos('HTTP://', UpperCase(URL));
+  if (I > 0) or (J > 0) then
   begin
-  {Note: ShellExecute causes problems when run from Delphi 4 IDE}
+    {Note: ShellExecute causes problems when run from Delphi 4 IDE}
 {$ifdef LCL}
-  OpenDocument(StrPCopy(PC, URL));
+    OpenDocument(StrPCopy(PC, URL));
 {$else}
-  ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
+    ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
 {$endif}
-  Handled := True;
-  Exit;
+    Handled := True;
+    Exit;
   end;
-Edit1.Text := URL;   {other protocall}
+
+  Edit1.Text := URL;   {other protocall}
 end;
 
 procedure TForm1.ShowImagesClick(Sender: TObject);

@@ -67,6 +67,7 @@ type
     PanelSy,
     IFrameSy, IFrameEndSy,
     ProgressSy, ProgressEndSy,
+    MeterSy, MeterEndSy,
 
     MapSy, MapEndSy,
     AreaSy,
@@ -167,6 +168,7 @@ type
     FrameAttrSy,
     FrameBorderSy,
     HeightSy,
+    HighSy,
     HrefSy,
     HSpaceSy,
     HttpEqSy,
@@ -177,12 +179,14 @@ type
     LeftMarginSy,
     LinkSy,
     LoopSy,
+    LowSy,
     MarginHeightSy,
     MarginWidthSy,
     MaxSy,
     MaxLengthSy,
     MediaSy,
     MethodSy,
+    MinSy,
     MultipleSy,
     NameSy,
     NoHrefSy,
@@ -194,6 +198,7 @@ type
     OnChangeSy,
     OnClickSy,
     OnFocusSy,
+    OptimumSy,
     PlaceholderSy,
     PlainSy,
     RadioSy,
@@ -642,7 +647,7 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..101] of TResWord = (
+  ElementDefinitions: array[1..102] of TResWord = (
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -747,7 +752,9 @@ const
     (Name: 'HGROUP';      Symbol: HGroupSy;     EndSym: HGroupEndSy),
     (Name: 'MARK';        Symbol: MarkSy;       EndSym: MarkEndSy),
     (Name: 'TIME';        Symbol: TimeSy;       EndSym: TimeEndSy),
-    (Name: 'PROGRESS';    Symbol: ProgressSy;   EndSym: ProgressEndSy));
+    (Name: 'PROGRESS';    Symbol: ProgressSy;   EndSym: ProgressEndSy),
+    (Name: 'METER';       Symbol: MeterSy;      EndSym: MeterEndSy));
+
 var
   I: Integer;
   P: PResWord;
@@ -782,7 +789,7 @@ end;
 
 procedure InitAttributes;
 const
-  AttribDefinitions: array[1..89] of TSymbolRec = (
+  AttribDefinitions: array[1..93] of TSymbolRec = (
     (Name: 'ACTION';            Value: ActionSy),
     (Name: 'ACTIVE';            Value: ActiveSy),
     (Name: 'ALIGN';             Value: AlignSy),
@@ -812,6 +819,7 @@ const
     (Name: 'FRAME';             Value: FrameAttrSy),
     (Name: 'FRAMEBORDER';       Value: FrameBorderSy),
     (Name: 'HEIGHT';            Value: HeightSy),
+    (Name: 'HIGH';              Value: HighSy),
     (Name: 'HREF';              Value: HrefSy),
     (Name: 'HSPACE';            Value: HSpaceSy),
     (Name: 'HTTP-EQUIV';        Value: HttpEqSy),
@@ -822,12 +830,14 @@ const
     (Name: 'LEFTMARGIN';        Value: LeftMarginSy),
     (Name: 'LINK';              Value: LinkSy),
     (Name: 'LOOP';              Value: LoopSy),
+    (Name: 'LOW';               Value: LowSy),
     (Name: 'MARGINHEIGHT';      Value: MarginHeightSy),
     (Name: 'MARGINWIDTH';       Value: MarginWidthSy),
     (Name: 'MAX';               Value: MaxSy),
     (Name: 'MAXLENGTH';         Value: MaxLengthSy),
     (Name: 'MEDIA';             Value: MediaSy),
     (Name: 'METHOD';            Value: MethodSy),
+    (Name: 'MIN';               Value: MinSy),
     (Name: 'MULTIPLE';          Value: MultipleSy),
     (Name: 'NAME';              Value: NameSy),
     (Name: 'NOHREF';            Value: NoHrefSy),
@@ -839,6 +849,7 @@ const
     (Name: 'ONCHANGE';          Value: OnChangeSy),
     (Name: 'ONCLICK';           Value: OnClickSy),
     (Name: 'ONFOCUS';           Value: OnFocusSy),
+    (Name: 'OPTIMUM';           Value: OptimumSy),
     (Name: 'PLACEHOLDER';       Value: PlaceholderSy),
     (Name: 'PLAIN';             Value: PlainSy),
     (Name: 'RADIO';             Value: RadioSy),

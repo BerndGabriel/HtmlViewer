@@ -487,6 +487,7 @@ type
     procedure SelectAll;
     procedure SetImageCache(ImageCache: ThtImageCache);
     procedure TriggerUrlAction;
+    procedure ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
     procedure UrlAction;
     property Base: ThtString read FBase write SetBase;
     property BaseTarget: ThtString read FBaseTarget;
@@ -1693,7 +1694,13 @@ var
   S, Dest: ThtString;
   OldPos: Integer;
   ft: THtmlFileType;
+  Handled: Boolean;
 begin
+  Handled := False;
+  ToggleIDExpand(Url, Handled);
+  if Handled then
+    Exit;
+
   if not HotSpotClickHandled then
   begin
     OldPos := Position;
@@ -2103,6 +2110,8 @@ begin
       else if guUrl in guResult then
       begin
         FURL := UrlTarget.Url;
+        if ssCtrl in Shift then
+          UrlTarget.Target := '_blank';
         FTarget := UrlTarget.Target;
         FLinkAttributes.Text := UrlTarget.Attr;
         FLinkText := GetTextByIndices(UrlTarget.Start, UrlTarget.Last);
@@ -5012,8 +5021,8 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if Obj is TBlock then
-        Result := TBlock(Obj).Display;
+      if Obj is TSectionBase then
+        Result := TSectionBase(Obj).Display;
     end;
 end;
 
@@ -5026,13 +5035,39 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if Obj is TBlock then
-        if TBlock(Obj).Display <> Value then
+      if Obj is TSectionBase then
+        if TSectionBase(Obj).Display <> Value then
         begin
           FSectionList.HideControls;
-          TBlock(Obj).Display := Value;
+          TSectionBase(Obj).Display := Value;
         end;
     end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.05.2014 --
+procedure THtmlViewer.ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
+var
+  I: Integer;
+  ID: ThtString;
+  pd: ThtDisplayStyle;
+begin
+  {The following looks for an URL of the form, "IDExpand_XXX".  This is interpreted
+   as meaning a block with an ID="XXXPlus" or ID="XXXMinus" attribute should have
+   its Display property toggled.
+  }
+  I :=  Pos('IDEXPAND_', Uppercase(URL));
+  if I=1 then
+  begin
+    ID := Copy(URL, 10, Length(URL)-9);
+
+    pd := IDDisplay[ID+'Plus'];
+    IDDisplay[ID+'Plus'] := IDDisplay[ID+'Minus'];
+    IDDisplay[ID+'Minus'] := pd;
+
+    Reformat;
+
+    Handled := True;
+  end;
 end;
 
 procedure THtmlViewer.SetPrintScale(const Value: Double);
