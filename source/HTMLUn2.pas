@@ -3243,7 +3243,6 @@ begin
       if O.FreeMe then
         O.Free;
     except
-      O := O;
     end;
     Delete(I);
   end;
