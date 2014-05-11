@@ -1778,7 +1778,7 @@ end;
 procedure THtmlNode.AfterConstruction;
 begin
   inherited AfterConstruction;
-  if (Document <> nil) and (Document.IDNameList <> nil) then
+  if (Length(ID) > 0) and (Document <> nil) and (Document.IDNameList <> nil) then
     Document.IDNameList.AddObject(ID, Self);
 end;
 
