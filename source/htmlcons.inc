@@ -25,7 +25,7 @@
   {$define MetaFileMissing}
   {$define MultiMediaMissing}
   {.$define UnitConstsMissing}
-  {$define UseOldPreviewForm}
+  {.$define UseOldPreviewForm}
 
   {$define ver100_plus}
   {$define ver120_plus}

@@ -1,5 +1,5 @@
 {-------------------------------------------------------------------------------
-Copyright (C) 2006-2012 by Bernd Gabriel.
+Copyright (C) 2006-2014 by Bernd Gabriel.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -26,14 +26,17 @@ unit BegaScrollBox;
 interface
 
 uses
-  {$ifdef UseVCLStyles}
+{$ifdef UseVCLStyles}
   Vcl.Themes,
-  {$endif}
+{$endif}
   Classes, SysUtils, Messages,
 {$ifdef LCL}
   LclIntf, LclType, LMessages,
+  HtmlMisc,
+{$else}
+  FlatSB,
 {$endif LCL}
-  Windows, CommCtrl, Controls, ExtCtrls, FlatSB, Forms, Graphics, Math, Menus,
+  Windows, CommCtrl, Controls, ExtCtrls, Forms, Graphics, Math, Menus,
   MultiMon, TypInfo;
 
 type
