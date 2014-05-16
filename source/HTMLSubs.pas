@@ -811,6 +811,7 @@ type
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
     procedure CollapseMargins;
+    procedure CollapseBottomMargins;
     procedure CopyToClipboard; override;
     procedure DrawBlock(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
     procedure DrawSort;
@@ -1007,6 +1008,9 @@ type
     MyHRule: TSectionBase;
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; override;
+  end;
+
+  TListBlock = class(TBlock)
   end;
 
   TBlockLI = class(TBlock)
@@ -4039,7 +4043,7 @@ function TCellBasic.CheckLastBottomMargin: boolean;
 {Look at the last item in this cell.  If its bottom margin was set to Auto,
  set it to 0}
 var
-  TB: TObject;
+  TB: TSectionBase;
   I: Integer;
   Done: boolean;
 begin
@@ -4057,15 +4061,17 @@ begin
   if I >= 0 then
   begin
     TB := Items[I];
-    if (TB is TBlock) then
+    if TB is TBlock then
+    begin
       with TBlock(TB) do
         if BottomAuto then
         begin
           MargArray[MarginBottom] := 0;
           Result := True;
         end;
-    if (TB is TBlockLI) then
-      Result := TBlockLI(TB).MyCell.CheckLastBottomMargin;
+      if TB is TBlockLI then
+        Result := TBlockLI(TB).MyCell.CheckLastBottomMargin;
+    end;
   end;
 end;
 
@@ -4497,6 +4503,44 @@ begin
       end
       else if (Tag = LISy) and TopAuto and (Symbol in [ULSy, OLSy]) then
         MargArray[MarginTop] := 0; {removes space from nested lists}
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 16.05.2014 --
+procedure TBlock.CollapseBottomMargins;
+var
+  TB: TSectionBase;
+  Block: TBlock absolute TB;
+  I: Integer;
+  BottomMargin: Integer;
+begin
+  if (OwnerCell <> Document) and (MargArrayO[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
+  begin
+    // collapse with last sectionbase, if it is an in-flow block.
+
+    // find block to collapse
+    I := MyCell.Count - 1;
+    while I >= 0 do
+    begin
+      TB := MyCell[I];
+      if TB.Display <> pdNone then
+        if TB is TBlock then
+          if Block.Positioning = posStatic then
+            break;
+      Dec(I);
+    end;
+
+    if I >= 0 then
+    begin
+      // collapse block, if it has no bottom padding and no bottom border
+      if Block.MargArray[PaddingBottom] = 0 then
+        if ThtBorderStyle(Block.MargArray[BorderBottomStyle]) = bssNone then
+        begin
+          BottomMargin := Block.MargArray[MarginBottom];
+          Block.MargArray[MarginBottom] := 0;
+          MargArray[MarginBottom] := Max(MargArray[MarginBottom], BottomMargin);
+        end;
     end;
   end;
 end;
