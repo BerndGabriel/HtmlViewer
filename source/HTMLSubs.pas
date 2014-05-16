@@ -4446,9 +4446,12 @@ var
   TB: TSectionBase;
   LastMargin, Negs, I: Integer;
   Tag: TElemSymb;
+  CD: ThtConvData;
 begin
-  ConvVertMargins(MargArrayO, 400, {height not known at this point}
-    EmSize, ExSize, MargArray, TopAuto, BottomAuto);
+  CD := ConvData(0, 400 {width and height not known at this point},  EmSize, ExSize, BorderWidth);
+  ConvVertMargins(MargArrayO, CD, MargArray);
+  TopAuto := MarginTop in CD.IsAutoParagraph;
+  BottomAuto := MarginBottom in CD.IsAutoParagraph;
   if Positioning = posAbsolute then
   begin
     if TopAuto then
@@ -4514,6 +4517,8 @@ var
   Block: TBlock absolute TB;
   I: Integer;
   BottomMargin: Integer;
+  CD, BCD: ThtConvData;
+  H, MH: Integer;
 begin
   if (OwnerCell <> Document) and (MargArrayO[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
   begin
@@ -4534,8 +4539,13 @@ begin
     if I >= 0 then
     begin
       // collapse block, if it has no bottom padding and no bottom border
+      BCD := ConvData(100, 100, Block.EmSize, Block.ExSize, Block.BorderWidth);
+      ConvMargProp(PaddingBottom, Block.MargArrayO, CD, Block.MargArray);
+      ConvMargProp(BorderBottomStyle, Block.MargArrayO, CD, Block.MargArray);
+      ConvMargProp(BorderBottomWidth, Block.MargArrayO, CD, Block.MargArray);
+
       if Block.MargArray[PaddingBottom] = 0 then
-        if ThtBorderStyle(Block.MargArray[BorderBottomStyle]) = bssNone then
+        if Block.MargArray[BorderBottomWidth] = 0 then
         begin
           BottomMargin := Block.MargArray[MarginBottom];
           Block.MargArray[MarginBottom] := 0;
@@ -15867,7 +15877,7 @@ begin
   end;
   if Positioning = posAbsolute then
     Floating := ANone;
-  
+
 end;
 
 constructor TBlockBase.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
