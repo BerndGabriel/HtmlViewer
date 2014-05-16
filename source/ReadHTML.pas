@@ -3659,6 +3659,7 @@ begin
   SectionList.Add(Section, TagIndex);
   Section := nil;
   SectionList.CheckLastBottomMargin;
+  LiBlock.CollapseBottomMargins;
   PopAProp(Sym);
   SectionList := LiBlock.OwnerCell;
 {$ifdef DO_LI_INLINE}
@@ -3678,7 +3679,7 @@ var
   LineCount: Integer;
   Plain: Boolean;
   Index: ThtChar;
-  NewBlock: TBlock;
+  NewBlock: TListBlock;
   EndSym: TElemSymb;
 {$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
@@ -3708,7 +3709,7 @@ begin
   Section := nil;
   PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
 
-  NewBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
+  NewBlock := TListBlock.Create(SectionList, Attributes, PropStack.Last);
 // BG, 25.03.2012: unused:  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
   SectionList.Add(NewBlock, TagIndex);
   SectionList := NewBlock.MyCell;
@@ -3773,6 +3774,7 @@ begin
     NewBlock.MargArray[MarginBottom] := ParagraphSpace;
     NewBlock.BottomAuto := True;
   end;
+  NewBlock.CollapseBottomMargins;
   Section := nil;
   PopAProp(Sym); {maybe save stack position}
   SectionList := NewBlock.OwnerCell;
