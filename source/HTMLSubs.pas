@@ -4439,12 +4439,27 @@ begin
   {$ENDIF}
 end;
 
+//-- BG ---------------------------------------------------------- 17.05.2014 --
+function Collapse(A, B: Integer): Integer; {$ifdef UseInline} inline; {$endif}
+begin
+  if A >= 0 then
+    if B >= 0 then
+      Result := Max(A, B)
+    else
+      Result := A + B
+  else
+    if B >= 0 then
+      Result := B + A
+    else
+      Result := Min(A, B);
+end;
+
 procedure TBlock.CollapseMargins;
 {adjacent vertical margins need to be reduced}
 var
   TopAuto: boolean;
   TB: TSectionBase;
-  LastMargin, Negs, I: Integer;
+  LastMargin, I: Integer;
   Tag: TElemSymb;
   CD: ThtConvData;
 begin
@@ -4471,6 +4486,7 @@ begin
           break;
       Dec(I);
     end;
+
     if OwnerCell.OwnerBlock <> nil then
       Tag := OwnerCell.OwnerBlock.Symbol
     else
@@ -4493,16 +4509,7 @@ begin
       begin
         LastMargin := TBlock(TB).MargArray[MarginBottom];
         TBlock(TB).MargArray[MarginBottom] := 0;
-        Negs := 0;
-        if LastMargin < 0 then {figure out how many are negative}
-          Inc(Negs);
-        if MargArray[MarginTop] < 0 then
-          Inc(Negs);
-        case Negs of
-          0: MargArray[MarginTop] := Max(MargArray[MarginTop], LastMargin);
-          1: MargArray[MarginTop] :=     MargArray[MarginTop] + LastMargin;
-          2: MargArray[MarginTop] := Min(MargArray[MarginTop], LastMargin);
-        end;
+        MargArray[MarginTop] := Collapse(LastMargin, MargArray[MarginTop]);
       end
       else if (Tag = LISy) and TopAuto and (Symbol in [ULSy, OLSy]) then
         MargArray[MarginTop] := 0; {removes space from nested lists}
@@ -4530,13 +4537,13 @@ begin
     begin
       TB := MyCell[I];
       if TB.Display <> pdNone then
-        if TB is TBlock then
-          if Block.Positioning = posStatic then
-            break;
+        if not (TB is TBlock) or ((TBlock(TB).Positioning <> PosAbsolute) and (TBlock(TB).Floating = aNone)) then
+          break;
       Dec(I);
     end;
 
     if I >= 0 then
+      if (TB is TBlock) and (Block.Positioning = posStatic) then
     begin
       // collapse block, if it has no bottom padding and no bottom border
       BCD := ConvData(100, 100, Block.EmSize, Block.ExSize, Block.BorderWidth);
@@ -4549,7 +4556,7 @@ begin
         begin
           BottomMargin := Block.MargArray[MarginBottom];
           Block.MargArray[MarginBottom] := 0;
-          MargArray[MarginBottom] := Max(MargArray[MarginBottom], BottomMargin);
+          MargArray[MarginBottom] := Collapse(MargArray[MarginBottom], BottomMargin);
         end;
     end;
   end;
