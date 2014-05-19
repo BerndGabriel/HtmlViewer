@@ -421,7 +421,7 @@ begin
     begin
 {$ifdef LCL}
       PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
-{$if lcl_fullversion >= 1020200}
+{$if lcl_fullversion >= 1020000}
       DevMode := PrnDev.DevModeA;
 {$else}
       DevMode := PrnDev.DevMode;
