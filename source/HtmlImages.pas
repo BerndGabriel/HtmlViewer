@@ -598,7 +598,11 @@ begin
 
 {$ifndef NoGDIPlus}
     if not (ImageFormat in [itGif]) then
-      Result := LoadGpImage;
+      try
+        Result := LoadGpImage;
+      except
+        // just continue without image...
+      end;
 {$endif !NoGDIPlus}
 
     if Result = nil then
@@ -626,7 +630,11 @@ begin
   end;
 {$IFNDEF NoMetafile}
   if Result = nil then
-    Result := LoadMetafileImage;
+    try
+      Result := LoadMetafileImage;
+    except
+      // just continue without image...
+    end;
 {$ENDIF}
 end;
 
