@@ -221,7 +221,8 @@ begin
       AGif.Free;
     end;
   except
-    FreeAndNil(Result);
+    Result.Free;
+    raise;
   end;
 end;
 

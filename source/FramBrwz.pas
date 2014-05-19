@@ -981,7 +981,8 @@ begin
     FullUrl := CombineURL((Viewer.FrameOwner as TbrFrame).URLBase, S);
   FullUrl := Normalize(FullUrl);  // ANGUS
 
-  if not HotSpotClickHandled(FullUrl + Dest, Target) then
+  Handled := HotSpotClickHandled(FullUrl + Dest, Target);
+  if not Handled then
   begin
     Handled := True;
     if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
