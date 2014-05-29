@@ -1766,8 +1766,15 @@ var
   begin
     if Assigned(SectionList) then
     begin
-      SectionList.Add(Section, TagIndex);
-      Section := nil;
+      if Assigned(Section) then
+      begin
+        // Do not add empty section
+        if Length(Section.XP) <> 0 then
+          SectionList.Add(Section, TagIndex)
+        else
+          Section.Free;
+        Section := nil;
+      end;
       if CellObj.Cell = SectionList then
       begin
         SectionList.CheckLastBottomMargin;
@@ -1984,6 +1991,7 @@ begin
                 NoBreak := True {this seems to be what IExplorer does}
               else
                 NoBreak := False;
+              Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, True);
               SkipWhiteSpace;
               Next;
               DoBody(TableTermSet);
