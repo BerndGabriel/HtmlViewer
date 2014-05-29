@@ -10639,6 +10639,7 @@ begin
   FirstLineIndent := T.FirstLineIndent;
   FLPercent := T.FLPercent;
   BreakWord := T.BreakWord;
+  WhiteSpaceStyle := T.WhiteSpaceStyle;
 end;
 
 {----------------TSection.Destroy}
