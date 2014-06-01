@@ -119,6 +119,7 @@ type
     CharCount: Integer;
 
     Sy: TElemSymb;
+    IsXhtmlEndSy: Boolean; // current symbol is an xhtml combined start/end tag like <tag [attr="value" ...] />
     Attributes: TAttributeList;
 
     BaseFontSize: Integer;
@@ -1160,15 +1161,7 @@ procedure THtmlParser.Next;
           GetCh;
         end;
 
-        'a'..'z', 'A'..'Z', '_':
-        begin
-          // faster than: Compare := Compare + LCh;
-          SetLength(Compare, Length(Compare) + 1);
-          Compare[Length(Compare)] := LCh;
-          GetCh;
-        end;
-
-        '0'..'9':
+        'a'..'z', 'A'..'Z', '_', '0'..'9':
         begin
           // faster than: Compare := Compare + LCh;
           SetLength(Compare, Length(Compare) + 1);
@@ -1198,8 +1191,17 @@ procedure THtmlParser.Next;
     while GetAttribute(Sym, SymStr, AttrStr, L) do
       Attributes.Add(TAttribute.Create(Sym, L, SymStr, AttrStr, PropStack.Last.Codepage));
 
-    while (LCh <> GreaterChar) and (LCh <> EofChar) do
+    while True do
+    begin
+      case LCh of
+        GreaterChar,
+        EofChar:
+          break;
+        '/':
+          IsXhtmlEndSy := True;
+      end;
       GetCh;
+    end;
     if not (Sy in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
       GetCh;
   end;
@@ -1207,6 +1209,7 @@ procedure THtmlParser.Next;
 
 begin {already have fresh character loaded here}
   LCToken.Clear;
+  IsXhtmlEndSy := False;
   case LCh of
     '<':
       GetTag;
@@ -1420,6 +1423,8 @@ begin
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
+        if InHref then
+          DoAEnd;
         PopAProp(Sym);
         if not IsInline then
         begin
@@ -1772,8 +1777,15 @@ var
   begin
     if Assigned(SectionList) then
     begin
-      SectionList.Add(Section, TagIndex);
-      Section := nil;
+      if Assigned(Section) then
+      begin
+        // Do not add empty section
+        if Length(Section.XP) <> 0 then
+          SectionList.Add(Section, TagIndex)
+        else
+          Section.Free;
+        Section := nil;
+      end;
       if CellObj.Cell = SectionList then
       begin
         SectionList.CheckLastBottomMargin;
@@ -1990,6 +2002,7 @@ begin
                 NoBreak := True {this seems to be what IExplorer does}
               else
                 NoBreak := False;
+              Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, True);
               SkipWhiteSpace;
               Next;
               DoBody(TableTermSet);
@@ -2649,6 +2662,8 @@ procedure THtmlParser.DoCommonSy;
     T: TAttribute;
     Prop: TProperties;
   begin
+    if InHref then
+      DoAEnd;
     FoundHRef := False;
     Link := '';
     for I := 0 to Attributes.Count - 1 do
@@ -2656,8 +2671,6 @@ procedure THtmlParser.DoCommonSy;
         if Which = HRefSy then
         begin
           FoundHRef := True;
-          if InHref then
-            DoAEnd;
           InHref := True;
           if Attributes.Find(TargetSy, T) then
             CurrentUrlTarget.Assign(Name, T.Name, Attributes, PropStack.SIndex)
@@ -2689,6 +2702,8 @@ procedure THtmlParser.DoCommonSy;
     end;
     if FoundHRef then
       Section.HRef(true, PropStack.Document, CurrentUrlTarget, Attributes, PropStack.Last);
+    if IsXhtmlEndSy then
+      DoAEnd;
   end;
 
   procedure DoImage();
@@ -3537,6 +3552,8 @@ begin
     NewBlock.MargArray[MarginBottom] := 0; {open paragraph followed by table, no space}
   SectionList.Add(Section, TagIndex);
   Section := nil;
+  if InHref then
+    DoAEnd;
   PopAProp(PSy);
   SectionList := NewBlock.OwnerCell;
   if Sy = PEndSy then
@@ -3782,6 +3799,8 @@ begin
   end;
   NewBlock.CollapseBottomMargins;
   Section := nil;
+  if InHref then
+    DoAEnd;
   PopAProp(Sym); {maybe save stack position}
   SectionList := NewBlock.OwnerCell;
 end;

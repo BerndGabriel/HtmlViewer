@@ -260,8 +260,8 @@ type
 type
   ThtWhiteSpaceStyle = (
     wsNormal,
-    wsPre,
     wsNoWrap,
+    wsPre,
     wsPreWrap,
     wsPreLine{, wsInherit});
 

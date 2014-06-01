@@ -9319,8 +9319,9 @@ begin
               wtAbsolute:
               begin
                 // BG, 07.10.2012: issue 55: wrong CellMax calculation
-                CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
-                CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
+                //CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
+                //CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
+                CellMax := Value;   // CellMax should be at most  the given absolute value
                 CellMax := Max(CellMax, CellMin); // CellMax should be at least CellMin
               end;
 
@@ -9583,7 +9584,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
 
     {fill in the Widths array}
     if MinWidth > NewWidth then
-      // The minimum table width fits exactly or is too wide. Thus use minimum widths, table might expand.
+      // The minimum table width is too wide. Thus use minimum widths, table might expand.
       Widths := Copy(MinWidths)
     else
     begin
@@ -9600,58 +9601,85 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
         end;
 
       Widths := Copy(MinWidths);
-      if (PercentAbove0Count > 0) and (NewWidth > 0) then
+
+      // As minimum widths fit into table try to preserve given absolute widths:
+      Counts[wtAbsolute] := 0;
+      W := 0;
+      for I := 0 to NumCols - 1 do
       begin
-        // Calculate widths with respect to percentage specifications.
-        // Don't shrink Column i below MinWidth[i]! Therefor spread exessive space
-        // trying to fit the percentage demands.
-        // If there are more than 100% percent reduce linearly to 100% (including
-        // the corresponding percentages of the MinWidth of all other columns).
-        SetLength(PercentDeltas, NumCols);
-        CalcPercentDeltas(PercentDeltas, NewWidth);
-
-        PercentDeltaAbove0Count := 0;
-        for I := 0 to NumCols - 1 do
-          if PercentDeltas[I] > 0 then
-            Inc(PercentDeltaAbove0Count);
-
-        IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
+        case ColumnSpecs[I] of
+          wtAbsolute:
+          begin
+            Widths[i] := MaxWidths[i];
+            Inc(Counts[wtAbsolute]);
+          end;
+        end;
+        Inc(W, Widths[i]);
       end;
-      MinWidth := Sum(Widths);
 
-      if MinWidth > NewWidth then
-        // Table is too small for given percentage specifications.
-        // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
-        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
-      else if not Specified and (MaxWidth <= NewWidth) then
-        // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
-        Widths := Copy(MaxWidths)
-      else if MinWidth < NewWidth then
+      if W > NewWidth then
       begin
-        // Expand columns to fit exactly into NewWidth.
-        // Prefer widening columns without or with relative specification.
-        CountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
-        if Counts[wtNone] > 0 then
+        // Given absolute widths plus minimum widths of other columns do not fit into table!
+        // Thus reduce the absolute widths as less as possible:
+
+        IncreaseWidths(wtAbsolute, W, NewWidth, Counts[wtAbsolute]);
+      end
+      else
+      begin
+        if (PercentAbove0Count > 0) and (NewWidth > 0) then
         begin
-          // a) There is at least 1 column without any width constraint: modify this/these.
-          IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
-        end
-        else if Counts[wtRelative] > 0 then
+          // Calculate widths with respect to percentage specifications.
+          // Don't shrink Column i below MinWidth[i]! Therefor spread exessive space
+          // trying to fit the percentage demands.
+          // If there are more than 100% percent reduce linearly to 100% (including
+          // the corresponding percentages of the MinWidth of all other columns).
+          SetLength(PercentDeltas, NumCols);
+          CalcPercentDeltas(PercentDeltas, NewWidth);
+
+          PercentDeltaAbove0Count := 0;
+          for I := 0 to NumCols - 1 do
+            if PercentDeltas[I] > 0 then
+              Inc(PercentDeltaAbove0Count);
+
+          IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
+        end;
+        MinWidth := Sum(Widths);
+
+        if MinWidth > NewWidth then
+          // Table (NewWidth) is too small for given percentage specifications.
+          // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
+          IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
+        else if not Specified and (MaxWidth <= NewWidth) then
+          // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
+          Widths := Copy(MaxWidths)
+        else if MinWidth < NewWidth then
         begin
-          // b) There is at least 1 column with relative width: modify this/these.
-          W := NewWidth - MinWidth;
-          D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
-          IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
-        end
-        else if Counts[wtPercent] > 0 then
-        begin
-          // c) There is at least 1 column with percentage width: modify this/these.
-          IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
-        end
-        else
-        begin
-          // d) All columns have absolute widths: modify relative to current width.
-          IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+          // Expand columns to fit exactly into NewWidth.
+          // Prefer widening columns without or with relative specification.
+          CountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
+
+          if Counts[wtNone] > 0 then
+          begin
+            // a) There is at least 1 column without any width constraint: modify this/these.
+            IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
+          end
+          else if Counts[wtRelative] > 0 then
+          begin
+            // b) There is at least 1 column with relative width: modify this/these.
+            W := NewWidth - MinWidth;
+            D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
+            IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
+          end
+          else if Counts[wtPercent] > 0 then
+          begin
+            // c) There is at least 1 column with percentage width: modify this/these.
+            IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
+          end
+          else
+          begin
+            // d) All columns have absolute widths: modify relative to current width.
+            IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+          end;
         end;
       end;
     end;
@@ -10639,6 +10667,7 @@ begin
   FirstLineIndent := T.FirstLineIndent;
   FLPercent := T.FLPercent;
   BreakWord := T.BreakWord;
+  WhiteSpaceStyle := T.WhiteSpaceStyle;
 end;
 
 {----------------TSection.Destroy}
