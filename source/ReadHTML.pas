@@ -1417,6 +1417,8 @@ begin
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
+        if InHref then
+          DoAEnd;
         PopAProp(Sym);
         if not IsInline then
         begin
@@ -3791,6 +3793,8 @@ begin
   end;
   NewBlock.CollapseBottomMargins;
   Section := nil;
+  if InHref then
+    DoAEnd;
   PopAProp(Sym); {maybe save stack position}
   SectionList := NewBlock.OwnerCell;
 end;
