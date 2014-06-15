@@ -866,7 +866,7 @@ begin
           S := CombineURL(CurbrFrameSet.URLBase, S);
         end;
 
-        (CurbrFrameSet as TbrFrameSet).LoadFromBrzFile(Stream, StreamType, S, Dest);
+        CurbrFrameSet.LoadFromBrzFile(Stream, StreamType, S, Dest);
       except
         RemoveControl(CurbrFrameSet);
         CurbrFrameSet.Free;
