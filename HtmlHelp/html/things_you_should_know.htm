@@ -6,13 +6,20 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v115">
 
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="Compile Options">
 	<PARAM NAME="Keyword" VALUE="DLL">
+	<PARAM NAME="Keyword" VALUE="GdiPlus">
+	<PARAM NAME="Keyword" VALUE="NoGdiPlus">
+	<PARAM NAME="Keyword" VALUE="NoMetaFile">
+	<PARAM NAME="Keyword" VALUE="NoTabLink">
+	<PARAM NAME="Keyword" VALUE="FastRadio">
 	<PARAM NAME="Keyword" VALUE="Images">
+	<PARAM NAME="Keyword" VALUE="Active Images">
 	<PARAM NAME="Keyword" VALUE="Mouseover images">
+	<PARAM NAME="Keyword" VALUE="UseGlobalObjectId">
 	<PARAM NAME="Keyword" VALUE="Options">
 	<PARAM NAME="Keyword" VALUE="Things You Should Know">
 </OBJECT>
@@ -20,51 +27,39 @@
 <H1><A NAME="things_you_should_know"></A><B>Things You Should Know</B></H1>
 <HR>
 
-<P><A NAME="1hs.xn."></A><B>PNG Image Support</B></P>
+<H2><A name="Compile_Options"></A>Compile Time Options</H2>
 
-<P>Starting with version 9.4, the HTML Components will use the GDIPLUS.DLL for displaying PNG images if that DLL is present. This will allow proper rendering of PNG images with Alpha transparency. If the GDIPLUS.DLL is not present, PNG images will still be displayed but without the Alpha transparency capability.</P>
+<P>Several compile time options are controlled by defining symbols. You can find these in the HTMLCONS.INC file. Most of these symbols are initially not defined. To make any one (or all) of these symbols active, remove the "." from the {$.Define XXXX} sequence and recompile the code. </P>
 
-<P>The GDIPLUS.DLL is present on all WinXP systems and has often been loaded on other systems by other applications. If it is not present on your system, it can be downloaded (at no charge) at http://www.microsoft.com/downloads/.</P>
+<H3><A name="GdiPlus"></A>GdiPlus.dll Support</H3>
 
-<P><A NAME="15dxvo1"></A><B>Version 9 Compile Time Options</B></P>
+<p>The GdiPlus.dll provides support for PNG, TIFF, JPEG, ICO, EMF, WMF, EXIF, and BMP images.</p>
 
-<P>Version 9 has two compile time options controlled by defining symbols. You can find these in the HTMLCONS.INC file. None of these symbols are initially defined. To make any one (or all) of these symbols active, remove the "." from the {$.Define XXXX} sequence and recompile the code. </P>
+<p>Defining <b>NoGdiPlus</b> will remove support for TIFF, ICO, EMF, WMF, and EXIF images entirely.  If the GdiPlus.dll is not present or <b>NoGdiPlus</b> is defined most images will still be displayed but less nice than with GdiPlus.dll. Complied with <b>NoGdiPlus</b> by Delphi does not support PNG images.</P>
 
-<P>The possibilities are: </P>
+<P>The GdiPlus.dll is present on all WinXP systems and has often been loaded on other systems by other applications. If it is not present on your system, it can be downloaded (at no charge) at http://www.microsoft.com/downloads/.</P>
 
-<P><B>NoOldPNG</B></P>
+<H3><A name ="NoMetaFile"></A>Metafile support</H3>
 
-<P>Defining <B>NoOldPNG</B> removes the backup PNG Image code. This option should not be used unless it is certain that the GDIPLUS.DLL is present or if PNG image capabilies are not required.</P>
+<P>Metafile display and some printing operations are incompatible with Win95/98/ME.  For applications running on these systems define <b>NoMetaFile</b></P>
 
-<P><B>NoGDIPlus</B></P>
+<H3><A name="NoTabLink"></A>Ability to Tab between Links</H3>
 
-<P>The GDIPLUS.DLL provides alpha transparency support for PNG images.  If, for some reason the use of the gdiplus.dll is undesirable, define <B>NoGDIPlus</B>.</P>
+<P>To eliminate tabbing between links, define <b>NoTabLink</b>.  For documents with hundreds of links, tabbing may not be desirable and also may cause delays in loading.  Even when NoTabLink is not defined, there is another constant, MaxTab, which eliminates tabbing to MaxTab links.  MaxTab is defined in readhtml.pas</P>
 
-<P><B>NoTabLink</B></P>
+<H3><A name="FastRadio"></A>FastRadio</H3>
 
-<P>Defining <B>NoTabLink</B> disables the ability to Tab between Links. This may be desirable for documents with a great many links.</P>
+<p>if you have a form with a great many radio buttons, you may want to define FastRadio to help speed the action.  Note that this option changes the way tabbing works.  With FastRadio off, tabs move only to the next control that is visible.  With FastRadio on, tabs move to the next control even if it is not visible.</p>  
 
-<P><B>Quirk</B></P>
+<H3>Quirks</H3>
 
-<P>Defining <B>Quirk</B> makes changes which simulate some of the quirks of other browsers.  It may be desirable to define this constant if you expect to be displaying HTML which might depend on these quirks.  Currently, <B>Quirk</B> forces the font color and size to return to default values in each table cell.</P>
+<P>Quirks mode makes changes which simulate some of the quirks of other browsers.  The HTML components now support a property <a href="prop_thtmlviewer_quirksmode.htm">QuirksMode</a> that replaces and enhances the previous compiler symbol.</P>
 
-<P><B>UseTNT or UseElpack</B></P>
-
-<P>Defining one of these allows the Unicode TNT or Elpack controls to be substituted for Delphi controls for Form controls. See the file, HTMLCONS.INC, for more details.</P>
-
-<P><B>NoMetafile</B></P>
-
-<P>Metafiles may be displayed by undefining this constant.  <B>NoMetafile is defined by default</B> to emphasize the fact that Metafile display and some printing operations are currently incompatible in Win98.  For applications where printing is unimportant or Win98/95/ME need not be supported, undefining this constant will allow Metafiles to be displayed.</P>
-
-<P><A NAME="ygpqvw"></A><B>OpOnChange</B></P>
+<H3><A name="OpOnChange"></A>OpOnChange</H3>
 
 <P>Without this definition, the &lt;select&gt; form controls (TListbox and TCombobox) will issue the OnObjectChange event only when the control loses the focus which is according to HTML specs.   Defining OpOnChange simulates the way IExplorer does it, issuing the OnChange event immediately when a change is made.</P>
 
-<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-	<PARAM NAME="Keyword" VALUE="Active Images">
-</OBJECT>
-
-<P><A NAME="active_images"></A><B>Mouseover Images</B></P>
+<H3><A NAME="active_images"><A NAME="mouseover_images"><A NAME="images"></A>Mouseover Images</H3>
 
 <P>A <B><I>Mouseover Image</I></B> is one that changes when the mouse passes over it. The HTML components use a special syntax to implement mouseover images. It's done with the <B>&lt;img&gt;</B> tag as follows: </P>
 
@@ -73,6 +68,13 @@
 <P><IMG SRC="../images/bm3.gif" ALT="" BORDER=0>Add an <B>Active</B> attribute </P>
 
 <P>With the <B>Active</B> attribute, the GIF will normally just display the first frame. When the mouse passes over or is clicked, it will display the second or third frame respecively if there are 2 or 3 frames or will animate if there are more than 3 frames. </P>
+
+<H3><a name="UseGlobalObjectId"></a>Global Object Id</H3>
+
+<p>Defining <b>UseGlobalObjectId</b> gives each HTML element an application wide unique ID even if there is no ID or NAME attribute given in the HTML document. The unique ID is composed of 'GOID-' and a consecutive number starting with 1</p>
+
+<H3>Legacy Style Type Names</H3>
+<p>Style types have been renamed to Tht.. to meet the Delphi style guide that types should start with a 'T'. As long as you did not change your code accordingly you can define <b>UseOldStyleTypes</b>.</p>
 
 <H2 class="SeeAlso">See Also:</H2>
 

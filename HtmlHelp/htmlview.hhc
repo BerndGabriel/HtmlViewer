@@ -256,6 +256,10 @@
           <param name="Local" value="html/processing_property.htm">
           </OBJECT>
         <LI> <OBJECT type="text/sitemap">
+          <param name="Name" value="QuirksMode Property">
+		  <param name="Local" value="html/prop_thtmlviewer_quirksmode.htm">
+		  </OBJECT>
+		<LI> <OBJECT type="text/sitemap">
           <param name="Name" value="SelLength Property">
           <param name="Local" value="html/sellength_property.htm">
           </OBJECT>
@@ -768,6 +772,10 @@
             <param name="Local" value="html/type_thtprogressevent.htm">
             </OBJECT>
           <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Type THtQuirksMode">
+			<param name="Local" value="html/type_thtquirksmode.htm">
+			</OBJECT>
+		  <LI> <OBJECT type="text/sitemap">
             <param name="Name" value="Type ThtChar">
             <param name="Local" value="html/type_thtchar.htm">
             </OBJECT>
