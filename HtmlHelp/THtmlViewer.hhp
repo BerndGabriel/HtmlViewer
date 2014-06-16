@@ -13,6 +13,9 @@ Title=THtmlViewer Components
 [FILES]
 html\_body__attributes.htm
 html\activeviewer_property.htm
+html\assign_tbuffer_method.htm
+html\assignto_tbuffer_method.htm
+html\asstring_tbuffer_method.htm
 html\backbuttonenabled_property.htm
 html\base_property.htm
 html\basetarget_property.htm
@@ -22,7 +25,9 @@ html\charset_property.htm
 html\class_hierarchy.htm
 html\clear_method.htm
 html\clearhistory_method.htm
+html\codepage_tbuffer_property.htm
 html\contents.htm
+html\convert_tbuffer_method.htm
 html\copyright.htm
 html\copytoclipboard_method.htm
 html\currentfile_property.htm
@@ -51,6 +56,7 @@ html\fwdbuttonenabled_property.htm
 html\getcharatpos_method.htm
 html\getpostquery_method.htm
 html\getseltextbuf_method.htm
+html\getstring_tbuffer_method.htm
 html\getviewerurlbase_method.htm
 html\goback_method.htm
 html\gofwd_method.htm
@@ -84,7 +90,9 @@ html\makemetafile_method.htm
 html\makepagedmetafiles_method.htm
 html\marginheight_and_marginwidth_properties.htm
 html\maxvertical_property.htm
+html\name_tbuffer_property.htm
 html\namelist_property.htm
+html\nextchar_tbuffer_method.htm
 html\noselect_property.htm
 html\numprinterpages_method.htm
 html\onblankwindowrequest_event.htm
@@ -127,11 +135,14 @@ html\onstringsrequest_event.htm
 html\onviewerclear_event.htm
 html\openprint__abortprint__and_closeprint_methods.htm
 html\palette_property.htm
+html\peekchar_tbuffer_method.htm
+html\position_tbuffer_property.htm
 html\positionto_method.htm
 html\print_method.htm
 html\printmargin_properties.htm
 html\printscale_property.htm
 html\processing_property.htm
+html\prop_thtmlviewer_quirksmode.htm
 html\prop_thtmlviewerdocumenttitle.htm
 html\prop_thtmlviewerposition.htm
 html\ptinobject_method.htm
@@ -146,7 +157,10 @@ html\selstart_property.htm
 html\seltext_property.htm
 html\serverroot_property.htm
 html\setting_up_a_history_list.htm
+html\size_tbuffer_method.htm
 html\special_html_tags_and_attributes.htm
+html\supported_elements.htm
+html\supported_properties.htm
 html\target_property.htm
 html\tframebrowser_component.htm
 html\tframebrowser_events.htm
@@ -164,6 +178,7 @@ html\thtmlviewer_methods.htm
 html\thtmlviewerproperties.htm
 html\titleattr_property.htm
 html\titlehistory_property.htm
+html\type_tbuffcodepage.htm
 html\type_tbufferrequestevent.htm
 html\type_tfilebrowseevent.htm
 html\type_tfilerequestevent.htm
@@ -180,6 +195,7 @@ html\type_thtmlfiletype.htm
 html\type_thtmlpageprinted.htm
 html\type_thtobjectevent.htm
 html\type_thtprogressevent.htm
+html\type_thtquirksmode.htm
 html\type_thtstring.htm
 html\type_thtstrings.htm
 html\type_timageclickevent.htm
@@ -215,24 +231,10 @@ html\vscrollbarposition_property.htm
 html\vscrollbarrange_property.htm
 html\waitstream.htm
 html\xytodisplaypos_method.htm
+images\smallcheck.gif
 images\v114.png
 images\v115.png
 images\v945.png
-images\smallcheck.gif
-html\assign_tbuffer_method.htm
-html\assignto_tbuffer_method.htm
-html\asstring_tbuffer_method.htm
-html\convert_tbuffer_method.htm
-html\getstring_tbuffer_method.htm
-html\nextchar_tbuffer_method.htm
-html\peekchar_tbuffer_method.htm
-html\size_tbuffer_method.htm
-html\codepage_tbuffer_property.htm
-html\name_tbuffer_property.htm
-html\position_tbuffer_property.htm
-html\type_tbuffcodepage.htm
-html\supported_elements.htm
-html\supported_properties.htm
 
 [ALIAS]
 DocumentTitle_Property = html\prop_thtmlviewerdocumenttitle.htm
