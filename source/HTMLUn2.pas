@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -207,6 +207,7 @@ type
     FTarget: ThtString;
     FTitle: ThtString;
   public
+    destructor Destroy; override;
     function PtInArea(X, Y: Integer): Boolean;
     property HRef: ThtString read FHRef;
     property Target: ThtString read FTarget;
@@ -216,9 +217,9 @@ type
   // BG, 31.12.2011: 
   TMapAreaList = class(TObjectList)
   private
-    function getArea(Index: Integer): TMapArea;
+    function GetArea(Index: Integer): TMapArea;
   public
-    property Items[Index: Integer]: TMapArea read getArea; default;
+    property Items[Index: Integer]: TMapArea read GetArea; default;
   end;
 
   TMapItem = class(TObject) {holds a client map info}
@@ -1686,6 +1687,14 @@ end;
 
 { TMapArea }
 
+//-- BG ---------------------------------------------------------- 25.06.2014 --
+destructor TMapArea.Destroy;
+begin
+  if FRegion <> 0 then
+    DeleteObject(FRegion);
+  inherited;
+end;
+
 //-- BG ---------------------------------------------------------- 31.12.2011 --
 function TMapArea.PtInArea(X, Y: Integer): Boolean;
 begin
@@ -1695,9 +1704,9 @@ end;
 { TMapAreaList }
 
 //-- BG ---------------------------------------------------------- 31.12.2011 --
-function TMapAreaList.getArea(Index: Integer): TMapArea;
+function TMapAreaList.GetArea(Index: Integer): TMapArea;
 begin
-  Result := get(Index);
+  Result := Get(Index);
 end;
 
 { TMapItem }
