@@ -36,7 +36,6 @@ requires
   VclSmp;
 
 contains
-  AlphaBlendUn in '..\source\AlphaBlendUn.pas',
   BegaHtmlPrintPreviewForm in '..\source\BegaHtmlPrintPreviewForm.pas',
   BegaMetaFilePrinter in '..\source\BegaMetaFilePrinter.pas',
   BegaPreview in '..\source\BegaPreview.pas',
@@ -52,24 +51,23 @@ contains
   GDIPL2A in '..\source\GDIPL2A.pas',
   HSLUtils in '..\source\HSLUtils.pas',
   HtmlBuffer in '..\source\HtmlBuffer.pas',
+  HtmlCaches in '..\source\HtmlCaches.pas',
+  HtmlFonts in '..\source\HtmlFonts.pas',
   htmlgif1 in '..\source\htmlgif1.pas',
   HTMLGif2 in '..\source\HTMLGif2.pas',
   HtmlGlobals in '..\source\HtmlGlobals.pas',
+  HtmlImages in '..\source\HtmlImages.pas',
   Htmlsbs1 in '..\source\Htmlsbs1.pas',
   HTMLSubs in '..\source\HTMLSubs.pas',
+  HtmlSymb in '..\source\HtmlSymb.pas',
   htmlun2 in '..\source\htmlun2.pas',
   htmlview in '..\source\htmlview.pas',
   MetaFilePrinter in '..\source\MetaFilePrinter.pas',
-  msimg32 in '..\source\msimg32.pas',
   ReadHTML in '..\source\ReadHTML.pas',
   StylePars in '..\source\StylePars.pas',
+  StyleTypes in '..\source\StyleTypes.pas',
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
-  vwPrint in '..\source\vwPrint.pas',
-  HtmlSymb in '..\source\HtmlSymb.pas',
-  HtmlCaches in '..\source\HtmlCaches.pas',
-  HtmlFonts in '..\source\HtmlFonts.pas',
-  StyleTypes in '..\source\StyleTypes.pas',
-  HtmlImages in '..\source\HtmlImages.pas';
+  vwPrint in '..\source\vwPrint.pas';
 
 end.
