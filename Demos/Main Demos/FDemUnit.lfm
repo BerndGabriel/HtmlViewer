@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 874
+  Left = 875
   Height = 505
-  Top = 175
+  Top = 176
   Width = 762
   Caption = 'Frame Demo'
   ClientHeight = 485
@@ -13,12 +13,14 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '1.1'
+  LCLVersion = '1.2.2.0'
   object FrameViewer: TFrameViewer
     Left = 0
     Height = 431
     Top = 27
     Width = 762
+    CharSet = DEFAULT_CHARSET
+    CodePage = 0
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
@@ -28,6 +30,12 @@ object Form1: TForm1
     HistoryMaxCount = 6
     ImageCacheCount = 6
     NoSelect = False
+    PrintMarginBottom = 3
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintScale = 1
+    QuirksMode = qmDetect
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -40,12 +48,6 @@ object Form1: TForm1
     OnProgress = FrameViewerProgress
     OnRightClick = FrameViewerRightClick
     OnSoundRequest = SoundRequest
-    PrintMarginBottom = 3
-    PrintMarginLeft = 2
-    PrintMarginRight = 2
-    PrintMarginTop = 2
-    PrintScale = 1
-    QuirksMode = qmDetect
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove

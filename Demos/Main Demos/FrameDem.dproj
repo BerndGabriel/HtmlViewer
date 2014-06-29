@@ -3,29 +3,29 @@
   <PropertyGroup>
     <ProjectGuid>{e8f2416f-36f0-4431-9dac-a546113c084a}</ProjectGuid>
     <MainSource>FrameDem.dpr</MainSource>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-    <DCC_DependencyCheckOutputName>bin\Delphi2007\FrameDem.exe</DCC_DependencyCheckOutputName>
+    <DCC_DependencyCheckOutputName>C:\Users\Bernd\Documents\RAD Studio\5.0\AnyCPU\Bin\FrameDem.exe</DCC_DependencyCheckOutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Version>7.0</Version>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
     <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
     <DCC_MapFile>3</DCC_MapFile>
-    <DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu</DCC_DcuOutput>
-    <DCC_ObjOutput>$(BDSCOMMONDIR)\Dcu</DCC_ObjOutput>
-    <DCC_HppOutput>$(BDSCOMMONDIR)\Dcu</DCC_HppOutput>
+    <DCC_DcuOutput>$(BDSUSERDIR)\$(PLATFORM)\Dcu\$(MSBuildProjectName)</DCC_DcuOutput>
+    <DCC_ObjOutput>$(BDSUSERDIR)\$(PLATFORM)\Dcu\$(MSBuildProjectName)</DCC_ObjOutput>
+    <DCC_HppOutput>$(BDSUSERDIR)\$(PLATFORM)\Dcu\$(MSBuildProjectName)</DCC_HppOutput>
     <DCC_BplOutput>$(BDSCOMMONDIR)\Bpl</DCC_BplOutput>
     <DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp</DCC_DcpOutput>
-    <DCC_UnitSearchPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_UnitSearchPath>
-    <DCC_ResourcePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_ResourcePath>
-    <DCC_ObjPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_ObjPath>
-    <DCC_IncludePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components</DCC_IncludePath>
+    <DCC_UnitSearchPath>$(DELPHI)\Lib\Debug</DCC_UnitSearchPath>
+    <DCC_ResourcePath>$(DELPHI)\Lib\Debug</DCC_ResourcePath>
+    <DCC_ObjPath>$(DELPHI)\Lib\Debug</DCC_ObjPath>
+    <DCC_IncludePath>$(DELPHI)\Lib\Debug</DCC_IncludePath>
     <DCC_Define>RELEASE</DCC_Define>
     <DCC_Description>Fast Function Factory - Components</DCC_Description>
     <DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
-    <DCC_ExeOutput>bin\Delphi2007</DCC_ExeOutput>
+    <DCC_ExeOutput>$(BDSUSERDIR)\$(PLATFORM)\BIn</DCC_ExeOutput>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
@@ -35,16 +35,16 @@
     <DCC_RangeChecking>True</DCC_RangeChecking>
     <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
     <DCC_MapFile>3</DCC_MapFile>
-    <DCC_DcuOutput>lib\Delphi2007</DCC_DcuOutput>
-    <DCC_ObjOutput>lib\Delphi2007</DCC_ObjOutput>
-    <DCC_HppOutput>lib\Delphi2007</DCC_HppOutput>
-    <DCC_UnitSearchPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_UnitSearchPath>
-    <DCC_ResourcePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_ResourcePath>
-    <DCC_ObjPath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_ObjPath>
-    <DCC_IncludePath>$(DELPHI)\Lib\Debug;L:\src\fast-function-factory\components;L:\src\shareware\HtmlViewer\source</DCC_IncludePath>
-    <DCC_Define>DEBUG;madExcept</DCC_Define>
+    <DCC_DcuOutput>$(BDSUSERDIR)\$(PLATFORM)\Dcu\$(MSBuildProjectName)</DCC_DcuOutput>
+    <DCC_ObjOutput>$(BDSUSERDIR)\$(PLATFORM)\Dcu\$(MSBuildProjectName)</DCC_ObjOutput>
+    <DCC_HppOutput>$(BDSUSERDIR)\$(PLATFORM)\Dcu\$(MSBuildProjectName)</DCC_HppOutput>
+    <DCC_UnitSearchPath>$(DELPHI)\Lib\Debug</DCC_UnitSearchPath>
+    <DCC_ResourcePath>$(DELPHI)\Lib\Debug</DCC_ResourcePath>
+    <DCC_ObjPath>$(DELPHI)\Lib\Debug</DCC_ObjPath>
+    <DCC_IncludePath>$(DELPHI)\Lib\Debug</DCC_IncludePath>
+    <DCC_Define>DEBUG</DCC_Define>
     <DCC_Description>Fast Function Factory - Components</DCC_Description>
-    <DCC_ExeOutput>bin\Delphi2007</DCC_ExeOutput>
+    <DCC_ExeOutput>$(BDSUSERDIR)\$(PLATFORM)\Bin</DCC_ExeOutput>
     <DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
   </PropertyGroup>
   <ProjectExtensions>
