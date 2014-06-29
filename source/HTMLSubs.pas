@@ -4525,7 +4525,6 @@ var
   I: Integer;
   BottomMargin: Integer;
   CD, BCD: ThtConvData;
-  H, MH: Integer;
 begin
   if (OwnerCell <> Document) and (MargArrayO[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
   begin
@@ -13816,10 +13815,10 @@ constructor TMeterObj.Create(Parent: TCellBasic; Position: Integer; L: TAttribut
 var
   PntPanel: TWinControl; //TPaintPanel;
   I: Integer;
-  PositionSet: Boolean;
+  //PositionSet: Boolean;
 begin
   inherited Create(Parent, Position, L, Prop);
-  PositionSet := false;
+  //PositionSet := false;
   VertAlign := ABottom; {default}
   Floating := ANone;
   PntPanel := Document.PPanel;
@@ -13866,7 +13865,7 @@ begin
         ValueSy:
         begin
           Meter.Position := StrToIntDef( Name, 0 );
-          PositionSet := true;
+          //PositionSet := true;
         end;
       end;
 
