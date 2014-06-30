@@ -108,21 +108,24 @@ In "Source"
      DitherUnit.pas
      GDIPL2A.pas
      HSLUtils.pas
-     Html32.res
      HtmlBuffer.pas
-     HtmlCons.inc
-     HtmlGif1.pas
+     HtmlCaches.pas
+     HtmlFonts.pas
+     htmlgif1.pas
      HTMLGif2.pas
      HtmlGlobals.pas
-     HtmlSbs1.pas
+     HtmlImages.pas
+     Htmlsbs1.pas
      HTMLSubs.pas
-     HTMLUn2.pas
+     HtmlSymb.pas
+     htmlun2.pas
      MetaFilePrinter.pas
      ReadHTML.pas
      StylePars.pas
+     StyleTypes.pas
      StyleUn.pas
      URLSubs.pas
-     VwPrint.pas
+     vwPrint.pas
      HtmlMisc.pas                 Lazarus only
      HtmlComp.lrs                 Lazarus only
      HtmlUn2.lrs                  Lazarus only
@@ -138,12 +141,18 @@ In "Source"
      FrameViewer2007.dpk, .res    Delphi 2007 Package source file.        Uses TntControls for better unicode support.
      FrameViewer2009.dpk, .res    Delphi 2009 Package source file.
      FrameViewer2010.dpk, .res    Delphi 2010 Package source file.
-     FrameViewerXE.dpk, .res      Delphi XE Package source file.
-     FrameViewerXE2.dpk, .res     Delphi XE2 Package source file.
+     FrameViewerXE.dpk, .res      Delphi XE Runtime Package source file.
+     FrameViewerXE2.dpk, .res     Delphi XE2 Runtime Package source file.
      FrameViewerXE3.dpk, .res     Delphi XE3 Runtime package source file.
-     DclFrameViewerXE3.dpk, .res  Delphi XE3 Designtime package source file.
      FrameViewerXE4.dpk, .res     Delphi XE4 Runtime package source file.
+     FrameViewerXE5.dpk, .res     Delphi XE5 Runtime package source file.
+     FrameViewerXE6.dpk, .res     Delphi XE6 Runtime package source file.
+     DclFrameViewerXE.dpk, .res   Delphi XE Designtime package source file.
+     DclFrameViewerXE2.dpk, .res  Delphi XE2 Designtime package source file.
+     DclFrameViewerXE3.dpk, .res  Delphi XE3 Designtime package source file.
      DclFrameViewerXE4.dpk, .res  Delphi XE4 Designtime package source file.
+     DclFrameViewerXE5.dpk, .res  Delphi XE5 Designtime package source file.
+     DclFrameViewerXE6.dpk, .res  Delphi XE6 Designtime package source file.
      HtmlView.chm                 The help file (Sorry, but most of it is still version 9.45)
    
    Source code for the print preview dialog TBegaHtmlPrintPreviewForm
@@ -182,7 +191,7 @@ In "Demos\Main Demos"
 
 In "Demos\Other Demos"     
 
-   Some more demos projects and source files. For example the FrameBrowser demos 
+   Some more demo projects and source files. For example the FrameBrowser demos 
      
      FrameBrowserUsingICSv7 
      FrameBrowserUsingIndy10
@@ -323,7 +332,7 @@ World Wide Web: <a HREF="http://code.google.com/p/thtmlviewer/">http://code.goog
 </tr>
 </table>
 
-<p CLASS="heading"><a NAME="Copyright">Copyright &copy; 1995-2008 by L. David Baldwin</a>, 2008-2013 by HtmlViewer Team</p>
+<p CLASS="heading"><a NAME="Copyright"></a>Copyright &copy; 1995-2008 by L. David Baldwin, 2008-2014 by HtmlViewer Team</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to

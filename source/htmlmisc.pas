@@ -23,6 +23,7 @@
 {* All Rights Reserved.                                                       *}
 {*                                                                            *}
 {* Contributor(s):                                                            *}
+{* Bernd Gabriel, 2014: FlatSB support                                        *}
 {*                                                                            *}
 {* ***** END LICENSE BLOCK *****                                              *}
 

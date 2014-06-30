@@ -1,4 +1,4 @@
-package dclFrameViewerXE4;
+package dclFrameViewerXE;
 
 {$R *.res}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
@@ -36,7 +36,7 @@ requires
   vclimg,
   soaprtl,
   VclSmp,
-  FrameViewerXE4;
+  FrameViewerXE;
 
 contains
   FrameViewerReg in '..\source\FrameViewerReg.pas',

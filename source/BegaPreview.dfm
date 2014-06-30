@@ -81,7 +81,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     Left = 0
     Top = 0
     Width = 800
-    Height = 55
+    Height = 56
     AutoSize = True
     BorderWidth = 1
     Caption = 'ToolBar'
@@ -93,14 +93,14 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     TabOrder = 0
     object ReportProperties: TToolButton
       Left = 0
-      Top = 2
+      Top = 0
       Caption = 'ReportProperties'
       ImageIndex = 8
       OnClick = ReportPropertiesClick
     end
     object PrinterSetup: TToolButton
       Left = 23
-      Top = 2
+      Top = 0
       Hint = 'Setup printer...'
       Caption = 'PrinterSetup'
       ImageIndex = 0
@@ -110,7 +110,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object Print: TToolButton
       Left = 46
-      Top = 2
+      Top = 0
       Hint = 'Print shown document...'
       Caption = 'Print'
       ImageIndex = 1
@@ -120,7 +120,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object SendMail: TToolButton
       Left = 69
-      Top = 2
+      Top = 0
       Hint = 'Send e-mail with shown document...'
       Caption = 'SendMail'
       ImageIndex = 10
@@ -129,7 +129,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object SaveFile: TToolButton
       Left = 92
-      Top = 2
+      Top = 0
       Hint = 'Save shown document as HTML file...'
       Caption = 'SaveFile'
       ImageIndex = 2
@@ -140,7 +140,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object OpenInExcel: TToolButton
       Left = 115
-      Top = 2
+      Top = 0
       Hint = 'Open shown document in '#39'MS Excel'#39
       Caption = 'OpenInExcel'
       ImageIndex = 18
@@ -148,7 +148,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ContentZoomSeparator: TToolButton
       Left = 138
-      Top = 2
+      Top = 0
       Width = 8
       Caption = 'ContentZoomSeparator'
       ImageIndex = 4
@@ -156,7 +156,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ContentZoomBoxLabel: TLabel
       Left = 146
-      Top = 2
+      Top = 0
       Width = 39
       Height = 22
       Alignment = taCenter
@@ -172,12 +172,11 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ContentZoomBox: TComboBox
       Left = 185
-      Top = 2
+      Top = 0
       Width = 81
       Height = 21
       Hint = 'Content zoom'
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 4
       OnChange = ContentZoomBoxChange
       Items.Strings = (
@@ -197,7 +196,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ContentFitHeight: TToolButton
       Left = 266
-      Top = 2
+      Top = 0
       Hint = 'Fit content to page height'
       AllowAllUp = True
       Caption = 'ContentFitHeight'
@@ -208,7 +207,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ContentFitWidth: TToolButton
       Left = 289
-      Top = 2
+      Top = 0
       Hint = 'Fit content to page width'
       AllowAllUp = True
       Caption = 'Send'
@@ -221,7 +220,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ToolButton2: TToolButton
       Left = 312
-      Top = 2
+      Top = 0
       Width = 8
       Caption = 'ToolButton2'
       ImageIndex = 5
@@ -229,7 +228,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object FirstPage: TToolButton
       Left = 320
-      Top = 2
+      Top = 0
       Hint = 'Go to first page of document'
       Caption = 'FirstPage'
       ImageIndex = 3
@@ -239,7 +238,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object PrevPage: TToolButton
       Left = 343
-      Top = 2
+      Top = 0
       Hint = 'Go to previous page of document'
       AllowAllUp = True
       Caption = 'PrevPage'
@@ -251,18 +250,17 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object cboxPage: TComboBox
       Left = 366
-      Top = 2
+      Top = 0
       Width = 145
       Height = 21
       Hint = 'List of all pages of this report'
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 5
       OnChange = PageChange
     end
     object NextPage: TToolButton
       Left = 511
-      Top = 2
+      Top = 0
       Hint = 'Go to next page of document'
       Caption = 'NextPage'
       ImageIndex = 5
@@ -272,7 +270,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object LastPage: TToolButton
       Left = 534
-      Top = 2
+      Top = 0
       Hint = 'Go to last page of document'
       Caption = 'LastPage'
       ImageIndex = 6
@@ -280,7 +278,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object AllOnOne: TToolButton
       Left = 557
-      Top = 2
+      Top = 0
       Hint = 'Show all rows of this document on 1 page'
       Caption = 'AllOnOne'
       ImageIndex = 7
@@ -290,7 +288,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ToolButton9: TToolButton
       Left = 0
-      Top = 2
+      Top = 0
       Width = 8
       Caption = 'ToolButton9'
       ImageIndex = 9
@@ -299,7 +297,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object Label2: TLabel
       Left = 0
-      Top = 29
+      Top = 30
       Width = 41
       Height = 22
       Alignment = taCenter
@@ -315,12 +313,11 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ZoomBox: TComboBox
       Left = 41
-      Top = 29
+      Top = 30
       Width = 81
       Height = 21
       Hint = 'Preview zoom'
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 0
       OnChange = ZoomBoxChange
       Items.Strings = (
@@ -340,7 +337,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object FitHeight: TToolButton
       Left = 122
-      Top = 29
+      Top = 30
       Hint = 'Fit preview to page height'
       AllowAllUp = True
       Caption = 'FitHeight'
@@ -353,7 +350,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object FitWidth: TToolButton
       Left = 145
-      Top = 29
+      Top = 30
       Hint = 'Fit preview to page width'
       AllowAllUp = True
       Caption = 'FitWidth'
@@ -364,7 +361,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ToolButton14: TToolButton
       Left = 168
-      Top = 29
+      Top = 30
       Width = 8
       Caption = 'ToolButton14'
       ImageIndex = 16
@@ -372,7 +369,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object Label3: TLabel
       Left = 176
-      Top = 29
+      Top = 30
       Width = 37
       Height = 22
       Alignment = taCenter
@@ -389,7 +386,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object PagesPerRow: TSpinEdit
       Left = 213
-      Top = 29
+      Top = 30
       Width = 59
       Height = 22
       MaxValue = 100
@@ -400,7 +397,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object Label4: TLabel
       Left = 272
-      Top = 29
+      Top = 30
       Width = 29
       Height = 22
       Alignment = taCenter
@@ -417,7 +414,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object RowsPerPreview: TSpinEdit
       Left = 301
-      Top = 29
+      Top = 30
       Width = 59
       Height = 22
       MaxValue = 100
@@ -428,7 +425,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ToolButton11: TToolButton
       Left = 360
-      Top = 29
+      Top = 30
       Width = 8
       Caption = 'ToolButton11'
       ImageIndex = 16
@@ -436,7 +433,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object Zooming: TToolButton
       Left = 368
-      Top = 29
+      Top = 30
       Hint = 'Selects the Zoom Tool to zoom in or out'
       AllowAllUp = True
       Caption = 'Zooming'
@@ -447,7 +444,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object Panning: TToolButton
       Left = 391
-      Top = 29
+      Top = 30
       Hint = 'Selects the Hand Tool to pan across the Page'
       AllowAllUp = True
       Caption = 'Panning'
@@ -460,14 +457,14 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object ToolButton10: TToolButton
       Left = 414
-      Top = 29
+      Top = 30
       Width = 8
       Caption = 'ToolButton10'
       Style = tbsSeparator
     end
     object Grid: TToolButton
       Left = 422
-      Top = 29
+      Top = 30
       Hint = 'Show/Hide Grid'
       Caption = 'Grid'
       ImageIndex = 15
@@ -476,11 +473,10 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     end
     object UnitsBox: TComboBox
       Left = 445
-      Top = 29
+      Top = 30
       Width = 81
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 3
       OnChange = UnitsBoxChange
       Items.Strings = (
@@ -490,9 +486,9 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
   end
   object PreviewBox: TBegaZoomBox
     Left = 0
-    Top = 55
+    Top = 56
     Width = 800
-    Height = 528
+    Height = 527
     HorzScrollBar.Tracking = True
     VertScrollBar.Tracking = True
     Align = alClient
@@ -523,7 +519,7 @@ object BegaCustomPreviewFrame: TBegaCustomPreviewFrame
     Left = 196
     Top = 112
     Bitmap = {
-      494C010113001800180010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C0101130018001C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
