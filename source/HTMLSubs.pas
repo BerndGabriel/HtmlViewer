@@ -5954,6 +5954,8 @@ begin
         MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], clNone);
     end;
 
+     MyProps.SetPropertyDefault(BorderSpacing, ATable.CellSpacing);
+
     if ATable.HasBorderWidthAttr then
       MyProps.SetPropertyDefaults([BorderBottomWidth, BorderRightWidth, BorderTopWidth, BorderLeftWidth], ATable.brdWidthAttr);
 
@@ -8707,7 +8709,9 @@ begin
         BorderColorDarkSy:
           TryStrToColor(Name, False, BorderColorDark);
       end;
-  if Prop.Collapse then
+  if Prop.HasBorderSpacing then
+    CellSpacing := Prop.GetBorderSpacing
+  else if Prop.Collapse then
     Cellspacing := -1;
 end;
 

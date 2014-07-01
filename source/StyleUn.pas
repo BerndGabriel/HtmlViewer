@@ -101,7 +101,7 @@ type
     ListStyleType, ListStyleImage, Float, Clear, TextIndent,
     PageBreakBefore, PageBreakAfter, PageBreakInside, TextTransform,
     WordWrap, FontVariant, BorderCollapse, OverFlow, piDisplay, piEmptyCells,
-    piWhiteSpace,
+    piWhiteSpace, BorderSpacing,
 
     // the below properties are short hands
     MarginX, PaddingX, BorderWidthX, BorderX,
@@ -113,7 +113,7 @@ type
 
   TShortHand = MarginX..BorderStyleX;
 
-  ThtPropIndices = FontFamily..piWhiteSpace;
+  ThtPropIndices = FontFamily..BorderSpacing;//piWhiteSpace;
   ThtPropertyArray = array [ThtPropIndices] of Variant;
   ThtPropIndexSet = Set of ThtPropIndices;
 
@@ -140,7 +140,7 @@ const
     'list-style-type', 'list-style-image', 'float', 'clear', 'text-indent',
     'page-break-before', 'page-break-after', 'page-break-inside', 'text-transform',
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells',
-    'white-space',
+    'white-space', 'border-spacing',
 
     // short hand names
     'margin', 'padding', 'border-width', 'border',
@@ -221,8 +221,10 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : ThtBoxSizing) : Boolean;
+    function GetBorderSpacing: Integer;
     procedure GetVMarginArrayDefBorder(var MArray: ThtVMarginArray; const ADefColor : Variant);
     procedure GetVMarginArray(var MArray: ThtVMarginArray);
+    function HasBorderSpacing: Boolean;
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -1488,6 +1490,30 @@ begin
 
   GetBorderStyle(BorderLeftStyle, Dummy);
   Result := Dummy <> bssNone;
+end;
+
+function TProperties.GetBorderSpacing: Integer;
+var
+  V: Double;
+  Code: Integer;
+
+begin
+  if VarIsStr(Props[BorderSpacing]) then
+  begin
+    Val(Props[BorderSpacing], V, Code);
+    if Code = 0 then {a numerical entry with no 'em', '%', etc.  }
+      Result := Round(V)
+    else
+    {note: 'normal' yields -1 in the next statement}
+      Result := LengthConv(Props[BorderSpacing], True, EmSize, EmSize, ExSize, -1);
+  end
+  else
+    Result := -1;
+end;
+
+function TProperties.HasBorderSpacing: Boolean;
+begin
+  Result := not (VarIsIntNull(Props[BorderSpacing]) or VarIsEmpty(Props[BorderSpacing]));
 end;
 
 procedure TProperties.SetFontBG;
