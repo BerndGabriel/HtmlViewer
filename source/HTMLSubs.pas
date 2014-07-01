@@ -4526,7 +4526,8 @@ var
   BottomMargin: Integer;
   CD, BCD: ThtConvData;
 begin
-  if (OwnerCell <> Document) and (MargArrayO[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
+// (MargArrayO[piHeight] = IntNull)
+  if (OwnerCell <> Document) and (MargArray[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
   begin
     // collapse with last sectionbase, if it is an in-flow block.
 
