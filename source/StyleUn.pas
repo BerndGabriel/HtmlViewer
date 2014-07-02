@@ -95,13 +95,14 @@ type
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
     piWidth, piHeight, piTop, piRight, piBottom, piLeft,
+    BorderSpacingHoriz, BorderSpacingVert,  //These two are internal
     // the above properties are in MarginArrays
 
     Visibility, LineHeight, VerticalAlign, Position, ZIndex,
     ListStyleType, ListStyleImage, Float, Clear, TextIndent,
     PageBreakBefore, PageBreakAfter, PageBreakInside, TextTransform,
     WordWrap, FontVariant, BorderCollapse, OverFlow, piDisplay, piEmptyCells,
-    piWhiteSpace, BorderSpacingHoriz, BorderSpacingVert,
+    piWhiteSpace,
 
     // the below properties are short hands
     MarginX, PaddingX, BorderWidthX, BorderX,
@@ -117,11 +118,11 @@ type
 
   TShortHand = MarginX..BorderSpacing;//BorderStyleX;
 
-  ThtPropIndices = FontFamily..BorderSpacingVert;//piWhiteSpace;
+  ThtPropIndices = FontFamily..piWhiteSpace;
   ThtPropertyArray = array [ThtPropIndices] of Variant;
   ThtPropIndexSet = Set of ThtPropIndices;
 
-  ThtMarginIndices = BackgroundColor..piLeft;
+  ThtMarginIndices = BackgroundColor..BorderSpacingVert; //piLeft;
   ThtVMarginArray = array [ThtMarginIndices] of Variant;
   ThtMarginArray = array [ThtMarginIndices] of Integer;
 
@@ -139,15 +140,14 @@ const
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
     'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
     'width', 'height', 'top', 'bottom', 'right', 'left',
+    'thv-border-spacinghoriz', 'thv-border-spacingvert', //These two are for internal use only
 
     'visibility', 'line-height', 'vertical-align', 'position', 'z-index',
     'list-style-type', 'list-style-image', 'float', 'clear', 'text-indent',
     'page-break-before', 'page-break-after', 'page-break-inside', 'text-transform',
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells',
     'white-space',
-    //These two are meant ONLY for internal use.  No web-designer should use them.
-    //They are here ONLY for storing two horizontal values.
-      'thv-border-spacinghoriz', 'thv-border-spacingvert',
+
 
     // short hand names
     'margin', 'padding', 'border-width', 'border',
@@ -775,7 +775,7 @@ begin
   ID := Sequence;
   Inc(Sequence);
   FontBG := clNone;
-  for I := MarginTop to piLeft do
+  for I := MarginTop to BorderSpacingVert do
     Props[I] := IntNull;
   Props[ZIndex] := 0;
   FUseQuirksMode := False;
@@ -1795,7 +1795,7 @@ begin
             M[I] := 0;
         end;
 
-      PaddingTop..PaddingLeft:
+      PaddingTop..PaddingLeft,BorderSpacingHoriz,BorderSpacingVert:
         begin
           if VarIsStr(VM[I]) then
           begin
@@ -2123,7 +2123,7 @@ procedure TProperties.Combine(Styles: TStyleList;
         end;
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
           case Index of
-            MarginTop..piLeft:
+            MarginTop..BorderSpacingVert:
               if VarIsStr(Source.Props[Index]) then // if VarType(Source.Props[Index]) = VarString then
               begin
                 Props[Index] := Source.Props[Index];
@@ -2895,7 +2895,7 @@ begin
       else
         Props[Index] := clNone;
 
-    MarginTop..BorderLeftWidth, piWidth..piLeft,BorderSpacingHoriz,BorderSpacingVert:
+    MarginTop..BorderLeftWidth, piWidth..BorderSpacingVert:
       Props[Index] := PropValue;
 
     FontSize:
