@@ -471,20 +471,20 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     S : array[0..1] of THtString;
     Count : Integer;
   begin
-   SplitString(Value,S,Count);
-   case Count of
-     0 : exit;
-     1 :
-     begin
-      ProcessProperty('thv-border-spacinghoriz',S[0]);
-      ProcessProperty('thv-border-spacingvert',S[0]);
-     end;
-     2 :
-     begin
-      ProcessProperty('thv-border-spacinghoriz',S[0]);
-      ProcessProperty('thv-border-spacingvert',S[1]);
-     end;
-   end;
+    SplitString(Value,S,Count);
+    case Count of
+      1:
+      begin
+        ProcessProperty('thv-border-spacing-horz', S[0]);
+        ProcessProperty('thv-border-spacing-vert', S[0]);
+      end;
+
+      2:
+      begin
+        ProcessProperty('thv-border-spacing-horz', S[0]);
+        ProcessProperty('thv-border-spacing-vert', S[1]);
+      end;
+    end;
   end;
 
   procedure DoBackground(Value: ThtString);

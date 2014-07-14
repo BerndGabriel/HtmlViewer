@@ -95,7 +95,7 @@ type
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
     piWidth, piHeight, piTop, piRight, piBottom, piLeft,
-    BorderSpacingHoriz, BorderSpacingVert,  //These two are internal
+    BorderSpacingHorz, BorderSpacingVert,  //These two are internal
     // the above properties are in MarginArrays
 
     Visibility, LineHeight, VerticalAlign, Position, ZIndex,
@@ -140,14 +140,13 @@ const
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
     'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
     'width', 'height', 'top', 'bottom', 'right', 'left',
-    'thv-border-spacinghoriz', 'thv-border-spacingvert', //These two are for internal use only
+    'thv-border-spacing-horz', 'thv-border-spacing-vert', //These two are for internal use only
 
     'visibility', 'line-height', 'vertical-align', 'position', 'z-index',
     'list-style-type', 'list-style-image', 'float', 'clear', 'text-indent',
     'page-break-before', 'page-break-after', 'page-break-inside', 'text-transform',
     'word-wrap', 'font-variant', 'border-collapse', 'overflow', 'display', 'empty-cells',
     'white-space',
-
 
     // short hand names
     'margin', 'padding', 'border-width', 'border',
@@ -230,7 +229,7 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : ThtBoxSizing) : Boolean;
-    function GetBorderSpacingHoriz: Integer;
+    function GetBorderSpacingHorz: Integer;
     function GetBorderSpacingVert: Integer;
     procedure GetVMarginArrayDefBorder(var MArray: ThtVMarginArray; const ADefColor : Variant);
     procedure GetVMarginArray(var MArray: ThtVMarginArray);
@@ -1502,20 +1501,20 @@ begin
   Result := Dummy <> bssNone;
 end;
 
-function TProperties.GetBorderSpacingHoriz: Integer;
+function TProperties.GetBorderSpacingHorz: Integer;
 var
   V: Double;
   Code: Integer;
 
 begin
-  if VarIsStr(Props[BorderSpacingHoriz]) then
+  if VarIsStr(Props[BorderSpacingHorz]) then
   begin
-    Val(Props[BorderSpacingHoriz], V, Code);
+    Val(Props[BorderSpacingHorz], V, Code);
     if Code = 0 then {a numerical entry with no 'em', '%', etc.  }
       Result := Round(V)
     else
     {note: 'normal' yields -1 in the next statement}
-      Result := LengthConv(Props[BorderSpacingHoriz], True, EmSize, EmSize, ExSize, -1);
+      Result := LengthConv(Props[BorderSpacingHorz], True, EmSize, EmSize, ExSize, -1);
   end
   else
     Result := -1;
@@ -1542,7 +1541,7 @@ end;
 
 function TProperties.HasBorderSpacing: Boolean;
 begin
-  Result := not (VarIsIntNull(Props[BorderSpacingHoriz]) or VarIsEmpty(Props[BorderSpacingHoriz]));
+  Result := not (VarIsIntNull(Props[BorderSpacingHorz]) or VarIsEmpty(Props[BorderSpacingHorz]));
 end;
 
 procedure TProperties.SetFontBG;
@@ -1795,7 +1794,7 @@ begin
             M[I] := 0;
         end;
 
-      PaddingTop..PaddingLeft,BorderSpacingHoriz,BorderSpacingVert:
+      PaddingTop..PaddingLeft,BorderSpacingHorz,BorderSpacingVert:
         begin
           if VarIsStr(VM[I]) then
           begin
