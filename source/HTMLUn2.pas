@@ -514,6 +514,7 @@ type
     FFontName, FPreFontName: TFontName;
     FFontSize: Integer;
     FHistoryMaxCount, FImageCacheCount, FVisitedMaxCount: Integer;
+    FLoadCursor: TCursor;
     FMarginWidth, FMarginHeight: Integer;
     FNoSelect: Boolean;
     FPrintMarginLeft, FPrintMarginRight, FPrintMarginTop, FPrintMarginBottom: Double;
@@ -571,6 +572,7 @@ type
     procedure SetHistoryMaxCount(const Value: Integer); virtual;
     procedure SetHotSpotColor(const Value: TColor); virtual;
     procedure SetImageCacheCount(const Value: Integer); virtual;
+    procedure SetLoadCursor(const Value: TCursor); virtual;
     procedure SetMarginHeight(const Value: Integer); virtual;
     procedure SetMarginWidth(const Value: Integer); virtual;
     procedure SetNoSelect(const Value: Boolean); virtual;
@@ -638,6 +640,7 @@ type
     property DefVisitedLinkColor: TColor read FVisitedColor write SetVisitedColor default clPurple;
     property HistoryMaxCount: Integer read FHistoryMaxCount write SetHistoryMaxCount;
     property ImageCacheCount: Integer read FImageCacheCount write SetImageCacheCount default 5;
+    property LoadCursor: TCursor read FLoadCursor write SetLoadCursor default crHourGlass;
     property MarginHeight: Integer read FMarginHeight write SetMarginHeight default 5;
     property MarginWidth: Integer read FMarginWidth write SetMarginWidth default 10;
     property NoSelect: Boolean read FNoSelect write SetNoSelect;
@@ -3096,6 +3099,7 @@ begin
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
   QuirksMode := qmStandards;
+  LoadCursor := crHourGlass;
 {$ifdef HasGestures}
   Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
   Touch.InteractiveGestures := [igPan];
@@ -3117,6 +3121,7 @@ begin
   DefOverLinkColor := Source.DefOverLinkColor;
   DefPreFontName := Source.DefPreFontName;
   DefVisitedLinkColor := Source.DefVisitedLinkColor;
+  LoadCursor := Source.LoadCursor;
   NoSelect := Source.NoSelect;
   ServerRoot := Source.ServerRoot;
 
@@ -3244,6 +3249,11 @@ end;
 procedure TViewerBase.SetImageCacheCount(const Value: Integer);
 begin
   FImageCacheCount := Value;
+end;
+
+procedure TViewerBase.SetLoadCursor(const Value: TCursor);
+begin
+  FLoadCursor := Value;
 end;
 
 procedure TViewerBase.SetMarginHeight(const Value: Integer);

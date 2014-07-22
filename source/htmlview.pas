@@ -546,6 +546,7 @@ type
     property HistoryMaxCount;
     property HtOptions: THtmlViewerOptions read FOptions write SetOptions default [htPrintTableBackground, htPrintMonochromeBlack];
     property ImageCacheCount;
+    property LoadCursor;
     property MarginHeight;
     property MarginWidth;
     property NoSelect;
@@ -1180,8 +1181,13 @@ begin
   SetProcessing(True);
   try
     OldFile := FCurrentFile;
-    OldCursor := Screen.Cursor;
-    Screen.Cursor := crHourGlass;
+    if LoadCursor <> crDefault then
+    begin
+      OldCursor := Screen.Cursor;
+      Screen.Cursor := LoadCursor;
+    end
+    else
+      OldCursor := crDefault; // valium for the compiler
     Include(FViewerState, vsDontDraw);
     try
       FRefreshDelay := 0;
@@ -1254,7 +1260,8 @@ begin
       end;
     finally
       Exclude(FViewerState, vsDontDraw);
-      Screen.Cursor := OldCursor;
+      if LoadCursor <> crNone then
+        Screen.Cursor := OldCursor;
     end;
   finally
     SetProcessing(False);

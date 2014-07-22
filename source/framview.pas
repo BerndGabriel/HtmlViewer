@@ -162,6 +162,7 @@ type
     procedure SetHistoryMaxCount(const Value: integer); override;
     procedure SetHotSpotColor(const Value: TColor); override;
     procedure SetImageCacheCount(const Value: integer); override;
+    procedure SetLoadCursor(const Value: TCursor); override;
     procedure SetMarginHeight(const Value: integer); override;
     procedure SetMarginWidth(const Value: integer); override;
     procedure SetNoSelect(const Value: boolean); override;
@@ -269,6 +270,7 @@ type
     property HistoryIndex: integer read FHistoryIndex write SetHistoryIndex;
     property HistoryMaxCount;
     property ImageCacheCount;
+    property LoadCursor;
     property MarginHeight;
     property MarginWidth;
     property NoSelect;
@@ -3819,6 +3821,18 @@ begin
     inherited;
     for I := 0 to GetCurViewerCount - 1 do
       CurViewer[I].ImageCacheCount := Value;
+  end;
+end;
+
+procedure TFVBase.SetLoadCursor(const Value: TCursor);
+var
+  I: integer;
+begin
+  if (Value <> LoadCursor) and not Processing then
+  begin
+    inherited;
+    for I := 0 to GetCurViewerCount - 1 do
+      CurViewer[I].LoadCursor := Value;
   end;
 end;
 
