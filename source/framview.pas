@@ -3197,7 +3197,7 @@ var
   I: integer;
   Obj: TObject;
 begin
-  if (HistoryMaxCount > 0) and (OldFrameSet.FCurrentFile <> '') then
+  if (HistoryMaxCount > 0) and (CurFrameSet.FCurrentFile <> '') then
   begin
     if FHistory.Count > 0 then
     begin
