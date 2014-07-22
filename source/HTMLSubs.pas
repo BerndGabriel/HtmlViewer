@@ -652,7 +652,6 @@ type
   private
     BreakWord: Boolean;
     DrawWidth: Integer;
-    FirstLineIndent: Integer;
     FLPercent: Integer;
     LineHeight: Integer;
     StoredMin, StoredMax: TSize;
@@ -661,7 +660,7 @@ type
     ThisCycle: Integer;
 
     BuffS: ThtString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section} //TODO -oBG, 30.11.2013: #1 (Table for display:inline-table)
-    Buff: PWideChar;    {same as above}
+    FBuff: PWideChar;    {same as above}
     Brk: ThtTextWrapArray; //string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One entry per character in BuffS
     SIndexList: TFreeList; {list of Source index changes}
     Lines: TFreeList; {List of ThtLineRecs,  info on all the lines in section}
@@ -680,6 +679,8 @@ type
     ClearAttr: ThtClearStyle;
     TextWidth: Integer;
     WhiteSpaceStyle: ThtWhiteSpaceStyle;
+    FirstLineIndent: Integer;             // Issue 365: public for TRichView
+    property Buff: PWideChar read FBuff;  // Issue 365: public for TRichView
   protected
     constructor Create(Parent: TCellBasic); overload;
   public
@@ -10544,7 +10545,7 @@ constructor TSection.Create(Parent: TCellBasic);
 begin
   inherited Create(Parent, nil, nil);
   FDisplay := pdInline; // A section is always inline as the section is intended to handle consecutive inline elements.  
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Fonts := TFontList.Create;
   Images := TSizeableObjList.Create;
   FormControls := TFormControlObjList.Create(False);
@@ -10569,7 +10570,7 @@ begin
   inherited Create(Parent, Attr, Prop);
   if FDisplay = pdUnassigned then
     FDisplay := pdInline;
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Fonts := TFontList.Create;
   Images := TSizeableObjList.Create;
   FormControls := TFormControlObjList.Create(False);
@@ -10665,7 +10666,7 @@ begin
   Len := T.Len;
   BuffS := T.BuffS;
   SetLength(BuffS, Length(BuffS));
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Brk := T.Brk;
   Fonts := TFontList.CreateCopy(Self, T.Fonts);
   //TODO -oBG, 24.03.2011: TSection has no Cell, but owns images. Thus Parent must be a THtmlNode.
@@ -10846,7 +10847,7 @@ begin
     BuffS := BuffS + St;
     Len := L;
   end;
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
 end;
 
 {----------------TSection.ProcessText}
@@ -10955,7 +10956,7 @@ var
   Last, I: Integer;
   IO: ThtIndexObj;
 begin
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Len := Length(BuffS);
   if Len > 0 then
   begin
