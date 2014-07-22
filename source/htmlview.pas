@@ -1430,7 +1430,7 @@ begin
       VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
       VScrollBar.Enabled := VHeight < FMaxVertical;
     end;
-    // alwyas set scroll height for scrolling via mouse even without scrollbars.
+    // always set scroll height for scrolling via mouse even without scrollbars.
     SetPageSizeAndMax(VScrollBar, Min(VHeight, FMaxVertical), FMaxVertical);
   end;
 end;
@@ -2149,15 +2149,24 @@ procedure THtmlViewer.HTMLMouseWheel(Sender: TObject; Shift: TShiftState;
 var
   Lines: Integer;
 begin
-  Lines := Mouse.WheelScrollLines;
-  if Lines > 0 then
-    if WheelDelta > 0 then
-      VScrollBarPosition := VScrollBarPosition - (Lines * 16)
+  // Issue 363: HtmlViewer should not act on MouseWheel if there is no vertical
+  //            scrollbar (suggested by Andreas Hausladen).
+  //BG, 22.07.2014: Handle only, if document height > viewport height. Do not
+  // test via VScrollBar.Visible as it might be hidden although mouse should be
+  // able to scroll.
+  Handled := FMaxVertical > PaintPanel.Height;
+
+  if Handled then
+  begin
+    Lines := Mouse.WheelScrollLines;
+    if Lines > 0 then
+      if WheelDelta > 0 then
+        VScrollBarPosition := VScrollBarPosition - (Lines * 16)
+      else
+        VScrollBarPosition := VScrollBarPosition + (Lines * 16)
     else
-      VScrollBarPosition := VScrollBarPosition + (Lines * 16)
-  else
-    VScrollBarPosition := VScrollBarPosition - WheelDelta div 2;
-  Handled := True;
+      VScrollBarPosition := VScrollBarPosition - WheelDelta div 2;
+  end;
 end;
 
 function THtmlViewer.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer;
