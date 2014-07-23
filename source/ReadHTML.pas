@@ -3865,11 +3865,6 @@ begin
   if (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
   begin
     DoCharset(Content);
-    if CallingObject is ThtmlViewer then
-    begin
-      ThtmlViewer(CallingObject).Charset := PropStack.Last.Charset;
-      ThtmlViewer(CallingObject).CodePage := PropStack.Last.CodePage;
-    end;
   end;
   if Assigned(MetaEvent) then
     MetaEvent(Sender, HttpEq, Name, Content);
