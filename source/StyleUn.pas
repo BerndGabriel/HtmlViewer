@@ -139,7 +139,7 @@ const
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
     'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
-    'width', 'height', 'top', 'bottom', 'right', 'left',
+    'width', 'height', 'top', 'right', 'bottom', 'left',
     'thv-border-spacing-horz', 'thv-border-spacing-vert', //These two are for internal use only
 
     'visibility', 'line-height', 'vertical-align', 'position', 'z-index',
