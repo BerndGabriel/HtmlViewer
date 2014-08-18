@@ -4928,7 +4928,12 @@ var
   procedure CalcWidth;
   begin
     if Positioning = posAbsolute then
-      MargArray[piWidth] := Max(MinWidth, AWidth - BordWidth - LeftP)
+    begin
+      if (MargArray[piLeft] = Auto) and (MargArray[piRight] <> Auto) then
+        MargArray[piWidth] := MaxWidth
+      else
+        MargArray[piWidth] := Max(MinWidth, AWidth - BordWidth - LeftP);
+    end
     else if (Floating in [ALeft, ARight]) then
       MargArray[piWidth] := Min(MaxWidth, AWidth - BordWidth)
     else
@@ -5105,7 +5110,7 @@ var
         if TopP = Auto then
           TopP := 0;
         if (LeftP = Auto) then
-          if (MargArray[piRight] <> Auto) and (AutoCount = 0) then
+          if (MargArray[piRight] <> Auto) and (MargArray[piWidth] <> Auto) then
             LeftP := AWidth - MargArray[piRight] - MargArray[piWidth] - LeftWidths - RightWidths
           else
             LeftP := 0;
