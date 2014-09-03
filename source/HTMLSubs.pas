@@ -71,7 +71,9 @@ uses
  {$endif}
 {$ifdef VCL}
   Windows,
+  {$ifndef Compiler28_Plus}
   EncdDecd,
+  {$endif}
 {$endif}
   Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs, ComCtrls,
 {$ifdef LCL}
@@ -1630,6 +1632,9 @@ uses
 {$IFNDEF NoTabLink}
   HtmlView,
 {$endif}
+ {$ifdef Compiler28_Plus}
+ System.NetEncoding,
+ {$endif}
   HtmlSbs1;
 
 
@@ -7462,7 +7467,11 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
       try
         Stream := TMemoryStream.Create;
         try
+          {$IFDEF Compiler28_Plus}
+          TNetEncoding.Base64.Decode(Source, Stream);
+          {$ELSE}
           DecodeStream(Source, Stream);
+          {$ENDIF}
           Result := LoadImageFromStream(Stream, Transparent);
         finally
           Stream.Free;
