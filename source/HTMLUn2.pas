@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -30,16 +30,21 @@ unit HTMLUn2;
 
 interface
 uses
-   {$ifdef UseInline} Math, {$endif}
+{$ifdef UseInline}
+  Math,
+{$endif}
 {$ifdef LCL}
   LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
 {$else}
   Windows,
 {$endif}
   SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types, ComCtrls,
-{$IFNDEF NoGDIPlus}
+{$ifdef Compiler20_Plus}
+  CommCtrl,
+{$endif}
+{$ifndef NoGDIPlus}
   GDIPL2A,
-{$ENDIF}
+{$endif}
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
@@ -202,6 +207,7 @@ type
     FTarget: ThtString;
     FTitle: ThtString;
   public
+    destructor Destroy; override;
     function PtInArea(X, Y: Integer): Boolean;
     property HRef: ThtString read FHRef;
     property Target: ThtString read FTarget;
@@ -211,9 +217,9 @@ type
   // BG, 31.12.2011: 
   TMapAreaList = class(TObjectList)
   private
-    function getArea(Index: Integer): TMapArea;
+    function GetArea(Index: Integer): TMapArea;
   public
-    property Items[Index: Integer]: TMapArea read getArea; default;
+    property Items[Index: Integer]: TMapArea read GetArea; default;
   end;
 
   TMapItem = class(TObject) {holds a client map info}
@@ -408,7 +414,9 @@ type
 {$ifndef Compiler20_Plus}
 const
   PBS_MARQUEE  = $08;
-  PBM_SETMARQUEE = WM_USER + 10;
+  PBM_SETBARCOLOR = WM_USER+9;
+  PBM_SETMARQUEE = WM_USER+10;
+  PBM_GETBARCOLOR = WM_USER+14;
 
 type
   TProgressBarStyle = (pbstNormal, pbstMarquee);
@@ -425,6 +433,42 @@ type
 {$else}
   ThvProgressBar = TProgressBar;
 {$endif}
+
+  // While the meter is not a progressbar, it is the closest control to what is required.
+  // There are a few downsides to the Windows ProgressBar:
+  //  - it animates to the value instead of jumping there. This is fixed by overriding the Position property.
+  //  - Under Theming the progress bar animates a glowing swish that cannot be turned off.
+  // This class also allows the user to define a color for when the bar is < low and one for > high.
+  // This matches other browsers implementations
+  ThvMeter = class(ThvProgressBar)
+  private
+    FLow: double;
+    FHigh: double;
+    FOptimum: double;  // This is only for reference and has not affect on the color
+    FLowColor: TColor;
+    FHighColor: TColor;
+
+    procedure SetPosition(Value: Integer);
+    function GetPosition: Integer;
+    procedure UpdateColor;
+  protected
+    procedure SetLow(const value: double); virtual;
+    procedure SetHigh(const value: double); virtual;
+    procedure SetOptimum(const value: double); virtual;
+    procedure SetLowColor(const value: TColor); virtual;
+    procedure SetHighColor(const value: TColor); virtual;
+  public
+    constructor Create(AOwner: TComponent); override;
+    property Position: Integer read GetPosition write SetPosition default 0;
+
+    property Low: double read FLow write SetLow;
+    property High: double read FHigh write SetHigh;
+    property Optimum: double read FOptimum write SetOptimum;
+
+    property LowColor: TColor read FLowColor write SetLowColor;
+    property HighColor: TColor read FHighColor write SetHighColor;
+  end;
+
 
 
 //------------------------------------------------------------------------------
@@ -470,6 +514,7 @@ type
     FFontName, FPreFontName: TFontName;
     FFontSize: Integer;
     FHistoryMaxCount, FImageCacheCount, FVisitedMaxCount: Integer;
+    FLoadCursor: TCursor;
     FMarginWidth, FMarginHeight: Integer;
     FNoSelect: Boolean;
     FPrintMarginLeft, FPrintMarginRight, FPrintMarginTop, FPrintMarginBottom: Double;
@@ -527,6 +572,7 @@ type
     procedure SetHistoryMaxCount(const Value: Integer); virtual;
     procedure SetHotSpotColor(const Value: TColor); virtual;
     procedure SetImageCacheCount(const Value: Integer); virtual;
+    procedure SetLoadCursor(const Value: TCursor); virtual;
     procedure SetMarginHeight(const Value: Integer); virtual;
     procedure SetMarginWidth(const Value: Integer); virtual;
     procedure SetNoSelect(const Value: Boolean); virtual;
@@ -594,6 +640,7 @@ type
     property DefVisitedLinkColor: TColor read FVisitedColor write SetVisitedColor default clPurple;
     property HistoryMaxCount: Integer read FHistoryMaxCount write SetHistoryMaxCount;
     property ImageCacheCount: Integer read FImageCacheCount write SetImageCacheCount default 5;
+    property LoadCursor: TCursor read FLoadCursor write SetLoadCursor default crHourGlass;
     property MarginHeight: Integer read FMarginHeight write SetMarginHeight default 5;
     property MarginWidth: Integer read FMarginWidth write SetMarginWidth default 10;
     property NoSelect: Boolean read FNoSelect write SetNoSelect;
@@ -1643,6 +1690,14 @@ end;
 
 { TMapArea }
 
+//-- BG ---------------------------------------------------------- 25.06.2014 --
+destructor TMapArea.Destroy;
+begin
+  if FRegion <> 0 then
+    DeleteObject(FRegion);
+  inherited;
+end;
+
 //-- BG ---------------------------------------------------------- 31.12.2011 --
 function TMapArea.PtInArea(X, Y: Integer): Boolean;
 begin
@@ -1652,9 +1707,9 @@ end;
 { TMapAreaList }
 
 //-- BG ---------------------------------------------------------- 31.12.2011 --
-function TMapAreaList.getArea(Index: Integer): TMapArea;
+function TMapAreaList.GetArea(Index: Integer): TMapArea;
 begin
-  Result := get(Index);
+  Result := Get(Index);
 end;
 
 { TMapItem }
@@ -2620,12 +2675,14 @@ end;
 function TIDObjectList.AddObject(const S: ThtString; AObject: TIDObject): Integer;
 var
   I: Integer;
+  O: TIdObject;
 begin
   if Find(S, I) then
   begin
     try
-      if Objects[I].FreeMe then
-        Objects[I].Free;
+      O := Objects[I];
+      if O.FreeMe then
+        O.Free;
     except
     end;
     Delete(I);
@@ -2636,11 +2693,13 @@ end;
 procedure TIDObjectList.Clear;
 var
   I: Integer;
+  O: TIdObject;
 begin
   for I := 0 to Count - 1 do
   try
-    if Objects[I].FreeMe then
-      Objects[I].Free;
+    O := Objects[I];
+    if O.FreeMe then
+      O.Free;
   except
   end;
   inherited Clear;
@@ -3040,6 +3099,7 @@ begin
   DefPreFontName := 'Courier New';
   ImageCacheCount := 5;
   QuirksMode := qmStandards;
+  LoadCursor := crHourGlass;
 {$ifdef HasGestures}
   Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
   Touch.InteractiveGestures := [igPan];
@@ -3061,6 +3121,7 @@ begin
   DefOverLinkColor := Source.DefOverLinkColor;
   DefPreFontName := Source.DefPreFontName;
   DefVisitedLinkColor := Source.DefVisitedLinkColor;
+  LoadCursor := Source.LoadCursor;
   NoSelect := Source.NoSelect;
   ServerRoot := Source.ServerRoot;
 
@@ -3188,6 +3249,11 @@ end;
 procedure TViewerBase.SetImageCacheCount(const Value: Integer);
 begin
   FImageCacheCount := Value;
+end;
+
+procedure TViewerBase.SetLoadCursor(const Value: TCursor);
+begin
+  FLoadCursor := Value;
 end;
 
 procedure TViewerBase.SetMarginHeight(const Value: Integer);
@@ -3523,6 +3589,117 @@ begin
   end;
 end;
 {$endif}
+
+{ ThvMeter }
+
+constructor ThvMeter.Create(AOwner: TComponent);
+begin
+  inherited;
+
+  FLowColor := clRed;      // default color
+  FHighColor := clYellow;  // default color
+  FLow := MinDouble;       // wont show unless set
+  FHigh := MaxDouble;      // wont show unless set
+  FOptimum := 50;
+end;
+
+// GetPosition and SetPosition are called from an overridden Position
+// property which allows us to set the position in a way which stops animation
+function ThvMeter.GetPosition: Integer;
+begin
+  result := inherited Position;
+end;
+
+procedure ThvMeter.SetPosition(Value: Integer);
+begin
+  if Value = inherited Position then
+    Exit ;
+
+  // In Vista +, the progress bar only animates on incrementing the position.
+  // Therefore, we set the value 1 greater and subtract 1, therefore "jumping" to the position.
+  // And Therefore, making it look more like a meter, than a progressbar
+  if value < Max then
+  begin
+    inherited Position := value + 1;
+    inherited Position := value;
+  end
+  else
+  begin
+    Max := Max + 1;
+    inherited Position := Max;
+    inherited Position := value;
+    Max := Max - 1;
+  end;
+
+  UpdateColor;
+end;
+
+procedure ThvMeter.UpdateColor;
+var
+  position: Integer;
+begin
+  position := GetPosition;
+
+  // This only works if theming is switched off as Windows does not
+  // change the color. The best you could do is change the state.
+  // Also, if you switch the values and go to low/high then back to "normal/original" range, it does not switch the color back.
+  // I do not know how to make it return to the normal color, so chose blue
+  if position < FLow then
+    SendMessage(Handle, PBM_SETBARCOLOR, 0, ColorToRGB(FLowColor))
+  else if position > FHigh then
+    SendMessage(Handle, PBM_SETBARCOLOR, 0, ColorToRGB(FHighColor))
+  else
+    SendMessage(Handle, PBM_SETBARCOLOR, 0, ColorToRGB(clBlue));
+end;
+
+procedure ThvMeter.SetLow(const value: double);
+begin
+  if value = FLow then
+    Exit;
+
+  if (value > Min) and (value < FHigh) and (value < Max) then
+    FLow := value;
+
+  UpdateColor;
+end;
+procedure ThvMeter.SetHigh(const value: double);
+begin
+  if value = FHigh then
+    Exit;
+
+  if (value < Max) and (value > FLow) and (value > Min) then
+    FHigh := value;
+
+  UpdateColor;
+end;
+procedure ThvMeter.SetOptimum(const value: double);
+begin
+  if value = FOptimum then
+    FOptimum := value;
+
+  // no need to update color as Optimum value has no affect on color  
+  //UpdateColor;
+end;
+
+procedure ThvMeter.SetLowColor(const value: TColor);
+begin
+  if FLowColor = value then
+    Exit;
+
+  FLowColor := value;
+
+  UpdateColor;
+end;
+procedure ThvMeter.SetHighColor(const value: TColor);
+begin
+  if FHighColor = value then
+    Exit;
+
+  FHighColor := value;
+
+  UpdateColor;
+end;
+
 
 initialization
 {$ifdef UseGlobalObjectId}

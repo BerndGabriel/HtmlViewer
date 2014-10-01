@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -117,8 +117,8 @@ type
     Visited: TStringList; {visited URLs}
     function CreateViewer(Owner: THtmlFrameBase): THtmlViewer; virtual;
     function CreateIFrameControl(Sender: TObject; Owner: TComponent): TViewerBase;
-    function GetActiveBase: ThtString;
-    function GetActiveTarget: ThtString;
+    function GetViewerBase(Viewer: THtmlViewer): ThtString;
+    function GetViewerTarget(Viewer: THtmlViewer): ThtString;
     function GetActiveViewer: THtmlViewer;
     function GetBase: ThtString;
     function GetBaseTarget: ThtString;
@@ -162,6 +162,7 @@ type
     procedure SetHistoryMaxCount(const Value: integer); override;
     procedure SetHotSpotColor(const Value: TColor); override;
     procedure SetImageCacheCount(const Value: integer); override;
+    procedure SetLoadCursor(const Value: TCursor); override;
     procedure SetMarginHeight(const Value: integer); override;
     procedure SetMarginWidth(const Value: integer); override;
     procedure SetNoSelect(const Value: boolean); override;
@@ -269,6 +270,7 @@ type
     property HistoryIndex: integer read FHistoryIndex write SetHistoryIndex;
     property HistoryMaxCount;
     property ImageCacheCount;
+    property LoadCursor;
     property MarginHeight;
     property MarginWidth;
     property NoSelect;
@@ -2981,14 +2983,14 @@ var
   I: integer;
   Viewer: THtmlViewer;
   FrameTarget: TFrameBase;
-  S, Dest, Query, Target: ThtString;
+  S, Dest, Query, Target, ExpURL: ThtString;
 begin
-  Handled := True;
-  if Processing then
+  Handled := Processing;
+  if Handled then
     Exit;
 
   Viewer := (Sender as THtmlViewer);
-  Target := GetActiveTarget;
+  Target := GetViewerTarget(Viewer);
   FLinkAttributes.Text := Viewer.LinkAttributes.Text;
   FLinkText := Viewer.LinkText;
 
@@ -2996,8 +2998,9 @@ begin
   SplitQuery(S, Query);
   if (S <> '') and not CurFrameSet.RequestEvent then
     S := Viewer.HTMLExpandFileName(S);
+  ExpURL := S + Query + Dest;
 
-  if not HotSpotClickHandled(S, Target) then
+  if not HotSpotClickHandled(ExpURL, Target) then
   begin
     Handled := True;
     if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
@@ -3021,9 +3024,9 @@ begin
     begin
       if Assigned(OnBlankWindowRequest) then
       begin
-        AddVisitedLink(S + Query + Dest);
+        AddVisitedLink(ExpURL);
         CheckVisitedLinks;
-        OnBlankWindowRequest(Self, Target, AnURL);
+        OnBlankWindowRequest(Self, Target, ExpURL);
         Handled := True;
       end
       else
@@ -3044,7 +3047,7 @@ begin
       else if FrameTarget is TSubFrameSetBase then
         TSubFrameSetBase(FrameTarget).LoadFromFile(S, Dest);
       if Query <> '' then
-        AddVisitedLink(S + Query + Dest);
+        AddVisitedLink(ExpURL);
       CheckVisitedLinks;
     finally
       //BG, 05.01.2010: this was the location, where a comment told us that resetting FProcessing was moved before the notification.
@@ -3081,21 +3084,19 @@ end;
 
 {----------------TFrameViewer.GetActiveTarget}
 
-function TFVBase.GetActiveTarget: ThtString;
+function TFVBase.GetViewerTarget(Viewer: THtmlViewer): ThtString;
 var
-  Vw: THtmlViewer;
   Done: boolean;
   FSet: TSubFrameSetBase;
 begin
   Result := '';
-  Vw := GetActiveViewer;
-  if Assigned(Vw) then
+  if Assigned(Viewer) then
   begin
-    Result := Vw.Target;
+    Result := Viewer.Target;
     if Result = '' then
-      Result := Vw.BaseTarget;
+      Result := Viewer.BaseTarget;
     Done := False;
-    FSet := TViewerFrameBase(Vw.FrameOwner).LOwner;
+    FSet := TViewerFrameBase(Viewer.FrameOwner).LOwner;
     while (Result = '') and Assigned(FSet) and not Done do
     begin
       Result := FSet.FBaseTarget;
@@ -3108,19 +3109,17 @@ end;
 
 {----------------TFrameViewer.GetActiveBase}
 
-function TFVBase.GetActiveBase: ThtString;
+function TFVBase.GetViewerBase(Viewer: THtmlViewer): ThtString;
 var
-  Vw: THtmlViewer;
   Done: boolean;
   FSet: TSubFrameSetBase;
 begin
   Result := '';
-  Vw := GetActiveViewer;
-  if Assigned(Vw) then
+  if Assigned(Viewer) then
   begin
-    Result := Vw.Base;
+    Result := Viewer.Base;
     Done := False;
-    FSet := TViewerFrameBase(Vw.FrameOwner).LOwner;
+    FSet := TViewerFrameBase(Viewer.FrameOwner).LOwner;
     while (Result = '') and Assigned(FSet) and not Done do
     begin
       Result := FSet.FBase;
@@ -3141,7 +3140,8 @@ begin
   Result := HTMLServerToDos(Trim(Filename), ServerRoot);
   if (Pos(':', Result) <> 2) and (Pos('\\', Result) <> 1) then
   begin
-    BasePath := GetActiveBase;
+    Viewer := ActiveViewer;
+    BasePath := GetViewerBase(Viewer);
     if CompareText(BasePath, 'DosPath') = 0 then {let Dos find the path}
     else
     begin
@@ -3149,7 +3149,6 @@ begin
         Result := HTMLToDos(BasePath) + Result
       else
       begin
-        Viewer := ActiveViewer;
         if Assigned(Viewer) then
           Result := Viewer.HTMLExpandFilename(Result)
         else
@@ -3200,7 +3199,7 @@ var
   I: integer;
   Obj: TObject;
 begin
-  if (HistoryMaxCount > 0) and (OldFrameSet.FCurrentFile <> '') then
+  if (HistoryMaxCount > 0) and (CurFrameSet.FCurrentFile <> '') then
   begin
     if FHistory.Count > 0 then
     begin
@@ -3822,6 +3821,18 @@ begin
     inherited;
     for I := 0 to GetCurViewerCount - 1 do
       CurViewer[I].ImageCacheCount := Value;
+  end;
+end;
+
+procedure TFVBase.SetLoadCursor(const Value: TCursor);
+var
+  I: integer;
+begin
+  if (Value <> LoadCursor) and not Processing then
+  begin
+    inherited;
+    for I := 0 to GetCurViewerCount - 1 do
+      CurViewer[I].LoadCursor := Value;
   end;
 end;
 

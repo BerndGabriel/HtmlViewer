@@ -1,7 +1,7 @@
 {
-Version   11.4
+Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -71,6 +71,7 @@ type
     fHandle: GpImage;
     fWidth, fHeight: Cardinal;
     fFilename: string;
+    fBitmap: TBitmap;
     function GetHeight: Cardinal;
     function GetWidth: Cardinal;
   public
@@ -452,6 +453,7 @@ end;
 
 destructor ThtGpImage.Destroy;
 begin
+  fBitmap.Free;
   GDICheck('ThtGpImage.Destroy', GdipDisposeImage(fHandle));
   if Length(fFilename) > 0 then
     try
@@ -479,7 +481,9 @@ function ThtGpImage.GetBitmap: TBitmap;
 var
   g: ThtGpGraphics;
 begin
-  Result := TBitmap.Create;
+  if fBitmap = nil then
+    fBitmap := TBitmap.Create;
+  Result := fBitmap;
   Result.Width := GetWidth;
   Result.Height := GetHeight;
   PatBlt(Result.Canvas.Handle, 0, 0, Result.Width, Result.Height, Whiteness);

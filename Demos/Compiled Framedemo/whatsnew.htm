@@ -27,7 +27,7 @@
   <li>Lazarus Printing Support
   <li>Delphi 2010 - XE6 Gesture Support. Built-in panning support
   <li>HTML 4 Element <b>&lt;iframe&gt;</b>
-  <li>HTML 5 Element <b>&lt;main&gt;</b>
+  <li>HTML 5 Elements <b>&lt;main&gt;</b>, <b>&lt;progress&gt;</b>, <b>&lt;meter&gt;</b>
   <li>CSS Property <b>BorderColor</b> accepts <b>currentColor</b> keyword
   <li><b>TIFF</b> support for <b>&lt;img&gt;</b> (requires GDI+) (by JPM)
   <li>Property THtmlViewer.DocumentCodePage reflects the documents codepage while property THtmlViewer.CodePage is the default codepage if a document comes without it
@@ -44,9 +44,12 @@
   <li>Performance
   <li>Supports &lt;pre style="white-space: normal"&gt; (by JPM)
   <li>Lazarus demos can load files with non-ANSI names
+  <li>Prefer loading and scaling PNG, TIFF, JPEG, ICO, EMF, WMF, EXIF, and BMP images via GDI+ for better scaling results
 </ul>  
 <h5>Fixed</h5>
 <ul>
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=133"> Issue 133</a>: Nested lists bottom margins not collapsed
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=181"> Issue 181</a>: Gifs are not animated, if there are too many on the same page
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=257"> Issue 257</a>: StyleUn.hpp fails to build in C++Builder XE4
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=270"> Issue 270</a>: Print preview hand button sends previewed page into oblivion
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=277"> Issue 277</a>: URLs aren't decoded in demo application
@@ -64,6 +67,11 @@
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=319"> Issue 319</a>: THtmlViewer.CopyToClipboard error
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=320"> Issue 320</a>: &lt;div&gt; with negative margins in a &lt;td&gt; is clipped
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=347"> Issue 347</a>: Entities in DocumentTitle are not converted 
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=351"> Issue 351</a>: Problems with superscript/subscript in tables 
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=355"> Issue 355.1</a>: Table cell cut off if cell and table widths are overdetermined
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=355"> Issue 355.3</a>: Table too wide, if sum of given cell widths exceeds given table width
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=356"> Issue 356</a>: Error underlined text
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=362"> Issue 362</a>: Resource leak in TMapArea
 </ul>
 
 <!----------------------------------------------------------------------------->
@@ -747,6 +755,576 @@
   <li>Fixed Image Form controls so that they will focus and react to CR key.
   <li>Improved layout when vertical scrollbar does not show.
   <li>Add little square where scrollbars meet at lower left corner.
+</ul>
+
+<!--   Version 8.31  -->
+<h4 class="heading">Version 8.31</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <B>OnLink </B>event.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix for a number of animated Gif problems.  The htmlgif.pas file has been
+      replaced by htmlgif1.pas and htmlgif2.pas.
+  <li>Fix Print Preview so the correct number of pages will be printed after
+      switching to Landscape mode.
+  <li>Fix LoadFromFile to allow the file to be opened elsewhere.
+  <li>Add the missing OnObjectFocus/Blur/Change events to TFrameBrowser.
+</ul>
+
+
+<!--   Version 8.3  -->
+<h4 class="heading">Version 8.3</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <B>OnObjectEnter</B>, <B>OnObjectBlur</B>, and <B>OnObjectChange </B>events for Form controls.
+  <li><B>OnProgress</B> event for progress bar support.
+  <li><B>OnParseEnd</B> event.
+  <li><B>Text-Transform</B> uppercase|lowercase|none stylesheet property added.
+  <li><B>MakeBitmaps</B> and <B>MakeMetaFiles</B> methods form bitamps/metafiles with formatted HTML
+      for use outside of ThtmlViewer.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Get transparent PNG working for win98/95.
+  <li>Fix variant problem which occured with Delphi 6.01
+  <li>Cell stylesheet borders did not print proper color.
+  <li>Fix <B>HTMLExpandName</B> to handle http://.
+  <li>If Nil stream returned from <B>OnImageRequest</B> event, attempt to load image from file.
+  <li>Fix <B>Urlsubs.Normalize</B> so DosToHTML is not called unless there is a file:// protocol.
+</ul>
+
+
+<!--   Version 8.25  -->
+<h4 class="heading">Version 8.25</h4>
+<h5>Added</h5>
+<ul>
+  <li id="X1Plus"><a class="expandhead" href="IDEXPAND_X1"><img src="Plus.gif" border="0">
+     <B>ThtmlViewer.IDDisplay</B> property allows blocks of HTML to be shown or hidden.</a></li>
+  <li id="X1Minus" style="display: none;"><a class="expandhead" href="IDEXPAND_X1"><img src="Minus.gif" border="0">
+     <B>ThtmlViewer.IDDisplay</B> property allows blocks of HTML to be shown or hidden.</a></li>
+  <p class="expand">The IDDisplay property works with most HTML block tags such as &lt;div&gt;,
+     &lt;p&gt;, &lt;ul&gt;, &lt;form&gt;, &lt;table&gt;, etc.
+     Blocks are identified by their ID attribute.</p>
+  <p class="expand">This particular example uses a link to control the action.
+     Code in the program's OnHotSpotTargietClick handler uses the IDDisplay
+     property to toggle between two versions of this section.</p>
+  </li>
+  <li title="This is a Title example"><B>ThtmlViewer.TitleAttr</B> property contains the Title string for the HTML tag nearest
+      to the mouse cursor.  A title attribute may be added to almost any tag.
+  <li><B>HScrollbar</B> and <B>HScrollbarRange</B> properties added to ThtmlViewer.
+  <li>Height attribute supported for <B>&lt;tr&gt;</B>.
+  <li><B>OnPanelPrint</B> event allows printing of Panels.
+  <li>Hex form for character entities now supported.
+  <li><B>ThtmlViewer.IDControl</B> property returns the form control's instance handle
+      using the control's <B>ID</B> attribute.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Arrow keys now move between radiobuttons.
+  <li>Fixed CSS Width property for table cells.
+  <li>Close file being read before <B>OnParseBegin</B> event call.
+  <li>Make ThtmlViewer's <B>OnExit</B> event Public.
+  <li>Table cells now display their background even if the cell is empty.
+  <li>Fix resource leak that occured with the <B>ReplaceImage</B> method.
+  <li>List widths were not measured correctly which sometimes resulted in wide table cells.
+  <li>Proxy password may now be entered in TFrameBrowser demo.
+</ul>
+
+
+<!--   Version 8.2  -->
+<h4 class="heading">Version 8.2</h4>
+<h5>Added</h5>
+<ul>
+  <li>New PNG image support.  Graphics DLL no longer required.  
+  <li>CSS Page-Break-Before/After/Inside properties for printing.
+  <li>CSS Display: none; property.
+  <li>MouseDown added to mouseover <a href="Things.htm#ActiveImages">Active Images</a>.
+           <p align="center"><img Src="mail5a.gif" Active>
+           <p align="center"><b>Try Me</b>
+  <li><B>ThtmlViewer.ReplaceImage</B> method allows images to be changed.
+  <li>New <B>ThtmlViewer.MaxVertical</B> Property gives document's total vertical size. 
+  <li><B>htPrintMonochromeBlack</B> and <B>fvPrintMonochromeBlack</B> selections added to <B>ThtmlViewer.htOptions</B> 
+      and <B>TFrameViewer.fvOptions</B>.  See the helpfile for documentation on these.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Allow &lt;pre&gt; to be centered.
+  <li>Fix wrap problem with &lt;br&gt; tag.
+  <li>Table and cell background images were sometimes of bad quality.
+  <li>Style="" attribute sometimes did not work in &lt;font&gt; tag.
+</ul>
+
+
+<!--   Version 8.11  -->
+<h4 class="heading">Version 8.11</h4>
+<h5>Added</h5>
+<ul>
+  <li>Text-Indent CSS Property.
+  <li>ThtmlViewer.DocumentSource Property makes HTML source available.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix problem in Win98 with short justified text when mouse passes over.
+  <li>Fix Access error when ID attribute used in Frame definition files.
+  <li>Fix problem which sometimes occured when relating Source character position to
+       Display character position.
+</ul>
+
+<!--   Version 8.1  -->
+<h4 class="heading">Version 8.1</h4>
+<h5>Added</h5>
+<ul>
+  <li>Delphi 6 support.
+  <li>New <B>TFrameBrowser.OnGetPostRequestEx</B> Event has addtional parameters to those of
+      the <B>OnGetPostRequest</B> Event;
+  <li>Allow word wrap on comma..
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix problem when selecting multibyte text.
+  <li>Changes to allow Hourglass cursor to be set externally.
+</ul>
+
+<!--   Version 8.06  -->
+<h4 class="heading">Version 8.06</h4>
+<h5>Added</h5>
+<ul>
+  <li>Add JIS and EUC-JP Japanese translators.
+  <li>Improved parameter parsing in the <B>OnInclude</B> event allows more robust symbols.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix GPF which sometimes occured with TFrameViewer/TFramBrowser.Clear.
+  <li><B>&lt;li&gt;</B> without <B>&lt;ul&gt;</B> was not working properly.
+</ul>
+
+<!--   Version 8.05  -->
+<h4 class="heading">Version 8.05</h4>
+<h5>Added</h5>
+<ul>
+  <li>Text justification supported.  <B>Align="Justify"</B> attribute and <B>Text-Align: Justify</B> CSS property.
+  <li>Partial support for multibyte character sets.
+  <li>New <B>Viewers</B> property for TFrameViewer and TFrameBrowser lists all currently displayed
+       viewers and gives information on their location.
+  <li><B>OnParseBegin</B> event occurs just before parsing starts.  Shows source in string form and allows source modifications.
+  <li>Add new character entities including Euro, &euro;, sign.
+  
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix GPF problem which occasionally occurred with Print/Print Preview in Win95/98.
+  <li>Fix problem which caused background image to be missing if <B>&lt;basefont&gt;</B> used.
+  <li>Some Background CSS property strings were misread to give black background.
+  <li>Fix GetURLExtension (UrlSubs.pas) to handle '?' correctly.
+  <li>Wrap lines on '-' and '?' in addtion to space character.
+  <li>Several Link, Font problems fixed.
+</ul>
+
+<!--   Version 8.04  -->
+<h4 class="heading">Version 8.04</h4> 
+<h5>Added</h5>
+<ul>
+  <li>Form data is now saved in History and restored when document viewed again.
+  <li>New <B>FormData</B> Property allows reading and changing of Form control entries.
+  <li>Stylesheet border support added for table cells.
+  <li><B>BorderColorLight</B> and <B>BorderColorDark</B> attributes added to <B>&lt;Table&gt;</B>.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Tab characters weren't handled in stylesheet files.
+  <li>Fix various problems with fonts and anchor tags.
+  <li>Blank lines weren't diplayed in &lt;pre&gt;.
+  <li>Improved printing of transparent images.
+  <li>Fix align=right problem in table cells.
+  <li>Fix problem where absolute positioned items jumped to left when window width reduced.
+  <li>Some transparent animated GIFs did not display correctly in tables.
+  <li>Allow greated freedom in locating <B>&lt;Meta&gt;</b>, <B>&lt;Style&gt;</B>, and <B>&lt;BGSound&gt;</B> tags.
+</ul>
+
+<!--   Version 8.03  -->
+<h4 class="heading">Version 8.03</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <B>ThtmlViewer.XYToDisplayPos</B> method returns caret position from XY data.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Speed up of load and format times.
+  <li>Fix problem where <B>&lt;font&gt;</B> inside of <B>&lt;a&gt;</B> tag did not work.
+  <li>Fix type="a" attribute for <B>&lt;ol&gt;</B> tag.
+  <li>Fix memory leak with table, cell, and paragraph background images.
+  <li>Fix nested lists where 3rd nest level had extra spacing.
+  <li>Add '_' to characters allowed in class name.
+  <li>Fix problem with printing of transparent images.
+</ul>
+
+<!--   Version 8.02  -->
+<h4 class="heading">Version 8.02</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <B>TFrameBrowser.GetPostQuery</B> method allows Get/Post of URL with Form data.
+</ul>
+<h5>Changed</h5>
+<ul>
+  <li>Wrap=Soft now the default attribute in <B>&lt;TextArea&gt;</B>.  
+  <li>TFrameBrowser's <B>OnFormSubmit</B> event now has an additional Viewer parameter.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Fix problem with contextual selectors.
+  <li>Change font used in form controls and allow stylesheet font changes.
+  <li>Improvements in <B>&lt;Select&gt;</B> tag display 
+  <li>Fix problem with some URLs in Tables which could not be clicked.
+  <li>Fix problem which caused extra characters to be  added to <B>OnInclude</B> event response.
+  <li>Some inner nested Tables did not display their background color.
+  <li>Form submissions for some Forms in Tables were not correct.
+  <li><B>&lt;Font&gt;</B> tag definitions did not change size when the  <B>DefaultFontSize</B> property was changed.
+</ul>
+
+<!--Version 8.01  -->
+<h4 class="heading">Version 8.01</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <b>ThtmlViewer.OnhtStreamRequest</b> event for requesting
+      linked Stylesheet documents in stream format.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Fix problem with <B>&lt;pre&gt;</B> tag which caused occasional memory access exceptions.
+  <li>BorderColor <B>&lt;table&gt;</B> attribute was mistakenly left out of Version 8.
+  <li>Add protection against out of place <B>&lt;body&gt;</B> tags which could cause exceptions in Version 8.
+  <li>Minor problem with <b>&lt;big&gt;</b>, <b>&lt;small&gt;</b>, <b>&lt;sup&gt;</b>,
+      and <b>&lt;sub&gt;</b> fixed. 
+</ul>
+
+<!--  Version 8  -->
+<h4 class="heading">Version 8</h4>
+<h5>Added</h5>
+<ul>
+  <li>Support  for many Cascading Stylesheet properties was added.
+  <li>New <b>PtInObject</b> method allows hint windows on images.
+</ul>
+<h5>Changed</h5>
+<ul>
+  <li>Printing of Table background colors is now the default.
+  <li>An ImageCacheCount setting of 0 now truly disables Image Caching.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>The <b>&lt;base&gt;</b> tag was not working correctly in TFrameBrowser.
+  <li>Background colors and borders were not displayed correctly in very large
+      tables.
+  <li>Text formatting problem in Windows 2000 fixed.
+  <li>The <b>FindSourcePos</b> and <b>FindDisplayPos</b> methods occaisonally reported incorrect
+      values.
+</ul>
+
+<!--   Version 7.25  -->
+<h4 class="heading">Version 7.25</h4>
+<h5>Added</h5>
+<ul>
+  <li>TFrameBrowser now also has an <B>OnFormSubmit</B> event which may be used in addition to
+       its default handling of Form submissions.
+  <li>The <B>NOWRAP</B> attribute for the <B>&lt;TD&gt;</b> and <B>&lt;TH&gt;</b> Table
+      tags was added.
+</ul>
+<h5>Changed</h5>
+<ul>
+  <li><B>TFrame</B> in htmlgif.pas and framview.pas were renamed to <B>TgfFrame</B> and <B>TfvFrame</B>
+      respectively to avoid conflicts with the new Delphi <B>TFrame</B> component.
+
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>The TFrameBrowser <B>MarginWidth</B> and <B>MarginHeight</B> Properties are now properly initialized.
+  <li>The <B>MarginWidth</B> and <B>MarginHeight &lt;FRAME&gt;</b> attributes are working
+       again.
+  <li>The horizontal scrollbar range is now correct when the <B>htShowVScroll</B> or <B>fvShowVScroll</B>
+       option is used.
+</ul>
+
+
+<!--   Version 7.24  -->
+<h4 class="heading">Version 7.24</h4>
+<h5>Added</h5>
+<ul>
+  <li>The <B>Height</B> attribute for the <B>&lt;Table&gt;</b> tag is now supported.
+      Height in percentages is supported for the outer table only.
+
+  <li>Add <B>MarginHeight</B> and <B>MarginWidth</B> attributes to <B>&lt;body&gt;</B> tag.
+  <li>Add <B>MarginHeight</B>, <B>MarginWidth</B> Properties to TFrameViewer and TFrameBrowser.
+  <li>Add <B>htShowVScroll</B> and <B>fvShowVScroll</B> options to <B>htOptions</B> and <B>fvOptions</B>.  These force the
+      vertical scrollbar to always show.
+</ul>
+<h5>Changed</h5>
+<ul>
+  <li>The URL parameter in the <b>TFrameBrowser.OnHotspotTargetCover</B> event is now a full URL.
+  <li>An additional parameter was added to the <B>OnScript</B> event.
+  <li>Two additional parameters have been added to the <B>OnPanelCreate</B> event.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Fix Browser demo so the Proxy (if any) is used when posting.
+  <li>SelStart and SelLength should not have been published in TFrameViewer and TFrameBrowser.
+  <li>Handle the <B>&amp;nbsp;</B> character differently to avoid printing and Copy to Clipboard problems.
+</ul>
+
+<!--   Version 7.23  -->
+<h4 class="heading">Version 7.23</h4>
+<h5>Added</h5>
+<ul>
+  <li><B>OnDragDrop</B> and <B>OnDragOver</B> events added.
+  <li>Support <B>HSpace</B> attribute for inline images.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Active images and mouseover links worked only if ThtmlViewer had the focus. 
+  <li>Fix problem where accelerator keys did not work when mouse was over a link.
+  <li>Rapid repeat of Form submission caused GPFs in TFrameBrowser.
+  <li>Fixed problem with submitting Form when text was selected.
+  <li>Several problems with URLs were fixed.
+</ul>
+
+
+<!--   Version 7.22  -->
+<h4 class="heading">Version 7.22</h4>
+<h5>Fixed</h5>
+<ul>
+  <li>Fix problem with cursor not turning to hand over mapped images. 
+  <li>TFrameViewer.Clear wasn't clearing.
+  <li>Fix GPF when calling Print after Print Preview.
+  <li>Mouse select and scroll was not working properly.
+  <li>Correct X parameter in DisplayToXY function.
+  <li>Fix problem with character entities entered in tag attributes.
+</ul>
+
+<!--   Version 7.21  -->
+<h4 class="heading">Version 7.21</h4>
+<h5>Added</h5>
+<ul>
+  <li><B>OnObjectClick</B> event support added for <B>&lt;Input type="Edit"&gt;</B>, 
+
+      <B>&lt;TextArea&gt;</B>,       and <B>&lt;Select&gt;</B>
+      form controls.  Buttons, Radiobuttons, and Checkboxes already were supported.
+  <li><B>VSpace</B> attribute support for <B>&lt;table&gt;</B> and <B>&lt;img&gt;</B>.
+  <li>Support Wide Characters in character entities.
+</ul>
+<h5>Changed</h5>
+<ul>
+  <li>Increase maximum horizontal scroll to 6000 pixels. 
+  <li>Increase allowable MarginHeight and MarginWidth property range.
+</ul>
+
+<!--   Version 7.2  -->
+<h4 class="heading">Version 7.2</h4>
+<h5>Added</h5>
+<ul>
+  <li>Properties and methods have been added so that a character position in the displayed 
+      document can be related to the same position in the HTML source and visa versa.  See
+      <B>htmleditor.dpr</B> and the following in the help file:
+  <p><ul>
+     <li>SelStart and SelLength Properties
+     <li>FindSourcePos Method
+     <li>FindDisplayPos Method
+     <li>DisplayPosToXY Method	
+  </ul>
+  <p>A character position marker may now optionally be displayed in the document.  See the <B>htOpions</B> property.
+  <p>	
+  <li>Add support for <B>&lt;NOBR&gt;</B> and <B>&lt;WBR&gt;</B> tags.
+  <li>Mouse wheel support in Delphi 4 version.  Middle button drag support in all versions.
+  <li>The graphics DLL is no longer needed for color dithering in 256 color mode.
+  <li>Special <B>&lt;PANEL&gt;</B> tag added.  <B>&lt;PANEL&gt;</B> allows a TPanel equivalent to be added
+      anywhere in an HTML document where an image might be placed. The panel in turn may have 
+      other VCL controls added to it.  See the help file for further information.  
+      See <B>Panel Tag</B> in htmlview.hlp.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Fix bug causing GPF if <B>NumPrinterPages</B> was called before a Print Preview. 
+  <li><B>GetImageFromFile</B> function onca again handles GIF images.
+  <li><B>TFileType</B> changed to <B>ThtmlFileType</B> to avoid conflict with Delphi symbol.
+  <li>Visited links now work when using OnStreamRequest.
+</ul>
+
+<!--   Version 7.02  -->
+<h4 class="heading">Version 7.02</h4>
+<h5>Fixed</h5>
+<ul>
+  <li>Missing &lt;/TD&gt; and &lt;/Table&gt; tags sometimes caused display problems and GPFs.
+  <li>Fix problem where corrupt GIFs caused serious damage.  
+  <li>In ThtmlViewer, missing HREF parameter in &lt;A&gt; caused GPFs.
+</ul>
+
+<!--   Version 7.01  -->
+<h4 class="heading">Version 7.01</h4>
+<h5>Added</h5>
+<ul>
+  <li>The &lt;Meta http-equiv="content-type" ...&gt; should now distinguish a number of
+      character sets.  I still need information on the codes for some, though.
+  <li>Right click on word gives word without selecting it.  See the OnRightClick
+      event in the help file.
+  <li>Changes to accommodate C++Builder 4.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Fix access error in TFrameViewer when a &lt;Meta http-equiv="content-type" ...&gt;
+  statement read. 
+
+</ul>
+
+<!--   Version 7.0  -->
+<h4 class="heading">Version 7.0</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <b>TFrameBrowser</b> component oriented to online use and other protocols.
+  <li>Print Preview for all 32 bit versions.
+  <li>Color change for visited links now supported.  See <b>&lt;Body&gt;</b> topic in help file. 
+  <li>Color change for links when mouse passes over now supported.  See <b>&lt;Body&gt;</b> topic in help file. 
+  <li>Image change when mouse passes over (<a href="Things.htm#ActiveImages">Active Images</a>) now supported.  
+      
+           <p align="center"><img Src="ugly.gif" Active>
+           <p align="center"><b>Try Me</b>
+  <li>OnDoubleClick event. 
+  <li>New <b>htOptions</b> property for ThtmlViewer and extended <b>fvOptions</b> property for TFrameViewer.
+</ul>
+<h5>Fixed</h5>
+<ul>
+  <li>Allow more table columns (now 100)
+  <li>OnImageOver didn't work if image was a link
+  <li>When using drag and drop, sound file didn't work
+  <li>Fix directory problems with meta refresh and <b>&lt;bgsound&gt;</b>
+</ul>
+
+<!--   Version 6.2  -->
+<h4 class="heading">Version 6.2</h4>
+<h5>Added</h5>
+<ul>
+  <li>An OnRightClick event has been added supplying data especially for popup menus.
+  <li>An OnMeta event triggered by <b>&lt;META&gt;</b> tags.
+  <li>Support for the Refresh <b>&lt;META&gt;</b> sequence allows automated document loading.
+    <ul>
+      <li>OnMetaRefresh event for ThtmlViewer.
+      <li>fvMetaRefresh option (under fvOptions) for TFrameViewer.
+          <a href="TryIt.htm">Try it.</a> 
+    </ul>
+  <li>
+  <li>Two additional parameters have been added to the OnFormSubmit event.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>The <b>&amp;#nnn;</b> syntax for character references has been expanded to allow
+       leading zeros.
+  <li>The OnSoundRequest event has been added to ThtmlViewer's LoadFromStream, LoadFromBuffer,
+       and LoadStrings methods.
+  <li>Occasionally animated GIFs were displayed as all black.
+  <li>A small vertical alignment error when printing has been fixed.
+  <li>A number of Table and Print fixes.
+</ul>
+
+<!--   Version 6.12  -->
+<h4 class="heading">Version 6.12</h4>
+<h5>Added</h5>
+<ul>
+  <li>New <b>InsertImage</b> method in conjunction with the OnImageRequest Event allows
+      images to be downloaded and inserted when available.
+  <li>More visible cursor.
+  <li>The <b>NoDLL</b> compile time option now supports Jpeg images in the Delphi 3 and 4 versions.
+  <li><b>NumPrinterPage</b> method indicates the number of pages that will be printed.
+  <li>There is now a <b>Wrap=Off|Soft|Hard</b> attribute for <b>&lt;textarea&gt;</b>.
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li><b>&lt;SUB&gt;</b> and <b>&lt;SUP&gt;</b>  didn't work if first in table cell.
+  <li>Fix the <b>&lt;TD&gt;</b> height attribute which didn't allow for cellpadding.
+  <li>Tabbing now activates Form controls outside of the display area.
+  <li>The VScrollBarRange property now reflects the end of the document more accurately in
+      Delphi 2,3,4 and C++Builder.
+</ul>
+
+<!--   Version 6.1  -->
+<h4 class="heading">Version 6.1</h4>
+<h5>Added</h5>
+<ul>
+  <li>OnSoundRequest event for <b>&lt;BGSound&gt;</b>
+  <li>Transparency supported in palette based PNG images.
+  <li>OnInclude event allows HTML text insertion at load time.
+      <p align="center"><b>Today's date is <!--#date--></b>
+      <br><b>Loaded at <!--#time--></b>
+  <li>OnImageClick, OnImageOver events
+      <p align="center"><b>Right Click on these Thumbnails</b>
+      <p align="center"><img src="arizona.jpg" height="75">&nbsp;&nbsp;
+         <img src="pyramids.jpg" height="75">&nbsp;&nbsp;
+         <img src="windmill.jpg" transp height="75">&nbsp;&nbsp;
+  <li>OnObjectClick event for Buttons, Radiobutton, and Checkboxes
+      <p align="center"><b>Click on these</b>
+
+      <table align="center" cellpadding="5">
+      <tr valign="bottom">
+          <td width="50%" nowrap>
+              <input type="radio" name="Series1" value="Radio 1" OnClick="display" checked>&nbsp;Radio 1<br>
+              <input type="radio" name="Series1" value="Radio 2" OnClick="display">&nbsp;Radio 2
+          <td nowrap><input type="checkbox" name="Series2" value="Checkbox 1" OnClick="display">&nbsp;Checkbox 1<br>
+              <input type="checkbox" name="Series2" value="Checkbox 2" OnClick="display">&nbsp;Checkbox 2
+      </table>
+  <li>&lt;INPUT TYPE="button"&gt; supported
+      <p align="center"><input type="button" value="Push Me" OnClick="Thank You!">
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix TFrameViewer problem when HistroyMaxCount was set to 0
+  <li>Fix some printing problems that occured when ImageCacheCount was set to 0
+  <li>Improve splitting of tables when printing
+  <li>Fix problem with printing transparent images which occured on some printers
+  <li>Remove gap from adjacent packed Tables
+  <li>Character entities
+  <ul>
+     <li>Allow in &lt;TEXTAREA&gt;...&lt;/TEXTAREA&gt;
+     <li>Add "times" and "divide"
+  </ul>
+  <li>Fix Home, End and Page keys which misbehaved in form controls
+</ul>
+
+<!--   Version 6.01  -->
+<h4 class="heading">Version 6.01</h4>
+<h5>Added</h5>
+<ul>
+  <li>MarginHeight and MarginWidth properties for ThtmlViewer
+  <li>MarginHeight and MarginWidth attributes for &lt;FRAME&gt; tag</li>
+  <li>Base property can now be assigned a value (writable)
+  <li>New ServerRoot property
+  <li>Width attribute of &lt;img&gt; tag may now be a percentage
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix problem with 36 bit video mode in Delphi 2 version</li>
+  <li>TFrameViewer.ClearHistory fixed</li>
+  <li>Return value from OnBufferRequest, OnFileRequest, OnStreamRequest events
+      is now correct.
+  <li>&lt;center&gt; now works inside &lt;blockquote&gt;
+</ul>
+
+<!--   Version 6  -->
+<h4 class="heading">Version 6</h4>
+<h5>Added</h5>
+<ul>
+  <li>Animated GIFs </li>
+  <li>Borderless Frames </li>
+  <li>Better frame history list </li>
+  <li>Form controls now print </li>
+  <li>Color printing </li>
+  <li>Access to Form Controls through FormControlList. </li>
+  <li>Access to Anchor names through NameList. </li>
+  <li>Type=&quot;image&quot; attribute for &lt;INPUT&gt; </li>
+  <li>Type and Start attributes for &lt;OL&gt; </li>
+  <li>Strike-through text. </li>
+  <li>Double click selects word. </li>
+</ul>
+<h5>Fixed and Changed</h5>
+<ul>
+  <li>Fix TFrameViewer.Clear method </li>
+  <li>Better way to shrink images. </li>
 </ul>
 
 </font>

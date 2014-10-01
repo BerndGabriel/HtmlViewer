@@ -394,6 +394,10 @@ begin
   {$ifdef LogIt}
   logwin.LogForm := TLogForm.Create(nil);
   {$endif}
+{$ifdef HasGestures}
+  FrameBrowser.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
+  FrameBrowser.Touch.InteractiveGestures := [igPan];
+{$endif}
   Top := Top div 2;
   if Screen.Width <= 800 then   {make window fit appropriately}
   begin

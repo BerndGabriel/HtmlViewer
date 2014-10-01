@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -95,6 +95,7 @@ type
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
     piWidth, piHeight, piTop, piRight, piBottom, piLeft,
+    BorderSpacingHorz, BorderSpacingVert,  //These two are internal
     // the above properties are in MarginArrays
 
     Visibility, LineHeight, VerticalAlign, Position, ZIndex,
@@ -107,17 +108,21 @@ type
     MarginX, PaddingX, BorderWidthX, BorderX,
     BorderTX, BorderRX, BorderBX, BorderLX,
     FontX, BackgroundX, ListStyleX, BorderColorX,
-    BorderStyleX
+    BorderStyleX,
     // the above properties are short hands
+
+    //the following have multiple values sometimes
+    BorderSpacing
+    //the above have multiple values sometimes
   );
 
-  TShortHand = MarginX..BorderStyleX;
+  TShortHand = MarginX..BorderSpacing;//BorderStyleX;
 
   ThtPropIndices = FontFamily..piWhiteSpace;
   ThtPropertyArray = array [ThtPropIndices] of Variant;
   ThtPropIndexSet = Set of ThtPropIndices;
 
-  ThtMarginIndices = BackgroundColor..piLeft;
+  ThtMarginIndices = BackgroundColor..BorderSpacingVert; //piLeft;
   ThtVMarginArray = array [ThtMarginIndices] of Variant;
   ThtMarginArray = array [ThtMarginIndices] of Integer;
 
@@ -134,7 +139,8 @@ const
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
     'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
-    'width', 'height', 'top', 'bottom', 'right', 'left',
+    'width', 'height', 'top', 'right', 'bottom', 'left',
+    'thv-border-spacing-horz', 'thv-border-spacing-vert', //These two are for internal use only
 
     'visibility', 'line-height', 'vertical-align', 'position', 'z-index',
     'list-style-type', 'list-style-image', 'float', 'clear', 'text-indent',
@@ -146,7 +152,9 @@ const
     'margin', 'padding', 'border-width', 'border',
     'border-top', 'border-right', 'border-bottom', 'border-left',
     'font', 'background', 'list-style', 'border-color',
-    'border-style'
+    'border-style',
+    //multiple values
+    'border-spacing'
   );
 
 type
@@ -221,8 +229,11 @@ type
     procedure GetFontInfo(AFI: TFontInfoArray);
     procedure GetPageBreaks(out Before, After, Intact: Boolean);
     function GetBoxSizing(var VBoxSizing : ThtBoxSizing) : Boolean;
+    function GetBorderSpacingHorz: Integer;
+    function GetBorderSpacingVert: Integer;
     procedure GetVMarginArrayDefBorder(var MArray: ThtVMarginArray; const ADefColor : Variant);
     procedure GetVMarginArray(var MArray: ThtVMarginArray);
+    function HasBorderSpacing: Boolean;
     procedure Inherit(Tag: ThtString; Source: TProperties);
     procedure SetFontBG;
     procedure Update(Source: TProperties; Styles: TStyleList; I: Integer);
@@ -274,6 +285,15 @@ type
     property Items[Index: Integer]: TProperties read GetProp; default;
   end;
 
+type
+  ThtConvData = record
+    BaseWidth, BaseHeight: Integer;
+    EmSize, ExSize: Integer;
+    BorderWidth: Integer;
+    AutoCount: Integer;
+    IsAutoParagraph: set of ThtPropertyIndex;
+  end;
+
 const
   IntNull = -12345678;
   Auto = -12348765;
@@ -294,10 +314,13 @@ function VarIsAuto(const Value: Variant): Boolean; {$ifdef UseInline} inline; {$
 
 function VMargToMarg(const Value: Variant; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
 
+function ConvData(BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; AutoCount: Integer = 0): ThtConvData;
+procedure ConvMargProp(I: ThtPropIndices; const VM: ThtVMarginArray; var ConvData: ThtConvData; var M: ThtMarginArray);
+
 procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
 procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; out AutoCount: Integer; var M: ThtMarginArray);
 procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize, ExSize: Integer; var M: ThtMarginArray);
-procedure ConvVertMargins(const VM: ThtVMarginArray;  BaseHeight, EmSize, ExSize: Integer; var M: ThtMarginArray; out TopAuto, BottomAuto: Boolean);
+procedure ConvVertMargins(const VM: ThtVMarginArray; var CD: ThtConvData; var M: ThtMarginArray);
 
 
 function OpacityFromStr(S : ThtString) : Byte;
@@ -751,7 +774,7 @@ begin
   ID := Sequence;
   Inc(Sequence);
   FontBG := clNone;
-  for I := MarginTop to piLeft do
+  for I := MarginTop to BorderSpacingVert do
     Props[I] := IntNull;
   Props[ZIndex] := 0;
   FUseQuirksMode := False;
@@ -1478,6 +1501,49 @@ begin
   Result := Dummy <> bssNone;
 end;
 
+function TProperties.GetBorderSpacingHorz: Integer;
+var
+  V: Double;
+  Code: Integer;
+
+begin
+  if VarIsStr(Props[BorderSpacingHorz]) then
+  begin
+    Val(Props[BorderSpacingHorz], V, Code);
+    if Code = 0 then {a numerical entry with no 'em', '%', etc.  }
+      Result := Round(V)
+    else
+    {note: 'normal' yields -1 in the next statement}
+      Result := LengthConv(Props[BorderSpacingHorz], True, EmSize, EmSize, ExSize, -1);
+  end
+  else
+    Result := -1;
+end;
+
+function TProperties.GetBorderSpacingVert: Integer;
+var
+  V: Double;
+  Code: Integer;
+
+begin
+  if VarIsStr(Props[BorderSpacingVert]) then
+  begin
+    Val(Props[BorderSpacingVert], V, Code);
+    if Code = 0 then {a numerical entry with no 'em', '%', etc.  }
+      Result := Round(V)
+    else
+    {note: 'normal' yields -1 in the next statement}
+      Result := LengthConv(Props[BorderSpacingVert], True, EmSize, EmSize, ExSize, -1);
+  end
+  else
+    Result := -1;
+end;
+
+function TProperties.HasBorderSpacing: Boolean;
+begin
+  Result := not (VarIsIntNull(Props[BorderSpacingHorz]) or VarIsEmpty(Props[BorderSpacingHorz]));
+end;
+
 procedure TProperties.SetFontBG;
 {called for font tags like <b>, <small>, etc.  Sets the font background color.}
 begin
@@ -1508,47 +1574,26 @@ begin
   Result := (VarIsStr(Props[piEmptyCells])) and (Props[piEmptyCells] = 'show');
 end;
 
-procedure ConvVertMargins(const VM: ThtVMarginArray;
-  BaseHeight, EmSize, ExSize: Integer;
-  var M: ThtMarginArray; out TopAuto, BottomAuto: Boolean);
-
-  function Convert(V: Variant; out IsAutoParagraph: Boolean): Integer;
-  begin
-    IsAutoParagraph := False;
-    if VarIsStr(V) then
-      Result := LengthConv(V, False, BaseHeight, EmSize, ExSize, 0) {Auto will be 0}
-    else if VarType(V) in varInt then
-    begin
-      if V = IntNull then
-        Result := 0
-      else if V = AutoParagraph then
-      begin
-        Result := ParagraphSpace;
-        IsAutoParagraph := True;
-      end
-      else
-        Result := V;
-    end
-    else
-      Result := 0;
-  end;
-
+procedure ConvVertMargins(const VM: ThtVMarginArray; var CD: ThtConvData; var M: ThtMarginArray);
 begin
-  {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.EnterMethod('ConvVertMargins');
   CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
   StyleUn.LogTVMarginArray(VM,'VM');
-  {$ENDIF}
-  M[MarginTop] := Convert(VM[MarginTop], TopAuto);
-  M[MarginBottom] := Convert(VM[MarginBottom], BottomAuto);
-    {$IFDEF JPM_DEBUGGING}
+{$ENDIF}
+
+  ConvMargProp(MarginTop, VM, CD, M);
+  ConvMargProp(MarginBottom, VM, CD, M);
+  ConvMargProp(piMinHeight, VM, CD, M);
+
+{$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   CodeSiteLogging.CodeSite.ExitMethod('ConvVertMargins');
   StyleUn.LogThtMarginArray(M,'M');
-  {$ENDIF}
+{$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 25.04.2012 --
@@ -1654,9 +1699,24 @@ end;
 
 {----------------ConvMargArray}
 
-procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
-  BorderWidth: Integer; out AutoCount: Integer; var M: ThtMarginArray);
-{This routine does not do MarginTop and MarginBottom as they are done by ConvVertMargins}
+//-- BG ---------------------------------------------------------- 16.05.2014 --
+function ConvData(
+    BaseWidth, BaseHeight: Integer;
+    EmSize, ExSize: Integer;
+    BorderWidth: Integer;
+    AutoCount: Integer = 0): ThtConvData;
+begin
+  Result.BaseWidth := BaseWidth;
+  Result.BaseHeight := BaseHeight;
+  Result.EmSize := EmSize;
+  Result.ExSize := ExSize;
+  Result.BorderWidth := BorderWidth;
+  Result.AutoCount := AutoCount;
+  Result.IsAutoParagraph := [];
+end;
+
+//-- BG ---------------------------------------------------------- 16.05.2014 --
+procedure ConvMargProp(I: ThtPropIndices; const VM: ThtVMarginArray; var ConvData: ThtConvData; var M: ThtMarginArray);
 
   function Base(I: ThtPropIndices): Integer;
   begin
@@ -1667,33 +1727,16 @@ procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize
       PaddingTop, PaddingBottom,
       LineHeight,
       piHeight, piTop:
-        Base := BaseHeight
+        Base := ConvData.BaseHeight
     else
-      Base := BaseWidth;
+      Base := ConvData.BaseWidth;
     end;
   end;
 
 var
-  I: ThtPropIndices;
   LBoxSizing : ThtBoxSizing;
 begin
-  {$IFDEF JPM_DEBUGGING}
-  CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
- CodeSiteLogging.CodeSite.AddSeparator;
- CodeSiteLogging.CodeSite.Send('Input');
-
- CodeSiteLogging.CodeSite.AddSeparator;
-   LogTVMarginArray(VM,'VM');
-   CodeSiteLogging.CodeSite.Send('BaseWidth   = [%d]',[BaseWidth]);
-   CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
-   CodeSiteLogging.CodeSite.Send('BorderWidth  = [%d]',[BorderWidth]);
-
-   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
-   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
-   CodeSiteLogging.CodeSite.Send('BorderWidth = [%d]',[BorderWidth]);
-  {$ENDIF}
-  AutoCount := 0; {count of 'auto's in width items}
-  for I := Low(VM) to High(VM) do
+  with ConvData do
   begin
     case I of
       BackgroundColor, BorderTopColor..BorderLeftColor:
@@ -1703,6 +1746,7 @@ begin
           else
             M[I] := VM[I];
         end;
+
       BorderTopWidth..BorderLeftWidth:
         begin
           if VM[ThtPropIndices(Ord(BorderTopStyle) + (Ord(I) - Ord(BorderTopWidth)))] = bssNone then
@@ -1729,6 +1773,7 @@ begin
             end;
           end;
         end;
+
       piMinHeight, piMaxHeight,
       piHeight:
         begin
@@ -1748,7 +1793,8 @@ begin
           else
             M[I] := 0;
         end;
-      PaddingTop..PaddingLeft:
+
+      PaddingTop..PaddingLeft,BorderSpacingHorz,BorderSpacingVert:
         begin
           if VarIsStr(VM[I]) then
           begin
@@ -1764,6 +1810,7 @@ begin
           else
             M[I] := 0;
         end;
+
       piTop..piLeft:
         begin
           if VarIsStr(VM[I]) then
@@ -1778,6 +1825,7 @@ begin
           else
             M[I] := Auto;
         end;
+
       BoxSizing:
         if TryStrToBoxSizing(VM[I],LBoxSizing) then begin
            M[I] := Ord(LBoxSizing);
@@ -1785,7 +1833,8 @@ begin
           //assume content-box
            M[I] := 0;
         end;
-      MarginLeft, MarginRight:
+
+      MarginRight, MarginLeft:
         begin
           if VarIsStr(VM[I]) then
           begin
@@ -1807,6 +1856,27 @@ begin
           else
             M[I] := 0;
         end;
+
+      MarginTop, MarginBottom:
+        begin
+          if VarIsStr(VM[I]) then
+            M[I] := LengthConv(VM[I], False, BaseHeight, EmSize, ExSize, 0) {Auto will be 0}
+          else if VarType(VM[I]) in varInt then
+          begin
+            if VM[I] = IntNull then
+              M[I] := 0
+            else if VM[I] = AutoParagraph then
+            begin
+              M[I] := ParagraphSpace;
+              Include(IsAutoParagraph, I);
+            end
+            else
+              M[I] := VM[I];
+          end
+          else
+            M[I] := 0;
+        end;
+
       piMinWidth,
       piMaxWidth:
         begin
@@ -1822,6 +1892,7 @@ begin
           else
             M[I] := 0;
         end;
+
       piWidth:
         begin
           if VarIsStr(VM[I]) then
@@ -1838,21 +1909,6 @@ begin
           if M[I] = Auto then
             Inc(AutoCount);
         end;
-      MarginTop, MarginBottom:
-//        if VarType(VM[I]) in varInt then
-//          case VM[I] of
-//            AutoParagraph: ; // do nothing
-//
-//            IntNull:
-//              M[I] := 0;
-//          else
-//            M[I] := VM[I];
-//          end
-//        else if VarIsStr(VM[I]) then
-//          M[I] := LengthConv(VM[I], False, BaseHeight, EmSize, ExSize, 0)
-//        else
-//          M[I] := 0
-        ;
     else
       begin
         if VarIsStr(VM[I]) then
@@ -1869,13 +1925,44 @@ begin
       end;
     end;
   end;
-  {$IFDEF JPM_DEBUGGING}
+end;
+
+procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer;
+  BorderWidth: Integer; out AutoCount: Integer; var M: ThtMarginArray);
+{This routine does not do MarginTop and MarginBottom as they are done by ConvVertMargins}
+var
+  I: ThtPropIndices;
+  CD: ThtConvData;
+begin
+{$IFDEF JPM_DEBUGGING}
+  CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
+  CodeSiteLogging.CodeSite.AddSeparator;
+  CodeSiteLogging.CodeSite.Send('Input');
+
+  CodeSiteLogging.CodeSite.AddSeparator;
+  LogTVMarginArray(VM,'VM');
+  CodeSiteLogging.CodeSite.Send('BaseWidth   = [%d]',[BaseWidth]);
+  CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
+  CodeSiteLogging.CodeSite.Send('BorderWidth  = [%d]',[BorderWidth]);
+
+  CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
+  CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+  CodeSiteLogging.CodeSite.Send('BorderWidth = [%d]',[BorderWidth]);
+{$ENDIF}
+
+  CD := ConvData(BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth);
+  for I := Low(VM) to High(VM) do
+    if not (I in [MarginTop, MarginBottom]) then
+      ConvMargProp(I, VM, CD, M);
+  AutoCount := CD.AutoCount; {count of 'auto's in width items}
+
+{$IFDEF JPM_DEBUGGING}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   LogThtMarginArray(M,'M');
   CodeSiteLogging.CodeSite.Send('AutoCount  = [%d]',[AutoCount]);
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArray');
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize,
@@ -2035,7 +2122,7 @@ procedure TProperties.Combine(Styles: TStyleList;
         end;
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
           case Index of
-            MarginTop..piLeft:
+            MarginTop..BorderSpacingVert:
               if VarIsStr(Source.Props[Index]) then // if VarType(Source.Props[Index]) = VarString then
               begin
                 Props[Index] := Source.Props[Index];
@@ -2807,7 +2894,7 @@ begin
       else
         Props[Index] := clNone;
 
-    MarginTop..BorderLeftWidth, piWidth..piLeft:
+    MarginTop..BorderLeftWidth, piWidth..BorderSpacingVert:
       Props[Index] := PropValue;
 
     FontSize:

@@ -75,6 +75,7 @@ object HTTPForm: THTTPForm
     Width = 729
     Height = 537
     CharSet = ANSI_CHARSET
+    CodePage = 0
     DefBackground = clWhite
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
@@ -83,6 +84,11 @@ object HTTPForm: THTTPForm
     HistoryIndex = 0
     HistoryMaxCount = 0
     NoSelect = False
+    PrintMarginBottom = 3.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
     OnBlankWindowRequest = BlankWindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -95,11 +101,6 @@ object HTTPForm: THTTPForm
     OnRightClick = RightClick
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
-    PrintMarginBottom = 3.000000000000000000
-    PrintMarginLeft = 2.000000000000000000
-    PrintMarginRight = 2.000000000000000000
-    PrintMarginTop = 2.000000000000000000
-    PrintScale = 1.000000000000000000
     Align = alClient
     TabOrder = 1
     OnMouseMove = FrameBrowserMouseMove
@@ -117,7 +118,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 216
+        Width = 156
       end
       item
         Break = False
@@ -126,7 +127,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 268
+        Width = 274
       end
       item
         Break = False
@@ -134,12 +135,12 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 231
+        Width = 285
       end>
     object ToolBar2: TToolBar
-      Left = 9
+      Left = 11
       Top = 0
-      Width = 141
+      Width = 143
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -183,11 +184,10 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 194
+      Left = 199
       Top = 8
-      Width = 227
+      Width = 233
       Height = 21
-      ItemHeight = 0
       TabOrder = 1
       OnClick = URLComboBoxClick
       OnKeyPress = URLComboBoxKeyPress
@@ -195,9 +195,9 @@ object HTTPForm: THTTPForm
         'http://pc19-web/local/localindex.html')
     end
     object Panel10: TPanel
-      Left = 443
+      Left = 449
       Top = 0
-      Width = 282
+      Width = 276
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -233,14 +233,13 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 254
+        Left = 248
         Top = 0
         Width = 28
         Height = 37
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 255
         object Animate1: TAnimate
           Left = 3
           Top = 8
@@ -417,7 +416,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 160
     Bitmap = {
-      494C01010D001100040011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D0011000C0011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

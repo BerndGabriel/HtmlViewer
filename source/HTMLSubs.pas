@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -535,6 +535,18 @@ type
     procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
   end;
 
+  // inline meter (object) node
+  TMeterObj = class(TControlObj)
+  protected
+    function GetControl: TWinControl; override;
+  public
+    Meter: ThvMeter;
+    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
+    constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
+    destructor Destroy; override;
+    procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); override;
+  end;
+
 
   ThtHover = (hvOff, hvOverUp, hvOverDown);
 
@@ -640,7 +652,6 @@ type
   private
     BreakWord: Boolean;
     DrawWidth: Integer;
-    FirstLineIndent: Integer;
     FLPercent: Integer;
     LineHeight: Integer;
     StoredMin, StoredMax: TSize;
@@ -649,7 +660,7 @@ type
     ThisCycle: Integer;
 
     BuffS: ThtString;  {holds the text or one of #2 (Form), #4 (Image/Panel), #8 (break char) for the section} //TODO -oBG, 30.11.2013: #1 (Table for display:inline-table)
-    Buff: PWideChar;    {same as above}
+    FBuff: PWideChar;    {same as above}
     Brk: ThtTextWrapArray; //string;        // Brk[n]: Can I wrap to new line after BuffS[n]? One entry per character in BuffS
     SIndexList: TFreeList; {list of Source index changes}
     Lines: TFreeList; {List of ThtLineRecs,  info on all the lines in section}
@@ -668,6 +679,8 @@ type
     ClearAttr: ThtClearStyle;
     TextWidth: Integer;
     WhiteSpaceStyle: ThtWhiteSpaceStyle;
+    FirstLineIndent: Integer;             // Issue 365: public for TRichView
+    property Buff: PWideChar read FBuff;  // Issue 365: public for TRichView
   protected
     constructor Create(Parent: TCellBasic); overload;
   public
@@ -679,6 +692,7 @@ type
     function AddImage(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TImageObj;
     function AddPanel(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TPanelObj;
     function AddProgress(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TProgressObj;
+    function AddMeter(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TMeterObj;
     function CreatePanel(L: TAttributeList; ACell: TCellBasic; Prop: TProperties): TPanelObj;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -798,6 +812,7 @@ type
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
     procedure CollapseMargins;
+    procedure CollapseBottomMargins;
     procedure CopyToClipboard; override;
     procedure DrawBlock(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
     procedure DrawSort;
@@ -996,6 +1011,9 @@ type
     function FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Integer): Integer; override;
   end;
 
+  TListBlock = class(TBlock)
+  end;
+
   TBlockLI = class(TBlock)
   private
     FListType: ThtListType;
@@ -1075,8 +1093,8 @@ type
     FSpecHt: TSpecWidth; {Height as specified}
     // END: this area is copied by move() in AssignTo()
     function GetCell: TCellObjCell; virtual; abstract;
-    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor); virtual; abstract;
-    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer); virtual; abstract;
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacingHorz, CellSpacingVert: Integer; Border: Boolean; Light, Dark: TColor); virtual; abstract;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert : Integer; var Curs: Integer); virtual; abstract;
   public
     function Clone(Parent: TBlock): TCellObjBase; virtual; abstract;
     procedure AssignTo(Destin: TCellObjBase); virtual;
@@ -1099,8 +1117,8 @@ type
   {holds one dummy cell of the table}
   protected
     function GetCell: TCellObjCell; override;
-    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor); override;
-    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer); override;
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacingHorz, CellSpacingVert: Integer; Border: Boolean; Light, Dark: TColor); override;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert : Integer; var Curs: Integer); override;
   public
     constructor Create(RSpan: Integer);
     function Clone(Parent: TBlock): TCellObjBase; override;
@@ -1126,8 +1144,8 @@ type
     procedure Initialize(TablePadding: Integer; const BkImageName: ThtString; const APRec: PtPositionRec; Border: Boolean);
   protected
     function GetCell: TCellObjCell; override;
-    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light, Dark: TColor); override;
-    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer); override;
+    procedure Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacingHorz, CellSpacingVert : Integer; Border: Boolean; Light, Dark: TColor); override;
+    procedure DrawLogic2(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert: Integer; var Curs: Integer); override;
   private
 
     // BG, 08.01.2012: Issue 109: C++Builder cannot handle properties that reference record members.
@@ -1207,11 +1225,11 @@ type
     constructor Create(Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TBlock; T: TCellList);
     procedure Initialize;
-    function DrawLogicA(Canvas: TCanvas; const Widths: TIntArray; Span, CellSpacing, AHeight, Rows: Integer;
+    function DrawLogicA(Canvas: TCanvas; const Widths: TIntArray; Span, CellSpacingHorz,CellSpacingVert, AHeight, Rows: Integer;
       out Desired: Integer; out Spec, More: boolean): Integer;
-    procedure DrawLogicB(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+    procedure DrawLogicB(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert: Integer; var Curs: Integer);
     function Draw(Canvas: TCanvas; Document: ThtDocument; const ARect: TRect; const Widths: TIntArray;
-      X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
+      X, Y, YOffset, CellSpacingHorz,CellSpacingVert: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
     procedure Add(CellObjBase: TCellObjBase);
     property Items[Index: Integer]: TCellObjBase read GetCellObj; default;
   end;
@@ -1328,7 +1346,7 @@ type
     TableWidth: Integer;    {width of table}
     tblWidthAttr: Integer;  {Width attribute as entered}
     CellPadding: Integer;
-    CellSpacing: Integer;
+    CellSpacingHorz, CellSpacingVert: Integer;
     HSpace, VSpace: Integer; {horizontal, vertical extra space}
     BorderColor: TColor;      //BG, 13.06.2010: added for Issue 5: Table border versus stylesheets
     BorderColorLight: TColor;
@@ -1765,7 +1783,7 @@ end;
 procedure THtmlNode.AfterConstruction;
 begin
   inherited AfterConstruction;
-  if (Document <> nil) and (Document.IDNameList <> nil) then
+  if (Length(ID) > 0) and (Document <> nil) and (Document.IDNameList <> nil) then
     Document.IDNameList.AddObject(ID, Self);
 end;
 
@@ -1774,9 +1792,9 @@ var
   id: ThtString; //>-- DZ
 begin
   //>-- DZ
-  if Properties <> nil then
+  {if Properties <> nil then
     id := Properties.PropID
-  else if Attributes <> nil then
+  else} if Attributes <> nil then
     id := Attributes.TheId
   else
     id := '';
@@ -4026,7 +4044,7 @@ function TCellBasic.CheckLastBottomMargin: boolean;
 {Look at the last item in this cell.  If its bottom margin was set to Auto,
  set it to 0}
 var
-  TB: TObject;
+  TB: TSectionBase;
   I: Integer;
   Done: boolean;
 begin
@@ -4044,15 +4062,17 @@ begin
   if I >= 0 then
   begin
     TB := Items[I];
-    if (TB is TBlock) then
+    if TB is TBlock then
+    begin
       with TBlock(TB) do
         if BottomAuto then
         begin
           MargArray[MarginBottom] := 0;
           Result := True;
         end;
-    if (TB is TBlockLI) then
-      Result := TBlockLI(TB).MyCell.CheckLastBottomMargin;
+      if TB is TBlockLI then
+        Result := TBlockLI(TB).MyCell.CheckLastBottomMargin;
+    end;
   end;
 end;
 
@@ -4420,16 +4440,34 @@ begin
   {$ENDIF}
 end;
 
+//-- BG ---------------------------------------------------------- 17.05.2014 --
+function Collapse(A, B: Integer): Integer; {$ifdef UseInline} inline; {$endif}
+begin
+  if A >= 0 then
+    if B >= 0 then
+      Result := Max(A, B)
+    else
+      Result := A + B
+  else
+    if B >= 0 then
+      Result := B + A
+    else
+      Result := Min(A, B);
+end;
+
 procedure TBlock.CollapseMargins;
 {adjacent vertical margins need to be reduced}
 var
   TopAuto: boolean;
   TB: TSectionBase;
-  LastMargin, Negs, I: Integer;
+  LastMargin, I: Integer;
   Tag: TElemSymb;
+  CD: ThtConvData;
 begin
-  ConvVertMargins(MargArrayO, 400, {height not known at this point}
-    EmSize, ExSize, MargArray, TopAuto, BottomAuto);
+  CD := ConvData(0, 400 {width and height not known at this point},  EmSize, ExSize, BorderWidth);
+  ConvVertMargins(MargArrayO, CD, MargArray);
+  TopAuto := MarginTop in CD.IsAutoParagraph;
+  BottomAuto := MarginBottom in CD.IsAutoParagraph;
   if Positioning = posAbsolute then
   begin
     if TopAuto then
@@ -4449,6 +4487,7 @@ begin
           break;
       Dec(I);
     end;
+
     if OwnerCell.OwnerBlock <> nil then
       Tag := OwnerCell.OwnerBlock.Symbol
     else
@@ -4471,19 +4510,55 @@ begin
       begin
         LastMargin := TBlock(TB).MargArray[MarginBottom];
         TBlock(TB).MargArray[MarginBottom] := 0;
-        Negs := 0;
-        if LastMargin < 0 then {figure out how many are negative}
-          Inc(Negs);
-        if MargArray[MarginTop] < 0 then
-          Inc(Negs);
-        case Negs of
-          0: MargArray[MarginTop] := Max(MargArray[MarginTop], LastMargin);
-          1: MargArray[MarginTop] :=     MargArray[MarginTop] + LastMargin;
-          2: MargArray[MarginTop] := Min(MargArray[MarginTop], LastMargin);
-        end;
+        MargArray[MarginTop] := Collapse(LastMargin, MargArray[MarginTop]);
       end
       else if (Tag = LISy) and TopAuto and (Symbol in [ULSy, OLSy]) then
         MargArray[MarginTop] := 0; {removes space from nested lists}
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 16.05.2014 --
+procedure TBlock.CollapseBottomMargins;
+var
+  TB: TSectionBase;
+  Block: TBlock absolute TB;
+  I: Integer;
+  BottomMargin: Integer;
+  CD, BCD: ThtConvData;
+begin
+// (MargArrayO[piHeight] = IntNull)
+  if (OwnerCell <> Document) and (MargArray[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
+  begin
+    // collapse with last sectionbase, if it is an in-flow block.
+
+    // find block to collapse
+    I := MyCell.Count - 1;
+    while I >= 0 do
+    begin
+      TB := MyCell[I];
+      if TB.Display <> pdNone then
+        if not (TB is TBlock) or ((TBlock(TB).Positioning <> PosAbsolute) and (TBlock(TB).Floating = aNone)) then
+          break;
+      Dec(I);
+    end;
+
+    if I >= 0 then
+      if (TB is TBlock) and (Block.Positioning = posStatic) then
+    begin
+      // collapse block, if it has no bottom padding and no bottom border
+      BCD := ConvData(100, 100, Block.EmSize, Block.ExSize, Block.BorderWidth);
+      ConvMargProp(PaddingBottom, Block.MargArrayO, CD, Block.MargArray);
+      ConvMargProp(BorderBottomStyle, Block.MargArrayO, CD, Block.MargArray);
+      ConvMargProp(BorderBottomWidth, Block.MargArrayO, CD, Block.MargArray);
+
+      if Block.MargArray[PaddingBottom] = 0 then
+        if Block.MargArray[BorderBottomWidth] = 0 then
+        begin
+          BottomMargin := Block.MargArray[MarginBottom];
+          Block.MargArray[MarginBottom] := 0;
+          MargArray[MarginBottom] := Collapse(MargArray[MarginBottom], BottomMargin);
+        end;
     end;
   end;
 end;
@@ -4853,7 +4928,12 @@ var
   procedure CalcWidth;
   begin
     if Positioning = posAbsolute then
-      MargArray[piWidth] := Max(MinWidth, AWidth - BordWidth - LeftP)
+    begin
+      if (MargArray[piLeft] = Auto) and (MargArray[piRight] <> Auto) then
+        MargArray[piWidth] := MaxWidth
+      else
+        MargArray[piWidth] := Max(MinWidth, AWidth - BordWidth - LeftP);
+    end
     else if (Floating in [ALeft, ARight]) then
       MargArray[piWidth] := Min(MaxWidth, AWidth - BordWidth)
     else
@@ -5030,7 +5110,7 @@ var
         if TopP = Auto then
           TopP := 0;
         if (LeftP = Auto) then
-          if (MargArray[piRight] <> Auto) and (AutoCount = 0) then
+          if (MargArray[piRight] <> Auto) and (MargArray[piWidth] <> Auto) then
             LeftP := AWidth - MargArray[piRight] - MargArray[piWidth] - LeftWidths - RightWidths
           else
             LeftP := 0;
@@ -5372,7 +5452,7 @@ function TBlock.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager;
             and ((Document.PrintingTable = nil) or
             (Document.PrintingTable = TTableBlock(Self).Table)) then
           begin
-            Spacing := CellSpacing div 2;
+            Spacing := CellSpacingVert div 2;
             HeightNeeded := HeaderHeight + FootHeight + Rows.Items[HeaderRowCount].RowHeight;
             if (YO > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
               (HeightNeeded < ARect.Bottom - ARect.Top) then
@@ -5880,6 +5960,9 @@ begin
       else
         MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], clNone);
     end;
+
+     MyProps.SetPropertyDefault(BorderSpacingHorz, ATable.CellSpacingHorz);
+     MyProps.SetPropertyDefault(BorderSpacingVert, ATable.CellSpacingVert);
 
     if ATable.HasBorderWidthAttr then
       MyProps.SetPropertyDefaults([BorderBottomWidth, BorderRightWidth, BorderTopWidth, BorderLeftWidth], ATable.brdWidthAttr);
@@ -7110,6 +7193,7 @@ begin
   for I := 0 to AGifList.Count - 1 do
     with TGifImage(AGifList.Items[I]) do
     begin
+      ShowIt := False; // when gif is drawn, it will set it to true again. Avoids animating invisible gifs.
       Animate := False; {starts iteration count from 1}
       if not Self.IsCopy then
         Animate := True;
@@ -7196,11 +7280,6 @@ begin
 
   if Assigned(Timer) then
     Timer.Enabled := False;
-  for I := 0 to AGifList.Count - 1 do
-    with TGifImage(AGifList.Items[I]) do
-    begin
-      ShowIt := False;
-    end;
   if (BackgroundImage is ThtGifImage) and not IsCopy then
     ThtGifImage(BackgroundImage).Gif.ShowIt := True;
   if (ColorBits <= 8) then
@@ -7333,9 +7412,9 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
       GetBitmap(TheOwner, BMName, Bitmap, Color);
       if Bitmap <> nil then
         if Color <> -1 then
-          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(TBitmap(Result), True, Color), TrGif)
+          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(Bitmap, True, Color), TrGif)
         else if Transparent = LLCorner then
-          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(TBitmap(Result), False, 0), LLCorner)
+          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(Bitmap, False, 0), LLCorner)
         else
           Result := ThtBitmapImage.Create(Bitmap, nil, NotTransp);
     end;
@@ -7659,14 +7738,14 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2013 --
-procedure TDummyCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer; Border: Boolean; Light,
+procedure TDummyCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacingHorz, CellSpacingVert: Integer; Border: Boolean; Light,
   Dark: TColor);
 begin
   //abstract: inherited Draw(Canvas,ARect,X,Y,CellSpacing,Border,Light,Dark);
 end;
 
 //-- BG ---------------------------------------------------------- 19.02.2013 --
-procedure TDummyCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+procedure TDummyCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacingHorz,CellSpacingVert: Integer; var Curs: Integer);
 begin
   //abstract: inherited DrawLogic2(Canvas,Y,CellSpacing,Curs);
 end;
@@ -7932,7 +8011,7 @@ end;
 
 {----------------TCellObj.DrawLogic2}
 
-procedure TCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+procedure TCellObj.DrawLogic2(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert: Integer; var Curs: Integer);
 var
   Dummy: Integer;
   Tmp: Integer;
@@ -7946,15 +8025,15 @@ begin
    {$ENDIF}
   if Cell.Count > 0 then
   begin
-    Tmp := Ht - VSize - (VrSpace + CellSpacing);
+    Tmp := Ht - VSize - (VrSpace + CellSpacingVert);
     case VAlign of
       ATop: YIndent := 0;
       AMiddle: YIndent := Tmp div 2;
       ABottom, ABaseline: YIndent := Tmp;
     end;
     Dummy := 0;
-    Cell.DoLogic(Canvas, Y + FPad.Top + FBrd.Top + CellSpacing + YIndent, Wd - (HzSpace + CellSpacing),
-      Ht - VrSpace - CellSpacing, 0, Dummy, Curs);
+    Cell.DoLogic(Canvas, Y + FPad.Top + FBrd.Top + CellSpacingVert + YIndent, Wd - (HzSpace + CellSpacingHorz),
+      Ht - VrSpace - CellSpacingVert, 0, Dummy, Curs);
   end;
   if Assigned(BGImage) and Cell.Document.ShowImages then
   begin
@@ -7974,7 +8053,7 @@ end;
 
 {----------------TCellObj.Draw}
 
-procedure TCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacing: Integer;
+procedure TCellObj.Draw(Canvas: TCanvas; const ARect: TRect; X, Y, CellSpacingHorz, CellSpacingVert: Integer;
   Border: boolean; Light, Dark: TColor);
 var
   YO: Integer;
@@ -7991,12 +8070,12 @@ var
 begin
   YO := Y - Cell.Document.YOff;
 
-  BL := X + CellSpacing; {Border left and right}
+  BL := X + CellSpacingHorz; {Border left and right}
   BR := X + Wd;
   PL := BL + FBrd.Left; {Padding left and right}
   PR := BR - FBrd.Right;
 
-  BT := YO + CellSpacing; {Border Top and Bottom}
+  BT := YO + CellSpacingVert; {Border Top and Bottom}
   BB := YO + Ht;
   PT := BT + FBrd.Top; {Padding Top and Bottom}
   PB := BB - FBrd.Bottom;
@@ -8020,7 +8099,7 @@ begin
           FreeAndNil(BGImage)
         else
         try
-          DoImageStuff(Canvas, Wd - CellSpacing, Ht - CellSpacing,
+          DoImageStuff(Canvas, Wd - CellSpacingHorz, Ht - CellSpacingVert,
             BGImage.Image, PRec, TiledImage, TiledMask, NoMask);
           if Cell.IsCopy and (TiledImage is TBitmap) then
             TBitmap(TiledImage).HandleType := bmDIB;
@@ -8147,8 +8226,8 @@ begin
         CombineRgn(Rgn, Rgn, SaveRgn, Rgn_And);
       SelectClipRgn(Canvas.Handle, Rgn);
       try
-        Cell.Draw(Canvas, ARect, Wd - HzSpace - CellSpacing,
-          X + FPad.Left + FBrd.Left + CellSpacing,
+        Cell.Draw(Canvas, ARect, Wd - HzSpace - CellSpacingHorz,
+          X + FPad.Left + FBrd.Left + CellSpacingHorz,
           Y + FPad.Top + FBrd.Top + YIndent, ARect.Left, 0); {possibly should be IRgn.LfEdge}
       finally
         if Rslt = 1 then {restore any previous clip region}
@@ -8344,7 +8423,7 @@ end;
 
 {----------------TCellList.DrawLogic1}
 
-function TCellList.DrawLogicA(Canvas: TCanvas; const Widths: TIntArray; Span, CellSpacing, AHeight, Rows: Integer;
+function TCellList.DrawLogicA(Canvas: TCanvas; const Widths: TIntArray; Span, CellSpacingHorz,CellSpacingVert, AHeight, Rows: Integer;
   out Desired: Integer; out Spec, More: boolean): Integer;
 {Find vertical size of each cell, Row height of this row.  But final Y position
  is not known at this time.
@@ -8382,7 +8461,7 @@ begin
             if (GuessHt = 0) and (Rows = 1) then
               GuessHt := AHeight;
 
-            VSize := Cell.DoLogic(Canvas, 0, Wd - HzSpace - CellSpacing, Max(0, GuessHt - VrSpace), 0, Dummy, DummyCurs);
+            VSize := Cell.DoLogic(Canvas, 0, Wd - HzSpace - CellSpacingHorz, Max(0, GuessHt - VrSpace), 0, Dummy, DummyCurs);
             Result := Max(Result, VSize + VrSpace);
 
             case SpecHt.VType of
@@ -8408,7 +8487,7 @@ end;
 
 {----------------TCellList.DrawLogic2}
 
-procedure TCellList.DrawLogicB(Canvas: TCanvas; Y, CellSpacing: Integer; var Curs: Integer);
+procedure TCellList.DrawLogicB(Canvas: TCanvas; Y, CellSpacingHorz,CellSpacingVert: Integer; var Curs: Integer);
 {Calc Y indents. Set up Y positions of all cells.}
 var
   I: Integer;
@@ -8425,7 +8504,7 @@ begin
   begin
     CellObj := Items[I];
     if (CellObj <> nil) and (CellObj.ColSpan > 0) and (CellObj.RowSpan > 0) then
-      CellObj.DrawLogic2(Canvas, Y, CellSpacing, Curs);
+      CellObj.DrawLogic2(Canvas, Y, CellSpacingHorz,CellSpacingVert, Curs);
   end;
 {$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
@@ -8442,15 +8521,15 @@ end;
 {----------------TCellList.Draw}
 
 function TCellList.Draw(Canvas: TCanvas; Document: ThtDocument; const ARect: TRect; const Widths: TIntArray;
-  X, Y, YOffset, CellSpacing: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
+  X, Y, YOffset, CellSpacingHorz,CellSpacingVert: Integer; Border: boolean; Light, Dark: TColor; MyRow: Integer): Integer;
 var
-  I, Spacing: Integer;
+  I, SpacingVert: Integer;
   YO: Integer;
   CellObj: TCellObjBase;
 begin
   YO := Y - YOffset;
   Result := RowHeight + Y;
-  Spacing := CellSpacing div 2;
+  SpacingVert := CellSpacingVert div 2;
 
   with Document do {check CSS page break properties}
     if Printing then
@@ -8458,10 +8537,10 @@ begin
       begin
         if YO > ARect.Top then {page-break-before}
         begin
-          if Y + Spacing < PageBottom then
+          if Y + SpacingVert < PageBottom then
           begin
             PageShortened := True;
-            PageBottom := Y + Spacing;
+            PageBottom := Y + SpacingVert;
           end;
           Exit;
         end;
@@ -8482,20 +8561,20 @@ begin
         else if (YO > ARect.Top) and (Y + RowHeight > PageBottom) and
           (RowHeight < ARect.Bottom - ARect.Top) then
         begin
-          if Y + Spacing < PageBottom then
+          if Y + SpacingVert < PageBottom then
           begin
             PageShortened := True;
-            PageBottom := Y + Spacing;
+            PageBottom := Y + SpacingVert;
           end;
           Exit;
         end;
       end
       else if BreakAfter then
         if ARect.Top + YOff < Result then {page-break-after}
-          if Result + Spacing < PageBottom then
+          if Result + SpacingVert < PageBottom then
           begin
             PageShortened := True;
-            PageBottom := Result + Spacing;
+            PageBottom := Result + SpacingVert;
           end;
 
   with Document do {avoid splitting any small rows}
@@ -8516,7 +8595,7 @@ begin
     begin
       CellObj := Items[I];
       if (CellObj <> nil) and (CellObj.ColSpan > 0) and (CellObj.RowSpan > 0) then
-        CellObj.Draw(Canvas, ARect, X, Y, CellSpacing, Border, Light, Dark);
+        CellObj.Draw(Canvas, ARect, X, Y, CellSpacingHorz,CellSpacingVert, Border, Light, Dark);
       X := X + Widths[I];
     end;
 end;
@@ -8586,7 +8665,8 @@ begin
   Rows := TRowList.Create;
 
   CellPadding := 1;
-  CellSpacing := 2;
+  CellSpacingHorz := 2;
+  CellSpacingVert := 2;
   BorderColor := clBtnFace;
   BorderColorLight := clBtnHighLight;
   BorderColorDark := clBtnShadow;
@@ -8624,7 +8704,10 @@ begin
           TryStrToTableRules(Name, Rules);
 
         CellSpacingSy:
-          CellSpacing := Min(40, Max(-1, Value));
+          begin
+            CellSpacingHorz := Min(40, Max(-1, Value));
+            CellSpacingVert := CellSpacingHorz;
+          end;
 
         CellPaddingSy:
           CellPadding := Min(50, Max(0, Value));
@@ -8638,8 +8721,13 @@ begin
         BorderColorDarkSy:
           TryStrToColor(Name, False, BorderColorDark);
       end;
-  if Prop.Collapse then
-    Cellspacing := -1;
+  if Prop.HasBorderSpacing then begin
+    CellSpacingHorz := Prop.GetBorderSpacingHorz;
+    CellSpacingVert := Prop.GetBorderSpacingVert;
+  end else if Prop.Collapse then begin
+    CellSpacingHorz := -1;
+    CellSpacingVert := -1;
+  end;
 end;
 
 {----------------THtmlTable.CreateCopy}
@@ -9249,8 +9337,9 @@ begin
               wtAbsolute:
               begin
                 // BG, 07.10.2012: issue 55: wrong CellMax calculation
-                CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
-                CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
+                //CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
+                //CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
+                CellMax := Value;   // CellMax should be at most  the given absolute value
                 CellMax := Max(CellMax, CellMin); // CellMax should be at least CellMin
               end;
 
@@ -9258,8 +9347,8 @@ begin
                 CellRel := Value;
             end;
           end;
-          Inc(CellMin, CellSpacing + CellObj.HzSpace);
-          Inc(CellMax, CellSpacing + CellObj.HzSpace);
+          Inc(CellMin, CellSpacingHorz + CellObj.HzSpace);
+          Inc(CellMax, CellSpacingHorz + CellObj.HzSpace);
 
           if Span = 1 then
           begin
@@ -9415,8 +9504,8 @@ procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   Initialize; {in case it hasn't been done}
   GetMinMaxWidths(Canvas, tblWidthAttr);
-  Min := Math.Max(Sum(MinWidths) + CellSpacing, tblWidthAttr);
-  Max := Math.Max(Sum(MaxWidths) + CellSpacing, tblWidthAttr);
+  Min := Math.Max(Sum(MinWidths) + CellSpacingHorz, tblWidthAttr);
+  Max := Math.Max(Sum(MaxWidths) + CellSpacingHorz, tblWidthAttr);
 end;
 
 {----------------THtmlTable.DrawLogic}
@@ -9502,7 +9591,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
       NewWidth := tblWidthAttr
     else
       NewWidth := IMgr.RightSide(Y) - IMgr.LeftIndent(Y);
-    Dec(NewWidth, CellSpacing);
+    Dec(NewWidth, CellSpacingHorz);
 
     Initialize;
 
@@ -9513,7 +9602,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
 
     {fill in the Widths array}
     if MinWidth > NewWidth then
-      // The minimum table width fits exactly or is too wide. Thus use minimum widths, table might expand.
+      // The minimum table width is too wide. Thus use minimum widths, table might expand.
       Widths := Copy(MinWidths)
     else
     begin
@@ -9530,64 +9619,91 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
         end;
 
       Widths := Copy(MinWidths);
-      if (PercentAbove0Count > 0) and (NewWidth > 0) then
+
+      // As minimum widths fit into table try to preserve given absolute widths:
+      Counts[wtAbsolute] := 0;
+      W := 0;
+      for I := 0 to NumCols - 1 do
       begin
-        // Calculate widths with respect to percentage specifications.
-        // Don't shrink Column i below MinWidth[i]! Therefor spread exessive space
-        // trying to fit the percentage demands.
-        // If there are more than 100% percent reduce linearly to 100% (including
-        // the corresponding percentages of the MinWidth of all other columns).
-        SetLength(PercentDeltas, NumCols);
-        CalcPercentDeltas(PercentDeltas, NewWidth);
-
-        PercentDeltaAbove0Count := 0;
-        for I := 0 to NumCols - 1 do
-          if PercentDeltas[I] > 0 then
-            Inc(PercentDeltaAbove0Count);
-
-        IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
+        case ColumnSpecs[I] of
+          wtAbsolute:
+          begin
+            Widths[i] := MaxWidths[i];
+            Inc(Counts[wtAbsolute]);
+          end;
+        end;
+        Inc(W, Widths[i]);
       end;
-      MinWidth := Sum(Widths);
 
-      if MinWidth > NewWidth then
-        // Table is too small for given percentage specifications.
-        // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
-        IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
-      else if not Specified and (MaxWidth <= NewWidth) then
-        // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
-        Widths := Copy(MaxWidths)
-      else if MinWidth < NewWidth then
+      if W > NewWidth then
       begin
-        // Expand columns to fit exactly into NewWidth.
-        // Prefer widening columns without or with relative specification.
-        CountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
-        if Counts[wtNone] > 0 then
+        // Given absolute widths plus minimum widths of other columns do not fit into table!
+        // Thus reduce the absolute widths as less as possible:
+
+        IncreaseWidths(wtAbsolute, W, NewWidth, Counts[wtAbsolute]);
+      end
+      else
+      begin
+        if (PercentAbove0Count > 0) and (NewWidth > 0) then
         begin
-          // a) There is at least 1 column without any width constraint: modify this/these.
-          IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
-        end
-        else if Counts[wtRelative] > 0 then
+          // Calculate widths with respect to percentage specifications.
+          // Don't shrink Column i below MinWidth[i]! Therefor spread exessive space
+          // trying to fit the percentage demands.
+          // If there are more than 100% percent reduce linearly to 100% (including
+          // the corresponding percentages of the MinWidth of all other columns).
+          SetLength(PercentDeltas, NumCols);
+          CalcPercentDeltas(PercentDeltas, NewWidth);
+
+          PercentDeltaAbove0Count := 0;
+          for I := 0 to NumCols - 1 do
+            if PercentDeltas[I] > 0 then
+              Inc(PercentDeltaAbove0Count);
+
+          IncreaseWidthsByPercentage(Widths, PercentDeltas, 0, NumCols - 1, NewWidth, MinWidth, Sum(PercentDeltas), PercentDeltaAbove0Count);
+        end;
+        MinWidth := Sum(Widths);
+
+        if MinWidth > NewWidth then
+          // Table (NewWidth) is too small for given percentage specifications.
+          // Shrink percentage columns to fit exactly into NewWidth. All other columns are at minimum.
+          IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent])
+        else if not Specified and (MaxWidth <= NewWidth) then
+          // Table width not specified and maximum widths fits into available width, table might be smaller than NewWidth
+          Widths := Copy(MaxWidths)
+        else if MinWidth < NewWidth then
         begin
-          // b) There is at least 1 column with relative width: modify this/these.
-          W := NewWidth - MinWidth;
-          D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
-          IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
-        end
-        else if Counts[wtPercent] > 0 then
-        begin
-          // c) There is at least 1 column with percentage width: modify this/these.
-          IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
-        end
-        else
-        begin
-          // d) All columns have absolute widths: modify relative to current width.
-          IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+          // Expand columns to fit exactly into NewWidth.
+          // Prefer widening columns without or with relative specification.
+          CountsPerType(Counts, ColumnSpecs, 0, NumCols - 1);
+
+          if Counts[wtNone] > 0 then
+          begin
+            // a) There is at least 1 column without any width constraint: modify this/these.
+            IncreaseWidths(wtNone, MinWidth, NewWidth, Counts[wtNone]);
+          end
+          else if Counts[wtRelative] > 0 then
+          begin
+            // b) There is at least 1 column with relative width: modify this/these.
+            W := NewWidth - MinWidth;
+            D := SumOfType(wtRelative, ColumnSpecs, Widths, 0, NumCols - 1);
+            IncreaseWidthsRelatively(Widths, 0, NumCols - 1, D + W, Sum(Multis), False);
+          end
+          else if Counts[wtPercent] > 0 then
+          begin
+            // c) There is at least 1 column with percentage width: modify this/these.
+            IncreaseWidths(wtPercent, MinWidth, NewWidth, Counts[wtPercent]);
+          end
+          else
+          begin
+            // d) All columns have absolute widths: modify relative to current width.
+            IncreaseWidths(wtAbsolute, MinWidth, NewWidth, Counts[wtAbsolute]);
+          end;
         end;
       end;
     end;
 
     {Return Table Width}
-    Result := CellSpacing + Sum(Widths);
+    Result := CellSpacingHorz + Sum(Widths);
   end;
 
   function FindTableHeight: Integer;
@@ -9603,7 +9719,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
     begin
       if Rows.Count = 0 then
         Exit;
-      Dec(AHeight, CellSpacing); {calculated heights will include one cellspacing each,
+      Dec(AHeight, CellSpacingVert); {calculated heights will include one cellspacing each,
       this removes that last odd cellspacing}
       if Length(Heights) = 0 then
         SetLength(Heights, Rows.Count);
@@ -9628,9 +9744,9 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
           begin
             if J + Span > Rows.Count then
               Break; {otherwise will overlap}
-            H := DrawLogicA(Canvas, Widths, Span, CellSpacing, Max(0, AHeight - Rows.Count * CellSpacing),
-              Rows.Count, Desired, IsSpeced, Mr) + CellSpacing;
-            Inc(Desired, Cellspacing);
+            H := DrawLogicA(Canvas, Widths, Span, CellSpacingHorz,CellSpacingVert, Max(0, AHeight - Rows.Count * CellSpacingVert),
+              Rows.Count, Desired, IsSpeced, Mr) + CellSpacingVert;
+            Inc(Desired, CellspacingVert);
             More := More or Mr;
             if Span = 1 then
             begin
@@ -9638,7 +9754,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
               DesiredHts[J] := Desired;
               SpecHts[J] := SpecHts[J] or IsSpeced;
             end
-            else if H > Cellspacing then {if H=Cellspacing then no rowspan for this span}
+            else if H > CellspacingVert then {if H=Cellspacing then no rowspan for this span}
             begin
               TotalMinHt := 0; {sum up the heights so far for the rows involved}
               TotalDesHt := 0;
@@ -9795,7 +9911,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
           Document.InLogic2 := True;
         try
           if Document.InLogic2 then
-            DrawLogicB(Canvas, Y, CellSpacing, Curs);
+            DrawLogicB(Canvas, Y, CellSpacingHorz,CellSpacingVert, Curs);
         finally
           if Document.TableNestLevel = 1 then
             Document.InLogic2 := False;
@@ -9803,7 +9919,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
         Inc(Y, RowHeight);
       end;
     HeadOrFoot := ((HeaderHeight > 0) or (FootHeight > 0)) and HasBody;
-    Inc(Result, CellSpacing);
+    Inc(Result, CellSpacingVert);
   end;
 
 var
@@ -9887,7 +10003,7 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
   begin
     for I := 0 to Rows.Count - 1 do
       YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-        XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+        XX, YY, YOffset, CellSpacingHorz,CellSpacingVert, BorderWidth > 0, BorderColorLight,
         BorderColorDark, I);
   end;
 
@@ -9908,7 +10024,7 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
       begin
         for I := 0 to Rows.Count - 1 do {do whole table now}
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz,CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         Document.PrintingTable := nil;
       end
@@ -9916,7 +10032,7 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
       begin {see if enough room on this page for header, 1 row, footer}
         if HeadOrFoot then
         begin
-          Spacing := CellSpacing div 2;
+          Spacing := CellSpacingVert div 2;
           HeightNeeded := HeaderHeight + FootHeight + Rows[HeaderRowCount].RowHeight;
           if (Y - YOffset > ARect.Top) and (Y + HeightNeeded > Document.PageBottom) and
             (HeightNeeded < ARect.Bottom - ARect.Top) then
@@ -9931,17 +10047,17 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
         end;
         {start table. it will not be complete and will go to next page}
         SavePageBottom := Document.PageBottom;
-        Document.PageBottom := SavePageBottom - FootHeight - Cellspacing - BottomBorder - 5; {a little to spare}
+        Document.PageBottom := SavePageBottom - FootHeight - CellspacingVert - BottomBorder - 5; {a little to spare}
         for I := 0 to Rows.Count - 1 do {do part of table}
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz, CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         BodyBreak := Document.PageBottom;
         if FootStartRow >= 0 then
         begin
           TablePartRec.TablePart := DoFoot;
           TablePartRec.PartStart := Y + FootOffset;
-          TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder;
+          TablePartRec.PartHeight := FootHeight + Max(2 * CellspacingVert, CellspacingVert + 1) + BottomBorder;
           Document.TheOwner.TablePartRec := TablePartRec;
         end
         else if HeaderHeight > 0 then
@@ -9965,24 +10081,24 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
       begin {can complete table now}
         for I := 0 to Rows.Count - 1 do {do remainder of table now}
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz, CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         Document.TheOwner.TablePartRec.TablePart := Normal;
       end
       else
       begin {will do part of the table now}
     {Leave room for foot later}
-        Document.PageBottom := Document.PageBottom - FootHeight + Max(Cellspacing, 1) - BottomBorder;
+        Document.PageBottom := Document.PageBottom - FootHeight + Max(CellspacingVert, 1) - BottomBorder;
         for I := 0 to Rows.Count - 1 do
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz, CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         BodyBreak := Document.PageBottom;
         if FootStartRow >= 0 then
         begin
           TablePartRec.TablePart := DoFoot;
           TablePartRec.PartStart := Y + FootOffset;
-          TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
+          TablePartRec.PartHeight := FootHeight + Max(2 * CellspacingVert, CellspacingVert + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
           Document.TheOwner.TablePartRec := TablePartRec;
         end
         else if HeaderHeight > 0 then
@@ -10005,7 +10121,7 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
       begin
         for I := 0 to Rows.Count - 1 do {do remainder of table now}
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz,CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         Document.TheOwner.TablePartRec.TablePart := Normal;
         Document.PrintingTable := nil;
@@ -10015,14 +10131,14 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
         SavePageBottom := Document.PageBottom;
         for I := 0 to Rows.Count - 1 do {do part of table}
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz,CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
         BodyBreak := Document.PageBottom;
         if FootStartRow >= 0 then
         begin
           TablePartRec.TablePart := DoFoot;
           TablePartRec.PartStart := Y + FootOffset;
-          TablePartRec.PartHeight := FootHeight + Max(2 * Cellspacing, Cellspacing + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
+          TablePartRec.PartHeight := FootHeight + Max(2 * CellspacingVert, CellspacingVert + 1) + BottomBorder; //FootHeight+Max(CellSpacing, 1);
           Document.TheOwner.TablePartRec := TablePartRec;
         end
         else if HeaderHeight > 0 then
@@ -10046,7 +10162,7 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
       if FootStartRow >= 0 then
         for I := FootStartRow to Rows.Count - 1 do
           YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-            XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+            XX, YY, YOffset, CellSpacingHorz, CellSpacingVert, BorderWidth > 0, BorderColorLight,
             BorderColorDark, I);
       if HeaderHeight > 0 then
       begin
@@ -10058,7 +10174,7 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
       begin {No THead}
         TablePartRec.TablePart := DoBody3;
         TablePartRec.PartStart := BodyBreak - 1;
-        TablePartRec.FootHeight := FootHeight + Max(Cellspacing, 1);
+        TablePartRec.FootHeight := FootHeight + Max(CellspacingVert, 1);
       end;
       Document.TheOwner.TablePartRec := TablePartRec;
     end;
@@ -10069,11 +10185,11 @@ function THtmlTable.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentMana
     begin
       for I := 0 to HeaderRowCount - 1 do
         YY := Rows[I].Draw(Canvas, Document, ARect, Widths,
-          XX, YY, YOffset, CellSpacing, BorderWidth > 0, BorderColorLight,
+          XX, YY, YOffset, CellSpacingHorz,CellSpacingVert, BorderWidth > 0, BorderColorLight,
           BorderColorDark, I);
       TablePartRec.TablePart := DoBody1;
       TablePartRec.PartStart := BodyBreak - 1;
-      TablePartRec.FootHeight := FootHeight + Max(Cellspacing, 1) + BottomBorder;
+      TablePartRec.FootHeight := FootHeight + Max(CellspacingVert, 1) + BottomBorder;
       Document.TheOwner.TablePartRec := TablePartRec;
     end;
 
@@ -10434,7 +10550,7 @@ constructor TSection.Create(Parent: TCellBasic);
 begin
   inherited Create(Parent, nil, nil);
   FDisplay := pdInline; // A section is always inline as the section is intended to handle consecutive inline elements.  
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Fonts := TFontList.Create;
   Images := TSizeableObjList.Create;
   FormControls := TFormControlObjList.Create(False);
@@ -10459,7 +10575,7 @@ begin
   inherited Create(Parent, Attr, Prop);
   if FDisplay = pdUnassigned then
     FDisplay := pdInline;
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Fonts := TFontList.Create;
   Images := TSizeableObjList.Create;
   FormControls := TFormControlObjList.Create(False);
@@ -10555,7 +10671,7 @@ begin
   Len := T.Len;
   BuffS := T.BuffS;
   SetLength(BuffS, Length(BuffS));
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Brk := T.Brk;
   Fonts := TFontList.CreateCopy(Self, T.Fonts);
   //TODO -oBG, 24.03.2011: TSection has no Cell, but owns images. Thus Parent must be a THtmlNode.
@@ -10569,6 +10685,7 @@ begin
   FirstLineIndent := T.FirstLineIndent;
   FLPercent := T.FLPercent;
   BreakWord := T.BreakWord;
+  WhiteSpaceStyle := T.WhiteSpaceStyle;
 end;
 
 {----------------TSection.Destroy}
@@ -10735,7 +10852,7 @@ begin
     BuffS := BuffS + St;
     Len := L;
   end;
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
 end;
 
 {----------------TSection.ProcessText}
@@ -10844,7 +10961,7 @@ var
   Last, I: Integer;
   IO: ThtIndexObj;
 begin
-  Buff := PWideChar(BuffS);
+  FBuff := PWideChar(BuffS);
   Len := Length(BuffS);
   if Len > 0 then
   begin
@@ -10986,6 +11103,13 @@ end;
 function TSection.AddProgress(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TProgressObj;
 begin
   Result := TProgressObj.Create(ACell, Len, L, Prop, False);
+  Images.Add(Result);
+  AddChar(ImgPan, Index); {marker for progress}
+end;
+
+function TSection.AddMeter(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TMeterObj;
+begin
+  Result := TMeterObj.Create(ACell, Len, L, Prop, False);
   Images.Add(Result);
   AddChar(ImgPan, Index); {marker for progress}
 end;
@@ -13703,6 +13827,113 @@ begin
   Result := Progress;
 end;
 
+
+{----------------TMeterObj.Create}
+
+constructor TMeterObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties; ObjectTag: boolean);
+var
+  PntPanel: TWinControl; //TPaintPanel;
+  I: Integer;
+  //PositionSet: Boolean;
+begin
+  inherited Create(Parent, Position, L, Prop);
+  //PositionSet := false;
+  VertAlign := ABottom; {default}
+  Floating := ANone;
+  PntPanel := Document.PPanel;
+  Meter := ThvMeter.Create(PntPanel);
+  with Meter do
+  begin
+    Left := -4000;
+    Top := -4000;
+    Parent := PntPanel;
+    Max := 100;  // making sure this is the default
+    Smooth := true;
+    Height := 20;
+    Width := 100;
+    Visible := True;
+{$ifdef has_StyleElements}
+    StyleElements := Document.StyleElements; // TODO: does this work? Cannot see in Delphi 6
+{$endif}
+  end;
+
+  if not PercentWidth and (SpecWidth > 0) then
+    Meter.Width := SpecWidth;
+
+  if not PercentHeight and (SpecHeight > 0) then
+    Meter.Height := SpecHeight;
+
+  for I := 0 to L.Count - 1 do
+    with L[I] do
+      case Which of
+        HighSy:
+          Meter.High := StrToIntDef( Name, 100 );
+
+        LowSy:
+          Meter.Low := StrToIntDef( Name, 0 );
+
+        MaxSy:
+          Meter.Max := StrToIntDef( Name, 100 );
+
+        MinSy:
+          Meter.Min := StrToIntDef( Name, 0 );
+
+        OptimumSy:
+          Meter.Optimum := StrToIntDef( Name, 50 );
+
+        ValueSy:
+        begin
+          Meter.Position := StrToIntDef( Name, 0 );
+          //PositionSet := true;
+        end;
+      end;
+
+  SetWidth := Meter.Width;
+  SetHeight := Meter.Height;
+
+
+  Meter.Style := pbstNormal;
+end;
+
+constructor TMeterObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
+var
+  T: TMeterObj absolute Source;
+begin
+  inherited CreateCopy(Parent,Source);
+  Meter := ThvMeter.Create(nil);
+  with T.Meter do
+    Meter.SetBounds(Left, Top, Width, Height);
+  Meter.Visible := T.Meter.Visible;
+  Meter.Parent := Document.PPanel;
+  Meter.Max := T.Meter.Max;
+  Meter.Position := T.Meter.Position;
+  SetHeight := T.SetHeight;
+  SetWidth := T.SetWidth;
+end;
+
+destructor TMeterObj.Destroy;
+begin
+  Meter.Free;
+  inherited Destroy;
+end;
+
+procedure TMeterObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
+begin
+  inherited DrawInline(Canvas,X,Y,YBaseline,FO);
+
+  if Meter.Visible then
+    Meter.Show
+  else
+    Meter.Hide;
+end;
+
+function TMeterObj.GetControl: TWinControl;
+begin
+  Result := Meter;
+end;
+
+
+
 {----------------TCell.Create}
 
 constructor TCell.Create(Parent: TBlock);
@@ -14927,13 +15158,19 @@ begin
   if AProp <> nil then
   begin
     FDisplay := AProp.Display;
-    TagClass := AProp.PropTag + '.' + AProp.PropClass + '#' + AProp.PropID;
-  end
-  else
-  begin
-    FDisplay := pdUnassigned;
-    TagClass := '.#';
+    TagClass := AProp.PropTag;
+//  end
+//  else
+//  begin
+//    FDisplay := pdUnassigned;
+//    TagClass := '';
   end;
+
+  if Attributes <> nil then
+  begin
+    htAppendStr(TagClass, '.' + Attributes.TheClass + '#' + Attributes.TheID);
+  end;
+
   ContentTop := 999999999; {large number in case it has Display: none; }
 
   DrawRect.Top    := 999999999;
@@ -15694,7 +15931,7 @@ begin
   end;
   if Positioning = posAbsolute then
     Floating := ANone;
-  
+
 end;
 
 constructor TBlockBase.CreateCopy(Parent: TCellBasic; Source: THtmlNode);

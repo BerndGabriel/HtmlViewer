@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -487,6 +487,7 @@ type
     procedure SelectAll;
     procedure SetImageCache(ImageCache: ThtImageCache);
     procedure TriggerUrlAction;
+    procedure ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
     procedure UrlAction;
     property Base: ThtString read FBase write SetBase;
     property BaseTarget: ThtString read FBaseTarget;
@@ -545,6 +546,7 @@ type
     property HistoryMaxCount;
     property HtOptions: THtmlViewerOptions read FOptions write SetOptions default [htPrintTableBackground, htPrintMonochromeBlack];
     property ImageCacheCount;
+    property LoadCursor;
     property MarginHeight;
     property MarginWidth;
     property NoSelect;
@@ -1179,8 +1181,13 @@ begin
   SetProcessing(True);
   try
     OldFile := FCurrentFile;
-    OldCursor := Screen.Cursor;
-    Screen.Cursor := crHourGlass;
+    if LoadCursor <> crDefault then
+    begin
+      OldCursor := Screen.Cursor;
+      Screen.Cursor := LoadCursor;
+    end
+    else
+      OldCursor := crDefault; // valium for the compiler
     Include(FViewerState, vsDontDraw);
     try
       FRefreshDelay := 0;
@@ -1253,7 +1260,8 @@ begin
       end;
     finally
       Exclude(FViewerState, vsDontDraw);
-      Screen.Cursor := OldCursor;
+      if LoadCursor <> crNone then
+        Screen.Cursor := OldCursor;
     end;
   finally
     SetProcessing(False);
@@ -1429,7 +1437,7 @@ begin
       VScrollBar.LargeChange := Max(16, VHeight - VScrollBar.SmallChange);
       VScrollBar.Enabled := VHeight < FMaxVertical;
     end;
-    // alwyas set scroll height for scrolling via mouse even without scrollbars.
+    // always set scroll height for scrolling via mouse even without scrollbars.
     SetPageSizeAndMax(VScrollBar, Min(VHeight, FMaxVertical), FMaxVertical);
   end;
 end;
@@ -1693,7 +1701,13 @@ var
   S, Dest: ThtString;
   OldPos: Integer;
   ft: THtmlFileType;
+  Handled: Boolean;
 begin
+  Handled := False;
+  ToggleIDExpand(Url, Handled);
+  if Handled then
+    Exit;
+
   if not HotSpotClickHandled then
   begin
     OldPos := Position;
@@ -2103,6 +2117,8 @@ begin
       else if guUrl in guResult then
       begin
         FURL := UrlTarget.Url;
+        if ssCtrl in Shift then
+          UrlTarget.Target := '_blank';
         FTarget := UrlTarget.Target;
         FLinkAttributes.Text := UrlTarget.Attr;
         FLinkText := GetTextByIndices(UrlTarget.Start, UrlTarget.Last);
@@ -2140,15 +2156,24 @@ procedure THtmlViewer.HTMLMouseWheel(Sender: TObject; Shift: TShiftState;
 var
   Lines: Integer;
 begin
-  Lines := Mouse.WheelScrollLines;
-  if Lines > 0 then
-    if WheelDelta > 0 then
-      VScrollBarPosition := VScrollBarPosition - (Lines * 16)
+  // Issue 363: HtmlViewer should not act on MouseWheel if there is no vertical
+  //            scrollbar (suggested by Andreas Hausladen).
+  //BG, 22.07.2014: Handle only, if document height > viewport height. Do not
+  // test via VScrollBar.Visible as it might be hidden although mouse should be
+  // able to scroll.
+  Handled := FMaxVertical > PaintPanel.Height;
+
+  if Handled then
+  begin
+    Lines := Mouse.WheelScrollLines;
+    if Lines > 0 then
+      if WheelDelta > 0 then
+        VScrollBarPosition := VScrollBarPosition - (Lines * 16)
+      else
+        VScrollBarPosition := VScrollBarPosition + (Lines * 16)
     else
-      VScrollBarPosition := VScrollBarPosition + (Lines * 16)
-  else
-    VScrollBarPosition := VScrollBarPosition - WheelDelta div 2;
-  Handled := True;
+      VScrollBarPosition := VScrollBarPosition - WheelDelta div 2;
+  end;
 end;
 
 function THtmlViewer.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer;
@@ -5012,8 +5037,8 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if Obj is TBlock then
-        Result := TBlock(Obj).Display;
+      if Obj is TSectionBase then
+        Result := TSectionBase(Obj).Display;
     end;
 end;
 
@@ -5026,13 +5051,39 @@ begin
     if Find(ID, I) then
     begin
       Obj := Objects[I];
-      if Obj is TBlock then
-        if TBlock(Obj).Display <> Value then
+      if Obj is TSectionBase then
+        if TSectionBase(Obj).Display <> Value then
         begin
           FSectionList.HideControls;
-          TBlock(Obj).Display := Value;
+          TSectionBase(Obj).Display := Value;
         end;
     end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.05.2014 --
+procedure THtmlViewer.ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
+var
+  I: Integer;
+  ID: ThtString;
+  pd: ThtDisplayStyle;
+begin
+  {The following looks for an URL of the form, "IDExpand_XXX".  This is interpreted
+   as meaning a block with an ID="XXXPlus" or ID="XXXMinus" attribute should have
+   its Display property toggled.
+  }
+  I :=  Pos('IDEXPAND_', Uppercase(URL));
+  if I=1 then
+  begin
+    ID := Copy(URL, 10, Length(URL)-9);
+
+    pd := IDDisplay[ID+'Plus'];
+    IDDisplay[ID+'Plus'] := IDDisplay[ID+'Minus'];
+    IDDisplay[ID+'Minus'] := pd;
+
+    Reformat;
+
+    Handled := True;
+  end;
 end;
 
 procedure THtmlViewer.SetPrintScale(const Value: Double);

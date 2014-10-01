@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -283,7 +283,9 @@ begin
             FrameSet.SendToBack;
             FrameSet.Visible := True;
             MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
-            Self.BevelOuter := bvNone;
+{$ifndef LCL}
+            BevelOuter := bvNone;
+{$endif}
             frBumpHistory1(Source, 0);
             with FrameSet do
             begin
@@ -513,7 +515,9 @@ begin
           FrameSet.Visible := True;
           MasterSet.FrameViewer.ParseFrame(FrameSet, Doc, Source, FrameSet.HandleMeta);
           MasterSet.FrameViewer.AddVisitedLink(URL);
-          Self.BevelOuter := bvNone;
+{$ifndef LCL}
+          BevelOuter := bvNone;
+{$endif}
           with FrameSet do
           begin
             for I := 0 to List.Count - 1 do
@@ -546,6 +550,7 @@ begin
           end;
         if Assigned(Viewer) then
         begin
+{$ifndef LCL}
           if MasterSet.BorderSize = 0 then
             BevelOuter := bvNone
           else
@@ -553,6 +558,7 @@ begin
             BevelOuter := bvLowered;
             BevelWidth := MasterSet.BorderSize;
           end;
+{$endif}
           if (Dest <> '') then
             Viewer.PositionTo(Dest);
         end;
@@ -860,7 +866,7 @@ begin
           S := CombineURL(CurbrFrameSet.URLBase, S);
         end;
 
-        (CurbrFrameSet as TbrFrameSet).LoadFromBrzFile(Stream, StreamType, S, Dest);
+        CurbrFrameSet.LoadFromBrzFile(Stream, StreamType, S, Dest);
       except
         RemoveControl(CurbrFrameSet);
         CurbrFrameSet.Free;
@@ -954,12 +960,12 @@ var
   FrameTarget: TFrameBase;
   S, Dest, FullUrl, Target: ThtString;
 begin
-  Handled := True;
-  if Processing then
+  Handled := Processing;
+  if Handled then
     Exit;
 
   Viewer := Sender as ThtmlViewer;
-  Target := GetActiveTarget;
+  Target := GetViewerTarget(Viewer);
   FLinkAttributes.Text := Viewer.LinkAttributes.Text;
   FLinkText := Viewer.LinkText;
 
@@ -975,7 +981,8 @@ begin
     FullUrl := CombineURL((Viewer.FrameOwner as TbrFrame).URLBase, S);
   FullUrl := Normalize(FullUrl);  // ANGUS
 
-  if not HotSpotClickHandled(FullUrl + Dest, Target) then
+  Handled := HotSpotClickHandled(FullUrl + Dest, Target);
+  if not Handled then
   begin
     Handled := True;
     if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}

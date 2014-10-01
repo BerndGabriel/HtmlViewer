@@ -315,61 +315,74 @@ Illustration of Centered Table with a Width of 75% </INS>
    &lt;td width=15%&gt;15%&lt;/td&gt;
 &lt;/table&gt;</CODE></PRE>
 
-<H4 CLASS="heading"><A NAME="CellSpacing">The CellSpacing attribute controls the spacing
+<H4 CLASS="heading"><A NAME="CellSpacing">The CellSpacing attribute and the border-spacing property control the spacing
 between table cells.</A></H4>
 <TABLE WIDTH="50%" ALIGN="center">
   <TR VALIGN="top">
-	 <TD align="center"> <TABLE border="1" CELLSPACING="0">
-		<CAPTION>CellSpacing of 0 
-		</CAPTION> <TR>
-		  <TD>1</TD>
-		  <TD>2</TD>
-		</TR>
-		<TR>
-		  <TD>3</TD>
-		  <TD>4</TD>
-		</TR>
-	 </TABLE>
+	 <TD align="center"> 
+         CellSpacing of 0
+         <TABLE border="1" CELLSPACING="0">
+            <TR>
+              <TD>1</TD>
+              <TD>2</TD>
+            </TR>
+            <TR>
+              <TD>3</TD>
+              <TD>4</TD>
+            </TR>
+         </TABLE>
 	 </TD>
-	 <TD align="center"> <TABLE border="1" CELLSPACING="10">
-		<CAPTION>CellSpacing of 10 
-		</CAPTION> <TR>
-		  <TD>1</TD>
-		  <TD>2</TD>
-		</TR>
-		<TR>
-		  <TD>3</TD>
-		  <TD>4</TD>
-		</TR>
-	 </TABLE>
+	 <TD align="center"> 
+        CellSpacing of 10
+        <TABLE border="1" CELLSPACING="10">
+            <TR>
+              <TD>1</TD>
+              <TD>2</TD>
+            </TR>
+            <TR>
+              <TD>3</TD>
+              <TD>4</TD>
+            </TR>
+         </TABLE>
+	 </TD>
+	 <TD align="center"> 
+         border-spacing of 10 and 5
+         <TABLE border="1" style="border-spacing:10 5">
+            <TR>
+              <TD>1</TD>
+              <TD>2</TD>
+            </TR>
+            <TR>
+              <TD>3</TD>
+              <TD>4</TD>
+            </TR>
+         </TABLE>
 	 </TD>
   </TR>
-</TABLE>
-<TABLE ALIGN="center" width="50%">
   <TR VALIGN="top">
-	 <TD> <PRE><CODE>   &lt;table border
+	 <TD> <PRE><CODE>&lt;table border="1"
    CellSpacing=0&gt;
-   &lt;Caption&gt;
-   CellSpacing of 0
-   &lt;/caption&gt;
    &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
        &lt;td&gt;2&lt;/td&gt;
    &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
        &lt;td&gt;4&lt;/td&gt;
    &lt;/table&gt;</CODE></PRE>
-
 	 </TD>
-	 <TD> <PRE><CODE>   &lt;table border
+	 <TD> <PRE><CODE>   &lt;table border="1"
    CellSpacing=10&gt;
-   &lt;Caption&gt;
-   CellSpacing of 10
-   &lt;/caption&gt;
    &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
        &lt;td&gt;2&lt;/td&gt;
    &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
        &lt;td&gt;4&lt;/td&gt;
    &lt;/table&gt; </CODE></PRE>
-
+	 </TD>
+	 <TD> <PRE><CODE>   &lt;table border="1"
+   style="border-spacing:10 5"&gt;
+   &lt;tr&gt;&lt;td&gt;1&lt;/td&gt;
+       &lt;td&gt;2&lt;/td&gt;
+   &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;
+       &lt;td&gt;4&lt;/td&gt;
+   &lt;/table&gt; </CODE></PRE>
 	 </TD>
   </TR>
 </TABLE>

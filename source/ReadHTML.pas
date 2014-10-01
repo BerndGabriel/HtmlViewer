@@ -1,7 +1,7 @@
 {
 Version   11.5
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 *********************************************************
 *                                                       *
@@ -119,6 +119,7 @@ type
     CharCount: Integer;
 
     Sy: TElemSymb;
+    IsXhtmlEndSy: Boolean; // current symbol is an xhtml combined start/end tag like <tag [attr="value" ...] />
     Attributes: TAttributeList;
 
     BaseFontSize: Integer;
@@ -717,6 +718,7 @@ non-quirks mode
 Scan for the following DOCTYPE declarations:
 
 <!DOCTYPE html>
+<!DOCTYPE html SYSTEM "about:legacy-compat">
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN"
@@ -829,6 +831,11 @@ var LId : ThtString;
         GetChBasic;
       SkipWhiteSpace;
       ScanDTDIdentifier(LPart);
+      if (htUpperCase(LPart) = 'ABOUT') then begin
+        //HTML5 - don't use quirks mode
+        Result := True;
+        exit;
+      end;
       if (htUpperCase(LPart) = 'HTTP') then begin
       //probably a URL pointing to a DTD
         ScanRestOfUnquotedString(LPart);
@@ -1154,15 +1161,7 @@ procedure THtmlParser.Next;
           GetCh;
         end;
 
-        'a'..'z', 'A'..'Z', '_':
-        begin
-          // faster than: Compare := Compare + LCh;
-          SetLength(Compare, Length(Compare) + 1);
-          Compare[Length(Compare)] := LCh;
-          GetCh;
-        end;
-
-        '0'..'9':
+        'a'..'z', 'A'..'Z', '_', '0'..'9':
         begin
           // faster than: Compare := Compare + LCh;
           SetLength(Compare, Length(Compare) + 1);
@@ -1192,8 +1191,17 @@ procedure THtmlParser.Next;
     while GetAttribute(Sym, SymStr, AttrStr, L) do
       Attributes.Add(TAttribute.Create(Sym, L, SymStr, AttrStr, PropStack.Last.Codepage));
 
-    while (LCh <> GreaterChar) and (LCh <> EofChar) do
+    while True do
+    begin
+      case LCh of
+        GreaterChar,
+        EofChar:
+          break;
+        '/':
+          IsXhtmlEndSy := True;
+      end;
       GetCh;
+    end;
     if not (Sy in [StyleSy, ScriptSy]) then {in case <!-- comment immediately follows}
       GetCh;
   end;
@@ -1201,6 +1209,7 @@ procedure THtmlParser.Next;
 
 begin {already have fresh character loaded here}
   LCToken.Clear;
+  IsXhtmlEndSy := False;
   case LCh of
     '<':
       GetTag;
@@ -1414,6 +1423,8 @@ begin
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
+        if InHref then
+          DoAEnd;
         PopAProp(Sym);
         if not IsInline then
         begin
@@ -1766,8 +1777,15 @@ var
   begin
     if Assigned(SectionList) then
     begin
-      SectionList.Add(Section, TagIndex);
-      Section := nil;
+      if Assigned(Section) then
+      begin
+        // Do not add empty section
+        if Length(Section.XP) <> 0 then
+          SectionList.Add(Section, TagIndex)
+        else
+          Section.Free;
+        Section := nil;
+      end;
       if CellObj.Cell = SectionList then
       begin
         SectionList.CheckLastBottomMargin;
@@ -1984,6 +2002,7 @@ begin
                 NoBreak := True {this seems to be what IExplorer does}
               else
                 NoBreak := False;
+              Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, True);
               SkipWhiteSpace;
               Next;
               DoBody(TableTermSet);
@@ -2643,6 +2662,8 @@ procedure THtmlParser.DoCommonSy;
     T: TAttribute;
     Prop: TProperties;
   begin
+    if InHref then
+      DoAEnd;
     FoundHRef := False;
     Link := '';
     for I := 0 to Attributes.Count - 1 do
@@ -2650,8 +2671,6 @@ procedure THtmlParser.DoCommonSy;
         if Which = HRefSy then
         begin
           FoundHRef := True;
-          if InHref then
-            DoAEnd;
           InHref := True;
           if Attributes.Find(TargetSy, T) then
             CurrentUrlTarget.Assign(Name, T.Name, Attributes, PropStack.SIndex)
@@ -2683,6 +2702,8 @@ procedure THtmlParser.DoCommonSy;
     end;
     if FoundHRef then
       Section.HRef(true, PropStack.Document, CurrentUrlTarget, Attributes, PropStack.Last);
+    if IsXhtmlEndSy then
+      DoAEnd;
   end;
 
   procedure DoImage();
@@ -2714,6 +2735,14 @@ procedure THtmlParser.DoCommonSy;
     IO: TSizeableObj;
   begin
     IO := Section.AddProgress(Attributes, SectionList, TagIndex, PropStack.Last);
+    IO.ProcessProperties(PropStack.Last);
+  end;
+
+  procedure DoMeter();
+  var
+    IO: TSizeableObj;
+  begin
+    IO := Section.AddMeter(Attributes, SectionList, TagIndex, PropStack.Last);
     IO.ProcessProperties(PropStack.Last);
   end;
 
@@ -2979,6 +3008,12 @@ procedure THtmlParser.DoCommonSy;
                     DoProgress;
                     DoAfterSy(SaveSy);
                   end;
+                MeterSy:
+                  begin
+                    DoBeforeSy(SaveSy);
+                    DoMeter;
+                    DoAfterSy(SaveSy);
+                  end;
 
                 ObjectSy:
                   begin
@@ -3211,8 +3246,17 @@ begin
           PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
         DoProgress;
         DoAfterSy(SaveSy);
-      end;  
-
+      end;
+    MeterSy:
+      begin
+        DoBeforeSy(SaveSy);
+        Prop := PropStack.Last;
+        if Prop.HasBorderStyle then {start of inline border}
+          PropStack.Document.ProcessInlines(PropStack.SIndex, Prop, True);
+        DoMeter;
+        DoAfterSy(SaveSy);
+      end;
+    
     ObjectSy:
       DoObjectTag(C, N, IX);
 
@@ -3365,8 +3409,8 @@ begin
             BigEndSy, SmallEndSy, LabelEndSy, AbbrEndSy, AcronymEndSy, DfnEndSy,
             CodeEndSy, TTEndSy, KbdEndSy, SampEndSy,
             StringSy, ASy, AEndSy, BrSy, NoBrSy, NoBrEndSy, WbrSy,
-            InputSy, ButtonSy, ButtonEndSy, ProgressSy, TextAreaSy, TextAreaEndSy, SelectSy,
-            ImageSy, FontSy, FontEndSy, BaseFontSy,
+            InputSy, ButtonSy, ButtonEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy,
+            TextAreaSy, TextAreaEndSy, SelectSy, ImageSy, FontSy, FontEndSy, BaseFontSy,
             ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
               DoCommonSy;
 
@@ -3497,7 +3541,7 @@ begin
       InputSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BRSy,
       ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ButtonSy, ButtonEndSy,
-      ProgressSy, ProgressEndSy, 
+      ProgressSy, ProgressEndSy, MeterSy, MeterEndSy, 
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, CommandSy])
   do
     if Sy <> CommandSy then
@@ -3508,6 +3552,8 @@ begin
     NewBlock.MargArray[MarginBottom] := 0; {open paragraph followed by table, no space}
   SectionList.Add(Section, TagIndex);
   Section := nil;
+  if InHref then
+    DoAEnd;
   PopAProp(PSy);
   SectionList := NewBlock.OwnerCell;
   if Sy = PEndSy then
@@ -3601,7 +3647,7 @@ begin
       InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BrSy, H1Sy..H6Sy,
       MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, 
-      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy:
+      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy:
         DoCommonSy;
 
       PSy:
@@ -3636,6 +3682,7 @@ begin
   SectionList.Add(Section, TagIndex);
   Section := nil;
   SectionList.CheckLastBottomMargin;
+  LiBlock.CollapseBottomMargins;
   PopAProp(Sym);
   SectionList := LiBlock.OwnerCell;
 {$ifdef DO_LI_INLINE}
@@ -3655,7 +3702,7 @@ var
   LineCount: Integer;
   Plain: Boolean;
   Index: ThtChar;
-  NewBlock: TBlock;
+  NewBlock: TListBlock;
   EndSym: TElemSymb;
 {$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
@@ -3685,7 +3732,7 @@ begin
   Section := nil;
   PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
 
-  NewBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
+  NewBlock := TListBlock.Create(SectionList, Attributes, PropStack.Last);
 // BG, 25.03.2012: unused:  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
   SectionList.Add(NewBlock, TagIndex);
   SectionList := NewBlock.MyCell;
@@ -3734,7 +3781,7 @@ begin
       InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
       SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy:
+      ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy:
         DoCommonSy;
     else
       if Sy in TermSet then {exit below}
@@ -3750,7 +3797,10 @@ begin
     NewBlock.MargArray[MarginBottom] := ParagraphSpace;
     NewBlock.BottomAuto := True;
   end;
+  NewBlock.CollapseBottomMargins;
   Section := nil;
+  if InHref then
+    DoAEnd;
   PopAProp(Sym); {maybe save stack position}
   SectionList := NewBlock.OwnerCell;
 end;
@@ -3815,11 +3865,6 @@ begin
   if (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
   begin
     DoCharset(Content);
-    if CallingObject is ThtmlViewer then
-    begin
-      ThtmlViewer(CallingObject).Charset := PropStack.Last.Charset;
-      ThtmlViewer(CallingObject).CodePage := PropStack.Last.CodePage;
-    end;
   end;
   if Assigned(MetaEvent) then
     MetaEvent(Sender, HttpEq, Name, Content);
@@ -4006,7 +4051,7 @@ begin
         InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
         SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
-        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy:
+        ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy:
           begin
             PushHtmlPropsIfAny;
             DoCommonSy;

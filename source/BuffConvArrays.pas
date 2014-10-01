@@ -1,6 +1,6 @@
 {
-HtmlViewer Version 11.4
-Copyright (c) 2013 by Bernd Gabriel
+HtmlViewer Version 11.5
+Copyright (c) 2013-2014 by Bernd Gabriel
 
 This source module is adopted from CodeChangerDecodeMatrix.pas
 written by SchwarzKopf-M (SchwarzKopf-M@yandex.ru).

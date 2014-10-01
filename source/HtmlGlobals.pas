@@ -1,6 +1,6 @@
 {
-Version   11.4
-Copyright (c) 2008-2013 by HtmlViewer Team
+Version   11.5
+Copyright (c) 2008-2014 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -81,8 +81,12 @@ uses
 {$endif}
   Math;
 
-type
+{$ifndef LCL}
+const
+  lcl_fullversion = 0;
+{$endif}
 
+type
 {$IFNDEF DOTNET}
   {$IFNDEF FPC}
      //needed so that in FreePascal, we can use pointers of different sizes

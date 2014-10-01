@@ -8,10 +8,12 @@
   body, td, th  {font-size: 10pt; font-family: Arial;}
   .larger       {font-size: larger; background-color: a0b8c8;}
   th            {background-color: ffffce;}
+  th.larger     {padding-top: 10; padding-bottom: 5;}
   td            {background-color: #f0f0f0; padding-left: 5;}
+  td.empty      {background-color: #ffffff;}
   td.note       {background-color: lightBlue;}
-  .head		      {font: bold 18pt; color: #a53737;}
-  .red          {color: red; font-weight: bold;}
+  .head		    {font: bold 18pt; color: #a53737;}
+  .v11          {color: red; font-weight: bold;}
 </style>
 
 </head>
@@ -21,61 +23,37 @@
   <p CLASS="title">
     HTML Components
     <div STYLE="color: #733737; margin-top: 0;"><b>Cascading Style Sheet Support</b></div>
-    <div CLASS="subtitle" STYLE="color: 373737">Version 10 additions shown in <SPAN CLASS="red">red</SPAN></div>
+    <div CLASS="subtitle" STYLE="color: 373737">Version 11 additions shown in <SPAN CLASS="v11">red</SPAN></div>
   </p>
 </div>
-<p></p>
 <table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
+  <colgroup>
+    <col span=3 width=30%>
+    <col width=50>
+  </colgroup>
+  <tr> <td COLSPAN="4" CLASS="empty">&nbsp;</td> </tr>
   <tr>
 	 <th COLSPAN="3" CLASS="larger">Pseudo-Classes</th>
   </tr>
   <tr>
-	 <th WIDTH="31%">Pseudo-Class</th>
-	 <th WIDTH="31%">Supported</th>
-	 <th WIDTH="31%">Unsupported</th>
-	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+	 <th>Pseudo-Class</th>
+	 <th>Supported</th>
+	 <th>Unsupported</th>
+	 <thSTYLE="BACKGROUND-COLOR: transparent"></th>
   </tr>
+  <tr> <TD>&nbsp;:link</TD> <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td> <td>&nbsp;</td> </tr>
+  <tr> <td>&nbsp;:visited</td> <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td> <td>&nbsp;</td> </tr>
+  <tr> <td>&nbsp;:active</td> <td>&nbsp;</td> <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td> </tr>
+  <tr> <td>&nbsp;:hover</td> <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td> <td>&nbsp;</td> </tr>
+  <tr> <td>&nbsp;:first-letter</td> <td>&nbsp;</td> <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td> </tr>
+  <tr> <td>&nbsp;:first-line</td> <td>&nbsp;</td> <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td> </tr>
+  <tr> <td COLSPAN="4" CLASS="empty">&nbsp;</td> </tr>
+  <tr> <th COLSPAN="3" CLASS="larger">CSS Properties </th> </tr>
   <tr>
-	 <TD> &nbsp;:link</TD>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>&nbsp;:visited</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>&nbsp;:active</td>
-	 <td>&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-  </tr>
-  <tr>
-	 <td>&nbsp;:hover</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>&nbsp;:first-letter</td>
-	 <td>&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-  </tr>
-  <tr>
-	 <td>&nbsp;:first-line</td>
-	 <td>&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-  </tr>
-</table>
-<p></p>
-<table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
-  <tr>
-	 <th COLSPAN="3" CLASS="larger">CSS1 Properties </th>
-  </tr>
-  <tr>
-	 <th WIDTH="31%">Property</th>
-	 <th WIDTH="31%">Supported</th>
-	 <th WIDTH="31%">Unsupported</th>
-	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+	 <th">Property</th>
+	 <th">Supported</th>
+	 <th">Unsupported</th>
+	 <th STYLE="BACKGROUND-COLOR: transparent"></th>
   </tr>
   <tr>
 	 <td>Background (shorthand)</td>
@@ -113,7 +91,7 @@
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
 	 </td>
 	 <td>&nbsp;</td>
-	 <td CLASS="note" WIDTH="50"><a HREF="#note1">Note 1</a></td>
+	 <td CLASS="note"><a HREF="#note1">Note 1</a></td>
   </tr>
   <tr>
 	 <td>Border-style (shorthand)</td>
@@ -123,8 +101,7 @@
   </tr>
   <tr>
 	 <td>Border-top..left (shorthand)</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
-	 </td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties)</td>
 	 <td>&nbsp;</td>
   </tr>
   <tr>
@@ -147,10 +124,20 @@
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
 	 <td>&nbsp;</td>
   </tr>
+  <tr class="css2 v11">
+	 <td>Border-spacing</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
   <tr>
 	 <td>Clear</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> </td>
 	 <td>&nbsp;</td>
+  </tr>
+  <tr class="css2">
+	 <td>Clip</td>
+	 <td>&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
   </tr>
   <tr>
 	 <td>Color</td>
@@ -162,6 +149,11 @@
 	 <td>none, <span class="red">inline (&lt;li&gt; only)</span></td>
 	 <td>block, inline (all other tags), list-item</td>
   </tr>
+  <tr class="css2">
+	 <td>Empty-cells</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
   <tr>
 	 <td>Float</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
@@ -169,8 +161,7 @@
   </tr>
   <tr>
 	 <td>Font (shorthand)</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties) 
-	 </td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17">(see specific properties)</td>
 	 <td>&nbsp;</td>
   </tr>
   <tr>
@@ -203,12 +194,16 @@
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> most cases </td>
 	 <td>&nbsp;</td>
   </tr>
+  <tr class="css2">
+	 <td>Left</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
   <tr>
 	 <td>Letter-spacing</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
 	 <td>&nbsp;</td>
   </tr>
-
   <tr>
 	 <td>Line-height</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
@@ -246,6 +241,11 @@
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
 	 <td>&nbsp;table cells</td>
   </tr>
+  <tr class="css2">
+	 <td>Overflow</td>
+	 <td>hidden</td>
+	 <td>scroll</td>
+  </tr>
   <tr>
 	 <td>Padding (shorthand)</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
@@ -255,6 +255,22 @@
 	 <td>Padding-top..left</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
 	 <td>&nbsp;</td>
+  </tr>
+  <tr class="css2">
+	 <td>Page-break-before/after</td>
+	 <td>always, auto&nbsp;</td>
+	 <td>left, right</td>
+  </tr>
+  <tr class="css2">
+	 <td>Page-break-inside</td>
+	 <td>avoid, auto&nbsp;</td>
+	 <td>&nbsp;</td>
+  </tr>
+  <tr class="css2">
+	 <td>Position&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> block tags</td>
+	 <td>&nbsp;inline tags</td>
+	 <td CLASS="note"><a HREF="#note3">Note 3</a></td>
   </tr>
   <tr>
 	 <td>Text-align</td>
@@ -276,11 +292,26 @@
 	 <td>uppercase, lowercase, none</td>
 	 <td>capitalize</td>
   </tr>
+  <tr class="css2">
+	 <td>Top&nbsp;</td>
+	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
+	 <td>&nbsp;</td>
+  </tr>
   <tr>
 	 <td>Vertical-align</td>
 	 <td>top, text-top, middle, baseline, bottom, sub, super</td>
 	 <td>text-bottom&nbsp;</td>
-	 <td CLASS="note" WIDTH="50"><a HREF="#note2">Note 2</a></td>
+	 <td CLASS="note"><a HREF="#note2">Note 2</a></td>
+  </tr>
+  <tr class="css2">
+	 <td>Visibility&nbsp;</td>
+	 <td>hidden, visible. Block tags only</td>
+	 <td>inherit</td>
+  </tr>
+  <tr class="css2">
+	 <td>White-space&nbsp;</td>
+	 <td>nowrap, normal</td>
+	 <td>pre, pre-wrap, pre-line</td>
   </tr>
   <tr>
 	 <td>Width</td>
@@ -292,85 +323,22 @@
 	 <td>&nbsp;</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
   </tr>
-</table>
-<p></p>
-<table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
-  <tr>
-	 <th COLSPAN="3" CLASS="larger">CSS2 Properties</th>
-  </tr>
-  <tr>
-	 <th WIDTH="31%">Property</th>
-	 <th WIDTH="31%">Supported</th>
-	 <th WIDTH="31%">Unsupported</th>
-	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
-  </tr>
-  <tr>
-	 <td>Clip</td>
-	 <td>&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-  </tr>
-  <tr class="red">
-	 <td>Empty-cells</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>Left</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>Overflow</td>
-	 <td>hidden</td>
-	 <td>scroll</td>
-  </tr>
-  <tr>
-	 <td>Page-break-before/after</td>
-	 <td>always, auto&nbsp;</td>
-	 <td>left, right</td>
-  </tr>
-  <tr>
-	 <td>Page-break-inside</td>
-	 <td>avoid, auto&nbsp;</td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>Position&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"> block tags</td>
-	 <td>&nbsp;inline tags</td>
-	 <td CLASS="note"><a HREF="#note3">Note 3</a></td>
-  </tr>
-  <tr>
-	 <td>Top&nbsp;</td>
-	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
-	 <td>&nbsp;</td>
-  </tr>
-  <tr>
-	 <td>Visibility&nbsp;</td>
-	 <td>hidden, visible. Block tags only</td>
-	 <td>inherit</td>
-  </tr>
-  <tr class="red">
-	 <td>White-space&nbsp;</td>
-	 <td>nowrap, normal</td>
-	 <td>pre, pre-wrap, pre-line</td>
-  </tr>
-  <tr>
+  <tr class="css2">
 	 <td>Word-Wrap&nbsp;</td>
 	 <td>break-word</td>
 	 <td></td>
   </tr>
-  <tr>
+  <tr class="css2">
 	 <td>Z-index&nbsp;</td>
 	 <td><img SRC="smallcheck.gif" ALT="Checkmark" BORDER="0" WIDTH="23" HEIGHT="17"></td>
 	 <td>&nbsp;</td>
   </tr>
+  <tr> <td COLSPAN="4" CLASS="empty">&nbsp;</td> </tr>
 </table>
-<p></p>
-<table WIDTH="90%" BORDER="0" ALIGN="center">
+<table WIDTH="90%" BORDER="0" CELLPADDING="2" CELLSPACING="2" ALIGN="center">
   <tr>
-	 <th ALIGN="middle" CLASS="larger" COLSPAN="2" WIDTH="93%">NOTES</th>
-	 <th WIDTH="50" STYLE="BACKGROUND-COLOR: transparent"></th>
+	 <th ALIGN="middle" CLASS="larger" COLSPAN="2" WIDTH="90%">NOTES</th>
+	 <th WIDTH="45" STYLE="BACKGROUND-COLOR: transparent"></th>
   </tr>
   <tr>
 	 <td WIDTH="0*" ALIGN="center" class="note"><a NAME="note1">1</a></td>
@@ -384,7 +352,7 @@
 	 <td ALIGN="center" class="note"><a NAME="note3">3</a></td>
 	 <td>Position is supported for block tags only.</td>
   </tr>
+  <tr> <td COLSPAN="3" CLASS="empty">&nbsp;</td> </tr>
 </table>
-<p>&nbsp;</p>
 </body>
 </html>
