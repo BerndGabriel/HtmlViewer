@@ -6460,11 +6460,17 @@ begin
           FListStyleType := lbNone
         else
           if Tmp = lbBlank then
-            case ListLevel mod 3 of
-              1: FListStyleType := lbDisc;
-              2: FListStyleType := lbCircle;
-              0: FListStyleType := lbSquare;
-            end;
+            case AIndexType of // type="disc|circle|square"
+              'd': FListStyleType := lbDisc;
+              'c': FListStyleType := lbCircle;
+              's': FListStyleType := lbSquare;
+            else
+              case ListLevel mod 3 of
+                1: FListStyleType := lbDisc;
+                2: FListStyleType := lbCircle;
+                0: FListStyleType := lbSquare;
+              end;
+            end;  
       end;
 
     OLSy:
