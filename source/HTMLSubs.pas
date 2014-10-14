@@ -4669,8 +4669,8 @@ begin
 {$endif}
 
   ConvMargArray(0, 400, AutoCount);
-  HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
-  if HideOverflow then
+  //HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
+  if HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20) then
   begin
     MinCell := MargArray[piWidth];
     MaxCell := MinCell;
@@ -4961,7 +4961,7 @@ begin
 {$ENDIF}
 
   ContentMinMaxWidth(Canvas, MinWidth, MaxWidth);
-  HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
+  //HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
   case AutoCount of
     0:
       begin
