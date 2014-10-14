@@ -674,17 +674,26 @@ end;
 //-- BG ---------------------------------------------------------- 26.09.2012 --
 function TBuffConvUTF8.NextChar: TBuffChar;
 const
-  MaxChar: LongWord = 65535;
+  MaxChar: LongWord = 65535; // "Not A Character"
 var
   Buffer: LongWord;
+  Chr, Cnt: Word;
 
   function NextByte: Boolean;
-  var
-    Chr: Word;
   begin
     Chr := GetNext;
+    Inc(Cnt);
     Result := (Chr and $C0) = $80;
     Buffer := (Buffer shl 6) + (Chr and $3F);
+  end;
+
+  procedure Failed;
+  begin
+    if Chr = 0 then
+      Buffer := 0
+    else
+      Buffer := MaxChar;
+    Dec(FPos.BytePtr, Cnt);
   end;
 
 begin
@@ -696,22 +705,25 @@ begin
     $C0..$DF: // 2 bytes, 11 bits
     begin
       Buffer := Buffer and $1F;
+      Cnt := 0;
       if not NextByte then
-        Buffer := 0; // invalid
+        Failed; // invalid
     end;
 
     $E0..$EF: // 3 bytes, 16 bits
     begin
       Buffer := Buffer and $0F;
+      Cnt := 0;
       if not (NextByte and NextByte) then
-        Buffer := 0; // invalid
+        Failed; // invalid
     end;
 
     $F0..$F7: // 4 bytes, 21 bits
     begin
       Buffer := Buffer and $07;
+      Cnt := 0;
       if not (NextByte and NextByte and NextByte) then
-        Buffer := 0 // invalid
+        Failed // invalid
       else if Buffer > MaxChar then
         Buffer := MaxChar;
     end;
@@ -719,8 +731,9 @@ begin
     $F8..$FB: // 5 bytes, 26 bits
     begin
       Buffer := Buffer and $03;
+      Cnt := 0;
       if not (NextByte and NextByte and NextByte and NextByte) then
-        Buffer := 0 // invalid
+        Failed // invalid
       else if Buffer > MaxChar then
         Buffer := MaxChar;
     end;
@@ -728,8 +741,9 @@ begin
     $FC..$FD: // 6 bytes, 31 bits
     begin
       Buffer := Buffer and $01;
+      Cnt := 0;
       if not (NextByte and NextByte and NextByte and NextByte and NextByte) then
-        Buffer := 0 // invalid
+        Failed // invalid
       else if Buffer > MaxChar then
         Buffer := MaxChar;
     end;
