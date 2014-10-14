@@ -190,6 +190,8 @@ type
 
   // BG, 25.01.2013: base class for TFrameBase
   THtmlFrameBase = class(ThtControlBase)
+  public
+    procedure Reload; virtual; abstract;
   end;
 
   TLoadHistoryItem = procedure(Sender: TObject; HI: ThvHistoryItem; var Handled: Boolean) of object;
@@ -2622,6 +2624,18 @@ begin
     PaintPanel.Cursor := Cursor;
     Exit;
   end;
+
+  case Key of
+    VK_F5:
+      if Shift = [] then
+      begin
+        if FrameOwner <> nil then
+          FrameOwner.Reload
+        else
+          Reload;
+      end;
+  end;
+
   with VScrollBar do
   begin
     Pos := Position;

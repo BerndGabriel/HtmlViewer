@@ -367,6 +367,7 @@ type
 
     procedure UpdateFrameList; virtual; abstract;
   public
+    procedure Reload; override;
     procedure InitializeDimensions(X, Y, Wid, Ht: integer); virtual; abstract;
     property LOwner: TSubFrameSetBase read FOwner;
     property MasterSet: TFrameSetBase read FMasterSet; {Points to top (master) TFrameSetBase}
@@ -4755,6 +4756,15 @@ begin
 end;
 
 { TFrameBase }
+
+//-- BG ---------------------------------------------------------- 14.10.2014 --
+procedure TFrameBase.Reload;
+begin
+  inherited;
+  if FMasterSet <> nil then
+    if FMasterSet.FFrameViewer <> nil then
+      FMasterSet.FFrameViewer.Reload;
+end;
 
 procedure TFrameBase.SetQuirksMode(const AValue: THtQuirksMode);
 begin
