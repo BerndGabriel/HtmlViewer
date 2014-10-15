@@ -3725,8 +3725,15 @@ begin
          Index := T.Name[1];
       end;
     ULSy:
-      Plain := Attributes.Find(PlainSy, T)
-           or (Attributes.Find(TypeSy, T) and ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
+      begin
+        Plain := Attributes.Find(PlainSy, T)
+             or (Attributes.Find(TypeSy, T) and ((Lowercase(T.Name) = 'none') or (Lowercase(T.Name) = 'plain')));
+
+        if Attributes.Find(TypeSy, T) then
+          if LowerCase(T.Name) = 'disc' then  Index := 'd'
+          else if LowerCase(T.Name) = 'circle' then  Index := 'c'
+          else if LowerCase(T.Name) = 'square' then  Index := 's';
+      end;       
   end;
   SectionList.Add(Section, TagIndex);
   Section := nil;
