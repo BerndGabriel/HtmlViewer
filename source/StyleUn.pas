@@ -1571,7 +1571,11 @@ end;
 //-- BG ---------------------------------------------------------- 23.11.2009 --
 function TProperties.ShowEmptyCells: Boolean;
 begin
-  Result := (VarIsStr(Props[piEmptyCells])) and (Props[piEmptyCells] = 'show');
+{$ifdef EmptyCellsDefaultIsShow}
+  Result := not (VarIsStr(Props[piEmptyCells]) and (Props[piEmptyCells] = 'hide'));
+{$else}
+  Result :=      VarIsStr(Props[piEmptyCells]) and (Props[piEmptyCells] = 'show') ;
+{$endif}
 end;
 
 procedure ConvVertMargins(const VM: ThtVMarginArray; var CD: ThtConvData; var M: ThtMarginArray);

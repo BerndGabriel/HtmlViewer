@@ -252,6 +252,12 @@
         {Style types have been renamed to Tht.. to meet the Delphi style guide that types should start with a 'T'.
         As long as you did not change your code accordingly you can define this symbol.}
 
+{$define EmptyCellsDefaultIsShow} {The early HtmlViewer was built with the
+        default 'hide', but CSS 2.1 defines 'show' as default. A lot of page
+        designs for use in HtmlViewer (including our table demo page) now use
+        'hide' as default.
+        New users should define EmptyCellsDefaultIsShow for CSS compliance.}
+
 {$ifdef Compiler20_Plus}
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}
