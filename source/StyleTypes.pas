@@ -402,9 +402,9 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
 const
 // CSS 2.1 defines a fixed ratio between pt and px at 96 dpi: 1px = 0.75pt.
 // (see http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-length for details).
-  PixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
-  PointsPerInch = 72.0;
-  PointsPerPixel = PointsPerInch / PixelsPerInch;
+  HTMLViewerPixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
+  HTMLViewerPointsPerInch = 72.0;
+  HTMLViewerPointsPerPixel = HTMLViewerPointsPerInch / HTMLViewerPixelsPerInch;
 
 type
   ThtLengthUnitInfo = record
@@ -431,9 +431,9 @@ const
     (Name: 'pt'; Factor: 0.75; IsAbsolute: True),
     (Name: 'px'; Factor: 1.00; IsAbsolute: True),
     (Name: 'pc'; Factor: 9.00; IsAbsolute: True),
-    (Name: 'in'; Factor: PixelsPerInch       ; IsAbsolute: True),
-    (Name: 'cm'; Factor: PixelsPerInch / 2.54; IsAbsolute: True),
-    (Name: 'mm'; Factor: PixelsPerInch / 25.4; IsAbsolute: True),
+    (Name: 'in'; Factor: HTMLViewerPixelsPerInch       ; IsAbsolute: True),
+    (Name: 'cm'; Factor: HTMLViewerPixelsPerInch / 2.54; IsAbsolute: True),
+    (Name: 'mm'; Factor: HTMLViewerPixelsPerInch / 25.4; IsAbsolute: True),
     // css font sizes
     (Name: '';          Index:  3; IsAbsolute: True),
     (Name: 'smaller';   Index: -1; IsAbsolute: False),
@@ -963,7 +963,7 @@ begin
     if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
         if IsAbsolute then
-          Result := V * Factor * PointsPerPixel
+          Result := V * Factor * HTMLViewerPointsPerPixel
         else
           Result := V * Factor * Base;
   end
@@ -1053,7 +1053,7 @@ begin
     if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
         if IsAbsolute then
-          Result := V * Factor * PointsPerPixel
+          Result := V * Factor * HTMLViewerPointsPerPixel
         else
           Result := V * Factor * Base;
   end
