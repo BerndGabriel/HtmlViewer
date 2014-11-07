@@ -2472,44 +2472,53 @@ begin
   Clear;
   NestLevel := 0;
   EV.Doc := TBuffer.Create(Source, Name);
-  if Name <> '' then
-    EV.NewName := Name
-  else
-    EV.NewName := 'source://' + Source;
-  FCurrentFile := EV.NewName;
-  FRefreshDelay := 0;
-  if MasterSet.FrameViewer.IsFrame(EV.Doc) then
-  begin {it's a Frameset html file}
-    MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
-    for I := 0 to List.Count - 1 do
-    begin
-      Item := TFrameBase(List.Items[I]);
-      Item.LoadFiles();
-    end;
-    CalcSizes(Self);
-    CheckNoresize(Lower, Upper);
-    if FRefreshDelay > 0 then
-      SetRefreshTimer;
-  end
-  else
-  begin {it's a non frame file}
-    Frame := TfvFrame(AddFrame(nil, ''));
-    if RequestEvent then
-    begin
-      Frame.Source := Source;
-      PEV := @EV;
+  try
+    if Name <> '' then
+      EV.NewName := Name
+    else
+      EV.NewName := 'source://' + Source;
+    FCurrentFile := EV.NewName;
+    FRefreshDelay := 0;
+    if MasterSet.FrameViewer.IsFrame(EV.Doc) then
+    begin {it's a Frameset html file}
+      MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
+      FreeAndNil(EV.Doc);
+      for I := 0 to List.Count - 1 do
+      begin
+        Item := TFrameBase(List.Items[I]);
+        Item.LoadFiles();
+      end;
+      CalcSizes(Self);
+      CheckNoresize(Lower, Upper);
+      if FRefreshDelay > 0 then
+        SetRefreshTimer;
     end
     else
-    begin
-      Frame.Source := EV.NewName;
-      PEV := nil;
+    begin {it's a non frame file}
+      Frame := TfvFrame(AddFrame(nil, ''));
+      if RequestEvent then
+      begin
+        Frame.Source := Source;
+        PEV := @EV;
+      end
+      else
+      begin
+        Frame.Source := EV.NewName;
+        PEV := nil;
+        FreeAndNil(EV.Doc);
+      end;
+      Frame.Destination := Dest;
+      Parsed('', '', '');
+      CalcSizes(Self);
+      Frame.Loadfiles(PEV);
+      // now Doc is owned by Frame. We must not free it.
+      if PEV <> nil then
+        EV.Doc := nil;
+      FTitle := Frame.Viewer.DocumentTitle;
+      FBaseTarget := Frame.Viewer.BaseTarget;
     end;
-    Frame.Destination := Dest;
-    Parsed('', '', '');
-    CalcSizes(Self);
-    Frame.Loadfiles(PEV);
-    FTitle := Frame.Viewer.DocumentTitle;
-    FBaseTarget := Frame.Viewer.BaseTarget;
+  finally
+    EV.Doc.Free;
   end;
 end;
 
