@@ -3568,6 +3568,7 @@ const
     $B48246, $8CB4D2, $D8BFD8, $4763FF, $D0E040,
     $EE82EE, $B3DEF5, $F5F5F5, $32CD9A,
     clGray, $A9A9A9, $4F4F2F, $696969, $D3D3D3, $998877, $908070,
+    $663399,
     clBackground, clActiveCaption, clInactiveCaption, clMenu, clWindow,
     clWindowFrame, clMenuText, clWindowText, clCaptionText, clActiveBorder,
     clInactiveBorder, clAppWorkSpace, clHighlight, clHighlightText, clBtnFace,
