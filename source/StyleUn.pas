@@ -3500,7 +3500,7 @@ begin
 end;
 
 const
-  NumColors = 176;
+  NumColors = 177;
   Colors: array[1..NumColors] of ThtString = ('transparent',
     'black', 'maroon', 'green', 'olive', 'navy', 'purple', 'teal', 'gray',
     'silver', 'red', 'lime', 'yellow', 'blue', 'fuchsia', 'aqua', 'white',
@@ -3531,6 +3531,7 @@ const
     'violet', 'wheat', 'whitesmoke', 'yellowgreen',
 
     'grey', 'darkgrey', 'darkslategrey', 'dimgrey', 'lightgrey', 'lightslategrey', 'slategrey',
+    'rebeccapurple',  //CSS4 tribute to Eric Meyer's daughter, Rebecca, died of cancer on her sixth birthday
     'background', 'activecaption', 'inactivecaption', 'menu', 'window',
     'windowframe', 'menutext', 'windowtext', 'captiontext', 'activeborder',
     'inactiveborder', 'appworkSpace', 'highlight', 'hightlighttext', 'buttonface',
