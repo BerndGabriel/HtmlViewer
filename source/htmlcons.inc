@@ -17,8 +17,6 @@
 
   {$define FPC_TODO}
 
-  {$define CopyPaletteMissing}
-  {$define TransparentStretchBltMissing}
   {$define MetaFileMissing}
   {$define MultiMediaMissing}
 
