@@ -4373,6 +4373,10 @@ begin
   if vsLocalImageCache in FViewerState then
     FSectionList.ImageCache.Clear;
 
+  FreeAndNil(FDocument);
+  FCurrentFile := '';
+  FCurrentFileType := HTMLType;
+
   FSectionList.SetFonts(
     DefFontName, DefPreFontName, DefFontSize, DefFontColor,
     DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
@@ -4639,7 +4643,7 @@ begin
     HTML := DocumentSource;
     StSrc := FindSourcePos(FSectionList.SelB);
     EnSrc := FindSourcePos(FSectionList.SelE);
-    if (FDocument <> nil) then
+    if FDocument <> nil then
     begin
       Dec(StSrc, FDocument.BomLength);
       Dec(EnSrc, FDocument.BomLength);

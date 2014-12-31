@@ -7394,7 +7394,10 @@ begin
     begin
       Obj := MissingImages.Objects[J];
       if (Obj = Self) and not IsCopy and not Error then
-        BitmapLoaded := False {the background image, set to load}
+      begin
+        BitmapLoaded := False; {the background image, set to load}
+        GetBackgroundBitmap();
+      end
       else if (Obj is TImageObj) then
       begin
         TImageObj(Obj).InsertImage(UName, Error, Rformat);
