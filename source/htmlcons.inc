@@ -199,7 +199,7 @@
   {$warn Symbol_Platform Off}
 
   {$IFDEF UNICODE}
-    {$HIGHCHARUNICODE ON}  {make all #nn char constants Wide for better portatibility}
+    {$HIGHCHARUNICODE ON}  {make all #nn char constants Wide for better portability}
   {$ENDIF}
 
   {$define OwnPaintPanelDoubleBuffering}

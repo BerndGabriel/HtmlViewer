@@ -366,10 +366,12 @@ const
   );
 
 {$if not declared(CopyPalette)}
+{$define CopyPaletteMissing}
 function CopyPalette(Palette: HPALETTE): HPALETTE;
 {$ifend}
 
 {$if not declared(TransparentStretchBlt)}
+{$define TransparentStretchBltMissing}
 function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; MaskDC: HDC; MaskX,
   MaskY: Integer): Boolean;
@@ -720,7 +722,7 @@ begin
   end;
 end;
 
-{$if not declared(CopyPalette)}
+{$ifdef CopyPaletteMissing}
 // -----------
 // CopyPalette
 // -----------
@@ -755,9 +757,9 @@ begin
   end;
   Result := CreatePalette(PLogPalette(@LogPal)^);
 end;
-{$ifend CopyPalette}
+{$endif CopyPaletteMissing}
 
-{$if not declared(TransparentStretchBlt)}
+{$ifdef TransparentStretchBltMissing}
 const
   SOutOfResources = 'Out of system resources';
 var
@@ -846,7 +848,7 @@ begin
   end;
 end;
 
-{$ifend TransparentStretchBlt}
+{$endif TransparentStretchBltMissing}
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendChr(var Dest: ThtString; C: ThtChar);
