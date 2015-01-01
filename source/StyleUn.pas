@@ -3500,7 +3500,7 @@ begin
 end;
 
 const
-  NumColors = 176;
+  NumColors = 177;
   Colors: array[1..NumColors] of ThtString = ('transparent',
     'black', 'maroon', 'green', 'olive', 'navy', 'purple', 'teal', 'gray',
     'silver', 'red', 'lime', 'yellow', 'blue', 'fuchsia', 'aqua', 'white',
@@ -3531,6 +3531,7 @@ const
     'violet', 'wheat', 'whitesmoke', 'yellowgreen',
 
     'grey', 'darkgrey', 'darkslategrey', 'dimgrey', 'lightgrey', 'lightslategrey', 'slategrey',
+    'rebeccapurple',  //CSS4 tribute to Eric Meyer's daughter, Rebecca, died of cancer on her sixth birthday
     'background', 'activecaption', 'inactivecaption', 'menu', 'window',
     'windowframe', 'menutext', 'windowtext', 'captiontext', 'activeborder',
     'inactiveborder', 'appworkSpace', 'highlight', 'hightlighttext', 'buttonface',
@@ -3567,6 +3568,7 @@ const
     $B48246, $8CB4D2, $D8BFD8, $4763FF, $D0E040,
     $EE82EE, $B3DEF5, $F5F5F5, $32CD9A,
     clGray, $A9A9A9, $4F4F2F, $696969, $D3D3D3, $998877, $908070,
+    $663399,
     clBackground, clActiveCaption, clInactiveCaption, clMenu, clWindow,
     clWindowFrame, clMenuText, clWindowText, clCaptionText, clActiveBorder,
     clInactiveBorder, clAppWorkSpace, clHighlight, clHighlightText, clBtnFace,
