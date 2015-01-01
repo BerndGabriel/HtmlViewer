@@ -17,8 +17,6 @@
 
   {$define FPC_TODO}
 
-  {$define CopyPaletteMissing}
-  {$define TransparentStretchBltMissing}
   {$define MetaFileMissing}
   {$define MultiMediaMissing}
 
@@ -199,6 +197,10 @@
   {$endif}
 
   {$warn Symbol_Platform Off}
+
+  {$IFDEF UNICODE}
+    {$HIGHCHARUNICODE ON}  {make all #nn char constants Wide for better portatibility}
+  {$ENDIF}
 
   {$define OwnPaintPanelDoubleBuffering}
 
