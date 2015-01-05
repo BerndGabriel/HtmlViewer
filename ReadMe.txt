@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-HtmlViewer 10.2 and 11
+HtmlViewer 10.2 and 11.x
 --------------------------------------------------------------------------------
 
 What are the HtmlViewer Components?
@@ -23,12 +23,11 @@ TFrameBrowser
 - Additional code and/or components are generally required to get data from
   other sources than the local file system.
 
-These components support most of the HTML 3.2 specifications with many
-additional popular HTML 4 enhancements.
+These components support most of the HTML 4.01 specifications 
+with many additional popular HTML 5 enhancements.
 Many Cascading Style Sheet properties are also supported.
 
 Some features:
-
 - Cascading Stylesheets
 - Large HTML files
 - HTML Frames
@@ -43,10 +42,12 @@ Some features:
 - Background colors and images
 - Font sizes, styles, and colors with HTML tags or default settings
 - Formatted printing of the HTML document
+- Can print multiple pages horizontally
 - Print preview
 - Text search
 - Copy to clipboard
 - Subscripts and superscripts
+- Unicode, UTF-8 and many single and multi byte character codes supported
 
 While HTML documents are normally associated with the Internet, they are also
 very useful for displaying all kinds of textual material such as documentation,
@@ -56,24 +57,27 @@ For a detailed list and demonstration of features start FrameDem.exe.
 
 For a detailed list of changes and bugfixes per version start FrameDem.exe 
 and click "What's new" or see "./Demos/Compiled Framedemo/whatsnew.htm".
+
 --------------------------------------------------------------------------------
 
 Which HtmlViewer version should I use?
 
-HtmlViewer 10.2
+HtmlViewer 10.2 (deprecated)
 - is a mixed AnsiString/WideString version suitable for projects 
   with a single codepage/charset.
 
-HtmlViewer 11
-- is a full WideString version suitable for projects
-  with several codepages/charsets.
+HtmlViewer 11.x (recommended)
+- is a full WideString version suitable for projects 
+  with most common codepages/charsets.
 - with Delphi 6..2007 requires the TntUnicodeControls.
-- works with Lazarus 0.9.31
+- works with Lazarus 0.9.31 or newer (recommended at least 1.2.x)
+- 32 and 64 Bit
 
 --------------------------------------------------------------------------------
 
-HtmlViewer 10.2 and 11 are available at: http://code.google.com/p/thtmlviewer/
-HtmlViewer developement is hosted at: https://github.com/BerndGabriel/HtmlViewer
+HtmlViewer 10.2 is still available at: http://code.google.com/p/thtmlviewer/
+HtmlViewer 11.5 is available at: https://sourceforge.net/projects/htmlviewer/
+HtmlViewer development is hosted at: https://github.com/BerndGabriel/HtmlViewer
 
 If you are using HtmlViewer 11 with Delphi 6..2007 you will need the
 TntUnicodeControls 2.3.0 or 2.2.1, which are available at:
@@ -89,9 +93,8 @@ Copyright (c) 1995 - 2008 by Anders Melander (DitherUnit.pas)
 Copyright (c) 1995 - 2008 by Ron Collins (HtmlGif1.pas)
 Copyright (c) 2008 - 2009 by Sebastian Zierer (Delphi 2009 Port)
 Copyright (c) 2008 - 2010 by Arvid Winkelsdorf (Fixes)
-Copyright (c) 2009 - 2012 by Bernd Gabriel (Fixes, Enhancements)
+Copyright (c) 2009 - 2015 by HtmlViewer Team 
 
 See included License.txt
 
 --------------------------------------------------------------------------------
-
