@@ -225,33 +225,35 @@ end;
 procedure TForm1.ViewerMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
-  Pos, Pos2, VSelLength: integer;
+  Pos, Pos2, VSelLength, VSelStart: integer;
 begin
   if not ViewerOK then Exit;
   ViewerOK := False;
   try
+    VSelStart  := Viewer.SelStart;
     VSelLength := Viewer.SelLength;
-    if VSelLength >= 0 then
-      Pos := Viewer.FindSourcePos(Viewer.SelStart)
-    else Pos := Viewer.FindSourcePos(Viewer.SelStart+VSelLength);
+    if VSelLength < 0 then
+    begin
+      VSelLength := -VSelLength;
+      Dec(VSelStart, VSelLength);
+    end;
+
+    Pos := Viewer.FindSourcePos(VSelStart);
     if Pos >= 0 then
     begin
-      RichEdit.SelStart := Pos;
       if VSelLength = 0 then
-        RichEdit.SelLength := 0
-      else if VSelLength > 0 then
-      begin
-        Pos2 := Viewer.FindSourcePos(Viewer.SelStart+VSelLength-1)+1;
-        RichEdit.SelLength := Pos2-Pos;
-      end
+        Pos2 := Pos
       else
-      begin
-        Pos2 := Viewer.FindSourcePos(Viewer.SelStart-1)+1;
-        RichEdit.SelLength := Pos2-Pos;
-      end;
+        Pos2 := Viewer.FindSourcePos(VSelStart + VSelLength);
+      RichEdit.SelStart := Pos div 2;
+      RichEdit.SelLength := (Pos2-Pos) div 2;
+{$ifdef FPC}
+      FSelStart := RichEdit.SelStart;
+      FSelLength := RichEdit.SelLength;
+{$endif}
       RichEdit.SetFocus;
 {$ifdef MsWindows}
-      PostMessage(RichEdit.handle, em_scrollcaret, 0, 0);   {8.03}
+      PostMessage(RichEdit.handle, EM_SCROLLCARET, 0, 0);   {8.03}
 {$endif}
     end;
   finally
