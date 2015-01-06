@@ -2295,7 +2295,7 @@ end;
 
 procedure THtmlViewer.HTMLMouseDblClk(Message: TWMMouse);
 var
-  st, en: Integer;
+  St, En: Integer;
   AWord: UnicodeString;
 begin
   FSectionList.LButtonDown(True);
@@ -2303,9 +2303,9 @@ begin
     Exit;
   if not NoSelect and GetWordAtCursor(Message.XPos, Message.YPos, St, En, AWord) then
   begin
-    FSectionList.SelB := st + 1;
-    FSectionList.SelE := en;
-    FCaretPos := st + 1;
+    FCaretPos := St + 1;
+    FSectionList.SelB := St + 1;
+    FSectionList.SelE := En;
     InvalidateRect(PaintPanel.Handle, nil, True);
   end;
   if Assigned(OnMouseDouble) then
