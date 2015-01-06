@@ -10883,9 +10883,14 @@ var
   FO: TFontObj;
 
   procedure Remove(I: Integer);
+  var L: Integer;
   begin
-    Move(XP[I], XP[I - 1], (Length(BuffS) - I) * Sizeof(Integer));
-    Move(Brk[I], Brk[I - 1], (Length(Brk) - I) * Sizeof(ThtTextWrap));
+    L := Length(BuffS) - I;
+    if L > 0 then
+       Move(XP[I], XP[I - 1], L * Sizeof(Integer));
+    L := Length(Brk) - I;
+    if L > 0 then
+        Move(Brk[I], Brk[I - 1], L * Sizeof(ThtTextWrap));
     SetLength(Brk, Length(Brk) - 1);
     System.Delete(BuffS, I, 1);
     FormControls.Decrement(I - 1);
@@ -10985,6 +10990,7 @@ begin
   begin
     SetLength(Brk, Length(Brk) + 1);
     Brk[Length(Brk) - 1] := twYes;
+
     if not IsCopy then
     begin
       Last := 0; {to prevent warning msg}
@@ -11002,9 +11008,7 @@ begin
       end;
       SetLength(XP, 0);
     end;
-  end;
-  if Len > 0 then
-  begin
+
     Inc(Document.SectionCount);
     SectionNumber := Document.SectionCount;
   end;
