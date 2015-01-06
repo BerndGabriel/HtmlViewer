@@ -688,7 +688,7 @@ begin
     repeat
       WriteStringToStream(AStream,'<tr>'+EOL+
        '<th class="fn" scope="row"><a href="',LEnc);
-{$ifdef TSearchRecHasNoTimestamp}
+{$ifndef TSearchRecHasNoTimestamp}
         TimeStamp := FileDateToDateTime(F.Time);
 {$else}
         TimeStamp := F.TimeStamp;
