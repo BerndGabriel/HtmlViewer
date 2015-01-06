@@ -192,6 +192,10 @@ object Form1: TForm1
         OnClick = EditPaste
       end
     end
+    object About1: TMenuItem
+      Caption = '&About'
+      OnClick = About1Click
+    end
   end
   object OpenDialog: TOpenDialog
     DefaultExt = 'htm'

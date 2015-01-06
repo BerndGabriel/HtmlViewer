@@ -1,18 +1,20 @@
 {
- The purpose of this demo is to illustrate the usage of the new FindDisplayPos,
- FindSourcePos, and DisplayPosToXY methods and SelStart, SelLength properties.
- These new properties and methods relate character positions in the HTML source
- with those in the displayed docuement.
+Version   11.5
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2015 by HtmlViewer Team
 
- This demo is a simple two window editor.  Text entry and modifications are made
- in the TRichEdit window but appear immediately in the ThtmlViewer window.
- Positions marked in the ThtmlViewer window are also hilighted in the TRichEdit
- window.
+The purpose of this demo is to illustrate the usage of FindDisplayPos,
+FindSourcePos, and DisplayPosToXY methods and SelStart, SelLength properties.
+These properties and methods relate character positions in the HTML source
+with those in the displayed docuement.
 
- Since display updates are accomplished by reloading the document, this scheme
- obviously works best with a fast computer and simple documents.
+This demo is a simple two window editor.  Text entry and modifications are made
+in the TRichEdit window but appear immediately in the ThtmlViewer window.
+Positions marked in the THtmlViewer window are also hilighted in the TRichEdit
+window.
 
- This demo will not run in Delphi 2 as there is no TSplitter
+Since display updates are accomplished by reloading the document, this scheme
+obviously works best with a fast computer and simple documents.
 }
 
 unit HTMLEd1;
@@ -22,17 +24,23 @@ unit HTMLEd1;
 interface
 
 uses
-{$IFNDEF FPC}
+{$ifdef FPC}
+  LCLIntf, LCLType, LMessages, FileUtil, ShellAPI,
+{$else}
   ShellAPI, Windows,
-{$ELSE}
-  LCLIntf, LCLType, LMessages, FileUtil,
-{$ENDIF}
+{$endif}
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, StdCtrls, ComCtrls,
-  HtmlGlobals,
-  Htmlview, StyleUn, HTMLUn2;
+  HtmlGlobals, StyleTypes, Htmlview, StyleUn, HTMLUn2, HtmlAbt;
 
 type
+{$ifdef FPC}
+  TRichEdit = TMemo;
+{$endif}
+
   TForm1 = class(TForm)
     Panel1: TPanel;
     MainMenu1: TMainMenu;
@@ -59,21 +67,22 @@ type
     Panel2: TPanel;
     Viewer: THTMLViewer;
     Panel3: TPanel;
-    procedure Open1Click(Sender: TObject);
-    procedure RichEdChange(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
-    procedure RichEditSelectionChange(Sender: TObject);
-    procedure ViewerMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure FormShow(Sender: TObject);
-    procedure Save1Click(Sender: TObject);
-    procedure Saveas1Click(Sender: TObject);
-    procedure New1Click(Sender: TObject);
+    About1: TMenuItem;
+    procedure ButtonClick(Sender: TObject);
     procedure EditCopy(Sender: TObject);
     procedure EditCut(Sender: TObject);
     procedure EditPaste(Sender: TObject);
     procedure ExitItemClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    procedure ButtonClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure New1Click(Sender: TObject);
+    procedure Open1Click(Sender: TObject);
+    procedure RichEdChange(Sender: TObject);
+    procedure RichEditSelectionChange(Sender: TObject);
+    procedure Save1Click(Sender: TObject);
+    procedure Saveas1Click(Sender: TObject);
+    procedure ViewerMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 {$ifdef UNICODE}
     procedure ViewerHotSpotClick(Sender: TObject; const SRC: string; var Handled: Boolean);
     procedure ViewerHotSpotCovered(Sender: TObject; const SRC: string);
@@ -83,16 +92,24 @@ type
 {$endif}
     procedure FormResize(Sender: TObject);
     procedure SplitterMoved(Sender: TObject);
+    procedure About1Click(Sender: TObject);
   private
-    ViewerOK, RichOK: boolean;
-    SizeRatio: double;
+    ViewerOK, RichOK: Boolean;
+    SizeRatio: Double;
+{$ifdef FPC}
+    FSelStart, FSelLength: Integer;
+{$endif}
     procedure CheckFileSave;
 {$ifdef MsWindows}
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
 {$endif}
+
   public
     CurrentFile: String;
     procedure LoadFile(Filename: String);
+{$ifdef FPC}
+    procedure UpdateActions; override;
+{$endif}
   end;
 
 var
@@ -100,11 +117,11 @@ var
 
 implementation
 
-{$IFNDEF FPC}
-  {$R *.dfm}
-{$ELSE}
+{$ifdef FPC}
   {$R *.lfm}
-{$ENDIF}
+{$else}
+  {$R *.dfm}
+{$endif}
 
 const
   InitText = '<html>'^m^j'<head>'^m^j'<style>'^m^j^m^j'</style>'^m^j'</head>'^m^j+
@@ -181,14 +198,14 @@ begin
     SLen := RichEdit.SelLength;
     if SStr+SLen > Length(RichEdit.Text) then
        SLen := Length(RichEdit.Text)-SStr;
-    Pos1 := Viewer.FindDisplayPos(SStr, False);
+    Pos1 := Viewer.FindDisplayPos(SStr*2, False);
     if Pos1 < 0 then  {means it's past end}
-      Pos1 := Viewer.FindDisplayPos(SStr, True);
+      Pos1 := Viewer.FindDisplayPos(SStr*2, True);
     if SLen <> 0 then
     begin
-      Pos2 := Viewer.FindDisplayPos(SStr+SLen, False);
+      Pos2 := Viewer.FindDisplayPos((SStr+SLen)*2, False);
       if Pos2 < 0 then
-        Pos2 := Viewer.FindDisplayPos(SStr+SLen-1, False); {fix for above}
+        Pos2 := Viewer.FindDisplayPos((SStr+SLen-1)*2, False); {fix for above}
     end
     else
       Pos2 := Pos1;
@@ -349,6 +366,17 @@ begin
 end;
 {$endif}
 
+//-- BG ---------------------------------------------------------- 06.01.2015 --
+procedure TForm1.About1Click(Sender: TObject);
+begin
+  with TAboutBox.CreateIt(Self, 'HtmlEditor', 'THtmlViewer') do
+  try
+    ShowModal;
+  finally
+    Free;
+  end;
+end;
+
 procedure TForm1.ButtonClick(Sender: TObject);
 var
   C: char;
@@ -377,8 +405,8 @@ begin
   if I=1 then
   begin
     ID := Copy(SRC, 10, Length(SRC)-9);
-    if Viewer.IDDisplay[ID+'Minus'] = High(TPropDisplay) then
-      Viewer.IDDisplay[ID+'Minus'] := Low(TPropDisplay)
+    if Viewer.IDDisplay[ID+'Minus'] = High(ThtDisplayStyle) then
+      Viewer.IDDisplay[ID+'Minus'] := Low(ThtDisplayStyle)
     else
       Viewer.IDDisplay[ID+'Minus'] := Succ(Viewer.IDDisplay[ID+'Minus']);
     Viewer.IDDisplay[ID+'Plus'] := Viewer.IDDisplay[ID+'Minus'];
@@ -430,5 +458,18 @@ begin
   RichEdit.SetFocus;
   RichEdit.Modified := False;
 end;
+
+{$ifdef LCL}
+//-- BG ---------------------------------------------------------- 06.01.2015 --
+procedure TForm1.UpdateActions;
+begin
+  if (RichEdit.SelStart <> FSelStart) or (RichEdit.SelLength <> FSelLength) then
+  begin
+    FSelStart := RichEdit.SelStart;
+    FSelLength := RichEdit.SelLength;
+    RichEditSelectionChange(RichEdit);
+  end;
+end;
+{$endif}
 
 end.

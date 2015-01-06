@@ -5,14 +5,12 @@ program HTMLEditor;
 {$ENDIF}
 
 uses
-{$IFNDEF FPC}
-{$ELSE}
+{$IFDEF FPC}
   Interfaces,
 {$ENDIF}
   Forms,
-  HTMLEd1 in 'HTMLEd1.pas' {Form1};
-
-{$R *.res}
+  HTMLEd1 in 'HTMLEd1.pas' {Form1},
+  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox};
 
 begin
   Application.Initialize;

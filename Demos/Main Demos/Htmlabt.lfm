@@ -11,7 +11,7 @@ object AboutBox: TAboutBox
   Constraints.MinWidth = 375
   Font.Height = -13
   Font.Name = 'System'
-  Position = poScreenCenter
+  Position = poOwnerFormCenter
   LCLVersion = '0.9.28.2'
   object BitBtn1: TBitBtn
     Left = 292

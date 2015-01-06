@@ -14,7 +14,7 @@ object AboutBox: TAboutBox
   Font.Name = 'System'
   Font.Style = []
   OldCreateOrder = True
-  Position = poScreenCenter
+  Position = poOwnerFormCenter
   DesignSize = (
     359
     253)

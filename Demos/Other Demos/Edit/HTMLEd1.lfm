@@ -23,6 +23,7 @@ object Form1: TForm1
     Align = alTop
     TabOrder = 0
     object Button1: TButton
+      Tag = 3
       Left = 246
       Top = 6
       Width = 25
@@ -186,6 +187,10 @@ object Form1: TForm1
         ShortCut = 8237
         OnClick = EditPaste
       end
+    end
+    object About1: TMenuItem
+      Caption = '&About'
+      OnClick = About1Click
     end
   end
   object OpenDialog: TOpenDialog
