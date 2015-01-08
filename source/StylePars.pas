@@ -1448,7 +1448,14 @@ begin
               Sort := True;
           end;
         ' ': Cnt := 0;
-        '*': LCh := ' ';
+
+        '*':
+          begin
+            // ignore unexpected end of comment.
+            if Doc.PeekChar = '/' then
+              GetCh;
+            LCh := ' ';
+          end;
       else
         break;
       end;
