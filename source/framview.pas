@@ -167,6 +167,7 @@ type
     procedure SetMarginWidth(const Value: integer); override;
     procedure SetNoSelect(const Value: boolean); override;
     procedure SetOnBitmapRequest(const Handler: TGetBitmapEvent); override;
+    procedure SetOnBitmapRequested(const Handler: TGottenBitmapEvent); override;
     procedure SetOnDragDrop(const Value: TDragDropEvent); override;
     procedure SetOnDragOver(const Value: TDragOverEvent); override;
     procedure SetOnImageClick(const Handler: TImageClickEvent); override;
@@ -212,7 +213,8 @@ type
     function CreateSubFrameSet(FrameSet: TObject): TObject; override;
     function Find(const S: UnicodeString; MatchCase: boolean): boolean;
     function FindEx(const S: UnicodeString; MatchCase, Reverse: boolean): boolean;
-    function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TStream): Boolean;
+    function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: TStream): Boolean; overload;
+    function InsertImage(Viewer: THtmlViewer; const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor; OwnsBitmap: Boolean): Boolean; overload;
     function ViewerFromTarget(const Target: ThtString): THtmlViewer;
 {$ifndef NoMetafile}
     function NumPrinterPages(out WidthRatio: double): integer; overload;
@@ -284,6 +286,8 @@ type
     property ViewImages: boolean read FViewImages write SetViewImages default True;
     property VisitedMaxCount;
     //
+    property OnBitmapRequest;
+    property OnBitmapRequested;
     property OnBlankWindowRequest: TWindowRequestEvent read FOnBlankWindowRequest write FOnBlankWindowRequest;
     property OnDragDrop;
     property OnDragOver;
@@ -3482,6 +3486,16 @@ begin
     CurViewer[I].OnDragOver := E;
 end;
 
+procedure TFVBase.SetOnBitmapRequested(const Handler: TGottenBitmapEvent);
+var
+  I: integer;
+begin
+  inherited;
+  with CurFrameSet do
+    for I := 0 to Viewers.Count - 1 do
+      THtmlViewer(Viewers[I]).OnBitmapRequested := Handler;
+end;
+
 procedure TFVBase.SetOnImageRequested(const Handler: TGottenImageEvent);
 var
   I: integer;
@@ -4483,6 +4497,16 @@ function TFVBase.InsertImage(Viewer: THtmlViewer; const Src: ThtString; Stream: 
 begin
   try
     Result := (Viewer as THtmlViewer).InsertImage(Src, Stream);
+  except
+    Result := True; {consider exceptions done}
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 10.01.2015 --
+function TFVBase.InsertImage(Viewer: THtmlViewer; const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor; OwnsBitmap: Boolean): Boolean;
+begin
+  try
+    Result := (Viewer as THtmlViewer).InsertImage(Src, Bitmap, Transparent, Color, OwnsBitmap);
   except
     Result := True; {consider exceptions done}
   end;

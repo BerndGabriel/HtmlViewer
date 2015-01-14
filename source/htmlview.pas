@@ -396,6 +396,7 @@ type
     procedure SetImageCacheCount(const Value: Integer); override;
     procedure SetNoSelect(const Value: Boolean); override;
     procedure SetOnBitmapRequest(const Handler: TGetBitmapEvent); override;
+    procedure SetOnBitmapRequested(const Handler: TGottenBitmapEvent); override;
     procedure SetOnDragDrop(const Value: TDragDropEvent); override;
     procedure SetOnDragOver(const Value: TDragOverEvent); override;
     procedure SetOnImageRequest(const Handler: TGetImageEvent); override;
@@ -430,7 +431,8 @@ type
     function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
     function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
-    function InsertImage(const Src: ThtString; Stream: TStream): Boolean;
+    function InsertImage(const Src: ThtString; Stream: TStream): Boolean; overload;
+    function InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor = -1; OwnsBitmap: Boolean = False): Boolean; overload;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 {$ifndef NoMetafile}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
@@ -2530,6 +2532,38 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 10.01.2015 --
+function THtmlViewer.InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor; OwnsBitmap: Boolean): Boolean;
+var
+  ImageReformat: Boolean;
+begin
+  if IsProcessing then
+  begin
+    // insert later. Does not require a copy as caller is responsible for bitmap.
+    FInsertedImages.AddObject(Src, ThtBitmapToInsert.Create(Bitmap, Transparent, Color, False));
+    FImagesInserted.Enabled := True;
+    Result := True;
+  end
+  else
+  begin
+    // insert now. No copy required.
+    SetProcessing(True);
+    try
+      FSectionList.InsertImage(Src, Bitmap, Color, Transparent, OwnsBitmap, ImageReformat);
+      if ImageReformat then
+      begin
+        FImagesReformat := True;
+        FImagesInserted.Enabled := True;
+      end
+      else
+        Invalidate;
+      Result := True;
+    finally
+      SetProcessing(False);
+    end;
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 10.08.2011 --
 procedure THtmlViewer.InsertImages;
 var
@@ -2542,7 +2576,13 @@ begin
     FImagesReformat := False;
     while FInsertedImages.Count > 0 do
     begin
-      FSectionList.InsertImage(FInsertedImages[0], TStream(FInsertedImages.Objects[0]), ImageReformat);
+      if FInsertedImages.Objects[0] is ThtBitmapToInsert then
+      begin
+        with FInsertedImages.Objects[0] as ThtBitmapToInsert do
+          FSectionList.InsertImage(FInsertedImages[0], Bitmap, Color, Transp, OwnsBitmap, ImageReformat);
+      end
+      else
+        FSectionList.InsertImage(FInsertedImages[0], TStream(FInsertedImages.Objects[0]), ImageReformat);
       if ImageReformat then
         Reformat := True;
       FInsertedImages.Objects[0].Free;
@@ -4129,6 +4169,13 @@ procedure THtmlViewer.SetOnBitmapRequest(const Handler: TGetBitmapEvent);
 begin
   inherited;
   FSectionList.GetBitmap := Handler;
+end;
+
+//-- BG ---------------------------------------------------------- 10.01.2015 --
+procedure THtmlViewer.SetOnBitmapRequested(const Handler: TGottenBitmapEvent);
+begin
+  inherited;
+  FSectionList.GottenBitmap := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 20.11.2010 --

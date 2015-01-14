@@ -501,6 +501,7 @@ type
   TLinkDrawnEvent = procedure(Sender: TObject; Page: Integer; const Url, Target: ThtString; ARect: TRect) of object;
   TFileBrowseEvent = procedure(Sender, Obj: TObject; var S: ThtString) of object;
   TGetBitmapEvent = procedure(Sender: TObject; const SRC: ThtString; var Bitmap: TBitmap; var Color: TColor) of object;
+  TGottenBitmapEvent = TGetBitmapEvent;
   TGetImageEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
   TGottenImageEvent = TGetImageEvent;
   TFormSubmitEvent = procedure(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList) of object;
@@ -523,6 +524,7 @@ type
     FServerRoot: ThtString;
     //
     FOnBitmapRequest: TGetBitmapEvent;
+    FOnBitmapRequested: TGottenBitmapEvent;
     FOnDragDrop: TDragDropEvent;
     FOnDragOver: TDragOverEvent;
     FOnHistoryChange: TNotifyEvent;
@@ -577,6 +579,7 @@ type
     procedure SetMarginWidth(const Value: Integer); virtual;
     procedure SetNoSelect(const Value: Boolean); virtual;
     procedure SetOnBitmapRequest(const Value: TGetBitmapEvent); virtual;
+    procedure SetOnBitmapRequested(const Value: TGottenBitmapEvent); virtual;
     procedure SetOnDragDrop(const Value: TDragDropEvent); virtual;
     procedure SetOnDragOver(const Value: TDragOverEvent); virtual;
     procedure SetOnHistoryChange(const Value: TNotifyEvent); virtual;
@@ -654,6 +657,7 @@ type
     property VisitedMaxCount: Integer read FVisitedMaxCount write SetVisitedMaxCount default 50;
     //
     property OnBitmapRequest: TGetBitmapEvent read FOnBitmapRequest write SetOnBitmapRequest;
+    property OnBitmapRequested: TGottenBitmapEvent read FOnBitmapRequested write SetOnBitmapRequested;
     property OnDragDrop: TDragDropEvent read FOnDragDrop write SetOnDragDrop;
     property OnDragOver: TDragOverEvent read FOnDragOver write SetOnDragOver;
     property OnHistoryChange: TNotifyEvent read FOnHistoryChange write SetOnHistoryChange;
@@ -3209,6 +3213,11 @@ end;
 procedure TViewerBase.SetOnBitmapRequest(const Value: TGetBitmapEvent);
 begin
   FOnBitmapRequest := Value;
+end;
+
+procedure TViewerBase.SetOnBitmapRequested(const Value: TGottenBitmapEvent);
+begin
+  FOnBitmapRequested := Value;
 end;
 
 procedure TViewerBase.SetOnDragDrop(const Value: TDragDropEvent);

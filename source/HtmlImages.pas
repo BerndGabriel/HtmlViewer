@@ -132,10 +132,21 @@ type
 // if NoMetafile is not defined: metafile,
 //------------------------------------------------------------------------------
 
+  //BG, 11.01.2015: remember bitmap etc. until it is inserted:
+  ThtBitmapToInsert = class
+  public
+    Bitmap: TBitmap;
+    Color: TColor;
+    Transp: TTransparency;
+    OwnsBitmap: Boolean;
+    constructor Create(AImage: TBitmap; ATransp: TTransparency; AColor: TColor; AOwnsBitmap: Boolean = True); overload;
+  end;
+
   //BG, 09.04.2011
   ThtBitmapImage = class(ThtImage)
   private
     Bitmap, Mask: TBitmap;
+    OwnsBitmap, OwnsMask: Boolean;
   protected
     function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
@@ -143,7 +154,8 @@ type
     function GetImageWidth: Integer; override;
     function GetMask: TBitmap; override;
   public
-    constructor Create(AImage, AMask: TBitmap; Tr: TTransparency);
+    constructor Create(AImage, AMask: TBitmap; Tr: TTransparency; AOwnsBitmap: Boolean = True; AOwnsMask: Boolean = True); overload;
+    constructor Create(AImage: TBitmap; Tr: TTransparency; Color: TColor; AOwnsBitmap: Boolean = True); overload;
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
   end;
@@ -1845,20 +1857,37 @@ end;
 { ThtBitmapImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-constructor ThtBitmapImage.Create(AImage, AMask: TBitmap; Tr: TTransparency);
+constructor ThtBitmapImage.Create(AImage, AMask: TBitmap; Tr: TTransparency; AOwnsBitmap, AOwnsMask: Boolean);
 begin
   if AImage = nil then
     raise EInvalidImage.Create('ThtBitmapImage requires an image');
   inherited Create(Tr);
   Bitmap := AImage;
+  OwnsBitmap := AOwnsBitmap;
   Mask := AMask;
+  OwnsMask := AOwnsMask;
 end;
 
-//-- BG ---------------------------------------------------------- 10.04.2011 --
+//-- BG ---------------------------------------------------------- 10.01.2015 --
+constructor ThtBitmapImage.Create(AImage: TBitmap; Tr: TTransparency; Color: TColor; AOwnsBitmap: Boolean);
+begin
+  if AImage = nil then
+    raise EInvalidImage.Create('ThtBitmapImage requires an image');
+  inherited Create(Tr);
+  Bitmap := AImage;
+  OwnsBitmap := AOwnsBitmap;
+  case Transp of
+    TrGif:    Mask := GetImageMask(Bitmap, True, Color);
+    LLCorner: Mask := GetImageMask(Bitmap, False, Color);
+  end;
+end;
+
 destructor ThtBitmapImage.Destroy;
 begin
-  Bitmap.Free;
-  Mask.Free;
+  if OwnsBitmap then
+    Bitmap.Free;
+  if OwnsMask then
+    Mask.Free;
   inherited;
 end;
 
@@ -2166,6 +2195,16 @@ end;
 procedure ThtImageCache.InsertImage(Index: Integer; const S: ThtString; AObject: ThtImage);
 begin
   InsertItem(Index, S, AObject);
+end;
+
+{ ThtBitmapToInsert }
+
+constructor ThtBitmapToInsert.Create(AImage: TBitmap; ATransp: TTransparency; AColor: TColor; AOwnsBitmap: Boolean);
+begin
+  Bitmap     := AImage;
+  Color      := AColor;
+  Transp     := ATransp;
+  OwnsBitmap := AOwnsBitmap;
 end;
 
 initialization

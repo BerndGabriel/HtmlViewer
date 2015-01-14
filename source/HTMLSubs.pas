@@ -1436,6 +1436,7 @@ type
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
     function CopyToBuffer(Buffer: TSelTextCount): Integer;
+    procedure InsertMissingImage(const UName: ThtString; J: Integer; Error: Boolean; out Reformat: Boolean);
     {$ifdef has_StyleElements}
     procedure SetStyleElements(const AValue : TStyleElements);
     {$endif}
@@ -1462,6 +1463,7 @@ type
     TheOwner: THtmlViewerBase; {the viewer that owns this document}
     PPanel: TWinControl; {the viewer's PaintPanel}
     GetBitmap: TGetBitmapEvent; {for OnBitmapRequest Event}
+    GottenBitmap: TGottenBitmapEvent; {for OnBitmapRequest Event}
     GetImage: TGetImageEvent; {for OnImageRequest Event}
     GottenImage: TGottenImageEvent; {for OnImageRequest Event}
     ExpandName: TExpandNameEvent;
@@ -1546,9 +1548,10 @@ type
     procedure CopyToClipboardA(Leng: Integer);
     procedure GetBackgroundBitmap;
     procedure HideControls;
-    procedure InsertImage(const Src: ThtString; Stream: TStream; out Reformat: boolean);
+    procedure InsertImage(const Src: ThtString; Stream: TStream; out Reformat: Boolean); overload;
+    procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Color: TColor; Transparent: TTransparency; out Reformat: Boolean); overload;
     procedure LButtonDown(Down: boolean);
-    procedure ProcessInlines(SIndex: Integer; Prop: TProperties; Start: boolean);
+    procedure ProcessInlines(SIndex: Integer; Prop: TProperties; Start: Boolean);
     procedure SetBackground(ABackground: TColor);
     procedure SetBackgroundBitmap(const Name: ThtString; const APrec: PtPositionRec);
     procedure SetFormcontrolData(T: TFreeList);
@@ -1610,6 +1613,8 @@ function htCompareText(const T1, T2: ThtString): Integer; {$ifdef UseInline} inl
 var
   WaitStream: TMemoryStream;
   ErrorStream: TMemoryStream;
+  WaitBitmap: TBitmap;
+  ErrorBitmap: TBitmap;
 {$ifdef UNICODE}
 {$else}
   UnicodeControls: Boolean;
@@ -7361,14 +7366,37 @@ begin
 end;
 
 //------------------------------------------------------------------------------
+procedure ThtDocument.InsertMissingImage(const UName: ThtString; J: Integer; Error: Boolean; out Reformat: boolean);
+var
+  Rformat: Boolean;
+  Obj: TObject;
+begin
+  while J >= 0 do
+  begin
+    Obj := MissingImages.Objects[J];
+    if (Obj = Self) and not IsCopy and not Error then
+    begin
+      BitmapLoaded := False; {the background image, set to load}
+      GetBackgroundBitmap();
+    end
+    else if (Obj is TImageObj) then
+    begin
+      TImageObj(Obj).InsertImage(UName, Error, Rformat);
+      Reformat := Reformat or Rformat;
+    end;
+    MissingImages.Delete(J);
+    J := MissingImages.IndexOf(UName);
+  end;
+end;
+
+//------------------------------------------------------------------------------
 procedure ThtDocument.InsertImage(const Src: ThtString; Stream: TStream; out Reformat: boolean);
 var
   UName: ThtString;
   I, J: Integer;
   Image: ThtImage;
-  Rformat, Error: boolean;
+  Error: Boolean;
   Transparent: TTransparency;
-  Obj: TObject;
 begin
   Image := nil;
   Error := False;
@@ -7388,33 +7416,53 @@ begin
     else
       Error := True; {bad stream or Nil}
   end;
-  if (I >= 0) or Assigned(Image) or Error then {a valid image in the Cache or Bad stream}
+
+  if (I >= 0) or (Image <> nil) or Error then {a valid image in the Cache or Bad stream}
+    InsertMissingImage(UName, J, Error, Reformat);
+end;
+
+//-- BG ---------------------------------------------------------- 10.01.2015 --
+procedure ThtDocument.InsertImage(const Src: ThtString; Bitmap: TBitmap; Color: TColor; Transparent: TTransparency; out Reformat: boolean);
+var
+  UName: ThtString;
+  I, J: Integer;
+  Image: ThtImage;
+  Error: Boolean;
+begin
+  Image := nil;
+  Error := False;
+  Reformat := False;
+  UName := htUpperCase(htTrim(Src));
+  I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
+  J := MissingImages.IndexOf(UName); {see if it's in missing image list}
+  if (I = -1) and (J >= 0) then
   begin
-    while J >= 0 do
+    if Bitmap <> nil then
     begin
-      Obj := MissingImages.Objects[J];
-      if (Obj = Self) and not IsCopy and not Error then
-      begin
-        BitmapLoaded := False; {the background image, set to load}
-        GetBackgroundBitmap();
-      end
-      else if (Obj is TImageObj) then
-      begin
-        TImageObj(Obj).InsertImage(UName, Error, Rformat);
-        Reformat := Reformat or Rformat;
-      end;
-      MissingImages.Delete(J);
-      J := MissingImages.IndexOf(UName);
+        if Color <> -1 then
+          Transparent := TrGif;
+        Image := ThtBitmapImage.Create(Bitmap, Transparent, Color, False);
     end;
+
+    if Image <> nil then {put in Cache}
+    begin
+      ImageCache.AddObject(UName, Image); {put new bitmap in list}
+      ImageCache.DecUsage(UName); {this does not count as being used yet}
+    end
+    else
+      Error := True; {bad stream or Nil}
   end;
+
+  if (I >= 0) or Assigned(Image) or Error then {a valid image in the Cache or Bad stream}
+    InsertMissingImage(UName, J, Error, Reformat);
 end;
 
 //------------------------------------------------------------------------------
 function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
-{Note: bitmaps and Mask returned by this routine are on "loan".  Do not destroy them}
-{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TGif here}
+{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif here}
 
   procedure GetTheBitmap;
+  {Note: bitmaps gotten by OnBitmapRequest are on "loan".  We do not destroy them}
   var
     Color: TColor;
     Bitmap: TBitmap;
@@ -7424,17 +7472,26 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
       Bitmap := nil;
       Color := -1;
       GetBitmap(TheOwner, BMName, Bitmap, Color);
-      if Bitmap <> nil then
+      if Bitmap = WaitBitmap then
+        Delay := True
+      else if Bitmap = ErrorBitmap then
+        Result := nil
+      else if Bitmap <> nil then
+      begin
         if Color <> -1 then
-          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(Bitmap, True, Color), TrGif)
-        else if Transparent = LLCorner then
-          Result := ThtBitmapImage.Create(Bitmap, GetImageMask(Bitmap, False, 0), LLCorner)
-        else
-          Result := ThtBitmapImage.Create(Bitmap, nil, NotTransp);
+          Transparent := TrGif;
+        try
+          Result := ThtBitmapImage.Create(Bitmap, Transparent, Color, False);
+        finally
+          if Assigned(GottenBitmap) then
+            GottenBitmap(TheOwner, BMName, Bitmap, Color);
+        end;
+      end;
     end;
   end;
 
   procedure GetTheStream;
+  {Note: streams gotten by OnImageRequest are on "loan".  We do not destroy them}
   var
     Stream: TStream;
   begin
@@ -7516,7 +7573,7 @@ begin
       else
       begin
         GetTheBitmap;
-        if Result = nil then
+        if (Result = nil) and not Delay then
           GetTheStream;
         if (Result = nil) and not Delay then
           Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent);
@@ -16018,8 +16075,12 @@ initialization
 {$endif}
   WaitStream := TMemoryStream.Create;
   ErrorStream := TMemoryStream.Create;
+  WaitBitmap := TBitmap.Create;
+  ErrorBitmap := TBitmap.Create;
 finalization
-  WaitStream.Free;
+  ErrorBitmap.Free;
+  WaitBitmap.Free;
   ErrorStream.Free;
+  WaitStream.Free;
 end.
 
