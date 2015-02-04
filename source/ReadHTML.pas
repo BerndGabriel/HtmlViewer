@@ -4646,6 +4646,27 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 04.02.2015 --
+function TryShorterEntity(Entity: ThtString; out I: Integer; var Collect: ThtString): Boolean;
+var
+  J: Integer;
+begin
+  J := Entity.Length;
+  while J > 2 do
+  begin
+    SetLength(Entity, J - 1);
+    if Entities.Find(Entity, I) then
+    begin
+      I := PEntity(Entities.Objects[I]).Value;
+      Collect := Copy(Collect, J + 1, MaxInt);
+      Result := True;
+      Exit;
+    end;
+    Dec(J);
+  end;
+  Result := False;
+end;
+
 function THtmlParser.GetEntityStr(CodePage: Integer): ThtString;
 {read an entity and return it as a ThtString.}
 
@@ -4674,8 +4695,7 @@ var
 
   procedure NextCh;
   begin
-    SetLength(Collect, Length(Collect) + 1);
-    Collect[Length(Collect)] := LCh;
+    htAppendChr(Collect, LCh);
     GetCh;
   end;
 
@@ -4768,6 +4788,11 @@ begin
         else
           Result := Collect;
       end
+      else if TryShorterEntity(Entity, I, Collect) then
+      begin
+        AddNumericChar(I, True);
+        htAppendStr(Result, Collect);
+      end
       else
         Result := Collect;
     end; {case}
@@ -4819,8 +4844,7 @@ var
 
     procedure NextCh;
     begin
-      SetLength(Collect, Length(Collect) + 1);
-      Collect[Length(Collect)] := LCh;
+      htAppendChr(Collect, LCh);
       GetCh;
     end;
 
@@ -4910,6 +4934,11 @@ var
           AddNumericChar(I, True)
         else
           Result := Collect;
+      end
+      else if TryShorterEntity(Entity, I, Collect) then
+      begin
+        AddNumericChar(I, True);
+        htAppendStr(Result, Collect);
       end
       else
         Result := Collect;
