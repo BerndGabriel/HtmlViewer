@@ -4651,7 +4651,7 @@ function TryShorterEntity(Entity: ThtString; out I: Integer; var Collect: ThtStr
 var
   J: Integer;
 begin
-  J := Entity.Length;
+  J := Length(Entity);
   while J > 2 do
   begin
     SetLength(Entity, J - 1);
