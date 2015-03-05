@@ -500,6 +500,7 @@ type
 
     function RequestEvent: boolean; virtual; abstract;
     procedure ClearForwards;
+    procedure StopTimers;
     procedure UpdateFrameList; override;
   protected
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); override;
@@ -2252,6 +2253,15 @@ begin
   inherited;
 end;
 
+//-- BG ---------------------------------------------------------- 05.03.2015 --
+procedure TFrameSetBase.StopTimers;
+var
+  I: Integer;
+begin
+  for I := 0 to Viewers.Count - 1 do
+    THtmlViewer(Viewers[I]).StopTimers;
+end;
+
 {----------------TFrameSetBase.RequestEvent}
 
 function TFrameSet.RequestEvent: boolean;
@@ -3221,6 +3231,7 @@ begin
       FHistory.Objects[FHistoryIndex] := OldFrameSet;
       FTitleHistory[FHistoryIndex] := OldFrameSet.FTitle;
       FPosition[FHistoryIndex] := TObject(OldPos);
+      OldFrameSet.StopTimers;
       OldFrameSet.Parent := nil;
       OldFrameSet.ClearForwards;
     end

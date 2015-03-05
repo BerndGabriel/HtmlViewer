@@ -490,6 +490,7 @@ type
     procedure ScrollXY(const Delta: TSize);
     procedure SelectAll;
     procedure SetImageCache(ImageCache: ThtImageCache);
+    procedure StopTimers;
     procedure TriggerUrlAction;
     procedure ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
     procedure UrlAction;
@@ -1886,7 +1887,7 @@ procedure THtmlViewer.HTMLTimerTimer(Sender: TObject);
 var
   Pt: TPoint;
 begin
-  if GetCursorPos(Pt) and (WindowFromPoint(Pt) <> PaintPanel.Handle) then
+  if not PaintPanel.HandleAllocated or (GetCursorPos(Pt) and (WindowFromPoint(Pt) <> PaintPanel.Handle)) then
   begin
     SectionList.CancelActives;
     HTMLTimer.Enabled := False;
@@ -3054,6 +3055,13 @@ end;
 function THtmlViewer.ShowFocusRect: Boolean;
 begin
   Result := not(htNoFocusRect in htOptions);
+end;
+
+//-- BG ---------------------------------------------------------- 05.03.2015 --
+procedure THtmlViewer.StopTimers;
+begin
+  FHTMLTimer.Enabled := False;
+  FImagesInserted.Enabled := False;
 end;
 
 function THtmlViewer.GetCursor: TCursor;
@@ -4411,7 +4419,7 @@ procedure THtmlViewer.Clear;
 begin
   if IsProcessing then
     Exit;
-  HTMLTimer.Enabled := False;
+  StopTimers;
   FSectionList.UseQuirksMode := FUseQuirksMode;
 {$ifdef has_StyleElements}
   FSectionList.StyleElements := Self.StyleElements;
