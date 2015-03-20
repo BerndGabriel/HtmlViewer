@@ -9,7 +9,7 @@ Developers under Windows might want to use Tortoise-GIT or "Git Gui" to keep
 their sources up-to-date.
 
 Or even become a member of GitHub, clone the repository and push their changes 
-to their clone. If they are of public interest you can request me to merge it 
+to their clone. If they are of public interest you can request me to pull it 
 into my branch where it will become part of the "official" HtmlViewer.
 
 --------------------------------------------------------------------------------
