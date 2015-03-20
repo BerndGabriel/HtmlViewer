@@ -1,4 +1,18 @@
 --------------------------------------------------------------------------------
+Welcome at GitHub.
+--------------------------------------------------------------------------------
+
+If you're coming from the HtmlViewer-SVN at Google Code you now find the same 
+code and revisions of SVN-"trunk" in my GitHub-default branch "HtmlViewer-11.5".
+
+Developers under Windows might want to use Tortoise-GIT or "Git Gui" to keep 
+their sources up-to-date.
+
+Or even become a member of GitHub, clone the repository and push their changes 
+to their clone. If they are of public interest you can request me to merge it 
+into my branch where it will become part of the "official" HtmlViewer.
+
+--------------------------------------------------------------------------------
 HtmlViewer 10.2 and 11.x
 --------------------------------------------------------------------------------
 
