@@ -4022,8 +4022,9 @@ begin
   if Assigned(Item) then
   begin
     if Item is TSection then
-      Add(Section, TagIndex);
-    inherited Add(Item);
+      Add(Section, TagIndex)
+    else
+      inherited Add(Item);
     Item.SetDocument(Document);
   end;
 end;
