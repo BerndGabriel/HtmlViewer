@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{2D22AD30-031D-4E42-ADAE-B91377FA3096}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="FrameViewerXE8.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="dclFrameViewerXE8.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FrameViewerXE8">
+        <MSBuild Projects="FrameViewerXE8.dproj"/>
+    </Target>
+    <Target Name="FrameViewerXE8:Clean">
+        <MSBuild Projects="FrameViewerXE8.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FrameViewerXE8:Make">
+        <MSBuild Projects="FrameViewerXE8.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="dclFrameViewerXE8">
+        <MSBuild Projects="dclFrameViewerXE8.dproj"/>
+    </Target>
+    <Target Name="dclFrameViewerXE8:Clean">
+        <MSBuild Projects="dclFrameViewerXE8.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="dclFrameViewerXE8:Make">
+        <MSBuild Projects="dclFrameViewerXE8.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FrameViewerXE8;dclFrameViewerXE8"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FrameViewerXE8:Clean;dclFrameViewerXE8:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FrameViewerXE8:Make;dclFrameViewerXE8:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
