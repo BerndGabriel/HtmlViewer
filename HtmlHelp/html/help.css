@@ -9,7 +9,7 @@ body.v119     { background: url("../images/v119.png") no-repeat; }
 
 h1            { font-size: 12pt; }
 h2            { font-size: 11pt; }
-h2.deprecated { color: red; }
+.deprecated { color: red; }
 h3            { font-size: 10pt; }
 
 ul.SeeAlso    { list-style-type: none; }
