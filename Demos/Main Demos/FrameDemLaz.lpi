@@ -30,7 +30,6 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="C:\Users\Bernd\Downloads\Development\HtmlViewer-TestCases\issue-133-nesten-list-margin-collapse\list-margin-bottom.html"/>
       </local>
     </RunParams>
     <RequiredPackages Count="3">
@@ -96,7 +95,6 @@
         <TopLine Value="7894"/>
         <CursorPos X="19" Y="7898"/>
         <UsageCount Value="101"/>
-        <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="..\..\source\framview.pas"/>
@@ -113,7 +111,6 @@
         <TopLine Value="1"/>
         <CursorPos X="5" Y="28"/>
         <UsageCount Value="40"/>
-        <Loaded Value="True"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\..\source\DitherUnit.pas"/>
@@ -155,7 +152,6 @@
         <TopLine Value="334"/>
         <CursorPos X="64" Y="360"/>
         <UsageCount Value="36"/>
-        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\source\htmlview.pas"/>
@@ -168,7 +164,6 @@
         <Bookmarks Count="1">
           <Item0 X="1" Y="3162" ID="8"/>
         </Bookmarks>
-        <Loaded Value="True"/>
       </Unit12>
       <Unit13>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\canvas.inc"/>
@@ -193,7 +188,6 @@
         <TopLine Value="655"/>
         <CursorPos X="1" Y="691"/>
         <UsageCount Value="43"/>
-        <Loaded Value="True"/>
       </Unit15>
       <Unit16>
         <Filename Value="..\..\source\Htmlsbs1.pas"/>
@@ -258,7 +252,6 @@
         <TopLine Value="43"/>
         <CursorPos X="17" Y="79"/>
         <UsageCount Value="65"/>
-        <Loaded Value="True"/>
       </Unit23>
       <Unit24>
         <Filename Value="D:\source\pascal\lazarus\lcl\include\rasterimage.inc"/>
@@ -584,7 +577,6 @@
         <TopLine Value="110"/>
         <CursorPos X="10" Y="138"/>
         <UsageCount Value="36"/>
-        <Loaded Value="True"/>
       </Unit66>
       <Unit67>
         <Filename Value="..\..\source\FrameViewerReg.pas"/>
@@ -594,7 +586,6 @@
         <TopLine Value="11"/>
         <CursorPos X="86" Y="20"/>
         <UsageCount Value="36"/>
-        <Loaded Value="True"/>
       </Unit67>
       <Unit68>
         <Filename Value="..\..\source\BegaScrollBox.pas"/>
@@ -667,7 +658,6 @@
         <TopLine Value="596"/>
         <CursorPos X="1" Y="632"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit76>
       <Unit77>
         <Filename Value="..\..\source\URLSubs.pas"/>
@@ -677,7 +667,6 @@
         <TopLine Value="583"/>
         <CursorPos X="1" Y="619"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit77>
     </Units>
     <JumpHistory Count="29" HistoryIndex="28">
@@ -826,43 +815,6 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="5">
-      <Item1>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="..\..\source\htmlview.pas"/>
-        <Line Value="5018"/>
-      </Item1>
-      <Item2>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="..\..\source\htmlview.pas"/>
-        <Line Value="2173"/>
-      </Item2>
-      <Item3>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="..\..\source\htmlview.pas"/>
-        <Line Value="4248"/>
-      </Item3>
-      <Item4>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="..\..\source\htmlview.pas"/>
-        <Line Value="4259"/>
-      </Item4>
-      <Item5>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="C:\lazarus.1.2\fpc\2.6.4\source\packages\winunits-base\src\flatsb.pp"/>
-        <Line Value="75"/>
-      </Item5>
-    </BreakPoints>
     <Exceptions Count="3">
       <Item1>
         <Name Value="EAbort"/>

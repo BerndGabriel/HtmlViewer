@@ -92,7 +92,7 @@ type
 {$ifdef UseTNT}
     TBaseForm = TTntForm;
 {$else}
-    TBaseForm = TForm;
+    TBaseForm = class(TForm);
 {$endif}
 
   { TForm1 }

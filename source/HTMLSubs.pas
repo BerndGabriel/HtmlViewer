@@ -4745,7 +4745,7 @@ begin
 {$endif}
   else
     Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
-    if (BlockTitle <> '') and PtInRect(MyRect, Point(X, Y - Document.YOFF)) then
+    if not (guTitle in Result) and (BlockTitle <> '') and PtInRect(MyRect, Point(X, Y - Document.YOFF)) then
     begin
       ATitle := BlockTitle;
       Include(Result, guTitle);
@@ -6743,7 +6743,7 @@ function TBodyBlock.GetURL(Canvas: TCanvas; X, Y: Integer;
   out ATitle: ThtString): ThtguResultType;
 begin
   Result := MyCell.GetURL(Canvas, X, Y, UrlTarg, FormControl, ATitle);
-  if (BlockTitle <> '') then
+  if not (guTitle in Result) and (BlockTitle <> '') then
   begin
     ATitle := BlockTitle;
     Include(Result, guTitle);
