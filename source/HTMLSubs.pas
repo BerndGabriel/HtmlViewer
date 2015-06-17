@@ -209,7 +209,7 @@ type
 //    function GetPseudos: TPseudos; virtual;
     function IsCopy: Boolean; virtual;
   public
-    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
+    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const ID: ThtString);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); virtual;
     //constructor Create(Parent: THtmlNode; Tag: TElemSymb; Attributes: TAttributeList; const Properties: TResultingProperties);
     function IndexOf(Child: THtmlNode): Integer; virtual;
@@ -258,7 +258,8 @@ type
     DrawRect: TRect;    //>-- DZ where the section starts (calculated in DrawLogic1 or Draw1)
     TagClass: ThtString; {debugging aid}
 
-    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
+    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const TheId, TheClass: ThtString); overload;
+    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties); overload;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; virtual;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual; abstract;
@@ -298,7 +299,7 @@ type
     Floating: ThtAlignmentStyle;
     Indent: Integer;           {Indentation of floated object}
 
-    constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
+    constructor Create(Parent: TCellBasic; Position: Integer; Attributes: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
   end;
 
@@ -1582,7 +1583,7 @@ type
   public
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
-    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
+    constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
   end;
 
   THorzLine = class(TSectionBase) {a horizontal line, <hr>}
@@ -1800,19 +1801,9 @@ begin
     Document.IDNameList.AddObject(ID, Self);
 end;
 
-constructor THtmlNode.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
-var
-  id: ThtString; //>-- DZ
+constructor THtmlNode.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const ID: ThtString);
 begin
-  //>-- DZ
-  {if Properties <> nil then
-    id := Properties.PropID
-  else} if Attributes <> nil then
-    id := Attributes.TheId
-  else
-    id := '';
-
-  inherited Create(id);
+  inherited Create(ID);
   FOwnerCell := Parent;
   if FOwnerCell <> nil then
   begin
@@ -2871,6 +2862,7 @@ begin
     H := ObjHeight;
   end;
   try
+    ddImage.Transp := Transparent;
     if IsCopy then
       ddImage.Print(Canvas, XX, Y, W, H, clWhite)
     else
@@ -7587,6 +7579,7 @@ begin
         GetTheBase64(Name)
       else
       begin
+
         GetTheBitmap;
         if (Result = nil) and not Delay then
           GetTheStream;
@@ -10648,7 +10641,7 @@ end;
 constructor TSection.Create(Parent: TCellBasic);
 begin
   inherited Create(Parent, nil, nil);
-  FDisplay := pdInline; // A section is always inline as the section is intended to handle consecutive inline elements.  
+  FDisplay := pdInline; // A section is always inline as the section is intended to handle consecutive inline elements.
   FBuff := PWideChar(BuffS);
   Fonts := TFontList.Create;
   Images := TSizeableObjList.Create;
@@ -10662,7 +10655,7 @@ constructor TSection.Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TPro
 var
   FO: TFontObj;
   T: TAttribute;
-  S: ThtString;
+  S, C: ThtString;
   Clr: ThtClearStyle;
   Percent: boolean;
 begin
@@ -10671,7 +10664,12 @@ begin
   StyleUn.LogProperties(Prop,'Prop');
   CodeSite.AddSeparator;
 {$ENDIF}
-  inherited Create(Parent, Attr, Prop);
+  if Attr <> nil then
+  begin
+    S := Attr.TheID;
+    C := Attr.TheClass;
+  end;
+  inherited Create(Parent, Attr, Prop, S, C);
   if FDisplay = pdUnassigned then
     FDisplay := pdInline;
   FBuff := PWideChar(BuffS);
@@ -14433,9 +14431,9 @@ end;
 
 {----------------TPage.Draw1}
 
-constructor TPage.Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
+constructor TPage.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
 begin
-  inherited Create(Parent,Attributes,AProp);
+  inherited Create(Parent, Attributes, Properties);
   if FDisplay = pdUnassigned then
     FDisplay := pdBlock;
 end;
@@ -15255,24 +15253,38 @@ end;
 { TSectionBase }
 
 //-- BG ---------------------------------------------------------- 20.09.2009 --
-constructor TSectionBase.Create(Parent: TCellBasic; Attributes: TAttributeList; AProp: TProperties);
+constructor TSectionBase.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
+var
+  TheId, TheClass: ThtString;
 begin
-  inherited Create(Parent,Attributes,AProp);
-  if AProp <> nil then
+  if Properties <> nil then
   begin
-    FDisplay := AProp.Display;
-    TagClass := AProp.PropTag;
+    TheID := Properties.PropID;
+    TheClass := Properties.PropClass;
+  end
+  else if Attributes <> nil then
+  begin
+    TheId := Attributes.TheId;
+    TheClass := Attributes.TheClass;
+  end;
+  Create(Parent, Attributes, Properties, TheId, TheClass);
+end;
+
+//-- BG ---------------------------------------------------------- 20.09.2009 --
+constructor TSectionBase.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const TheId, TheClass: ThtString);
+begin
+  inherited Create(Parent, Attributes, Properties, TheId);
+  if Properties <> nil then
+  begin
+    FDisplay := Properties.Display;
+    TagClass := Properties.PropTag;
 //  end
 //  else
 //  begin
 //    FDisplay := pdUnassigned;
 //    TagClass := '';
   end;
-
-  if Attributes <> nil then
-  begin
-    htAppendStr(TagClass, '.' + Attributes.TheClass + '#' + Attributes.TheID);
-  end;
+  htAppendStr(TagClass, '.' + TheClass + '#' + TheId);
 
   ContentTop := 999999999; {large number in case it has Display: none; }
 
@@ -16015,9 +16027,9 @@ end;
 { TBlockBase }
 
 //-- BG ---------------------------------------------------------- 31.08.2013 --
-constructor TBlockBase.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
+constructor TBlockBase.Create(Parent: TCellBasic; Position: Integer; Attributes: TAttributeList; Prop: TProperties);
 begin
-  inherited Create(Parent, L, Prop);
+  inherited Create(Parent, Attributes, Prop);
   if FDisplay = pdUnassigned then
     FDisplay := pdBlock;
   StartCurs := Position;

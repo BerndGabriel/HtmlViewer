@@ -609,7 +609,9 @@ begin
     ImageFormat := KindOfImage(Stream);
 
 {$ifndef NoGDIPlus}
-    if not (ImageFormat in [itGif]) then
+    if ImageFormat in [itGif] then
+    else if (ImageFormat in [itBmp]) {and (Transparent <> NotTransp)} then
+    else
       try
         Result := LoadGpImage;
       except
@@ -630,7 +632,7 @@ begin
     if Result = nil then
       if Bitmap <> nil then
       begin
-        if Transparent = LLCorner then
+        //if Transparent = LLCorner then
           Mask := GetImageMask(Bitmap, False, 0);
         Bitmap := ConvertImage(Bitmap);
         Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
@@ -1896,7 +1898,7 @@ procedure ThtBitmapImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 begin
   if Bitmap = nil then
     exit;
-  if Mask = nil then
+  if (Mask = nil) or (Transp = NotTransp) then
   begin
 {$IFDEF HalfToneStretching}
     SetStretchBltMode(Canvas.Handle, HALFTONE);
