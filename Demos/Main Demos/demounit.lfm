@@ -143,7 +143,6 @@ object Form1: TForm1
       OnSoundRequest = SoundRequest
       Align = alClient
       TabOrder = 0
-      TabStop = True
       OnMouseMove = ViewerMouseMove
     end
   end
