@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  LCLVersion = '0.9.30.2'
+  LCLVersion = '1.4.0.4'
   object Panel1: TPanel
     Left = 0
     Height = 18
@@ -113,11 +113,7 @@ object Form1: TForm1
       Height = 362
       Top = 1
       Width = 611
-      TabStop = True
-      TabOrder = 0
-      Align = alClient
       BorderStyle = htFocused
-      CharSet = DEFAULT_CHARSET
       DefBackground = clWindow
       DefFontColor = clWindowText
       DefFontName = 'Times New Roman'
@@ -131,7 +127,6 @@ object Form1: TForm1
       PrintMarginRight = 2
       PrintMarginTop = 2
       PrintScale = 1
-      OnMouseMove = ViewerMouseMove
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange
       OnHotSpotClick = HotSpotClick
@@ -146,6 +141,10 @@ object Form1: TForm1
       OnRightClick = RightClick
       OnScript = ViewerScript
       OnSoundRequest = SoundRequest
+      Align = alClient
+      TabOrder = 0
+      TabStop = True
+      OnMouseMove = ViewerMouseMove
     end
   end
   object OpenDialog: TOpenDialog
