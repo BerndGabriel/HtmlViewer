@@ -1,8 +1,9 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <Package Version="4">
     <PathDelim Value="\"/>
     <Name Value="FrameViewer09"/>
+    <Type Value="RunAndDesignTime"/>
     <AddToProjectUsesSection Value="True"/>
     <CompilerOptions>
       <Version Value="11"/>
@@ -38,11 +39,10 @@
         <CompilerMessages>
           <IgnoredMessages idx5024="True"/>
         </CompilerMessages>
-        <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="23">
+    <Files Count="38">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -136,8 +136,67 @@
         <Filename Value="..\source\HtmlSymb.pas"/>
         <UnitName Value="HtmlSymb"/>
       </Item23>
+      <Item24>
+        <Filename Value="..\source\BegaHtmlPrintPreviewForm.pas"/>
+        <UnitName Value="BegaHtmlPrintPreviewForm"/>
+      </Item24>
+      <Item25>
+        <Filename Value="..\source\BegaMetaFilePrinter.pas"/>
+        <UnitName Value="BegaMetaFilePrinter"/>
+      </Item25>
+      <Item26>
+        <Filename Value="..\source\BegaPreview.pas"/>
+        <UnitName Value="BegaPreview"/>
+      </Item26>
+      <Item27>
+        <Filename Value="..\source\BegaPreviewForm.pas"/>
+        <UnitName Value="BegaPreviewForm"/>
+      </Item27>
+      <Item28>
+        <Filename Value="..\source\BegaPreviewPanel.pas"/>
+        <UnitName Value="BegaPreviewPanel"/>
+      </Item28>
+      <Item29>
+        <Filename Value="..\source\BegaScrollBox.pas"/>
+        <UnitName Value="BegaScrollBox"/>
+      </Item29>
+      <Item30>
+        <Filename Value="..\source\BegaZoom.pas"/>
+        <UnitName Value="BegaZoom"/>
+      </Item30>
+      <Item31>
+        <Filename Value="..\source\GDIPL2A.pas"/>
+        <UnitName Value="GDIPL2A"/>
+      </Item31>
+      <Item32>
+        <Filename Value="..\source\HtmlCaches.pas"/>
+        <UnitName Value="HtmlCaches"/>
+      </Item32>
+      <Item33>
+        <Filename Value="..\source\HtmlFonts.pas"/>
+        <UnitName Value="HtmlFonts"/>
+      </Item33>
+      <Item34>
+        <Filename Value="..\source\HtmlImages.pas"/>
+        <UnitName Value="HtmlImages"/>
+      </Item34>
+      <Item35>
+        <Filename Value="..\source\MetaFilePrinter.pas"/>
+        <UnitName Value="MetaFilePrinter"/>
+      </Item35>
+      <Item36>
+        <Filename Value="..\source\StyleTypes.pas"/>
+        <UnitName Value="StyleTypes"/>
+      </Item36>
+      <Item37>
+        <Filename Value="..\source\vwPrint.pas"/>
+        <UnitName Value="vwPrint"/>
+      </Item37>
+      <Item38>
+        <Filename Value="..\source\widestringslcl.pas"/>
+        <UnitName Value="WideStringsLcl"/>
+      </Item38>
     </Files>
-    <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">
       <Item1>
         <PackageName Value="printer4lazarus"/>

@@ -10,7 +10,10 @@ uses
   DitherUnit, FramBrwz, FrameViewerReg, FramView, HtmlBuffer, HtmlGif1, 
   HTMLGif2, HtmlGlobals, HtmlMisc, Htmlsbs1, HTMLSubs, HTMLUn2, HtmlView, 
   ReadHTML, StylePars, StyleUn, URLSubs, msimg32, AlphaBlendUn, HSLUtils, 
-  BuffConv, BuffConvArrays, HtmlSymb, LazarusPackageIntf;
+  BuffConv, BuffConvArrays, HtmlSymb, BegaHtmlPrintPreviewForm, 
+  BegaMetaFilePrinter, BegaPreview, BegaPreviewForm, BegaPreviewPanel, 
+  BegaScrollBox, BegaZoom, GDIPL2A, HtmlCaches, HtmlFonts, HtmlImages, 
+  MetaFilePrinter, StyleTypes, vwPrint, WideStringsLcl, LazarusPackageIntf;
 
 implementation
 
