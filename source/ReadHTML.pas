@@ -3199,7 +3199,7 @@ begin
         begin {don't create a section for a single space}
           if (LCToken.Count >= 1) and (LCToken.S <> SpcChar) then
           begin
-            Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
+            Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, True);
             Section.AddTokenObj(LCToken);
           end;
         end
