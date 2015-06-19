@@ -176,11 +176,17 @@ procedure TForm1.RichEdChange(Sender: TObject);
 {TRichEdit OnChange handler}
 var
   Position: integer;
+  Text: string;
 begin
   if RichOK then
   begin
     Position := Viewer.Position;
-    Viewer.LoadFromString(RichEdit.Text);
+{$ifdef Compiler16_Plus}
+    Text := StringReplace(RichEdit.Text, #$0D#$0A, #$0A, [rfReplaceAll]);
+{$else}
+    Text := RichEdit.Text;    
+{$endif}    
+    Viewer.LoadFromString(Text);
     ViewerOK := True;
     Viewer.Position := Position;
     RichEditSelectionChange(Nil);
@@ -219,6 +225,7 @@ begin
       Viewer.SelStart := Pos1;
       Viewer.SelLength := Pos2-Pos1;
     end;
+    Panel3.Caption := Format('Edit.SelStart %d, Edit.SelLength %d, Viewer.SelStart %d, Viewer.SelLength %d', [SStr, SLen, Pos1, Pos2-Pos1]);
   end;
 end;
 
