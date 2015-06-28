@@ -1,9 +1,9 @@
 {
-Version   11.5
+Version   11.6
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2012 by Angus Robertson delphi@magsys.co.uk
-Copyright (c) 2013-2014 by HtmlViewer Team
+Copyright (c) 2013-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -29,8 +29,7 @@ are covered by separate copyright notices located in those modules.
 
 This demo requires the HtmlViewer component from:
 
-https://github.com/BerndGabriel/HtmlViewer or
-http://code.google.com/p/thtmlviewer/
+https://github.com/BerndGabriel/HtmlViewer
 
 which must also be downloaded and installed before the demo can be built.
 
