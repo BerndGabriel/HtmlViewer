@@ -1,6 +1,6 @@
 {
-HtmlViewer Version 11.5
-Copyright (c) 2010-2014 by Bernd Gabriel
+HtmlViewer Version 11.6
+Copyright (c) 2010-2015 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -155,14 +155,14 @@ type
   public
     class function Convert(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
     class function Convert(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
-    class function Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
+    class function Convert(const Text: TBuffString; CodePage: TBuffCodePage): TBuffString; overload; {$ifdef UseInline} inline; {$endif}
     constructor Create(const Doc: TBuffer); overload;
     constructor Create(Stream: TStream; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
     constructor Create(Stream: TStream; Name: TBuffString = ''); overload;
-    constructor Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    constructor Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = ''); overload;
-    constructor Create(Text: TBuffString; Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE); overload;
+    constructor Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; const Name: TBuffString = ''); overload;
+    constructor Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; const Name: TBuffString = ''); overload;
+    constructor Create(const Text: TBuffString; CodePage: TBuffCodePage; const Name: TBuffString = ''); overload;
+    constructor Create(const Text: TBuffString; const Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE); overload;
     destructor Destroy; override;
     function AsString: TBuffString; {$ifdef UseInline} inline; {$endif}
     function GetString(FromIndex, UntilIndex: Integer): TBuffString;
@@ -1431,7 +1431,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: TBuffString; Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE);
+constructor TBuffer.Create(const Text: TBuffString; const Name: TBuffString = ''; CodePage: TBuffCodePage = CP_UTF16LE);
 var
   I: Integer;
 begin
@@ -1455,19 +1455,19 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: TBuffString; CodePage: TBuffCodePage; Name: TBuffString = '');
+constructor TBuffer.Create(const Text: TBuffString; CodePage: TBuffCodePage; const Name: TBuffString = '');
 begin
   Create(Text, Name, CodePage);
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; Name: TBuffString = '');
+constructor TBuffer.Create(Text: PByte; ByteCount: Integer; CodePage: TBuffCodePage; const Name: TBuffString = '');
 begin
   Create(Text, ByteCount, CodePage, CodePage, Name);
 end;
 
 //-- BG ---------------------------------------------------------- 17.12.2010 --
-constructor TBuffer.Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; Name: TBuffString = '');
+constructor TBuffer.Create(Text: PByte; ByteCount: Integer; CodePage, InitialCodePage: TBuffCodePage; const Name: TBuffString = '');
 var
   I: Integer;
 begin
@@ -1482,7 +1482,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 06.12.2011 --
-class function TBuffer.Convert(Text: TBuffString; CodePage: TBuffCodePage): TBuffString;
+class function TBuffer.Convert(const Text: TBuffString; CodePage: TBuffCodePage): TBuffString;
 var
   Buffer: TBuffer;
 begin
