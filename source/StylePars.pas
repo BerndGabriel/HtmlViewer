@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.6
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -64,7 +64,7 @@ type
     procedure SkipWhiteSpace;
     function GetString(out Str: ThtString): Boolean;
     //
-    function AddPath(S: ThtString): ThtString;
+    function AddPath(const S: ThtString): ThtString;
     procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString);
   protected
     constructor Create(const AUseQuirksMode : Boolean);
@@ -287,23 +287,21 @@ end;
 
 {----------------AddPath}
 
-function THtmlStyleParser.AddPath(S: ThtString): ThtString;
+function THtmlStyleParser.AddPath(const S: ThtString): ThtString;
 {for <link> styles, the path is relative to that of the stylesheet directory
  and must be added now}
 begin
-  S := ReadUrl(S); {extract the info from url(....) }
+  Result := ReadUrl(S); {extract the info from url(....) }
   if (Pos('://', LinkPath) > 0) then {it's TFrameBrowser and URL}
-    if not IsFullUrl(S) then
-      Result := CombineURL(LinkPath, S)
-    else
-      Result := S
+  begin
+    if not IsFullUrl(Result) then
+      Result := CombineURL(LinkPath, Result);
+  end
   else
   begin
-    S := HTMLToDos(S);
-    if (Pos(':', S) <> 2) and (Pos('\\', Result) <> 1) then
-      Result := LinkPath + S
-    else
-      Result := S;
+    Result := HTMLToDos(S);
+    if not IsAbsolutePath(Result) then
+      Result := CombineDos(LinkPath, Result);
   end;
 {
 IMPORTANT!!!

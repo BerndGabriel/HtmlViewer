@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.6
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -37,11 +37,22 @@ uses
  * URL processing methods
  **************************************************************************************************}
 
-procedure ParseURL(const url: ThtString; out Proto, User, Pass, Host, Port, Path: ThtString);
+procedure ParseURL(const Url: ThtString; out Proto, User, Pass, Host, Port, Path: ThtString);
 {François PIETTE's URL parsing procedure}
 
 procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
 {Split Str at first appearance of Sep into Str and Spall. Spall starts with Sep.}
+
+function IsValidSchemeChar(const Ch: ThtChar): Boolean;
+{ Returns true, if Ch is a valid scheme char (a..z, A..Z, 0..9, +, -, .)}
+function FindSchemeSep(const Src: ThtString; var Index: Integer): Boolean;
+{Find the ':' after a series of valid scheme chars starting with Src[Index].
+ Returns true, if there is a ':' only preceeded by valid scheme chars.
+ If returns true Index is advanced to the position of ':'}
+
+procedure SplitScheme(const Src: ThtString; out Name, SchemeSpecific: ThtString); overload;
+procedure SplitScheme(var Src: ThtString; out SchemeSpecific: ThtString); overload;
+{Split an URL into scheme and scheme specific part at first appearance of ':'}
 
 procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload;
 procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
@@ -82,22 +93,25 @@ function DecodeURL(const URL: ThtString): ThtString;
 function Normalize(const URL: ThtString): ThtString;
 {lowercase, trim, and make sure a '/' terminates a hostname, adds http://}
 
-function DosToHTML(FName: ThtString): ThtString;
+function DosToHTML(const FName: ThtString): ThtString;
 {convert an Dos style filename to one for HTML.  Does not add the file:///}
 
 function DosToHtmlNoSharp(FName: ThtString): ThtString;
 {convert a Dos style filename to one for HTML.  Does not add the file:///.
  use where "#" is not being used as a local position but rather is part of filename.}
 
-function HTMLToDos(FName: ThtString): ThtString;
+function HTMLToDos(const FName: ThtString): ThtString;
 {convert an HTML style filename to one for Dos}
 
-function HTMLServerToDos(FName, Root: ThtString): ThtString;
+function HTMLServerToDos(const FName, Root: ThtString): ThtString;
 {convert an HTML style filename to one for Dos. Prefix with Root, if name starts with a single backslash}
 
 {***************************************************************************************************
  * DOS processing methods
  **************************************************************************************************}
+
+function IsAbsolutePath(const Filename: ThtString): Boolean;
+{set if contains a drive or server}
 
 function CombineDos(const Base, Path: ThtString): ThtString;
 {combine a base and a path}
@@ -106,7 +120,7 @@ function CombineDos(const Base, Path: ThtString): ThtString;
  * both URL and Resource processing methods
  **************************************************************************************************}
 
-function HTMLToRes(URL: ThtString; out AType: ThtString): ThtString;
+function HTMLToRes(const URL: ThtString; out AType: ThtString): ThtString;
 {convert an (% encoded) URL like res:[/]*<name>.<type> to resource name and type}
 
 {**************************************************************************************************}
@@ -204,9 +218,12 @@ begin
 
   if (Length(APath) >= 1) and (APath[1] = '/') then
   begin {remove path from base and use host only}
-    if (Length(APath) >= 2) and (APath[2] = '/') then {UNC filename}
+    if (Length(APath) >= 2) and (APath[2] = '/') then
+      // '//...' is an absolue path, but not an UNC path, because DosToHtml()
+      // had detected it as an absolute path and thus had added a scheme/protocol
+      // and thus CombineURL had not been called.
       if Proto = 'file' then
-        Result := 'file:///' + APath
+        Result := 'http:' + APath
       else
         Result := Proto + ':' + APath
     else
@@ -278,25 +295,39 @@ begin
   Result := Result + Query;
 end;
 
-function IsFullURL(const URL: ThtString): boolean;
+function IsFullURL(const URL: ThtString): Boolean;
  {$ifdef UseInline} inline; {$endif}
 var
-  N: integer;
-  S: ThtString;
+  I: integer;
+//  S: ThtString;
 begin
-  N := Pos('?', Url);
-  if N > 0 then
-    S := Copy(Url, 1, N - 1)
-  else
-    S := Url;
-  N := Pos('://', S);
-  if (N > 0) and (N < Pos('/', S)) then
+  I := 1;
+  if FindSchemeSep(URL, I) then
     Result := True
+//  else if Pos('//', URL) = 1 then
+//    // no scheme? Assuming http:
+//    Result := True
   else
-  begin
-    S := htLowerCase(S);
-    Result := (Copy(S, 1, 7) = 'mailto:') or (Copy(S, 1, 5) = 'data:');
-  end;
+    Result := False;
+
+//  S := Url;
+//  N := Pos('?', S);
+//  if N > 0 then
+//    SetLength(S, N - 1);
+//  N := Pos('://', S);
+//  if (N > 0) and (N < Pos('/', S)) then
+//    Result := True
+//  else
+//  begin
+//    S := htLowerCase(S);
+//    Result := (Copy(S, 1, 7) = 'mailto:') or (Copy(S, 1, 5) = 'data:');
+//  end;
+end;
+
+//-- BG ---------------------------------------------------------- 28.06.2015 --
+function IsAbsolutePath(const Filename: ThtString): Boolean;
+begin
+  Result := (Pos(':', Filename) = 2) or (Pos('\\', Filename) = 1);
 end;
 
 function GetProtocol(const URL: ThtString): ThtString;
@@ -355,7 +386,7 @@ end;
 // Thanx to François PIETTE
 
 procedure ParseURL(
-  const url: ThtString;
+  const Url: ThtString;
   out Proto, User, Pass, Host, Port, Path: ThtString);
 
   // Find the count'th occurence of string s in string t.
@@ -411,20 +442,21 @@ procedure ParseURL(
   end;
 
 var
-  p, q: Integer;
+  n, p, q: Integer;
   s: ThtString;
 begin
-  proto := '';
-  User := '';
-  Pass := '';
-  Host := '';
-  Port := '';
-  Path := '';
+  SetLength(Proto, 0);
+  SetLength(User , 0);
+  SetLength(Pass , 0);
+  SetLength(Host , 0);
+  SetLength(Port , 0);
+  SetLength(Path , 0);
 
-  if Length(url) < 1 then
+  n := Length(Url);
+  if n < 1 then
     Exit;
 
-  p := pos('://', url);
+  p := Pos('://', Url);
   if p = 0 then
   begin
     if (url[1] = '/') then
@@ -459,6 +491,12 @@ begin
     begin
       proto := 'data';
       p := pos(':', url);
+    end
+    else
+    begin
+      p := 1;
+      if FindSchemeSep(Url, p) then
+        Proto := Copy(Url, 1, p - 1);
     end;
   end
   else
@@ -521,10 +559,80 @@ begin
   if I >= 0 then
   begin
     Spall := System.Copy(Str, I + 1, Length(Str) - I);
-    Str   := System.Copy(Str, 1, I);
+    SetLength(Str, I);
   end
   else
     Spall := '';
+end;
+
+//-- BG ---------------------------------------------------------- 28.06.2015 --
+function IsValidSchemeChar(const Ch: ThtChar): Boolean;
+ {$ifdef UseInline} inline; {$endif}
+begin
+  case Ch of
+    '0'..'9',
+    'a'..'z',
+    'A'..'Z',
+    '+', '-', '.':
+      Result := True;
+  else
+    Result := False;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 28.06.2015 --
+function FindSchemeSep(const Src: ThtString; var Index: Integer): Boolean;
+var
+  I, N: Integer;
+begin
+  I := Index;
+  N := Length(Src);
+  while (I <= N) and IsValidSchemeChar(Src[I]) do
+    Inc(I);
+
+  // Assuming that all scheme names are longer than 1 char (as 1 char might indicate a DOS drive name):
+  Result := (I > 2) and (I <= N) and (Src[I] = ':');
+  if Result then
+    // Yes there is a scheme:
+    Index := I;
+end;
+
+//-- BG ---------------------------------------------------------- 28.06.2015 --
+procedure SplitScheme(var Src: ThtString; out SchemeSpecific: ThtString); overload;
+var
+  I: Integer;
+begin
+  I := 1;
+  if FindSchemeSep(Src, I) then
+  begin
+    SchemeSpecific := Copy(Src, I + 1, MaxInt);
+    SetLength(Src, I);
+  end
+  else
+  begin
+    SchemeSpecific := Src;
+    SetLength(Src, 0);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 28.06.2015 --
+procedure SplitScheme(const Src: ThtString; out Name, SchemeSpecific: ThtString); overload;
+ {$ifdef UseInline} inline; {$endif}
+{Split an URL into scheme and scheme specific part}
+var
+  I: Integer;
+begin
+  I := 1;
+  if FindSchemeSep(Src, I) then
+  begin
+    Name := Copy(Src, 1, I);
+    SchemeSpecific := Copy(Src, I + 1, MaxInt);
+  end
+  else
+  begin
+    SchemeSpecific := Src;
+    SetLength(Name, 0);
+  end;
 end;
 
 procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
@@ -554,7 +662,7 @@ begin
   SplitString(Name, '?', Query);
 end;
 
-function DosToHTML(FName: ThtString): ThtString;
+function DosToHTML(const FName: ThtString): ThtString;
 {convert a Dos style filename to one for HTML.  Does not add the file:///}
 var
   Colon: integer;
@@ -563,21 +671,21 @@ var
   var
     I: integer;
   begin
-    I := Pos(Old, FName);
+    I := Pos(Old, Result);
     while I > 0 do
     begin
-      FName[I] := New;
-      I := Pos(Old, FName);
+      Result[I] := New;
+      I := Pos(Old, Result);
     end;
   end;
 
 begin
-  Colon := Pos('://', FName);
+  Result := FName;
+  Colon := Pos('://', Result);
   Replace(':', '|');
   Replace('\', '/');
   if Colon > 0 then
-    FName[Colon] := ':'; {return it to a colon}
-  Result := FName;
+    Result[Colon] := ':'; {return it to a colon}
 end;
 
 function DosToHtmlNoSharp(FName: ThtString): ThtString;
@@ -681,7 +789,7 @@ begin
   Result := FName;
 end;
 
-function HTMLToDos(FName: ThtString): ThtString;
+function HTMLToDos(const FName: ThtString): ThtString;
 {convert an HTML style filename to one for Dos}
 var
   I, N: integer;
@@ -690,38 +798,37 @@ var
   var
     I: integer;
   begin
-    I := Pos(Old, FName);
+    I := Pos(Old, Result);
     while I > 0 do
     begin
-      FName[I] := New;
-      I := Pos(Old, FName);
+      Result[I] := New;
+      I := Pos(Old, Result);
     end;
   end;
 
 begin
-  FName := DecodeURL(FName);
-  I := pos('/', FName);
+  Result := DecodeURL(FName);
+  I := Pos('/', Result);
   if I <> 0 then
   begin
-    I := Pos('file:/', Lowercase(FName));
+    I := Pos('file:/', Lowercase(Result));
     if I > 0 then
     begin
-      N := Length(FName);
-      if (N < 7) or (FName[7] <> '/') then
+      N := Length(Result);
+      if (N < 7) or (Result[7] <> '/') then
         N := 6
-      else if (N < 8) or (FName[8] <> '/') then
+      else if (N < 8) or (Result[8] <> '/') then
         N := 7
       else
         N := 8;
-      System.Delete(FName, I, N);
+      System.Delete(Result, I, N);
     end;
     Replace('|', ':');
     Replace('/', '\');
   end;
-  Result := FName;
 end;
 
-function HTMLServerToDos(FName, Root: ThtString): ThtString;
+function HTMLServerToDos(const FName, Root: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
 {Add Prefix Root only if first character is '\' but not '\\'}
 begin
@@ -738,7 +845,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 02.04.2014 --
-function HTMLToRes(URL: ThtString; out AType: ThtString): ThtString;
+function HTMLToRes(const URL: ThtString; out AType: ThtString): ThtString;
 {convert an URL like res:[/]*<name>.<type> to resource name and type
   Any number of '/' between 'res:' and 'name.ext' are allowed and ignored.
   On return Result is <name> and AType is <type>.

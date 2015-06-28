@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.6
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -70,7 +70,7 @@ type
     TheStream: TMemoryStream;
     TheStreamType: ThtmlFileType;
   protected
-    function ExpandSourceName(Base, Path: ThtString; S: ThtString): ThtString; override;
+    function ExpandSourceName(const Base, Path, S: ThtString): ThtString; override;
     function FrameSet: TbrSubFrameSet; {$ifdef UseInline} inline; {$endif}
     function GetSubFrameSetClass: TSubFrameSetClass; override;
     function MasterSet: TbrFrameSet; {$ifdef UseInline} inline; {$endif}
@@ -159,14 +159,14 @@ function ConvDosToHTML(const Name: ThtString): ThtString; forward;
 {----------------TbrFrame.CreateIt}
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --
-function TbrFrame.ExpandSourceName(Base, Path: ThtString; S: ThtString): ThtString;
+function TbrFrame.ExpandSourceName(const Base, Path, S: ThtString): ThtString;
 begin
-  S := ConvDosToHTML(S);
-  if Pos(':/', S) <> 0 then
-    URLBase := URLSubs.GetURLBase(S) {get new base}
+  Result := ConvDosToHTML(S);
+  if Pos(':/', Result) <> 0 then
+    URLBase := URLSubs.GetURLBase(Result) {get new base}
   else if Base <> '' then
   begin
-    S := CombineURL(Base, S);
+    Result := CombineURL(Base, Result);
     URLBase := Base;
   end
   else
@@ -175,9 +175,8 @@ begin
       URLBase := (LOwner as TbrFrameSet).URLBase
     else
       URLBase := (LOwner as TbrSubFrameSet).URLBase;
-    S := CombineURL(URLBase, S);
+    Result := CombineURL(URLBase, Result);
   end;
-  Result := S
 end;
 
 //-- BG ---------------------------------------------------------- 04.01.2010 --
@@ -592,14 +591,13 @@ begin
 end;
 
 function ConvDosToHTML(const Name: ThtString): ThtString;
-{if Name is a Dos filename, convert it to HTML.  Add the file:// if it is
- a full pathe filename}
+{if Name is a Dos filename, convert it to HTML.  Add the file:// if it is a full path filename}
 begin
   Result := Name;
   if Pos('\', Result) > 0 then
   begin
     Result := DosToHTML(Result);
-    if (Pos('|', Result) > 0) then {was something like c:\....}
+    if IsAbsolutePath(Name) then {UNC path or something like c:\....}
       Result := 'file:///' + Result;
   end;
 end;
@@ -615,7 +613,9 @@ begin
   if not IsFullUrl(S) then
   begin
     Viewer := Sender as ThtmlViewer;
-    if Viewer.Base <> '' then
+    if Pos('//', SRC) = 1 then
+      S := 'http:' + S
+    else if Viewer.Base <> '' then
       Rslt := CombineURL(ConvDosToHTML(Viewer.Base), S)
     else
       Rslt := CombineURL(UrlBase, S);
@@ -942,7 +942,7 @@ begin
     FOnGetPostRequest(Self, IsGet, Source, Query, Reload, NewURL, DocType, Stream)
   else if Copy(Source, 1, 7) = 'file://' then
   begin
-    DocType := getFileType(Source);
+    DocType := GetFileType(Source);
     if DocType <> OtherType then
     begin
       Stream := TMemoryStream.Create;

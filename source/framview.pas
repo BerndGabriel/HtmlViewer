@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.6
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -394,7 +394,7 @@ type
     procedure UpdateStyleElements; override;
 {$endif}
     function CheckNoResize(out Lower, Upper: boolean): boolean; override;
-    function ExpandSourceName(Base, Path, S: ThtString): ThtString; virtual; abstract;
+    function ExpandSourceName(const Base, Path, S: ThtString): ThtString; virtual; abstract;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
     procedure CreateViewer; virtual;
     procedure frBumpHistory(const NewName: ThtString; NewPos, OldPos: integer; OldFormData: TFreeList);
@@ -530,7 +530,7 @@ type
 
   TfvFrame = class(TViewerFrameBase)
   protected
-    function ExpandSourceName(Base, Path, S: ThtString): ThtString; override;
+    function ExpandSourceName(const Base, Path, S: ThtString): ThtString; override;
     function GetSubFrameSetClass: TSubFrameSetClass; override;
     function MasterSet: TFrameSet; {$ifdef UseInline} inline; {$endif}
     procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: boolean); override;
@@ -863,23 +863,23 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 03.01.2010 --
-function TfvFrame.ExpandSourceName(Base, Path, S: ThtString): ThtString;
+function TfvFrame.ExpandSourceName(const Base, Path, S: ThtString): ThtString;
 begin
+  Result := S;
   if not MasterSet.RequestEvent then
   begin
-    S := HTMLServerToDos(S, MasterSet.FrameViewer.ServerRoot);
-    if Pos(':', S) = 0 then
+    Result := HTMLServerToDos(Result, MasterSet.FrameViewer.ServerRoot);
+    if Pos(':', Result) = 0 then
     begin
       if Base <> '' then
         if CompareText(Base, 'DosPath') = 0 then
-          S := ExpandFilename(S)
+          Result := ExpandFilename(Result)
         else
-          S := CombineDos(HTMLToDos(Base), S)
+          Result := CombineDos(HTMLToDos(Base), Result)
       else
-        S := Path + S;
+        Result := Path + Result;
     end;
   end;
-  Result := S;
 end;
 
 procedure TfvFrame.LoadFiles(PEV: PEventRec);
