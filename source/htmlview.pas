@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.6
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1078,9 +1078,11 @@ var
 begin
   if IsProcessing then
     Exit;
+{$ifdef FPC}
   // in lazarus 1.4.0 with fpc 2.6.4
   // htmlviewer will not draw properly if focused
   RemoveFocus(false);
+{$endif}
   if Filename <> '' then
   begin
     OldFile := FCurrentFile;
@@ -1176,9 +1178,11 @@ var
 begin
   if IsProcessing then
     Exit;
+{$ifdef FPC}
   // in lazarus 1.4.0 with fpc 2.6.4
   // htmlviewer will not draw properly if focused
   RemoveFocus(false);
+{$endif}
   SplitDest(DocName, Name, Dest);
   case DocType of
     ImgType:

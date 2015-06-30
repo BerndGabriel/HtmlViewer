@@ -1,6 +1,6 @@
 {
-HtmlViewer Version 11.5
-Copyright (c) 2010-2014 by Bernd Gabriel
+HtmlViewer Version 11.6
+Copyright (c) 2010-2015 by Bernd Gabriel
 
 This source module is based on code of CodeChangerDecode.pas written by SchwarzKopf-M (SchwarzKopf-M@yandex.ru)
 and the source code library libiconv, which is published under the GNU Library General Public License.
