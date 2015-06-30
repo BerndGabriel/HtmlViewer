@@ -306,6 +306,10 @@ procedure TForm1.OpenFileClick(Sender: TObject);
 begin
   if Viewer.CurrentFile <> '' then
     OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html'+
+      '|Text Files (*.txt)|*.txt'+
+      '|All Files (*.*)|*.*';
+  OpenDialog.FilterIndex:=1;
   if OpenDialog.Execute then
   begin
     Update;
@@ -597,6 +601,7 @@ begin
   OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html'+
     '|Text Files (*.txt)|*.txt'+
     '|All Files (*.*)|*.*';
+  OpenDialog.FilterIndex:=2;
   if OpenDialog.Execute then
   begin
     ReloadButton.Enabled := False;
@@ -617,6 +622,7 @@ begin
   OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
     '*.bmp;*.jpg;*.jpeg;*.gif;*.png|'+
     'All Files (*.*)|*.*';
+  OpenDialog.FilterIndex := 1;
   if OpenDialog.Execute then
   begin
     ReloadButton.Enabled := False;

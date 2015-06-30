@@ -13,7 +13,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  LCLVersion = '0.9.30.2'
+  LCLVersion = '1.4.0.4'
   object Panel1: TPanel
     Left = 0
     Height = 18
@@ -113,11 +113,7 @@ object Form1: TForm1
       Height = 362
       Top = 1
       Width = 611
-      TabStop = True
-      TabOrder = 0
-      Align = alClient
       BorderStyle = htFocused
-      CharSet = DEFAULT_CHARSET
       DefBackground = clWindow
       DefFontColor = clWindowText
       DefFontName = 'Times New Roman'
@@ -131,7 +127,6 @@ object Form1: TForm1
       PrintMarginRight = 2
       PrintMarginTop = 2
       PrintScale = 1
-      OnMouseMove = ViewerMouseMove
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange
       OnHotSpotClick = HotSpotClick
@@ -146,18 +141,21 @@ object Form1: TForm1
       OnRightClick = RightClick
       OnScript = ViewerScript
       OnSoundRequest = SoundRequest
+      Align = alClient
+      TabOrder = 0
+      OnMouseMove = ViewerMouseMove
     end
   end
   object OpenDialog: TOpenDialog
     DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    left = 329
-    top = 2
+    left = 224
+    top = 56
   end
   object MainMenu: TMainMenu
-    left = 352
-    top = 75
+    left = 48
+    top = 56
     object File1: TMenuItem
       Caption = '&File'
       object Open: TMenuItem
@@ -240,12 +238,12 @@ object Form1: TForm1
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    left = 249
-    top = 65535
+    left = 312
+    top = 56
   end
   object PopupMenu: TPopupMenu
-    left = 400
-    top = 1
+    left = 136
+    top = 56
     object Viewimage: TMenuItem
       Caption = '&View image'
       OnClick = ViewimageClick
@@ -265,21 +263,21 @@ object Form1: TForm1
   object MetaTimer: TTimer
     Enabled = False
     OnTimer = MetaTimerTimer
-    left = 242
-    top = 75
+    left = 224
+    top = 136
   end
   object Timer1: TTimer
     Interval = 200
     OnTimer = Timer1Timer
-    left = 291
-    top = 71
+    left = 312
+    top = 136
   end
   object PrintDialog: TPrintDialog
-    left = 160
-    top = 83
+    left = 136
+    top = 136
   end
   object PrinterSetupDialog: TPrinterSetupDialog
-    left = 56
-    top = 83
+    left = 48
+    top = 136
   end
 end

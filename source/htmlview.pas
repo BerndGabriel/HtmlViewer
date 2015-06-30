@@ -1078,6 +1078,9 @@ var
 begin
   if IsProcessing then
     Exit;
+  // in lazarus 1.4.0 with fpc 2.6.4
+  // htmlviewer will not draw properly if focused
+  RemoveFocus(false);
   if Filename <> '' then
   begin
     OldFile := FCurrentFile;
@@ -1173,7 +1176,9 @@ var
 begin
   if IsProcessing then
     Exit;
-
+  // in lazarus 1.4.0 with fpc 2.6.4
+  // htmlviewer will not draw properly if focused
+  RemoveFocus(false);
   SplitDest(DocName, Name, Dest);
   case DocType of
     ImgType:
