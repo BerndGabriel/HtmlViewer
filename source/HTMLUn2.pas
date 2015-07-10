@@ -481,7 +481,8 @@ type
 // TViewerBase is base class for THtmlViewer and TFrameViewer
 //------------------------------------------------------------------------------
 
-  TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream) of object;
+  TGetStreamEvent = procedure(Sender: TObject; const SRC: ThtString; var Stream: TStream) of object;
+  TGottenStreamEvent = TGetStreamEvent;
 
   THotSpotTargetClickEvent = procedure(Sender: TObject; const Target, URL: ThtString; var Handled: boolean) of object;
   THotSpotTargetEvent = procedure(Sender: TObject; const Target, URL: ThtString) of object;
