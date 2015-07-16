@@ -213,6 +213,12 @@
 
 { Define Aspects Of HtmlViewer }
 
+{define if you want to use PasJPeg2000}
+{$define UseJPeg2000}
+{$IFDEF WIN64}
+{$nodefine UseJPeg2000}
+{$ENDIF}
+
 {.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
         PNG images and provides support for TIFF images.
         If, for some reason the use of the gdiplus.dll is
