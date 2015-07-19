@@ -3900,8 +3900,9 @@ var
   Url, Rel, Rev: ThtString;
   OK: Boolean;
   Request: TGetStreamEvent;
+  Requested: TGetStreamEvent;
   DStream: TStream;
-  RStream: TMemoryStream;
+  RStream: TStream;
   Viewer: ThtmlViewer;
   Path: ThtString;
   FreeDStream: Boolean;
@@ -3939,6 +3940,7 @@ begin
       try
         Viewer := (CallingObject as ThtmlViewer);
         Request := Viewer.OnHtStreamRequest;
+        Requested := Viewer.OnHtStreamRequested;
         if Assigned(Request) then
         begin
           RStream := nil;
@@ -3989,8 +3991,11 @@ begin
       except
       end;
     finally
-      if FreeDStream then
-        DStream.Free;
+      if FreeDStream and (DStream <> nil) then
+        DStream.Free
+      else
+      if (not FreeDStream) and Assigned(Requested) then //FreeDStream only false, if RStream set and Request called
+        Requested(Viewer, Url, DStream);
     end;
   end;
   if Assigned(LinkEvent) then

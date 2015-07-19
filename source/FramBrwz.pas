@@ -51,10 +51,10 @@ uses
 
 type
   TGetPostRequestEvent = procedure(Sender: TObject; IsGet: boolean; const URL, Query: ThtString;
-    Reload: boolean; var NewURL: ThtString; var DocType: ThtmlFileType; var Stream: TMemoryStream) of object;
+    Reload: boolean; var NewURL: ThtString; var DocType: ThtmlFileType; var Stream: TStream) of object;
 
   TGetPostRequestExEvent = procedure(Sender: TObject; IsGet: boolean; const URL, Query, EncType, Referer: ThtString;
-    Reload: boolean; var NewURL: ThtString; var DocType: ThtmlFileType; var Stream: TMemoryStream) of object;
+    Reload: boolean; var NewURL: ThtString; var DocType: ThtmlFileType; var Stream: TStream) of object;
     
   TbrFormSubmitEvent = procedure(Sender: TObject; Viewer: ThtmlViewer;
     const Action, Target, EncType, Method: ThtString; Results: ThtStringList; var Handled: boolean) of object;
@@ -67,7 +67,7 @@ type
   TbrFrame = class(TViewerFrameBase) {TbrFrame holds a ThtmlViewer or TbrSubFrameSet}
   private
     URLBase: ThtString;
-    TheStream: TMemoryStream;
+    TheStream: TStream;
     TheStreamType: ThtmlFileType;
   protected
     function ExpandSourceName(const Base, Path, S: ThtString): ThtString; override;
@@ -105,7 +105,7 @@ type
     function MasterSet: TbrFrameSet; {$ifdef UseInline} inline; {$endif}
     function RequestEvent: Boolean; override;
     procedure RefreshTimerTimer(Sender: TObject); override;
-    procedure LoadFromBrzFile(Stream: TMemoryStream; StreamType: ThtmlFileType; const URL, Dest: ThtString);
+    procedure LoadFromBrzFile(Stream: TStream; StreamType: ThtmlFileType; const URL, Dest: ThtString);
   end;
 
   TFrameBrowser = class(TFVBase)
@@ -123,7 +123,7 @@ type
     procedure AssertCanPostRequest(const URL: ThtString); virtual;
     procedure CheckVisitedLinks; override;
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
-    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream); override;
+    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TStream); override;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
     procedure PostRequest(
       Sender: TObject;
@@ -132,7 +132,7 @@ type
       Reload: boolean;
       out NewURL: ThtString;
       out DocType: ThtmlFileType;
-      out Stream: TMemoryStream); virtual;
+      out Stream: TStream); virtual;
   public
     constructor Create(AOwner: TComponent); override;
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
@@ -697,7 +697,7 @@ end;
 
 {----------------TbrFrameSet.LoadFromBrzFile}
 
-procedure TbrFrameSet.LoadFromBrzFile(Stream: TMemoryStream; StreamType: ThtmlFileType;
+procedure TbrFrameSet.LoadFromBrzFile(Stream: TStream; StreamType: ThtmlFileType;
   const URL, Dest: ThtString);
 var
   I: integer;
@@ -823,7 +823,7 @@ var
   OldPos: LongInt;
   Tmp: TObject;
   SameName: boolean;
-  Stream: TMemoryStream;
+  Stream: TStream;
   StreamType: ThtmlFileType;
   I: integer;
 begin
@@ -931,7 +931,7 @@ end;
 // concentrate all FOnGetPostRequest* calls here:
 procedure TFrameBrowser.PostRequest(Sender: TObject; IsGet: boolean; const Source, Query, EncType,
   Referer: ThtString; Reload: boolean; out NewURL: ThtString; out DocType: ThtmlFileType;
-  out Stream: TMemoryStream);
+  out Stream: TStream);
 begin
   NewURL := '';
   DocType := OtherType;
@@ -946,7 +946,7 @@ begin
     if DocType <> OtherType then
     begin
       Stream := TMemoryStream.Create;
-      Stream.LoadFromFile(HTMLToDos(Source));
+      TMemoryStream(Stream).LoadFromFile(HTMLToDos(Source));
     end;
   end;
 end;
@@ -1200,7 +1200,7 @@ begin
   end;
 end;
 
-procedure TFrameBrowser.DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TMemoryStream);
+procedure TFrameBrowser.DoURLRequest(Sender: TObject; const SRC: ThtString; var Stream: TStream);
 var
   NewURL: ThtString;
   DocType: ThtmlFileType;

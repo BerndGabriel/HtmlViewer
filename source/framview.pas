@@ -148,7 +148,7 @@ type
     procedure ChkFree(Obj: TObject);
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); virtual; abstract;
     procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
-    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream); virtual; abstract;
+    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TStream); virtual; abstract;
     procedure EndProcessing; virtual;
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: boolean); virtual; abstract;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); virtual; abstract;
@@ -570,7 +570,7 @@ type
     function GetSubFrameSetClass: TSubFrameSetClass; override;
     procedure CheckVisitedLinks; override;
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); override;
-    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream); override;
+    procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TStream); override;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); override;
     procedure LoadFromFileInternal(const FileName, Dest: ThtString);
   public
@@ -3773,7 +3773,7 @@ end;
 
 {----------------TFrameViewer.DoURLRequest}
 
-procedure TFrameViewer.DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TMemoryStream);
+procedure TFrameViewer.DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TStream);
 var
   NewName: ThtString;
   Doc: TBuffer;
