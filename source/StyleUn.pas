@@ -335,7 +335,7 @@ function LowerCaseUnquotedStr(const S : THtString) : THtString;
 function RemoveQuotes(const S: ThtString): ThtString;
 function ReadFontName(S: ThtString): ThtString;
 
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
 const
     CVis : array [0..2] of string = ('viInherit','viHidden','viVisible');
 
@@ -356,7 +356,7 @@ uses
 {$ifdef Compiler24_Plus}
   System.UITypes,
 {$endif}
- {$ifdef JPM_DEBUGGING}
+ {$ifdef JPM_DEBUGGING_STYLES}
  CodeSiteLogging,
  {$endif}
  HSLUtils;
@@ -365,7 +365,7 @@ var
 //  DefPointSize: Double;
   CharsetPerCharset: array [TFontCharset] of record Inited: Boolean; Charset: TFontCharset; end;
 
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
 
 function LogPropColor(const AInt : Integer): String; overload;
 {$ifdef UseInline} inline; {$endif}
@@ -841,7 +841,7 @@ procedure TProperties.Copy(Source: TProperties);
 var
   I: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'Copy');
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Source,'Source');
@@ -849,7 +849,7 @@ begin
   FDefPointSize := Source.DefPointSize;
   for I := Low(I) to High(I) do
     Props[I] := Source.Props[I];
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'Copy');
@@ -862,7 +862,7 @@ procedure TProperties.CopyDefault(Source: TProperties);
 var
   I: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'CopyDefault');
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Source,'Source');
@@ -873,7 +873,7 @@ begin
   DefFontname := Source.DefFontname;
   FDefPointSize := Source.DefPointSize;
   PropTag := 'default';
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'CopyDefault');
@@ -887,7 +887,7 @@ var
   Span, HBF: Boolean;
   isTable: Boolean;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.Inherit');
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.SendFmtMsg('tag = [%s]',[Tag]);
@@ -942,7 +942,7 @@ begin
 
   FEmSize := Source.FEmSize; {actually this is calculated later }
   FExSize := Source.FExSize; {apparently correlates with what browsers are doing}
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.Inherit');
@@ -956,7 +956,7 @@ procedure TProperties.Update(Source: TProperties; Styles: TStyleList; I: Integer
 var
   Index: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.Update');
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Source,'Source');
@@ -975,7 +975,7 @@ begin
       FreeAndNil(FIArray);
       Inlink := False;
     end;
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.Update');
@@ -1580,11 +1580,11 @@ end;
 
 procedure ConvVertMargins(const VM: ThtVMarginArray; var CD: ThtConvData; var M: ThtMarginArray);
 begin
-{$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod('ConvVertMargins');
-  CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[BaseHeight]);
-  CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
-  CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
+  CodeSiteLogging.CodeSite.Send('BaseHeight  = [%d]',[CD.BaseHeight]);
+  CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[CD.EmSize]);
+  CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[CD.ExSize]);
   StyleUn.LogTVMarginArray(VM,'VM');
 {$ENDIF}
 
@@ -1592,7 +1592,7 @@ begin
   ConvMargProp(MarginBottom, VM, CD, M);
   ConvMargProp(piMinHeight, VM, CD, M);
 
-{$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   CodeSiteLogging.CodeSite.ExitMethod('ConvVertMargins');
@@ -1938,7 +1938,7 @@ var
   I: ThtPropIndices;
   CD: ThtConvData;
 begin
-{$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Input');
@@ -1960,7 +1960,7 @@ begin
       ConvMargProp(I, VM, CD, M);
   AutoCount := CD.AutoCount; {count of 'auto's in width items}
 
-{$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   LogThtMarginArray(M,'M');
@@ -1975,7 +1975,7 @@ procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize,
 var
   I: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod('ConvMargArrayForCellPadding');
   CodeSiteLogging.CodeSite.AddSeparator;
   LogTVMarginArray(VM,'VM');
@@ -1994,7 +1994,7 @@ begin
     end
     else
       M[I] := -1;
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   LogThtMarginArray(M,'M');
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArrayForCellPadding');
@@ -2010,7 +2010,7 @@ procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, 
 var
   I: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod('ConvInlineMargArray');
   CodeSiteLogging.CodeSite.AddSeparator;
   LogTVMarginArray(VM,'VM');
@@ -2080,7 +2080,7 @@ begin
     else
       ; {remaining items unsupported/unused}
     end;
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
    CodeSiteLogging.CodeSite.AddSeparator;
    LogThtMarginArray(M,'M');
    CodeSiteLogging.CodeSite.ExitMethod('ConvInlineMargArray');
@@ -2111,7 +2111,7 @@ procedure TProperties.Combine(Styles: TStyleList;
       Wt: Integer;
       S1: ThtString;
     begin
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
       CodeSiteLogging.CodeSite.EnterMethod('TProperties.Combine CombineX Merge');
       CodeSiteLogging.CodeSite.Send('Parameters');
       CodeSiteLogging.CodeSite.AddSeparator;
@@ -2199,7 +2199,7 @@ procedure TProperties.Combine(Styles: TStyleList;
             end;
           end;
       end;
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
       CodeSiteLogging.CodeSite.AddSeparator;
       CodeSiteLogging.CodeSite.Send('Results');
       CodeSiteLogging.CodeSite.AddSeparator;
@@ -2803,7 +2803,7 @@ var
   NewColor : TColor;
   LVal : THtString;
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArrayDefBorder');
   LogProperties(Self,'Self');
   CodeSiteLogging.CodeSite.SendFmtMsg('ADefColor = %s',[LogPropColor( ADefColor )]);
@@ -2834,7 +2834,7 @@ begin
     else
       MArray[I] := Props[I];
     end;
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogTVMarginArray(MArray,'MArray');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.GetVMarginArrayDefBorder');
@@ -2850,12 +2850,12 @@ element's 'color' property as the computed value for
 the border color.
 }
 begin
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.GetVMarginArray');
   LogProperties(Self,'Self');
   {$ENDIF}
   GetVMarginArrayDefBorder(MArray,Props[StyleUn.Color]);
-  {$IFDEF JPM_DEBUGGING}
+  {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   StyleUn.LogTVMarginArray(MArray,'MArray');
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.GetVMarginArray');
@@ -2867,7 +2867,7 @@ var
   NewColor: TColor;
   WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByIndex');
   CodeSiteLogging.CodeSite.Send('Parameters');
   CodeSiteLogging.CodeSite.AddSeparator;
@@ -2957,7 +2957,7 @@ begin
   else
     Props[Index] := PropValue;
   end;
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   CodeSiteLogging.CodeSite.AddSeparator;
@@ -2970,12 +2970,12 @@ procedure TProperties.AddPropertyByName(const PropName, PropValue: ThtString);
 var
   Index: ThtPropIndices;
 begin
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByName');
 {$endif}
   if TryStrToPropIndex(PropName, Index) then
     AddPropertyByIndex(Index, PropValue);
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByName');
 {$endif}
 end;
@@ -3078,7 +3078,7 @@ var
   NewProp: Boolean;
   WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TStyleList.AddModifyProp');
   CodeSiteLogging.CodeSite.Send('Parameters');
 
@@ -3204,7 +3204,7 @@ begin
       end;
     end;
   end;
-{$ifdef JPM_DEBUGGING}
+{$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TStyleList.AddModifyProp');
 {$endif}
 end;

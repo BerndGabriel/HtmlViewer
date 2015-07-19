@@ -4361,9 +4361,9 @@ procedure TCellBasic.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 var
   I, Mn, Mx: Integer;
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TCellBasic.MinMaxWidth');
-   {$ENDIF}
+{$ENDIF}
   Max := 0; Min := 0;
   for I := 0 to Count - 1 do
   begin
@@ -4401,9 +4401,11 @@ var
   S: ThtString;
 begin
   {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TBlock.Create');
+  CodeSite.EnterMethod(Self,Format('TBlock.Create "%s"', [TagClass]));
+  {$IFDEF JPM_DEBUGGING_STYLES}
   StyleUn.LogProperties(Prop,'Prop');
   CodeSite.AddSeparator;
+  {$ENDIF}
   {$ENDIF}
   inherited Create(Parent, 0, Attributes, Prop);
   MyCell := TBlockCell.Create(Self);
@@ -4453,7 +4455,7 @@ begin
   else
     Justify := Left;
   {$IFDEF JPM_DEBUGGING}
-  CodeSite.ExitMethod(Self,'TBlock.Create');
+  CodeSite.ExitMethod(Self,Format('TBlock.Create "%s"', [TagClass]));
   {$ENDIF}
 end;
 
@@ -4601,7 +4603,7 @@ end;
 //-- BG ---------------------------------------------------------- 06.10.2010 --
 procedure TBlock.ConvMargArray(BaseWidth, BaseHeight: Integer; out AutoCount: Integer);
 begin
-{$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSite.EnterMethod(Self,'TBlock.ConvMargArray');
   CodeSite.SendFmtMsg('BaseWidth       = [%d]',[BaseWidth]);
   CodeSite.SendFmtMsg('BaseHeight      = [%d]',[BaseHeight]);
@@ -4614,7 +4616,7 @@ begin
 
   StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
 
-{$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
   CodeSite.ExitMethod(Self,'TBlock.ConvMargArray');
 {$ENDIF}
@@ -5290,8 +5292,8 @@ var
 
 begin {TBlock.DrawLogic}
 {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TBlock.DrawLogic');
-  CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
+  CodeSite.EnterMethod(Self,Format('TBlock.DrawLogic "%s"', [TagClass]));
+{$IFDEF JPM_DEBUGGING_DRAWLOGIC}
   CodeSite.SendFmtMsg('X        = [%d]',[X]);
   CodeSite.SendFmtMsg('Y        = [%d]',[Y]);
   CodeSite.SendFmtMsg('XRef     = [%d]',[XRef]);
@@ -5309,6 +5311,7 @@ begin {TBlock.DrawLogic}
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.AddSeparator;
+{$ENDIF}
 {$ENDIF}
 
   case CalcDisplayIntern of
@@ -5336,6 +5339,7 @@ begin {TBlock.DrawLogic}
   end;
 
 {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING_DRAWLOGIC}
   if Assigned(IMgr) then begin
     CodeSite.SendFmtMsg('IMgr.LfEdge    = [%d]',[ IMgr.LfEdge ] );
     CodeSite.SendFmtMsg('IMgr.Width     = [%d]',[ IMgr.Width ] );
@@ -5343,6 +5347,7 @@ begin {TBlock.DrawLogic}
   end else begin
     CodeSite.SendMsg('IMgr      = nil');
   end;
+{$ENDIF}
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
@@ -5876,13 +5881,13 @@ function TTableAndCaptionBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoC
 var
   Mx, Mn, FWidth: Integer;
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TTableAndCaptionBlock.FindWidth');
   CodeSite.SendFmtMsg('AWidth = [%d]',[AWidth]);
   CodeSite.SendFmtMsg('AHeight = [%d]',[AHeight]);
   CodeSite.SendFmtMsg('AutoCount = [%d]',[AutoCount]);
   CodeSite.AddSeparator;
-   {$ENDIF}
+{$ENDIF}
   HasBorderStyle := False; //bssNone; {has no border}
   MargArray[BorderLeftWidth] := 0;
   MargArray[BorderTopWidth] := 0;
@@ -5908,10 +5913,10 @@ begin
         MargArray[MarginLeft] := AWidth - Result;
     end;
   TableBlock.Justify := Centered;
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Result = [%d]',[Result]);
   CodeSite.ExitMethod(Self,'TTableAndCaptionBlock.FindWidth');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TTableAndCaptionBlock.MinMaxWidth}
@@ -5920,18 +5925,18 @@ procedure TTableAndCaptionBlock.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integ
 var
   Mx, Mn, MxTable, MnTable: Integer;
 begin
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TTableAndCaptionBlock.MinMaxWidth');
-   {$ENDIF}
+{$ENDIF}
   TableBlock.MinMaxWidth(Canvas, MnTable, MxTable);
   FCaptionBlock.MinMaxWidth(Canvas, Mn, Mx);
   Min := Math.Max(MnTable, Mn);
   Max := Math.Max(MxTable, Mn);
-   {$IFDEF JPM_DEBUGGING}
+{$IFDEF JPM_DEBUGGING}
    CodeSite.SendFmtMsg('Min = [%d]',[Min]);
    CodeSite.SendFmtMsg('Max = [%d]',[Max]);
   CodeSite.ExitMethod(Self,'TTableAndCaptionBlock.MinMaxWidth');
-   {$ENDIF}
+{$ENDIF}
 end;
 
 function TTableAndCaptionBlock.FindDocPos(SourcePos: Integer; Prev: boolean): Integer;
@@ -6712,8 +6717,10 @@ var
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TBodyBlock.Create');
+  {$IFDEF JPM_DEBUGGING_STYLES}
   StyleUn.LogProperties(Prop,'Prop');
   CodeSite.AddSeparator;
+  {$ENDIF}
   {$ENDIF}
   inherited Create(Parent,Attributes,Prop);
   Positioning := PosStatic; {7.28}
@@ -8103,7 +8110,7 @@ begin
    {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
   CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
-  CodeSite.SendFmtMsg('CellSpacing = [%d]',[CellSpacing]);
+  CodeSite.SendFmtMsg('CellSpacing = [%d,%d]',[CellSpacingHorz, CellSpacingVert]);
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
   CodeSite.AddSeparator;
    {$ENDIF}
@@ -8579,7 +8586,7 @@ end;
 
 {----------------TCellList.DrawLogic2}
 
-procedure TCellList.DrawLogicB(Canvas: TCanvas; Y, CellSpacingHorz,CellSpacingVert: Integer; var Curs: Integer);
+procedure TCellList.DrawLogicB(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert: Integer; var Curs: Integer);
 {Calc Y indents. Set up Y positions of all cells.}
 var
   I: Integer;
@@ -8588,7 +8595,7 @@ begin
 {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
   CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
-  CodeSite.SendFmtMsg('CellSpacing = [%d]',[CellSpacing]);
+  CodeSite.SendFmtMsg('CellSpacing = [%d,%d]',[CellSpacingHorz, CellSpacingVert]);
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
   CodeSite.AddSeparator;
 {$ENDIF}
@@ -10661,8 +10668,10 @@ var
 begin
 {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'TSection.Create');
+{$IFDEF JPM_DEBUGGING_STYLES}
   StyleUn.LogProperties(Prop,'Prop');
   CodeSite.AddSeparator;
+{$ENDIF}
 {$ENDIF}
   if Attr <> nil then
   begin
