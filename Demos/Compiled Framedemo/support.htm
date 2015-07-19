@@ -114,7 +114,7 @@
     ALIGN=left|center|right|justify
 <span class="new">&lt;NAV&gt;</span>...<span class="new">&lt;/NAV&gt;</span>
     ALIGN=left|center|right|justify
-<span class="new">&lt;ASIDE&gt;</span>...<span class="new">&lt;ASIDE/&gt;</span>
+<span class="new">&lt;ASIDE&gt;</span>...<span class="new">&lt;/ASIDE&gt;</span>
     ALIGN=left|center|right|justify
 <span class="new">&lt;HGROUP&gt;</span>...<span class="new">&lt;/HGROUP&gt;</span>    
     ALIGN=left|center|right|justify
@@ -129,8 +129,8 @@
    TYPE=plain|none
 &lt;DIR&gt;...&lt;/DIR&gt;
 &lt;MENU&gt;...&lt;/MENU&gt;
-  &lt;LI&gt;...(&lt;/LI&gt;)
-    VALUE=n</PRE>
+&lt;LI&gt;...(&lt;/LI&gt;)
+   VALUE=n</PRE>
 
 <P CLASS="heading"><A NAME="Description">Description List</A></P>
 <PRE>&lt;DL&gt;...&lt;/DL&gt;
@@ -138,7 +138,7 @@
   &lt;DT&gt;...&lt;/DT&gt;</PRE>
 
 <P CLASS="heading"><A NAME="Tables">Tables</A></P>
-<PRE>&lt;TABLE&gt;...&lt;TABLE&gt;
+<PRE>&lt;TABLE&gt;...&lt;/TABLE&gt;
    BORDER or BORDER=n
    <span class="new">FRAME=void|above|below|hsides|lhs|rhs|vsides|box|border</span>
    <span class="new">RULES=none|rows|cols|all</span>
@@ -179,7 +179,7 @@
    ALIGN=left|center|right
    BGCOLOR=<A HREF="#Colors">color</A>
    NOWRAP
-&lt;THEAD&gt;&lt;TBODY&gt;&lt;TFOOT&gt;   (printing)</PRE>
+&lt;THEAD&gt;, &lt;TBODY&gt;, &lt;TFOOT&gt;   (printing)</PRE>
 
 <P CLASS="heading"><A NAME="Forms">Forms</A></P>
 <PRE>&lt;FORM&gt;...&lt;/FORM&gt;
@@ -201,7 +201,7 @@
    NAME=string
    MULTIPLE
    SIZE=lines
-   OnClick
+   ONCLICK=string
    &lt;OPTION&gt;...(&lt;/OPTION&gt;)
       SELECTED
       VALUE=string
@@ -212,7 +212,7 @@
    ROWS=n
    COLS=n
    WRAP=off|soft|hard
-   OnClick
+   ONCLICK=string
    TABINDEX=n
    DISABLE
 &lt;OPTION&gt;...&lt;/OPTION&gt;</PRE>
@@ -276,8 +276,8 @@
 &lt;BGSOUND&gt;
    SRC=filename
    LOOP=n
-&lt;Span&gt;
-   Style</PRE>
+&lt;SPAN&gt;
+   STYLE=string</PRE>
 
 <P CLASS="heading"><A NAME="Frames"> Frame Syntax</A></P>
 <PRE>&lt;FRAMESET&gt;...&lt;/FRAMESET&gt;

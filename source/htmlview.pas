@@ -225,6 +225,7 @@ type
     FOnHotSpotClick: THotSpotClickEvent;
     FOnHotSpotCovered: THotSpotEvent;
     FOnhtStreamRequest: TGetStreamEvent;
+    FOnhtStreamRequested: TGottenStreamEvent;
     FOnLinkDrawn: TLinkDrawnEvent;
     FOnMetaRefresh: TMetaRefreshType;
     FOnPageEvent: TPageEvent;
@@ -577,6 +578,7 @@ type
     property OnHotSpotClick: THotSpotClickEvent read FOnHotSpotClick write FOnHotSpotClick;
     property OnHotSpotCovered: THotSpotEvent read FOnHotSpotCovered write FOnHotSpotCovered;
     property OnhtStreamRequest: TGetStreamEvent read FOnhtStreamRequest write FOnhtStreamRequest;
+    property OnhtStreamRequested: TGottenStreamEvent read FOnhtStreamRequested write FOnhtStreamRequested;
     property OnLoadHistoryItem: TLoadHistoryItem read FOnLoadHistoryItem write FOnLoadHistoryItem;
     property OnImageClick;
     property OnImageOver;
@@ -929,6 +931,7 @@ begin
     OnHotSpotClick := Viewer.OnHotSpotClick;
     OnHotSpotCovered := Viewer.OnHotSpotCovered;
     OnhtStreamRequest := Viewer.OnhtStreamRequest;
+    OnhtStreamRequested := Viewer.OnhtStreamRequested;
     OnLinkDrawn := Viewer.OnLinkDrawn;
     OnMetaRefresh := Viewer.OnMetaRefresh;
     OnPageEvent := Viewer.OnPageEvent;

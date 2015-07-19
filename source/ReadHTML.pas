@@ -3900,11 +3900,23 @@ var
   Url, Rel, Rev: ThtString;
   OK: Boolean;
   Request: TGetStreamEvent;
-  DStream: TStream;
-  RStream: TMemoryStream;
+  Requested: TGottenStreamEvent;
+  Stream: TStream;
   Viewer: ThtmlViewer;
   Path: ThtString;
-  FreeDStream: Boolean;
+  FreeStream: Boolean;
+
+  procedure GetTheFile;
+  begin
+    Url := Viewer.HTMLExpandFilename(Url);
+    Path := ExtractFilePath(Url);
+    if FileExists(Url) then
+    begin
+      Stream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+      FreeStream := True;
+    end;
+  end;
+
 begin
   OK := False;
   for I := 0 to Attributes.Count - 1 do
@@ -3933,52 +3945,40 @@ begin
       end;
   if OK and (Url <> '') then
   begin
-    DStream := nil;
-    FreeDStream := True;
+    Stream := nil;
+    FreeStream := False;
     try
       try
         Viewer := (CallingObject as ThtmlViewer);
         Request := Viewer.OnHtStreamRequest;
+        Requested := Viewer.OnHtStreamRequested;
         if Assigned(Request) then
         begin
-          RStream := nil;
           if Assigned(Viewer.OnExpandName) then
           begin {must be using TFrameBrowser}
             Viewer.OnExpandName(Viewer, Url, Url);
             Path := GetURLBase(Url);
-            Request(Viewer, Url, RStream);
-            DStream := RStream;
-            FreeDStream := False;
+            Request(Viewer, Url, Stream);
           end
           else
           begin
             Path := ''; {for TFrameViewer requests, don't know path}
-            Request(Viewer, Url, RStream);
-            if Assigned(RStream) then
-            begin
-              DStream := RStream;
-              FreeDStream := False;
-            end
-            else
+            Request(Viewer, Url, Stream);
+            if not Assigned(Stream) then
             begin {try it as a file}
-              Url := Viewer.HTMLExpandFilename(Url);
-              Path := ExtractFilePath(Url);
-              if FileExists(Url) then
-                DStream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+              GetTheFile;
             end;
           end;
         end
         else {assume it's a file}
         begin
-          Url := Viewer.HTMLExpandFilename(Url);
-          Path := ExtractFilePath(Url);
-          if FileExists(Url) then
-            DStream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+          GetTheFile;
         end;
-        if DStream <> nil then
+
+        if Stream <> nil then
         begin
-          DStream.Position := 0;
-          Style := TBuffer.Create(DStream, Url);
+          Stream.Position := 0;
+          Style := TBuffer.Create(Stream, Url);
           try
             C := SpcChar;
             DoStyle(PropStack.Document.Styles, C, Style, Path, True, FUseQuirksMode);
@@ -3989,8 +3989,10 @@ begin
       except
       end;
     finally
-      if FreeDStream then
-        DStream.Free;
+      if FreeStream then
+        Stream.Free
+      else if Assigned(Requested) then //FreeStream only false, if RStream set and Request called
+        Requested(Viewer, Url, Stream);
     end;
   end;
   if Assigned(LinkEvent) then
