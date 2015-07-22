@@ -356,9 +356,9 @@ uses
 {$ifdef Compiler24_Plus}
   System.UITypes,
 {$endif}
- {$ifdef JPM_DEBUGGING_STYLES}
+{$if defined(JPM_DEBUGGING_STYLES) or defined(JPM_DEBUGGING_CONV)}
  CodeSiteLogging,
- {$endif}
+{$ifend}
  HSLUtils;
 
 var
@@ -1938,7 +1938,7 @@ var
   I: ThtPropIndices;
   CD: ThtConvData;
 begin
-{$IFDEF JPM_DEBUGGING_STYLES}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSiteLogging.CodeSite.EnterMethod('ConvMargArray');
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Input');
@@ -1960,7 +1960,7 @@ begin
       ConvMargProp(I, VM, CD, M);
   AutoCount := CD.AutoCount; {count of 'auto's in width items}
 
-{$IFDEF JPM_DEBUGGING_STYLES}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
   LogThtMarginArray(M,'M');
@@ -1975,13 +1975,13 @@ procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize,
 var
   I: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING_STYLES}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSiteLogging.CodeSite.EnterMethod('ConvMargArrayForCellPadding');
   CodeSiteLogging.CodeSite.AddSeparator;
   LogTVMarginArray(VM,'VM');
   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
-  {$ENDIF}
+{$ENDIF}
   for I := PaddingTop to PaddingLeft do
     if VarIsStr(VM[I]) then
       M[I] := LengthConv(VM[I], False, -100, EmSize, ExSize, 0) {Auto will be 0}
@@ -1994,11 +1994,11 @@ begin
     end
     else
       M[I] := -1;
-  {$IFDEF JPM_DEBUGGING_STYLES}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSiteLogging.CodeSite.AddSeparator;
   LogThtMarginArray(M,'M');
   CodeSiteLogging.CodeSite.ExitMethod('ConvMargArrayForCellPadding');
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------ConvInlineMargArray}
@@ -2010,7 +2010,7 @@ procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, 
 var
   I: ThtPropIndices;
 begin
-  {$IFDEF JPM_DEBUGGING_STYLES}
+{$IFDEF JPM_DEBUGGING_CONV}
   CodeSiteLogging.CodeSite.EnterMethod('ConvInlineMargArray');
   CodeSiteLogging.CodeSite.AddSeparator;
   LogTVMarginArray(VM,'VM');
@@ -2019,7 +2019,7 @@ begin
 
   CodeSiteLogging.CodeSite.Send('EmSize      = [%d]',[EmSize]);
   CodeSiteLogging.CodeSite.Send('ExSize      = [%d]',[ExSize]);
-  {$ENDIF}
+{$ENDIF}
   for I := Low(VM) to High(VM) do
     case I of
       piHeight, piWidth:
@@ -2080,11 +2080,11 @@ begin
     else
       ; {remaining items unsupported/unused}
     end;
-  {$IFDEF JPM_DEBUGGING_STYLES}
+{$IFDEF JPM_DEBUGGING_CONV}
    CodeSiteLogging.CodeSite.AddSeparator;
    LogThtMarginArray(M,'M');
    CodeSiteLogging.CodeSite.ExitMethod('ConvInlineMargArray');
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {----------------TProperties.Combine}
