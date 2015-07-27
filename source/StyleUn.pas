@@ -2137,8 +2137,32 @@ procedure TProperties.Combine(Styles: TStyleList;
                 Props[Index] := Source.Props[Index];
                 Originals[Index] := True;
               end;
-            FontFamily, FontSize, FontStyle, FontWeight, Color, BackgroundColor,
-              TextDecoration, LetterSpacing:
+
+            TextDecoration:
+              begin
+                Originals[Index] := True;
+                S1 := Props[Index];
+                if (S1 = 'none') or (Length(S1) = 0) or (Source.Props[Index] = 'none') then
+                  Props[Index] := Source.Props[Index]
+                else if Pos(Source.Props[Index], S1) = 0 then
+                  Props[Index] := S1 + SpcChar + Source.Props[Index];
+                if InLink then
+                begin
+                  for I := LFont to HVFont do
+                    with FIArray.Ar[I] do
+                      if Props[Index] = 'none' then
+                        iStyle := iStyle - [fsStrikeOut, fsUnderline]
+                      else
+                      begin
+                        if Pos('underline', Props[Index]) > 0 then
+                          Include(iStyle, fsUnderline);
+                        if Pos('line-through', Props[Index]) > 0 then
+                          Include(iStyle, fsStrikeOut);
+                      end;
+                end;
+              end;
+
+            FontFamily, FontSize, FontStyle, FontWeight, Color, BackgroundColor, LetterSpacing:
               begin
                 Originals[Index] := True;
                 Props[Index] := Source.Props[Index];
@@ -2148,48 +2172,40 @@ procedure TProperties.Combine(Styles: TStyleList;
                       case Index of
                         FontFamily:
                           begin
-                            S1 := ReadFontName(Props[FontFamily]);
+                            S1 := ReadFontName(Props[Index]);
                             if S1 <> '' then
                               iName := S1;
                           end;
 
                         FontSize:
-                          iSize := FontSizeConv(Props[FontSize], iSize, DefPointSize, FUseQuirksMode);
+                          iSize := FontSizeConv(Props[Index], iSize, DefPointSize, FUseQuirksMode);
 
                         Color:
-                          iColor := Props[Color];
+                          iColor := Props[Index];
 
                         BackgroundColor:
-                          ibgColor := Props[BackgroundColor];
+                          ibgColor := Props[Index];
 
                         FontStyle:
-                          if (Props[FontStyle] = 'italic') or (Props[FontStyle] = 'oblique') then
+                          if (Props[Index] = 'italic') or (Props[Index] = 'oblique') then
                             iStyle := iStyle + [fsItalic]
-                          else if Props[FontStyle] = 'normal' then
+                          else if Props[Index] = 'normal' then
                             iStyle := iStyle - [fsItalic];
 
                         FontWeight:
-                          if Pos('bold', Props[FontWeight]) > 0 then
+                          if Pos('bold', Props[Index]) > 0 then
                             iStyle := iStyle + [fsBold]
-                          else if Pos('normal', Props[FontWeight]) > 0 then
+                          else if Pos('normal', Props[Index]) > 0 then
                             iStyle := iStyle - [fsBold]
                           else
                           begin
-                            Wt := StrToIntDef(Props[FontWeight], 0);
+                            Wt := StrToIntDef(Props[Index], 0);
                             if Wt >= 600 then
                               iStyle := iStyle + [fsBold];
                           end;
 
-                        TextDecoration:
-                          if Props[TextDecoration] = 'underline' then
-                            iStyle := iStyle + [fsUnderline]
-                          else if Props[TextDecoration] = 'line-through' then
-                            iStyle := iStyle + [fsStrikeOut]
-                          else if Props[TextDecoration] = 'none' then
-                            iStyle := iStyle - [fsStrikeOut, fsUnderline];
-
                         LetterSpacing:
-                          iCharExtra := Props[LetterSpacing];
+                          iCharExtra := Props[Index];
                       end;
               end
           else
@@ -2737,6 +2753,7 @@ procedure TProperties.GetSingleFontInfo(var Font: ThtFontInfo);
 var
   Wt: Integer;
   Style: TFontStyles;
+
 begin {call only if all things valid}
   Font.ibgColor := FontBG;
   Font.iColor := Props[Color];
@@ -2751,9 +2768,9 @@ begin {call only if all things valid}
   end;
   if (Props[FontStyle] = 'italic') or (Props[FontStyle] = 'oblique') then
     Include(Style, fsItalic);
-  if Props[TextDecoration] = 'underline' then
-    Include(Style, fsUnderline)
-  else if Props[TextDecoration] = 'line-through' then
+  if Pos('underline', Props[TextDecoration]) > 0 then
+    Include(Style, fsUnderline);
+  if Pos('line-through', Props[TextDecoration]) > 0 then
     Include(Style, fsStrikeOut);
   Font.iStyle := Style;
   Font.iSize := Props[FontSize];
