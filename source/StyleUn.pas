@@ -2124,6 +2124,8 @@ procedure TProperties.Combine(Styles: TStyleList;
           if (Props[Index] <> Unassigned) and not VarIsIntNull(Props[Index]) then
             continue;
         end;
+        if VarIsStr(Source.Props[Index]) and (Source.Props[Index] = 'inherit') then
+          continue;
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
           case Index of
             MarginTop..BorderSpacingVert:
