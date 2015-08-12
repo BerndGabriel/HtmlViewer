@@ -1676,7 +1676,7 @@ begin
     correctly causing a rendering bug. }
 
     //min max width
-    if AMarg[piWidth] > -1 then
+    if AMarg[piWidth] > 0 then
     begin
       if AMarg[piMaxWidth] > 0 then
         AMarg[piWidth] := Min(AMarg[piWidth], AMarg[piMaxWidth]);
@@ -1685,15 +1685,17 @@ begin
         AMarg[piWidth] := Max(AMarg[piWidth], AMarg[piMinWidth]);
     end;
 
-    //min max height
-    if AMarg[piHeight] > -1 then
-    begin
-      if AMarg[piMaxHeight] > 0 then
-        AMarg[piHeight] := Min(AMarg[piHeight], AMarg[piMaxHeight]);
-
-      if AMarg[piMinHeight] > 0 then
-        AMarg[piHeight] := Max(AMarg[piHeight], AMarg[piMinHeight]);
-    end;
+//BG, 09.08.2015: this min/max handling is not as described in CSS 2.1
+// and tents to bust the document design.
+//    //min max height
+//    if AMarg[piHeight] > 0 then
+//    begin
+//      if AMarg[piMaxHeight] > 0 then
+//        AMarg[piHeight] := Min(AMarg[piHeight], AMarg[piMaxHeight]);
+//
+//      if AMarg[piMinHeight] > 0 then
+//        AMarg[piHeight] := Max(AMarg[piHeight], AMarg[piMinHeight]);
+//    end;
 
     case ThtBoxSizing(AMarg[BoxSizing]) of
       BorderBox: ApplyBorderBoxModel(AMarg);
