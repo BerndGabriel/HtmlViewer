@@ -3947,6 +3947,7 @@ begin
   begin
     Stream := nil;
     FreeStream := False;
+    Requested := nil;
     try
       try
         Viewer := (CallingObject as ThtmlViewer);
