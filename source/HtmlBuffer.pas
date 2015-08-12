@@ -1607,12 +1607,31 @@ begin
         if followed by $FEFF, this is UTF-32-2143
       }
     end;
+
+    if FStart.BytePtr[0] = 0 then
+    begin
+      if FStart.BytePtr[1] <> 0 then
+      begin
+        CodePage := CP_UTF16BE;
+        Include(FState, bsFixedCodePage);
+        Exit;
+      end;
+    end
+    else
+    begin
+      if FStart.BytePtr[1] = 0 then
+      begin
+        CodePage := CP_UTF16LE;
+        Include(FState, bsFixedCodePage);
+        Exit;
+      end;
+    end;
   end;
   if IsIso2022JP then
   begin
     CodePage := CP_ISO2022JP;
     Include(FState, bsFixedCodePage);
-    exit;
+    Exit;
   end;
   // no preamble: this is most probably a 1-byte per character code.
   CodePage := CP_ACP;
