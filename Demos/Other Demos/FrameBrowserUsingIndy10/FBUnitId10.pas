@@ -201,7 +201,7 @@ type
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
       const URL, Query, EncType, RefererX: String; Reload: Boolean;
       var NewURL: String; var DocType: ThtmlFileType;
-      var Stream: TMemoryStream);
+      var Stream: TStream);
     procedure GetImageRequest(Sender: TObject; const URL: String; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: String; var Handled: Boolean);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: String);
@@ -212,7 +212,7 @@ type
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
       const URL, Query, EncType, RefererX: WideString; Reload: Boolean;
       var NewURL: WideString; var DocType: ThtmlFileType;
-      var Stream: TMemoryStream);
+      var Stream: TStream);
     procedure GetImageRequest(Sender: TObject; const URL: WideString; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: WideString; var Handled: Boolean);
     procedure HotSpotTargetCovered(Sender: TObject; const Target, URL: WideString);
@@ -630,7 +630,7 @@ end;
 procedure THTTPForm.FrameBrowserGetPostRequestEx(Sender: TObject;
   IsGet: Boolean; const URL, Query, EncType, RefererX: ThtString;
   Reload: Boolean; var NewURL: ThtString; var DocType: ThtmlFileType;
-  var Stream: TMemoryStream);
+  var Stream: TStream);
 {OnGetPostRequest handler.
  URL is what to load.
  IsGet is set for Get (as opposed to Post)
