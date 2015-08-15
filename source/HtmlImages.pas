@@ -692,7 +692,7 @@ if not(ImageFormat in [itGif, itBmp{$ifdef UseJPeg2000}, itJPEG2K{$endif}]) then
       if Bitmap <> nil then
       begin
         //if Transparent = LLCorner then
-          Mask := GetImageMask(Bitmap, False, 0);
+          // Yunqa.de removed: Mask := GetImageMask(Bitmap, False, 0);
         Bitmap := ConvertImage(Bitmap);
         Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
       end;
