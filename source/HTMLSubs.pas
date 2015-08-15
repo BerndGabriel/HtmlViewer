@@ -2866,7 +2866,7 @@ begin
     H := ObjHeight;
   end;
   try
-    ddImage.Transp := Transparent;
+    // Yunqa.de removed: ddImage.Transp := Transparent;
     if IsCopy then
       ddImage.Print(Canvas, XX, Y, W, H, clWhite)
     else

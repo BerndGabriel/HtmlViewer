@@ -633,7 +633,7 @@ begin
       if Bitmap <> nil then
       begin
         //if Transparent = LLCorner then
-          Mask := GetImageMask(Bitmap, False, 0);
+          // Yunqa.de removed: Mask := GetImageMask(Bitmap, False, 0);
         Bitmap := ConvertImage(Bitmap);
         Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
       end;
