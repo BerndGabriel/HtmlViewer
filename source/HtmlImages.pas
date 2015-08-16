@@ -632,8 +632,11 @@ begin
     if Result = nil then
       if Bitmap <> nil then
       begin
-        //if Transparent = LLCorner then
-          // Yunqa.de removed: Mask := GetImageMask(Bitmap, False, 0);
+        if not (ImageFormat in [itGif]) then
+        begin
+          Transparent := LLCorner;
+          Mask := GetImageMask(Bitmap, False, 0);
+        end;
         Bitmap := ConvertImage(Bitmap);
         Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
       end;
