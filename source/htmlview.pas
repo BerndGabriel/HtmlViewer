@@ -388,6 +388,7 @@ type
     procedure LoadString(const Source, Reference: ThtString; ft: ThtmlFileType);
     procedure LoadStream(const URL: ThtString; AStream: TStream; ft: ThtmlFileType);
     procedure PaintWindow(DC: HDC); override;
+    function GetUseQuirksMode: Boolean; override;
     procedure SetActiveColor(const Value: TColor); override;
 //    procedure SetCharset(const Value: TFontCharset); override;
     procedure SetCursor(Value: TCursor); {$ifdef LCL} override; {$endif LCL}
@@ -1217,30 +1218,22 @@ begin
       htProgressInit;
       try
         // handle quirks mode settings
-        if (DocType = HTMLType) then begin
-          case QuirksMode of
-            qmDetect :
-              begin
+        FSectionList.UseQuirksMode := False;
+        case (DocType) of
+          HTMLType:
+            case QuirksMode of
+              qmDetect:
                 with THtmlParser.Create(Document) do
                 try
-                  FUseQuirksMode := ShouldUseQuirksMode;
+                  FSectionList.UseQuirksMode := ShouldUseQuirksMode;
                 finally
                   Free;
                 end;
-              end;
-            qmStandards :
-              begin
-                FUseQuirksMode := False;
-              end;
-            qmQuirks :
-              begin
-                FUseQuirksMode := True;
-              end;
-          end;
-        end else begin
-          FUseQuirksMode := False;
+
+              qmQuirks:
+                FSectionList.UseQuirksMode := True;
+            end;
         end;
-        Self.FSectionList.UseQuirksMode := FUseQuirksMode;
 
         // terminate old document
         InitLoad;
@@ -2467,6 +2460,12 @@ begin
   Result := FSectionList.GetURL(PaintPanel.Canvas, X, Y + FSectionList.YOff, UrlTarg, FormControl, ATitle);
 end;
 
+//-- BG ---------------------------------------------------------- 16.08.2015 --
+function THtmlViewer.GetUseQuirksMode: Boolean;
+begin
+  Result := FSectionList.UseQuirksMode;
+end;
+
 //-- BG ---------------------------------------------------------- 23.11.2010 --
 procedure THtmlViewer.SetViewerStateBit(Index: THtmlViewerStateBit; Value: Boolean);
 begin
@@ -3577,7 +3576,7 @@ begin
   Result.CodePage := CodePage;
   Result.MarginHeight := 0;
 
-  if UseQuirksMode then
+  if FSectionList.UseQuirksMode then
     Result.QuirksMode := qmQuirks
   else
     Result.QuirksMode := qmStandards;
@@ -4417,7 +4416,6 @@ begin
     Include(FViewerState, vsLocalImageCache);
   end;
   FSectionList.Clear;
-  FSectionList.UseQuirksMode := FUseQuirksMode;
 {$ifdef has_StyleElements}
   FSectionList.StyleElements := Self.StyleElements;
 {$endif}
@@ -4437,7 +4435,6 @@ begin
   if IsProcessing then
     Exit;
   StopTimers;
-  FSectionList.UseQuirksMode := FUseQuirksMode;
 {$ifdef has_StyleElements}
   FSectionList.StyleElements := Self.StyleElements;
 {$endif}

@@ -117,8 +117,6 @@ type
     Visited: TStringList; {visited URLs}
     function CreateViewer(Owner: THtmlFrameBase): THtmlViewer; virtual;
     function CreateIFrameControl(Sender: TObject; Owner: TComponent): TViewerBase;
-    function GetViewerBase(Viewer: THtmlViewer): ThtString;
-    function GetViewerTarget(Viewer: THtmlViewer): ThtString;
     function GetActiveViewer: THtmlViewer;
     function GetBase: ThtString;
     function GetBaseTarget: ThtString;
@@ -135,8 +133,11 @@ type
     function GetSelTextBuf(Buffer: PWideChar; BufSize: integer): integer;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
     function GetTitle: ThtString;
+    function GetUseQuirksMode: Boolean; override;
+    function GetViewerBase(Viewer: THtmlViewer): ThtString;
     function GetViewerClass: THtmlViewerClass; virtual;
     function GetViewers: TStrings;
+    function GetViewerTarget(Viewer: THtmlViewer): ThtString;
     function HotSpotClickHandled(const FullUrl: ThtString; const Target: ThtString {= ''}): Boolean;
     procedure AddVisitedLink(const S: ThtString);
     procedure BeginProcessing; virtual;
@@ -3201,6 +3202,11 @@ end;
 function TFVBase.GetTitle: ThtString;
 begin
   Result := CurFrameSet.FTitle;
+end;
+
+function TFVBase.GetUseQuirksMode: Boolean;
+begin
+  Result := (ActiveViewer <> nil) and (ActiveViewer.UseQuirksMode);
 end;
 
 function TFVBase.GetCurrentFile: ThtString;

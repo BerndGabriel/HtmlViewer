@@ -6867,7 +6867,6 @@ begin
   FStyleElements := Owner.StyleElements;
   {$Endif}
   FPropStack := THtmlPropStack.Create;
-  UseQuirksMode := Owner.UseQuirksMode;
   TheOwner := Owner;
   PPanel := APaintPanel;
   IDNameList := TIDObjectList.Create; //(Self);

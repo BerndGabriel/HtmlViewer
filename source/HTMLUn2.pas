@@ -555,14 +555,12 @@ type
     FOnProgress: ThtProgressEvent;
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
-  protected
-    // set to determine if child objects should be in "quirks" mode
-    //This must be protected because it's set directly in a descendant
-    FUseQuirksMode : Boolean;
     FQuirksMode : THtQuirksMode;
+  protected
     {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
     {$endif}
+    function GetUseQuirksMode: Boolean; virtual; abstract;
     procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
     procedure SetActiveColor(const Value: TColor); virtual;
     procedure SetCharset(const Value: TFontCharset); virtual;
@@ -630,7 +628,7 @@ type
     procedure Load(const Url: ThtString); virtual; abstract;
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
     // set to determine if child objects should be in "quirks" mode
-    property UseQuirksMode : Boolean read FUseQuirksMode;
+    property UseQuirksMode: Boolean read GetUseQuirksMode;
     property CodePage: Integer read FCodePage write SetCodePage;
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
