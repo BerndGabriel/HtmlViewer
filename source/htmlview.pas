@@ -476,6 +476,7 @@ type
     procedure LoadFromFile(const FileName: ThtString; DocType: THtmlFileType = HtmlType);
     procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = ''; DocType: THtmlFileType = HtmlType);
     procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''; DocType: THtmlFileType = HtmlType);
+{$ifdef UseDeprecatedLoadMethods}
     // due to reduction of code duplications the following methods became obsolete:
     procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = ''); deprecated; // use LoadFromString() instead
     procedure LoadImageFile(const FileName: ThtString); deprecated; // use LoadFromFile() instead.
@@ -483,6 +484,7 @@ type
     procedure LoadTextFile(const FileName: ThtString); deprecated; // use LoadFromFile() instead.
     procedure LoadTextFromString(const S: ThtString); deprecated; // use LoadFromString() instead.
     procedure LoadTextStrings(Strings: ThtStrings); deprecated; // use LoadFromString() instead.
+{$endif}
     //
     procedure Reformat;
     procedure Reload;
@@ -1106,6 +1108,8 @@ begin
   end;
 end;
 
+{$ifdef UseDeprecatedLoadMethods}
+
 {----------------THtmlViewer.LoadTextFile}
 
 procedure THtmlViewer.LoadTextFile(const FileName: ThtString);
@@ -1151,6 +1155,7 @@ procedure THtmlViewer.LoadTextFromString(const S: ThtString);
 begin
   LoadString(S, '', TextType);
 end;
+{$endif}
 
 //-- BG ---------------------------------------------------------- 27.12.2010 --
 procedure THtmlViewer.LoadFromDocument(Document: TBuffer; const Reference: ThtString; DocType: THtmlFileType);

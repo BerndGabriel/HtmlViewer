@@ -61,7 +61,7 @@
 
   A complete list of version numbers can be found at:
   
-  http://docwiki.embarcadero.com/RADStudio/XE5/de/Compiler-Versionen
+  http://docwiki.embarcadero.com/RADStudio/XE8/de/Compiler-Versionen
 }
 
   {$define VCL}
@@ -272,6 +272,10 @@
         designs for use in HtmlViewer (including our table demo page) now use
         'hide' as default.
         New users should define EmptyCellsDefaultIsShow for CSS compliance.}
+
+{.$define UseDeprecatedLoadMethods}
+        {Brings back deprecated LoadStrings(), LoadImage(), LoadText*()..., ... methods.
+        Prefer using the suggested replacement methods over defining this switch.}
 
 {$ifdef Compiler20_Plus}
 {$else}
