@@ -217,7 +217,9 @@ var
 implementation
 
 uses
-  htmlun2 , FBUnitIcs;
+  htmlun2,
+  FBUnitIcs,
+  OverbyteIcsWinsock;
 
 constructor TURLConnection.Create;
 begin

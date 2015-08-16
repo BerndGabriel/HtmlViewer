@@ -34,6 +34,7 @@ interface
 
 uses
 {$ifdef HasSystemUITypes}
+  System.Types,
   System.UITypes,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
@@ -63,6 +64,7 @@ uses
 {$ifdef UseOldPreviewForm}
   PreviewForm,
 {$else UseOldPreviewForm}
+  BegaZoom,
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
 {$ifdef UseTNT}
@@ -221,6 +223,7 @@ type
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
     procedure UpdateCaption;
+    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
   public
     { Public declarations }
   end;
@@ -278,6 +281,8 @@ begin
   HintWindow := ThtHintWindow.Create(Self);
   HintWindow.Color := $CCFFFF;
   UpdateCaption;
+
+  Application.OnMessage := AppMessage;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -1051,6 +1056,23 @@ begin
 {$else}
   Caption := Cap;
 {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 16.08.2015 --
+procedure TForm1.AppMessage(var Msg: TMsg; var Handled: Boolean);
+var
+  WinCtrl: TWinControl;
+begin
+  if Msg.message = WM_MOUSEWHEEL then
+  begin
+    WinCtrl := FindVCLWindow(Point(Word(Msg.lParam), HiWord(Msg.lParam)));
+    if (WinCtrl is TPaintPanel) {$ifndef UseOldPreviewForm} or (WinCtrl is TBegaZoomBox) {$endif UseOldPreviewForm} then
+    begin
+      // perform mouse wheel scrolling for the control under the mouse:
+      WinCtrl.Perform(CM_MOUSEWHEEL, Msg.WParam, Msg.LParam);
+      Handled := True;
+    end;
+  end;
 end;
 
 end.

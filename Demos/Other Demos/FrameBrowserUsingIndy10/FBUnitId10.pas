@@ -40,6 +40,7 @@ uses
 {$ifdef UseOldPreviewForm}
   PreviewForm,
 {$else UseOldPreviewForm}
+  BegaZoom,
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
   DownLoadId, IniFiles,
@@ -290,6 +291,7 @@ type
     procedure LoadCookies(ACookieCollection: TIdCookieManager);
     procedure CloseHints;
     procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
+    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
   public
     { Public declarations }
   {$ifdef UseSSL}
@@ -536,6 +538,8 @@ begin
   SetWindowLong(Gauge.Handle,
                 GWL_EXSTYLE,
                 ProgressBarStyle);
+
+  Application.OnMessage := AppMessage;
 end;
 
 {----------------THTTPForm.FormDestroy}
@@ -2420,6 +2424,23 @@ begin
   {$ifdef LogIt}
    LogLine ('FrameBrowserScript, Name=' + Name + ', Src=' + Src + ', Script=' + Script);
    {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 16.08.2015 --
+procedure THTTPForm.AppMessage(var Msg: TMsg; var Handled: Boolean);
+var
+  WinCtrl: TWinControl;
+begin
+  if Msg.message = WM_MOUSEWHEEL then
+  begin
+    WinCtrl := FindVCLWindow(Point(Word(Msg.lParam), HiWord(Msg.lParam)));
+    if (WinCtrl is TPaintPanel) {$ifndef UseOldPreviewForm} or (WinCtrl is TBegaZoomBox) {$endif UseOldPreviewForm} then
+    begin
+      // perform mouse wheel scrolling for the control under the mouse:
+      WinCtrl.Perform(CM_MOUSEWHEEL, Msg.WParam, Msg.LParam);
+      Handled := True;
+    end;
+  end;
 end;
 
 end.

@@ -60,6 +60,7 @@ uses
 {$ifdef UseOldPreviewForm}
   PreviewForm,
 {$else UseOldPreviewForm}
+  BegaZoom,
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
 {$ifdef UseTNT}
@@ -227,6 +228,7 @@ type
     procedure UpdateCaption;
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
+    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
   protected
     procedure UpdateActions; override;
   public
@@ -238,7 +240,9 @@ var
 implementation
 
 {$ifdef HasSystemUITypes}
-uses System.UITypes;
+uses
+  System.Types,
+  System.UITypes;
 {$endif}
 {$ifdef LCL}
   {$R *.lfm}
@@ -293,6 +297,8 @@ begin
   else
     Edit2.Text := 'Program uses unicode characters.';
   UpdateCaption;
+
+  Application.OnMessage := AppMessage;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -1144,6 +1150,23 @@ begin
   begin
     QuirksModePanel.Font.Style := QuirksModePanel.Font.Style - [fsItalic];
     QuirksModePanel.Hint := 'QuirksMode ''' + QuirksModePanelCaption + ''' as selected in Options menu';
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 16.08.2015 --
+procedure TForm1.AppMessage(var Msg: TMsg; var Handled: Boolean);
+var
+  WinCtrl: TWinControl;
+begin
+  if Msg.message = WM_MOUSEWHEEL then
+  begin
+    WinCtrl := FindVCLWindow(Point(Word(Msg.lParam), HiWord(Msg.lParam)));
+    if (WinCtrl is TPaintPanel) {$ifndef UseOldPreviewForm} or (WinCtrl is TBegaZoomBox) {$endif UseOldPreviewForm} then
+    begin
+      // perform mouse wheel scrolling for the control under the mouse:
+      WinCtrl.Perform(CM_MOUSEWHEEL, Msg.WParam, Msg.LParam);
+      Handled := True;
+    end;
   end;
 end;
 

@@ -1,8 +1,16 @@
 unit DownLoadId;
 
+{$include htmlcons.inc}
+
 interface
 
 uses
+{$ifdef Compiler24_Plus}
+  System.Types,
+{$endif}
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, mmSystem, UrlConIcs;
 
