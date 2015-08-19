@@ -7398,6 +7398,7 @@ var
   I, J: Integer;
   Image: ThtImage;
   Error: Boolean;
+  Obj: TObject;
   Transparent: TTransparency;
 begin
   Image := nil;
@@ -7409,6 +7410,11 @@ begin
   if (I = -1) and (J >= 0) then
   begin
     Transparent := NotTransp;
+    Obj := MissingImages.Objects[J];
+    if (Obj is TImageObj) then
+    begin
+      Transparent := TImageObj(Obj).Transparent;
+    end;
     Image := LoadImageFromStream(Stream, Transparent);
     if Image <> nil then {put in Cache}
     begin
