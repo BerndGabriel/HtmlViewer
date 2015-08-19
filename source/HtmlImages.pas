@@ -443,8 +443,8 @@ end;
 function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
 
-  function LoadMetafileImage: ThtImage;
 {$ifndef NoMetafile}
+  procedure LoadMetafileImage;
   var
     Meta: ThtMetaFile;
   begin
@@ -457,18 +457,13 @@ function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var A
     end;
     Result := ThtMetafileImage.Create(Meta);
   end;
-{$else}
-  begin
-    Result := nil;
-  end;
 {$endif NoMetafile}
 
-  function LoadGpImage: ThtImage;
 {$ifndef NoGDIPlus}
+  procedure LoadGpImage;
   var
     Image: ThtGpImage;
   begin
-    Result := nil;
     if GDIPlusActive then
     begin
       Image := ThtGpImage.Create(Stream);
@@ -480,16 +475,12 @@ function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var A
       end;
     end;
   end;
-{$else}
-  begin
-    Result := nil;
-  end;
 {$endif !NoGDIPlus}
 
 var
   Bitmap, Mask: TBitmap;
 
-  function LoadGif: ThtImage;
+  procedure LoadGif;
   var
     Gif: TGifImage;
     NonAnimated: Boolean;
@@ -505,26 +496,22 @@ var
           Mask := TBitmap.Create;
           Mask.Assign(Gif.Mask);
           Transparent := TrGif;
-        end
-        else if Transparent = LLCorner then
-          Mask := GetImageMask(Bitmap, False, 0);
+        end;
       finally
         Gif.Free;
       end;
-      Result := nil;
     end
     else
       Result := ThtGifImage.Create(Gif);
   end;
 
-  function LoadPng: ThtImage;
+  procedure LoadPng;
 {$ifdef LCL}
   var
     pngImage: TPortableNetworkGraphic;
   begin
     pngImage := TPortableNetworkGraphic.Create;
     try
-      Transparent := TrPng;
       pngImage.LoadFromStream(Stream);
       if ColorBits <= 8 then
         pngImage.PixelFormat := pf8bit
@@ -537,6 +524,7 @@ var
       begin
         Mask := TBitmap.Create;
         Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
+        Transparent := TrPng;
       end;
     finally
       pngImage.Free;
@@ -544,10 +532,9 @@ var
 {$else}
   begin
 {$endif}
-    Result := nil;
   end;
 
-  function LoadJpeg: ThtImage;
+  procedure LoadJpeg;
   var
     jpImage: TJpegImage;
   begin
@@ -564,56 +551,49 @@ var
         jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
       Bitmap := TBitmap.Create;
       Bitmap.Assign(jpImage);
+      Transparent := NotTransp;
     finally
       jpImage.Free;
     end;
-    Transparent := NotTransp;
-    Result := nil;
   end;
 
-  function LoadIco: ThtImage;
+  procedure LoadIco;
   var
     Icon: TIcon;
   begin
     Icon := TIcon.Create;
     try
       Icon.LoadFromStream(Stream);
-
       Bitmap := TBitmap.Create;
       Bitmap.Assign(Icon);
       Transparent := LLCorner;
     finally
       Icon.Free;
     end;
-    Result := nil;
   end;
 
-  function LoadBmp: ThtImage;
+  procedure LoadBmp;
   begin
     Bitmap := TBitmap.Create;
     Bitmap.LoadFromStream(Stream);
-    Result := nil;
   end;
 
 var
   ImageFormat: ThtImageFormat;
 begin
   Result := nil;
-  if (Stream = nil) or (Stream.Size < 20) then
-    Exit;
-
-  Stream.Position := 0;
-  Mask := nil;
   Bitmap := nil;
+  Mask := nil;
   try
+    Stream.Position := 0;
     ImageFormat := KindOfImage(Stream);
+    if ImageFormat = itNone then
+      Exit;
 
 {$ifndef NoGDIPlus}
-    if ImageFormat in [itGif] then
-    else if (ImageFormat in [itBmp]) {and (Transparent <> NotTransp)} then
-    else
+    if not (ImageFormat in [itBmp, itIco, itGif]) then
       try
-        Result := LoadGpImage;
+        LoadGpImage;
       except
         // just continue without image...
       end;
@@ -622,33 +602,30 @@ begin
     if Result = nil then
       case ImageFormat of
         itIco,
-        itCur: Result := LoadIco;
-        itGif: Result := LoadGif;
-        itPng: Result := LoadPng;
-        itJpg: Result := LoadJpeg;
-        itBmp: Result := LoadBmp;
+        itCur: LoadIco;
+        itPng: LoadPng;
+        itJpg: LoadJpeg;
+        itBmp: LoadBmp;
+        itGif: LoadGif;
       end;
 
-    if Result = nil then
-      if Bitmap <> nil then
-      begin
-        if not (ImageFormat in [itGif]) then
-        begin
-          Transparent := LLCorner;
-          Mask := GetImageMask(Bitmap, False, 0);
-        end;
-        Bitmap := ConvertImage(Bitmap);
-        Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
-      end;
+    if Bitmap <> nil then
+    begin
+      if Transparent = LLCorner then
+        Mask := GetImageMask(Bitmap, False, 0);
+      Bitmap := ConvertImage(Bitmap);
+      Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
+    end;
   except
-    FreeAndNil(Bitmap);
-    FreeAndNil(Mask);
+    Bitmap.Free;
+    Mask.Free;
     FreeAndNil(Result);
   end;
+
 {$IFNDEF NoMetafile}
   if Result = nil then
     try
-      Result := LoadMetafileImage;
+      LoadMetafileImage;
     except
       // just continue without image...
     end;
