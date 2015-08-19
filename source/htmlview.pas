@@ -66,6 +66,7 @@ type
   EExcessiveSizeError = class(EhtException);
   EIllegalArgument = class(EhtException);
 
+  THtBase = class;
   THtmlViewer = class;
 
   THTMLBorderStyle = (htFocused, htNone, htSingle);
@@ -196,7 +197,27 @@ type
 
   TLoadHistoryItem = procedure(Sender: TObject; HI: ThvHistoryItem; var Handled: Boolean) of object;
 
-  THtmlViewer = class(THtmlViewerBase)
+  //TODO -oBG, 16.08.2015: split THtmlViewer into ThtBase and THtmlViewer.
+  //
+  // ThtBase (or a derivate of it) will be the control that TFVBase will create
+  // to embed HtmlViewers.
+  //
+  // The properties of TViewerBase will no longer be members to avoid the copy
+  // orgies and to simplify implementing more features that are unique to the
+  // entire THtmlViewer or TFrameViewer/TFrameBrowser component. Instead they
+  // are gotten by virtual methods.
+  //
+  // The implementation of these properties will go back to THtmlViewer and
+  // TFrameViewer/TFrameBrowser from where they came.
+  //
+  // THtmlViewer implements getters getting the properties from itself.
+  // The ThtBase derivate, that TFVBase uses, implements the getters getting the
+  // properties from the TFrameViewer/TFrameBrowser component.
+
+  ThtBase = class(THtmlViewerBase)
+  end;
+
+  THtmlViewer = class(ThtBase)
   private
     // child components
     FBorderPanel: TPanel;
@@ -433,8 +454,8 @@ type
     function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
     function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
-    function InsertImage(const Src: ThtString; Stream: TStream): Boolean; overload;
-    function InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor = -1; OwnsBitmap: Boolean = False): Boolean; overload;
+    procedure InsertImage(const Src: ThtString; Stream: TStream); overload;
+    procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor = -1; OwnsBitmap: Boolean = False); overload;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 {$ifndef NoMetafile}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
@@ -2505,7 +2526,7 @@ begin
 end;
 
 {----------------THtmlViewer.InsertImage}
-function THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream): Boolean;
+procedure THtmlViewer.InsertImage(const Src: ThtString; Stream: TStream);
 var
   MS: TMemoryStream;
   ImageReformat: Boolean;
@@ -2527,7 +2548,6 @@ begin
     else
       FInsertedImages.AddObject(Src, nil);
     FImagesInserted.Enabled := True;
-    Result := True;
   end
   else
   begin
@@ -2542,7 +2562,6 @@ begin
       end
       else
         Invalidate;
-      Result := True;
     finally
       SetProcessing(False);
     end;
@@ -2550,7 +2569,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 10.01.2015 --
-function THtmlViewer.InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor; OwnsBitmap: Boolean): Boolean;
+procedure THtmlViewer.InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor; OwnsBitmap: Boolean);
 var
   ImageReformat: Boolean;
 begin
@@ -2559,7 +2578,6 @@ begin
     // insert later. Does not require a copy as caller is responsible for bitmap.
     FInsertedImages.AddObject(Src, ThtBitmapToInsert.Create(Bitmap, Transparent, Color, False));
     FImagesInserted.Enabled := True;
-    Result := True;
   end
   else
   begin
@@ -2574,7 +2592,6 @@ begin
       end
       else
         Invalidate;
-      Result := True;
     finally
       SetProcessing(False);
     end;

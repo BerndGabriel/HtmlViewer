@@ -1047,8 +1047,12 @@ begin
   Timer.Enabled := False;
   if Pending.Count > 0 then
     with ImageRec(Pending[0]) do
-      if FrameBrowser.InsertImage(Viewer, ID, Stream) then
       begin
+        try
+          Viewer.InsertImage(ID, Stream);
+        except
+        end;
+
         if Assigned(Stream) then  {Stream can be Nil}
         begin
           {save image in cache file}
