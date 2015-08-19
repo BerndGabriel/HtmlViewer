@@ -324,6 +324,12 @@ var
   Magic: DWord;
   WMagic: Word absolute Magic;
 begin
+  if Stream = nil then
+  begin
+    Result := itNone;
+    Exit;
+  end;
+
   Pos := Stream.Position;
   Stream.Position := 0;
   try
@@ -585,10 +591,11 @@ begin
   Bitmap := nil;
   Mask := nil;
   try
-    Stream.Position := 0;
     ImageFormat := KindOfImage(Stream);
     if ImageFormat = itNone then
       Exit;
+
+    Stream.Position := 0;
 
 {$ifndef NoGDIPlus}
     if not (ImageFormat in [itBmp, itIco, itGif]) then
