@@ -4583,8 +4583,6 @@ begin
     OnProcessing(Self, False);
 end;
 
-{$ifndef NoMetafile}
-
 //-- BG ---------------------------------------------------------- 13.03.2011 --
 procedure TFVBase.ParseFrame(FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
 var
@@ -4597,6 +4595,8 @@ begin
     Parser.Free;
   end;
 end;
+
+{$ifndef NoMetafile}
 
 {----------------TFVBase.Print}
 

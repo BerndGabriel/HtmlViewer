@@ -281,11 +281,6 @@ type
     FImagesInserted: TTimer;
     FImagesReformat: Boolean;
 
-    // print/preview status
-    FPage: Integer;
-    FPrintedSize: TPoint;
-    FWidthRatio: Double;
-
     // mouse move status
     FTarget: ThtString;
     FURL: ThtString;
@@ -306,11 +301,14 @@ type
     FLastEventInfo: TGestureEventInfo;
 {$endif}
 
-    //
+    // print/preview status
+    FPrintedSize: TPoint;
 {$ifndef NoMetafile}
+    FPage: Integer;
+    FWidthRatio: Double;
     vwP: TvwPrinter;
-{$endif}
     function CreateHeaderFooter: THtmlViewer;
+{$endif}
     function GetCursor: TCursor;
     function GetDocumentSource: ThtString;
     function GetFormControlList: TFormControlObjList;
@@ -3570,8 +3568,6 @@ begin
   end;
 end;
 
-{$endif}
-
 function THtmlViewer.CreateHeaderFooter: THtmlViewer;
 begin
 {
@@ -3608,6 +3604,8 @@ begin
   Result.StyleElements := StyleElements;
   {$endif}
 end;
+
+{$endif}
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
 function THtmlViewer.CreateIFrameControl: TViewerBase;
