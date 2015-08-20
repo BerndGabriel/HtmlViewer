@@ -82,7 +82,6 @@ type
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
-  ThtImageFormat = (itNone, itBmp, itIco, itCur, itGif, itPng, itJpg, {$IFNDEF NoGDIPlus} itTiff, {$ENDIF NoGDIPlus} itMetafile);
   TTransparency = (NotTransp, LLCorner, TrGif, TrPng);
 
   //BG, 09.04.2011
@@ -318,58 +317,87 @@ type
 
 //------------------------------------------------------------------------------
 
-function KindOfImage(Stream: TStream): ThtImageFormat;
+{ Try to recognize image type by reading the image header at Stream position.
+  Return image type or itNone if not recognized.
+
+  Do not reset stream position when done; this is left to the caller
+  which knows better how to interpret the results. }
+type
+  ThtImageFormat = (itNone, itBmp, itIco, itCur, itGif, itPng, itJpg, itTiff, itMeta);
+
+function KindOfImage(const Stream: TStream): ThtImageFormat;
+type
+  THeaderRec = record
+    case Integer of
+      0: (c: Cardinal);
+      1: (w: Word);
+      2: (EMF: record
+          Type_: Cardinal;
+          Size: Cardinal;
+          Bounds: array[0..15] of Byte;
+          Frame: array[0..15] of Byte;
+          RecordSignature: Cardinal;
+        end);
+      3: (WMF: record
+          Type_: Word;
+          HeaderSize: Word;
+          Version: Word;
+        end);
+      4: (TIFF: record
+          ID: Word;
+          Version: Word;
+        end);
+    end;
 var
-  Pos: Int64;
-  Magic: DWord;
-  WMagic: Word absolute Magic;
+  Header: THeaderRec;
+  n: Integer;
 begin
-  if Stream = nil then
+  Assert(Assigned(Stream));
+
+  n := Stream.Read(Header, SizeOf(Header));
+  if n >= SizeOf(Header.c) then
   begin
-    Result := itNone;
-    Exit;
+
+    case Header.c of
+      $00000001:
+        { Windows Enhanced Metafile Specs & Info:
+          * https://msdn.microsoft.com/en-us/library/cc230635.aspx }
+        if (n >= SizeOf (Header.Emf)) and (Header.EMF.RecordSignature = $464D4520) then
+        begin
+          Result := itMeta;
+          Exit;
+        end;
+
+      $00010000: begin Result := itIco ; Exit; end;
+      $00020000: begin Result := itCur ; Exit; end;
+      $002A4949: begin Result := itTiff; Exit; end; // .TIFF little endian (II - Intel).
+      $2A004D4D: begin Result := itTiff; Exit; end; // .TIFF big endian (MM - Motorola).
+      $38464947: begin Result := itGif ; Exit; end;
+      $474E5089: begin Result := itPng ; Exit; end;
+      $9AC6CDD7: begin Result := itMeta; Exit; end;
+    end;
+
+    case Header.w of
+      $0001, $0002:
+        { Windows Metafile Specs & Info:
+          * https://msdn.microsoft.com/en-us/library/cc250418.aspx
+          * https://www.symantec.com/avcenter/reference/inside.the.windows.meta.file.format.pdf }
+        if (n >= SizeOf(Header.WMF)) and
+          (Header.Wmf.HeaderSize = 9) then
+            case Header.Wmf.Version of
+              $0100, $0300:
+                begin
+                  Result := itMeta;
+                  Exit;
+                end;
+            end;
+
+      $4D42: begin Result := itBmp; Exit; end;
+      $D8FF: begin Result := itJpg; Exit; end;
+    end;
   end;
 
-  Pos := Stream.Position;
-  Stream.Position := 0;
-  try
-    Stream.Read(Magic, sizeof(Magic));
-    if Magic = $38464947 then
-    begin
-//      Stream.Read(BMagic, sizeof(BMagic));
-//      if BMagic = Ord('9') then
-//        Result := Gif89
-//      else
-        Result := itGif;
-    end
-    else if Magic = $474E5089 then
-      Result := itPng
-    else if Magic = $00010000 then
-      Result := itIco
-    else if Magic = $00020000 then
-      Result := itCur
-    else
-      case WMagic of
-        $4D42: Result := itBmp;
-        $D8FF: Result := itJpg;
-{$ifndef NoGDIPlus}
-         // .TIFF little endian (II - Intell)
-        $4949: if (Magic and $2A0000)=$2A0000 then
-                 Result := itTiff
-               else
-                 Result := itNone;
-         // .TIFF big endian (MM - Motorola)
-        $4D4D: if (Magic and $2A000000)=$2A000000 then
-                 Result := itTiff
-               else
-                 Result := itNone;
-{$endif !NoGDIPlus}
-      else
-        Result := itNone;
-      end;
-  finally
-    Stream.Position := Pos;
-  end;
+  Result := itNone;
 end;
 
 function ConvertImage(Bitmap: TBitmap): TBitmap;
@@ -449,8 +477,8 @@ end;
 function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
 
+  procedure LoadMeta;
 {$ifndef NoMetafile}
-  procedure LoadMetafileImage;
   var
     Meta: ThtMetaFile;
   begin
@@ -462,8 +490,10 @@ function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var A
       raise;
     end;
     Result := ThtMetafileImage.Create(Meta);
-  end;
+{$else}
+  begin
 {$endif NoMetafile}
+  end;
 
 {$ifndef NoGDIPlus}
   procedure LoadGpImage;
@@ -588,17 +618,24 @@ var
   ImageFormat: ThtImageFormat;
 begin
   Result := nil;
+  if not Assigned(Stream) then
+    Exit;
+
   Bitmap := nil;
   Mask := nil;
   try
+    Stream.Seek(0, soFromBeginning); // Seek is faster than Position.
     ImageFormat := KindOfImage(Stream);
     if ImageFormat = itNone then
       Exit;
 
-    Stream.Position := 0;
+    Stream.Seek(0, soFromBeginning); // Seek is faster than Position.
 
 {$ifndef NoGDIPlus}
-    if not (ImageFormat in [itBmp, itIco, itGif]) then
+    { If GDI+ is available, try it first to load images. Do not use it for BMP
+      because we might need to apply LLCORNER transparency later. Do not use it
+      for GIF because GDI+ does not support animated GIFs. }
+    if GDIPlusActive and not (ImageFormat in [itBmp, itIco, itGif]) then
       try
         LoadGpImage;
       except
@@ -609,11 +646,12 @@ begin
     if Result = nil then
       case ImageFormat of
         itIco,
-        itCur: LoadIco;
-        itPng: LoadPng;
-        itJpg: LoadJpeg;
-        itBmp: LoadBmp;
-        itGif: LoadGif;
+        itCur:  LoadIco;
+        itPng:  LoadPng;
+        itJpg:  LoadJpeg;
+        itBmp:  LoadBmp;
+        itGif:  LoadGif;
+        itMeta: LoadMeta;
       end;
 
     if Bitmap <> nil then
@@ -623,20 +661,12 @@ begin
       Bitmap := ConvertImage(Bitmap);
       Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
     end;
+
   except
     Bitmap.Free;
     Mask.Free;
     FreeAndNil(Result);
   end;
-
-{$IFNDEF NoMetafile}
-  if Result = nil then
-    try
-      LoadMetafileImage;
-    except
-      // just continue without image...
-    end;
-{$ENDIF}
 end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
