@@ -228,7 +228,10 @@ type
     procedure UpdateCaption;
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
+{$ifdef LCL}
+{$else}
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
+{$endif}
   protected
     procedure UpdateActions; override;
   public
@@ -298,7 +301,10 @@ begin
     Edit2.Text := 'Program uses unicode characters.';
   UpdateCaption;
 
+{$ifdef LCL}
+{$else}
   Application.OnMessage := AppMessage;
+{$endif}
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -1153,6 +1159,8 @@ begin
   end;
 end;
 
+{$ifdef LCL}
+{$else}
 //-- BG ---------------------------------------------------------- 16.08.2015 --
 procedure TForm1.AppMessage(var Msg: TMsg; var Handled: Boolean);
 var
@@ -1169,5 +1177,5 @@ begin
     end;
   end;
 end;
-
+{$endif}
 end.

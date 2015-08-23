@@ -223,7 +223,10 @@ type
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
     procedure CloseAll;
     procedure UpdateCaption;
+{$ifdef LCL}
+{$else}
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
+{$endif}
   public
     { Public declarations }
   end;
@@ -282,7 +285,10 @@ begin
   HintWindow.Color := $CCFFFF;
   UpdateCaption;
 
+{$ifdef LCL}
+{$else}
   Application.OnMessage := AppMessage;
+{$endif}
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -1058,6 +1064,8 @@ begin
 {$endif}
 end;
 
+{$ifdef LCL}
+{$else}
 //-- BG ---------------------------------------------------------- 16.08.2015 --
 procedure TForm1.AppMessage(var Msg: TMsg; var Handled: Boolean);
 var
@@ -1074,5 +1082,6 @@ begin
     end;
   end;
 end;
+{$endif}
 
 end.

@@ -569,7 +569,7 @@ var
       begin
         Mask := TBitmap.Create;
         Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
-        Transparent := TrPng;
+        Transparent := trTransparent;
       end;
     finally
       pngImage.Free;
@@ -610,15 +610,17 @@ var
     Icon := TIcon.Create;
     try
       Icon.LoadFromStream(Stream);
-      Bitmap := TBitmap.Create;
-      Bitmap.Assign(Icon);
-      if Transparent <> LLCorner then
-        if GetIconInfo(Icon.Handle, IconInfo) then
+      if GetIconInfo(Icon.Handle, {$ifdef LCL}@{$endif} IconInfo) then
+      begin
+        Bitmap := TBitmap.Create;
+        Bitmap.Handle := IconInfo.hbmColor;
+        if Transparent <> LLCorner then
         begin
           Mask := TBitmap.Create;
           Mask.Handle := IconInfo.hbmMask;
           Transparent := trTransparent;
         end;
+      end;
     finally
       Icon.Free;
     end;

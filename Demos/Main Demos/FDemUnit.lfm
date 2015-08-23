@@ -13,7 +13,7 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '1.2.2.0'
+  LCLVersion = '1.4.0.4'
   object FrameViewer: TFrameViewer
     Left = 0
     Height = 431
@@ -241,7 +241,7 @@ object Form1: TForm1
   object OpenDialog: TOpenDialog
     DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
-    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
     left = 272
     top = 72
   end

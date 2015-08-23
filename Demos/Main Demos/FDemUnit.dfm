@@ -1,9 +1,9 @@
 object Form1: TForm1
   Left = 705
   Top = 161
+  Width = 1187
+  Height = 887
   Caption = 'Frame Demo'
-  ClientHeight = 836
-  ClientWidth = 1179
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -25,6 +25,7 @@ object Form1: TForm1
     Width = 1179
     Height = 782
     CharSet = DEFAULT_CHARSET
+    CodePage = 0
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
@@ -34,11 +35,11 @@ object Form1: TForm1
     HistoryMaxCount = 6
     ImageCacheCount = 6
     NoSelect = False
-    PrintMarginBottom = 3.000000000000000000
-    PrintMarginLeft = 2.000000000000000000
-    PrintMarginRight = 2.000000000000000000
-    PrintMarginTop = 2.000000000000000000
-    PrintScale = 1.000000000000000000
+    PrintMarginBottom = 3
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintScale = 1
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -135,6 +136,8 @@ object Form1: TForm1
       Width = 150
       Height = 23
       Align = alRight
+      Min = 0
+      Max = 100
       TabOrder = 0
       Visible = False
     end
@@ -262,7 +265,7 @@ object Form1: TForm1
   object OpenDialog: TOpenDialog
     DefaultExt = 'htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
-    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
     Left = 320
     Top = 72
   end

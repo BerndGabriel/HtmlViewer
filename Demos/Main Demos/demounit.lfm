@@ -149,7 +149,7 @@ object Form1: TForm1
   object OpenDialog: TOpenDialog
     DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
-    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
     left = 224
     top = 56
   end

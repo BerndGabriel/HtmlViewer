@@ -1608,9 +1608,9 @@ begin
       }
     end;
 
-    if FStart.BytePtr[0] = 0 then
+    if (FStart.WordPtr^ and $00FF) = 0 then
     begin
-      if FStart.BytePtr[1] <> 0 then
+      if (FStart.WordPtr^ and $FF00) <> 0 then
       begin
         CodePage := CP_UTF16BE;
         Include(FState, bsFixedCodePage);
@@ -1619,7 +1619,7 @@ begin
     end
     else
     begin
-      if FStart.BytePtr[1] = 0 then
+      if (FStart.WordPtr^ and $FF00) = 0 then
       begin
         CodePage := CP_UTF16LE;
         Include(FState, bsFixedCodePage);
