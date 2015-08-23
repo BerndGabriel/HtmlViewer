@@ -75,9 +75,9 @@ type
     function GetHeight: Cardinal;
     function GetWidth: Cardinal;
   public
-    constructor Create(Filename: ThtString; TmpFile: boolean = False); overload;
-    constructor Create(IStr: IStream); overload;
-    constructor Create(Stream: TStream); overload;
+    procedure LoadFromFile(Filename: ThtString; TmpFile: boolean = False);
+    procedure LoadFromStream(IStr: IStream); overload;
+    procedure LoadFromStream(Stream: TStream); overload;
     destructor Destroy; override;
     function GetBitmap: TBitmap;
     property Height: Cardinal read GetHeight;
@@ -88,10 +88,11 @@ type
 
   ThtGpBitmap = class(ThtGpImage)
   public
+    constructor Create(); overload;
     constructor Create(W, H: integer); overload;
-    constructor Create(IStr: IStream); overload;
-    constructor Create(Stream: TStream); overload;
     constructor Create(W, H: integer; Graphics: ThtGpGraphics); overload;
+//    procedure LoadFromStream(IStr: IStream); overload;
+//    procedure LoadFromStream(Stream: TStream); overload;
     function GetPixel(X, Y: integer): DWord;
     procedure SetPixel(X, Y: integer; Color: DWord);
   end;
@@ -307,20 +308,20 @@ begin
     raise EGDIPlus.CreateFmt('%s GDI error %s', [AProc, GetStatus(AErr)]);
 end;
 
-//-- BG ---------------------------------------------------------- 01.04.2012 --
-function IStreamFromStream(Stream: TStream): IStream;
-// thanks to Sérgio Alexandre for this method.
-var
-  Handle: HGLOBAL;
-  Ptr: Pointer absolute Handle;
-begin
-  Handle := GlobalAlloc(GPTR, Stream.Size);
-  if Handle <> 0 then
-  begin
-    Stream.Read(Ptr^, Stream.Size);
-    CreateStreamOnHGlobal(Handle, True, Result);
-  end;
-end;
+////-- BG ---------------------------------------------------------- 01.04.2012 --
+//function IStreamFromStream(Stream: TStream): IStream;
+//// thanks to Sérgio Alexandre for this method.
+//var
+//  Handle: HGLOBAL;
+//  Ptr: Pointer absolute Handle;
+//begin
+//  Handle := GlobalAlloc(GPTR, Stream.Size);
+//  if Handle <> 0 then
+//  begin
+//    Stream.Read(Ptr^, Stream.Size);
+//    CreateStreamOnHGlobal(Handle, True, Result);
+//  end;
+//end;
 
 { ThtGpGraphics }
 
@@ -339,7 +340,7 @@ end;
 destructor ThtGpGraphics.Destroy;
 begin
   if fGraphics <> nil then
-    GDICheck('ThtGpGraphics.Destroy', GdipDeleteGraphics(fGraphics));
+    {GDICheck('ThtGpGraphics.Destroy',} GdipDeleteGraphics(fGraphics) {)};
   inherited;
 end;
 
@@ -424,11 +425,10 @@ end;
 
 { TGpImage }
 
-constructor ThtGpImage.Create(Filename: ThtString; TmpFile: boolean = False);
+procedure ThtGpImage.LoadFromFile(Filename: ThtString; TmpFile: boolean = False);
 var
   err: GpStatus;
 begin
-  inherited Create;
   err := GdipLoadImageFromFile(PWideChar(FileName), fHandle);
   if err <> Ok then
     if GetLastError = 2 then
@@ -439,27 +439,34 @@ begin
     fFilename := Filename;
 end;
 
-constructor ThtGpImage.Create(IStr: IStream);
+procedure ThtGpImage.LoadFromStream(IStr: IStream);
 begin
-  inherited Create;
   GDICheck('Can''t load image stream.', GdipLoadImageFromStream(IStr, fHandle));
 end;
 
 //-- BG ---------------------------------------------------------- 01.04.2012 --
-constructor ThtGpImage.Create(Stream: TStream);
+procedure ThtGpImage.LoadFromStream(Stream: TStream);
+var
+  Handle: HGLOBAL;
+  Ptr: Pointer absolute Handle;
+  IStr: IStream;
 begin
-  Create(IStreamFromStream(Stream));
+  Handle := GlobalAlloc(GPTR, Stream.Size);
+  if Handle <> 0 then
+  begin
+    Stream.Read(Ptr^, Stream.Size);
+    CreateStreamOnHGlobal(Handle, True, IStr);
+    LoadFromStream(IStr);
+  end;
 end;
 
 destructor ThtGpImage.Destroy;
 begin
   fBitmap.Free;
-  GDICheck('ThtGpImage.Destroy', GdipDisposeImage(fHandle));
+  if fHandle <> nil then
+    GdipDisposeImage(fHandle);
   if Length(fFilename) > 0 then
-    try
-      DeleteFile(fFilename);
-    except
-    end;
+    DeleteFile(fFilename);
   inherited;
 end;
 
@@ -492,18 +499,15 @@ begin
   g.Free;
 end;
 
+constructor ThtGpBitmap.Create;
+begin
+  inherited Create;
+end;
+
 constructor ThtGpBitmap.Create(W, H: integer);
-
-
 begin
   inherited Create;
   GDICheck(Format('Can''t create bitmap of size %d x %d.', [W, H]), GdipCreateBitmapFromScan0(W, H, 0, PixelFormat32bppARGB, nil, fHandle));
-end;
-
-constructor ThtGpBitmap.Create(IStr: IStream);
-begin
-  inherited Create;
-  GDICheck('Can''t create bitmap from stream.', GdipCreateBitmapFromStream(IStr, fHandle));
 end;
 
 constructor ThtGpBitmap.Create(W, H: integer; Graphics: ThtGpGraphics);
@@ -512,11 +516,16 @@ begin
   GDICheck(Format('Can''t create bitmap of size %d x %d from graphics.', [W, H]), GdipCreateBitmapFromGraphics(W, H, Graphics.fGraphics, fHandle));
 end;
 
-//-- BG ---------------------------------------------------------- 01.04.2012 --
-constructor ThtGpBitmap.Create(Stream: TStream);
-begin
-  Create(IStreamFromStream(Stream));
-end;
+//procedure ThtGpBitmap.LoadFromStream(IStr: IStream);
+//begin
+//  GDICheck('Can''t create bitmap from stream.', GdipCreateBitmapFromStream(IStr, fHandle));
+//end;
+//
+////-- BG ---------------------------------------------------------- 01.04.2012 --
+//procedure ThtGpBitmap.LoadFromStream(Stream: TStream);
+//begin
+//  LoadFromStream(IStreamFromStream(Stream));
+//end;
 
 function ThtGpBitmap.GetPixel(X, Y: integer): DWord;
 begin
@@ -530,17 +539,15 @@ end;
 
 var
   GDIPlusCount: integer;
-{$ifndef HasGDIPlus}
   InitToken: DWord;
   Startup: GdiplusStartupInput;
+{$ifndef HasGDIPlus}
   LibHandle: THandle;
 {$endif}
 
 procedure CheckInitGDIPlus;
-{$ifndef HasGDIPlus}
 var
   Err: GpStatus;
-{$endif}
 begin
   if GDIPlusCount = 0 then
   begin
@@ -585,7 +592,10 @@ begin
       end;
     end;
 {$else}
-    GDIPlusActive := True;
+    FillChar(Startup, sizeof(Startup), 0);
+    Startup.GdiplusVersion := 1;
+    Err := GdiPlusStartup(InitToken, @Startup, nil);
+    GDIPlusActive := Err = Ok;
 {$endif HasGDIPlus}
   end;
   Inc(GDIPlusCount);
@@ -596,19 +606,17 @@ begin
   Dec(GDIPlusCount);
   if GDIPlusCount = 0 then
   begin
-{$ifndef HasGDIPlus}
     if GDIPlusActive then
     begin
       GdiplusShutdown(InitToken);
       GDIPlusActive := False;
     end;
+{$ifndef HasGDIPlus}
     if LibHandle <> 0 then
     begin
       FreeLibrary(LibHandle);
       LibHandle := 0;
     end;
-{$else}
-    GDIPlusActive := False;
 {$endif HasGDIPlus}
   end;
 end;

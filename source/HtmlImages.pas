@@ -82,7 +82,7 @@ type
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
-  TTransparency = (NotTransp, LLCorner, TrGif, TrPng);
+  TTransparency = (NotTransp, trTransparent, LLCorner, trGif);
 
   //BG, 09.04.2011
   ThtImage = class(ThtCachable)
@@ -374,6 +374,9 @@ begin
       $2A004D4D: begin Result := itTiff; Exit; end; // .TIFF big endian (MM - Motorola).
       $38464947: begin Result := itGif ; Exit; end;
       $474E5089: begin Result := itPng ; Exit; end;
+
+      { Windows Metafile with WmfPlaceableFileHeader
+        * https://msdn.microsoft.com/en-us/library/windows/desktop/ms534075%28v=vs.85%29.aspx }
       $9AC6CDD7: begin Result := itMeta; Exit; end;
     end;
 
@@ -381,7 +384,12 @@ begin
       $0001, $0002:
         { Windows Metafile Specs & Info:
           * https://msdn.microsoft.com/en-us/library/cc250418.aspx
-          * https://www.symantec.com/avcenter/reference/inside.the.windows.meta.file.format.pdf }
+          * https://www.symantec.com/avcenter/reference/inside.the.windows.meta.file.format.pdf
+
+          NOTICE: with NoGDIPlus defined Vcl.Graphics.TMetaFile should handle this kind of stream
+            but since Delphi 4 it does not recognize WMF metafiles without a WmfPlaceableFileHeader
+            which starts with magic number $9AC6CDD7 and is detected in the case above.
+        }
         if (n >= SizeOf(Header.WMF)) and
           (Header.Wmf.HeaderSize = 9) then
             case Header.Wmf.Version of
@@ -502,8 +510,9 @@ function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var A
   begin
     if GDIPlusActive then
     begin
-      Image := ThtGpImage.Create(Stream);
+      Image := ThtGpImage.Create;
       try
+        Image.LoadFromStream(Stream);
         Result := ThtGdipImage.Create(Image);
       except
         Image.Free;
@@ -596,13 +605,20 @@ var
   procedure LoadIco;
   var
     Icon: TIcon;
+    IconInfo: TIconInfo;
   begin
     Icon := TIcon.Create;
     try
       Icon.LoadFromStream(Stream);
       Bitmap := TBitmap.Create;
       Bitmap.Assign(Icon);
-      Transparent := LLCorner;
+      if Transparent <> LLCorner then
+        if GetIconInfo(Icon.Handle, IconInfo) then
+        begin
+          Mask := TBitmap.Create;
+          Mask.Handle := IconInfo.hbmMask;
+          Transparent := trTransparent;
+        end;
     finally
       Icon.Free;
     end;
@@ -635,9 +651,15 @@ begin
     { If GDI+ is available, try it first to load images. Do not use it for BMP
       because we might need to apply LLCORNER transparency later. Do not use it
       for GIF because GDI+ does not support animated GIFs. }
-    if GDIPlusActive and not (ImageFormat in [itBmp, itIco, itGif]) then
+    if GDIPlusActive then
       try
-        LoadGpImage;
+        case ImageFormat of
+          itGif: ;
+          itBmp: if Transparent = NotTransp then LoadGpImage;
+          itIco: if Transparent <> LLCorner then LoadGpImage;
+        else
+          LoadGpImage;
+        end;
       except
         // just continue without image...
       end;
@@ -656,8 +678,9 @@ begin
 
     if Bitmap <> nil then
     begin
-      if Transparent = LLCorner then
-        Mask := GetImageMask(Bitmap, False, 0);
+      if Mask = nil then
+        if Transparent = LLCorner then
+          Mask := GetImageMask(Bitmap, False, 0);
       Bitmap := ConvertImage(Bitmap);
       Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
     end;
@@ -2030,7 +2053,7 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtGdipImage.Create(AImage: ThtGpImage);
 begin
-  inherited Create(TrPng);
+  inherited Create(trTransparent);
   Gpi := AImage;
 end;
 
