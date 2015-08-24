@@ -1544,7 +1544,7 @@ type
     function GetFormcontrolData: TFreeList;
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
+    function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: Boolean): ThtImage;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     procedure CancelActives;
     procedure CheckGIFList(Sender: TObject);
@@ -7466,7 +7466,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: boolean): ThtImage;
+function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: Boolean): ThtImage;
 {Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif here}
 
   procedure GetTheBitmap;
@@ -7556,6 +7556,22 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
     end;
   end;
 
+  procedure GetTheFile(Name: ThtString);
+  var
+    Stream: TStream;
+  begin
+    Name := TheOwner.HtmlExpandFilename(Name);
+    if FileExists(Name) then
+    begin
+      Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+      try
+        Result := LoadImageFromStream(Stream, Transparent);
+      finally
+        Stream.Free;
+      end;
+    end;
+  end;
+
 var
   UName, Name: ThtString;
   I: Integer;
@@ -7575,17 +7591,16 @@ begin
     end
     else
     begin
-    {The image is not loaded yet, need to get it}
+      {The image is not loaded yet, need to get it}
       if Copy(Name, 1, 11) = 'data:image/' then
         GetTheBase64(Name)
       else
       begin
-
         GetTheBitmap;
         if (Result = nil) and not Delay then
           GetTheStream;
         if (Result = nil) and not Delay then
-          Result := LoadImageFromFile(TheOwner.HtmlExpandFilename(BMName), Transparent);
+          GetTheFile(BMName);
       end;
 
       if Result <> nil then {put in Image List for use later also}

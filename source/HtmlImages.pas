@@ -237,19 +237,43 @@ type
 {$ENDIF !NoMetafile}
 
 //------------------------------------------------------------------------------
+// ThtImageLoader is the base class for image loaders, that the global function
+// LoadImageFromStream() uses to load images of various kinds.
+//
+// HtmlViewer components use LoadImageFromStream() to load images.
+//
+// You may derive your own image loader from this class to support further
+// image file formats. Your loader must load the images into a derivate of
+// the ThtImage declared above.
+//------------------------------------------------------------------------------
+
+type
+  //BG, 24.08.2015:
+  ThtImageLoader = class
+  public
+    function LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage; virtual;
+  end;
+
+// SetImageLoader() sets a global image loader.
+// The loader will be freed during finalization or by setting another loader.
+procedure SetImageLoader(AImageLoader: ThtImageLoader);
+
+// GetImageLoader() gets the global image loader. If no image loader has been
+// set yet, a ThtImageLoader is created.
+function GetImageLoader(): ThtImageLoader;
+
+// LoadImageFromStream() tries to load an image from stream using the currently
+// set global image loader.
+//
+// The HtmlViewer components use LoadImageFromStream() to load images from streams.
+function LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage;
+
+//------------------------------------------------------------------------------
 // image methods
 //------------------------------------------------------------------------------
 
-function LoadImageFromFile(const FName: ThtString; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
-function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
-//function KindOfImage(Stream: TStream): ThtImageFormat;
-
-function GetImageHeight(Image: TGpObject): Integer;
-function GetImageWidth(Image: TGpObject): Integer;
 function EnlargeImage(Image: TGpObject; W, H: Integer): TBitmap;
 
-function GetImageMask(Image: TBitmap; ColorValid: boolean; AColor: TColor): TBitmap;
-procedure FinishTransparentBitmap(ahdc: HDC; InImage, Mask: TBitmap; xStart, yStart, W, H: Integer);
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer; Bitmap, Mask: TBitmap; YI, HI: Integer);
 
@@ -290,6 +314,9 @@ var
   ErrorImage: ThtBitmapImage;
 
 implementation
+
+var
+  ImageLoader: ThtImageLoader;
 
 //------------------------------------------------------------------------------
 // device independent bitmap wrapper
@@ -481,8 +508,32 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+procedure SetImageLoader(AImageLoader: ThtImageLoader);
+begin
+  if ImageLoader <> AImageLoader then
+  begin
+    ImageLoader.Free;
+    ImageLoader := AImageLoader;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+function GetImageLoader(): ThtImageLoader;
+begin
+  if ImageLoader = nil then
+    ImageLoader := ThtImageLoader.Create;
+  Result := ImageLoader;
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+function LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage;
+begin
+  Result := GetImageLoader.LoadImageFromStream(Stream, Transparent);
+end;
+
 //-- BG ---------------------------------------------------------- 26.09.2010 --
-function LoadImageFromStream(Stream: TStream; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
+function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
 
   procedure LoadMeta;
@@ -691,25 +742,6 @@ begin
     Bitmap.Free;
     Mask.Free;
     FreeAndNil(Result);
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 26.09.2010 --
-function LoadImageFromFile(const FName: ThtString; Transparent: TTransparency{; var AMask: TBitmap}): ThtImage;
-// extracted from ThtDocument.GetTheBitmap() and redesigned.
-// Now the image file is loaded once only (was: 2 to 3 times) and GetImageAndMaskFromFile() is obsolete.
-var
-  Stream: TStream;
-begin {look for the image file}
-  Result := nil;
-  if FileExists(FName) then
-  begin
-    Stream := TFileStream.Create(FName, fmOpenRead or fmShareDenyWrite);
-    try
-      Result := LoadImageFromStream(Stream, Transparent);
-    finally
-      Stream.Free;
-    end;
   end;
 end;
 
@@ -2277,11 +2309,9 @@ initialization
 
   DefImage := ThtBitmapImage.Create(DefBitmap, nil, NotTransp);
   ErrorImage := ThtBitmapImage.Create(ErrorBitmap, ErrorBitmapMask, LLCorner);
+//  ImageLoader := nil;
 finalization
-  DefImage.Free;
+  ImageLoader.Free;
   ErrorImage.Free;
-
-//  DefBitMap.Free;
-//  ErrorBitMap.Free;
-//  ErrorBitMapMask.Free;
+  DefImage.Free;
 end.
