@@ -250,8 +250,23 @@ type
 type
   //BG, 24.08.2015:
   ThtImageLoader = class
+  private
+    FSupportedKinds: TStringList;
+    FSupportedExts: TStringList;
+  protected
+    // AddSupportedKinds adds one kind with a comma separated list of file extensions
+    // e.g.: AddSupportedKinds('Bitmaps', '*.bmp,*.dib')
+    procedure AddSupportedKinds(const KindName, Extensions: string); overload;
+
+    // AddSupportedKinds() adds all supported kinds using the above AddSupportedKinds().
+    procedure AddSupportedKinds; overload; virtual;
   public
+    constructor Create; virtual;
+    destructor Destroy; override;
+
     function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage; virtual;
+    // Filter returns a file dialog filter compliant string of supported image types
+    function GetFilter(const AllKinds: string): string;
   end;
 
 // SetImageLoader() sets a global image loader.
@@ -530,6 +545,138 @@ end;
 function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage;
 begin
   Result := GetImageLoader.LoadImageFromStream(Stream, Transparent);
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+procedure ThtImageLoader.AddSupportedKinds(const KindName, Extensions: string);
+var
+  I: Integer;
+  Exts, SupportedExts: TStringList;
+begin
+  Exts := TStringList.Create;
+  try
+    Exts.CommaText := Extensions;
+
+    for I := 0 to Exts.Count - 1 do
+    begin
+      if FSupportedExts.IndexOf(Exts[I]) < 0 then
+        FSupportedExts.Add(Exts[I]);
+    end;
+
+    I := FSupportedKinds.IndexOf(KindName);
+    if I >= 0 then
+    begin
+      SupportedExts := TStringList(FSupportedKinds.Objects[I]);
+      for I := 0 to Exts.Count - 1 do
+      begin
+        if SupportedExts.IndexOf(Exts[I]) < 0 then
+          SupportedExts.Add(Exts[I]);
+      end;
+    end
+    else
+    begin
+      // new entry
+      FSupportedKinds.AddObject(KindName, Exts);
+      Exts := nil;
+    end;
+  finally
+    Exts.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+procedure ThtImageLoader.AddSupportedKinds;
+begin
+
+  AddSupportedKinds('Bitmaps', 'bmp');
+  AddSupportedKinds('Graphics Interchange Format', 'gif');
+  AddSupportedKinds('JPEG', 'jpg,jpeg');
+{$ifdef LCL}
+  AddSupportedKinds('Portable Network Graphics', 'png');
+{$endif}
+{$ifndef NoGDIPlus}
+  AddSupportedKinds('Portable Network Graphics', 'png');
+  AddSupportedKinds('Tagged Image Files', 'tif,tiff');
+  AddSupportedKinds('Icons', 'ico');
+  AddSupportedKinds('Cursors', 'cur');
+  AddSupportedKinds('Windows Metafiles', 'wmf,emf');
+{$endif}
+{$ifndef NoMetafile}
+  AddSupportedKinds('Windows Metafiles', 'wmf,emf');
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+constructor ThtImageLoader.Create;
+begin
+  inherited;
+  FSupportedKinds := TStringList.Create;
+  FSupportedExts := TStringList.Create;
+  AddSupportedKinds;
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+destructor ThtImageLoader.Destroy;
+var
+  I: Integer;
+begin
+  FSupportedExts.Free;
+  for i := 0 to FSupportedKinds.Count - 1 do
+    FSupportedKinds.Objects[I].Free;
+  FSupportedKinds.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 24.08.2015 --
+function ThtImageLoader.GetFilter(const AllKinds: string): string;
+var
+  Files: TStringList;
+  Filters: TStringList;
+
+  procedure AddFilter(const Name: string; Exts: TStrings);
+  var
+    I: Integer;
+  begin
+    Files.Clear;
+    for I := 0 to Exts.Count - 1 do
+      Files.Add('*.' + Exts[I]);
+    Files.Delimiter := ',';
+    Filters.Add( Name + ' (' + Files.DelimitedText + ')' );
+    Files.Delimiter := ';';
+    Filters.Add( Files.DelimitedText );
+  end;
+
+var
+  I: Integer;
+
+begin
+  Filters := TStringList.Create;
+  Files := TStringList.Create;
+{$ifdef HasStrictDelimiter}
+  Files.StrictDelimiter := True;
+{$endif}
+  try
+    if Length(AllKinds) > 0 then
+      AddFilter( AllKinds, FSupportedExts );
+
+    for I := 0 to FSupportedKinds.Count - 1 do
+      AddFilter( FSupportedKinds[I], TStringList(FSupportedKinds.Objects[I]) );
+
+    Filters.Delimiter := '|';
+{$ifdef HasStrictDelimiter}
+    Filters.StrictDelimiter := True;
+    Result := Filters.DelimitedText;
+{$else}
+    SetLength(Result, 0);
+    for I := 0 to Filters.Count - 1 do
+      Result := Result + Filters[I] + '|';
+    SetLength(Result, Length(Result) - 1);
+{$endif}
+
+  finally
+    Files.Free;
+    Filters.Free;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --

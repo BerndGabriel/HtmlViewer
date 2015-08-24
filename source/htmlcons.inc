@@ -20,8 +20,11 @@
   {$define MetaFileMissing}
   {$define MultiMediaMissing}
 
+  {$define HasStrictDelimiter}
+
   {$define ver100_plus}
   {$define ver120_plus}
+
 {$else}
 
 { Identify Delphi Compiler Version:
@@ -144,6 +147,10 @@
     {$else}
       {$define UseInline}
     {$endif}
+  {$endif}
+
+  {$ifdef Compiler18_Plus}
+    {$define HasStrictDelimiter}
   {$endif}
 
   {$ifdef Compiler20_Plus}

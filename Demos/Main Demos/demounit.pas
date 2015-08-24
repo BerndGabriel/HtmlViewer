@@ -76,6 +76,7 @@ uses
 {$endif UseTNT}
   HtmlGlobals,
   HtmlBuffer,
+  HtmlImages,
   URLSubs,
   StyleTypes,
   ReadHTML,
@@ -630,9 +631,9 @@ procedure TForm1.OpenImageFileClick(Sender: TObject);
 begin
   if Viewer.CurrentFile <> '' then
     OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
-  OpenDialog.Filter := 'Graphics Files (*.bmp,*.gif,*.jpg,*.jpeg,*.png)|'+
-    '*.bmp;*.jpg;*.jpeg;*.gif;*.png|'+
-    'All Files (*.*)|*.*';
+  OpenDialog.Filter :=
+    GetImageLoader.GetFilter('Graphics Files') +
+    '|All Files (*.*)|*.*';
   OpenDialog.FilterIndex := 1;
   if OpenDialog.Execute then
   begin
