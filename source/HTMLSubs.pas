@@ -562,7 +562,7 @@ type
     FSource: ThtString;
     FImage: ThtImage;
     OrigImage: ThtImage; {same as above unless swapped}
-    Transparent: TTransparency; {None, Lower Left Corner, or Transp GIF}
+    Transparent: ThtImageTransparency; {None, Lower Left Corner, or Transp GIF}
     FHover: ThtHover;
     FHoverImage: boolean;
     AltHeight, AltWidth: Integer;
@@ -1544,7 +1544,7 @@ type
     function GetFormcontrolData: TFreeList;
     function GetSelLength: Integer;
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-    function GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: Boolean): ThtImage;
+    function GetTheImage(const BMName: ThtString; var Transparent: ThtImageTransparency; out FromCache, Delay: Boolean): ThtImage;
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     procedure CancelActives;
     procedure CheckGIFList(Sender: TObject);
@@ -1554,7 +1554,7 @@ type
     procedure GetBackgroundBitmap;
     procedure HideControls;
     procedure InsertImage(const Src: ThtString; Stream: TStream; out Reformat: Boolean); overload;
-    procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Color: TColor; Transparent: TTransparency; OwnsBitmap: Boolean; out Reformat: Boolean); overload;
+    procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Color: TColor; Transparent: ThtImageTransparency; OwnsBitmap: Boolean; out Reformat: Boolean); overload;
     procedure LButtonDown(Down: boolean);
     procedure ProcessInlines(SIndex: Integer; Prop: TProperties; Start: Boolean);
     procedure SetBackground(ABackground: TColor);
@@ -2500,7 +2500,7 @@ begin
           end;
 
         TranspSy:
-          Transparent := LLCorner;
+          Transparent := itrLLCorner;
 
         ActiveSy:
           FHoverImage := True;
@@ -2612,7 +2612,7 @@ var
   I: Integer;
 begin
   try
-    Transparent := NotTransp;
+    Transparent := itrNone;
     TmpImage := LoadImageFromStream(NewImage, Transparent);
     if Assigned(TmpImage) then
     begin
@@ -7399,7 +7399,7 @@ var
   Image: ThtImage;
   Error: Boolean;
   Obj: TObject;
-  Transparent: TTransparency;
+  Transparent: ThtImageTransparency;
 begin
   Image := nil;
   Error := False;
@@ -7409,7 +7409,7 @@ begin
   J := MissingImages.IndexOf(UName); {see if it's in missing image list}
   if (I = -1) and (J >= 0) then
   begin
-    Transparent := NotTransp;
+    Transparent := itrNone;
     Obj := MissingImages.Objects[J];
     if (Obj is TImageObj) then
     begin
@@ -7430,7 +7430,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 10.01.2015 --
-procedure ThtDocument.InsertImage(const Src: ThtString; Bitmap: TBitmap; Color: TColor; Transparent: TTransparency; OwnsBitmap: Boolean; out Reformat: Boolean);
+procedure ThtDocument.InsertImage(const Src: ThtString; Bitmap: TBitmap; Color: TColor; Transparent: ThtImageTransparency; OwnsBitmap: Boolean; out Reformat: Boolean);
 var
   UName: ThtString;
   I, J: Integer;
@@ -7448,7 +7448,7 @@ begin
     if Bitmap <> nil then
     begin
         if Color <> -1 then
-          Transparent := TrGif;
+          Transparent := itrIntrinsic;
         Image := ThtBitmapImage.Create(Bitmap, Transparent, Color, OwnsBitmap);
     end;
 
@@ -7466,8 +7466,8 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTransparency; out FromCache, Delay: Boolean): ThtImage;
-{Transparent may be set to NotTransp or LLCorner on entry but may discover it's TrGif here}
+function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtImageTransparency; out FromCache, Delay: Boolean): ThtImage;
+{Transparent may be set to itrNone or itrLLCorner on entry but may discover it's itrIntrinsic here}
 
   procedure GetTheBitmap;
   {Note: bitmaps gotten by OnBitmapRequest are on "loan".  We do not destroy them}
@@ -7487,7 +7487,7 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: TTran
       else if Bitmap <> nil then
       begin
         if Color <> -1 then
-          Transparent := TrGif;
+          Transparent := itrIntrinsic;
         try
           Result := ThtBitmapImage.Create(Bitmap, Transparent, Color, False);
         finally
@@ -7628,7 +7628,7 @@ end;
 
 procedure ThtDocument.GetBackgroundBitmap;
 var
-  Dummy1: TTransparency;
+  Dummy1: ThtImageTransparency;
   FromCache, Delay: boolean;
   Rslt: ThtString;
   I: Integer;
@@ -7646,7 +7646,7 @@ begin
       end
       else
       begin
-        Dummy1 := NotTransp;
+        Dummy1 := itrNone;
         if not Assigned(GetBitmap) and not Assigned(GetImage) then
           BitmapName := TheOwner.HtmlExpandFilename(BitmapName)
         else if Assigned(ExpandName) then

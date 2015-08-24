@@ -82,7 +82,7 @@ type
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
-  TTransparency = (NotTransp, trTransparent, LLCorner, trGif);
+  ThtImageTransparency = (itrNone, itrIntrinsic, itrLLCorner);
 
   //BG, 09.04.2011
   ThtImage = class(ThtCachable)
@@ -93,8 +93,8 @@ type
     function GetImageWidth: Integer; virtual; abstract;
     function GetMask: TBitmap; virtual; abstract;
   public
-    Transp: TTransparency; {identifies what the mask is for}
-    constructor Create(Tr: TTransparency); overload;
+    Transp: ThtImageTransparency; {identifies what the mask is for}
+    constructor Create(Tr: ThtImageTransparency); overload;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); virtual; abstract;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); virtual;
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); virtual;
@@ -136,9 +136,9 @@ type
   public
     Bitmap: TBitmap;
     Color: TColor;
-    Transp: TTransparency;
+    Transp: ThtImageTransparency;
     OwnsBitmap: Boolean;
-    constructor Create(AImage: TBitmap; ATransp: TTransparency; AColor: TColor; AOwnsBitmap: Boolean = True); overload;
+    constructor Create(AImage: TBitmap; ATransp: ThtImageTransparency; AColor: TColor; AOwnsBitmap: Boolean = True); overload;
   end;
 
   //BG, 09.04.2011
@@ -153,8 +153,8 @@ type
     function GetImageWidth: Integer; override;
     function GetMask: TBitmap; override;
   public
-    constructor Create(AImage, AMask: TBitmap; Tr: TTransparency; AOwnsBitmap: Boolean = True; AOwnsMask: Boolean = True); overload;
-    constructor Create(AImage: TBitmap; Tr: TTransparency; Color: TColor; AOwnsBitmap: Boolean = True); overload;
+    constructor Create(AImage, AMask: TBitmap; Tr: ThtImageTransparency; AOwnsBitmap: Boolean = True; AOwnsMask: Boolean = True); overload;
+    constructor Create(AImage: TBitmap; Tr: ThtImageTransparency; Color: TColor; AOwnsBitmap: Boolean = True); overload;
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
   end;
@@ -251,7 +251,7 @@ type
   //BG, 24.08.2015:
   ThtImageLoader = class
   public
-    function LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage; virtual;
+    function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage; virtual;
   end;
 
 // SetImageLoader() sets a global image loader.
@@ -266,7 +266,7 @@ function GetImageLoader(): ThtImageLoader;
 // set global image loader.
 //
 // The HtmlViewer components use LoadImageFromStream() to load images from streams.
-function LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage;
+function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage;
 
 //------------------------------------------------------------------------------
 // image methods
@@ -527,13 +527,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 24.08.2015 --
-function LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage;
+function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage;
 begin
   Result := GetImageLoader.LoadImageFromStream(Stream, Transparent);
 end;
 
 //-- BG ---------------------------------------------------------- 26.09.2010 --
-function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: TTransparency): ThtImage;
+function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
 
   procedure LoadMeta;
@@ -591,7 +591,7 @@ var
         begin
           Mask := TBitmap.Create;
           Mask.Assign(Gif.Mask);
-          Transparent := TrGif;
+          Transparent := itrIntrinsic;
         end;
       finally
         Gif.Free;
@@ -620,7 +620,7 @@ var
       begin
         Mask := TBitmap.Create;
         Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
-        Transparent := trTransparent;
+        Transparent := itrIntrinsic;
       end;
     finally
       pngImage.Free;
@@ -647,7 +647,7 @@ var
         jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
       Bitmap := TBitmap.Create;
       Bitmap.Assign(jpImage);
-      Transparent := NotTransp;
+      Transparent := itrNone;
     finally
       jpImage.Free;
     end;
@@ -665,11 +665,11 @@ var
       begin
         Bitmap := TBitmap.Create;
         Bitmap.Handle := IconInfo.hbmColor;
-        if Transparent <> LLCorner then
+        if Transparent <> itrLLCorner then
         begin
           Mask := TBitmap.Create;
           Mask.Handle := IconInfo.hbmMask;
-          Transparent := trTransparent;
+          Transparent := itrIntrinsic;
         end;
       end;
     finally
@@ -701,15 +701,19 @@ begin
     Stream.Seek(0, soFromBeginning); // Seek is faster than Position.
 
 {$ifndef NoGDIPlus}
-    { If GDI+ is available, try it first to load images. Do not use it for BMP
-      because we might need to apply LLCORNER transparency later. Do not use it
-      for GIF because GDI+ does not support animated GIFs. }
     if GDIPlusActive then
+      // as GDI+ is available, try it first to load images as it renders images nicer.
       try
         case ImageFormat of
+          // GDI+ does not support animated GIFs:
           itGif: ;
-          itBmp: if Transparent = NotTransp then LoadGpImage;
-          itIco: if Transparent <> LLCorner then LoadGpImage;
+
+          // GDI+ does not support transparency for bitmaps
+          itBmp: if Transparent = itrNone then LoadGpImage;
+
+          // GDI+ does not support lower left corner transparency for icons and cursors:
+          itCur,
+          itIco: if Transparent <> itrLLCorner then LoadGpImage;
         else
           LoadGpImage;
         end;
@@ -720,19 +724,19 @@ begin
 
     if Result = nil then
       case ImageFormat of
-        itIco,
-        itCur:  LoadIco;
-        itPng:  LoadPng;
-        itJpg:  LoadJpeg;
+        itCur,
+        itIco:  LoadIco;
         itBmp:  LoadBmp;
         itGif:  LoadGif;
+        itJpg:  LoadJpeg;
         itMeta: LoadMeta;
+        itPng:  LoadPng;
       end;
 
     if Bitmap <> nil then
     begin
       if Mask = nil then
-        if Transparent = LLCorner then
+        if Transparent = itrLLCorner then
           Mask := GetImageMask(Bitmap, False, 0);
       Bitmap := ConvertImage(Bitmap);
       Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
@@ -1829,7 +1833,7 @@ begin
         Tmp.Canvas.FillRect(Rect(0, 0, Width, Height));
         Tmp.Canvas.Draw(0, 0, Self);
 
-        FhtBitmap := ThtBitmapImage.Create(FBitmap, GetImageMask(Tmp, False, Color), LLCorner);
+        FhtBitmap := ThtBitmapImage.Create(FBitmap, GetImageMask(Tmp, False, Color), itrLLCorner);
       finally
         Tmp.Free;
       end;
@@ -1879,7 +1883,7 @@ end;
 { ThtImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-constructor ThtImage.Create(Tr: TTransparency);
+constructor ThtImage.Create(Tr: ThtImageTransparency);
 begin
   inherited Create;
   Transp := Tr;
@@ -1933,7 +1937,7 @@ end;
 { ThtBitmapImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-constructor ThtBitmapImage.Create(AImage, AMask: TBitmap; Tr: TTransparency; AOwnsBitmap, AOwnsMask: Boolean);
+constructor ThtBitmapImage.Create(AImage, AMask: TBitmap; Tr: ThtImageTransparency; AOwnsBitmap, AOwnsMask: Boolean);
 begin
   if AImage = nil then
     raise EInvalidImage.Create('ThtBitmapImage requires an image');
@@ -1945,7 +1949,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 10.01.2015 --
-constructor ThtBitmapImage.Create(AImage: TBitmap; Tr: TTransparency; Color: TColor; AOwnsBitmap: Boolean);
+constructor ThtBitmapImage.Create(AImage: TBitmap; Tr: ThtImageTransparency; Color: TColor; AOwnsBitmap: Boolean);
 begin
   if AImage = nil then
     raise EInvalidImage.Create('ThtBitmapImage requires an image');
@@ -1953,8 +1957,8 @@ begin
   Bitmap := AImage;
   OwnsBitmap := AOwnsBitmap;
   case Transp of
-    TrGif:    Mask := GetImageMask(Bitmap, True, Color);
-    LLCorner: Mask := GetImageMask(Bitmap, False, Color);
+    itrIntrinsic:  Mask := GetImageMask(Bitmap, True, Color);
+    itrLLCorner:   Mask := GetImageMask(Bitmap, False, Color);
   end;
 end;
 
@@ -1972,7 +1976,7 @@ procedure ThtBitmapImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 begin
   if Bitmap = nil then
     exit;
-  if (Mask = nil) or (Transp = NotTransp) then
+  if (Mask = nil) or (Transp = itrNone) then
   begin
 {$IFDEF HalfToneStretching}
     SetStretchBltMode(Canvas.Handle, HALFTONE);
@@ -2033,7 +2037,7 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtGifImage.Create(AImage: TGifImage);
 begin
-  inherited Create(trGif);
+  inherited Create(itrIntrinsic);
   FGif := AImage;
 end;
 
@@ -2087,7 +2091,7 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtGdipImage.Create(AImage: ThtGpImage);
 begin
-  inherited Create(trTransparent);
+  inherited Create(itrIntrinsic);
   Gpi := AImage;
 end;
 
@@ -2179,7 +2183,7 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtMetafileImage.Create(AImage: ThtMetaFile);
 begin
-  inherited Create(NotTransp);
+  inherited Create(itrNone);
   MetaFile := AImage;
 end;
 
@@ -2275,7 +2279,7 @@ end;
 
 { ThtBitmapToInsert }
 
-constructor ThtBitmapToInsert.Create(AImage: TBitmap; ATransp: TTransparency; AColor: TColor; AOwnsBitmap: Boolean);
+constructor ThtBitmapToInsert.Create(AImage: TBitmap; ATransp: ThtImageTransparency; AColor: TColor; AOwnsBitmap: Boolean);
 begin
   Bitmap     := AImage;
   Color      := AColor;
@@ -2307,8 +2311,8 @@ initialization
   Screen.Cursors[DownOnlyCursor] := LoadCursor(HInstance, 'DOWNONLYCURSOR');
 {$endif}
 
-  DefImage := ThtBitmapImage.Create(DefBitmap, nil, NotTransp);
-  ErrorImage := ThtBitmapImage.Create(ErrorBitmap, ErrorBitmapMask, LLCorner);
+  DefImage := ThtBitmapImage.Create(DefBitmap, nil, itrNone);
+  ErrorImage := ThtBitmapImage.Create(ErrorBitmap, ErrorBitmapMask, itrLLCorner);
 //  ImageLoader := nil;
 finalization
   ImageLoader.Free;

@@ -453,7 +453,7 @@ type
     function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
     function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
     procedure InsertImage(const Src: ThtString; Stream: TStream); overload;
-    procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor = -1; OwnsBitmap: Boolean = False); overload;
+    procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: ThtImageTransparency; Color: TColor = -1; OwnsBitmap: Boolean = False); overload;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
 {$ifndef NoMetafile}
     function MakeMetaFile(YTop, FormatWidth, Width, Height: Integer): TMetaFile;
@@ -2567,7 +2567,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 10.01.2015 --
-procedure THtmlViewer.InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: TTransparency; Color: TColor; OwnsBitmap: Boolean);
+procedure THtmlViewer.InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: ThtImageTransparency; Color: TColor; OwnsBitmap: Boolean);
 var
   ImageReformat: Boolean;
 begin
@@ -3271,7 +3271,7 @@ begin
           NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y)
         else
           NewMask := nil;
-        NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, LLCorner);
+        NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, itrLLCorner);
         // NewBitmap and NewMask will be freed with NewImage
         NewBitmap := nil;
         NewMask := nil;
@@ -3360,7 +3360,7 @@ begin
         if Assigned(Image.Mask) then
           NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y);
 
-        NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, LLCorner);
+        NewImage := ThtBitmapImage.Create(NewBitmap, NewMask, itrLLCorner);
         NewMask := nil;
         NewBitmap := nil;
         try
