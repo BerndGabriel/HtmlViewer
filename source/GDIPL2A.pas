@@ -66,7 +66,7 @@ type
 {$endif}
 
 type
-  ThtGpImage = class(TObject)
+  ThtGpImage = class(TBitmap)
   protected
     fHandle: GpImage;
     fWidth, fHeight: Cardinal;

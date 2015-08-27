@@ -1,5 +1,5 @@
 {
-Version   11.6
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin,
 Copyright (c) 2008-2015 by HtmlViewer Team
 
@@ -42,9 +42,9 @@ uses
   //Variants,
   Types,
   Math,
-{$IFNDEF NoGDIPlus}
+{$ifndef NoGDIPlus}
   GDIPL2A,
-{$ENDIF}
+{$endif}
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
@@ -53,7 +53,9 @@ uses
   HtmlGlobals,
   HtmlGif2,
   StyleTypes,
-{$IFDEF UNICODE} PngImage, {$ENDIF}
+{$ifdef Compiler20_Plus}
+  PngImage,
+{$endif}
   DitherUnit;
 
 const
@@ -89,6 +91,7 @@ type
   protected
     function GetGpObject: TGpObject; virtual; abstract;
     function GetBitmap: TBitmap; virtual; abstract;
+    function GetGraphic: TGraphic; virtual;
     function GetImageHeight: Integer; virtual; abstract;
     function GetImageWidth: Integer; virtual; abstract;
     function GetMask: TBitmap; virtual; abstract;
@@ -101,9 +104,9 @@ type
     procedure PrintTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer; BgColor: TColor); virtual;
     property Bitmap: TBitmap read GetBitmap;
     property Mask: TBitmap read GetMask;
+    property Graphic: TGraphic read GetGraphic;
     property Height: Integer read GetImageHeight;
     property Width: Integer read GetImageWidth;
-    //property MImage: TGpObject read GetGpObject;
   end;
 
   TGetImageEvent = function(Sender: TObject; const Url: ThtString): ThtImage of object;
@@ -177,7 +180,7 @@ type
     property Gif: TGifImage read FGif;
   end;
 
-{$IFNDEF NoGDIPlus}
+{$ifndef NoGDIPlus}
   //BG, 09.04.2011
   //BG, 18.05.2014: GDIPlus can handle image kinds: PNG, TIFF, JPEG, ICO, EMF, WMF, EXIF, BMP, GIF (not animated)
   ThtGdipImage = class(ThtImage)
@@ -196,45 +199,31 @@ type
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); override;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
   end;
-{$ENDIF !NoGDIPlus}
+{$endif !NoGDIPlus}
 
-{$IFNDEF NoMetafile}
 //------------------------------------------------------------------------------
-// bitmap meta file
+// ThtGraphicImage: support for all TGrphics without own TBitmap, e.g. meta files
 //------------------------------------------------------------------------------
-
-  ThtMetaFile = class(TMetaFile)
-  private
-    FhtBitmap: ThtBitmapImage;
-    FWhiteBGBitmap: TBitmap;
-    function GetBitmap: TBitmap;
-    function GetMask: TBitmap;
-    procedure Construct;
-    function GetWhiteBGBitmap: TBitmap;
-  public
-    destructor Destroy; override;
-    property Bitmap: TBitmap read GetBitmap;
-    property Mask: TBitmap read GetMask;
-    property WhiteBGBitmap: TBitmap read GetWhiteBGBitmap;
-  end;
 
   //BG, 09.04.2011
-  ThtMetafileImage = class(ThtImage)
+  ThtGraphicImage = class(ThtImage)
   private
-    MetaFile: ThtMetafile;
+    FGraphic: TGraphic;
+    FImage: ThtBitmapImage;
+    procedure Construct; deprecated;
   protected
     function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
+    function GetGraphic: TGraphic; override;
     function GetImageHeight: Integer; override;
     function GetImageWidth: Integer; override;
     function GetMask: TBitmap; override;
   public
-    constructor Create(AImage: ThtMetaFile); overload;
+    constructor Create(AGraphic: TGraphic); overload;
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
   end;
-{$ENDIF !NoMetafile}
 
 //------------------------------------------------------------------------------
 // ThtImageLoader is the base class for image loaders, that the global function
@@ -264,6 +253,7 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
 
+    function LoadGraphicFromStream(Stream: TStream; Transparent: ThtImageTransparency): TGraphic; virtual;
     function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage; virtual;
     // Filter returns a file dialog filter compliant string of supported image types
     function GetFilter(const AllKinds: string): string;
@@ -591,9 +581,9 @@ begin
   AddSupportedKinds('Bitmaps', 'bmp');
   AddSupportedKinds('Graphics Interchange Format', 'gif');
   AddSupportedKinds('JPEG', 'jpg,jpeg');
-{$ifdef LCL}
+{$if defined(LCL) or defined(Compiler20_Plus) }
   AddSupportedKinds('Portable Network Graphics', 'png');
-{$endif}
+{$ifend}
 {$ifndef NoGDIPlus}
   AddSupportedKinds('Portable Network Graphics', 'png');
   AddSupportedKinds('Tagged Image Files', 'tif,tiff');
@@ -679,6 +669,66 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 26.08.2015 --
+function ThtImageLoader.LoadGraphicFromStream(Stream: TStream; Transparent: ThtImageTransparency): TGraphic;
+var
+  ImageFormat: ThtImageFormat;
+begin
+  Result := nil;
+  if not Assigned(Stream) then
+    Exit;
+
+  try
+    Stream.Seek(0, soFromBeginning); // Seek is faster than Position.
+    ImageFormat := KindOfImage(Stream);
+    if ImageFormat = itNone then
+      Exit;
+
+    Stream.Seek(0, soFromBeginning); // Seek is faster than Position.
+
+{$ifndef NoGDIPlus}
+    if GDIPlusActive then
+      // as GDI+ is available, try it first to load images as it renders images nicer.
+      try
+        case ImageFormat of
+          // GDI+ does not support animated GIFs:
+          itGif: ;
+
+          // GDI+ does not support transparency for bitmaps
+          itBmp: if Transparent = itrNone then Result := ThtGpImage.Create;
+
+          // GDI+ does not support lower left corner transparency for icons and cursors:
+          itCur,
+          itIco: if Transparent <> itrLLCorner then Result := ThtGpImage.Create;
+        else
+          Result := ThtGpImage.Create;
+        end;
+      except
+        // just continue without image...
+      end;
+{$endif !NoGDIPlus}
+
+    if Result = nil then
+      case ImageFormat of
+        itCur,
+        itIco:  Result := TIcon.Create;
+        itBmp:  Result := TBitmap.Create;
+        itGif:  Result := TGifImage.Create;
+        itJpg:  Result := TJPEGImage.Create;
+        itMeta: Result := TMetafile.Create;
+{$ifdef Compiler20_Plus}
+        itPng:  Result := TPngImage.Create;
+{$endif}
+      end;
+
+    if Result <> nil then
+      Result.LoadFromStream(Stream);
+
+  except
+    FreeAndNil(Result);
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 26.09.2010 --
 function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency): ThtImage;
 // extracted from ThtDocument.GetTheBitmap(), ThtDocument.InsertImage(), and ThtDocument.ReplaceImage()
@@ -686,16 +736,16 @@ function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: ThtIma
   procedure LoadMeta;
 {$ifndef NoMetafile}
   var
-    Meta: ThtMetaFile;
+    Meta: TMetaFile;
   begin
-    Meta := ThtMetafile.Create;
+    Meta := TMetafile.Create;
     try
       Meta.LoadFromStream(Stream);
     except
       Meta.Free;
       raise;
     end;
-    Result := ThtMetafileImage.Create(Meta);
+    Result := ThtGraphicImage.Create(Meta);
 {$else}
   begin
 {$endif NoMetafile}
@@ -706,16 +756,13 @@ function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: ThtIma
   var
     Image: ThtGpImage;
   begin
-    if GDIPlusActive then
-    begin
-      Image := ThtGpImage.Create;
-      try
-        Image.LoadFromStream(Stream);
-        Result := ThtGdipImage.Create(Image);
-      except
-        Image.Free;
-        raise;
-      end;
+    Image := ThtGpImage.Create;
+    try
+      Image.LoadFromStream(Stream);
+      Result := ThtGdipImage.Create(Image);
+    except
+      Image.Free;
+      raise;
     end;
   end;
 {$endif !NoGDIPlus}
@@ -1452,9 +1499,9 @@ var
 {$ENDIF !NoGDIPlus}
 begin
   Result := TBitmap.Create;
-  {$IFNDEF NoGDIPlus}
+{$IFNDEF NoGDIPlus}
   OwnsBitmap := False;
-  {$ENDIF !NoGDIPlus}
+{$ENDIF !NoGDIPlus}
   if Image is ThtImage then
   begin
     TmpBitmap := ThtImage(Image).GetBitmap;
@@ -1479,48 +1526,11 @@ begin
   else
     Result.Height := TmpBitmap.Height;
   Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), TmpBitmap);
-  {$IFNDEF NoGDIPlus}
+{$IFNDEF NoGDIPlus}
   if OwnsBitmap then
     TmpBitmap.Free;
-  {$ENDIF NoGDIPlus}
+{$ENDIF NoGDIPlus}
 end;
-
-function GetImageHeight(Image: TGpObject): Integer;
-begin
-  if Image is TBitmap then
-    Result := TBitmap(Image).Height
-  else {$IFNDEF NoGDIPlus}
-  if Image is ThtGpImage then
-    Result := ThtGpImage(Image).Height
-  else {$ENDIF !NoGDIPlus}
-  if Image is TGifImage then
-    Result := TGifImage(Image).Height
-{$IFNDEF NoMetafile}
-  else if Image is ThtMetaFile then
-    Result := ThtMetaFile(Image).Height
-{$ENDIF}
-  else
-    raise(EInvalidArgument.Create('Not a TBitmap, TGifImage, TMetafile, or ThtGpImage'));
-end;
-
-function GetImageWidth(Image: TGpObject): Integer;
-begin
-  if Image is TBitmap then
-    Result := TBitmap(Image).Width
-  else {$IFNDEF NoGDIPlus}
-  if Image is ThtGpImage then
-    Result := ThtGpImage(Image).Width
-  else {$ENDIF !NoGDIPlus}
-  if Image is TGifImage then
-    Result := TGifImage(Image).Width
-{$IFNDEF NoMetafile}
-  else if Image is ThtMetaFile then
-    Result := ThtMetaFile(Image).Width
-{$ENDIF}
-  else
-    raise(EInvalidArgument.Create('Not a TBitmap, TGifImage, TMetafile, or ThtGpImage'));
-end;
-
 
 {----------------PrintBitmap}
 
@@ -1535,6 +1545,12 @@ type
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}
 
+{$ifdef LCL}
+begin
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Bitmap);
+end;
+{$else}
+
   function Allocate(Size: Integer): ThtAllocRec;
   begin
     Result := ThtAllocRec.Create;
@@ -1547,7 +1563,7 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
       begin
         AHandle := GlobalAlloc(HeapAllocFlags, Size);
         if AHandle = 0 then
-          ABort;
+          Abort;
         Ptr := GlobalLock(AHandle);
       end;
     end;
@@ -1566,8 +1582,6 @@ procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
     AR.Free;
   end;
 
-{$ifdef LCL}
-{$else}
 var
   OldPal: HPalette;
   DC: HDC;
@@ -1575,11 +1589,8 @@ var
   Image: ThtAllocRec;
   ImageSize: DWord;
   InfoSize: DWord;
-{$endif}
+
 begin
-{$ifdef LCL}
-  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Bitmap);
-{$else}
   if (Bitmap = nil) or (Bitmap.Handle = 0) then
     Exit;
   DC := Canvas.Handle;
@@ -1603,8 +1614,8 @@ begin
     end;
   except
   end;
-{$endif}
 end;
+{$endif}
 
 {----------------PrintTransparentBitmap3}
 
@@ -1947,86 +1958,6 @@ begin
   end;
 end;
 
-{$IFNDEF NoMetafile}
-
-{ ThtMetafile }
-
-procedure ThtMetaFile.Construct;
-var
-  Tmp: TBitmap;
-  pe: TPaletteEntry;
-  Color: TColor;
-  FBitmap: TBitmap;
-begin
-  if not Assigned(FhtBitmap) then
-  begin
-    FBitmap := TBitmap.Create;
-    try
-      FBitmap.Width := Width;
-      FBitmap.Height := Height;
-      PatBlt(FBitmap.Canvas.Handle, 0, 0, Width, Height, Blackness);
-      FBitmap.Canvas.Draw(0, 0, Self);
-
-      Tmp := TBitmap.Create;
-      try
-        Tmp.Width := Width;
-        Tmp.Height := Height;
-        Tmp.PixelFormat := pf8Bit;
-      {pick an odd color from the palette to represent the background color,
-       one not likely in the metafile}
-        GetPaletteEntries(Tmp.Palette, 115, 1, pe);
-        Color := pe.peBlue shl 16 or pe.peGreen shl 8 or pe.peRed;
-        Tmp.Canvas.Brush.Color := Color; //ThemedColor( Color );
-        Tmp.Canvas.FillRect(Rect(0, 0, Width, Height));
-        Tmp.Canvas.Draw(0, 0, Self);
-
-        FhtBitmap := ThtBitmapImage.Create(FBitmap, GetImageMask(Tmp, False, Color), itrLLCorner);
-      finally
-        Tmp.Free;
-      end;
-    except
-      FreeAndNil(FBitmap);
-    end;
-  end;
-end;
-
-function ThtMetaFile.GetBitmap: TBitmap;
-begin
-  Construct;
-  Result := FhtBitmap.Bitmap;
-end;
-
-function ThtMetaFile.GetMask: TBitmap;
-begin
-  Construct;
-  Result := FhtBitmap.Mask;
-end;
-
-function ThtMetaFile.GetWhiteBGBitmap: TBitmap;
-begin
-  if not Assigned(FWhiteBGBitmap) then
-  begin
-    FWhiteBGBitmap := TBitmap.Create;
-    try
-      FWhiteBGBitmap.Width := Width;
-      FWhiteBGBitmap.Height := Height;
-      PatBlt(FWhiteBGBitmap.Canvas.Handle, 0, 0, Width, Height, Whiteness);
-      FWhiteBGBitmap.Canvas.Draw(0, 0, Self);
-    except
-      FreeAndNil(FWhiteBGBitmap);
-    end;
-  end;
-  Result := FWhiteBGBitmap;
-end;
-
-destructor ThtMetaFile.Destroy;
-begin
-  FreeAndNil(FhtBitmap);
-  FreeAndNil(FWhiteBGBitmap);
-  inherited;
-end;
-{$ENDIF}
-
 { ThtImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -2055,6 +1986,11 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 10.04.2011 --
+function ThtImage.GetGraphic: TGraphic;
+begin
+  Result := GetBitmap;
+end;
+
 procedure ThtImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
 begin
   if Mask = nil then
@@ -2323,66 +2259,109 @@ end;
 
 {$ENDIF NoGDIPlus}
 
-{$IFNDEF NoMetafile}
-
-{ ThtMetafileImage }
+{ ThtGraphicImage }
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-constructor ThtMetafileImage.Create(AImage: ThtMetaFile);
+constructor ThtGraphicImage.Create(AGraphic: TGraphic);
 begin
   inherited Create(itrNone);
-  MetaFile := AImage;
+  FGraphic := AGraphic;
 end;
 
 //-- BG ---------------------------------------------------------- 10.04.2011 --
-destructor ThtMetafileImage.Destroy;
+destructor ThtGraphicImage.Destroy;
 begin
-  MetaFile.Free;
+  FImage.Free;
+  FGraphic.Free;
   inherited;
 end;
 
-//-- BG ---------------------------------------------------------- 09.04.2011 --
-procedure ThtMetafileImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
+procedure ThtGraphicImage.Construct;
+var
+  Tmp: TBitmap;
+  pe: TPaletteEntry;
+  Color: TColor;
+  FBitmap: TBitmap;
 begin
-  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), MetaFile);
+  if not Assigned(FImage) then
+  begin
+    FBitmap := TBitmap.Create;
+    try
+      FBitmap.Width := Width;
+      FBitmap.Height := Height;
+      PatBlt(FBitmap.Canvas.Handle, 0, 0, Width, Height, Blackness);
+      FBitmap.Canvas.Draw(0, 0, FGraphic);
+
+      Tmp := TBitmap.Create;
+      try
+        Tmp.Width := Width;
+        Tmp.Height := Height;
+        Tmp.PixelFormat := pf8Bit;
+      {pick an odd color from the palette to represent the background color,
+       one not likely in the metafile}
+        GetPaletteEntries(Tmp.Palette, 115, 1, pe);
+        Color := pe.peBlue shl 16 or pe.peGreen shl 8 or pe.peRed;
+        Tmp.Canvas.Brush.Color := Color; //ThemedColor( Color );
+        Tmp.Canvas.FillRect(Rect(0, 0, Width, Height));
+        Tmp.Canvas.Draw(0, 0, FGraphic);
+
+        FImage := ThtBitmapImage.Create(FBitmap, GetImageMask(Tmp, False, Color), itrLLCorner);
+      finally
+        Tmp.Free;
+      end;
+    except
+      FreeAndNil(FBitmap);
+    end;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-function ThtMetafileImage.GetBitmap: TBitmap;
+procedure ThtGraphicImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 begin
-  Result := MetaFile.GetBitmap;
-end;
-
-function ThtMetafileImage.GetGpObject: TGpObject;
-begin
-  Result := MetaFile;
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), FGraphic);
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-function ThtMetafileImage.GetImageHeight: Integer;
+function ThtGraphicImage.GetBitmap: TBitmap;
 begin
-  Result := MetaFile.Height;
+  Construct;
+  Result := FImage.Bitmap;
+end;
+
+function ThtGraphicImage.GetGpObject: TGpObject;
+begin
+  Result := FGraphic;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-function ThtMetafileImage.GetImageWidth: Integer;
+function ThtGraphicImage.GetGraphic: TGraphic;
 begin
-  Result := MetaFile.Width;
+  Result := FGraphic;
+end;
+
+function ThtGraphicImage.GetImageHeight: Integer;
+begin
+  Result := FGraphic.Height;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
-function ThtMetafileImage.GetMask: TBitmap;
+function ThtGraphicImage.GetImageWidth: Integer;
 begin
-  Result := MetaFile.Mask;
+  Result := FGraphic.Width;
+end;
+
+//-- BG ---------------------------------------------------------- 09.04.2011 --
+function ThtGraphicImage.GetMask: TBitmap;
+begin
+  Construct;
+  Result := FImage.Mask;
 end;
 
 //-- BG ---------------------------------------------------------- 10.04.2011 --
-procedure ThtMetafileImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
+procedure ThtGraphicImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
 begin
-  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), MetaFile);
+  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), FGraphic);
 end;
-
-{$ENDIF !NoMetafile}
 
 { ThtImageCache }
 

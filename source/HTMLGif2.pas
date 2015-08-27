@@ -1,8 +1,8 @@
 {
-Version   11.5
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2014 by Bernd Gabriel
+Copyright (c) 2011-2015 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -85,12 +85,12 @@ type
     property Frames[I: integer]: TgfFrame read GetFrame; default;
   end;
 
-  TGIFImage = class(TPersistent)
+  TGIFImage = class(TBitmap)
   private
     FAnimated: Boolean;
-    FCurrentFrame: Integer;
     FImageWidth: Integer;
     FImageHeight: Integer;
+    FCurrentFrame: Integer;
     FNumFrames: Integer;
     FNumIterations: Integer;
     FTransparent: Boolean;
@@ -99,8 +99,7 @@ type
 
     TheEnd: boolean; {copy to here}
 
-    FBitmap: TBitmap;
-    FMaskedBitmap, FMask: TBitmap;
+    FMask: TBitmap;
     FAnimate: Boolean;
     FStretchedRect: TRect;
     WasDisposal: TDisposalType;
@@ -126,7 +125,11 @@ type
     constructor Create;
     constructor CreateCopy(Item: TGIFImage);
     destructor Destroy; override;
+
+    procedure LoadFromStream(Stream: TStream); override;
+
     procedure Draw(Canvas: TCanvas; X, Y, Wid, Ht: integer);
+
     property Bitmap: TBitmap read GetBitmap;
     property MaskedBitmap: TBitmap read GetMaskedBitmap;
     property Mask: TBitmap read GetMask;
@@ -137,8 +140,6 @@ type
 
     procedure CheckTime(WinControl: TWinControl);
 
-    property Width: integer read FImageWidth;
-    property Height: integer read FImageHeight;
     property Animate: Boolean read FAnimate write SetAnimate;
     property CurrentFrame: Integer read FCurrentFrame write SetCurrentFrame;
     property Visible: Boolean read FVisible write FVisible;
@@ -157,73 +158,76 @@ implementation
 //end;
 
 function LoadGifFromStream(out NonAnimated: boolean; Stream: TStream): TGifImage;
-var
-  AGif: TGif;
-  Frame: TgfFrame;
-  I: integer;
-  ABitmap, AMask: TBitmap;
+//var
+//  AGif: TGif;
+//  Frame: TgfFrame;
+//  I: integer;
+//  ABitmap, AMask: TBitmap;
 begin
-  Result := nil;
-  try
-    NonAnimated := True;
-    AGif := TGif.Create;
-    try
-      AGif.LoadFromStream(Stream);
+//  Result := nil;
+//  try
+//    NonAnimated := True;
+//    AGif := TGif.Create;
+//    try
+//      AGif.LoadFromStream(Stream);
+
       Result := TGifImage.Create;
+      Result.LoadFromStream(Stream);
+      NonAnimated := not Result.IsAnimated;
 
-      Result.FNumFrames := AGif.ImageCount;
-      Result.FAnimated := Result.FNumFrames > 1;
-      NonAnimated := not Result.FAnimated;
-      Result.FImageWidth := AGif.Width;
-      Result.FImageHeight := AGif.Height;
-      Result.FNumIterations := AGif.LoopCount;
-      if Result.FNumIterations < 0 then {-1 means no loop block}
-        Result.FNumIterations := 1
-      else if Result.FNumIterations > 0 then
-        Inc(Result.FNumIterations); {apparently this is the convention}
-      Result.FTransparent := AGif.Transparent;
-
-      with Result do
-      begin
-        Strip := ThtBitmap.Create;
-        ABitmap := AGif.GetStripBitmap(AMask);
-        try
-          Strip.Assign(ABitmap);
-          Strip.htMask := AMask;
-          Strip.htTransparent := Assigned(AMask);
-        finally
-          ABitmap.Free;
-        end;
-        if Result.Strip.Palette <> 0 then
-          DeleteObject(Result.Strip.ReleasePalette);
-        Result.Strip.Palette := CopyPalette(ThePalette);
-      end;
-
-      for I := 0 to Result.FNumFrames - 1 do
-      begin
-        Frame := TgfFrame.Create;
-        try
-          Frame.frDisposalMethod := TDisposalType(AGif.ImageDisposal[I]);
-          Frame.frLeft := AGif.ImageLeft[I];
-          Frame.frTop := AGif.ImageTop[I];
-          Frame.frWidth := AGif.ImageWidth[I];
-          Frame.frHeight := AGif.ImageHeight[I];
-          Frame.frDelay := Max(30, AGif.ImageDelay[I] * 10);
-        except
-          Frame.Free;
-          raise;
-        end;
-        Result.Frames.Add(Frame);
-      end;
-      if Result.IsAnimated then
-        Result.WasDisposal := dtToBackground;
-    finally
-      AGif.Free;
-    end;
-  except
-    Result.Free;
-    raise;
-  end;
+//      Result.FNumFrames := AGif.ImageCount;
+//      Result.FAnimated := Result.FNumFrames > 1;
+//      NonAnimated := not Result.FAnimated;
+//      Result.FImageWidth := AGif.Width;
+//      Result.FImageHeight := AGif.Height;
+//      Result.FNumIterations := AGif.LoopCount;
+//      if Result.FNumIterations < 0 then {-1 means no loop block}
+//        Result.FNumIterations := 1
+//      else if Result.FNumIterations > 0 then
+//        Inc(Result.FNumIterations); {apparently this is the convention}
+//      Result.FTransparent := AGif.Transparent;
+//
+//      with Result do
+//      begin
+//        Strip := ThtBitmap.Create;
+//        ABitmap := AGif.GetStripBitmap(AMask);
+//        try
+//          Strip.Assign(ABitmap);
+//          Strip.htMask := AMask;
+//          Strip.htTransparent := Assigned(AMask);
+//        finally
+//          ABitmap.Free;
+//        end;
+//        if Result.Strip.Palette <> 0 then
+//          DeleteObject(Result.Strip.ReleasePalette);
+//        Result.Strip.Palette := CopyPalette(ThePalette);
+//      end;
+//
+//      for I := 0 to Result.FNumFrames - 1 do
+//      begin
+//        Frame := TgfFrame.Create;
+//        try
+//          Frame.frDisposalMethod := TDisposalType(AGif.ImageDisposal[I]);
+//          Frame.frLeft := AGif.ImageLeft[I];
+//          Frame.frTop := AGif.ImageTop[I];
+//          Frame.frWidth := AGif.ImageWidth[I];
+//          Frame.frHeight := AGif.ImageHeight[I];
+//          Frame.frDelay := Max(30, AGif.ImageDelay[I] * 10);
+//        except
+//          Frame.Free;
+//          raise;
+//        end;
+//        Result.Frames.Add(Frame);
+//      end;
+//      if Result.IsAnimated then
+//        Result.WasDisposal := dtToBackground;
+//    finally
+//      AGif.Free;
+//    end;
+//  except
+//    Result.Free;
+//    raise;
+//  end;
 end;
 
 //function LoadGifFromFile(const Name: string; var NonAnimated: boolean): TGifImage;
@@ -279,8 +283,8 @@ var
   I: integer;
 begin
   inherited Create;
-  FImageWidth := Item.Width;
-  FimageHeight := Item.Height;
+  FImageWidth := Item.FImageWidth;
+  FImageHeight := Item.FImageHeight;
   System.Move(Item.FAnimated, FAnimated, PtrSub(@TheEnd, @FAnimated));
   IsCopy := True;
 
@@ -302,11 +306,9 @@ begin
   for I := Frames.Count downto 1 do
     Frames[I].Free;
   Frames.Free;
-  FreeAndNil(FBitmap);
   if not IsCopy then
     FreeAndNil(Strip);
-  FMaskedBitmap.Free;
-  FreeAndNil(FMask);
+  FMask.Free;
   inherited Destroy;
 end;
 
@@ -412,20 +414,76 @@ end;
 function TGIFImage.GetMaskedBitmap: TBitmap;
 {This returns frame 1}
 begin
-  if not Assigned(FMaskedBitmap) then
-  begin
-    FMaskedBitmap := TBitmap.Create;
-    FMaskedBitmap.Assign(Strip);
-    FMaskedBitmap.Width := FImageWidth;
-    if Strip.htTransparent then
-    begin
-      FMask := TBitmap.Create;
-      FMask.Assign(Strip.htMask);
-      FMask.Width := FImageWidth;
+  Result := Self;
+end;
+
+//-- BG ---------------------------------------------------------- 27.08.2015 --
+procedure TGIFImage.LoadFromStream(Stream: TStream);
+var
+  AGif: TGif;
+  Frame: TgfFrame;
+  I: integer;
+  ABitmap, AMask: TBitmap;
+begin
+  AGif := TGif.Create;
+  try
+    AGif.LoadFromStream(Stream);
+
+    FNumFrames := AGif.ImageCount;
+    FAnimated := FNumFrames > 1;
+    FImageWidth := AGif.Width;
+    FImageHeight := AGif.Height;
+    FNumIterations := AGif.LoopCount;
+    if FNumIterations < 0 then {-1 means no loop block}
+      FNumIterations := 1
+    else if FNumIterations > 0 then
+      Inc(FNumIterations); {apparently this is the convention}
+    FTransparent := AGif.Transparent;
+
+    Strip := ThtBitmap.Create;
+    ABitmap := AGif.GetStripBitmap(AMask);
+    try
+      Strip.Assign(ABitmap);
+      Strip.htMask := AMask;
+      Strip.htTransparent := Assigned(AMask);
+    finally
+      ABitmap.Free;
     end;
-    FMaskedBitmap.Transparent := False;
+    if Strip.Palette <> 0 then
+      DeleteObject(Strip.ReleasePalette);
+    Strip.Palette := CopyPalette(ThePalette);
+
+    for I := 0 to FNumFrames - 1 do
+    begin
+      Frame := TgfFrame.Create;
+      try
+        Frame.frDisposalMethod := TDisposalType(AGif.ImageDisposal[I]);
+        Frame.frLeft := AGif.ImageLeft[I];
+        Frame.frTop := AGif.ImageTop[I];
+        Frame.frWidth := AGif.ImageWidth[I];
+        Frame.frHeight := AGif.ImageHeight[I];
+        Frame.frDelay := Max(30, AGif.ImageDelay[I] * 10);
+      except
+        Frame.Free;
+        raise;
+      end;
+      Frames.Add(Frame);
+    end;
+    if IsAnimated then
+      WasDisposal := dtToBackground;
+  finally
+    AGif.Free;
   end;
-  Result := FMaskedBitmap;
+
+  inherited Assign(Strip);
+  Width := FImageWidth;
+  if Strip.htTransparent then
+  begin
+    FMask := TBitmap.Create;
+    FMask.Assign(Strip.htMask);
+    FMask.Width := FImageWidth;
+  end;
+  Transparent := False;
 end;
 
 {----------------TGIFImage.GetMask:}

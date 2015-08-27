@@ -566,7 +566,7 @@ type
     FHover: ThtHover;
     FHoverImage: boolean;
     AltHeight, AltWidth: Integer;
-    function GetBitmap: TBitmap;
+    function GetGraphic: TGraphic;
     procedure SetHover(Value: ThtHover);
   public
     ObjHeight, ObjWidth: Integer; {width as drawn}
@@ -585,7 +585,7 @@ type
     procedure DrawInline(Canvas: TCanvas; X: Integer; Y, YBaseline: Integer; FO: TFontObj); override;
     function InsertImage(const UName: ThtString; Error: boolean; out Reformat: boolean): boolean;
 
-    property Bitmap: TBitmap read GetBitmap;
+    property Graphic: TGraphic read GetGraphic;
     property Hover: ThtHover read FHover write SetHover;
     property Image: ThtImage read FImage ; //write SetImage;
     property Source: ThtString read FSource; {the src= attribute}
@@ -2557,21 +2557,12 @@ begin
   inherited Destroy;
 end;
 
-function TImageObj.GetBitmap: TBitmap;
+function TImageObj.GetGraphic: TGraphic;
 begin
-  if Image is ThtBitmapImage then
-  begin
-    if Image.Bitmap = ErrorBitmap then
-      Result := nil
-    else
-    begin
-      Result := Image.Bitmap;
-    end
-  end
-  else if Image <> nil  then
-    Result := Image.Bitmap
+  if (Image = nil) or (Image = ErrorImage) then
+    Result := nil
   else
-    Result := nil;
+    Result := Image.Graphic;
 end;
 
 procedure TImageObj.SetHover(Value: ThtHover);
@@ -5622,8 +5613,7 @@ begin
         if Document.NoOutput then
           exit;
 
-        ImgOK := not NeedDoImageStuff and Assigned(BGImage) and (BGImage.Bitmap <> DefBitmap)
-          and Document.ShowImages;
+        ImgOK := not NeedDoImageStuff and Assigned(BGImage) and (BGImage.Image <> DefImage) and Document.ShowImages;
 
         if HasBackgroundColor and
           (not Document.Printing or Document.PrintTableBackground) then
@@ -7404,7 +7394,8 @@ begin
   Image := nil;
   Error := False;
   Reformat := False;
-  UName := htUpperCase(htTrim(Src));
+  //UName := htUpperCase(htTrim(Src));
+  UName := htTrim(Src);
   I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
   J := MissingImages.IndexOf(UName); {see if it's in missing image list}
   if (I = -1) and (J >= 0) then
@@ -8211,8 +8202,7 @@ begin
       end;
     end;
 
-    ImgOK := not NeedDoImageStuff and Assigned(BGImage) and (BGImage.Bitmap <> DefBitmap)
-      and Cell.Document.ShowImages;
+    ImgOK := not NeedDoImageStuff and Assigned(BGImage) and (BGImage.Image <> DefImage) and Cell.Document.ShowImages;
 
     if Cell.BkGnd then
     begin
