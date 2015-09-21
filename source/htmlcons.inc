@@ -30,6 +30,7 @@
 { Identify Delphi Compiler Version:
 
   #   Compiler    Version Compiler Defined Symbol
+  D23 Delphi 10 Seattle 30  VER300
   D22 Delphi XE8    29    VER290
   D21 Delphi XE7    28    VER280
   D20 Delphi XE6    27    VER270
@@ -119,6 +120,10 @@
                                  {$define Compiler29_Plus}
                                  {$ifdef ver290}
                                  {$else}
+                                   {$define Compiler30_Plus}
+                                   {$ifdef ver300}
+                                   {$else}
+                                   {$endif}
                                  {$endif}
                                {$endif}
                              {$endif}
