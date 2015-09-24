@@ -4022,7 +4022,7 @@ var
       if PropStack.Last.GetBackgroundImage(Image) and (Image <> '') then
       begin
         PropStack.Last.GetBackgroundPos(0, 0, PRec);
-        PropStack.Document.SetBackgroundBitmap(Image, PRec);
+        PropStack.Document.SetBackgroundImage(Image, PRec);
       end;
       Val := PropStack.Last.GetBackgroundColor;
       if Val <> clNone then

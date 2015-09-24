@@ -668,19 +668,19 @@ end;
 
 procedure TForm1.CopyImagetoclipboardClick(Sender: TObject);
 begin
-Clipboard.Assign(FoundObject.Bitmap);
+  Clipboard.Assign(FoundObject.Graphic);
 end;
 
 procedure TForm1.ViewImageClick(Sender: TObject);
 var
   AForm: TImageForm;
 begin
-AForm := TImageForm.Create(Self);
-with AForm do
+  AForm := TImageForm.Create(Self);
+  with AForm do
   begin
-  Bitmap := FoundObject.Bitmap;
-  Caption := '';
-  Show;
+    Image := FoundObject.Image;
+    Caption := '';
+    Show;
   end;
 end;
 
@@ -815,8 +815,8 @@ Viewer := Sender as ThtmlViewer;
 with Parameters do
   begin
   FoundObject := Image;
-  ViewImage.Enabled := (FoundObject <> Nil) and (FoundObject.Bitmap <> Nil);
-  CopyImageToClipboard.Enabled := (FoundObject <> Nil) and (FoundObject.Bitmap <> Nil);
+  ViewImage.Enabled := (FoundObject <> Nil) and (FoundObject.Image <> Nil);
+  CopyImageToClipboard.Enabled := (FoundObject <> Nil) and (FoundObject.Graphic <> Nil);
 
   if URL <> '' then
     begin

@@ -806,7 +806,7 @@ begin
   with Parameters do
   begin
     FoundObject := Image;
-    Viewimage.Enabled := (FoundObject <> Nil) and (FoundObject.Graphic <> Nil);
+    Viewimage.Enabled := (FoundObject <> Nil) and (FoundObject.Image <> Nil);
     CopyImageToClipboard.Enabled := (FoundObject <> Nil) and (FoundObject.Graphic <> Nil);
     if URL <> '' then
     begin

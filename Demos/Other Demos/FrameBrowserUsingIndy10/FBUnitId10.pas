@@ -1543,7 +1543,7 @@ begin
   with Parameters do
   begin
     FoundObject := Image;
-    if (FoundObject <> Nil) and (FoundObject.Bitmap <> Nil) then
+    if (FoundObject <> Nil) and (FoundObject.Graphic <> Nil) then
     begin
       if not IsFullUrl(FoundObject.Source) then
         FoundObjectName := CombineURL(FrameBrowser.GetViewerUrlBase(Viewer), FoundObject.Source)
