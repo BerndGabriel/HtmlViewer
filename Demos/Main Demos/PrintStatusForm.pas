@@ -15,6 +15,7 @@ uses
   MetaFilePrinter,
   HtmlView;
 
+{$ifndef NoMetaFile}
 type
   TPrnStatusForm = class(TForm)
     InfoLabel: TLabel;
@@ -30,18 +31,21 @@ type
     procedure DoPrint(Viewer: THtmlViewer; FromPg, ToPg: Integer; var Abort: Boolean); overload;
     procedure Print(Viewer: THtmlViewer; Printer: ThtPrinter; FromPage, ToPage, Copies: Integer; var Abort: Boolean); overload;
   end;
+{$endif}
 
 procedure PrintWithDialog(Owner: TComponent; PrintDialog: TPrintDialog; Viewer: THtmlViewer; PageCount: Integer = MaxInt);
 
 implementation
-
+{$ifndef NoMetaFile}
 {$ifdef LCL}
   {$R *.lfm}
 {$else}
   {$R *.dfm}
 {$endif}
+{$endif}
 
 procedure PrintWithDialog(Owner: TComponent; PrintDialog: TPrintDialog; Viewer: THtmlViewer; PageCount: Integer);
+{$ifndef NoMetaFile}
 var
   StatusForm: TPrnStatusForm;
   Dummy: Boolean;
@@ -92,8 +96,12 @@ begin
       end;
     end;
   end;
+{$else !NoMetaFile}
+begin
+{$endif !NoMetaFile}
 end;
 
+{$ifndef NoMetaFile}
 
 procedure TPrnStatusForm.DoPreview(Viewer: ThtmlViewer; MFPrinter: TMetaFilePrinter; var Abort: Boolean);
 begin
@@ -176,4 +184,5 @@ begin
   CancelButton.Enabled := False;
 end;
 
+{$endif}
 end.

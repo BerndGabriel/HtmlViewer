@@ -94,7 +94,7 @@ uses
   HtmlSymb,
   HTMLUn2,
   HTMLSubs,
-  HtmlSbs1,
+  Htmlsbs1,
   StyleTypes,
   StyleUn;
 

@@ -731,7 +731,9 @@ begin
         itBmp:  Result := TBitmap.Create;
         itGif:  Result := TGifImage.Create;
         itJpg:  Result := TJPEGImage.Create;
+{$ifndef NoMetafile}
         itMeta: Result := TMetafile.Create;
+{$endif}
 {$ifdef Compiler20_Plus}
         itPng:  Result := TPngImage.Create;
 {$endif}
