@@ -32,7 +32,15 @@ unit StyleTypes;
 interface
 
 uses
-  Windows, SysUtils, Math, Forms, Variants, Graphics,
+{$ifdef MSWindows}
+  Windows,
+{$else}
+  Types,
+{$endif}
+{$ifdef LCL}
+  LclIntf, LclType,
+{$endif}
+  SysUtils, Math, Forms, Variants, Graphics,
   //
   HtmlGlobals;
 

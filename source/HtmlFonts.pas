@@ -37,7 +37,10 @@ uses
   System.UITypes,
   Vcl.Themes,
 {$endif}
-  Windows, SysUtils,
+{$ifdef MSWindows}
+  Windows,
+{$endif}
+  SysUtils,
   Graphics, Classes, Forms, Contnrs, Variants,
   //
   HtmlGlobals,
@@ -158,7 +161,9 @@ end;
 procedure ThtFont.AssignToCanvas(Canvas: TCanvas);
 begin
   Canvas.Font := Self;
+{$ifdef Windows}
   SetTextCharacterExtra(Canvas.Handle, CharExtra);
+{$endif}
 end;
 
 constructor ThtFont.Create;
@@ -242,10 +247,12 @@ end;
 function ThtFontCache.GetFontLike(var Font: ThtFontInfo): ThtFont;
 var
   SameFont: ThtFont;
+{$ifdef MSWindows}
   Save: THandle;
   SaveCharSet: TFontCharSet;
   tm: TTextmetric;
   DC: HDC;
+{$endif}
   V: Variant;
 begin
   SameFont := Find(Font);
@@ -258,10 +265,11 @@ begin
     SameFont.Charset := Font.iCharSet;
     Add(SameFont);
 
+{$ifdef MSWindows}
     // If this is a Symbol charset, then keep it that way.
     // To check the font's real charset, use Default_Charset
     SaveCharSet := SameFont.CharSet;
-    SameFont.CharSet := Default_Charset;
+    SameFont.CharSet := DEFAULT_CHARSET;
     DC := GetDC(0);
     try
       Save := SelectObject(DC, SameFont.Handle);
@@ -296,6 +304,7 @@ begin
     SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
     SameFont.tmAveCharWidth := tm.tmAveCharWidth;
     SameFont.tmCharset := tm.tmCharset;
+{$endif}
   end;
 
   Result := ThtFont.Create;

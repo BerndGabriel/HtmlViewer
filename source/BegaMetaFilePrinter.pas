@@ -24,9 +24,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 unit BegaMetaFilePrinter;
 
 interface
+{$ifndef NoMetaFile}
 
 uses
-  Windows, Classes, Messages, SysUtils,
+{$ifdef MSWindows}
+  Windows,
+{$endif}
+  Classes, Messages, SysUtils,
 {$ifdef LCL}
   LclIntf, LclType, LMessages,
 {$endif}
@@ -140,7 +144,9 @@ type
     property PrintScale: double read FPrintScale write FPrintScale;
   end;
 
+{$endif NoMetaFile}
 implementation
+{$ifndef NoMetaFile}
 
 { TBegaPrintable }
 
@@ -610,4 +616,5 @@ begin
   getPrinterCapsOf(Printer);
 end;
 
+{$endif NoMetaFile}
 end.

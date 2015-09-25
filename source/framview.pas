@@ -37,7 +37,7 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
-  UrlSubs,
+  URLSubs,
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages, 

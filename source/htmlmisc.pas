@@ -44,9 +44,7 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
  **********************************************************************}
-
-{$mode objfpc}
-{$H+}
+{$I htmlcons.inc}
 {$inline on}
 
 unit HtmlMisc;
@@ -56,11 +54,11 @@ interface
 uses
   ctypes,
   SysUtils,
-  {$IFDEF MSWINDOWS}
-   Windows,
-  {$ELSE}
-   Types, Printers,
-  {$ENDIF}
+{$IFDEF MSWINDOWS}
+  Windows,
+{$ELSE}
+  Types, Printers,
+{$ENDIF}
   LclIntf, LMessages, LclType, LclProc, InterfaceBase,
   GraphType, Graphics, Controls;
    {Important: Be sure to list LclType after SysUtils and Classes
@@ -154,6 +152,9 @@ type
 
   PINT = ^Integer;
   PUINT = ^UINT;
+
+  LPINT = ^LongInt;
+  INT_PTR = LongInt;
 {$ENDIF}
 
 {$IFDEF MSWINDOWS}
@@ -357,6 +358,7 @@ const
   EM_LINEINDEX = $00BB;
   EM_GETLINE = $00C4;
   EM_REPLACESEL = $00C2;
+  EM_LIMITTEXT = $00C5;
 
   CS_SAVEBITS = $800;
   CS_DBLCLKS = 8;
@@ -562,7 +564,7 @@ function ClipCursor(lpRect: PRect): BOOL;
 function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
                                SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer;
                                MaskDC: HDC; MaskX, MaskY: Integer): Boolean;
-
+{$IFNDEF NoFlatScrollbars}
 { FLAT scrollbars }
 function InitializeFlatSB(hWnd: HWND): Bool; stdcall;
 procedure UninitializeFlatSB(hWnd: HWND); stdcall;
@@ -578,14 +580,12 @@ var
   FlatSB_SetScrollPos: function(hWnd:HWND;nBar,nPos:cint;bRedraw:BOOL):cint; stdcall;
   FlatSB_SetScrollInfo: function(hWnd:HWND;BarFlag:cint;const ScrollInfo:TScrollInfo;Redraw:BOOL):cint; stdcall;
   FlatSB_SetScrollRange: function(hWnd: HWND; nBar,nMinPos,nMaxPos: cint; bRedraw: BOOL):cint; stdcall;
+{$ENDIF}
+
+var
+  htExpectsUTF8 : Boolean;  {True=widgetset expects to receive UTF8-encoded strings}
 
 implementation
-
-{$IFDEF MSWINDOWS}
-{$ELSE}
-var
-  ExpectsUTF8 : Boolean;  {True=widgetset expects to receive UTF8-encoded strings}
-{$ENDIF}
 
  {These functions belong in LclIntf unit}
 
@@ -803,7 +803,7 @@ begin
    {First copy to WideString since it may not have terminating null}
   SetLength(w, Count);
   Move(Str^, w[1], Count*2);
-  if ExpectsUTF8 then
+  if htExpectsUTF8 then
     s := UTF8Encode(w)  {Widgetset expects UTF8, so encode wide string as UTF8}
   else
     s := w;  {Just convert to ANSI}
@@ -979,7 +979,7 @@ begin
    {First copy to WideString since it may not have terminating null}
   SetLength(w, Count);
   Move(Str^, w[1], Count*2);
-  if ExpectsUTF8 then
+  if htExpectsUTF8 then
     s := UTF8Encode(w)  {Widgetset expects UTF8, so encode wide string as UTF8}
   else
     s := w;  {Just convert to ANSI}
@@ -1013,7 +1013,7 @@ begin
    {First copy to WideString since it may not have terminating null}
   SetLength(w, Count);
   Move(Str^, w[1], Count*2);
-  if ExpectsUTF8 then
+  if htExpectsUTF8 then
     s := UTF8Encode(w) {Widgetset expects UTF8, so encode wide string as UTF8}
   else
     s := w;  {Just convert to ANSI}
@@ -1040,7 +1040,7 @@ begin
     SetLength(w, nCount);
     Move(lpString^, w[1], nCount*2);
     end;
-  if ExpectsUTF8 then
+  if htExpectsUTF8 then
     s := UTF8Encode(w)  {Widgetset expects UTF8, so encode wide string as UTF8}
   else
     s := w;  {Just convert to ANSI}
@@ -1203,6 +1203,7 @@ begin
                        SrcDC, SrcX, SrcY, SrcW, SrcH, SrcCopy);
 end;
 
+{$IFNDEF NoFlatScrollbars}
 var
   Internal_FlatSB_GetScrollProp: function(hwnd:HWND;propIndex : cint;p3 : LPINT):BOOL; stdcall;
   Internal_FlatSB_SetScrollProp: function(p1: HWND; index : UINT; newValue: INT_PTR; p4: BOOL):BOOL; stdcall;
@@ -1242,50 +1243,50 @@ begin
   handle:=GetModuleHandle('comctrl32.dll');
   if handle<>0 then
   begin
-    pointer(Internal_InitializeFlatSB):=GetProcAddress(handle,'InitializeFlatSB');
-    pointer(Internal_UninitializeFlatSB):=GetProcAddress(handle,'UninitializeFlatSB');
-    pointer(Internal_FlatSB_GetScrollProp):=GetProcAddress(handle,'FlatSB_GetScrollProp');
-    pointer(Internal_FlatSB_SetScrollProp):=GetProcAddress(handle,'FlatSB_SetScrollProp');
+    Internal_InitializeFlatSB := GetProcAddress(handle,'InitializeFlatSB');
+    Internal_UninitializeFlatSB := GetProcAddress(handle,'UninitializeFlatSB');
+    Internal_FlatSB_GetScrollProp := GetProcAddress(handle,'FlatSB_GetScrollProp');
+    Internal_FlatSB_SetScrollProp := GetProcAddress(handle,'FlatSB_SetScrollProp');
 
-    pointer(FlatSB_EnableScrollBar):=GetProcAddress(handle,'FlatSB_EnableScrollBar');
+    FlatSB_EnableScrollBar := GetProcAddress(handle,'FlatSB_EnableScrollBar');
     if not(assigned(FlatSB_EnableScrollBar)) then
-      pointer(FlatSB_EnableScrollBar):=pointer(@EnableScrollBar);
+      FlatSB_EnableScrollBar := @EnableScrollBar;
 
-    pointer(FlatSB_ShowScrollBar):=GetProcAddress(handle,'FlatSB_ShowScrollBar');
+    FlatSB_ShowScrollBar :=GetProcAddress(handle,'FlatSB_ShowScrollBar');
     if not(assigned(FlatSB_ShowScrollBar)) then
-      pointer(FlatSB_ShowScrollBar):=pointer(@ShowScrollBar);
+      FlatSB_ShowScrollBar := @ShowScrollBar;
 
-    pointer(FlatSB_GetScrollRange):=GetProcAddress(handle,'FlatSB_GetScrollRange');
+    FlatSB_GetScrollRange := GetProcAddress(handle,'FlatSB_GetScrollRange');
     if not(assigned(FlatSB_GetScrollRange)) then
-      pointer(FlatSB_GetScrollRange):=pointer(@GetScrollRange);
+      FlatSB_GetScrollRange := @GetScrollRange;
 
-    pointer(FlatSB_GetScrollInfo):=GetProcAddress(handle,'FlatSB_GetScrollInfo');
+    FlatSB_GetScrollInfo := GetProcAddress(handle,'FlatSB_GetScrollInfo');
     if not(assigned(FlatSB_GetScrollInfo)) then
-      pointer(FlatSB_GetScrollInfo):=pointer(@GetScrollInfo);
+      FlatSB_GetScrollInfo := @GetScrollInfo;
 
-    pointer(FlatSB_GetScrollPos):=GetProcAddress(handle,'FlatSB_GetScrollPos');
+    FlatSB_GetScrollPos := GetProcAddress(handle,'FlatSB_GetScrollPos');
     if not(assigned(FlatSB_GetScrollPos)) then
-      pointer(FlatSB_GetScrollPos):=pointer(@GetScrollPos);
+      FlatSB_GetScrollPos := @GetScrollPos;
 
-    pointer(FlatSB_SetScrollPos):=GetProcAddress(handle,'FlatSB_SetScrollPos');
+    FlatSB_SetScrollPos := GetProcAddress(handle,'FlatSB_SetScrollPos');
     if not(assigned(FlatSB_SetScrollPos)) then
-      pointer(FlatSB_SetScrollPos):=pointer(@SetScrollPos);
+      FlatSB_SetScrollPos := @SetScrollPos;
 
-    pointer(FlatSB_SetScrollInfo):=GetProcAddress(handle,'FlatSB_SetScrollInfo');
+    FlatSB_SetScrollInfo := GetProcAddress(handle,'FlatSB_SetScrollInfo');
     if not(assigned(FlatSB_SetScrollInfo)) then
-      pointer(FlatSB_SetScrollInfo):=pointer(@SetScrollInfo);
+      FlatSB_SetScrollInfo := @SetScrollInfo;
 
-    pointer(FlatSB_SetScrollRange):=GetProcAddress(handle,'FlatSB_SetScrollRange');
+    FlatSB_SetScrollRange := GetProcAddress(handle,'FlatSB_SetScrollRange');
     if not(assigned(FlatSB_SetScrollRange)) then
-      pointer(FlatSB_SetScrollRange):=pointer(@SetScrollRange);
+      FlatSB_SetScrollRange := @SetScrollRange;
   end;
 end;
+{$ENDIF}
 
 initialization
-{$IFDEF MSWINDOWS}
-{$ELSE}
-  ExpectsUTF8 := WidgetSet.LCLPlatform in [lpCarbon, lpQt, lpGTK2, lpWin32];
-{$ENDIF}
+  htExpectsUTF8 := WidgetSet.LCLPlatform in [lpCarbon, lpQt, lpGTK2, lpWin32];
+{$IFNDEF NoFlatScrollbars}
   InitFlatSB;
+{$ENDIF}
 end.
 

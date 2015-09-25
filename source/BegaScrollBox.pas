@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 unit BegaScrollBox;
 
 interface
+{$ifndef NoFlatScrollbars}
 
 uses
 {$ifdef UseVCLStyles}
@@ -36,8 +37,13 @@ uses
 {$else}
   FlatSB,
 {$endif LCL}
-  Windows, CommCtrl, Controls, ExtCtrls, Forms, Graphics, Math, Menus,
-  MultiMon, TypInfo;
+{$ifdef MSWindows}
+  Windows,
+  CommCtrl,
+  MultiMon,
+{$endif MSWindows}
+  Controls, ExtCtrls, Forms, Graphics, Math, Menus,
+  TypInfo;
 
 type
   TBegaScrollingWinClientSize = (csCurrent, csWithoutBar, csWithBar);
@@ -260,7 +266,9 @@ type
     constructor createEnum(EnumType: PTypeInfo; const Value);
   end;
 
+{$endif NoFlatScrollbars}
 implementation
+{$ifndef NoFlatScrollbars}
 
  {$ifdef UseVCLStyles}
  uses
@@ -1240,4 +1248,5 @@ begin
   inherited createFmt('unsupported: %s.%s', [EnumType.Name, GetEnumName(EnumType, integer(Value))]);
 end;
 
+{$endif NoFlatScrollbars}
 end.

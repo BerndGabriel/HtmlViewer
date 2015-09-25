@@ -30,7 +30,11 @@ unit URLSubs;
 interface
 
 uses
+{$ifdef MSWindows}
   Windows,
+{$else MSWindows}
+  Types,
+{$endif MSWindows}
   HtmlGlobals;
 
 {***************************************************************************************************
@@ -162,20 +166,29 @@ end;
 {----------------Combine}
 function CombineDos(const Base, Path: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
+const
+  DirSep =
+{$ifdef MSWindows}
+    '\';
+{$endif MSWindows}
+{$ifdef Unix}
+    '/';
+{$endif Unix}
+
 var
   L: Integer;
 begin
   L := Length(Base);
-  if (L > 0) and (Base[L] = '\') then
-    if (Length(Path) > 0) and (Path[1] = '\') then
+  if (L > 0) and (Base[L] = DirSep) then
+    if (Length(Path) > 0) and (Path[1] = DirSep) then
       Result := Copy(Base, 1, L - 1) + Path
     else
       Result := Base + Path
   else
-    if (Length(Path) > 0) and (Path[1] = '\') then
+    if (Length(Path) > 0) and (Path[1] = DirSep) then
       Result := Base + Path
     else
-      Result := Base + '\' + Path;
+      Result := Base + DirSep + Path;
 end;
 
 function Combine(Base, APath: ThtString): ThtString;
@@ -299,35 +312,20 @@ function IsFullURL(const URL: ThtString): Boolean;
  {$ifdef UseInline} inline; {$endif}
 var
   I: integer;
-//  S: ThtString;
 begin
   I := 1;
-  if FindSchemeSep(URL, I) then
-    Result := True
-//  else if Pos('//', URL) = 1 then
-//    // no scheme? Assuming http:
-//    Result := True
-  else
-    Result := False;
-
-//  S := Url;
-//  N := Pos('?', S);
-//  if N > 0 then
-//    SetLength(S, N - 1);
-//  N := Pos('://', S);
-//  if (N > 0) and (N < Pos('/', S)) then
-//    Result := True
-//  else
-//  begin
-//    S := htLowerCase(S);
-//    Result := (Copy(S, 1, 7) = 'mailto:') or (Copy(S, 1, 5) = 'data:');
-//  end;
+  Result := FindSchemeSep(URL, I);
 end;
 
 //-- BG ---------------------------------------------------------- 28.06.2015 --
 function IsAbsolutePath(const Filename: ThtString): Boolean;
 begin
-  Result := (Pos(':', Filename) = 2) or (Pos('\\', Filename) = 1);
+{$ifdef MSWindows}
+  Result := (Length(Filename) >= 2) and ((Filename[2] = ':') or ((Filename[1] = '\') and (Filename[2] = '\')));
+{$endif}
+{$ifdef Unix}
+  Result := (Length(Filename) > 0) and (Filename[1] = '/');
+{$endif}
 end;
 
 function GetProtocol(const URL: ThtString): ThtString;
@@ -824,7 +822,9 @@ begin
       System.Delete(Result, I, N);
     end;
     Replace('|', ':');
+{$ifdef MSWindows}
     Replace('/', '\');
+{$endif}
   end;
 end;
 
@@ -832,6 +832,7 @@ function HTMLServerToDos(const FName, Root: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
 {Add Prefix Root only if first character is '\' but not '\\'}
 begin
+{$ifdef MSWindows}
   Result := Trim(HTMLToDos(FName));
   if (Result <> '') and (Root <> '') then
   begin
@@ -842,6 +843,12 @@ begin
     if Result[1] = '\' then
       Result := Root + Result;
   end;
+{$endif}
+{$ifdef Unix}
+  Result := Trim(FName);
+  if not IsAbsolutePath(Result) and (Length(Root) > 0) then
+    Result := Root + Result;
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 02.04.2014 --

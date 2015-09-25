@@ -220,6 +220,7 @@
 
 { Define Aspects Of HtmlViewer }
 
+{$ifdef MSWindows}
 {.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
         PNG images and provides support for TIFF images.
         If, for some reason the use of the gdiplus.dll is
@@ -232,6 +233,12 @@
         For applications where printing is unimportant or Win98/95/ME need not
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
+{$endif}
+{$ifdef Unix}
+  {$define NoGDIPlus}
+  {$define NoMetaFile}
+  {$define NoFlatScrollbars}
+{$endif}
 
 {.$define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
         removing the '.'.  For documents with hundreds of links, tabbing may not
@@ -306,6 +313,7 @@ some versions of RAD Studio XE2.  This should never be used for release software
   {$endif}
    {$define has_StyleElements}
 {$endif}
+
 {
 Using Third Party Unicode Controls
 

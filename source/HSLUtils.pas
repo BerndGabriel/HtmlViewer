@@ -55,7 +55,12 @@ unit HSLUtils;
 interface
 
 uses
-  Windows, Graphics;
+{$ifdef MSWindows}
+  Windows,
+{$else MSWindows}
+  Types,
+{$endif MSWindows}
+  Graphics;
 
 var
   HSLRange: integer = 240;
@@ -81,6 +86,29 @@ procedure RGBtoHSL (RGB: TColor; var H, S, L : double);
 procedure RGBtoHSLRange (RGB: TColor; var H, S, L : integer);
 
 implementation
+{$ifdef MSWindows}
+{$else MSWindows}
+function GetRValue(RGB: TColor): Byte;
+begin
+  Result := Byte(RGB);
+end;
+
+function GetGValue(RGB: TColor): Byte;
+begin
+  Result := Byte(RGB shr 8);
+end;
+
+function GetBValue(RGB: TColor): Byte;
+begin
+  Result := Byte(RGB shr 16);
+end;
+
+function RGB(R, G, B: Cardinal): TColor;
+begin
+  Result := R + G shl 8 + LongWord(b) shl 16;
+end;
+
+{$endif MSWindows}
 
 function HSLtoRGB (H, S, L: double): TColor;
 var

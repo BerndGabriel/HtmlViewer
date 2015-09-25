@@ -48,7 +48,7 @@ uses
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
 {$endif}
-  UrlSubs,
+  URLSubs,
   HtmlCaches,
   HtmlGlobals,
   HtmlGif2,

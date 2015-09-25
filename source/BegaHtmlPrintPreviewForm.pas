@@ -24,6 +24,8 @@ unit BegaHtmlPrintPreviewForm;
 {$include htmlcons.inc}
 
 interface
+{$ifndef NoFlatScrollbars}
+{$ifndef NoMetaFile}
 
 uses
 {$ifdef LCL}
@@ -58,7 +60,11 @@ type
     property HtmlViewer: THtmlViewer read FHtmlViewer write setHtmlViewer;
   end;
 
+{$endif NoMetaFile}
+{$endif NoFlatScrollbars}
 implementation
+{$ifndef NoFlatScrollbars}
+{$ifndef NoMetaFile}
 
 //- BG ----------------------------------------------------------- 26.03.2007 --
 function TBegaHtmlPrintPreviewForm.canPrint: Boolean;
@@ -187,4 +193,6 @@ begin
   end;
 end;
 
+{$endif NoMetaFile}
+{$endif NoFlatScrollbars}
 end.

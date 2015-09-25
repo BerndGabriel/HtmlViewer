@@ -29,7 +29,7 @@ uses
   LCLIntf, LCLType, LMessages, types,
 {$ENDIF}
   Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, Htmlview;
+  Dialogs, ExtCtrls, StdCtrls, Htmlview, HTMLUn2;
 
 type
   TForm1 = class(TForm)

@@ -24,6 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 unit BegaPreviewForm;
 
 interface
+{$ifndef NoFlatScrollbars}
+{$ifndef NoMetaFile}
 
 uses
   Classes, SysUtils,
@@ -68,8 +70,11 @@ type
     property MetafilePrinter: TBegaMetaFilePrinter read FMetafilePrinter write setMetafilePrinter;
   end;
 
-
+{$endif NoMetaFile}
+{$endif NoFlatScrollbars}
 implementation
+{$ifndef NoFlatScrollbars}
+{$ifndef NoMetaFile}
 
 {$ifdef LCL}
   {$R *.lfm}
@@ -164,4 +169,6 @@ begin
   Preview.createPages;
 end;
 
+{$endif NoMetaFile}
+{$endif NoFlatScrollbars}
 end.
