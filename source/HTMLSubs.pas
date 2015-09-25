@@ -15218,6 +15218,8 @@ var
   T: TSectionBase absolute Source;
 begin
   inherited CreateCopy(Parent,Source);
+  StartCurs := T.StartCurs;
+  Len := T.Len;
   FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed
   SectionHeight := T.SectionHeight;
   ZIndex := T.ZIndex;
