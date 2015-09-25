@@ -37,8 +37,12 @@ uses
   System.UITypes,
   Vcl.Themes,
 {$endif}
-{$ifdef MSWindows}
-  Windows,
+{$ifdef LCL}
+  LclIntf, LclType,
+{$else}
+  {$ifdef MSWindows}
+    Windows,
+  {$endif}
 {$endif}
   SysUtils,
   Graphics, Classes, Forms, Contnrs, Variants,
@@ -247,12 +251,10 @@ end;
 function ThtFontCache.GetFontLike(var Font: ThtFontInfo): ThtFont;
 var
   SameFont: ThtFont;
-{$ifdef MSWindows}
   Save: THandle;
   SaveCharSet: TFontCharSet;
   tm: TTextmetric;
   DC: HDC;
-{$endif}
   V: Variant;
 begin
   SameFont := Find(Font);
@@ -265,7 +267,6 @@ begin
     SameFont.Charset := Font.iCharSet;
     Add(SameFont);
 
-{$ifdef MSWindows}
     // If this is a Symbol charset, then keep it that way.
     // To check the font's real charset, use Default_Charset
     SaveCharSet := SameFont.CharSet;
@@ -304,16 +305,6 @@ begin
     SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
     SameFont.tmAveCharWidth := tm.tmAveCharWidth;
     SameFont.tmCharset := tm.tmCharset;
-{$else}
-    //TODO -oBG, 25.09.2015: Get the correct font properties
-    SameFont.EmSize := trunc(-SameFont.Height * 0.95);
-    SameFont.ExSize := SameFont.EmSize div 2; {apparently correlates with what browsers are doing}
-    SameFont.tmHeight := trunc(-SameFont.Height * 1.1);
-    SameFont.tmDescent := trunc(-SameFont.Height * 0.2);
-    SameFont.tmMaxCharWidth := SameFont.GetTextWidth('W');
-    SameFont.tmAveCharWidth := SameFont.GetTextWidth('s');
-    SameFont.tmCharset := SameFont.CharSet;
-{$endif}
   end;
 
   Result := ThtFont.Create;
