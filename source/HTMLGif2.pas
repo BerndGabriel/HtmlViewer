@@ -43,12 +43,15 @@ uses
 type
   ThtBitmap = class(TBitmap)
   protected
-    htMask: TBitmap;
-    htTransparent: boolean;
+    FMask: TBitmap;
+    FTransparent: boolean;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
     procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
+    function GetMask: TBitmap;
   public
     destructor Destroy; override;
+    procedure Assign(Source: TPersistent); override;
+    property Mask: TBitmap read GetMask;
   end;
 
   TDisposalType = (
@@ -69,8 +72,6 @@ type
     frDisposalMethod: TDisposalType;
     TheEnd: boolean; {end of what gets copied}
 
-    IsCopy: boolean;
-
   public
     constructor Create;
     constructor CreateCopy(Item: TgfFrame);
@@ -85,7 +86,7 @@ type
     property Frames[I: integer]: TgfFrame read GetFrame; default;
   end;
 
-  TGIFImage = class(TBitmap)
+  TGIFImage = class(ThtBitmap)
   private
     FAnimated: Boolean;
     FImageWidth: Integer;
@@ -93,17 +94,15 @@ type
     FCurrentFrame: Integer;
     FNumFrames: Integer;
     FNumIterations: Integer;
-    FTransparent: Boolean;
     FVisible: Boolean;
-    Strip: ThtBitmap;
 
-    TheEnd: boolean; {copy to here}
+    TheEnd: Boolean; {copy to here}
 
-    FMask: TBitmap;
     FAnimate: Boolean;
     FStretchedRect: TRect;
     WasDisposal: TDisposalType;
 
+    Strip: ThtBitmap;
     Frames: TgfFrameList;
 
     CurrentIteration: Integer;
@@ -112,27 +111,21 @@ type
 
     procedure SetAnimate(AAnimate: Boolean);
     procedure SetCurrentFrame(AFrame: Integer);
-    function GetMaskedBitmap: TBitmap;
-    function GetMask: TBitmap;
-    function GetBitMap: TBitmap;
 
     procedure NextFrame(OldFrame: Integer);
 
   public
-    ShowIt: boolean;
-    IsCopy: boolean; {set if this is a copy of one in Cache}
+    ShowIt: Boolean;
+    IsCopy: Boolean; {set if this is a copy of one in Cache}
 
-    constructor Create;
+    constructor Create; override;
     constructor CreateCopy(Item: TGIFImage);
     destructor Destroy; override;
 
     procedure LoadFromStream(Stream: TStream); override;
 
-    procedure Draw(Canvas: TCanvas; X, Y, Wid, Ht: integer);
+    procedure Draw(Canvas: TCanvas; const ARect: TRect); override;
 
-    property Bitmap: TBitmap read GetBitmap;
-    property MaskedBitmap: TBitmap read GetMaskedBitmap;
-    property Mask: TBitmap read GetMask;
     property IsAnimated: Boolean read FAnimated;
     property IsTransparent: Boolean read FTransparent;
     property NumFrames: Integer read FNumFrames;
@@ -145,106 +138,16 @@ type
     property Visible: Boolean read FVisible write FVisible;
   end;
 
-function LoadGifFromStream(out NonAnimated: boolean; Stream: TStream): TGifImage;
-//function LoadGifFromFile(const Name: string; var NonAnimated: boolean): TGifImage;
+function LoadGifFromStream(out NonAnimated: Boolean; Stream: TStream): TGifImage;
 
 implementation
 
-//function CreateBitmap(Width, Height: integer): TBitmap;
-//begin
-//  Result := TBitmap.Create;
-//  Result.Width := Width;
-//  Result.Height := Height;
-//end;
-
-function LoadGifFromStream(out NonAnimated: boolean; Stream: TStream): TGifImage;
-//var
-//  AGif: TGif;
-//  Frame: TgfFrame;
-//  I: integer;
-//  ABitmap, AMask: TBitmap;
+function LoadGifFromStream(out NonAnimated: Boolean; Stream: TStream): TGifImage;
 begin
-//  Result := nil;
-//  try
-//    NonAnimated := True;
-//    AGif := TGif.Create;
-//    try
-//      AGif.LoadFromStream(Stream);
-
-      Result := TGifImage.Create;
-      Result.LoadFromStream(Stream);
-      NonAnimated := not Result.IsAnimated;
-
-//      Result.FNumFrames := AGif.ImageCount;
-//      Result.FAnimated := Result.FNumFrames > 1;
-//      NonAnimated := not Result.FAnimated;
-//      Result.FImageWidth := AGif.Width;
-//      Result.FImageHeight := AGif.Height;
-//      Result.FNumIterations := AGif.LoopCount;
-//      if Result.FNumIterations < 0 then {-1 means no loop block}
-//        Result.FNumIterations := 1
-//      else if Result.FNumIterations > 0 then
-//        Inc(Result.FNumIterations); {apparently this is the convention}
-//      Result.FTransparent := AGif.Transparent;
-//
-//      with Result do
-//      begin
-//        Strip := ThtBitmap.Create;
-//        ABitmap := AGif.GetStripBitmap(AMask);
-//        try
-//          Strip.Assign(ABitmap);
-//          Strip.htMask := AMask;
-//          Strip.htTransparent := Assigned(AMask);
-//        finally
-//          ABitmap.Free;
-//        end;
-//        if Result.Strip.Palette <> 0 then
-//          DeleteObject(Result.Strip.ReleasePalette);
-//        Result.Strip.Palette := CopyPalette(ThePalette);
-//      end;
-//
-//      for I := 0 to Result.FNumFrames - 1 do
-//      begin
-//        Frame := TgfFrame.Create;
-//        try
-//          Frame.frDisposalMethod := TDisposalType(AGif.ImageDisposal[I]);
-//          Frame.frLeft := AGif.ImageLeft[I];
-//          Frame.frTop := AGif.ImageTop[I];
-//          Frame.frWidth := AGif.ImageWidth[I];
-//          Frame.frHeight := AGif.ImageHeight[I];
-//          Frame.frDelay := Max(30, AGif.ImageDelay[I] * 10);
-//        except
-//          Frame.Free;
-//          raise;
-//        end;
-//        Result.Frames.Add(Frame);
-//      end;
-//      if Result.IsAnimated then
-//        Result.WasDisposal := dtToBackground;
-//    finally
-//      AGif.Free;
-//    end;
-//  except
-//    Result.Free;
-//    raise;
-//  end;
+  Result := TGifImage.Create;
+  Result.LoadFromStream(Stream);
+  NonAnimated := not Result.IsAnimated;
 end;
-
-//function LoadGifFromFile(const Name: string; var NonAnimated: boolean): TGifImage;
-//var
-//  Stream: TFileStream;
-//begin
-//  Result := nil;
-//  try
-//    Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
-//    try
-//      Result := LoadGifFromStream(NonAnimated, Stream);
-//    finally
-//      Stream.Free;
-//    end;
-//  except
-//  end;
-//end;
 
 {----------------TgfFrame.Create}
 
@@ -257,7 +160,6 @@ constructor TgfFrame.CreateCopy(Item: TgfFrame);
 begin
   inherited Create;
   System.Move(Item.frLeft, frLeft, PtrSub(@TheEnd, @frLeft));
-  IsCopy := True;
 end;
 
 {----------------TgfFrame.Destroy}
@@ -283,10 +185,14 @@ var
   I: integer;
 begin
   inherited Create;
+  Assign(Item);
   FImageWidth := Item.FImageWidth;
   FImageHeight := Item.FImageHeight;
   System.Move(Item.FAnimated, FAnimated, PtrSub(@TheEnd, @FAnimated));
   IsCopy := True;
+
+  Strip := ThtBitmap.Create;
+  Strip.Assign(Item.Strip);
 
   Frames := TgfFrameList.Create;
   for I := 1 to FNumFrames do
@@ -306,22 +212,20 @@ begin
   for I := Frames.Count downto 1 do
     Frames[I].Free;
   Frames.Free;
-  if not IsCopy then
-    FreeAndNil(Strip);
-  FMask.Free;
+  Strip.Free;
   inherited Destroy;
 end;
 
 {----------------TGIFImage.Draw}
 
-procedure TGIFImage.Draw(Canvas: TCanvas; X, Y, Wid, Ht: integer);
+procedure TGIFImage.Draw(Canvas: TCanvas; const ARect: TRect);
 var
   SRect: TRect;
   ALeft: integer;
 begin
-  if (FVisible) and (FNumFrames > 0) then
+  if FVisible and (FNumFrames > 0) then
   begin
-    FStretchedRect := Rect(X, Y, X + Wid, Y + Ht);
+    FStretchedRect := ARect;
     with Frames[FCurrentFrame] do
     begin
       ALeft := (FCurrentFrame - 1) * Width;
@@ -402,21 +306,6 @@ begin
     WasDisposal := dtToBackground;
 end;
 
-{----------------TGIFImage.GetBitmap}
-
-function TGIFImage.GetBitmap: TBitmap;
-begin
-  Result := GetMaskedBitmap;
-end;
-
-{----------------TGIFImage.GetMaskedBitmap:}
-
-function TGIFImage.GetMaskedBitmap: TBitmap;
-{This returns frame 1}
-begin
-  Result := Self;
-end;
-
 //-- BG ---------------------------------------------------------- 27.08.2015 --
 procedure TGIFImage.LoadFromStream(Stream: TStream);
 var
@@ -444,8 +333,8 @@ begin
     ABitmap := AGif.GetStripBitmap(AMask);
     try
       Strip.Assign(ABitmap);
-      Strip.htMask := AMask;
-      Strip.htTransparent := Assigned(AMask);
+      Strip.FMask := AMask;
+      Strip.FTransparent := Assigned(AMask);
     finally
       ABitmap.Free;
     end;
@@ -477,28 +366,18 @@ begin
 
   inherited Assign(Strip);
   Width := FImageWidth;
-  if Strip.htTransparent then
-  begin
-    FMask := TBitmap.Create;
-    FMask.Assign(Strip.htMask);
-    FMask.Width := FImageWidth;
-  end;
   Transparent := False;
 end;
 
-{----------------TGIFImage.GetMask:}
+{----------------ThtBitmap.GetMask:}
 
-function TGIFImage.GetMask: TBitmap;
+function ThtBitmap.GetMask: TBitmap;
 {This returns mask for frame 1.  Content is black, background is white}
 begin
   if not FTransparent then
     Result := nil
   else
-  begin
-    if not Assigned(FMask) then
-      GetMaskedBitmap;
     Result := FMask;
-  end;
 end;
 
 {----------------TGIFImage.NextFrame}
@@ -520,9 +399,34 @@ end;
 //var
 //  AHandle: THandle;
 
+procedure ThtBitmap.Assign(Source: TPersistent);
+var
+  htSource: ThtBitmap absolute Source;
+
+begin
+  inherited;
+  if Source is ThtBitmap then
+  begin
+    FTransparent := htSource.FTransparent;
+    if htSource.FMask = nil then
+      FreeAndNil(FMask)
+    else
+    begin
+      if FMask = nil then
+        FMask := TBitmap.Create;
+      FMask.Assign(htSource.FMask);
+    end
+  end
+  else
+  begin
+    FTransparent := False;
+    FreeAndNil(FMask);
+  end;
+end;
+
 destructor ThtBitmap.Destroy;
 begin
-  htMask.Free;
+  FMask.Free;
   inherited;
 end;
 
@@ -564,7 +468,7 @@ begin
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
     try
       //AHandle := Canvas.Handle; {LDB}
-      if htTransparent then
+      if FTransparent then
       begin
         Save := 0;
         MaskDC := 0;
@@ -573,7 +477,7 @@ begin
           Save := SelectObject(MaskDC, MaskHandle);
           TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
             Bottom - Top, Canvas.Handle, 0, 0, Width,
-            Height, htMask.Canvas.Handle, 0, 0); {LDB}
+            Height, FMask.Canvas.Handle, 0, 0); {LDB}
         finally
           if Save <> 0 then
             SelectObject(MaskDC, Save);
@@ -627,11 +531,11 @@ begin
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
     try
       //AHandle := Canvas.Handle; {LDB}
-      if htTransparent then
+      if FTransparent then
         TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
           Bottom - Top, Canvas.Handle,
           SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
-          htMask.Canvas.Handle, SrcRect.Left, SrcRect.Top) {LDB}
+          FMask.Canvas.Handle, SrcRect.Left, SrcRect.Top) {LDB}
       else
         StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
           Canvas.Handle,

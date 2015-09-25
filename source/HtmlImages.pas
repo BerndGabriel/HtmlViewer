@@ -82,31 +82,45 @@ type
 // Currently it supports ThtBitmap, (animated) TGifImage, TGpImage or ThtMetafile
 // It replaces the unspecific TgpObject and TBitmapItem of the old image cache.
 //------------------------------------------------------------------------------
-  TGpObject = TObject;
 
   ThtImageTransparency = (itrNone, itrIntrinsic, itrLLCorner);
 
   //BG, 09.04.2011
   ThtImage = class(ThtCachable)
   protected
-    function GetGpObject: TGpObject; virtual; abstract;
     function GetBitmap: TBitmap; virtual; abstract;
     function GetGraphic: TGraphic; virtual;
     function GetImageHeight: Integer; virtual; abstract;
     function GetImageWidth: Integer; virtual; abstract;
     function GetMask: TBitmap; virtual; abstract;
+    function GetAnimate: Boolean; virtual;
+    procedure SetAnimate(const Value: Boolean); virtual;
+
+    function EnlargeBitmap(Bitmap: TBitmap; W, H: Integer): TBitmap; virtual;
+    function EnlargeImage(W, H: Integer): ThtImage; virtual;
   public
     Transp: ThtImageTransparency; {identifies what the mask is for}
     constructor Create(Tr: ThtImageTransparency); overload;
-    procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); virtual; abstract;
+    function Clone: ThtImage; virtual;
+
+    procedure TileImage(PRec: PtPositionRec; DstW, DstH: Integer; var TiledImage: ThtImage; var NoMask: Boolean); virtual;
+
+    procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); virtual;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); virtual;
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); virtual;
     procedure PrintTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer; BgColor: TColor); virtual;
+    // used to draw/print background images.
+    // BG, 06.09.2015: Currently only ThtBitmapImage and ThtGdipImage implement these methods.
+    procedure DrawUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean); virtual;
+    procedure PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean); virtual;
+
+    function IsAnimated: Boolean; virtual;
     property Bitmap: TBitmap read GetBitmap;
     property Mask: TBitmap read GetMask;
     property Graphic: TGraphic read GetGraphic;
     property Height: Integer read GetImageHeight;
     property Width: Integer read GetImageWidth;
+    property Animate: Boolean read GetAnimate write SetAnimate;
   end;
 
   TGetImageEvent = function(Sender: TObject; const Url: ThtString): ThtImage of object;
@@ -150,7 +164,6 @@ type
     Bitmap, Mask: TBitmap;
     OwnsBitmap, OwnsMask: Boolean;
   protected
-    function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
     function GetImageHeight: Integer; override;
     function GetImageWidth: Integer; override;
@@ -160,6 +173,9 @@ type
     constructor Create(AImage: TBitmap; Tr: ThtImageTransparency; Color: TColor; AOwnsBitmap: Boolean = True); overload;
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
+    procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
+    procedure DrawUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean); override;
+    procedure PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean); override;
   end;
 
   //BG, 09.04.2011
@@ -167,15 +183,17 @@ type
   private
     FGif: TGifImage;
   protected
-    function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
     function GetImageHeight: Integer; override;
     function GetImageWidth: Integer; override;
     function GetMask: TBitmap; override;
+    function GetAnimate: Boolean; override;
+    procedure SetAnimate(const Value: Boolean); override;
   public
     constructor Create(AImage: TGifImage); overload;
     destructor Destroy; override;
-    function Clone: ThtGifImage;
+    function Clone: ThtImage; override;
+    function IsAnimated: Boolean; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
     property Gif: TGifImage read FGif;
   end;
@@ -187,7 +205,6 @@ type
   private
     Gpi: ThtGpImage;
   protected
-    function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
     function GetImageHeight: Integer; override;
     function GetImageWidth: Integer; override;
@@ -195,14 +212,16 @@ type
   public
     constructor Create(AImage: ThtGpImage); overload;
     destructor Destroy; override;
-    procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
     procedure DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer); override;
     procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
+
+    procedure DrawUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean); override;
+    procedure PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean); override;
   end;
 {$endif !NoGDIPlus}
 
 //------------------------------------------------------------------------------
-// ThtGraphicImage: support for all TGrphics without own TBitmap, e.g. meta files
+// ThtGraphicImage: support for all TGraphics without own TBitmap, e.g. meta files
 //------------------------------------------------------------------------------
 
   //BG, 09.04.2011
@@ -212,7 +231,6 @@ type
     FImage: ThtBitmapImage;
     procedure Construct; deprecated;
   protected
-    function GetGpObject: TGpObject; override;
     function GetBitmap: TBitmap; override;
     function GetGraphic: TGraphic; override;
     function GetImageHeight: Integer; override;
@@ -221,8 +239,6 @@ type
   public
     constructor Create(AGraphic: TGraphic); overload;
     destructor Destroy; override;
-    procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
-    procedure Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor); override;
   end;
 
 //------------------------------------------------------------------------------
@@ -277,7 +293,7 @@ function LoadImageFromStream(Stream: TStream; Transparent: ThtImageTransparency)
 // image methods
 //------------------------------------------------------------------------------
 
-function EnlargeImage(Image: TGpObject; W, H: Integer): TBitmap;
+function EnlargeImage(Image: TBitmap; W, H: Integer): TBitmap;
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer; Bitmap, Mask: TBitmap; YI, HI: Integer);
@@ -285,7 +301,7 @@ procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer; Bi
 function GetClipRegion(Canvas: TCanvas): Integer;
 
 procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
-  Image: ThtImage; {Mask: TBitmap; AniGif: TGifImage;} BW, BH: Integer; BGColor: TColor);
+  Image: ThtImage; BW, BH: Integer; BGColor: TColor);
 {draw the background color and any tiled images on it}
 {ARect, the cliprect, drawing outside this will not show but images may overhang
  XStart, YStart are first image position already calculated for the cliprect and parameters.
@@ -293,20 +309,20 @@ procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, 
  BW, BH  bitmap dimensions.
 }
 
-procedure DoImageStuff(Canvas: TCanvas; IW, IH: Cardinal; BGImage: ThtImage; PRec: PtPositionRec;
-  var TiledImage: TGpObject; var TiledMask: TBitmap; var NoMask: boolean);
-{Set up for the background image. Allow for tiling, and transparency
-  BGImage is the image
-  PRec describes the location and tiling
-  IW, IH, the width and height of the background
-}
+//procedure DoImageStuff(IW, IH: Integer; BGImage: ThtImage;
+//  PRec: PtPositionRec; var TiledImage: ThtImage; var NoMask: boolean);
+//{Set up for the background image. Allow for tiling, and transparency
+//  BGImage is the image
+//  PRec describes the location and tiling
+//  IW, IH, the width and height of the background
+//}
 
 
 {$IFNDEF NoGDIPlus}
 procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer); overload;
 procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY, SrcX, SrcY, SrcW, SrcH: Integer); overload;
 procedure StretchDrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer);
-procedure PrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer; ScaleX, ScaleY: single);
+procedure PrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer; ScaleX: single = 1.0; ScaleY: single = 1.0);
 procedure StretchPrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; ScaleX, ScaleY: Single);
 procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 {$ENDIF NoGDIPlus}
@@ -780,7 +796,7 @@ var
     begin {else already have animated GIF}
       try
         Bitmap := TBitmap.Create;
-        Bitmap.Assign(Gif.MaskedBitmap);
+        Bitmap.Assign(Gif);
         if Gif.IsTransparent then
         begin
           Mask := TBitmap.Create;
@@ -1299,7 +1315,7 @@ end;
 {----------------DrawBackground}
 
 procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, YLast: Integer;
-  Image: ThtImage; {Mask: TBitmap; AniGif: TGifImage;} BW, BH: Integer; BGColor: TColor);
+  Image: ThtImage; BW, BH: Integer; BGColor: TColor);
 {draw the background color and any tiled images on it}
 {ARect, the cliprect, drawing outside this will not show but images may overhang
  XStart, YStart are first image position already calculated for the cliprect and parameters.
@@ -1340,196 +1356,177 @@ begin
 end;
 
 //BG, 07.04.2011: same as CalcBackgroundLocationAndTiling plus DrawBackground ?
-//TODO: let the better version win, but keep it in 2 separate methods for THtmlViewer.
-procedure DoImageStuff(Canvas: TCanvas; IW, IH: Cardinal; BGImage: ThtImage; PRec: PtPositionRec;
-  var TiledImage: TGpObject; var TiledMask: TBitmap; var NoMask: boolean);
-{Set up for the background image. Allow for tiling, and transparency
-  BGImage is the image
-  PRec describes the location and tiling
-  IW, IH, the width and height of the background
-}
-var
-  OW, OH: Cardinal;
-  X, XX, Y, X2, Y2: Integer;
-  TheMask, NewBitmap, NewMask: TBitmap;
-  TheGpObj: TBitmap;
-{$IFNDEF NoGDIPlus}
-  g: ThtGpGraphics;
-{$ENDIF !NoGDIPlus}
-
-//----------------------------------------------------------
-//these methods fill the TiledImage and TiledMask.
-
-  procedure Tile(Bitmap, Mask: TBitmap; W, H: Integer);
-  begin
-    repeat {tile BGImage in the various dc's}
-      XX := X;
-      repeat
-        TBitmap(TiledImage).Canvas.Draw(XX, Y, Bitmap);
-        if Assigned(TheMask) then
-          TiledMask.Canvas.Draw(XX, Y, Mask)
-        else if not NoMask then
-          PatBlt(TiledMask.Canvas.Handle, XX, Y, Bitmap.Width, Bitmap.Height, Blackness);
-        Inc(XX, Bitmap.Width);
-      until XX >= X2;
-      Inc(Y, Bitmap.Height);
-    until Y >= Y2;
-  end;
-
-{$IFNDEF NoGDIPlus}
-  procedure TileGpImage(Image: ThtGpImage; W, H: Cardinal);
-  var
-    ImW, ImH: Integer;
-    graphics: ThtGpGraphics;
-  begin
-    ImW := Image.Width;
-    ImH := Image.Height;
-    try
-      graphics := ThtGpGraphics.Create(ThtGpImage(TiledImage));
-      try
-        repeat {tile Image in the various dc's}
-          XX := X;
-          repeat
-            graphics.DrawImage(Image, XX, Y, Image.Width, Image.Height);
-            Inc(XX, ImW);
-          until XX >= X2;
-          Inc(Y, ImH);
-        until Y >= Y2;
-      except
-      end;
-      graphics.Free;
-    except
-    end;
-  end;
-{$ENDIF !NoGDIPlus}
-
-begin
-  if (IW = 0) or (IH = 0) then
-    exit;
-
-  TheGpObj := BGImage.Bitmap;
-  TheMask  := BGImage.Mask;
-  NoMask := not Assigned(TheMask) and PRec.X.RepeatD and PRec.Y.RepeatD;
-
-  OW := BGImage.Width;
-  OH := BGImage.Height;
-
-{$IFNDEF NoGDIPlus}
-  if (BGImage is ThtGdipImage) and not ((OW = 1) or (OH = 1)) then
-  begin {TiledImage will be a TGpBitmap unless Image needs to be enlarged}
-    if Assigned(TiledImage) then
-      with ThtGpBitmap(TiledImage) do
-        if (IW <> Width) or (IH <> Height) then
-          FreeAndNil(TiledImage);
-    if not Assigned(TiledImage) then
-      TiledImage := ThtGpBitmap.Create(IW, IH);
-    g := ThtGpGraphics.Create(ThtGpBitmap(TiledImage));
-    g.Clear(0); {clear to transparent black}
-    g.Free;
-  end
-  else
-{$ENDIF !NoGDIPlus}
-  begin {TiledImage will be a TBitmap}
-    if not Assigned(TiledImage) then
-      TiledImage := TBitmap.Create;
-    TBitmap(TiledImage).Palette := CopyPalette(ThePalette);
-    TBitmap(TiledImage).Height := IH;
-    TBitmap(TiledImage).Width := IW;
-    PatBlt(TBitmap(TiledImage).Canvas.Handle, 0, 0, IW, IH, Blackness);
-
-    if not NoMask then
-    begin
-      if not Assigned(TiledMask) then
-        TiledMask := TBitmap.Create;
-      TiledMask.Monochrome := True;
-      TiledMask.Height := IH;
-      TiledMask.Width := IW;
-      if not Assigned(TheMask) then
-        PatBlt(TiledMask.Canvas.Handle, 0, 0, IW, IH, Whiteness);
-    end;
-  end;
-
-{compute the location and tiling of BGImage in the background}
-  with PRec.X do
-  begin
-    X := GetPositionInRange(PosType, Value, IW - OW);
-    AdjustForTiling(RepeatD, 0, IW, OW, X, X2);
-  end;
-  with PRec.Y do
-  begin
-    Y := GetPositionInRange(PosType, Value, IH - OH);
-    AdjustForTiling(RepeatD, 0, IH, OH, Y, Y2);
-  end;
-
-  if (OW = 1) or (OH = 1) then
-  begin
-    {in case a 1 pixel bitmap is being tiled.  EnlargeImage returns a TBitmap regardless of TheGpObj type.}
-    NewBitmap := EnlargeImage(TheGpObj, X2 - X + 1, Y2 - Y + 1);
-    try
-      if Assigned(TheMask) then
-        NewMask := EnlargeImage(TheMask, X2 - X + 1, Y2 - Y + 1)
-      else
-        NewMask := nil;
-      try
-        Tile(NewBitmap, NewMask, X2 - X + 1, Y2 - Y + 1);
-      finally
-        NewMask.Free;
-      end;
-    finally
-      NewBitmap.Free;
-    end;
-  end
-{$IFNDEF NoGDIPlus}
-  else if (BGImage is ThtGdipImage) then
-    TileGpImage(ThtGpImage(BGImage.GetGpObject), OW, OH)
-{$ENDIF !NoGDIPlus}
-  else
-    Tile(TBitmap(TheGpObj), TheMask, OW, OH)
-  ;
-end;
+////TODO: let the better version win, but keep it in 2 separate methods for THtmlViewer.
+//procedure DoImageStuff(IW, IH: Integer; BGImage: ThtImage; PRec: PtPositionRec; var TiledImage: ThtImage; var NoMask: boolean);
+//{Set up for the background image. Allow for tiling, and transparency
+//  BGImage is the image
+//  PRec describes the location and tiling
+//  IW, IH, the width and height of the background
+//}
+//var
+//  OW, OH: Integer;
+//  X, XX, Y, X2, Y2: Integer;
+//
+////----------------------------------------------------------
+////these methods fill the TiledImage and TiledMask.
+//
+//  procedure Tile(Bitmap, Mask: TBitmap; W, H: Integer);
+//  begin
+//    repeat {tile BGImage in the various dc's}
+//      XX := X;
+//      repeat
+//        TiledImage.Bitmap.Canvas.Draw(XX, Y, Bitmap);
+//        if Mask <> nil then
+//          TiledImage.Mask.Canvas.Draw(XX, Y, Mask)
+//        else if not NoMask then
+//          PatBlt(TiledImage.Mask.Canvas.Handle, XX, Y, Bitmap.Width, Bitmap.Height, Blackness);
+//        Inc(XX, Bitmap.Width);
+//      until XX >= X2;
+//      Inc(Y, Bitmap.Height);
+//    until Y >= Y2;
+//  end;
+//
+//  procedure Enlarge;
+//  var
+//    TheBitmap, TheMask: TBitmap;
+//    NewBitmap, NewMask: TBitmap;
+//  begin
+//    TheBitmap := BGImage.Bitmap;
+//    TheMask   := BGImage.Mask;
+//
+//    NewBitmap := EnlargeImage(TheBitmap, X2 - X + 1, Y2 - Y + 1);
+//    try
+//      if TheMask <> nil then
+//        NewMask := EnlargeImage(TheMask, X2 - X + 1, Y2 - Y + 1)
+//      else
+//        NewMask := nil;
+//
+//      try
+//        Tile(NewBitmap, NewMask, X2 - X + 1, Y2 - Y + 1);
+//      finally
+//        NewMask.Free;
+//      end;
+//    finally
+//      NewBitmap.Free;
+//    end;
+//  end;
+//
+//{$IFNDEF NoGDIPlus}
+//  procedure TileGpImage(Image: ThtGdipImage; W, H: Cardinal);
+//  var
+//    ImW, ImH: Integer;
+//    graphics: ThtGpGraphics;
+//  begin
+//    if Assigned(TiledImage) then
+//      if (IW <> TiledImage.Width) or (IH <> TiledImage.Height) then
+//        FreeAndNil(TiledImage);
+//    if TiledImage = nil then
+//      TiledImage := ThtGdipImage.Create( ThtGpBitmap.Create(IW, IH) );
+//
+//    ImW := Image.Width;
+//    ImH := Image.Height;
+//    try
+//      graphics := ThtGpGraphics.Create(ThtGpImage(TiledImage));
+//      try
+//        graphics.Clear(clBlack); {clear to transparent black}
+//        repeat {tile Image in the various dc's}
+//          XX := X;
+//          repeat
+//            graphics.DrawImage(Image.Gpi, XX, Y, Image.Width, Image.Height);
+//            Inc(XX, ImW);
+//          until XX >= X2;
+//          Inc(Y, ImH);
+//        until Y >= Y2;
+//      except
+//      end;
+//      graphics.Free;
+//    except
+//    end;
+//  end;
+//{$ENDIF !NoGDIPlus}
+//
+//var
+//  TiledBitmap, TiledMask: TBitmap;
+//begin
+//  if (IW = 0) or (IH = 0) then
+//    exit;
+//
+//  OW := BGImage.Width;
+//  OH := BGImage.Height;
+//
+//{compute the location and tiling of BGImage in the background}
+//  with PRec.X do
+//  begin
+//    X := GetPositionInRange(PosType, Value, IW - OW);
+//    AdjustForTiling(RepeatD, 0, IW, OW, X, X2);
+//  end;
+//  with PRec.Y do
+//  begin
+//    Y := GetPositionInRange(PosType, Value, IH - OH);
+//    AdjustForTiling(RepeatD, 0, IH, OH, Y, Y2);
+//  end;
+//
+//  NoMask := not Assigned(BGImage.Mask) and PRec.X.RepeatD and PRec.Y.RepeatD;
+//
+//  if (OW = 1) or (OH = 1) then
+//  begin
+//    {in case a 1 pixel bitmap is being tiled.  EnlargeImage returns a TBitmap regardless of BgImage type.}
+//    Enlarge;
+//  end
+//  else
+//{$IFNDEF NoGDIPlus}
+//  if BGImage is ThtGdipImage then
+//  begin
+//    {TiledImage becomes a ThtGdipBitmap as well}
+//
+//    TileGpImage(ThtGdipImage(BGImage), OW, OH);
+//  end
+//  else
+//{$ENDIF !NoGDIPlus}
+//  begin
+//    {TiledImage becomes a ThtBitmapImage}
+//    if TiledImage = nil then
+//    begin
+//      TiledBitmap := TBitmap.Create;
+//      TiledBitmap.Palette := CopyPalette(ThePalette);
+//      TiledBitmap.Height := IH;
+//      TiledBitmap.Width := IW;
+//      PatBlt(TiledBitmap.Canvas.Handle, 0, 0, IW, IH, Blackness);
+//
+//      if not NoMask then
+//      begin
+//        TiledMask := TBitmap.Create;
+//        TiledMask.Monochrome := True;
+//        TiledMask.Height := IH;
+//        TiledMask.Width := IW;
+//        if BGImage.Mask = nil then
+//          PatBlt(TiledMask.Canvas.Handle, 0, 0, IW, IH, Whiteness);
+//      end
+//      else
+//        TiledMask := nil;
+//
+//      TiledImage := ThtBitmapImage.Create(TiledBitmap, TiledMask, BGImage.Transp);
+//    end;
+//    Tile(BGImage.Bitmap, BGImage.Mask, OW, OH);
+//  end;
+//end;
 
 { TgpObject }
 
-function EnlargeImage(Image: TGpObject; W, H: Integer): TBitmap;
+function EnlargeImage(Image: TBitmap; W, H: Integer): TBitmap;
 {enlarge 1 pixel images for tiling.  Returns a TBitmap regardless of Image type}
-var
-  TmpBitmap: TBitmap;
-{$IFNDEF NoGDIPlus}
-  OwnsBitmap: Boolean;
-{$ENDIF !NoGDIPlus}
 begin
   Result := TBitmap.Create;
-{$IFNDEF NoGDIPlus}
-  OwnsBitmap := False;
-{$ENDIF !NoGDIPlus}
-  if Image is ThtImage then
-  begin
-    TmpBitmap := ThtImage(Image).GetBitmap;
-{$IFNDEF NoGDIPlus}
-    OwnsBitmap := Image is ThtGdipImage;
-  end
-  else if Image is ThtGpImage then
-  begin
-    TmpBitmap := ThtGpImage(Image).GetBitmap;
-    OwnsBitmap := True;
-{$ENDIF !NoGDIPlus}
-  end
-  else
-    TmpBitmap := Image as TBitmap;
-  Result.Assign(TmpBitmap);
-  if TmpBitmap.Width = 1 then
+  Result.Assign(Image);
+  if Image.Width = 1 then
     Result.Width := Min(100, W)
   else
-    Result.Width := TmpBitmap.Width;
-  if TmpBitmap.Height = 1 then
+    Result.Width := Image.Width;
+  if Image.Height = 1 then
     Result.Height := Min(100, H)
   else
-    Result.Height := TmpBitmap.Height;
-  Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), TmpBitmap);
-{$IFNDEF NoGDIPlus}
-  if OwnsBitmap then
-    TmpBitmap.Free;
-{$ENDIF NoGDIPlus}
+    Result.Height := Image.Height;
+  Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), Image);
 end;
 
 {----------------PrintBitmap}
@@ -1960,11 +1957,57 @@ end;
 
 { ThtImage }
 
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+function ThtImage.Clone: ThtImage;
+begin
+  // currently only animated images need to be cloneable!
+  Result := nil;
+end;
+
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtImage.Create(Tr: ThtImageTransparency);
 begin
   inherited Create;
   Transp := Tr;
+end;
+
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
+begin
+  if Graphic <> nil then
+    Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Graphic);
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtImage.DrawUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
+begin
+  //TODO -oBG, 06.09.2015: draw any kind of image unstretched
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+function ThtImage.EnlargeBitmap(Bitmap: TBitmap; W, H: Integer): TBitmap;
+{enlarge 1 pixel images for tiling.  Returns a TBitmap regardless of Image type}
+begin
+  if Bitmap = nil then
+    Result := nil
+  else
+  begin
+    Result := TBitmap.Create;
+    Result.Assign(Bitmap);
+    if Result.Width = 1 then
+      Result.Width := Min(100, W);
+    if Result.Height = 1 then
+      Result.Height := Min(100, H);
+    Result.Canvas.StretchDraw(Rect(0, 0, Result.Width, Result.Height), Bitmap);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+function ThtImage.EnlargeImage(W, H: Integer): ThtImage;
+begin
+  Result := ThtBitmapImage.Create(
+    EnlargeBitmap(Bitmap, W, H),
+    EnlargeBitmap(Mask  , W, H), Transp);
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -1985,18 +2028,29 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+function ThtImage.GetAnimate: Boolean;
+begin
+  Result := False;
+end;
+
 //-- BG ---------------------------------------------------------- 10.04.2011 --
 function ThtImage.GetGraphic: TGraphic;
 begin
   Result := GetBitmap;
 end;
 
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+function ThtImage.IsAnimated: Boolean;
+begin
+  Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 31.08.2015 --
 procedure ThtImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
 begin
-  if Mask = nil then
-    PrintBitmap(Canvas, X, Y, W, H, Bitmap)
-  else
-    PrintTransparentBitmap3(Canvas, X, Y, W, H, Bitmap, Mask, 0, Bitmap.Height);
+  if Graphic <> nil then
+    Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), Graphic);
 end;
 
 //-- BG ---------------------------------------------------------- 10.04.2011 --
@@ -2014,6 +2068,121 @@ begin
       Inc(X, W);
     end;
     Inc(Y, H);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtImage.PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
+begin
+  //TODO -oBG, 06.09.2015: print any kind of image unstretched
+end;
+
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+procedure ThtImage.SetAnimate(const Value: Boolean);
+begin
+  // do nothing as base class is not animated
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtImage.TileImage(PRec: PtPositionRec; DstW, DstH: Integer; var TiledImage: ThtImage; var NoMask: Boolean);
+{EnlargeImage returns a ThtBitmapImage in TiledImage regardless of Self type.  Descendants may return other types}
+
+  procedure Enlarge(W, H: Integer);
+  var
+    LargerImage: ThtImage;
+  begin
+    LargerImage := EnlargeImage(W + 1, H + 1);
+    try
+      LargerImage.TileImage(PRec, DstW, DstH, TiledImage, NoMask);
+    finally
+      LargerImage.Free;
+    end;
+  end;
+
+var
+  OW, OH, IW, IH: Integer;
+  X, XX, Y, X2, Y2: Integer;
+
+  procedure ValidateTiledImage;
+  var
+    TiledBitmap, TiledMask: TBitmap;
+  begin
+    {TiledImage becomes a ThtBitmapImage}
+    if TiledImage = nil then
+    begin
+      TiledBitmap := TBitmap.Create;
+      TiledBitmap.Palette := CopyPalette(ThePalette);
+      TiledBitmap.Height := IH;
+      TiledBitmap.Width := IW;
+      PatBlt(TiledBitmap.Canvas.Handle, 0, 0, IW, IH, Blackness);
+
+      if not NoMask then
+      begin
+        TiledMask := TBitmap.Create;
+        TiledMask.Monochrome := True;
+        TiledMask.Height := IH;
+        TiledMask.Width := IW;
+        if Mask = nil then
+          PatBlt(TiledMask.Canvas.Handle, 0, 0, IW, IH, Whiteness);
+      end
+      else
+        TiledMask := nil;
+
+      TiledImage := ThtBitmapImage.Create(TiledBitmap, TiledMask, Transp);
+    end;
+  end;
+
+  procedure Tile(W, H: Integer);
+  begin
+
+    repeat {tile BGImage in the various dc's}
+      XX := X;
+      repeat
+        TiledImage.Bitmap.Canvas.Draw(XX, Y, Bitmap);
+        if Mask <> nil then
+          TiledImage.Mask.Canvas.Draw(XX, Y, Mask)
+        else if not NoMask then
+          PatBlt(TiledImage.Mask.Canvas.Handle, XX, Y, Bitmap.Width, Bitmap.Height, Blackness);
+        Inc(XX, Bitmap.Width);
+      until XX >= X2;
+      Inc(Y, Bitmap.Height);
+    until Y >= Y2;
+  end;
+
+begin
+  IW := DstW;
+  IH := DstH;
+  OW := Width;
+  OH := Height;
+
+  if (IW = 0) or (IH = 0) then
+  begin
+    FreeAndNil(TiledImage);
+    NoMask := True;
+  end
+  else if (OW = 1) or (OH = 1) then
+  begin
+    {in case a 1 pixel bitmap is being tiled}
+    Enlarge(X2 - X, Y2 - Y);
+  end
+  else
+  begin
+    {compute the location and tiling of BGImage in the background}
+    with PRec.X do
+    begin
+      X := GetPositionInRange(PosType, Value, IW - OW);
+      AdjustForTiling(RepeatD, 0, IW, OW, X, X2);
+    end;
+    with PRec.Y do
+    begin
+      Y := GetPositionInRange(PosType, Value, IH - OH);
+      AdjustForTiling(RepeatD, 0, IH, OH, Y, Y2);
+    end;
+
+    NoMask := not Assigned(Mask) and PRec.X.RepeatD and PRec.Y.RepeatD;
+
+    ValidateTiledImage;
+    Tile(OW, OH);
   end;
 end;
 
@@ -2073,14 +2242,41 @@ begin
     FinishTransparentBitmap(Canvas.Handle, Bitmap, Mask, X, Y, W, H);
 end;
 
-//-- BG ---------------------------------------------------------- 09.04.2011 --
-function ThtBitmapImage.GetBitmap: TBitmap;
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtBitmapImage.DrawUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
+var
+  FullBG: TBitmap;
 begin
-  Result := Bitmap;
+  if Bitmap = nil then
+    Exit;
+  if (Mask = nil) or (Transp = itrNone) then
+    BitBlt(Canvas.Handle, X, Y, W, H, Bitmap.Canvas.Handle, SrcX, SrcY, SRCCOPY)
+  else
+  begin
+    FullBG := nil;
+    InitFullBG(FullBG, W, H, False);
+    try
+      if FillBackground then
+      begin
+        FullBG.Canvas.Brush := Canvas.Brush;
+        FullBG.Canvas.FillRect( Rect(0, 0, W, H));
+      end
+      else
+        BitBlt(FullBG.Canvas.Handle, 0, 0, W, H,        Canvas.Handle, X,    Y, SRCCOPY   );
+
+      BitBlt(FullBG.Canvas.Handle, 0, 0, W, H, Bitmap.Canvas.Handle, 0, SrcY, SRCINVERT );
+      BitBlt(FullBG.Canvas.Handle, 0, 0, W, H,   Mask.Canvas.Handle, 0, SrcY, SRCAND    );
+      BitBlt(FullBG.Canvas.Handle, 0, 0, W, H, Bitmap.Canvas.Handle, 0, SrcY, SRCPAINT  );
+
+      BitBlt(       Canvas.Handle, X, Y, W, H, FullBG.Canvas.Handle, 0,    0, SRCCOPY   );
+    finally
+      FullBG.Free;
+    end;
+  end;
 end;
 
-//-- BG ---------------------------------------------------------- 10.04.2011 --
-function ThtBitmapImage.GetGpObject: TGpObject;
+//-- BG ---------------------------------------------------------- 09.04.2011 --
+function ThtBitmapImage.GetBitmap: TBitmap;
 begin
   Result := Bitmap;
 end;
@@ -2109,10 +2305,51 @@ begin
   Result := Mask;
 end;
 
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtBitmapImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
+begin
+  if Transp = itrNone then
+    inherited
+  else if Mask = nil then
+    PrintBitmap(Canvas, X, Y, W, H, Bitmap)
+  else
+    PrintTransparentBitmap3(Canvas, X, Y, W, H, Bitmap, Mask, 0, Bitmap.Height);
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtBitmapImage.PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
+var
+  FullBG: TBitmap;
+begin
+  if Bitmap = nil then
+    Exit;
+  if (Mask = nil) or (Transp = itrNone) then
+    PrintBitmap(Canvas, X, Y, W, H, Bitmap)
+  else if FillBackground then
+  begin
+    FullBG := nil;
+    InitFullBG(FullBG, W, H, True);
+    try
+      FullBG.Canvas.Brush := Canvas.Brush;
+      FullBG.Canvas.FillRect( Rect(0, 0, W, H));
+
+      BitBlt(FullBG.Canvas.Handle, 0, 0, W, H, Bitmap.Canvas.Handle, 0, SrcY, SRCINVERT );
+      BitBlt(FullBG.Canvas.Handle, 0, 0, W, H,   Mask.Canvas.Handle, 0, SrcY, SRCAND    );
+      BitBlt(FullBG.Canvas.Handle, 0, 0, W, H, Bitmap.Canvas.Handle, 0, SrcY, SRCPAINT  );
+
+      PrintBitmap(Canvas, X, Y, W, H, FullBG);
+    finally
+      FullBG.Free;
+    end;
+  end
+  else
+    PrintTransparentBitmap3(Canvas, X, Y, W, H, Bitmap, Mask, SrcY, H);
+end;
+
 { ThtGifImage }
 
 //-- BG ---------------------------------------------------------- 11.04.2011 --
-function ThtGifImage.Clone: ThtGifImage;
+function ThtGifImage.Clone: ThtImage;
 begin
   Result := ThtGifImage.Create(TGIFImage.CreateCopy(Gif));
 end;
@@ -2127,7 +2364,7 @@ end;
 //-- BG ---------------------------------------------------------- 10.04.2011 --
 destructor ThtGifImage.Destroy;
 begin
-  Gif.Free;
+  FGif.Free;
   inherited;
 end;
 
@@ -2135,16 +2372,18 @@ end;
 procedure ThtGifImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
 begin
   Gif.ShowIt := True; // animate it
-  Gif.Draw(Canvas, X, Y, W, H);
+  //Gif.Draw(Canvas, Rect(X, Y, X + W, Y + H));
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+function ThtGifImage.GetAnimate: Boolean;
+begin
+  Result := Gif.Animate;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 function ThtGifImage.GetBitmap: TBitmap;
-begin
-  Result := Gif.MaskedBitmap; // same as Gif.Bitmap
-end;
-
-function ThtGifImage.GetGpObject: TGpObject;
 begin
   Result := Gif;
 end;
@@ -2167,6 +2406,18 @@ begin
   Result := Gif.Mask;
 end;
 
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+function ThtGifImage.IsAnimated: Boolean;
+begin
+  Result := Gif.IsAnimated;
+end;
+
+//-- BG ---------------------------------------------------------- 02.09.2015 --
+procedure ThtGifImage.SetAnimate(const Value: Boolean);
+begin
+  Gif.Animate := Value;
+end;
+
 {$IFNDEF NoGDIPlus}
 
 { ThtGdipImage }
@@ -2185,18 +2436,18 @@ begin
   inherited;
 end;
 
-//-- BG ---------------------------------------------------------- 09.04.2011 --
-procedure ThtGdipImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
-var
-  Graphics: ThtGpGraphics;
-begin
-  Graphics := ThtGpGraphics.Create(Canvas.Handle);
-  try
-    Graphics.DrawImage(Gpi, X, Y, W, H);
-  finally
-    Graphics.Free;
-  end;
-end;
+////-- BG ---------------------------------------------------------- 09.04.2011 --
+//procedure ThtGdipImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
+//var
+//  Graphics: ThtGpGraphics;
+//begin
+//  Graphics := ThtGpGraphics.Create(Canvas.Handle);
+//  try
+//    Graphics.DrawImage(Gpi, X, Y, W, H);
+//  finally
+//    Graphics.Free;
+//  end;
+//end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 procedure ThtGdipImage.DrawTiled(Canvas: TCanvas; XStart, YStart, XEnd, YEnd, W, H: Integer);
@@ -2222,15 +2473,16 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtGdipImage.DrawUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
+begin
+  DrawGpImage(Canvas.Handle, Gpi, X, Y, SrcX, SrcY, W, H);
+end;
+
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 function ThtGdipImage.GetBitmap: TBitmap;
 begin
   Result := Gpi.GetBitmap;
-end;
-
-function ThtGdipImage.GetGpObject: TGpObject;
-begin
-  Result := Gpi;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -2255,6 +2507,31 @@ end;
 procedure ThtGdipImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
 begin
   StretchPrintGpImageOnColor(Canvas, Gpi, X, Y, W, H, BGColor);
+end;
+
+//-- BG ---------------------------------------------------------- 06.09.2015 --
+procedure ThtGdipImage.PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
+var
+  FullBG: TBitmap;
+begin
+  if FillBackground then
+  begin
+    FullBG := nil;
+    InitFullBG(FullBG, W, H, True);
+    try
+      FullBG.Canvas.Brush := Canvas.Brush;
+      FullBG.Canvas.FillRect(Rect(0, 0, W, H));
+
+      DrawGpImage(FullBg.Canvas.Handle, Gpi, 0, 0);
+
+      PrintBitmap(Canvas, X, Y, W, H, FullBG);
+    finally
+      FullBG.Free;
+    end;
+  end
+  else
+    PrintGpImageDirect(Canvas.Handle, Gpi, X, Y{, Document.ScaleX, Document.ScaleY});
+
 end;
 
 {$ENDIF NoGDIPlus}
@@ -2315,22 +2592,17 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 09.04.2011 --
-procedure ThtGraphicImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
-begin
-  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), FGraphic);
-end;
+////-- BG ---------------------------------------------------------- 09.04.2011 --
+//procedure ThtGraphicImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
+//begin
+//  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), FGraphic);
+//end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 function ThtGraphicImage.GetBitmap: TBitmap;
 begin
   Construct;
   Result := FImage.Bitmap;
-end;
-
-function ThtGraphicImage.GetGpObject: TGpObject;
-begin
-  Result := FGraphic;
 end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
@@ -2355,12 +2627,6 @@ function ThtGraphicImage.GetMask: TBitmap;
 begin
   Construct;
   Result := FImage.Mask;
-end;
-
-//-- BG ---------------------------------------------------------- 10.04.2011 --
-procedure ThtGraphicImage.Print(Canvas: TCanvas; X, Y, W, H: Integer; BgColor: TColor);
-begin
-  Canvas.StretchDraw(Rect(X, Y, X + W, Y + H), FGraphic);
 end;
 
 { ThtImageCache }
@@ -2394,7 +2660,7 @@ end;
 //-- BG ---------------------------------------------------------- 11.04.2011 --
 function ThtImageCache.GetImage(I: Integer): ThtImage;
 begin
-  Result := ThtImage(inherited GetCachable(I));
+    Result := ThtImage(inherited GetCachable(I));
 end;
 
 //-- BG ---------------------------------------------------------- 19.08.2011 --

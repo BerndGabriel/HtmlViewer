@@ -1,12 +1,12 @@
 object Form1: TForm1
   Left = 657
   Top = 269
-  ClientHeight = 430
-  ClientWidth = 605
+  Width = 613
+  Height = 481
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
+  Font.Height = -16
   Font.Name = 'System'
   Font.Style = []
   Menu = MainMenu
@@ -14,24 +14,26 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 16
+  PixelsPerInch = 120
+  TextHeight = 20
   object Panel1: TPanel
     Left = 0
-    Top = 412
+    Top = 396
     Width = 605
-    Height = 18
+    Height = 23
     Align = alBottom
     Alignment = taLeftJustify
     BevelInner = bvLowered
     BevelOuter = bvNone
     TabOrder = 0
     object ProgressBar: TProgressBar
-      Left = 454
+      Left = 417
       Top = 1
-      Width = 150
-      Height = 16
+      Width = 187
+      Height = 21
       Align = alRight
+      Min = 0
+      Max = 100
       TabOrder = 0
       Visible = False
     end
@@ -40,54 +42,54 @@ object Form1: TForm1
     Left = 0
     Top = 0
     Width = 605
-    Height = 33
+    Height = 41
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
     object Edit1: TEdit
-      Left = 246
-      Top = 4
-      Width = 337
+      Left = 308
+      Top = 5
+      Width = 421
       Height = 24
       TabStop = False
       ReadOnly = True
       TabOrder = 3
     end
     object ReloadButton: TButton
-      Left = 66
-      Top = 4
-      Width = 59
-      Height = 24
+      Left = 83
+      Top = 5
+      Width = 73
+      Height = 30
       Caption = '&Reload'
       Enabled = False
       TabOrder = 0
       OnClick = ReloadButtonClick
     end
     object BackButton: TButton
-      Left = 125
-      Top = 4
-      Width = 59
-      Height = 24
+      Left = 156
+      Top = 5
+      Width = 74
+      Height = 30
       Caption = '&Back'
       Enabled = False
       TabOrder = 1
       OnClick = FwdBackClick
     end
     object FwdButton: TButton
-      Left = 184
-      Top = 4
-      Width = 59
-      Height = 24
+      Left = 230
+      Top = 5
+      Width = 74
+      Height = 30
       Caption = '&Forward'
       Enabled = False
       TabOrder = 2
       OnClick = FwdBackClick
     end
     object RepaintButton: TButton
-      Left = 7
-      Top = 4
-      Width = 59
-      Height = 24
+      Left = 9
+      Top = 5
+      Width = 74
+      Height = 30
       Caption = 'Re&paint'
       Enabled = False
       TabOrder = 4
@@ -96,9 +98,9 @@ object Form1: TForm1
   end
   object Panel3: TPanel
     Left = 0
-    Top = 33
+    Top = 41
     Width = 605
-    Height = 379
+    Height = 355
     Align = alClient
     BevelInner = bvLowered
     BevelOuter = bvNone
@@ -108,7 +110,7 @@ object Form1: TForm1
       Left = 1
       Top = 1
       Width = 603
-      Height = 377
+      Height = 353
       BorderStyle = htFocused
       DefBackground = clWindow
       DefFontColor = clWindowText
@@ -118,11 +120,11 @@ object Form1: TForm1
       HistoryMaxCount = 6
       ImageCacheCount = 6
       NoSelect = False
-      PrintMarginBottom = 2.000000000000000000
-      PrintMarginLeft = 2.000000000000000000
-      PrintMarginRight = 2.000000000000000000
-      PrintMarginTop = 2.000000000000000000
-      PrintScale = 1.000000000000000000
+      PrintMarginBottom = 2
+      PrintMarginLeft = 2
+      PrintMarginRight = 2
+      PrintMarginTop = 2
+      PrintScale = 1
       QuirksMode = qmDetect
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange
@@ -143,10 +145,10 @@ object Form1: TForm1
       TabStop = True
       OnMouseMove = ViewerMouseMove
       object MediaPlayer: TMediaPlayer
-        Left = 336
-        Top = 40
-        Width = 253
-        Height = 30
+        Left = 420
+        Top = 50
+        Width = 316
+        Height = 38
         Visible = False
         TabOrder = 3
         OnNotify = MediaPlayerNotify

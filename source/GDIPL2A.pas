@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2015 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -43,9 +43,9 @@ interface
 
 uses
 {$ifdef HasGDIPlus}
-   GDIPAPI,
+  GDIPAPI,
 {$endif}
-  Windows, ActiveX, SysUtils, Graphics, Classes,
+  Windows, ActiveX, SysUtils, Graphics, Classes, ClipBrd,
   HtmlGlobals;
 
 var
@@ -55,49 +55,55 @@ var
 type
   //types for GDIPlus API
   GpGraphics = Pointer;
-//  PGpGraphics = ^GpGraphics;
   GpImage = Pointer;
-//  PGpImage = ^GpImage;
   GpBitmap = Pointer;
-//  PGpBitmap = ^GpBitmap;
   GpStatus = Integer;
   PixelFormat = Integer;
   GpImageAttributes = Pointer;
+
+const
+  NotImplemented: GpStatus = 6;
 {$endif}
 
 type
-  ThtGpImage = class(TBitmap)
-  protected
-    fHandle: GpImage;
+  ThtGpImage = class(TGraphic)
+  private
     fWidth, fHeight: Cardinal;
     fFilename: string;
     fBitmap: TBitmap;
-    function GetHeight: Cardinal;
-    function GetWidth: Cardinal;
+  protected
+    fHandle: GpImage;
+    function GetEmpty: Boolean; override;
+    function GetHeight: Integer; override;
+    function GetWidth: Integer; override;
+    procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
+    procedure SetHeight(Value: Integer); override;
+    procedure SetWidth(Value: Integer); override;
   public
-    procedure LoadFromFile(Filename: ThtString; TmpFile: boolean = False);
-    procedure LoadFromStream(IStr: IStream); overload;
-    procedure LoadFromStream(Stream: TStream); overload;
     destructor Destroy; override;
+
     function GetBitmap: TBitmap;
-    property Height: Cardinal read GetHeight;
-    property Width: Cardinal read GetWidth;
+    procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE); {$ifndef LCL} override; {$endif}
+    procedure LoadFromFile(const Filename: String{; TmpFile: boolean = False}); override;
+    procedure LoadFromStream(IStr: IStream); reintroduce; overload;
+    procedure LoadFromStream(Stream: TStream); overload; override;
+    procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE); {$ifndef LCL} override; {$endif}
+    procedure SaveToFile(const Filename: string); override;
+    procedure SaveToStream(Stream: TStream); override;
   end;
 
   ThtGpGraphics = class;
 
   ThtGpBitmap = class(ThtGpImage)
   public
-    constructor Create(); overload;
-    constructor Create(W, H: integer); overload;
-    constructor Create(W, H: integer; Graphics: ThtGpGraphics); overload;
-//    procedure LoadFromStream(IStr: IStream); overload;
-//    procedure LoadFromStream(Stream: TStream); overload;
+    constructor Create(); overload; override;
+    constructor Create(W, H: integer); reintroduce; overload;
+    constructor Create(W, H: integer; Graphics: ThtGpGraphics); reintroduce; overload;
     function GetPixel(X, Y: integer): DWord;
     procedure SetPixel(X, Y: integer; Color: DWord);
   end;
 
-  ThtGpGraphics = class(TObject)
+  ThtGpGraphics = class(TObject) // like TCanvas
   private
     fGraphics: GpGraphics;
     procedure DrawSmallStretchedImage(Image: THtGPImage; X, Y, Width, Height: Integer);
@@ -105,8 +111,8 @@ type
     constructor Create(Handle: HDC); overload;
     constructor Create(Image: ThtGpImage); overload;
     destructor Destroy; override;
-    procedure DrawImage(Image: THtGPImage; X, Y: Cardinal); overload;
-    procedure DrawImage(Image: THtGPImage; X, Y, Width, Height: Cardinal); overload;
+    procedure DrawImage(Image: ThtGpImage; X, Y: Integer); overload;
+    procedure DrawImage(Image: ThtGpImage; X, Y, Width, Height: Integer); overload;
     procedure DrawImage(Image: ThtGpImage; x, y, srcx, srcy, srcwidth, srcheight: integer); overload;
     procedure DrawImage(Image: ThtGpImage; dx, dy, dw, dh, sx, sy, sw, sh: integer); overload;
     procedure Clear(Color: Cardinal);
@@ -344,7 +350,7 @@ begin
   inherited;
 end;
 
-procedure ThtGpGraphics.DrawImage(Image: THtGPImage; X, Y, Width, Height: Cardinal);
+procedure ThtGpGraphics.DrawImage(Image: THtGPImage; X, Y, Width, Height: Integer);
 begin
   if ((Image.Width <= 10) and (Width > Image.Width)) or
     ((Image.Height <= 10) and (Height > Image.Height)) then
@@ -395,7 +401,7 @@ begin
   end;
 end;
 
-procedure ThtGpGraphics.DrawImage(Image: THtGPImage; X, Y: Cardinal);
+procedure ThtGpGraphics.DrawImage(Image: THtGPImage; X, Y: Integer);
 begin
   GDICheck('ThtGpGraphics.DrawImage', GdipDrawImageRectI(fGraphics, Image.fHandle, X, Y, Image.Width, Image.Height));
 end;
@@ -423,9 +429,51 @@ begin
   GDICheck('ThtGpGraphics.DrawImage', GdipScaleWorldTransform(fGraphics, sx, sy, MatrixOrderPrepend));
 end;
 
-{ TGpImage }
+{ ThtGpImage }
 
-procedure ThtGpImage.LoadFromFile(Filename: ThtString; TmpFile: boolean = False);
+destructor ThtGpImage.Destroy;
+begin
+  fBitmap.Free;
+  if fHandle <> nil then
+    GdipDisposeImage(fHandle);
+  if Length(fFilename) > 0 then
+    DeleteFile(fFilename);
+  inherited;
+end;
+
+procedure ThtGpImage.Draw(ACanvas: TCanvas; const Rect: TRect);
+var
+  g: ThtGpGraphics;
+begin
+  g := ThtGpGraphics.Create(ACanvas.Handle);
+  try
+    g.DrawImage(Self, Rect.Left, Rect.Top, Rect.Right - Rect.Left, Rect.Bottom - Rect.Top, 0, 0, Width, Height);
+  finally
+    g.Free;
+  end;
+end;
+
+function ThtGpImage.GetHeight: Integer;
+begin
+  if fHeight = 0 then
+     GDICheck('ThtGpImage.GetHeight', GdipGetImageHeight(fHandle, fHeight));
+  Result := fHeight;
+end;
+
+function ThtGpImage.GetWidth: Integer;
+begin
+  if fWidth = 0 then
+     GDICheck('ThtGpImage.GetWidth', GdipGetImageWidth(fHandle, fWidth));
+  Result := fWidth;
+end;
+
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtGpImage.LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE);
+begin
+  GDICheck('ThtGpImage.LoadFromClipboardFormat', NotImplemented );
+end;
+
+procedure ThtGpImage.LoadFromFile(const Filename: string{; TmpFile: boolean = False});
 var
   err: GpStatus;
 begin
@@ -435,7 +483,7 @@ begin
       raise EGDIPlus.CreateFmt('Image file "%s" not found. GDI error %s', [FileName, GetStatus(err)])
     else
       raise EGDIPlus.CreateFmt('Can''t load image file "%s". GDI error %s', [FileName, GetStatus(err)]);
-  if TmpFile then
+//  if TmpFile then
     fFilename := Filename;
 end;
 
@@ -460,28 +508,34 @@ begin
   end;
 end;
 
-destructor ThtGpImage.Destroy;
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtGpImage.SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE);
 begin
-  fBitmap.Free;
-  if fHandle <> nil then
-    GdipDisposeImage(fHandle);
-  if Length(fFilename) > 0 then
-    DeleteFile(fFilename);
-  inherited;
+  GDICheck('ThtGpImage.SaveToClipboardFormat', NotImplemented );
 end;
 
-function ThtGpImage.GetWidth: Cardinal;
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtGpImage.SaveToFile(const Filename: string);
 begin
-  if fWidth = 0 then
-     GDICheck('ThtGpImage.GetWidth', GdipGetImageWidth(fHandle, fWidth));
-  Result := fWidth;
+  GDICheck('Can''t save to file', NotImplemented {GdipSaveImageToFile(fhandle, PWideChar(FileName), , )} );
 end;
 
-function ThtGpImage.GetHeight: Cardinal;
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtGpImage.SaveToStream(Stream: TStream);
 begin
-  if fHeight = 0 then
-     GDICheck('ThtGpImage.GetWidth', GdipGetImageHeight(fHandle, fHeight));
-  Result := fHeight;
+  GDICheck('Can''t save to stream', NotImplemented {GdipSaveImageToStream(fhandle, IStreamOfStream, , )} );
+end;
+
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtGpImage.SetHeight(Value: Integer);
+begin
+  GDICheck('ThtGpImage.SetHeight', NotImplemented );
+end;
+
+//-- BG ---------------------------------------------------------- 31.08.2015 --
+procedure ThtGpImage.SetWidth(Value: Integer);
+begin
+  GDICheck('ThtGpImage.SetWidth', NotImplemented );
 end;
 
 function ThtGpImage.GetBitmap: TBitmap;
@@ -497,6 +551,11 @@ begin
   g := ThtGpGraphics.Create(Result.Canvas.Handle);
   g.DrawImage(Self, 0, 0, Result.Width, Result.Height);
   g.Free;
+end;
+
+function ThtGpImage.GetEmpty: Boolean;
+begin
+  Result := fHandle = nil;
 end;
 
 constructor ThtGpBitmap.Create;

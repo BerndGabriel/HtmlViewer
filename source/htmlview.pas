@@ -1,5 +1,5 @@
 {
-Version   11.6
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2015 by HtmlViewer Team
 
@@ -1012,7 +1012,7 @@ begin
   try
     Include(FViewerState, vsDontDraw);
     {Load the background bitmap if any and if ViewImages set}
-    FSectionList.GetBackgroundBitmap;
+    FSectionList.GetBackgroundImage;
     DoLogic;
   finally
     Exclude(FViewerState, vsDontDraw);
@@ -2510,7 +2510,7 @@ begin
       FSectionList.ShowImages := Value;
       if FSectionList.Count > 0 then
       begin
-        FSectionList.GetBackgroundBitmap; {load any background bitmap}
+        FSectionList.GetBackgroundImage; {load any background bitmap}
         OldPos := Position;
         DoLogic;
         Position := OldPos;
@@ -2620,12 +2620,12 @@ begin
       FInsertedImages.Objects[0].Free;
       FInsertedImages.Delete(0);
     end;
-    FSectionList.GetBackgroundBitmap; {in case it's the one placed}
+    FSectionList.GetBackgroundImage; {in case it's the one placed}
     if Reformat then
     begin
       if FSectionList.Count > 0 then
       begin
-        //has been done 5 lines above: FSectionList.GetBackgroundBitmap; {load any background bitmap}
+        //has been done 5 lines above: FSectionList.GetBackgroundImage; {load any background bitmap}
         OldPos := Position;
         DoLogic;
         Position := OldPos;
@@ -3170,7 +3170,7 @@ begin
   begin
     BW := Image.Width;
     BH := Image.Height;
-    PRec := FSectionList.BackgroundPRec;
+    PRec := FSectionList.BackgroundImagePosition;
     Fixed := PRec.X.Fixed;
     if Fixed then
     begin {fixed background}
@@ -3253,7 +3253,7 @@ begin
   begin
     BW := Image.Width;
     BH := Image.Height;
-    PRec := FSectionList.BackgroundPRec;
+    PRec := FSectionList.BackgroundImagePosition;
     XOff := -ALeft;
     YOff := -ATop;
     IW := AWidth;
@@ -3265,7 +3265,7 @@ begin
     if (BW = 1) or (BH = 1) then
     begin {this is for people who try to tile 1 pixel images}
       NewMask := nil;
-      NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y);
+      NewBitmap := EnlargeImage(Image.Bitmap, X2 - X, Y2 - Y);
       try
         if Assigned(Image.Mask) then
           NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y)
@@ -3332,7 +3332,7 @@ begin
   begin
     BW := Image.Width;
     BH := Image.Height;
-    PRec := FSectionList.BackgroundPRec;
+    PRec := FSectionList.BackgroundImagePosition;
     SetViewerStateBit(vsBGFixed, PRec.X.Fixed);
     if vsBGFixed in FViewerState then
     begin {fixed background}
@@ -3355,7 +3355,7 @@ begin
     if (BW = 1) or (BH = 1) then
     begin {this is for people who try to tile 1 pixel images}
       NewMask := nil;
-      NewBitmap := EnlargeImage(Image, X2 - X, Y2 - Y); // as TBitmap;
+      NewBitmap := EnlargeImage(Image.Bitmap, X2 - X, Y2 - Y); // as TBitmap;
       try
         if Assigned(Image.Mask) then
           NewMask := EnlargeImage(Image.Mask, X2 - X, Y2 - Y);
@@ -5103,7 +5103,7 @@ begin
       if not TImageObj(FNameList.Objects[I]).ClientSizeKnown then
         if FSectionList.Count > 0 then
         begin
-          FSectionList.GetBackgroundBitmap; {load any background bitmap}
+          FSectionList.GetBackgroundImage; {load any background bitmap}
           OldPos := Position;
           DoLogic;
           Position := OldPos;
