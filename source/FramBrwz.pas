@@ -46,7 +46,7 @@ uses
   HtmlView,
   Htmlun2,
   ReadHTML,
-  UrlSubs,
+  URLSubs,
   FramView;
 
 type

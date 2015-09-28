@@ -2886,7 +2886,7 @@ begin
     Result := HTMLServerToDos(Filename, ServerRoot);
     if Pos('\', Result) = 1 then
       Result := ExpandFilename(Result)
-    else if (Pos(':', Result) <> 2) and (Pos('\\', Result) <> 1) then
+    else if not IsAbsolutePath(Result) then
       if CompareText(FBase, 'DosPath') = 0 then {let Dos find the path}
       else if FBase <> '' then
         Result := CombineDos(HTMLToDos(FBase), Result)

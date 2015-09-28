@@ -49,7 +49,7 @@ uses
   MetaFilePrinter,
 {$endif}
   HtmlBuffer,
-  HtmlGif2,
+  HTMLGif2,
   HtmlGlobals,
   HtmlImages,
   StyleTypes,

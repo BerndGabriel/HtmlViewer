@@ -43,14 +43,20 @@ uses
   {$ifdef FPC}
     RtlConsts,
     {$IFDEF MSWindows}
-    WinUtilPrn,
+      WinUtilPrn,
+    {$else}
+      LclType,
+      HtmlMisc,
     {$endif}
     LCLVersion,
   {$else}
     Consts,
   {$endif}
+  {$ifdef MSWINDOWS}
+    Windows,
+  {$endif}
   SysUtils, Forms, Contnrs,
-  Windows, Classes, Graphics, Printers,
+  Classes, Graphics, Printers,
   HtmlGlobals;
 
 type
@@ -355,6 +361,8 @@ begin
   inherited Destroy;
 end;
 
+{$ifdef LCL}
+{$else}
 function CopyData(Handle: THandle): THandle;
 var
   Src, Dest: PByte;
@@ -378,8 +386,10 @@ begin
   else
     Result := 0;
 end;
+{$endif LCL}
 
 procedure TvwPrinter.SetState(Value: TvwPrinterState);
+{$ifdef MsWindows}
 type
   TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar; InitData: PDeviceMode): HDC stdcall;
 var
@@ -454,12 +464,18 @@ begin
     end;
     State := Value;
   end;
+{$else MsWindows}
+begin
+  raise Exception.Create('TvwPrinter.SetState() not yet implemented.');
+{$endif MsWindows}
 end;
 
 procedure TvwPrinter.Abort;
 begin
   CheckPrinting(True);
+{$ifdef MsWindows}
   AbortDoc(Canvas.Handle);
+{$endif}
   FAborted := True;
   EndDoc;
 end;
@@ -467,15 +483,18 @@ end;
 procedure TvwPrinter.BeginDoc;
 var
   CTitle: array[0..31] of Char;
+{$ifdef MsWindows}
   DocInfo: TDocInfo;
+{$endif}
 begin
   CheckPrinting(False);
   SetState(psHandleDC);
-  getPrinterCapsOf(Printer);
+  GetPrinterCapsOf(Printer);
   Canvas.Refresh;
   FAborted := False;
   FPageNumber := 1;
 
+{$ifdef MsWindows}
   StrPLCopy(CTitle, Title, Length(CTitle) - 1);
   FillChar(DocInfo, SizeOf(DocInfo), 0);
   with DocInfo do
@@ -484,20 +503,29 @@ begin
     lpszDocName := CTitle;
     lpszOutput := nil;
   end;
+{$endif}
   FPrinters.Put(DC, Self);
+{$ifdef MsWindows}
   SetAbortProc(DC, AbortProc);
   StartDoc(DC, DocInfo);
+{$endif}
   SetPrinting(True);
+{$ifdef MsWindows}
   StartPage(DC);
+{$endif}
 end;
 
 procedure TvwPrinter.EndDoc;
 begin
   CheckPrinting(True);
+{$ifdef MsWindows}
   EndPage(DC);
+{$endif}
   FPrinters.Remove(DC);
+{$ifdef MsWindows}
   if not Aborted then
     Windows.EndDoc(DC);
+{$endif}
   SetPrinting(False);
   FAborted := False;
   FPageNumber := 0;
@@ -511,8 +539,10 @@ end;
 procedure TvwPrinter.NewPage;
 begin
   CheckPrinting(True);
+{$ifdef MsWindows}
   EndPage(DC);
   StartPage(DC);
+{$endif}
   Inc(FPageNumber);
   Canvas.Refresh;
 end;

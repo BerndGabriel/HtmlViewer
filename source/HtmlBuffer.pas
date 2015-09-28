@@ -48,35 +48,6 @@ uses
   //
   HtmlGlobals;
 
-const
-{ Charsets defined in unit Windows:
-  ANSI_CHARSET        = 0;
-  DEFAULT_CHARSET     = 1;
-  SYMBOL_CHARSET      = 2;
-  SHIFTJIS_CHARSET    = 128;
-  HANGEUL_CHARSET     = 129;
-  JOHAB_CHARSET       = 130;
-  GB2312_CHARSET      = 134;
-  CHINESEBIG5_CHARSET = 136;
-  GREEK_CHARSET       = 161;
-  TURKISH_CHARSET     = 162;
-  VIETNAMESE_CHARSET  = 163;
-  HEBREW_CHARSET      = 177;
-  ARABIC_CHARSET      = 178;
-  RUSSIAN_CHARSET     = 204;
-  THAI_CHARSET        = 222;
-  EASTEUROPE_CHARSET  = 238;
-  OEM_CHARSET         = 255;
-}
-  // more charset constants
-  UNKNOWN_CHARSET = -1;
-
-  // some more codepage constants
-  CP_UNKNOWN = -1;
-  CP_UTF16LE = 1200;
-  CP_UTF16BE = 1201;
-  CP_ISO2022JP = 50220;
-
 type
   EConversionError = class(Exception);
 
@@ -1634,6 +1605,11 @@ begin
     Exit;
   end;
   // no preamble: this is most probably a 1-byte per character code.
+{$ifdef LCL}
+  if htExpectsUTF8 then
+    CodePage := CP_UTF8
+  else
+{$endif}
   CodePage := CP_ACP;
 end;
 

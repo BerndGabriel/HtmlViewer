@@ -41,7 +41,7 @@ uses
   Windows,
 {$endif}
 {$ifdef LCL}
-  LclIntf, LclType,
+  LclIntf, LclType, Types, Messages,
   StdCtrls, Buttons, Forms, Base64,
   HtmlMisc,
   WideStringsLcl,
@@ -81,10 +81,39 @@ uses
 {$endif}
   Math;
 
-{$ifndef LCL}
 const
+{$ifndef LCL}
   lcl_fullversion = 0;
 {$endif}
+{$ifndef MSWindows}
+  //Charsets defined in unit Windows:
+  ANSI_CHARSET        = 0;
+  DEFAULT_CHARSET     = 1;
+  SYMBOL_CHARSET      = 2;
+  SHIFTJIS_CHARSET    = 128;
+  HANGEUL_CHARSET     = 129;
+  //JOHAB_CHARSET       = 130;
+  GB2312_CHARSET      = 134;
+  CHINESEBIG5_CHARSET = 136;
+  GREEK_CHARSET       = 161;
+  TURKISH_CHARSET     = 162;
+  //VIETNAMESE_CHARSET  = 163;
+  HEBREW_CHARSET      = 177;
+  ARABIC_CHARSET      = 178;
+  RUSSIAN_CHARSET     = 204;
+  THAI_CHARSET        = 222;
+  EASTEUROPE_CHARSET  = 238;
+  OEM_CHARSET         = 255;
+{$endif MSWindows}
+  // more charset constants
+  UNKNOWN_CHARSET = -1;
+
+  // some more codepage constants
+  CP_UNKNOWN = -1;
+  CP_UTF16LE = 1200;
+  CP_UTF16BE = 1201;
+  CP_ISO2022JP = 50220;
+
 
 type
 {$IFNDEF DOTNET}
@@ -880,7 +909,11 @@ begin
 {$ifdef UNICODE}
   Result := CompareStr(S1, S2);
 {$else}
-  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2)) - 2;
+  {$ifdef MSWindows}
+    Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2)) - 2;
+  {$else}
+    Result := WideCompareStr(S1, S2);
+  {$endif}
 {$endif}
 end;
 
@@ -893,9 +926,7 @@ begin
     // Actually it does the same as we do in the $else part except for Linux.
     Result := AnsiLowerCase(Str);
   {$else}
-    Result := Str;
-    if Length(Result) > 0 then
-      CharLowerBuffW(@Result[1], Length(Result));
+    Result := WideLowerCase(Str);
   {$endif}
 end;
 
@@ -945,9 +976,7 @@ begin
     // Actually it does the same as we do in the $else part except for Linux.
     Result := AnsiUpperCase(Str);
   {$else}
-    Result := Str;
-    if Length(Result) > 0 then
-      CharUpperBuffW(@Result[1], Length(Result));
+    Result := WideUpperCase(Str);
   {$endif}
 end;
 

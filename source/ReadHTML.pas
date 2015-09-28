@@ -94,7 +94,7 @@ uses
   HtmlSymb,
   HTMLUn2,
   HTMLSubs,
-  HtmlSbs1,
+  Htmlsbs1,
   StyleTypes,
   StyleUn;
 
@@ -217,7 +217,7 @@ uses
 {$ifdef Compiler24_Plus}
   System.Types,
 {$endif}
-  HtmlView, FramView, StylePars, UrlSubs;
+  HtmlView, FramView, StylePars, URLSubs;
 
 const
   TableTermSet = [

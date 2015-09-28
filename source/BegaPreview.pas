@@ -24,6 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 unit BegaPreview;
 
 interface
+{$ifndef NoFlatScrollbars}
+{$ifndef NoMetaFile}
 
 uses
   Classes, SysUtils,
@@ -255,7 +257,11 @@ type
 
 procedure loadPreviewCursors;
 
+{$endif NoMetaFile}
+{$endif NoFlatScrollbars}
 implementation
+{$ifndef NoFlatScrollbars}
+{$ifndef NoMetaFile}
 
 {$ifdef UseVCLStyles}
 uses
@@ -1132,4 +1138,6 @@ begin
   doOpenInExcel(done);
 end;
 
+{$endif NoMetaFile}
+{$endif NoFlatScrollbars}
 end.

@@ -37,7 +37,7 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
-  UrlSubs,
+  URLSubs,
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages, 
@@ -3161,7 +3161,7 @@ var
   Viewer: THtmlViewer;
 begin
   Result := HTMLServerToDos(Trim(Filename), ServerRoot);
-  if (Pos(':', Result) <> 2) and (Pos('\\', Result) <> 1) then
+  if not IsAbsolutePath(Result) then
   begin
     Viewer := ActiveViewer;
     BasePath := GetViewerBase(Viewer);

@@ -1,8 +1,8 @@
 {
-Version   11.2
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2011-2015 by Bernd Gabriel
 
 *********************************************************
 *                                                       *
@@ -43,8 +43,6 @@ uses
   GoPage in 'GoPage.pas' {GoPageForm},
   HtmlAbt in 'HtmlAbt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
-  PreviewForm in 'PreviewForm.pas' {PreviewForm},
-  PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
   Submit in 'Submit.pas' {SubmitForm},
   DemoUnit in 'DemoUnit.pas' {Form1};
 

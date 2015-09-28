@@ -61,10 +61,13 @@ unit BuffConv;
 interface
 
 uses
+{$ifdef MSWindows}
   Windows,
+{$endif}
 {$ifdef LCL}
   LclIntf, LclType,
 {$endif}
+  SysUtils,
   BuffConvArrays,
   HtmlGlobals,
   HtmlBuffer;
@@ -253,7 +256,12 @@ begin
   case c1 of
     $00: Result := TBuffChar(c1);
   else
+{$ifdef MSWindows}
     MultiByteToWideChar(FCodePage, 0, PAnsiChar(@c1), 1, @Result, 1)
+{$else}
+    raise Exception.Create('function MultiByteToWideCharDecodeChar() not implemented.');
+{$endif MSWindows}
+
   end;
 end;
 

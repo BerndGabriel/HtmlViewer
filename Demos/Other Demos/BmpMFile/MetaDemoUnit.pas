@@ -20,7 +20,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, StdCtrls, ShellAPI, Htmlview;
+  Dialogs, ExtCtrls, StdCtrls, ShellAPI, Htmlview, HTMLUn2;
 
 type
   TForm1 = class(TForm)

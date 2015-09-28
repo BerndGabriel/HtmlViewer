@@ -27,6 +27,8 @@ unit msimg32;
 interface
 {$ALIGN ON}
 {$MINENUMSIZE 4}
+{$ifdef MsWindows}
+
 uses Windows;
 {
 This is not done like a typical header for several reasons.
@@ -141,7 +143,9 @@ var
   GLoadedMsImg : Boolean = False;
   GHandleMsImg : THandle = INVALID_HANDLE_VALUE;
 
+{$endif MsWindows}
 implementation
+{$ifdef MsWindows}
 uses SysUtils;
 
 initialization
@@ -168,4 +172,5 @@ finalization
     jpm_TransparentBlt := nil;
   end;
 
+{$endif MsWindows}
 end.

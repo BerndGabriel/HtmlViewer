@@ -37,7 +37,14 @@ uses
   System.UITypes,
   Vcl.Themes,
 {$endif}
-  Windows, SysUtils,
+{$ifdef LCL}
+  LclIntf, LclType,
+{$else}
+  {$ifdef MSWindows}
+    Windows,
+  {$endif}
+{$endif}
+  SysUtils,
   Graphics, Classes, Forms, Contnrs, Variants,
   //
   HtmlGlobals,
@@ -158,7 +165,9 @@ end;
 procedure ThtFont.AssignToCanvas(Canvas: TCanvas);
 begin
   Canvas.Font := Self;
+{$ifdef Windows}
   SetTextCharacterExtra(Canvas.Handle, CharExtra);
+{$endif}
 end;
 
 constructor ThtFont.Create;
@@ -261,7 +270,7 @@ begin
     // If this is a Symbol charset, then keep it that way.
     // To check the font's real charset, use Default_Charset
     SaveCharSet := SameFont.CharSet;
-    SameFont.CharSet := Default_Charset;
+    SameFont.CharSet := DEFAULT_CHARSET;
     DC := GetDC(0);
     try
       Save := SelectObject(DC, SameFont.Handle);

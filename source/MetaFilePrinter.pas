@@ -36,15 +36,28 @@ unit MetaFilePrinter;
 {$I htmlcons.inc}
 
 interface
+{$ifndef NoMetaFile}
 
 uses
-  Windows, Classes, Graphics, Printers, SysUtils, Forms,
+  {$ifdef MSWINDOWS}
+    Windows,
+  {$else}
+    Types,
+    {$ifdef LCL}
+      LclType,
+    {$endif}
+  {$endif}
+  Classes, Graphics, Printers, SysUtils, Forms,
   vwPrint;
 
 type
 
 {$ifdef MetaFileMissing}
-  //HENHMETAFILE = longint;
+
+{$ifdef MsWindows}
+{$else}
+  HENHMETAFILE = longint;
+{$endif}
 
   TMetafile = class(TGraphic)
   private
@@ -145,9 +158,11 @@ type
     property Units: TUnits read FUnits write SetUnits;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
   end;
+{$endif NoMetaFile}
 
 implementation
 
+{$ifndef NoMetaFile}
 {$ifndef NoGDIPlus}
 uses
   GDIPL2A;
@@ -575,5 +590,6 @@ begin
   Result := FCurCanvas;
   FUsedPage := True;
 end;
+{$endif NoMetaFile}
 
 end.

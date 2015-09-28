@@ -55,11 +55,15 @@ procedure Register;
 begin
   RegisterComponents('HtmlViewer/FrameViewer', [
 {$ifndef UseOldPreviewForm}
+  {$ifndef NoMetaFile}
+    {$ifndef NoFlatScrollbars}
     TBegaMetafilePreviewPanel,
     TBegaPreviewFrame,
     TBegaScrollBox,
     TBegaZoomBox,
     TBegaCustomPrintPreviewForm,
+    {$endif}
+  {$endif}
 {$endif}
     THTMLViewer,
     TFrameViewer,

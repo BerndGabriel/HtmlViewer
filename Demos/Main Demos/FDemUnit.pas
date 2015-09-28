@@ -867,6 +867,7 @@ begin
 end;
 
 procedure TForm1.PrintPreviewClick(Sender: TObject);
+{$ifndef NoMetaFile}
 var
 {$ifdef UseOldPreviewForm}
   pf: TPreviewForm;
@@ -893,6 +894,9 @@ begin
       pf.Free;
     end;
   end;
+{$else !NoMetaFile}
+begin
+{$endif !NoMetaFile}
 end;
 
 procedure TForm1.FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);

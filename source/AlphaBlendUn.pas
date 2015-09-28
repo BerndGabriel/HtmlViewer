@@ -24,9 +24,11 @@ are covered by separate copyright notices located in those modules.
 
 }
 unit AlphaBlendUn;
+{$I htmlcons.inc}
 
 interface
-{$I htmlcons.inc}
+{$ifdef MsWindows}
+
 uses
   Windows, Graphics, Types, SysUtils,
   HTMLUn2, HtmlGlobals, msimg32;
@@ -56,8 +58,9 @@ procedure AlphaDrawTransparentBitmap(ASource: Graphics.TBitmap;
 procedure AlphaDrawTransparentBitmap(Source: Graphics.TBitmap; Destination: TCanvas; DestRect: TRect; Opacity: Byte); overload;  {$ifdef UseInline} inline; {$endif}
 procedure AlphaDrawTransparentBitmap(Source: Graphics.TBitmap; SourceRect: TRect; Destination: TCanvas; DestRect: TRect; Opacity: Byte); overload; {$ifdef UseInline} inline; {$endif}
 
-
+{$endif MsWindows}
 implementation
+{$ifdef MsWindows}
 
 {
 These were barrowed from Vcl.GraphUtil
@@ -323,4 +326,5 @@ begin
   end;
 end;
 
+{$endif MsWindows}
 end.

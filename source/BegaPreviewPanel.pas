@@ -24,9 +24,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 unit BegaPreviewPanel;
 
 interface
+{$ifndef NoMetaFile}
 
 uses
-  Windows, Classes,
+{$ifdef MSWindows}
+  Windows,
+{$endif}
+  Classes,
 {$ifdef LCL}
   LclIntf, LclType, HtmlMisc, WideStringsLcl,
 {$endif LCL}
@@ -196,7 +200,9 @@ type
     property OnUpdatePreview;
   end;
 
+{$endif NoMetaFile}
 implementation
+{$ifndef NoMetaFile}
 
 uses
 {$ifdef UseVCLStyles}
@@ -633,4 +639,5 @@ begin
   inherited;
 end;
 
+{$endif NoMetaFile}
 end.
