@@ -32,7 +32,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LCLVersion,
+  LCLVersion, LCLIntf, InterfaceBase,
 {$endif}
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Buttons, ExtCtrls,
   HtmlGlobals, Htmlview, StdCtrls, HTMLUn2;
@@ -138,6 +138,9 @@ begin
 {$endif}
 {$ifdef win32}
   Result := Result + '<li>Compiled for Win32</li>';
+{$endif}
+{$ifdef wince}
+  Result := Result + '<li>Compiled for WinCE</li>';
 {$endif}
 {$ifdef unix}
   Result := Result + '<li>Compiled for Unix';
