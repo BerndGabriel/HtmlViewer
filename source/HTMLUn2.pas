@@ -738,7 +738,7 @@ function WidePos(SubStr, S: UnicodeString): Integer;
 function WideSameText1(const S1, S2: UnicodeString): boolean; {$ifdef UseInline} inline; {$endif}
 function WideSameStr1(const S1, S2: UnicodeString): boolean;  {$ifdef UseInline} inline; {$endif}
 
-function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
+//function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
 
 function FitText(DC: HDC; S: PWideChar; Max, Width: Integer; out Extent: TSize): Integer;
 function GetTextExtent(DC: HDC; P: PWideChar; N: Integer): TSize;
@@ -2545,25 +2545,25 @@ begin
   StringOK := True;
 end;
 
-function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
- {$ifdef UseInline} inline; {$endif}
-var
-  NewLen, Len: Integer;
-begin
-  if CodePage = CP_UTF8 then {UTF-8 encoded ThtString.}
-    Result := UTF8Encode(W)
-  else
-  begin
-    Len := Length(W);
-    SetLength(Result, 3 * Len);
-    NewLen := WideCharToMultiByte(CodePage, 0, PWideChar(W), Len, PAnsiChar(Result), 3 * Len, nil, nil);
-    if NewLen = 0 then
-    { Invalid code page. Try default.}
-      NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(W), Len, PAnsiChar(Result), 3 * Len, nil, nil);
-    SetLength(Result, NewLen);
-  end;
-end;
-
+//function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
+// {$ifdef UseInline} inline; {$endif}
+//var
+//  NewLen, Len: Integer;
+//begin
+//  if CodePage = CP_UTF8 then {UTF-8 encoded ThtString.}
+//    Result := UTF8Encode(W)
+//  else
+//  begin
+//    Len := Length(W);
+//    SetLength(Result, 3 * Len);
+//    NewLen := WideCharToMultiByte(CodePage, 0, PWideChar(W), Len, PAnsiChar(Result), 3 * Len, nil, nil);
+//    if NewLen = 0 then
+//    { Invalid code page. Try default.}
+//      NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(W), Len, PAnsiChar(Result), 3 * Len, nil, nil);
+//    SetLength(Result, NewLen);
+//  end;
+//end;
+//
 //function ByteNum(CodePage: Integer; P: PAnsiChar): Integer;
 //var
 //  P1: PAnsiChar;

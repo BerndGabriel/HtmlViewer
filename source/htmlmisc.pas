@@ -521,10 +521,9 @@ function WideCharToMultiByte(CodePage: UINT; dwFlags: DWORD;
                              lpWideCharStr: LPWSTR; cchWideChar: Integer;
                              lpMultiByteStr: LPSTR; cchMultiByte: Integer;
                              lpDefaultChar: LPCSTR; lpUsedDefaultChar: PBOOL): Integer;
-function CharUpperBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
-function CharLowerBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
-function GetTextExtentPoint32W(DC: HDC; Str: PWideChar; Count: Integer;
-                               var Size: TSize): BOOL;
+//function CharUpperBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
+//function CharLowerBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
+function GetTextExtentPoint32W(DC: HDC; Str: PWideChar; Count: Integer; var Size: TSize): BOOL;
 function SetTextAlign(DC: HDC; Flags: UINT): UINT;
 function GetMapMode(DC: HDC): Integer;
 function SetMapMode(DC: HDC; p2: Integer): Integer;
@@ -537,23 +536,18 @@ function GetWindowExtEx(DC: HDC; var Size: TSize): BOOL;
 function GetDeviceCaps(DC: HDC; Index: Integer): Integer;
 {$ENDIF}
 function TextOutW(DC: HDC; X, Y: Integer; Str: PWideChar; Count: Integer): BOOL;
-function ExtTextOutW(DC: HDC; X, Y: Integer; Options: Longint; Rect: PRect;
-                     Str: PWideChar; Count: Longint; Dx: PInteger): BOOL;
-
-function DrawTextW(hDC: HDC; lpString: PWideChar; nCount: Integer;
-                   var lpRect: TRect; uFormat: UINT): Integer;
+function ExtTextOutW(DC: HDC; X, Y: Integer; Options: Longint; Rect: PRect; Str: PWideChar; Count: Longint; Dx: PInteger): BOOL;
+function DrawTextW(hDC: HDC; Str: PWideChar; Count: Integer; var lpRect: TRect; uFormat: UINT): Integer;
 function PatBlt(DC: HDC; X, Y, Width, Height: Integer; Rop: DWORD): BOOL;
 function SetTextJustification(DC: HDC; BreakExtra, BreakCount: Integer): Integer;
 function GetBrushOrgEx(DC: HDC; var lppt: TPoint): BOOL;
 function SetBrushOrgEx(DC: HDC; X, Y: Integer; PrevPt: PPoint): BOOL;
 function timeGetTime: DWORD;
-function GetTextExtentExPointW(DC: HDC; p2: PWideChar; p3, p4: Integer;
-                               p5, p6: PInteger; var p7: TSize): BOOL;
+function GetTextExtentExPointW(DC: HDC; Str: PWideChar; Count, p4: Integer; p5, p6: PInteger; var p7: TSize): BOOL;
 function GetTempPath(nBufferLength: DWORD; lpBuffer: PChar): DWORD;
 function CharNextEx(CodePage: Word; lpCurrentChar: LPCSTR; dwFlags: DWORD): LPSTR;
 function ExtCreateRegion(XForm: PXForm; Count: DWORD; const RgnData: TRgnData): HRGN;
-function ExtCreatePen(PenStyle, Width: DWORD; const Brush: TLogBrush;
-                      StyleCount: DWORD; Style: Pointer): HPEN;
+function ExtCreatePen(PenStyle, Width: DWORD; const Brush: TLogBrush; StyleCount: DWORD; Style: Pointer): HPEN;
 function BeginPath(DC: HDC): BOOL;
 function EndPath(DC: HDC): BOOL;
 function StrokePath(DC: HDC): BOOL;
@@ -721,6 +715,26 @@ begin
 {$ENDIF}
 end;
 
+function PWideCharToWideString(Str: PWideChar; Count: Integer): WideString;
+begin
+  if Count < 0 then  {Null terminated?}
+    Result := Str
+  else {Specifies number of wide chars to convert}
+  begin
+    SetLength(Result, Count);
+    if Count > 0 then
+      Move(Str^, Result[1], Count * sizeof(Result[1]));
+  end;
+end;
+
+function WideStringToString(const Str: WideString): String;
+begin
+  if htExpectsUTF8 then
+    Result := UTF8Encode(Str)  {Widgetset expects UTF8, so encode wide string as UTF8}
+  else
+    Result := Str;  {Just convert to ANSI}
+end;
+
 function WideCharToMultiByte(CodePage: UINT; dwFlags: DWORD;
                              lpWideCharStr: LPWSTR; cchWideChar: Integer;
                              lpMultiByteStr: LPSTR; cchMultiByte: Integer;
@@ -735,14 +749,13 @@ var
   w : WideString;
   s : string;
 begin
-  if cchWideChar < 0 then  {Null terminated?}
-    w := lpWideCharStr
-  else  {Specifies number of wide chars to convert}
-    begin
-    SetLength(w, cchWideChar);
-    Move(lpWideCharStr^, w[1], cchWideChar*2);
-    end;
-  s := WideCharToString(PWideChar(w));
+  w := PWideCharToWideString(lpWideCharStr, cchWideChar);
+  case CodePage of
+    CP_UTF8:
+      s := UTF8Encode(w);
+  else
+    s := WideCharToString(PWideChar(w));
+  end;
   Result := Length(s);
   if cchWideChar < 0 then  {Include terminating null too?}
     Inc(Result);
@@ -751,37 +764,37 @@ begin
 {$ENDIF}
 end;
 
-function CharUpperBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
-{$IFDEF MSWINDOWS}
-begin
-  Result := Windows.CharUpperBuffw(lpsz, cchLength);
-{$ELSE}
-var
-  w : WideString;
-begin
-  SetLength(w, cchLength);
-  Move(lpsz^, w[1], cchLength*2);
-  w := WideUpperCase(w);
-  Move(w[1], lpsz^, cchLength*2);
-  Result := cchLength;
-{$ENDIF}
-end;
-
-function CharLowerBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
-{$IFDEF MSWINDOWS}
-begin
-  Result := Windows.CharLowerBuffw(lpsz, cchLength);
-{$ELSE}
-var
-  w : WideString;
-begin
-  SetLength(w, cchLength);
-  Move(lpsz^, w[1], cchLength*2);
-  w := WideLowerCase(w);
-  Move(w[1], lpsz^, cchLength*2);
-  Result := cchLength;
-{$ENDIF}
-end;
+//function CharUpperBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
+//{$IFDEF MSWINDOWS}
+//begin
+//  Result := Windows.CharUpperBuffw(lpsz, cchLength);
+//{$ELSE}
+//var
+//  w : WideString;
+//begin
+//  SetLength(w, cchLength);
+//  Move(lpsz^, w[1], cchLength*2);
+//  w := WideUpperCase(w);
+//  Move(w[1], lpsz^, cchLength*2);
+//  Result := cchLength;
+//{$ENDIF}
+//end;
+//
+//function CharLowerBuffW(lpsz: PWideChar; cchLength: DWORD): DWORD;
+//{$IFDEF MSWINDOWS}
+//begin
+//  Result := Windows.CharLowerBuffw(lpsz, cchLength);
+//{$ELSE}
+//var
+//  w : WideString;
+//begin
+//  SetLength(w, cchLength);
+//  Move(lpsz^, w[1], cchLength*2);
+//  w := WideLowerCase(w);
+//  Move(w[1], lpsz^, cchLength*2);
+//  Result := cchLength;
+//{$ENDIF}
+//end;
 
 function GetTextExtentPointW(DC: HDC; Str: PWideChar; Count: Integer;
                              var Size: TSize): BOOL;
@@ -790,23 +803,16 @@ begin
   Result := Windows.GetTextExtentPointW(DC, Str, Count, Size);
 {$ELSE}
 var
-  w : WideString;
   s : string;
 begin
   if Count = 0 then  {No text? (don't want range error with w[1])}
-    begin
+  begin
     Size.cx := 0;
     Size.cy := 0;
     Result := True;
     Exit;
-    end;
-   {First copy to WideString since it may not have terminating null}
-  SetLength(w, Count);
-  Move(Str^, w[1], Count*2);
-  if htExpectsUTF8 then
-    s := UTF8Encode(w)  {Widgetset expects UTF8, so encode wide string as UTF8}
-  else
-    s := w;  {Just convert to ANSI}
+  end;
+  s := WideStringToString(PWideCharToWideString(Str, Count));
   Result := LclIntf.GetTextExtentPoint32(DC, PChar(s), Length(s), Size);
 {$ENDIF}
 end;
@@ -962,29 +968,22 @@ begin
 {$ELSE}
 var
   TM : TEXTMETRIC;
-  w  : WideString;
   s  : string;
 begin
   if Count = 0 then  {Nothing to output? (don't want range error with w[1])}
-    begin
+  begin
     Result := True;
     Exit;
-    end;
+  end;
   if CurTA_DC = DC then
-    begin  //Adjust reference point here since not done in widgetset
+  begin  //Adjust reference point here since not done in widgetset
     GetTextMetrics(DC, TM);
     if (CurTextAlign and TA_BASELINE) <> 0 then
       Y := Y - (TM.tmHeight - TM.tmDescent);
-    end;
-   {First copy to WideString since it may not have terminating null}
-  SetLength(w, Count);
-  Move(Str^, w[1], Count*2);
-  if htExpectsUTF8 then
-    s := UTF8Encode(w)  {Widgetset expects UTF8, so encode wide string as UTF8}
-  else
-    s := w;  {Just convert to ANSI}
+  end;
+  s := WideStringToString(PWideCharToWideString(Str, Count));
   Result := TextOut(DC, X, Y, PChar(s), Length(s));
-   {Note not calling LclIntf's TextOut}
+  {Note not calling LclIntf's TextOut}
 {$ENDIF}
 end;
 
@@ -996,54 +995,35 @@ begin
 {$ELSE}
 var
   TM : TEXTMETRIC;
-  w : WideString;
   s : string;
 begin
   if Count = 0 then  {Nothing to output? (don't want range error with w[1])}
-    begin
+  begin
     Result := True;
     Exit;
-    end;
+  end;
   if CurTA_DC = DC then
-    begin  //Adjust reference point here since not done in widgetset
+  begin  //Adjust reference point here since not done in widgetset
     GetTextMetrics(DC, TM);
     if (CurTextAlign and TA_BASELINE) <> 0 then
       Y := Y - (TM.tmHeight - TM.tmDescent);
-    end;
-   {First copy to WideString since it may not have terminating null}
-  SetLength(w, Count);
-  Move(Str^, w[1], Count*2);
-  if htExpectsUTF8 then
-    s := UTF8Encode(w) {Widgetset expects UTF8, so encode wide string as UTF8}
-  else
-    s := w;  {Just convert to ANSI}
+  end;
+  s := WideStringToString(PWideCharToWideString(Str, Count));
   Result := ExtTextOut(DC, X, Y, Options, Rect, PChar(s), Length(s), Dx);
-   {Note not calling LclIntf's ExtTextOut}
+  {Note not calling LclIntf's ExtTextOut}
 {$ENDIF}
 end;
 
-function DrawTextW(hDC: HDC; lpString: PWideChar; nCount: Integer;
+function DrawTextW(hDC: HDC; Str: PWideChar; Count: Integer;
                    var lpRect: TRect; uFormat: UINT): Integer;
 {$IFDEF MSWINDOWS}
 begin
-  Result := Windows.DrawTextW(hDC, lpString, nCount, lpRect, uFormat);
+  Result := Windows.DrawTextW(hDC, Str, Count, lpRect, uFormat);
 {$ELSE}
 var
-  w : WideString;
   s : string;
 begin
-  if nCount = -1 then  {String is null-terminated?}
-    w := WideString(lpString)
-  else
-    begin
-     {First copy to WideString since it may not have terminating null}
-    SetLength(w, nCount);
-    Move(lpString^, w[1], nCount*2);
-    end;
-  if htExpectsUTF8 then
-    s := UTF8Encode(w)  {Widgetset expects UTF8, so encode wide string as UTF8}
-  else
-    s := w;  {Just convert to ANSI}
+  s := WideStringToString(PWideCharToWideString(Str, Count));
   Result := LclIntf.DrawText(hDC, PChar(s), Length(s), lpRect, uFormat);
 {$ENDIF}
 end;
@@ -1091,13 +1071,16 @@ begin
 //  Result := Trunc(TimeStampToMSecs(DateTimeToTimeStamp(Now)));  //Can overflow.
 end;
 
-function GetTextExtentExPointW(DC: HDC; p2: PWideChar; p3, p4: Integer;
-                               p5, p6: PInteger; var p7: TSize): BOOL;
-begin
+function GetTextExtentExPointW(DC: HDC; Str: PWideChar; Count, p4: Integer; p5, p6: PInteger; var p7: TSize): BOOL;
 {$IFDEF MSWINDOWS}
-  Result := Windows.GetTextExtentExPointW(DC, p2, p3, p4, p5, p6, p7);
-{$ELSE}  //Don't need if use GetTextExtentPoint32W
-  WriteLn('GetTextExtentExPointW not implemented yet');
+begin
+  Result := Windows.GetTextExtentExPointW(DC, Str, Count, p4, p5, p6, p7);
+{$ELSE}
+var
+  s: String;
+begin
+  s := WideStringToString(PWideCharToWideString(Str, Count));
+  Result := WidgetSet.GetTextExtentExPoint(DC, PChar(s), Length(s), p4, p5, p6, p7);
 {$ENDIF}
 end;
 

@@ -132,11 +132,19 @@ begin
     'Lazarus ' + lcl_version
 {$endif}
     ;
+
 {$ifdef win64}
   Result := Result + '<li>Compiled for Win64</li>';
 {$endif}
 {$ifdef win32}
   Result := Result + '<li>Compiled for Win32</li>';
+{$endif}
+{$ifdef unix}
+  Result := Result + '<li>Compiled for Unix';
+  {$ifdef LCL}
+    Result := Result + ' (' + LCLPlatformDirNames[WidgetSet.LCLPlatform] +')';
+  {$endif}
+  Result := Result + '</li>';
 {$endif}
 {$ifdef UseTNT}
   Result := Result + '<li>Using TNT unicode controls.';
