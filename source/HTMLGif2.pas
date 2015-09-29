@@ -41,18 +41,6 @@ uses
   HtmlGlobals, htmlgif1;
 
 type
-  ThtBitmap = class(TBitmap)
-  protected
-    FMask: TBitmap;
-    FTransparent: boolean;
-    procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
-    procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
-    function GetMask: TBitmap;
-  public
-    destructor Destroy; override;
-    procedure Assign(Source: TPersistent); override;
-    property Mask: TBitmap read GetMask;
-  end;
 
   TDisposalType = (
     dtUndefined,    {Take no action}
@@ -86,6 +74,8 @@ type
     property Frames[I: integer]: TgfFrame read GetFrame; default;
   end;
 
+  { TGIFImage }
+
   TGIFImage = class(ThtBitmap)
   private
     FAnimated: Boolean;
@@ -94,6 +84,7 @@ type
     FCurrentFrame: Integer;
     FNumFrames: Integer;
     FNumIterations: Integer;
+    FTransparent: Boolean;
     FVisible: Boolean;
 
     TheEnd: Boolean; {copy to here}
@@ -113,6 +104,7 @@ type
     procedure SetCurrentFrame(AFrame: Integer);
 
     procedure NextFrame(OldFrame: Integer);
+    procedure SetTransaprent(AValue: Boolean);
 
   public
     ShowIt: Boolean;
@@ -127,7 +119,7 @@ type
     procedure Draw(Canvas: TCanvas; const ARect: TRect); override;
 
     property IsAnimated: Boolean read FAnimated;
-    property IsTransparent: Boolean read FTransparent;
+    property IsTransparent: Boolean read FTransparent write SetTransaprent;
     property NumFrames: Integer read FNumFrames;
     property NumIterations: Integer read FNumIterations;
 
@@ -241,7 +233,7 @@ end;
 
 {----------------TGifImage.CheckTime}
 
-procedure TGifImage.CheckTime(WinControl: TWinControl);
+procedure TGIFImage.CheckTime(WinControl: TWinControl);
 var
   ThisTime: DWord;
 begin
@@ -312,7 +304,7 @@ var
   AGif: TGif;
   Frame: TgfFrame;
   I: integer;
-  ABitmap, AMask: TBitmap;
+  ABitmap: ThtBitmap;
 begin
   AGif := TGif.Create;
   try
@@ -329,15 +321,7 @@ begin
       Inc(FNumIterations); {apparently this is the convention}
     FTransparent := AGif.Transparent;
 
-    Strip := ThtBitmap.Create;
-    ABitmap := AGif.GetStripBitmap(AMask);
-    try
-      Strip.Assign(ABitmap);
-      Strip.FMask := AMask;
-      Strip.FTransparent := Assigned(AMask);
-    finally
-      ABitmap.Free;
-    end;
+    Strip := AGif.GetStripBitmap();
     if Strip.Palette <> 0 then
       DeleteObject(Strip.ReleasePalette);
     Strip.Palette := CopyPalette(ThePalette);
@@ -369,22 +353,20 @@ begin
   Transparent := False;
 end;
 
-{----------------ThtBitmap.GetMask:}
-
-function ThtBitmap.GetMask: TBitmap;
-{This returns mask for frame 1.  Content is black, background is white}
-begin
-  if not FTransparent then
-    Result := nil
-  else
-    Result := FMask;
-end;
-
 {----------------TGIFImage.NextFrame}
 
 procedure TGIFImage.NextFrame(OldFrame: Integer);
 begin
   WasDisposal := Frames[OldFrame].frDisposalMethod;
+end;
+
+procedure TGIFImage.SetTransaprent(AValue: Boolean);
+begin
+  if FTransparent=AValue then
+    Exit;
+  FTransparent:=AValue;
+  if FMask = nil then
+    FMask := TBitmap.Create;
 end;
 
 {----------------TgfFrameList.GetFrame}
@@ -393,159 +375,6 @@ function TgfFrameList.GetFrame(I: integer): TgfFrame;
 begin
   Assert((I <= Count) and (I >= 1), 'Frame index out of range');
   Result := TgfFrame(Items[I - 1]);
-end;
-
-{ ThtBitmap }
-//var
-//  AHandle: THandle;
-
-procedure ThtBitmap.Assign(Source: TPersistent);
-var
-  htSource: ThtBitmap absolute Source;
-
-begin
-  inherited;
-  if Source is ThtBitmap then
-  begin
-    FTransparent := htSource.FTransparent;
-    if htSource.FMask = nil then
-      FreeAndNil(FMask)
-    else
-    begin
-      if FMask = nil then
-        FMask := TBitmap.Create;
-      FMask.Assign(htSource.FMask);
-    end
-  end
-  else
-  begin
-    FTransparent := False;
-    FreeAndNil(FMask);
-  end;
-end;
-
-destructor ThtBitmap.Destroy;
-begin
-  FMask.Free;
-  inherited;
-end;
-
-{----------------ThtBitmap.Draw}
-
-procedure ThtBitmap.Draw(ACanvas: TCanvas; const Rect: TRect);
-var
-  OldPalette: HPalette;
-  RestorePalette: Boolean;
-  DoHalftone: Boolean;
-  Pt: TPoint;
-  BPP: Integer;
-  MaskDC: HDC;
-  Save: THandle;
-begin
-  with Rect do
-  begin
-    //AHandle := ACanvas.Handle; {LDB}
-    PaletteNeeded;
-    OldPalette := 0;
-    RestorePalette := False;
-
-    if Palette <> 0 then
-    begin
-      OldPalette := SelectPalette(ACanvas.Handle, Palette, True);
-      RealizePalette(ACanvas.Handle);
-      RestorePalette := True;
-    end;
-    BPP := GetDeviceCaps(ACanvas.Handle, BITSPIXEL) *
-      GetDeviceCaps(ACanvas.Handle, PLANES);
-    DoHalftone := (BPP <= 8) and (PixelFormat in [pf15bit, pf16bit, pf24bit]);
-    if DoHalftone then
-    begin
-      GetBrushOrgEx(ACanvas.Handle, pt);
-      SetStretchBltMode(ACanvas.Handle, HALFTONE);
-      SetBrushOrgEx(ACanvas.Handle, pt.x, pt.y, @pt);
-    end
-    else if not Monochrome then
-      SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
-    try
-      //AHandle := Canvas.Handle; {LDB}
-      if FTransparent then
-      begin
-        Save := 0;
-        MaskDC := 0;
-        try
-          MaskDC := CreateCompatibleDC(0); {LDB}
-          Save := SelectObject(MaskDC, MaskHandle);
-          TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
-            Bottom - Top, Canvas.Handle, 0, 0, Width,
-            Height, FMask.Canvas.Handle, 0, 0); {LDB}
-        finally
-          if Save <> 0 then
-            SelectObject(MaskDC, Save);
-          if MaskDC <> 0 then
-            DeleteDC(MaskDC);
-        end;
-      end
-      else
-        StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle, 0, 0, Width,
-          Height, ACanvas.CopyMode);
-    finally
-      if RestorePalette then
-        SelectPalette(ACanvas.Handle, OldPalette, True);
-    end;
-  end;
-end;
-
-procedure ThtBitmap.StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
-{Draw parts of this bitmap on ACanvas}
-var
-  OldPalette: HPalette;
-  RestorePalette: Boolean;
-  DoHalftone: Boolean;
-  Pt: TPoint;
-  BPP: Integer;
-begin
-  with DestRect do
-  begin
-    //AHandle := ACanvas.Handle; {LDB}
-    PaletteNeeded;
-    OldPalette := 0;
-    RestorePalette := False;
-
-    if Palette <> 0 then
-    begin
-      OldPalette := SelectPalette(ACanvas.Handle, Palette, True);
-      RealizePalette(ACanvas.Handle);
-      RestorePalette := True;
-    end;
-    BPP := GetDeviceCaps(ACanvas.Handle, BITSPIXEL) *
-      GetDeviceCaps(ACanvas.Handle, PLANES);
-    DoHalftone := (BPP <= 8) and (PixelFormat in [pf15bit, pf16bit, pf24bit]);
-    if DoHalftone then
-    begin
-      GetBrushOrgEx(ACanvas.Handle, pt);
-      SetStretchBltMode(ACanvas.Handle, HALFTONE);
-      SetBrushOrgEx(ACanvas.Handle, pt.x, pt.y, @pt);
-    end
-    else if not Monochrome then
-      SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
-    try
-      //AHandle := Canvas.Handle; {LDB}
-      if FTransparent then
-        TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
-          Bottom - Top, Canvas.Handle,
-          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
-          FMask.Canvas.Handle, SrcRect.Left, SrcRect.Top) {LDB}
-      else
-        StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle,
-          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
-          ACanvas.CopyMode);
-    finally
-      if RestorePalette then
-        SelectPalette(ACanvas.Handle, OldPalette, True);
-    end;
-  end;
 end;
 
 end.

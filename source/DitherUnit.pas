@@ -102,9 +102,9 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Graphics, Classes;
+  SysUtils, Graphics, Classes, HtmlGlobals;
 
-function GetBitmap(Source: TPersistent): TBitmap; {LDB}
+function GetBitmap(Source: TPersistent): ThtBitmap; {LDB}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,16 +115,20 @@ function GetBitmap(Source: TPersistent): TBitmap; {LDB}
 ////////////////////////////////////////////////////////////////////////////////
 implementation
 
+{$if defined(DEBUG) or defined(DEBUG_DITHERPERFORMANCE)}
 uses
+{$ifend}
 {$IFDEF DEBUG}
-  dialogs,
+  dialogs
 {$ENDIF}
 //BG, 01.09.2009: ifdef added:
 {$IFDEF DEBUG_DITHERPERFORMANCE}
   mmsystem, // timeGetTime()
-  messages,
+  messages
 {$ENDIF}
-  HtmlGlobals;
+{$if defined(DEBUG) or defined(DEBUG_DITHERPERFORMANCE)}
+  ;
+{$ifend}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1584,7 +1588,7 @@ end;
 {$ENDIF}
 
 function ReduceColors(Bitmap: TBitmap; ColorReduction: TColorReduction;
-  DitherMode: TDitherMode): TBitmap;
+  DitherMode: TDitherMode): ThtBitmap;
 var
   Palette: hPalette;
   ColorLookup: TColorLookup;
@@ -1609,7 +1613,7 @@ begin
   TimeStart := timeGetTime;
 {$ENDIF}
 
-  Result := TBitmap.Create;
+  Result := ThtBitmap.Create;
   try
 
     if (ColorReduction = rmNone) then
@@ -1739,16 +1743,16 @@ end;
 {$UNDEF R_PLUS}
 {$ENDIF}
 
-function GetBitmap(Source: TPersistent): TBitmap;
+function GetBitmap(Source: TPersistent): ThtBitmap;
 var
   PixelFormat: TPixelFormat;
-  FBitmap: TBitmap;
+  FBitmap: ThtBitmap;
   ColorReduction: TColorReduction;
   DitherMode: TDitherMode;
 
 begin
   Result := nil;
-  if (Source is TBitmap) then {should always be}
+  if Source is TBitmap then {should always be}
   begin
     if (TBitmap(Source).Empty) then
       exit;
@@ -1766,8 +1770,13 @@ begin
     else
     begin
       // Create new bitmap and copy
-      FBitmap := TBitmap.Create;
+      FBitmap := ThtBitmap.Create;
       FBitmap.Assign(TBitmap(Source));
+    end;
+    if Source is ThtBitmap then
+    begin
+      FBitmap.WithTransparentMask := ThtBitmap(Source).WithTransparentMask;
+      FBitmap.Mask := ThtBitmap(Source).Mask;
     end;
     Result := FBitmap;
   end;

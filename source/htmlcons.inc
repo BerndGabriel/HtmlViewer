@@ -25,6 +25,8 @@
   {$define ver100_plus}
   {$define ver120_plus}
 
+  {.$undef MSWindows}
+  {.$undef Windows}
 {$else}
 
 { Identify Delphi Compiler Version:
@@ -233,6 +235,10 @@
         For applications where printing is unimportant or Win98/95/ME need not
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
+{$else}
+  {$define NoGDIPlus}
+  {$define NoMetaFile}
+  {$define NoFlatScrollbars}
 {$endif}
 {$ifdef Unix}
   {$define NoGDIPlus}

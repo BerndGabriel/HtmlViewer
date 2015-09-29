@@ -46,16 +46,17 @@ interface
 uses
 {$IFDEF UseCLX}
   SysUtils, Types, Classes, QGraphics, QControls, QForms, QDialogs,
-  QStdCtrls, Math;
+  QStdCtrls,
 {$ELSE}
-{$ifdef LCL}
-  LclIntf, LclType, IntfGraphics, //LMessages,
-{$else}
-  Windows,
-{$endif}
+  {$ifdef LCL}
+    LclIntf, LclType, IntfGraphics, //LMessages,
+  {$else}
+    Windows,
+  {$endif}
   Messages, SysUtils, Classes, Graphics,
-  Controls, StdCtrls, ExtCtrls, Forms, Math;
+  Controls, StdCtrls, ExtCtrls, Forms,
 {$ENDIF}
+  Math, HtmlGlobals;
 
 type
 {$IFDEF CONDITIONALEXPRESSIONS}
@@ -329,7 +330,7 @@ type
     procedure FreeImage;
 
     procedure LoadFromStream(Source: TStream);
-    function GetStripBitmap(out Mask: TBitmap): TBitmap; {LDB}
+    function GetStripBitmap(): ThtBitmap; {LDB}
 
     property Signature: AnsiString read GetSignature;
     property ScreenDescriptor: PGifScreenDescriptor read GetScreenDescriptor;
@@ -1967,12 +1968,12 @@ begin
     Result.Handle := MskHandle;
   finally
     IntfImage.Free;
-    Bitmap.Free;
+    //Bitmap.Free;
   end;
 end;
 {$endif}
 
-function TGif.GetStripBitmap(out Mask: TBitmap): TBitmap; {LDB}
+function TGif.GetStripBitmap(): ThtBitmap; {LDB}
 {This is a single bitmap containing all the frames.  A mask is also provided
  if the GIF is transparent.  Each Frame is set up so that it can be transparently
  blted to a background.}
@@ -1989,10 +1990,10 @@ var
   TrIndex: integer;
   C: Byte;
   IsTransparent: boolean;
+  Mask: TBitmap;
 begin
   MStream := nil;
   Result := nil;
-  Mask := nil;
   MP := nil;
   MPix := nil;
 {find size needed for strip bitmap}
@@ -2143,21 +2144,22 @@ begin
       end;
     end;
 
-    Result := TBitmap.Create;
+    Result := ThtBitmap.Create(IsTransparent);
 {$IFNDEF UseCLX}
     Result.HandleType := bmDIB;
 {$ENDIF}
     Result.LoadFromStream(Stream); {turn the stream just formed into a TBitmap}
     if IsTransparent then
     begin
-      Mask := TBitmap.Create;
-      Mask.HandleType := bmDIB;
-      Mask.LoadFromStream(MStream);
+      Result.HandleType := bmDIB;
+      Result.Mask.LoadFromStream(MStream);
 {$ifdef LCL}
       // setting to monochrome not yet implemented
-      Mask := CreateMask(Mask, clWhite);
+      Mask := CreateMask(Result.Mask, clWhite);
+      Result.Mask := Mask;
+      FreeAndNil(Mask);
 {$else}
-      Mask.Monochrome := True; {crunch mask into a monochrome TBitmap}
+      Result.Mask.Monochrome := True; {crunch mask into a monochrome TBitmap}
 {$endif}
     end;
     Stream.Free;

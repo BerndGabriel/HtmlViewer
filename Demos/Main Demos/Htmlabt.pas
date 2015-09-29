@@ -59,7 +59,7 @@ implementation
 
 function ConfigInfo: String;
 begin
-  Result := '<ul><li>compiled with ' +
+  Result := '<ul><li>Compiled with ' +
 {$ifdef Ver90}
     'Delphi 2'
 {$endif}
