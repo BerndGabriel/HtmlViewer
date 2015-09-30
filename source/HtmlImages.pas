@@ -169,6 +169,7 @@ type
     function GetImageWidth: Integer; override;
     function GetMask: TBitmap; override;
   public
+    constructor Create(AImage: ThtBitmap; Tr: ThtImageTransparency; AOwnsBitmap: Boolean = True); overload;
     constructor Create(AImage, AMask: TBitmap; Tr: ThtImageTransparency; AOwnsBitmap: Boolean = True; AOwnsMask: Boolean = True); overload;
     constructor Create(AImage: TBitmap; Tr: ThtImageTransparency; Color: TColor; AOwnsBitmap: Boolean = True); overload;
     destructor Destroy; override;
@@ -456,10 +457,10 @@ begin
   Result := itNone;
 end;
 
-function ConvertImage(Bitmap: TBitmap): TBitmap;
+function ConvertImage(Bitmap: ThtBitmap): ThtBitmap;
 {convert bitmap into a form for BitBlt later}
 
-  function DIBConvert: TBitmap;
+  function DIBConvert: ThtBitmap;
   var
     DC: HDC;
     DIB: TDib;
@@ -477,8 +478,9 @@ function ConvertImage(Bitmap: TBitmap): TBitmap;
     SelectPalette(DC, OldPal, False);
     SelectObject(DC, OldBmp);
     DeleteDC(DC);
+    Result := ThtBitmap.Create(Bitmap.WithTransparentMask);
+    Result.Mask := Bitmap.Mask;
     Bitmap.Free;
-    Result := TBitmap.Create;
     Result.Handle := Hnd;
     if (ColorBits = 8) and (Result.Palette = 0) then
       Result.Palette := CopyPalette(ThePalette);
@@ -770,7 +772,7 @@ function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: ThtIma
   end;
 
 {$ifndef NoGDIPlus}
-  procedure LoadGpImage;
+  procedure LoadGdipImage;
   var
     Image: ThtGpImage;
   begin
@@ -786,7 +788,7 @@ function ThtImageLoader.LoadImageFromStream(Stream: TStream; Transparent: ThtIma
 {$endif !NoGDIPlus}
 
 var
-  Bitmap, Mask: TBitmap;
+  Bitmap: ThtBitmap;
 
   procedure LoadGif;
   var
@@ -797,12 +799,11 @@ var
     if NonAnimated then
     begin {else already have animated GIF}
       try
-        Bitmap := TBitmap.Create;
+        Bitmap := ThtBitmap.Create(Gif.IsTransparent);
         Bitmap.Assign(Gif);
         if Gif.IsTransparent then
         begin
-          Mask := TBitmap.Create;
-          Mask.Assign(Gif.Mask);
+          Bitmap.Mask := Gif.Mask;
           Transparent := itrIntrinsic;
         end;
       finally
@@ -825,13 +826,12 @@ var
         pngImage.PixelFormat := pf8bit
       else
         pngImage.PixelFormat := pf24bit;
-      Bitmap := TBitmap.Create;
-      Bitmap.Assign(pngImage);
       pngImage.Mask(clDefault);
+      Bitmap := ThtBitmap.Create(pngImage.MaskHandleAllocated);
+      Bitmap.Assign(pngImage);
       if pngImage.MaskHandleAllocated then
       begin
-        Mask := TBitmap.Create;
-        Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
+        Bitmap.Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
         Transparent := itrIntrinsic;
       end;
     finally
@@ -857,7 +857,7 @@ var
       end
       else
         jpImage.PixelFormat := {$ifdef LCL} pf24bit {$else} jf24bit {$endif};
-      Bitmap := TBitmap.Create;
+      Bitmap := ThtBitmap.Create;
       Bitmap.Assign(jpImage);
       Transparent := itrNone;
     finally
@@ -875,12 +875,11 @@ var
       Icon.LoadFromStream(Stream);
       if GetIconInfo(Icon.Handle, {$ifdef LCL}@{$endif} IconInfo) then
       begin
-        Bitmap := TBitmap.Create;
+        Bitmap := ThtBitmap.Create(Transparent <> itrLLCorner);
         Bitmap.Handle := IconInfo.hbmColor;
         if Transparent <> itrLLCorner then
         begin
-          Mask := TBitmap.Create;
-          Mask.Handle := IconInfo.hbmMask;
+          Bitmap.Mask.Handle := IconInfo.hbmMask;
           Transparent := itrIntrinsic;
         end;
       end;
@@ -891,19 +890,19 @@ var
 
   procedure LoadBmp;
   begin
-    Bitmap := TBitmap.Create;
+    Bitmap := ThtBitmap.Create;
     Bitmap.LoadFromStream(Stream);
   end;
 
 var
   ImageFormat: ThtImageFormat;
+  Mask: TBitmap;
 begin
   Result := nil;
   if not Assigned(Stream) then
     Exit;
 
   Bitmap := nil;
-  Mask := nil;
   try
     Stream.Seek(0, soFromBeginning); // Seek is faster than Position.
     ImageFormat := KindOfImage(Stream);
@@ -921,13 +920,13 @@ begin
           itGif: ;
 
           // GDI+ does not support transparency for bitmaps
-          itBmp: if Transparent = itrNone then LoadGpImage;
+          itBmp: if Transparent = itrNone then LoadGdipImage;
 
           // GDI+ does not support lower left corner transparency for icons and cursors:
           itCur,
-          itIco: if Transparent <> itrLLCorner then LoadGpImage;
+          itIco: if Transparent <> itrLLCorner then LoadGdipImage;
         else
-          LoadGpImage;
+          LoadGdipImage;
         end;
       except
         // just continue without image...
@@ -947,16 +946,22 @@ begin
 
     if Bitmap <> nil then
     begin
-      if Mask = nil then
+      Mask := nil;
+      if Bitmap.Mask = nil then
         if Transparent = itrLLCorner then
           Mask := GetImageMask(Bitmap, False, 0);
       Bitmap := ConvertImage(Bitmap);
-      Result := ThtBitmapImage.Create(Bitmap, Mask, Transparent);
+      if Mask <> nil then
+      begin
+        Bitmap.WithTransparentMask := True;
+        Bitmap.Mask := Mask;
+        Mask.Free;
+      end;
+      Result := ThtBitmapImage.Create(Bitmap, Transparent);
     end;
 
   except
     Bitmap.Free;
-    Mask.Free;
     FreeAndNil(Result);
   end;
 end;
@@ -2189,6 +2194,18 @@ begin
 end;
 
 { ThtBitmapImage }
+
+//-- BG ---------------------------------------------------------- 29.09.2015 --
+constructor ThtBitmapImage.Create(AImage: ThtBitmap; Tr: ThtImageTransparency; AOwnsBitmap: Boolean);
+begin
+  if AImage = nil then
+    raise EInvalidImage.Create('ThtBitmapImage requires an image');
+  inherited Create(Tr);
+  Bitmap := AImage;
+  OwnsBitmap := AOwnsBitmap;
+  Mask := AImage.Mask;
+  OwnsMask := False;
+end;
 
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 constructor ThtBitmapImage.Create(AImage, AMask: TBitmap; Tr: ThtImageTransparency; AOwnsBitmap, AOwnsMask: Boolean);

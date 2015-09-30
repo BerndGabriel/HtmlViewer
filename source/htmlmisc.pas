@@ -1060,7 +1060,7 @@ begin
 {$IFDEF MSWINDOWS}
   Result := Windows.SetBrushOrgEx(DC, X, Y, PrevPt);
 {$ELSE}
-  WriteLn('SetBrushOrgEx not implemented yet');
+//  WriteLn('SetBrushOrgEx not implemented yet');
 {$ENDIF}
 end;
 

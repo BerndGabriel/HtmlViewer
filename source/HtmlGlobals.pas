@@ -36,10 +36,10 @@ uses
 {$ifdef UseVCLStyles}
   Vcl.Themes,
 {$endif}
-  Classes, SysUtils, Graphics, Controls,
 {$ifdef MSWINDOWS}
   Windows,
 {$endif}
+  Classes, SysUtils, Graphics, Controls,
 {$ifdef LCL}
   LclIntf, LclType, Types, Messages,
   StdCtrls, Buttons, Forms, Base64,
@@ -240,6 +240,26 @@ type
   ThtCanvas = class(TCanvas)
   public
     procedure htTextRect(const Rect: TRect; X, Y: Integer; const Text: ThtString);
+  end;
+
+  { ThtBitmap }
+
+  ThtBitmap = class(TBitmap)
+  private
+    procedure SetMask(AValue: TBitmap);
+    function GetMask: TBitmap;
+    procedure SetTransparentMask(AValue: Boolean);
+  protected
+    FMask: TBitmap;
+    FTransparent: boolean;
+  public
+    constructor Create(WithTransparentMask: Boolean = False); overload;
+    destructor Destroy; override;
+    procedure Assign(Source: TPersistent); override;
+    procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
+    procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
+    property Mask: TBitmap read GetMask write SetMask;
+    property WithTransparentMask: Boolean read FTransparent write SetTransparentMask;
   end;
 
 const
@@ -1111,6 +1131,195 @@ begin
   end;
 end;
 {$endif LCL}
+
+{----------------ThtBitmap.GetMask:}
+
+function ThtBitmap.GetMask: TBitmap;
+{This returns mask for frame 1.  Content is black, background is white}
+begin
+  if not FTransparent then
+    Result := nil
+  else
+    Result := FMask;
+end;
+
+procedure ThtBitmap.SetTransparentMask(AValue: Boolean);
+begin
+  if FTransparent <> AValue then
+  begin
+    FTransparent := AValue;
+    if not FTransparent then
+      FreeAndNil(FMask)
+    else if FMask = nil then
+      FMask := ThtBitmap.Create;
+  end;
+end;
+
+constructor ThtBitmap.Create(WithTransparentMask: Boolean);
+begin
+  inherited Create;
+  SetTransparentMask( WithTransparentMask );
+end;
+
+{ ThtBitmap }
+
+procedure ThtBitmap.Assign(Source: TPersistent);
+var
+  htSource: ThtBitmap absolute Source;
+begin
+  {$ifdef LCL}
+    // LCL didn't copy PixelFormat before SVN-33344 (2011-11-05)
+  if Source is TCustomBitmap then
+    PixelFormat := TCustomBitmap(Source).PixelFormat;
+  {$endif}
+  inherited;
+  if Source is ThtBitmap then
+  begin
+    FTransparent := htSource.FTransparent;
+    if htSource.FMask = nil then
+      FreeAndNil(FMask)
+    else
+    begin
+      if FMask = nil then
+        FMask := TBitmap.Create;
+      FMask.Assign(htSource.FMask);
+    end
+  end;
+end;
+
+destructor ThtBitmap.Destroy;
+begin
+  FMask.Free;
+  inherited;
+end;
+
+{----------------ThtBitmap.Draw}
+
+procedure ThtBitmap.SetMask(AValue: TBitmap);
+begin
+  if FMask <> AValue then
+  begin
+    if FMask = nil then
+      FMask := ThtBitmap.Create;
+    FMask.Assign(AValue);
+  end;
+end;
+
+procedure ThtBitmap.Draw(ACanvas: TCanvas; const Rect: TRect);
+var
+  OldPalette: HPalette;
+  RestorePalette: Boolean;
+  DoHalftone: Boolean;
+  Pt: TPoint;
+  BPP: Integer;
+  MaskDC: HDC;
+  Save: THandle;
+begin
+  with Rect do
+  begin
+    //AHandle := ACanvas.Handle; {LDB}
+    PaletteNeeded;
+    OldPalette := 0;
+    RestorePalette := False;
+
+    if Palette <> 0 then
+    begin
+      OldPalette := SelectPalette(ACanvas.Handle, Palette, True);
+      RealizePalette(ACanvas.Handle);
+      RestorePalette := True;
+    end;
+    BPP := GetDeviceCaps(ACanvas.Handle, BITSPIXEL) *
+      GetDeviceCaps(ACanvas.Handle, PLANES);
+    DoHalftone := (BPP <= 8) and (PixelFormat in [pf15bit, pf16bit, pf24bit]);
+    if DoHalftone then
+    begin
+      GetBrushOrgEx(ACanvas.Handle, pt);
+      SetStretchBltMode(ACanvas.Handle, HALFTONE);
+      SetBrushOrgEx(ACanvas.Handle, pt.x, pt.y, @pt);
+    end
+    else if not Monochrome then
+      SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
+    try
+      //AHandle := Canvas.Handle; {LDB}
+      if FTransparent then
+      begin
+        Save := 0;
+        MaskDC := 0;
+        try
+          MaskDC := CreateCompatibleDC(0); {LDB}
+          Save := SelectObject(MaskDC, MaskHandle);
+          TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
+            Bottom - Top, Canvas.Handle, 0, 0, Width,
+            Height, FMask.Canvas.Handle, 0, 0); {LDB}
+        finally
+          if Save <> 0 then
+            SelectObject(MaskDC, Save);
+          if MaskDC <> 0 then
+            DeleteDC(MaskDC);
+        end;
+      end
+      else
+        StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+          Canvas.Handle, 0, 0, Width,
+          Height, ACanvas.CopyMode);
+    finally
+      if RestorePalette then
+        SelectPalette(ACanvas.Handle, OldPalette, True);
+    end;
+  end;
+end;
+
+procedure ThtBitmap.StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
+{Draw parts of this bitmap on ACanvas}
+var
+  OldPalette: HPalette;
+  RestorePalette: Boolean;
+  DoHalftone: Boolean;
+  Pt: TPoint;
+  BPP: Integer;
+begin
+  with DestRect do
+  begin
+    //AHandle := ACanvas.Handle; {LDB}
+    PaletteNeeded;
+    OldPalette := 0;
+    RestorePalette := False;
+
+    if Palette <> 0 then
+    begin
+      OldPalette := SelectPalette(ACanvas.Handle, Palette, True);
+      RealizePalette(ACanvas.Handle);
+      RestorePalette := True;
+    end;
+    BPP := GetDeviceCaps(ACanvas.Handle, BITSPIXEL) *
+      GetDeviceCaps(ACanvas.Handle, PLANES);
+    DoHalftone := (BPP <= 8) and (PixelFormat in [pf15bit, pf16bit, pf24bit]);
+    if DoHalftone then
+    begin
+      GetBrushOrgEx(ACanvas.Handle, pt);
+      SetStretchBltMode(ACanvas.Handle, HALFTONE);
+      SetBrushOrgEx(ACanvas.Handle, pt.x, pt.y, @pt);
+    end
+    else if not Monochrome then
+      SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
+    try
+      //AHandle := Canvas.Handle; {LDB}
+      if FTransparent then
+        TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
+          Bottom - Top, Canvas.Handle,
+          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+          FMask.Canvas.Handle, SrcRect.Left, SrcRect.Top) {LDB}
+      else
+        StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+          Canvas.Handle,
+          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+          ACanvas.CopyMode);
+    finally
+      if RestorePalette then
+        SelectPalette(ACanvas.Handle, OldPalette, True);
+    end;
+  end;
+end;
 
 { initialization }
 
