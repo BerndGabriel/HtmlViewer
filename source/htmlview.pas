@@ -714,7 +714,7 @@ type
 //-- BG ---------------------------------------------------------- 12.05.2013 --
 procedure InitFileTypes;
 const
-  FileTypeDefinitions: array [1..19  {$IFNDEF NoMetafile}+2{$ENDIF !NoMetafile} {$IFNDEF NoGDIPlus}+2{$ENDIF !NoGDIPlus}] of TFileTypeRec = (
+  FileTypeDefinitions: array [1..23] of TFileTypeRec = (
     (FileExt: '.htm';   FileType: HTMLType),
     (FileExt: '.html';  FileType: HTMLType),
 
@@ -738,14 +738,11 @@ const
     (FileExt: '.dib';   FileType: ImgType),
     (FileExt: '.ico';   FileType: ImgType),
 
-    {$IFNDEF NoMetafile}
-     (FileExt: '.emf';   FileType: ImgType),
-      (FileExt: '.wmf';   FileType: ImgType),
-    {$ENDIF !NoMetafile}
-      {$IFNDEF NoGDIPlus}
+    (FileExt: '.emf';   FileType: ImgType),
+    (FileExt: '.wmf';   FileType: ImgType),
     (FileExt: '.tiff';  FileType: ImgType),
-    (FileExt: '.tif';  FileType: ImgType),
-     {$ENDIF !NoGDIPlus}
+    (FileExt: '.tif';   FileType: ImgType),
+
     (FileExt: '.txt';   FileType: TextType)
   );
 var
