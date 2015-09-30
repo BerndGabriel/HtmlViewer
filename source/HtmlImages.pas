@@ -1999,7 +1999,7 @@ begin
     Result := nil
   else
   begin
-    Result := TBitmap.Create;
+    Result := ThtBitmap.Create;
     Result.Assign(Bitmap);
     if Result.Width = 1 then
       Result.Width := Min(100, W);
@@ -2704,8 +2704,8 @@ initialization
   ErrorBitMapMask := TBitmap.Create;
 {$ifdef LCL}
   {$I htmlun2.lrs}
-  DefBitMap.LoadFromLazarusResource('ErrBitmap');
-  ErrorBitMap.LoadFromLazarusResource('DefaultBitmap');
+  DefBitMap.LoadFromLazarusResource('DefaultBitmap');
+  ErrorBitMap.LoadFromLazarusResource('ErrBitmap');
   ErrorBitMapMask.LoadFromLazarusResource('ErrBitmapMask');
   Screen.Cursors[HandCursor] := LoadCursorFromLazarusResource('Hand_Cursor');
   Screen.Cursors[UpDownCursor] := LoadCursorFromLazarusResource('UPDOWNCURSOR');
