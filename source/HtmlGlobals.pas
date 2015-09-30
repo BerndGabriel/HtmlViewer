@@ -1181,7 +1181,7 @@ begin
     else
     begin
       if FMask = nil then
-        FMask := TBitmap.Create;
+        FMask := ThtBitmap.Create;
       FMask.Assign(htSource.FMask);
     end
   end;
