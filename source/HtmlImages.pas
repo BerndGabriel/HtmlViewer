@@ -2150,7 +2150,7 @@ procedure ThtBitmapImage.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
     Image: TBitmap;
 
   begin
-    Image := TBitmap.Create; {protect original image}
+    Image := ThtBitmap.Create; {protect original image}
     try
       Image.Assign(Bitmap);
 
@@ -2236,15 +2236,7 @@ begin
   if Bitmap = nil then
     exit;
   if (Mask = nil) or (Transp = itrNone) then
-  begin
-{$IFDEF HalfToneStretching}
-    SetStretchBltMode(Canvas.Handle, HALFTONE);
-{$ELSE}
-    SetStretchBltMode(Canvas.Handle, COLORONCOLOR);
-{$ENDIF}
-    SetBrushOrgEx(Canvas.Handle, 0, 0, nil);
-    StretchBlt(Canvas.Handle, X, Y, W, H, Bitmap.Canvas.Handle, 0, 0, Width, Height, SRCCOPY);
-  end
+    inherited Draw(Canvas, X, Y, W, H)
   else
     FinishTransparentBitmap(Canvas.Handle);
 end;

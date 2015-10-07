@@ -104,7 +104,7 @@ type
     procedure SetCurrentFrame(AFrame: Integer);
 
     procedure NextFrame(OldFrame: Integer);
-    procedure SetTransaprent(AValue: Boolean);
+    procedure SetTransparent(AValue: Boolean);
 
   public
     ShowIt: Boolean;
@@ -119,7 +119,7 @@ type
     procedure Draw(Canvas: TCanvas; const ARect: TRect); override;
 
     property IsAnimated: Boolean read FAnimated;
-    property IsTransparent: Boolean read FTransparent write SetTransaprent;
+    property IsTransparent: Boolean read FTransparent write SetTransparent;
     property NumFrames: Integer read FNumFrames;
     property NumIterations: Integer read FNumIterations;
 
@@ -351,7 +351,7 @@ begin
   WasDisposal := Frames[OldFrame].frDisposalMethod;
 end;
 
-procedure TGIFImage.SetTransaprent(AValue: Boolean);
+procedure TGIFImage.SetTransparent(AValue: Boolean);
 begin
   if FTransparent=AValue then
     Exit;

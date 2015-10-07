@@ -419,12 +419,9 @@ const
 function CopyPalette(Palette: HPALETTE): HPALETTE;
 {$ifend}
 
-{$if not declared(TransparentStretchBlt)}
-{$define TransparentStretchBltMissing}
 function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; MaskDC: HDC; MaskX,
   MaskY: Integer): Boolean;
-{$ifend}
 
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
@@ -808,7 +805,6 @@ begin
 end;
 {$endif CopyPaletteMissing}
 
-{$ifdef TransparentStretchBltMissing}
 const
   SOutOfResources = 'Out of system resources';
 var
@@ -820,6 +816,7 @@ begin
 end;
 
 procedure GDIError;
+{$ifndef LCL}
 var
   ErrorCode: Integer;
   Buf: array [Byte] of Char;
@@ -829,6 +826,9 @@ begin
     ErrorCode, LOCALE_USER_DEFAULT, Buf, sizeof(Buf), nil) <> 0) then
     raise EOutOfResources.Create(Buf)
   else
+{$else}
+begin
+{$endif}
     OutOfResources;
 end;
 
@@ -851,6 +851,7 @@ var
   SavePal: HPALETTE;
 begin
   Result := True;
+{$ifdef MSWindows}
   if (Win32Platform = VER_PLATFORM_WIN32_NT) and (SrcW = DstW) and (SrcH = DstH) then
   begin
     MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, 1, 1));
@@ -867,6 +868,7 @@ begin
     end;
     Exit;
   end;
+{$endif}
   SavePal := 0;
   MemDC := GDICheck(CreateCompatibleDC(0));
   try
@@ -896,8 +898,6 @@ begin
     DeleteDC(MemDC);
   end;
 end;
-
-{$endif TransparentStretchBltMissing}
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
 procedure htAppendChr(var Dest: ThtString; C: ThtChar);
@@ -1181,7 +1181,11 @@ begin
     else
     begin
       if FMask = nil then
+      begin
         FMask := ThtBitmap.Create;
+        FMask.TransparentMode := tmFixed;
+        FMask.TransparentColor := clNone;
+      end;
       FMask.Assign(htSource.FMask);
     end
   end;
@@ -1200,7 +1204,11 @@ begin
   if FMask <> AValue then
   begin
     if FMask = nil then
+    begin
       FMask := ThtBitmap.Create;
+      FMask.TransparentMode := tmFixed;
+      FMask.TransparentColor := clNone;
+    end;
     FMask.Assign(AValue);
   end;
 end;
@@ -1305,12 +1313,13 @@ begin
     try
       //AHandle := Canvas.Handle; {LDB}
       if FTransparent then
-        TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
-          Bottom - Top, Canvas.Handle,
-          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+        TransparentStretchBlt(
+          ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+          Canvas.Handle, SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
           FMask.Canvas.Handle, SrcRect.Left, SrcRect.Top) {LDB}
       else
-        StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+        StretchBlt(
+          ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
           Canvas.Handle,
           SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
           ACanvas.CopyMode);
