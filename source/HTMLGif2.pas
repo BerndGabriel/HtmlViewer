@@ -130,16 +130,7 @@ type
     property Visible: Boolean read FVisible write FVisible;
   end;
 
-function LoadGifFromStream(out NonAnimated: Boolean; Stream: TStream): TGifImage;
-
 implementation
-
-function LoadGifFromStream(out NonAnimated: Boolean; Stream: TStream): TGifImage;
-begin
-  Result := TGifImage.Create;
-  Result.LoadFromStream(Stream);
-  NonAnimated := not Result.IsAnimated;
-end;
 
 {----------------TgfFrame.Create}
 
