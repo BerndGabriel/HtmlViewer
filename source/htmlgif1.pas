@@ -1936,7 +1936,7 @@ type
   PLayoutType = ^ThtLayoutType;
 
 {$ifdef LCL}
-function CreateMask(Bitmap: TBitmap; AColor: TColor): TBitmap;
+procedure CreateMask(Bitmap: ThtBitmap; AColor: TColor);
 var
   IntfImage: TLazIntfImage;
   x, y, stopx, stopy: Integer;
@@ -1947,7 +1947,7 @@ begin
   IntfImage := TLazIntfImage.Create(0,0,[]);
   try
     MskHandle := CreateBitmap(Bitmap.Width, Bitmap.Height, 1, 1, nil);
-    IntfImage.LoadFromBitmap(Bitmap.BitmapHandle, MskHandle);
+    IntfImage.LoadFromBitmap(Bitmap.Mask.BitmapHandle, MskHandle);
     DeleteObject(MskHandle);
 
     stopx := IntfImage.Width - 1;
@@ -1964,8 +1964,7 @@ begin
 
     IntfImage.CreateBitmaps(ImgHandle, MskHandle);
     DeleteObject(ImgHandle);
-    Result := TBitmap.Create;
-    Result.Handle := MskHandle;
+    Bitmap.Mask.Handle := MskHandle;
   finally
     IntfImage.Free;
     //Bitmap.Free;
@@ -1990,7 +1989,6 @@ var
   TrIndex: integer;
   C: Byte;
   IsTransparent: boolean;
-  Mask: TBitmap;
 begin
   MStream := nil;
   Result := nil;
@@ -2155,9 +2153,7 @@ begin
       Result.Mask.LoadFromStream(MStream);
 {$ifdef LCL}
       // setting to monochrome not yet implemented
-      Mask := CreateMask(Result.Mask, clWhite);
-      Result.Mask := Mask;
-      FreeAndNil(Mask);
+      CreateMask(Result, clWhite);
 {$else}
       Result.Mask.Monochrome := True; {crunch mask into a monochrome TBitmap}
 {$endif}
@@ -2167,7 +2163,6 @@ begin
   except
     Stream.Free;
     MStream.Free;
-    Mask.Free;
     Result.Free;
     raise;
   end;

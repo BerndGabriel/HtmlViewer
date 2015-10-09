@@ -554,10 +554,6 @@ function StrokePath(DC: HDC): BOOL;
 function CloseFigure(DC: HDC): BOOL;
 function ClipCursor(lpRect: PRect): BOOL;
 
- {This belongs in Graphics unit}
-function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
-                               SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer;
-                               MaskDC: HDC; MaskX, MaskY: Integer): Boolean;
 {$IFNDEF NoFlatScrollbars}
 { FLAT scrollbars }
 function InitializeFlatSB(hWnd: HWND): Bool; stdcall;
@@ -1173,17 +1169,6 @@ begin
 {$ELSE}
   WriteLn('ClipCursor not implemented yet');
 {$ENDIF}
-end;
-
-
- {This belongs in Graphics unit}
-function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
-                               SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer;
-                               MaskDC: HDC; MaskX, MaskY: Integer): Boolean;
-begin
-// Need implementation, but for now just call StretchBlt.
-  Result := StretchBlt(DstDC, DstX, DstY, DstW, DstH,
-                       SrcDC, SrcX, SrcY, SrcW, SrcH, SrcCopy);
 end;
 
 {$IFNDEF NoFlatScrollbars}
