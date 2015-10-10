@@ -1264,7 +1264,7 @@ begin
 {$else}
       StretchBlt(
         ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-        Canvas.Handle, 0, 0, Image.Width, Image.Height,
+        Canvas.Handle, 0, 0, Width, Height,
         ACanvas.CopyMode);
 {$endif}
     finally
