@@ -1249,8 +1249,8 @@ begin
     end
     else if not Monochrome then
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
-
     try
+{$ifdef MSWindows}
       if FTransparent then
         TransparentStretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
@@ -1261,6 +1261,12 @@ begin
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
           Canvas.Handle, 0, 0, Width, Height,
           ACanvas.CopyMode);
+{$else}
+      StretchBlt(
+        ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+        Canvas.Handle, 0, 0, Image.Width, Image.Height,
+        ACanvas.CopyMode);
+{$endif}
     finally
       if RestorePalette then
         SelectPalette(ACanvas.Handle, OldPalette, True);
@@ -1279,7 +1285,6 @@ var
 begin
   with DestRect do
   begin
-    //AHandle := ACanvas.Handle; {LDB}
     PaletteNeeded;
     OldPalette := 0;
     RestorePalette := False;
@@ -1302,7 +1307,7 @@ begin
     else if not Monochrome then
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
     try
-      //AHandle := Canvas.Handle; {LDB}
+{$ifdef MSWindows}
       if FTransparent then
         TransparentStretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
@@ -1311,9 +1316,14 @@ begin
       else
         StretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle,
-          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+          Canvas.Handle, SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
           ACanvas.CopyMode);
+{$else}
+      StretchBlt(
+        ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+        Canvas.Handle, SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+        ACanvas.CopyMode);
+{$endif}
     finally
       if RestorePalette then
         SelectPalette(ACanvas.Handle, OldPalette, True);
