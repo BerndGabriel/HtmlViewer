@@ -51,7 +51,7 @@ uses
   URLSubs,
   HtmlCaches,
   HtmlGlobals,
-  HtmlGif2,
+  HTMLGif2,
   StyleTypes,
 {$ifdef Compiler20_Plus}
   PngImage,
@@ -867,6 +867,7 @@ var
     Icon := TIcon.Create;
     try
       Icon.LoadFromStream(Stream);
+{$ifdef MSWindows}
       if GetIconInfo(Icon.Handle, {$ifdef LCL}@{$endif} IconInfo) then
       begin
         Bitmap := ThtBitmap.Create(Transparent <> itrLLCorner);
@@ -877,6 +878,15 @@ var
           Transparent := itrIntrinsic;
         end;
       end;
+{$else}
+      Bitmap := ThtBitmap.Create(Transparent <> itrLLCorner);
+      Bitmap.LoadFromBitmapHandles(Icon.BitmapHandle, 0);
+      if Transparent <> itrLLCorner then
+      begin
+        Bitmap.Mask.LoadFromBitmapHandles(Icon.MaskHandle, 0);
+        Transparent := itrIntrinsic;
+      end;
+{$endif}
     finally
       Icon.Free;
     end;
@@ -2472,7 +2482,7 @@ begin
        one not likely in the metafile}
         GetPaletteEntries(Tmp.Palette, 115, 1, pe);
         Color := pe.peBlue shl 16 or pe.peGreen shl 8 or pe.peRed;
-        Tmp.Canvas.Brush.Color := Color; //ThemedColor( Color );
+        Tmp.Canvas.Brush.Color := Color;
         Tmp.Canvas.FillRect(Rect(0, 0, Width, Height));
         Tmp.Canvas.Draw(0, 0, FGraphic);
 
