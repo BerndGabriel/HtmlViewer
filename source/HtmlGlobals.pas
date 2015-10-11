@@ -599,10 +599,7 @@ begin
   end;
   Result := ColorToRGB(Result);
 {$else}
-  if AColor < 0 then
-    Result := GetSysColor(AColor and $FFFFFF)
-  else
-    Result := AColor and $FFFFFF;
+  Result := ColorToRGB(AColor);
 {$endif}
 end;
 {$endif}
@@ -628,7 +625,7 @@ function Darker(Color : TColor): TColor; {$ifdef UseInline} inline; {$endif}
 var
   Red, Green, Blue: Byte;
 begin
-  Result := GetSysColor(Color); //ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+  Result := ColorToRGB(Color); //ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
   Red   := DarkerColors[Byte(Result       )];
   Green := DarkerColors[Byte(Result shr  8)];
   Blue  := DarkerColors[Byte(Result shr 16)];
@@ -640,7 +637,7 @@ function Lighter(Color : TColor) : TColor; {$ifdef UseInline} inline; {$endif}
 var
   Red, Green, Blue: Byte;
 begin
-  Result := GetSysColor(Color); // ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+  Result := ColorToRGB(Color); // ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
   Red   := LighterColors[Byte(Result       )];
   Green := LighterColors[Byte(Result shr  8)];
   Blue  := LighterColors[Byte(Result shr 16)];
