@@ -1964,7 +1964,7 @@ begin
 
     IntfImage.CreateBitmaps(ImgHandle, MskHandle);
     DeleteObject(ImgHandle);
-    Bitmap.Mask.Handle := MskHandle;
+    Bitmap.Mask.BitmapHandle := MskHandle;
   finally
     IntfImage.Free;
     //Bitmap.Free;

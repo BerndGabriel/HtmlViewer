@@ -599,10 +599,7 @@ begin
   end;
   Result := ColorToRGB(Result);
 {$else}
-  if AColor < 0 then
-    Result := GetSysColor(AColor and $FFFFFF)
-  else
-    Result := AColor and $FFFFFF;
+  Result := ColorToRGB(AColor);
 {$endif}
 end;
 {$endif}
@@ -628,7 +625,7 @@ function Darker(Color : TColor): TColor; {$ifdef UseInline} inline; {$endif}
 var
   Red, Green, Blue: Byte;
 begin
-  Result := GetSysColor(Color); //ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+  Result := ColorToRGB(Color); //ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
   Red   := DarkerColors[Byte(Result       )];
   Green := DarkerColors[Byte(Result shr  8)];
   Blue  := DarkerColors[Byte(Result shr 16)];
@@ -640,7 +637,7 @@ function Lighter(Color : TColor) : TColor; {$ifdef UseInline} inline; {$endif}
 var
   Red, Green, Blue: Byte;
 begin
-  Result := GetSysColor(Color); // ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+  Result := ColorToRGB(Color); // ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
   Red   := LighterColors[Byte(Result       )];
   Green := LighterColors[Byte(Result shr  8)];
   Blue  := LighterColors[Byte(Result shr 16)];
@@ -832,7 +829,7 @@ begin
     OutOfResources;
 end;
 
-function GDICheck(Value: Integer): Integer;
+function GDICheck(Value: PtrUInt): PtrUInt;
 begin
   if Value = 0 then GDIError;
   Result := Value;
@@ -846,7 +843,7 @@ const
 var
   MemDC: HDC;
   MemBmp: HBITMAP;
-  Save: THandle;
+  SaveObj: HGDIOBJ;
   crText, crBack: TColorRef;
   SavePal: HPALETTE;
 begin
@@ -869,32 +866,37 @@ begin
     Exit;
   end;
 {$endif}
-  SavePal := 0;
-  MemDC := GDICheck(CreateCompatibleDC(0));
+  MemDC := GDICheck(CreateCompatibleDC(DstDC));
   try
     MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, SrcW, SrcH));
-    Save := SelectObject(MemDC, MemBmp);
-    SavePal := SelectPalette(SrcDC, SystemPalette16, False);
-    SelectPalette(SrcDC, SavePal, False);
-    if SavePal <> 0 then
-      SavePal := SelectPalette(MemDC, SavePal, True)
-    else
-      SavePal := SelectPalette(MemDC, SystemPalette16, True);
-    RealizePalette(MemDC);
+    try
+      SaveObj := SelectObject(MemDC, MemBmp);
+      SavePal := SelectPalette(SrcDC, SystemPalette16, False);
+      SelectPalette(SrcDC, SavePal, False);
+      if SavePal <> 0 then
+        SavePal := SelectPalette(MemDC, SavePal, True)
+      else
+        SavePal := SelectPalette(MemDC, SystemPalette16, True);
+      RealizePalette(MemDC);
 
-    StretchBlt(MemDC, 0, 0, SrcW, SrcH, MaskDC, MaskX, MaskY, SrcW, SrcH, SrcCopy);
-    StretchBlt(MemDC, 0, 0, SrcW, SrcH, SrcDC, SrcX, SrcY, SrcW, SrcH, SrcErase);
-    crText := SetTextColor(DstDC, $0);
-    crBack := SetBkColor(DstDC, $FFFFFF);
-    StretchBlt(DstDC, DstX, DstY, DstW, DstH, MaskDC, MaskX, MaskY, SrcW, SrcH, SrcAnd);
-    StretchBlt(DstDC, DstX, DstY, DstW, DstH, MemDC, 0, 0, SrcW, SrcH, SrcInvert);
-    SetTextColor(DstDC, crText);
-    SetBkColor(DstDC, crBack);
+      { Mask out the transparent colored pixels of the source }
+      BitBlt(MemDC, 0, 0, SrcW, SrcH, MaskDC, MaskX, MaskY, SrcCopy);
+      BitBlt(MemDC, 0, 0, SrcW, SrcH, SrcDC, SrcX, SrcY, SrcErase);
 
-    if Save <> 0 then SelectObject(MemDC, Save);
-    DeleteObject(MemBmp);
+      { Punch out a black hole in the background where the source image will go}
+      crText := SetTextColor(DstDC, $0);
+      crBack := SetBkColor(DstDC, $FFFFFF);
+      StretchBlt(DstDC, DstX, DstY, DstW, DstH, MaskDC, MaskX, MaskY, SrcW, SrcH, SrcAnd);
+      SetTextColor(DstDC, crText);
+      SetBkColor(DstDC, crBack);
+
+      StretchBlt(DstDC, DstX, DstY, DstW, DstH, MemDC, 0, 0, SrcW, SrcH, SrcInvert);
+    finally
+      SelectPalette(MemDC, SavePal, False);
+      SelectObject(MemDC, SaveObj);
+      DeleteObject(MemBmp);
+    end;
   finally
-    if SavePal <> 0 then SelectPalette(MemDC, SavePal, False);
     DeleteDC(MemDC);
   end;
 end;
@@ -1220,12 +1222,9 @@ var
   DoHalftone: Boolean;
   Pt: TPoint;
   BPP: Integer;
-  MaskDC: HDC;
-  Save: THandle;
 begin
   with Rect do
   begin
-    //AHandle := ACanvas.Handle; {LDB}
     PaletteNeeded;
     OldPalette := 0;
     RestorePalette := False;
@@ -1248,28 +1247,23 @@ begin
     else if not Monochrome then
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
     try
-      //AHandle := Canvas.Handle; {LDB}
+{$ifdef MSWindows}
       if FTransparent then
-      begin
-        Save := 0;
-        MaskDC := 0;
-        try
-          MaskDC := CreateCompatibleDC(0); {LDB}
-          Save := SelectObject(MaskDC, MaskHandle);
-          TransparentStretchBlt(ACanvas.Handle, Left, Top, Right - Left,
-            Bottom - Top, Canvas.Handle, 0, 0, Width,
-            Height, FMask.Canvas.Handle, 0, 0); {LDB}
-        finally
-          if Save <> 0 then
-            SelectObject(MaskDC, Save);
-          if MaskDC <> 0 then
-            DeleteDC(MaskDC);
-        end;
-      end
+        TransparentStretchBlt(
+          ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+          Canvas.Handle, 0, 0, Width, Height,
+          FMask.Canvas.Handle, 0, 0) {LDB}
       else
-        StretchBlt(ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle, 0, 0, Width,
-          Height, ACanvas.CopyMode);
+        StretchBlt(
+          ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+          Canvas.Handle, 0, 0, Width, Height,
+          ACanvas.CopyMode);
+{$else}
+      StretchBlt(
+        ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+        Canvas.Handle, 0, 0, Width, Height,
+        ACanvas.CopyMode);
+{$endif}
     finally
       if RestorePalette then
         SelectPalette(ACanvas.Handle, OldPalette, True);
@@ -1288,7 +1282,6 @@ var
 begin
   with DestRect do
   begin
-    //AHandle := ACanvas.Handle; {LDB}
     PaletteNeeded;
     OldPalette := 0;
     RestorePalette := False;
@@ -1311,7 +1304,7 @@ begin
     else if not Monochrome then
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
     try
-      //AHandle := Canvas.Handle; {LDB}
+{$ifdef MSWindows}
       if FTransparent then
         TransparentStretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
@@ -1320,9 +1313,14 @@ begin
       else
         StretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle,
-          SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+          Canvas.Handle, SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
           ACanvas.CopyMode);
+{$else}
+      StretchBlt(
+        ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+        Canvas.Handle, SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
+        ACanvas.CopyMode);
+{$endif}
     finally
       if RestorePalette then
         SelectPalette(ACanvas.Handle, OldPalette, True);

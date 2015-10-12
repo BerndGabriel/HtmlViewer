@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 875
+  Left = 876
   Height = 505
-  Top = 176
+  Top = 178
   Width = 762
   Caption = 'Frame Demo'
   ClientHeight = 485
@@ -25,7 +25,7 @@ object Form1: TForm1
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
-    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvShowVScroll]
+    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
     HistoryIndex = 0
     HistoryMaxCount = 6
     ImageCacheCount = 6
@@ -220,12 +220,18 @@ object Form1: TForm1
         Caption = 'Quirks Mode'
         object mmiQuirksModeStandards: TMenuItem
           Caption = 'Standards'
+          RadioItem = True
+          OnClick = mmiQuirksModeStandardsClick
         end
         object mmiQuirksModeDetect: TMenuItem
           Caption = 'Detect'
+          RadioItem = True
+          OnClick = mmiQuirksModeDetectClick
         end
         object mmiQuirksModeQuirks: TMenuItem
           Caption = 'Quirks'
+          RadioItem = True
+          OnClick = mmiQuirksModeQuirksClick
         end
       end
     end
