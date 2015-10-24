@@ -2240,7 +2240,8 @@ begin
     with TSection(Obj) do
     begin
       FO := Fonts.GetFontObjAt(Pos - StartCurs);
-      Font := FO.TheFont;
+      if FO = nil then Font := nil
+      else Font := FO.TheFont; 
     end;
 end;
 
