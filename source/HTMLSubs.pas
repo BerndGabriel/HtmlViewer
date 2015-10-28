@@ -202,8 +202,10 @@ type
     FAttributes: TAttributeList;
     FProperties: TProperties;
     function GetSymbol(): TElemSymb;
+    function GetAttribute(const Name: ThtString): ThtString;
   protected
-    function FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean; overload; virtual;
+//    function FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean; overload;
+    function FindAttribute(const Name: ThtString; out Attribute: TAttribute): Boolean; overload;
     function GetChild(Index: Integer): THtmlNode; virtual;
 //    function GetParent: TBlock; virtual;
 //    function GetPseudos: TPseudos; virtual;
@@ -221,6 +223,7 @@ type
     property OwnerBlock: TBlock read FOwnerBlock; //BG, 07.02.2011: public for reading document structure (see issue 24). Renamed from MyBlock to Owner to clarify the relation.
     property OwnerCell: TCellBasic read FOwnerCell write FOwnerCell;
     property Document: ThtDocument read FDocument;
+    property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
   end;
 
 //------------------------------------------------------------------------------
@@ -862,7 +865,6 @@ type
     FID: ThtString;
     FTitle: ThtString;
     FValue: ThtString;
-    //function GetAttribute(const AttrName: ThtString): ThtString;
     procedure SetValue(const Value: ThtString);
   protected
     Active: Boolean;
@@ -919,7 +921,6 @@ type
     procedure SetHeightWidth(Canvas: TCanvas); virtual;
     procedure Show; virtual;
 
-    //property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
 //    property Height: Integer read GetClientHeight write SetClientHeight;
     property Hidden: Boolean read IsHidden;
     property ID: ThtString read FID write FID; {ID attribute of control}
@@ -1831,19 +1832,30 @@ begin
   FProperties := Source.FProperties;
 end;
 
-//-- BG ---------------------------------------------------------- 23.03.2011 --
-function THtmlNode.FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean;
-begin
-  Attribute := nil;
-  Result := (FAttributes <> nil) and FAttributes.Find(NameSy, Attribute);
-end;
-
-////-- BG ---------------------------------------------------------- 24.03.2011 --
-//function THtmlNode.FindAttribute(Name: ThtString; out Attribute: TAttribute): Boolean;
+////-- BG ---------------------------------------------------------- 23.03.2011 --
+//function THtmlNode.FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean;
 //begin
 //  Attribute := nil;
-//  Result := (FAttributes <> nil) and FAttributes.Find(Name, Attribute);
+//  Result := (FAttributes <> nil) and FAttributes.Find(NameSy, Attribute);
 //end;
+
+//-- BG ---------------------------------------------------------- 24.03.2011 --
+function THtmlNode.FindAttribute(const Name: ThtString; out Attribute: TAttribute): Boolean;
+begin
+  Attribute := nil;
+  Result := (FAttributes <> nil) and FAttributes.Find(Name, Attribute);
+end;
+
+//-- BG ---------------------------------------------------------- 28.10.2015 --
+function THtmlNode.GetAttribute(const Name: ThtString): ThtString;
+var
+  Attribute: TAttribute;
+begin
+  if FindAttribute(Name, Attribute) then
+    Result := Attribute.Name
+  else
+    SetLength(Result, 0);
+end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 function THtmlNode.GetChild(Index: Integer): THtmlNode;
@@ -3552,11 +3564,6 @@ begin
   if Assigned(Document.ObjectClick) then
     Document.ObjectClick(Document.TheOwner, Self, OnClickMessage);
 end;
-
-//function TFormControlObj.GetAttribute(const AttrName: ThtString): ThtString;
-//begin
-//  Result := FAttributeList.Values[AttrName];
-//end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
 function TFormControlObj.GetClientHeight: Integer;
