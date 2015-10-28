@@ -6,16 +6,14 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v117">
 
 <H1><A NAME="type_tobjectclickevent"></A><B>Type TObjectClickEvent</B></H1>
 <HR>
 
 <H2 class="Declaration">Declaration</H2>
 
-<P>TObjectClickEvent = procedure(Sender, Obj: TObject; </P>
-
-<P>const OnClick: string) of Object;</P>
+<P>TObjectClickEvent = procedure(Sender, Obj: TObject; const OnClick: string) of Object;</P>
 
 <H2 class="Description">Description</H2>
 
@@ -25,21 +23,18 @@
 
 <P>Form controls currently support the <A HREF="onobjectclick_event.htm">OnObjectClick</A> event.  These objects are descendents of TFormControlObj.  In particular, the <B>TheControl</B> property can give access to the underlying Delphi controls, such as <B>TButton</B>, <B>TRadiobutton</B>, and <B>TCheckbox</B> with code similar to:</P>
 
-<P>if (Obj is TFormControlObj) then</P>
-
-<P>with TFormControlObj(Obj) do</P>
-
-<P>if (TheControl is TButton) then .....</P>
-
+<PRE>if (Obj is TFormControlObj) then
+    with TFormControlObj(Obj) do
+        if (TheControl is TButton) then 
+            .....</PRE>
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="AttributeValue Property">
 </OBJECT>
 
-<P>TFormControlObj also has an <B>AttributeValue Property</B> with which special user attributes can be accessed:</P>
+<P>TFormControlObj's base class THtmlNode also has an <B>AttributeValue Property</B> with which special user attributes can be accessed:</P>
 
-<P>if (Obj is TFormControlObj) then</P>
-
-<P>AttrValue := TFormControlObj(Obj).AttributeValue['MyAttr'];</P>
+<PRE>if (Obj is THtmlNode) then
+    AttrValue := THtmlNode(Obj).AttributeValue['MyAttr'];</PRE>
 
 <P><B>See also:</B></P>
 

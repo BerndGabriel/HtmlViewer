@@ -131,7 +131,8 @@ type
     constructor CreateCopy(ASource: TAttributeList);
     destructor Destroy; override;
     procedure Clear; override;
-    function Find(Sy: TAttrSymb; var T: TAttribute): Boolean; {$ifdef UseInline} inline; {$endif}
+    function Find(const Name: ThtString; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
+    function Find(Sy: TAttrSymb; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
@@ -1418,6 +1419,20 @@ destructor TAttributeList.Destroy;
 begin
   Prop.Free;
   inherited;
+end;
+
+function TAttributeList.Find(const Name: ThtString; var T: TAttribute): Boolean;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+    if Items[I].WhichName = Name then
+    begin
+      Result := True;
+      T := Items[I];
+      Exit;
+    end;
+  Result := False;
 end;
 
 function TAttributeList.Find(Sy: TAttrSymb; var T: TAttribute): Boolean;

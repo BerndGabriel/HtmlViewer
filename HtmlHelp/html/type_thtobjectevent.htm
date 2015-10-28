@@ -6,46 +6,37 @@
 <link rel="stylesheet" type="text/css" href="help.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<BODY class="v117">
 
 <H1><A NAME="type_thtobjectevent"></A><B>Type ThtObjectEvent</B></H1>
 <HR>
 
 <H2 class="Declaration">Declaration</H2>
 
-<P>ThtObjectEvent = procedure(Sender, Obj: TObject; </P>
-
-<P>const Attribute: string) of Object;</P>
+<P>ThtObjectEvent = procedure(Sender, Obj: TObject; const Attribute: string) of Object;</P>
 
 <H2 class="Description">Description</H2>
 
 <P>The ThtObjectEvent type is the type for <A HREF="onobjectfocus_event.htm">OnObjectFocus</A>, <A HREF="onobjectblur_event.htm">OnObjectBlur</A>, and <A HREF="onobjectchange_event.htm">OnObjectChange</A> events.</P>
 
-<P>In the above:</P>
+<P>In the above, <I>Sender</I>The <A HREF="thtmlviewer_component.htm">THtmlViewer</A> where the Object is located and <I>Obj</I> is a pointer to the clicked object.</P>
 
-<P><I>Sender</I>The <A HREF="thtmlviewer_component.htm">THtmlViewer</A> where the Object is located</P>
-
-<P><I>Obj</I>A pointer to the clicked object.</P>
-
-<P><I>Attribute</I>The string assigned to the OnFocus, OnBlur, or OnChange attribute of the object's HTML tag.</P>
+<P><I>Attribute</I> is the string assigned to the OnFocus, OnBlur, or OnChange attribute of the object's HTML tag.</P>
 
 <P>Form controls currently support these events.  Form controls are descendents of TFormControlObj.  In particular, the <B>TheControl</B> property can give access to the underlying Delphi controls, such as <B>TEdit</B>, <B>TButton</B>,  and <B>TCheckbox</B> with code similar to:</P>
 
-<P>if (Obj is TFormControlObj) then</P>
-
-<P>with TFormControlObj(Obj) do</P>
-
-<P>if (TheControl is TButton) then .....</P>
-
+<PRE>if (Obj is TFormControlObj) then
+    with TFormControlObj(Obj) do
+        if (TheControl is TButton) then 
+            .....</PRE>
 <OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
 	<PARAM NAME="Keyword" VALUE="AttributeValue Property">
 </OBJECT>
 
-<P>TFormControlObj also has an <B>AttributeValue Property</B> with which special user attributes can be accessed:</P>
+<P>TFormControlObj's base class THtmlNode also has an <B>AttributeValue Property</B> with which special user attributes can be accessed:</P>
 
-<P>if (Obj is TFormControlObj) then</P>
-
-<P>AttrValue := TFormControlObj(Obj).AttributeValue['MyAttr'];</P>
+<PRE>if (Obj is THtmlNode) then
+    AttrValue := THtmlNode(Obj).AttributeValue['MyAttr'];</PRE>
 
 <P><B>See also:</B></P>
 
