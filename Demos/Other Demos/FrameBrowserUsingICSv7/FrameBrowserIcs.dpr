@@ -47,7 +47,7 @@ uses
 
 begin
   Application.Initialize;
-  Application.Title := 'Experimental Browser using ICSv7';
+  Application.Title := 'Experimental Browser using ICSv7/v8';
   Application.CreateForm(THTTPForm, HTTPForm);
   Application.CreateForm(TLogForm, LogForm);
   Application.CreateForm(TAuthForm, AuthForm);

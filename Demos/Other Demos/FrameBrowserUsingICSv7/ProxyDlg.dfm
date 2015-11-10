@@ -3,8 +3,8 @@ object ProxyForm: TProxyForm
   Top = 180
   BorderIcons = []
   BorderStyle = bsDialog
-  Caption = 'Proxy'
-  ClientHeight = 207
+  Caption = 'Settings'
+  ClientHeight = 314
   ClientWidth = 288
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -43,6 +43,13 @@ object ProxyForm: TProxyForm
     Height = 13
     Caption = 'Proxy Password'
   end
+  object Label5: TLabel
+    Left = 24
+    Top = 162
+    Width = 53
+    Height = 13
+    Caption = 'User Agent'
+  end
   object ProxyEdit: TEdit
     Left = 24
     Top = 32
@@ -60,7 +67,7 @@ object ProxyForm: TProxyForm
   end
   object OKBurron: TBitBtn
     Left = 64
-    Top = 168
+    Top = 253
     Width = 65
     Height = 25
     TabOrder = 2
@@ -68,7 +75,7 @@ object ProxyForm: TProxyForm
   end
   object CancelButton: TBitBtn
     Left = 160
-    Top = 168
+    Top = 253
     Width = 65
     Height = 25
     TabOrder = 3
@@ -87,5 +94,13 @@ object ProxyForm: TProxyForm
     Width = 177
     Height = 21
     TabOrder = 5
+  end
+  object UserAgent: TEdit
+    Left = 24
+    Top = 181
+    Width = 241
+    Height = 21
+    TabOrder = 6
+    Text = 'Mozilla/4.0'
   end
 end

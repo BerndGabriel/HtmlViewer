@@ -20,18 +20,13 @@
   {$define MetaFileMissing}
   {$define MultiMediaMissing}
 
-  {$define HasStrictDelimiter}
-
   {$define ver100_plus}
   {$define ver120_plus}
-
 {$else}
 
 { Identify Delphi Compiler Version:
 
   #   Compiler    Version Compiler Defined Symbol
-  D23 Delphi 10 Seattle 30  VER300
-  D22 Delphi XE8    29    VER290
   D21 Delphi XE7    28    VER280
   D20 Delphi XE6    27    VER270
   D19 Delphi XE5    26    VER260
@@ -65,7 +60,7 @@
 
   A complete list of version numbers can be found at:
   
-  http://docwiki.embarcadero.com/RADStudio/XE8/de/Compiler-Versionen
+  http://docwiki.embarcadero.com/RADStudio/XE5/de/Compiler-Versionen
 }
 
   {$define VCL}
@@ -117,14 +112,6 @@
                                {$define Compiler28_Plus}
                                {$ifdef ver280}
                                {$else}
-                                 {$define Compiler29_Plus}
-                                 {$ifdef ver290}
-                                 {$else}
-                                   {$define Compiler30_Plus}
-                                   {$ifdef ver300}
-                                   {$else}
-                                   {$endif}
-                                 {$endif}
                                {$endif}
                              {$endif}
                             {$endif}
@@ -152,10 +139,6 @@
     {$else}
       {$define UseInline}
     {$endif}
-  {$endif}
-
-  {$ifdef Compiler18_Plus}
-    {$define HasStrictDelimiter}
   {$endif}
 
   {$ifdef Compiler20_Plus}
@@ -225,7 +208,6 @@
 
 { Define Aspects Of HtmlViewer }
 
-{$ifdef MSWindows}
 {.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
         PNG images and provides support for TIFF images.
         If, for some reason the use of the gdiplus.dll is
@@ -238,11 +220,6 @@
         For applications where printing is unimportant or Win98/95/ME need not
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
-{$else}
-  {$define NoGDIPlus}
-  {$define NoMetaFile}
-  {$define NoFlatScrollbars}
-{$endif}
 
 {.$define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by
         removing the '.'.  For documents with hundreds of links, tabbing may not
@@ -291,10 +268,6 @@
         'hide' as default.
         New users should define EmptyCellsDefaultIsShow for CSS compliance.}
 
-{.$define UseDeprecatedLoadMethods}
-        {Brings back deprecated LoadStrings(), LoadImage(), LoadText*()..., ... methods.
-        Prefer using the suggested replacement methods over defining this switch.}
-
 {$ifdef Compiler20_Plus}
 {$else}
   {TNT Unicode controls are mandatory for Delphi 6-2007}
@@ -317,7 +290,6 @@ some versions of RAD Studio XE2.  This should never be used for release software
   {$endif}
    {$define has_StyleElements}
 {$endif}
-
 {
 Using Third Party Unicode Controls
 

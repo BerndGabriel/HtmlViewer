@@ -2,7 +2,7 @@ object HTTPForm: THTTPForm
   Left = 510
   Top = 261
   ActiveControl = UrlComboBox
-  Caption = 'Experimental Browser using ICSv7'
+  Caption = 'Experimental Browser using ICSv7/v8'
   ClientHeight = 606
   ClientWidth = 729
   Color = clBtnFace
@@ -89,7 +89,9 @@ object HTTPForm: THTTPForm
     PrintMarginRight = 2.000000000000000000
     PrintMarginTop = 2.000000000000000000
     PrintScale = 1.000000000000000000
+    QuirksMode = qmDetect
     OnBlankWindowRequest = BlankWindowRequest
+    OnFileBrowse = FrameBrowserFileBrowse
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
     OnHotSpotTargetCovered = HotSpotTargetCovered
@@ -118,7 +120,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 156
+        Width = 163
       end
       item
         Break = False
@@ -127,7 +129,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 274
+        Width = 384
       end
       item
         Break = False
@@ -135,12 +137,12 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 285
+        Width = 168
       end>
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 143
+      Width = 150
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -184,9 +186,9 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 199
+      Left = 206
       Top = 8
-      Width = 233
+      Width = 343
       Height = 21
       TabOrder = 1
       OnClick = URLComboBoxClick
@@ -195,9 +197,9 @@ object HTTPForm: THTTPForm
         'http://pc19-web/local/localindex.html')
     end
     object Panel10: TPanel
-      Left = 449
+      Left = 566
       Top = 0
-      Width = 276
+      Width = 159
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -233,7 +235,7 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 248
+        Left = 131
         Top = 0
         Width = 28
         Height = 37
@@ -307,7 +309,7 @@ object HTTPForm: THTTPForm
     object Options1: TMenuItem
       Caption = '&Options'
       object Proxy1: TMenuItem
-        Caption = '&Proxy...'
+        Caption = '&Settings...'
         OnClick = Proxy1Click
       end
       object CachePages: TMenuItem
@@ -337,6 +339,10 @@ object HTTPForm: THTTPForm
         Caption = 'Log HTML'
         OnClick = ShowLogHTMLClick
       end
+      object ShowLogHTTP: TMenuItem
+        Caption = 'Log HTTP'
+        OnClick = ShowLogHTTPClick
+      end
     end
     object Help1: TMenuItem
       Caption = '&Help'
@@ -359,13 +365,6 @@ object HTTPForm: THTTPForm
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
     Left = 296
     Top = 152
-  end
-  object Timer: TTimer
-    Enabled = False
-    Interval = 100
-    OnTimer = TimerTimer
-    Left = 368
-    Top = 145
   end
   object SaveDialog: TSaveDialog
     Filter = 'All Files|*.*'
@@ -416,7 +415,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 160
     Bitmap = {
-      494C01010D0011000C0011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D009400B00011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1034,9 +1033,11 @@ object HTTPForm: THTTPForm
     SslVerifyPeerModes = [SslVerifyMode_PEER]
     SslSessionCacheModes = []
     SslCipherList = 'ALL:!ADH:RC4+RSA:+SSLv2:@STRENGTH'
-    SslVersionMethod = sslV23
+    SslVersionMethod = sslBestVer_CLIENT
+    SslECDHMethod = sslECDHAuto
     SslSessionTimeout = 0
     SslSessionCacheSize = 20480
+    AutoEnableBuiltinEngines = False
     Left = 45
     Top = 95
   end
@@ -1045,5 +1046,40 @@ object HTTPForm: THTTPForm
     OnNewCookie = IcsCookiesNewCookie
     Left = 122
     Top = 95
+  end
+  object MimeTypesList1: TMimeTypesList
+    LoadOSonDemand = True
+    MimeTypesFile = '/etc/apache2/mime.types'
+    DefaultTypes.Strings = (
+      '.htm=text/html'
+      '.html=text/html'
+      '.gif=image/gif'
+      '.bmp=image/bmp'
+      '.jpg=image/jpeg'
+      '.jpeg=image/jpeg'
+      '.tif=image/tiff'
+      '.tiff=image/tiff'
+      '.txt=text/plain'
+      '.css=text/css'
+      '.wav=audio/x-wav'
+      '.ico=image/x-icon'
+      '.wml=text/vnd.wap.wml'
+      '.wbmp=image/vnd.wap.wbmp'
+      '.wmlc=application/vnd.wap.wmlc'
+      '.wmlscript=text/vnd.wap.wmlscript'
+      '.wmlscriptc=application/vnd.wap.wmlscriptc'
+      '.pdf=application/pdf'
+      '.png=image/png'
+      '.xml=application/xml'
+      '.xhtml=application/xhtml+xml'
+      '.zip=application/zip'
+      '.exe=application/x-msdownload'
+      '.msi=application/x-msdownload'
+      '.bin=application/octet-stream'
+      '.iso=application/octet-stream')
+    MimeTypeSrc = MTypeList
+    UnknownType = 'application/octet-stream'
+    Left = 396
+    Top = 92
   end
 end
