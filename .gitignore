@@ -1,3 +1,53 @@
-*.dcu
-*.local
-*.stat
+**.dcu
+**.bmp
+**.d
+**.ddp
+**.drc
+**.gex
+**.ico
+**.ICO
+**.identcache
+**.log
+**.map
+**.o
+**.ncb
+**.sln
+**.suo
+**.dproj*
+**.vcproj*
+**.cbproj*
+**.exe
+**CVS
+**__history
+**.*ignore
+**.svn
+*.*~*
+**.bak
+**.cfg
+**.dof
+**.mes
+**.dsk
+**.lpi
+**.*groupproj*
+**.tvsconfig
+**.local
+**.stat
+**.gid
+**.lpi
+**.res
+**.otares
+**.aqt
+*bin
+sonar-*
+config.default
+Thumbs.db
+Demos/Main Demos/bin
+Demos/Main Demos/lib
+Demos/Other Demos/LiveHtml/bin
+Demos/Other Demos/LiveHtml/lib
+Demos/Other Demos/FrameBrowserUsingICSv7/cache
+Demos/Other Demos/FrameBrowserUsingIndy9/cache
+Demos/Other Demos/FrameBrowserUsingIndy10/cache
+package/lib
+package/XE2BCB
+*eay*.dll
