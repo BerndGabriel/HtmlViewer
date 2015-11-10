@@ -3588,7 +3588,7 @@ begin
   begin
     if not Assigned(Section) then
       Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, False);
-    Section.AddChar(#8, TagIndex);
+    Section.AddChar(BrkCh, TagIndex);
     SectionList.Add(Section, TagIndex);
     PushNewProp(BRSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
     PropStack.Last.GetPageBreaks(Before, After, Intact);
