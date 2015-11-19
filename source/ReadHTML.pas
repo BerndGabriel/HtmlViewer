@@ -1404,7 +1404,7 @@ var
   IsInline: Boolean;
 begin
   case Sym of
-    DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy :
+    DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
@@ -1547,6 +1547,13 @@ begin
         if Sy in [BlockQuoteEndSy, AddressEndSy] then
           Next;
       end;
+
+    StyleSy:
+      begin
+        DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
+        Next;
+      end;
+
   else
     Next;
   end;
@@ -3112,6 +3119,12 @@ procedure THtmlParser.DoCommonSy;
 
                 ScriptSy:
                   DoScript(PropStack.Document.ScriptEvent);
+
+                StyleSy:
+                  begin
+                    DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
+                    Next;
+                  end;
               end;
             end;
 
@@ -3411,7 +3424,7 @@ begin
             StringSy, ASy, AEndSy, BrSy, NoBrSy, NoBrEndSy, WbrSy,
             InputSy, ButtonSy, ButtonEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy,
             TextAreaSy, TextAreaEndSy, SelectSy, ImageSy, FontSy, FontEndSy, BaseFontSy,
-            ScriptSy, ScriptEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
+            ScriptSy, ScriptEndSy, StyleSy, StyleEndSy, PanelSy, HRSy, ObjectSy, ObjectEndSy:
               DoCommonSy;
 
             CommandSy:
@@ -3480,6 +3493,12 @@ begin
         DoScript(PropStack.Document.ScriptEvent);
         Next;
       end;
+
+    StyleSy:
+      begin
+        DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
+        Next;
+      end;
   else
     begin
       Assert(False, 'DoCommon can''t handle <' + SymbToStr(Sy) + GreaterChar);
@@ -3542,7 +3561,7 @@ begin
       ImageSy, FontSy, BaseFontSy, BRSy,
       ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ButtonSy, ButtonEndSy,
       ProgressSy, ProgressEndSy, MeterSy, MeterEndSy, 
-      MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, CommandSy])
+      MapSy, PageSy, ScriptSy, ScriptEndSy, StyleSy, StyleEndSy, PanelSy, CommandSy])
   do
     if Sy <> CommandSy then
       DoCommonSy
@@ -3646,7 +3665,7 @@ begin
       SmallEndSy, BigSy, SmallSy, ASy, AEndSy, SpanSy, SpanEndSy,
       InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, BaseFontSy, BrSy, H1Sy..H6Sy,
-      MapSy, PageSy, ScriptSy, ScriptEndSy, PanelSy, 
+      MapSy, PageSy, ScriptSy, ScriptEndSy, StyleSy, StyleEndSy, PanelSy,
       ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy:
         DoCommonSy;
 
@@ -3787,9 +3806,10 @@ begin
       H1Sy..H6Sy, H1EndSy..H6EndSy, PreSy,
       InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
       ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
-      SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
+      SmallEndSy, MapSy, PageSy, ScriptSy, StyleSy, StyleEndSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
       ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy:
         DoCommonSy;
+
     else
       if Sy in TermSet then {exit below}
       else
@@ -4060,7 +4080,7 @@ begin
         H1Sy..H6Sy, H1EndSy..H6EndSy, PreSy, TableSy,
         InputSy, ButtonSy, ButtonEndSy, TextAreaSy, TextAreaEndSy, SelectSy, LabelSy, LabelEndSy,
         ImageSy, FontSy, FontEndSy, BaseFontSy, BigSy, BigEndSy, SmallSy,
-        SmallEndSy, MapSy, PageSy, ScriptSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
+        SmallEndSy, MapSy, PageSy, ScriptSy, ScriptEndSy, StyleSy, StyleEndSy, PanelSy, NoBrSy, NoBrEndSy, WbrSy,
         ObjectSy, ObjectEndSy, IFrameSy, IFrameEndSy, ProgressSy, ProgressEndSy, MeterSy, MeterEndSy:
           begin
             PushHtmlPropsIfAny;
@@ -4191,12 +4211,6 @@ begin
         LinkElemSy:
           begin
             DoStyleLink;
-          end;
-
-        StyleSy:
-          begin
-            DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
-            Next;
           end;
 
         BgSoundSy:
