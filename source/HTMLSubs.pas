@@ -9899,6 +9899,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
       if TotalMinHt >= AHeight then
         Heights := Copy(MinHts)
       else if TotalDesHt < AHeight then
+      begin
         if UnSpec > 0 then
         begin {expand the unspeced rows to fit}
           Heights := Copy(DesiredHts);
@@ -9931,6 +9932,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
           end;
           Heights[Rows.Count - 1] := AHeight - Sum; {last row is the difference}
         end
+      end
       else if TotalDesHt - TotalMinHt <> 0 then
       begin
         Sum := 0;
