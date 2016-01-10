@@ -59,9 +59,9 @@ type
     LinkPath: ThtString;
     FUseQuirksMode : Boolean;
     // parser methods
-    procedure GetCh;
+    procedure GetCh(WantLfChar: Boolean = False);
+    procedure SkipWhiteSpace(WantLfChar: Boolean = False);
     function GetIdentifier(out Identifier: ThtString): Boolean;
-    procedure SkipWhiteSpace;
     function GetString(out Str: ThtString): Boolean;
     //
     function AddPath(const S: ThtString): ThtString;
@@ -149,16 +149,28 @@ begin
   FUseQuirksMode := AUseQuirksMode;
 end;
 
-procedure THtmlStyleParser.GetCh;
+procedure THtmlStyleParser.GetCh(WantLfChar: Boolean);
 var
   LastCh: ThtChar;
 begin
   LCh := Doc.NextChar;
   case LCh of
-    CrChar,
-    LfChar,
-    TabChar,
-    FfChar:
+    CrChar:
+      if Doc.PeekChar = LfChar then
+        GetCh(WantLfChar)
+      else if WantLfChar then
+        LCh := LfChar
+      else
+        LCh := SpcChar;
+
+    FfChar,
+    LfChar:
+      if WantLfChar then
+        LCh := LfChar
+      else
+        LCh := SpcChar;
+
+    TabChar:
       LCh := SpcChar;
 
     ThtChar('/'):
@@ -279,9 +291,9 @@ end;
 
 {-------------SkipWhiteSpace}
 
-procedure THtmlStyleParser.SkipWhiteSpace;
+procedure THtmlStyleParser.SkipWhiteSpace(WantLfChar: Boolean);
 begin
-  while LCh = ' ' do
+  while (LCh = SpcChar) or (LCh = LfChar) do
     GetCh;
 end;
 
@@ -1206,6 +1218,8 @@ procedure THtmlStyleTagParser.GetCollection;
 var
   Top: ThtChar;
   MoreStack: ThtString;
+  Strings: Integer;
+  InString: Boolean;
 
   procedure Push(Ch: ThtChar);
   var
@@ -1234,6 +1248,36 @@ var
       Top := EofChar;
   end;
 
+  function TryPop(LCh: ThtChar): Boolean;
+  var
+    I: Integer;
+  begin
+    Result := Top = LCh;
+    if Result then
+      Pop
+    else
+    begin
+      for I := Length(MoreStack) downto 1 do
+      begin
+        Result := MoreStack[I] = LCh;
+        if Result then
+        begin
+          SetLength(MoreStack, I-1);
+          Pop;
+          Break;
+        end;
+      end;
+    end;
+  end;
+
+  procedure PopStrings;
+  begin
+    TryPop('''');
+    TryPop('"');
+    Strings := 0;
+    InString := False;
+  end;
+
   function IsTermChar(LCh: ThtChar): Boolean;
   begin
     case LCh of
@@ -1252,6 +1296,8 @@ var
 begin
   if LCh = '{' then
   begin
+    Strings := 0;
+    InString := False;
     GetCh;
     repeat
       SkipWhiteSpace;
@@ -1260,8 +1306,8 @@ begin
         SkipWhiteSpace;
         if (LCh = ':') or (LCh = '=') then
         begin
-          GetCh;
-          SkipWhiteSpace;
+          GetCh(True);
+          SkipWhiteSpace(True);
 
           SetLength(Value, 0);
           { The ';' inside a quotation should not end a CSS value.  }
@@ -1269,10 +1315,29 @@ begin
           begin
             case LCh of
               '"', '''':
-                if LCh = Top then
-                  Pop
+                if Top = LCh then
+                begin
+                  Pop;
+                  Dec(Strings);
+                  if Strings <= 0 then
+                  begin
+                    InString := False;
+                    Strings := 0;
+                  end;
+                end
                 else
+                begin
                   Push(LCh);
+                  Inc(Strings);
+                  InString := True;
+                end;
+
+              LfChar:
+                if InString then
+                begin
+                  PopStrings;
+                  Break;
+                end;
 
               '(' :
                 Push(')');
@@ -1283,7 +1348,7 @@ begin
             end;
             SetLength(Value, Length(Value) + 1);
             Value[Length(Value)] := LCh;
-            GetCh;
+            GetCh(True);
           end;
 
           // TODO -oBG, 26.04.2013: support !important
@@ -1316,10 +1381,29 @@ begin
           '[': Push(']');
 
           '"', '''':
-            if LCh = Top then
-              Pop
+            if Top = LCh then
+            begin
+              Pop;
+              Dec(Strings);
+              if Strings <= 0 then
+              begin
+                InString := False;
+                Strings := 0;
+              end;
+            end
             else
+            begin
               Push(LCh);
+              Inc(Strings);
+              InString := True;
+            end;
+
+          LfChar:
+            if InString then
+            begin
+              PopStrings;
+              Break;
+            end;
 
           '}':
           begin
@@ -1340,11 +1424,13 @@ begin
           if LCh = Top then
             Pop;
         end;
-        GetCh;
+        GetCh(True);
       end;
     until IsTermChar(LCh);
     if LCh = '}' then
       GetCh;
+    if LCh = LfChar then
+      LCh := SpcChar;
   end;
 end;
 
