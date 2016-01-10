@@ -1340,7 +1340,8 @@ begin
                 end;
 
               '(' :
-                Push(')');
+                if not InString then
+                  Push(')');
 
               ')' :
                 if LCh = Top then
@@ -1376,9 +1377,17 @@ begin
               break;
             end;
 
-          '{': Push('}');
-          '(': Push(')');
-          '[': Push(']');
+          '{':
+            if not InString then
+              Push('}');
+
+          '(':
+            if not InString then
+              Push(')');
+
+          '[':
+            if not InString then
+              Push(']');
 
           '"', '''':
             if Top = LCh then
@@ -1406,16 +1415,18 @@ begin
             end;
 
           '}':
-          begin
-            if LCh = Top then
-              Pop;
-            if Top = EofChar then
-              break;
-          end;
+            if not InString then
+            begin
+              if LCh = Top then
+                Pop;
+              if Top = EofChar then
+                break;
+            end;
 
           '<':
-            if Top = EofChar then
-              break;
+            if not InString then
+              if Top = EofChar then
+                break;
 
           EofChar:
             break;
