@@ -14988,11 +14988,13 @@ end;
 constructor TSizeableObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   I: Integer;
-  NewSpace: Integer;
+  NewHSpace: Integer;
+  NewVSpace: Integer;
   S: ThtString;
 begin
   inherited Create(Parent,Position,L,Prop);
-  NewSpace := -1;
+  NewHSpace := -1;
+  NewVSpace := -1;
   SpecHeight := -1;
   SpecWidth := -1;
 
@@ -15025,10 +15027,10 @@ begin
           end;
 
         HSpaceSy:
-          NewSpace := Min(40, Abs(Value));
+          NewHSpace := Min(40, Abs(Value));
 
         VSpaceSy:
-          VSpaceT := Min(40, Abs(Value));
+          NewVSpace := Min(40, Abs(Value));
 
         AlignSy:
           begin
@@ -15050,12 +15052,20 @@ begin
           end;
       end;
 
-  if NewSpace >= 0 then
+  if NewVSpace >= 0 then
   begin
-    HSpaceL := NewSpace;
+    VSpaceT := NewVSpace;
+    VSpaceB := VSpaceT;
+  end;
+
+  if NewHSpace >= 0 then
+  begin
+    HSpaceL := NewHSpace;
+    HSpaceR := HSpaceL;
   end
   else
   begin
+    HSpaceR := HSpaceL;
     if Self.Document.UseQuirksMode then
     begin
        case Floating of
@@ -15073,17 +15083,6 @@ begin
     end;
   end;
 
- {
-  if NewSpace >= 0 then
-    HSpaceL := NewSpace
-  else if Floating in [ALeft, ARight] then
-    HSpaceL := ImageSpace {default}
-{  else
-    HSpaceL := 0;
-
-  HSpaceR := HSpaceL;
-  VSpaceB := VSpaceT;
-    }
 end;
 
 constructor TSizeableObj.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
