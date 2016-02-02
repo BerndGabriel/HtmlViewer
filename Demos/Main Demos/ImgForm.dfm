@@ -13,7 +13,6 @@ object ImageForm: TImageForm
   Font.Name = 'MS Sans Serif'
   FormStyle = fsStayOnTop
   Position = poOwnerFormCenter
-  LCLVersion = '0.9.31'
   object Image1: TImage
     Left = 0
     Height = 306
