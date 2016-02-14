@@ -299,11 +299,14 @@ type
   TBlockBase = class(TSectionBase)
   public
     Positioning: ThtBoxPositionStyle;
+    Positions: ThtRectIntegers; // in Pixels
     Floating: ThtAlignmentStyle;
     Indent: Integer;           {Indentation of floated object}
 
     constructor Create(Parent: TCellBasic; Position: Integer; Attributes: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
+
+    function IsInFlow: Boolean; {$ifdef UseInline} inline; {$endif}
   end;
 
   TFloatingObj = class(TBlockBase)
@@ -2722,7 +2725,6 @@ var
 begin
   ViewImages := Document.ShowImages;
   case FDisplay of
-
     pdNone:
     begin
       ObjHeight := 0;
@@ -2733,6 +2735,7 @@ begin
       Exit;
     end;
   end;
+
   if ViewImages then
   begin
     if FImage = nil then
@@ -3011,27 +3014,43 @@ begin
   else
     MiddleAlignTop := 0; {not used}
 
+  DrawXX := X;
+  DrawYY := Y;
   if Floating = ANone then
   begin
-    DrawXX := X;
-    case VertAlign of
-      ATop, ANone:
-        DrawYY := Y + VSpaceT;
-      AMiddle:
-        DrawYY := MiddleAlignTop;
-      ABottom, ABaseline:
-        DrawYY := YBaseLine - ClientHeight - VSpaceB;
+    case Positioning of
+      posAbsolute:
+      begin
+        if not IsAuto(Positions[reLeft]) then DrawXX := Positions[reLeft];
+        if not IsAuto(Positions[reTop ]) then DrawYY := Positions[reTop ];
+      end;
+
+      posFixed:
+      begin
+      end;
+
+    else
+      case VertAlign of
+        ATop, ANone:
+          DrawYY := Y + VSpaceT;
+        AMiddle:
+          DrawYY := MiddleAlignTop;
+        ABottom, ABaseline:
+          DrawYY := YBaseLine - ClientHeight - VSpaceB;
+      end;
+
+      if Positioning = posRelative then
+      begin
+        if not IsAuto(Positions[reLeft]) then Inc(DrawXX, Positions[reLeft]);
+        if not IsAuto(Positions[reTop ]) then Inc(DrawYY, Positions[reTop ]);
+      end;
+
     end;
     if (BorderSize > 0) then
     begin
       Inc(DrawXX, BorderSize);
       Inc(DrawYY, BorderSize);
     end;
-  end
-  else
-  begin
-    DrawXX := X;
-    DrawYY := Y;
   end;
 
   if not SubstImage or (AltHeight >= 16 + 8) and (AltWidth >= 16 + 8) then
@@ -4430,13 +4449,13 @@ begin
     if (Positioning = posAbsolute) and (ZIndex = 0) then
       ZIndex := 1; {abs on top unless otherwise specified}
   end;
-  if (Positioning in [posAbsolute, posFixed]) or (Floating in [ALeft, ARight]) then
+  if (Floating in [ALeft, ARight]) and (ZIndex = 0) then
+    ZIndex := 1;
+  if not IsInFlow then
   begin
     MyIMgr := TIndentManager.Create;
     MyCell.IMgr := MyIMgr;
   end;
-  if (Floating in [ALeft, ARight]) and (ZIndex = 0) then
-    ZIndex := 1;
   if not (Self is TTableBlock) and not (Self is TTableAndCaptionBlock) then
     CollapseMargins;
   HideOverflow := Prop.IsOverflowHidden;
@@ -4549,7 +4568,7 @@ begin
     begin
       TB := MyCell[I];
       if TB.Display <> pdNone then
-        if not (TB is TBlock) or ((TBlock(TB).Positioning <> PosAbsolute) and (TBlock(TB).Floating = aNone)) then
+        if not (TB is TBlock) or ((Block.Positioning <> PosAbsolute) and (Block.Floating = aNone)) then
           break;
       Dec(I);
     end;
@@ -4620,7 +4639,7 @@ begin
   if Assigned(T.BGImage) and Document.PrintTableBackground then
     BGImage := TImageObj.CreateCopy(MyCell, T.BGImage);
   MargArrayO := T.MargArrayO;
-  if (Positioning in [posAbsolute, posFixed]) or (Floating in [ALeft, ARight]) then
+  if not IsInFlow then
   begin
     MyIMgr := TIndentManager.Create;
     MyCell.IMgr := MyIMgr;
@@ -4652,7 +4671,7 @@ begin
   try
 {$ENDIF}
 
-  if (Display = pdNone) or (Positioning = PosAbsolute) then
+  if (Display = pdNone) or (Positioning in [PosAbsolute, posFixed]) then
   begin
     Min := 0;
     Max := 0;
@@ -5137,7 +5156,7 @@ var
     DrawTop := YClear + Max(0, MargArray[MarginTop]); {Border top}
     ContentTop := DrawTop + MargArray[PaddingTop] + MargArray[BorderTopWidth];
 
-    if (Positioning in [posAbsolute, posFixed]) or (Floating in [ALeft, ARight]) then
+    if not IsInFlow then
     begin
       RefIMgr := IMgr;
       if MyCell.IMgr = nil then
@@ -5227,7 +5246,7 @@ var
     SectionHeight := Result;
     IMgr.FreeLeftIndentRec(LIndex);
     IMgr.FreeRightIndentRec(RIndex);
-    if (Positioning in [posAbsolute, posFixed]) or (Floating in [ALeft, ARight]) then
+    if not IsInFlow then
     begin
       case Positioning of
         posAbsolute,
@@ -5686,7 +5705,7 @@ var
   I: Integer;
   SaveID: TObject;
 begin
-  if (Positioning in [posAbsolute, posFixed]) or (Floating in [ALeft, ARight]) then
+  if not IsInFlow then
     with MyCell do
     begin
       SaveID := IMgr.CurrentID;
@@ -11301,23 +11320,18 @@ begin
     FO.TheFont.AssignToCanvas(Canvas);
     J2 := Images.GetObjectAt(Start - Buff, FlObj);
     J3 := FormControls.GetObjectAt(Start - Buff, FcObj);
-    if J2 = 0 then
+    if (J2 = 0) or (J3 = 0) then
     begin
-      if not (FlObj.Floating in [ALeft, ARight]) then
+      if J2 <> 0 then
+        FlObj := FcObj;
+      I := 1; J := 1;
+      Picture := True;
+      if FlObj.IsInFlow then
+      begin
         Inc(XX, FlObj.TotalWidth);
-      I := 1; J := 1;
-      Picture := True;
-      if XX > Width then
-        break;
-    end
-    else if J3 = 0 then
-    begin
-      if not (FcObj.Floating in [ALeft, ARight]) then
-        Inc(XX, FcObj.TotalWidth);
-      I := 1; J := 1;
-      Picture := True;
-      if XX > Width then
-        break;
+        if XX > Width then
+          break;
+      end;
     end
     else
     begin
@@ -11326,6 +11340,7 @@ begin
       J := Min(J, J3);
       I := FitText(Canvas.Handle, Start, J, Width - XX, Extent);
     end;
+
     if Cnt + I >= Max then {I has been initialized}
     begin
       Cnt := Max;
@@ -11394,7 +11409,13 @@ procedure TSection.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
       Obj := Objects[I];
       Obj.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Obj.StartCurs), 0, 0);
       if not Obj.PercentWidth then
-        if Obj.Floating in [ALeft, ARight] then
+      begin
+        if Obj.Positioning in [posAbsolute, posFixed] then
+        begin
+          // does not affect the block width
+          Brk[Obj.StartCurs] := twYes; {allow break after positioned object}
+        end
+        else if Obj.Floating in [ALeft, ARight] then
         begin
           Inc(Max, Obj.TotalWidth);
           Brk[Obj.StartCurs] := twYes; {allow break after floating object}
@@ -11402,6 +11423,7 @@ procedure TSection.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
         end
         else
           Min := Math.Max(Min, Obj.ClientWidth);
+      end;
     end;
   end;
 
@@ -11564,26 +11586,18 @@ begin
   begin
     J := Images.GetObjectAt(Start - Buff, FlObj);
     J1 := FormControls.GetObjectAt(Start - Buff, FcObj);
-    if J = 0 then {it's an image}
+    if (J = 0) or (J1 = 0) then {it's an image or a form control}
     begin
     {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
-      if not (FlObj.Floating in [ALeft, ARight]) then
+      if J <> 0 then
+        FlObj := FcObj;
+      if FlObj.IsInFlow then
       begin
         Inc(Result.cx, FlObj.TotalWidth);
         Result.cy := Max(Result.cy, FlObj.TotalHeight);
       end;
       Dec(N); {image counts as one ThtChar}
-      Inc(Start);
-    end
-    else if J1 = 0 then
-    begin
-      if not (FcObj.Floating in [ALeft, ARight]) then
-      begin
-        Inc(Result.cx, FcObj.TotalWidth);
-        Result.cy := Max(Result.cy, FcObj.TotalHeight);
-      end;
-      Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
     else
@@ -11625,20 +11639,15 @@ begin
   begin
     J := Images.GetObjectAt(Start - Buff, FlObj);
     J1 := FormControls.GetObjectAt(Start - Buff, FcObj);
-    if J = 0 then {it's an image}
+    if (J = 0) or (J1 = 0) then {it's an image or a form control}
     begin
     {Here we count floating images as 1 ThtChar but do not include their width,
       This is required for the call in FindCursor}
-      if not (FlObj.Floating in [ALeft, ARight]) then
+      if J <> 0 then
+        FlObj := FcObj;
+      if FlObj.IsInFlow then
         Inc(Result, FlObj.TotalWidth);
       Dec(N); {image counts as one ThtChar}
-      Inc(Start);
-    end
-    else if J1 = 0 then
-    begin
-      if not (FcObj.Floating in [ALeft, ARight]) then
-        Inc(Result, FcObj.TotalWidth);
-      Dec(N); {control counts as one ThtChar}
       Inc(Start);
     end
     else
@@ -11711,7 +11720,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
             Result := rsContinue;
         end;
       end
-      else
+      else if not (FlObj.Positioning in [posAbsolute, posFixed]) then
       begin
         ImgHt := Max(ImgHt, FlObj.TotalHeight);
         Inc(XX, FlObj.TotalWidth);
@@ -11786,30 +11795,14 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       end;
       J2 := Images.GetObjectAt(Start - Buff, FlObj);
       J3 := FormControls.GetObjectAt(Start - Buff, FcObj);
-      if J2 = 0 then
+      if (J2 = 0) or (J3 = 0) then
       begin {next is an image}
+        if J2 <> 0 then
+          FlObj := FcObj;
         I := 1;
         J := 1;
         Picture := True;
         case DrawLogicOfObject(FlObj, XX, YY, Width, Cnt, FloatingImageCount) of
-          rsContinue:
-          begin
-            Start := TheStart;
-            Cnt := 0;
-            XX := 0;
-            continue;
-          end;
-
-          rsBreak:
-            break;
-        end;
-      end
-      else if J3 = 0 then
-      begin
-        I := 1;
-        J := 1;
-        Picture := True;
-        case DrawLogicOfObject(FcObj, XX, YY, Width, Cnt, FloatingImageCount) of
           rsContinue:
           begin
             Start := TheStart;
@@ -12033,24 +12026,27 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
             FlObj.DrawYY := Y; {approx y dimension}
             if (FLObj is TImageObj) and Assigned(TImageObj(FLObj).MyFormControl) then
               TImageObj(FLObj).MyFormControl.DrawYY := Y; // FYValue := Y;
-            case FlObj.VertAlign of
-              aTop:
-                SA := Max(SA, H - DHt);
+            if not (FlObj.Positioning in [posAbsolute, posFixed]) then
+            begin
+              case FlObj.VertAlign of
+                aTop:
+                  SA := Max(SA, H - DHt);
 
-              aMiddle:
-                begin
-                  if DHt = 0 then
+                aMiddle:
                   begin
-                    DHt := Fonts.GetFontObjAt(PStart - Buff).GetHeight(Desc);
-                    LR.Descent := Desc;
+                    if DHt = 0 then
+                    begin
+                      DHt := Fonts.GetFontObjAt(PStart - Buff).GetHeight(Desc);
+                      LR.Descent := Desc;
+                    end;
+                    Tmp := (H - DHt) div 2;
+                    SA := Max(SA, Tmp);
+                    SB := Max(SB, (H - DHt - Tmp));
                   end;
-                  Tmp := (H - DHt) div 2;
-                  SA := Max(SA, Tmp);
-                  SB := Max(SB, (H - DHt - Tmp));
-                end;
-              aBaseline,
-              aBottom:
-                SB := Max(SB, H - (DHt - LR.Descent));
+                aBaseline,
+                aBottom:
+                  SB := Max(SB, H - (DHt - LR.Descent));
+              end;
             end;
           end;
         end;
@@ -12724,10 +12720,10 @@ var
           else
           begin
             SetTextJustification(Canvas.Handle, 0, 0);
-            if OwnerBlock <> nil then
-              FlObj.Positioning := OwnerBlock.Positioning
-            else
-              FlObj.Positioning := posStatic;
+//            if OwnerBlock <> nil then
+//              FlObj.Positioning := OwnerBlock.Positioning
+//            else
+//              FlObj.Positioning := posStatic;
             TImageObj(FlObj).DrawInline(Canvas, CPx + FlObj.HSpaceL, LR.DrawY, Y - Descent, FO);
           {see if there's an inline border for the image}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -12736,21 +12732,23 @@ var
                 BR := ThtBorderRec(LR.BorderList.Items[K]);
                 if (Start - Buff >= BR.BStart) and (Start - Buff <= BR.BEnd) then
                 begin {there is a border here, find the image dimensions}
-                  case FlObj.VertAlign of
+                  TopP := 0;
+                  if not (FlObj.Positioning in [posAbsolute, posFixed]) then
+                  begin
+                    case FlObj.VertAlign of
 
-                    ATop, ANone:
-                      TopP := Y - LR.LineHt + FlObj.VSpaceT;
+                      ATop, ANone:
+                        TopP := Y - LR.LineHt + FlObj.VSpaceT;
 
-                    AMiddle:
-                      TopP := Y - Descent + FO.Descent - FO.tmHeight div 2 - (FlObj.ClientHeight - FlObj.VSpaceT + FlObj.VSpaceB) div 2;
+                      AMiddle:
+                        TopP := Y - Descent + FO.Descent - FO.tmHeight div 2 - (FlObj.ClientHeight - FlObj.VSpaceT + FlObj.VSpaceB) div 2;
 
-                    ABottom, ABaseline:
-                      TopP := Y - Descent - FlObj.VSpaceB - FlObj.ClientHeight;
+                      ABottom, ABaseline:
+                        TopP := Y - Descent - FlObj.VSpaceB - FlObj.ClientHeight;
 
-                  else
-                    TopP := 0; {to eliminate warning msg}
+                    end;
+                    BottomP := TopP + FlObj.ClientHeight;
                   end;
-                  BottomP := TopP + FlObj.ClientHeight;
 
                   if Start - Buff = BR.BStart then
                   begin {border starts at image}
@@ -12767,8 +12765,12 @@ var
                   end;
                 end;
               end;
-            CPx := CPx + FlObj.TotalWidth;
-            NewCP := True;
+
+            if not (FlObj.Positioning in [posAbsolute, posFixed]) then
+            begin
+              CPx := CPx + FlObj.TotalWidth;
+              NewCP := True;
+            end;
           end;
         end
         else
@@ -15806,7 +15808,10 @@ end;
 function TFloatingObj.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
 begin
-  Result := SectionHeight;
+  if Positioning in [posAbsolute, posFixed] then
+    Result := 0
+  else
+    Result := SectionHeight;
 end;
 
 //-- BG ---------------------------------------------------------- 02.03.2011 --
@@ -15955,6 +15960,12 @@ end;
 
 //-- BG ---------------------------------------------------------- 31.08.2013 --
 constructor TBlockBase.Create(Parent: TCellBasic; Position: Integer; Attributes: TAttributeList; Prop: TProperties);
+var
+  MargArrayO: ThtVMarginArray;
+  MargArray: ThtMarginArray;
+  Align: ThtAlignmentStyle;
+  EmSize, ExSize: Integer;
+  Cd: ThtConvData;
 begin
   inherited Create(Parent, Attributes, Prop);
   if FDisplay = pdUnassigned then
@@ -15962,20 +15973,30 @@ begin
   StartCurs := Position;
   if Prop <> nil then
   begin
-    if not Prop.GetFloat(Floating) then
-      Floating := ANone;
     Positioning := Prop.GetPosition;
+    if not Prop.GetFloat(Floating) or not (Positioning in [posAbsolute, posFixed]) then
+      Floating := ANone;
+    Prop.GetVMarginArray(MargArrayO);
+    EmSize := Prop.EmSize;
+    ExSize := Prop.ExSize;
+    CD := ConvData(100, 100, Prop.EmSize, Prop.ExSize, 0);
+    ConvMargProp(piTop   , MargArrayO, CD, MargArray);
+    ConvMargProp(piLeft  , MargArrayO, CD, MargArray);
+    ConvMargProp(piRight , MargArrayO, CD, MargArray);
+    ConvMargProp(piBottom, MargArrayO, CD, MargArray);
+    Positions[reTop   ] := MargArray[piTop   ];
+    Positions[reLeft  ] := MargArray[piLeft  ];
+    Positions[reRight ] := MargArray[piRight ];
+    Positions[reBottom] := MargArray[piBottom];
   end
   else
   begin
     Floating := ANone;
     Positioning := posStatic;
   end;
-  if Positioning = posAbsolute then
-    Floating := ANone;
-
 end;
 
+//-- BG ---------------------------------------------------------- 31.08.2013 --
 constructor TBlockBase.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 var
   T: TBlockBase absolute Source;
@@ -15984,6 +16005,12 @@ begin
   Positioning := T.Positioning;
   Floating := T.Floating;
   Indent := T.Indent;
+end;
+
+//-- BG ---------------------------------------------------------- 13.02.2016 --
+function TBlockBase.IsInFlow: Boolean;
+begin
+  Result := not (Floating in [aLeft, aRight]) and not (Positioning in [posAbsolute, posFixed]);
 end;
 
 //{ TRenderSectionBaseList }
