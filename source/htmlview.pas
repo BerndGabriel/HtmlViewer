@@ -3971,6 +3971,10 @@ begin
         H             := Trunc(HPrn * Wy); {scaled pageHeight without margins == height of used paper area}
         ScaledPgHt    := Trunc(Prn.PageHeight * Wy); {scaled pageHeight with margins}
 
+        ARect := Rect(MLeft, TopPixels, W + MLeft, TopPixels + H);
+        PrintList.SetYOffset(0);
+        PrintList.PageArea := ARect;
+
         HTop := 0;
         OldTop := 0;
         Curs := 0;
@@ -3997,7 +4001,6 @@ begin
         Application.ProcessMessages;
         if Assigned(FOnPageEvent) then
           FOnPageEvent(Self, FPage, Done);
-        ARect := Rect(MLeft, TopPixels, W + MLeft, TopPixels + H);
 
         if Assigned(FOnPrintHTMLHeader) then
           HeadViewer := CreateHeaderFooter;
@@ -4018,6 +4021,7 @@ begin
         while (FPage <= ToPage) and not Done do
         begin
           PrintList.SetYOffset(HTop - TopPixels);
+          PrintList.PageArea := ARect;
 
           for HPageIndex := 0 to HPages - 1 do
           begin

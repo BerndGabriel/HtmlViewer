@@ -1251,11 +1251,11 @@ begin
     Result := True;
     S := Props[Float];
     if S = 'left' then
-      Align := ALeft
+      Align := aLeft
     else if S = 'right' then
-      Align := ARight
+      Align := aRight
     else if S = 'none' then
-      Align := ANone
+      Align := aNone
     else
       Result := False;
   end

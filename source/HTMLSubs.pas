@@ -201,19 +201,34 @@ type
     //FClasses: ThtStringArray;
     FAttributes: TAttributeList;
     FProperties: TProperties;
+    FDisplay: ThtDisplayStyle; // how it is displayed
+
     function GetSymbol(): TElemSymb;
     function GetAttribute(const Name: ThtString): ThtString;
+    function GetContainingBlock: TBlock; virtual;
+    function GetProperty(PropIndex: ThtPropIndices): Variant;
+    function GetContainingBox: TRect;
   protected
+    FPositioning: ThtBoxPositionStyle;
+    FPositions: ThtRectIntegers; // in Pixels
+    FFloating: ThtAlignmentStyle;
+    FIndent: Integer;           {Indentation of floated object}
+
+    function CalcDisplayExtern: ThtDisplayStyle; virtual;
+    function CalcDisplayIntern: ThtDisplayStyle; virtual;
 //    function FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean; overload;
     function FindAttribute(const Name: ThtString; out Attribute: TAttribute): Boolean; overload;
 //    function GetChild(Index: Integer): THtmlNode; virtual;
 //    function GetParent: TBlock; virtual;
 //    function GetPseudos: TPseudos; virtual;
     function IsCopy: Boolean; virtual;
+    property ContainingBlock: TBlock read GetContainingBlock;
+    property ContainingBox: TRect read GetContainingBox;
   public
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const ID: ThtString);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); virtual;
     //constructor Create(Parent: THtmlNode; Tag: TElemSymb; Attributes: TAttributeList; const Properties: TResultingProperties);
+    function IsInFlow: Boolean; {$ifdef UseInline} inline; {$endif}
     function IndexOf(Child: THtmlNode): Integer; virtual;
     procedure AfterConstruction; override;
     //function IsMatching(Selector: TSelector): Boolean;
@@ -223,7 +238,9 @@ type
     property OwnerBlock: TBlock read FOwnerBlock; //BG, 07.02.2011: public for reading document structure (see issue 24). Renamed from MyBlock to Owner to clarify the relation.
     property OwnerCell: TCellBasic read FOwnerCell write FOwnerCell;
     property Document: ThtDocument read FDocument;
+    property Display: ThtDisplayStyle read FDisplay write FDisplay;
     property AttributeValue[const AttrName: ThtString]: ThtString read GetAttribute;
+    property PropertyValue[PropIndex: ThtPropIndices]: Variant read GetProperty;
   end;
 
 //------------------------------------------------------------------------------
@@ -236,13 +253,9 @@ type
 //------------------------------------------------------------------------------
 
   TSectionBase = class(THtmlNode)
-  private
-    FDisplay: ThtDisplayStyle; // how it is displayed
   protected
     function GetYPosition: Integer; override;
     procedure SetDocument(List: ThtDocument);
-    function CalcDisplayExtern: ThtDisplayStyle; virtual;
-    function CalcDisplayIntern: ThtDisplayStyle; virtual;
   public
     // source buffer reference
     StartCurs: Integer;     // where the section starts in the source buffer.
@@ -279,7 +292,6 @@ type
     procedure AddSectionsToList; virtual;
     procedure CopyToClipboard; virtual;
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
-    property Display: ThtDisplayStyle read FDisplay write FDisplay;
   end;
 
   TSectionBaseList = class(TFreeList)
@@ -298,15 +310,14 @@ type
 
   TBlockBase = class(TSectionBase)
   public
-    Positioning: ThtBoxPositionStyle;
-    Positions: ThtRectIntegers; // in Pixels
-    Floating: ThtAlignmentStyle;
-    Indent: Integer;           {Indentation of floated object}
 
     constructor Create(Parent: TCellBasic; Position: Integer; Attributes: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
 
-    function IsInFlow: Boolean; {$ifdef UseInline} inline; {$endif}
+    property Positioning: ThtBoxPositionStyle read FPositioning;
+    property Positions: ThtRectIntegers read FPositions; // in Pixels
+    property Floating: ThtAlignmentStyle read FFloating;
+    property Indent: Integer read FIndent;           {Indentation of floated object}
   end;
 
   TFloatingObj = class(TBlockBase)
@@ -332,6 +343,7 @@ type
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
+    function GetYPosition: Integer; override;
     procedure DrawLogicInline(Canvas: TCanvas; FO: TFontObj; AvailableWidth, AvailableHeight: Integer); virtual; abstract;
     procedure DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj); virtual; abstract;
     property ClientHeight: Integer read GetClientHeight write SetClientHeight;
@@ -440,9 +452,10 @@ type
 //------------------------------------------------------------------------------
 // TSizeableObj is base class for floating objects TImageObj, TFrameOBj and TPanelObj.
 //
-// These objects may appear in text flow or attribute ALIGN or style FLOAT may
-// push them out of the flow floating to the left or right side in the
-// containing block.
+// These objects may appear in text flow or attribute ALIGN or style FLOAT or
+// style POSITION may push them out of the flow floating to the left or right
+// side or anywhere else in the containing block or even fixed in the viewport
+// resp. on printed pages.
 //------------------------------------------------------------------------------
 
   TSizeableObj = class(TFloatingObj)
@@ -456,8 +469,6 @@ type
     SpecHeight: Integer; {as specified by <img, applet, panel, object, or iframe> tag}
     Title: ThtString;
   protected
-    FDisplay: ThtDisplayStyle; // how it is displayed
-    function GetYPosition: Integer; override;
     procedure CalcSize(AvailableWidth, AvailableHeight, SetWidth, SetHeight: Integer; IsClientSizeSpecified: Boolean);
     function GetClientHeight: Integer; override;
     function GetClientWidth: Integer; override;
@@ -879,7 +890,6 @@ type
     function GetControl: TWinControl; virtual; abstract;
     function GetTabOrder: Integer; virtual;
     function GetTabStop: Boolean; virtual;
-    function GetYPosition: Integer; override;
     function IsHidden: Boolean; virtual;
     procedure DoOnChange; virtual;
     procedure SaveContents; virtual;
@@ -1440,10 +1450,13 @@ type
   private
     FUseQuirksMode : Boolean;
     FPropStack: THtmlPropStack;
+    FPageArea: TRect;
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
     function CopyToBuffer(Buffer: TSelTextCount): Integer;
     procedure InsertMissingImage(const UName: ThtString; J: Integer; Error: Boolean; out Reformat: Boolean);
+    procedure SetPageArea(const Value: TRect);
+    function GetViewPort: TRect;
     {$ifdef has_StyleElements}
     procedure SetStyleElements(const AValue : TStyleElements);
     {$endif}
@@ -1570,6 +1583,8 @@ type
     property PropStack : THtmlPropStack read FPropStack write FPropStack;
 
     property NoBreak : Boolean read FNoBreak write FNoBreak;  {set when in <NoBr>}
+    property ViewPort: TRect read GetViewPort;  {ViewPort is the APaintPanel's client rect, except while printing}
+    property PageArea: TRect write SetPageArea; {is the ViewPort while printing, set by THtmlViewer.Print}
 
     {$ifdef has_StyleElements}
     property StyleElements : TStyleElements read FStyleElements write SetStyleElements;
@@ -1807,7 +1822,39 @@ begin
     Document.IDNameList.AddObject(ID, Self);
 end;
 
+//-- BG ---------------------------------------------------------- 07.09.2013 --
+function THtmlNode.CalcDisplayExtern: ThtDisplayStyle;
+begin
+  case FDisplay of
+    pdInlineBlock,
+    pdInlineTable:
+      Result := pdInline;
+  else
+    Result := FDisplay;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 07.09.2013 --
+function THtmlNode.CalcDisplayIntern: ThtDisplayStyle;
+begin
+  case FDisplay of
+    pdInlineTable:
+      Result := pdTable;
+
+    pdInlineBlock:
+      Result := pdBlock;
+  else
+    Result := FDisplay;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const ID: ThtString);
+var
+  MargArrayO: ThtVMarginArray;
+  MargArray: ThtMarginArray;
+  EmSize, ExSize: Integer;
+  Cd: ThtConvData;
 begin
   inherited Create(ID);
   FOwnerCell := Parent;
@@ -1818,6 +1865,29 @@ begin
   end;
   FAttributes := Attributes;
   FProperties := Properties;
+// defaults are set automatically as Ord() of these defaults is 0:
+//  FDisplay := pdUnassigned;
+//  FFloating := aNone;
+//  FPositioning := posStatic;
+  if FProperties <> nil then
+  begin
+    FDisplay := FProperties.Display;
+    FPositioning := FProperties.GetPosition;
+    if not FProperties.GetFloat(FFloating) or not (FPositioning in [posAbsolute, posFixed]) then
+      FFloating := ANone;
+    FProperties.GetVMarginArray(MargArrayO);
+    EmSize := FProperties.EmSize;
+    ExSize := FProperties.ExSize;
+    CD := ConvData(100, 100, EmSize, ExSize, 0);
+    ConvMargProp(piTop   , MargArrayO, CD, MargArray);
+    ConvMargProp(piLeft  , MargArrayO, CD, MargArray);
+    ConvMargProp(piRight , MargArrayO, CD, MargArray);
+    ConvMargProp(piBottom, MargArrayO, CD, MargArray);
+    FPositions[reTop   ] := MargArray[piTop   ];
+    FPositions[reLeft  ] := MargArray[piLeft  ];
+    FPositions[reRight ] := MargArray[piRight ];
+    FPositions[reBottom] := MargArray[piBottom];
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 24.03.2011 --
@@ -1831,6 +1901,11 @@ begin
   end;
   FAttributes := Source.FAttributes;
   FProperties := Source.FProperties;
+  FDisplay    := Source.FDisplay;
+  FPositioning := Source.FPositioning;
+  FPositions   := SOurce.FPositions;
+  FFloating    := Source.FFloating;
+  FIndent      := Source.FIndent;
 end;
 
 ////-- BG ---------------------------------------------------------- 23.03.2011 --
@@ -1856,6 +1931,52 @@ begin
     Result := Attribute.Name
   else
     SetLength(Result, 0);
+end;
+
+//-- BG ---------------------------------------------------------- 14.02.2016 --
+function THtmlNode.GetContainingBlock: TBlock;
+begin
+  // if Result is nil, containing block is the viewport resp. page area
+  case FPositioning of
+    posFixed:
+      Result := nil;
+
+    posAbsolute:
+    begin
+      Result := OwnerBlock;
+      while (Result <> nil) and not (Result.Positioning in [posAbsolute, posRelative, posFixed]) do
+        Result := Result.OwnerBlock;
+    end;
+
+  else
+    Result := OwnerBlock;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.02.2016 --
+function THtmlNode.GetContainingBox: TRect;
+var
+  ContainingBlock: TBlock;
+begin
+  ContainingBlock := GetContainingBlock;
+  if ContainingBlock <> nil then
+  begin
+    Result.Left := ContainingBlock.LeftP;
+    Result.Top  := ContainingBlock.TopP;
+    Result.Width := ContainingBlock.ContentWidth;
+    Result.Height := ContainingBlock.MyCell.tcContentBot - ContainingBlock.MyCell.tcDrawTop;
+  end
+  else
+    Result := FDocument.ViewPort;
+end;
+
+//-- BG ---------------------------------------------------------- 14.02.2016 --
+function THtmlNode.GetProperty(PropIndex: ThtPropIndices): Variant;
+begin
+  if FProperties <> nil then
+    Result := FProperties.Props[PropIndex]
+  else
+    Result := Unassigned;
 end;
 
 ////-- BG ---------------------------------------------------------- 24.03.2011 --
@@ -1891,6 +2012,12 @@ end;
 function THtmlNode.IsCopy: Boolean;
 begin
   Result := Document.IsCopy;
+end;
+
+//-- BG ---------------------------------------------------------- 13.02.2016 --
+function THtmlNode.IsInFlow: Boolean;
+begin
+  Result := not (FFloating in [aLeft, aRight]) and not (FPositioning in [posAbsolute, posFixed]);
 end;
 
 ////-- BG ---------------------------------------------------------- 23.03.2011 --
@@ -3021,12 +3148,16 @@ begin
     case Positioning of
       posAbsolute:
       begin
-        if not IsAuto(Positions[reLeft]) then DrawXX := Positions[reLeft];
-        if not IsAuto(Positions[reTop ]) then DrawYY := Positions[reTop ];
+        ARect := ContainingBox;
+        if not IsAuto(Positions[reLeft]) then DrawXX := Positions[reLeft] + ARect.Left;
+        if not IsAuto(Positions[reTop ]) then DrawYY := Positions[reTop ] + ARect.Top;
       end;
 
       posFixed:
       begin
+        ARect := FDocument.ViewPort;
+        if not IsAuto(Positions[reLeft]) then DrawXX := Positions[reLeft] + ARect.Left;
+        if not IsAuto(Positions[reTop ]) then DrawYY := Positions[reTop ] + ARect.Top;
       end;
 
     else
@@ -3428,11 +3559,6 @@ begin
   Result := False;
 end;
 
-function TFormControlObj.GetYPosition: Integer;
-begin
-  Result := DrawYY; //YValue;
-end;
-
 procedure TFormControlObj.ProcessProperties(Prop: TProperties);
 var
   MargArrayO: ThtVMarginArray;
@@ -3479,7 +3605,7 @@ begin
   if MargArray[piHeight] > 0 then
     FHeight := MargArray[piHeight] - BordT - BordB;
   Prop.GetVertAlign(VertAlign);
-  Prop.GetFloat(Floating);
+  Prop.GetFloat(FFloating);
 
   BkColor := Prop.GetBackgroundColor;
 end;
@@ -5087,6 +5213,7 @@ var
   procedure DrawLogicAsBlock;
   var
     LIndent, RIndent: Integer;
+    ARect: TRect;
   begin
     YDraw := Y;
     Xin := X;
@@ -5108,52 +5235,83 @@ var
     MiscWidths   := LeftWidths + RightWidths;
     TotalWidth   := MiscWidths + ContentWidth;
 
-    Indent := LeftWidths;
-    TopP := MargArray[piTop];
-    LeftP := MargArray[piLeft];
+    FIndent := LeftWidths;
+    TopP := 0;
+    LeftP := 0;
     case Positioning of
-      posRelative:
-      begin
-        if TopP = Auto then
-          TopP := 0;
-        if LeftP = Auto then
-          LeftP := 0;
-      end;
-
+//      posRelative:
+//      begin
+//        if TopP = Auto then
+//          TopP := 0;
+//        if LeftP = Auto then
+//          LeftP := 0;
+//      end;
+//
+//      posAbsolute:
+//      begin
+//        if TopP = Auto then
+//          TopP := 0;
+//        if (LeftP = Auto) then
+//          if (MargArray[piRight] <> Auto) and (MargArray[piWidth] <> Auto) then
+//            LeftP := AWidth - MargArray[piRight] - MargArray[piWidth] - LeftWidths - RightWidths
+//          else
+//            LeftP := 0;
+//        X := LeftP;
+//        Y := TopP + YRef;
+//      end;
       posAbsolute:
-      begin
-        if TopP = Auto then
-          TopP := 0;
-        if (LeftP = Auto) then
-          if (MargArray[piRight] <> Auto) and (MargArray[piWidth] <> Auto) then
-            LeftP := AWidth - MargArray[piRight] - MargArray[piWidth] - LeftWidths - RightWidths
-          else
-            LeftP := 0;
-        X := LeftP;
-        Y := TopP + YRef;
-      end;
+        ARect := ContainingBox;
+
+      posFixed:
+        ARect := FDocument.ViewPort;
     end;
 
-    YClear := Y + ClearAddon;
-    if not (Positioning in [posAbsolute, PosFixed]) then
+    case Positioning of
+      posAbsolute,
+      posFixed:
+      begin
+        if not IsAuto(Positions[reLeft]) then
+          X := ARect.Left + Positions[reLeft]
+        else if not IsAuto(Positions[reRight]) and not IsAuto(MargArray[piWidth]) then
+          X := ARect.Right - Positions[reRight] - MargArray[piWidth];
+        LeftP := X;
+
+        if not IsAuto(Positions[reTop]) then
+          Y := ARect.Top + Positions[reTop]
+        else if not IsAuto(Positions[reBottom]) and not IsAuto(MargArray[piHeight]) then
+          Y := ARect.Bottom - Positions[reBottom] - MargArray[piHeight];
+        TopP := Y;
+
+        DrawTop := TopP + Max(0, MargArray[MarginTop]); {Border top}
+      end;
+    else
+      if Positioning = posRelative then
+      begin
+        if not IsAuto(Positions[reLeft]) then Inc(LeftP, Positions[reLeft]);
+        if not IsAuto(Positions[reTop ]) then Inc(TopP, Positions[reTop ]);
+      end;
+
       case Floating of
         ALeft:
         begin
           YClear := Y;
           LIndent := IMgr.AlignLeft(YClear, TotalWidth);
-          Indent := LIndent + LeftWidths - X;
+          FIndent := LIndent + LeftWidths - X;
         end;
 
         ARight:
         begin
           YClear := Y;
           RIndent := IMgr.AlignRight(YClear, TotalWidth);
-          Indent := RIndent + LeftWidths - X;
+          FIndent := RIndent + LeftWidths - X;
         end;
+      else
+        YClear := Y + ClearAddon;
       end;
-    Inc(X, Indent);
+      DrawTop := YClear + Max(0, MargArray[MarginTop]); {Border top}
+    end;
+    Inc(X, FIndent);
 
-    DrawTop := YClear + Max(0, MargArray[MarginTop]); {Border top}
     ContentTop := DrawTop + MargArray[PaddingTop] + MargArray[BorderTopWidth];
 
     if not IsInFlow then
@@ -5199,6 +5357,21 @@ var
       end;
 
       posAbsolute:
+      begin
+        MyCell.DoLogicX(Canvas,
+          X,
+          ContentTop,
+          XRef + LeftP + MargArray[MarginLeft] + MargArray[BorderLeftWidth],
+          YRef + TopP + MargArray[MarginTop] + MargArray[BorderTopWidth],
+          ContentWidth, MargArray[piHeight], BlockHeight, ScrollWidth, Curs);
+        MaxWidth := ScrollWidth + MiscWidths - MargArray[MarginRight] + LeftP - Xin;
+        ClientContentBot := GetClientContentBot(MyCell.tcContentBot);
+        IB := IMgr.ImageBottom; {check for image overhang}
+        if IB > ClientContentBot then
+          ClientContentBot := IB;
+      end;
+
+      posFixed:
       begin
         MyCell.DoLogicX(Canvas,
           X,
@@ -5259,7 +5432,7 @@ var
           ARight: RefIMgr.AddRight(YClear, ContentBot, TotalWidth);
         end;
       end;
-      SectionHeight := 0;
+      //SectionHeight := 0;
       Result := 0;
     end
     else
@@ -5484,14 +5657,22 @@ function TBlock.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager;
 
     end;
 
-    if Positioning = posRelative then {for debugging}
-      DrawBlock(Canvas, ARect, IMgr, X + LeftP, Y + TopP, XRef, YRef)
-    else if Positioning = posAbsolute then
-      DrawBlock(Canvas, ARect, IMgr, XRef + LeftP, YRef + TopP, XRef, YRef)
-    else if Floating in [ALeft, ARight] then
-      DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef)
+    case Positioning of
+      posRelative:
+        DrawBlock(Canvas, ARect, IMgr, X + LeftP, Y + TopP, XRef, YRef);
+
+      posAbsolute:
+        DrawBlock(Canvas, ARect, IMgr, LeftP, TopP, 0, 0);
+
+      posFixed:
+        DrawBlock(Canvas, ARect, IMgr, LeftP, TopP, 0, 0);
+
     else
-      DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef);
+      if Floating in [ALeft, ARight] then
+        DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef)
+      else
+        DrawBlock(Canvas, ARect, IMgr, X, Y, XRef, YRef);
+    end;
   end;
 
   procedure DrawInline;
@@ -5557,11 +5738,17 @@ begin
     case Positioning of
       posRelative:
         Inc(YB, TopP);
+
     end;
   end;
 
   // MyRect is the outmost rectangle of this block incl. border and padding but without margins in screen coordinates.
-  MyRect := Rect(RefX, RefY - YOffset, XR, YB - YOffset);
+  case Positioning of
+    posFixed:
+      MyRect := Rect(RefX, RefY, XR, YB);
+  else
+    MyRect := Rect(RefX, RefY - YOffset, XR, YB - YOffset);
+  end;
 
   // PdRect is the border rectangle of this block incl. padding in screen coordinates
   PdRect.Left   := MyRect.Left   + MargArray[BorderLeftWidth];
@@ -5659,16 +5846,24 @@ begin
     try
       SaveID := IMgr.CurrentID;
       Imgr.CurrentID := Self;
-      if Positioning = posRelative then
-        DrawTheList(Canvas, ARect, ContentWidth, X,
-          RefX + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
-          Y + MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop])
-      else if Positioning = posAbsolute then
-        DrawTheList(Canvas, ARect, ContentWidth, X,
-          RefX + MargArray[BorderLeftWidth],
-          Y + MargArray[MarginTop] + MargArray[BorderTopWidth])
+      case Positioning of
+        posRelative:
+          DrawTheList(Canvas, ARect, ContentWidth, X,
+            RefX + MargArray[BorderLeftWidth] + MargArray[PaddingLeft],
+            Y + MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop]);
+
+        posAbsolute:
+          DrawTheList(Canvas, ARect, ContentWidth, X,
+            RefX + MargArray[BorderLeftWidth],
+            Y + MargArray[MarginTop] + MargArray[BorderTopWidth]);
+
+        posFixed:
+          DrawTheList(Canvas, ARect, ContentWidth, X,
+            PdRect.Left,
+            PdRect.Top);
       else
         DrawTheList(Canvas, ARect, ContentWidth, X, XRef, YRef);
+      end;
       Imgr.CurrentID := SaveID;
     finally
       if HideOverflow then {restore any previous clip region}
@@ -5761,13 +5956,13 @@ begin
             Justify := Centered
           else if CompareText(Name, 'LEFT') = 0 then
           begin
-            if Floating = ANone then
-              Floating := ALeft;
+            if FFloating = ANone then
+              FFloating := ALeft;
           end
           else if CompareText(Name, 'RIGHT') = 0 then
           begin
-            if Floating = ANone then
-              Floating := ARight;
+            if FFloating = ANone then
+              FFloating := ARight;
           end;
       end;
   TableID := Attributes.TheID;
@@ -5842,7 +6037,7 @@ begin
   MargArray[PaddingBottom] := 0;
   MargArray[BackgroundColor] := clNone;
 
-  TableBlock.Floating := ANone;
+  TableBlock.FFloating := ANone;
   TableBlock.Table.Float := False;
 
   CaptionBlock.MinMaxWidth(Canvas, Mn, Mx);
@@ -5998,15 +6193,15 @@ begin
           else if CompareText(Name, 'LEFT') = 0 then
           begin
 //TODO: BG, 14.07.2013: The table block is not floating, but justified!
-            if Floating = ANone then
-              Floating := ALeft;
+            if FFloating = ANone then
+              FFloating := ALeft;
 //            Justify := Left;
           end
           else if CompareText(Name, 'RIGHT') = 0 then
           begin
 //TODO: BG, 14.07.2013: The table block is not floating, but justified!
-            if Floating = ANone then
-              Floating := ARight;
+            if FFloating = ANone then
+              FFloating := ARight;
 //            Justify := Right;
           end;
 
@@ -6665,7 +6860,7 @@ begin
   {$ENDIF}
   {$ENDIF}
   inherited Create(Parent,Attributes,Prop);
-  Positioning := PosStatic; {7.28}
+  FPositioning := PosStatic; {7.28}
   Prop.GetBackgroundPos(0, 0, PRec);
   if Prop.GetBackgroundImage(Image) and (Image <> '') then
     Document.SetBackgroundImage(Image, PRec);
@@ -6938,6 +7133,15 @@ begin
       ActiveImage.Hover := hvOverDown
     else
       ActiveImage.Hover := hvOverUp;
+end;
+
+//-- BG ---------------------------------------------------------- 14.02.2016 --
+function ThtDocument.GetViewPort: TRect;
+begin
+  if Printing then
+    Result := FPageArea
+  else
+    Result := PPanel.ClientRect;
 end;
 
 procedure ThtDocument.LButtonDown(Down: boolean);
@@ -7660,6 +7864,12 @@ begin
         ThtmlForm(htmlFormList[I]).SetFormData(ThtStringList(T[I]));
   except
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 14.02.2016 --
+procedure ThtDocument.SetPageArea(const Value: TRect);
+begin
+  FPageArea := Value;
 end;
 
 //------------------------------------------------------------------------------
@@ -11698,13 +11908,13 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
             ALeft:
             begin
               IMgr.AlignLeft(ImgY, W, XX, YY);
-              FlObj.Indent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
+              FlObj.FIndent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
             end;
 
             ARight:
             begin
               IMgr.AlignRight(ImgY, W, XX, YY);
-              FlObj.Indent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
+              FlObj.FIndent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
             end;
           end;
           FlObj.DrawYY := ImgY + FlObj.VSpaceT;
@@ -13110,7 +13320,10 @@ var
 begin {TSection.Draw}
   Y := YDraw;
   Result := Y + SectionHeight;
-  YOffset := Document.YOff;
+  if (OwnerBlock <> nil) and (OwnerBlock.Positioning = posFixed) then
+    YOffset := 0
+  else
+    YOffset := Document.YOff;
 
 {Only draw if will be in display rectangle}
   if (Len > 0) and (Y - YOffset + DrawHeight + 40 >= ARect.Top) and (Y - YOffset - 40 < ARect.Bottom) then
@@ -13135,7 +13348,7 @@ begin {TSection.Draw}
             DoDraw(I)
           else
           begin
-            if (OwnerBlock <> nil) and (OwnerBlock.Positioning = PosAbsolute) then
+            if (OwnerBlock <> nil) and (OwnerBlock.Positioning = posAbsolute) then
               DoDraw(I)
             else if Y < Document.PageBottom then
               Document.PageBottom := Y; {Dont' print, don't want partial line}
@@ -13617,7 +13830,7 @@ var
 begin
   inherited Create(Parent, Position, L, Prop);
   VertAlign := ABottom; {default}
-  Floating := ANone;
+  FFloating := ANone;
   PntPanel := {TPaintPanel(}Document.PPanel{)};
   Panel := ThvPanel.Create(PntPanel);
   Panel.Left := -4000;
@@ -13778,7 +13991,7 @@ begin
   inherited Create(Parent, Position, L, Prop);
   PositionSet := false;
   VertAlign := ABottom; {default}
-  Floating := ANone;
+  FFloating := ANone;
   PntPanel := Document.PPanel;
   Progress := ThvProgressBar.Create(PntPanel);
   with Progress do
@@ -13874,7 +14087,7 @@ begin
   inherited Create(Parent, Position, L, Prop);
   //PositionSet := false;
   VertAlign := ABottom; {default}
-  Floating := ANone;
+  FFloating := ANone;
   PntPanel := Document.PPanel;
   Meter := ThvMeter.Create(PntPanel);
   with Meter do
@@ -14955,12 +15168,12 @@ begin
             else if S = 'LEFT' then
             begin
               VertAlign := ANone;
-              Floating := ALeft;
+              FFloating := ALeft;
             end
             else if S = 'RIGHT' then
             begin
               VertAlign := ANone;
-              Floating := ARight;
+              FFloating := ARight;
             end;
           end;
       end;
@@ -15033,11 +15246,6 @@ begin
   Result := FClientWidth;
 end;
 
-function TSizeableObj.GetYPosition: Integer;
-begin
-  Result := DrawYY;
-end;
-
 procedure TSizeableObj.ProcessProperties(Prop: TProperties);
 const
   DummyHtWd = 200;
@@ -15056,8 +15264,8 @@ begin
 //      HSpaceR := ImageSpace;
 //      HSpaceL := ImageSpace;
 //    end;
-    Floating := Align;
     VertAlign := ANone;
+    FFloating := Align;
   end;
   if Title = '' then {a Title attribute will have higher priority than inherited}
     Title := Prop.PropTitle;
@@ -15107,7 +15315,7 @@ begin
   if Prop.GetVertAlign(Align) then
     VertAlign := Align;
   if Prop.GetFloat(Align) and (Align <> ANone) then
-    Floating := Align;
+    FFloating := Align;
 
   if Prop.BorderStyleNotBlank then
   begin
@@ -15121,7 +15329,6 @@ begin
     Inc(VSpaceT, MargArray[BorderTopWidth]);
     Inc(VSpaceB, MargArray[BorderBottomWidth]);
   end;
-  FDisplay := Prop.Display;
 end;
 
 //-- BG ---------------------------------------------------------- 14.10.2012 --
@@ -15172,7 +15379,6 @@ constructor TSizeableObj.SimpleCreate(Parent: TCellBasic);
 begin
   inherited Create(Parent, 0, nil, nil);
   VertAlign := ABottom; {default}
-  Floating := ANone; {default}
   NoBorder := True;
   BorderSize := 0;
   SpecHeight := -1;
@@ -15205,13 +15411,7 @@ begin
   inherited Create(Parent, Attributes, Properties, TheId);
   if Properties <> nil then
   begin
-    FDisplay := Properties.Display;
     TagClass := Properties.PropTag;
-//  end
-//  else
-//  begin
-//    FDisplay := pdUnassigned;
-//    TagClass := '';
   end;
   htAppendStr(TagClass, '.' + TheClass + '#' + TheId);
 
@@ -15230,35 +15430,8 @@ begin
   inherited CreateCopy(Parent,Source);
   StartCurs := T.StartCurs;
   Len := T.Len;
-  FDisplay := T.Display; //BG, 30.12.2010: issue-43: Invisible section is printed
   SectionHeight := T.SectionHeight;
   ZIndex := T.ZIndex;
-end;
-
-//-- BG ---------------------------------------------------------- 07.09.2013 --
-function TSectionBase.CalcDisplayExtern: ThtDisplayStyle;
-begin
-  case FDisplay of
-    pdInlineBlock,
-    pdInlineTable:
-      Result := pdInline;
-  else
-    Result := FDisplay;
-  end;
-end;
-
-//-- BG ---------------------------------------------------------- 07.09.2013 --
-function TSectionBase.CalcDisplayIntern: ThtDisplayStyle;
-begin
-  case FDisplay of
-    pdInlineTable:
-      Result := pdTable;
-
-    pdInlineBlock:
-      Result := pdBlock;
-  else
-    Result := FDisplay;
-  end;
 end;
 
 procedure TSectionBase.CopyToClipboard;
@@ -15814,6 +15987,12 @@ begin
     Result := SectionHeight;
 end;
 
+//-- BG ---------------------------------------------------------- 14.02.2016 --
+function TFloatingObj.GetYPosition: Integer;
+begin
+  Result := DrawYY;
+end;
+
 //-- BG ---------------------------------------------------------- 02.03.2011 --
 function TFloatingObj.TotalHeight: Integer;
 begin
@@ -15960,40 +16139,11 @@ end;
 
 //-- BG ---------------------------------------------------------- 31.08.2013 --
 constructor TBlockBase.Create(Parent: TCellBasic; Position: Integer; Attributes: TAttributeList; Prop: TProperties);
-var
-  MargArrayO: ThtVMarginArray;
-  MargArray: ThtMarginArray;
-  Align: ThtAlignmentStyle;
-  EmSize, ExSize: Integer;
-  Cd: ThtConvData;
 begin
   inherited Create(Parent, Attributes, Prop);
   if FDisplay = pdUnassigned then
     FDisplay := pdBlock;
   StartCurs := Position;
-  if Prop <> nil then
-  begin
-    Positioning := Prop.GetPosition;
-    if not Prop.GetFloat(Floating) or not (Positioning in [posAbsolute, posFixed]) then
-      Floating := ANone;
-    Prop.GetVMarginArray(MargArrayO);
-    EmSize := Prop.EmSize;
-    ExSize := Prop.ExSize;
-    CD := ConvData(100, 100, Prop.EmSize, Prop.ExSize, 0);
-    ConvMargProp(piTop   , MargArrayO, CD, MargArray);
-    ConvMargProp(piLeft  , MargArrayO, CD, MargArray);
-    ConvMargProp(piRight , MargArrayO, CD, MargArray);
-    ConvMargProp(piBottom, MargArrayO, CD, MargArray);
-    Positions[reTop   ] := MargArray[piTop   ];
-    Positions[reLeft  ] := MargArray[piLeft  ];
-    Positions[reRight ] := MargArray[piRight ];
-    Positions[reBottom] := MargArray[piBottom];
-  end
-  else
-  begin
-    Floating := ANone;
-    Positioning := posStatic;
-  end;
 end;
 
 //-- BG ---------------------------------------------------------- 31.08.2013 --
@@ -16002,15 +16152,6 @@ var
   T: TBlockBase absolute Source;
 begin
   inherited CreateCopy(Parent,Source);
-  Positioning := T.Positioning;
-  Floating := T.Floating;
-  Indent := T.Indent;
-end;
-
-//-- BG ---------------------------------------------------------- 13.02.2016 --
-function TBlockBase.IsInFlow: Boolean;
-begin
-  Result := not (Floating in [aLeft, aRight]) and not (Positioning in [posAbsolute, posFixed]);
 end;
 
 //{ TRenderSectionBaseList }
