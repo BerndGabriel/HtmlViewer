@@ -5235,37 +5235,17 @@ var
     MiscWidths   := LeftWidths + RightWidths;
     TotalWidth   := MiscWidths + ContentWidth;
 
-    FIndent := LeftWidths;
-    TopP := 0;
-    LeftP := 0;
     case Positioning of
-//      posRelative:
-//      begin
-//        if TopP = Auto then
-//          TopP := 0;
-//        if LeftP = Auto then
-//          LeftP := 0;
-//      end;
-//
-//      posAbsolute:
-//      begin
-//        if TopP = Auto then
-//          TopP := 0;
-//        if (LeftP = Auto) then
-//          if (MargArray[piRight] <> Auto) and (MargArray[piWidth] <> Auto) then
-//            LeftP := AWidth - MargArray[piRight] - MargArray[piWidth] - LeftWidths - RightWidths
-//          else
-//            LeftP := 0;
-//        X := LeftP;
-//        Y := TopP + YRef;
-//      end;
       posAbsolute:
         ARect := ContainingBox;
 
       posFixed:
-        ARect := FDocument.ViewPort;
+        ARect := Document.ViewPort;
     end;
 
+    FIndent := LeftWidths;
+    TopP := 0;
+    LeftP := 0;
     case Positioning of
       posAbsolute,
       posFixed:
@@ -11701,7 +11681,7 @@ begin
     P1 := StrScanW(P, BrkCh);
   end;
   P1 := StrScanW(P, #0); {look for the end}
-  Max := Math.Max(Max, FindTextWidthB(Canvas, P, P1 - P, True).cx); // + FloatMin;
+  Inc(Max, FindTextWidthB(Canvas, P, P1 - P, True).cx); // + FloatMin;
 
   P := Buff;
   if not BreakWord then
@@ -11907,13 +11887,13 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
           case FlObj.Floating of
             ALeft:
             begin
-              IMgr.AlignLeft(ImgY, W, XX, YY);
+              IMgr.AlignLeft(ImgY, W);
               FlObj.FIndent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
             end;
 
             ARight:
             begin
-              IMgr.AlignRight(ImgY, W, XX, YY);
+              IMgr.AlignRight(ImgY, W);
               FlObj.FIndent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
             end;
           end;
@@ -11940,7 +11920,13 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     end;
 
   var
-    Cnt, I, J, J1, J2, J3, X1, X2, Width, D, H: Integer;
+    Cnt,
+    I,  // number of fitting chars
+    J,  // number of chars up to next font change or object
+    J1, // number of chars up to next font change
+    J2, // number of chars up to next image
+    J3, // number of chars up to next form control
+    X1, X2, Width, D, H: Integer;
     XX: Integer; // current width of row in pixels (== current horizontal position).
     YY: Integer; // current height of row in pixels.
     Picture: boolean;
@@ -12006,7 +11992,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       J2 := Images.GetObjectAt(Start - Buff, FlObj);
       J3 := FormControls.GetObjectAt(Start - Buff, FcObj);
       if (J2 = 0) or (J3 = 0) then
-      begin {next is an image}
+      begin {next is an object}
         if J2 <> 0 then
           FlObj := FcObj;
         I := 1;
@@ -12015,6 +12001,8 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
         case DrawLogicOfObject(FlObj, XX, YY, Width, Cnt, FloatingImageCount) of
           rsContinue:
           begin
+            // after an object floating to the left or right, we must retry to
+            // fit the remaining space between the floating objects.
             Start := TheStart;
             Cnt := 0;
             XX := 0;
@@ -12063,7 +12051,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       Inc(Result);
 
     // adjust floating objects top position, in case they have been moved down and line height has been changed.
-    H := Max(YY, ImgHt);
+    H := YY; //Max(YY, ImgHt);
     IMgr.AdjustY(InitialFloatingLeftCount, InitialFloatingRightCount, Y, H);
 
     D := 0;
