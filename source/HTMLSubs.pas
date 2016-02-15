@@ -1873,7 +1873,7 @@ begin
   begin
     FDisplay := FProperties.Display;
     FPositioning := FProperties.GetPosition;
-    if not FProperties.GetFloat(FFloating) or not (FPositioning in [posAbsolute, posFixed]) then
+    if not FProperties.GetFloat(FFloating) or (FPositioning in [posAbsolute, posFixed]) then
       FFloating := ANone;
     FProperties.GetVMarginArray(MargArrayO);
     EmSize := FProperties.EmSize;
