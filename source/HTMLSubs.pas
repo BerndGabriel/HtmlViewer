@@ -5441,7 +5441,7 @@ var
 
 begin {TBlock.DrawLogic}
 {$IFDEF JPM_DEBUGGING_LOGIC}
-  CodeSite.EnterMethod(Self,Format('TBlock.DrawLogic "%s"', [TagClass]));
+  CodeSite.EnterMethod(Self,Format('TBlock.DrawLogic1 "%s"', [TagClass]));
   CodeSite.SendFmtMsg('AWidth, AHeight = [%4d, %4d]', [AWidth, AHeight]);
 {$IFDEF JPM_DEBUGGING_LOGIC1}
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
@@ -5497,7 +5497,7 @@ begin {TBlock.DrawLogic}
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TBlock.DrawLogic');
+  CodeSite.ExitMethod(Self,'TBlock.DrawLogic1');
 {$ENDIF}
 end;
 
@@ -6450,7 +6450,7 @@ var
   X1, Tmp: Integer;
 begin
 {$IFDEF JPM_DEBUGGING_LOGIC}
-  CodeSite.EnterMethod(Self, Format('TTableBlock.DrawLogic TagClass = [%s]', [Self.TagClass] ));
+  CodeSite.EnterMethod(Self, Format('TTableBlock.DrawLogic1 TagClass = [%s]', [Self.TagClass] ));
 {$IFDEF JPM_DEBUGGING_LOGIC1}
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
@@ -6491,7 +6491,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TTableBlock.DrawLogic');
+  CodeSite.ExitMethod(Self,'TTableBlock.DrawLogic1');
 {$ENDIF}
 end;
 
@@ -6685,7 +6685,7 @@ function TBlockLI.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
   var MaxWidth, Curs: Integer): Integer;
 begin
 {$IFDEF JPM_DEBUGGING_LOGIC}
-  CodeSite.EnterMethod(Self,'TBlockLI.DrawLogic');
+  CodeSite.EnterMethod(Self,'TBlockLI.DrawLogic1');
   CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
 
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
@@ -6728,7 +6728,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TBlockLI.DrawLogic');
+  CodeSite.ExitMethod(Self,'TBlockLI.DrawLogic1');
 {$ENDIF}
 end;
 
@@ -6877,7 +6877,7 @@ var
   ClientContentBot: Integer;
 begin
    {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TBodyBlock.DrawLogic');
+  CodeSite.EnterMethod(Self,'TBodyBlock.DrawLogic1');
   CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
@@ -6949,7 +6949,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TBodyBlock.DrawLogic');
+  CodeSite.ExitMethod(Self,'TBodyBlock.DrawLogic1');
   {$ENDIF}
 end;
 
@@ -8700,7 +8700,7 @@ begin
   Desired := Max(Result, Desired);
 end;
 
-{----------------TCellList.DrawLogic2}
+{----------------TCellList.DrawLogicB}
 
 procedure TCellList.DrawLogicB(Canvas: TCanvas; Y, CellSpacingHorz, CellSpacingVert: Integer; var Curs: Integer);
 {Calc Y indents. Set up Y positions of all cells.}
@@ -8709,7 +8709,7 @@ var
   CellObj: TCellObjBase;
 begin
 {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TCellObj.DrawLogic2');
+  CodeSite.EnterMethod(Self,'TCellObj.DrawLogicB');
   CodeSite.SendFmtMsg('Y           = [%d]',[Y]);
   CodeSite.SendFmtMsg('CellSpacing = [%d,%d]',[CellSpacingHorz, CellSpacingVert]);
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
@@ -8723,7 +8723,7 @@ begin
   end;
 {$IFDEF JPM_DEBUGGING}
   CodeSite.SendFmtMsg('Curs         = [%d]',[Curs]);
-  CodeSite.ExitMethod(Self,'TCellObj.DrawLogic2');
+  CodeSite.ExitMethod(Self,'TCellObj.DrawLogicB');
 {$ENDIF}
 end;
 
@@ -9511,7 +9511,7 @@ begin
       end;
   end;
 
-  SetLength(Heights, 0);
+  //SetLength(Heights, 0);
   Span := 1;
 
   //BG, 29.01.2011: data for loop termination and to speed up looping through
@@ -9935,8 +9935,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
         Exit;
       Dec(AHeight, CellSpacingVert); {calculated heights will include one cellspacing each,
       this removes that last odd cellspacing}
-      if Length(Heights) = 0 then
-        SetLength(Heights, Rows.Count);
+      SetLength(Heights, Rows.Count);
       SetLength(DesiredHts, Rows.Count);
       SetLength(MinHts, Rows.Count);
       SetLength(SpecHts, Rows.Count);
@@ -10072,10 +10071,11 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
     HasBody: Boolean;
   begin
   // Find Row Heights
-    if Length(Heights) = 0 then
+    if (CycleNumber <> Document.CycleNumber) or (Length(Heights) = 0) then
       FindRowHeights(Canvas, AHeight)
-    else if Document.InLogic2 and (Document.TableNestLevel <= 5) then
-      FindRowHeights(Canvas, AHeight);
+    //else if Document.InLogic2 and (Document.TableNestLevel <= 10) then
+    //  FindRowHeights(Canvas, AHeight)
+    ;
 
     Result := 0;
     HeaderHeight := 0;
@@ -10138,12 +10138,26 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
     Inc(Result, CellSpacingVert);
   end;
 
+  procedure DrawLogicYIndent;
+  var
+    J: Integer;
+  begin
+    for J := 0 to Rows.Count - 1 do
+      with Rows[J] do
+      begin
+        RowHeight := Heights[J];
+      {DrawLogicB is only called in nested tables if the outer table is calling DrawLogic2}
+            DrawLogicB(Canvas, Y, CellSpacingHorz,CellSpacingVert, Curs);
+        Inc(Y, RowHeight);
+      end;
+  end;
+
 var
   TopY: Integer;
   FirstLinePtr: PInteger;
 begin {THtmlTable.DrawLogic}
 {$IFDEF JPM_DEBUGGING_LOGIC}
-  CodeSite.EnterMethod(Self, Format('THtmlTable.DrawLogic "%s"', [TagClass]));
+  CodeSite.EnterMethod(Self, Format('THtmlTable.DrawLogic1 "%s"', [TagClass]));
   CodeSite.SendFmtMsg('AWidth, AHeight = [%4d, %4d]', [AWidth, AHeight]);
 {$IFDEF JPM_DEBUGGING_LOGIC1}
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
@@ -10162,7 +10176,7 @@ begin {THtmlTable.DrawLogic}
 {$ENDIF}
   Inc(Document.TableNestLevel);
   try
-    if (CycleNumber <> Document.CycleNumber) or (YDraw <> Y) or (ContentTop <> Y) or (DrawTop <> Y) or (StartCurs <> Curs)
+    if (CycleNumber <> Document.CycleNumber) or (YDraw <> Y) or (ContentTop <> Y) or (DrawTop <> Y) or (StartCurs <> Curs) or (Length(Heights) = 0)
     then
     begin
       YDraw := Y;
@@ -10200,7 +10214,17 @@ begin {THtmlTable.DrawLogic}
     end
     else
     begin
-      Curs := StartCurs + Len;
+      if Document.TableNestLevel = 1 then
+        Document.InLogic2 := True;
+      try
+        if Document.InLogic2 then
+          DrawLogicYIndent
+        else
+          Curs := StartCurs + Len;
+      finally
+        if Document.TableNestLevel = 1 then
+          Document.InLogic2 := False;
+      end;
 {$ifdef JPM_DEBUGGING_LOGIC}
       CodeSite.SendFmtMsg('Stored TableWidth = %d, TableHeight = %d', [TableWidth, TableHeight]);
 {$endif}
@@ -10225,7 +10249,7 @@ begin {THtmlTable.DrawLogic}
     CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
     CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
     CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-    CodeSite.ExitMethod(Self, Format('THtmlTable.DrawLogic "%s"', [TagClass]));
+    CodeSite.ExitMethod(Self, Format('THtmlTable.DrawLogic1 "%s"', [TagClass]));
 {$ENDIF}
   end;
 end;
@@ -12621,7 +12645,7 @@ var
   Save: Integer;
 begin {TSection.DrawLogic}
 {$IFDEF JPM_DEBUGGING_LOGIC}
-  CodeSite.EnterMethod(Self,'TSection.DrawLogic');
+  CodeSite.EnterMethod(Self,'TSection.DrawLogic1');
 {$IFDEF JPM_DEBUGGING_LOGIC1}
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
@@ -12697,7 +12721,7 @@ begin {TSection.DrawLogic}
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TSection.DrawLogic');
+  CodeSite.ExitMethod(Self,'TSection.DrawLogic1');
 {$ENDIF}
 end;
 
@@ -14666,7 +14690,7 @@ function THorzLine.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight
   var MaxWidth: Integer; var Curs: Integer): Integer;
 begin
   {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'THorzLine.DrawLogic');
+  CodeSite.EnterMethod(Self,'THorzLine.DrawLogic1');
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
   CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
@@ -14707,7 +14731,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'THorzLine.DrawLogic');
+  CodeSite.ExitMethod(Self,'THorzLine.DrawLogic1');
    {$ENDIF}
 end;
 
@@ -14923,7 +14947,7 @@ var
   SaveID: TObject;
 begin
   {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TBlock.DrawLogic');
+  CodeSite.EnterMethod(Self,'TBlock.DrawLogic1');
   CodeSite.SendFmtMsg('Self.TagClass = [%s]', [Self.TagClass] );
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
@@ -14992,7 +15016,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TBlock.DrawLogic');
+  CodeSite.ExitMethod(Self,'TBlock.DrawLogic1');
    {$ENDIF}
 end;
 
@@ -15442,7 +15466,7 @@ function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, Bl
 // Returns the nominal height of the section (without overhanging floating blocks)
 begin
 {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TPage.DrawLogic');
+  CodeSite.EnterMethod(Self,'TPage.DrawLogic1');
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
   CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
@@ -15493,7 +15517,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TPage.DrawLogic');
+  CodeSite.ExitMethod(Self,'TPage.DrawLogic1');
 {$ENDIF}
 end;
 
