@@ -1433,6 +1433,7 @@ begin
             DivBlock.MargArray[MarginBottom] := ParagraphSpace;
             DivBlock.BottomAuto := True;
           end;
+          DivBlock.CollapseNestedMargins;
           SectionList := DivBlock.OwnerCell;
         end;
 
@@ -1461,6 +1462,7 @@ begin
           FieldsetBlock.MargArray[MarginBottom] := ParagraphSpace;
           FieldsetBlock.BottomAuto := True;
         end;
+        FieldsetBlock.CollapseNestedMargins;
         SectionList := FieldsetBlock.OwnerCell;
 
         Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
@@ -1530,6 +1532,7 @@ begin
           FormBlock.MargArray[MarginBottom] := ParagraphSpace;
           FormBlock.BottomAuto := True;
         end;
+        FormBlock.CollapseNestedMargins;
         SectionList := FormBlock.OwnerCell;
         if Sy = FormEndSy then
         begin
@@ -3701,7 +3704,7 @@ begin
   SectionList.Add(Section, TagIndex);
   Section := nil;
   SectionList.CheckLastBottomMargin;
-  LiBlock.CollapseBottomMargins;
+  LiBlock.CollapseNestedMargins;
   PopAProp(Sym);
   SectionList := LiBlock.OwnerCell;
 {$ifdef DO_LI_INLINE}
@@ -3824,7 +3827,7 @@ begin
     NewBlock.MargArray[MarginBottom] := ParagraphSpace;
     NewBlock.BottomAuto := True;
   end;
-  NewBlock.CollapseBottomMargins;
+  NewBlock.CollapseNestedMargins;
   Section := nil;
   if InHref then
     DoAEnd;

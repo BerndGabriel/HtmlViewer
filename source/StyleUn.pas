@@ -1588,9 +1588,15 @@ begin
   StyleUn.LogTVMarginArray(VM,'VM');
 {$ENDIF}
 
+  ConvMargProp(PaddingTop, VM, CD, M);
+  ConvMargProp(BorderTopWidth, VM, CD, M);
   ConvMargProp(MarginTop, VM, CD, M);
-  ConvMargProp(MarginBottom, VM, CD, M);
+  ConvMargProp(piHeight, VM, CD, M);
   ConvMargProp(piMinHeight, VM, CD, M);
+  ConvMargProp(piMaxHeight, VM, CD, M);
+  ConvMargProp(MarginBottom, VM, CD, M);
+  ConvMargProp(BorderBottomWidth, VM, CD, M);
+  ConvMargProp(PaddingBottom, VM, CD, M);
 
 {$IFDEF JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;

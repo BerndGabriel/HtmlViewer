@@ -831,8 +831,8 @@ type
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): boolean; override;
     procedure AddSectionsToList; override;
-    procedure CollapseMargins;
-    procedure CollapseBottomMargins;
+    procedure CollapseAdjoiningMargins;
+    procedure CollapseNestedMargins;
     procedure CopyToClipboard; override;
     procedure DrawBlock(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
     procedure DrawSort;
@@ -4583,7 +4583,7 @@ begin
     MyCell.IMgr := MyIMgr;
   end;
   if not (Self is TTableBlock) and not (Self is TTableAndCaptionBlock) then
-    CollapseMargins;
+    CollapseAdjoiningMargins;
   HideOverflow := Prop.IsOverflowHidden;
   if Prop.Props[TextAlign] = 'right' then
     Justify := Right
@@ -4611,11 +4611,12 @@ begin
       Result := Min(A, B);
 end;
 
-procedure TBlock.CollapseMargins;
+procedure TBlock.CollapseAdjoiningMargins;
 {adjacent vertical margins need to be reduced}
 var
   TopAuto: boolean;
   TB: TSectionBase;
+  Block: TBlock absolute TB;
   LastMargin, I: Integer;
   Tag: TElemSymb;
   CD: ThtConvData;
@@ -4662,11 +4663,14 @@ begin
     begin
       if ((TB is TTableBlock) or (TB is TTableAndCaptionBlock)) and (TBlock(TB).Floating in [ALeft, ARight]) and TopAuto then
         MargArray[MarginTop] := 0
-      else if (TB is TBlock) then
+      else if TB is TBlock then
       begin
-        LastMargin := TBlock(TB).MargArray[MarginBottom];
-        TBlock(TB).MargArray[MarginBottom] := 0;
-        MargArray[MarginTop] := Collapse(LastMargin, MargArray[MarginTop]);
+        if Block.Positioning = posStatic then
+        begin
+          LastMargin := Block.MargArray[MarginBottom];
+          Block.MargArray[MarginBottom] := 0;
+          MargArray[MarginTop] := Collapse(LastMargin, MargArray[MarginTop]);
+        end
       end
       else if (Tag = LISy) and TopAuto and (Symbol in [ULSy, OLSy]) then
         MargArray[MarginTop] := 0; {removes space from nested lists}
@@ -4675,46 +4679,72 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.05.2014 --
-procedure TBlock.CollapseBottomMargins;
+procedure TBlock.CollapseNestedMargins;
 var
   TB: TSectionBase;
   Block: TBlock absolute TB;
-  I: Integer;
-  BottomMargin: Integer;
-  CD, BCD: ThtConvData;
+  I, J, M: Integer;
 begin
-// (MargArrayO[piHeight] = IntNull)
-  if (OwnerCell <> Document) and (MargArray[piHeight] = IntNull) and (MargArray[piMinHeight] = 0) then
+  if (OwnerCell <> Document) and (MargArray[piHeight] = 0) and (MargArray[piMinHeight] = 0) then
   begin
-    // collapse with last sectionbase, if it is an in-flow block.
-
-    // find block to collapse
-    I := MyCell.Count - 1;
-    while I >= 0 do
+    J := 0;
+    if MargArray[BorderTopWidth] = 0 then
     begin
-      TB := MyCell[I];
-      if TB.Display <> pdNone then
-        if not (TB is TBlock) or ((Block.Positioning <> PosAbsolute) and (Block.Floating = aNone)) then
-          break;
-      Dec(I);
+      // collapse with first sectionbase, if it is an in-flow block.
+
+      // find block to collapse
+      while J < MyCell.Count do
+      begin
+        TB := MyCell[J];
+        if TB.Display <> pdNone then
+          if not (TB is TBlock) or ((Block.Positioning <> PosAbsolute) and (Block.Floating = aNone)) then
+            break;
+        Inc(J);
+      end;
+
+      if J < MyCell.Count then
+      begin
+        if (TB is TBlock) and (Block.Positioning = posStatic) then
+        begin
+          // collapse margins, if it has no top padding
+          if (Block.MargArray[PaddingTop] = 0) then
+          begin
+            M := Block.MargArray[MarginTop];
+            Block.MargArray[MarginTop] := 0;
+            MargArray[MarginTop] := Collapse(MargArray[MarginTop], M);
+          end;
+        end;
+      end;
     end;
 
-    if I >= 0 then
-      if (TB is TBlock) and (Block.Positioning = posStatic) then
+    if MargArray[BorderBottomWidth] = 0 then
     begin
-      // collapse block, if it has no bottom padding and no bottom border
-      BCD := ConvData(100, 100, Block.EmSize, Block.ExSize, Block.BorderWidth);
-      ConvMargProp(PaddingBottom, Block.MargArrayO, CD, Block.MargArray);
-      ConvMargProp(BorderBottomStyle, Block.MargArrayO, CD, Block.MargArray);
-      ConvMargProp(BorderBottomWidth, Block.MargArrayO, CD, Block.MargArray);
+      // collapse with last sectionbase, if it is an in-flow block.
 
-      if Block.MargArray[PaddingBottom] = 0 then
-        if Block.MargArray[BorderBottomWidth] = 0 then
+      // find block to collapse
+      I := MyCell.Count - 1;
+      while I >= J do
+      begin
+        TB := MyCell[I];
+        if TB.Display <> pdNone then
+          if not (TB is TBlock) or ((Block.Positioning <> PosAbsolute) and (Block.Floating = aNone)) then
+            break;
+        Dec(I);
+      end;
+
+      if I >= 0 then
+      begin
+        if (TB is TBlock) and (Block.Positioning = posStatic) then
         begin
-          BottomMargin := Block.MargArray[MarginBottom];
-          Block.MargArray[MarginBottom] := 0;
-          MargArray[MarginBottom] := Collapse(MargArray[MarginBottom], BottomMargin);
+          // collapse margins, if it has no bottom padding
+          if (Block.MargArray[PaddingBottom] = 0) then
+          begin
+            M := Block.MargArray[MarginBottom];
+            Block.MargArray[MarginBottom] := 0;
+            MargArray[MarginBottom] := Collapse(MargArray[MarginBottom], M);
+          end;
         end;
+      end;
     end;
   end;
 end;
@@ -6244,7 +6274,7 @@ begin
     end;
   end;
 
-  CollapseMargins;
+  CollapseAdjoiningMargins;
   Table.Float := Floating in [ALeft, ARight];
   if Table.Float and (ZIndex = 0) then
     ZIndex := 1;
