@@ -271,8 +271,8 @@ type
     destructor Destroy; override;
     function AddLeft(YT, YB, W: Integer): TIndentRec;
     function AddRight(YT, YB, W: Integer): TIndentRec;
-    function AlignLeft(var Y: Integer; W: Integer; SpW: Integer = 0; SpH: Integer = 0): Integer;
-    function AlignRight(var Y: Integer; W: Integer; SpW: Integer = 0; SpH: Integer = 0): Integer;
+    function AlignLeft(var Y: Integer; W: Integer): Integer;
+    function AlignRight(var Y: Integer; W: Integer): Integer;
     function GetNextWiderY(Y: Integer): Integer;
     function ImageBottom: Integer;
     function LeftIndent(Y: Integer): Integer;
@@ -2101,254 +2101,208 @@ begin
   Inc(CR);
 end;
 
-////-- BG ---------------------------------------------------------- 08.06.2008 --
-//function TIndentManager.GetNextLeftXY(var Y: Integer; X, ThisWidth, MaxWidth, MinIndex: Integer): Integer;
-//var
-//  Index: Integer;
-//  Indent: IndentRec;
-//  DummyCR: Integer;
-//begin
-//  if X < 0 then
-//  begin
-//    dec(X, Auto);
-//    inc(MaxWidth, 2 * Auto);
-//  end;
-//
-//  Index := L.Count - 1;
-//  if Index >= MinIndex then
-//  begin
-//    Indent := IndentRec(L[Index]);
-//    if Y < Indent.YB then
-//    begin
-//      // set y to previous used y == y of current line
-//      Y := Max(Y, Indent.YT);
-//      Result := Max(X, Indent.X);
-//    end
-//    else
-//      Result := X;
-//  end
-//  else
-//    Result := Max(X, LeftIndent(Y));
-//
-//  if Result + ThisWidth > MaxWidth + X then
-//  begin
-//    Result := X;
-//    GetClearY(Y, DummyCR);
-//  end;
-//end;
-
 //-- BG ---------------------------------------------------------- 06.02.2011 --
-function TIndentManager.AlignLeft(var Y: Integer; W, SpW, SpH: Integer): Integer;
-// Returns the aligned Y position of a block of width W starting at Y.
-// Result is > Y, if at Y is not enough width for the block and optional additional space Sp
-// Additional space e.g. for a textRec between aligned images.
+function TIndentManager.AlignLeft(var Y: Integer; W: Integer): Integer;
+// Find an available area to the left at or below Y with a width of W pixels.
+//
+// Returns the absolute X position of the found area.
+// On return Y may be adjusted to a larger value if at original Y there is not
+// enough width W.
 var
   I, CL, CR, LX, RX, XL, XR, YY, MinX: Integer;
 begin
   Y := Max(Y, LTopMin);
   Result := LeftEdge(Y);
-  if Result + W + SpW > RightEdge(Y) then
+  if Result + W > RightEdge(Y) then
   begin
     // too wide, must find a wider place below:
-    if (SpH > 0) and (Result + W <= RightEdge(Y + SpH)) then
-    begin
-      // fits into area below space Sp
-      Inc(Y, SpH);
-    end
-    else
-    begin
-      // too wide, must find a wider place below:
-      YY := Y;
-      MinX := 0;
+    YY := Y;
+    MinX := 0;
 
-      CL := Y;
-      XL := Result; // valium for the compiler
-      for I := L.Count - 1 downto 0 do
-        with TIndentRec(L.Items[I]) do
+    CL := Y;
+    XL := Result; // valium for the compiler
+    for I := L.Count - 1 downto 0 do
+      with TIndentRec(L.Items[I]) do
+      begin
+        if ID = CurrentID then
         begin
-          if ID = CurrentID then
+          MinX := X;
+          break;
+        end;
+        if (ID = nil) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+        begin
+          if X = LeftEdge(YB - 1) then
           begin
-            MinX := X;
-            break;
-          end;
-          if (ID = nil) and (YB > Y) and ((YB < CL) or (CL = Y)) then
-          begin
-            if X = LeftEdge(YB - 1) then
+            // This is the right most left indentation
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
+            if YY < YB then
+              YY := YB;
+            if RX >= LX then
             begin
-              // This is the right most left indentation
-              LX := LeftEdge(YB);
-              RX := RightEdge(YB) - W;
-              if YY < YB then
-                YY := YB;
-              if RX >= LX then
-              begin
-                CL := YB;
-                XL := LX;
-              end;
+              CL := YB;
+              XL := LX;
             end;
           end;
         end;
+      end;
 
-      CR := Y;
-      XR := Result; // valium for the compiler
-      for I := R.Count - 1 downto 0 do
-        with TIndentRec(R.Items[I]) do
+    CR := Y;
+    XR := Result; // valium for the compiler
+    for I := R.Count - 1 downto 0 do
+      with TIndentRec(R.Items[I]) do
+      begin
+        if ID = CurrentID then
+          break;
+        if (ID = nil) and (YB > Y) and ((YB < CR) or (CR = Y)) then
         begin
-          if ID = CurrentID then
-            break;
-          if (ID = nil) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+          if X = RightEdge(YB - 1) then
           begin
-            if X = RightEdge(YB - 1) then
+            // This is the left most right indentation
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
+            if YY < YB then
+              YY := YB;
+            if RX >= LX then
             begin
-              // This is the left most right indentation
-              LX := LeftEdge(YB);
-              RX := RightEdge(YB) - W;
-              if YY < YB then
-                YY := YB;
-              if RX >= LX then
-              begin
-                CR := YB;
-                XR := LX;
-              end;
+              CR := YB;
+              XR := LX;
             end;
           end;
         end;
+      end;
 
-      if CL = Y then
+    if CL = Y then
+    begin
+      if CR = Y then
       begin
-        if CR = Y then
-        begin
-          // no better place found, just append at the end.
-          Y := YY;
-          Result := MinX;
-        end
-        else
-        begin
-          Y := CR;
-          Result := XR;
-        end
-      end
-      else if CR = Y then
-      begin
-        Y := CL;
-        Result := XL;
-      end
-      else if CL < CR then
-      begin
-        Y := CL;
-        Result := XL;
+        // no better place found, just append at the end.
+        Y := YY;
+        Result := MinX;
       end
       else
       begin
         Y := CR;
         Result := XR;
-      end;
+      end
+    end
+    else if CR = Y then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else if CL < CR then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else
+    begin
+      Y := CR;
+      Result := XR;
     end;
   end;
   Inc(Result, LfEdge);
 end;
 
-function TIndentManager.AlignRight(var Y: Integer; W, SpW, SpH: Integer): Integer;
+function TIndentManager.AlignRight(var Y: Integer; W: Integer): Integer;
+// Find an available area to the right at or below Y with a width of W pixels.
+//
+// Returns the absolute X position of the found area.
+// On return Y may be adjusted to a larger value if at original Y there is not
+// enough width W.
 var
   I, CL, CR, LX, RX, XL, XR, YY, MaxX: Integer;
 begin
   Y := Max(Y, RTopMin);
   Result := RightEdge(Y) - W;
-  if Result < LeftEdge(Y) + SpW then
+  if Result < LeftEdge(Y) then
   begin
     // too wide, must find a wider place below:
-    if (SpH > 0) and (Result >= LeftEdge(Y + SpH)) then
-    begin
-      // fits into area below space Sp
-      Inc(Y, SpH);
-    end
-    else
-    begin
-      YY := Y;
-      MaxX := Width - W;
+    YY := Y;
+    MaxX := Width - W;
 
-      CL := Y;
-      XL := Result; // valium for the compiler
-      for I := L.Count - 1 downto 0 do
-        with TIndentRec(L.Items[I]) do
+    CL := Y;
+    XL := Result; // valium for the compiler
+    for I := L.Count - 1 downto 0 do
+      with TIndentRec(L.Items[I]) do
+      begin
+        if ID = CurrentID then
+          break;
+        if (ID = nil) and (YB > Y) and ((YB < CL) or (CL = Y)) then
         begin
-          if ID = CurrentID then
-            break;
-          if (ID = nil) and (YB > Y) and ((YB < CL) or (CL = Y)) then
+          if X = LeftEdge(YB - 1) then
           begin
-            if X = LeftEdge(YB - 1) then
+            // This is the right most left indentation
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
+            if YY < YB then
+              YY := YB;
+            if RX >= LX then
             begin
-              // This is the right most left indentation
-              LX := LeftEdge(YB);
-              RX := RightEdge(YB) - W;
-              if YY < YB then
-                YY := YB;
-              if RX >= LX then
-              begin
-                CL := YB;
-                XL := RX;
-              end;
+              CL := YB;
+              XL := RX;
             end;
           end;
         end;
+      end;
 
-      CR := Y;
-      XR := Result; // valium for the compiler
-      for I := R.Count - 1 downto 0 do
-        with TIndentRec(R.Items[I]) do
+    CR := Y;
+    XR := Result; // valium for the compiler
+    for I := R.Count - 1 downto 0 do
+      with TIndentRec(R.Items[I]) do
+      begin
+        if ID = CurrentID then
         begin
-          if ID = CurrentID then
+          MaxX := X - W;
+          break;
+        end;
+        if (ID = nil) and (YB > Y) and ((YB < CR) or (CR = Y)) then
+        begin
+          if X = RightEdge(YB - 1) then
           begin
-            MaxX := X - W;
-            break;
-          end;
-          if (ID = nil) and (YB > Y) and ((YB < CR) or (CR = Y)) then
-          begin
-            if X = RightEdge(YB - 1) then
+            // This is the left most right indentation
+            LX := LeftEdge(YB);
+            RX := RightEdge(YB) - W;
+            if YY < YB then
+              YY := YB;
+            if RX >= LX then
             begin
-              // This is the left most right indentation
-              LX := LeftEdge(YB);
-              RX := RightEdge(YB) - W;
-              if YY < YB then
-                YY := YB;
-              if RX >= LX then
-              begin
-                CR := YB;
-                XR := RX;
-              end;
+              CR := YB;
+              XR := RX;
             end;
           end;
         end;
+      end;
 
-      if CL = Y then
+    if CL = Y then
+    begin
+      if CR = Y then
       begin
-        if CR = Y then
-        begin
-          // no better place found, just append at the end.
-          Y := YY;
-          Result := MaxX;
-        end
-        else
-        begin
-          Y := CR;
-          Result := XR;
-        end
-      end
-      else if CR = Y then
-      begin
-        Y := CL;
-        Result := XL;
-      end
-      else if CL < CR then
-      begin
-        Y := CL;
-        Result := XL;
+        // no better place found, just append at the end.
+        Y := YY;
+        Result := MaxX;
       end
       else
       begin
         Y := CR;
         Result := XR;
-      end;
+      end
+    end
+    else if CR = Y then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else if CL < CR then
+    begin
+      Y := CL;
+      Result := XL;
+    end
+    else
+    begin
+      Y := CR;
+      Result := XR;
     end;
   end;
   Inc(Result, LfEdge);
@@ -2559,49 +2513,6 @@ begin
   St := '';
   StringOK := True;
 end;
-
-//function WideStringToMultibyte(CodePage: Integer; W: UnicodeString): AnsiString;
-// {$ifdef UseInline} inline; {$endif}
-//var
-//  NewLen, Len: Integer;
-//begin
-//  if CodePage = CP_UTF8 then {UTF-8 encoded ThtString.}
-//    Result := UTF8Encode(W)
-//  else
-//  begin
-//    Len := Length(W);
-//    SetLength(Result, 3 * Len);
-//    NewLen := WideCharToMultiByte(CodePage, 0, PWideChar(W), Len, PAnsiChar(Result), 3 * Len, nil, nil);
-//    if NewLen = 0 then
-//    { Invalid code page. Try default.}
-//      NewLen := WideCharToMultiByte(CP_ACP, 0, PWideChar(W), Len, PAnsiChar(Result), 3 * Len, nil, nil);
-//    SetLength(Result, NewLen);
-//  end;
-//end;
-//
-//function ByteNum(CodePage: Integer; P: PAnsiChar): Integer;
-//var
-//  P1: PAnsiChar;
-//begin
-//  if CodePage <> CP_UTF8 then
-//  begin
-//    P1 := {$ifdef LCL} CharNextEx {$else} CharNextExA {$endif} (CodePage, P, 0);
-//    if Assigned(P1) then
-//      Result := P1 - P
-//    else
-//      Result := 0;
-//  end
-//  else
-//    case ord(P^) of {UTF-8}
-//      0: Result := 0;
-//      1..127: Result := 1;
-//      192..223: Result := 2;
-//      224..239: Result := 3;
-//      240..247: Result := 4;
-//    else
-//      Result := 1; {error}
-//    end;
-//end;
 
 procedure TTokenObj.AddString(S: TCharCollection);
 var

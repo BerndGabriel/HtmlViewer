@@ -212,7 +212,7 @@ type
     FPositioning: ThtBoxPositionStyle;
     FPositions: ThtRectIntegers; // in Pixels
     FFloating: ThtAlignmentStyle;
-    FIndent: Integer;           {Indentation of floated object}
+    FIndent: Integer;           {Indentation of floating object relative to Draw-X}
 
     function CalcDisplayExtern: ThtDisplayStyle; virtual;
     function CalcDisplayIntern: ThtDisplayStyle; virtual;
@@ -11929,6 +11929,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     function DrawLogicOfObject(FlObj: TFloatingObj; var XX, YY, Width, Cnt, FloatingImageCount: Integer): TResultCode;
     var
       X1, X2, W, H: Integer;
+      LfEdge: Integer;
     begin
       Result := rsOk;
       if FlObj.Floating in [ALeft, ARight] then
@@ -11941,14 +11942,14 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
           case FlObj.Floating of
             ALeft:
             begin
-              IMgr.AlignLeft(ImgY, W);
-              FlObj.FIndent := IMgr.AddLeft(ImgY, ImgY + H, W).X - W + FlObj.HSpaceL;
+              FlObj.FIndent := IMgr.AlignLeft(ImgY, W) + FlObj.HSpaceL - X;
+              IMgr.AddLeft(ImgY, ImgY + H, W);
             end;
 
             ARight:
             begin
-              IMgr.AlignRight(ImgY, W);
-              FlObj.FIndent := IMgr.AddRight(ImgY, ImgY + H, W).X + FlObj.HSpaceL;
+              FlObj.FIndent := IMgr.AlignRight(ImgY, W) + FlObj.HSpaceL - X;
+              IMgr.AddRight(ImgY, ImgY + H, W);
             end;
           end;
           FlObj.DrawYY := ImgY + FlObj.VSpaceT;
