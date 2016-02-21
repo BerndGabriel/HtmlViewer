@@ -311,7 +311,7 @@ begin
   end
   else
   begin
-    Result := HTMLToDos(S);
+    Result := HTMLToDos(Result);
     if not IsAbsolutePath(Result) then
       Result := CombineDos(LinkPath, Result);
   end;
