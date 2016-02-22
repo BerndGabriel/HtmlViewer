@@ -5019,11 +5019,11 @@ end;
 function TBlock.CalcDisplayIntern: ThtDisplayStyle;
 begin
   Result := inherited CalcDisplayIntern;
-  case Result of
-    pdNone:;
-  else
-    Result := MyCell.CalcDisplayExtern;
-  end;
+//  case Result of
+//    pdNone:;
+//  else
+//    //Result := MyCell.CalcDisplayExtern;
+//  end;
 end;
 
 function TBlock.CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean;
@@ -5469,7 +5469,7 @@ var
     //DrawRect.Right := DrawRect.Left + MyCell.TextWidth;
   end;
 
-begin {TBlock.DrawLogic}
+begin {TBlock.DrawLogic1}
 {$IFDEF JPM_DEBUGGING_LOGIC}
   CodeSite.EnterMethod(Self,Format('TBlock.DrawLogic1 "%s"', [TagClass]));
   CodeSite.SendFmtMsg('AWidth, AHeight = [%4d, %4d]', [AWidth, AHeight]);
@@ -5914,7 +5914,7 @@ begin
     with MyCell do
     begin
       SaveID := IMgr.CurrentID;
-      IMgr.Reset(X{RefIMgr.LfEdge});
+      IMgr.Reset(RefIMgr.LfEdge);
       IMgr.ClipWidth := ClipWidth;
       IMgr.CurrentID := SaveID;
     end
@@ -11929,7 +11929,6 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     function DrawLogicOfObject(FlObj: TFloatingObj; var XX, YY, Width, Cnt, FloatingImageCount: Integer): TResultCode;
     var
       X1, X2, W, H: Integer;
-      LfEdge: Integer;
     begin
       Result := rsOk;
       if FlObj.Floating in [ALeft, ARight] then
@@ -11942,16 +11941,17 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
           case FlObj.Floating of
             ALeft:
             begin
-              FlObj.FIndent := IMgr.AlignLeft(ImgY, W) + FlObj.HSpaceL - X;
+              FlObj.FIndent := IMgr.AlignLeft(ImgY, W) + FlObj.HSpaceL;
               IMgr.AddLeft(ImgY, ImgY + H, W);
             end;
 
             ARight:
             begin
-              FlObj.FIndent := IMgr.AlignRight(ImgY, W) + FlObj.HSpaceL - X;
+              FlObj.FIndent := IMgr.AlignRight(ImgY, W) + FlObj.HSpaceL;
               IMgr.AddRight(ImgY, ImgY + H, W);
             end;
           end;
+          FlObj.DrawXX := FlObj.FIndent;
           FlObj.DrawYY := ImgY + FlObj.VSpaceT;
           ImgHt := Max(ImgHt, H);
           DoneFlObjPos := Start;
@@ -12959,7 +12959,7 @@ var
             //
             // correct x-position for floating images: IMgr.LfEdge + Obj.Indent
             Document.DrawList.AddImage(TImageObj(FlObj), Canvas,
-              IMgr.LfEdge + FlObj.Indent, FlObj.DrawYY, Y - Descent, FO);
+              IMgr.LfEdge + FlObj.FIndent, FlObj.DrawYY, Y - Descent, FO);
 
           {if a boundary is on a floating image, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -13032,7 +13032,7 @@ var
             TControlObj(FlObj).ShowIt := True;
           if FlObj.Floating in [ALeft, ARight] then
           begin
-            LeftT := IMgr.LfEdge + FlObj.Indent;
+            LeftT := IMgr.LfEdge + FlObj.FIndent;
             TopP := FlObj.DrawYY;
             {check for border.  For floating panel, remove it}
             if LR.FirstDraw and Assigned(LR.BorderList) then
@@ -14743,8 +14743,8 @@ begin
 {Note: VSize gets updated in THRBlock.FindWidth}
   ContentTop := Y;
   DrawTop := Y;
-  Indent := Max(X, IMgr.LeftIndent(Y));
-  Width := Min(X + AWidth - Indent, IMgr.RightSide(Y) - Indent);
+  Indent := Max(0, IMgr.LeftIndent(Y) - X);
+  Width := Min(AWidth, IMgr.RightSide(Y) - X) - Indent;
   MaxWidth := Width;
   SectionHeight := VSize;
   DrawHeight := SectionHeight;
@@ -14777,10 +14777,10 @@ begin
   Y := YDraw;
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
   YO := Y - Document.YOff;
-  if (YO + SectionHeight >= ARect.Top) and (YO < ARect.Bottom) and
-    (not Document.Printing or (Y < Document.PageBottom)) then
+  if (YO + SectionHeight >= ARect.Top) and (YO < ARect.Bottom) and (not Document.Printing or (Y < Document.PageBottom)) then
     with Canvas do
     begin
+      Inc(X, Indent);
       YT := YO;
       XR := X + Width - 1;
       if Color <> clNone then
