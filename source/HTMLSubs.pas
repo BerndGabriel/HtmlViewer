@@ -2014,8 +2014,8 @@ begin
   begin
     Result.Left := ContainingBlock.LeftP;
     Result.Top  := ContainingBlock.TopP;
-    Result.Width := ContainingBlock.ContentWidth;
-    Result.Height := ContainingBlock.MyCell.tcContentBot - ContainingBlock.MyCell.tcDrawTop;
+    Result.Right := Result.Left + ContainingBlock.ContentWidth;
+    Result.Bottom := Result.Top + ContainingBlock.MyCell.tcContentBot - ContainingBlock.MyCell.tcDrawTop;
   end
   else
     Result := FDocument.ViewPort;
