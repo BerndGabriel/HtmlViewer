@@ -3529,19 +3529,19 @@ begin
   LastStyle := Attributes.TheStyle;
   LastTitle := Attributes.TheTitle;
   Next;
-  while Sy in [PSy, PEndSy] do
-  begin {recognize only the first <p>}
-    if Sy = PSy then
-    begin
-      LastAlign := FindAlignment; {if a series of <p>, get last alignment}
-      LastClass := Attributes.TheClass;
-      LastID := Attributes.TheID;
-      LastStyle := Attributes.TheStyle;
-      LastTitle := Attributes.TheTitle;
-    end;
-    SkipWhiteSpace;
-    Next;
-  end;
+//  while Sy in [PSy, PEndSy] do
+//  begin {recognize only the first <p>}
+//    if Sy = PSy then
+//    begin
+//      LastAlign := FindAlignment; {if a series of <p>, get last alignment}
+//      LastClass := Attributes.TheClass;
+//      LastID := Attributes.TheID;
+//      LastStyle := Attributes.TheStyle;
+//      LastTitle := Attributes.TheTitle;
+//    end;
+//    SkipWhiteSpace;
+//    Next;
+//  end;
 {at this point have the 'next' attributes, so use 'Last' items here}
   PushNewProp(PSy, LastClass, LastID, '', LastTitle, LastStyle);
   if LastAlign <> '' then
@@ -3588,20 +3588,35 @@ procedure THtmlParser.DoBr(const TermSet: TElemSymbSet);
 var
   T: TAttribute;
   Before, After, Intact: Boolean;
+  HasClear: Boolean;
+  L: TLineBreak;
 begin
   if BRSy in TermSet then
     Exit;
-  if Attributes.Find(ClearSy, T) then
+
+  L := nil;
+  PushNewProp(BRSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+  HasClear := Attributes.Find(ClearSy, T) or VarIsStr(PropStack.Last.Props[Clear]);
+  if HasClear then
+    L := TLineBreak.Create(SectionList, Attributes, PropStack.Last);
+  PropStack.Last.GetPageBreaks(Before, After, Intact);
+  PopAProp(BRSy);
+
+  if HasClear then
   begin
     if Assigned(Section) then
-      SectionList.Add(Section, TagIndex);
-    Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, False);
-    PushNewProp(BRSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
-    PropStack.Last.GetPageBreaks(Before, After, Intact);
-    PopAProp(BRSy);
-    if Before or After then
     begin
       SectionList.Add(Section, TagIndex);
+      Section := nil;
+    end;
+//    Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, False);
+//    PushNewProp(BRSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
+//    PropStack.Last.GetPageBreaks(Before, After, Intact);
+//    PopAProp(BRSy);
+    SectionList.Add(L, TagIndex);
+    if Before or After then
+    begin
+//      SectionList.Add(Section, TagIndex);
       SectionList.Add(TPage.Create(SectionList, nil, PropStack.Last), TagIndex);
       Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, False);
     end;
@@ -3612,9 +3627,9 @@ begin
       Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, False);
     Section.AddChar(BrkCh, TagIndex);
     SectionList.Add(Section, TagIndex);
-    PushNewProp(BRSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
-    PropStack.Last.GetPageBreaks(Before, After, Intact);
-    PopAProp(BRSy);
+//    PushNewProp(BRSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
+//    PropStack.Last.GetPageBreaks(Before, After, Intact);
+//    PopAProp(BRSy);
     if Before or After then
       SectionList.Add(TPage.Create(SectionList, nil, PropStack.Last), TagIndex);
     Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, False);

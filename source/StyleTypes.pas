@@ -185,9 +185,15 @@ const
 type
   ThtClearStyle = (
     clrNone,
-    clLeft,
-    clRight,
-    clAll);
+    clrLeft,
+    clrRight,
+    clrBoth);
+const
+  CClearStyle: array[ThtClearStyle] of ThtString = (
+    'none',
+    'left',
+    'right',
+    'both');
 
 type
   ThtDisplayStyle = (
@@ -366,6 +372,7 @@ function TryStrToBorderStyle(const Str: ThtString; out BorderStyle: ThtBorderSty
 function TryStrToBoxFloatStyle(const Str: ThtString; out Float: ThtBoxFloatStyle): Boolean;
 function TryStrToBoxPositionStyle(const Str: ThtString; out Position: ThtBoxPositionStyle): Boolean;
 function TryStrToBulletStyle(const Str: ThtString; out BulletStyle: ThtBulletStyle): Boolean;
+function TryStrToClearStyle(const Str: ThtString; out Clear: ThtClearStyle): Boolean;
 function TryStrToDisplayStyle(const Str: ThtString; out Display: ThtDisplayStyle): Boolean;
 function TryStrToWhiteSpace(const Str: ThtString; out AWhiteSpace: ThtWhiteSpaceStyle): Boolean;
 function GetPositionInRange(Which: ThtBackgroundPosition; Where, Range: Integer): Integer;
@@ -688,6 +695,26 @@ begin
       exit;
     end;
   Result := False;
+end;
+
+//-- BG ---------------------------------------------------------- 16.03.2011 --
+function TryStrToClearStyle(const Str: ThtString; out Clear: ThtClearStyle): Boolean;
+ {$ifdef UseInline} inline; {$endif}
+var
+  I: ThtClearStyle;
+begin
+  for I := low(I) to high(I) do
+    if CClearStyle[I] = Str then
+    begin
+      Result := True;
+      Clear := I;
+      exit;
+    end;
+
+  // clear attribute of <br> uses 'all' as 'both'
+  Result := Str = 'all';
+  if Result then
+    Clear := clrBoth;
 end;
 
 //-- BG ---------------------------------------------------------- 01.05.2011 --

@@ -1269,19 +1269,9 @@ var
 begin
   if (VarIsStr(Props[Clear])) then
   begin
-    Result := True;
     S := Props[Clear];
-    if (S = 'left') then
-      Clr := clLeft
-    else if S = 'right' then
-      Clr := clRight
-    else if S = 'both' then
-      Clr := clAll
-    else if S = 'none' then
-      Clr := clrNone
-    else
-      Result := False;
-    Props[Clear] := Unassigned; {allow only one read}
+    Result := TryStrToClearStyle(S, Clr);
+    //Props[Clear] := Unassigned; {allow only one read}
   end
   else
     Result := False;

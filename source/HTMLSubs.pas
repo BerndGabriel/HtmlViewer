@@ -208,16 +208,21 @@ type
     function GetContainingBlock: TBlock; virtual;
     function GetProperty(PropIndex: ThtPropIndices): Variant;
     function GetContainingBox: TRect;
+
+    function GetClearSpace(IMgr: TIndentManager; Y: Integer): Integer;
+
   protected
     FPositioning: ThtBoxPositionStyle;
     FPositions: ThtRectIntegers; // in Pixels
     FFloating: ThtAlignmentStyle;
+    FClearing: ThtClearStyle;
     FIndent: Integer;           {Indentation of floating object relative to Draw-X}
 
+    function TryGetClear(var Clear: ThtClearStyle): Boolean; virtual;
     function CalcDisplayExtern: ThtDisplayStyle; virtual;
     function CalcDisplayIntern: ThtDisplayStyle; virtual;
-//    function FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean; overload;
     function FindAttribute(const Name: ThtString; out Attribute: TAttribute): Boolean; overload;
+//    function FindAttribute(NameSy: TAttrSymb; out Attribute: TAttribute): Boolean; overload;
 //    function GetChild(Index: Integer): THtmlNode; virtual;
 //    function GetParent: TBlock; virtual;
 //    function GetPseudos: TPseudos; virtual;
@@ -278,7 +283,7 @@ type
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties); overload;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     function CursorToXY(Canvas: TCanvas; Cursor: Integer; var X, Y: Integer): boolean; virtual;
-    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual; abstract;
+    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; virtual;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; virtual;
     function FindCursor(Canvas: TCanvas; X, Y: Integer; out XR, YR, CaretHt: Integer; out Intext: boolean): Integer; virtual;
     function FindDocPos(SourcePos: Integer; Prev: boolean): Integer; virtual;
@@ -697,13 +702,14 @@ type
 
     Fonts: TFontList; {List of FontObj's in this section}
     Justify: ThtJustify; {Left, Centered, Right}
-    ClearAttr: ThtClearStyle;
+    //ClearAttr: ThtClearStyle;
     TextWidth: Integer;
     WhiteSpaceStyle: ThtWhiteSpaceStyle;
     FirstLineIndent: Integer;             // Issue 365: public for TRichView
     property Buff: PWideChar read FBuff;  // Issue 365: public for TRichView
   protected
     constructor Create(Parent: TCellBasic); overload;
+    function TryGetClear(var Clear: ThtClearStyle): Boolean; override;
   public
     constructor Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; AnURL: TUrlTarget; FirstItem: Boolean); overload;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
@@ -793,12 +799,12 @@ type
     EmSize, ExSize, FGColor: Integer;
     HasBorderStyle: Boolean;
 
-    ClearAttr: ThtClearStyle;
+    //ClearAttr: ThtClearStyle;
     PRec: PtPositionRec; // background image position
     Visibility: ThtVisibilityStyle;
-    BottomAuto: boolean;
-    BreakBefore, BreakAfter, KeepIntact: boolean;
-    HideOverflow: boolean;
+    BottomAuto: Boolean;
+    BreakBefore, BreakAfter, KeepIntact: Boolean;
+    HideOverflow: Boolean;
     Justify: ThtJustify;
     Converted: boolean;
     // END: this area is copied by move() in CreateCopy()
@@ -1597,11 +1603,15 @@ type
 // some more base sections
 //------------------------------------------------------------------------------
 
+  TLineBreak = class(TSectionBase)
+  protected
+    function TryGetClear(var Clear: ThtClearStyle): Boolean; override;
+  end;
+
   TPage = class(TSectionBase)
   public
-    function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
-    function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties);
+    function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
   end;
 
   THorzLine = class(TSectionBase) {a horizontal line, <hr>}
@@ -1869,6 +1879,8 @@ begin
 //  FDisplay := pdUnassigned;
 //  FFloating := aNone;
 //  FPositioning := posStatic;
+  TryGetClear(FClearing);
+
   if FProperties <> nil then
   begin
     FDisplay := FProperties.Display;
@@ -1890,6 +1902,27 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 24.02.2016 --
+function THtmlNode.TryGetClear(var Clear: ThtClearStyle): Boolean;
+begin
+  Result := False;
+  if FProperties <> nil then
+    Result := FProperties.GetClear(Clear);
+end;
+
+//-- BG ---------------------------------------------------------- 24.02.2016 --
+function TSection.TryGetClear(var Clear: ThtClearStyle): Boolean;
+var
+  T: TAttribute;
+begin
+  Result := inherited TryGetClear(Clear);
+  if not Result then
+    if FAttributes <> nil then
+      if FAttributes.Find(ClearSy, T) then
+        Result := TryStrToClearStyle(LowerCase(T.Name), Clear);
+end;
+
+
 //-- BG ---------------------------------------------------------- 24.03.2011 --
 constructor THtmlNode.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
 begin
@@ -1897,15 +1930,16 @@ begin
   FOwnerCell := Parent;
   begin
     FOwnerBlock := FOwnerCell.OwnerBlock;
-    FDocument := FOwnerCell.Document;
+    FDocument   := FOwnerCell.Document;
   end;
-  FAttributes := Source.FAttributes;
-  FProperties := Source.FProperties;
-  FDisplay    := Source.FDisplay;
-  FPositioning := Source.FPositioning;
-  FPositions   := SOurce.FPositions;
-  FFloating    := Source.FFloating;
-  FIndent      := Source.FIndent;
+  FAttributes   := Source.FAttributes;
+  FProperties   := Source.FProperties;
+  FClearing     := Source.FClearing;
+  FDisplay      := Source.FDisplay;
+  FPositioning  := Source.FPositioning;
+  FPositions    := Source.FPositions;
+  FFloating     := Source.FFloating;
+  FIndent       := Source.FIndent;
 end;
 
 ////-- BG ---------------------------------------------------------- 23.03.2011 --
@@ -1931,6 +1965,23 @@ begin
     Result := Attribute.Name
   else
     SetLength(Result, 0);
+end;
+
+//-- BG ---------------------------------------------------------- 24.02.2016 --
+function THtmlNode.GetClearSpace(IMgr: TIndentManager; Y: Integer): Integer;
+var
+  CL, CR: Integer;
+begin
+  Result := 0;
+  if FClearing <> clrNone then
+  begin {may need to move down past floating image}
+    IMgr.GetClearY(CL, CR);
+    case FClearing of
+      clrLeft:   Result := Max(0, CL - Y - 1);
+      clrRight:  Result := Max(0, CR - Y - 1);
+      clrBoth:   Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
+    end;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 14.02.2016 --
@@ -4166,7 +4217,7 @@ begin
     begin
       Section.ProcessText(TagIndex);
       if not (Section.WhiteSpaceStyle in [wsPre, wsPreWrap, wsPreLine]) and (Section.Len = 0)
-        and not Section.AnchorName and (Section.ClearAttr = clrNone) then
+        and not Section.AnchorName and (Section.FClearing = clrNone) then
       begin
         Section.CheckFree;
         FreeAndNil(Section); {discard empty TSections that aren't anchors}
@@ -4534,8 +4585,8 @@ end;
 
 constructor TBlock.Create(Parent: TCellBasic; Attributes: TAttributeList; Prop: TProperties);
 var
-  Clr: ThtClearStyle;
   S: ThtString;
+  TmpFont: ThtFont;
 begin
   {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,Format('TBlock.Create "%s"', [TagClass]));
@@ -4552,12 +4603,16 @@ begin
     Prop.GetVMarginArrayDefBorder(MargArrayO, clSilver)
   else
     Prop.GetVMarginArray(MargArrayO);
-  if Prop.GetClear(Clr) then
-    ClearAttr := Clr;
+//  if Prop.GetClear(Clr) then
+//    ClearAttr := Clr;
   HasBorderStyle := Prop.HasBorderStyle;
   FGColor := Prop.Props[Color];
+
+  TmpFont := Prop.GetFont;
   EmSize := Prop.EmSize;
   ExSize := Prop.ExSize;
+  FreeAndNil(TmpFont);
+
   //DisplayNone := Prop.DisplayNone;
   BlockTitle := Prop.PropTitle;
   if not (Self is TBodyBlock) and not (Self is TTableAndCaptionBlock)
@@ -4614,18 +4669,19 @@ end;
 procedure TBlock.CollapseAdjoiningMargins;
 {adjacent vertical margins need to be reduced}
 var
-  TopAuto: boolean;
+  TopAuto: Boolean;
   TB: TSectionBase;
   Block: TBlock absolute TB;
   LastMargin, I: Integer;
   Tag: TElemSymb;
   CD: ThtConvData;
 begin
-  CD := ConvData(0, 400 {width and height not known at this point},  EmSize, ExSize, BorderWidth);
+  CD := ConvData(100, 100 {width and height not known at this point},  EmSize, ExSize, BorderWidth);
   ConvVertMargins(MargArrayO, CD, MargArray);
   TopAuto := MarginTop in CD.IsAutoParagraph;
   BottomAuto := MarginBottom in CD.IsAutoParagraph;
-  if Positioning = posAbsolute then
+  if (MargArray[PaddingTop] <> 0) or (MargArray[BorderTopWidth] <> 0) then {do nothing}
+  else if Positioning = posAbsolute then
   begin
     if TopAuto then
       MargArray[MarginTop] := 0;
@@ -5216,22 +5272,6 @@ var
   BlockHeight: Integer;
   IB, Xin: Integer;
 
-  function GetClearSpace(ClearAttr: ThtClearStyle): Integer;
-  var
-    CL, CR: Integer;
-  begin
-    Result := 0;
-    if ClearAttr <> clrNone then
-    begin {may need to move down past floating image}
-      IMgr.GetClearY(CL, CR);
-      case ClearAttr of
-        clLeft: Result := Max(0, CL - Y - 1);
-        clRight: Result := Max(0, CR - Y - 1);
-        clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
-      end;
-    end;
-  end;
-
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   begin
     if HideOverflow and (MargArray[piHeight] > 3) then
@@ -5247,7 +5287,7 @@ var
   begin
     YDraw := Y;
     Xin := X;
-    ClearAddOn := GetClearSpace(ClearAttr);
+    ClearAddOn := GetClearSpace(IMgr, Y);
     StartCurs := Curs;
     MaxWidth := AWidth;
 
@@ -5407,7 +5447,18 @@ var
       ClientContentBot := GetClientContentBot(MyCell.tcContentBot);
     end;
     Len := Curs - StartCurs;
-    ContentBot :=  ClientContentBot + MargArray[PaddingBottom] + MargArray[BorderBottomWidth] + MargArray[MarginBottom];
+
+    ContentBot := ClientContentBot + MargArray[PaddingBottom] + MargArray[BorderBottomWidth] + MargArray[MarginBottom];
+    if ContentBot = ContentTop then
+      if IsInFlow then
+      begin
+        // no content, hide top margin
+        DrawTop := YClear;
+        ContentTop := DrawTop;
+        ClientContentBot := ContentTop;
+        ContentBot := ClientContentBot;
+      end;
+
     DrawBot := Max(ClientContentBot, MyCell.tcDrawBot) + MargArray[PaddingBottom] + MargArray[BorderBottomWidth];
 
     Result := ContentBot - Y;
@@ -10853,9 +10904,9 @@ end;
 constructor TSection.Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; AnURL: TUrlTarget; FirstItem: Boolean);
 var
   FO: TFontObj;
-  T: TAttribute;
+//  T: TAttribute;
   S, C: ThtString;
-  Clr: ThtClearStyle;
+//  Clr: ThtClearStyle;
   Percent: boolean;
 begin
 {$IFDEF JPM_DEBUGGING}
@@ -10903,21 +10954,21 @@ begin
       FLPercent := Min(FirstLineIndent, 90);
   end;
 
-  if Assigned(Attr) then
-  begin
-    if Attr.Find(ClearSy, T) then
-    begin
-      S := LowerCase(T.Name);
-      if (S = 'left') then
-        ClearAttr := clLeft
-      else if (S = 'right') then
-        ClearAttr := clRight
-      else
-        ClearAttr := clAll;
-    end;
-  end;
-  if Prop.GetClear(Clr) then
-    ClearAttr := Clr;
+//  if Assigned(Attr) then
+//  begin
+//    if Attr.Find(ClearSy, T) then
+//    begin
+//      S := LowerCase(T.Name);
+//      if (S = 'left') then
+//        ClearAttr := clLeft
+//      else if (S = 'right') then
+//        ClearAttr := clRight
+//      else
+//        ClearAttr := clAll;
+//    end;
+//  end;
+//  if Prop.GetClear(Clr) then
+//    ClearAttr := Clr;
 
   if Prop.Props[TextAlign] = 'right' then
     Justify := Right
@@ -10978,7 +11029,7 @@ begin
   FormControls := TFormControlObjList.CreateCopy(Parent, T.FormControls);
   Lines := TFreeList.Create;
   Justify := T.Justify;
-  ClearAttr := T.ClearAttr;
+//  ClearAttr := T.ClearAttr;
   LineHeight := T.LineHeight;
   FirstLineIndent := T.FirstLineIndent;
   FLPercent := T.FLPercent;
@@ -12161,22 +12212,6 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     LR: ThtLineRec;
     AccumImgBot: Integer;
 
-    function GetClearSpace(ClearAttr: ThtClearStyle): Integer;
-    var
-      CL, CR: Integer;
-    begin
-      Result := 0;
-      if (ClearAttr <> clrNone) then
-      begin {may need to move down past floating image}
-        IMgr.GetClearY(CL, CR);
-        case ClearAttr of
-          clLeft: Result := Max(0, CL - Y - 1);
-          clRight: Result := Max(0, CR - Y - 1);
-          clAll: Result := Max(CL - Y - 1, Max(0, CR - Y - 1));
-        end;
-      end;
-    end;
-
     procedure LineComplete(NN: Integer);
     var
       I, J, DHt, Desc, Tmp, TmpRt, Cnt, H, SB, SA: Integer;
@@ -12406,7 +12441,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     Last := Buff + Len - 1;
     if Len = 0 then
     begin
-      Result := GetClearSpace(ClearAttr);
+      Result := GetClearSpace(IMgr, Y);
       DrawHeight := Result;
       SectionHeight := Result;
       ContentBot := Y + Result;
@@ -12469,7 +12504,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       LR := ThtLineRec.Create(Document); {a new line}
       if Lines.Count = 0 then
       begin {may need to move down past floating image}
-        Tmp := GetClearSpace(ClearAttr);
+        Tmp := GetClearSpace(IMgr, Y);
         if Tmp > 0 then
         begin
           LR.LineHt := Tmp;
@@ -12958,11 +12993,11 @@ var
             //  block were the sum of all LfEdges of the containing blocks.
             //
             // correct x-position for floating images: IMgr.LfEdge + Obj.Indent
-            Document.DrawList.AddImage(TImageObj(FlObj), Canvas,
-              IMgr.LfEdge + FlObj.FIndent, FlObj.DrawYY, Y - Descent, FO);
-
-          {if a boundary is on a floating image, remove it}
-            if LR.FirstDraw and Assigned(LR.BorderList) then
+            if not LR.FirstDraw then
+              Document.DrawList.AddImage(TImageObj(FlObj), Canvas,
+                IMgr.LfEdge + FlObj.FIndent, FlObj.DrawYY, Y - Descent, FO)
+            else if Assigned(LR.BorderList) then
+              {if a boundary is on a floating image, remove it}
               for K := LR.BorderList.Count - 1 downto 0 do
               begin
                 BR := ThtBorderRec(LR.BorderList.Items[K]);
@@ -14628,11 +14663,6 @@ begin
     FDisplay := pdBlock;
 end;
 
-//function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer;
-//begin
-//  Result := 0;
-//end;
-
 function TPage.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer;
 var
   YOffset, Y: Integer;
@@ -15486,18 +15516,19 @@ begin
   Result := ContentTop;
 end;
 
-function TPage.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
+function TSectionBase.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager;
   var MaxWidth, Curs: Integer): Integer;
-// This was TSectionBase.DrawLogic1, but actually TPage was the only descendant, that uses it.
 // Computes all coordinates of the section.
 //
 // Normal sections, absolutely positioned blocks and floating blocks start at given (X,Y) relative to document origin.
 // Table cells start at given (X,Y) coordinates relative to the outmost containing block.
 //
 // Returns the nominal height of the section (without overhanging floating blocks)
+var
+  ClearAddon: Integer;
 begin
 {$IFDEF JPM_DEBUGGING}
-  CodeSite.EnterMethod(Self,'TPage.DrawLogic1');
+  CodeSite.EnterMethod(Self,'TSectionBase.DrawLogic1');
   CodeSite.SendFmtMsg('X, XRef  = [%4d, %4d]', [X, XRef]);
   CodeSite.SendFmtMsg('Y, YRef  = [%4d, %4d]', [Y, YRef]);
   CodeSite.SendFmtMsg('AWidth   = [%d]',[AWidth]);
@@ -15517,17 +15548,28 @@ begin
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.AddSeparator;
 {$ENDIF}
+
+  case FDisplay of
+    pdNone:
+      ClearAddon := 0;
+  else
+    ClearAddon := GetClearSpace(IMgr, Y);
+  end;
+
   StartCurs := Curs;
   Len := 0;
-  SectionHeight := 0;
-  Result := SectionHeight;
-  DrawHeight := SectionHeight;
   MaxWidth := 0;
-  ContentTop := Y;
-  DrawTop := Y;
-  YDraw := Y;
-  ContentBot := Y + SectionHeight;
-  DrawBot := Y + DrawHeight;
+  SectionHeight := 0;
+  DrawHeight := SectionHeight;
+  YDraw := Y + ClearAddon;
+
+  ContentTop := YDraw;
+  ContentBot := ContentTop + SectionHeight;
+
+  DrawTop := YDraw;
+  DrawBot := DrawTop + DrawHeight;
+
+  Result := ContentBot - Y;
 
   //>-- DZ
   DrawRect.Top    := DrawTop;
@@ -15548,7 +15590,7 @@ begin
   CodeSite.SendFmtMsg('MaxWidth = [%d]',[MaxWidth]);
   CodeSite.SendFmtMsg('Curs     = [%d]',[Curs]);
   CodeSite.SendFmtMsg('Result   = [%d]',[Result]);
-  CodeSite.ExitMethod(Self,'TPage.DrawLogic1');
+  CodeSite.ExitMethod(Self,'TSectionBase.DrawLogic1');
 {$ENDIF}
 end;
 
@@ -16235,6 +16277,22 @@ end;
 //begin
 //  inherited Create(Parent);
 //end;
+
+//-- BG ---------------------------------------------------------- 24.02.2016 --
+
+{ TLineBreak }
+
+//-- BG ---------------------------------------------------------- 24.02.2016 --
+function TLineBreak.TryGetClear(var Clear: ThtClearStyle): Boolean;
+var
+  T: TAttribute;
+begin
+  Result := inherited TryGetClear(Clear);
+  if not Result then
+    if FAttributes <> nil then
+      if FAttributes.Find(ClearSy, T) then
+        Result := TryStrToClearStyle(LowerCase(T.Name), Clear);
+end;
 
 initialization
 {$ifdef UNICODE}

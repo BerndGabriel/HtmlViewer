@@ -121,6 +121,7 @@ type
   TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
   private
     Prop: TProperties;
+    SaveStyle: ThtString;
     SaveID: ThtString;
     function GetClass: ThtString;
     function GetID: ThtString;
@@ -1510,13 +1511,20 @@ var
 begin
   if Find(StyleAttrSy, T) then
   begin
-    Prop.Free;
-    Prop := TProperties.Create;
+    if SaveStyle <> T.Name then
+    begin
+      Prop.Free;
+      Prop := TProperties.Create;
+      SaveStyle := T.Name;
+      ParsePropertyStr(SaveStyle, Prop);
+    end;
     Result := Prop;
-    ParsePropertyStr(T.Name, Result);
   end
   else
+  begin
+    SetLength(SaveStyle, 0);
     Result := nil;
+  end;
 end;
 
 {----------------TUrlTarget.Create}
