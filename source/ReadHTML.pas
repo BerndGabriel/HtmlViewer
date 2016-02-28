@@ -181,7 +181,7 @@ type
     procedure Next;
     procedure ParseInit(ASectionList: ThtDocument; AIncludeEvent: TIncludeType);
     procedure SkipWhiteSpace; {$ifdef UseInline} inline; {$endif}
-    procedure PushNewProp(Sy: TElemSymb; const AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties); {$ifdef UseInline} inline; {$endif}
+    procedure PushNewProp(Sy: TElemSymb; Attributes: TAttributeList; const APseudo: ThtString = ''); {$ifdef UseInline} inline; {$endif}
     procedure PopAProp(Sy: TElemSymb); {$ifdef UseInline} inline; {$endif}
     function Peek: ThtChar;
     function GetTitle: ThtString;
@@ -1228,10 +1228,28 @@ begin {already have fresh character loaded here}
   end;
 end;
 
-{ Add a TProperties to the PropStack. }
-procedure THtmlParser.PushNewProp(Sy: TElemSymb; const AClass, AnID, APseudo, ATitle: ThtString; AProp: TProperties);
+{ Add Properties to the PropStack. }
+procedure THtmlParser.PushNewProp(Sy: TElemSymb; Attributes: TAttributeList; const APseudo: ThtString = '');
+var
+  T: TAttribute;
+  PropertiesOfStyleAttribute: TProperties;
 begin
-  PropStack.PushNewProp(Sy, AClass, AnID, APseudo, ATitle, AProp);
+  if Attributes <> nil then
+  begin
+    PropertiesOfStyleAttribute := nil;
+    if Attributes.Find(StyleAttrSy, T) then
+    begin
+      PropertiesOfStyleAttribute := TProperties.Create;
+      ParsePropertyStr(T.Name, PropertiesOfStyleAttribute);
+    end;
+    try
+      PropStack.PushNewProp(Sy, PropertiesOfStyleAttribute, Attributes, APseudo)
+    finally
+      PropertiesOfStyleAttribute.Free;
+    end;
+  end
+  else
+    PropStack.PushNewProp(Sy, nil, nil, APseudo);
 end;
 
 procedure THtmlParser.PopProp;
@@ -1407,7 +1425,7 @@ begin
     DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sym, Attributes);
         IsInline := PropStack.Last.Display = pdInline;
         CheckForAlign;
 
@@ -1445,7 +1463,7 @@ begin
     FieldsetSy:
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sym, Attributes);
         CheckForAlign;
 
         FieldsetBlock := TFieldsetBlock.Create(SectionList, Attributes, PropStack.Last);
@@ -1473,7 +1491,7 @@ begin
     LegendSy:
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sym, Attributes);
         CheckForAlign;
 
         FieldsetBlock := nil; // valium for the compiler
@@ -1500,7 +1518,7 @@ begin
     CenterSy:
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp(Sym, '', '', '', '', nil);
+        PushNewProp(Sym, nil);
         Section := nil;
         Next;
         DoBody([CenterEndSy] + TermSet);
@@ -1515,7 +1533,7 @@ begin
       repeat
         SectionList.Add(Section, TagIndex);
         Section := nil;
-        PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sym, Attributes);
         FormBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
         SectionList.Add(FormBlock, TagIndex);
         SectionList := FormBlock.MyCell;
@@ -1892,7 +1910,7 @@ begin
       SetJustify := Right
     else
       SetJustify := NoJustify;
-    PushNewProp(TableSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+    PushNewProp(TableSy, Attributes);
     Table := ThtmlTable.Create(SaveSectionList, Attributes, PropStack.Last);
     NewBlock := TTableBlock.Create(SaveSectionList, Attributes, PropStack.Last, Table, TableLevel);
     if (NewBlock.Justify <> Centered) and not (NewBlock.Floating in [ALeft, ARight]) then
@@ -1928,7 +1946,7 @@ begin
               begin
                 RowVAlign := AMiddle;
                 RowStack := PropStackIndex;
-                PushNewProp(TrSy, '', '', '', '', nil);
+                PushNewProp(TrSy, nil);
                 Row := TCellList.Create(nil, PropStack.Last);
               end
               else
@@ -1938,7 +1956,7 @@ begin
                   PopProp; {back stack off to Row item}
               end;
               TdTh := Sy;
-              PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              PushNewProp(TdTh, Attributes);
               VAlign := GetVAlign(RowVAlign);
               if Assigned(CM) then
               begin
@@ -2029,7 +2047,7 @@ begin
               AddSection;
               if Attributes.Find(AlignSy, T) then
                 TopCaption := Lowercase(T.Name) <> 'bottom';
-              PushNewProp(CaptionSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              PushNewProp(CaptionSy, Attributes);
               if not Assigned(CaptionBlock) then
                 CaptionBlock := TBlock.Create(SaveSectionList, Attributes, PropStack.Last);
               SectionList := CaptionBlock.MyCell;
@@ -2077,7 +2095,7 @@ begin
                   RowType := TBody;
               end;
               if TdTh <> OtherChar then
-                PushNewProp(TdTh, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+                PushNewProp(TdTh, Attributes);
               Next;
             end;
 
@@ -2091,7 +2109,7 @@ begin
             begin
               AddRow; {if it is still assigned}
               RowStack := PropStackIndex;
-              PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              PushNewProp(Sy, Attributes);
               TrDisplay := PropStack.Last.Display; // Yunqa.de.
               CheckForAlign;
               Row := TCellList.Create(Attributes, PropStack.Last);
@@ -2437,7 +2455,7 @@ begin
       try
         if not Assigned(Section) then
           Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
-        PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sym, Attributes);
         Prop := PropStack.Last;
         PO := Section.CreatePanel(Attributes, SectionList, Prop);
         PO.ProcessProperties(PropStack.Last);
@@ -2639,7 +2657,7 @@ procedure THtmlParser.DoCommonSy;
               CodePage := PropStack.Last.CodePage;
             end;
         end;
-    PushNewProp(FontSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+    PushNewProp(FontSy, Attributes);
     Prop := TProperties(PropStack.Last);
     Prop.SetFontBG;
     if Prop.HasBorderStyle then {start of inline border}
@@ -2691,7 +2709,7 @@ procedure THtmlParser.DoCommonSy;
           Link := 'link';
           Break;
         end;
-    PushNewProp(ASy, Attributes.TheClass, Attributes.TheID, Link, Attributes.TheTitle, Attributes.TheStyle);
+    PushNewProp(ASy, Attributes, Link);
     Prop := PropStack.Last;
     Prop.SetFontBG;
     if Prop.HasBorderStyle then {start of inline border}
@@ -2832,7 +2850,7 @@ procedure THtmlParser.DoCommonSy;
     begin
       Section.AddTokenObj(S);
       S.Clear;
-      PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+      PushNewProp(Sy, Attributes);
     end;
 
     procedure DoAfterSy(Sy: TElemSymb);
@@ -2866,7 +2884,7 @@ procedure THtmlParser.DoCommonSy;
     FormBlock := nil;
     try
       SectionList.Add(Section, TagIndex);
-      PushNewProp(PreSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+      PushNewProp(PreSy, Attributes);
       InitialStackIndex := PropStackIndex;
       PreBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
       if not StyleTypes.TryStrToWhiteSpace(PropStack.Last.Props[piWhiteSpace],LW) then
@@ -2891,7 +2909,8 @@ procedure THtmlParser.DoCommonSy;
                     S.Clear;
                     SectionList.Add(Section, TagIndex);
                {look for page-break}
-                    PushNewProp(SaveSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
+                    //PushNewProp(SaveSy, Attributes.TheClass, '', '', '', Attributes.TheStyle);
+                    PushNewProp(SaveSy, Attributes);
                     PropStack.Last.GetPageBreaks(Before, After, Intact);
                     if Before or After then
                       SectionList.Add(TPage.Create(SectionList, nil, PropStack.Last), TagIndex);
@@ -2918,7 +2937,7 @@ procedure THtmlParser.DoCommonSy;
                     end;
                     if LCh = CrChar then
                       GetCh;
-                    PushNewProp(SaveSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+                    PushNewProp(SaveSy, Attributes);
                     PBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
                     SectionList.Add(PBlock, TagIndex);
                     SectionList := PBlock.MyCell;
@@ -3096,7 +3115,7 @@ procedure THtmlParser.DoCommonSy;
                       SectionList.Add(Section, TagIndex);
                     end;
 
-                    PushNewProp(SaveSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+                    PushNewProp(SaveSy, Attributes);
                     FormBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
                     SectionList.Add(FormBlock, TagIndex);
                     SectionList := FormBlock.MyCell;
@@ -3178,7 +3197,7 @@ procedure THtmlParser.DoCommonSy;
   begin
     if not Assigned(Section) then
       Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, True);
-    PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+    PushNewProp(Sy, Attributes);
   end;
 
   procedure DoAfterSy(Sy: TElemSymb);
@@ -3293,7 +3312,7 @@ begin
       end;
     ButtonSy:
       begin
-        PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sy, Attributes);
         Prop := TProperties(PropStack.Last);
         Prop.SetFontBG;
         if Prop.HasBorderStyle then {start of inline border}
@@ -3353,7 +3372,7 @@ begin
     BigSy, SmallSy, LabelSy, AbbrSy, AcronymSy, DfnSy,
     CodeSy, TTSy, KbdSy, SampSy:
       begin
-        PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(Sy, Attributes);
         Prop := TProperties(PropStack.Last);
         Prop.SetFontBG;
         if Prop.HasBorderStyle then {start of inline border}
@@ -3399,7 +3418,7 @@ begin
       begin
         SaveEndSy := EndSymbFromSymb(SaveSy);
         SectionList.Add(Section, TagIndex);
-        PushNewProp(SaveSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(SaveSy, Attributes);
         CheckForAlign;
         SkipWhiteSpace;
         Next;
@@ -3455,7 +3474,7 @@ begin
     HRSy:
       begin
         SectionList.Add(Section, TagIndex);
-        PushNewProp(SaveSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(SaveSy, Attributes);
       {Create Horzline first as it effects the PropStack}
         HorzLine := THorzLine.Create(SectionList, Attributes, PropStack.Last);
         HRBlock := THRBlock.Create(SectionList, Attributes, PropStack.Last);
@@ -3478,7 +3497,7 @@ begin
       begin
         SectionList.Add(Section, TagIndex);
         Section := nil;
-        PushNewProp(SaveSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+        PushNewProp(SaveSy, Attributes);
         Next;
       end;
 
@@ -3515,20 +3534,23 @@ end; {DoCommon}
 procedure THtmlParser.DoP(const TermSet: TElemSymbSet);
 var
   NewBlock: TBlock;
-  LastAlign, LastClass, LastID, LastTitle: ThtString;
-  LastStyle: TProperties;
+//  LastAlign, LastClass, LastID, LastTitle: ThtString;
+//  LastStyle: TProperties;
 begin
   if PSy in TermSet then
     Exit;
   SectionList.Add(Section, TagIndex);
   Section := nil;
-  SkipWhiteSpace;
-  LastAlign := FindAlignment;
-  LastClass := Attributes.TheClass;
-  LastID := Attributes.TheID;
-  LastStyle := Attributes.TheStyle;
-  LastTitle := Attributes.TheTitle;
-  Next;
+
+//BG, 28.02.2016: don't skip empty paragraphs any longer for correctly not
+//  collapsing margins, if paragraph has padding or border
+//  SkipWhiteSpace;
+//  LastAlign := FindAlignment;
+//  LastClass := Attributes.TheClass;
+//  LastID := Attributes.TheID;
+//  LastStyle := Attributes.TheStyle;
+//  LastTitle := Attributes.TheTitle;
+//  Next;
 //  while Sy in [PSy, PEndSy] do
 //  begin {recognize only the first <p>}
 //    if Sy = PSy then
@@ -3542,15 +3564,21 @@ begin
 //    SkipWhiteSpace;
 //    Next;
 //  end;
-{at this point have the 'next' attributes, so use 'Last' items here}
-  PushNewProp(PSy, LastClass, LastID, '', LastTitle, LastStyle);
-  if LastAlign <> '' then
-    PropStack.Last.Assign(LastAlign, TextAlign);
+//{at this point have the 'next' attributes, so use 'Last' items here}
+//  PushNewProp(PSy, LastClass, LastID, '', LastTitle, LastStyle);
+//  PushNewProp(PSy, LastClass, LastID, '', LastTitle, LastStyle);
+//  if LastAlign <> '' then
+//    PropStack.Last.Assign(LastAlign, TextAlign);
+//  if LastAlign <> '' then
+//    PropStack.Last.Assign(LastAlign, TextAlign);
 
+  PushNewProp(PSy, Attributes);
   NewBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
   SectionList.Add(NewBlock, TagIndex);
   SectionList := NewBlock.MyCell;
 
+  SkipWhiteSpace;
+  Next;
   while not (Sy in Termset) and
     (Sy in [StringSy, NoBrSy, NoBrEndSy, WbrSy, MarkSy, MarkEndSy, TimeSy, TimeEndSy, BSy, ISy, BEndSy, IEndSy,
       AbbrSy, AbbrEndSy, AcronymSy, AcronymEndSy, DfnSy, DfnEndSy,
@@ -3595,7 +3623,7 @@ begin
     Exit;
 
   L := nil;
-  PushNewProp(BRSy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+  PushNewProp(BRSy, Attributes);
   HasClear := Attributes.Find(ClearSy, T) or VarIsStr(PropStack.Last.Props[Clear]);
   if HasClear then
     L := TLineBreak.Create(SectionList, Attributes, PropStack.Last);
@@ -3650,7 +3678,7 @@ var
 {$endif}
 begin
   SectionList.Add(Section, TagIndex);
-  PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+  PushNewProp(Sym, Attributes);
 {$ifdef DO_LI_INLINE}
   IsInline := PropStack.Last.Display = pdInline;
   IsFirst := not IsInline or (LiSection = nil) or not (LiSection.Display = pdInline);
@@ -3774,7 +3802,7 @@ begin
   end;
   SectionList.Add(Section, TagIndex);
   Section := nil;
-  PushNewProp(Sym, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+  PushNewProp(Sym, Attributes);
 
   NewBlock := TListBlock.Create(SectionList, Attributes, PropStack.Last);
 // BG, 25.03.2012: unused:  NewBlock.IsListBlock := not (Sym in [AddressSy, BlockquoteSy, DLSy]);
@@ -4053,7 +4081,7 @@ var
   begin
     if HtmlAttributes <> nil then
     begin
-      PushNewProp(HtmlSy, HtmlAttributes.TheClass, HtmlAttributes.TheID, '', HtmlAttributes.TheTitle, HtmlAttributes.TheStyle);
+      PushNewProp(HtmlSy, HtmlAttributes);
       FreeAndNil(HtmlAttributes);
 
       // set document background
@@ -4124,7 +4152,7 @@ begin
                 Section.CheckFree;
                 Section.Free; {Will start with a new section}
               end;
-              PushNewProp(Sy, Attributes.TheClass, Attributes.TheID, '', Attributes.TheTitle, Attributes.TheStyle);
+              PushNewProp(Sy, Attributes);
               AMarginHeight := (CallingObject as ThtmlViewer).MarginHeight;
               AMarginWidth := (CallingObject as ThtmlViewer).MarginWidth;
               for I := 0 to Attributes.Count - 1 do
@@ -4457,7 +4485,8 @@ begin
   S := TTokenObj.Create;
   try
     SectionList.Add(Section, TagIndex);
-    PushNewProp(PreSy, Attributes.TheClass, Attributes.TheID, '', '', Attributes.TheStyle);
+//    PushNewProp(PreSy, Attributes.TheClass, Attributes.TheID, '', '', Attributes.TheStyle);
+    PushNewProp(PreSy, Attributes);
     PreBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
     SectionList.Add(PreBlock, TagIndex);
     SectionList := PreBlock.MyCell;

@@ -1447,7 +1447,7 @@ type
     SIndex: Integer; //BG, 26.12.2010: seems, this is the current position in the original html-file.
     procedure PopAProp(Sym: TElemSymb);
     procedure PopProp;
-    procedure PushNewProp(Sym: TElemSymb; const AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
+    procedure PushNewProp(Sym: TElemSymb; Properties: TProperties; Attributes: TAttributeList; const APseudo: ThtString = '');
   end;
 
   ThtDocument = class(TCell) {a list of all the sections -- the html document}
@@ -11155,7 +11155,7 @@ begin
         begin
           if StU[I] <> St[I] then
           begin {St[I] was lower case}
-            Document.PropStack.PushNewProp(SmallSy, '', '', '', '', nil); {change to smaller font}
+            Document.PropStack.PushNewProp(SmallSy, nil, nil); {change to smaller font}
             ChangeFont(Document.PropStack.Last);
             Small := True;
           end;
@@ -14830,7 +14830,7 @@ end;
 { THtmlPropStack }
 
 { Add a TProperties to the PropStack. }
-procedure THtmlPropStack.PushNewProp(Sym: TElemSymb; const AClass, AnID, APseudo, ATitle: ThtString; AProps: TProperties);
+procedure THtmlPropStack.PushNewProp(Sym: TElemSymb; Properties: TProperties; Attributes: TAttributeList; const APseudo: ThtString = '');
 var
   NewProp: TProperties;
   Tag: ThtString;
@@ -14840,7 +14840,7 @@ begin
   NewProp.PropSym := Sym;
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
-  NewProp.Combine(Document.Styles, Tag, AClass, AnID, APseudo, ATitle, AProps, Count - 1);
+  NewProp.Combine(Document.Styles, Tag, APseudo, Properties, Attributes, Count - 1);
 end;
 
 procedure THtmlPropStack.PopProp;

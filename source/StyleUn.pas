@@ -42,6 +42,7 @@ uses
   HtmlFonts,
   HtmlGlobals,
   HtmlSymb,
+  HtmlUn2,
   StyleTypes;
 
 {$ifdef UseOldStyleTypes}
@@ -222,7 +223,8 @@ type
     procedure SetPropertyDefaults(Indexes: ThtPropIndexSet; const Value: Variant);
     procedure Assign(const Item: Variant; Index: ThtPropIndices);
     procedure AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
-    procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
+    procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; AAttr: TAttributeList; ParentIndexInPropStack: Integer); overload;
+    procedure Combine(Styles: TStyleList; const Tag, Pseudo: ThtString; Properties: TProperties; Attributes: TAttributeList; ParentIndexInPropStack: Integer); overload;
     procedure Copy(Source: TProperties);
     procedure CopyDefault(Source: TProperties);
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
@@ -2087,8 +2089,19 @@ end;
 
 {----------------TProperties.Combine}
 
+//-- BG ---------------------------------------------------------- 28.02.2016 --
 procedure TProperties.Combine(Styles: TStyleList;
-  const Tag, AClass, AnID, PSeudo, ATitle: ThtString; AProp: TProperties; ParentIndexInPropStack: Integer);
+  const Tag, Pseudo: ThtString; Properties: TProperties;
+  Attributes: TAttributeList; ParentIndexInPropStack: Integer);
+begin
+  if Attributes <> nil then
+    Combine(Styles, Tag, Attributes.TheClass, Attributes.TheID, PSeudo, Attributes.TheTitle, Properties, Attributes, ParentIndexInPropStack)
+  else
+    Combine(Styles, Tag, '', '', PSeudo, '', Properties, Attributes, ParentIndexInPropStack);
+end;
+
+procedure TProperties.Combine(Styles: TStyleList;
+  const Tag, AClass, AnID, PSeudo, ATitle: ThtString; AProp: TProperties; AAttr: TAttributeList; ParentIndexInPropStack: Integer);
 {When called, this TProperties contains the inherited properties.  Here we
  add the ones relevant to this item. AProp are TProperties gleaned from the
  Style= attribute. AClass may be a multiple class like class="ab.cd"}
@@ -2122,7 +2135,7 @@ procedure TProperties.Combine(Styles: TStyleList;
           if (Props[Index] <> Unassigned) and not VarIsIntNull(Props[Index]) then
             continue;
         end;
-        if Important[Index] then
+        if Important[Index] and not Source.Important[Index] then
           continue;
         if VarIsStr(Source.Props[Index]) and (Source.Props[Index] = 'inherit') then
           continue;
@@ -2787,7 +2800,7 @@ procedure TProperties.CalcLinkFontInfo(Styles: TStyleList; I: Integer);
   begin
     PropStack.Insert(N, TProperties.Create(PropStack,FUseQuirksMode));
     PropStack[N].Inherit('', PropStack[N - 1]);
-    PropStack[N].Combine(Styles, PropTag, PropClass, PropID, Pseudo, PropTitle, PropStyle, N - 1);
+    PropStack[N].Combine(Styles, PropTag, PropClass, PropID, Pseudo, PropTitle, PropStyle, nil {PropAttr}, N - 1);
   end;
 
 begin
@@ -3060,7 +3073,6 @@ var
   Propty: TProperties;
   NewColor: TColor;
   NewProp: Boolean;
-  WhiteSpaceStyle : ThtWhiteSpaceStyle;
 begin
 {$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TStyleList.AddModifyProp');

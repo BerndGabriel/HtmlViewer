@@ -40,15 +40,7 @@ uses
 
 {---------  Detect Shorthand syntax }
 type
-//  TShortHand = (
-//    MarginX, PaddingX, BorderWidthX, BorderX,
-//    BorderTX, BorderRX, BorderBX, BorderLX,
-//    FontX, BackgroundX, ListStyleX, BorderColorX,
-//    BorderStyleX);
-
   EParseError = class(Exception);
-
-  //TProcessProc = procedure(Obj: TObject; Selectors: ThtStringList; Prop, Value: ThtString);
 
   { THtmlStyleParser }
 
@@ -68,6 +60,8 @@ type
     procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString; IsImportant: Boolean);
   protected
     constructor Create(const AUseQuirksMode : Boolean);
+
+    procedure GetCollection(const GoodTermChars, BadTermChars: ThtString);
     procedure ProcessProperty(const Prop, Value: ThtString; IsImportant: Boolean); virtual; abstract;
     procedure ProcessPropertyOrShortHand(Prop, Value: ThtString; IsImportant: Boolean);
   end;
@@ -234,6 +228,257 @@ begin
 
   if Result then
     Result := Length(Identifier) > 0;
+end;
+
+
+//-- BG ---------------------------------------------------------- 29.12.2010 --
+procedure THtmlStyleParser.GetCollection(const GoodTermChars, BadTermChars: ThtString);
+//Read a series of property/value pairs such as "Text-Align: Center;" between
+//  '{', '}'  brackets. Add these to the Styles list for the specified selectors
+var
+  Top: ThtChar;
+  MoreStack: ThtString;
+  Strings: Integer;
+  InString: Boolean;
+
+  procedure Push(Ch: ThtChar);
+  var
+    I: Integer;
+  begin
+    if Top <> EofChar then
+    begin
+      I := Length(MoreStack) + 1;
+      SetLength(MoreStack, I);
+      MoreStack[I] := Top;
+    end;
+    Top := Ch;
+  end;
+
+  procedure Pop;
+  var
+    I: Integer;
+  begin
+    I := Length(MoreStack);
+    if I > 0 then
+    begin
+      Top := MoreStack[I];
+      SetLength(MoreStack, I - 1);
+    end
+    else
+      Top := EofChar;
+  end;
+
+  function TryPop(LCh: ThtChar): Boolean;
+  var
+    I: Integer;
+  begin
+    Result := Top = LCh;
+    if Result then
+      Pop
+    else
+    begin
+      for I := Length(MoreStack) downto 1 do
+      begin
+        Result := MoreStack[I] = LCh;
+        if Result then
+        begin
+          SetLength(MoreStack, I-1);
+          Pop;
+          Break;
+        end;
+      end;
+    end;
+  end;
+
+  procedure PopStrings;
+  begin
+    TryPop('''');
+    TryPop('"');
+    Strings := 0;
+    InString := False;
+  end;
+
+type
+  ThtTermCharKind = (tckNone, tckGood, tckBad);
+
+  function GetTermCharKind(LCh: ThtChar): ThtTermCharKind; {$ifdef UseInline} inline; {$endif}
+  begin
+    if Pos(LCh, GoodTermChars) > 0 then
+      Result := tckGood
+    else if Pos(LCh, BadTermChars) > 0 then
+      Result := tckBad
+    else if LCh = EofChar then
+      Result := tckBad
+    else
+      Result := tckNone;
+  end;
+
+var
+  Prop, Value, Important: ThtString;
+  ImportantSepPos: Integer;
+  IsImportant: Boolean;
+  TermCharKind: ThtTermCharKind;
+begin
+  Top := EofChar;
+  Strings := 0;
+  ImportantSepPos := 0;
+  InString := False;
+  GetCh;
+  repeat
+    SkipWhiteSpace;
+    if GetIdentifier(Prop) then
+    begin
+      SkipWhiteSpace;
+      if (LCh = ':') or (LCh = '=') then
+      begin
+        GetCh(True);
+        SkipWhiteSpace(True);
+
+        SetLength(Value, 0);
+        { The ';' inside a quotation should not end a CSS value.  }
+        while not ((LCh = ';') and (Top = EofChar)) and (GetTermCharKind(LCh) = tckNone) do
+        begin
+          case LCh of
+            '"', '''':
+              if Top = LCh then
+              begin
+                Pop;
+                Dec(Strings);
+                if Strings <= 0 then
+                begin
+                  InString := False;
+                  Strings := 0;
+                end;
+              end
+              else
+              begin
+                Push(LCh);
+                Inc(Strings);
+                InString := True;
+              end;
+
+            '!':
+              if not InString then
+              begin
+                ImportantSepPos := Length(Value) + 1;
+                break;
+              end;
+
+            LfChar:
+              if InString then
+              begin
+                PopStrings;
+                Break;
+              end;
+
+            '(' :
+              if not InString then
+                Push(')');
+
+            ')' :
+              if LCh = Top then
+                Pop;
+          end;
+          SetLength(Value, Length(Value) + 1);
+          Value[Length(Value)] := LCh;
+          GetCh(True);
+        end;
+
+        // support 'important'
+        IsImportant := False;
+        if ImportantSepPos > 0 then
+        begin
+          GetCh;
+          SkipWhiteSpace;
+          if GetIdentifier(Important) then
+          begin
+            SkipWhiteSpace;
+            IsImportant := htLowerCase(Important) = 'important';
+            if IsImportant then
+              SetLength(Value, ImportantSepPos - 1);
+          end
+        end;
+        ProcessPropertyOrShortHand(Prop, Value, IsImportant);
+      end;
+    end;
+
+    // Skip trailing ';' or any erroneous/unknown syntax observing the rules
+    // for matching pairs of (), [], {}, "", and '' until and including next ';'
+    TermCharKind := GetTermCharKind(LCh);
+    while True do
+    begin
+      case TermCharKind of
+        tckGood:
+          if not InString then
+          begin
+            if LCh = Top then
+              Pop;
+            if Top = EofChar then
+              break;
+          end;
+
+        tckBad:
+          if not InString then
+            if Top = EofChar then
+              break;
+      else
+        case LCh of
+          ';':
+            if Top = EofChar then
+            begin
+              GetCh;
+              break;
+            end;
+
+          '{':
+            if not InString then
+              Push('}');
+
+          '(':
+            if not InString then
+              Push(')');
+
+          '[':
+            if not InString then
+              Push(']');
+
+          '"', '''':
+            if Top = LCh then
+            begin
+              Pop;
+              Dec(Strings);
+              if Strings <= 0 then
+              begin
+                InString := False;
+                Strings := 0;
+              end;
+            end
+            else
+            begin
+              Push(LCh);
+              Inc(Strings);
+              InString := True;
+            end;
+
+          LfChar:
+            if InString then
+            begin
+              PopStrings;
+              Break;
+            end;
+
+          EofChar:
+            break;
+
+        else
+          if LCh = Top then
+            Pop;
+        end;
+      end;
+      GetCh(True);
+      TermCharKind := GetTermCharKind(LCh);
+    end;
+  until TermCharKind <> tckNone;
 end;
 
 
@@ -1213,239 +1458,10 @@ end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleTagParser.GetCollection;
-//Read a series of property/value pairs such as "Text-Align: Center;" between
-//  '{', '}'  brackets. Add these to the Styles list for the specified selectors
-var
-  Top: ThtChar;
-  MoreStack: ThtString;
-  Strings: Integer;
-  InString: Boolean;
-
-  procedure Push(Ch: ThtChar);
-  var
-    I: Integer;
-  begin
-    if Top <> EofChar then
-    begin
-      I := Length(MoreStack) + 1;
-      SetLength(MoreStack, I);
-      MoreStack[I] := Top;
-    end;
-    Top := Ch;
-  end;
-
-  procedure Pop;
-  var
-    I: Integer;
-  begin
-    I := Length(MoreStack);
-    if I > 0 then
-    begin
-      Top := MoreStack[I];
-      SetLength(MoreStack, I - 1);
-    end
-    else
-      Top := EofChar;
-  end;
-
-  function TryPop(LCh: ThtChar): Boolean;
-  var
-    I: Integer;
-  begin
-    Result := Top = LCh;
-    if Result then
-      Pop
-    else
-    begin
-      for I := Length(MoreStack) downto 1 do
-      begin
-        Result := MoreStack[I] = LCh;
-        if Result then
-        begin
-          SetLength(MoreStack, I-1);
-          Pop;
-          Break;
-        end;
-      end;
-    end;
-  end;
-
-  procedure PopStrings;
-  begin
-    TryPop('''');
-    TryPop('"');
-    Strings := 0;
-    InString := False;
-  end;
-
-  function IsTermChar(LCh: ThtChar): Boolean;
-  begin
-    case LCh of
-      '}', '<', EofChar:
-        Result := True;
-    else
-      Result := False;
-    end;
-  end;
-
-const
-  Important: ThtString = 'important';
-var
-  Prop, Value: ThtString;
-  ImportantSepPos: Integer;
-  IsImportant: Boolean;
 begin
   if LCh = '{' then
   begin
-    Strings := 0;
-    ImportantSepPos := 0;
-    InString := False;
-    GetCh;
-    repeat
-      SkipWhiteSpace;
-      if GetIdentifier(Prop) then
-      begin
-        SkipWhiteSpace;
-        if (LCh = ':') or (LCh = '=') then
-        begin
-          GetCh(True);
-          SkipWhiteSpace(True);
-
-          SetLength(Value, 0);
-          { The ';' inside a quotation should not end a CSS value.  }
-          while not (((LCh = ';') and (Top = EofChar)) or IsTermChar(LCh)) do
-          begin
-            case LCh of
-              '"', '''':
-                if Top = LCh then
-                begin
-                  Pop;
-                  Dec(Strings);
-                  if Strings <= 0 then
-                  begin
-                    InString := False;
-                    Strings := 0;
-                  end;
-                end
-                else
-                begin
-                  Push(LCh);
-                  Inc(Strings);
-                  InString := True;
-                end;
-
-              '!':
-                ImportantSepPos := Length(Value) + 1;
-
-              LfChar:
-                if InString then
-                begin
-                  PopStrings;
-                  Break;
-                end;
-
-              '(' :
-                if not InString then
-                  Push(')');
-
-              ')' :
-                if LCh = Top then
-                  Pop;
-            end;
-            SetLength(Value, Length(Value) + 1);
-            Value[Length(Value)] := LCh;
-            GetCh(True);
-          end;
-
-          // TODO -oBG, 26.04.2013: support 'important'
-          if ImportantSepPos > 0 then
-          begin
-            IsImportant := Pos(Important, htLowerCase(Value)) > ImportantSepPos;
-            if IsImportant then
-              SetLength(Value, ImportantSepPos - 1);
-          end
-          else
-            IsImportant := False;
-
-          ProcessPropertyOrShortHand(Prop, Value, IsImportant);
-        end;
-      end;
-
-      // Skip trailing ';' or any erroneous/unknown syntax observing the rules
-      // for matching pairs of (), [], {}, "", and '' until and including next ';'
-      while True do
-      begin
-        case LCh of
-
-          ';':
-            if Top = EofChar then
-            begin
-              GetCh;
-              break;
-            end;
-
-          '{':
-            if not InString then
-              Push('}');
-
-          '(':
-            if not InString then
-              Push(')');
-
-          '[':
-            if not InString then
-              Push(']');
-
-          '"', '''':
-            if Top = LCh then
-            begin
-              Pop;
-              Dec(Strings);
-              if Strings <= 0 then
-              begin
-                InString := False;
-                Strings := 0;
-              end;
-            end
-            else
-            begin
-              Push(LCh);
-              Inc(Strings);
-              InString := True;
-            end;
-
-          LfChar:
-            if InString then
-            begin
-              PopStrings;
-              Break;
-            end;
-
-          '}':
-            if not InString then
-            begin
-              if LCh = Top then
-                Pop;
-              if Top = EofChar then
-                break;
-            end;
-
-          '<':
-            if not InString then
-              if Top = EofChar then
-                break;
-
-          EofChar:
-            break;
-
-        else
-          if LCh = Top then
-            Pop;
-        end;
-        GetCh(True);
-      end;
-    until IsTermChar(LCh);
-
+    inherited GetCollection('}', '<');
     if LCh = '}' then
       GetCh;
     if LCh = LfChar then
@@ -1600,45 +1616,7 @@ begin
   Self.Propty := Propty;
   try
     LinkPath := '';
-    GetCh;
-    repeat
-      Prop := '';
-      SkipWhiteSpace;
-      while True do
-        case LCh of
-          'A'..'Z', 'a'..'z', '0'..'9', '-':
-            begin
-              Prop := Prop + LCh;
-              GetCh;
-            end;
-        else
-          break;
-        end;
-      SkipWhiteSpace;
-      if (LCh = ':') or (LCh = '=') then
-      begin
-        GetCh;
-        Value := '';
-        while not ((LCh = ';') or (LCh = EofChar)) do
-        begin
-          SetLength(Value, Length(Value) + 1);
-          Value[Length(Value)] := LCh;
-          GetCh;
-        end;
-
-        ProcessPropertyOrShortHand(Prop, Value, IsImportant);
-      end;
-      SkipWhiteSpace;
-      if LCh = ';' then
-        GetCh;
-      while True do
-        case LCh of
-          'A'..'Z', 'a'..'z', '0'..'9', '-', EofChar:
-            break;
-        else
-          GetCh;
-        end;
-    until LCh = EofChar;
+    GetCollection(EofChar, EofChar);
   finally
     Self.Doc := nil;
     Self.Propty := nil;

@@ -29,6 +29,7 @@ are covered by separate copyright notices located in those modules.
 unit HTMLUn2;
 
 interface
+
 uses
 {$ifdef UseInline}
   Math,
@@ -53,11 +54,10 @@ uses
   HtmlGlobals,
   HtmlImages,
   StyleTypes,
-  StyleUn,
   HtmlSymb;
 
 const
-  VersionNo = '11.6';
+  VersionNo = '11.7pre';
   MaxHScroll = 100000; {max horizontal display in pixels}
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
@@ -108,7 +108,6 @@ type
     WhichName: ThtString;
     Value: Integer; {numeric value if appropriate}
     DblValue: Double; {numeric value if appropriate}
-    xPercent: boolean; {if value is in percent}
     Name: ThtString; {ThtString (mixed case), value after '=' sign}
     CodePage: Integer;
     constructor Create(ASym: TAttrSymb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
@@ -120,17 +119,13 @@ type
 
   TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
   private
-    Prop: TProperties;
-    SaveStyle: ThtString;
     SaveID: ThtString;
     function GetClass: ThtString;
     function GetID: ThtString;
     function GetTitle: ThtString;
-    function GetStyle: TProperties;
     function GetAttribute(Index: Integer): TAttribute; {$ifdef UseInline} inline; {$endif}
   public
     constructor CreateCopy(ASource: TAttributeList);
-    destructor Destroy; override;
     procedure Clear; override;
     function Find(const Name: ThtString; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function Find(Sy: TAttrSymb; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
@@ -138,7 +133,6 @@ type
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
     property TheTitle: ThtString read GetTitle;
-    property TheStyle: TProperties read GetStyle;
     property Items[Index: Integer]: TAttribute read GetAttribute; default;
   end;
 
@@ -1383,7 +1377,6 @@ begin
   WhichName := ASource.WhichName;
   Value := ASource.Value;
   DblValue := ASource.DblValue;
-  xPercent := ASource.xPercent;
   Name := ASource.Name;
   CodePage := ASource.CodePage;
 end;
@@ -1414,12 +1407,6 @@ begin
   for I := 0 to Count - 1 do
     with Items[I] do
       Result.Add(WhichName + '=' + Name);
-end;
-
-destructor TAttributeList.Destroy;
-begin
-  Prop.Free;
-  inherited;
 end;
 
 function TAttributeList.Find(const Name: ThtString; var T: TAttribute): Boolean;
@@ -1503,28 +1490,6 @@ begin
     Result := T.Name
   else
     Result := '';
-end;
-
-function TAttributeList.GetStyle: TProperties;
-var
-  T: TAttribute;
-begin
-  if Find(StyleAttrSy, T) then
-  begin
-    if SaveStyle <> T.Name then
-    begin
-      Prop.Free;
-      Prop := TProperties.Create;
-      SaveStyle := T.Name;
-      ParsePropertyStr(SaveStyle, Prop);
-    end;
-    Result := Prop;
-  end
-  else
-  begin
-    SetLength(SaveStyle, 0);
-    Result := nil;
-  end;
 end;
 
 {----------------TUrlTarget.Create}
