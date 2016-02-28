@@ -65,11 +65,11 @@ type
     function GetString(out Str: ThtString): Boolean;
     //
     function AddPath(const S: ThtString): ThtString;
-    procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString);
+    procedure ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString; IsImportant: Boolean);
   protected
     constructor Create(const AUseQuirksMode : Boolean);
-    procedure ProcessProperty(const Prop, Value: ThtString); virtual; abstract;
-    procedure ProcessPropertyOrShortHand(Prop, Value: ThtString);
+    procedure ProcessProperty(const Prop, Value: ThtString; IsImportant: Boolean); virtual; abstract;
+    procedure ProcessPropertyOrShortHand(Prop, Value: ThtString; IsImportant: Boolean);
   end;
 
   THtmlStyleTagParser = class(THtmlStyleParser)
@@ -79,7 +79,7 @@ type
     procedure GetCollection;
     procedure GetSelectors;
   protected
-    procedure ProcessProperty(const Prop, Value: ThtString); override;
+    procedure ProcessProperty(const Prop, Value: ThtString; IsImportant: Boolean); override;
   public
     constructor Create(const AUseQuirksMode : Boolean);
     destructor Destroy; override;
@@ -90,7 +90,7 @@ type
   private
     Propty: TProperties;
   protected
-    procedure ProcessProperty(const Prop, Value: ThtString); override;
+    procedure ProcessProperty(const Prop, Value: ThtString; IsImportant: Boolean); override;
   public
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
@@ -325,7 +325,7 @@ on paths specifiers that contain spaces.  Spaces are legal filename characters.
 end;
 
 //-- BG ---------------------------------------------------------- 26.11.2012 --
-procedure THtmlStyleParser.ProcessPropertyOrShortHand(Prop, Value: ThtString);
+procedure THtmlStyleParser.ProcessPropertyOrShortHand(Prop, Value: ThtString; IsImportant: Boolean);
 
   function FindShortHand(S: ThtString; out Index: TShortHand): boolean;
   var
@@ -349,14 +349,14 @@ begin
   Value := RemoveQuotes(Value1);
   Prop := LowerCase(Prop);
   if FindShortHand(Prop, Index) then
-    ProcessShortHand(Index, Prop, Value, Value1)
+    ProcessShortHand(Index, Prop, Value, Value1, IsImportant)
   else if Prop = 'font-family' then
-    ProcessProperty(Prop, LowerCase(Value1))
+    ProcessProperty(Prop, LowerCase(Value1), IsImportant)
   else
   begin
     if (LinkPath <> '') and (Pos('url(', Value) > 0) then
       Value := AddPath(Value);
-    ProcessProperty(Prop, Value);
+    ProcessProperty(Prop, Value, IsImportant);
   end;
 end;
 
@@ -473,7 +473,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
-procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString);
+procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigValue, StrippedValue: ThtString; IsImportant: Boolean);
 
   //ProcessShortHand
   procedure DoBorderSpacing(Value: THtString);
@@ -485,14 +485,14 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     case Count of
       1:
       begin
-        ProcessProperty('thv-border-spacing-horz', S[0]);
-        ProcessProperty('thv-border-spacing-vert', S[0]);
+        ProcessProperty('thv-border-spacing-horz', S[0], IsImportant);
+        ProcessProperty('thv-border-spacing-vert', S[0], IsImportant);
       end;
 
       2:
       begin
-        ProcessProperty('thv-border-spacing-horz', S[0]);
-        ProcessProperty('thv-border-spacing-vert', S[1]);
+        ProcessProperty('thv-border-spacing-horz', S[0], IsImportant);
+        ProcessProperty('thv-border-spacing-vert', S[1], IsImportant);
       end;
     end;
   end;
@@ -550,8 +550,8 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
         S[I] := '';
       end;
 
-    ProcessProperty('background-color', Values[shColor]);
-    ProcessProperty('background-image', Values[shImage]);
+    ProcessProperty('background-color', Values[shColor], IsImportant);
+    ProcessProperty('background-image', Values[shImage], IsImportant);
 
     // process repeat
     for I := 0 to Count - 1 do
@@ -560,7 +560,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
         Values[shRepeat] := S[I];
         S[I] := '';
       end;
-    ProcessProperty('background-repeat', Values[shRepeat]);
+    ProcessProperty('background-repeat', Values[shRepeat], IsImportant);
 
     // process attachment
     for I := 0 to Count - 1 do
@@ -569,7 +569,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
         Values[shAttachment] := S[I];
         S[I] := '';
       end;
-    ProcessProperty('background-attachment', Values[shAttachment]);
+    ProcessProperty('background-attachment', Values[shAttachment], IsImportant);
 
     // process position
     N := 0;
@@ -584,7 +584,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
       end;
     if S1 <> '' then
       Values[shPosition] := S1;
-    ProcessProperty('background-position', Values[shPosition]);
+    ProcessProperty('background-position', Values[shPosition], IsImportant);
   end;
 
   procedure DoBorder(Prop, Value: ThtString);
@@ -618,13 +618,13 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     begin
       if Prop = 'border' then
       begin
-        ProcessProperty(Prop + '-top' + Erty, Value);
-        ProcessProperty(Prop + '-right' + Erty, Value);
-        ProcessProperty(Prop + '-bottom' + Erty, Value);
-        ProcessProperty(Prop + '-left' + Erty, Value);
+        ProcessProperty(Prop + '-top' + Erty, Value, IsImportant);
+        ProcessProperty(Prop + '-right' + Erty, Value, IsImportant);
+        ProcessProperty(Prop + '-bottom' + Erty, Value, IsImportant);
+        ProcessProperty(Prop + '-left' + Erty, Value, IsImportant);
       end
       else
-        ProcessProperty(Prop + Erty, Value);
+        ProcessProperty(Prop + Erty, Value, IsImportant);
     end;
 
   begin
@@ -753,12 +753,12 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     if Values[shFamily] <> '' then
     begin
       // set values to properties
-      ProcessProperty('font-style', Values[shStyle]);
-      ProcessProperty('font-variant', Values[shVariant]);
-      ProcessProperty('font-weight', Values[shWeight]);
-      ProcessProperty('font-size', Values[shSize]);
-      ProcessProperty('line-height', Values[shHeight]);
-      ProcessProperty('font-family', Values[shFamily]);
+      ProcessProperty('font-style', Values[shStyle], IsImportant);
+      ProcessProperty('font-variant', Values[shVariant], IsImportant);
+      ProcessProperty('font-weight', Values[shWeight], IsImportant);
+      ProcessProperty('font-size', Values[shSize], IsImportant);
+      ProcessProperty('line-height', Values[shHeight], IsImportant);
+      ProcessProperty('font-family', Values[shFamily], IsImportant);
     end;
   end;
 
@@ -801,9 +801,9 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
         Values[shType] := S[I];
     end;
 
-    ProcessProperty('list-style-type', Values[shType]);
-    ProcessProperty('list-style-position', Values[shPosition]);
-    ProcessProperty('list-style-image', Values[shImage]);
+    ProcessProperty('list-style-type', Values[shType], IsImportant);
+    ProcessProperty('list-style-position', Values[shPosition], IsImportant);
+    ProcessProperty('list-style-image', Values[shImage], IsImportant);
   end;
 
   procedure DoMarginItems(X: TShortHand; const Value: ThtString);
@@ -830,27 +830,27 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     for I := 1 to 3 do
       Index[I] := Succ(Index[I - 1]);
 
-    ProcessProperty(PropWords[Index[0]], S[0]);
+    ProcessProperty(PropWords[Index[0]], S[0], IsImportant);
     case Count of
       1: for I := 1 to 3 do
-          ProcessProperty(PropWords[Index[I]], S[0]);
+          ProcessProperty(PropWords[Index[I]], S[0], IsImportant);
       2:
         begin
-          ProcessProperty(PropWords[Index[2]], S[0]);
-          ProcessProperty(PropWords[Index[1]], S[1]);
-          ProcessProperty(PropWords[Index[3]], S[1]);
+          ProcessProperty(PropWords[Index[2]], S[0], IsImportant);
+          ProcessProperty(PropWords[Index[1]], S[1], IsImportant);
+          ProcessProperty(PropWords[Index[3]], S[1], IsImportant);
         end;
       3:
         begin
-          ProcessProperty(PropWords[Index[2]], S[2]);
-          ProcessProperty(PropWords[Index[1]], S[1]);
-          ProcessProperty(PropWords[Index[3]], S[1]);
+          ProcessProperty(PropWords[Index[2]], S[2], IsImportant);
+          ProcessProperty(PropWords[Index[1]], S[1], IsImportant);
+          ProcessProperty(PropWords[Index[3]], S[1], IsImportant);
         end;
       4:
         begin
-          ProcessProperty(PropWords[Index[1]], S[1]);
-          ProcessProperty(PropWords[Index[2]], S[2]);
-          ProcessProperty(PropWords[Index[3]], S[3]);
+          ProcessProperty(PropWords[Index[1]], S[1], IsImportant);
+          ProcessProperty(PropWords[Index[2]], S[2], IsImportant);
+          ProcessProperty(PropWords[Index[3]], S[3], IsImportant);
         end;
     end;
   end;
@@ -1213,7 +1213,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleTagParser.GetCollection;
-//Read a series of property, value pairs such as "Text-Align: Center;" between
+//Read a series of property/value pairs such as "Text-Align: Center;" between
 //  '{', '}'  brackets. Add these to the Styles list for the specified selectors
 var
   Top: ThtChar;
@@ -1289,14 +1289,16 @@ var
   end;
 
 const
-  Important: ThtString = '!important';
+  Important: ThtString = 'important';
 var
   Prop, Value: ThtString;
-  ValueLength: Integer;
+  ImportantSepPos: Integer;
+  IsImportant: Boolean;
 begin
   if LCh = '{' then
   begin
     Strings := 0;
+    ImportantSepPos := 0;
     InString := False;
     GetCh;
     repeat
@@ -1332,6 +1334,9 @@ begin
                   InString := True;
                 end;
 
+              '!':
+                ImportantSepPos := Length(Value) + 1;
+
               LfChar:
                 if InString then
                 begin
@@ -1352,15 +1357,17 @@ begin
             GetCh(True);
           end;
 
-          // TODO -oBG, 26.04.2013: support !important
-          ValueLength := Length(Value) - Length(Important);
-          if ValueLength >= 0 then
+          // TODO -oBG, 26.04.2013: support 'important'
+          if ImportantSepPos > 0 then
           begin
-            if htLowerCase(Copy(Value, 1 + ValueLength, Length(Important))) = Important then
-              Value := Trim(Copy(Value, 1, ValueLength));
-          end;
+            IsImportant := Pos(Important, htLowerCase(Value)) > ImportantSepPos;
+            if IsImportant then
+              SetLength(Value, ImportantSepPos - 1);
+          end
+          else
+            IsImportant := False;
 
-          ProcessPropertyOrShortHand(Prop, Value);
+          ProcessPropertyOrShortHand(Prop, Value, IsImportant);
         end;
       end;
 
@@ -1438,6 +1445,7 @@ begin
         GetCh(True);
       end;
     until IsTermChar(LCh);
+
     if LCh = '}' then
       GetCh;
     if LCh = LfChar then
@@ -1572,12 +1580,12 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
-procedure THtmlStyleTagParser.ProcessProperty(const Prop, Value: ThtString);
+procedure THtmlStyleTagParser.ProcessProperty(const Prop, Value: ThtString; IsImportant: Boolean);
 var
   I: integer;
 begin
   for I := 0 to Selectors.Count - 1 do
-    Styles.AddModifyProp(Selectors[I], Prop, Value);
+    Styles.AddModifyProp(Selectors[I], Prop, Value, IsImportant);
 end;
 
 { THtmlStyleAttrParser }
@@ -1586,6 +1594,7 @@ end;
 procedure THtmlStyleAttrParser.ParseProperties(Doc: TBuffer; Propty: TProperties);
 var
   Prop, Value: ThtString;
+  IsImportant: Boolean;
 begin
   Self.Doc := Doc;
   Self.Propty := Propty;
@@ -1617,7 +1626,7 @@ begin
           GetCh;
         end;
 
-        ProcessPropertyOrShortHand(Prop, Value);
+        ProcessPropertyOrShortHand(Prop, Value, IsImportant);
       end;
       SkipWhiteSpace;
       if LCh = ';' then
@@ -1637,9 +1646,9 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
-procedure THtmlStyleAttrParser.ProcessProperty(const Prop, Value: ThtString);
+procedure THtmlStyleAttrParser.ProcessProperty(const Prop, Value: ThtString; IsImportant: Boolean);
 begin
-  Propty.AddPropertyByName(Prop, Value);
+  Propty.AddPropertyByName(Prop, Value, IsImportant);
 end;
 
 end.

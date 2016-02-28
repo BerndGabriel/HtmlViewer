@@ -169,8 +169,6 @@ type
     InLink: Boolean;
     DefFontname: ThtString;
     FUseQuirksMode : Boolean;
-    procedure AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString);
-//    procedure AssignCharSet(CS: TFontCharset);
     procedure AssignCodePage(const CP: Integer);
     procedure CalcLinkFontInfo(Styles: TStyleList; I: Integer);
     procedure GetSingleFontInfo(var Font: ThtFontInfo);
@@ -184,6 +182,7 @@ type
     FEmSize, FExSize: Integer; {# pixels for Em and Ex dimensions}
     Props: ThtPropertyArray;
     Originals: array[ThtPropIndices] of Boolean;
+    Important: array[ThtPropIndices] of Boolean;
     FIArray: TFontInfoArray;
     ID: Integer;
 
@@ -217,7 +216,8 @@ type
     function HasBorderWidth: Boolean;
     function IsOverflowHidden: Boolean;
     function ShowEmptyCells: Boolean;
-    procedure AddPropertyByName(const PropName, PropValue: ThtString);
+    procedure AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString; IsImportant: Boolean);
+    procedure AddPropertyByName(const PropName, PropValue: ThtString; IsImportant: Boolean);
     procedure SetPropertyDefault(Index: ThtPropIndices; const Value: Variant);
     procedure SetPropertyDefaults(Indexes: ThtPropIndexSet; const Value: Variant);
     procedure Assign(const Item: Variant; Index: ThtPropIndices);
@@ -266,7 +266,7 @@ type
     function AddObject(const S: ThtString; AObject: TObject): Integer; override;
     function GetSeqNo: ThtString;
     procedure Clear; override;
-    procedure AddModifyProp(const Selector, Prop, Value: ThtString);
+    procedure AddModifyProp(const Selector, Prop, Value: ThtString; IsImportant: Boolean);
     procedure FixupTableColor(BodyProp: TProperties);
     procedure Initialize(const FontName, PreFontName: ThtString; PointSize: Integer;
       AColor, AHotspot, AVisitedColor, AActiveColor: TColor; LinkUnderline: Boolean;
@@ -2115,13 +2115,15 @@ procedure TProperties.Combine(Styles: TStyleList;
       CodeSiteLogging.CodeSite.AddSeparator;
       LogProperties(Source,'Source');
 {$endif}
-      for Index := Low(Index) to High(ThtPropIndices) do
+      for Index := Low(Index) to High(Index) do
       begin
         if Reverse then
         begin
           if (Props[Index] <> Unassigned) and not VarIsIntNull(Props[Index]) then
             continue;
         end;
+        if Important[Index] then
+          continue;
         if VarIsStr(Source.Props[Index]) and (Source.Props[Index] = 'inherit') then
           continue;
         if (VarType(Source.Props[Index]) <> varEmpty) and (Vartype(Source.Props[Index]) <> varNull) then
@@ -2130,16 +2132,19 @@ procedure TProperties.Combine(Styles: TStyleList;
               if VarIsStr(Source.Props[Index]) then // if VarType(Source.Props[Index]) = VarString then
               begin
                 Props[Index] := Source.Props[Index];
+                Important[Index] := Source.Important[Index];
                 Originals[Index] := True;
               end
               else if Source.Props[Index] <> IntNull then
               begin
                 Props[Index] := Source.Props[Index];
+                Important[Index] := Source.Important[Index];
                 Originals[Index] := True;
               end;
 
             TextDecoration:
               begin
+                Important[Index] := Source.Important[Index];
                 Originals[Index] := True;
                 S1 := Props[Index];
                 if (S1 = 'none') or (Length(S1) = 0) or (Source.Props[Index] = 'none') then
@@ -2164,6 +2169,7 @@ procedure TProperties.Combine(Styles: TStyleList;
 
             FontFamily, FontSize, FontStyle, FontWeight, Color, BackgroundColor, LetterSpacing:
               begin
+                Important[Index] := Source.Important[Index];
                 Originals[Index] := True;
                 Props[Index] := Source.Props[Index];
                 if InLink then
@@ -2211,6 +2217,7 @@ procedure TProperties.Combine(Styles: TStyleList;
           else
             begin
               Props[Index] := Source.Props[Index];
+              Important[Index] := Source.Important[Index];
               Originals[Index] := True; {it's defined for this item, not inherited}
             end;
           end;
@@ -2428,21 +2435,13 @@ procedure TProperties.Combine(Styles: TStyleList;
     end;
 
   begin
-    if FUseQuirksMode then begin
-       if (Tag = 'td') or (Tag = 'th') then begin
-          OldSize := DefPointSize;
-       end else begin
-          if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
-            OldSize := Props[FontSize]
-          else
-            OldSize := DefPointSize;
-       end;
-    end else begin
-      if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
-        OldSize := Props[FontSize]
-      else
-        OldSize := DefPointSize;
-    end;
+    if FUseQuirksMode and ((Tag = 'td') or (Tag = 'th')) then
+      OldSize := DefPointSize
+    else if (VarType(Props[FontSize]) in VarNum) and (Props[FontSize] > 0.0) then {should be true}
+      OldSize := Props[FontSize]
+    else
+      OldSize := DefPointSize;
+
   {Some hover and visited items adequately taken care of when link processed}
     NoHoverVisited := (Pseudo = '') or ((Pseudo <> 'hover') and (Pseudo <> 'visited'));
 
@@ -2879,7 +2878,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TProperties.AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString);
+procedure TProperties.AddPropertyByIndex(Index: ThtPropIndices; PropValue: ThtString; IsImportant: Boolean);
 var
   NewColor: TColor;
   WhiteSpaceStyle : ThtWhiteSpaceStyle;
@@ -2892,15 +2891,6 @@ begin
   LogProperties(Self,'Self');
 {$endif}
   case Index of
-//    BorderColor:
-//      if TryStrToColor(PropValue, False, NewColor) then
-//      begin
-//        Props[BorderColor] := NewColor;
-//        Props[BorderLeftColor] := NewColor;
-//        Props[BorderTopColor] := NewColor;
-//        Props[BorderRightColor] := NewColor;
-//        Props[BorderBottomColor] := NewColor;
-//      end;
     BorderTopColor..BorderLeftColor:
       if TryStrToColor(PropValue, False, NewColor) then
         Props[Index] := NewColor
@@ -2914,12 +2904,6 @@ begin
         Props[Index] := clBlack
       else
         Props[Index] := clNone;
-
-    MarginTop..BorderLeftWidth, piWidth..BorderSpacingVert:
-      Props[Index] := PropValue;
-
-    FontSize:
-      Props[FontSize] := PropValue;
 
     Visibility:
       if PropValue = 'visible' then
@@ -2943,13 +2927,7 @@ begin
 
     piWhiteSpace:
       if TryStrToWhiteSpace(PropValue,WhiteSpaceStyle) then
-      begin
         Props[piWhiteSpace] := PropValue;
-      end;
-//      if PropValue = 'nowrap' then
-//        Props[piWhiteSpace] := PropValue
-//      else if PropValue = 'normal' then
-//        Props[piWhiteSpace] := 'normal';
 
     FontVariant:
       if PropValue = 'small-caps' then
@@ -2957,23 +2935,12 @@ begin
       else if PropValue = 'normal' then
         Props[FontVariant] := 'normal';
 
-    BorderTopStyle..BorderLeftStyle:
-      begin
-//        if PropValue <> 'none' then
-//          Props[BorderStyle] := PropValue;
-        Props[Index] := PropValue;
-      end;
-//    BorderStyle:
-//      begin
-//        Props[BorderStyle] := PropValue;
-//        Props[BorderTopStyle] := PropValue;
-//        Props[BorderRightStyle] := PropValue;
-//        Props[BorderBottomStyle] := PropValue;
-//        Props[BorderLeftStyle] := PropValue;
-//      end;
   else
     Props[Index] := PropValue;
   end;
+
+  Important[Index] := IsImportant;
+
 {$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.AddSeparator;
   CodeSiteLogging.CodeSite.Send('Results');
@@ -2983,7 +2950,7 @@ begin
 {$endif}
 end;
 
-procedure TProperties.AddPropertyByName(const PropName, PropValue: ThtString);
+procedure TProperties.AddPropertyByName(const PropName, PropValue: ThtString; IsImportant: Boolean);
 var
   Index: ThtPropIndices;
 begin
@@ -2991,7 +2958,7 @@ begin
   CodeSiteLogging.CodeSite.EnterMethod(Self,'TProperties.AddPropertyByName');
 {$endif}
   if TryStrToPropIndex(PropName, Index) then
-    AddPropertyByIndex(Index, PropValue);
+    AddPropertyByIndex(Index, PropValue, IsImportant);
 {$ifdef JPM_DEBUGGING_STYLES}
   CodeSiteLogging.CodeSite.ExitMethod(Self,'TProperties.AddPropertyByName');
 {$endif}
@@ -3085,7 +3052,7 @@ begin
   end;
 end;
 
-procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString);
+procedure TStyleList.AddModifyProp(const Selector, Prop, Value: ThtString; IsImportant: Boolean);
 {strings are all lowercase here}
 var
   I: Integer;
@@ -3117,103 +3084,30 @@ begin
       Propty := TProperties(Objects[I]); {modify existing property}
       NewProp := False;
     end;
-    case PropIndex of
-      Color:
-        if TryStrToColor(Value, False, NewColor) then
-        begin
-          if Selector = ':link' then
-          begin {changed the defaults to be the same as link}
-            ModifyLinkColor('hover', NewColor);
-            ModifyLinkColor('visited', NewColor);
-          end
-          else if Selector = ':visited' then
-            ModifyLinkColor('hover', NewColor);
-          Propty.Props[PropIndex] := NewColor;
-        end;
-//      BorderColor:
-//        if TryStrToColor(Value, False, NewColor) then
-//        begin
-//          Propty.Props[BorderColor] := NewColor;
-//          Propty.Props[BorderLeftColor] := NewColor;
-//          Propty.Props[BorderTopColor] := NewColor;
-//          Propty.Props[BorderRightColor] := NewColor;
-//          Propty.Props[BorderBottomColor] := NewColor;
-//        end;
 
-      BorderTopColor..BorderLeftColor:
-        if TryStrToColor(Value, False, NewColor) then
-          Propty.Props[PropIndex] := NewColor
-        else if LowerCase(Value) = CurColorStr then
-          Propty.Props[PropIndex] := CurColor_Val;
-
-      BackgroundColor:
-        if TryStrToColor(Value, False, NewColor) then
-          Propty.Props[PropIndex] := NewColor
-        else
-          Propty.Props[PropIndex] := clNone;
-
-      Visibility:
-        if Value = 'visible' then
-          Propty.Props[Visibility] := viVisible
-        else if Value = 'hidden' then
-          Propty.Props[Visibility] := viHidden;
-
-      TextTransform:
-        if Value = 'uppercase' then
-          Propty.Props[TextTransform] := txUpper
-        else if Value = 'lowercase' then
-          Propty.Props[TextTransform] := txLower
-        else
-          Propty.Props[TextTransform] := txNone;
-
-      WordWrap:
-        if Value = 'break-word' then
-          Propty.Props[WordWrap] := Value
-        else
-          Propty.Props[WordWrap] := 'normal';
-
-      piWhiteSpace:
-        if TryStrToWhiteSpace(Value,WhiteSpaceStyle) then
-        begin
-          Propty.Props[piWhiteSpace] := Value;
-        end;
-//        if Value = 'nowrap' then
-//          Propty.Props[piWhiteSpace] := Value
-//        else if Value = 'normal' then
-//          Propty.Props[piWhiteSpace] := 'normal';
-
-      FontVariant:
-        if Value = 'small-caps' then
-          Propty.Props[FontVariant] := Value
-        else if Value = 'normal' then
-          Propty.Props[FontVariant] := 'normal';
-          
-      BorderTopStyle..BorderLeftStyle:
-        begin
-//          if Value <> 'none' then
-//            Propty.Props[BorderStyle] := Value;
-          Propty.Props[PropIndex] := Value;
-        end;
-//      BorderStyle:
-//        begin
-//          Propty.Props[BorderStyle] := Value;
-//          Propty.Props[BorderTopStyle] := Value;
-//          Propty.Props[BorderRightStyle] := Value;
-//          Propty.Props[BorderBottomStyle] := Value;
-//          Propty.Props[BorderLeftStyle] := Value;
-//        end;
-      LineHeight:
-        Propty.Props[PropIndex] := Value;
-    else
-      Propty.Props[PropIndex] := Value;
+    if PropIndex = Color then
+    begin
+      if TryStrToColor(Value, False, NewColor) then
+      begin
+        if Selector = ':link' then
+        begin {changed the defaults to be the same as link}
+          ModifyLinkColor('hover', NewColor);
+          ModifyLinkColor('visited', NewColor);
+        end
+        else if Selector = ':visited' then
+          ModifyLinkColor('hover', NewColor);
+      end;
     end;
+
+    Propty.AddPropertyByIndex(PropIndex, Value, IsImportant);
+
     if NewProp then
       AddObject(Selector, Propty); {it's a newly created property}
     if Pos(':hover', Selector) > 0 then
       LinksActive := True;
     if Selector = 'a' then
     begin
-      AddModifyProp('::link', Prop, Value); {also applies to ::link}
+      AddModifyProp('::link', Prop, Value, IsImportant); {also applies to ::link}
     end;
     if UseQuirksMode then begin
       if (Selector = 'body') and (PropIndex = Color) then begin
