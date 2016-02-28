@@ -702,7 +702,6 @@ type
 
     Fonts: TFontList; {List of FontObj's in this section}
     Justify: ThtJustify; {Left, Centered, Right}
-    //ClearAttr: ThtClearStyle;
     TextWidth: Integer;
     WhiteSpaceStyle: ThtWhiteSpaceStyle;
     FirstLineIndent: Integer;             // Issue 365: public for TRichView
@@ -799,7 +798,6 @@ type
     EmSize, ExSize, FGColor: Integer;
     HasBorderStyle: Boolean;
 
-    //ClearAttr: ThtClearStyle;
     PRec: PtPositionRec; // background image position
     Visibility: ThtVisibilityStyle;
     BottomAuto: Boolean;
@@ -4603,8 +4601,6 @@ begin
     Prop.GetVMarginArrayDefBorder(MargArrayO, clSilver)
   else
     Prop.GetVMarginArray(MargArrayO);
-//  if Prop.GetClear(Clr) then
-//    ClearAttr := Clr;
   HasBorderStyle := Prop.HasBorderStyle;
   FGColor := Prop.Props[Color];
 
@@ -10954,22 +10950,6 @@ begin
       FLPercent := Min(FirstLineIndent, 90);
   end;
 
-//  if Assigned(Attr) then
-//  begin
-//    if Attr.Find(ClearSy, T) then
-//    begin
-//      S := LowerCase(T.Name);
-//      if (S = 'left') then
-//        ClearAttr := clLeft
-//      else if (S = 'right') then
-//        ClearAttr := clRight
-//      else
-//        ClearAttr := clAll;
-//    end;
-//  end;
-//  if Prop.GetClear(Clr) then
-//    ClearAttr := Clr;
-
   if Prop.Props[TextAlign] = 'right' then
     Justify := Right
   else if Prop.Props[TextAlign] = 'center' then
@@ -11029,7 +11009,6 @@ begin
   FormControls := TFormControlObjList.CreateCopy(Parent, T.FormControls);
   Lines := TFreeList.Create;
   Justify := T.Justify;
-//  ClearAttr := T.ClearAttr;
   LineHeight := T.LineHeight;
   FirstLineIndent := T.FirstLineIndent;
   FLPercent := T.FLPercent;
