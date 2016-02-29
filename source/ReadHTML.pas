@@ -1,7 +1,7 @@
 {
-Version   11.6
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 *********************************************************
 *                                                       *
@@ -73,6 +73,8 @@ ANGUS March 2012 - fixed THtmlParser.DoMeta to handle meta without http-equiv="C
 
 }
 
+{-$define DEBUGGING_PARSER}
+
 {-$define DO_LI_INLINE}
 {$ifdef DO_LI_INLINE}
 {$else}
@@ -89,6 +91,9 @@ uses
   Windows,
 {$endif}
   SysUtils, Math, Variants, Classes, Graphics, Controls, Contnrs,
+{$ifdef DEBUGGING_PARSER}
+  CodeSiteLogging,
+{$endif}
   HtmlGlobals,
   HtmlBuffer,
   HtmlSymb,
@@ -957,7 +962,7 @@ end;
 procedure THtmlParser.Next;
 {Get the next token}
 
-  procedure GetTag;
+  function GetTag: Boolean;
   {Pick up a Tag or pass a single LessChar}
 
     function GetAttribute(out Sym: TAttrSymb; out St: ThtString; out S: ThtString; out Val: Integer): Boolean;
@@ -1118,7 +1123,7 @@ procedure THtmlParser.Next;
     end;
 
   var
-    EndTag: Boolean;
+    //EndTag: Boolean;
     Compare: ThtString;
     SymStr: ThtString;
     AttrStr: ThtString;
@@ -1127,19 +1132,20 @@ procedure THtmlParser.Next;
     Save: Integer;
     Sym: TAttrSymb;
   begin
+    Result := False;
     Save := PropStack.SIndex;
     TagIndex := PropStack.SIndex;
     GetCh;
     case LCh of
       '/':
       begin
-        EndTag := True;
+        Result := True;
         GetCh;
       end;
 
       'a'..'z', 'A'..'Z', '?':
       begin
-        EndTag := False;
+        Result := False;
       end;
     else
       {an odd LessChar}
@@ -1175,7 +1181,7 @@ procedure THtmlParser.Next;
     if Length(Compare) > 0 then
     begin
       if ElementNames.Find(htUpperCase(Compare), I) then
-        if not EndTag then
+        if not Result then
           Sy := PResWord(ElementNames.Objects[I]).Symbol
         else
         begin
@@ -1206,13 +1212,15 @@ procedure THtmlParser.Next;
       GetCh;
   end;
 
-
+var
+  EndTag: Boolean;
 begin {already have fresh character loaded here}
   LCToken.Clear;
   IsXhtmlEndSy := False;
+  EndTag := False;
   case LCh of
     '<':
-      GetTag;
+      EndTag := GetTag;
 
     #1..#8:
       begin
@@ -1226,6 +1234,21 @@ begin {already have fresh character loaded here}
     Sy := StringSy;
     CollectNormalText(LCToken);
   end;
+
+{$ifdef DEBUGGING_PARSER}
+xxx
+  case Sy of
+    StringSy: CodeSite.SendMsg('THtmlParser.Next: ''' + LcToken.S + '''');
+    EofSy:    CodeSite.SendMsg('THtmlParser.Next: EOF');
+  else
+    if EndTag then
+      CodeSite.SendMsg('THtmlParser.Next: </' + SymbToStr(Sy) + '>')
+    else if IsXhtmlEndSy then
+      CodeSite.SendMsg('THtmlParser.Next: <' + SymbToStr(Sy) + '/>')
+    else
+      CodeSite.SendMsg('THtmlParser.Next: <' + SymbToStr(Sy) + '>');
+  end;
+{$endif}
 end;
 
 { Add Properties to the PropStack. }
