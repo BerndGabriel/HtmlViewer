@@ -477,7 +477,7 @@ procedure ThtGpImage.LoadFromFile(const Filename: string{; TmpFile: boolean = Fa
 var
   err: GpStatus;
 begin
-  err := GdipLoadImageFromFile(PWideChar(FileName), fHandle);
+  err := GdipLoadImageFromFile(PWideChar(WideString(FileName)), fHandle);
   if err <> Ok then
     if GetLastError = 2 then
       raise EGDIPlus.CreateFmt('Image file "%s" not found. GDI error %s', [FileName, GetStatus(err)])
