@@ -1,7 +1,7 @@
 {
 Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -5542,23 +5542,25 @@ begin {TBlock.DrawLogic1}
     pdInline:
       DrawLogicInline;
 
-    pdBlock:
-      DrawLogicAsBlock;
+    pdNone:
+    begin
+      SectionHeight := 0;
+      DrawHeight := 0;
+      ContentBot := 0;
+      DrawBot := 0;
+      MaxWidth := 0;
+      Result := 0;
 
+      //>-- DZ
+      DrawRect.Left   := X;
+      DrawRect.Top    := DrawTop;
+      DrawRect.Right  := DrawRect.Left + ContentWidth;
+      DrawRect.Bottom := DrawRect.Top + SectionHeight;
+    end;
   else
-    //pdNone:
-    SectionHeight := 0;
-    DrawHeight := 0;
-    ContentBot := 0;
-    DrawBot := 0;
-    MaxWidth := 0;
-    Result := 0;
-
-    //>-- DZ
-    DrawRect.Left   := X;
-    DrawRect.Top    := DrawTop;
-    DrawRect.Right  := DrawRect.Left + ContentWidth;
-    DrawRect.Bottom := DrawRect.Top + SectionHeight;
+//    pdBlock:
+//    pdTable:
+      DrawLogicAsBlock;
   end;
 
 {$IFDEF JPM_DEBUGGING_LOGIC}
@@ -5743,12 +5745,13 @@ begin
     pdInline:
       DrawInline;
 
-    pdBlock:
-      DrawAsBlock;
+    pdNone:
+      Result := 0;
 
   else
-    //pdNone:
-    Result := 0;
+//    pdBlock:
+//    pdTable:
+      DrawAsBlock;
   end;
 end;
 
@@ -5836,8 +5839,17 @@ begin
   if OpenRgn then
   begin
     SaveRgn1 := CreateRectRgn(0, 0, 1, 1);
-    GetClipRgn(Canvas.Handle, SaveRgn1);
-    SelectClipRgn(Canvas.Handle, 0);
+    case GetClipRgn(Canvas.Handle, SaveRgn1) of
+      -1, // failed to get the clip region
+       0: // there is no clip region
+        begin
+          DeleteObject(SaveRgn1);
+          SaveRgn1 := 0;
+        end;
+    else
+      //1: got the clip region
+      SelectClipRgn(Canvas.Handle, 0);
+    end;
   end;
   try
     if (MyRect.Top <= ARect.Bottom) and (MyRect.Bottom >= ARect.Top) then
@@ -5933,7 +5945,7 @@ begin
     end;
     DrawBlockBorder(Canvas, MyRect, PdRect);
   finally
-    if OpenRgn then
+    if SaveRgn1 <> 0 then
     begin
       SelectClipRgn(Canvas.Handle, SaveRgn1);
       DeleteObject(SaveRgn1);

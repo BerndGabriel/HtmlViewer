@@ -869,9 +869,9 @@ begin
   MemDC := GDICheck(CreateCompatibleDC(DstDC));
   try
     MemBmp := GDICheck(CreateCompatibleBitmap(SrcDC, SrcW, SrcH));
+    SaveObj := SelectObject(MemDC, MemBmp);
+    SavePal := SelectPalette(SrcDC, SystemPalette16, False);
     try
-      SaveObj := SelectObject(MemDC, MemBmp);
-      SavePal := SelectPalette(SrcDC, SystemPalette16, False);
       SelectPalette(SrcDC, SavePal, False);
       if SavePal <> 0 then
         SavePal := SelectPalette(MemDC, SavePal, True)
