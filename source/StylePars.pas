@@ -301,7 +301,7 @@ var
 type
   ThtTermCharKind = (tckNone, tckGood, tckBad);
 
-  function GetTermCharKind(LCh: ThtChar): ThtTermCharKind; {$ifdef UseInline} inline; {$endif}
+  function GetTermCharKind(LCh: ThtChar): ThtTermCharKind;
   begin
     if Pos(LCh, GoodTermChars) > 0 then
       Result := tckGood
