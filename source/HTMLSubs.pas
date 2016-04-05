@@ -1667,9 +1667,7 @@ uses
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
 {$ENDIF}
-{$IFNDEF NoTabLink}
   HtmlView,
-{$endif}
 {$ifdef Compiler28_Plus}
  System.NetEncoding,
 {$endif}
