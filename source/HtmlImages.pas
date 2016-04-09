@@ -31,13 +31,13 @@ unit HtmlImages;
 interface
 
 uses
+  SysUtils, Classes,
 {$ifdef LCL}
   LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
 {$else}
   Windows, Jpeg,
 {$endif}
-  SysUtils, Classes, Graphics, Forms,
-  Controls,
+  Graphics, Forms, Controls,
   //Messages,
   //Variants,
   Types,
@@ -320,11 +320,11 @@ procedure DrawBackground(ACanvas: TCanvas; ARect: TRect; XStart, YStart, XLast, 
 
 
 {$IFNDEF NoGDIPlus}
-procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer); overload;
-procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY, SrcX, SrcY, SrcW, SrcH: Integer); overload;
-procedure StretchDrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer);
-procedure PrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer; ScaleX: single = 1.0; ScaleY: single = 1.0);
-procedure StretchPrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; ScaleX, ScaleY: Single);
+procedure DrawGpImage(Handle: HDC; Image: ThtGpImage; DestX, DestY: Integer); overload;
+procedure DrawGpImage(Handle: HDC; Image: ThtGpImage; DestX, DestY, SrcX, SrcY, SrcW, SrcH: Integer); overload;
+procedure StretchDrawGpImage(Handle: HDC; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer);
+procedure PrintGpImageDirect(Handle: HDC; Image: ThtGpImage; DestX, DestY: Integer; ScaleX: single = 1.0; ScaleY: single = 1.0);
+procedure StretchPrintGpImageDirect(Handle: HDC; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; ScaleX, ScaleY: Single);
 procedure StretchPrintGpImageOnColor(Canvas: TCanvas; Image: ThtGpImage; DestX, DestY, DestW, DestH: Integer; Color: TColor = clWhite);
 {$ENDIF NoGDIPlus}
 
@@ -352,7 +352,7 @@ type
     InfoSize: Integer;
     Image: Pointer;
     ImageSize: Integer;
-    FHandle: THandle;
+    FHandle: HGLOBAL;
     procedure InitializeBitmapInfoHeader(Bitmap: HBITMAP);
     procedure GetDIBX(DC: HDC; Bitmap: HBITMAP; Palette: HPALETTE);
     procedure Allocate(Size: Integer);
@@ -1237,11 +1237,7 @@ var
   OldBrush: HBrush;
   OldPal: HPalette;
   DC: HDC;
-  OldBack, OldFore: TColor;
-//  Bitmap: TBitmap;
-//  {$IFNDEF NoGDIPlus}
-//  Graphics: TGpGraphics;
-//  {$ENDIF NoGDIPlus}
+  OldBack, OldFore: TColorRef;
 begin
   DC := ACanvas.handle;
   if DC <> 0 then
@@ -1447,7 +1443,7 @@ type
   public
     Ptr: Pointer;
     ASize: Integer;
-    AHandle: THandle;
+    AHandle: HGLOBAL;
   end;
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
@@ -1538,7 +1534,7 @@ procedure PrintTransparentBitmap3(Canvas: TCanvas; X, Y, NewW, NewH: Integer;
 }
 var
   DC: HDC;
-  hRgn, OldRgn: THandle;
+  Rgn, OldRgn: HRGN;
   Rslt: Integer;
   XForm: TXForm;
   SizeV, SizeW: TSize;
@@ -1596,22 +1592,22 @@ begin
       XForm.edy := VF * Y;
 
     {Find the region for the white area of the Mask}
-      hRgn := BitmapToRegion(AMask, @XForm, $FFFFFF);
-      if hRgn <> 0 then {else nothing to output--this would be unusual}
+      Rgn := BitmapToRegion(AMask, @XForm, $FFFFFF);
+      if Rgn <> 0 then {else nothing to output--this would be unusual}
       begin
         OldRgn := CreateRectRgn(0, 0, 1, 1); {a valid region is needed for the next call}
         Rslt := GetClipRgn(DC, OldRgn); {save the Old clip region}
         try
           if Rslt = 1 then
-            CombineRgn(hRgn, hRgn, OldRgn, RGN_AND);
-          SelectClipRgn(DC, hRgn);
+            CombineRgn(Rgn, Rgn, OldRgn, RGN_AND);
+          SelectClipRgn(DC, Rgn);
           PrintBitmap(Canvas, X, Y, NewW, NewH, ABitmap);
         finally
           if Rslt = 1 then
             SelectClipRgn(DC, OldRgn)
           else
             SelectClipRgn(DC, 0);
-          DeleteObject(hRgn);
+          DeleteObject(Rgn);
           DeleteObject(OldRgn);
         end;
       end;
@@ -1628,7 +1624,7 @@ end;
 
 {$IFNDEF NoGDIPlus}
 
-procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer);
+procedure DrawGpImage(Handle: HDC; Image: ThtGpImage; DestX, DestY: Integer);
 {Draws the entire image as specified at the point specified}
 var
   g: ThtGpGraphics;
@@ -1641,7 +1637,7 @@ begin
   g.Free;
 end;
 
-procedure DrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY,
+procedure DrawGpImage(Handle: HDC; Image: ThtGpImage; DestX, DestY,
   SrcX, SrcY, SrcW, SrcH: Integer);
 {Draw a portion of the image at DestX, DestY.  No stretching}
 var
@@ -1655,7 +1651,7 @@ begin
   g.Free;
 end;
 
-procedure StretchDrawGpImage(Handle: THandle; Image: ThtGpImage; DestX, DestY,
+procedure StretchDrawGpImage(Handle: HDC; Image: ThtGpImage; DestX, DestY,
   DestW, DestH: Integer);
 {Draws the entire image in the rectangle specified}
 var
@@ -1669,7 +1665,7 @@ begin
   g.Free;
 end;
 
-procedure StretchPrintGpImageDirect(Handle: THandle; Image: ThtGpImage;
+procedure StretchPrintGpImageDirect(Handle: HDC; Image: ThtGpImage;
   DestX, DestY, DestW, DestH: Integer;
   ScaleX, ScaleY: single);
 {Prints the entire image at the point specified with the height and width specified}
@@ -1703,7 +1699,7 @@ begin {Draw image on white background first, then print}
   bg.Free;
 end;
 
-procedure PrintGpImageDirect(Handle: THandle; Image: ThtGpImage; DestX, DestY: Integer;
+procedure PrintGpImageDirect(Handle: HDC; Image: ThtGpImage; DestX, DestY: Integer;
   ScaleX, ScaleY: single);
 {Prints the entire image as specified at the point specified}
 var

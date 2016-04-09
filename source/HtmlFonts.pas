@@ -251,7 +251,7 @@ end;
 function ThtFontCache.GetFontLike(var Font: ThtFontInfo): ThtFont;
 var
   SameFont: ThtFont;
-  Save: THandle;
+  Save: HFONT;
   SaveCharSet: TFontCharSet;
   tm: TTextmetric;
   DC: HDC;

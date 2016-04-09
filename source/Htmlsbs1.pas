@@ -1060,7 +1060,7 @@ procedure TOptionsFormControlObj.AddStr(const S: ThtString; Selected: boolean;
 var
   Opt: TOptionObj;
   DC: HDC;
-  OldFont: THandle;
+  OldFont: HFONT;
   ExtS: TSize;
   S1, S2: ThtString;
 begin

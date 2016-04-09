@@ -116,7 +116,7 @@ type
     function getPreviewPrintArea: TBegaRect;
     function getPrintArea: TBegaRect; // in pixels
     function getPrintMargins: TRect; // FPrintMargins in pixels
-    procedure doBeforeFirstPage(out PreviewArea: TBegaRect; out WDpi: Integer; out hrgnClip: THandle);
+    procedure doBeforeFirstPage(out PreviewArea: TBegaRect; out WDpi: Integer; out hrgnClip: HRGN);
     function getPreviewPaperArea: TBegaRect;
     function getPaperArea: TBegaRect;
     function printer2preview(Value: TBegaRect): TBegaRect;
@@ -293,7 +293,7 @@ end;
 procedure TBegaMetaFilePrinter.doBeforeFirstPage(
   out PreviewArea: TBegaRect;
   out WDpi: Integer;
-  out hrgnClip: THandle);
+  out hrgnClip: HRGN);
 var
   Area: TBegaRect;
 begin
@@ -372,7 +372,7 @@ procedure TBegaMetaFilePrinter.preview(Printable: IBegaPrintable);
 var
   DC: HDC;
   Done: boolean;
-  hrgnClip: THandle;
+  hrgnClip: HRGN;
   PreviewArea: TBegaRect;
   PrintedHeight: Integer;
   PrintedWidth: Integer;
@@ -448,7 +448,7 @@ var
   CurrentPage: Integer;
   DC: HDC;
   Done: boolean;
-  hrgnClip: THandle;
+  hrgnClip: HRGN;
   NoPrintCanvas: TCanvas;
   PreviewArea: TBegaRect;
   PrintedHeight: Integer;

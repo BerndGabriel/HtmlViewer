@@ -3207,8 +3207,8 @@ procedure THtmlViewer.DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeig
    XLast, YLast   Tiling stops here.
   }
   var
-    OldBrush: HBrush;
-    OldPal: HPalette;
+    OldBrush: HBRUSH;
+    OldPal: HPALETTE;
     DC: HDC;
     OldBack, OldFore: TColor;
   begin
@@ -3762,7 +3762,7 @@ var
   procedure WhiteoutArea(Canvas: TCanvas; Y: Integer);
   {White out excess printing.  Y is top of the bottom area to be blanked.}
   var
-    hrgnClip1: THandle;
+    hrgnClip1: HRGN;
   begin
     if Mode = ppNoOutput then
       exit;
@@ -3846,9 +3846,7 @@ var
   MRightPrn: Integer;
   MTopPrn: Integer;
   MBottomPrn: Integer;
-  hrgnClip: THandle;
-  hrgnClip1: THandle;
-  hrgnClip2: THandle;
+  hrgnClip, hrgnClip1, hrgnClip2: HRGN;
   Align: Integer;
   ScaledPgWid: Integer;
   FootViewer, HeadViewer: THtmlViewer;

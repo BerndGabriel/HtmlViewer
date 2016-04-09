@@ -112,7 +112,7 @@ type
     State: TvwPrinterState;
     DC: HDC;
     DevMode: PDeviceMode;
-    DeviceMode: THandle;
+    DeviceMode: HGLOBAL;
     procedure SetState(Value: TvwPrinterState);
     function GetHandle: HDC;
   protected
@@ -363,7 +363,7 @@ end;
 
 {$ifdef LCL}
 {$else}
-function CopyData(Handle: THandle): THandle;
+function CopyData(Handle: HGLOBAL): HGLOBAL;
 var
   Src, Dest: PByte;
   Size: Integer;
@@ -398,7 +398,7 @@ var
 {$ifdef LCL}
   PrnDev: TPrinterDevice;
 {$else}
-  TmpDeviceMode: THandle;
+  TmpDeviceMode: HGLOBAL;
 {$endif}
 begin
   if Value <> State then

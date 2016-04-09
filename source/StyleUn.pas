@@ -1038,7 +1038,7 @@ function TranslateCharset(CS: TFontCharset): TFontCharset;
  {$ifdef UseInline} inline; {$endif}
 // extracted from TProperties.AssignCharSetAndCodePage()
 var
-  Save: THandle;
+  Save: HFONT;
   tm: TTextmetric;
   DC: HDC;
   Font: TFont;

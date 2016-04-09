@@ -1206,7 +1206,7 @@ end;
 
 procedure InitFlatSB;
 var
-  handle : THandle;
+  handle : HMODULE;
 begin
   handle:=GetModuleHandle('comctrl32.dll');
   if handle<>0 then

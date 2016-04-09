@@ -141,7 +141,7 @@ var
 
 var
   GLoadedMsImg : Boolean = False;
-  GHandleMsImg : THandle = INVALID_HANDLE_VALUE;
+  GHandleMsImg : HMODULE = INVALID_HANDLE_VALUE;
 
 {$endif MsWindows}
 implementation

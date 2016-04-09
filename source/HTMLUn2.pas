@@ -199,7 +199,7 @@ type
   TMapArea = class(TObject)
   private
     FHRef: ThtString;
-    FRegion: THandle;
+    FRegion: HRGN;
     FTarget: ThtString;
     FTitle: ThtString;
   public
@@ -2731,7 +2731,7 @@ var
   InPath: boolean;
   PenType, Start: Integer;
   StyleSet: set of ThtBorderStyle;
-  OuterRegion, InnerRegion: THandle;
+  OuterRegion, InnerRegion: HRGN;
   Brush: TBrush;
 
 begin
