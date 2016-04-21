@@ -3,7 +3,10 @@ Welcome at GitHub.
 --------------------------------------------------------------------------------
 
 If you're coming from the HtmlViewer-SVN at Google Code you now find the same 
-code and revisions of SVN-"trunk" in my GitHub-default branch "HtmlViewer-11.5".
+code and revisions of SVN-"trunk" in my GitHub branch "HtmlViewer-11.5".
+
+The current version is 11.6 in the default branch "HtmlViewer-11.6".
+The next version is growing up in branch "HtmlViewer-11.6-to-11.7".
 
 Developers under Windows might want to use Tortoise-GIT or "Git Gui" to keep 
 their sources up-to-date.
