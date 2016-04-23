@@ -280,6 +280,21 @@ const
   CrLfTab     = ThtString(#13#10#9);
   NullRect: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
 
+{$ifdef MSWindows}
+  FontSerif   = ThtString('Times New Roman');
+  FontMono    = ThtString('Courier New');
+  FontSans    = ThtString('Arial');
+  FontCursive = ThtString('Lucida Handwriting');
+  FontHelvet  = ThtString('Arial');
+{$endif}
+{$ifdef Linux}
+  FontSerif   = ThtString('Serif');
+  FontMono    = ThtString('Monospace');
+  FontSans    = ThtString('Sans');
+  FontHelvet  = ThtString('Sans');
+  FontCursive = ThtString('Sans');
+{$endif}
+
 {$ifdef LCL}
 const
   HWND_MESSAGE = HWND(-3);

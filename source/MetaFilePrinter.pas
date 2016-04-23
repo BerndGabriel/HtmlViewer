@@ -559,7 +559,7 @@ begin
   if FCurCanvas = nil then
   begin
     NewCanvas.Font.PixelsPerInch := Screen.PixelsPerInch;
-    NewCanvas.Font.Name := 'Arial';
+    NewCanvas.Font.Name := FontSans;
     NewCanvas.Font.Size := 10;
     NewCanvas.Brush.Style := bsClear;
   end;

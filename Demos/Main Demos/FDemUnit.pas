@@ -1004,7 +1004,7 @@ end;
 const
   HFText: ThtString =
     '<html><head><style>'+
-    'body, td  {font: Arial 8pt;}'+
+    'body, td  {font: sans-serif 8pt;}'+
     '</style></head>'+
     '<body marginwidth="0">'+
     '<table border="0" cellspacing="2" cellpadding="1" width="100%">'+

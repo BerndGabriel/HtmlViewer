@@ -2996,8 +2996,8 @@ begin
   DefVisitedLinkColor := clPurple;
   VisitedMaxCount := 50;
   DefFontSize := 12;
-  DefFontName := 'Times New Roman';
-  DefPreFontName := 'Courier New';
+  DefFontName := FontSerif;
+  DefPreFontName := FontSans;
   ImageCacheCount := 5;
   QuirksMode := qmStandards;
   LoadCursor := crHourGlass;

@@ -2719,8 +2719,8 @@ var
 
   function NextFontName: ThtString;
   const
-    Generic1: array[1..AMax] of ThtString = ('serif', 'monospace', 'sans-serif', 'cursive', 'Helvetica');
-    Generic2: array[1..AMax] of ThtString = ('Times New Roman', 'Courier New', 'Arial', 'Lucida Handwriting', 'Arial');
+    Generic1: array[1..AMax] of ThtString = ('serif'  , 'monospace', 'sans-serif', 'cursive'  , 'helvetica');
+    Generic2: array[1..AMax] of ThtString = (FontSerif, FontMono   , FontSans    , FontCursive, FontHelvet );
   var
     I: Integer;
   begin

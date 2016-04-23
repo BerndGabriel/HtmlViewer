@@ -1001,7 +1001,7 @@ end;
 
 { HTML for print header and footer }
 const
-  HFText: string = '<html><head><style>' + 'body  {font: Arial 8pt;}' +
+  HFText: string = '<html><head><style>' + 'body  {font: sans-serif 8pt;}' +
     '</style></head>' + '<body marginwidth="0">' +
     '<table border="0" cellspacing="2" cellpadding="1" width="100%">' + '<tr>' +
     '<td>#left</td><td align="right">#right</td>' + '</tr>' +

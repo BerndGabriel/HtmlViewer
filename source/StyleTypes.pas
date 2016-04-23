@@ -793,8 +793,9 @@ function StrToFontName(const Str: ThtString): ThtString;
   procedure TranslateGenericFontName(var Str: ThtString);
   const
     AMax = 5;
-    Generic1: array[1..AMax] of ThtString = ('serif', 'monospace', 'sans-serif', 'cursive', 'helvetica');
-    Generic2: array[1..AMax] of ThtString = ('Times New Roman', 'Courier New', 'Arial', 'Lucida Handwriting', 'Arial');
+  const
+    Generic1: array[1..AMax] of ThtString = ('serif'  , 'monospace', 'sans-serif', 'cursive'  , 'helvetica');
+    Generic2: array[1..AMax] of ThtString = (FontSerif, FontMono   , FontSans    , FontCursive, FontHelvet );
   var
     I: Integer;
     F: ThtString;

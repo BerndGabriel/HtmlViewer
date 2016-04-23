@@ -60,7 +60,7 @@ uses
    Vcl.ActnPopup,
    {$endif}
   idLogfile,
-  HtmlGlobals;
+  HtmlGlobals, System.ImageList;
 
 const
   (*UsrAgent = 'Mozilla/4.0 (compatible; Indy Library)';*)
@@ -1921,7 +1921,7 @@ var
   AFont: TFont;
 begin
   AFont := TFont.Create;
-  AFont.Name := 'Arial';
+  AFont.Name := FontSans;
   AFont.Size := 8;
   with Canvas do
   begin
@@ -1944,7 +1944,7 @@ var
   AFont: TFont;
 begin
   AFont := TFont.Create;
-  AFont.Name := 'Arial';
+  AFont.Name := FontSans;
   AFont.Size := 8;
   with Canvas do
   begin

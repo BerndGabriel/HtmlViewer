@@ -255,7 +255,7 @@ procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject;
  number and date so the content will change for each page.}
 const
   Text =  '<html><head><style>'+
-            'body  {font: Arial 10pt bold;}'+
+            'body  {font: sans-serif 10pt bold;}'+
           '</style></head>'+
           '<body marginwidth="0" bgcolor="Pink">'+
           '<table border="0" cellspacing="2" cellpadding="1" width="100%">'+

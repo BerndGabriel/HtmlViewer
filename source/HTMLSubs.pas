@@ -2992,7 +2992,7 @@ begin
     begin
       if FAlt <> '' then {Alt text and no size specified, take as much space as necessary}
       begin
-        Canvas.Font.Name := 'Arial'; {use same font as in Draw}
+        Canvas.Font.Name := FontSans; {use same font as in Draw}
         Canvas.Font.Size := 8;
         ARect := Rect(0, 0, 0, 0);
         DrawTextW(Canvas.Handle, PWideChar(FAlt + CRLF), -1, ARect, DT_CALCRECT);
@@ -3174,7 +3174,7 @@ begin
   begin
     Brush.Style := bsClear;
     Font.Size := 8;
-    Font.Name := 'Arial'; {make this a property?}
+    Font.Name := FontSans; {make this a property?}
     Font.Style := Font.Style - [fsBold];
   end;
 
@@ -15791,7 +15791,7 @@ begin
         try
           SaveFont.Assign(Canvas.Font);
           Canvas.Font.Size := 8;
-          Canvas.Font.Name := 'Arial';
+          Canvas.Font.Name := FontSans;
           WrapTextW(Canvas, X + 5, Y + 5, X + ClientWidth - 5, Y + ClientHeight - 5, FAlt);
         finally
           Canvas.Font := SaveFont;

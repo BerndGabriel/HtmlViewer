@@ -4,7 +4,7 @@ object Form1: TForm1
   Top = 178
   Width = 762
   Caption = 'Frame Demo'
-  ClientHeight = 485
+  ClientHeight = 505
   ClientWidth = 762
   Font.Height = -13
   Font.Name = 'System'
@@ -13,18 +13,18 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '1.4.0.4'
+  LCLVersion = '1.0.10.0'
   object FrameViewer: TFrameViewer
     Left = 0
-    Height = 431
+    Height = 451
     Top = 27
     Width = 762
     CharSet = DEFAULT_CHARSET
     CodePage = 0
     DefBackground = clWindow
-    DefFontName = 'Times New Roman'
+    DefFontName = 'Serif'
     DefHotSpotColor = clNavy
-    DefPreFontName = 'Courier New'
+    DefPreFontName = 'Monospace'
     fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
     HistoryIndex = 0
     HistoryMaxCount = 6
@@ -109,7 +109,7 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 0
     Height = 27
-    Top = 458
+    Top = 478
     Width = 762
     Align = alBottom
     Alignment = taLeftJustify

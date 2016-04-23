@@ -110,7 +110,7 @@ uses
     XpMan,
 {$IFEND}
 {$IFEND}
-    HtmlGlobals;
+    HtmlGlobals, System.ImageList;
 
 const
 //    UsrAgent     = 'Mozilla/4.0 (compatible; MSIE 5.0; Windows 98)';
@@ -2075,7 +2075,7 @@ var
     AFont : TFont;
 begin
     AFont      := TFont.Create;
-    AFont.Name := 'Arial';
+    AFont.Name := FontSans;
     AFont.Size := 8;
     with Canvas do begin
         Font.Assign(AFont);
@@ -2096,7 +2096,7 @@ var
     AFont : TFont;
 begin
     AFont      := TFont.Create;
-    AFont.Name := 'Arial';
+    AFont.Name := FontSans;
     AFont.Size := 8;
     with Canvas do begin
         Font.Assign(AFont);
