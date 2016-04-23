@@ -60,7 +60,10 @@ uses
    Vcl.ActnPopup,
    {$endif}
   idLogfile,
-  HtmlGlobals, System.ImageList;
+{$IF CompilerVersion >= 30}
+    System.ImageList,
+{$IFEND}
+  HtmlGlobals;
 
 const
   (*UsrAgent = 'Mozilla/4.0 (compatible; Indy Library)';*)
@@ -292,6 +295,7 @@ type
     procedure CloseHints;
     procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
+    procedure UpdateCaption;
   public
     { Public declarations }
   {$ifdef UseSSL}
@@ -540,6 +544,31 @@ begin
                 ProgressBarStyle);
 
   Application.OnMessage := AppMessage;
+end;
+
+procedure THTTPForm.UpdateCaption;
+var
+  Viewer: TFrameBrowser;
+  Title, Cap: ThtString;
+begin
+  Viewer := FrameBrowser;
+  if Viewer.DocumentTitle <> '' then
+    Title := Viewer.DocumentTitle
+  else if Viewer.URL <> '' then
+    Title := Viewer.URL
+  else if Viewer.CurrentFile <> '' then
+    Title := Viewer.CurrentFile
+  else
+    Title := '';
+
+  Cap := 'FrameBrowser ' + VersionNo + ' Demo using Indy 10';
+  if Title <> '' then
+    Cap := Cap + ' - ' + Title;
+{$ifdef LCL}
+  Caption := UTF8Encode(Cap);
+{$else}
+  Caption := Cap;
+{$endif}
 end;
 
 {----------------THTTPForm.FormDestroy}
@@ -1112,7 +1141,7 @@ begin
         end
         else
           Histories[I].Visible := False;
-    Caption := DocumentTitle;    {keep the Form caption updated}
+    UpdateCaption;
     FrameBrowser.SetFocus;
   end;
 end;
@@ -1149,7 +1178,7 @@ begin
   begin
     UrlComboBox.Text := 'file:///'+DosToHTMLNoSharp(OpenDialog.Filename);
     GetButtonClick(Nil);
-    Caption := FrameBrowser.DocumentTitle;
+    UpdateCaption;
     CurrentLocalFile := FrameBrowser.CurrentFile;
   end;
 end;

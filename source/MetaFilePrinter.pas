@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 ***************************************************************
 *                                                             *
@@ -48,6 +48,7 @@ uses
     {$endif}
   {$endif}
   Classes, Graphics, Printers, SysUtils, Forms,
+  HtmlGlobals,
   vwPrint;
 
 type
