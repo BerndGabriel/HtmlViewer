@@ -561,7 +561,7 @@ begin
   else
     Title := '';
 
-  Cap := 'FrameBrowser ' + VersionNo + ' Demo using Indy 10';
+  Cap := 'FrameBrowser/Indy Demo';
   if Title <> '' then
     Cap := Cap + ' - ' + Title;
 {$ifdef LCL}
@@ -1990,7 +1990,8 @@ procedure THTTPForm.About1Click(Sender: TObject);
 var
   AboutBox: TAboutBox;
 begin
-  AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser Indy Demo', 'TFrameBrowser');
+  AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser Demo', 'TFrameBrowser',
+    'accessing remote data via<h3>' + gsIdProductName + ' ' + gsIdVersion + '</h3>');
   try
     AboutBox.ShowModal;
   finally

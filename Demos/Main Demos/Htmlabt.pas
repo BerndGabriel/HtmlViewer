@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2014 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -45,7 +45,7 @@ type
     BitBtn1: TBitBtn;
     Viewer: THTMLViewer;
   public
-    constructor CreateIt(Owner: TComponent; const ProgName, CompName: string); overload;
+    constructor CreateIt(Owner: TComponent; const ProgName, CompName: string; const Remarks: string = ''); overload;
     constructor CreateIt(Owner: TComponent; const Message: ThtString); overload;
   end;
 
@@ -181,24 +181,27 @@ begin
 end;
 
 
-constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName: string);
+constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName, Remarks: string);
 var
   S: String;
 begin
   inherited Create(Owner);
   inherited Loaded;
-  Viewer.DefFontName := 'MS Sans Serif';
+  Viewer.DefFontName := FontSans;
   Viewer.DefFontSize := 9;
   Viewer.DefFontColor := clNavy;
-  S :='<body text="000080">'+
-    '<center>'+
-    '<h1>'+ProgName+'</h1>'+
-    '<font color="Maroon">A demo program for the '+CompName+' component</font>'+
-    '<h3>Version '+ VersionNo +'</h3>'+
-    '</center>'+
+  S :='<body text="000080">' +
+    '<center>' +
+    '<h1>' + ProgName + '</h1>' +
+    '<font color="Maroon">A demo program for the <b>' + CompName + '</b> component</font>' +
+    '<h3>Version ' + VersionNo + '</h3>' +
+    Remarks +
+    '</center>' +
     ConfigInfo +
     '</body>';
   Viewer.LoadFromString(S);
+  if Viewer.ClientHeight < Viewer.MaxVertical then
+    Height := Height + Viewer.MaxVertical - Viewer.ClientHeight;
 end;
 
 
@@ -209,7 +212,7 @@ begin
   inherited Loaded;
   if Owner is TCustomForm then
     Caption := TCustomForm(Owner).Caption;
-  Viewer.DefFontName := 'Verdana';
+  Viewer.DefFontName := FontSans;
   Viewer.DefFontSize := 12;
   Viewer.DefFontColor := clBlack;
   Viewer.LoadFromString('<body>' + Message + '</body>');

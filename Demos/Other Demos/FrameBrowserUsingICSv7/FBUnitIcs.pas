@@ -721,7 +721,7 @@ begin
   else
     Title := '';
 
-  Cap := 'FrameBrowser ' + VersionNo + ' Demo using ICS ' + Format('%d.%.02d', [TIcsWndControlVersion div 100, TIcsWndControlVersion mod 100]);
+  Cap := 'FrameBrowser/ICS Demo';
   if Title <> '' then
     Cap := Cap + ' - ' + Title;
 {$ifdef LCL}
@@ -2155,8 +2155,10 @@ procedure THTTPForm.About1Click(Sender : TObject);
 var
     AboutBox: TAboutBox;
 begin
-    AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser ICSv7/v8 Demo',
-        'TFrameBrowser');
+    AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser Demo', 'TFrameBrowser',
+        'accessing remote data via<h3>Internet Component Suite ICS ' +
+        Format('%d.%.02d', [TIcsWndControlVersion div 100, TIcsWndControlVersion mod 100]) + '</h3>'
+    );
     try
         AboutBox.ShowModal;
     finally
