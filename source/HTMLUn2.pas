@@ -65,6 +65,9 @@ const
   FmCtl = WideChar(#2);
   ImgPan = WideChar(#4);
   BrkCh = WideChar(#8);
+  htDefFontName = 'Serif';
+  htDefPreFontName = 'Monospace';
+
 
 type
   THtQuirksMode = (qmDetect, qmStandards, qmQuirks);
@@ -552,6 +555,8 @@ type
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
     FQuirksMode : THtQuirksMode;
+    function StoreFontName: Boolean;
+    function StorePreFontName: Boolean;
   protected
     {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
@@ -629,11 +634,11 @@ type
     property CharSet: TFontCharset read FCharSet write SetCharset;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
     property DefFontColor: TColor read FFontColor write SetFontColor default clBtnText;
-    property DefFontName: TFontName read FFontName write SetFontName;
+    property DefFontName: TFontName read FFontName write SetFontName stored StoreFontName;
     property DefFontSize: Integer read FFontSize write SetFontSize default 12;
     property DefHotSpotColor: TColor read FHotSpotColor write SetHotSpotColor default clBlue;
     property DefOverLinkColor: TColor read FOverColor write SetActiveColor default clBlue;
-    property DefPreFontName: TFontName read FPreFontName write SetPreFontName;
+    property DefPreFontName: TFontName read FPreFontName write SetPreFontName stored StorePreFontName;
     property DefVisitedLinkColor: TColor read FVisitedColor write SetVisitedColor default clPurple;
     property HistoryMaxCount: Integer read FHistoryMaxCount write SetHistoryMaxCount;
     property ImageCacheCount: Integer read FImageCacheCount write SetImageCacheCount default 5;
@@ -2996,8 +3001,8 @@ begin
   DefVisitedLinkColor := clPurple;
   VisitedMaxCount := 50;
   DefFontSize := 12;
-  DefFontName := FontSerif;
-  DefPreFontName := FontSans;
+  DefFontName := htDefFontName;
+  DefPreFontName := htDefPreFontName;
   ImageCacheCount := 5;
   QuirksMode := qmStandards;
   LoadCursor := crHourGlass;
@@ -3379,6 +3384,16 @@ end;
 procedure TViewerBase.SetVisitedMaxCount(const Value: Integer);
 begin
   FVisitedMaxCount := Value;
+end;
+
+function TViewerBase.StoreFontName: Boolean;
+begin
+  Result := FFontName <> htDefFontName;
+end;
+
+function TViewerBase.StorePreFontName: Boolean;
+begin
+  Result := FPreFontName <> htDefPreFontName;
 end;
 
 procedure TViewerBase.ViewerDragDrop(Sender, Source: TObject; X, Y: Integer);
