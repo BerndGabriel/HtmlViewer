@@ -9023,12 +9023,15 @@ begin
         BorderColorDarkSy:
           TryStrToColor(Name, False, BorderColorDark);
       end;
-  if Prop.HasBorderSpacing then begin
-    CellSpacingHorz := Prop.GetBorderSpacingHorz;
-    CellSpacingVert := Prop.GetBorderSpacingVert;
-  end else if Prop.Collapse then begin
+  if Prop.Collapse then
+  begin
     CellSpacingHorz := -1;
     CellSpacingVert := -1;
+  end
+  else if Prop.HasBorderSpacing then
+  begin
+    CellSpacingHorz := Prop.GetBorderSpacingHorz;
+    CellSpacingVert := Prop.GetBorderSpacingVert;
   end;
 end;
 
