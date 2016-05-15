@@ -1,7 +1,7 @@
 {
-Version   11.4
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,8 +20,10 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
+Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS and UrlConId*.PAS
 are covered by separate copyright notices located in those modules.
+
+Thanks to the Indy Pit Crew for updating *Id9 to *Id10.
 }
 unit FBUnitId10;
 
@@ -30,13 +32,25 @@ unit FBUnitId10;
 
 {A program to demonstrate the TFrameBrowser component}
 
-
 interface
 
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ShellAPI, Menus, StdCtrls, Buttons, ExtCtrls, htmlun2, CachUnitId,
-  URLSubs, htmlview, htmlsubs, Gauges, mmSystem,
+{$ifdef LCL}
+  LCLIntf, LCLType, LMessages, PrintersDlgs, dynlibs, HtmlMisc,
+{$else}
+  ShellAPI, WinTypes, WinProcs, MPlayer,
+  {$if CompilerVersion >= 15}
+    {$ifndef UseVCLStyles}
+    XpMan,
+    {$endif}
+  {$ifend}
+  {$IF CompilerVersion >= 30}
+      System.ImageList,
+  {$IFEND}
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Menus, StdCtrls, Buttons, ExtCtrls, htmlun2, CachUnitId,
+  URLSubs, htmlview, htmlsubs, mmSystem,
 {$ifdef UseOldPreviewForm}
   PreviewForm,
 {$else UseOldPreviewForm}
@@ -44,25 +58,17 @@ uses
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
   DownLoadId, IniFiles,
-  Readhtml, urlconId10, FramBrwz, FramView, MPlayer, IdBaseComponent,
+  Readhtml, UrlConId10, FramBrwz, FramView, IdBaseComponent,
   IdAntiFreezeBase, IdAntiFreeze, IdGlobal, IdGlobalProtocols,
   ImgList, ComCtrls, ToolWin, IdIntercept,
   IdHTTP, IdComponent, IdIOHandler, IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
   IdTCPConnection, IdTCPClient, IdAuthentication,
-  {$if CompilerVersion >= 15}
-    {$ifndef UseVCLStyles}
-    XpMan,
-    {$endif}
-  {$ifend}
-   {$ifdef UseVCLStyles}
+{$ifdef UseVCLStyles}
    Vcl.Styles,
    Vcl.Themes,
    Vcl.ActnPopup,
-   {$endif}
+{$endif}
   idLogfile,
-{$IF CompilerVersion >= 30}
-    System.ImageList,
-{$IFEND}
   HtmlGlobals;
 
 const
@@ -74,9 +80,9 @@ const
   wm_DownLoad = wm_User+125;
 
 type
-  {$ifdef UseVCLStyles}
+{$ifdef UseVCLStyles}
   TPopupMenu=class(Vcl.ActnPopup.TPopupActionBar);
-  {$endif}
+{$endif}
   ImageRec = class(TObject)
   public
     Viewer: ThtmlViewer;
@@ -145,7 +151,9 @@ type
     SaveUrl: TToolButton;
     ImageList1: TImageList;
     Panel3: TPanel;
+{$ifndef LCL}
     Animate1: TAnimate;
+{$endif}
     StatusBarMain: TStatusBar;
     Gauge: TProgressBar;
     PopupMenu1: TPopupMenu;
@@ -286,15 +294,17 @@ type
     procedure CheckEnableControls;
     procedure ClearProcessing;
     procedure Progress(Num, Den: integer);
+{$ifdef LCL}
+{$else}
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
+    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
+{$endif}
     procedure CheckException(Sender: TObject; E: Exception);
-    procedure HTTPRedirect(Sender: TObject; var Dest: String;
-      var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
+    procedure HTTPRedirect(Sender: TObject; var Dest: String; var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
     procedure SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
     procedure LoadCookies(ACookieCollection: TIdCookieManager);
     procedure CloseHints;
     procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
-    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
     procedure UpdateCaption;
   public
     { Public declarations }
@@ -339,12 +349,16 @@ uses
   IdCTypes,
   {$endif}
   IdURI,
-  HTMLAbt, ProxyDlg, AuthUnit;
+  Htmlabt, ProxyDlg, AuthUnit;
 
 {$ifdef LCL}
   {$R *.lfm}
 {$else}
+  {$IFnDEF FPC}
   {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
   {$if CompilerVersion < 15}
     {$R manifest.res}
   {$ifend}
@@ -487,7 +501,9 @@ begin
   end;
 
 {Load animation from resource}
+{$IFnDEF FPC}
   Animate1.ResName := 'StarCross';
+{$ENDIF}
 
 {$ifdef ver140}   {delphi 6}
   URLComboBox.AutoComplete := False;
@@ -524,7 +540,11 @@ begin
   finally
     IniFile.Free;
   end;
+{$ifdef LCL}
+{$else}
   DragAcceptFiles(Handle, True);
+  Application.OnMessage := AppMessage;
+{$endif}
   Application.OnException := CheckException;
 
 {$ifdef M4Viewer}
@@ -543,7 +563,6 @@ begin
                 GWL_EXSTYLE,
                 ProgressBarStyle);
 
-  Application.OnMessage := AppMessage;
 end;
 
 procedure THTTPForm.UpdateCaption;
@@ -1207,7 +1226,6 @@ var
   PC: array[0..255] of char;
   S, Params: string;
   K: integer;
-  Tmp: string;
 begin
   {$ifdef LogIt}
   LogLine ('HotSpotTargetClick: ' + URL);
@@ -1215,10 +1233,8 @@ begin
   Protocol := GetProtocol(URL);
   if Protocol = 'mailto' then
   begin
-    Tmp := URL + #0;  {for Delphi 1}
   {call mail program}
-  {Note: ShellExecute causes problems when run from Delphi 4 IDE}
-    ShellExecute(Handle, nil, @Tmp[1], nil, nil, SW_SHOWNORMAL);
+    OpenDocument(URL);
     Handled := True;
     Exit;
   end;
@@ -1260,15 +1276,13 @@ begin
       if Ext = 'exe' then
       begin
         Handled := True;
-        ShellExecute(Handle, nil, PChar(S), PChar(Params), nil, sw_Show);
-  //  WinExec(StrPCopy(PC, S+' '+Params), sw_Show);
+        OpenDocument(S);
       end
       else
         if (Ext = 'mid') or (Ext = 'avi')  then
         begin
           Handled := True;
-          ShellExecute(Handle, nil, PChar('MPlayer.exe'), PChar(' /play /close ' +Params), nil, sw_Show);
-  //  WinExec(StrPCopy(PC, 'MPlayer.exe /play /close '+S), sw_Show);
+          OpenDocument('MPlayer.exe');
         end;
     {else ignore other extensions}
     UrlComboBox.Text := URL;
@@ -1335,6 +1349,8 @@ begin
   DiskCache.EraseCache;
 end;
 
+{$ifdef LCL}
+{$else}
 procedure THTTPForm.wmDropFiles(var Message: TMessage);
 {handles dragging of file into browser window}
 var
@@ -1352,6 +1368,7 @@ begin
   end;
   Message.Result := 0;
 end;
+{$endif}
 
 procedure THTTPForm.Exit1Click(Sender: TObject);
 begin
@@ -1500,7 +1517,7 @@ begin
   if not IsFullURL(S) then
     S := CombineURL(URLBase, S);
 
-  ShellAPI.ShellExecute(Handle,nil,PChar(ParamStr(0)),PChar(S),nil,sw_show);
+  OpenDocument(S); { *Konvertiert von ShellExecute* }
 end;
 
 procedure THTTPForm.Find1Click(Sender: TObject);
@@ -1663,8 +1680,11 @@ begin
 end;
 
 procedure THTTPForm.OpenInNewWindowClick(Sender: TObject);
+var
+  URL: ThtString;
 begin
-  ShellAPI.ShellExecute(Handle,nil,PChar(ParamStr(0)),PChar('"'+NewWindowFile+'"'),nil,sw_show);
+  URL := FrameBrowser.ActiveViewer.URL;
+  OpenDocument(URL);
 end;
 
 procedure THTTPForm.SaveURLClick(Sender: TObject);
@@ -1743,8 +1763,11 @@ begin
   URLCombobox.Enabled:=false;
   CancelButton.Enabled:=true;
   ReloadButton.Enabled := False;
+{$ifdef LCL}
+{$else}
   Animate1.Visible := True;
   Animate1.Play(1, Animate1.FrameCount,0);
+{$endif}
   Gauge.Visible := True;
 end;
 
@@ -1754,8 +1777,11 @@ begin
   CancelButton.Enabled:=false;
   ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
   Reloading := False;
+{$ifdef LCL}
+{$else}
   Animate1.Active := False;
   Animate1.Visible := False;
+{$endif}
   Gauge.Visible := False;
 end;
 
@@ -2426,7 +2452,7 @@ begin
   end;
 end;
 
-      {$ifdef LogIt}
+{$ifdef LogIt}
 procedure THTTPForm.LogTStrings(AStrings: TStrings);
 var i : Integer;
 begin
@@ -2460,6 +2486,8 @@ begin
    {$endif}
 end;
 
+{$ifdef LCL}
+{$else}
 //-- BG ---------------------------------------------------------- 16.08.2015 --
 procedure THTTPForm.AppMessage(var Msg: TMsg; var Handled: Boolean);
 var
@@ -2476,6 +2504,6 @@ begin
     end;
   end;
 end;
-
+{$endif}
 end.
 

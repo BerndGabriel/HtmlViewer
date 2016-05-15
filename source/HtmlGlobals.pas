@@ -42,16 +42,14 @@ uses
   Classes, SysUtils, Graphics, Controls,
 {$ifdef LCL}
   LclIntf, LclType, Types, Messages,
-  StdCtrls, Buttons, Forms, Base64,
+  StdCtrls, Buttons, Forms, Base64, Dialogs,
   HtmlMisc,
   WideStringsLcl,
   {$ifdef DebugIt}
     {$message 'HtmlViewer uses LCL standard controls.'}
   {$endif}
 {$else}
-  Consts,
-  StrUtils,
-  StdCtrls, 
+  Consts, StrUtils, StdCtrls, ShellAPI,
   {$ifdef UseTNT}
     {$ifdef DebugIt}
       {$message 'HtmlViewer uses TNT unicode controls.'}
@@ -376,6 +374,16 @@ type
 }
 
 procedure DecodeStream(Input, Output: TStream);
+
+function PromptForFileName(var AFileName: string; const AFilter: string = '';
+  const ADefaultExt: string = ''; const ATitle: string = '';
+  const AInitialDir: string = ''; SaveDialog: Boolean = False): Boolean;
+
+{$else}
+
+// Open a document with the default application associated with it in the system
+function OpenDocument(const APath: ThtString): Boolean;
+
 {$endif}
 
 {$ifndef Compiler17_Plus}
@@ -1123,6 +1131,7 @@ begin
 end;
 
 {$ifdef LCL}
+
 procedure DecodeStream(Input, Output: TStream);
 const
   BufferSize = 999;
@@ -1147,6 +1156,50 @@ begin
     Decoder.Free;
   end;
 end;
+
+function PromptForFileName(var AFileName: string; const AFilter: string = '';
+  const ADefaultExt: string = ''; const ATitle: string = '';
+  const AInitialDir: string = ''; SaveDialog: Boolean = False): Boolean;
+var
+  Dialog: TOpenDialog;
+begin
+  if SaveDialog then
+  begin
+    Dialog := TSaveDialog.Create(nil);
+    Dialog.Options := Dialog.Options + [ofOverwritePrompt];
+  end
+  else
+    Dialog := TOpenDialog.Create(nil);
+  with Dialog do
+  try
+    Title := ATitle;
+    if Length(Title) = 0 then
+      if SaveDialog then
+        Title := 'Select Filename'
+      else
+        Title := 'Select File';
+    Filter := AFilter;
+    if Length(Filter) = 0 then
+      Filter := 'Any File (*.*)|*.*';
+    DefaultExt := ADefaultExt;
+    InitialDir := AInitialDir;
+    FileName := AFileName;
+    Result := Execute;
+    if Result then
+      AFileName := FileName;
+  finally
+    Free;
+  end;
+end;
+
+{$else}
+
+// Open a document with the default application associated with it in the system
+function OpenDocument(const APath: ThtString): Boolean;
+begin
+  Result := ShellExecuteW(0, nil, PWideChar(APath), nil, nil, SW_SHOWNORMAL) > 32;
+end;
+
 {$endif LCL}
 
 {----------------ThtBitmap.GetMask:}

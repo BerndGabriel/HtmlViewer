@@ -1,7 +1,7 @@
 {
-Version   11.6
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -364,12 +364,12 @@ type
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     function CheckNoResize(out Lower, Upper: boolean): boolean; virtual; abstract;
-    procedure LoadFiles(); virtual; abstract;
-    procedure ReLoadFiles(APosition: integer); virtual; abstract;
     procedure UnloadFiles; virtual; abstract;
 
     procedure UpdateFrameList; virtual; abstract;
   public
+    procedure LoadFiles(); virtual; abstract;
+    procedure ReLoadFiles(APosition: integer); virtual; abstract;
     procedure Reload; override;
     procedure InitializeDimensions(X, Y, Wid, Ht: integer); virtual; abstract;
     property LOwner: TSubFrameSetBase read FOwner;

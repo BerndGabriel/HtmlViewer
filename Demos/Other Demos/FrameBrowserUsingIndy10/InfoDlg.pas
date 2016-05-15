@@ -1,10 +1,17 @@
 unit InfoDlg;
 
-interface
 {$include htmlcons.inc}
 {$include options.inc}
+
+interface
+
 uses
-  WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  {$IFnDEF FPC}
+    WinTypes, WinProcs, Messages,
+  {$ELSE}
+    LCLIntf, LCLType,
+  {$ENDIF}
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, Buttons;
 
 type
@@ -23,6 +30,10 @@ var
 
 implementation
 
-{$R *.DFM}
+{$IFnDEF FPC}
+  {$R *.dfm}
+{$ELSE}
+  {$R *.lfm}
+{$ENDIF}
 
 end.

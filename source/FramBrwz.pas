@@ -1,7 +1,8 @@
 {
-Version   11.6
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2016 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -22,9 +23,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
-
-ANGUS - fixed HotSpotClick not normalising URL before adding protocol for links
-
 }
 
 {$I htmlcons.inc}
@@ -58,8 +56,6 @@ type
     
   TbrFormSubmitEvent = procedure(Sender: TObject; Viewer: ThtmlViewer;
     const Action, Target, EncType, Method: ThtString; Results: ThtStringList; var Handled: boolean) of object;
-
-  TFrameBaseOpener = class(TFrameBase);
 
   TbrFrameSet = class;
   TbrSubFrameSet = class;
@@ -246,7 +242,7 @@ end;
 
 procedure TbrFrame.LoadFiles;
 var
-  Item: TFrameBaseOpener;
+  Item: TFrameBase;
   I: integer;
   Upper, Lower: boolean;
   NewURL: ThtString;
@@ -290,7 +286,7 @@ begin
             begin
               for I := 0 to List.Count - 1 do
               begin
-                Item := TFrameBaseOpener(List.Items[I]);
+                Item := TFrameBase(List.Items[I]);
                 Item.LoadFiles;
               end;
               CheckNoresize(Lower, Upper);
@@ -334,7 +330,7 @@ end;
 
 procedure TbrFrame.ReloadFiles(APosition: LongInt);
 var
-  Item: TFrameBaseOpener;
+  Item: TFrameBase;
   I: integer;
   Upper, Lower: boolean;
   Dummy: ThtString;
@@ -352,7 +348,7 @@ begin
       begin
         for I := 0 to List.Count - 1 do
         begin
-          Item := TFrameBaseOpener(List.Items[I]);
+          Item := TFrameBase(List.Items[I]);
           Item.ReloadFiles(APosition);
         end;
         CheckNoresize(Lower, Upper);
@@ -520,7 +516,7 @@ begin
           with FrameSet do
           begin
             for I := 0 to List.Count - 1 do
-              TFrameBaseOpener(List.Items[I]).LoadFiles;
+              TFrameBase(List.Items[I]).LoadFiles;
             CheckNoresize(Lower, Upper);
             if FRefreshDelay > 0 then
               SetRefreshTimer;
@@ -715,7 +711,7 @@ begin
     begin {it's a Frameset html file}
       MasterSet.FrameViewer.ParseFrame(Self, Doc, Url, HandleMeta);
       for I := 0 to List.Count - 1 do
-        TFrameBaseOpener(List.Items[I]).LoadFiles;
+        TFrameBase(List.Items[I]).LoadFiles;
       CalcSizes(Self);
       CheckNoresize(Lower, Upper);
       if FRefreshDelay > 0 then

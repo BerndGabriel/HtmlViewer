@@ -8,9 +8,10 @@
 
 unit UrlConId10;
 
-interface
 {$include htmlcons.inc}
 {$include options.inc}
+
+interface
 
 {*********************************************************}
 {*                                                       *}
@@ -42,10 +43,14 @@ interface
 {* - version 1.0d1: first version                        *}
 {*********************************************************}
 
-{$include htmlcons.inc}
-{$include options.inc}
-uses   WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-       ShellAPI, URLSubs, htmlview, IdHTTP, IdComponent, HTTPAsyncId10, IdCookieManager
+uses
+{$IFnDEF FPC}
+  ShellAPI, WinTypes, WinProcs,
+{$ELSE}
+  LCLIntf, LCLType, LMessages,
+{$ENDIF}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+       URLSubs, htmlview, IdHTTP, IdComponent, HttpAsyncId10, IdCookieManager
 {$ifdef UseSSL}
        , IdIntercept, IdSSLOpenSSL, IdLogFile
 {$endif}
@@ -232,7 +237,7 @@ var
 implementation
 
 uses
-  {$ifdef LogIt}LogWin, {$endif} htmlun2, FBUnitId10, IdURI, IdGlobal;
+  {$ifdef LogIt}LogWin, {$endif} HTMLUn2, FBUnitId10, IdURI, IdGlobal;
 
 constructor TURLConnection.Create;
 begin

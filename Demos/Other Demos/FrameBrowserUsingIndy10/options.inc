@@ -1,10 +1,9 @@
-{$i htmlcons.inc}
+{.$i htmlcons.inc}
 
- {
- options.inc
+{
+options.inc
 
-
-UseSSL - Enables the OpenSourceSSL support (https).
+UseSSL - Enables the OpenSSL support (https).
 
 UseZLib - set this to support ZLib and Gzip http compression.
 

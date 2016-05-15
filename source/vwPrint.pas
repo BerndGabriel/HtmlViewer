@@ -135,24 +135,24 @@ type
   // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
   TMapItem = class(TObject)
   private
-    FKey: Integer;
+    FKey: HDC;
     FValue: Pointer;
   public
-    constructor Create(Key: Integer; Value: Pointer);
+    constructor Create(Key: HDC; Value: Pointer);
   end;
 
   // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
   TMap = class(TObject)
   private
     FItems: TObjectList;
-    function getItem(Index: Integer): TMapItem;
-    property Items[Index: Integer]: TMapItem read getItem;
+    function GetItem(Index: HDC): TMapItem;
+    property Items[Index: HDC]: TMapItem read GetItem;
   public
     constructor Create;
     destructor Destroy; override;
-    function Get(Key: Integer): Pointer;
-    function Put(Key: Integer; Value: Pointer): Pointer;
-    function Remove(Key: Integer): Pointer;
+    function Get(Key: HDC): Pointer;
+    function Put(Key: HDC; Value: Pointer): Pointer;
+    function Remove(Key: HDC): Pointer;
   end;
 
 var
@@ -180,7 +180,7 @@ end;
 { TMapItem }
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --
-constructor TMapItem.Create(Key: Integer; Value: Pointer);
+constructor TMapItem.Create(Key: HDC; Value: Pointer);
 begin
   inherited Create;
   FKey := Key;
@@ -204,7 +204,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.Get(Key: Integer): Pointer;
+function TMap.Get(Key: HDC): Pointer;
 var
   I: Integer;
 begin
@@ -218,13 +218,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.getItem(Index: Integer): TMapItem;
+function TMap.GetItem(Index: HDC): TMapItem;
 begin
   Result := TMapItem(FItems[Index]);
 end;
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.Put(Key: Integer; Value: Pointer): Pointer;
+function TMap.Put(Key: HDC; Value: Pointer): Pointer;
 var
   I: Integer;
 begin
@@ -241,7 +241,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --
-function TMap.Remove(Key: Integer): Pointer;
+function TMap.Remove(Key: HDC): Pointer;
 var
   I: Integer;
 begin

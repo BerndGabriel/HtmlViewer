@@ -43,11 +43,9 @@ config.default
 Thumbs.db
 Demos/Main Demos/bin
 Demos/Main Demos/lib
-Demos/Other Demos/LiveHtml/bin
-Demos/Other Demos/LiveHtml/lib
-Demos/Other Demos/FrameBrowserUsingICSv7/cache
-Demos/Other Demos/FrameBrowserUsingIndy9/cache
-Demos/Other Demos/FrameBrowserUsingIndy10/cache
+Demos/Other Demos/*/bin
+Demos/Other Demos/*/lib
+Demos/Other Demos/*/cache
 package/lib
 package/XE2BCB
 *eay*.dll

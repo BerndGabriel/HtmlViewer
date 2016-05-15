@@ -35,7 +35,7 @@ uses
   LCLVersion, LCLIntf, InterfaceBase,
 {$endif}
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Buttons, ExtCtrls,
-  HtmlGlobals, Htmlview, StdCtrls, HTMLUn2;
+  HtmlGlobals, Htmlview, HTMLUn2;
 
 type
 
@@ -183,7 +183,7 @@ end;
 
 constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName, Remarks: string);
 var
-  S: String;
+  S: string;
 begin
   inherited Create(Owner);
   inherited Loaded;

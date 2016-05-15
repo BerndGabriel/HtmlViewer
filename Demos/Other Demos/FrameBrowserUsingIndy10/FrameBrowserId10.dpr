@@ -1,6 +1,6 @@
 {
-Version   11.5
-Copyright (c) 2014 by HtmlViewer Team
+Version   11.7
+Copyright (c) 2014-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -19,15 +19,26 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Note that the source modules HTMLGIF1.PAS and DITHERUNIT.PAS
+Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS and UrlConId*.PAS
 are covered by separate copyright notices located in those modules.
+
+Thanks to the Indy Pit Crew for updating *Id9 to *Id10.
 }
 
 program FrameBrowserId10;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$R 'fbHelp.res' 'Resources\fbHelp.rc'}
 
 uses
+{$IFnDEF FPC}
+{$ELSE}
+  Interfaces,
+  printer4lazarus,
+{$ENDIF}
   Forms,
   FBUnitId10 in 'FBUnitId10.pas' {HTTPForm},
   HttpAsyncId10 in 'HttpAsyncId10.pas',
@@ -36,17 +47,13 @@ uses
   CachUnitId in 'CachUnitId.pas',
   DownLoadId in 'DownLoadId.pas' {DownLoadForm},
   ProxyDlg in 'ProxyDlg.pas' {ProxyForm},
-  Gopage in '..\..\Main Demos\Gopage.pas' {GoPageForm},
-  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox},
-  PreviewForm in '..\..\Main Demos\PreviewForm.pas' {PreviewForm},
-  PrintStatusForm in '..\..\Main Demos\PrintStatusForm.pas' {PrnStatusForm};
+  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox};
 
-{$R *.RES}
+{$R *.res}
 
 begin
   Application.Initialize;
   Application.CreateForm(THTTPForm, HTTPForm);
   Application.CreateForm(TAuthForm, AuthForm);
-  Application.CreateForm(TGoPageForm, GoPageForm);
   Application.Run;
 end.
