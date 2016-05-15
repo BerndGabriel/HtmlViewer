@@ -1227,7 +1227,7 @@ procedure TFrameBrowser.AssertCanPostRequest(const URL: ThtString);
 begin
   if not SameText(Copy(URL, 1, 7), 'file://') then
     if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
-      raise Exception.Create('Don''t know how to load an URL. Neither OnGetPostRequest nor OnGetPostRequestEx event defined.');
+      raise Exception.Create('Don''t know how to load an URL. Neither OnGetPostRequest nor OnGetPostRequestEx event handler defined.');
 end;
 
 {----------------TFrameBrowser.CheckVisitedLinks}
