@@ -49,8 +49,8 @@ uses
   {$IFEND}
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  Menus, StdCtrls, Buttons, ExtCtrls, htmlun2, CachUnitId,
-  URLSubs, htmlview, htmlsubs, mmSystem,
+  Menus, StdCtrls, Buttons, ExtCtrls, HTMLUn2, CachUnitId,
+  URLSubs, HtmlView, HTMLSubs,
 {$ifdef UseOldPreviewForm}
   PreviewForm,
 {$else UseOldPreviewForm}
@@ -58,17 +58,23 @@ uses
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
   DownLoadId, IniFiles,
-  Readhtml, UrlConId10, FramBrwz, FramView, IdBaseComponent,
+  //ReadHTML,
+  UrlConId10, FramBrwz, FramView, IdBaseComponent,
   IdAntiFreezeBase, IdAntiFreeze, IdGlobal, IdGlobalProtocols,
   ImgList, ComCtrls, ToolWin, IdIntercept,
   IdHTTP, IdComponent, IdIOHandler, IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
   IdTCPConnection, IdTCPClient, IdAuthentication,
+{$ifndef MultiMediaMissing}
+  mmSystem,
+{$endif}
 {$ifdef UseVCLStyles}
    Vcl.Styles,
    Vcl.Themes,
    Vcl.ActnPopup,
 {$endif}
+{$ifdef LogIt}
   idLogfile,
+{$endif}
   HtmlGlobals;
 
 const
@@ -101,10 +107,12 @@ type
     procedure GetAsync;
   end;
 
+{$ifdef LogIt}
   TModIdLogFile = class(TIdLogFile)
   public
       procedure LogWriteString(const AText: string); override;
   end;
+{$endif}
 
   THTTPForm = class(TForm)
     MainMenu1: TMainMenu;
@@ -431,7 +439,7 @@ begin
     Height := 600;
   end;
 
-  Cache := ExtractFilePath(Application.ExeName)+'Cache\';
+  Cache := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName)+'Cache');
   DiskCache := TDiskCache.Create(Cache);
   Self.StatusBarMain.Panels[0].Text := '';
 
@@ -1270,7 +1278,9 @@ begin
     if Ext = 'wav' then
     begin
       Handled := True;
+{$ifndef MultiMediaMissing}
       sndPlaySound(StrPCopy(PC, S), snd_ASync);
+{$endif}
     end
     else
       if Ext = 'exe' then
@@ -1442,13 +1452,17 @@ var
   h1, h2: THandle;
   {$endif}
 begin
-  {$ifdef UseSSL}  {check to see the DLLs for Secure Socket Layer can be found}
+  {$ifdef UseSSL}
+  {$ifdef MSWindows}
+  {check to see the DLLs for Secure Socket Layer can be found}
   h1 := LoadLibrary('libeay32.dll');
   h2 := LoadLibrary('ssleay32.dll');
   if h2 = 0 then begin
     {alternative name for mingw32 versions of OpenSSL}
     h2 := LoadLibrary('libssl32.dll');
   end;
+  FreeLibrary(h1);
+  FreeLibrary(h2);
   if (h1 = 0) or (h2 = 0) then
   begin
     if Monitor1 then
@@ -1457,15 +1471,12 @@ begin
     SSL := Nil;
   end
   else
+  {$endif}
   begin
     SSL := TIdSSLIOHandlerSocketOpenSSL.Create(Nil);
     SSL.SSLOptions.Method := sslvSSLv23;
     SSL.SSLOptions.Mode := sslmClient;
   end;
-  FreeLibrary(h1);
-  FreeLibrary(h2);
-  {$else}
-  //SSL := Nil;
   {$endif}
 
   if (ParamCount >= 1) then
@@ -1901,6 +1912,7 @@ begin
 end;
 
 procedure THTTPForm.PrintPreviewClick(Sender: TObject);
+{$ifndef NoMetaFile}
 var
 {$ifdef UseOldPreviewForm}
   pf: TPreviewForm;
@@ -1927,6 +1939,9 @@ begin
        pf.Free;
     end;
   end;
+{$else !NoMetaFile}
+begin
+{$endif !NoMetaFile}
 end;
 
 procedure THTTPForm.File1Click(Sender: TObject);
@@ -1962,12 +1977,14 @@ end;
 
 procedure THTTPForm.Print1Click(Sender: TObject);
 begin
+{$ifndef NoMetaFile}
   with PrintDialog do
     if Execute then
       if PrintRange = prAllPages then
         FrameBrowser.Print(1, 9999)
       else
         FrameBrowser.Print(FromPage, ToPage);
+{$endif !NoMetaFile}
 end;
 
 procedure THTTPForm.PrintHeader(Sender: TObject; Canvas: TCanvas; NumPage,
@@ -2460,6 +2477,14 @@ begin
         LogLine (AStrings[i]);
   end;
 end;
+
+{ TModIdLogFile }
+
+procedure TModIdLogFile.LogWriteString(const AText: string);
+begin
+  if Active then
+    inherited;
+end;
 {$endif}
 
 procedure THTTPForm.AuthorizationEvent(Sender: TObject;
@@ -2469,14 +2494,6 @@ begin
     with TIdBasicAuthentication(Authentication) do
       ARealm := Realm;
   Handled := False;
-end;
-
-{ TModIdLogFile }
-
-procedure TModIdLogFile.LogWriteString(const AText: string);
-begin
-  if Active then
-    inherited;
 end;
 
 procedure THTTPForm.FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);

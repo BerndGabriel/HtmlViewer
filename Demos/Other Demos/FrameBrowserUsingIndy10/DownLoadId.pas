@@ -36,16 +36,16 @@ uses
 {$ifdef Compiler24_Plus}
   System.Types,
 {$endif}
- {$ifdef TScrollStyleInSystemUITypes}
+{$ifdef TScrollStyleInSystemUITypes}
   System.UITypes,
 {$endif}
-{$IFnDEF FPC}
-  WinTypes, WinProcs,
-{$ELSE}
+{$ifdef LCL}
   LCLIntf, LCLType, LMessages,
+{$ELSE}
+  WinTypes, WinProcs,
 {$ENDIF}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, mmSystem, UrlConId10;
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
+  UrlConId10;
 
 const
   wm_DoIt = wm_User + 111;

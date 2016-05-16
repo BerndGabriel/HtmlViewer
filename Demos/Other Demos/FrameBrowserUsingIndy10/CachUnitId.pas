@@ -37,13 +37,13 @@ unit CachUnitId;
 interface
 
 uses
-  {$IFnDEF FPC}
-    WinTypes, WinProcs,
-  {$ELSE}
+  {$ifdef LCL}
     LCLIntf, LCLType, LMessages,
+  {$ELSE}
+    WinTypes, WinProcs,
   {$ENDIF}
   Messages, SysUtils, Classes, Controls, StdCtrls, Math,
-  htmlview;
+  HtmlView;
 
 const
   MaxCacheEntries = 200;   

@@ -44,68 +44,72 @@ interface
 {*********************************************************}
 
 uses
-{$IFnDEF FPC}
-  ShellAPI, WinTypes, WinProcs,
-{$ELSE}
+{$ifdef LCL}
   LCLIntf, LCLType, LMessages,
-{$ENDIF}
+{$else}
+  ShellAPI, WinTypes, WinProcs,
+{$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-       URLSubs, htmlview, IdHTTP, IdComponent, HttpAsyncId10, IdCookieManager
+  URLSubs, htmlview, IdHTTP, IdComponent, IdCookieManager,
 {$ifdef UseSSL}
-       , IdIntercept, IdSSLOpenSSL, IdLogFile
+  IdIntercept, IdSSLOpenSSL,
 {$endif}
-  {$ifdef UseZLib}
-  , IdCompressorZLib
-  {$endif}
+{$ifdef LogIt}
+  idLogfile,
+{$endif}
+{$ifdef UseZLib}
+  IdCompressorZLib,
+{$endif}
 {$ifdef IncludeZip}
-       , VCLUnZIp, kpZipObj
+  VCLUnZIp, kpZipObj,
 {$endif}
-       ;
+  HttpAsyncId10;
+
 type
-  THttpRequest     = (httpAbort, httpGET, httpPOST, httpHEAD);
-  THttpState       = (httpReady,         httpNotConnected, httpConnected,
-                        httpDnsLookup,     httpDnsLookupDone,
-                        httpWaitingHeader, httpWaitingBody,  httpAborting);
-  THttpRequestDone = procedure (Sender : TObject;
-                                  RqType : THttpRequest;
-                                  Error  : Word) of object;
+  THttpRequest = (httpAbort, httpGET, httpPOST, httpHEAD);
+  THttpState = (httpReady, httpNotConnected, httpConnected, httpDnsLookup,
+    httpDnsLookupDone, httpWaitingHeader, httpWaitingBody, httpAborting);
+  THttpRequestDone = procedure (Sender: TObject; RqType: THttpRequest; Error: Word) of object;
 
   TURLConnection = class(TObject)
   private
-    FHeaderRequestData : TStrings;
+    FHeaderRequestData  : TStrings;
     FHeaderResponseData : TStrings;
-    FInputStream : TMemoryStream;
-    FInputStreamOwn : Boolean; { true if the class ownes the stream }
+    FInputStream        : TMemoryStream;
+    FInputStreamOwn     : Boolean; { true if the class owns the stream }
     procedure SetInputStream(Value: TMemoryStream);
   protected 
-    FOnHeaderEnd      : TNotifyEvent;
-    FOnHeaderData     : TNotifyEvent;
-    FOnDocBegin       : TNotifyEvent;
-    FOnDocEnd         : TNotifyEvent;
-    FOnDocData        : TNotifyEvent;
-    FOnRequestDone    : THttpRequestDone;
-    FOnRedirect       : TIdHTTPOnRedirectEvent;
-    FContentType      : ThtmlFileType;
-    FContentLength    : LongInt;
-    FProxy            : string;
-    FProxyPort        : string;
-    FProxyUser        : string;
-    FProxyPassword    : string;		
-    FUsername         : string;
-    FPassword         : string;
-    FUserAgent        : string;    
-    FCookieManager    : TIdCookieManager;
-    FBasicAuth: boolean;                        
+    FOnHeaderEnd       : TNotifyEvent;
+    FOnHeaderData      : TNotifyEvent;
+    FOnDocBegin        : TNotifyEvent;
+    FOnDocEnd          : TNotifyEvent;
+    FOnDocData         : TNotifyEvent;
+    FOnRequestDone     : THttpRequestDone;
+    FOnRedirect        : TIdHTTPOnRedirectEvent;
+    FContentType       : ThtmlFileType;
+    FContentLength     : LongInt;
+    FProxy             : string;
+    FProxyPort         : string;
+    FProxyUser         : string;
+    FProxyPassword     : string;
+    FUsername          : string;
+    FPassword          : string;
+    FUserAgent         : string;
+    FCookieManager     : TIdCookieManager;
+    FBasicAuth         : boolean;
     FContentTypePost   : String;
-    FSendStream : TMemoryStream;
-    FOwner : TComponent;
-    FReasonPhrase : String;
-    FStatusCode  : integer;
-    FReferer: string;
-    FOnAuthorization: TIdOnAuthorization;
+    FSendStream        : TMemoryStream;
+    FOwner             : TComponent;
+    FReasonPhrase      : String;
+    FStatusCode        : integer;
+    FReferer           : string;
+    FOnAuthorization   : TIdOnAuthorization;
   public
+    class function Getconnection(const URL : String) : TURLConnection;
+
     constructor Create;
     destructor Destroy; override;
+
     procedure Get(const URL: String); virtual; abstract;
     procedure Post(const URL: String); virtual;
     procedure GetAsync(const URL: String); virtual;
@@ -119,48 +123,31 @@ type
     procedure Abort; virtual;
     function ContentType: ThtmlFileType; virtual;
     function ContentLength: LongInt; virtual;
-    class function Getconnection(const URL : String) : TURLConnection;
-    property OnHeaderData    : TNotifyEvent     read  FOnHeaderData
-                                                write FOnHeaderData;
-    property OnHeaderEnd     : TNotifyEvent     read  FOnHeaderEnd
-                                                write FOnHeaderEnd;
-    property OnDocBegin      : TNotifyEvent     read  FOnDocBegin
-                                                write FOnDocBegin;
-    property OnDocData       : TNotifyEvent     read  FOnDocData
-                                                write FOnDocData;
-    property OnDocEnd        : TNotifyEvent     read  FOnDocEnd
-                                                write FOnDocEnd;
-    property OnRequestDone   : THttpRequestDone read  FOnRequestDone
-                                                write FOnRequestDone;
-    property Owner           : TComponent       read  FOwner
-                                                write FOwner;
-    property InputStream     : TMemoryStream    read  FInputStream
-                                                write SetInputStream;
-    property Proxy           : string           read  FProxy
-                                                write FProxy;
-    property ProxyPort       : string           read  FProxyPort
-                                                write FProxyPort;
-    property ProxyUser       : string           read  FProxyUser
-                                                write FProxyUser;
-    property ProxyPassword   : string           read  FProxyPassword
-                                                write FProxyPassword; 
-    property Username        : string           read  FUsername
-                                                write FUsername;
-    property Password        : string           read  FPassword
-                                                write FPassword;
-    property UserAgent       : string           read  FUserAgent    
-                                                write FUserAgent;
-    property OnRedirect: TIdHTTPOnRedirectEvent read  FOnRedirect
-                                                write FOnRedirect;
-    property Referer         : string           read FReferer
-                                                write FReferer;
-    property OnAuthorization:TIdOnAuthorization read FOnAuthorization write FOnAuthorization;
-    property CookieManager: TIdCookieManager read FCookieManager write FCookieManager;
-    property BasicAuth: boolean read FBasicAuth write FBasicAuth;
-    property ContentTypePost: String read FContentTypePost write FContentTypePost;
-    property SendStream: TMemoryStream read FSendStream write FSendStream;
-    property HeaderRequestData : TStrings read FHeaderRequestData;
-    property HeaderResponseData : TStrings read FHeaderResponseData;
+
+    property OnHeaderData      : TNotifyEvent           read  FOnHeaderData      write FOnHeaderData;
+    property OnHeaderEnd       : TNotifyEvent           read  FOnHeaderEnd       write FOnHeaderEnd;
+    property OnDocBegin        : TNotifyEvent           read  FOnDocBegin        write FOnDocBegin;
+    property OnDocData         : TNotifyEvent           read  FOnDocData         write FOnDocData;
+    property OnDocEnd          : TNotifyEvent           read  FOnDocEnd          write FOnDocEnd;
+    property OnRequestDone     : THttpRequestDone       read  FOnRequestDone     write FOnRequestDone;
+    property Owner             : TComponent             read  FOwner             write FOwner;
+    property InputStream       : TMemoryStream          read  FInputStream       write SetInputStream;
+    property Proxy             : string                 read  FProxy             write FProxy;
+    property ProxyPort         : string                 read  FProxyPort         write FProxyPort;
+    property ProxyUser         : string                 read  FProxyUser         write FProxyUser;
+    property ProxyPassword     : string                 read  FProxyPassword     write FProxyPassword;
+    property Username          : string                 read  FUsername          write FUsername;
+    property Password          : string                 read  FPassword          write FPassword;
+    property UserAgent         : string                 read  FUserAgent         write FUserAgent;
+    property OnRedirect        : TIdHTTPOnRedirectEvent read  FOnRedirect        write FOnRedirect;
+    property Referer           : string                 read FReferer            write FReferer;
+    property OnAuthorization   : TIdOnAuthorization     read FOnAuthorization    write FOnAuthorization;
+    property CookieManager     : TIdCookieManager       read FCookieManager      write FCookieManager;
+    property BasicAuth         : Boolean                read FBasicAuth          write FBasicAuth;
+    property ContentTypePost   : String                 read FContentTypePost    write FContentTypePost;
+    property SendStream        : TMemoryStream          read FSendStream         write FSendStream;
+    property HeaderRequestData : TStrings               read FHeaderRequestData;
+    property HeaderResponseData: TStrings               read FHeaderResponseData;
   end;
 
   THTTPConnection = class(TURLConnection)
@@ -405,7 +392,7 @@ begin
   FAborted := False;
   CheckInputStream;
   HTTP := TIdHTTP.Create(Nil);
- {$ifdef UseZLib}
+{$ifdef UseZLib}
   HTTP.Compressor := Comp;
 {$endif}
 {$ifdef LogIt}
@@ -761,7 +748,7 @@ begin
 
      Delete(thefile, 1,5+2);  { remove file:// }
      CheckInputStream;
-     { We suppose that windows accept c:/test/test2 }
+     { We suppose that windows accepts c:/test/test2 }
      if thefile[1] = '/' then
      begin
         Delete(thefile,1,1);
@@ -779,12 +766,12 @@ begin
            or (Ext = '.gif')
            or (Ext = '.jpg') or (Ext = '.jpeg') or (Ext = '.jpe') or (Ext = '.jfif')
            or (Ext = '.png')
-    {$IFNDEF NoMetafile}
+{$IFNDEF NoMetafile}
            or (Ext = '.emf') or (Ext = '.wmf')
-    {$ENDIF !NoMetafile}
-             {$IFNDEF NoGDIPlus}
+{$ENDIF !NoMetafile}
+{$IFNDEF NoGDIPlus}
              or (Ext = '.tiff') or (Ext = '.tif')
-             {$ENDIF NoGDIPlus}
+{$ENDIF NoGDIPlus}
             then
        FContentType := ImgType
      else if (Ext = '.txt') then
