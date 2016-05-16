@@ -38,9 +38,7 @@ program HtmlDemoW;
 
 uses
   Forms,
-  DemoSubs in 'DemoSubs.pas',
   FontDlg in 'FontDlg.pas' {FontForm},
-  GoPage in 'GoPage.pas' {GoPageForm},
   HtmlAbt in 'HtmlAbt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
   Submit in 'Submit.pas' {SubmitForm},

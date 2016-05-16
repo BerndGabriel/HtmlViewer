@@ -280,6 +280,8 @@ var
   Query: ThtString;
 begin
   Result := Trim(URL);
+  if Pos('mailto:', Result) = 1 then
+    Exit;
   J := Pos('?', Result);
   if J > 0 then
   begin

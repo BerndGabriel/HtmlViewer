@@ -2,7 +2,7 @@
 Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2015 by Bernd Gabriel
+Copyright (c) 2011-2016 by Bernd Gabriel
 
 *********************************************************
 *                                                       *
@@ -38,9 +38,7 @@ program FrameDemW;
 
 uses
   Forms,
-  DemoSubs in 'DemoSubs.pas',
   FontDlg in 'FontDlg.pas' {FontForm},
-  GoPage in 'GoPage.pas' {GoPageForm},
   HtmlAbt in 'HtmlAbt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
   Submit in 'Submit.pas' {SubmitForm},

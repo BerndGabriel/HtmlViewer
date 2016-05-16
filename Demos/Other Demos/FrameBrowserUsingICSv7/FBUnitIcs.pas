@@ -1,9 +1,9 @@
 {
-  Version   11.6
+  Version   11.7
   Copyright (c) 1995-2008 by L. David Baldwin
-  Copyright (c) 2008-2010 by HtmlViewer Team
+  Copyright (c) 2008-2011 by HtmlViewer Team
   Copyright (c) 2012-2015 by Angus Robertson delphi@magsys.co.uk
-  Copyright (c) 2013-2015 by HtmlViewer Team
+  Copyright (c) 2016      by HtmlViewer Team
 
   Permission is hereby granted, free of charge, to any person obtaining a copy of
   this software and associated documentation files (the "Software"), to deal in
@@ -91,29 +91,41 @@ unit FBUnitIcs;
 interface
 
 uses
-    WinTypes, WinProcs, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-    ShellAPI, Menus, StdCtrls, Buttons, ExtCtrls, Gauges, mmSystem, IniFiles,
-    MPlayer, ImgList, ComCtrls, ToolWin, Dialogs,
-    htmlun2, CachUnitId, URLSubs, htmlview, htmlsubs, FramBrwz, FramView,
-{$IFDEF UseOldPreviewForm}
+{$ifdef LCL}
+  LCLIntf, LCLType, LMessages, PrintersDlgs, dynlibs, HtmlMisc,
+{$else}
+  ShellAPI, WinTypes, WinProcs, MPlayer,
+  {$if CompilerVersion >= 15}
+    {$ifndef UseVCLStyles}
+    XpMan,
+    {$endif}
+  {$ifend}
+  {$IF CompilerVersion >= 30}
+      System.ImageList,
+  {$IFEND}
+{$endif}
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Menus, StdCtrls, Buttons, ExtCtrls, IniFiles, ImgList, ComCtrls, ToolWin,
+{$ifndef MultiMediaMissing}
+  mmSystem,
+{$endif}
+{$ifdef UseVCLStyles}
+   Vcl.Styles,
+   Vcl.Themes,
+   Vcl.ActnPopup,
+{$endif}
+{$ifdef UseOldPreviewForm}
   PreviewForm,
-{$ELSE UseOldPreviewForm}
+{$else UseOldPreviewForm}
   BegaZoom,
   BegaHtmlPrintPreviewForm,
-{$ENDIF UseOldPreviewForm}
-    DownLoadId, Readhtml, urlconIcs,
-    OverbyteIcsWndControl, OverbyteIcsWsocket, OverbyteIcsHttpProt,
-    OverbyteIcsCookies, OverbyteIcsStreams, OverbyteIcsUtils,
-    OverbyteIcsMimeUtils,
-{$IF CompilerVersion >= 15}
-{$IF CompilerVersion < 23}
-    XpMan,
-{$IFEND}
-{$IFEND}
-{$IF CompilerVersion >= 30}
-    System.ImageList,
-{$IFEND}
-    HtmlGlobals;
+{$endif UseOldPreviewForm}
+  HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs,
+  HtmlView, FramView, FramBrwz,
+  CachUnitId, DownLoadId, UrlConIcs,
+  OverbyteIcsWndControl, OverbyteIcsWsocket, OverbyteIcsHttpProt,
+  OverbyteIcsCookies, OverbyteIcsStreams, OverbyteIcsUtils,
+  OverbyteIcsMimeUtils;
 
 const
 //    UsrAgent     = 'Mozilla/4.0 (compatible; MSIE 5.0; Windows 98)';
@@ -192,7 +204,9 @@ type
         SaveUrl : TToolButton;
         ImageList1 : TImageList;
         Panel3 : TPanel;
+{$ifndef LCL}
         Animate1 : TAnimate;
+{$endif}
         Gauge : TProgressBar;
         SslContext : TSslContext;
         ShowDiagWindow : TMenuItem;
@@ -547,24 +561,6 @@ begin
             Result := Result + Copy(Src, J, I - J) + '&' +
                     HtmlSpecialChars[Ord(Src[I])] + ';';
         Inc(I);
-    end;
-end;
-
-
-procedure StartProcess(CommandLine : String; ShowWindow : Word);
-var
-    si : _STARTUPINFO;
-    pi : _PROCESS_INFORMATION;
-begin
-    FillChar(si, SizeOf(si), 0);
-    si.cb          := SizeOf(si);
-    si.dwFlags     := STARTF_USESHOWWINDOW;
-    si.wShowWindow := ShowWindow;
-    UniqueString(CommandLine);
-    if CreateProcess(nil, PChar(CommandLine), nil, nil, False, 0, nil, nil, si,
-        pi) then begin
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
     end;
 end;
 
@@ -1535,70 +1531,70 @@ procedure THTTPForm.HotSpotTargetClick(Sender : TObject;
 { a link was clicked.  URL is a full url here have protocol and path added.  If
   you need the actual link String, it's available in the TFrameBrowser URL property }
 const
-    snd_Async = $0001; { play asynchronously }
+  snd_Async = $0001; { play asynchronously }
 var
-    Protocol, Ext, FullUrl : String;
-    PC                     : array [0 .. 255] of Char;
-    S, Params              : String;
-    K                      : Integer;
-    Tmp                    : String;
+  Protocol, Ext, FullUrl : String;
+  PC                     : array [0 .. 255] of Char;
+  S, Params              : String;
+  K                      : Integer;
 begin
-    LogLine('HotSpotTargetClick: ' + URL);
-    if IsFullUrl(URL) then // ANGUS not always a full URL...
-        FullUrl := URL
-    else
-        FullUrl := CombineURL(URLBase, URL);
-    Protocol    := GetProtocol(FullUrl);
-    if Protocol = 'mailto' then begin
-        Tmp := FullUrl + #0; { for Delphi 1 }
-        { call mail program }
-        { Note: ShellExecute causes problems when run from Delphi 4 IDE }
-        ShellExecute(Handle, nil, @Tmp[1], nil, nil, SW_SHOWNORMAL);
-        Handled := True;
-        exit;
-    end;
-    { Note: it would be nice to handle ftp protocol here also as some downloads use
-      this protocol }
+  LogLine('HotSpotTargetClick: ' + URL);
+  if IsFullUrl(URL) then // ANGUS not always a full URL...
+    FullUrl := URL
+  else
+    FullUrl := CombineURL(URLBase, URL);
+  Protocol    := GetProtocol(FullUrl);
+  if Protocol = 'mailto' then
+  begin
+    Handled := OpenDocument(URL);
+    exit;
+  end;
+  { Note: it would be nice to handle ftp protocol here also as some downloads use
+    this protocol }
 
-    Ext := LowerCase(GetURLExtension(FullUrl));
-    if Pos('http', Protocol) > 0 then begin
-        if (CompareText(Ext, 'zip') = 0) or (CompareText(Ext, 'exe') = 0) or
-            (CompareText(Ext, 'pdf') = 0) or (CompareText(Ext, 'iso') = 0) or
-            (CompareText(Ext, 'doc') = 0) or (CompareText(Ext, 'xls') = 0) then
-        begin
-            { download can't be done here.  Post a message to do it later at WMDownload }
-            DownLoadUrl := FullUrl;
-            PostMessage(Handle, wm_DownLoad, 0, 0);
-            Handled := True;
-            exit;
-        end;
+  Ext := LowerCase(GetURLExtension(FullUrl));
+  if Pos('http', Protocol) > 0 then
+  begin
+    if (Ext = 'zip') or (Ext = '7z') or (Ext = 'gz') or (Ext = 'tar') or
+       (Ext = 'exe') or (Ext = 'msi') or (Ext = 'pdf') or (Ext = 'iso') or
+       (Ext = 'doc') or (Ext = 'xls') or (Ext = 'odt') or (Ext = 'ods')
+    then
+    begin
+      { download can't be done here.  Post a message to do it later at WMDownload }
+      DownLoadUrl := FullUrl;
+      PostMessage(Handle, wm_DownLoad, 0, 0);
+      Handled := True;
+      exit;
     end;
-    if (Protocol = 'file') then begin
-        S := FullUrl;
-        K := Pos(' ', S); { look for parameters }
-        if K = 0 then
-            K := Pos('?', S); { could be '?x,y' , etc }
-        if K > 0 then begin
-            Params := Copy(S, K + 1, 255); { save any parameters }
-            SetLength(S, K - 1); { truncate S }
-        end
-        else
-            Params := '';
-        S := HTMLToDos(S);
-        if Ext = 'wav' then begin
-            Handled := True;
-            sndPlaySound(StrPCopy(PC, S), snd_Async);
-        end
-        else if Ext = 'exe' then begin
-            Handled := True;
-            StartProcess(StrPCopy(PC, S + ' ' + Params), sw_Show);
-        end
-        else if (Ext = 'mid') or (Ext = 'avi') then begin
-            Handled := True;
-            StartProcess(StrPCopy(PC, 'MPlayer.exe /play /close ' + S), sw_Show);
-        end;
+  end;
+
+  if (Protocol = 'file') then
+  begin
+    S := FullUrl;
+    K := Pos(' ', S); { look for parameters }
+    if K = 0 then
+      K := Pos('?', S); { could be '?x,y' , etc }
+    if K > 0 then begin
+      Params := Copy(S, K + 1, 255); { save any parameters }
+      SetLength(S, K - 1); { truncate S }
+    end
+    else
+      Params := '';
+    S := HTMLToDos(S);
+    if Ext = 'wav' then
+    begin
+      Handled := True;
+{$ifndef MultiMediaMissing}
+      sndPlaySound(StrPCopy(PC, S), snd_ASync);
+{$endif}
+    end
+    else
+    if Ext = 'exe' then
+      Handled := StartProcess(S, Params)
+    else if (Ext = 'mid') or (Ext = 'avi') then
+      Handled := OpenDocument(Params);
         { else ignore other extensions }
-    end;
+  end;
 end;
 
 procedure THTTPForm.ViewerClear(Sender : TObject);
@@ -1741,19 +1737,19 @@ begin
 end;
 
 { ----------------THTTPForm.BlankWindowRequest }
-procedure THTTPForm.BlankWindowRequest(Sender : TObject;
-    const Target, URL : ThtString);
+procedure THTTPForm.BlankWindowRequest(Sender : TObject; const Target, URL : ThtString);
 { OnBlankWindowRequest handler.  Either a Target of _blank or an unknown target
   was called for.  Load a new instance }
 var
-    S : String;
+  S : String;
 begin
-    S := URL;
-    if not IsFullUrl(S) then
-        S := CombineURL(URLBase, S);
+  S := URL;
+  if not IsFullUrl(S) then
+      S := CombineURL(URLBase, S);
+  if Pos(' ', S) > 0 then
+    S := '"' + S + '"';
 
-    S := ParamStr(0) + ' "' + S + '"';
-    StartProcess(PChar(S), sw_Show);
+  StartProcess(ParamStr(0), S);
 end;
 
 procedure THTTPForm.Find1Click(Sender : TObject);
@@ -1914,10 +1910,8 @@ end;
 
 procedure THTTPForm.OpenInNewWindowClick(Sender : TObject);
 { response to popup menu selection to open link }
-var
-    PC : array [0 .. 255] of Char;
 begin
-    StartProcess(StrPCopy(PC, ParamStr(0) + ' "' + NewWindowFile + '"'), sw_Show);
+  BlankWindowRequest(Sender, '_blank', NewWindowFile);
 end;
 
 procedure THTTPForm.SaveURLClick(Sender : TObject);

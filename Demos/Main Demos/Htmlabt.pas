@@ -35,7 +35,7 @@ uses
   LCLVersion, LCLIntf, InterfaceBase,
 {$endif}
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Buttons, ExtCtrls,
-  HtmlGlobals, Htmlview, HTMLUn2;
+  HtmlGlobals, Htmlview, HTMLUn2, StdCtrls;
 
 type
 

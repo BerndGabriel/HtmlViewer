@@ -1212,15 +1212,22 @@ procedure THtmlParser.Next;
       GetCh;
   end;
 
+{$ifdef DEBUGGING_PARSER}
 var
   EndTag: Boolean;
+{$endif}
 begin {already have fresh character loaded here}
   LCToken.Clear;
   IsXhtmlEndSy := False;
+{$ifdef DEBUGGING_PARSER}
   EndTag := False;
+{$endif}
   case LCh of
     '<':
-      EndTag := GetTag;
+{$ifdef DEBUGGING_PARSER}
+      EndTag :=
+{$endif}
+      GetTag;
 
     #1..#8:
       begin

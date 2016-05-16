@@ -18,7 +18,6 @@
   {$define FPC_TODO}
 
   {$define MetaFileMissing}
-  {$define MultiMediaMissing}
 
   {$define HasStrictDelimiter}
 
@@ -242,6 +241,7 @@
   {$define NoGDIPlus}
   {$define NoMetaFile}
   {$define NoFlatScrollbars}
+  {$define MultiMediaMissing}
 {$endif}
 
 {.$define NoTabLink}  {To eliminate tabbing between links, define "NoTabLink" by

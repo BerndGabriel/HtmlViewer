@@ -854,8 +854,6 @@ type
   TRadioButtonFormControlObj = class;
 
   ThtmlForm = class(TObject)
-  protected
-    procedure AKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   public
     Document: ThtDocument;
     Method: ThtString;
@@ -872,6 +870,7 @@ type
     procedure SetFormData(SL: ThtStringList);
     procedure SetSizes(Canvas: TCanvas);
     procedure ControlKeyPress(Sender: TObject; var Key: Char);
+    procedure AKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   end;
 
   TFormControlObj = class(TFloatingObj)

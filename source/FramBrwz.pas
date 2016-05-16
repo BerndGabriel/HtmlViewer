@@ -73,11 +73,12 @@ type
     procedure CreateViewer; override;
     procedure frLoadFromBrzFile(const URL, Dest, Query, EncType, Referer: ThtString; Bump, IsGet, Reload: boolean);
     procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: Boolean); override;
-    procedure LoadFiles; override;
     procedure RefreshEvent(Sender: TObject; Delay: integer; const URL: ThtString); override;
     procedure RefreshTimerTimer(Sender: TObject); override;
-    procedure ReLoadFiles(APosition: LongInt); override;
     procedure URLExpandName(Sender: TObject; const SRC: ThtString; var Rslt: ThtString);
+  public
+    procedure LoadFiles; override;
+    procedure ReLoadFiles(APosition: LongInt); override;
   end;
 
   TbrSubFrameSet = class(TSubFrameSetBase) {can contain one or more TbrFrames and/or TSubFrameSets}

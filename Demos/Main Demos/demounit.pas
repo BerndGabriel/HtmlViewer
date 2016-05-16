@@ -1,7 +1,7 @@
 {
 Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -41,7 +41,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
 {$else}
-  Windows, ShellAPI,
+  Windows, ShellAPI, MPlayer,
   {$IF CompilerVersion >= 15}
     {$IFNDEF TScrollStyleInSystemUITypes}
       XpMan,
@@ -55,7 +55,7 @@ uses
   {$endif}
 {$endif}
 {$ifndef MultiMediaMissing}
-  MPlayer, MMSystem,
+  MMSystem,
 {$endif}
 {$ifndef MetaFileMissing}
   MetaFilePrinter,
@@ -76,18 +76,11 @@ uses
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages,
-  URLSubs,
-  StyleTypes,
-  ReadHTML,
   HTMLSubs,
   HTMLSbs1,
-  HTMLUn2,
-  Htmlview,
-  FramView,
-  DemoSubs,
   Htmlabt,
   PrintStatusForm,
-  ImgForm;
+  ImgForm, HTMLUn2, HtmlView;
 
 const
   MaxHistories = 6; { size of History list }
@@ -350,15 +343,16 @@ const
 {$endif}
 var
   PC: array [0 .. 255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
-  S, Params: ThtString;
+  uURL, S, Params: ThtString;
   Ext: string;
   I, J, K: Integer;
 begin
   Handled := False;
 
   { check for various file types }
-  I := Pos(':', URL);
-  J := Pos('FILE:', UpperCase(URL));
+  uURL := htUpperCase(URL);
+  I := Pos(':', uURL);
+  J := Pos('FILE:', uURL);
   if (I <= 2) or (J > 0) then
   begin { apparently the URL is a filename }
     S := URL;
@@ -368,7 +362,7 @@ begin
     if K > 0 then
     begin
       Params := Copy(S, K + 1, 255); { save any parameters }
-      setLength(S, K - 1); { truncate S }
+      SetLength(S, K - 1); { truncate S }
     end
     else
       Params := '';
@@ -383,30 +377,19 @@ begin
     end
     else if Ext = '.EXE' then
     begin
-      Handled := True;
-      StartProcess(S + ' ' + Params, SW_SHOW);
+      Handled := StartProcess(S, Params);
     end
     else if (Ext = '.MID') or (Ext = '.AVI') then
-    begin
-      Handled := True;
-      StartProcess('MPlayer.exe /play /close ' + S, SW_SHOW);
-    end;
+      Handled := OpenDocument(S);
     { else ignore other extensions }
     Edit1.Text := URL;
     Exit;
   end;
 
-  I := Pos('MAILTO:', UpperCase(URL));
-  J := Pos('HTTP://', UpperCase(URL));
-  if (I > 0) or (J > 0) then
+  I := Pos('MAILTO:', uURL) + Pos('HTTP://', uURL) + Pos('HTTPS://', uURL);
+  if I > 0 then
   begin
-    { Note: ShellExecute causes problems when run from Delphi 4 IDE }
-{$ifdef LCL}
-    OpenDocument(StrPCopy(PC, URL));
-{$else}
-    ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
-{$endif}
-    Handled := True;
+    Handled := OpenDocument(URL);
     Exit;
   end;
 
@@ -851,14 +834,8 @@ begin
 end;
 
 procedure TForm1.OpenInNewWindowClick(Sender: TObject);
-var
-  PC: array [0 .. 1023] of char;
 begin
-{$ifdef LCL}
-  OpenDocument(ParamStr(0));
-{$else}
-  StartProcess(StrPCopy(PC, ParamStr(0) + ' "' + NewWindowFile + '"'), SW_SHOW);
-{$endif}
+  StartProcess(ParamStr(0), NewWindowFile);
 end;
 
 procedure TForm1.MetaTimerTimer(Sender: TObject);

@@ -49,21 +49,7 @@ uses
   {$IFEND}
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  Menus, StdCtrls, Buttons, ExtCtrls, HTMLUn2, CachUnitId,
-  URLSubs, HtmlView, HTMLSubs,
-{$ifdef UseOldPreviewForm}
-  PreviewForm,
-{$else UseOldPreviewForm}
-  BegaZoom,
-  BegaHtmlPrintPreviewForm,
-{$endif UseOldPreviewForm}
-  DownLoadId, IniFiles,
-  //ReadHTML,
-  UrlConId10, FramBrwz, FramView, IdBaseComponent,
-  IdAntiFreezeBase, IdAntiFreeze, IdGlobal, IdGlobalProtocols,
-  ImgList, ComCtrls, ToolWin, IdIntercept,
-  IdHTTP, IdComponent, IdIOHandler, IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
-  IdTCPConnection, IdTCPClient, IdAuthentication,
+  Menus, StdCtrls, Buttons, ExtCtrls, IniFiles, ImgList, ComCtrls, ToolWin,
 {$ifndef MultiMediaMissing}
   mmSystem,
 {$endif}
@@ -72,10 +58,22 @@ uses
    Vcl.Themes,
    Vcl.ActnPopup,
 {$endif}
+{$ifdef UseOldPreviewForm}
+  PreviewForm,
+{$else UseOldPreviewForm}
+  BegaZoom,
+  BegaHtmlPrintPreviewForm,
+{$endif UseOldPreviewForm}
+  HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs,
+  HtmlView, FramView, FramBrwz,
+  CachUnitId, DownLoadId, UrlConId10,
 {$ifdef LogIt}
-  idLogfile,
+  IdLogfile,
 {$endif}
-  HtmlGlobals;
+  IdBaseComponent, IdAntiFreezeBase, IdAntiFreeze,
+  IdGlobal, IdGlobalProtocols, IdIntercept, IdHTTP, IdComponent, IdIOHandler,
+  IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
+  IdTCPConnection, IdTCPClient, IdAuthentication;
 
 const
   (*UsrAgent = 'Mozilla/4.0 (compatible; Indy Library)';*)
@@ -1242,17 +1240,19 @@ begin
   if Protocol = 'mailto' then
   begin
   {call mail program}
-    OpenDocument(URL);
-    Handled := True;
+    Handled := OpenDocument(URL);
     Exit;
   end;
 {Note: it would be nice to handle ftp protocol here also as some downloads use
  this protocol}
 
   Ext := Lowercase(GetURLExtension(URL));
-  if Pos('http', Protocol) > 0 then
+  if Pos('http', Protocol) = 1 then
   begin
-    if (CompareText(Ext, 'zip') = 0) or (CompareText(Ext, 'exe') = 0) then
+    if (Ext = 'zip') or (Ext = '7z') or (Ext = 'gz') or (Ext = 'tar') or
+       (Ext = 'exe') or (Ext = 'msi') or (Ext = 'pdf') or (Ext = 'iso') or
+       (Ext = 'doc') or (Ext = 'xls') or (Ext = 'odt') or (Ext = 'ods')
+    then
     begin
     {download can't be done here.  Post a message to do it later at WMDownload}
       DownLoadURL := URL;
@@ -1261,7 +1261,8 @@ begin
       Exit;
     end;
   end;
-  if (Protocol = 'file') then
+
+  if Protocol = 'file' then
   begin
     S := URL;
     K := Pos(' ', S);     {look for parameters}
@@ -1270,7 +1271,7 @@ begin
     if K > 0 then
     begin
       Params := Copy(S, K+1, 255); {save any parameters}
-      setlength(S, K-1);            {truncate S}
+      SetLength(S, K-1);            {truncate S}
     end
     else
       Params := '';
@@ -1283,21 +1284,15 @@ begin
 {$endif}
     end
     else
-      if Ext = 'exe' then
-      begin
-        Handled := True;
-        OpenDocument(S);
-      end
-      else
-        if (Ext = 'mid') or (Ext = 'avi')  then
-        begin
-          Handled := True;
-          OpenDocument('MPlayer.exe');
-        end;
+    if Ext = 'exe' then
+      Handled := StartProcess(S, Params)
+    else if (Ext = 'mid') or (Ext = 'avi') then
+      Handled := OpenDocument(Params);
     {else ignore other extensions}
-    UrlComboBox.Text := URL;
+//    UrlComboBox.Text := URL;
     Exit;
   end;
+
   UrlComboBox.Text := URL;   {other protocall}
 end;
 
@@ -1527,8 +1522,10 @@ begin
   S := URL;
   if not IsFullURL(S) then
     S := CombineURL(URLBase, S);
+  if Pos(' ', S) > 0 then
+    S := '"' + S + '"';
 
-  OpenDocument(S); { *Konvertiert von ShellExecute* }
+  StartProcess(ParamStr(0), S);
 end;
 
 procedure THTTPForm.Find1Click(Sender: TObject);
@@ -1691,11 +1688,8 @@ begin
 end;
 
 procedure THTTPForm.OpenInNewWindowClick(Sender: TObject);
-var
-  URL: ThtString;
 begin
-  URL := FrameBrowser.ActiveViewer.URL;
-  OpenDocument(URL);
+  BlankWindowRequest(Sender, '_blank', NewWindowFile);
 end;
 
 procedure THTTPForm.SaveURLClick(Sender: TObject);

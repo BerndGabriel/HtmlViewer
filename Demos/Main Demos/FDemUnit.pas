@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2013 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -38,7 +38,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
 {$else}
-  Windows, ShellAPI,
+  Windows, ShellAPI, MPlayer,
   {$if CompilerVersion >= 15}
     {$ifndef UseVCLStyles}
     XpMan,
@@ -52,7 +52,7 @@ uses
   {$endif}
 {$endif}
 {$ifndef MultiMediaMissing}
-  MPlayer, MMSystem,
+  MMSystem,
 {$endif}
 {$ifndef MetaFileMissing}
   MetaFilePrinter,
@@ -80,7 +80,6 @@ uses
   HTMLUn2,
   Htmlview,
   FramView,
-  DemoSubs,
   Htmlabt,
   PrintStatusForm,
   ImgForm;
@@ -135,10 +134,8 @@ type
     Showimages: TMenuItem;
     Timer1: TTimer;
     ViewImage: TMenuItem;
-{$ifdef MsWindows}
-  {$ifndef LCL}
+{$ifdef VCL}
     MediaPlayer: TMediaPlayer;
-  {$endif}
 {$endif}
     PrintDialog: TPrintDialog;
     PrinterSetupDialog: TPrinterSetupDialog;
@@ -358,19 +355,20 @@ const
 {$endif}
 var
   PC: array[0..255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
-  S, Params: ThtString;
+  uURL, S, Params: ThtString;
   Ext: string;
   I, J, K: integer;
 begin
   Handled := False;
 
   {check for various file types}
-  I := Pos(':', URL);
-  J := Pos('FILE:', UpperCase(URL));
+  uURL := htUpperCase(URL);
+  I := Pos(':', uURL);
+  J := Pos('FILE:', uURL);
   if (I <= 2) or (J > 0) then
   begin                      {apparently the URL is a filename}
     S := URL;
-    K := Pos(' ', S);     {look for parameters}
+    K := 0; //Pos(' ', S);     {look for parameters}
     if K = 0 then K := Pos('?', S);  {could be '?x,y' , etc}
     if K > 0 then
     begin
@@ -384,36 +382,24 @@ begin
     if Ext = '.WAV' then
     begin
       Handled := True;
-  {$ifndef MultiMediaMissing}
+{$ifndef MultiMediaMissing}
       sndPlaySound(StrPCopy(PC, S), snd_ASync);
-  {$endif}
+{$endif}
     end
-    else if Ext = '.EXE' then
-    begin
-      Handled := True;
-      StartProcess(S + ' ' + Params, SW_SHOW);
-    end
-    else if (Ext = '.MID') or (Ext = '.AVI')  then
-    begin
-      Handled := True;
-      StartProcess('MPlayer.exe /play /close ' + S, SW_SHOW);
-    end;
+    else
+    if Ext = '.EXE' then
+      Handled := StartProcess(S, Params)
+    else if (Ext = '.MID') or (Ext = '.AVI') then
+      Handled := OpenDocument(S);
     {else ignore other extensions}
     Edit2.Text := URL;
     Exit;
   end;
 
-  I := Pos('MAILTO:', UpperCase(URL));
-  J := Pos('HTTP://', UpperCase(URL));
-  if (I > 0) or (J > 0) then
+  I := Pos('MAILTO:', uURL) + Pos('HTTP://', uURL) + Pos('HTTPS://', uURL);
+  if I > 0 then
   begin
-    {Note: ShellExecute causes problems when run from Delphi 4 IDE}
-  {$ifdef LCL}
-    OpenDocument(StrPCopy(PC, URL));
-  {$else}
-    ShellExecute(Handle, nil, StrPCopy(PC, URL), nil, nil, SW_SHOWNORMAL);
-  {$endif}
-    Handled := True;
+    Handled := OpenDocument(URL);
     Exit;
   end;
 
@@ -643,7 +629,7 @@ begin
   S := FrameViewer.HTMLExpandFileName(S);
   if FileExists(S) then
     try
-      StartProcess(ParamStr(0)+' "'+S+Dest+'"', sw_Show);
+      StartProcess(ParamStr(0), '"'+S+Dest+'"');
     except
       on e: Exception do
         ShowMessage('failed to open "'+S+Dest+'"'#13#13'Cause: ' + e.Message );
@@ -686,7 +672,7 @@ end;
 
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
 begin
-{$ifndef MultiMediaMissing}
+{$ifndef LCL}
   try
     With MediaPlayer do
       if NotifyValue = nvSuccessful then
@@ -709,7 +695,7 @@ end;
 
 procedure TForm1.SoundRequest(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: Boolean);
 begin
-{$ifndef MultiMediaMissing}
+{$ifndef LCL}
   try
     with MediaPlayer do
       if Terminate then
@@ -855,10 +841,8 @@ with Parameters do
 end;
   
 procedure TForm1.OpenInNewWindowClick(Sender: TObject);
-var
-  PC: array[0..255] of char;
 begin
-  StartProcess(StrPCopy(PC, ParamStr(0)+' "'+NewWindowFile+'"'), sw_Show);
+  StartProcess(ParamStr(0), '"' + NewWindowFile + '"');
 end;
 
 procedure TForm1.PrinterSetupClick(Sender: TObject);

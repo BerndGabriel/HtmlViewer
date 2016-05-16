@@ -1598,10 +1598,6 @@ end;
 
 {----------------TCheckBoxFormControlObj.Create}
 
-type
-  THtmlFormOpener = class(THtmlForm)
-  end;
-
 constructor TCheckBoxFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
@@ -1620,7 +1616,7 @@ begin
     Left := -4000; {so will be invisible until placed}
     Width := 13;
     Height := 13;
-    OnKeyDown := THtmlFormOpener(MyForm).AKeyDown;
+    OnKeyDown := THtmlForm(MyForm).AKeyDown;
     OnEnter := EnterEvent;
     OnExit := ExitEvent;
     OnMouseMove := HandleMouseMove;

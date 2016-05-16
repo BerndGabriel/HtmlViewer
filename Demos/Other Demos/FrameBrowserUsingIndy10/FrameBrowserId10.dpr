@@ -1,6 +1,7 @@
 {
 Version   11.7
-Copyright (c) 2014-2016 by HtmlViewer Team
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -34,11 +35,10 @@ program FrameBrowserId10;
 {$R 'fbHelp.res' 'Resources\fbHelp.rc'}
 
 uses
-{$IFnDEF FPC}
-{$ELSE}
+{$ifdef FPC}
   Interfaces,
   printer4lazarus,
-{$ENDIF}
+{$endif}
   Forms,
   FBUnitId10 in 'FBUnitId10.pas' {HTTPForm},
   HttpAsyncId10 in 'HttpAsyncId10.pas',

@@ -1,8 +1,9 @@
 {
-Version   11.5
-Copyright (c) 1995-2008 by L. David Baldwin, 2008-2010 by HtmlViewer Team
+Version   11.7
+Copyright (c) 1995-2008 by L. David Baldwin
+Copyright (c) 2008-2011 by HtmlViewer Team
 Copyright (c) 2012 by Angus Robertson delphi@magsys.co.uk
-Copyright (c) 2013-2014 by HtmlViewer Team
+Copyright (c) 2013-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -38,10 +39,7 @@ uses
   DownLoadId in 'DownLoadId.pas' {DownLoadForm},
   ProxyDlg in 'ProxyDlg.pas' {ProxyForm},
   logwin in 'logwin.pas' {LogForm},
-  Gopage in '..\..\Main Demos\Gopage.pas' {GoPageForm},
-  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox},
-  PreviewForm in '..\..\Main Demos\PreviewForm.pas' {PreviewForm},
-  PrintStatusForm in '..\..\Main Demos\PrintStatusForm.pas' {PrnStatusForm};
+  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox};
 
 {$R *.RES}
 

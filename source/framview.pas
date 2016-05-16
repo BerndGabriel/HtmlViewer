@@ -533,10 +533,11 @@ type
     function GetSubFrameSetClass: TSubFrameSetClass; override;
     function MasterSet: TFrameSet; {$ifdef UseInline} inline; {$endif}
     procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: boolean); override;
-    procedure LoadFiles(); overload; override;
     procedure LoadFiles(PEV: PEventRec); reintroduce; overload;
     procedure RefreshEvent(Sender: TObject; Delay: integer; const URL: ThtString); override;
     procedure RefreshTimerTimer(Sender: TObject); override;
+  public
+    procedure LoadFiles(); overload; override;
     procedure ReLoadFiles(APosition: integer); override;
   end;
 
@@ -1484,7 +1485,7 @@ begin
   QuirksMode := Master.QuirksMode;
   FMasterSet := Master;
   if AOwner is TFrameBase then
-    LocalCodePage := TSubFrameSetBase(AOwner).LocalCodePage;
+    LocalCodePage := TFrameBase(AOwner).LocalCodePage;
   OuterBorder := 0; {no border for subframesets}
   if Self <> Master then
     BorderSize := Master.BorderSize;

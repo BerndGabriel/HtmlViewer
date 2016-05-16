@@ -386,6 +386,8 @@ function OpenDocument(const APath: ThtString): Boolean;
 
 {$endif}
 
+function StartProcess(const ApplicationName, Params: string; ShowWindow: Word = SW_SHOW): Boolean;
+
 {$ifndef Compiler17_Plus}
 type
   TBytes = array of byte;
@@ -1201,6 +1203,41 @@ begin
 end;
 
 {$endif LCL}
+
+function StartProcess(const ApplicationName, Params: string; ShowWindow: Word): Boolean;
+{$ifdef MSWindows}
+var
+  si: _STARTUPINFO;
+  pi: _PROCESS_INFORMATION;
+  CommandLine: string;
+begin
+  FillMemory(@si, SizeOf(si), 0);
+  FillMemory(@pi, SizeOf(pi), 0);
+  si.cb := SizeOf(si);
+  si.dwFlags := STARTF_USESHOWWINDOW;
+  si.wShowWindow := ShowWindow;
+  CommandLine := ApplicationName;
+  if Pos(' ', CommandLine) > 0 then
+    CommandLine := '"' + CommandLine + '"';
+  if Length(Params) > 0 then
+    CommandLine := CommandLine + ' ' + Params;
+  UniqueString(CommandLine);
+  Result := CreateProcess(PChar(ApplicationName), PChar(CommandLine), nil, nil, False, 0, nil, nil, si, pi);
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+{$else}
+var
+  CommandLine: String;
+  Output: String;
+begin
+  CommandLine := ApplicationName;
+  if Pos(' ', CommandLine) > 0 then
+    CommandLine := '"' + CommandLine + '"';
+  if Length(Params) > 0 then
+    CommandLine := CommandLine + ' ' + Params;
+  Result := RunCommand(CommandLine, Output);
+{$endif}
+end;
 
 {----------------ThtBitmap.GetMask:}
 

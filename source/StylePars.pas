@@ -1,7 +1,7 @@
 {
-Version   11.6
+Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1608,9 +1608,9 @@ end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleAttrParser.ParseProperties(Doc: TBuffer; Propty: TProperties);
-var
-  Prop, Value: ThtString;
-  IsImportant: Boolean;
+//var
+//  Prop, Value: ThtString;
+//  IsImportant: Boolean;
 begin
   Self.Doc := Doc;
   Self.Propty := Propty;

@@ -34,10 +34,8 @@ program FrameDemLaz;
 uses
   Interfaces,
   Forms,
-  printer4lazarus,
-  DemoSubs in 'DemoSubs.pas',
+  Printer4Lazarus,
   Fontdlg in 'Fontdlg.pas' {FontForm},
-  Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
   Submit in 'Submit.pas' {SubmitForm},
