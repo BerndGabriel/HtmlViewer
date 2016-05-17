@@ -43,6 +43,9 @@ uses
   StdCtrls, Buttons;
 
 type
+
+  { TAuthForm }
+
   TAuthForm = class(TForm)
     AuthUsername: TEdit;
     AuthPassword: TEdit;
@@ -50,6 +53,7 @@ type
     BitBtn2: TBitBtn;
     Label1: TLabel;
     Label2: TLabel;
+    LabelRealm: TLabel;
     procedure FormShow(Sender: TObject);
     procedure OKBtnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -117,7 +121,7 @@ function TAuthForm.GetAuthorization(TryRealm: boolean; const Realm: string;
   var UName, PWord: string): boolean;
 {TryRealm is only set for one try at most}
 var
-  I: integer;
+  I: Integer;
   P: PTwoStrings;
 begin
   Result := False;
@@ -132,6 +136,12 @@ begin
   end;
   if not Result then
   begin
+    I := Pos('=', Realm);
+    if I > 0 then   // ANGUS: tell user what realm
+      LabelRealm.Caption := Copy(Realm, I + 1, MaxInt)
+    else
+      LabelRealm.Caption := Realm;
+
     Result := ShowModal = mrOK;  {Use dialog to get info}
     if Result then
     begin
