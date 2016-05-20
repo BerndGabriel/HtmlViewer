@@ -117,8 +117,7 @@ begin
   RealmList.Free;
 end;
 
-function TAuthForm.GetAuthorization(TryRealm: boolean; const Realm: string;
-  var UName, PWord: string): boolean;
+function TAuthForm.GetAuthorization(TryRealm: Boolean; const Realm: string; var UName, PWord: string): Boolean;
 {TryRealm is only set for one try at most}
 var
   I: Integer;

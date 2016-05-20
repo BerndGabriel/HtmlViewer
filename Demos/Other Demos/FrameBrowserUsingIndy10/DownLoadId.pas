@@ -45,7 +45,7 @@ uses
   WinTypes, WinProcs,
 {$ENDIF}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls,
-  UrlConId10;
+  URLSubs, UrlConn;
 
 const
   wm_DoIt = wm_User + 111;
@@ -61,16 +61,18 @@ type
     procedure CancelButtonClick(Sender: TObject);
   private
     { Private declarations }
-    BytesRead: LongInt;
-    StartTime: LongInt;
-    FileSize: LongInt;
-    Connection: TURLConnection;
+    FStartTick: Cardinal;
+    FDownLoad: ThtUrlDoc;
+    FConnection: ThtConnection;
     procedure WMDoIt(var Message: TMessage); message WM_DoIt;
     procedure DocData(Sender: TObject);
     procedure DocBegin(Sender: TObject);
   public
     { Public declarations }
     DownLoadURL, Filename, Proxy, ProxyPort, UserAgent: string;
+    Connections: ThtConnectionManager;
+
+    destructor Destroy; override;
   end;
 
 var
@@ -93,25 +95,30 @@ begin
 end;
 
 procedure TDownLoadForm.WMDoIt(var Message: TMessage);
+var
+  Msg: String;
 begin
-  BytesRead := 0;
   try
-    Connection := TURLConnection.GetConnection(DownLoadURL);
-    if Assigned(Connection) then
     try
-      try
-        Connection.Proxy := Proxy;
-        Connection.ProxyPort := ProxyPort;
-        Connection.UserAgent := UserAgent;
-        Connection.OnDocData := DocData;
-        Connection.OnDocBegin := DocBegin;
-        Connection.Get(DownLoadURL);     {download it}
-        Connection.InputStream.SaveToFile(Filename);
-      except
-        MessageDlg(Connection.ReasonPhrase, mtError, [mbOK], 0);
+      FDownLoad := ThtUrlDoc.Create;
+      FDownLoad.Url := DownLoadURL;
+
+      FConnection := Connections.CreateConnection(GetProtocol(DownLoadURL));
+      FConnection.OnDocData := DocData;
+      FConnection.OnDocBegin := DocBegin;
+      FConnection.LoadDoc(FDownLoad);     {download it}
+      FDownLoad.SaveToFile(Filename);
+    except
+      on E: Exception do
+      begin
+        SetLength(Msg, 0);
+        if FConnection <> nil then
+          Msg := FConnection.ReasonPhrase;
+        if Length(Msg) + Length(E.Message) > 0 then
+          Msg := Msg + ' ';
+        Msg := Msg + E.Message;
+        MessageDlg(Msg, mtError, [mbOK], 0);
       end;
-    finally
-      Connection.Free;
     end;
   finally
     Close;
@@ -120,37 +127,46 @@ end;
 
 procedure TDownLoadForm.DocData(Sender: TObject);
 var
-  hr, min, sec, rem: integer;
-  KBytesPerSec: Double;
-  Elapsed: LongInt;
+  ReceivedSize: Int64;
+  ExpectedSize: Int64;
+  Elapsed: Int64;
+  H, M, S: Integer;
 begin
-  BytesRead := Connection.RcvdCount;
-  Elapsed := LongInt(GetTickCount { *Konvertiert von TimeGetTime* })-LongInt(StartTime);
+  ReceivedSize := FConnection.ReceivedSize;
+  ExpectedSize := FConnection.ExpectedSize;
+  Elapsed := GetTickCount - FStartTick;
   if Elapsed > 0 then
   begin
-    KBytesPerSec := BytesRead/Elapsed;
-    Rem := ((FileSize - BytesRead) * (Elapsed div 1000)) div BytesRead;
-    Hr := Rem div 3600;
-    Rem := Rem mod 3600;
-    Min := Rem div 60;
-    Sec := Rem mod 60;
+    Status.Caption := Format('%dKiB of %dKiB (at %4.1fKiB/sec)', [ReceivedSize div 1024, ExpectedSize div 1024, ReceivedSize/Elapsed]);
 
-    TimeLeft.Caption := Format('%2.2d:%2.2d:%2.2d', [Hr, Min, Sec]);
-    Status.Caption := Format('%dk of %dk (at %4.1fk/sec)',
-                     [BytesRead div 1024, FileSize div 1024, KBytesPerSec]);
-    TimeLeft.Update;
+    if (ReceivedSize > 0) and (ExpectedSize > 0) then
+    begin
+      S := Round(((ExpectedSize - ReceivedSize) * (Elapsed / 1000)) / ReceivedSize);
+      H := S div 3600;
+      S := S mod 3600;
+      M := S div 60;
+      S := S mod 60;
+      TimeLeft.Caption := Format('%2.2d:%2.2d:%2.2d', [H, M, S]);
+      TimeLeft.Update;
+    end;
   end;
 end;
 
 procedure TDownLoadForm.CancelButtonClick(Sender: TObject);
 begin
-  Connection.Abort;
+  FConnection.Abort;
+end;
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+destructor TDownLoadForm.Destroy;
+begin
+  FDownLoad.Free;
+  inherited;
 end;
 
 procedure TDownLoadForm.DocBegin(Sender: TObject);
 begin
-  Filesize := Connection.ContentLength;
-  StartTime := GetTickCount; { *Konvertiert von TimeGetTime* }
+  FStartTick := GetTickCount;
 end;
 
 end.

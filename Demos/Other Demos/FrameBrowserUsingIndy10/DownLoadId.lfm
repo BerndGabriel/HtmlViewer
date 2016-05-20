@@ -1,12 +1,12 @@
 object DownLoadForm: TDownLoadForm
   Left = 645
-  Height = 87
+  Height = 118
   Top = 221
-  Width = 241
+  Width = 308
   BorderIcons = [biSystemMenu]
   Caption = 'DownLoad'
-  ClientHeight = 87
-  ClientWidth = 241
+  ClientHeight = 118
+  ClientWidth = 308
   Color = clBtnFace
   Font.Color = clWindowText
   Font.Height = -11

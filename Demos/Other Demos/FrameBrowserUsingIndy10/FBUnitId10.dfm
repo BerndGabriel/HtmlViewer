@@ -69,7 +69,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 165
+        Width = 176
       end
       item
         Break = False
@@ -78,7 +78,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 220
+        Width = 212
       end
       item
         Break = False
@@ -86,12 +86,12 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 155
-        Width = 171
+        Width = 168
       end>
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 152
+      Width = 163
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -135,9 +135,9 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 208
+      Left = 219
       Top = 8
-      Width = 179
+      Width = 171
       Height = 21
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
@@ -150,9 +150,9 @@ object HTTPForm: THTTPForm
       OnKeyPress = URLComboBoxKeyPress
     end
     object Panel10: TPanel
-      Left = 404
+      Left = 407
       Top = 0
-      Width = 162
+      Width = 159
       Height = 37
       Align = alTop
       BevelOuter = bvNone
@@ -194,7 +194,7 @@ object HTTPForm: THTTPForm
         end
       end
       object Panel3: TPanel
-        Left = 134
+        Left = 131
         Top = 0
         Width = 28
         Height = 37
@@ -350,13 +350,6 @@ object HTTPForm: THTTPForm
     Left = 312
     Top = 96
   end
-  object Timer: TTimer
-    Enabled = False
-    Interval = 100
-    OnTimer = TimerTimer
-    Left = 384
-    Top = 145
-  end
   object SaveDialog: TSaveDialog
     Filter = 'All Files|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofNoReadOnlyReturn]
@@ -406,7 +399,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 120
     Bitmap = {
-      494C01010D001100180011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100400011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

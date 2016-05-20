@@ -25,8 +25,7 @@ are covered by separate copyright notices located in those modules.
 }
 unit ProxyDlg;
 
-{$include htmlcons.inc}
-{$include options.inc}
+{.$include htmlcons.inc}
 
 interface
 
@@ -41,16 +40,18 @@ uses
 
 type
   TProxyForm = class(TForm)
-    ProxyEdit: TEdit;
-    PortEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
-    OKBurron: TBitBtn;
-    CancelButton: TBitBtn;
-    ProxyUsername: TEdit;
-    ProxyPassword: TEdit;
     Label3: TLabel;
     Label4: TLabel;
+    Label5: TLabel;
+    ProxyEdit: TEdit;
+    PortEdit: TEdit;
+    ProxyUsername: TEdit;
+    ProxyPassword: TEdit;
+    UserAgent: TEdit;
+    OKBurron: TBitBtn;
+    CancelButton: TBitBtn;
   private
     { Private declarations }
   public

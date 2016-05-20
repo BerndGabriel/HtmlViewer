@@ -35,13 +35,11 @@ program FrameBrowserId10;
 {$R 'fbHelp.res' 'Resources\fbHelp.rc'}
 
 uses
-{$ifdef FPC}
+  {$ifdef FPC}
   Interfaces,
-  printer4lazarus,
-{$endif}
+  {$endif }
   Forms,
   FBUnitId10 in 'FBUnitId10.pas' {HTTPForm},
-  HttpAsyncId10 in 'HttpAsyncId10.pas',
   UrlConId10 in 'UrlConId10.pas',
   AuthUnit in 'AuthUnit.pas' {AuthForm},
   CachUnitId in 'CachUnitId.pas',

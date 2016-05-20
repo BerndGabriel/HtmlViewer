@@ -42,41 +42,41 @@ uses
   {$ELSE}
     WinTypes, WinProcs,
   {$ENDIF}
-  Messages, SysUtils, Classes, Controls, StdCtrls, Math,
-  HtmlView;
+  Messages, SysUtils, Classes, Controls, StdCtrls, Math, URLSubs;
 
 const
-  MaxCacheEntries = 200;   
+  MaxCacheEntries = 200;
   CacheData = 'cachinfo.txt';
 var
-  Seq: integer = 12345;
+  Seq: Integer = 10000;
 
 type
   TDiskCache = class(TObject)
   private
-    URLList, RedirectList, TypeList, FileList: TStringList;   
+    URLList, RedirectList, TypeList, FileList: TStringList;
     Directory: string;
     procedure CheckSize;
     function MakeName(S: string): string;
-    function RemovePrefix(const URL: string): string;
+    function SplitProtocol(var URL: string): string;
+    procedure Erase(I: Integer);
+    function IsCacheable(const Protocol: string): Boolean;
   public
     constructor Create(const ADirectory: string);
     destructor Destroy; override;
-    function AddNameToCache(const URL, NewURL: string; DocType: ThtmlFileType; Error: boolean): string;
+    function AddNameToCache(const URL, NewURL: string; DocType: ThtDocType; Error: boolean): string;
       {Given an URL, creates a filename and adds both to cachelist}
-    function GetCacheFilename(const URL: string; var Filename: string;
-             var DocType: ThtmlFileType; var NewURL: string): boolean;
-    procedure RemoveFromCache(URL: string);
+    function GetCacheFilename(const URL: string; var Filename: string; var DocType: ThtDocType; var NewURL: string): boolean;
+    procedure RemoveFromCache(const URL: string);
     procedure EraseCache;
+    procedure Flush;
   end;
 
 implementation
 
+{$ifndef Delphi7_Plus}
 uses
-  {$ifndef Delphi7_Plus}
-  FileCtrl,
-  {$endif}
-  FBUnitId10, htmlun2, urlsubs;
+  FileCtrl;
+{$endif}
 
 constructor TDiskCache.Create(const ADirectory: string);
 var
@@ -119,24 +119,13 @@ begin
     end;
     with FileList do
       if Count > 0 then
-        Seq := StrToIntDef(Copy(Strings[Count-1], 2, 5), 1110)+1;
+        Seq := StrToIntDef(Copy(Strings[Count-1], 2, 5), 10000)+1;
     CloseFile(F);
   end;
 end;
 
 destructor TDiskCache.Destroy;
-var
-  F: TextFile;
-  I: integer;
 begin
-  if Monitor1 then  {only write if first instance}
-  begin
-    AssignFile(F, Directory+CacheData);
-    Rewrite(F);
-    for I := 0 to URLList.Count-1 do
-      WriteLn(F, URLList[I], ' ', RedirectList[I], ' ', TypeList[I], ' ', FileList[I]);
-    CloseFile(F);
-  end;
   URLList.Free;
   TypeList.Free;
   FileList.Free;
@@ -144,74 +133,98 @@ begin
   inherited Destroy;
 end;
 
-function TDiskCache.AddNameToCache(const URL, NewURL: string; DocType: ThtmlFileType; Error: boolean): string;
+//-- BG ---------------------------------------------------------- 20.05.2016 --
+// extracted from Destroy
+procedure TDiskCache.Flush;
 var
+  F: TextFile;
   I: integer;
-  S: string;
+begin
+  AssignFile(F, Directory+CacheData);
+  Rewrite(F);
+  for I := 0 to URLList.Count-1 do
+    WriteLn(F, URLList[I], ' ', RedirectList[I], ' ', TypeList[I], ' ', FileList[I]);
+  CloseFile(F);
+end;
+
+function TDiskCache.IsCacheable(const Protocol: string): Boolean;
 begin
 {$ifdef UseSSL}
-  if Pos('http', GetProtocol(URL)) = 0 then  {cache only http's and https's}
+  Result := Pos('http', Protocol) > 0;  {cache only http's and https's}
 {$else}
-  S := GetProtocol(URL);
-  if S <> 'http' then
+  Result := Protocol = 'http';
 {$endif}
+end;
+
+function TDiskCache.AddNameToCache(const URL, NewURL: string; DocType: ThtDocType; Error: boolean): string;
+var
+  I: integer;
+  S, P: string;
+begin
+  S := URL;
+  P := SplitProtocol(S);
+  SetLength(Result, 0);
+  if IsCacheable(P) then
   begin
-    Result := '';
-    Exit;
-  end;
-  S := RemovePrefix(URL);
-  I := URLList.IndexOf(S);
-  if I >= 0 then
-    Result := FileList[I]
-  else
-  begin
-    Result := MakeName(S);
-    if Error then S := S+'*';   {so it won't be found in a lookup}
-      TypeList.Add(IntToStr(Ord(DocType)));
-    URLList.Add(S);
-    FileList.Add(Result);
-    if NewURL <> '' then
-      RedirectList.Add(NewURL)
+    I := URLList.IndexOf(S);
+    if I >= 0 then
+      Result := FileList[I]
     else
-      RedirectList.Add('*');
-    CheckSize;
+    begin
+      Result := MakeName(S);
+      if Error then
+        S := S + '*';   {so it won't be found in a lookup}
+      TypeList.Add(IntToStr(Ord(DocType)));
+      URLList.Add(S);
+      FileList.Add(Result);
+      if NewURL <> '' then
+        RedirectList.Add(NewURL)
+      else
+        RedirectList.Add('*');
+      CheckSize;
+    end;
+    Result := Directory + Result;
   end;
-  Result := Directory+Result;
 end;
 
 function TDiskCache.GetCacheFilename(const URL: string; var Filename: string;
-         var DocType: ThtmlFileType; var NewURL: string): boolean;
+         var DocType: ThtDocType; var NewURL: string): boolean;
 var
   I: integer;
-  S: string;
+  S, P: string;
 begin
   NewURL := '';
-  S := RemovePrefix(URL);
-  I := URLList.IndexOf(S);
-  DocType := HTMLType;
-  Result := I >= 0;
+  S := URL;
+  P := SplitProtocol(S);
+  Result := IsCacheable(P);
   if Result then
   begin
-    Filename := Directory+FileList[I];
-    DocType := ThtmlFileType(StrToIntDef(TypeList[I], 0));
-    S := RedirectList[I];
-    if S <> '*' then
-      NewURL := S
-    else
-      NewURL := '';
-  end
-  else
-  begin  {try searching in the Redirect list.  The back button would generate this}
-    I := RedirectList.IndexOf(Lowercase(URL));
+    I := URLList.IndexOf(S);
+    DocType := HTMLType;
     Result := I >= 0;
     if Result then
     begin
       Filename := Directory+FileList[I];
-      DocType := ThtmlFileType(StrToIntDef(TypeList[I], 0));
-      NewUrl := '';
+      DocType := ThtDocType(StrToIntDef(TypeList[I], 0));
+      S := RedirectList[I];
+      if S <> '*' then
+        NewURL := S
+      else
+        NewURL := '';
     end
     else
-      Filename := '';
+    begin  {try searching in the Redirect list.  The back button would generate this}
+      I := RedirectList.IndexOf(Lowercase(URL));
+      Result := I >= 0;
+      if Result then
+      begin
+        Filename := Directory+FileList[I];
+        DocType := ThtDocType(StrToIntDef(TypeList[I], 0));
+        NewUrl := '';
+      end
+      else
+        Filename := '';
+    end;
   end;
 end;
 
@@ -242,9 +255,9 @@ begin
       Break;
     end;
   GoodExt := (Ext <>'') and
-           ((Ext = '.htm') or  (Ext = '.html') or (Ext = '.xhtml') or (Ext = '.xht') or
+           ((Ext = '.htm') or (Ext = '.html') or (Ext = '.xhtml') or (Ext = '.xht') or
             (Ext = '.gif') or (Ext = '.jpg') or
-            (Ext = '.png') or  (Ext = '.bmp') or (Ext = '.txt') or (Ext = '.jpeg') or
+            (Ext = '.png') or (Ext = '.bmp') or (Ext = '.txt') or (Ext = '.jpeg') or
             (Ext = '.css'));
   Result := 'm'+IntToStr(Seq);
   Inc(Seq);
@@ -252,21 +265,25 @@ begin
     Result := Result+Ext;
 end;
 
-procedure TDiskCache.RemoveFromCache(URL: string);
+procedure TDiskCache.Erase(I: Integer);
+begin
+  DeleteFile(Directory+FileList[I]);
+  FileList.Delete(I);
+  URLList.Delete(I);
+  TypeList.Delete(I);
+  RedirectList.Delete(I);
+end;
+
+procedure TDiskCache.RemoveFromCache(const URL: string);
 var
   I: integer;
   S: string;
 begin
-  S := RemovePrefix(URL);
+  S := URL;
+  SplitProtocol(S);
   I := URLList.IndexOf(S);
-  if I >=0 then
-  begin
-    DeleteFile(Directory+FileList[I]);
-    FileList.Delete(I);
-    TypeList.Delete(I);
-    URLlist.Delete(I);
-    Redirectlist.Delete(I);
-  end;
+  if I >= 0 then
+    Erase(I);
 end;
 
 procedure TDiskCache.EraseCache;
@@ -274,28 +291,25 @@ var
   I: integer;
 begin
   for I := FileList.Count-1 downto 0 do
-  begin
-    DeleteFile(Directory+FileList[I]);
-    FileList.Delete(I);
-    URLList.Delete(I);
-    TypeList.Delete(I);
-    RedirectList.Delete(I);
-  end;
+    Erase(I);
 end;
 
-function TDiskCache.RemovePrefix(const URL: string): string;
+function TDiskCache.SplitProtocol(var URL: string): string;
 var
-  I: integer;
+  I, N: integer;
 begin
-  Result := Lowercase(URL);
-  I := Pos('https://', Result);
-  if I = 0 then
-    I := Pos('http://', Result);
-  if I > 0 then
-    Result := Copy(Result, I+7, Length(Result));
-  I := Pos('www.', Result);
-  if I = 1 then
-    Result := Copy(Result, I+4, Length(Result));
+  I := 1;
+  if FindSchemeSep(Url, I) then
+  begin
+    Result := LowerCase(Copy(Url, 1, I - 1));
+    Delete(URL, 1, I + 2);
+  end
+  else
+    // default protocol
+    Result := 'http';
+
+  if CompareText('www.', Copy(URL, 1, 4)) = 0 then
+    Delete(URL, 1, 4);
 end;
 
 end.

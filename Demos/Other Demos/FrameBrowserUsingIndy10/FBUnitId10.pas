@@ -64,21 +64,19 @@ uses
   BegaZoom,
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
-  HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs,
+  HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs, UrlConn,
   HtmlView, FramView, FramBrwz,
-  CachUnitId, DownLoadId, UrlConId10,
+  CachUnitId, DownLoadId,
+// Indy specific:
+  IdGlobal, IdGlobalProtocols,
+  IdCookie, IdCookieManager,
+  IdAuthentication,
 {$ifdef LogIt}
   IdLogfile,
 {$endif}
-  IdBaseComponent, IdAntiFreezeBase, IdAntiFreeze,
-  IdGlobal, IdGlobalProtocols, IdIntercept, IdHTTP, IdComponent, IdIOHandler,
-  IdIOHandlerSocket, IdSSLOpenSSL, IdCookie, IdCookieManager,
-  IdTCPConnection, IdTCPClient, IdAuthentication;
+  UrlConId10;
 
 const
-  (*UsrAgent = 'Mozilla/4.0 (compatible; Indy Library)';*)
-  UsrAgent = 'Mozilla/4.0 (compatible; MSIE 5.0; Windows 98)';
- // UsrAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)';
   MaxHistories = 15;  {size of History list}
   wm_LoadURL = wm_User+124;
   wm_DownLoad = wm_User+125;
@@ -87,23 +85,6 @@ type
 {$ifdef UseVCLStyles}
   TPopupMenu=class(Vcl.ActnPopup.TPopupActionBar);
 {$endif}
-  ImageRec = class(TObject)
-  public
-    Viewer: ThtmlViewer;
-    ID, URL: string;
-    Stream: TMemorystream;
-  end;
-
-  TImageHTTP = class(TComponent)
-  {an HTTP component with a few extra fields}
-  public
-    ImRec: ImageRec;
-    Url: String;
-    Connection : TURLConnection;
-    constructor CreateIt(AOwner: TComponent; IRec: TObject);
-    destructor Destroy; override;
-    procedure GetAsync;
-  end;
 
 {$ifdef LogIt}
   TModIdLogFile = class(TIdLogFile)
@@ -112,6 +93,8 @@ type
   end;
 {$endif}
 
+  { THTTPForm }
+
   THTTPForm = class(TForm)
     MainMenu1: TMainMenu;
     HistoryMenuItem: TMenuItem;
@@ -119,7 +102,6 @@ type
     File1: TMenuItem;
     Openfile1: TMenuItem;
     OpenDialog: TOpenDialog;
-    Timer: TTimer;
     Options1: TMenuItem;
     DeleteCache1: TMenuItem;
     N1: TMenuItem;
@@ -175,14 +157,11 @@ type
     Source1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure GetButtonClick(Sender: TObject);
-    procedure HTTPHeaderData(Sender: TObject);
     procedure CancelButtonClick(Sender: TObject);
     procedure HistoryChange(Sender: TObject);
     procedure BackButtonClick(Sender: TObject);
     procedure FwdButtonClick(Sender: TObject);
     procedure Openfile1Click(Sender: TObject);
-    procedure TimerTimer(Sender: TObject);
     procedure DeleteCacheClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
     procedure ShowImagesClick(Sender: TObject);
@@ -213,12 +192,11 @@ type
     procedure DemoInformation1Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
-    procedure AuthorizationEvent(Sender: TObject; Authentication: TIdAuthentication; var Handled: Boolean);
 {$ifdef UNICODE}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: String);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
       const URL, Query, EncType, RefererX: String; Reload: Boolean;
-      var NewURL: String; var DocType: ThtmlFileType;
+      var NewURL: String; var DocType: ThtDocType;
       var Stream: TStream);
     procedure GetImageRequest(Sender: TObject; const URL: String; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: String; var Handled: Boolean);
@@ -244,59 +222,52 @@ type
     procedure Source1Click(Sender: TObject);
   private
     { Private declarations }
-    URLBase: String;
+    URLBase: string;
     Histories: array[0..MaxHistories-1] of TMenuItem;
-    Pending: TList;       {a list of ImageRecs}
-    HTTPList: TList;         {a list of the Image HTTPs currently existing}
     DiskCache: TDiskCache;
-    NewLocation: string;
-    Redirect: boolean;
-    ARealm: string;
     CurrentLocalFile,
     DownLoadUrl: string;
-    Reloading: boolean;
-    CookieManager: TIdCookieManager;
+    Reloading: Boolean;
     FoundObject: TImageObj;
     FoundObjectName: string;
     NewWindowFile: string;
-    AnAbort: boolean;
-    NumImageTot, NumImageDone: integer;
+    AnAbort: Boolean;
+    NumImageTot, NumImageDone: Integer;
     AStream: TMemoryStream;
-    Connection: TURLConnection;
-    Proxy: string;
-    ProxyPort: string;
-    ProxyUser: string;
-    ProxyPassword: string;
-    TimerCount: integer;
+
+    Connections: ThtConnectionManager;
+    FileConnector: ThtFileConnector;
+    ResourceConnector: ThtResourceConnector;
+    HttpConnector: ThtIndyHTTPConnector;
+    AsyncLoaders: ThtUrlDocLoaderThreadList;
+    Connection: ThtConnection;
+
+    TimerCount: Integer;
     OldTitle: ThtString;
     HintWindow: ThtHintWindow;
-    HintVisible: boolean;
-    TitleViewer: ThtmlViewer;
-    Allow: string;
+    HintVisible: Boolean;
+    TitleViewer: THtmlViewer;
     FHeaderRequestData : TStrings;
     FHeaderResponseData : TStrings;
     FMetaInfo : TStrings;
-    {$ifdef LogIt}
+{$ifdef LogIt}
     ShowDiagWindow: TMenuItem;
-    {$endif}
-    {$ifdef UseVCLStyles}
+{$endif}
+{$ifdef UseVCLStyles}
     sepVCLStyles,
     VCLStyles1 : TMenuItem;
 
     procedure VCLStyleClick(Sender: TObject);
-    {$endif}
-    {$ifdef LogIt}
-   procedure ShowDiagWindowClick(Sender: TObject);
-   {$endif}
+{$endif}
+{$ifdef LogIt}
+    procedure ShowDiagWindowClick(Sender: TObject);
+    procedure LogTStrings(AStrings : TStrings);
+{$endif}
     procedure EnableControls;
     procedure DisableControls;
-    {$ifdef LogIt}
-    procedure LogTStrings(AStrings : TStrings);
-    {$endif}
-    procedure ImageRequestDone(Sender: TObject; RqType: THttpRequest; Error: Word);
     procedure HistoryClick(Sender: TObject);
     procedure WMLoadURL(var Message: TMessage); message WM_LoadURL;
-    procedure WMDownLoad(var Message: TMessage); message WM_DownLoad; 
+    procedure WMDownLoad(var Message: TMessage); message WM_DownLoad;
     procedure CheckEnableControls;
     procedure ClearProcessing;
     procedure Progress(Num, Den: integer);
@@ -306,24 +277,26 @@ type
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
 {$endif}
     procedure CheckException(Sender: TObject; E: Exception);
-    procedure HTTPRedirect(Sender: TObject; var Dest: String; var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
     procedure SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
     procedure LoadCookies(ACookieCollection: TIdCookieManager);
     procedure CloseHints;
     procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
     procedure UpdateCaption;
+    function ConnectionsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
+    procedure LoadedAsync(Sender: ThtUrlDoc; Receiver: TObject);
+    procedure DownLoad(const Url: String);
+    procedure LoadIniFile;
+    procedure SaveIniFile;
   public
     { Public declarations }
-  {$ifdef UseSSL}
-    SSL: TIdSSLIOHandlerSocketOpenSSL;
-  {$endif}
-  {$ifdef LogIt}
-    Log: TModIdLogFile;
-    {$endif}
     FIniFilename: string;
-       {$ifdef LogIt}
-    procedure LogLine (S: string);
-    {$endif}
+{$ifdef LogIt}
+    Log: TModIdLogFile;
+    procedure LogLine(const S: string);
+{$endif}
+
+    procedure LoadURL; overload;
+    procedure LoadURL(const URL: String); overload;
   end;
 
   EContentTypeError = class(Exception);
@@ -370,12 +343,12 @@ uses
   {$ifend}
 {$endif}
 
-  {$ifdef LogIt}
-procedure THTTPForm.LogLine (S: string);
+{$ifdef LogIt}
+procedure THTTPForm.LogLine(const S: string);
 begin
- //   if NOT ShowDiagWindow.Checked then exit;
-    if NOT LogForm.Visible then LogForm.Visible := true;
-    LogForm.LogMemo.Lines.Add (S);
+  // if NOT ShowDiagWindow.Checked then exit;
+  if NOT LogForm.Visible then LogForm.Visible := true;
+  LogForm.LogMemo.Lines.Add (S);
 end;
 {$endif}
 
@@ -402,24 +375,22 @@ end;
 {----------------THTTPForm.FormCreate}
 procedure THTTPForm.FormCreate(Sender: TObject);
 var
-  I, J: integer;
-  IniFile: TIniFile;
-  SL: TStringList;
+  I: integer;
   ProgressBarStyle : LongInt;
-    {$ifdef UseVCLStyles}
+{$ifdef UseVCLStyles}
   m : TMenuItem;
-    {$endif}
+{$endif}
 begin
-  Self.OpenDialog.Filter := GetFileMask;
+  OpenDialog.Filter := GetFileMask;
   FMetaInfo := TStringList.Create;
-  {$ifdef has_StyleElements}
+{$ifdef has_StyleElements}
   TStyleManager.AnimationOnControls := True;
-  {$Endif}
-    FHeaderRequestData := TStringList.Create;
-    FHeaderResponseData := TStringList.Create;
-  {$ifdef LogIt}
+{$Endif}
+  FHeaderRequestData := TStringList.Create;
+  FHeaderResponseData := TStringList.Create;
+{$ifdef LogIt}
   logwin.LogForm := TLogForm.Create(nil);
-  {$endif}
+{$endif}
 {$ifdef HasGestures}
   FrameBrowser.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
   FrameBrowser.Touch.InteractiveGestures := [igPan];
@@ -439,7 +410,8 @@ begin
 
   Cache := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName)+'Cache');
   DiskCache := TDiskCache.Create(Cache);
-  Self.StatusBarMain.Panels[0].Text := '';
+  SaveDialog.InitialDir := Cache;
+  StatusBarMain.Panels[0].Text := '';
 
 {Monitor1 will be set if this is the first instance opened}
   Monitor1 := True;
@@ -449,13 +421,13 @@ begin
   except
     Monitor1 := False;   {probably open in another instance}
   end;
-  {$ifdef LogIt}
+{$ifdef LogIt}
   ShowDiagWindow:= TMenuItem.Create(Options1);
   ShowDiagWindow.OnClick := ShowDiagWindowClick;
   ShowDiagWindow.Caption := '&Diagnostic Window...';
   Options1.Add(ShowDiagWindow);
-  {$endif}
-  {$ifdef UseVCLStyles}
+{$endif}
+{$ifdef UseVCLStyles}
   sepVCLStyles := TMenuItem.Create(Options1);
   sepVCLStyles.Caption := '-';
   Options1.Add(sepVCLStyles);
@@ -472,7 +444,7 @@ begin
       VCLStyles1.Add(m);
     end;
   end;
-  {$endif}
+{$endif}
 {$ifdef LogIt}
   if Monitor1 then
   begin
@@ -484,13 +456,7 @@ begin
   end;
 {$endif}
 
-  CookieManager := TIdCookieManager.Create(Self);
-  LoadCookies(CookieManager);
-  CookieManager.OnDestroy := SaveCookies;
-
   AStream := TMemoryStream.Create;
-  Pending := TList.Create;
-  HTTPList := TList.Create;
 
   FrameBrowser.HistoryMaxCount := MaxHistories;  {defines size of history list}
 
@@ -506,8 +472,13 @@ begin
     end;
   end;
 
-{Load animation from resource}
-{$IFnDEF FPC}
+{$ifdef LCL}
+  // OnClick also handles clicks on dropdown button.
+  UrlComboBox.OnEditingDone := UrlComboBox.OnClick;
+  UrlComboBox.OnSelect := UrlComboBox.OnClick;
+  UrlComboBox.OnClick := nil;
+{$else}
+  {Load animation from resource}
   Animate1.ResName := 'StarCross';
 {$ENDIF}
 
@@ -515,37 +486,27 @@ begin
   URLComboBox.AutoComplete := False;
 {$endif}
 
-  I := Pos('.', Application.ExeName);
-  FIniFilename := Copy(Application.Exename, 1, I)+'ini';
+  ResourceConnector := ThtResourceConnector.Create(Self);
 
-  ProxyPort := '80';
-  IniFile := TIniFile.Create(FIniFileName);
-  try
-    Top := IniFile.ReadInteger('HTTPForm', 'Top', Top);
-    Left := IniFile.ReadInteger('HTTPForm', 'Left',   Left);
-    Width := IniFile.ReadInteger('HTTPForm', 'Width',  Width);
-    Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
-    {$ifdef LogIt}
-    ShowDiagWindow.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
-    {$endif}
-    Proxy := IniFile.ReadString('Proxy', 'ProxyHost', '');
-    ProxyPort := IniFile.ReadString('Proxy', 'ProxyPort', '80');
-    ProxyUser := IniFile.ReadString('Proxy', 'ProxyUsername', '');
-    ProxyPassword := IniFile.ReadString('Proxy', 'ProxyPassword', '');
-    SL := TStringList.Create;
-    try
-      IniFile.ReadSectionValues('favorites', SL);
-      for I := 0 to SL.Count-1 do
-      begin
-        J := Pos('=', SL[I]);
-        UrlCombobox.Items.Add(Copy(SL[I], J+1, 1000));
-      end;
-    finally
-      SL.Free;
-    end;
-  finally
-    IniFile.Free;
-  end;
+  FileConnector := ThtFileConnector.Create(Self);
+  FileConnector.OnGetAuthorization := ConnectionsGetAuthorization;
+
+  HttpConnector := ThtIndyHttpConnector.Create(Self);
+  HttpConnector.OnGetAuthorization := ConnectionsGetAuthorization;
+  HttpConnector.CookieManager.OnDestroy := SaveCookies;
+  HttpConnector.ProxyPort := '80';
+  LoadCookies(HttpConnector.CookieManager);
+
+  AsyncLoaders := ThtUrlDocLoaderThreadList.Create(Self);
+
+  Connections := ThtConnectionManager.Create(Self);
+  Connections.RegisterConnector(ResourceConnector);
+  Connections.RegisterConnector(FileConnector);
+  Connections.RegisterConnector(HttpConnector);
+
+  FIniFilename := ChangeFileExt(Application.Exename, '.ini');
+  LoadIniFile;
+
 {$ifdef LCL}
 {$else}
   DragAcceptFiles(Handle, True);
@@ -561,14 +522,75 @@ begin
   FrameBrowser.OnFileBrowse := FrameBrowserFileBrowse;
   Gauge.Parent := Self.StatusBarMain;
   //remove progress bar border
-  ProgressBarStyle := GetWindowLong(Gauge.Handle,
-                                    GWL_EXSTYLE);
-  ProgressBarStyle := ProgressBarStyle
-                      - WS_EX_STATICEDGE;
-  SetWindowLong(Gauge.Handle,
-                GWL_EXSTYLE,
-                ProgressBarStyle);
+  ProgressBarStyle := GetWindowLong(Gauge.Handle, GWL_EXSTYLE);
+  ProgressBarStyle := ProgressBarStyle - WS_EX_STATICEDGE;
+  SetWindowLong(Gauge.Handle, GWL_EXSTYLE, ProgressBarStyle);
+end;
 
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPForm.LoadIniFile;
+var
+  IniFile: TIniFile;
+  SL: TStringList;
+  I, J: Integer;
+begin
+  IniFile := TIniFile.Create(FIniFileName);
+  try
+    Top    := IniFile.ReadInteger('HTTPForm', 'Top'   , Top   );
+    Left   := IniFile.ReadInteger('HTTPForm', 'Left'  , Left  );
+    Width  := IniFile.ReadInteger('HTTPForm', 'Width' , Width );
+    Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
+{$ifdef LogIt}
+    ShowDiagWindow.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
+{$endif}
+    HttpConnector.ProxyServer   := IniFile.ReadString( 'Proxy'   , 'ProxyHost'    , HttpConnector.ProxyServer   );
+    HttpConnector.ProxyPort     := IniFile.ReadString( 'Proxy'   , 'ProxyPort'    , HttpConnector.ProxyPort     );
+    HttpConnector.ProxyUsername := IniFile.ReadString( 'Proxy'   , 'ProxyUsername', HttpConnector.ProxyUsername );
+    HttpConnector.ProxyPassword := IniFile.ReadString( 'Proxy'   , 'ProxyPassword', HttpConnector.ProxyPassword );
+    HttpConnector.UserAgent     := IniFile.ReadString( 'Settings', 'UserAgent'    , HttpConnector.UserAgent     );
+
+    SL := TStringList.Create;
+    try
+      IniFile.ReadSectionValues('Favorites', SL);
+      for I := 0 to SL.Count-1 do
+      begin
+        J := Pos('=', SL[I]);
+        UrlCombobox.Items.Add(Copy(SL[I], J+1, 1000));
+      end;
+    finally
+      SL.Free;
+    end;
+  finally
+    IniFile.Free;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPForm.SaveIniFile;
+var
+  IniFile: TIniFile;
+  I: Integer;
+begin       {save only if this is the first instance}
+  IniFile := TIniFile.Create(FIniFileName);
+  try
+    IniFile.WriteInteger('HTTPForm', 'Top', Top);
+    IniFile.WriteInteger('HTTPForm', 'Left', Left);
+    IniFile.WriteInteger('HTTPForm', 'Width', Width);
+    IniFile.WriteInteger('HTTPForm', 'Height', Height);
+    {$ifdef LogIt}
+    IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
+    {$endif}
+    IniFile.WriteString('Proxy', 'ProxyHost', HttpConnector.ProxyServer);
+    IniFile.WriteString('Proxy', 'ProxyPort', HttpConnector.ProxyPort);
+    IniFile.WriteString('Proxy', 'ProxyUsername', HttpConnector.ProxyUsername);
+    IniFile.WriteString('Proxy', 'ProxyPassword', HttpConnector.ProxyPassword);
+    IniFile.WriteString('Settings', 'UserAgent', HttpConnector.UserAgent);
+    IniFile.EraseSection('Favorites');
+    for I := 0 to UrlCombobox.Items.Count - 1 do
+      IniFile.WriteString('Favorites', 'Url'+IntToStr(I), UrlCombobox.Items[I]);
+  finally
+    IniFile.Free;
+  end;
 end;
 
 procedure THTTPForm.UpdateCaption;
@@ -598,62 +620,32 @@ end;
 
 {----------------THTTPForm.FormDestroy}
 procedure THTTPForm.FormDestroy(Sender: TObject);
-var
-  I: integer;
-  IniFile: TIniFile;
 begin
-{$ifdef UseSSL}
-  if Assigned(SSL) then
-     SSL.Free;
-{$endif}
 {$ifdef LogIt}
   Log.Free;
 {$endif}
   AStream.Free;
-  Pending.Free;
-  for I := 0 to HTTPList.Count-1 do
-    TImageHTTP(HTTPList.Items[I]).Free;
-  HTTPList.Free;
+
   if Monitor1 then
-    CloseFile(Mon);
-  DiskCache.Free;
-  CookieManager.Free;
-  if Assigned(Connection) then
   begin
-    Connection.Free;
-    Connection := Nil;
+    CloseFile(Mon);
+    DiskCache.Flush;
+    SaveIniFile;
   end;
-  if Monitor1 then
-  begin       {save only if this is the first instance}
-    IniFile := TIniFile.Create(FIniFileName);
-    try
-      IniFile.WriteInteger('HTTPForm', 'Top', Top);
-      IniFile.WriteInteger('HTTPForm', 'Left', Left);
-      IniFile.WriteInteger('HTTPForm', 'Width', Width);
-      IniFile.WriteInteger('HTTPForm', 'Height', Height);
-      {$ifdef LogIt}
-      IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
-      {$endif}
-      IniFile.WriteString('Proxy', 'ProxyHost', Proxy);
-      IniFile.WriteString('Proxy', 'ProxyPort', ProxyPort);
-      IniFile.WriteString('Proxy', 'ProxyUsername', ProxyUser);
-      IniFile.WriteString('Proxy', 'ProxyPassword', ProxyPassword);
-      IniFile.EraseSection('Favorites');
-      for I := 0 to UrlCombobox.Items.Count - 1 do
-        IniFile.WriteString('Favorites', 'Url'+IntToStr(I), UrlCombobox.Items[I]);
-    finally
-      IniFile.Free;
-    end;
-  end;
+
+  DiskCache.Free;
   FHeaderRequestData.Free;
   FHeaderResponseData.Free;
 end;
 
-{----------------THTTPForm.GetButtonClick}
-procedure THTTPForm.GetButtonClick(Sender: TObject);
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPForm.LoadURL;
 {initiate loading of a main document}
+var
+  URL: String;
 begin
-  URLBase := GetUrlBase(URLCombobox.Text);
+  URL := UrlCombobox.Text;
+  URLBase := GetUrlBase(URL);
   DisableControls;
   StatusBarMain.Panels[0].Text := '';
   StatusBarMain.Panels[1].Style := psText;
@@ -662,7 +654,7 @@ begin
     FHeaderRequestData.Clear;
     FHeaderResponseData.Clear;
   {the following initiates one or more GetPostRequest's}
-    FrameBrowser.LoadURL(Normalize(URLCombobox.Text));
+    FrameBrowser.LoadURL(Normalize(URL));
     Reloading := False;
   finally
     CheckEnableControls;
@@ -670,24 +662,48 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPForm.LoadURL(const URL: String);
+begin
+  UrlCombobox.Text := URL;
+  LoadURL;
+end;
+
 {----------------THTTPForm.FrameBrowserFileBrowse}
 //This fires when the user hits a file-browse button on a form.
 
 procedure THTTPForm.FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
-var LFile : String;
+var
+  LFile : String;
 begin
-  //
-  if PromptForFileName(LFile,'Any File |*.*','','Select File','',False) then begin
+  if PromptForFileName(LFile, 'Any File |*.*', '', 'Select File', '', False) then
     S := LFile;
+end;
+
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+function THTTPForm.ConnectionsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
+var
+  Username, Password: string;
+begin
+  begin
+    Username := Connection.Username;
+    Password := Connection.Password;
+    Result := AuthForm.GetAuthorization(TryRealm and (Connection.Realm <> ''), Connection.Realm, Username, Password);
+    if Result then
+    begin
+      Connection.Username := Username;
+      Connection.Password := Password;
+      Connection.BasicAuthentication := True;
+    end;
   end;
-  //
 end;
 
 {----------------THTTPForm.FrameBrowserGetPostRequestEx}
 
 procedure THTTPForm.FrameBrowserGetPostRequestEx(Sender: TObject;
   IsGet: Boolean; const URL, Query, EncType, RefererX: ThtString;
-  Reload: Boolean; var NewURL: ThtString; var DocType: ThtmlFileType;
+  Reload: Boolean; var NewURL: ThtString; var DocType: ThtDocType;
   var Stream: TStream);
 {OnGetPostRequest handler.
  URL is what to load.
@@ -698,256 +714,159 @@ procedure THTTPForm.FrameBrowserGetPostRequestEx(Sender: TObject;
  DocType is the type of document found -- HTMLType, TextType, or ImgType
  Stream is the stream answer to the request}
 const
-  MaxRedirect = 15;                       
+  MaxRedirect = 15;
 var
-  S, URL1, FName, Query1, LastUrl: string;
-  Error, TryAgain, TryRealm: boolean;
+  S, URL1, CacheFileName, Query1, LastUrl, Protocol, NewUrlDummy: string;
+  Error, IsHttpConnection: Boolean;
   RedirectCount: integer;
-
-  function GetAuthorization: boolean;
-  var
-    UName, PWord: string;
-  begin
-    with AuthForm do
-    begin
-      Result := GetAuthorization(TryRealm and (ARealm <> ''), ARealm, UName, PWord);
-      TryRealm := False;    {only try it once}
-      if Result then
-      begin
-        Connection.UserName := UName;
-        Connection.Password := PWord;
-        Connection.InputStream.Clear;   {delete any previous message sent}
-        Connection.BasicAuth := True;
-      end;
-    end;
-  end;
-
+  //Connection: ThtConnection;
+  HttpConnection: THTTPConnection;
+  DownLoad: ThtUrlDoc;
 begin
   CloseHints;   {may be a hint window open}
-  Query1 := Query;
   StatusBarMain.Panels[0].Text := '';
   StatusBarMain.Panels[1].Text := '';
-  FName := '';
   Error := False;
   AnAbort := False;
   NumImageTot := 0;
   NumImageDone := 0;
   Progress(0, 0);
   Gauge.Visible := True;
+  Query1 := Query;
   URL1 := DecodeURL(Normalize(URL));
-(*URLComboBox.Text := URL1; *)    {Probably don't want this}
   URLBase := GetUrlBase(URL1);
   DisableControls;
-  NewLocation := '';     {will change if document referenced by URL has been relocated}
-  ARealm := '';
-  TryRealm := True;
   AStream.Clear;
   RedirectCount := 0;
+
+  SetLength(CacheFileName, 0);
+  SetLength(NewUrlDummy, 0);     {will change if document referenced by URL has been relocated}
   if Reloading or Reload then
-  begin     {don't want a cache file}
-    DiskCache.RemoveFromCache(URL1);
+    {don't want a cache file}
+    DiskCache.RemoveFromCache(URL1)
+  else
+    {if in cache already, get the cache filename}
+    DiskCache.GetCacheFilename(URL1, CacheFileName, DocType, NewUrlDummy);
+
+  if (Length(CacheFileName) > 0) and FileExists(CacheFileName) then
+  begin
+    AStream.LoadFromFile(CacheFileName);
+    NewUrl := NewUrlDummy;
+{$ifdef LogIt}
+    LogLine ('FrameBrowserGetPostRequestEx: from Cache' + CacheFileName);
+{$endif}
   end
   else
-    DiskCache.GetCacheFilename(URL1, FName, DocType, NewLocation);  {if in cache already, get the cache filename}
-  if (FName = '') or not FileExists(FName) then
   begin       {it's not in cache}
-    If Connection <> nil Then
-    begin
-      Connection.Free;
-      Connection := Nil;
-    end;
-    If {$ifdef UseSSL}not Assigned(SSL) and{$endif} (GetProtocol(URL1) = 'https') then  {guard against missing DLLs}
-      Connection := Nil
-    else
-      Connection := TURLConnection.GetConnection(URL1);
-    if connection <> nil then
-    begin
-      Connection.OnHeaderData := HTTPForm.HTTPHeaderData;
-      Connection.OnDocData := HTTPForm.HTTPDocData1;
-      Connection.Referer := RefererX;
-      LastURL := Url1;
-      Connection.OnRedirect := HTTPForm.HTTPRedirect;
-      Connection.Proxy := Proxy;
-      Connection.ProxyPort := ProxyPort;
-      Connection.ProxyUser := ProxyUser;
-      Connection.ProxyPassword := ProxyPassword;
-      Connection.UserAgent := UsrAgent;
-      Connection.CookieManager := CookieManager;
-      Connection.OnAuthorization := AuthorizationEvent;
+    Protocol := GetProtocol(URL1);
+    Connection := Connections.CreateConnection(Protocol);
+    if Connection <> nil then
       try
-        repeat
-          TryAgain := False;
-          Redirect := False;
-          Inc(RedirectCount);
-          if Assigned(Connection.InputStream) then
-            Connection.InputStream.Clear;
-          try
-            if IsGet then
-            begin       {Get}
-              if Query1 <> '' then begin
-                {$ifdef LogIt}
-                 LogLine ('FrameBrowser Get: ' + URL1+'?'+Query1);
-                 {$endif}
-                Connection.Get(URL1+'?'+Query1)
-              end else begin
-                {$ifdef LogIt}
-                 LogLine ('FrameBrowser Get: ' + URL1);
-                 {$endif}
-                Connection.Get(URL1);
-              end;
-            end
-            else      {Post}
-            begin
-              Connection.SendStream := TMemoryStream.Create;
-              try
-                {$ifdef LogIt}
-                LogLine ('FrameBrowser Post: ' + URL1+', Data=' +
-                  Copy (Query1, 1, 132) + ', EncType=' + EncType);  // not too much data
-                   {$endif}
-
-                Connection.SendStream.WriteBuffer(Query1[1], Length(Query1));
-                Connection.SendStream.Position := 0;
-                if EncType = '' then
-                  Connection.ContentTypePost := 'application/x-www-form-urlencoded'
-                else
-                  Connection.ContentTypePost := EncType;
-                Connection.Post(URL1);
-              finally
-                Connection.SendStream.Free;
-              end;
-            end;
-            if Connection.StatusCode = 401 then
-              TryAgain := GetAuthorization
-            else
-              if Redirect then
-              begin
-                Url1 := NewLocation;
-                if Connection.StatusCode = 303 then
-                begin
-                  IsGet := True;
-                 Query1 := '';
-                end;
-                TryAgain := True;
-
-              if {$ifdef UseSSL} not Assigned(SSL) and {$endif} (GetProtocol(NewLocation) = 'https') then
-              begin
-                TryAgain := False;
-                S := '<p>Unsupported protocol: https';
-                Connection.InputStream.Position := Connection.InputStream.Size;
-                Connection.InputStream.Write(S[1], Length(S));
-              end;
-
-            end;
-        except
-          case Connection.StatusCode of
-            401: TryAgain := GetAuthorization;
-            405: if not IsGet and (Pos('get', Allow) > 0) then
-                 begin
-                   IsGet := True;
-                   TryAgain := True;
-                 end;
-            301, 302:
-              if NewLocation <> '' then
-              begin
-                URL1 := NewLocation;
-                TryAgain := True;
-              end;
-            end;
-          if not TryAgain or (RedirectCount >= MaxRedirect) then
-            Raise;
-          end;
-        {$ifdef LogIt}
-         LogLine ('FrameBrowserGetPostRequestEx Done: Status ' + IntToStr (Connection.StatusCode));
-         {$endif}
-      until not TryAgain;
-      if FHeaderRequestData.Count > 0 then begin
-        FHeaderRequestData.Add('');
-      end;
-      FHeaderRequestData.Add( 'URL = "'+ URL +'"');
-      FHeaderRequestData.Add('');
-      FHeaderRequestData.AddStrings( Connection.HeaderRequestData );
-      if FHeaderResponseData.Count > 0 then begin
-        FHeaderResponseData.Add('');
-      end;
-      FHeaderResponseData.Add( 'URL = "'+ URL +'"');
-      FHeaderResponseData.Add('');
-      FHeaderResponseData.AddStrings( Connection.HeaderResponseData );
-      DocType := Connection.ContentType;
-      AStream.LoadFromStream(Connection.InputStream);
-    except
-      {$ifndef UseSSL}
-      On ESpecialException do
-      begin
-        {$ifdef LogIt}
-        LogLine ('FrameBrowserGetPostRequestEx: Special Exception');
-        {$endif}
-        Connection.Free;   {needs to be reset}
-        Connection := Nil;
-        Raise;
-      end;
-      {$endif}
-      On E: Exception do
-      try
-       {$ifdef LogIt}
-        LogLine ('FrameBrowserGetPostRequestEx: Exception - ' + E.Message);
-        {$endif}
-        if AnAbort then
-          Raise(ESpecialException.Create('Abort on user request'));
-
-        Error := True;
-        if Connection is THTTPConnection then
-        with Connection do
-          begin
-            if InputStream.Size > 0 then   {sometimes error messages come in RcvdStream}
-              AStream.LoadFromStream(InputStream)
-            else
-            begin
-              if RedirectCount >= MaxRedirect then
-                  S := 'Excessive Redirects'
-              else
-                 S := ReasonPhrase+'<p>Statuscode: '+IntToStr(StatusCode);
-              AStream.Write(S[1], Length(S));
-            end;
-            DocType := HTMLType;
-          end
-        else  {other connection types}
+        IsHttpConnection := Connection is THTTPConnection;
+        if IsHttpConnection then
         begin
-            S := E.Message;          {Delphi 1}
-            AStream.Write(S[1], Length(S));
+          HttpConnection := Connection as THttpConnection;
+          //HttpConnection.OnDocBegin := HTTPDocBegin1;
+          HttpConnection.OnDocData := HTTPDocData1;
+          //HttpConnection.OnDocEnd := HTTPDocEnd1;
+        end;
+        LastURL := Url1;
+        DownLoad := Connection.CreateUrlDoc(not IsGet, URL1, Query1, EncType, RefererX);
+        try
+          try
+            Connection.LoadDoc(DownLoad);
+            DocType := DownLoad.DocType;
+            AStream.LoadFromStream(DownLoad.Stream);
+
+            if FHeaderRequestData.Count > 0 then
+              FHeaderRequestData.Add('');
+            FHeaderRequestData.Add( 'URL = "'+ URL +'"');
+            if IsHttpConnection then
+            begin
+              FHeaderRequestData.Add('');
+              FHeaderRequestData.AddStrings( HttpConnection.HeaderRequestData );
+            end;
+
+            if FHeaderResponseData.Count > 0 then
+              FHeaderResponseData.Add('');
+            FHeaderResponseData.Add( 'URL = "'+ URL +'"');
+            if IsHttpConnection then
+            begin
+              FHeaderResponseData.Add('');
+              FHeaderResponseData.AddStrings( HttpConnection.HeaderResponseData );
+            end;
+          except
+            {$ifndef UseSSL}
+            On ESpecialException do
+            begin
+              {$ifdef LogIt}
+              LogLine ('FrameBrowserGetPostRequestEx: Special Exception');
+              {$endif}
+              Connection.Free;   {needs to be reset}
+              Connection := Nil;
+              Raise;
+            end;
+            {$endif}
+            On E: Exception do
+            begin
+             {$ifdef LogIt}
+              LogLine ('FrameBrowserGetPostRequestEx: Exception - ' + E.Message);
+              {$endif}
+              if AnAbort then
+                raise ESpecialException.Create('Abort on user request');
+
+              Error := True;
+              if Connection is THTTPConnection then
+              begin
+                if DownLoad.Stream.Size > 0 then   {sometimes error messages come in RcvdStream}
+                  AStream.LoadFromStream(DownLoad.Stream)
+                else
+                begin
+                  if RedirectCount >= MaxRedirect then
+                      S := 'Excessive Redirects'
+                  else
+                     S := HttpConnection.ReasonPhrase+'<p>Statuscode: '+IntToStr(HttpConnection.StatusCode);
+                  AStream.Write(S[1], Length(S) * SizeOf(S[1]));
+                end;
+                DocType := HTMLType;
+              end
+              else  {other connection types}
+              begin
+                S :=
+                  '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + LastURL +
+                  '<p>Cause: ' + E.Message; {load an error message}
+
+                  AStream.Write(S[1], Length(S) * SizeOf(S[1]));
+              end;
+            end;
+          end;
+          StatusBarMain.Panels[0].Text := 'Received ' + IntToStr(AStream.Size) + ' bytes';
+          CacheFileName := DiskCache.AddNameToCache(LastUrl, Download.NewUrl, DocType, Error);
+          if Length(CacheFileName) > 0 then
+            try
+              AStream.SaveToFile(CacheFileName);   {it's now in cache}
+            except
+            end;
+        finally
+          NewURL := Download.NewUrl;   {in case location has been changed}
+          FreeAndNil(Download);
         end;
       finally
-          Connection.Free;   {needs to be reset}
-          Connection := Nil;
-      end;
-    end;
-    StatusBarMain.Panels[0].Text := 'Received ' + IntToStr(AStream.Size) + ' bytes';
-    FName := DiskCache.AddNameToCache(LastUrl, NewLocation, DocType, Error);
-    if FName <> '' then
-      try
-        AStream.SaveToFile(FName);   {it's now in cache}
-      except
-      end;
-    end
+        FreeAndNil(Connection);
+      end
     else
     begin        { unsupported protocol }
-      S := 'Unsupported protocol: ' + GetProtocol(URL1);
+      S := 'Unsupported protocol: ' + Protocol;
+{$ifdef LogIt}
+      LogLine (S);
+{$endif}
       if Sender is TFrameBrowser then   {main document display}
-        Raise(ESpecialException.Create(S))
-      else   {else other errors will get displayed as HTML file}
-        AStream.Write(S[1], Length(S));
-        {$ifdef LogIt}
-       LogLine (S);
-       {$endif}
+        raise ESpecialException.Create(S);
+
+      {else other errors will get displayed as HTML file}
+      AStream.Write(S[1], Length(S) * SizeOf(S[1]));
     end;
-  end
-  else
-  begin
-    AStream.LoadFromFile(FName);
-    {$ifdef LogIt}
-    LogLine ('FrameBrowserGetPostRequestEx: from Cache' + FName);
-     {$endif}
   end;
-  NewURL := NewLocation;   {in case location has been changed}
   Stream := AStream;
 end;
 
@@ -955,177 +874,89 @@ end;
 procedure THTTPForm.GetImageRequest(Sender: TObject; const URL: ThtString; var Stream: TStream);
 {the OnImageRequest handler}
 var
-  S: string;
-  IR: ImageRec;
+  Protocol, S: string;
+  Connection: ThtConnection;
+  DownLoad: ThtUrlDoc;
   DocType: ThtmlFileType;
-  ImHTTP: TImageHTTP;
   Dummy: string;
-begin
-  if Reloading then
-  begin
-    DiskCache.RemoveFromCache(URL);
-    S := '';
-  end
-  else
-    DiskCache.GetCacheFilename(URL, S, DocType, Dummy);  {see if image is in cache file already}
-  if FileExists(S) and (DocType = ImgType) then
-  begin                               {yes, it is}
-    AStream.LoadFromFile(S);
-    Stream := AStream;      {return image immediately}
-    {$ifdef LogIt}
-    LogLine ('GetImageRequest, from Cache: ' + S);
-    {$endif}
-  end
-  else
-    if not ((GetProtocol(URL) = 'http')
-       {$ifdef UseSSL}
-       or (GetProtocol(URL) = 'https')
-       {$endif}
-       ) then
-    begin
-      if Assigned(Connection) then
-        Connection.Free;
-      Connection := TURLConnection.GetConnection(URL);
-      if connection <> nil then
-      begin
-        {$ifdef LogIt}
-         LogLine ('GetImageRequest Start: ' + URL);
-        {$endif}
-        try
-          Connection.Get(URL);
-          Stream := Connection.InputStream;
-       except
-         Stream := Nil;
-       end;
-    end
-    else
-      Stream := Nil;
-  end
-  else
-  begin          {http protocol, the image will need to be downloaded}
-    Stream := WaitStream;   {wait indicator}
-    IR := ImageRec.Create;
-    IR.Viewer := Sender as ThtmlViewer;
-    IR.URL := URL;
-    IR.ID := URL;
-
-    ImHTTP := TImageHTTP.CreateIt(Self, IR);
-    ImHTTP.Connection.Owner := ImHTTP;
-    ImHTTP.Connection.OnRequestDone := ImageRequestDone;
-    ImHTTP.Connection.Proxy := Proxy;
-    ImHTTP.Connection.ProxyPort := ProxyPort;
-    ImHTTP.Connection.ProxyUser := ProxyUser;
-    ImHTTP.Connection.ProxyPassword := ProxyPassword;
-    ImHTTP.Connection.UserAgent := UsrAgent;
-    DisableControls;
-    try
-      ImHTTP.GetAsync;  {This call does not stall. When done getting the image,
-                         processing will continue at ImageRequestDone}
-      HTTPList.Add(ImHTTP);
-    except
-      ImHTTP.Free;
-      Stream := Nil;
-    end;
-
-    Inc(NumImageTot);
-    Progress(NumImageDone, NumImageTot);
-  end;
-end;
-
-{----------------THTTPForm.ImageRequestDone}
-procedure THTTPForm.ImageRequestDone(Sender: TObject; RqType: THttpRequest;
-  Error: Word);
-{arrive here when ImHTTP.GetAsync has completed}
-var
-  ImHTTP: TImageHTTP;
+  Viewer: THtmlViewer;
 begin
   try
-    ImHTTP := (Sender as TImageHTTP);
-      {$ifdef LogIt}
-        LogLine ('=====');
-        LogLine ('');
-         LogLine ('--- Request ---');
-        LogTStrings( ImHTTP.Connection.HeaderRequestData );
-        LogLine ('');
-        LogLine ('--- Response ---');
-        LogTStrings( ImHTTP.Connection.HeaderResponseData );
-        LogLine ('');
-        LogLine ('====');
-      {$endif}
-    if (RqType = httpGet) then
-    begin
-      if (Error = 0) then
-      begin   {Add the image record to the Pending list to be inserted in the timer
-               loop at TimerTimer}
-      {$ifdef LogIt}
-        LogLine ('GetImageRequest Done OK');
-      {$endif}
-        Pending.Add(ImHTTP.ImRec);
-        ImHTTP.ImRec := Nil;  {so it won't get free'd below}
-        Timer.Enabled := True;
-      end
-      else
-      {this code will cause Error Image to appear if error occured when downloading image}
-      begin   {Add the image record to the Pending list to be inserted in the timer
-               loop at TimerTimer}
-      {$ifdef LogIt}
-        LogLine ('GetImageRequest Done - Error '+IntToStr(Error));
-      {$endif}
-        Pending.Add(ImHTTP.ImRec);
-        FreeAndNil(ImHTTP.ImRec.Stream);
-        ImHTTP.ImRec := Nil;  {so it won't get free'd below}
-        Timer.Enabled := True;
+    SetLength(S, 0);
+    if Reloading then
+      DiskCache.RemoveFromCache(URL)
+    else
+      DiskCache.GetCacheFilename(URL, S, DocType, Dummy);  {see if image is in cache file already}
+
+    if (Length(S) > 0) and FileExists(S) and (DocType = ImgType) then
+    begin                               {yes, it is}
+      AStream.LoadFromFile(S);
+      Stream := AStream;      {return image immediately}
+{$ifdef LogIt}
+      LogLine ('GetImageRequest, from Cache: ' + S);
+{$endif}
+    end
+    else
+    begin          {get the image asynchronously }
+      Protocol := GetProtocol(URL);
+      Connection := Connections.CreateConnection(Protocol);
+      if Connection <> nil then
+      begin
+        DownLoad := Connection.CreateUrlDoc(False, URL, '', '', '');
+        if Connection is THTTPConnection then
+        begin
+          if Sender is THtmlViewer then
+            Viewer := THtmlViewer(Sender)
+          else
+            Viewer := FrameBrowser.ActiveViewer;
+          AsyncLoaders.AddLoader(ThtUrlDocLoaderThread.Create(Connection, DownLoad, LoadedAsync, Viewer));
+          Stream := WaitStream;   {wait indicator}
+        end
+        else
+          try
+            Connection.LoadDoc(DownLoad);
+            DocType := DownLoad.DocType;
+            AStream.LoadFromStream(DownLoad.Stream);
+            Stream := AStream;
+          finally
+            DownLoad.Free;
+            Connection.Free;
+          end;
       end;
-      (*Optional code to just ignore the error
-      begin   {an error occured, forget this image}
-      Inc(NumImageDone);
-      Progress(NumImageDone, NumImageTot);
-      end; *)
     end;
-  HTTPList.Remove(ImHTTP);
-  ImHTTP.Free;
-  if NumImageDone >= NumImageTot then
-    CheckEnableControls;
   except
+    Stream := ErrorStream;
   end;
 end;
 
-{----------------THTTPForm.TimerTimer}
-procedure THTTPForm.TimerTimer(Sender: TObject);
-{Images cannot necessarily be inserted at the moment they become available since
- the system may be busy with other things.  Hence they are added to a Pending
- list and this timing loop repeatedly trys to insert them}
+//-- BG ---------------------------------------------------------- 28.08.2007 --
+procedure THTTPForm.LoadedAsync(Sender: ThtUrlDoc; Receiver: TObject);
 var
-  FName: String;
+  Viewer: THtmlViewer absolute Receiver;
+  CacheFileName: String;
+  Loaded: Boolean;
 begin
-  Timer.Enabled := False;
-  if Pending.Count > 0 then
-    with ImageRec(Pending[0]) do
-      begin
-        try
-          Viewer.InsertImage(ID, Stream);
-        except
-        end;
+  Loaded := Sender.Status = ucsLoaded;
+  if Receiver is THtmlViewer then
+    if Loaded then
+      Viewer.InsertImage(Sender.Url, Sender.Stream)
+    else
+      Viewer.InsertImage(Sender.Url, TStream(nil));
 
-        if Assigned(Stream) then  {Stream can be Nil}
-        begin
-          {save image in cache file}
-          FName := DiskCache.AddNameToCache(URL, '', ImgType, False);
-          if FName <> '' then
-          try
-            Stream.SaveToFile(FName);
-          except
-          end;
-          Stream.Free;
-        end;
-        Pending.Delete(0);
-        Free;
-        Inc(NumImageDone);
-        Progress(NumImageDone, NumImageTot);
+  CacheFileName := DiskCache.AddNameToCache(Sender.Url, Sender.NewUrl, Sender.DocType, Loaded);
+  if Length(CacheFileName) > 0 then
+    try
+      if Sender.Stream is TMemoryStream then
+        (Sender.Stream as TMemoryStream).SaveToFile(CacheFileName)
+      else
+      begin
+        AStream.LoadFromStream(Sender.Stream);
+        AStream.SaveToFile(CacheFileName);   {it's now in cache}
       end;
-  if (Pending.Count > 0) or (HTTPList.Count > 0) then
-    Timer.Enabled := True;   {still have images to process}
-  CheckEnableControls;
+    except
+    end;
+
+  Sender.Free;
 end;
 
 {----------------THTTPForm.CancelButtonClick}
@@ -1186,7 +1017,7 @@ end;
 {----------------THTTPForm.WMLoadURL}
 procedure THTTPForm.WMLoadURL(var Message: TMessage);
 begin
-  GetButtonClick(Self);
+  LoadURL;
 end;
 
 {----------------THTTPForm.Openfile1Click}
@@ -1201,8 +1032,7 @@ begin
   OpenDialog.Filename := '';
   if OpenDialog.Execute then
   begin
-    UrlComboBox.Text := 'file:///'+DosToHTMLNoSharp(OpenDialog.Filename);
-    GetButtonClick(Nil);
+    LoadURL('file:///'+DosToHTMLNoSharp(OpenDialog.Filename));
     UpdateCaption;
     CurrentLocalFile := FrameBrowser.CurrentFile;
   end;
@@ -1233,9 +1063,9 @@ var
   S, Params: string;
   K: integer;
 begin
-  {$ifdef LogIt}
+{$ifdef LogIt}
   LogLine ('HotSpotTargetClick: ' + URL);
-  {$endif}
+{$endif}
   Protocol := GetProtocol(URL);
   if Protocol = 'mailto' then
   begin
@@ -1298,9 +1128,7 @@ end;
 
 procedure THTTPForm.CheckEnableControls;
 begin
-  if not FrameBrowser.Processing and
-      (not Assigned(Connection) or (Connection.State in [httpReady, httpNotConnected])) and
-      (HTTPList.Count = 0) then
+  if not FrameBrowser.Processing and not Connection.Processing {(not Assigned(Connection) or (Connection.State in [httpReady, httpNotConnected])) and (HTTPList.Count = 0)} then
   begin
     EnableControls;
     StatusBarMain.Panels[1].Text   := 'DONE';
@@ -1308,45 +1136,45 @@ begin
 end;
 
 procedure THTTPForm.ClearProcessing;
-var
-  I: integer;
+//var
+//  I: integer;
 begin
-  for I := 0 to HTTPList.Count-1 do   {free any Image HTTPs existing}
-    with TImageHTTP(HTTPList.Items[I]) do
-    begin
-      Free;
-    end;
-  HTTPList.Clear;
-  for I := 0 to Pending.Count-1 do
-  begin
-    ImageRec(Pending.Items[I]).Stream.Free;
-    ImageRec(Pending.Items[I]).Free;
-  end;
-  Pending.Clear;
+//  for I := 0 to HTTPList.Count-1 do   {free any Image HTTPs existing}
+//    with TImageHTTP(HTTPList.Items[I]) do
+//    begin
+//      Free;
+//    end;
+//  HTTPList.Clear;
+//  for I := 0 to Pending.Count-1 do
+//  begin
+//    ImageRec(Pending.Items[I]).Stream.Free;
+//    ImageRec(Pending.Items[I]).Free;
+//  end;
+//  Pending.Clear;
 end;
 
 procedure THTTPForm.ViewerClear(Sender: TObject);
 {A ThtmlViewer is about to be cleared. Cancel any image processing destined for it}
-var
-  I: integer;
-  Vw: ThtmlViewer;
+//var
+//  I: integer;
+//  Vw: ThtmlViewer;
 begin
-  Vw := Sender as ThtmlViewer;
-  for I := HTTPList.Count-1 downto 0 do
-    with TImageHTTP(HTTPList.Items[I]) do
-      if ImRec.Viewer = Vw then
-      begin
-        Free;
-        HTTPList.Delete(I);
-      end;
-  for I := Pending.Count-1 downto 0 do
-    with ImageRec(Pending.Items[I]) do
-      if Viewer = Vw then
-      begin
-        Stream.Free;
-        Free;
-        Pending.Delete(I);
-      end;
+//  Vw := Sender as ThtmlViewer;
+//  for I := HTTPList.Count-1 downto 0 do
+//    with TImageHTTP(HTTPList.Items[I]) do
+//      if ImRec.Viewer = Vw then
+//      begin
+//        Free;
+//        HTTPList.Delete(I);
+//      end;
+//  for I := Pending.Count-1 downto 0 do
+//    with ImageRec(Pending.Items[I]) do
+//      if Viewer = Vw then
+//      begin
+//        Stream.Free;
+//        Free;
+//        Pending.Delete(I);
+//      end;
 end;
 
 procedure THTTPForm.DeleteCacheClick(Sender: TObject);
@@ -1367,8 +1195,7 @@ begin
   DragFinish(Message.WParam);
   if Count >0 then
   begin
-    UrlComboBox.Text := 'file:///'+DosToHTMLNoSharp(S);
-    GetButtonClick(Nil);
+    LoadURL('file:///'+DosToHTMLNoSharp(S));
     CurrentLocalFile := FrameBrowser.CurrentFile;
   end;
   Message.Result := 0;
@@ -1412,30 +1239,31 @@ begin
   FrameBrowser.SetFocus;
 end;
 
-procedure THTTPForm.WMDownLoad(var Message: TMessage);
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPForm.DownLoad(const Url: String);
 {Handle download of file}
 var
   DownLoadForm: TDownLoadForm;
 begin
-  SaveDialog.Filename := GetURLFilenameAndExt(DownLoadURL);
-  SaveDialog.InitialDir := Cache;
+  SaveDialog.Filename := GetURLFilenameAndExt(URL);
   if SaveDialog.Execute then
   begin
     DownLoadForm := TDownLoadForm.Create(Self);
     try
-      with DownLoadForm do
-      begin
-        Filename := SaveDialog.Filename;
-        DownLoadURL := Self.DownLoadURL;
-        Proxy := Self.Proxy;
-        ProxyPort := Self.ProxyPort;
-        UserAgent := UsrAgent;
-        ShowModal;
-      end;
+      DownLoadForm.Filename    := SaveDialog.Filename;
+      DownLoadForm.Connections := Connections;
+      DownLoadForm.DownLoadURL := URL;
+      DownLoadForm.ShowModal;
     finally
       DownLoadForm.Free;
     end;
   end;
+end;
+
+procedure THTTPForm.WMDownLoad(var Message: TMessage);
+{Handle download of file}
+begin
+  DownLoad(DownLoadURL);
 end;
 
 procedure THTTPForm.FormShow(Sender: TObject);
@@ -1443,37 +1271,7 @@ procedure THTTPForm.FormShow(Sender: TObject);
 var
   S: string;
   I: integer;
-  {$ifdef UseSSL}
-  h1, h2: THandle;
-  {$endif}
 begin
-  {$ifdef UseSSL}
-  {$ifdef MSWindows}
-  {check to see the DLLs for Secure Socket Layer can be found}
-  h1 := LoadLibrary('libeay32.dll');
-  h2 := LoadLibrary('ssleay32.dll');
-  if h2 = 0 then begin
-    {alternative name for mingw32 versions of OpenSSL}
-    h2 := LoadLibrary('libssl32.dll');
-  end;
-  FreeLibrary(h1);
-  FreeLibrary(h2);
-  if (h1 = 0) or (h2 = 0) then
-  begin
-    if Monitor1 then
-      ShowMessage('One or both Secure Socket Layer (SSL) DLLs cannot be found.'^M^J+
-      'See download information which follows.');
-    SSL := Nil;
-  end
-  else
-  {$endif}
-  begin
-    SSL := TIdSSLIOHandlerSocketOpenSSL.Create(Nil);
-    SSL.SSLOptions.Method := sslvSSLv23;
-    SSL.SSLOptions.Mode := sslmClient;
-  end;
-  {$endif}
-
   if (ParamCount >= 1) then
   begin            {Parameter is file to load}
     S := CmdLine;
@@ -1566,23 +1364,23 @@ procedure THTTPForm.URLComboBoxKeyPress(Sender: TObject; var Key: Char);
 {trap CR in combobox}
 begin
   if (Key = #13) and (URLComboBox.Text <> '') then
-  Begin
+  begin
     Key := #0;
-    GetButtonClick(Self);
+    LoadURL;
   end;
 end;
 
 procedure THTTPForm.URLComboBoxClick(Sender: TObject);
 begin
-  if URLComboBox.Text <> '' then begin
+  if URLComboBox.Text <> '' then
+  begin
     FMetaInfo.Clear;
-    GetButtonClick(Self);
+    LoadURL;
   end;
 end;
 
 {----------------THTTPForm.RightClick}
-procedure THTTPForm.RightClick(Sender: TObject;
-            Parameters: TRightClickParameters);
+procedure THTTPForm.RightClick(Sender: TObject; Parameters: TRightClickParameters);
 {OnRightClick handler.  Bring up popup menu allowing saving of image or opening
  a link in another window}
 var
@@ -1651,40 +1449,8 @@ end;
 
 procedure THTTPForm.SaveImageAsClick(Sender: TObject);
 {response to popup menu selection to save image}
-var
-  Stream: TMemoryStream;
-  S: string;
-  DocType: ThtmlFileType;
-  AConnection: TURLConnection;
-  Dummy: string;
 begin
-  SaveDialog.InitialDir := Cache;
-  SaveDialog.Filename := GetURLFilenameAndExt(FoundObjectName);
-  if SaveDialog.Execute then
-  begin
-    Stream := TMemoryStream.Create;
-    try
-      if DiskCache.GetCacheFilename(FoundObjectName, S, DocType, Dummy) then
-      begin
-        Stream.LoadFromFile(S);
-        Stream.SaveToFile(SaveDialog.Filename);
-      end
-      else
-      begin
-        AConnection := TURLConnection.GetConnection(FoundObjectName);
-        if AConnection <> nil then
-        try
-          AConnection.InputStream := Stream;
-          AConnection.Get(FoundObjectName);
-          Stream.SaveToFile(SaveDialog.Filename);
-        finally
-          AConnection.Free;
-        end;
-      end;
-    finally
-      Stream.Free;
-    end;
-  end;
+  DownLoad(FoundObjectName);
 end;
 
 procedure THTTPForm.OpenInNewWindowClick(Sender: TObject);
@@ -1704,8 +1470,8 @@ end;
 
 procedure THTTPForm.HTTPDocData1(Sender: TObject);
 begin
-  StatusBarMain.Panels[0].Text := 'Text: ' + IntToStr(Connection.RcvdCount) + ' bytes';
-  Progress(Connection.RcvdCount, Connection.ContentLength);
+  StatusBarMain.Panels[0].Text := 'Text: ' + IntToStr(Connection.ReceivedSize) + ' bytes';
+  Progress(Connection.ReceivedSize, Connection.ExpectedSize);
 end;
 
 procedure THTTPForm.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -1718,7 +1484,7 @@ begin
   {$endif}
 end;
 
-procedure THTTPForm.Progress(Num, Den: integer);
+procedure THTTPForm.Progress(Num, Den: Integer);
 var
   Percent: integer;
 begin
@@ -1790,42 +1556,6 @@ begin
   Gauge.Visible := False;
 end;
 
-procedure THTTPForm.HTTPHeaderData(Sender: TObject);
-{Selected Header data comes here}
-var
-  S: string;
-  I: integer;
-begin
-  S := Connection.LastResponse;
-
-{see if Authentication is required.  If so, need the Realm string}
-  I := Pos('www-authenticate', Lowercase(S));
-  if I > 0 then
-  begin
-    I := Pos('realm', Lowercase(S));
-    if (I > 0) then
-    begin
-      S := Copy(S, I+5, Length(S));
-      I := Pos('=', S);
-      if I > 0 then
-      begin
-        S := Trim(Copy(S, I+1, Length(S)));
-        ARealm := S;
-      end;
-    end;
-    Exit;
-  end;
-
-  {see what's allowed for error 405}
-  I := Pos('allow:', LowerCase(S));
-  if (I > 0) then
-  begin
-    Allow := Lowercase(S);
-    Exit;
-  end;
-
-end;
-
 procedure THTTPForm.HTTPHeaders1Click(Sender: TObject);
 begin
   with TInfoForm.Create(Application) do
@@ -1853,35 +1583,6 @@ procedure THTTPForm.FwdButtonClick(Sender: TObject);
 begin
   FrameBrowser.GoFwd;
   CheckEnableControls;
-end;
-
-{----------------TImageHTTP.CreateIt}
-constructor TImageHTTP.CreateIt(AOwner: TComponent; IRec: TObject);
-begin
-  inherited Create(AOwner);
-  ImRec := IRec as ImageRec;
-  ImRec.Stream := TMemoryStream.Create;
-  URL := ImRec.URL;
-  Connection := TURLConnection.GetConnection(URL);
-  Connection.InputStream := ImRec.Stream;
-end;
-
-{----------------TImageHTTP.GetAsync}
-procedure TImageHTTP.GetAsync;
-begin
-  Connection.GetAsync(URL);
-end;
-
-{----------------TImageHTTP.Destroy}
-destructor TImageHTTP.Destroy;
-begin
-  if Assigned(ImRec) then
-  begin
-    ImRec.Stream.Free;
-    ImRec.Free;
-  end;
-  Connection.Free;
-  inherited Destroy;
 end;
 
 {----------------THTTPForm.Processing}
@@ -2039,17 +1740,19 @@ end;
 procedure THTTPForm.Proxy1Click(Sender: TObject);
 begin
   ProxyForm := TProxyForm.Create(Self);
-  ProxyForm.ProxyEdit.Text := Proxy;
-  ProxyForm.PortEdit.Text := ProxyPort;
-  ProxyForm.ProxyUsername.Text := ProxyUser;
-  ProxyForm.ProxyPassword.Text := ProxyPassword;
   try
+    ProxyForm.ProxyEdit.Text     := HttpConnector.ProxyServer;
+    ProxyForm.PortEdit.Text      := HttpConnector.ProxyPort;
+    ProxyForm.ProxyUsername.Text := HttpConnector.ProxyUsername;
+    ProxyForm.ProxyPassword.Text := HttpConnector.ProxyPassword;
+    ProxyForm.UserAgent.Text     := HttpConnector.UserAgent;
     if ProxyForm.ShowModal = mrOK then
     begin
-      Proxy := ProxyForm.ProxyEdit.Text;
-      ProxyPort := ProxyForm.PortEdit.Text;
-      ProxyUser := ProxyForm.ProxyUsername.Text;
-      ProxyPassword := ProxyForm.ProxyPassword.Text;
+      HttpConnector.ProxyServer   := ProxyForm.ProxyEdit.Text;
+      HttpConnector.ProxyPort     := ProxyForm.PortEdit.Text;
+      HttpConnector.ProxyUsername := ProxyForm.ProxyUsername.Text;
+      HttpConnector.ProxyPassword := ProxyForm.ProxyPassword.Text;
+      HttpConnector.UserAgent     := ProxyForm.UserAgent.Text;
     end;
   finally
     ProxyForm.Free;
@@ -2058,8 +1761,7 @@ end;
 
 procedure THTTPForm.DemoInformation1Click(Sender: TObject);
 begin
-  UrlComboBox.Text := 'res:///page0.htm';
-  GetButtonClick(Self);
+  LoadURL('res:///page0.htm');
 end;
 
 procedure THTTPForm.FrameBrowserMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
@@ -2150,36 +1852,6 @@ begin
   except
     CloseHints;
   end;
-end;
-
-procedure THTTPForm.HTTPRedirect(Sender: TObject; var Dest: String;
-  var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
-var
-  Proto: string;
-  FullUrl: boolean;
-begin
-  FullURL := True;
-  Proto := GetProtocol(UrlBase);
-  if IsFullUrl(Dest) then  {it's a full URL}
-  begin
-    Dest := Normalize(Dest);
-    NewLocation := Dest;
-  end
-  else
-  begin
-    NewLocation := CombineURL(URLBase, Dest);
-    FullURL := False;
-  end;
-  URLBase := GetUrlBase(NewLocation);
-
-{The following is apparently no longer necessary}
-  if (Proto = 'https') or not FullURL or (GetProtocol(UrlBase) = 'https') then
-  begin
-    Handled := False;   {we will handle it}
-    Redirect := True;
-  end
-  else
-   Handled := True;  {IdHTTP will handle it}
 end;
 
 procedure THTTPForm.SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
@@ -2480,15 +2152,6 @@ begin
     inherited;
 end;
 {$endif}
-
-procedure THTTPForm.AuthorizationEvent(Sender: TObject;
-  Authentication: TIdAuthentication; var Handled: Boolean);
-begin
-  if Authentication is TIdBasicAuthentication then
-    with TIdBasicAuthentication(Authentication) do
-      ARealm := Realm;
-  Handled := False;
-end;
 
 procedure THTTPForm.FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 begin

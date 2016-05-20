@@ -3,8 +3,8 @@ object DownLoadForm: TDownLoadForm
   Top = 221
   BorderIcons = [biSystemMenu]
   Caption = 'DownLoad'
-  ClientHeight = 87
-  ClientWidth = 241
+  ClientHeight = 125
+  ClientWidth = 307
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,6 +12,7 @@ object DownLoadForm: TDownLoadForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = True
+  Position = poOwnerFormCenter
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13

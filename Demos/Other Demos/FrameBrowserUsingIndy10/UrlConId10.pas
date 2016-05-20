@@ -50,919 +50,564 @@ uses
   ShellAPI, WinTypes, WinProcs,
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  URLSubs, htmlview, IdHTTP, IdComponent, IdCookieManager,
+{$ifdef MSWindows}
+  Windows,
+{$endif}
+  IdHTTP, IdComponent, IdCookieManager, IdAuthentication,
 {$ifdef UseSSL}
   IdIntercept, IdSSLOpenSSL,
 {$endif}
 {$ifdef LogIt}
-  idLogfile,
+  IdLogFile,
 {$endif}
 {$ifdef UseZLib}
   IdCompressorZLib,
 {$endif}
-{$ifdef IncludeZip}
-  VCLUnZIp, kpZipObj,
-{$endif}
-  HttpAsyncId10;
+//{$ifdef IncludeZip}
+//  VCLUnZIp, kpZipObj,
+//{$endif}
+  URLSubs, UrlConn;
 
 type
-  THttpRequest = (httpAbort, httpGET, httpPOST, httpHEAD);
-  THttpState = (httpReady, httpNotConnected, httpConnected, httpDnsLookup,
-    httpDnsLookupDone, httpWaitingHeader, httpWaitingBody, httpAborting);
-  THttpRequestDone = procedure (Sender: TObject; RqType: THttpRequest; Error: Word) of object;
+  ThtIndyHttpConnector = class;
 
-  TURLConnection = class(TObject)
-  private
-    FHeaderRequestData  : TStrings;
-    FHeaderResponseData : TStrings;
-    FInputStream        : TMemoryStream;
-    FInputStreamOwn     : Boolean; { true if the class owns the stream }
-    procedure SetInputStream(Value: TMemoryStream);
-  protected 
-    FOnHeaderEnd       : TNotifyEvent;
-    FOnHeaderData      : TNotifyEvent;
-    FOnDocBegin        : TNotifyEvent;
-    FOnDocEnd          : TNotifyEvent;
-    FOnDocData         : TNotifyEvent;
-    FOnRequestDone     : THttpRequestDone;
-    FOnRedirect        : TIdHTTPOnRedirectEvent;
-    FContentType       : ThtmlFileType;
-    FContentLength     : LongInt;
-    FProxy             : string;
-    FProxyPort         : string;
-    FProxyUser         : string;
-    FProxyPassword     : string;
-    FUsername          : string;
-    FPassword          : string;
-    FUserAgent         : string;
-    FCookieManager     : TIdCookieManager;
-    FBasicAuth         : boolean;
-    FContentTypePost   : String;
-    FSendStream        : TMemoryStream;
-    FOwner             : TComponent;
-    FReasonPhrase      : String;
-    FStatusCode        : integer;
-    FReferer           : string;
-    FOnAuthorization   : TIdOnAuthorization;
-  public
-    class function Getconnection(const URL : String) : TURLConnection;
-
-    constructor Create;
-    destructor Destroy; override;
-
-    procedure Get(const URL: String); virtual; abstract;
-    procedure Post(const URL: String); virtual;
-    procedure GetAsync(const URL: String); virtual;
-    procedure PostAsync(const URL: String); virtual;
-    procedure CheckInputStream; virtual;
-    function RcvdCount : LongInt; virtual;
-    function ReasonPhrase : String; virtual;
-    function LastResponse : String; virtual;
-    function StatusCode : LongInt; virtual;
-    function State: THttpState; virtual;
-    procedure Abort; virtual;
-    function ContentType: ThtmlFileType; virtual;
-    function ContentLength: LongInt; virtual;
-
-    property OnHeaderData      : TNotifyEvent           read  FOnHeaderData      write FOnHeaderData;
-    property OnHeaderEnd       : TNotifyEvent           read  FOnHeaderEnd       write FOnHeaderEnd;
-    property OnDocBegin        : TNotifyEvent           read  FOnDocBegin        write FOnDocBegin;
-    property OnDocData         : TNotifyEvent           read  FOnDocData         write FOnDocData;
-    property OnDocEnd          : TNotifyEvent           read  FOnDocEnd          write FOnDocEnd;
-    property OnRequestDone     : THttpRequestDone       read  FOnRequestDone     write FOnRequestDone;
-    property Owner             : TComponent             read  FOwner             write FOwner;
-    property InputStream       : TMemoryStream          read  FInputStream       write SetInputStream;
-    property Proxy             : string                 read  FProxy             write FProxy;
-    property ProxyPort         : string                 read  FProxyPort         write FProxyPort;
-    property ProxyUser         : string                 read  FProxyUser         write FProxyUser;
-    property ProxyPassword     : string                 read  FProxyPassword     write FProxyPassword;
-    property Username          : string                 read  FUsername          write FUsername;
-    property Password          : string                 read  FPassword          write FPassword;
-    property UserAgent         : string                 read  FUserAgent         write FUserAgent;
-    property OnRedirect        : TIdHTTPOnRedirectEvent read  FOnRedirect        write FOnRedirect;
-    property Referer           : string                 read FReferer            write FReferer;
-    property OnAuthorization   : TIdOnAuthorization     read FOnAuthorization    write FOnAuthorization;
-    property CookieManager     : TIdCookieManager       read FCookieManager      write FCookieManager;
-    property BasicAuth         : Boolean                read FBasicAuth          write FBasicAuth;
-    property ContentTypePost   : String                 read FContentTypePost    write FContentTypePost;
-    property SendStream        : TMemoryStream          read FSendStream         write FSendStream;
-    property HeaderRequestData : TStrings               read FHeaderRequestData;
-    property HeaderResponseData: TStrings               read FHeaderResponseData;
-  end;
-
-  THTTPConnection = class(TURLConnection)
+  THTTPConnection = class(ThtConnection)
   private
     ReturnedContentType: string;
     FResponseText: string;
-    FResponseCode: integer;
-    FRcvdCount: integer;
-    FState: ThttpState;
-    FAborted: boolean;
-    FLastResponse : String;
-    procedure GetPostInit1;
-    procedure GetPostInit2(AHttp: TIdHTTP);
-    procedure GetPostFinal;
-  protected
-    {$ifdef UseZLib}
-    Comp: TIdCompressorZLib;
-    {$endif}
-    HTTP: TidHTTP;
-    HTTPa: THTTPAsync;
-    {$ifdef UseSSL}
-    SSL: TIdSSLIOHandlerSocketOpenSSL;
-    procedure CheckSSL(const Url: string);
-    {$endif}
-    procedure WorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
-    procedure Work(Sender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
-    procedure WorkEnd(Sender: TObject; AWorkMode: TWorkMode);
-    procedure Status(axSender: TObject; const axStatus: TIdStatus; const asStatusText: string);
-    procedure GetAsyncDone(Sender: TObject);
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Get(const URl: String); override;
-    procedure GetAsync(const URl: String); override;
-    procedure Post(const URl: String); override;
-    function RcvdCount : LongInt; override;
-    function ReasonPhrase : String; override;
-    function LastResponse : String; override;
-    function StatusCode : LongInt; override;
-    function State: THttpState; override;
-    function ContentType: ThtmlFileType; override;
-    function ContentLength: LongInt; override;
-    procedure Abort; override;
-  end;
+    FRedirect: Boolean;
+    FNewLocation: string;
+    FUrlBase: string;
+    FAllow: String;
 
-  TFileConnection = class(TURLConnection)
-  protected
-    procedure MakeDirOutput(AStream : TStream; const ADirName : String);
-  public
-    procedure Get(const URl: String); override;
-  end;
-
-  TResourceConnection = class(TURLConnection)
-  public
-    procedure Get(const URl: String); override;
-  end;
-
-{$ifdef IncludeZip}
-  TZipConnection = class(TURLConnection)
-  private
-    UnZipper: TVCLUnzip;
-  public
-    destructor Destroy; override;
-    procedure Get(const URl: String); override;
-  end;
+    FConnector: ThtIndyHttpConnector;
+    FHeaderRequestData  : TStrings;
+    FHeaderResponseData : TStrings;
+    FCookieManager     : TIdCookieManager;
+    FStatusCode        : Integer;
+    FHttp: TidHTTP;
+{$ifdef UseSSL}
+    FSsl: TIdSSLIOHandlerSocketOpenSSL;
 {$endif}
+{$ifdef UseZLib}
+    FComp: TIdCompressorZLib;
+{$endif}
+    procedure HeaderData(const LastResponse: string);
+    procedure HttpAuthorization(Sender: TObject; Authentication: TIdAuthentication; var Handled: Boolean);
+    procedure HttpRedirect(Sender: TObject; var Dest: String; var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
+    procedure HttpWorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
+    procedure HttpWork(Sender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
+    procedure HttpWorkEnd(Sender: TObject; AWorkMode: TWorkMode);
+  public
+    constructor Create(Connector: ThtIndyHttpConnector);
+    destructor Destroy; override;
 
-type
-  TProcolHandlerFunc = function(const URL : String) : TUrlConnection;
+    procedure Get(Doc: ThtUrlDoc); override;
+    procedure Abort; override;
+    property CookieManager     : TIdCookieManager       read FCookieManager      write FCookieManager;
+    property HeaderRequestData : TStrings               read FHeaderRequestData;
+    property HeaderResponseData: TStrings               read FHeaderResponseData;
+    property StatusCode        : Integer                read FStatusCode;
+  end;
 
-var
-  ProtocolHandler  : TProcolHandlerFunc;
+  ThtIndyHttpConnector = class(ThtProxyConnector)
+  private
+    FUserAgent         : string;
+    FCookieManager: TIdCookieManager;
+    function StoreUserAgent: Boolean;
+  protected
+    class function GetDefaultProtocols: string; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+
+    function CreateConnection(const Protocol: String): ThtConnection; override;
+  published
+    property UserAgent: string read FUserAgent write FUserAgent stored StoreUserAgent;
+    property CookieManager: TIdCookieManager read FCookieManager;
+  end;
+
+//{$ifdef IncludeZip}
+//  TZipConnection = class(TURLConnectionId)
+//  private
+//    UnZipper: TVCLUnzip;
+//  public
+//    destructor Destroy; override;
+//    procedure Get(const URl: String); override;
+//  end;
+//{$endif}
 
 implementation
 
 uses
-  {$ifdef LogIt}LogWin, {$endif} HTMLUn2, FBUnitId10, IdURI, IdGlobal;
+{$ifdef LogIt} LogWin, FBUnitId10, {$endif}
+  HTMLUn2,
+  IdURI, IdGlobal;
 
-constructor TURLConnection.Create;
+const
+//  CUsrAgent = 'Mozilla/4.0 (compatible; Indy Library)';
+  CUsrAgent = 'Mozilla/4.0 (compatible; MSIE 5.0; Windows 98)';
+//  CUsrAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)';
+
+var
+  VChecked: Boolean;
+  VCanSSL: Boolean;
+
+//- BG ----------------------------------------------------------- 08.12.2006 --
+function CanSSL: Boolean;
+var
+  h1, h2: THandle;
 begin
-  inherited Create;
-    FHeaderRequestData := TStringList.Create;
-    FHeaderResponseData := TStringList.Create;
-     FInputStream := nil;
-     SendStream := nil;
-     Owner := nil;
-     FStatusCode := 404;
-     FReasonPhrase := 'Can''t get file';
-     FInputStreamOwn := false;
-     FContentType := HTMLType;
+  if not VChecked then
+  begin
+    // check to see the DLLs for Secure Socket Layer can be found
+{$ifdef UseSSL}
+{$ifdef MSWindows}
+    {check to see the DLLs for Secure Socket Layer can be found}
+    h1 := LoadLibrary('libeay32.dll');
+    h2 := LoadLibrary('ssleay32.dll');
+    if h2 = 0 then
+      {alternative name for mingw32 versions of OpenSSL}
+      h2 := LoadLibrary('libssl32.dll');
+    FreeLibrary(h1);
+    FreeLibrary(h2);
+
+    VCanSSL := (h1 <> 0) and (H2 <> 0);
+{$else}
+    VCanSSL := True;
+{$endif}
+{$else}
+    VCanSSL := False;
+{$endif}
+    VChecked := True;
+  end;
+  Result := VCanSSL;
 end;
 
-destructor TURLConnection.Destroy;
+{ ThtIndyHttpConnector }
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+constructor ThtIndyHttpConnector.Create(AOwner: TComponent);
 begin
-     If FInputStreamOwn Then
-        FInputStream.Free;
+  inherited;
+  FCookieManager := TIdCookieManager.Create(Self);
+  FUserAgent := CUsrAgent;
+end;
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+function ThtIndyHttpConnector.CreateConnection(const Protocol: String): ThtConnection;
+var
+  Connection: THTTPConnection;
+begin
+  Connection := THTTPConnection.Create(Self);
+{$ifdef UseSSL}
+  if CanSSL then
+  begin
+    Connection.FSsl := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+    Connection.FSsl.SSLOptions.Method := sslvSSLv23;
+    Connection.FSsl.SSLOptions.Mode := sslmClient;
+  end;
+{$endif}
+  Result := Connection;
+end;
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+destructor ThtIndyHttpConnector.Destroy;
+begin
+
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+class function ThtIndyHttpConnector.GetDefaultProtocols: string;
+begin
+  Result := 'http';
+  if CanSSL then
+    Result := Result + ',https';
+end;
+
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+function ThtIndyHttpConnector.StoreUserAgent: Boolean;
+begin
+  Result := FUserAgent <> CUsrAgent;
+end;
+
+{ THTTPConnection }
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+constructor THTTPConnection.Create(Connector: ThtIndyHttpConnector);
+begin
+  inherited Create;
+  FConnector := Connector;
+  FHeaderRequestData := TStringList.Create;
+  FHeaderResponseData := TStringList.Create;
+  FStatusCode := 404;
+{$ifdef UseZLib}
+  FComp:= TIdCompressorZLib.Create(nil);
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+destructor THTTPConnection.Destroy;
+begin
+{$ifdef UseZLib}
+  FComp.Free;
+{$endif}
+{$ifdef UseSSL}
+  FSsl.Free;
+{$endif}
   FHeaderRequestData.Free;
   FHeaderResponseData.Free;
   inherited Destroy;
 end;
 
-function TURLConnection.State: THttpState; 
-begin
-     result := HTTPReady;
-end;
-
-function TURLConnection.RcvdCount : LongInt;
-begin
-     result := 0;
-end;
-
-function TURLConnection.LastResponse : String;
-begin
-     result := '';
-end;
-
-function TURLConnection.ReasonPhrase : String;
-begin
-     result := FReasonPhrase;
-end;
-
-function TURLConnection.StatusCode : LongInt;
-begin
-     StatusCode := FStatusCode;
-end;
-
-function TURLConnection.ContentType: ThtmlFileType;
-begin
-  Result := FContentType;
-end;
-
-function TURLConnection.ContentLength: LongInt;
-begin
-  Result := FContentLength;
-end;
-
-procedure TURLConnection.Abort;
-begin
-end;
-
-procedure TURLConnection.CheckInputStream;
-begin
-  if FInputStream = nil then
-  begin
-       FInputStream := TMemoryStream.Create;
-       FInputStreamOwn := true;
-  end;
-end;
-
-class function TURLConnection.GetConnection(const URL : String) : TURLConnection;
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPConnection.HeaderData(const LastResponse: string);
+{Selected Header data comes here}
 var
-   protocol : String;
+  S: string;
+  I: integer;
 begin
-     result := nil;
-     {If ProtocolHandler is defined call it else}
-     If Assigned(ProtocolHandler) Then
-        result := ProtocolHandler(URL);
+  S := LastResponse;
 
-     { Use default handlers }
-     if result = nil then
-     begin
-         protocol := GetProtocol(URL);
-         if (protocol = 'http') {$ifdef UseSSL}or (protocol = 'https'){$endif} then
-            result := THTTPConnection.Create
-         else
-           if protocol = 'file' then
-             result := TFileConnection.Create
-           else
-             if protocol = 'res' then
-               result := TResourceConnection.Create
-{$ifdef IncludeZip}
-            else
-              if protocol = 'zip' then
-               result := TZipConnection.Create
-{$endif}
-     end;
-end;
-
-procedure TURLConnection.Post(const URL : String);
-begin
-     Get(URL);
-end;
-
-procedure TURLConnection.GetAsync(const URL : String);
-begin
-   try
-     Get(URL);
-   { catch exception in order to let HTMLView perform correctly its DoLogic }
-   except
-   end;
-end;
-
-procedure TURLConnection.PostAsync(const URL : String);
-begin
-     Post(URL);
-end;
-
-procedure TURLConnection.SetInputStream(Value: TMemoryStream);
-begin
-  if Assigned(FInputStream) and FInputStreamOwn then
-    FInputStream.Free;
-  FInputStream := Value;
-  FInputStreamOwn := False;
-end;
-
-{----------------THTTPConnection.Create}
-constructor THTTPConnection.Create;
-begin
-  inherited Create;
-    {$ifdef UseZLib}
-    Comp:= TIdCompressorZLib.Create(nil);
-    {$endif}
-end;
-
-{----------------THTTPConnection.Destroy}
-destructor THTTPConnection.Destroy;
-begin
-  if Assigned(HTTPa) then
+{see if Authentication is required.  If so, need the Realm string}
+  I := Pos('www-authenticate', Lowercase(S));
+  if I > 0 then
   begin
-    HTTPa.OnTerminate := Nil;
-    HTTPa.Terminate;
+    I := Pos('realm', Lowercase(S));
+    if (I > 0) then
+    begin
+      S := Copy(S, I+5, Length(S));
+      I := Pos('=', S);
+      if I > 0 then
+      begin
+        S := Trim(Copy(S, I+1, Length(S)));
+        Realm := S;
+      end;
+    end;
+    Exit;
   end;
-   {$ifdef UseZLib}
-   Comp.Free;
-   {$endif}
-  inherited Destroy;
+
+  {see what's allowed for error 405}
+  I := Pos('allow:', LowerCase(S));
+  if (I > 0) then
+  begin
+    FAllow := Lowercase(S);
+    Exit;
+  end;
+
 end;
 
-{$ifdef UseSSL}
-procedure THTTPConnection.CheckSSL(const Url: string);
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPConnection.Get(Doc: ThtUrlDoc);
+const
+  MaxRedirect = 15;
+var
+  PostIt1, TryAgain, TryRealm, Redirect: Boolean;
+  SendStream: TStringStream;
+  RedirectCount: Integer;
+  Url1, Query1, S: String;
 begin
-if Pos('https', Lowercase(Url)) > 0 then
-  HTTP.IOHandler := HTTPForm.SSL
-else
-  HTTP.IOHandler := Nil;
-end;
-{$endif}
-
-procedure THTTPConnection.GetPostInit1;
-{common initiation for Get, Post}
-begin
-  FAborted := False;
-  CheckInputStream;
-  HTTP := TIdHTTP.Create(Nil);
+  Url1 := Doc.Url;
+  FUrlBase := GetUrlBase(URL1);
+  Query1 := Doc.Query;
+  PostIt1 := Doc.PostIt;
+  repeat
+    TryRealm := True;
+    TryAgain := False;
+    Redirect := False;
+    Inc(RedirectCount);
+    Doc.Clear;
+    try
+      Aborted := False;
+      FHttp := TIdHTTP.Create(Nil);
 {$ifdef UseZLib}
-  HTTP.Compressor := Comp;
+      FHttp.Compressor := FComp;
 {$endif}
 {$ifdef LogIt}
-  HTTP.Intercept := HTTPForm.Log;
+      FHttp.Intercept := HTTPForm.Log;
 {$endif}
-  HTTP.CookieManager := CookieManager;
-  HTTP.OnAuthorization := FOnAuthorization;
-  HTTP.HandleRedirects := True;
-  HTTP.OnRedirect := FOnRedirect;
-  HTTP.ProtocolVersion := pv1_1;
-  if FBasicAuth then
-    HTTP.Request.BasicAuthentication := True;
-  HTTP.Request.Referer := FReferer;
-  HTTP.OnWorkBegin := WorkBegin;
-  HTTP.OnWork := Work;
-  HTTP.OnWorkEnd := WorkEnd;
-  HTTP.OnStatus := Status;
-  FState := httpReady;
-end;
-
-procedure THTTPConnection.GetPostInit2(AHttp: TIdHTTP);
-{common initiation for Get, Post, GetAsync}
-begin
-  AHttp.ProxyParams.ProxyServer := FProxy;
-  AHttp.ProxyParams.ProxyPort := StrToIntDef(FProxyPort, 80);
-  AHttp.ProxyParams.ProxyUsername := FProxyUser;
-  AHttp.ProxyParams.ProxyPassword := FProxyPassword;
-  AHttp.ProxyParams.BasicAuthentication := (FProxyUser <> '')
-       and (FProxyPassword <> '');     {9.2}
-  AHttp.Request.Username := FUsername;
-  AHttp.Request.Password := FPassword;
-  AHttp.Request.UserAgent  := FUserAgent;
-end;
-
-procedure THTTPConnection.GetPostFinal;
-{common finalization for Get, Post}
-begin
-  ReturnedContentType := HTTP.Response.ContentType;
-  FContentLength := HTTP.Response.ContentLength;
-  FResponseText := HTTP.ResponseText;
-  FResponseCode := HTTP.ResponseCode;
-  FHeaderRequestData.AddStrings( HTTP.Request.RawHeaders );
-  FHeaderResponseData.AddStrings( HTTP.Response.RawHeaders );
-  FHeaderResponseData.Add( 'Character Set = '+ HTTP.Response.CharSet );
+      FHttp.CookieManager := FCookieManager;
+      FHttp.HandleRedirects := True;
+      FHttp.OnAuthorization := HttpAuthorization;
+      FHttp.OnRedirect := HttpRedirect;
+      FHttp.OnWorkBegin := HttpWorkBegin;
+      FHttp.OnWork := HttpWork;
+      FHttp.OnWorkEnd := HttpWorkEnd;
+      FHttp.ProtocolVersion := pv1_1;
+      FHttp.ProxyParams.ProxyServer := FConnector.ProxyServer;
+      FHttp.ProxyParams.ProxyPort := StrToIntDef(FConnector.ProxyPort, 80);
+      FHttp.ProxyParams.ProxyUsername := FConnector.ProxyUsername;
+      FHttp.ProxyParams.ProxyPassword := FConnector.ProxyPassword;
+      FHttp.ProxyParams.BasicAuthentication := (FConnector.ProxyUsername <> '') and (FConnector.ProxyPassword <> '');     {9.2}
+      FHttp.Request.UserAgent := FConnector.UserAgent;
+      FHttp.Request.BasicAuthentication := BasicAuthentication;
+      FHttp.Request.Referer := Doc.Referer;
+      FHttp.Request.Username := Username;
+      FHttp.Request.Password := Password;
 {$ifdef UseSSL}
-  HTTP.IOHandler := Nil;
+      FHttp.IOHandler := FSsl;
 {$endif}
-  HTTP.Free;
-  HTTP := Nil;
-  FState := httpNotConnected;
-end;
-
-{----------------THTTPConnection.Get}
-procedure THTTPConnection.Get(const URL : String);
-begin
-  GetPostInit1;
-  GetPostInit2(HTTP);
-
+      try
+        if PostIt1 then
+        begin {Post}
+          SendStream := TStringStream.Create(Query1);
+          try
+{$ifdef LogIt}
+            HTTPForm.LogLine('THTTPConnection.Get Post: ' + Url1 + ', Data=' + Copy(Query1, 1, 132) + ', EncType=' + Doc.QueryEncType);  // not too much data
+{$endif}
+            if Doc.QueryEncType = '' then
+              FHttp.Request.ContentType := 'application/x-www-form-urlencoded'
+            else
+              FHttp.Request.ContentType := Doc.QueryEncType;
+            FHttp.Post(TIdURI.URLEncode( URL1 ), SendStream, Doc.Stream);
+          finally
+            SendStream.Free;
+          end;
+        end
+        else
+        begin {Get}
+          if Length(Query1) > 0 then
+            Url1 := Url1 + '?' + Query1;
+{$ifdef LogIt}
+          HTTPForm.LogLine('THTTPConnection.Get Get: ' + Url1);
+{$endif}
+          FHttp.Get( TIdURI.URLEncode( Url1 ), Doc.Stream );
+        end;
+      finally
+        ReturnedContentType := FHttp.Response.ContentType;
+        ReceivedSize := FHttp.Response.ContentLength;
+        FResponseText := FHttp.ResponseText;
+        FStatusCode := FHttp.ResponseCode;
+        FHeaderRequestData.AddStrings( FHttp.Request.RawHeaders );
+        FHeaderResponseData.AddStrings( FHttp.Response.RawHeaders );
+        FHeaderResponseData.Add( 'Character Set = '+ FHttp.Response.CharSet );
 {$ifdef UseSSL}
-  CheckSSL(Url);
+        FHttp.IOHandler := Nil;
 {$endif}
+        FreeAndNil(FHttp);
+      end;
 
-  try
-    HTTP.Get(  TIdURI.URLEncode( Url ), FInputStream);
-  Finally
-    GetPostFinal;
-  end;
-end;
-
-{----------------THTTPConnection.Post}
-procedure THTTPConnection.Post(const URL : String);
-begin
-  GetPostInit1;
-  GetPostInit2(HTTP);
-  HTTP.Request.ContentType := ContentTypePost;
-
-{$ifdef UseSSL}
-  CheckSSL(Url);
-{$endif}
-
-  try
-    HTTP.Post(TIdURI.URLEncode( Url ), SendStream, FInputStream);
-  finally
-    GetPostFinal;
-  end;
-end;
-
-{----------------THTTPConnection.GetAsync}
-procedure THTTPConnection.GetAsync(const URL : String);
-begin
-  FAborted := False;
-  HTTPa := THTTPAsync.Create;
-  HTTPa.Url := URL;
-  GetPostInit2(HTTPa.HTTP);
-  HTTPa.HTTP.CookieManager := CookieManager;
-
-  HTTPa.OnTerminate := GetAsyncDone;
-  FState := httpReady;
-  HTTPa.Resume;
-end;
-
-{----------------THTTPConnection.GetAsyncDone}
-procedure THTTPConnection.GetAsyncDone(Sender: TObject);
-var
-  Error: integer;
-begin
-  ReturnedContentType := HTTPa.HTTP.Response.ContentType;
-  FContentLength := HTTPa.HTTP.Response.ContentLength;
-  FResponseText := HTTPa.HTTP.ResponseText;
-  FResponseCode := HTTPa.HTTP.ResponseCode;
-  FHeaderRequestData.AddStrings( HTTPa.HTTP.Request.RawHeaders );
-  FHeaderResponseData.AddStrings( HTTPa.HTTP.Response.RawHeaders);
-  FInputStream.LoadFromStream(HTTPa.Stream);
-
-  HTTPa := Nil;
-  FState := httpNotConnected;
-
-  if not FAborted and (FResponseCode < 300) then   {Relocated images not handled}
-    Error := 0
-  else
-    Error := FResponseCode;
-  if Assigned(FOnRequestDone) then
-    FOnRequestDone(Owner, httpGet, Error);
-end;
-
-function THTTPConnection.State: THttpState;
-begin
-  result :=FState;
-end;
-
-function THTTPConnection.ContentType: ThtmlFileType;
-var
-  Content: string;
-begin
-  Content := Lowercase(ReturnedContentType);
-  if Pos('image/', Content) > 0 then    {image/*}
-    Result := ImgType
-  else
-    if Pos('/plain', Content) > 0 then  {text/plain}
-      Result := TextType
-    else
-      if Pos('/xhtml', Content) > 0 then
-        Result := XHTMLType       {application/xhtml+xml}
+      if FStatusCode = 401 then
+      begin
+        TryAgain := GetAuthorization(TryRealm);
+        TryRealm := False;
+      end
       else
-        Result := HTMLType;       {text/html}
+        if Redirect then
+        begin
+          Url1 := FNewLocation;
+          if FStatusCode = 303 then
+          begin
+            PostIt1 := False;
+            Query1 := '';
+          end;
+          TryAgain := True;
+
+        if {$ifdef UseSSL} not Assigned(FSsl) and {$endif} (GetProtocol(FNewLocation) = 'https') then
+        begin
+          TryAgain := False;
+          S := '<p>Unsupported protocol: https';
+          Doc.Stream.Position := Doc.Stream.Size;
+          Doc.Stream.Write(S[1], Length(S) * SizeOf(S[1]));
+        end;
+
+      end;
+    except
+      case FStatusCode of
+        401:
+          begin
+            TryAgain := GetAuthorization(TryRealm);
+            TryRealm := False;
+          end;
+
+        405:
+          if PostIt1 and (Pos('get', FAllow) > 0) then
+          begin
+            PostIt1 := False;
+            TryAgain := True;
+          end;
+
+        301, 302:
+          if FNewLocation <> '' then
+          begin
+            URL1 := FNewLocation;
+            TryAgain := True;
+          end;
+      end;
+      if not TryAgain or (RedirectCount >= MaxRedirect) then
+        Raise;
+    end;
+{$ifdef LogIt}
+    HTTPForm.LogLine('THTTPConnection.Get Done: Status ' + IntToStr(StatusCode));
+{$endif}
+  until not TryAgain;
 end;
 
-function THTTPConnection.ContentLength: LongInt;
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPConnection.HttpRedirect(Sender: TObject; var Dest: String;
+  var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
+var
+  OldProtocol: string;
+  FullUrl: boolean;
 begin
-  Result := FContentLength;
+  FullUrl := IsFullUrl(Dest);
+  if FullUrl then  {it's a full URL}
+  begin
+    Dest := Normalize(Dest);
+    FNewLocation := Dest;
+  end
+  else
+  begin
+    FNewLocation := CombineURL(FUrlBase, Dest);
+    FullURL := False;
+  end;
+
+  OldProtocol := GetProtocol(FUrlBase);
+  FUrlBase := GetUrlBase(FNewLocation);
+
+{The following is apparently no longer necessary}
+  Handled := FullURL and (OldProtocol <> 'https') and (GetProtocol(FUrlBase) <> 'https');
+  if not Handled then
+  begin
+    {we will handle it}
+    FRedirect := True;
+  end;
 end;
 
-function THTTPConnection.RcvdCount : LongInt;
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure THTTPConnection.HttpAuthorization(Sender: TObject; Authentication: TIdAuthentication; var Handled: Boolean);
 begin
-     result := FRcvdCount;
-end;
-
-function THTTPConnection.ReasonPhrase : String;
-begin
-     result := FResponseText;
-end;
-
-function THTTPConnection.LastResponse : String;
-begin
-     result := FLastResponse;
-end;
-
-function THTTPConnection.StatusCode : LongInt;
-begin
-     StatusCode := FResponseCode;
+  if Authentication is TIdBasicAuthentication then
+    Realm := TIdBasicAuthentication(Authentication).Realm;
+  Handled := False;
 end;
 
 {----------------THTTPConnection.Abort}
 procedure THTTPConnection.Abort;
 begin
-  FAborted := True;
-  if Assigned(HTTP) then
-    HTTP.Disconnect;
-  if Assigned(HTTPa) then
-    HTTPa.Terminate;
+  inherited;
+  if Assigned(FHttp) then
+    FHttp.Disconnect;
 end;
 
 {----------------THTTPConnection.WorkBegin}
-procedure THTTPConnection.WorkBegin(Sender: TObject; AWorkMode: TWorkMode;
-             AWorkCountMax: Int64);
+procedure THTTPConnection.HttpWorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
 var
   LocationFound: boolean;
   S: string;
 begin
-  LocationFound := False;
-  FRcvdCount := 0;
-  FContentLength := AWorkCountMax;
-  if Assigned(FOnHeaderData) then
-  begin
-    if HTTP.Response.Location <> '' then
-    begin
-      FLastResponse := 'Location: '+ HTTP.Response.Location;
-      FOnHeaderData(Self);
-      LocationFound := True;
-    end;
-    if not LocationFound and (HTTP.Response.ContentType <> '') then
-    begin  {Content type is unimportant on Location change}
-      FLastResponse := 'content-type: '+ HTTP.Response.ContentType;
-      FOnHeaderData(Self);
-    end;
-    S := HTTP.Response.RawHeaders.Values['Allow'];
-    if S <> '' then
-    begin
-      FLastResponse := 'Allow: ' + S;
-      FOnHeaderData(Self);
-    end;
-  end;
-  if Assigned(FOnDocBegin) then
-    FOnDocBegin(Self);
+  Doc.Status := ucsInProgress;
+  ExpectedSize := AWorkCountMax;
+  ReceivedSize := 0;
+
+  LocationFound := FHttp.Response.Location <> '';
+  if LocationFound then
+    HeaderData('Location: '+ FHttp.Response.Location)
+  else if FHttp.Response.ContentType <> '' then
+    {Content type is unimportant on Location change}
+    HeaderData('content-type: '+ FHttp.Response.ContentType);
+
+  S := FHttp.Response.RawHeaders.Values['Allow'];
+  if S <> '' then
+    HeaderData('Allow: ' + S);
+
+  if Assigned(OnDocBegin) then
+    OnDocBegin(Self);
 end;
 
-procedure THTTPConnection.Work(Sender: TObject; AWorkMode: TWorkMode;
-            AWorkCount: Int64);
+procedure THTTPConnection.HttpWork(Sender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
 begin
-  FRcvdCount := AWorkCount;
-  if Assigned(FOnDocData) then
-    FOnDocData(Self);
+  ReceivedSize := AWorkCount;
+  if Assigned(OnDocData) then
+    OnDocData(Self);
 end;
 
-procedure THTTPConnection.WorkEnd(Sender: TObject; AWorkMode: TWorkMode);
+procedure THTTPConnection.HttpWorkEnd(Sender: TObject; AWorkMode: TWorkMode);
 begin
-  if Assigned(FOnDocEnd) then
-    FOnDocEnd(Self);
+  Doc.Status := ucsLoaded;
+  if Assigned(OnDocEnd) then
+    OnDocEnd(Self);
 end;
 
-procedure THTTPConnection.Status(axSender: TObject; const axStatus: TIdStatus;
-             const asStatusText: string);
-begin
-  case axStatus of
-    hsDisconnected, hsDisconnecting, hsConnecting:
-      FState := httpNotConnected;
-    hsConnected:
-      FState := httpConnected;
-    hsResolving:
-      FState := httpDNSLookup;
-  end;
-end;
-
-procedure TFileConnection.MakeDirOutput(AStream: TStream;
-  const ADirName: String);
-{This is for generating HTML from a directory listing including
-special dir entries.  Note that I realize a lot of the markup is probably
-unnecessary but it's a good idea to include it anyway to encourage
-good HTML habits.}
-var
-  F : TSearchRec;
-  LEnc : IIdTextEncoding;
-  TimeStamp: TDateTime;
-begin
-  {$ifdef Compiler24_Plus}
-  LEnc := IndyTextEncoding_UTF8;
-  {$else}
-  LEnc := enUTF8;
-  {$endif}
-  WriteStringToStream(AStream,'<!DOCTYPE html>'+ EOL +
-    '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">'+EOL+
-    '<head>'+EOL+
-    '<meta charset="utf-8" />'+EOL+
-    '<base href="file://'+ TIdURI.PathEncode(DosToHTML(ADirName)) +'" />'+EOL+
-    '<title>'+ADirName+'</title>'+EOL+
-    '<style type="text/css" media="screen">'+EOL+
-    '.fn {text-align:left; font-weight:normal;}'+EOL+
-    '.tm {text-align:center;}'+EOL+
-    '.sz {text-align:right;}'+EOL+
-    'table {width: 100%}'+EOL+
-    '</style>'+EOL+
-    '</head>'+EOL,LEnc);
-  WriteStringToStream(AStream,'<body>'+EOL+
-    '<h1>'+ADirName+'</h1>'+EOL,LEnc);
-  if (FindFirst( IncludeTrailingPathDelimiter( ADirName)+'*.*',faAnyFile,F) = 0) then begin
-    WriteStringToStream(AStream,'<table>'+EOL+
-    '<thead>'+EOL+
-    '<tr>'+EOL+
-    '<th scope="col">&nbsp;&nbsp;&nbsp;File Name&nbsp;&nbsp;&nbsp;</th>'+EOL+
-    '<th scope="col">&nbsp;&nbsp;&nbsp;Last Modified&nbsp;&nbsp;&nbsp;</th>'+EOL+
-    '<th scope="col">Size<br /></th>'+EOL+
-    '</tr>'+EOL+
-    '</thead>'+EOL+
-    '<tbody>'+EOL,LEnc);
-    repeat
-      WriteStringToStream(AStream,'<tr>'+EOL+
-       '<th class="fn" scope="row"><a href="',LEnc);
-{$ifndef TSearchRecHasNoTimestamp}
-        TimeStamp := FileDateToDateTime(F.Time);
-{$else}
-        TimeStamp := F.TimeStamp;
-{$endif}
-      case IdGlobal.PosInStrArray(F.Name,['.','..']) of
-      0 : begin   //'.'
-            WriteStringToStream(AStream,
-            'file://'+TIdURI.PathEncode( DosToHtml( ADirName ))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
-              '<td class="sz">DIR<br /></td>'+EOL+
-              '</tr>'+EOL,LEnc);
-          end;
-      1 : begin   //'..'
-            WriteStringToStream(AStream,
-            'file://'+TIdURI.PathEncode(DosToHtml( ExtractFileDir(ADirName) ))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
-              '<td class="sz">DIR<br /></td>'+EOL+
-              '</tr>'+EOL,LEnc);
-          end;
-      else
-        begin
-          if F.Attr and faDirectory <> 0 then
-          begin
-            WriteStringToStream(AStream,
-              TIdURI.PathEncode(DosToHtml( F.Name))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-              '<td class="tm">&nbsp;&nbsp;&nbsp;'+ DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
-              '<td class="sz">DIR<br /></td>'+EOL+
-              '</tr>'+EOL,LEnc);
-          end
-          else
-          begin
-            WriteStringToStream(AStream,
-            TIdURI.PathEncode(DosToHtml( F.Name ))+'">'+F.Name+'</a>&nbsp;&nbsp;&nbsp;</th>'+EOL+
-            '<td class="tm">&nbsp;&nbsp;&nbsp;'+DateTimeToStr ( TimeStamp )+ '&nbsp;&nbsp;&nbsp;</td>'+EOL+
-            '<td class="sz">'+IntToStr(F.Size)+'<br /></td>'+EOL+
-            '</tr>'+EOL,LEnc);
-          end;
-        end;
-      end;
-    until FindNext(F) <> 0;
-    WriteStringToStream(AStream,'</tbody>'+EOL+
-      '</table>'+EOL,LEnc);
-    FindClose(F);
-  end;
-  WriteStringToStream(AStream,'</body>'+EOL+
-    '</html>'+EOL,LEnc);
-end;
-
-{----------------TFileConnection.Get}
-procedure TFileConnection.Get(const URl: String);
-var
-   thefile, Ext : String;
-   error, I : integer;
-
-begin
-  error := 1;
-  try
-     thefile := URL;
-
-     {remove any query string as it's not certain how to respond to a Form
-      submit with a file protocol.  The user can add a response if desired.}
-     I := Pos('?', TheFile);
-     if I > 0 then
-       TheFile := Copy(TheFile, 1, I-1);
-
-     Delete(thefile, 1,5+2);  { remove file:// }
-     CheckInputStream;
-     { We suppose that windows accepts c:/test/test2 }
-     if thefile[1] = '/' then
-     begin
-        Delete(thefile,1,1);
-     end;
-     TheFile := HTMLtoDOS(TheFile);
-     if DirectoryExists( thefile) then begin
-       MakeDirOutput(FInputStream,thefile);
-     end else begin
-       FInputStream.LoadFromFile(thefile);
-     end;
-     error := 0;
-
-     Ext := Lowercase(ExtractFileExt(TheFile));
-     if (Ext = '.bmp') or (Ext = '.rle') or (Ext = '.dib')
-           or (Ext = '.gif')
-           or (Ext = '.jpg') or (Ext = '.jpeg') or (Ext = '.jpe') or (Ext = '.jfif')
-           or (Ext = '.png')
-{$IFNDEF NoMetafile}
-           or (Ext = '.emf') or (Ext = '.wmf')
-{$ENDIF !NoMetafile}
-{$IFNDEF NoGDIPlus}
-             or (Ext = '.tiff') or (Ext = '.tif')
-{$ENDIF NoGDIPlus}
-            then
-       FContentType := ImgType
-     else if (Ext = '.txt') then
-       FContentType := TextType
-     else if (Ext = '.xht') or (Ext = '.xhtml') then
-       FContentType := XHTMLType
-     else
-       FContentType := HTMLType;
-     FContentLength := FInputStream.Size;
-
-     FStatusCode := 200;
-     if Assigned(FOnRequestDone) then
-        FOnRequestDone(owner, httpGET, error);
-  except
-     if Assigned(FOnRequestDone) then
-        FOnRequestDone(owner, httpGET, error);
-     raise;
-  end;
-end;
-
-{----------------TResourceConnection.Get}
-procedure TResourceConnection.Get(const URl: String);
-var
-   thefile, S, Ext : String;
-   error : integer;
-   HResInfo: HRSRC;
-   HGlobal: THandle;
-   Buffer, GoodType : pchar;
-   I: integer;
-begin
-  error := 1;
-  GoodType := '';
-  try
-     thefile := URL;
-
-     {remove any query string as it's not certain how to respond to a Form
-      submit with a res: protocol.  The user can add a response if desired.}
-     I := Pos('?', TheFile);
-     if I > 0 then
-       TheFile := Copy(TheFile, 1, I-1);
-
-     I := Pos('res:///', Lowercase(TheFile));
-     if I > 0 then
-       Delete(thefile, I,4+3)  { remove res:/// }
-     else
-     begin
-       I :=  Pos('res://', Lowercase(TheFile));
-       if I > 0 then
-         Delete(thefile, I,4+2);  { accept res:// also }
-     end;
-     CheckInputStream;
-     Ext := Uppercase(GetURLExtension(URL));
-     if (Ext = 'HTM') or (Ext = 'HTML') or
-        (Ext = 'XHT') or (Ext = 'XHTML') or (Ext = 'CSS') then
-     begin
-        GoodType := 'HTML';
-        FContentType := HTMLType;
-     end
-     else
-       if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG') or (Ext = 'JFIF') or (Ext = 'JPE')
-            or (Ext = 'PNG') or (Ext = 'BMP') or (Ext = 'RLE') or (Ext = 'DIB')
-    {$IFNDEF NoMetafile}
-           or (Ext = 'EMF') or (Ext = 'WMF')
-    {$ENDIF !NoMetafile}
-              {$IFNDEF NoGDIPlus}
-            or (Ext = 'TIF') or (Ext = 'TIFF')
-              {$ENDIF NoGDIPlus}
-            then
-        begin
-          GoodType := PChar(Ext);
-          FContentType := ImgType;
-        end
-        else
-          if (Ext = 'TXT') then
-          begin
-            GoodType := 'TEXT';
-            FContentType := TextType;
-          end;
-     HResInfo := FindResource(HInstance, pchar(thefile), GoodType);
-     if HResInfo = 0 then
-     begin    {try without the extension if can't find it with extension}
-       I := Pos('.'+Ext, Uppercase(TheFile));
-       if I>=0 then
-       begin
-         S := TheFile;
-         System.Delete(S, I, Length(Ext)+1);
-         HResInfo := FindResource(HInstance, pchar(S), GoodType);
-         if HResInfo = 0 then
-            raise EResNotFound.Create('Can''t find resource: '+thefile);
-         end
-       else
-         raise EResNotFound.Create('Can''t find resource: '+thefile);
-     end;
-     HGlobal := LoadResource(HInstance, HResInfo);
-     if HGlobal = 0 then
-            raise EResNotFound.Create('Can''t load resource: '+thefile);
-     Buffer := LockResource(HGlobal);
-     InputStream.WriteBuffer(Buffer[0], SizeOfResource(HInstance, HResInfo));
-     UnlockResource(HGlobal);
-     FreeResource(HGlobal);
-     error := 0;
-     if Assigned(FOnRequestDone) then
-        FOnRequestDone(owner, httpGET, error);
-     FStatusCode := 200;
-  except
-     if Assigned(FOnRequestDone) then
-        FOnRequestDone(owner, httpGET, error);
-     raise
-  end;
-end;
-
-{$ifdef IncludeZip}
-
-type
-  EZipFileError = class(Exception);
-
-{----------------TZipConnection.Destroy}
-destructor TZipConnection.Destroy;
-begin
-  If unzipper <> nil then
-     Unzipper.free;
-  inherited;
-end;
-
-procedure TZipConnection.Get(const URl: String);
-var
-   num, error, I : integer;
-   TheFile, Host, Ext : String;
-begin
-   { Syntax: zip://zipname/filetoextract
-   { The full path is needed, as:  zip://c:\dir1\subdir\htmlfiles.zip/demo.htm
-     or zip://c|/dir1/subdir/htmlfiles.zip/demo.htm }
-   error := 1;
-   try
-         if Unzipper = nil then
-            Unzipper := TVCLUnzip.Create(nil);
-         thefile := URL;
-
-         {remove any query string as it's not certain how to respond to a Form
-          submit with a zip: protocol.  The user can add a response if desired.}
-         I := Pos('?', TheFile);
-         if I > 0 then
-           TheFile := Copy(TheFile, 1, I-1);
-
-         TheFile := GetURLFilenameAndExt(URL);
-         Host := GetBase(URL);
-         Delete(Host, 1, 6);     {remove zip://}
-         Delete(Host, Length(Host), 1);  {remove trailing '/'}
-         Host := HTMLToDos(Host);
-
-         CheckInputStream;
-         InputStream.Clear;  {apparently req'd for unzip routines}
-
-         Ext := Uppercase(GetURLExtension(URL));
-         FContentType := HTMLType;
-         if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG') or (Ext = 'JFIF') or (Ext = 'JPE')
-            or (Ext = 'PNG') or (Ext = 'BMP') or (Ext = 'RLE') or (Ext = 'DIB')
-    {$IFNDEF NoMetafile}
-           or (Ext = 'EMF') or (Ext = 'WMF')
-    {$ENDIF !NoMetafile}
-              {$IFNDEF NoGDIPlus}
-            or (Ext = 'TIF') or (Ext = 'TIFF')
-              {$ENDIF NoGDIPlus}
-         then
-            FContentType := ImgType
-         else
-            if (Ext = 'TXT') then
-              FContentType := TextType;
-
-         With Unzipper do
-         begin
-            if host <> ZipName Then
-               ZipName := host;              { set the zip filename}
-            try
-              { Extract files, return value is the number of files actually unzipped}
-              num := UnZipToStream( InputStream, TheFile );
-            except
-              raise EZipFileError.Create('Can''t open: '+URL);
-            end;
-            if num <> 1 then
-                raise EZipFileError.Create('Can''t open: '+URL);
-         end;
-         error := 0;
-         FStatusCode := 200;
-         if Assigned(FOnRequestDone) then
-            FOnRequestDone(owner, httpGET, error);
-   finally
-         if Assigned(FOnRequestDone) then
-            FOnRequestDone(owner, httpGET, error);
-   end;
-end;
-{$endif}
+//{$ifdef IncludeZip}
+//
+//type
+//  EZipFileError = class(Exception);
+//
+//{----------------TZipConnection.Destroy}
+//destructor TZipConnection.Destroy;
+//begin
+//  If unzipper <> nil then
+//     Unzipper.free;
+//  inherited;
+//end;
+//
+//procedure TZipConnection.Get(const URl: String);
+//var
+//   num, error, I : integer;
+//   TheFile, Host, Ext : String;
+//begin
+//   { Syntax: zip://zipname/filetoextract
+//   { The full path is needed, as:  zip://c:\dir1\subdir\htmlfiles.zip/demo.htm
+//     or zip://c|/dir1/subdir/htmlfiles.zip/demo.htm }
+//   error := 1;
+//   try
+//         if Unzipper = nil then
+//            Unzipper := TVCLUnzip.Create(nil);
+//         thefile := URL;
+//
+//         {remove any query string as it's not certain how to respond to a Form
+//          submit with a zip: protocol.  The user can add a response if desired.}
+//         I := Pos('?', TheFile);
+//         if I > 0 then
+//           TheFile := Copy(TheFile, 1, I-1);
+//
+//         TheFile := GetURLFilenameAndExt(URL);
+//         Host := GetBase(URL);
+//         Delete(Host, 1, 6);     {remove zip://}
+//         Delete(Host, Length(Host), 1);  {remove trailing '/'}
+//         Host := HTMLToDos(Host);
+//
+//         CheckInputStream;
+//         InputStream.Clear;  {apparently req'd for unzip routines}
+//
+//         Ext := Uppercase(GetURLExtension(URL));
+//         FContentType := HTMLType;
+//         if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG') or (Ext = 'JFIF') or (Ext = 'JPE')
+//            or (Ext = 'PNG') or (Ext = 'BMP') or (Ext = 'RLE') or (Ext = 'DIB')
+//    {$IFNDEF NoMetafile}
+//           or (Ext = 'EMF') or (Ext = 'WMF')
+//    {$ENDIF !NoMetafile}
+//              {$IFNDEF NoGDIPlus}
+//            or (Ext = 'TIF') or (Ext = 'TIFF')
+//              {$ENDIF NoGDIPlus}
+//         then
+//            FContentType := ImgType
+//         else
+//            if (Ext = 'TXT') then
+//              FContentType := TextType;
+//
+//         With Unzipper do
+//         begin
+//            if host <> ZipName Then
+//               ZipName := host;              { set the zip filename}
+//            try
+//              { Extract files, return value is the number of files actually unzipped}
+//              num := UnZipToStream( InputStream, TheFile );
+//            except
+//              raise EZipFileError.Create('Can''t open: '+URL);
+//            end;
+//            if num <> 1 then
+//                raise EZipFileError.Create('Can''t open: '+URL);
+//         end;
+//         error := 0;
+//         FStatusCode := 200;
+//   finally
+//         if Assigned(FOnRequestDone) then
+//            FOnRequestDone(owner, httpGET, error);
+//   end;
+//end;
+//{$endif}
 
 end.
