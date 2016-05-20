@@ -13,7 +13,8 @@ uses
   BuffConv, BuffConvArrays, HtmlSymb, BegaHtmlPrintPreviewForm, 
   BegaMetaFilePrinter, BegaPreview, BegaPreviewForm, BegaPreviewPanel, 
   BegaScrollBox, BegaZoom, GDIPL2A, HtmlCaches, HtmlFonts, HtmlImages, 
-  MetaFilePrinter, StyleTypes, vwPrint, WideStringsLcl, LazarusPackageIntf;
+  MetaFilePrinter, StyleTypes, vwPrint, WideStringsLcl, UrlConn, 
+  LazarusPackageIntf;
 
 implementation
 

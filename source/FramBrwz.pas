@@ -307,10 +307,15 @@ begin
           Doc.Free;
         end;
       except
-        if not Assigned(Viewer) then
-          CreateViewer;
-        FreeAndNil(FFrameSet);
-        Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
+        on E: Exception do
+        begin
+          FreeAndNil(FFrameSet);
+          if not Assigned(Viewer) then
+            CreateViewer;
+          Viewer.LoadFromString(
+            '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source +
+            '<p>Cause: ' + E.Message); {load an error message}
+        end;
       end;
     finally
       Dec(MasterSet.NestLevel);
@@ -335,12 +340,6 @@ var
   I: integer;
   Upper, Lower: boolean;
   Dummy: ThtString;
-
-  procedure DoError;
-  begin
-    Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
-  end;
-
 begin
   if Source <> '' then
     if FrameSet <> nil then
@@ -369,7 +368,10 @@ begin
         ViewerFormData.Free;
         ViewerFormData := nil;
       except
-        DoError;
+        on E: Exception do
+          Viewer.LoadFromString(
+            '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source +
+            '<p>Cause: ' + E.Message); {load an error message}
       end;
     end;
   Unloaded := False;

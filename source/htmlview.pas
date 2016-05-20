@@ -116,7 +116,7 @@ type
     property ParentViewer: THtmlViewer read FViewer;
   end;
 
-  THtmlFileType = (HTMLType, TextType, ImgType, XHtmlType, OtherType);
+  THtmlFileType = ThtDocType;
 
 {$ifdef NoMetafile}
   //From MetaFilePrinter.pas

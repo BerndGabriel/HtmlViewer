@@ -455,8 +455,8 @@ function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline;
 function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-// Posx(SubStr, S, Offst): find substring in S starting at Offset:
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+// htPos(SubStr, S, Offst): find substring in S starting at Offset: (formerly known as PosX)
+function htPos(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
 function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
@@ -1066,7 +1066,7 @@ begin
   end;
 end;
 
-function PosX(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
+function htPos(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
  {$ifdef UseInline} inline; {$endif}
 {find substring in S starting at Offset}
 var

@@ -2914,7 +2914,8 @@ begin
     if FImage = nil then
     begin
       TmpImage := nil;
-      UName := htUpperCase(htTrim(Source));
+      //UName := htUpperCase(htTrim(Source));
+      UName := htTrim(Source);
       if UName <> '' then
       begin
         if not Assigned(Document.GetBitmap) and not Assigned(Document.GetImage) then
@@ -2924,7 +2925,8 @@ begin
           Document.ExpandName(Document.TheOwner, Source, Rslt);
           FSource := Rslt;
         end;
-        UName := htUpperCase(htTrim(Source));
+        //UName := htUpperCase(htTrim(Source));
+        UName := htTrim(Source);
         if Document.MissingImages.IndexOf(UName) = -1 then
           TmpImage := Document.GetTheImage(Source, Transparent, FromCache, Missing)
         else
@@ -7819,7 +7821,8 @@ begin
   if BMName <> '' then
   begin
     Name := htTrim(BMName);
-    UName := htUpperCase(Name);
+    //UName := htUpperCase(Name);
+    UName := Name;
     I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
     if I >= 0 then
     begin {yes, handle the case where the image is already loaded}

@@ -37,6 +37,9 @@ uses
 {$endif MSWindows}
   HtmlGlobals;
 
+type
+  ThtDocType = (HTMLType, TextType, ImgType, XHtmlType, OtherType);
+
 {***************************************************************************************************
  * URL processing methods
  **************************************************************************************************}
@@ -44,7 +47,10 @@ uses
 procedure ParseURL(const Url: ThtString; out Proto, User, Pass, Host, Port, Path: ThtString);
 {François PIETTE's URL parsing procedure}
 
-procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString);
+procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString); overload;
+{$ifndef UNICODE}
+procedure SplitString(var Str: String; Sep: ThtChar; out Spall: String); overload;
+{$endif}
 {Split Str at first appearance of Sep into Str and Spall. Spall starts with Sep.}
 
 function IsValidSchemeChar(const Ch: ThtChar): Boolean;
@@ -56,14 +62,21 @@ function FindSchemeSep(const Src: ThtString; var Index: Integer): Boolean;
 
 procedure SplitScheme(const Src: ThtString; out Name, SchemeSpecific: ThtString); overload;
 procedure SplitScheme(var Src: ThtString; out SchemeSpecific: ThtString); overload;
+function  SplitScheme(var Src: ThtString): ThtString; overload;
 {Split an URL into scheme and scheme specific part at first appearance of ':'}
 
 procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload;
 procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
+function  SplitDest(var Src: ThtString): ThtString; overload;
 {Split local destination from an URL at first appearance of '#', returns Dest with separating '#'}
 
 procedure SplitQuery(const Src: ThtString; out Name, Query: ThtString); overload;
 procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload;
+function  SplitQuery(var Src: ThtString): ThtString; overload;
+{$ifndef UNICODE}
+procedure SplitQuery(var Src: String; out Query: String); overload;
+function  SplitQuery(var Src: String): String; overload;
+{$endif}
 {Split query from an URL at first appearance of '?', returns Query with separating '?'}
 
 function GetBase(const URL: ThtString): ThtString; deprecated;
@@ -88,7 +101,10 @@ function GetURLFilenameAndExt(const URL: ThtString): ThtString;
 {returns mixed case after last /}
 
 function DecodeURL(const URL: ThtString): ThtString;
-{return % encoded URL convert to UnicodeString}
+{return % encoded URL converted to UnicodeString}
+
+function EncodeUrl(const Url: ThtString): ThtString;
+
 
 {***************************************************************************************************
  * both URL and DOS processing methods
@@ -343,7 +359,7 @@ begin
   else
     S := URL;
   ParseURL(S, Result, user, pass, Host, port, Path);
-  Result := Lowercase(Result);
+  Result := LowerCase(Result);
 end;
 
 function GetURLExtension(const URL: ThtString): ThtString;
@@ -565,6 +581,26 @@ begin
     Spall := '';
 end;
 
+{$ifndef UNICODE}
+procedure SplitString(var Str: String; Sep: ThtChar; out Spall: String);
+ {$ifdef UseInline} inline; {$endif}
+// Extracted from several locations spread all over the code.
+// Splits Str at position of Sep into Str and Spall. Spall starts with Sep.
+// If Sep is not in Str, on return Str is unchanged and Spall is empty.
+var
+  I: Integer;
+begin
+  I := Pos(Sep, Str) - 1; // '-1' will be needed in both copy()s and comparing with 0 is faster.
+  if I >= 0 then
+  begin
+    Spall := System.Copy(Str, I + 1, Length(Str) - I);
+    SetLength(Str, I);
+  end
+  else
+    Spall := '';
+end;
+{$endif}
+
 //-- BG ---------------------------------------------------------- 28.06.2015 --
 function IsValidSchemeChar(const Ch: ThtChar): Boolean;
  {$ifdef UseInline} inline; {$endif}
@@ -595,6 +631,13 @@ begin
   if Result then
     // Yes there is a scheme:
     Index := I;
+end;
+
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+function SplitScheme(var Src: ThtString): ThtString; overload;
+begin
+  SplitScheme(Src, Result);
 end;
 
 //-- BG ---------------------------------------------------------- 28.06.2015 --
@@ -635,6 +678,14 @@ begin
   end;
 end;
 
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+function SplitDest(var Src: ThtString): ThtString; overload;
+ {$ifdef UseInline} inline; {$endif}
+begin
+  SplitString(Src, '#', Result);
+end;
+
 procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
  {$ifdef UseInline} inline; {$endif}
 begin
@@ -649,6 +700,14 @@ begin
   SplitString(Name, '#', Dest);
 end;
 
+
+//-- BG ---------------------------------------------------------- 18.05.2016 --
+function SplitQuery(var Src: ThtString): ThtString; overload;
+ {$ifdef UseInline} inline; {$endif}
+begin
+  SplitString(Src, '?', Result);
+end;
+
 procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload;
  {$ifdef UseInline} inline; {$endif}
 begin
@@ -661,6 +720,21 @@ begin
   Name := Src;
   SplitString(Name, '?', Query);
 end;
+
+{$ifndef UNICODE}
+procedure SplitQuery(var Src: String; out Query: String); overload;
+ {$ifdef UseInline} inline; {$endif}
+begin
+  SplitString(Src, '?', Query);
+end;
+
+function SplitQuery(var Src: String): String; overload;
+ {$ifdef UseInline} inline; {$endif}
+begin
+  SplitString(Src, '?', Result);
+end;
+{$endif}
+
 
 function DosToHTML(const FName: ThtString): ThtString;
 {convert a Dos style filename to one for HTML.  Does not add the file:///}
@@ -707,7 +781,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 04.04.2012 --
 function DecodeURL(const URL: ThtString): ThtString;
-{return % encoded URL convert to UnicodeString.
+{return % encoded URL converted to UnicodeString.
  According to http://tools.ietf.org/html/rfc3986 percent encoded data is in UTF-8}
 var
   J: Integer;
@@ -787,6 +861,25 @@ begin
         Inc(I);
     end;
   Result := FName;
+end;
+
+//- BG ----------------------------------------------------------- 01.11.2006 --
+function EncodeUrl(const Url: ThtString): ThtString;
+
+  function CharToHex(Ch: ThtChar): ThtString;
+  begin
+    Result := '%' + IntToHex(Ord(Ch), 2);
+  end;
+
+var
+  I: Integer;
+begin
+  SetLength(Result, 0);
+  for I := 1 to Length(Url) do
+    if Pos(Url[I], ' *<>#%"{}|\^[]`+') > 0 then
+      htAppendStr(Result, CharToHex(Url[I]))
+    else
+      htAppendChr(Result, Url[I]);
 end;
 
 function HTMLToDos(const FName: ThtString): ThtString;

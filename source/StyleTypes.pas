@@ -553,7 +553,7 @@ begin
   MediaTypes := [];
   I := 1;
   repeat
-    J := PosX(',', Str, I);
+    J := htPos(',', Str, I);
     if J = 0 then
       // no more commas, try the rest
       J := Length(Str) + 1;
@@ -736,7 +736,7 @@ function StrToFontName(const Str: ThtString): ThtString;
     Result := I < Length(Str);
     if Result then
     begin
-      J := PosX(',', Str, I);
+      J := htPos(',', Str, I);
       if J = 0 then
         // no more commas, try the rest
         J := Length(Str) + 1;

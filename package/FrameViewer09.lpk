@@ -42,7 +42,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="38">
+    <Files Count="39">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -196,6 +196,10 @@
         <Filename Value="..\source\widestringslcl.pas"/>
         <UnitName Value="WideStringsLcl"/>
       </Item38>
+      <Item39>
+        <Filename Value="..\source\UrlConn.pas"/>
+        <UnitName Value="UrlConn"/>
+      </Item39>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
