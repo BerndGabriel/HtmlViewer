@@ -1207,8 +1207,8 @@ end;
 function StartProcess(const ApplicationName, Params: string; ShowWindow: Word): Boolean;
 {$ifdef MSWindows}
 var
-  si: _STARTUPINFO;
-  pi: _PROCESS_INFORMATION;
+  si: TStartupInfo;
+  pi: TProcessInformation;
   CommandLine: string;
 begin
   FillMemory(@si, SizeOf(si), 0);

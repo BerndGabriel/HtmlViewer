@@ -69,7 +69,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 176
+        Width = 177
       end
       item
         Break = False
@@ -78,7 +78,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 212
+        Width = 211
       end
       item
         Break = False
@@ -91,7 +91,7 @@ object HTTPForm: THTTPForm
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 163
+      Width = 164
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -135,10 +135,11 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 219
+      Left = 220
       Top = 8
-      Width = 171
+      Width = 170
       Height = 21
+      AutoComplete = False
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -11
@@ -399,7 +400,7 @@ object HTTPForm: THTTPForm
     Left = 40
     Top = 120
     Bitmap = {
-      494C01010D001100400011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100440011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

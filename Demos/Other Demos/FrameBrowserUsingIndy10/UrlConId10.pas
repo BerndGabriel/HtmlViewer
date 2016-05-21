@@ -1,10 +1,29 @@
-{*********************************************************}
-{*                     UrlConId.PAS                      *}
-{*                Copyright (c) 1999 by                  *}
-{*                   Metaphor SPRL                       *}
-{*                 All rights reserved.                  *}
-{*                Written by Yves Urbain                 *}
-{*********************************************************}
+{
+Version   11.7
+Copyright (c) 2016 by HtmlViewer Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS
+are covered by separate copyright notices located in those modules.
+}
+
+{ Inspired by UrlConId.PAS written by Yves Urbain }
 
 unit UrlConId10;
 
@@ -14,6 +33,12 @@ unit UrlConId10;
 interface
 
 {*********************************************************}
+{*                     UrlConId.PAS                      *}
+{*                Copyright (c) 1999 by                  *}
+{*                   Metaphor SPRL                       *}
+{*                 All rights reserved.                  *}
+{*                Written by Yves Urbain                 *}
+{*********************************************************}
 {*                                                       *}
 {* This module contains a base class TURLConnection      *}
 {* that defines that behaviour of connection to a Web    *}
@@ -21,7 +46,7 @@ interface
 {* This base classes contains a class method that creates*}
 {* the connection object that will handle connection to  *}
 {* a resource described by a specific protocol specified *}
-{  in an URL                                             *}
+{* in an URL                                             *}
 {* this method is 'getConnection'                        *}
 {*                                                       *}
 {* The implemented protocol are now :                    *}
@@ -33,7 +58,7 @@ interface
 {*      resources.                                       *}
 {*      e.g res:///Welcome.html                          *}
 {*    - zip managed by TZipConnection. Through the use   *}
-{       of VCLZip (works also in Delphi 1) the HTML pages*}
+{*      of VCLZip (works also in Delphi 1) the HTML pages*}
 {*      are extracted from a zip file                    *}
 {*      e.g. zip://demo.zip/demo.htm URL will extract    *}
 {*      demo.htm from the demo.zip (stored in the current*}
@@ -80,10 +105,8 @@ type
     FUrlBase: string;
     FAllow: String;
 
-    FConnector: ThtIndyHttpConnector;
     FHeaderRequestData  : TStrings;
     FHeaderResponseData : TStrings;
-    FCookieManager     : TIdCookieManager;
     FStatusCode        : Integer;
     FHttp: TidHTTP;
 {$ifdef UseSSL}
@@ -92,19 +115,17 @@ type
 {$ifdef UseZLib}
     FComp: TIdCompressorZLib;
 {$endif}
-    procedure HeaderData(const LastResponse: string);
     procedure HttpAuthorization(Sender: TObject; Authentication: TIdAuthentication; var Handled: Boolean);
     procedure HttpRedirect(Sender: TObject; var Dest: String; var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
     procedure HttpWorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
     procedure HttpWork(Sender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
     procedure HttpWorkEnd(Sender: TObject; AWorkMode: TWorkMode);
   public
-    constructor Create(Connector: ThtIndyHttpConnector);
+    constructor Create;
     destructor Destroy; override;
 
     procedure Get(Doc: ThtUrlDoc); override;
     procedure Abort; override;
-    property CookieManager     : TIdCookieManager       read FCookieManager      write FCookieManager;
     property HeaderRequestData : TStrings               read FHeaderRequestData;
     property HeaderResponseData: TStrings               read FHeaderResponseData;
     property StatusCode        : Integer                read FStatusCode;
@@ -197,18 +218,16 @@ end;
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 function ThtIndyHttpConnector.CreateConnection(const Protocol: String): ThtConnection;
 var
-  Connection: THTTPConnection;
+  Connection: THTTPConnection absolute Result;
 begin
-  Connection := THTTPConnection.Create(Self);
-{$ifdef UseSSL}
-  if CanSSL then
-  begin
-    Connection.FSsl := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
-    Connection.FSsl.SSLOptions.Method := sslvSSLv23;
-    Connection.FSsl.SSLOptions.Mode := sslmClient;
-  end;
-{$endif}
-  Result := Connection;
+  Result := THTTPConnection.Create;
+  Connection.FHttp.CookieManager := FCookieManager;
+  Connection.FHttp.ProxyParams.ProxyServer := ProxyServer;
+  Connection.FHttp.ProxyParams.ProxyPort := StrToIntDef(ProxyPort, 80);
+  Connection.FHttp.ProxyParams.ProxyUsername := ProxyUsername;
+  Connection.FHttp.ProxyParams.ProxyPassword := ProxyPassword;
+  Connection.FHttp.ProxyParams.BasicAuthentication := (ProxyUsername <> '') and (ProxyPassword <> '');     {9.2}
+  Connection.FHttp.Request.UserAgent := UserAgent;
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
@@ -235,21 +254,43 @@ end;
 { THTTPConnection }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-constructor THTTPConnection.Create(Connector: ThtIndyHttpConnector);
+constructor THTTPConnection.Create;
 begin
   inherited Create;
-  FConnector := Connector;
   FHeaderRequestData := TStringList.Create;
   FHeaderResponseData := TStringList.Create;
   FStatusCode := 404;
+
+  FHttp := TIdHTTP.Create(nil);
+  FHttp.ProtocolVersion := pv1_1;
+  FHttp.HandleRedirects := True;
+  FHttp.OnAuthorization := HttpAuthorization;
+  FHttp.OnRedirect := HttpRedirect;
+  FHttp.OnWorkBegin := HttpWorkBegin;
+  FHttp.OnWork := HttpWork;
+  FHttp.OnWorkEnd := HttpWorkEnd;
+{$ifdef UseSSL}
+  if CanSSL then
+  begin
+    FSsl := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+    FSsl.SSLOptions.Method := sslvSSLv23;
+    FSsl.SSLOptions.Mode := sslmClient;
+    FHttp.IOHandler := FSsl;
+  end;
+{$endif}
 {$ifdef UseZLib}
   FComp:= TIdCompressorZLib.Create(nil);
+  FHttp.Compressor := FComp;
+{$endif}
+{$ifdef LogIt}
+  FHttp.Intercept := HTTPForm.Log;
 {$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 destructor THTTPConnection.Destroy;
 begin
+  FHttp.Free;
 {$ifdef UseZLib}
   FComp.Free;
 {$endif}
@@ -259,43 +300,6 @@ begin
   FHeaderRequestData.Free;
   FHeaderResponseData.Free;
   inherited Destroy;
-end;
-
-//-- BG ---------------------------------------------------------- 19.05.2016 --
-procedure THTTPConnection.HeaderData(const LastResponse: string);
-{Selected Header data comes here}
-var
-  S: string;
-  I: integer;
-begin
-  S := LastResponse;
-
-{see if Authentication is required.  If so, need the Realm string}
-  I := Pos('www-authenticate', Lowercase(S));
-  if I > 0 then
-  begin
-    I := Pos('realm', Lowercase(S));
-    if (I > 0) then
-    begin
-      S := Copy(S, I+5, Length(S));
-      I := Pos('=', S);
-      if I > 0 then
-      begin
-        S := Trim(Copy(S, I+1, Length(S)));
-        Realm := S;
-      end;
-    end;
-    Exit;
-  end;
-
-  {see what's allowed for error 405}
-  I := Pos('allow:', LowerCase(S));
-  if (I > 0) then
-  begin
-    FAllow := Lowercase(S);
-    Exit;
-  end;
-
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
@@ -312,6 +316,7 @@ begin
   FUrlBase := GetUrlBase(URL1);
   Query1 := Doc.Query;
   PostIt1 := Doc.PostIt;
+  FHttp.Request.Referer := Doc.Referer;
   repeat
     TryRealm := True;
     TryAgain := False;
@@ -320,34 +325,9 @@ begin
     Doc.Clear;
     try
       Aborted := False;
-      FHttp := TIdHTTP.Create(Nil);
-{$ifdef UseZLib}
-      FHttp.Compressor := FComp;
-{$endif}
-{$ifdef LogIt}
-      FHttp.Intercept := HTTPForm.Log;
-{$endif}
-      FHttp.CookieManager := FCookieManager;
-      FHttp.HandleRedirects := True;
-      FHttp.OnAuthorization := HttpAuthorization;
-      FHttp.OnRedirect := HttpRedirect;
-      FHttp.OnWorkBegin := HttpWorkBegin;
-      FHttp.OnWork := HttpWork;
-      FHttp.OnWorkEnd := HttpWorkEnd;
-      FHttp.ProtocolVersion := pv1_1;
-      FHttp.ProxyParams.ProxyServer := FConnector.ProxyServer;
-      FHttp.ProxyParams.ProxyPort := StrToIntDef(FConnector.ProxyPort, 80);
-      FHttp.ProxyParams.ProxyUsername := FConnector.ProxyUsername;
-      FHttp.ProxyParams.ProxyPassword := FConnector.ProxyPassword;
-      FHttp.ProxyParams.BasicAuthentication := (FConnector.ProxyUsername <> '') and (FConnector.ProxyPassword <> '');     {9.2}
-      FHttp.Request.UserAgent := FConnector.UserAgent;
       FHttp.Request.BasicAuthentication := BasicAuthentication;
-      FHttp.Request.Referer := Doc.Referer;
       FHttp.Request.Username := Username;
       FHttp.Request.Password := Password;
-{$ifdef UseSSL}
-      FHttp.IOHandler := FSsl;
-{$endif}
       try
         if PostIt1 then
         begin {Post}
@@ -356,11 +336,11 @@ begin
 {$ifdef LogIt}
             HTTPForm.LogLine('THTTPConnection.Get Post: ' + Url1 + ', Data=' + Copy(Query1, 1, 132) + ', EncType=' + Doc.QueryEncType);  // not too much data
 {$endif}
-            if Doc.QueryEncType = '' then
-              FHttp.Request.ContentType := 'application/x-www-form-urlencoded'
+            if Length(Doc.QueryEncType) > 0 then
+              FHttp.Request.ContentType := Doc.QueryEncType
             else
-              FHttp.Request.ContentType := Doc.QueryEncType;
-            FHttp.Post(TIdURI.URLEncode( URL1 ), SendStream, Doc.Stream);
+              FHttp.Request.ContentType := 'application/x-www-form-urlencoded';
+            FHttp.Post(URL1, SendStream, Doc.Stream);
           finally
             SendStream.Free;
           end;
@@ -372,7 +352,7 @@ begin
 {$ifdef LogIt}
           HTTPForm.LogLine('THTTPConnection.Get Get: ' + Url1);
 {$endif}
-          FHttp.Get( TIdURI.URLEncode( Url1 ), Doc.Stream );
+          FHttp.Get(Url1, Doc.Stream);
         end;
       finally
         ReturnedContentType := FHttp.Response.ContentType;
@@ -382,10 +362,6 @@ begin
         FHeaderRequestData.AddStrings( FHttp.Request.RawHeaders );
         FHeaderResponseData.AddStrings( FHttp.Response.RawHeaders );
         FHeaderResponseData.Add( 'Character Set = '+ FHttp.Response.CharSet );
-{$ifdef UseSSL}
-        FHttp.IOHandler := Nil;
-{$endif}
-        FreeAndNil(FHttp);
       end;
 
       if FStatusCode = 401 then
@@ -494,23 +470,23 @@ end;
 {----------------THTTPConnection.WorkBegin}
 procedure THTTPConnection.HttpWorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
 var
-  LocationFound: boolean;
+//  LocationFound: boolean;
   S: string;
 begin
   Doc.Status := ucsInProgress;
   ExpectedSize := AWorkCountMax;
   ReceivedSize := 0;
 
-  LocationFound := FHttp.Response.Location <> '';
-  if LocationFound then
-    HeaderData('Location: '+ FHttp.Response.Location)
-  else if FHttp.Response.ContentType <> '' then
-    {Content type is unimportant on Location change}
-    HeaderData('content-type: '+ FHttp.Response.ContentType);
+//  LocationFound := FHttp.Response.Location <> '';
+//  if LocationFound then
+//    HeaderData('Location: '+ FHttp.Response.Location)
+//  else if FHttp.Response.ContentType <> '' then
+//    {Content type is unimportant on Location change}
+//    HeaderData('content-type: '+ FHttp.Response.ContentType);
 
   S := FHttp.Response.RawHeaders.Values['Allow'];
   if S <> '' then
-    HeaderData('Allow: ' + S);
+    FAllow := S;
 
   if Assigned(OnDocBegin) then
     OnDocBegin(Self);

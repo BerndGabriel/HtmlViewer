@@ -19,18 +19,18 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS and UrlConId*.PAS
+Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-{ Inspired by UrlConId10.PAS written by Yves Urbain }
+{ Inspired by former UrlConId10.PAS written by Yves Urbain }
 
 unit UrlConn;
 
 interface
 
 uses
-  Classes, Contnrs, SysUtils, Forms,
+  Windows, Classes, Contnrs, SysUtils, Forms,
   URLSubs, HtmlGlobals, Types;
 
 const

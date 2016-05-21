@@ -49,7 +49,7 @@ procedure ParseURL(const Url: ThtString; out Proto, User, Pass, Host, Port, Path
 
 procedure SplitString(var Str: ThtString; Sep: ThtChar; out Spall: ThtString); overload;
 {$ifndef UNICODE}
-procedure SplitString(var Str: String; Sep: ThtChar; out Spall: String); overload;
+procedure SplitString(var Str: String; Sep: Char; out Spall: String); overload;
 {$endif}
 {Split Str at first appearance of Sep into Str and Spall. Spall starts with Sep.}
 
@@ -582,7 +582,7 @@ begin
 end;
 
 {$ifndef UNICODE}
-procedure SplitString(var Str: String; Sep: ThtChar; out Spall: String);
+procedure SplitString(var Str: String; Sep: Char; out Spall: String);
  {$ifdef UseInline} inline; {$endif}
 // Extracted from several locations spread all over the code.
 // Splits Str at position of Sep into Str and Spall. Spall starts with Sep.
@@ -680,45 +680,39 @@ end;
 
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function SplitDest(var Src: ThtString): ThtString; overload;
- {$ifdef UseInline} inline; {$endif}
+procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload; {$ifdef UseInline} inline; {$endif}
 begin
-  SplitString(Src, '#', Result);
+  SplitString(Src, ThtChar('#'), Dest);
 end;
 
-procedure SplitDest(var Src: ThtString; out Dest: ThtString); overload;
- {$ifdef UseInline} inline; {$endif}
+function SplitDest(var Src: ThtString): ThtString; overload; {$ifdef UseInline} inline; {$endif}
 begin
-  SplitString(Src, '#', Dest);
+  SplitDest(Src, Result);
 end;
 
-procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload;
- {$ifdef UseInline} inline; {$endif}
+procedure SplitDest(const Src: ThtString; out Name, Dest: ThtString); overload; {$ifdef UseInline} inline; {$endif}
 {Split an URL into filename and Destination}
 begin
   Name := Src;
-  SplitString(Name, '#', Dest);
+  SplitDest(Name, Dest);
 end;
 
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function SplitQuery(var Src: ThtString): ThtString; overload;
- {$ifdef UseInline} inline; {$endif}
+procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload; {$ifdef UseInline} inline; {$endif}
 begin
-  SplitString(Src, '?', Result);
+  SplitString(Src, ThtChar('?'), Query);
 end;
 
-procedure SplitQuery(var Src: ThtString; out Query: ThtString); overload;
- {$ifdef UseInline} inline; {$endif}
+function SplitQuery(var Src: ThtString): ThtString; overload; {$ifdef UseInline} inline; {$endif}
 begin
-  SplitString(Src, '?', Query);
+  SplitQuery(Src, Result);
 end;
 
-procedure SplitQuery(const Src: ThtString; out Name, Query: ThtString); overload;
- {$ifdef UseInline} inline; {$endif}
+procedure SplitQuery(const Src: ThtString; out Name, Query: ThtString); overload; {$ifdef UseInline} inline; {$endif}
 begin
   Name := Src;
-  SplitString(Name, '?', Query);
+  SplitQuery(Name, Query);
 end;
 
 {$ifndef UNICODE}
