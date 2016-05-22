@@ -45,7 +45,8 @@ uses
   CachUnitId in 'CachUnitId.pas',
   DownLoadId in 'DownLoadId.pas' {DownLoadForm},
   ProxyDlg in 'ProxyDlg.pas' {ProxyForm},
-  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox};
+  Htmlabt in '..\..\Main Demos\Htmlabt.pas' {AboutBox},
+  UrlConVclZip in 'UrlConVclZip.pas';
 
 {$R *.res}
 

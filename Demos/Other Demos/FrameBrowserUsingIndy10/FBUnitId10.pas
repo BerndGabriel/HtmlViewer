@@ -22,8 +22,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS and UrlConId*.PAS
 are covered by separate copyright notices located in those modules.
-
-Thanks to the Indy Pit Crew for updating *Id9 to *Id10.
 }
 unit FBUnitId10;
 
@@ -67,10 +65,6 @@ uses
   HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs, UrlConn,
   HtmlView, FramView, FramBrwz,
   CachUnitId, DownLoadId,
-// Indy specific:
-  IdGlobal, IdGlobalProtocols,
-  IdCookie, IdCookieManager,
-  IdAuthentication,
 {$ifdef LogIt}
   IdLogfile,
 {$endif}
@@ -96,7 +90,10 @@ type
   { THTTPForm }
 
   THTTPForm = class(TForm)
-    MainMenu1: TMainMenu;
+    Connectors: ThtConnectionManager;
+    FileConnector: ThtFileConnector;
+    ResourceConnector: ThtResourceConnector;
+    MainMenu: TMainMenu;
     HistoryMenuItem: TMenuItem;
     Help1: TMenuItem;
     File1: TMenuItem;
@@ -125,7 +122,7 @@ type
     Proxy1: TMenuItem;
     DemoInformation1: TMenuItem;
     About1: TMenuItem;
-    Timer1: TTimer;
+    TitleTimer: TTimer;
     CoolBar1: TCoolBar;
     ToolBar2: TToolBar;
     BackButton: TToolButton;
@@ -137,7 +134,7 @@ type
     ToolBar1: TToolBar;
     CancelButton: TToolButton;
     SaveUrl: TToolButton;
-    ImageList1: TImageList;
+    ImageList: TImageList;
     Panel3: TPanel;
 {$ifndef LCL}
     Animate1: TAnimate;
@@ -190,7 +187,7 @@ type
     procedure ViewerClear(Sender: TObject);
     procedure Proxy1Click(Sender: TObject);
     procedure DemoInformation1Click(Sender: TObject);
-    procedure Timer1Timer(Sender: TObject);
+    procedure TitleTimerTimer(Sender: TObject);
     procedure FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 {$ifdef UNICODE}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: String);
@@ -220,6 +217,7 @@ type
     procedure PageInfo1Click(Sender: TObject);
     procedure LibraryInformation1Click(Sender: TObject);
     procedure Source1Click(Sender: TObject);
+    function ConnectorsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
   private
     { Private declarations }
     URLBase: string;
@@ -235,11 +233,8 @@ type
     NumImageTot, NumImageDone: Integer;
     AStream: TMemoryStream;
 
-    Connections: ThtConnectionManager;
-    FileConnector: ThtFileConnector;
-    ResourceConnector: ThtResourceConnector;
-    HttpConnector: ThtIndyHTTPConnector;
     AsyncLoaders: ThtUrlDocLoaderThreadList;
+    HttpConnector: ThtIndyHttpConnector;
     Connection: ThtConnection;
 
     TimerCount: Integer;
@@ -277,12 +272,9 @@ type
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
 {$endif}
     procedure CheckException(Sender: TObject; E: Exception);
-    procedure SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
-    procedure LoadCookies(ACookieCollection: TIdCookieManager);
     procedure CloseHints;
     procedure FrameBrowserFileBrowse(Sender, Obj: TObject; var S: ThtString);
     procedure UpdateCaption;
-    function ConnectionsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
     procedure LoadedAsync(Sender: ThtUrlDoc; Receiver: TObject);
     procedure DownLoad(const Url: String);
     procedure LoadIniFile;
@@ -486,23 +478,13 @@ begin
   URLComboBox.AutoComplete := False;
 {$endif}
 
-  ResourceConnector := ThtResourceConnector.Create(Self);
-
-  FileConnector := ThtFileConnector.Create(Self);
-  FileConnector.OnGetAuthorization := ConnectionsGetAuthorization;
-
-  HttpConnector := ThtIndyHttpConnector.Create(Self);
-  HttpConnector.OnGetAuthorization := ConnectionsGetAuthorization;
-  HttpConnector.CookieManager.OnDestroy := SaveCookies;
-  HttpConnector.ProxyPort := '80';
-  LoadCookies(HttpConnector.CookieManager);
-
   AsyncLoaders := ThtUrlDocLoaderThreadList.Create(Self);
 
-  Connections := ThtConnectionManager.Create(Self);
-  Connections.RegisterConnector(ResourceConnector);
-  Connections.RegisterConnector(FileConnector);
-  Connections.RegisterConnector(HttpConnector);
+  HttpConnector := ThtIndyHttpConnector.Create(Self);
+  HttpConnector.OnGetAuthorization := ConnectorsGetAuthorization;
+  HttpConnector.ProxyPort := '80';
+  HttpConnector.CookieFile := Cache + CookieFile;
+  HttpConnector.ConnectionManager := Connectors;
 
   FIniFilename := ChangeFileExt(Application.Exename, '.ini');
   LoadIniFile;
@@ -631,6 +613,7 @@ begin
     CloseFile(Mon);
     DiskCache.Flush;
     SaveIniFile;
+    HttpConnector.SaveCookies;
   end;
 
   DiskCache.Free;
@@ -680,9 +663,8 @@ begin
     S := LFile;
 end;
 
-
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function THTTPForm.ConnectionsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
+function THTTPForm.ConnectorsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
 var
   Username, Password: string;
 begin
@@ -719,7 +701,6 @@ var
   S, URL1, CacheFileName, Query1, LastUrl, Protocol, NewUrlDummy: string;
   Error, IsHttpConnection: Boolean;
   RedirectCount: integer;
-  //Connection: ThtConnection;
   HttpConnection: THTTPConnection;
   DownLoad: ThtUrlDoc;
 begin
@@ -759,17 +740,15 @@ begin
   else
   begin       {it's not in cache}
     Protocol := GetProtocol(URL1);
-    Connection := Connections.CreateConnection(Protocol);
+    Connection := Connectors.CreateConnection(Protocol);
     if Connection <> nil then
       try
         IsHttpConnection := Connection is THTTPConnection;
         if IsHttpConnection then
-        begin
-          HttpConnection := Connection as THttpConnection;
-          //HttpConnection.OnDocBegin := HTTPDocBegin1;
-          HttpConnection.OnDocData := HTTPDocData1;
-          //HttpConnection.OnDocEnd := HTTPDocEnd1;
-        end;
+          HttpConnection := Connection as THTTPConnection;
+        //Connection.OnDocBegin := HTTPDocBegin1;
+        Connection.OnDocData := HTTPDocData1;
+        //Connection.OnDocEnd := HTTPDocEnd1;
         LastURL := Url1;
         DownLoad := Connection.CreateUrlDoc(not IsGet, URL1, Query1, EncType, RefererX);
         try
@@ -841,6 +820,7 @@ begin
             end;
           end;
           StatusBarMain.Panels[0].Text := 'Received ' + IntToStr(AStream.Size) + ' bytes';
+
           CacheFileName := DiskCache.AddNameToCache(LastUrl, Download.NewUrl, DocType, Error);
           if Length(CacheFileName) > 0 then
             try
@@ -899,7 +879,7 @@ begin
     else
     begin          {get the image asynchronously }
       Protocol := GetProtocol(URL);
-      Connection := Connections.CreateConnection(Protocol);
+      Connection := Connectors.CreateConnection(Protocol);
       if Connection <> nil then
       begin
         DownLoad := Connection.CreateUrlDoc(False, URL, '', '', '');
@@ -946,16 +926,9 @@ begin
   CacheFileName := DiskCache.AddNameToCache(Sender.Url, Sender.NewUrl, Sender.DocType, Loaded);
   if Length(CacheFileName) > 0 then
     try
-      if Sender.Stream is TMemoryStream then
-        (Sender.Stream as TMemoryStream).SaveToFile(CacheFileName)
-      else
-      begin
-        AStream.LoadFromStream(Sender.Stream);
-        AStream.SaveToFile(CacheFileName);   {it's now in cache}
-      end;
+      Sender.SaveToFile(CacheFileName)
     except
     end;
-
   Sender.Free;
 end;
 
@@ -1251,7 +1224,7 @@ begin
     DownLoadForm := TDownLoadForm.Create(Self);
     try
       DownLoadForm.Filename    := SaveDialog.Filename;
-      DownLoadForm.Connections := Connections;
+      DownLoadForm.Connections := Connectors;
       DownLoadForm.DownLoadURL := URL;
       DownLoadForm.ShowModal;
     finally
@@ -1518,12 +1491,10 @@ begin
   end
   else
   begin
-    {$IFDEF LogIt}
-    if E is EIdHTTPProtocolException then begin
+{$IFDEF LogIt}
+    if E is EIdHTTPProtocolException then
        LogLine( IntToStr(EIdHTTPProtocolException(E).ErrorCode)+ ' - '+ EIdHTTPProtocolException(E).ErrorMessage );
-    end;
-
-    {$ENDIF}
+{$ENDIF}
     Application.ShowException(E);
   end;
 end;
@@ -1727,9 +1698,24 @@ end;
 procedure THTTPForm.About1Click(Sender: TObject);
 var
   AboutBox: TAboutBox;
+  I: Integer;
+  C: ThtConnector;
+  Remarks: String;
 begin
+  for I := 0 to Connectors.Count - 1 do
+  begin
+    C := Connectors[I];
+    Remarks := Remarks + '<tr><td class="p">' + C.Protocols + '<td class="m"><td class="v">' + C.Version;
+  end;
+
   AboutBox := TAboutBox.CreateIt(Self, 'FrameBrowser Demo', 'TFrameBrowser',
-    'accessing remote data via<h3>' + gsIdProductName + ' ' + gsIdVersion + '</h3>');
+    '<table><thead><tr><td class="p">protocol(s)<td class="m" width="10"><td class="v">powered by<tbody>' +
+    Remarks +
+    '</table>',
+
+    'thead td {font-weight: bold}' +
+    'td.p {text-align: right}'
+    );
   try
     AboutBox.ShowModal;
   finally
@@ -1776,10 +1762,10 @@ procedure THTTPForm.FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X
 var
   TitleStr: string;
 begin
-  if not Timer1.Enabled and (Sender is ThtmlViewer) and Assigned(ActiveControl)
+  if not TitleTimer.Enabled and (Sender is THtmlViewer) and Assigned(ActiveControl)
          and ActiveControl.Focused then
   begin
-    TitleViewer := ThtmlViewer(Sender);
+    TitleViewer := THtmlViewer(Sender);
     TitleStr := TitleViewer.TitleAttr;
     if TitleStr = '' then
       OldTitle := ''
@@ -1787,7 +1773,7 @@ begin
       if TitleStr <> OldTitle then
       begin
         TimerCount := 0;
-        Timer1.Enabled := True;
+        TitleTimer.Enabled := True;
         OldTitle := TitleStr;
      end;
   end;
@@ -1795,13 +1781,13 @@ end;
 
 procedure THTTPForm.CloseHints;
 begin
-  Timer1.Enabled := False;
+  TitleTimer.Enabled := False;
   HintWindow.ReleaseHandle;
   HintVisible := False;
   TitleViewer := Nil;
 end;
 
-procedure THTTPForm.Timer1Timer(Sender: TObject);
+procedure THTTPForm.TitleTimerTimer(Sender: TObject);
 const
   StartCount = 2; {timer counts before hint window opens}
   EndCount = 20;  {after this many timer counts, hint window closes}
@@ -1854,92 +1840,13 @@ begin
   end;
 end;
 
-procedure THTTPForm.SaveCookies(ASender: TObject; ACookieCollection: TIdCookies);
-var
-  M : TMemIniFile;
-{$ifdef HasCookieCollectionPersistent}
-  i : Integer;
-  LU : TIdURI;
-{$endif}
-begin
-  if Monitor1 then  {write only if first instance}
-  begin
-      M := TMemIniFile.Create(Cache+CookieFile );
-      try
-        m.Clear;
-{$ifdef HasCookieCollectionPersistent}
-          LU := TIdURI.Create;
-          try
-            m.Clear;
-            for i := 0 to ACookieCollection.Count -1 do
-            begin
-              if ACookieCollection[i].Persistent then begin
-                LU.URI := '';
-                LU.Path := ACookieCollection[i].Path;
-                LU.Host := ACookieCollection[i].Domain;
-                if ACookieCollection[i].Secure then  begin
-                  LU.Protocol := 'https'
-                end else begin
-                  LU.Protocol := 'http';
-                end;
-                m.WriteString(LU.URI,IntToStr(i),
-                  LocalDateTimeToGMT( ACookieCollection[i].CreatedAt ) + '|' +
-                  LocalDateTimeToGMT( ACookieCollection[i].LastAccessed ) + '|' +
-                  ACookieCollection[i].ServerCookie );
-              end;
-            end;
-          finally
-            LU.Free;
-          end;
-{$endif}
-        m.UpdateFile;
-      finally
-        m.Free;
-      end;
-  end;
-end;
-
-{NOTE about Cookies in Indy 10.
-
-The cookie entine was completely rewritten in Indy 10.
-
-The code does not load and save every cookie.  I do not consider this a bug at all
-because:
-
-1) Cookies expire
-2) Some cookies are session cookies that are meant to only last for your session.
-Those cookies do not have expiration timestamps.
-
-
-}
-procedure ReadCookieValues(m : TMemIniFile;
-  AURI : TIdURI;
-  AValues : TStrings;
-  ACookieCollection: TIdCookieManager);
-var i : Integer;
-  s, LC, LA : String;
-  LCookie : TIdCookie;
-begin
-  for i := 0 to AValues.Count - 1 do begin
-    s := AValues[i];
-    Fetch(s,'=');
-    LC := Fetch(s,'|');
-    LA := Fetch(s,'|');
-    LCookie := ACookieCollection.CookieCollection.AddServerCookie(s,AURI);
-    if Assigned(LCookie) then begin
-      LCookie.CreatedAt := GMTToLocalDateTime(LC);
-      LCookie.LastAccessed := GMTToLocalDateTime(LA);
-    end;
-  end;
-end;
-
 procedure THTTPForm.LibraryInformation1Click(Sender: TObject);
 var LId : TIdC_ULONG;
 begin
   //
   with TInfoForm.Create(Application) do
   try
-    Caption := 'Library Information';
+    Caption := 'ZLib Library Information';
     mmoInfo.Lines.Clear;
     //
     //       1 -          1 - bit  0
@@ -1976,7 +1883,7 @@ begin
     //20000000 -  536870912 - bit 29
     //40000000 - 1073741824 - bit 30
     //80000000 - 2147483648 - bit 31
-    {$ifdef UseZLib}
+{$ifdef UseZLib}
     mmoInfo.Lines.Add('ZLib Version: '+ zlibVersion);
     LId := zlibCompileFlags;
     mmoInfo.Lines.Add('Type sizes, two bits each, 00 = 16 bits, 01 = 32, 10 = 64, 11 = other: ');
@@ -2091,47 +1998,12 @@ begin
     end else begin
       mmoInfo.Lines.Add( '0 = returns value, 1 = void - 1 means inferred string length returned  : False');
     end;
-    {$endif}
+{$else}
+    mmoInfo.Lines.Add('ZLib not included.');
+{$endif}
     ShowModal;
   finally
     Free;
-  end;
-end;
-
-procedure THTTPForm.LoadCookies(ACookieCollection: TIdCookieManager);
-var
-  M : TMemIniFile;
-  sects : TStringList;
-  CookieValues : TStringList;
-  i : Integer;
-  LU : TIdURI;
-begin
-  if FileExists(Cache+CookieFile) then
-  begin
-      M := TMemIniFile.Create(Cache+CookieFile );
-      try
-        sects := TStringList.Create;
-        try
-          CookieValues := TStringList.Create;
-          LU := TIdURI.Create;
-          try
-            m.ReadSections(sects);
-            for i := 0 to sects.Count - 1 do begin
-              m.ReadSectionValues(sects[i],CookieValues);
-              LU.URI := sects[i];
-              ReadCookieValues(m, LU, CookieValues, ACookieCollection);
-             CookieValues.Clear;
-            end;
-          finally
-            LU.Free;
-            CookieValues.Free;
-          end;
-        finally
-          sects.Free;
-        end;
-      finally
-        m.Free;
-      end;
   end;
 end;
 

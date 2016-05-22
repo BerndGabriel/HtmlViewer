@@ -75,6 +75,7 @@ contains
   StyleTypes in '..\source\StyleTypes.pas',
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
+  UrlConn in '..\Source\UrlConn.pas',
   vwPrint in '..\source\vwPrint.pas';
 
 end.

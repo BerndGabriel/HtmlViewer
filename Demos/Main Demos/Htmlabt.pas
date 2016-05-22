@@ -45,7 +45,7 @@ type
     BitBtn1: TBitBtn;
     Viewer: THTMLViewer;
   public
-    constructor CreateIt(Owner: TComponent; const ProgName, CompName: string; const Remarks: string = ''); overload;
+    constructor CreateIt(Owner: TComponent; const ProgName, CompName: string; const Remarks: string = ''; const Styles: string = ''); overload;
     constructor CreateIt(Owner: TComponent; const Message: ThtString); overload;
   end;
 
@@ -181,16 +181,26 @@ begin
 end;
 
 
-constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName, Remarks: string);
+constructor TAboutBox.CreateIt(Owner: TComponent; const ProgName, CompName, Remarks, Styles: string);
 var
-  S: string;
+  Head: string;
+  Body: string;
 begin
   inherited Create(Owner);
   inherited Loaded;
   Viewer.DefFontName := FontSans;
   Viewer.DefFontSize := 9;
   Viewer.DefFontColor := clNavy;
-  S :='<body text="000080">' +
+  if Length(Styles) > 0 then
+    Head :=
+      '<head>' +
+      '<style>' +
+      Styles +
+      '</style>' +
+      '</head>';
+
+  Body :=
+    '<body text="000080">' +
     '<center>' +
     '<h1>' + ProgName + '</h1>' +
     '<font color="Maroon">A demo program for the <b>' + CompName + '</b> component</font>' +
@@ -199,7 +209,7 @@ begin
     '</center>' +
     ConfigInfo +
     '</body>';
-  Viewer.LoadFromString(S);
+  Viewer.LoadFromString('<html>' + Head + Body + '</html>');
   if Viewer.ClientHeight < Viewer.MaxVertical then
     Height := Height + Viewer.MaxVertical - Viewer.ClientHeight;
 end;

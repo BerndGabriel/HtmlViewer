@@ -43,7 +43,8 @@ uses
   BegaScrollBox,
   BegaZoom,
 {$endif}
-  HTMLView,
+  UrlConn,
+  HtmlView,
   FramView,
   FramBrwz;
 
@@ -65,7 +66,10 @@ begin
     {$endif}
   {$endif}
 {$endif}
-    THTMLViewer,
+    ThtConnectionManager,
+    ThtFileConnector,
+    ThtResourceConnector,
+    THtmlViewer,
     TFrameViewer,
     TFrameBrowser]);
 end;

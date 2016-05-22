@@ -1,17 +1,17 @@
 object HTTPForm: THTTPForm
   Left = 510
-  Height = 251
+  Height = 307
   Top = 261
-  Width = 570
+  Width = 628
   ActiveControl = UrlComboBox
   Caption = 'Experimental Browser'
-  ClientHeight = 231
-  ClientWidth = 570
+  ClientHeight = 287
+  ClientWidth = 628
   Color = clBtnFace
   Font.Color = clBtnText
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
-  Menu = MainMenu1
+  Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -20,9 +20,9 @@ object HTTPForm: THTTPForm
   LCLVersion = '1.6.0.4'
   object FrameBrowser: TFrameBrowser
     Left = 0
-    Height = 161
-    Top = 47
-    Width = 570
+    Height = 212
+    Top = 52
+    Width = 628
     CharSet = ANSI_CHARSET
     CodePage = 0
     DefFontName = 'Times New Roman'
@@ -57,9 +57,9 @@ object HTTPForm: THTTPForm
   end
   object CoolBar1: TCoolBar
     Left = 0
-    Height = 47
+    Height = 52
     Top = 0
-    Width = 570
+    Width = 628
     AutoSize = True
     Bands = <    
       item
@@ -97,7 +97,7 @@ object HTTPForm: THTTPForm
       ButtonHeight = 37
       ButtonWidth = 41
       Caption = 'ToolBar2'
-      Images = ImageList1
+      Images = ImageList
       ShowCaptions = True
       TabOrder = 0
       Transparent = True
@@ -140,11 +140,11 @@ object HTTPForm: THTTPForm
       AnchorSideTop.Control = CoolBar1
       Left = 214
       Height = 21
-      Top = 13
+      Top = 15
       Width = 166
       AutoSelect = False
       BorderSpacing.Left = 212
-      BorderSpacing.Top = 11
+      BorderSpacing.Top = 13
       Font.Color = clWindowText
       Font.Height = -11
       Font.Name = 'MS Sans Serif'
@@ -159,10 +159,10 @@ object HTTPForm: THTTPForm
       AnchorSideTop.Control = CoolBar1
       Left = 409
       Height = 37
-      Top = 5
+      Top = 7
       Width = 142
       BorderSpacing.Left = 407
-      BorderSpacing.Top = 3
+      BorderSpacing.Top = 5
       BevelOuter = bvNone
       ClientHeight = 37
       ClientWidth = 142
@@ -181,7 +181,7 @@ object HTTPForm: THTTPForm
         ButtonHeight = 37
         ButtonWidth = 48
         Caption = 'ToolBar1'
-        Images = ImageList1
+        Images = ImageList
         ShowCaptions = True
         TabOrder = 0
         Wrapable = False
@@ -215,8 +215,8 @@ object HTTPForm: THTTPForm
   object StatusBarMain: TStatusBar
     Left = 0
     Height = 23
-    Top = 208
-    Width = 570
+    Top = 264
+    Width = 628
     Panels = <    
       item
         Width = 216
@@ -238,9 +238,9 @@ object HTTPForm: THTTPForm
     TabOrder = 3
     Visible = False
   end
-  object MainMenu1: TMainMenu
-    left = 256
-    top = 96
+  object MainMenu: TMainMenu
+    left = 40
+    top = 80
     object File1: TMenuItem
       Caption = '&File'
       OnClick = File1Click
@@ -346,24 +346,24 @@ object HTTPForm: THTTPForm
     DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|image files|*.bmp;*.gif;*.jpg;*.jpeg;*.png|text files|*.txt|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
-    left = 312
-    top = 96
+    left = 176
+    top = 80
   end
   object SaveDialog: TSaveDialog
     Filter = 'All Files|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofNoReadOnlyReturn]
-    left = 136
-    top = 104
+    left = 112
+    top = 80
   end
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    left = 480
-    top = 145
+    left = 176
+    top = 144
   end
   object PopupMenu: TPopupMenu
-    left = 408
-    top = 97
+    left = 256
+    top = 144
     object SaveImageAs: TMenuItem
       Caption = '&Save image as...'
       OnClick = SaveImageAsClick
@@ -382,21 +382,21 @@ object HTTPForm: THTTPForm
     MaxPage = -1
     Options = [poPageNums]
     ToPage = 1
-    left = 192
-    top = 105
+    left = 112
+    top = 144
   end
-  object Timer1: TTimer
+  object TitleTimer: TTimer
     Enabled = False
     Interval = 200
-    OnTimer = Timer1Timer
-    left = 426
-    top = 149
+    OnTimer = TitleTimerTimer
+    left = 368
+    top = 144
   end
-  object ImageList1: TImageList
+  object ImageList: TImageList
     Height = 17
     Width = 17
     left = 40
-    top = 120
+    top = 144
     Bitmap = {
       4C690D0000001100000011000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -872,8 +872,8 @@ object HTTPForm: THTTPForm
     }
   end
   object PopupMenu1: TPopupMenu
-    left = 360
-    top = 89
+    left = 256
+    top = 80
     object ViewImage: TMenuItem
       Caption = '&View Image'
     end
@@ -887,5 +887,19 @@ object HTTPForm: THTTPForm
       Caption = '&Open in new window'
       OnClick = OpenInNewWindowClick
     end
+  end
+  object Connectors: ThtConnectionManager
+    left = 368
+    top = 80
+  end
+  object FileConnector: ThtFileConnector
+    ConnectionManager = Connectors
+    left = 472
+    top = 80
+  end
+  object ResourceConnector: ThtResourceConnector
+    ConnectionManager = Connectors
+    left = 584
+    top = 80
   end
 end

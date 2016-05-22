@@ -23,49 +23,28 @@ Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-{ Inspired by UrlConId.PAS written by Yves Urbain }
-
 unit UrlConId10;
 
 {$include htmlcons.inc}
 {$include options.inc}
 
 interface
+{
+Inspired by the former UrlConId10.PAS.
 
+Thanks to the Indy Pit Crew for updating the former
+UrlConId10.pas/FBUnitId10.pas to Indy 10
+from Indy 9 in UrlConId9.pas/FBUnitId9.pas.
+
+UrlConId9.PAS was written as UrlConId.PAS by Yves Urbain.
+}
+// This is the original copyright notice of UrlConId.PAS:
 {*********************************************************}
 {*                     UrlConId.PAS                      *}
 {*                Copyright (c) 1999 by                  *}
 {*                   Metaphor SPRL                       *}
 {*                 All rights reserved.                  *}
 {*                Written by Yves Urbain                 *}
-{*********************************************************}
-{*                                                       *}
-{* This module contains a base class TURLConnection      *}
-{* that defines that behaviour of connection to a Web    *}
-{* resource: a HTML page, an image, ...                  *}
-{* This base classes contains a class method that creates*}
-{* the connection object that will handle connection to  *}
-{* a resource described by a specific protocol specified *}
-{* in an URL                                             *}
-{* this method is 'getConnection'                        *}
-{*                                                       *}
-{* The implemented protocol are now :                    *}
-{*    - http managed by THTTPConnection                  *}
-{*    - file managed by TFileConnection                  *}
-{*      e.g file://d:/myprojects/demo.htm                *}
-{*    - res managed by TResConnection                    *}
-{*      The HTLM pages are stored in the application     *}
-{*      resources.                                       *}
-{*      e.g res:///Welcome.html                          *}
-{*    - zip managed by TZipConnection. Through the use   *}
-{*      of VCLZip (works also in Delphi 1) the HTML pages*}
-{*      are extracted from a zip file                    *}
-{*      e.g. zip://demo.zip/demo.htm URL will extract    *}
-{*      demo.htm from the demo.zip (stored in the current*}
-{*      Define IncludeZip to enable the use of           *)
-{*      TZipConnection                                   *}
-{*                                                       *}
-{* - version 1.0d1: first version                        *}
 {*********************************************************}
 
 uses
@@ -74,11 +53,11 @@ uses
 {$else}
   ShellAPI, WinTypes, WinProcs,
 {$endif}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, IniFiles,
 {$ifdef MSWindows}
   Windows,
 {$endif}
-  IdHTTP, IdComponent, IdCookieManager, IdAuthentication,
+  IdHTTP, IdComponent, IdCookie, IdCookieManager, IdAuthentication,
 {$ifdef UseSSL}
   IdIntercept, IdSSLOpenSSL,
 {$endif}
@@ -88,14 +67,9 @@ uses
 {$ifdef UseZLib}
   IdCompressorZLib,
 {$endif}
-//{$ifdef IncludeZip}
-//  VCLUnZIp, kpZipObj,
-//{$endif}
   URLSubs, UrlConn;
 
 type
-  ThtIndyHttpConnector = class;
-
   THTTPConnection = class(ThtConnection)
   private
     ReturnedContentType: string;
@@ -133,37 +107,33 @@ type
 
   ThtIndyHttpConnector = class(ThtProxyConnector)
   private
-    FUserAgent         : string;
+    FUserAgent: string;
+    FCookieFile: String;
     FCookieManager: TIdCookieManager;
     function StoreUserAgent: Boolean;
   protected
     class function GetDefaultProtocols: string; override;
+    class function GetVersion: string; override;
   public
     constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
+
+    procedure LoadCookies;
+    procedure SaveCookies;
 
     function CreateConnection(const Protocol: String): ThtConnection; override;
   published
+    property OnGetAuthorization;
     property UserAgent: string read FUserAgent write FUserAgent stored StoreUserAgent;
+    property CookieFile: String read FCookieFile write FCookieFile;
     property CookieManager: TIdCookieManager read FCookieManager;
   end;
-
-//{$ifdef IncludeZip}
-//  TZipConnection = class(TURLConnectionId)
-//  private
-//    UnZipper: TVCLUnzip;
-//  public
-//    destructor Destroy; override;
-//    procedure Get(const URl: String); override;
-//  end;
-//{$endif}
 
 implementation
 
 uses
 {$ifdef LogIt} LogWin, FBUnitId10, {$endif}
   HTMLUn2,
-  IdURI, IdGlobal;
+  IdURI, IdGlobal, IdGlobalProtocols;
 
 const
 //  CUsrAgent = 'Mozilla/4.0 (compatible; Indy Library)';
@@ -211,7 +181,6 @@ end;
 constructor ThtIndyHttpConnector.Create(AOwner: TComponent);
 begin
   inherited;
-  FCookieManager := TIdCookieManager.Create(Self);
   FUserAgent := CUsrAgent;
 end;
 
@@ -220,6 +189,9 @@ function ThtIndyHttpConnector.CreateConnection(const Protocol: String): ThtConne
 var
   Connection: THTTPConnection absolute Result;
 begin
+  if FCookieManager = nil then
+    LoadCookies();
+
   Result := THTTPConnection.Create;
   Connection.FHttp.CookieManager := FCookieManager;
   Connection.FHttp.ProxyParams.ProxyServer := ProxyServer;
@@ -231,13 +203,6 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-destructor ThtIndyHttpConnector.Destroy;
-begin
-
-  inherited;
-end;
-
-//-- BG ---------------------------------------------------------- 18.05.2016 --
 class function ThtIndyHttpConnector.GetDefaultProtocols: string;
 begin
   Result := 'http';
@@ -245,10 +210,137 @@ begin
     Result := Result + ',https';
 end;
 
+class function ThtIndyHttpConnector.GetVersion: string;
+begin
+  Result := gsIdProductName + ' ' + gsIdVersion;
+end;
+
 //-- BG ---------------------------------------------------------- 19.05.2016 --
 function ThtIndyHttpConnector.StoreUserAgent: Boolean;
 begin
   Result := FUserAgent <> CUsrAgent;
+end;
+
+{NOTE about Cookies in Indy 10.
+
+The cookie entine was completely rewritten in Indy 10.
+
+The code does not load and save every cookie.  I do not consider this a bug at all
+because:
+
+1) Cookies expire
+2) Some cookies are session cookies that are meant to only last for your session.
+Those cookies do not have expiration timestamps.
+
+
+}
+
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+procedure ThtIndyHttpConnector.LoadCookies;
+var
+  M : TMemIniFile;
+
+  procedure ReadCookieValues(
+    AURI : TIdURI;
+    AValues : TStrings);
+  var i : Integer;
+    s, LC, LA : String;
+    LCookie : TIdCookie;
+  begin
+    for i := 0 to AValues.Count - 1 do
+    begin
+      s := AValues[i];
+      Fetch(s,'=');
+      LC := Fetch(s,'|');
+      LA := Fetch(s,'|');
+      LCookie := FCookieManager.CookieCollection.AddServerCookie(s,AURI);
+      if LCookie <> nil then
+      begin
+        LCookie.CreatedAt := GMTToLocalDateTime(LC);
+        LCookie.LastAccessed := GMTToLocalDateTime(LA);
+      end;
+    end;
+  end;
+
+var
+  sects : TStringList;
+  CookieValues : TStringList;
+  i : Integer;
+  LU : TIdURI;
+begin
+  if FCookieManager = nil then
+    FCookieManager := TIdCookieManager.Create(Self);
+
+  if FileExists(FCookieFile) then
+  begin
+    M := TMemIniFile.Create( FCookieFile );
+    try
+      sects := TStringList.Create;
+      try
+        CookieValues := TStringList.Create;
+        LU := TIdURI.Create;
+        try
+          m.ReadSections(sects);
+          for i := 0 to sects.Count - 1 do
+          begin
+            m.ReadSectionValues(sects[i], CookieValues);
+            LU.URI := sects[i];
+            ReadCookieValues(LU, CookieValues);
+            CookieValues.Clear;
+          end;
+        finally
+          LU.Free;
+          CookieValues.Free;
+        end;
+      finally
+        sects.Free;
+      end;
+    finally
+      m.Free;
+    end;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+procedure ThtIndyHttpConnector.SaveCookies;
+var
+  M: TMemIniFile;
+  i: Integer;
+  LU: TIdURI;
+  LCookie: TIdCookie;
+begin
+  if FCookieManager <> nil then
+    if Length(FCookieFile) > 0 then
+    begin
+      M := TMemIniFile.Create( FCookieFile );
+      try
+        M.Clear;
+        LU := TIdURI.Create;
+        try
+          M.Clear;
+          for i := 0 to FCookieManager.CookieCollection.Count -1 do
+          begin
+            LCookie := FCookieManager.CookieCollection[i];
+            if LCookie.Persistent then
+            begin
+              LU.URI := '';
+              LU.Path := LCookie.Path;
+              LU.Host := LCookie.Domain;
+              if LCookie.Secure then
+                LU.Protocol := 'https'
+              else
+                LU.Protocol := 'http';
+              M.WriteString( LU.URI, IntToStr(i), LocalDateTimeToGMT( LCookie.CreatedAt ) + '|' + LocalDateTimeToGMT( LCookie.LastAccessed ) + '|' + LCookie.ServerCookie );
+            end;
+          end;
+        finally
+          LU.Free;
+        end;
+        M.UpdateFile;
+      finally
+        M.Free;
+      end;
+    end;
 end;
 
 { THTTPConnection }
@@ -505,85 +597,5 @@ begin
   if Assigned(OnDocEnd) then
     OnDocEnd(Self);
 end;
-
-//{$ifdef IncludeZip}
-//
-//type
-//  EZipFileError = class(Exception);
-//
-//{----------------TZipConnection.Destroy}
-//destructor TZipConnection.Destroy;
-//begin
-//  If unzipper <> nil then
-//     Unzipper.free;
-//  inherited;
-//end;
-//
-//procedure TZipConnection.Get(const URl: String);
-//var
-//   num, error, I : integer;
-//   TheFile, Host, Ext : String;
-//begin
-//   { Syntax: zip://zipname/filetoextract
-//   { The full path is needed, as:  zip://c:\dir1\subdir\htmlfiles.zip/demo.htm
-//     or zip://c|/dir1/subdir/htmlfiles.zip/demo.htm }
-//   error := 1;
-//   try
-//         if Unzipper = nil then
-//            Unzipper := TVCLUnzip.Create(nil);
-//         thefile := URL;
-//
-//         {remove any query string as it's not certain how to respond to a Form
-//          submit with a zip: protocol.  The user can add a response if desired.}
-//         I := Pos('?', TheFile);
-//         if I > 0 then
-//           TheFile := Copy(TheFile, 1, I-1);
-//
-//         TheFile := GetURLFilenameAndExt(URL);
-//         Host := GetBase(URL);
-//         Delete(Host, 1, 6);     {remove zip://}
-//         Delete(Host, Length(Host), 1);  {remove trailing '/'}
-//         Host := HTMLToDos(Host);
-//
-//         CheckInputStream;
-//         InputStream.Clear;  {apparently req'd for unzip routines}
-//
-//         Ext := Uppercase(GetURLExtension(URL));
-//         FContentType := HTMLType;
-//         if (Ext = 'GIF') or (Ext = 'JPG') or (Ext = 'JPEG') or (Ext = 'JFIF') or (Ext = 'JPE')
-//            or (Ext = 'PNG') or (Ext = 'BMP') or (Ext = 'RLE') or (Ext = 'DIB')
-//    {$IFNDEF NoMetafile}
-//           or (Ext = 'EMF') or (Ext = 'WMF')
-//    {$ENDIF !NoMetafile}
-//              {$IFNDEF NoGDIPlus}
-//            or (Ext = 'TIF') or (Ext = 'TIFF')
-//              {$ENDIF NoGDIPlus}
-//         then
-//            FContentType := ImgType
-//         else
-//            if (Ext = 'TXT') then
-//              FContentType := TextType;
-//
-//         With Unzipper do
-//         begin
-//            if host <> ZipName Then
-//               ZipName := host;              { set the zip filename}
-//            try
-//              { Extract files, return value is the number of files actually unzipped}
-//              num := UnZipToStream( InputStream, TheFile );
-//            except
-//              raise EZipFileError.Create('Can''t open: '+URL);
-//            end;
-//            if num <> 1 then
-//                raise EZipFileError.Create('Can''t open: '+URL);
-//         end;
-//         error := 0;
-//         FStatusCode := 200;
-//   finally
-//         if Assigned(FOnRequestDone) then
-//            FOnRequestDone(owner, httpGET, error);
-//   end;
-//end;
-//{$endif}
 
 end.

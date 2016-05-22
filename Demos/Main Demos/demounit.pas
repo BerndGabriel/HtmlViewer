@@ -80,7 +80,7 @@ uses
   HTMLSbs1,
   Htmlabt,
   PrintStatusForm,
-  ImgForm, HTMLUn2, HtmlView;
+  ImgForm, HTMLUn2, UrlSubs, HtmlView;
 
 const
   MaxHistories = 6; { size of History list }

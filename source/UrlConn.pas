@@ -41,11 +41,24 @@ type
 
   ThtUrlDocStatus = (ucsInitial, ucsInProgress, ucsLoaded, ucsError);
 
-  ThtConnection = class;
   ThtConnector = class;
+  ThtConnection = class;
+  ThtUrlDoc = class;
 
   ThtGetAuthorizationEvent = function (Sender: ThtConnection; TryRealm: Boolean): Boolean of object;
 
+//------------------------------------------------------------------------------
+// A ThtConnectionManager gets a connection for a given transport protocol.
+//
+// Place a ThtConnectionManager component on your form and also place
+// transport protocol specific ThtConnector components like ThtFileConnector
+// and ThtResourceConnector on your form. They automatically register
+// themselves at the ThtConnectionManager and offer creating connections for
+// one or more protocols.
+//
+// Now the ThtConnectionManager is ready to support TFrameBrowser events like
+// OnGetPostRequest() and OnGetImageRequest() by creating the appropriate
+// ThtConnection descendant that can get the requested document resp. image.
 //------------------------------------------------------------------------------
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
@@ -55,6 +68,8 @@ type
     function GetCount: Integer;
     function GetConnector(Index: Integer): ThtConnector;
     function GetConnectorForProtocol(const Protocol: String): ThtConnector;
+  protected
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -62,15 +77,122 @@ type
     procedure RegisterConnector(Connector: ThtConnector);
     procedure UnregisterConnector(Connector: ThtConnector);
 
-    function AllProtocols: String;
+    function GetAllProtocols: String;
     function CreateConnection(const Protocol: String): ThtConnection;
     function TryCreateConnection(const Protocol: String; var Connection: ThtConnection): Boolean;
     function IndexOfProtocol(const Protocol: String): Integer;
 
     property Count: Integer read GetCount;
     property Items[Index: Integer]: ThtConnector read GetConnector; default;
+  published
+    property AllProtocols: String read GetAllProtocols;
   end;
 
+//------------------------------------------------------------------------------
+// A ThtConnector descendant knows how to create connections for one or more
+// protocols.
+//
+// To implement a new protocol derive one descentant from ThtConnector and
+// another from ThtConnection.
+//
+// The ThtConnector descendant must override the following functions:
+// GetDefaultProtocols() to tell the ThtConnectionManager which protocols it supports,
+// GetVersion() to tell the application the ThtConnector's implementor and version and
+// CreateConnection(const Protocol: String) which actually creates the connection for the given protocol.
+// In case the connection may need authorization publish OnGetAuthorization
+// rather than implementing another login/authorization dialog.
+//------------------------------------------------------------------------------
+
+  //-- BG -------------------------------------------------------- 18.05.2016 --
+  ThtConnector = class(TComponent)
+  private
+    FProtocols: String;
+    FOnGetAuthorization: ThtGetAuthorizationEvent;
+    FConnectionManager: ThtConnectionManager;
+
+    procedure SetProtocols(const Value: String);
+    function StoreProtocols: Boolean;
+    procedure SetConnectionManger(const Value: ThtConnectionManager);
+  protected
+    class function GetDefaultProtocols: String; virtual; abstract;
+    class function GetVersion: String; virtual; abstract;
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+    function GetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean; virtual;
+    property OnGetAuthorization: ThtGetAuthorizationEvent read FOnGetAuthorization write FOnGetAuthorization;
+  public
+    constructor Create(AOwner: TComponent); override;
+
+    function CreateConnection(const Protocol: String): ThtConnection; virtual; abstract;
+    function SupportsProtocol(const Protocol: String): Boolean;
+  published
+    property Version: String read GetVersion;
+    property Protocols: String read FProtocols write SetProtocols stored StoreProtocols;
+    property ConnectionManager: ThtConnectionManager read FConnectionManager write SetConnectionManger;
+  end;
+
+//----------------------------------------------------------------------------
+// A ThtConnection descendant just gets a document via LoadDoc(Doc: ThtUrlDoc)
+// and knows how to create an appropriate ThtUrlDoc.
+//
+// LoadDoc():
+//   When called at least Doc.Url must be filled.
+//   On return if Doc.Status is ucsLoaded Doc.Stream is filled with the loaded document.
+//   On return if Doc.Status is ucsInProgress the connection is loading the document asynchronously.
+//------------------------------------------------------------------------------
+
+  //-- BG -------------------------------------------------------- 18.05.2016 --
+  ThtConnection = class
+  private
+    FDoc: ThtUrlDoc;
+    FOnDocBegin: TNotifyEvent;
+    FOnDocData: TNotifyEvent;
+    FOnDocEnd: TNotifyEvent;
+
+    FAborted: Boolean;
+    FRealm: String;
+    FPassword: String;
+    FUsername: String;
+    FBasicAuthentication: Boolean;
+    FReasonPhrase: String;
+    FReceivedSize: Int64;
+    FExpectedSize: Int64;
+
+  protected
+    function GetAuthorization(TryRealm: Boolean): Boolean;
+    function GetConnector: ThtConnector; virtual;
+    procedure Get(Doc: ThtUrlDoc); virtual; abstract;
+  public
+    function CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: String): ThtUrlDoc; virtual;
+    procedure LoadDoc(Doc: ThtUrlDoc);
+    procedure Abort; virtual;
+
+    property Aborted: Boolean read FAborted write FAborted;
+    property Realm: String read FRealm write FRealm;
+    property Password: String read FPassword write FPassword;
+    property Username: String read FUsername write FUsername;
+    property BasicAuthentication: Boolean read FBasicAuthentication write FBasicAuthentication;
+
+    function IsProcessing: Boolean; // Must not be virtual! Checks Self just like Free does.
+    function ReasonPhrase: String; virtual;
+
+    property Doc: ThtUrlDoc read FDoc;
+    property Processing : Boolean      read IsProcessing;
+    property ReceivedSize: Int64 read FReceivedSize write FReceivedSize;
+    property ExpectedSize: Int64 read FExpectedSize write FExpectedSize;
+    property OnDocBegin : TNotifyEvent read FOnDocBegin write FOnDocBegin;
+    property OnDocData  : TNotifyEvent read FOnDocData  write FOnDocData;
+    property OnDocEnd   : TNotifyEvent read FOnDocEnd   write FOnDocEnd;
+  end;
+
+//------------------------------------------------------------------------------
+// ThtUrlDoc holds the document specific data required for a document request.
+//
+// A ThtUrlDoc object is passed to ThtConnection.LoadDoc(Doc: ThtUrlDoc).
+//   When called at least Doc.Url must be filled.
+//   On return if Doc.Status is ucsLoaded Doc.Stream is filled with the loaded document.
+//   On return if Doc.Status is ucsInProgress the connection is loading the document asynchronously.
+//
+// ThtUrlDoc objects are designed to be kept in a first level cache in memory.
 //------------------------------------------------------------------------------
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
@@ -96,86 +218,26 @@ type
     destructor Destroy; override;
     procedure Clear;
     procedure SaveToFile(FileName: String);
+
 //    property Name: String read FName write SetName;
+
     property Url: String read FUrl write FUrl; //SetUrl;
+
+    property Status: ThtUrlDocStatus read FStatus write FStatus;
+    property DocType: ThtDocType read FDocType write FDocType;
+    property Stream: TStream read GetStream write SetStream;
+    property StreamSize: Int64 read GetStreamSize;
+
     property NewUrl: String read FNewUrl write SetNewUrl;
     property PostIt: Boolean read FPostIt write FPostIt;
     property Referer: String read FReferer write FReferer;
     property Query: String read FQuery write FQuery;
     property QueryEncType: String read FQueryEncType write FQueryEncType;
-    property Stream: TStream read GetStream write SetStream;
-    property Status: ThtUrlDocStatus read FStatus write FStatus;
-    property DocType: ThtDocType read FDocType write FDocType;
-    property StreamSize: Int64 read GetStreamSize;
   end;
 
 //------------------------------------------------------------------------------
-
-  //-- BG -------------------------------------------------------- 18.05.2016 --
-  ThtConnection = class
-  private
-    FDoc: ThtUrlDoc;
-    FOnDocBegin: TNotifyEvent;
-    FOnDocData: TNotifyEvent;
-    FOnDocEnd: TNotifyEvent;
-
-    FAborted: Boolean;
-    FRealm: String;
-    FPassword: String;
-    FUsername: String;
-    FBasicAuthentication: Boolean;
-    FReasonPhrase: String;
-    FReceivedSize: Int64;
-    FExpectedSize: Int64;
-
-  protected
-    function GetAuthorization(TryRealm: Boolean): Boolean;
-    function GetConnector: ThtConnector; virtual; abstract;
-    procedure Get(Doc: ThtUrlDoc); virtual; abstract;
-  public
-    function CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: String): ThtUrlDoc; virtual;
-    procedure LoadDoc(Doc: ThtUrlDoc);
-    procedure Abort; virtual;
-
-    property Aborted: Boolean read FAborted write FAborted;
-    property Realm: String read FRealm write FRealm;
-    property Password: String read FPassword write FPassword;
-    property Username: String read FUsername write FUsername;
-    property BasicAuthentication: Boolean read FBasicAuthentication write FBasicAuthentication;
-
-    function IsProcessing: Boolean; // Must not be virtual! Checks Self just like Free does.
-    function ReasonPhrase: String; virtual;
-
-    property Doc: ThtUrlDoc read FDoc;
-    property Processing : Boolean      read IsProcessing;
-    property ReceivedSize: Int64 read FReceivedSize write FReceivedSize;
-    property ExpectedSize: Int64 read FExpectedSize write FExpectedSize;
-    property OnDocBegin : TNotifyEvent read FOnDocBegin write FOnDocBegin;
-    property OnDocData  : TNotifyEvent read FOnDocData  write FOnDocData;
-    property OnDocEnd   : TNotifyEvent read FOnDocEnd   write FOnDocEnd;
-  end;
-
-  //-- BG -------------------------------------------------------- 18.05.2016 --
-  ThtConnector = class(TComponent)
-  private
-    FProtocols: String;
-    FOnGetAuthorization: ThtGetAuthorizationEvent;
-
-    procedure SetProtocols(const Value: String);
-    function StoreProtocols: Boolean;
-    function GetAuthorization(Connection: ThtConnection;
-      TryRealm: Boolean): Boolean;
-  protected
-    class function GetDefaultProtocols: String; virtual; abstract;
-  public
-    constructor Create(AOwner: TComponent); override;
-
-    function CreateConnection(const Protocol: String): ThtConnection; virtual; abstract;
-    function SupportsProtocol(const Protocol: String): Boolean;
-  published
-    property Protocols    : String read FProtocols     write SetProtocols stored StoreProtocols;
-    property OnGetAuthorization: ThtGetAuthorizationEvent read FOnGetAuthorization write FOnGetAuthorization;
-  end;
+// Use ThtProxyConnector as base class for protocols like http, ftp, etc.
+//------------------------------------------------------------------------------
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtProxyConnector = class(ThtConnector)
@@ -192,16 +254,15 @@ type
   end;
 
 //------------------------------------------------------------------------------
-  ThtFileConnector = class;
+// ThtFileConnection and ThtFileConnector implement the protocol 'file'
+// that gets files from a file system.
+//------------------------------------------------------------------------------
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtFileConnection = class(ThtConnection)
   private
-    FConnector: ThtFileConnector;
     procedure MakeDirOutput(AStream : TStream; const ADirName : String);
   protected
-    constructor Create(Connector: ThtFileConnector);
-    function GetConnector: ThtConnector; override;
     procedure Get(Doc: ThtUrlDoc); override;
   end;
 
@@ -209,23 +270,19 @@ type
   ThtFileConnector = class(ThtConnector)
   protected
     class function GetDefaultProtocols: string; override;
+    class function GetVersion: string; override;
   public
     function CreateConnection(const Protocol: String): ThtConnection; override;
-  published
-    property Protocols;
   end;
 
 //------------------------------------------------------------------------------
-
-  ThtResourceConnector = class;
+// ThtResourceConnection and ThtResourceConnector implement the protocol 'res'
+// that gets files from the application's resources.
+//------------------------------------------------------------------------------
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtResourceConnection = class(ThtConnection)
-  private
-    FConnector: ThtResourceConnector;
   protected
-    constructor Create(Connector: ThtResourceConnector);
-    function GetConnector: ThtConnector; override;
     procedure Get(Doc: ThtUrlDoc); override;
   end;
 
@@ -233,12 +290,19 @@ type
   ThtResourceConnector = class(ThtConnector)
   protected
     class function GetDefaultProtocols: string; override;
+    class function GetVersion: string; override;
   public
     function CreateConnection(const Protocol: String): ThtConnection; override;
-  published
-    property Protocols;
   end;
 
+//------------------------------------------------------------------------------
+// ThtUrlDocLoaderThread can load a document asynchronously.
+//
+// Given document is loaded via given connection. After having loaded the document
+// the OnLoaded event is fired.
+//
+// ThtUrlDocLoaderThread frees the connection but not the document as you might
+// want to keep it in a cache. If not you must free the document.
 //------------------------------------------------------------------------------
 
   ThtUrlDocLoadedEvent = procedure(Sender: ThtUrlDoc; Receiver: TObject) of object;
@@ -269,6 +333,15 @@ type
 
   ThtOnProgressEvent = procedure(Sender: TObject; Done, Total: Integer) of object;
 
+//------------------------------------------------------------------------------
+// ThtUrlDocLoaderThreadList can load documents asynchronously using
+// ThtUrlDocLoaderThreads.
+//
+// Not to overcharge the systems ThtUrlDocLoaderThreadList runs at most
+// FMaxRunningThreadCount threads at a time. If one thread terminates the next
+// thread is started automatically until all documents are loaded.
+//------------------------------------------------------------------------------
+
   //-- BG -------------------------------------------------------- 19.05.2016 --
   ThtUrlDocLoaderThreadList = class(TComponent)
   private
@@ -293,10 +366,16 @@ type
     property OnProgress: ThtOnProgressEvent read FOnProgress write FOnProgress;
   end;
 
+//------------------------------------------------------------------------------
+
 function ContentType2DocType(const AContentType: String): ThtDocType;
 function FileExt2DocType(const AExt: String): ThtDocType;
 
+//------------------------------------------------------------------------------
 implementation
+
+uses
+  HtmlUn2;
 
 //-- BG ---------------------------------------------------------- 29.08.2007 --
 function ContentType2DocType(const AContentType: String): ThtDocType;
@@ -320,16 +399,8 @@ end;
 //-- BG ---------------------------------------------------------- 25.08.2007 --
 function FileExt2DocType(const AExt: String): ThtDocType;
 var
-//  I: Integer;
   Ext: String;
 begin
-//  // extract file ext without leading dot
-//  I := LastDelimiter('.\/:', FileName);
-//  if (I > 0) and (FileName[I] = '.') and (I < length(FileName)) then
-//    Ext := Uppercase(Copy(FileName, I + 1, MaxInt))
-//  else
-//    Ext := '';
-
   Ext := ',' + LowerCase(AExt) +',';
   // get type
   if Pos(Ext, ',htm,html,css,php,asp,shtml,') > 0 then
@@ -338,7 +409,7 @@ begin
     Result := XHtmlType
   else if Pos(Ext, ',gif,tiff,tif,jpg,jpeg,png,bmp,rle,dib,jpe,jfif,emf,wmf,') > 0 then
     Result := ImgType
-  else if Pos(Ext, ',txt,sql') > 0 then
+  else if Pos(Ext, ',txt,ini,sql,') > 0 then
     Result := TextType
   else
     Result := OtherType;
@@ -465,6 +536,12 @@ begin
   Result := (Connector <> nil) and Connector.GetAuthorization(Self, TryRealm);
 end;
 
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+function ThtConnection.GetConnector: ThtConnector;
+begin
+  Result := nil;
+end;
+
 //-- BG ---------------------------------------------------------- 19.05.2016 --
 function ThtConnection.IsProcessing: Boolean;
 begin
@@ -492,6 +569,36 @@ begin
   Result := Assigned(FOnGetAuthorization) and FOnGetAuthorization(Connection, TryRealm);
 end;
 
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+procedure ThtConnector.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+  inherited;
+  case Operation of
+// cannot register myself as ConnectionManager.FConnectors not yet created.
+//    opInsert:
+//      if not (csLoading in ComponentState) then
+//        if (AComponent is ThtConnectionManager) and (FConnectionManager = nil) then
+//          ConnectionManager := AComponent as ThtConnectionManager;
+
+    opRemove:
+      if AComponent = FConnectionManager then
+        FConnectionManager := nil;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+procedure ThtConnector.SetConnectionManger(const Value: ThtConnectionManager);
+begin
+  if FConnectionManager <> Value then
+  begin
+    if FConnectionManager <> nil then
+      FConnectionManager.UnregisterConnector(Self);
+    FConnectionManager := Value;
+    if FConnectionManager <> nil then
+      FConnectionManager.RegisterConnector(Self);
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtConnector.SetProtocols(const Value: String);
 begin
@@ -515,7 +622,7 @@ end;
 { ThtConnectionManager }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnectionManager.AllProtocols: String;
+function ThtConnectionManager.GetAllProtocols: String;
 var
   Index: Integer;
 begin
@@ -543,7 +650,11 @@ end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 destructor ThtConnectionManager.Destroy;
+var
+  I: Integer;
 begin
+  for I := 0 to FConnectors.Count - 1 do
+    GetConnector(I).FConnectionManager := nil;
   FConnectors.Free;
   inherited;
 end;
@@ -586,6 +697,22 @@ begin
       Dec(Result);
 end;
 
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+procedure ThtConnectionManager.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+  inherited;
+  case Operation of
+    opInsert:
+      if not (csLoading in ComponentState) then
+        if AComponent is ThtConnector then
+          (AComponent as ThtConnector).ConnectionManager := Self;
+
+    opRemove:
+      if AComponent <> Self then
+        FConnectors.Remove(AComponent);
+  end;
+end;
+
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtConnectionManager.RegisterConnector(Connector: ThtConnector);
 begin
@@ -611,12 +738,6 @@ begin
 end;
 
 { ThtFileConnection }
-
-//-- BG ---------------------------------------------------------- 19.05.2016 --
-function ThtFileConnection.GetConnector: ThtConnector;
-begin
-  Result := FConnector;
-end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtFileConnection.MakeDirOutput(AStream: TStream; const ADirName: String);
@@ -699,13 +820,6 @@ begin
   end;
 end;
 
-//-- BG ---------------------------------------------------------- 19.05.2016 --
-constructor ThtFileConnection.Create(Connector: ThtFileConnector);
-begin
-  inherited Create;
-  FConnector := Connector;
-end;
-
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtFileConnection.Get(Doc: ThtUrlDoc);
 var
@@ -745,7 +859,7 @@ end;
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 function ThtFileConnector.CreateConnection(const Protocol: String): ThtConnection;
 begin
-  Result := ThtFileConnection.Create(Self);
+  Result := ThtFileConnection.Create;
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
@@ -754,14 +868,13 @@ begin
   Result := 'file';
 end;
 
-{ ThtResourceConnection }
-
-//-- BG ---------------------------------------------------------- 19.05.2016 --
-constructor ThtResourceConnection.Create(Connector: ThtResourceConnector);
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+class function ThtFileConnector.GetVersion: string;
 begin
-  inherited Create;
-  FConnector := Connector;
+  Result := 'HtmlViewer ' + VersionNo;
 end;
+
+{ ThtResourceConnection }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtResourceConnection.Get(Doc: ThtUrlDoc);
@@ -829,24 +942,24 @@ begin
 //  end;
 end;
 
-//-- BG ---------------------------------------------------------- 19.05.2016 --
-function ThtResourceConnection.GetConnector: ThtConnector;
-begin
-  Result := FConnector;
-end;
-
 { ThtResourceConnector }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 function ThtResourceConnector.CreateConnection(const Protocol: String): ThtConnection;
 begin
-  Result := ThtResourceConnection.Create(Self);
+  Result := ThtResourceConnection.Create;
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 class function ThtResourceConnector.GetDefaultProtocols: string;
 begin
   Result := 'res';
+end;
+
+//-- BG ---------------------------------------------------------- 22.05.2016 --
+class function ThtResourceConnector.GetVersion: string;
+begin
+  Result := 'HtmlViewer ' + VersionNo;
 end;
 
 { ThtUrlDocLoaderThread }
