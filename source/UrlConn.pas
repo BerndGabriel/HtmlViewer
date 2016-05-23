@@ -672,8 +672,8 @@ var
 begin
   Index := IndexOfProtocol(Protocol);
   if Index < 0 then
-    raise EhtUrlConnException.CreateFmt('no connector for protocol "%s" found in "%s"', [
-      Protocol, AllProtocols]);
+    raise EhtUrlConnException.CreateFmt(
+      'Unsupported protocol ''%s''. Supported protocols are %s.', [Protocol, AllProtocols]);
   Result := Items[Index];
 end;
 
@@ -881,8 +881,6 @@ procedure ThtResourceConnection.Get(Doc: ThtUrlDoc);
 var
    FileName, S, Ext: String;
    HResInfo: HRSRC;
-//   HGlobal: THandle;
-//   Buffer: PChar;
    GoodType: PChar;
    I: Integer;
 begin
@@ -919,27 +917,15 @@ begin
       S := FileName;
       SetLength(S, I - 1);
       HResInfo := FindResource(HInstance, PChar(S), GoodType);
+      if HResInfo <> 0 then
+        FileName := S;
     end;
-    if HResInfo = 0 then
-       raise EResNotFound.Create('Can''t find resource: '+FileName);
-    FileName := S;
   end;
-  Doc.Stream := TResourceStream.Create(HInstance, FileName, GoodType);
-
-//  HGlobal := LoadResource(HInstance, HResInfo);
-//  try
-//    if HGlobal = 0 then
-//      raise EResNotFound.Create('Can''t load resource: '+FileName);
-//
-//    Buffer := LockResource(HGlobal);
-//    try
-//      Doc.Stream.WriteBuffer(Buffer[0], SizeOfResource(HInstance, HResInfo));
-//    finally
-//      UnlockResource(HGlobal);
-//    end;
-//  finally
-//    FreeResource(HGlobal);
-//  end;
+  if HResInfo = 0 then
+    // avoid Exception. Doc.Stream = nil is okay. Next access to it will create an empty TMemoryStream.
+    // raise EResNotFound.Create('Can''t find resource: '+FileName);
+  else
+    Doc.Stream := TResourceStream.Create(HInstance, FileName, GoodType);
 end;
 
 { ThtResourceConnector }

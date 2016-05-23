@@ -48,7 +48,7 @@ object HTTPForm: THTTPForm
     OnMeta = FrameBrowserMeta
     OnPrintFooter = PrintFooter
     OnPrintHeader = PrintHeader
-    OnProcessing = Processing
+    OnProcessing = FrameBrowserProcessing
     OnRightClick = RightClick
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
@@ -69,7 +69,7 @@ object HTTPForm: THTTPForm
         ImageIndex = -1
         MinHeight = 37
         MinWidth = 140
-        Width = 154
+        Width = 177
       end
       item
         Break = False
@@ -78,7 +78,7 @@ object HTTPForm: THTTPForm
         MinHeight = 21
         MinWidth = 170
         Text = 'URL:'
-        Width = 234
+        Width = 211
       end
       item
         Break = False
@@ -91,7 +91,7 @@ object HTTPForm: THTTPForm
     object ToolBar2: TToolBar
       Left = 11
       Top = 0
-      Width = 141
+      Width = 164
       Height = 37
       AutoSize = True
       ButtonHeight = 37
@@ -135,9 +135,9 @@ object HTTPForm: THTTPForm
       end
     end
     object UrlComboBox: TComboBox
-      Left = 197
+      Left = 220
       Top = 8
-      Width = 193
+      Width = 170
       Height = 21
       AutoComplete = False
       Font.Charset = DEFAULT_CHARSET
@@ -317,9 +317,17 @@ object HTTPForm: THTTPForm
         OnClick = DeleteCacheClick
       end
       object ShowImages: TMenuItem
-        Caption = '&Show images'
+        Caption = '&Show Images'
         Checked = True
         OnClick = ShowImagesClick
+      end
+      object WriteLog: TMenuItem
+        Caption = '&Write Diagnostic Log'
+        OnClick = WriteLogClick
+      end
+      object ShowLog: TMenuItem
+        Caption = 'Show Diagnostic &Log'
+        OnClick = ShowLogClick
       end
     end
     object Help1: TMenuItem
@@ -400,7 +408,7 @@ object HTTPForm: THTTPForm
     Left = 24
     Top = 120
     Bitmap = {
-      494C01010D001100640011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100680011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

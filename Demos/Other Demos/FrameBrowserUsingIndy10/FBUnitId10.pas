@@ -65,9 +65,6 @@ uses
   HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs, UrlConn,
   HtmlView, FramView, FramBrwz,
   CachUnitId, DownLoadId,
-{$ifdef LogIt}
-  IdLogfile,
-{$endif}
   UrlConId10;
 
 const
@@ -80,18 +77,47 @@ type
   TPopupMenu=class(Vcl.ActnPopup.TPopupActionBar);
 {$endif}
 
-{$ifdef LogIt}
-  TModIdLogFile = class(TIdLogFile)
-  public
-      procedure LogWriteString(const AText: string); override;
-  end;
-{$endif}
+//{$ifdef LogIt}
+//  IdLogfile,
+//{$endif}
+//{$ifdef LogIt}
+//  TModIdLogFile = class(TIdLogFile)
+//  public
+//      procedure LogWriteString(const AText: string); override;
+//  end;
+//{$endif}
+//{$ifdef LogIt}
+//    Log: TModIdLogFile;
+//{$endif}
+//{$ifdef LogIt}
+//  if Monitor1 then
+//  begin
+//    DeleteFile(Cache+'LogFile.txt');
+//    Log := TModIdLogFile.Create(Self);
+//    Log.Filename := Cache+'LogFile.txt';
+//    Log.ReplaceCRLF := False;
+//    Log.Active := True;
+//  end;
+//{$endif}
+//{$ifdef LogIt}
+//  Log.Free;
+//{$endif}
+//{$ifdef LogIt}
+//{ TModIdLogFile }
+//
+//procedure TModIdLogFile.LogWriteString(const AText: string);
+//begin
+//  if Active then
+//    inherited;
+//end;
 
   { THTTPForm }
 
   THTTPForm = class(TForm)
     Connectors: ThtConnectionManager;
     FileConnector: ThtFileConnector;
+    WriteLog: TMenuItem;
+    ShowLog: TMenuItem;
     ResourceConnector: ThtResourceConnector;
     MainMenu: TMainMenu;
     HistoryMenuItem: TMenuItem;
@@ -177,7 +203,7 @@ type
     procedure SaveURLClick(Sender: TObject);
     procedure HTTPDocData1(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure Processing(Sender: TObject; ProcessingOn: Boolean);
+    procedure FrameBrowserProcessing(Sender: TObject; ProcessingOn: Boolean);
     procedure PrintPreviewClick(Sender: TObject);
     procedure File1Click(Sender: TObject);
     procedure Print1Click(Sender: TObject);
@@ -218,6 +244,8 @@ type
     procedure LibraryInformation1Click(Sender: TObject);
     procedure Source1Click(Sender: TObject);
     function ConnectorsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
+    procedure WriteLogClick(Sender: TObject);
+    procedure ShowLogClick(Sender: TObject);
   private
     { Private declarations }
     URLBase: string;
@@ -245,18 +273,11 @@ type
     FHeaderRequestData : TStrings;
     FHeaderResponseData : TStrings;
     FMetaInfo : TStrings;
-{$ifdef LogIt}
-    ShowDiagWindow: TMenuItem;
-{$endif}
 {$ifdef UseVCLStyles}
     sepVCLStyles,
     VCLStyles1 : TMenuItem;
 
     procedure VCLStyleClick(Sender: TObject);
-{$endif}
-{$ifdef LogIt}
-    procedure ShowDiagWindowClick(Sender: TObject);
-    procedure LogTStrings(AStrings : TStrings);
 {$endif}
     procedure EnableControls;
     procedure DisableControls;
@@ -279,13 +300,11 @@ type
     procedure DownLoad(const Url: String);
     procedure LoadIniFile;
     procedure SaveIniFile;
+  protected
+    procedure UpdateActions; override;
   public
     { Public declarations }
     FIniFilename: string;
-{$ifdef LogIt}
-    Log: TModIdLogFile;
-    procedure LogLine(const S: string);
-{$endif}
 
     procedure LoadURL; overload;
     procedure LoadURL(const URL: String); overload;
@@ -306,42 +325,27 @@ implementation
 
 uses
   InfoDlg,
-{$ifdef LogIt}
   logwin,
-{$endif}
 {$ifdef Compiler24_Plus}
   System.Types,
 {$endif}
 {$ifdef HasSystemUITypes}
   System.UITypes,
 {$endif}
-  {$ifdef UseZLib}
+{$ifdef UseZLib}
   IdZLibHeaders,
   IdCTypes,
-  {$endif}
+{$endif}
   IdURI,
   Htmlabt, ProxyDlg, AuthUnit;
 
 {$ifdef LCL}
   {$R *.lfm}
 {$else}
-  {$IFnDEF FPC}
   {$R *.dfm}
-{$ELSE}
-  {$R *.lfm}
-{$ENDIF}
   {$if CompilerVersion < 15}
     {$R manifest.res}
   {$ifend}
-{$endif}
-
-{$ifdef LogIt}
-procedure THTTPForm.LogLine(const S: string);
-begin
-  // if NOT ShowDiagWindow.Checked then exit;
-  if NOT LogForm.Visible then LogForm.Visible := true;
-  LogForm.LogMemo.Lines.Add (S);
-end;
 {$endif}
 
 {$ifdef UseVCLStyles}
@@ -357,13 +361,6 @@ begin
 end;
 {$endif}
 
-{$ifdef LogIt}
-procedure THTTPForm.ShowDiagWindowClick(Sender: TObject);
-begin
-  ShowDiagWindow.Checked := NOT ShowDiagWindow.Checked;
-  LogForm.Visible := ShowDiagWindow.Checked;
-end;
-{$endif}
 {----------------THTTPForm.FormCreate}
 procedure THTTPForm.FormCreate(Sender: TObject);
 var
@@ -380,9 +377,6 @@ begin
 {$Endif}
   FHeaderRequestData := TStringList.Create;
   FHeaderResponseData := TStringList.Create;
-{$ifdef LogIt}
-  logwin.LogForm := TLogForm.Create(nil);
-{$endif}
 {$ifdef HasGestures}
   FrameBrowser.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
   FrameBrowser.Touch.InteractiveGestures := [igPan];
@@ -413,12 +407,6 @@ begin
   except
     Monitor1 := False;   {probably open in another instance}
   end;
-{$ifdef LogIt}
-  ShowDiagWindow:= TMenuItem.Create(Options1);
-  ShowDiagWindow.OnClick := ShowDiagWindowClick;
-  ShowDiagWindow.Caption := '&Diagnostic Window...';
-  Options1.Add(ShowDiagWindow);
-{$endif}
 {$ifdef UseVCLStyles}
   sepVCLStyles := TMenuItem.Create(Options1);
   sepVCLStyles.Caption := '-';
@@ -435,16 +423,6 @@ begin
       m.RadioItem := True;
       VCLStyles1.Add(m);
     end;
-  end;
-{$endif}
-{$ifdef LogIt}
-  if Monitor1 then
-  begin
-    DeleteFile(Cache+'LogFile.txt');
-    Log := TModIdLogFile.Create(Self);
-    Log.Filename := Cache+'LogFile.txt';
-    Log.ReplaceCRLF := False;
-    Log.Active := True;
   end;
 {$endif}
 
@@ -514,7 +492,8 @@ procedure THTTPForm.LoadIniFile;
 var
   IniFile: TIniFile;
   SL: TStringList;
-  I, J: Integer;
+  I, J, LTop, LLeft, LWidth, LHeight: Integer;
+
 begin
   IniFile := TIniFile.Create(FIniFileName);
   try
@@ -522,9 +501,24 @@ begin
     Left   := IniFile.ReadInteger('HTTPForm', 'Left'  , Left  );
     Width  := IniFile.ReadInteger('HTTPForm', 'Width' , Width );
     Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
-{$ifdef LogIt}
-    ShowDiagWindow.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
-{$endif}
+
+    ShowLog.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowLog.Checked);
+    WriteLog.Checked := IniFile.ReadBool('HTTPForm', 'WriteDiagLog', WriteLog.Checked);
+
+    LWidth  := Width  div 2;
+    LHeight := Height div 2;
+    LTop    := Top   + LWidth  div 2;
+    LLeft   := Left  + LHeight div 2;
+
+    LTop    := IniFile.ReadInteger('LogForm', 'Top'   , LTop   );
+    LLeft   := IniFile.ReadInteger('LogForm', 'Left'  , LLeft  );
+    LWidth  := IniFile.ReadInteger('LogForm', 'Width' , LWidth );
+    LHeight := IniFile.ReadInteger('LogForm', 'Height', LHeight);
+
+    LogForm := TLogForm.Create(Self, LTop, LLeft, LWidth, LHeight);
+    LogForm.Visible := ShowLog.Checked;
+    LogForm.LogActive := WriteLog.Checked;
+
     HttpConnector.ProxyServer   := IniFile.ReadString( 'Proxy'   , 'ProxyHost'    , HttpConnector.ProxyServer   );
     HttpConnector.ProxyPort     := IniFile.ReadString( 'Proxy'   , 'ProxyPort'    , HttpConnector.ProxyPort     );
     HttpConnector.ProxyUsername := IniFile.ReadString( 'Proxy'   , 'ProxyUsername', HttpConnector.ProxyUsername );
@@ -555,13 +549,19 @@ var
 begin       {save only if this is the first instance}
   IniFile := TIniFile.Create(FIniFileName);
   try
-    IniFile.WriteInteger('HTTPForm', 'Top', Top);
-    IniFile.WriteInteger('HTTPForm', 'Left', Left);
-    IniFile.WriteInteger('HTTPForm', 'Width', Width);
+    IniFile.WriteInteger('HTTPForm', 'Top'   , Top);
+    IniFile.WriteInteger('HTTPForm', 'Left'  , Left);
+    IniFile.WriteInteger('HTTPForm', 'Width' , Width);
     IniFile.WriteInteger('HTTPForm', 'Height', Height);
-    {$ifdef LogIt}
-    IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowDiagWindow.Checked);
-    {$endif}
+
+    IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowLog.Checked);
+    IniFile.WriteBool('HTTPForm', 'WriteDiagLog', WriteLog.Checked);
+
+    IniFile.WriteInteger('LogForm', 'Top'   , LogForm.Top);
+    IniFile.WriteInteger('LogForm', 'Left'  , LogForm.Left);
+    IniFile.WriteInteger('LogForm', 'Width' , LogForm.Width);
+    IniFile.WriteInteger('LogForm', 'Height', LogForm.Height);
+
     IniFile.WriteString('Proxy', 'ProxyHost', HttpConnector.ProxyServer);
     IniFile.WriteString('Proxy', 'ProxyPort', HttpConnector.ProxyPort);
     IniFile.WriteString('Proxy', 'ProxyUsername', HttpConnector.ProxyUsername);
@@ -573,6 +573,13 @@ begin       {save only if this is the first instance}
   finally
     IniFile.Free;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 23.05.2016 --
+procedure THTTPForm.UpdateActions;
+begin
+  inherited;
+  ShowLog.Checked := LogForm.Visible;
 end;
 
 procedure THTTPForm.UpdateCaption;
@@ -603,9 +610,6 @@ end;
 {----------------THTTPForm.FormDestroy}
 procedure THTTPForm.FormDestroy(Sender: TObject);
 begin
-{$ifdef LogIt}
-  Log.Free;
-{$endif}
   AStream.Free;
 
   if Monitor1 then
@@ -697,6 +701,7 @@ procedure THTTPForm.FrameBrowserGetPostRequestEx(Sender: TObject;
  Stream is the stream answer to the request}
 const
   MaxRedirect = 15;
+  Method: array [Boolean] of String = ( 'POST', 'GET' );
 var
   S, URL1, CacheFileName, Query1, LastUrl, Protocol, NewUrlDummy: string;
   Error, IsHttpConnection: Boolean;
@@ -733,16 +738,14 @@ begin
   begin
     AStream.LoadFromFile(CacheFileName);
     NewUrl := NewUrlDummy;
-{$ifdef LogIt}
-    LogLine ('FrameBrowserGetPostRequestEx: from Cache' + CacheFileName);
-{$endif}
+    LogForm.Log('FrameBrowserGetPostRequestEx: from cache ' + CacheFileName);
   end
   else
   begin       {it's not in cache}
     Protocol := GetProtocol(URL1);
-    Connection := Connectors.CreateConnection(Protocol);
-    if Connection <> nil then
+    if Connectors.TryCreateConnection(Protocol, Connection) then
       try
+        LogForm.Log('FrameBrowserGetPostRequestEx: ' + Method[IsGet] + ' ' + Url1);
         IsHttpConnection := Connection is THTTPConnection;
         if IsHttpConnection then
           HttpConnection := Connection as THTTPConnection;
@@ -775,22 +778,18 @@ begin
               FHeaderResponseData.AddStrings( HttpConnection.HeaderResponseData );
             end;
           except
-            {$ifndef UseSSL}
+{$ifndef UseSSL}
             On ESpecialException do
             begin
-              {$ifdef LogIt}
-              LogLine ('FrameBrowserGetPostRequestEx: Special Exception');
-              {$endif}
+              LogForm.Log('FrameBrowserGetPostRequestEx: Special Exception');
               Connection.Free;   {needs to be reset}
               Connection := Nil;
               Raise;
             end;
-            {$endif}
+{$endif}
             On E: Exception do
             begin
-             {$ifdef LogIt}
-              LogLine ('FrameBrowserGetPostRequestEx: Exception - ' + E.Message);
-              {$endif}
+              LogForm.Log('FrameBrowserGetPostRequestEx: Exception - ' + E.Message);
               if AnAbort then
                 raise ESpecialException.Create('Abort on user request');
 
@@ -815,7 +814,7 @@ begin
                   '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + LastURL +
                   '<p>Cause: ' + E.Message; {load an error message}
 
-                  AStream.Write(S[1], Length(S) * SizeOf(S[1]));
+                AStream.Write(S[1], Length(S) * SizeOf(S[1]));
               end;
             end;
           end;
@@ -835,18 +834,20 @@ begin
         FreeAndNil(Connection);
       end
     else
-    begin        { unsupported protocol }
-      S := 'Unsupported protocol: ' + Protocol;
-{$ifdef LogIt}
-      LogLine (S);
-{$endif}
-      if Sender is TFrameBrowser then   {main document display}
-        raise ESpecialException.Create(S);
+    begin
+      S := Format('Unsupported protocol ''%s''. Supported protocols are %s.', [Protocol, Connectors.AllProtocols]);
+      LogForm.Log('FrameBrowserGetPostRequestEx: Don''t know how to ' +  Method[IsGet] + ' ''' + Url1 + '''. Cause: ' + S );
 
-      {else other errors will get displayed as HTML file}
+//      if Sender is TFrameBrowser then   {main document display}
+//        raise ESpecialException.Create(S);
+//      {else other errors will get displayed as HTML file}
+
+      S := '<p><img src="res:///qw%&.bmp" alt="Error"> Don''t know how to ' +  Method[IsGet] + ' ''' + Url1 + '''<p>Cause: ' + S; {load an error message}
       AStream.Write(S[1], Length(S) * SizeOf(S[1]));
+      DocType := HTMLType;
     end;
   end;
+  AStream.Position := 0;
   Stream := AStream;
 end;
 
@@ -872,15 +873,12 @@ begin
     begin                               {yes, it is}
       AStream.LoadFromFile(S);
       Stream := AStream;      {return image immediately}
-{$ifdef LogIt}
-      LogLine ('GetImageRequest, from Cache: ' + S);
-{$endif}
+      LogForm.Log('GetImageRequest, from Cache: ' + S);
     end
     else
     begin          {get the image asynchronously }
       Protocol := GetProtocol(URL);
-      Connection := Connectors.CreateConnection(Protocol);
-      if Connection <> nil then
+      if Connectors.TryCreateConnection(Protocol, Connection) then
       begin
         DownLoad := Connection.CreateUrlDoc(False, URL, '', '', '');
         if Connection is THTTPConnection then
@@ -889,6 +887,7 @@ begin
             Viewer := THtmlViewer(Sender)
           else
             Viewer := FrameBrowser.ActiveViewer;
+          LogForm.Log('GetImageRequest, get asynchronously: ' + URL);
           AsyncLoaders.AddLoader(ThtUrlDocLoaderThread.Create(Connection, DownLoad, LoadedAsync, Viewer));
           Stream := WaitStream;   {wait indicator}
         end
@@ -902,6 +901,15 @@ begin
             DownLoad.Free;
             Connection.Free;
           end;
+      end
+      else
+      begin
+        S := Format('Unsupported protocol ''%s''. Supported protocols are %s.', [Protocol, Connectors.AllProtocols]);
+        LogForm.Log('GetImageRequest: Don''t know how to get ''' + Url + '''. Cause: ' + S );
+
+  //      if Sender is TFrameBrowser then   {main document display}
+  //        raise ESpecialException.Create(S);
+  //      {else other errors will get displayed as HTML file}
       end;
     end;
   except
@@ -993,6 +1001,13 @@ begin
   LoadURL;
 end;
 
+//-- BG ---------------------------------------------------------- 23.05.2016 --
+procedure THTTPForm.WriteLogClick(Sender: TObject);
+begin
+  WriteLog.Checked := not WriteLog.Checked;
+  LogForm.LogActive := WriteLog.Checked;
+end;
+
 {----------------THTTPForm.Openfile1Click}
 procedure THTTPForm.Openfile1Click(Sender: TObject);
 {Open a local disk file}
@@ -1037,7 +1052,7 @@ var
   K: integer;
 begin
 {$ifdef LogIt}
-  LogLine ('HotSpotTargetClick: ' + URL);
+  LogForm.Log ('HotSpotTargetClick: ' + URL);
 {$endif}
   Protocol := GetProtocol(URL);
   if Protocol = 'mailto' then
@@ -1184,6 +1199,13 @@ procedure THTTPForm.ShowImagesClick(Sender: TObject);
 begin
   FrameBrowser.ViewImages := not FrameBrowser.ViewImages;
   ShowImages.Checked := FrameBrowser.ViewImages;
+end;
+
+//-- BG ---------------------------------------------------------- 23.05.2016 --
+procedure THTTPForm.ShowLogClick(Sender: TObject);
+begin
+  ShowLog.Checked := not ShowLog.Checked;
+  LogForm.Visible := ShowLog.Checked;
 end;
 
 procedure THTTPForm.Source1Click(Sender: TObject);
@@ -1452,9 +1474,6 @@ begin
   if Assigned(Connection) then
     Connection.Abort;
   ClearProcessing;
-    {$ifdef LogIt}
-  FreeAndNil(logwin.LogForm);
-  {$endif}
 end;
 
 procedure THTTPForm.Progress(Num, Den: Integer);
@@ -1491,10 +1510,10 @@ begin
   end
   else
   begin
-{$IFDEF LogIt}
-    if E is EIdHTTPProtocolException then
-       LogLine( IntToStr(EIdHTTPProtocolException(E).ErrorCode)+ ' - '+ EIdHTTPProtocolException(E).ErrorMessage );
-{$ENDIF}
+//{$IFDEF LogIt}
+//    if E is EIdHTTPProtocolException then
+//       LogForm.Log( IntToStr(EIdHTTPProtocolException(E).ErrorCode)+ ' - '+ EIdHTTPProtocolException(E).ErrorMessage );
+//{$ENDIF}
     Application.ShowException(E);
   end;
 end;
@@ -1556,11 +1575,32 @@ begin
   CheckEnableControls;
 end;
 
-{----------------THTTPForm.Processing}
-procedure THTTPForm.Processing(Sender: TObject; ProcessingOn: Boolean);
+{----------------THTTPForm.FrameBrowserProcessing}
+procedure THTTPForm.FrameBrowserProcessing(Sender: TObject; ProcessingOn: Boolean);
+const
+  What: array [Boolean, Boolean] of String = (('Frame', 'Page'), (#13#10'Frame', 'Page'));
+var
+  Viewer: THtmlViewer;
+  Url: String;
 begin
+  if Sender is THtmlViewer then
+  begin
+    Exit;
+    Viewer := Sender as THtmlViewer;
+    Url := Viewer.CurrentFile;
+  end
+  else if Sender is TFrameBrowser then
+  begin
+    Viewer := nil;
+    Url := (Sender as TFrameBrowser).CurrentFile;
+  end
+  else
+    Exit;
+
   if ProcessingOn then
   begin    {disable various buttons and menuitems during processing}
+    LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Processing: ' + Url);
+
     FwdButton.Enabled := False;
     BackButton.Enabled := False;
     ReloadButton.Enabled := False;
@@ -1571,9 +1611,8 @@ begin
     BackButton.Enabled := FrameBrowser.BackButtonEnabled;
     ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
     CheckEnableControls;
-    {$ifdef LogIt}
-    LogLine ('Page Completed' + #13#10);
-    {$endif}
+
+    LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Completed: ' + Url);
   end;
 end;
 
@@ -1751,11 +1790,12 @@ begin
 end;
 
 procedure THTTPForm.FrameBrowserMeta(Sender: TObject; const HttpEq, Name, Content: ThtString);
+var
+  S: String;
 begin
-  {$ifdef LogIt}
-LogLine ('FrameBrowserMeta, HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content);
-  {$endif}
-  FMetaInfo.Add('HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content);
+  S := 'HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content;
+  FMetaInfo.Add(S);
+  LogForm.Log('FrameBrowserMeta: ' + S);
 end;
 
 procedure THTTPForm.FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -2007,29 +2047,9 @@ begin
   end;
 end;
 
-{$ifdef LogIt}
-procedure THTTPForm.LogTStrings(AStrings: TStrings);
-var i : Integer;
-begin
-  for i := 0 to AStrings.Count -1 do begin
-        LogLine (AStrings[i]);
-  end;
-end;
-
-{ TModIdLogFile }
-
-procedure TModIdLogFile.LogWriteString(const AText: string);
-begin
-  if Active then
-    inherited;
-end;
-{$endif}
-
 procedure THTTPForm.FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 begin
-  {$ifdef LogIt}
-   LogLine ('FrameBrowserScript, Name=' + Name + ', Src=' + Src + ', Script=' + Script);
-   {$endif}
+  LogForm.Log ('FrameBrowserScript: Name=' + Name + ', Src=' + Src + ', Script=' + Script);
 end;
 
 {$ifdef LCL}

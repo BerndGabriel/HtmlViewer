@@ -46,7 +46,7 @@ object HTTPForm: THTTPForm
     OnMeta = FrameBrowserMeta
     OnPrintFooter = PrintFooter
     OnPrintHeader = PrintHeader
-    OnProcessing = Processing
+    OnProcessing = FrameBrowserProcessing
     OnRightClick = RightClick
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
@@ -317,9 +317,17 @@ object HTTPForm: THTTPForm
         OnClick = DeleteCacheClick
       end
       object ShowImages: TMenuItem
-        Caption = '&Show images'
+        Caption = '&Show Images'
         Checked = True
         OnClick = ShowImagesClick
+      end
+      object WriteLog: TMenuItem
+        Caption = '&Write Diagnostic Log'
+        OnClick = WriteLogClick
+      end
+      object ShowLog: TMenuItem
+        Caption = 'Show Diagnostic &Log'
+        OnClick = ShowLogClick
       end
     end
     object Help1: TMenuItem

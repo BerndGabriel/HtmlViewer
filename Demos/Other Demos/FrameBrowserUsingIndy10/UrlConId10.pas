@@ -61,9 +61,9 @@ uses
 {$ifdef UseSSL}
   IdIntercept, IdSSLOpenSSL,
 {$endif}
-{$ifdef LogIt}
-  IdLogFile,
-{$endif}
+//{$ifdef LogIt}
+//  IdLogFile,
+//{$endif}
 {$ifdef UseZLib}
   IdCompressorZLib,
 {$endif}
@@ -131,7 +131,7 @@ type
 implementation
 
 uses
-{$ifdef LogIt} LogWin, FBUnitId10, {$endif}
+  LogWin,
   HTMLUn2,
   IdURI, IdGlobal, IdGlobalProtocols;
 
@@ -374,9 +374,9 @@ begin
   FComp:= TIdCompressorZLib.Create(nil);
   FHttp.Compressor := FComp;
 {$endif}
-{$ifdef LogIt}
-  FHttp.Intercept := HTTPForm.Log;
-{$endif}
+//{$ifdef LogIt}
+//  FHttp.Intercept := HTTPForm.Log;
+//{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
@@ -425,13 +425,11 @@ begin
         begin {Post}
           SendStream := TStringStream.Create(Query1);
           try
-{$ifdef LogIt}
-            HTTPForm.LogLine('THTTPConnection.Get Post: ' + Url1 + ', Data=' + Copy(Query1, 1, 132) + ', EncType=' + Doc.QueryEncType);  // not too much data
-{$endif}
             if Length(Doc.QueryEncType) > 0 then
               FHttp.Request.ContentType := Doc.QueryEncType
             else
               FHttp.Request.ContentType := 'application/x-www-form-urlencoded';
+            LogForm.Log('THTTPConnection.Get Post: ' + Url1 + ', Data=' + Copy(Query1, 1, 132) + ', EncType=' + Doc.QueryEncType);  // not too much data
             FHttp.Post(URL1, SendStream, Doc.Stream);
           finally
             SendStream.Free;
@@ -441,9 +439,7 @@ begin
         begin {Get}
           if Length(Query1) > 0 then
             Url1 := Url1 + '?' + Query1;
-{$ifdef LogIt}
-          HTTPForm.LogLine('THTTPConnection.Get Get: ' + Url1);
-{$endif}
+          LogForm.Log('THTTPConnection.Get Get: ' + Url1);
           FHttp.Get(Url1, Doc.Stream);
         end;
       finally
@@ -506,9 +502,7 @@ begin
       if not TryAgain or (RedirectCount >= MaxRedirect) then
         Raise;
     end;
-{$ifdef LogIt}
-    HTTPForm.LogLine('THTTPConnection.Get Done: Status ' + IntToStr(StatusCode));
-{$endif}
+    LogForm.Log('THTTPConnection.Get Done: Status ' + IntToStr(StatusCode));
   until not TryAgain;
 end;
 

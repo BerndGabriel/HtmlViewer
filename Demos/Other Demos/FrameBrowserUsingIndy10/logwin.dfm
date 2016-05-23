@@ -1,6 +1,7 @@
 object LogForm: TLogForm
   Left = 0
   Top = 0
+  BorderStyle = bsSizeToolWin
   Caption = 'Diagnostic Window'
   ClientHeight = 410
   ClientWidth = 641
@@ -10,10 +11,10 @@ object LogForm: TLogForm
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  FormStyle = fsStayOnTop
   OldCreateOrder = False
+  Position = poDesigned
   OnClose = FormClose
-  OnCreate = FormCreate
-  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object LogMemo: TMemo
