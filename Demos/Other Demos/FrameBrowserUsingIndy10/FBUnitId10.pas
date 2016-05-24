@@ -116,6 +116,9 @@ type
   THTTPForm = class(TForm)
     Connectors: ThtConnectionManager;
     FileConnector: ThtFileConnector;
+    Gauge: TProgressBar;
+    StatusBarMain: TStatusBar;
+    ProgressTimer: TTimer;
     WriteLog: TMenuItem;
     ShowLog: TMenuItem;
     ResourceConnector: ThtResourceConnector;
@@ -147,7 +150,7 @@ type
     PrintDialog: TPrintDialog;
     Proxy1: TMenuItem;
     DemoInformation1: TMenuItem;
-    About1: TMenuItem;
+    About: TMenuItem;
     TitleTimer: TTimer;
     CoolBar1: TCoolBar;
     ToolBar2: TToolBar;
@@ -165,8 +168,6 @@ type
 {$ifndef LCL}
     Animate1: TAnimate;
 {$endif}
-    StatusBarMain: TStatusBar;
-    Gauge: TProgressBar;
     PopupMenu1: TPopupMenu;
     ViewImage: TMenuItem;
     CopyImagetoclipboard: TMenuItem;
@@ -178,43 +179,45 @@ type
     N4: TMenuItem;
     LibraryInformation1: TMenuItem;
     Source1: TMenuItem;
-    procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
-    procedure CancelButtonClick(Sender: TObject);
-    procedure HistoryChange(Sender: TObject);
+    Panel1: TPanel;
+    procedure AboutClick(Sender: TObject);
+    procedure AsyncLoadersProgress(Sender: TObject; Done, Total: Integer);
     procedure BackButtonClick(Sender: TObject);
-    procedure FwdButtonClick(Sender: TObject);
-    procedure Openfile1Click(Sender: TObject);
+    procedure CancelButtonClick(Sender: TObject);
+    procedure Copy1Click(Sender: TObject);
     procedure DeleteCacheClick(Sender: TObject);
+    procedure DemoInformation1Click(Sender: TObject);
+    procedure Edit1Click(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
-    procedure ShowImagesClick(Sender: TObject);
-    procedure ReloadClick(Sender: TObject);
-    procedure FormShow(Sender: TObject);
+    procedure File1Click(Sender: TObject);
     procedure Find1Click(Sender: TObject);
     procedure FindDialogFind(Sender: TObject);
-    procedure Edit1Click(Sender: TObject);
-    procedure SelectAll1Click(Sender: TObject);
-    procedure Copy1Click(Sender: TObject);
-    procedure URLComboBoxKeyPress(Sender: TObject; var Key: Char);
-    procedure SaveImageAsClick(Sender: TObject);
-    procedure URLComboBoxClick(Sender: TObject);
-    procedure RightClick(Sender: TObject; Parameters: TRightClickParameters);
-    procedure OpenInNewWindowClick(Sender: TObject);
-    procedure SaveURLClick(Sender: TObject);
-    procedure HTTPDocData1(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure FrameBrowserProcessing(Sender: TObject; ProcessingOn: Boolean);
-    procedure PrintPreviewClick(Sender: TObject);
-    procedure File1Click(Sender: TObject);
-    procedure Print1Click(Sender: TObject);
-    procedure PrintHeader(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer; var StopPrinting: Boolean);
-    procedure PrintFooter(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer; var StopPrinting: Boolean);
-    procedure About1Click(Sender: TObject);
-    procedure ViewerClear(Sender: TObject);
-    procedure Proxy1Click(Sender: TObject);
-    procedure DemoInformation1Click(Sender: TObject);
-    procedure TitleTimerTimer(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FrameBrowserHistoryChange(Sender: TObject);
     procedure FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FrameBrowserProcessing(Sender: TObject; ProcessingOn: Boolean);
+    procedure FrameBrowserRightClick(Sender: TObject; Parameters: TRightClickParameters);
+    procedure FwdButtonClick(Sender: TObject);
+    procedure HTTPDocData1(Sender: TObject);
+    procedure Openfile1Click(Sender: TObject);
+    procedure OpenInNewWindowClick(Sender: TObject);
+    procedure Print1Click(Sender: TObject);
+    procedure PrintFooter(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer; var StopPrinting: Boolean);
+    procedure PrintHeader(Sender: TObject; Canvas: TCanvas; NumPage, W, H: Integer; var StopPrinting: Boolean);
+    procedure PrintPreviewClick(Sender: TObject);
+    procedure Proxy1Click(Sender: TObject);
+    procedure ReloadClick(Sender: TObject);
+    procedure SaveImageAsClick(Sender: TObject);
+    procedure SaveURLClick(Sender: TObject);
+    procedure SelectAll1Click(Sender: TObject);
+    procedure ShowImagesClick(Sender: TObject);
+    procedure TitleTimerTimer(Sender: TObject);
+    procedure URLComboBoxClick(Sender: TObject);
+    procedure URLComboBoxKeyPress(Sender: TObject; var Key: Char);
+    procedure ViewerClear(Sender: TObject);
 {$ifdef UNICODE}
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: String);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
@@ -238,7 +241,6 @@ type
     procedure FrameBrowserMeta(Sender: TObject; const HttpEq, Name, Content: WideString);
     procedure FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: WideString);
 {$endif}
-    procedure StatusBarMainDrawPanel(StatusBar: TStatusBar; Panel: TStatusPanel; const Rect: TRect);
     procedure HTTPHeaders1Click(Sender: TObject);
     procedure PageInfo1Click(Sender: TObject);
     procedure LibraryInformation1Click(Sender: TObject);
@@ -246,6 +248,7 @@ type
     function ConnectorsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
     procedure WriteLogClick(Sender: TObject);
     procedure ShowLogClick(Sender: TObject);
+    procedure ProgressTimerTimer(Sender: TObject);
   private
     { Private declarations }
     URLBase: string;
@@ -258,10 +261,10 @@ type
     FoundObjectName: string;
     NewWindowFile: string;
     AnAbort: Boolean;
-    NumImageTot, NumImageDone: Integer;
-    AStream: TMemoryStream;
 
+    AStream: TMemoryStream;
     AsyncLoaders: ThtUrlDocLoaderThreadList;
+    AsyncLoading: Boolean;
     HttpConnector: ThtIndyHttpConnector;
     Connection: ThtConnection;
 
@@ -361,6 +364,26 @@ begin
 end;
 {$endif}
 
+{$ifdef LCL}
+{$else}
+//-- BG ---------------------------------------------------------- 16.08.2015 --
+procedure THTTPForm.AppMessage(var Msg: TMsg; var Handled: Boolean);
+var
+  WinCtrl: TWinControl;
+begin
+  if Msg.message = WM_MOUSEWHEEL then
+  begin
+    WinCtrl := FindVCLWindow(Point(Word(Msg.lParam), HiWord(Msg.lParam)));
+    if (WinCtrl is TPaintPanel) {$ifndef UseOldPreviewForm} or (WinCtrl is TBegaZoomBox) {$endif UseOldPreviewForm} then
+    begin
+      // perform mouse wheel scrolling for the control under the mouse:
+      WinCtrl.Perform(CM_MOUSEWHEEL, Msg.WParam, Msg.LParam);
+      Handled := True;
+    end;
+  end;
+end;
+{$endif}
+
 {----------------THTTPForm.FormCreate}
 procedure THTTPForm.FormCreate(Sender: TObject);
 var
@@ -457,6 +480,7 @@ begin
 {$endif}
 
   AsyncLoaders := ThtUrlDocLoaderThreadList.Create(Self);
+  ASyncLoaders.OnProgress := ASyncLoadersProgress;
 
   HttpConnector := ThtIndyHttpConnector.Create(Self);
   HttpConnector.OnGetAuthorization := ConnectorsGetAuthorization;
@@ -480,11 +504,6 @@ begin
   HintWindow := ThtHintWindow.Create(Self);
 //  HintWindow.Color := $C0FFFF;
   FrameBrowser.OnFileBrowse := FrameBrowserFileBrowse;
-  Gauge.Parent := Self.StatusBarMain;
-  //remove progress bar border
-  ProgressBarStyle := GetWindowLong(Gauge.Handle, GWL_EXSTYLE);
-  ProgressBarStyle := ProgressBarStyle - WS_EX_STATICEDGE;
-  SetWindowLong(Gauge.Handle, GWL_EXSTYLE, ProgressBarStyle);
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
@@ -714,10 +733,7 @@ begin
   StatusBarMain.Panels[1].Text := '';
   Error := False;
   AnAbort := False;
-  NumImageTot := 0;
-  NumImageDone := 0;
   Progress(0, 0);
-  Gauge.Visible := True;
   Query1 := Query;
   URL1 := DecodeURL(Normalize(URL));
   URLBase := GetUrlBase(URL1);
@@ -888,6 +904,7 @@ begin
           else
             Viewer := FrameBrowser.ActiveViewer;
           LogForm.Log('GetImageRequest, get asynchronously: ' + URL);
+          AsyncLoading := True;
           AsyncLoaders.AddLoader(ThtUrlDocLoaderThread.Create(Connection, DownLoad, LoadedAsync, Viewer));
           Stream := WaitStream;   {wait indicator}
         end
@@ -951,7 +968,7 @@ begin
 end;
 
 {----------------THTTPForm.HistoryChange}
-procedure THTTPForm.HistoryChange(Sender: TObject);
+procedure THTTPForm.FrameBrowserHistoryChange(Sender: TObject);
 {OnHistoryChange handler -- history list has changed}
 var
   I: integer;
@@ -1375,7 +1392,7 @@ begin
 end;
 
 {----------------THTTPForm.RightClick}
-procedure THTTPForm.RightClick(Sender: TObject; Parameters: TRightClickParameters);
+procedure THTTPForm.FrameBrowserRightClick(Sender: TObject; Parameters: TRightClickParameters);
 {OnRightClick handler.  Bring up popup menu allowing saving of image or opening
  a link in another window}
 var
@@ -1481,27 +1498,25 @@ var
   Percent: integer;
 begin
   if Den = 0 then
-    Percent := 0
+    Percent := 100
   else
     Percent := (100*Num) div Den;
   Gauge.Position := Percent;
-  Gauge.Max := 100;
-  StatusBarMain.Panels.Items[1].Style := psOwnerDraw;
+  if Gauge.Position = 100 then
+    ProgressTimer.Enabled := True
+  else
+    Gauge.Visible := True;
 end;
 
-procedure THTTPForm.StatusBarMainDrawPanel(StatusBar: TStatusBar;
-  Panel: TStatusPanel; const Rect: TRect);
+//-- BG ---------------------------------------------------------- 24.05.2016 --
+procedure THTTPForm.ProgressTimerTimer(Sender: TObject);
 begin
-  if Panel = StatusBar.Panels[1] then
-  with Gauge do begin
-    Top := Rect.Top;
-    Left := Rect.Left;
-    Width := Rect.Right - Rect.Left - 15;
-    Height := Rect.Bottom - Rect.Top;
-  end;
+  ProgressTimer.Enabled := False;
+  if Gauge.Position = 100 then
+    Gauge.Visible := False;
 end;
 
-Procedure THTTPForm.CheckException(Sender: TObject; E: Exception);
+procedure THTTPForm.CheckException(Sender: TObject; E: Exception);
 begin
   if E is ESpecialException then
   begin
@@ -1518,32 +1533,40 @@ begin
   end;
 end;
 
-
 procedure THTTPForm.DisableControls;
 begin
-  URLCombobox.Enabled:=false;
-  CancelButton.Enabled:=true;
-  ReloadButton.Enabled := False;
+//  if not Gauge.Visible then
+  begin
+    URLCombobox.Enabled := False;
+    CancelButton.Enabled := True;
+    ReloadButton.Enabled := False;
 {$ifdef LCL}
 {$else}
-  Animate1.Visible := True;
-  Animate1.Play(1, Animate1.FrameCount,0);
+    Animate1.Visible := True;
+    Animate1.Play(1, Animate1.FrameCount, 0);
 {$endif}
-  Gauge.Visible := True;
+    Gauge.Visible := True;
+  end;
 end;
 
 procedure THTTPForm.EnableControls;
 begin
-  URLCombobox.Enabled:=true;
-  CancelButton.Enabled:=false;
-  ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
-  Reloading := False;
+//  if Gauge.Visible then
+  begin
+    URLCombobox.Enabled := True;
+    CancelButton.Enabled := False;
+    ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
+    Reloading := False;
+    if not AsyncLoading then
+    begin
 {$ifdef LCL}
 {$else}
-  Animate1.Active := False;
-  Animate1.Visible := False;
+      Animate1.Active := False;
+      Animate1.Visible := False;
 {$endif}
-  Gauge.Visible := False;
+//      Gauge.Visible := False;
+    end;
+  end;
 end;
 
 procedure THTTPForm.HTTPHeaders1Click(Sender: TObject);
@@ -1593,27 +1616,28 @@ begin
   begin
     Viewer := nil;
     Url := (Sender as TFrameBrowser).CurrentFile;
+
+    if ProcessingOn then
+    begin    {disable various buttons and menuitems during processing}
+      FwdButton.Enabled := False;
+      BackButton.Enabled := False;
+      ReloadButton.Enabled := False;
+    end
+    else
+    begin
+      FwdButton.Enabled := FrameBrowser.FwdButtonEnabled;
+      BackButton.Enabled := FrameBrowser.BackButtonEnabled;
+      ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
+      CheckEnableControls;
+    end;
   end
   else
     Exit;
 
   if ProcessingOn then
-  begin    {disable various buttons and menuitems during processing}
-    LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Processing: ' + Url);
-
-    FwdButton.Enabled := False;
-    BackButton.Enabled := False;
-    ReloadButton.Enabled := False;
-  end
+    LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Processing: ' + Url)
   else
-  begin
-    FwdButton.Enabled := FrameBrowser.FwdButtonEnabled;
-    BackButton.Enabled := FrameBrowser.BackButtonEnabled;
-    ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
-    CheckEnableControls;
-
     LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Completed: ' + Url);
-  end;
 end;
 
 procedure THTTPForm.PrintPreviewClick(Sender: TObject);
@@ -1734,7 +1758,7 @@ begin
   AFont.Free;
 end;
 
-procedure THTTPForm.About1Click(Sender: TObject);
+procedure THTTPForm.AboutClick(Sender: TObject);
 var
   AboutBox: TAboutBox;
   I: Integer;
@@ -2052,24 +2076,13 @@ begin
   LogForm.Log ('FrameBrowserScript: Name=' + Name + ', Src=' + Src + ', Script=' + Script);
 end;
 
-{$ifdef LCL}
-{$else}
-//-- BG ---------------------------------------------------------- 16.08.2015 --
-procedure THTTPForm.AppMessage(var Msg: TMsg; var Handled: Boolean);
-var
-  WinCtrl: TWinControl;
+//-- BG ---------------------------------------------------------- 24.05.2016 --
+procedure THTTPForm.AsyncLoadersProgress(Sender: TObject; Done, Total: Integer);
 begin
-  if Msg.message = WM_MOUSEWHEEL then
-  begin
-    WinCtrl := FindVCLWindow(Point(Word(Msg.lParam), HiWord(Msg.lParam)));
-    if (WinCtrl is TPaintPanel) {$ifndef UseOldPreviewForm} or (WinCtrl is TBegaZoomBox) {$endif UseOldPreviewForm} then
-    begin
-      // perform mouse wheel scrolling for the control under the mouse:
-      WinCtrl.Perform(CM_MOUSEWHEEL, Msg.WParam, Msg.LParam);
-      Handled := True;
-    end;
-  end;
+  AsyncLoading := Total > 0;
+  Progress(Done, Total);
+  CheckEnableControls;
 end;
-{$endif}
+
 end.
 

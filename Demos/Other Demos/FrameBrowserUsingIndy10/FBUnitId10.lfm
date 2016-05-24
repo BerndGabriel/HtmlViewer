@@ -16,11 +16,10 @@ object HTTPForm: THTTPForm
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  Position = poDefault
   LCLVersion = '1.6.0.4'
   object FrameBrowser: TFrameBrowser
     Left = 0
-    Height = 212
+    Height = 211
     Top = 52
     Width = 628
     CharSet = ANSI_CHARSET
@@ -39,7 +38,7 @@ object HTTPForm: THTTPForm
     PrintScale = 1
     QuirksMode = qmDetect
     OnBlankWindowRequest = BlankWindowRequest
-    OnHistoryChange = HistoryChange
+    OnHistoryChange = FrameBrowserHistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
     OnHotSpotTargetCovered = HotSpotTargetCovered
     OnImageRequest = GetImageRequest
@@ -47,7 +46,7 @@ object HTTPForm: THTTPForm
     OnPrintFooter = PrintFooter
     OnPrintHeader = PrintHeader
     OnProcessing = FrameBrowserProcessing
-    OnRightClick = RightClick
+    OnRightClick = FrameBrowserRightClick
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
     Align = alClient
@@ -212,31 +211,43 @@ object HTTPForm: THTTPForm
       end
     end
   end
-  object StatusBarMain: TStatusBar
+  object Panel1: TPanel
     Left = 0
-    Height = 23
-    Top = 264
+    Height = 24
+    Top = 263
     Width = 628
-    Panels = <    
-      item
-        Width = 216
-      end    
-      item
-        Width = 143
-      end    
-      item
-        Width = 50
-      end>
-    SimplePanel = False
-    OnDrawPanel = StatusBarMainDrawPanel
-  end
-  object Gauge: TProgressBar
-    Left = 176
-    Height = 17
-    Top = 142
-    Width = 150
-    TabOrder = 3
-    Visible = False
+    Align = alBottom
+    BevelOuter = bvNone
+    ClientHeight = 24
+    ClientWidth = 628
+    TabOrder = 2
+    object Gauge: TProgressBar
+      Left = 478
+      Height = 24
+      Top = 0
+      Width = 150
+      Align = alRight
+      TabOrder = 0
+      Visible = False
+    end
+    object StatusBarMain: TStatusBar
+      Left = 0
+      Height = 24
+      Top = 0
+      Width = 478
+      Align = alClient
+      Panels = <      
+        item
+          Width = 216
+        end      
+        item
+          Width = 143
+        end      
+        item
+          Width = 50
+        end>
+      SimplePanel = False
+    end
   end
   object MainMenu: TMainMenu
     left = 40
@@ -344,9 +355,9 @@ object HTTPForm: THTTPForm
       object N4: TMenuItem
         Caption = '-'
       end
-      object About1: TMenuItem
+      object About: TMenuItem
         Caption = '&About...'
-        OnClick = About1Click
+        OnClick = AboutClick
       end
     end
   end
@@ -909,5 +920,10 @@ object HTTPForm: THTTPForm
     ConnectionManager = Connectors
     left = 584
     top = 80
+  end
+  object ProgressTimer: TTimer
+    OnTimer = ProgressTimerTimer
+    left = 472
+    top = 144
   end
 end

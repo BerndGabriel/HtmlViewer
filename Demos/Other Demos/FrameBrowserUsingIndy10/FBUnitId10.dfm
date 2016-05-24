@@ -24,7 +24,7 @@ object HTTPForm: THTTPForm
     Left = 0
     Top = 41
     Width = 570
-    Height = 198
+    Height = 194
     CharSet = ANSI_CHARSET
     CodePage = 0
     DefFontName = 'Times New Roman'
@@ -41,7 +41,7 @@ object HTTPForm: THTTPForm
     PrintScale = 1.000000000000000000
     QuirksMode = qmDetect
     OnBlankWindowRequest = BlankWindowRequest
-    OnHistoryChange = HistoryChange
+    OnHistoryChange = FrameBrowserHistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
     OnHotSpotTargetCovered = HotSpotTargetCovered
     OnImageRequest = GetImageRequest
@@ -49,12 +49,14 @@ object HTTPForm: THTTPForm
     OnPrintFooter = PrintFooter
     OnPrintHeader = PrintHeader
     OnProcessing = FrameBrowserProcessing
-    OnRightClick = RightClick
+    OnRightClick = FrameBrowserRightClick
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
   end
   object CoolBar1: TCoolBar
@@ -213,30 +215,39 @@ object HTTPForm: THTTPForm
       end
     end
   end
-  object StatusBarMain: TStatusBar
+  object Panel1: TPanel
     Left = 0
-    Top = 239
+    Top = 235
     Width = 570
-    Height = 19
-    Panels = <
-      item
-        Width = 216
-      end
-      item
-        Width = 143
-      end
-      item
-        Width = 50
-      end>
-    OnDrawPanel = StatusBarMainDrawPanel
-  end
-  object Gauge: TProgressBar
-    Left = 409
-    Top = 129
-    Width = 150
-    Height = 17
-    TabOrder = 3
-    Visible = False
+    Height = 23
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 2
+    object Gauge: TProgressBar
+      Left = 420
+      Top = 0
+      Width = 150
+      Height = 23
+      Align = alRight
+      TabOrder = 0
+    end
+    object StatusBarMain: TStatusBar
+      Left = 0
+      Top = 0
+      Width = 420
+      Height = 23
+      Align = alClient
+      Panels = <
+        item
+          Width = 216
+        end
+        item
+          Width = 143
+        end
+        item
+          Width = 50
+        end>
+    end
   end
   object MainMenu: TMainMenu
     Left = 24
@@ -344,9 +355,9 @@ object HTTPForm: THTTPForm
       object N4: TMenuItem
         Caption = '-'
       end
-      object About1: TMenuItem
+      object About: TMenuItem
         Caption = '&About...'
-        OnClick = About1Click
+        OnClick = AboutClick
       end
     end
   end
@@ -408,7 +419,7 @@ object HTTPForm: THTTPForm
     Left = 24
     Top = 120
     Bitmap = {
-      494C01010D001100680011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100700011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1048,5 +1059,11 @@ object HTTPForm: THTTPForm
   object Connectors: ThtConnectionManager
     Left = 328
     Top = 56
+  end
+  object ProgressTimer: TTimer
+    Enabled = False
+    OnTimer = ProgressTimerTimer
+    Left = 408
+    Top = 120
   end
 end

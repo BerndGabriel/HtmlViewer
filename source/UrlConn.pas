@@ -781,11 +781,11 @@ begin
 
         Text.Add('<tbody>');
         repeat
-    {$ifndef TSearchRecHasNoTimestamp}
+{$ifndef TSearchRecHasNoTimestamp}
             TimeStamp := FileDateToDateTime(F.Time);
-    {$else}
+{$else}
             TimeStamp := F.TimeStamp;
-    {$endif}
+{$endif}
           if F.Attr and faDirectory <> 0 then
           begin
             if F.Name = '.' then
@@ -843,15 +843,20 @@ begin
 
   FileName := HTMLtoDOS(FileName);
   if DirectoryExists(FileName) then
-    MakeDirOutput(Doc.Stream, FileName)
+  begin
+    MakeDirOutput(Doc.Stream, FileName);
+    Doc.DocType := HTMLType;
+  end
   else
+  begin
     Doc.Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+    Ext := Lowercase(ExtractFileExt(FileName));
+    if Length(Ext) > 0 then
+      Delete(Ext, 1, 1);
+    Doc.DocType := FileExt2DocType(Ext);
+  end;
   Doc.Status := ucsLoaded;
 
-  Ext := Lowercase(ExtractFileExt(FileName));
-  if Length(Ext) > 0 then
-    Delete(Ext, 1, 1);
-  Doc.DocType := FileExt2DocType(Ext);
 end;
 
 { ThtFileConnector }
@@ -998,16 +1003,6 @@ end;
 { ThtUrlDocLoaderThreadList }
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
-procedure ThtUrlDocLoaderThreadList.AddLoader(Thread: ThtUrlDocLoaderThread);
-begin
-  Thread.OnTerminate := Terminated;
-  Thread.Priority := tpLower;
-  FWaiting.add(Thread);
-  inc(FTotal);
-  StartNext;
-end;
-
-//-- BG ---------------------------------------------------------- 19.05.2016 --
 constructor ThtUrlDocLoaderThreadList.Create(Owner: TComponent);
 begin
   inherited;
@@ -1044,7 +1039,6 @@ begin
   FWaiting.Free;
   FRunning.Free;
 
-
   inherited;
 end;
 
@@ -1055,26 +1049,21 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
-procedure ThtUrlDocLoaderThreadList.StartNext;
-var
-  Thread: TThread;
+procedure ThtUrlDocLoaderThreadList.AddLoader(Thread: ThtUrlDocLoaderThread);
 begin
-  if Assigned(FOnProgress) then
+  if FWaiting.Count + FRunning.Count = 0 then
   begin
-    if FDone >= FTotal then
-    begin
-      FDone := 0;
-      FTotal := FWaiting.Count + FRunning.Count;
-    end;
-    FOnProgress(self, FDone, FTotal);
+    FDone := 0;
+    FTotal := 0;
+    FFailed := 0;
   end;
-  if (FWaiting.Count > 0) and (FRunning.Count < MaxRunningThreadCount) then
-  begin
-    Thread := FWaiting[0];
-    FWaiting.Delete(0);
-    FRunning.Add(Thread);
-    Thread.Resume;
-  end;
+
+  Thread.OnTerminate := Terminated;
+  Thread.Priority := tpLower;
+  FWaiting.add(Thread);
+
+  Inc(FTotal);
+  StartNext;
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
@@ -1091,8 +1080,31 @@ begin
   end;
   FWaiting.Remove(Sender); // paranoia or needed for termination?
   FRunning.Remove(Sender);
+
   Inc(FDone);
+  if FWaiting.Count + FRunning.Count = 0 then
+  begin
+    FDone := 0;
+    FTotal := 0;
+  end;
   StartNext;
+end;
+
+//-- BG ---------------------------------------------------------- 19.05.2016 --
+procedure ThtUrlDocLoaderThreadList.StartNext;
+var
+  Thread: TThread;
+begin
+  if Assigned(FOnProgress) then
+    FOnProgress(self, FDone, FTotal);
+
+  if (FWaiting.Count > 0) and (FRunning.Count < MaxRunningThreadCount) then
+  begin
+    Thread := FWaiting[0];
+    FWaiting.Delete(0);
+    FRunning.Add(Thread);
+    Thread.Resume;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --

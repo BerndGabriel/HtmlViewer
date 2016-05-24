@@ -72,7 +72,6 @@ uses
 type
   THTTPConnection = class(ThtConnection)
   private
-    ReturnedContentType: string;
     FResponseText: string;
     FRedirect: Boolean;
     FNewLocation: string;
@@ -443,7 +442,7 @@ begin
           FHttp.Get(Url1, Doc.Stream);
         end;
       finally
-        ReturnedContentType := FHttp.Response.ContentType;
+        Doc.DocType := ContentType2DocType(FHttp.Response.ContentType);
         ReceivedSize := FHttp.Response.ContentLength;
         FResponseText := FHttp.ResponseText;
         FStatusCode := FHttp.ResponseCode;
