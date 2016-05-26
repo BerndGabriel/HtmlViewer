@@ -400,6 +400,7 @@ const
 var
   PostIt1, TryAgain, TryRealm, Redirect: Boolean;
   SendStream: TStringStream;
+  Strings: TStringList;
   RedirectCount: Integer;
   Url1, Query1, S: String;
 begin
@@ -428,7 +429,8 @@ begin
               FHttp.Request.ContentType := Doc.QueryEncType
             else
               FHttp.Request.ContentType := 'application/x-www-form-urlencoded';
-            LogForm.Log('THTTPConnection.Get Post: ' + Url1 + ', Data=' + Copy(Query1, 1, 132) + ', EncType=' + Doc.QueryEncType);  // not too much data
+            if LogForm.LogActive[laDiag] then
+              LogForm.LogSynced('THTTPConnection.Get Post: ' + Url1 + ', Data=' + Copy(Query1, 1, 132) + ', EncType=' + Doc.QueryEncType);  // not too much data
             FHttp.Post(URL1, SendStream, Doc.Stream);
           finally
             SendStream.Free;
@@ -438,7 +440,8 @@ begin
         begin {Get}
           if Length(Query1) > 0 then
             Url1 := Url1 + '?' + Query1;
-          LogForm.Log('THTTPConnection.Get Get: ' + Url1);
+          if LogForm.LogActive[laDiag] then
+            LogForm.LogSynced('THTTPConnection.Get Get: ' + Url1);
           FHttp.Get(Url1, Doc.Stream);
         end;
       finally
@@ -446,9 +449,21 @@ begin
         ReceivedSize := FHttp.Response.ContentLength;
         FResponseText := FHttp.ResponseText;
         FStatusCode := FHttp.ResponseCode;
-        FHeaderRequestData.AddStrings( FHttp.Request.RawHeaders );
-        FHeaderResponseData.AddStrings( FHttp.Response.RawHeaders );
-        FHeaderResponseData.Add( 'Character Set = '+ FHttp.Response.CharSet );
+        if LogForm.LogActive[laHttpHeader] then
+        begin
+          Strings := TStringList.Create;
+          try
+            Strings.Add( '--- Http.Request: ''' + Url1 + ''' ---' );
+            Strings.AddStrings( FHttp.Request.RawHeaders );
+            Strings.Add( '--- Http.Response ---' );
+            Strings.AddStrings( FHttp.Response.RawHeaders );
+            Strings.Add( 'Character Set = '+ FHttp.Response.CharSet );
+            Strings.Add( '---------------------' );
+            LogForm.LogSynced(Strings);
+          finally
+            FreeAndNil(Strings);
+          end;
+        end;
       end;
 
       if FStatusCode = 401 then
@@ -501,7 +516,8 @@ begin
       if not TryAgain or (RedirectCount >= MaxRedirect) then
         Raise;
     end;
-    LogForm.Log('THTTPConnection.Get Done: Status ' + IntToStr(StatusCode));
+    if LogForm.LogActive[laDiag] then
+      LogForm.LogSynced('THTTPConnection.Get Done: Status ' + IntToStr(StatusCode) + ': ''' + Url1 + '''');
   until not TryAgain;
 end;
 

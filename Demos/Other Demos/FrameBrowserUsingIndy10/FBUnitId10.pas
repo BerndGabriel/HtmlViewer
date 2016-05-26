@@ -119,7 +119,7 @@ type
     Gauge: TProgressBar;
     StatusBarMain: TStatusBar;
     ProgressTimer: TTimer;
-    WriteLog: TMenuItem;
+    LogDiag: TMenuItem;
     ShowLog: TMenuItem;
     ResourceConnector: ThtResourceConnector;
     MainMenu: TMainMenu;
@@ -174,12 +174,15 @@ type
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     View1: TMenuItem;
-    HTTPHeaders1: TMenuItem;
     PageInfo1: TMenuItem;
     N4: TMenuItem;
     LibraryInformation1: TMenuItem;
     Source1: TMenuItem;
     Panel1: TPanel;
+    LogHttp: TMenuItem;
+    N5: TMenuItem;
+    LogScript: TMenuItem;
+    GetImagesAsyncly: TMenuItem;
     procedure AboutClick(Sender: TObject);
     procedure AsyncLoadersProgress(Sender: TObject; Done, Total: Integer);
     procedure BackButtonClick(Sender: TObject);
@@ -246,9 +249,12 @@ type
     procedure LibraryInformation1Click(Sender: TObject);
     procedure Source1Click(Sender: TObject);
     function ConnectorsGetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean;
-    procedure WriteLogClick(Sender: TObject);
+    procedure LogDiagClick(Sender: TObject);
     procedure ShowLogClick(Sender: TObject);
     procedure ProgressTimerTimer(Sender: TObject);
+    procedure LogHttpClick(Sender: TObject);
+    procedure LogScriptClick(Sender: TObject);
+    procedure GetImagesAsynclyClick(Sender: TObject);
   private
     { Private declarations }
     URLBase: string;
@@ -273,8 +279,6 @@ type
     HintWindow: ThtHintWindow;
     HintVisible: Boolean;
     TitleViewer: THtmlViewer;
-    FHeaderRequestData : TStrings;
-    FHeaderResponseData : TStrings;
     FMetaInfo : TStrings;
 {$ifdef UseVCLStyles}
     sepVCLStyles,
@@ -398,8 +402,6 @@ begin
 {$ifdef has_StyleElements}
   TStyleManager.AnimationOnControls := True;
 {$Endif}
-  FHeaderRequestData := TStringList.Create;
-  FHeaderResponseData := TStringList.Create;
 {$ifdef HasGestures}
   FrameBrowser.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
   FrameBrowser.Touch.InteractiveGestures := [igPan];
@@ -521,9 +523,6 @@ begin
     Width  := IniFile.ReadInteger('HTTPForm', 'Width' , Width );
     Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
 
-    ShowLog.Checked := IniFile.ReadBool('HTTPForm', 'ShowDiagWindow', ShowLog.Checked);
-    WriteLog.Checked := IniFile.ReadBool('HTTPForm', 'WriteDiagLog', WriteLog.Checked);
-
     LWidth  := Width  div 2;
     LHeight := Height div 2;
     LTop    := Top   + LWidth  div 2;
@@ -535,14 +534,22 @@ begin
     LHeight := IniFile.ReadInteger('LogForm', 'Height', LHeight);
 
     LogForm := TLogForm.Create(Self, LTop, LLeft, LWidth, LHeight);
-    LogForm.Visible := ShowLog.Checked;
-    LogForm.LogActive := WriteLog.Checked;
 
-    HttpConnector.ProxyServer   := IniFile.ReadString( 'Proxy'   , 'ProxyHost'    , HttpConnector.ProxyServer   );
-    HttpConnector.ProxyPort     := IniFile.ReadString( 'Proxy'   , 'ProxyPort'    , HttpConnector.ProxyPort     );
-    HttpConnector.ProxyUsername := IniFile.ReadString( 'Proxy'   , 'ProxyUsername', HttpConnector.ProxyUsername );
-    HttpConnector.ProxyPassword := IniFile.ReadString( 'Proxy'   , 'ProxyPassword', HttpConnector.ProxyPassword );
-    HttpConnector.UserAgent     := IniFile.ReadString( 'Settings', 'UserAgent'    , HttpConnector.UserAgent     );
+    ShowLog.Checked   := IniFile.ReadBool('LogForm', 'ShowLogWindow' , ShowLog.Checked)  ;
+    LogDiag.Checked   := IniFile.ReadBool('LogForm', 'LogDiagnostics', LogDiag.Checked  );
+    LogHttp.Checked   := IniFile.ReadBool('LogForm', 'LogHttpHeader' , LogHttp.Checked  );
+    LogScript.Checked := IniFile.ReadBool('LogForm', 'LogHttpScript' , LogScript.Checked);
+
+    LogForm.Visible := ShowLog.Checked;
+    LogForm.LogActive[laDiag] := LogDiag.Checked;
+    LogForm.LogActive[laHttpHeader] := LogHttp.Checked;
+    LogForm.LogActive[laHttpScript] := LogScript.Checked;
+
+    HttpConnector.ProxyServer   := IniFile.ReadString('Proxy'   , 'ProxyHost'    , HttpConnector.ProxyServer   );
+    HttpConnector.ProxyPort     := IniFile.ReadString('Proxy'   , 'ProxyPort'    , HttpConnector.ProxyPort     );
+    HttpConnector.ProxyUsername := IniFile.ReadString('Proxy'   , 'ProxyUsername', HttpConnector.ProxyUsername );
+    HttpConnector.ProxyPassword := IniFile.ReadString('Proxy'   , 'ProxyPassword', HttpConnector.ProxyPassword );
+    HttpConnector.UserAgent     := IniFile.ReadString('Settings', 'UserAgent'    , HttpConnector.UserAgent     );
 
     SL := TStringList.Create;
     try
@@ -573,19 +580,22 @@ begin       {save only if this is the first instance}
     IniFile.WriteInteger('HTTPForm', 'Width' , Width);
     IniFile.WriteInteger('HTTPForm', 'Height', Height);
 
-    IniFile.WriteBool('HTTPForm', 'ShowDiagWindow', ShowLog.Checked);
-    IniFile.WriteBool('HTTPForm', 'WriteDiagLog', WriteLog.Checked);
-
     IniFile.WriteInteger('LogForm', 'Top'   , LogForm.Top);
     IniFile.WriteInteger('LogForm', 'Left'  , LogForm.Left);
     IniFile.WriteInteger('LogForm', 'Width' , LogForm.Width);
     IniFile.WriteInteger('LogForm', 'Height', LogForm.Height);
 
-    IniFile.WriteString('Proxy', 'ProxyHost', HttpConnector.ProxyServer);
-    IniFile.WriteString('Proxy', 'ProxyPort', HttpConnector.ProxyPort);
-    IniFile.WriteString('Proxy', 'ProxyUsername', HttpConnector.ProxyUsername);
-    IniFile.WriteString('Proxy', 'ProxyPassword', HttpConnector.ProxyPassword);
-    IniFile.WriteString('Settings', 'UserAgent', HttpConnector.UserAgent);
+    IniFile.WriteBool('LogForm', 'ShowLogWindow' , ShowLog.Checked  );
+    IniFile.WriteBool('LogForm', 'LogDiagnostics', LogDiag.Checked  );
+    IniFile.WriteBool('LogForm', 'LogHttpHeader' , LogHttp.Checked  );
+    IniFile.WriteBool('LogForm', 'LogHttpScript' , LogScript.Checked);
+
+    IniFile.WriteString('Proxy'   , 'ProxyHost'    , HttpConnector.ProxyServer   );
+    IniFile.WriteString('Proxy'   , 'ProxyPort'    , HttpConnector.ProxyPort     );
+    IniFile.WriteString('Proxy'   , 'ProxyUsername', HttpConnector.ProxyUsername );
+    IniFile.WriteString('Proxy'   , 'ProxyPassword', HttpConnector.ProxyPassword );
+    IniFile.WriteString('Settings', 'UserAgent'    , HttpConnector.UserAgent     );
+
     IniFile.EraseSection('Favorites');
     for I := 0 to UrlCombobox.Items.Count - 1 do
       IniFile.WriteString('Favorites', 'Url'+IntToStr(I), UrlCombobox.Items[I]);
@@ -640,8 +650,6 @@ begin
   end;
 
   DiskCache.Free;
-  FHeaderRequestData.Free;
-  FHeaderResponseData.Free;
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
@@ -657,8 +665,6 @@ begin
   StatusBarMain.Panels[1].Style := psText;
   StatusBarMain.Panels[1].Text := '';
   try
-    FHeaderRequestData.Clear;
-    FHeaderResponseData.Clear;
   {the following initiates one or more GetPostRequest's}
     FrameBrowser.LoadURL(Normalize(URL));
     Reloading := False;
@@ -754,14 +760,16 @@ begin
   begin
     AStream.LoadFromFile(CacheFileName);
     NewUrl := NewUrlDummy;
-    LogForm.Log('FrameBrowserGetPostRequestEx: from cache ' + CacheFileName);
+    if LogForm.LogActive[laDiag] then
+      LogForm.Log('FrameBrowserGetPostRequestEx: from cache ' + CacheFileName);
   end
   else
   begin       {it's not in cache}
     Protocol := GetProtocol(URL1);
     if Connectors.TryCreateConnection(Protocol, Connection) then
       try
-        LogForm.Log('FrameBrowserGetPostRequestEx: ' + Method[IsGet] + ' ' + Url1);
+        if LogForm.LogActive[laDiag] then
+          LogForm.Log('FrameBrowserGetPostRequestEx: ' + Method[IsGet] + ' ' + Url1);
         IsHttpConnection := Connection is THTTPConnection;
         if IsHttpConnection then
           HttpConnection := Connection as THTTPConnection;
@@ -776,28 +784,29 @@ begin
             DocType := DownLoad.DocType;
             AStream.LoadFromStream(DownLoad.Stream);
 
-            if FHeaderRequestData.Count > 0 then
-              FHeaderRequestData.Add('');
-            FHeaderRequestData.Add( 'URL = "'+ URL +'"');
-            if IsHttpConnection then
-            begin
-              FHeaderRequestData.Add('');
-              FHeaderRequestData.AddStrings( HttpConnection.HeaderRequestData );
-            end;
-
-            if FHeaderResponseData.Count > 0 then
-              FHeaderResponseData.Add('');
-            FHeaderResponseData.Add( 'URL = "'+ URL +'"');
-            if IsHttpConnection then
-            begin
-              FHeaderResponseData.Add('');
-              FHeaderResponseData.AddStrings( HttpConnection.HeaderResponseData );
-            end;
+//            if FHeaderRequestData.Count > 0 then
+//              FHeaderRequestData.Add('');
+//            FHeaderRequestData.Add( 'URL = "'+ URL +'"');
+//            if IsHttpConnection then
+//            begin
+//              FHeaderRequestData.Add('');
+//              FHeaderRequestData.AddStrings( HttpConnection.HeaderRequestData );
+//            end;
+//
+//            if FHeaderResponseData.Count > 0 then
+//              FHeaderResponseData.Add('');
+//            FHeaderResponseData.Add( 'URL = "'+ URL +'"');
+//            if IsHttpConnection then
+//            begin
+//              FHeaderResponseData.Add('');
+//              FHeaderResponseData.AddStrings( HttpConnection.HeaderResponseData );
+//            end;
           except
 {$ifndef UseSSL}
             On ESpecialException do
             begin
-              LogForm.Log('FrameBrowserGetPostRequestEx: Special Exception');
+              if LogForm.LogActive[laDiag] then
+                LogForm.Log('FrameBrowserGetPostRequestEx: Special Exception');
               Connection.Free;   {needs to be reset}
               Connection := Nil;
               Raise;
@@ -805,7 +814,8 @@ begin
 {$endif}
             On E: Exception do
             begin
-              LogForm.Log('FrameBrowserGetPostRequestEx: Exception - ' + E.Message);
+              if LogForm.LogActive[laDiag] then
+                LogForm.Log('FrameBrowserGetPostRequestEx: Exception - ' + E.Message);
               if AnAbort then
                 raise ESpecialException.Create('Abort on user request');
 
@@ -852,7 +862,8 @@ begin
     else
     begin
       S := Format('Unsupported protocol ''%s''. Supported protocols are %s.', [Protocol, Connectors.AllProtocols]);
-      LogForm.Log('FrameBrowserGetPostRequestEx: Don''t know how to ' +  Method[IsGet] + ' ''' + Url1 + '''. Cause: ' + S );
+      if LogForm.LogActive[laDiag] then
+        LogForm.Log('FrameBrowserGetPostRequestEx: Don''t know how to ' +  Method[IsGet] + ' ''' + Url1 + '''. Cause: ' + S );
 
 //      if Sender is TFrameBrowser then   {main document display}
 //        raise ESpecialException.Create(S);
@@ -889,7 +900,8 @@ begin
     begin                               {yes, it is}
       AStream.LoadFromFile(S);
       Stream := AStream;      {return image immediately}
-      LogForm.Log('GetImageRequest, from Cache: ' + S);
+      if LogForm.LogActive[laDiag] then
+        LogForm.Log('GetImageRequest, from Cache: ' + S);
     end
     else
     begin          {get the image asynchronously }
@@ -897,13 +909,14 @@ begin
       if Connectors.TryCreateConnection(Protocol, Connection) then
       begin
         DownLoad := Connection.CreateUrlDoc(False, URL, '', '', '');
-        if Connection is THTTPConnection then
+        if (Connection is THTTPConnection) and GetImagesAsyncly.Checked then
         begin
           if Sender is THtmlViewer then
             Viewer := THtmlViewer(Sender)
           else
             Viewer := FrameBrowser.ActiveViewer;
-          LogForm.Log('GetImageRequest, get asynchronously: ' + URL);
+          if LogForm.LogActive[laDiag] then
+            LogForm.Log('GetImageRequest, get asynchronously: ' + URL);
           AsyncLoading := True;
           AsyncLoaders.AddLoader(ThtUrlDocLoaderThread.Create(Connection, DownLoad, LoadedAsync, Viewer));
           Stream := WaitStream;   {wait indicator}
@@ -922,7 +935,8 @@ begin
       else
       begin
         S := Format('Unsupported protocol ''%s''. Supported protocols are %s.', [Protocol, Connectors.AllProtocols]);
-        LogForm.Log('GetImageRequest: Don''t know how to get ''' + Url + '''. Cause: ' + S );
+        if LogForm.LogActive[laDiag] then
+          LogForm.Log('GetImageRequest: Don''t know how to get ''' + Url + '''. Cause: ' + S );
 
   //      if Sender is TFrameBrowser then   {main document display}
   //        raise ESpecialException.Create(S);
@@ -1018,13 +1032,6 @@ begin
   LoadURL;
 end;
 
-//-- BG ---------------------------------------------------------- 23.05.2016 --
-procedure THTTPForm.WriteLogClick(Sender: TObject);
-begin
-  WriteLog.Checked := not WriteLog.Checked;
-  LogForm.LogActive := WriteLog.Checked;
-end;
-
 {----------------THTTPForm.Openfile1Click}
 procedure THTTPForm.Openfile1Click(Sender: TObject);
 {Open a local disk file}
@@ -1068,9 +1075,8 @@ var
   S, Params: string;
   K: integer;
 begin
-{$ifdef LogIt}
-  LogForm.Log ('HotSpotTargetClick: ' + URL);
-{$endif}
+  if LogForm.LogActive[laDiag] then
+    LogForm.Log ('HotSpotTargetClick: ' + URL);
   Protocol := GetProtocol(URL);
   if Protocol = 'mailto' then
   begin
@@ -1223,6 +1229,27 @@ procedure THTTPForm.ShowLogClick(Sender: TObject);
 begin
   ShowLog.Checked := not ShowLog.Checked;
   LogForm.Visible := ShowLog.Checked;
+end;
+
+//-- BG ---------------------------------------------------------- 23.05.2016 --
+procedure THTTPForm.LogDiagClick(Sender: TObject);
+begin
+  LogDiag.Checked := not LogDiag.Checked;
+  LogForm.LogActive[laDiag] := LogDiag.Checked
+end;
+
+//-- BG ---------------------------------------------------------- 25.05.2016 --
+procedure THTTPForm.LogHttpClick(Sender: TObject);
+begin
+  LogHttp.Checked := not LogHttp.Checked;
+  LogForm.LogActive[laHttpHeader] := LogHttp.Checked
+end;
+
+//-- BG ---------------------------------------------------------- 25.05.2016 --
+procedure THTTPForm.LogScriptClick(Sender: TObject);
+begin
+  LogScript.Checked := not LogScript.Checked;
+  LogForm.LogActive[laHttpScript] := LogScript.Checked
 end;
 
 procedure THTTPForm.Source1Click(Sender: TObject);
@@ -1571,19 +1598,19 @@ end;
 
 procedure THTTPForm.HTTPHeaders1Click(Sender: TObject);
 begin
-  with TInfoForm.Create(Application) do
-  try
-    Caption := 'HTTP Headers';
-    mmoInfo.Clear;
-    mmoInfo.Lines.Add('Request');
-    mmoInfo.Lines.AddStrings( Self.FHeaderRequestData );
-
-    mmoInfo.Lines.Add('Response');
-    mmoInfo.Lines.AddStrings( Self.FHeaderResponseData );
-    ShowModal;
-  finally
-    Free;
-  end;
+//  with TInfoForm.Create(Application) do
+//  try
+//    Caption := 'HTTP Headers';
+//    mmoInfo.Clear;
+//    mmoInfo.Lines.Add('Request');
+//    mmoInfo.Lines.AddStrings( Self.FHeaderRequestData );
+//
+//    mmoInfo.Lines.Add('Response');
+//    mmoInfo.Lines.AddStrings( Self.FHeaderResponseData );
+//    ShowModal;
+//  finally
+//    Free;
+//  end;
 end;
 
 procedure THTTPForm.BackButtonClick(Sender: TObject);
@@ -1634,10 +1661,11 @@ begin
   else
     Exit;
 
-  if ProcessingOn then
-    LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Processing: ' + Url)
-  else
-    LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Completed: ' + Url);
+  if LogForm.LogActive[laDiag] then
+    if ProcessingOn then
+      LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Processing: ' + Url)
+    else
+      LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Completed: ' + Url);
 end;
 
 procedure THTTPForm.PrintPreviewClick(Sender: TObject);
@@ -1819,7 +1847,8 @@ var
 begin
   S := 'HttpEq=' + HttpEq + ', MetaName=' + Name + ', MetaContent=' + Content;
   FMetaInfo.Add(S);
-  LogForm.Log('FrameBrowserMeta: ' + S);
+  if LogForm.LogActive[laDiag] then
+    LogForm.Log('FrameBrowserMeta: ' + S);
 end;
 
 procedure THTTPForm.FrameBrowserMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -2073,10 +2102,16 @@ end;
 
 procedure THTTPForm.FrameBrowserScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 begin
-  LogForm.Log ('FrameBrowserScript: Name=' + Name + ', Src=' + Src + ', Script=' + Script);
+  if LogForm.LogActive[laHttpScript] then
+    LogForm.Log('FrameBrowserScript: Name=' + Name + ', Src=' + Src + ', Script=' + Script);
 end;
 
 //-- BG ---------------------------------------------------------- 24.05.2016 --
+procedure THTTPForm.GetImagesAsynclyClick(Sender: TObject);
+begin
+  GetImagesAsyncly.Checked := not GetImagesAsyncly.Checked;
+end;
+
 procedure THTTPForm.AsyncLoadersProgress(Sender: TObject; Done, Total: Integer);
 begin
   AsyncLoading := Total > 0;

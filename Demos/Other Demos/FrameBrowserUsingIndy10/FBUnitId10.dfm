@@ -55,8 +55,6 @@ object HTTPForm: THTTPForm
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
-    Touch.InteractiveGestures = [igPan]
-    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
   end
   object CoolBar1: TCoolBar
@@ -300,10 +298,6 @@ object HTTPForm: THTTPForm
     end
     object View1: TMenuItem
       Caption = '&View'
-      object HTTPHeaders1: TMenuItem
-        Caption = '&HTTP Headers...'
-        OnClick = HTTPHeaders1Click
-      end
       object PageInfo1: TMenuItem
         Caption = '&Page Info...'
         OnClick = PageInfo1Click
@@ -320,25 +314,41 @@ object HTTPForm: THTTPForm
     object Options1: TMenuItem
       Caption = '&Options'
       object Proxy1: TMenuItem
-        Caption = '&Proxy...'
+        Caption = 'Proxy...'
         OnClick = Proxy1Click
       end
       object DeleteCache1: TMenuItem
-        Caption = '&Delete Cache'
+        Caption = 'Delete Cache'
         OnClick = DeleteCacheClick
       end
+      object GetImagesAsyncly: TMenuItem
+        Caption = 'Get Images Asyncly'
+        Checked = True
+        OnClick = GetImagesAsynclyClick
+      end
       object ShowImages: TMenuItem
-        Caption = '&Show Images'
+        Caption = 'Show Images'
         Checked = True
         OnClick = ShowImagesClick
       end
-      object WriteLog: TMenuItem
-        Caption = '&Write Diagnostic Log'
-        OnClick = WriteLogClick
-      end
       object ShowLog: TMenuItem
-        Caption = 'Show Diagnostic &Log'
+        Caption = 'Show Log'
         OnClick = ShowLogClick
+      end
+      object N5: TMenuItem
+        Caption = '-'
+      end
+      object LogDiag: TMenuItem
+        Caption = 'Log Diagnostics'
+        OnClick = LogDiagClick
+      end
+      object LogScript: TMenuItem
+        Caption = 'Log HTTP Script'
+        OnClick = LogScriptClick
+      end
+      object LogHttp: TMenuItem
+        Caption = 'Log HTTP Headers'
+        OnClick = LogHttpClick
       end
     end
     object Help1: TMenuItem
@@ -419,7 +429,7 @@ object HTTPForm: THTTPForm
     Left = 24
     Top = 120
     Bitmap = {
-      494C01010D001100700011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100740011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
