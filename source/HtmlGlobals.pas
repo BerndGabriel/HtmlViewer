@@ -956,11 +956,7 @@ begin
 {$ifdef UNICODE}
   Result := CompareStr(S1, S2);
 {$else}
-  {$ifdef MSWindows}
-    Result := CompareStringW(LOCALE_USER_DEFAULT, 0, @S1[1], Length(S1), @S2[1], Length(S2)) - 2;
-  {$else}
-    Result := WideCompareStr(S1, S2);
-  {$endif}
+  Result := WideCompareStr(S1, S2);
 {$endif}
 end;
 
@@ -968,13 +964,13 @@ end;
 function htLowerCase(Str: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
 begin
-  {$ifdef UNICODE}
-    // LowerCase() converts 7bit chars only while AnsiLowerCase() converts UnicodeStrings correctly.
-    // Actually it does the same as we do in the $else part except for Linux.
-    Result := AnsiLowerCase(Str);
-  {$else}
-    Result := WideLowerCase(Str);
-  {$endif}
+{$ifdef UNICODE}
+  // LowerCase() converts 7bit chars only while AnsiLowerCase() converts UnicodeStrings correctly.
+  // Actually it does the same as we do in the $else part except for Linux.
+  Result := AnsiLowerCase(Str);
+{$else}
+  Result := WideLowerCase(Str);
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --
@@ -992,26 +988,8 @@ end;
 //-- BG ---------------------------------------------------------- 09.08.2011 --
 function htTrim(Str: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
-{$ifdef UNICODE}
 begin
   Result := Trim(Str);
-{$else}
-var
-  I, L: Integer;
-begin
-  L := Length(Str);
-  I := 1;
-  while (I <= L) and (Str[I] <= ' ') do
-    Inc(I);
-  if I > L then
-    Result := ''
-  else
-  begin
-    while Str[L] <= ' ' do
-      Dec(L);
-    Result := Copy(Str, I, L - I + 1);
-  end;
-{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
