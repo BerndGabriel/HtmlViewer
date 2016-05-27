@@ -77,40 +77,6 @@ type
   TPopupMenu=class(Vcl.ActnPopup.TPopupActionBar);
 {$endif}
 
-//{$ifdef LogIt}
-//  IdLogfile,
-//{$endif}
-//{$ifdef LogIt}
-//  TModIdLogFile = class(TIdLogFile)
-//  public
-//      procedure LogWriteString(const AText: string); override;
-//  end;
-//{$endif}
-//{$ifdef LogIt}
-//    Log: TModIdLogFile;
-//{$endif}
-//{$ifdef LogIt}
-//  if Monitor1 then
-//  begin
-//    DeleteFile(Cache+'LogFile.txt');
-//    Log := TModIdLogFile.Create(Self);
-//    Log.Filename := Cache+'LogFile.txt';
-//    Log.ReplaceCRLF := False;
-//    Log.Active := True;
-//  end;
-//{$endif}
-//{$ifdef LogIt}
-//  Log.Free;
-//{$endif}
-//{$ifdef LogIt}
-//{ TModIdLogFile }
-//
-//procedure TModIdLogFile.LogWriteString(const AText: string);
-//begin
-//  if Active then
-//    inherited;
-//end;
-
   { THTTPForm }
 
   THTTPForm = class(TForm)
@@ -523,6 +489,8 @@ begin
     Width  := IniFile.ReadInteger('HTTPForm', 'Width' , Width );
     Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
 
+    GetImagesAsyncly.Checked := IniFile.ReadBool('Options', 'GetImagesAsyncly', GetImagesAsyncly.Checked);
+
     LWidth  := Width  div 2;
     LHeight := Height div 2;
     LTop    := Top   + LWidth  div 2;
@@ -579,6 +547,8 @@ begin       {save only if this is the first instance}
     IniFile.WriteInteger('HTTPForm', 'Left'  , Left);
     IniFile.WriteInteger('HTTPForm', 'Width' , Width);
     IniFile.WriteInteger('HTTPForm', 'Height', Height);
+
+    IniFile.WriteBool('Options', 'GetImagesAsyncly', GetImagesAsyncly.Checked);
 
     IniFile.WriteInteger('LogForm', 'Top'   , LogForm.Top);
     IniFile.WriteInteger('LogForm', 'Left'  , LogForm.Left);
@@ -773,9 +743,7 @@ begin
         IsHttpConnection := Connection is THTTPConnection;
         if IsHttpConnection then
           HttpConnection := Connection as THTTPConnection;
-        //Connection.OnDocBegin := HTTPDocBegin1;
         Connection.OnDocData := HTTPDocData1;
-        //Connection.OnDocEnd := HTTPDocEnd1;
         LastURL := Url1;
         DownLoad := Connection.CreateUrlDoc(not IsGet, URL1, Query1, EncType, RefererX);
         try
@@ -783,24 +751,6 @@ begin
             Connection.LoadDoc(DownLoad);
             DocType := DownLoad.DocType;
             AStream.LoadFromStream(DownLoad.Stream);
-
-//            if FHeaderRequestData.Count > 0 then
-//              FHeaderRequestData.Add('');
-//            FHeaderRequestData.Add( 'URL = "'+ URL +'"');
-//            if IsHttpConnection then
-//            begin
-//              FHeaderRequestData.Add('');
-//              FHeaderRequestData.AddStrings( HttpConnection.HeaderRequestData );
-//            end;
-//
-//            if FHeaderResponseData.Count > 0 then
-//              FHeaderResponseData.Add('');
-//            FHeaderResponseData.Add( 'URL = "'+ URL +'"');
-//            if IsHttpConnection then
-//            begin
-//              FHeaderResponseData.Add('');
-//              FHeaderResponseData.AddStrings( HttpConnection.HeaderResponseData );
-//            end;
           except
 {$ifndef UseSSL}
             On ESpecialException do
@@ -844,7 +794,7 @@ begin
               end;
             end;
           end;
-          StatusBarMain.Panels[0].Text := 'Received ' + IntToStr(AStream.Size) + ' bytes';
+          StatusBarMain.Panels.Items[0].Text := 'Received ' + IntToStr(AStream.Size) + ' bytes';
 
           CacheFileName := DiskCache.AddNameToCache(LastUrl, Download.NewUrl, DocType, Error);
           if Length(CacheFileName) > 0 then
