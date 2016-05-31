@@ -1,0 +1,57 @@
+object DownloadForm: TDownloadForm
+  Left = 645
+  Height = 125
+  Top = 221
+  Width = 307
+  BorderIcons = [biSystemMenu]
+  Caption = 'DownLoad'
+  ClientHeight = 125
+  ClientWidth = 307
+  Color = clBtnFace
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  OnShow = FormShow
+  Position = poOwnerFormCenter
+  LCLVersion = '1.6.0.4'
+  object Label2: TLabel
+    Left = 24
+    Height = 13
+    Top = 16
+    Width = 33
+    Caption = 'Status:'
+    ParentColor = False
+  end
+  object Label3: TLabel
+    Left = 24
+    Height = 13
+    Top = 40
+    Width = 47
+    Caption = 'Time Left:'
+    ParentColor = False
+  end
+  object Status: TLabel
+    Left = 88
+    Height = 13
+    Top = 16
+    Width = 201
+    AutoSize = False
+    ParentColor = False
+  end
+  object TimeLeft: TLabel
+    Left = 88
+    Height = 1
+    Top = 40
+    Width = 1
+    ParentColor = False
+  end
+  object CancelButton: TButton
+    Left = 112
+    Height = 25
+    Top = 80
+    Width = 89
+    Caption = 'Cancel'
+    OnClick = CancelButtonClick
+    TabOrder = 0
+  end
+end

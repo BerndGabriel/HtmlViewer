@@ -1,0 +1,48 @@
+<html>
+<head>
+	<title>Using the TFrameBrowser Component</title>
+    <link rel="StyleSheet" type="text/css" href="style.css">
+</head>
+
+<body>
+<p class="mainhead"><a name="Top">Using the TFrameBrowser Component</a></p>
+  
+<p class="heading"><a name="Using"><nobr>Overall Approach</nobr></a>
+
+  <p>To use the TFrameBrowser component, you must have event handlers that respond to the <b>OnGetPostRequest</b> 
+  and the <b>OnGetImageRequest</b> events.  These events occur whenever a document or an image for a document
+  is requested.  These events require that the document or image be returned in stream form.  In some 
+  cases, the return of the stream may be delayed to allow for downloading the information.
+  </p>
+  
+  <p>The general sequence of loading a document is as follows:
+  </p>
+ 
+  <ol>
+    <li>Call the LoadURL method.  The URL parameter supplied should be a full URL and include the 
+        protocol.
+    <li>An immediate <b>OnGetPostRequest</b> event will occur.  &nbsp;Respond with the stream requested.
+    <li>Assuming the document contains images, a number of <b>OnGetImageRequest</b> events will occur.
+        Again respond with a stream for each.
+    <li>Once the document is loaded, additional events will occur when links are selected, etc.	  
+  </ol>
+  
+  <p>Further information on the <b>OnGetPostRequest</b> and <b>OnGetImageRequest</b> events is available in the
+  <code>THtmlViewer.chm</code> file.</p>
+  
+<p class="heading">Connections</p>
+   
+  <p>To obtain the document and image streams, the demo programs establish a <i><b>connection</b></i>. 
+  A connection is obtained by calling 
+  <code>TURLConnection.GetConnection</code> and the proper type of connection is determined by the protocol on the 
+  URL used in the call.  It is through the connection concept that the various protocols are 
+  supported.  The Connection concept makes it easy to 
+  <a href="page5.htm#AddingProtocols" target="RightWin">add new protocols</a> for specialized situations.</p> 
+  
+  <p>Once the Connection is established, the stream may be obtained, usually with the 
+  <code><b>Connection.Get</b></code> method.</P>
+
+ 
+  <p>&nbsp;</p> 
+</body>
+</html>

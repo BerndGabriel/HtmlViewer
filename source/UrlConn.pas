@@ -148,6 +148,7 @@ type
     FOnDocData: TNotifyEvent;
     FOnDocEnd: TNotifyEvent;
 
+    FSessionId: Integer;
     FAborted: Boolean;
     FRealm: String;
     FPassword: String;
@@ -162,6 +163,8 @@ type
     function GetConnector: ThtConnector; virtual;
     procedure Get(Doc: ThtUrlDoc); virtual; abstract;
   public
+    constructor Create;
+
     function CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: String): ThtUrlDoc; virtual;
     procedure LoadDoc(Doc: ThtUrlDoc);
     procedure Abort; virtual;
@@ -175,13 +178,14 @@ type
     function IsProcessing: Boolean; // Must not be virtual! Checks Self just like Free does.
     function ReasonPhrase: String; virtual;
 
-    property Doc: ThtUrlDoc read FDoc;
-    property Processing : Boolean      read IsProcessing;
-    property ReceivedSize: Int64 read FReceivedSize write FReceivedSize;
-    property ExpectedSize: Int64 read FExpectedSize write FExpectedSize;
-    property OnDocBegin : TNotifyEvent read FOnDocBegin write FOnDocBegin;
-    property OnDocData  : TNotifyEvent read FOnDocData  write FOnDocData;
-    property OnDocEnd   : TNotifyEvent read FOnDocEnd   write FOnDocEnd;
+    property SessionId   : Integer      read FSessionId;
+    property Doc         : ThtUrlDoc    read FDoc;
+    property Processing  : Boolean      read IsProcessing;
+    property ReceivedSize: Int64        read FReceivedSize write FReceivedSize;
+    property ExpectedSize: Int64        read FExpectedSize write FExpectedSize;
+    property OnDocBegin  : TNotifyEvent read FOnDocBegin   write FOnDocBegin;
+    property OnDocData   : TNotifyEvent read FOnDocData    write FOnDocData;
+    property OnDocEnd    : TNotifyEvent read FOnDocEnd     write FOnDocEnd;
   end;
 
 //------------------------------------------------------------------------------
@@ -377,6 +381,9 @@ implementation
 uses
   HtmlUn2;
 
+var
+  GNextSessionId: Integer;
+
 //-- BG ---------------------------------------------------------- 29.08.2007 --
 function ContentType2DocType(const AContentType: String): ThtDocType;
 var
@@ -503,6 +510,13 @@ end;
 procedure ThtConnection.Abort;
 begin
   FAborted := True;
+end;
+
+constructor ThtConnection.Create;
+begin
+  inherited;
+  FSessionId := GNextSessionId;
+  Inc(GNextSessionId);
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --

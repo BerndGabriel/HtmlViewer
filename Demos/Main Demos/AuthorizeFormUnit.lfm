@@ -1,0 +1,83 @@
+object AuthorizeForm: TAuthorizeForm
+  Left = 470
+  Height = 195
+  Top = 309
+  Width = 245
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'AuthForm'
+  ClientHeight = 195
+  ClientWidth = 245
+  Color = clBtnFace
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  Position = poOwnerFormCenter
+  LCLVersion = '1.6.0.4'
+  object Label1: TLabel
+    Left = 19
+    Height = 13
+    Top = 60
+    Width = 51
+    Caption = 'User name'
+    ParentColor = False
+  end
+  object Label2: TLabel
+    Left = 19
+    Height = 13
+    Top = 100
+    Width = 46
+    Caption = 'Password'
+    ParentColor = False
+  end
+  object AuthUsername: TEdit
+    Left = 19
+    Height = 21
+    Top = 76
+    Width = 210
+    Anchors = [akTop, akLeft, akRight]
+    TabOrder = 0
+  end
+  object AuthPassword: TEdit
+    Left = 19
+    Height = 21
+    Top = 117
+    Width = 210
+    Anchors = [akTop, akLeft, akRight]
+    EchoMode = emPassword
+    PasswordChar = '*'
+    TabOrder = 1
+  end
+  object OKBtn: TBitBtn
+    Left = 19
+    Height = 25
+    Top = 156
+    Width = 85
+    Kind = bkOK
+    OnClick = OKBtnClick
+    TabOrder = 2
+  end
+  object BitBtn2: TBitBtn
+    Left = 146
+    Height = 25
+    Top = 156
+    Width = 83
+    Anchors = [akTop, akRight]
+    Kind = bkCancel
+    TabOrder = 3
+  end
+  object LabelRealm: TLabel
+    Left = 19
+    Height = 43
+    Top = 16
+    Width = 210
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = False
+    Caption = 'Realm'
+    ParentColor = False
+    WordWrap = True
+  end
+end

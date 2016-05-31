@@ -1,0 +1,107 @@
+<html>
+<head>
+    <title>Customizing - Adding Your Own Protocols</title>
+    <link rel="StyleSheet" type="text/css" href="style.css">
+</head>
+
+<body>
+
+<p class="mainhead"><a name="Top">Customizing</a></p>
+  
+<p class="heading"><a name="AddingProtocols"><nobr>Adding Your Own Protocols</nobr></a></p> 
+
+  <p>The Connection concept makes it easy to add or modify protocols.  A few possible
+  reasons that you might want to do this are:</p>
+  
+  <ul>
+     <li>To read HTML from encrypted files
+     <li>To read HTML from a database.
+     <li>To use a different <b>http</b> component.</li>     
+  </ul>
+  
+  <p>The various connection types are defined in <code>URLConId.pas</code>.  To add a new protocol,
+  it's necessary to define a descendent to <code>TURLConnection</code>, the base class.
+  In most cases, this is a two step process:</p>
+  <ol>
+     <li>Add your new protocol string to <code>TURLConnection.GetConnection</code>.  This makes
+        your new connection available for use.
+  
+     <li>Override the <code>TURLConnection.Get</code> method. 
+                The code you add here should use the URL to determine what 
+                stream to return. It's also necessary to specify the content 
+                type (HTMLtype, TEXTtype, or ImgType) of the return.</li>           
+                     
+                 
+  </ol>
+  <br>
+  
+  <p style="color: #9d3700;"><b>URL Format Considerations</b></font></p> 
+  
+  <p><b>TFrameBrowser</b> has the capability of assembling full URLs from partial URLs.  The
+  syntax for doing this is detemined by the standard <b>http</b> and <b>file</b> protocols.  This
+  means that any special protocols that are added should use URLs that resemble those
+  used by the <b>http</b> and <b>file</b> protocols.</p><B></B>
+  
+  <p>The general form of a special URL should be:</p>
+  
+<pre>     proto://dir1/dir2/file.ext
+  or
+     proto:///file.ext</pre>  
+     
+  <p>The important points are:</p>
+  <ul>
+     <li>The protocol string should be followed by a colon and two (possibly three)
+     forward slashes.
+  
+     <li>dir1/dir2/ represent a directory or other hierarchy.  The user can determine
+     how this should be interpreted in his <code>Get</code> method code.
+  
+     <li>Whatever follows the last forward slash is taken as a document or image name
+  
+     <li>The URL should contain at least three 
+                forward slashes. If there are only two, one will be added on the 
+                end.</li>              
+           
+  </ul>
+  <br>
+
+
+<p class="heading"><a name="Resources"><nobr>Adding HTML documents to an Application's Resources</nobr></a></p>  
+
+  <p>To construct a resource file containing HTML documents and images suitable for the <b>res</b> protocol, proceed as 
+  follows:</p>
+  <ul>
+  	<li>Write a resource compiler file (<b>.rc</b>) listing the files to be included.
+  	<li>Use the Borland Resource Compiler to compile the <b>.rc</b> file into a <b>.res</b> file.  The 
+       Borland Resource Compiler is
+  	    named BRCC32 (32 bit) or BRCC (16 bit).
+  	<li>Reference the <b>.res</b> file in your program 
+                code using the {$R } compiler directive.</li>             
+  </ul>
+  
+  <p>A typical resource compiler file might look like:</p>
+  
+  <pre>  //   usage:  BRCC32.EXE -foHelp32.res proghelp.rc
+  
+  		agif2       GIF   &quot;agif2.gif&quot;
+  		readme3     HTML  &quot;readme3.htm&quot;
+  		readme1     HTML  &quot;readme1.htm&quot;
+  		readme2     HTML  &quot;readme2.htm&quot;
+  		leftwin     HTML  &quot;leftwin.htm&quot;
+  		index       HTML  &quot;help.htm&quot;
+  		style       HTML  &quot;style.css&quot;
+  		borders	    TEXT  &quot;borders.txt&quot;
+  </pre>
+  
+  <p>The first column is the name by which the resource is referenced.  Column two is the resource type.  The <b>res</b> 
+  protocol as defined recognizes HTML, HTM, GIF, JPG, JPEG, BMP, PNG, and TEXT types.  The third column is the file
+  which defined the HTML document.</p>
+  
+  <p>In the above, the URL, <b><code>res:///index.htm</code></b>, would load the resource defined by the file, 
+  <b><code>help.htm</code></b>.
+  </p></FONT>
+
+  
+<p>&nbsp;</p> 
+</body>
+</html>

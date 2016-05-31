@@ -1,0 +1,40 @@
+object InfoForm: TInfoForm
+  Left = 551
+  Height = 330
+  Top = 178
+  Width = 468
+  Caption = 'Info'
+  ClientHeight = 330
+  ClientWidth = 468
+  Color = clBtnFace
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  OnResize = FormResize
+  Position = poOwnerFormCenter
+  LCLVersion = '1.6.0.4'
+  object OKButton: TBitBtn
+    Left = 199
+    Height = 25
+    Top = 291
+    Width = 65
+    Anchors = [akLeft, akBottom]
+    Kind = bkOK
+    ModalResult = 1
+    TabOrder = 0
+  end
+  object mmoInfo: TMemo
+    Left = 16
+    Height = 264
+    Top = 16
+    Width = 437
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Lines.Strings = (
+      'mmoInfo'
+    )
+    ReadOnly = True
+    ScrollBars = ssBoth
+    TabOrder = 1
+    WordWrap = False
+  end
+end

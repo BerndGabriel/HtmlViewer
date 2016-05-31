@@ -1,0 +1,61 @@
+<html>
+<head>
+	<title>Compiling the Demo Program</title>
+    <link rel="StyleSheet" type="text/css" href="style.css">
+</head>
+
+<body>
+<p class="mainhead"><a name="Top">Compiling the Demo Program</a></p>
+  
+<p class="heading"><a name="Compiling"><nobr>Compiling The Demo Program</nobr></a></p> 
+ 
+<p>To compile your own version of the FrameBrowzerId program for study or modification, the following is required:
+
+<ol>
+    <li>The source code for the demo program which is included in this package.<p>
+
+    <li>If you have not already done so, download and install the <b>THtmlViewer</b>, <b>TFrameViewer</b>, and <b>TFrameBrowser</b> HTML Components.  
+        This package may be obtained from <a href="https://github.com/BerndGabriel/HtmlViewer/" target="_blank"><code>github.com/BerndGabriel/HtmlViewer</code></a>.
+
+    <li>This demo uses the Internet Direct Components (Indy) <B>Version 10</b>. Versions 8 or 9 of Indy are not suitable for this demo.
+        <p>
+        Indy Version 10 comes with both Delphi 2007, 2009, XE, and XE2.  For other Delphi versions, Indy Version 10 may be downloaded (no charge) from
+        <a href="http://www.indyproject.org/" target="_blank">http://www.indyproject.org/</a>.
+
+    <li>For the optional Secure Socket Layer (SSL) support, the OpenSourceSSL DLLs should be downloaded from
+        <a href="http://indy.fulgan.com/SSL/" target="_blank">http://indy.fulgan.com/SSL/</a>.
+        Be sure and download the latest version as testing is usually done with that one and older versions often have security flaws. 
+        These DLLs should be placed in the same directory as your executable or the System32 directory for your program's architecture.
+</ol>
+
+<p class="heading"><a name="Compiling"><nobr>Compile Time Options</nobr></a></p> 
+
+  <p>Depending on which options are selected, the following <B>Defines</B> should be entered
+     in the Project|Options dialog, Directories/Conditionals tab, Conditional Defines 
+     section:
+  </p>
+  
+  <table width="80%" cellspacing="2" cellpadding="2" border="0">
+  <tr> 
+      <th width="2%"></th>
+      <th class="dorange" valign="top" align="left" width="100">UseSSL</th>
+      <td valign="top" align="left">Enables the OpenSourceSSL support (<B>https</B>).</td>
+  </tr>
+  </table>
+
+<p class="heading"><a name="Compiling"><nobr>Debugging</nobr></a></p> 
+
+<p>Both Indy and TFrameBrowser use exception handling as part of normal coding practice
+   so exceptions don't necessarily indicate a problem.  However, exceptions can be 
+   quite disconcerting when running the application from the IDE.  This is especially true when 
+   Socket timeout exceptions start cascading after the IDE stops for another exception.  For this 
+   reason, it's a good idea to turn off Delphi's "Break on Exception" option or at 
+   least specify that the following exceptions be ignored:
+<blockquote>EConvertError<br>
+   EIdConnClosedGracefully<br>EIdSocketError<br>EIdHTTPProtocolException
+</blockquote>
+<p>See <B>Tools|Debugger Options|Language Exceptions</B> for making these changes.
+
+  <p>&nbsp;</p> 
+</body>
+</html>
