@@ -5269,10 +5269,10 @@ var
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   begin
-    if HideOverflow and (MargArray[piHeight] > 3) then
-      Result := ContentTop + MargArray[piHeight]
+    if VarIsIntNull(MargArrayO[piHeight]) then
+      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight])
     else
-      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight]);
+      Result := ContentTop + MargArray[piHeight];
   end;
 
   procedure DrawLogicAsBlock;
@@ -5515,6 +5515,22 @@ var
     //DrawRect.Right := DrawRect.Left + MyCell.TextWidth;
   end;
 
+  procedure Invisible;
+  begin
+    SectionHeight := 0;
+    DrawHeight := 0;
+    ContentBot := 0;
+    DrawBot := 0;
+    MaxWidth := 0;
+    Result := 0;
+
+    //>-- DZ
+    DrawRect.Left   := X;
+    DrawRect.Top    := DrawTop;
+    DrawRect.Right  := DrawRect.Left + ContentWidth;
+    DrawRect.Bottom := DrawRect.Top + SectionHeight;
+  end;
+
 begin {TBlock.DrawLogic1}
 {$IFDEF JPM_DEBUGGING_LOGIC}
   CodeSite.EnterMethod(Self,Format('TBlock.DrawLogic1 "%s"', [TagClass]));
@@ -5535,33 +5551,18 @@ begin {TBlock.DrawLogic1}
   CodeSite.AddSeparator;
 {$ENDIF}
 {$ENDIF}
-
   case CalcDisplayIntern of
 
     pdInline:
       DrawLogicInline;
 
     pdNone:
-    begin
-      SectionHeight := 0;
-      DrawHeight := 0;
-      ContentBot := 0;
-      DrawBot := 0;
-      MaxWidth := 0;
-      Result := 0;
-
-      //>-- DZ
-      DrawRect.Left   := X;
-      DrawRect.Top    := DrawTop;
-      DrawRect.Right  := DrawRect.Left + ContentWidth;
-      DrawRect.Bottom := DrawRect.Top + SectionHeight;
-    end;
+      Invisible;
   else
 //    pdBlock:
 //    pdTable:
       DrawLogicAsBlock;
   end;
-
 {$IFDEF JPM_DEBUGGING_LOGIC}
 {$IFDEF JPM_DEBUGGING_LOGIC1}
   if Assigned(IMgr) then begin
