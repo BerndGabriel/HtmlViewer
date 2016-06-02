@@ -20,6 +20,96 @@
 
 <!----------------------------------------------------------------------------->
 
+<h4 class="heading">Version 11.7</h4>
+<h5>Added</h5>
+<ul>
+  <li>Delphi 10 Seattle Support
+  <li>Lazarus 1.6 Support
+  <li><b>Linux (GTK2)</b> Support
+  <li><b>Raspian (GTK2)</b> Support
+  <li>Detect UTF16 w/o BOM. Helps reading UnicodeStrings written to Streams.
+  <li>Scolling in unfocused HtmlViewer.
+  <li>TFloatingObj supports style <b>Position:Absolute</b>
+  <li><b>Position:fixed</b> for Blocks and Images
+  <li>HtmlViewer supports <b>!important</b> now
+  <li>Working With Protocols
+    <ul>
+      <li>New unit <b>UrlConn</b> makes it easy for coders to add own protocol handlers for a <b>TFrameBrowser</b>
+        <ul>
+          <li>New base class <b>ThtConnection</b> offers to get a document. 
+          <li>New class <b>ThtFileConnection</b> gets a document from a file. 
+          <li>New class <b>ThtResourceConnection</b> gets a document from the application's resources. 
+          <li>New component base class <b>ThtConnector</b> offers to create a connection for a protocol. When dropped to a form with a 
+              <b>ThtConnectionManager</b> on it <b>ThtConnectors</b> register themselves at the <b>ThtConnectionManager</b> automatically.
+          <li>New component <b>ThtFileConnector</b> creates a <b>ThtFileConnection</b> for protocol 'file://'. 
+          <li>New component <b>ThtResourceConnector</b> creates a <b>ThtResourceConnection</b> for protocol 'res://'. 
+          <li>New component <b>ThtConnectionManager</b> creates <b>ThtConnections</b> for the registered protocols.
+        </ul>
+      <li><b>TFrameBrowser</b> Demos promoted from <b>Other Demos</b> to <b>Main Demos</b>
+        <ul>
+          <li><b>FrameBrowserDemoIndy10.dpr</b> for Delphi and Lazarus (Win32/Win64/Linux)
+          <li><b>FrameBrowserDemoIcs.dpr</b> for Delphi only
+          <li>Both demos are using the same code except their specific <b>THttpConnector</b>/<b>THttpConnection</b> in unit 
+              <b>UrlConId10</b> resp. <b>UrlConIcs</b>.
+        </ul>
+    </ul>
+</ul>
+<h5>Enhanced</h5>
+<ul>
+  <li>Working With Images
+    <ul>
+      <li>Global image loader in unit <b>HtmlImages</b>, which enables coders to detect and load additional image formats:
+        <ul>
+          <li>base class <b>ThtImageLoader</b>
+          <li>global procedure <b>SetImageLoader</b>
+          <li>global function <b>GetImageLoader</b>
+          <li>global function <b>LoadImageFromStream</b> uses the new global image loader
+          <li><b>ThtImageLoader.GetFilter()</b> returns a filter for file open dialogs.
+          <li>Removed global function <b>LoadImageFromFile</b>: now done by new local procedure <b>GetTheFile</b> in <b>ThtDocument.GetTheImage</b>.  
+        </ul>
+       <li>Added: <b>ThtGraphicImage</b>: support for all <b>TGraphics</b> without own <b>TBitmap</b>, e.g. meta files
+       <li>Changed: More general code due to enhanced <b>ThtImage</b>
+       <li>Changed: <b>ThtGpImage</b> becomes a <b>TGraphic</b>
+       <li>Changed: <b>TGIFImage</b> becomes a <b>ThtBitmap</b>
+       <li>Removed: type <b>TGpObject</b> no longer needed
+       <li><b>ThtBitmap</b> extended and moved from unit <b>HtmlGif2</b> to <b>HtmlGlobals</b>. <b>ThtBitmap</b> is needed to support <b>TBitmap.Assign()</b> in Lazarus 0.9.30, which is the current official version for <b>Raspian gtk2/ARM</b>     
+    </ul>
+</ul>                                                                            
+<h5>Fixed</h5>                                                                   
+<ul>                                                                             
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=133"> Google Issue 133</a>: Nested lists bottom margins not collapsed. Collapse nested blocks top margins as well.
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=408"> Google Issue 408.2</a>: table or frame problem - respects 'inherit' now
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=409"> Google Issue 409</a>: <b>text-decoration</b> not handled correctly with multiple properties. 
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=411"> Google Issue 411</a>: Nested tables slow down HtmlViewer. 
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/101"> Github Issue #101</a>: Error displaying images
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/102"> Github Issue #102</a>: GIF transparency inverted + memory leak
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/106"> Github Issue #106</a>: Print Preview Bug
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/107"> Github Issue #107</a>: Incorrect displays
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/111"> Github Issue #111</a>: Problem with &lt;style&gt; inside &lt;blockqoute&gt;. Now allowing &lt;style&gt; almost everywhere
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/112"> Github Issue #112</a>: Missing Property AttributeValue
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/114"> Github Issue #114</a>: Error displaying table
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/120"> Github Issue #120</a>: CSS open parenthesis may swallow entire HTML document.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/123"> Github Issue #123</a>: File with css from amazon: Strings do not continue on next line.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/124"> Github Issue #124</a>: <b>&lt;table%gt;</b> is not rendered unless scrolled
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/125"> Github Issue #125</a>: When Scrollbars disapear the table is displayed wrong
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/126"> Github Issue #126</a>: Loading &lt;img hspace vspace&gt;
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/129"> Github Issue #129</a>: NoTabLink is not working
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/131"> Github Issue #131</a>: Cell borders in tables / last row wrong: ignore explicitly given cell-spacing, if border-collapse is collapse.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/132"> Github Issue #132</a>: Height parameter not honoured
+  <li>ThtDocument.InsertImage() now obeys attribute Transp
+  <li>ICO and CUR transparency without GDIPlus
+  <li>Transparency of animated GIFs in Lazarus (Windows).
+  <li>Floating blocks and images.
+  <li>Left and right aligned images both inside tables and outside tables are positioned correctly at last.
+  <li>Horizontal position of &lt;HR&gt;.
+  <li>Horizontal position of floating images in floating blocks.
+  <li>Do not remove empty paragraphs as they do not collapse margins, if they have padding or border.
+  <li>Clear floating at line breaks according to attribute or property.
+  <li>Lazarus hangs when dropping a THtmlViewer to a form.
+</ul>
+
+<!----------------------------------------------------------------------------->
+
 <h4 class="heading">Version 11.6</h4>
 <h5>Added</h5>
 <ul>
@@ -60,7 +150,6 @@
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=395"> Issue 395</a>: HtmlId and GlobalId both empty
   <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=403"> Issue 403</a>: Crash "Control has no parent window"
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/82"> github-issue 82</a>: Free on an Freed Object / <a href="http://code.google.com/p/thtmlviewer/issues/detail?id=405">Google-Code-Issue 405</a>: Print Preview Error
-
 </ul>
 
 <!----------------------------------------------------------------------------->
