@@ -14856,7 +14856,7 @@ begin
   NewProp.PropSym := Sym;
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
-  NewProp.Combine(Document.Styles, Tag, APseudo, Properties, Attributes, Count - 1);
+  NewProp.Combine(Document.Styles, Sym, Tag, APseudo, Properties, Attributes, Count - 1);
 end;
 
 procedure THtmlPropStack.PopProp;

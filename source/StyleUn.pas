@@ -223,8 +223,8 @@ type
     procedure SetPropertyDefaults(Indexes: ThtPropIndexSet; const Value: Variant);
     procedure Assign(const Item: Variant; Index: ThtPropIndices);
     procedure AssignCharSetAndCodePage(CS: TFontCharset; CP: Integer);
-    procedure Combine(Styles: TStyleList; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; AAttr: TAttributeList; ParentIndexInPropStack: Integer); overload;
-    procedure Combine(Styles: TStyleList; const Tag, Pseudo: ThtString; Properties: TProperties; Attributes: TAttributeList; ParentIndexInPropStack: Integer); overload;
+    procedure Combine(Styles: TStyleList; Sym: TElemSymb; const Tag, AClass, AnID, Pseudo, ATitle: ThtString; AProp: TProperties; Attributes: TAttributeList; ParentIndexInPropStack: Integer); overload;
+    procedure Combine(Styles: TStyleList; Sym: TElemSymb; const Tag, Pseudo: ThtString; Properties: TProperties; Attributes: TAttributeList; ParentIndexInPropStack: Integer); overload;
     procedure Copy(Source: TProperties);
     procedure CopyDefault(Source: TProperties);
     procedure GetBackgroundPos(EmSize, ExSize: Integer; out P: PtPositionRec);
@@ -2090,18 +2090,18 @@ end;
 {----------------TProperties.Combine}
 
 //-- BG ---------------------------------------------------------- 28.02.2016 --
-procedure TProperties.Combine(Styles: TStyleList;
+procedure TProperties.Combine(Styles: TStyleList; Sym: TElemSymb;
   const Tag, Pseudo: ThtString; Properties: TProperties;
   Attributes: TAttributeList; ParentIndexInPropStack: Integer);
 begin
   if Attributes <> nil then
-    Combine(Styles, Tag, Attributes.TheClass, Attributes.TheID, PSeudo, Attributes.TheTitle, Properties, Attributes, ParentIndexInPropStack)
+    Combine(Styles, Sym, Tag, Attributes.TheClass, Attributes.TheID, PSeudo, Attributes.TheTitle, Properties, Attributes, ParentIndexInPropStack)
   else
-    Combine(Styles, Tag, '', '', PSeudo, '', Properties, Attributes, ParentIndexInPropStack);
+    Combine(Styles, Sym, Tag, '', '', PSeudo, '', Properties, Attributes, ParentIndexInPropStack);
 end;
 
-procedure TProperties.Combine(Styles: TStyleList;
-  const Tag, AClass, AnID, PSeudo, ATitle: ThtString; AProp: TProperties; AAttr: TAttributeList; ParentIndexInPropStack: Integer);
+procedure TProperties.Combine(Styles: TStyleList; Sym: TElemSymb;
+  const Tag, AClass, AnID, PSeudo, ATitle: ThtString; AProp: TProperties; Attributes: TAttributeList; ParentIndexInPropStack: Integer);
 {When called, this TProperties contains the inherited properties.  Here we
  add the ones relevant to this item. AProp are TProperties gleaned from the
  Style= attribute. AClass may be a multiple class like class="ab.cd"}
@@ -2114,6 +2114,91 @@ procedure TProperties.Combine(Styles: TStyleList;
   var
     OldSize: Double;
     NoHoverVisited: Boolean;
+
+    //-- BG ------------------------------------------------------ 12.06.2016 --
+    procedure MergeAttrs(const Attributes: TAttributeList);
+    {Merge Attributes in this TProperties.}
+    var
+      I: Integer;
+      A: TAttribute;
+      T: TElemSymb;
+    begin
+      if (Attributes <> nil) and (Attributes.Count > 0) then
+      begin
+        for I := 0 to Attributes.Count - 1 do
+        begin
+          A := TAttribute(Attributes[I]);
+          case A.Which of
+            AlignSy:
+              case Sym of
+                DivSy,
+                H1Sy..H6Sy,
+                PSy,
+                ColSy,
+                ColGroupSy,
+                THeadSy..TFootSy,
+                TDSy, THSy, TRSy:
+                  if A.Name = 'char' then
+                    Props[TextAlign] := 'right'
+                  else
+                    Props[TextAlign] := A.Name;
+              end;
+
+            BackgroundSy: Props[BackgroundImage] := A.Name;
+            BGColorSy:    Props[BackgroundColor] := A.Name;
+
+            BorderSy:
+              begin
+                Props[BorderTopWidth] := A.Name;
+                Props[BorderRightWidth] := A.Name;
+                Props[BorderBottomWidth] := A.Name;
+                Props[BorderLeftWidth] := A.Name;
+              end;
+
+            BorderColorSy:
+              begin
+                Props[BorderTopColor] := A.Name;
+                Props[BorderRightColor] := A.Name;
+                Props[BorderBottomColor] := A.Name;
+                Props[BorderLeftColor] := A.Name;
+              end;
+
+            CellPaddingSy:
+              begin
+                Props[PaddingTop] := A.Name;
+                Props[PaddingRight] := A.Name;
+                Props[PaddingBottom] := A.Name;
+                Props[PaddingLeft] := A.Name;
+              end;
+
+            CellSpacingSy:
+              begin
+                Props[BorderSpacingHorz] := A.Name;
+                Props[BorderSpacingVert] := A.Name;
+              end;
+
+            //ColorSy:;
+            //HeightSy:;
+            //HSpaceSy:;
+            //LeftMarginSy:;
+            //LinkSy:;
+            //TopMarginSy:;
+            //MarginHeightSy:;
+            //MarginWidthSy:;
+
+            //StartSy,
+            //TypeSy,
+
+            VAlignSy: Props[VerticalAlign] := A.Name;
+
+            //ValueSy:;
+            //VLinkSy:;
+            //VSpaceSy:;
+            //WidthSy:;
+          end;
+        end;
+      end;
+    end;
 
     procedure Merge(Source: TProperties; Reverse: Boolean = False);
     var
@@ -2466,6 +2551,8 @@ procedure TProperties.Combine(Styles: TStyleList;
     if NoHoverVisited then
       MergeItems(Tag);
 
+    MergeAttrs(Attributes);
+
     if Pseudo <> '' then
       MergeItems(':' + Pseudo);
 
@@ -2584,6 +2671,7 @@ begin
     CombineX(Styles, Tag, BClass, AnID, PSeudo, '', AProp);
     CombineX(Styles, Tag, AClass, AnID, PSeudo, '', AProp);
   end;
+  PropSym := Sym;
   PropTag := Tag;
   PropClass := AClass;
   PropID := AnID;
@@ -2800,7 +2888,7 @@ procedure TProperties.CalcLinkFontInfo(Styles: TStyleList; I: Integer);
   begin
     PropStack.Insert(N, TProperties.Create(PropStack,FUseQuirksMode));
     PropStack[N].Inherit('', PropStack[N - 1]);
-    PropStack[N].Combine(Styles, PropTag, PropClass, PropID, Pseudo, PropTitle, PropStyle, nil {PropAttr}, N - 1);
+    PropStack[N].Combine(Styles, PropSym, PropTag, PropClass, PropID, Pseudo, PropTitle, PropStyle, nil {PropAttr}, N - 1);
   end;
 
 begin
