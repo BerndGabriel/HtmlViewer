@@ -1738,7 +1738,8 @@ procedure ConvMargProp(I: ThtPropIndices; const VM: ThtVMarginArray; var ConvDat
   end;
 
 var
-  LBoxSizing : ThtBoxSizing;
+  LBoxSizing: ThtBoxSizing;
+  Color: TColor;
 begin
   with ConvData do
   begin
@@ -1747,6 +1748,11 @@ begin
         begin
           if VarType(VM[I]) <= VarNull then
             M[I] := clNone
+          else if VarIsStr(VM[I]) then
+          begin
+            if TryStrToColor(VM[I], false, Color) then
+              M[I] := Color;
+          end
           else
             M[I] := VM[I];
         end;
@@ -2144,8 +2150,8 @@ procedure TProperties.Combine(Styles: TStyleList; Sym: TElemSymb;
                     Props[TextAlign] := A.Name;
               end;
 
-            BackgroundSy: Props[BackgroundImage] := A.Name;
-            BGColorSy:    Props[BackgroundColor] := A.Name;
+//            BackgroundSy: Props[BackgroundImage] := 'url(' + A.Name + ')';
+//            BGColorSy:    Props[BackgroundColor] := A.Name;
 
             BorderSy:
               begin
