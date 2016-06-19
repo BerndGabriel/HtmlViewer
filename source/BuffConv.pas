@@ -840,6 +840,15 @@ begin
     866: FMap := CP866Map;
     869: FMap := CP869Map;
     874: FMap := Windows874Map;
+    1250: FMap := CP1250Map;
+    1251: FMap := CP1251Map;
+    1252: FMap := CP1252Map;
+    1253: FMap := CP1253Map;
+    1254: FMap := CP1254Map;
+    1255: FMap := CP1255Map;
+    1256: FMap := CP1256Map;
+    1257: FMap := CP1257Map;
+    1258: FMap := CP1258Map;
     10000: FMap := MacRomanMap;
     10004: FMap := MacArabicMap;
     10005: FMap := MacHebrewMap;
