@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <Flags>
+        <MainUnitHasUsesSectionForAllUnits Value="False"/>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+      </Flags>
+      <SessionStorage Value="InProjectDir"/>
+      <MainUnit Value="0"/>
+      <Title Value="FrameBrowserDemoId10"/>
+      <UseAppBundle Value="False"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <VersionInfo>
+      <UseVersionInfo Value="True"/>
+      <MajorVersionNr Value="11"/>
+      <MinorVersionNr Value="7"/>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <BuildModes Count="1">
+      <Item1 Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="4">
+      <Item1>
+        <PackageName Value="Printer4Lazarus"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="indylaz"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="FrameViewer09"/>
+      </Item3>
+      <Item4>
+        <PackageName Value="LCL"/>
+      </Item4>
+    </RequiredPackages>
+    <Units Count="10">
+      <Unit0>
+        <Filename Value="FrameBrowserDemoId10.dpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="UrlConId10.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="CacheUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="FBrDemUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="HTTPForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="UrlConVclZip.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="AuthorizeFormUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="AuthorizeForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="LogFormUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <HasResources Value="True"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="DownloadFormUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <HasResources Value="True"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="ProxyFormUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <HasResources Value="True"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="InfoFormUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="InfoForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit9>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="bin\$(TargetCPU)-$(TargetOS)\FrameBrowserDemoId10Laz"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="..\..\source;$(ProjOutDir)"/>
+      <OtherUnitFiles Value="..\..\source;$(ProjOutDir)"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <SyntaxMode Value="Delphi"/>
+      </SyntaxOptions>
+    </Parsing>
+    <Linking>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+    <Other>
+      <CustomOptions Value="-dBorland
+-dCompiler6_Up
+-dPUREPASCAL
+-dUseIndy10"/>
+      <OtherDefines Count="4">
+        <Define0 Value="Borland"/>
+        <Define1 Value="Compiler6_Up"/>
+        <Define2 Value="PUREPASCAL"/>
+        <Define3 Value="UseIndy10"/>
+      </OtherDefines>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="6">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+      <Item4>
+        <Name Value="EIdHTTPProtocolException"/>
+      </Item4>
+      <Item5>
+        <Name Value="EIdConnClosedGracefully"/>
+      </Item5>
+      <Item6>
+        <Name Value="EIdSocketError"/>
+      </Item6>
+    </Exceptions>
+  </Debugging>
+</CONFIG>
