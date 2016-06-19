@@ -98,8 +98,8 @@ uses
   HtmlBuffer,
   HtmlSymb,
   HTMLUn2,
-  HTMLSubs,
   Htmlsbs1,
+  HTMLSubs,
   StyleTypes,
   StyleUn;
 

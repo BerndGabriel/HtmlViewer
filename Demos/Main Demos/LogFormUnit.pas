@@ -32,7 +32,8 @@ uses
 {$else}
   WinTypes, WinProcs, Messages,
 {$endif}
-  Windows, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  //Windows,
+  SysUtils, Variants, Classes, Graphics, Controls, Forms,
 {$ifdef UseVCLStyles}
   Vcl.Styles,
   Vcl.Themes,

@@ -1670,7 +1670,7 @@ uses
 {$ifdef Compiler28_Plus}
  System.NetEncoding,
 {$endif}
-  HtmlSbs1;
+  Htmlsbs1;
 
 
 //-- BG ---------------------------------------------------------- 14.01.2012 --

@@ -76,7 +76,7 @@ uses
   StyleTypes,
   ReadHTML,
   HTMLSubs,
-  HTMLSbs1,
+  Htmlsbs1,
   HTMLUn2,
   Htmlview,
   FramView,

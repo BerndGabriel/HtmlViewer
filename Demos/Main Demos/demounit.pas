@@ -77,7 +77,7 @@ uses
   HtmlBuffer,
   HtmlImages,
   HTMLSubs,
-  HTMLSbs1,
+  Htmlsbs1,
   Htmlabt,
   PrintStatusForm,
   ImgForm, HTMLUn2, UrlSubs, HtmlView;

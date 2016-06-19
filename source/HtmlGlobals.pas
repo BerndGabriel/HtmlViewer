@@ -43,6 +43,10 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, Types, Messages,
   StdCtrls, Buttons, Forms, Base64, Dialogs,
+{$ifdef MSWINDOWS}
+{$else}
+  Process,
+{$endif}
   HtmlMisc,
   WideStringsLcl,
   {$ifdef DebugIt}
