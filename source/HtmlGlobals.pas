@@ -38,6 +38,8 @@ uses
 {$endif}
 {$ifdef MSWINDOWS}
   Windows,
+{$ELSE}
+  process,
 {$endif}
   Classes, SysUtils, Graphics, Controls,
 {$ifdef LCL}

@@ -30,7 +30,7 @@ unit UrlConn;
 interface
 
 uses
-  Windows, Classes, Contnrs, SysUtils, Forms,
+  {$IFNDEF FPC}Windows, {$ENDIF} Classes, Contnrs, SysUtils, Forms,
   URLSubs, HtmlGlobals, Types;
 
 const
