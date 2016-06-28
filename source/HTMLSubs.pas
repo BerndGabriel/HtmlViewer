@@ -641,7 +641,8 @@ type
     DrawY: Integer;
     Spaces, Extra: Integer;
     BorderList: TFreeList; {List of inline borders (ThtBorderRec's) in this Line}
-    FirstDraw: boolean; {set if border processing needs to be done when first drawn}
+    FirstDraw: Boolean; {set if border processing needs to be done when first drawn}
+    Drawn: Boolean; // set if drawn by section and thus actual position has been calculated
     FirstX: Integer; {x value at FirstDraw}
     Shy: boolean;
   public
@@ -1539,7 +1540,7 @@ type
     TabOrderList: ThtStringList;
     FirstPageItem: boolean;
     StopTab: boolean;
-    InlineList: TFreeList; {actually TInlineList, a list of ThtInThtLineRec's}
+    InlineList: TFreeList; {actually TInlineList, a list of ThtInlineRec's}
     TableNestLevel: Integer;
     InLogic2: boolean;
     LinkDrawnEvent: TLinkDrawnEvent;
@@ -2204,13 +2205,13 @@ type
       {$ifdef has_StyleElements}; const AStyleElements : TStyleElements{$endif}); //overload;
   end;
 
-  ThtInThtLineRec = class
+  ThtInlineRec = class
   private
     StartB, EndB, IDB, StartBDoc, EndBDoc: Integer;
     MargArray: ThtMarginArray;
   end;
 
-  TInlineList = class(TFreeList) {a list of ThtInThtLineRec's}
+  TInlineList = class(TFreeList) {a list of ThtInlineRec's}
   private
     NeedsConverting: boolean;
     Owner: ThtDocument;
@@ -7967,7 +7968,7 @@ procedure ThtDocument.ProcessInlines(SIndex: Integer; Prop: TProperties; Start: 
 {called when an inline property is found to specify a border}
 var
   I, EmSize, ExSize: Integer;
-  Result: ThtInThtLineRec;
+  Result: ThtInlineRec;
   MargArrayO: ThtVMarginArray;
   Dummy1: Integer;
 begin
@@ -7978,7 +7979,7 @@ begin
   begin
     if Start then
     begin {this is for border start}
-      Result := ThtInThtLineRec.Create;
+      Result := ThtInlineRec.Create;
       InlineList.Add(Result);
       with Result do
       begin
@@ -7994,7 +7995,7 @@ begin
     else {this call has end information}
       for I := Count - 1 downto 0 do {the record we want is probably the last one}
       begin
-        Result := ThtInThtLineRec(Items[I]);
+        Result := ThtInlineRec(Items[I]);
         if Prop.ID = Result.IDB then {check the ID to make sure}
         begin
           Result.EndBDoc := SIndex; {the source position of the border end}
@@ -8028,7 +8029,7 @@ var
   I: Integer;
 begin
   for I := 0 to Count - 1 do
-    with ThtInThtLineRec(Items[I]) do
+    with ThtInlineRec(Items[I]) do
     begin
       StartB := Owner.FindDocPos(StartBDoc, False);
       EndB := Owner.FindDocPos(EndBDoc, False);
@@ -8043,7 +8044,7 @@ begin
   if NeedsConverting then
     AdjustValues;
   if (I < Count) and (I >= 0) then
-    Result := ThtInThtLineRec(Items[I]).StartB
+    Result := ThtInlineRec(Items[I]).StartB
   else
     Result := 99999999;
 end;
@@ -8053,7 +8054,7 @@ begin
   if NeedsConverting then
     AdjustValues;
   if (I < Count) and (I >= 0) then
-    Result := ThtInThtLineRec(Items[I]).EndB
+    Result := ThtInlineRec(Items[I]).EndB
   else
     Result := 99999999;
 end;
@@ -12816,7 +12817,7 @@ begin
           BorderList.Add(BR);
           with BR do
           begin
-            BR.MargArray := ThtInThtLineRec(Document.InlineList.Items[I]).MargArray; {get border data}
+            BR.MargArray := ThtInlineRec(Document.InlineList.Items[I]).MargArray; {get border data}
             if StartBI < LineStart then
             begin
               OpenStart := True; {continuation of border on line above, end is open}
@@ -13375,6 +13376,7 @@ var
       end;
       XOffset := X - FirstX;
       FirstDraw := False;
+      Drawn := True;
       if Assigned(BorderList) then {draw any borders found in this line}
         for K := 0 to BorderList.Count - 1 do
         begin
@@ -13558,7 +13560,7 @@ begin
       while I < Count do
       begin
         LR := ThtLineRec(Lines[I]);
-        if (Y > LR.DrawY) and (Y <= LR.DrawY + LR.LineHt) then
+        if (Y > LR.DrawY) and (Y <= LR.DrawY + LR.LineHt) and LR.Drawn then
           Break;
         Inc(I);
       end;
