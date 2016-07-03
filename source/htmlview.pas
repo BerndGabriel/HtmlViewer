@@ -1069,7 +1069,7 @@ begin
   SplitDest(FileName, Name, Dest);
   if Name <> '' then
     Name := ExpandFileName(Name);
-  FCurrentFile := Name; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
+  //FCurrentFile := Name; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
   if not FileExists(Name) then
   begin
 {$ifdef FPC}
@@ -1284,7 +1284,11 @@ begin
           HScrollBar.Position := 0;
         end;
       finally
-        PaintPanel.Invalidate;
+        {$ifdef Linux}
+          PaintPanel.Update;
+        {$else}
+          PaintPanel.Invalidate;
+        {$endif}
         htProgressEnd;
       end;
     finally
@@ -1435,14 +1439,13 @@ procedure THtmlViewer.DoScrollBars;
 
 var
   ScrollInfo: ThtScrollInfo;
+
 begin
-  BorderPanel.Visible := True;
   FScrollWidth := Min(ScrollWidth, MaxHScroll);
   ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
   with ScrollInfo do
   begin
-    if BWidth <= 0 then
-      BorderPanel.Visible := False;
+    BorderPanel.Visible := BWidth > 0;
 
     PaintPanel.Left := BWidth;
     PaintPanel.Top := BWidth;
