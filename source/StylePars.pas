@@ -405,7 +405,7 @@ begin
     // Skip trailing ';' or any erroneous/unknown syntax observing the rules
     // for matching pairs of (), [], {}, "", and '' until and including next ';'
     TermCharKind := GetTermCharKind(LCh);
-    while True do
+    while LCh <> EofChar do
     begin
       case TermCharKind of
         tckGood:
