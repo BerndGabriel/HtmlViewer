@@ -2169,13 +2169,13 @@ procedure TProperties.Combine(Styles: TStyleList; Sym: TElemSymb;
                 Props[BorderLeftColor] := A.Name;
               end;
 
-            CellPaddingSy:
-              begin
-                Props[PaddingTop] := A.Name;
-                Props[PaddingRight] := A.Name;
-                Props[PaddingBottom] := A.Name;
-                Props[PaddingLeft] := A.Name;
-              end;
+//            CellPaddingSy:
+//              begin
+//                Props[MarginTop] := A.Name;
+//                Props[MarginRight] := A.Name;
+//                Props[MarginBottom] := A.Name;
+//                Props[MarginLeft] := A.Name;
+//              end;
 
             CellSpacingSy:
               begin
