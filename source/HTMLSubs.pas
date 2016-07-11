@@ -5270,10 +5270,12 @@ var
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   begin
-    if VarIsIntNull(MargArrayO[piHeight]) then
-      Result := Max(Max(ContentTop, ClientContentBot), ContentTop + MargArray[piHeight])
-    else
-      Result := ContentTop + MargArray[piHeight];
+    Result := ContentTop + MargArray[piHeight];
+    if VarIsIntNull(MargArrayO[piHeight])
+      or (Self is TTableBlock and (Pos('%', VarToStr(MargArrayO[piHeight])) > 0))
+      or (VarToStr(MargArrayO[piHeight]) = 'auto')
+    then
+      Result := Max(Result, Max(ContentTop, ClientContentBot));
   end;
 
   procedure DrawLogicAsBlock;
@@ -10018,8 +10020,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
 
     procedure FindRowHeights(Canvas: TCanvas; AHeight: Integer);
     var
-      I, J, K, H, Span, TotalMinHt, TotalDesHt, AddOn,
-        Sum, AddedOn, Desired, UnSpec: Integer;
+      I, J, K, H, Span, TotalMinHt, TotalDesHt, AvailHt, AddOn, Sum, AddedOn, Desired, UnSpec: Integer;
       More, Mr, IsSpeced: boolean;
       MinHts, DesiredHts: TIntArray;
       SpecHts: array of boolean;
@@ -10027,6 +10028,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
     begin
       if Rows.Count = 0 then
         Exit;
+
       Dec(AHeight, CellSpacingVert); {calculated heights will include one cellspacing each,
       this removes that last odd cellspacing}
       SetLength(Heights, Rows.Count);
@@ -10043,6 +10045,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
     {Find the height of each row allowing for RowSpans}
       Span := 1;
       More := True;
+      AvailHt := Max(0, AHeight - Rows.Count * CellSpacingVert);
       while More do
       begin
         More := False;
@@ -10051,8 +10054,7 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
           begin
             if J + Span > Rows.Count then
               Break; {otherwise will overlap}
-            H := DrawLogicA(Canvas, Widths, Span, CellSpacingHorz,CellSpacingVert, Max(0, AHeight - Rows.Count * CellSpacingVert),
-              Rows.Count, Desired, IsSpeced, Mr) + CellSpacingVert;
+            H := DrawLogicA(Canvas, Widths, Span, CellSpacingHorz, CellSpacingVert, AvailHt, Rows.Count, Desired, IsSpeced, Mr) + CellSpacingVert;
             Inc(Desired, CellspacingVert);
             More := More or Mr;
             if Span = 1 then
