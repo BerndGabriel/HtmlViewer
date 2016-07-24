@@ -1003,7 +1003,9 @@ procedure THtmlParser.Next;
             CrChar:
               begin
                 if WantCrLf then
-                  htAppendStr(S, CrLf); //^M^J);
+                  htAppendStr(S, CrLf) //^M^J);
+                else
+                  htAppendChr(S, SpcChar);
                 GetCh;
               end;
 
