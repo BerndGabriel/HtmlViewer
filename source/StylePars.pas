@@ -784,14 +784,14 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
 
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
-      if TryStrToColor(S[I], NeedPound, Dummy) then
-      begin
-        Values[shColor] := S[I];
-        S[I] := '';
-      end
-      else if S[I] = 'none' then
+      if S[I] = 'none' then
       begin
         Values[shImage] := S[I];
+        S[I] := '';
+      end
+      else if TryStrToColor(S[I], NeedPound, Dummy) then
+      begin
+        Values[shColor] := S[I];
         S[I] := '';
       end;
 
