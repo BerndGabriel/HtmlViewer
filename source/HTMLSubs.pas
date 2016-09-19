@@ -3038,10 +3038,11 @@ begin
   end;
   try
     // Yunqa.de removed: ddImage.Transp := Transparent;
-    if IsCopy then
-      ddImage.Print(Canvas, XX, Y, W, H, clWhite)
-    else
-      ddImage.Draw(Canvas, XX, Y, W, H);
+    if (W > 0) and (H > 0) then
+      if IsCopy then
+        ddImage.Print(Canvas, XX, Y, W, H, clWhite)
+      else
+        ddImage.Draw(Canvas, XX, Y, W, H);
   except
     on E: Exception do
     begin
