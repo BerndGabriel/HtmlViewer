@@ -54,13 +54,13 @@ type
   TGetPostRequestExEvent = procedure(Sender: TObject; IsGet: boolean; const URL, Query, EncType, Referer: ThtString;
     Reload: boolean; var NewURL: ThtString; var DocType: ThtmlFileType; var Stream: TStream) of object;
     
-  TbrFormSubmitEvent = procedure(Sender: TObject; Viewer: ThtmlViewer;
+  TbrFormSubmitEvent = procedure(Sender: TObject; Viewer: THtmlViewer;
     const Action, Target, EncType, Method: ThtString; Results: ThtStringList; var Handled: boolean) of object;
 
   TbrFrameSet = class;
   TbrSubFrameSet = class;
 
-  TbrFrame = class(TViewerFrameBase) {TbrFrame holds a ThtmlViewer or TbrSubFrameSet}
+  TbrFrame = class(TViewerFrameBase) {TbrFrame holds a THtmlViewer or TbrSubFrameSet}
   private
     URLBase: ThtString;
     TheStream: TStream;
@@ -133,7 +133,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
-    function GetViewerUrlBase(Viewer: ThtmlViewer): ThtString;
+    function GetViewerUrlBase(Viewer: THtmlViewer): ThtString;
     procedure GetPostQuery(const URL, Query, EncType: ThtString; IsGet: boolean);
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: boolean); override;
     procedure Load(const SRC: ThtString); override;
@@ -386,7 +386,7 @@ var
   HS, S, S1, OldTitle, OldName, OldBase: ThtString;
   OldFormData: TFreeList;
   SameName: boolean;
-  OldViewer: ThtmlViewer;
+  OldViewer: THtmlViewer;
   OldFrameSet: TbrSubFrameSet;
   Upper, Lower, FrameFile: boolean;
   Item: TFrameBase;
@@ -606,12 +606,12 @@ end;
 procedure TbrFrame.URLExpandName(Sender: TObject; const SRC: ThtString; var Rslt: ThtString);
 var
   S: ThtString;
-  Viewer: ThtmlViewer;
+  Viewer: THtmlViewer;
 begin
   S := ConvDosToHTML(SRC);
   if not IsFullUrl(S) then
   begin
-    Viewer := Sender as ThtmlViewer;
+    Viewer := Sender as THtmlViewer;
     if Pos('//', SRC) = 1 then
       S := 'http:' + S
     else if Viewer.Base <> '' then
@@ -877,8 +877,8 @@ begin
       if (OldFrameSet.Viewers.Count = 1) then
       begin
         Tmp := OldFrameSet.Viewers[0];
-        if Tmp is ThtmlViewer then
-          OldPos := ThtmlViewer(Tmp).Position;
+        if Tmp is THtmlViewer then
+          OldPos := THtmlViewer(Tmp).Position;
       end;
       OldFrameSet.UnloadFiles;
       CurbrFrameSet.Visible := True;
@@ -903,8 +903,8 @@ begin
       if (CurbrFrameSet.Viewers.Count = 1) then
       begin
         Tmp := CurbrFrameSet.Viewers[0];
-        if Tmp is ThtmlViewer then
-          OldPos := ThtmlViewer(Tmp).Position;
+        if Tmp is THtmlViewer then
+          OldPos := THtmlViewer(Tmp).Position;
       end;
       PostRequest(Self, IsGet, S, Query, EncType, Referer, Reload, S1, StreamType, Stream);
       if not Assigned(Stream) then
@@ -963,7 +963,7 @@ begin
   if Handled then
     Exit;
 
-  Viewer := Sender as ThtmlViewer;
+  Viewer := Sender as THtmlViewer;
   Target := GetViewerTarget(Viewer);
   FLinkAttributes.Text := Viewer.LinkAttributes.Text;
   FLinkText := Viewer.LinkText;
@@ -1038,11 +1038,11 @@ end;
 procedure TFrameBrowser.HotSpotCovered(Sender: TObject; const SRC: ThtString);
 var
   S, Dest, FullUrl: ThtString;
-  Viewer: ThtmlViewer;
+  Viewer: THtmlViewer;
 begin
   if Assigned(OnHotSpotTargetCovered) then
   begin
-    Viewer := Sender as ThtmlViewer;
+    Viewer := Sender as THtmlViewer;
     SplitDest(SRC, S, Dest);
     S := ConvDosToHTML(S); {convert DOS names}
     if IsFullURL(S) or (Src = '') then
@@ -1056,7 +1056,7 @@ begin
     end;
     FLinkText := Viewer.LinkText;
     FLinkAttributes.Text := Viewer.LinkAttributes.Text;
-    OnHotSpotTargetCovered(Sender, (Sender as ThtmlViewer).Target, FullUrl + Dest);
+    OnHotSpotTargetCovered(Sender, (Sender as THtmlViewer).Target, FullUrl + Dest);
   end;
 end;
 
@@ -1074,7 +1074,7 @@ var
   S, Dest, Query: ThtString;
   FrameTarget: TFrameBase;
   I: integer;
-  Viewer: ThtmlViewer;
+  Viewer: THtmlViewer;
   UserHandled, IsGet: boolean;
 
   function AssembleQuery: ThtString;
@@ -1139,7 +1139,7 @@ begin
   try
   {see if the application wants to handle this event}
     UserHandled := false;
-    Viewer := (Sender as ThtmlViewer);
+    Viewer := (Sender as THtmlViewer);
     if Assigned(FOnFormSubmit) then
       FOnFormSubmit(Self, Viewer, Action, Target, EncType, Method, Results, UserHandled);
     if not UserHandled then
@@ -1209,7 +1209,7 @@ end;
 
 {----------------TFrameBrowser.GetViewerUrlBase}
 
-function TFrameBrowser.GetViewerUrlBase(Viewer: ThtmlViewer): ThtString;
+function TFrameBrowser.GetViewerUrlBase(Viewer: THtmlViewer): ThtString;
 var
   Frame: TbrFrame;
 begin
@@ -1235,13 +1235,13 @@ procedure TFrameBrowser.CheckVisitedLinks;
 var
   I, J, K: integer;
   S, S1: ThtString;
-  Viewer: ThtmlViewer;
+  Viewer: THtmlViewer;
 begin
   if VisitedMaxCount = 0 then
     Exit;
   for K := 0 to CurbrFrameSet.Viewers.Count - 1 do
   begin
-    Viewer := ThtmlViewer(CurbrFrameSet.Viewers[K]);
+    Viewer := THtmlViewer(CurbrFrameSet.Viewers[K]);
     for I := 0 to Visited.Count - 1 do
     begin
       S := Visited[I];

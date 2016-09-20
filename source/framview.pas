@@ -37,6 +37,7 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
+  UrlConn,
   URLSubs,
   HtmlGlobals,
   HtmlBuffer,
@@ -891,6 +892,7 @@ var
   Src: ThtString;
   Stream: TStream;
   ft: THtmlFileType;
+  Ext: string;
 begin
   if ((Source <> '') or Assigned(PEV)) and (MasterSet.NestLevel < 4) then
   begin
@@ -967,7 +969,10 @@ begin
         else
           if EV.Doc <> nil then
           begin
-            Viewer.LoadFromDocument(EV.Doc, Source);
+            Ext := Lowercase(ExtractFileExt(Source));
+            if Length(Ext) > 0 then
+              Delete(Ext, 1, 1);
+            Viewer.LoadFromDocument(EV.Doc, Source, FileExt2DocType(Ext));
             Viewer.PositionTo(Destination);
           end
           else

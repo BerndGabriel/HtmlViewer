@@ -1,6 +1,6 @@
 {
-Version   11.5
-Copyright (c) 2014 by HtmlViewer Team
+Version   11.7
+Copyright (c) 2014-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -39,8 +39,15 @@ type
   TElemSymb = (
     OtherChar, CommandSy, StringSy {was TextSy}, EolSy, EofSy,
 
+    { doc type tags }
+    XmlSy,     DocTypeSy,
+
+    { html elements }
+
     HtmlSy,    HeadSy,
     HtmlEndSy, HeadEndSy,
+
+    { frame set elements }
 
     FrameSetSy, FrameSetEndSy,
     FrameSy,
@@ -65,9 +72,9 @@ type
 
     ImageSy,
     PanelSy,
-    IFrameSy, IFrameEndSy,
+    IFrameSy,   IFrameEndSy,
     ProgressSy, ProgressEndSy,
-    MeterSy, MeterEndSy,
+    MeterSy,    MeterEndSy,
 
     MapSy, MapEndSy,
     AreaSy,
@@ -163,6 +170,7 @@ type
     ContentSy,
     CoordsSy,
     DisabledSy,
+    EncodingSy,
     EncTypeSy,
     FaceSy,
     FrameAttrSy,
@@ -228,6 +236,7 @@ type
     UseMapSy,
     VAlignSy,
     ValueSy,
+    VersionSy,
     VLinkSy,
     VSpaceSy,
     WidthSy,
@@ -647,7 +656,10 @@ end;
 
 procedure InitElements;
 const
-  ElementDefinitions: array[1..102] of TResWord = (
+  ElementDefinitions: array[1..104] of TResWord = (
+    (Name: '?XML';        Symbol: XmlSy;        EndSym: CommandSy),
+    (Name: '!DOCTYPE';    Symbol: DocTypeSy;    EndSym: CommandSy),
+    {HTML}
     (Name: 'HTML';        Symbol: HtmlSy;       EndSym: HtmlEndSy),
     (Name: 'TITLE';       Symbol: TitleElemSy;  EndSym: TitleEndSy),
     (Name: 'BODY';        Symbol: BodySy;       EndSym: BodyEndSy),
@@ -754,7 +766,6 @@ const
     (Name: 'TIME';        Symbol: TimeSy;       EndSym: TimeEndSy),
     (Name: 'PROGRESS';    Symbol: ProgressSy;   EndSym: ProgressEndSy),
     (Name: 'METER';       Symbol: MeterSy;      EndSym: MeterEndSy));
-
 var
   I: Integer;
   P: PResWord;
@@ -789,7 +800,7 @@ end;
 
 procedure InitAttributes;
 const
-  AttribDefinitions: array[1..93] of TSymbolRec = (
+  AttribDefinitions: array[1..95] of TSymbolRec = (
     (Name: 'ACTION';            Value: ActionSy),
     (Name: 'ACTIVE';            Value: ActiveSy),
     (Name: 'ALIGN';             Value: AlignSy),
@@ -814,6 +825,7 @@ const
     (Name: 'CONTENT';           Value: ContentSy),
     (Name: 'COORDS';            Value: CoordsSy),
     (Name: 'DISABLED';          Value: DisabledSy),
+    (Name: 'ENCODING';          Value: EncodingSy),
     (Name: 'ENCTYPE';           Value: EncTypeSy),
     (Name: 'FACE';              Value: FaceSy),
     (Name: 'FRAME';             Value: FrameAttrSy),
@@ -879,6 +891,7 @@ const
     (Name: 'USEMAP';            Value: UseMapSy),
     (Name: 'VALIGN';            Value: VAlignSy),
     (Name: 'VALUE';             Value: ValueSy),
+    (Name: 'VERSION';           Value: VersionSy),
     (Name: 'VLINK';             Value: VLinkSy),
     (Name: 'VSPACE';            Value: VSpaceSy),
     (Name: 'WIDTH';             Value: WidthSy),

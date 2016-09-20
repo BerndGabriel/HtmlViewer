@@ -2133,7 +2133,7 @@ procedure TProperties.Combine(Styles: TStyleList; Sym: TElemSymb;
       begin
         for I := 0 to Attributes.Count - 1 do
         begin
-          A := TAttribute(Attributes[I]);
+          A := Attributes[I];
           case A.Which of
             AlignSy:
               case Sym of

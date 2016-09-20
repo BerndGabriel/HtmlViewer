@@ -1138,6 +1138,7 @@ procedure THtmlParser.Next;
     Save := PropStack.SIndex;
     TagIndex := PropStack.SIndex;
     GetCh;
+    Compare := '';
     case LCh of
       '/':
       begin
@@ -1145,9 +1146,12 @@ procedure THtmlParser.Next;
         GetCh;
       end;
 
-      'a'..'z', 'A'..'Z', '?':
+      'a'..'z', 'A'..'Z', '?', '!':
       begin
         Result := False;
+        SetLength(Compare, Length(Compare) + 1);
+        Compare[Length(Compare)] := LCh;
+        GetCh;
       end;
     else
       {an odd LessChar}
@@ -1156,7 +1160,6 @@ procedure THtmlParser.Next;
       Exit;
     end;
     Sy := CommandSy;
-    Compare := '';
     while True do
       case LCh of
         '/':
@@ -1169,7 +1172,7 @@ procedure THtmlParser.Next;
           GetCh;
         end;
 
-        'a'..'z', 'A'..'Z', '_', '0'..'9':
+        'a'..'z', 'A'..'Z', '0'..'9', '_':
         begin
           // faster than: Compare := Compare + LCh;
           SetLength(Compare, Length(Compare) + 1);
@@ -1437,7 +1440,7 @@ procedure THtmlParser.DoAEnd; {do the </a>}
 begin
   if InHref then {see if we're in an href}
   begin
-    CurrentUrlTarget.SetLast(ThtmlViewer(CallingObject).LinkList, PropStack.SIndex);
+    CurrentUrlTarget.SetLast(THtmlViewer(CallingObject).LinkList, PropStack.SIndex);
     CurrentUrlTarget.Clear;
     InHref := False;
   end;
@@ -2403,54 +2406,55 @@ var
   S, Src: ThtString;
 begin
   {on entry, do not have the next character for <script>}
-  if Assigned(AScript) then
-  begin
-    InScript := True;
-    try
-      GetCh; {get character here with Inscript set to allow immediate comment}
+  if not IsXhtmlEndSy then
+    if Assigned(AScript) then
+    begin
+      InScript := True;
+      try
+        GetCh; {get character here with Inscript set to allow immediate comment}
 
-      if Attributes.Find(TypeSy, T) then
-        Lang := T.Name
-      else if Attributes.Find(LanguageSy, T) then
-        Lang := T.Name
-      else
-        Lang := '';
-
-      if Attributes.Find(NameSy, T) then
-        Name := T.Name
-      else
-        Name := '';
-
-      if Attributes.Find(SrcSy, T) then
-        Src := T.Name
-      else
-        Src := '';
-
-      S := '';
-      Next;
-      while (Sy <> ScriptEndSy) and (Sy <> EofSy) do
-      begin
-        if Sy = EolSy then
-        begin
-          htAppendChr(S, CrChar);
-          htAppendChr(S, LfChar);
-        end
+        if Attributes.Find(TypeSy, T) then
+          Lang := T.Name
+        else if Attributes.Find(LanguageSy, T) then
+          Lang := T.Name
         else
-          htAppendStr(S, Text);
+          Lang := '';
+
+        if Attributes.Find(NameSy, T) then
+          Name := T.Name
+        else
+          Name := '';
+
+        if Attributes.Find(SrcSy, T) then
+          Src := T.Name
+        else
+          Src := '';
+
+        S := '';
         Next;
+        while (Sy <> ScriptEndSy) and (Sy <> EofSy) do
+        begin
+          if Sy = EolSy then
+          begin
+            htAppendChr(S, CrChar);
+            htAppendChr(S, LfChar);
+          end
+          else
+            htAppendStr(S, Text);
+          Next;
+        end;
+        AScript(CallingObject, Name, Lang, Src, S);
+      finally
+        InScript := False;
       end;
-      AScript(CallingObject, Name, Lang, Src, S);
-    finally
-      InScript := False;
+    end
+    else
+    begin
+      GetCh; {make up for not having next character on entry}
+      repeat
+        Next;
+      until Sy in [ScriptEndSy, EofSy];
     end;
-  end
-  else
-  begin
-    GetCh; {make up for not having next character on entry}
-    repeat
-      Next;
-    until Sy in [ScriptEndSy, EofSy];
-  end;
 end;
 
 procedure THtmlParser.DoObjectTag(var C: ThtChar; var N, IX: Integer);
@@ -2510,7 +2514,7 @@ begin
                   Params.Add(S);
                 end;
           until (Sy <> ParamSy);
-          ThtmlViewer(CallingObject).OnObjectTag(CallingObject, PO.Panel, SL, Params, WantPanel);
+          THtmlViewer(CallingObject).OnObjectTag(CallingObject, PO.Panel, SL, Params, WantPanel);
         finally
           Params.Free;
         end;
@@ -2660,7 +2664,7 @@ procedure THtmlParser.DoCommonSy;
     CodePage := CP_UNKNOWN;
     CharSet := DEFAULT_CHARSET;
     for I := 0 to Attributes.Count - 1 do
-      with TAttribute(Attributes[I]) do
+      with Attributes[I] do
         case Which of
           SizeSy:
             begin
@@ -3487,7 +3491,7 @@ begin
             PSy:
               DoP([]);
 
-            DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
+            DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
               DoDivEtc(Sy, [SaveEndSy]);
           else
             Done := True;
@@ -3757,7 +3761,7 @@ begin
       CommandSy:
         Next;
 
-      DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+      DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
       CenterSy, FormSy, AddressSy, BlockquoteSy, FieldsetSy:
         DoDivEtc(Sy, TermSet);
 
@@ -3871,7 +3875,7 @@ begin
       BlockQuoteSy, AddressSy:
         DoDivEtc(Sy, TermSet);
 
-      DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
+      DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy, CenterSy, FormSy:
         DoDivEtc(Sy, [OLEndSy, ULEndSy, DirEndSy, MenuEndSy, DLEndSy, LISy, DDSy, DTSy, EofSy] + TermSet);
 
       AbbrSy, AbbrEndSy, AcronymSy, AcronymEndSy, DfnSy, DfnEndSy,
@@ -3967,7 +3971,7 @@ begin
   end
   else
     Content := '';
-  if (Sender is ThtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
+  if (Sender is THtmlViewer) and (CompareText(HttpEq, 'content-type') = 0) then
   begin
     DoCharset(Content);
   end;
@@ -4000,7 +4004,7 @@ var
   Request: TGetStreamEvent;
   Requested: TGottenStreamEvent;
   Stream: TStream;
-  Viewer: ThtmlViewer;
+  Viewer: THtmlViewer;
   Path: ThtString;
   FreeStream: Boolean;
 
@@ -4048,7 +4052,7 @@ begin
     Requested := nil;
     try
       try
-        Viewer := (CallingObject as ThtmlViewer);
+        Viewer := (CallingObject as THtmlViewer);
         Request := Viewer.OnHtStreamRequest;
         Requested := Viewer.OnHtStreamRequested;
         if Assigned(Request) then
@@ -4132,6 +4136,7 @@ var
   I: Integer;
   Val: TColor;
   AMarginHeight, AMarginWidth: Integer;
+  CP: TBuffCodePage;
 {$ifdef DO_LI_INLINE}
   LiBlock: TBlockLi;
   LiSection: TSection;
@@ -4165,6 +4170,23 @@ begin
             DoCommonSy;
           end;
 
+        XmlSy:
+          begin
+            IsXHTML := True;
+            for I := 0 to Attributes.Count - 1 do
+              with Attributes[I] do
+                case Which of
+                  //VersionSy:;
+                  EncodingSy:
+                    begin
+                      CP := StrToCodePage(Name);
+                      if CP <> CP_UNKNOWN then
+                        Doc.CodePage := CP;
+                    end;
+                end;
+            Next;
+          end;
+
         HtmlSy:
           begin
             // BG, 27.01.2013: cannot push html attributes here as html styles may be read later in a style tag before body.
@@ -4185,10 +4207,10 @@ begin
                 Section.Free; {Will start with a new section}
               end;
               PushNewProp(Sy, Attributes);
-              AMarginHeight := (CallingObject as ThtmlViewer).MarginHeight;
-              AMarginWidth := (CallingObject as ThtmlViewer).MarginWidth;
+              AMarginHeight := (CallingObject as THtmlViewer).MarginHeight;
+              AMarginWidth := (CallingObject as THtmlViewer).MarginWidth;
               for I := 0 to Attributes.Count - 1 do
-                with TAttribute(Attributes[I]) do
+                with Attributes[I] do
                   case Which of
                     BackgroundSy:
                       PropStack.Last.Assign('url(' + Name + ')', BackgroundImage);
@@ -4274,7 +4296,7 @@ begin
             Next;
           end;
 
-        DivSy, MainSy, HeaderSy, NavSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
+        DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy,
         CenterSy, FormSy, BlockQuoteSy, AddressSy, FieldsetSy, LegendSy:
           begin
             PushHtmlPropsIfAny;
@@ -4365,8 +4387,8 @@ begin
   FPropStack[0].CopyDefault(FPropStack.Document.Styles.DefProp);
   FPropStack.SIndex := -1;
 
-  if CallingObject is ThtmlViewer then
-    ThtmlViewer(CallingObject).CodePage := PropStack[0].CodePage;
+  if CallingObject is THtmlViewer then
+    THtmlViewer(CallingObject).CodePage := PropStack[0].CodePage;
 
   BodyBlock := TBodyBlock.Create(SectionList, nil, FPropStack[0]);
   SectionList.Add(BodyBlock, TagIndex);
@@ -4692,7 +4714,7 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
         ScriptSy:
           begin DoScript(nil); Next; end; {to skip the script stuff}
 
-        BodySy, H1Sy..H6Sy, HRSy, TableSy, ImageSy, OLSy, ULSy, MenuSy, DirSy,
+        XmlSy, BodySy, H1Sy..H6Sy, HRSy, TableSy, ImageSy, OLSy, ULSy, MenuSy, DirSy,
         PSy, PreSy, FormSy, AddressSy, BlockQuoteSy, DLSy:
           SetExit := True;
       else
