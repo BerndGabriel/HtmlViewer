@@ -2,11 +2,8 @@
 Welcome at GitHub.
 --------------------------------------------------------------------------------
 
-If you're coming from the HtmlViewer-SVN at Google Code you now find the same 
-code and revisions of SVN-"trunk" in my GitHub branch "HtmlViewer-11.5".
-
-The current version is 11.6 in the default branch "HtmlViewer-11.6".
-The next version is growing up in branch "HtmlViewer-11.6-to-11.7".
+The current version is 11.7 in the default branch "HtmlViewer-11.7".
+The next version is growing up in branch "master".
 
 Developers under Windows might want to use Tortoise-GIT or "Git Gui" to keep 
 their sources up-to-date.
@@ -87,13 +84,15 @@ HtmlViewer 11.x (recommended)
 - is a full WideString version suitable for projects 
   with most common codepages/charsets.
 - with Delphi 6..2007 requires the TntUnicodeControls.
-- works with Lazarus 0.9.31 or newer (recommended at least 1.2.x)
+- works with Delphi  6      or newer (recommended at least 2009)
+- works with Lazarus 0.9.30 or newer (recommended at least 1.2.x)
+  for Windows, Linux and Raspbian
 - 32 and 64 Bit
 
 --------------------------------------------------------------------------------
 
 HtmlViewer 10.2 is still available at: http://code.google.com/p/thtmlviewer/
-HtmlViewer 11.5 is available at: https://sourceforge.net/projects/htmlviewer/
+HtmlViewer 11.x is available at: https://sourceforge.net/projects/htmlviewer/
 HtmlViewer development is hosted at: https://github.com/BerndGabriel/HtmlViewer
 
 If you are using HtmlViewer 11 with Delphi 6..2007 you will need the
@@ -110,7 +109,7 @@ Copyright (c) 1995 - 2008 by Anders Melander (DitherUnit.pas)
 Copyright (c) 1995 - 2008 by Ron Collins (HtmlGif1.pas)
 Copyright (c) 2008 - 2009 by Sebastian Zierer (Delphi 2009 Port)
 Copyright (c) 2008 - 2010 by Arvid Winkelsdorf (Fixes)
-Copyright (c) 2009 - 2015 by HtmlViewer Team 
+Copyright (c) 2009 - 2016 by HtmlViewer Team 
 
 See included License.txt
 
