@@ -25,14 +25,15 @@ are covered by separate copyright notices located in those modules.
 
 { Inspired by former UrlConId10.PAS written by Yves Urbain }
 
+{$I htmlcons.inc}
+
 unit UrlConn;
 
 interface
 
 uses
-  //Windows,
-  Classes, Contnrs, SysUtils, Forms,
-  URLSubs, HtmlGlobals, Types;
+  Classes, Types, Contnrs, SysUtils, Forms,
+  URLSubs, HtmlGlobals;
 
 const
   ChtMaxRunningThreadCount = 20;
@@ -93,13 +94,20 @@ type
 // A ThtConnector descendant knows how to create connections for one or more
 // protocols.
 //
-// To implement a new protocol derive one descentant from ThtConnector and
+// To implement a new protocol derive one descendant from ThtConnector and
 // another from ThtConnection.
 //
 // The ThtConnector descendant must override the following functions:
-// GetDefaultProtocols() to tell the ThtConnectionManager which protocols it supports,
-// GetVersion() to tell the application the ThtConnector's implementor and version and
-// CreateConnection(const Protocol: String) which actually creates the connection for the given protocol.
+//
+// - GetDefaultProtocols()
+//     to tell the ThtConnectionManager which protocols it supports,
+//
+// - GetVersion()
+//     to tell the application the ThtConnector's implementor and version and
+//
+// - CreateConnection(const Protocol: String)
+//     which actually creates the connection for the given protocol.
+//
 // In case the connection may need authorization publish OnGetAuthorization
 // rather than implementing another login/authorization dialog.
 //------------------------------------------------------------------------------
@@ -132,13 +140,22 @@ type
   end;
 
 //----------------------------------------------------------------------------
-// A ThtConnection descendant just gets a document via LoadDoc(Doc: ThtUrlDoc)
-// and knows how to create an appropriate ThtUrlDoc.
+// A ThtConnection gets a document via LoadDoc(Doc: ThtUrlDoc)
 //
 // LoadDoc():
 //   When called at least Doc.Url must be filled.
 //   On return if Doc.Status is ucsLoaded Doc.Stream is filled with the loaded document.
 //   On return if Doc.Status is ucsInProgress the connection is loading the document asynchronously.
+//
+// The ThtConnection descendant must override the following function:
+//
+// - Get()
+//     to load document Doc.Url into Doc.Stream
+//
+// The ThtConnection descendant may override the following function:
+//
+// - CreateUrlDoc()
+//     to create an appropriate descendant of ThtUrlDoc.
 //------------------------------------------------------------------------------
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
@@ -204,7 +221,6 @@ type
   ThtUrlDoc = class(TObject)
   private
     FUrl: String;
-//    FName: String;
     FNewUrl: String;
     FReferer: String;
     FQuery: String;
@@ -217,16 +233,12 @@ type
     procedure SetNewUrl(const Value: String);
     procedure SetStream(const Value: TStream);
     function GetStreamSize: Int64;
-//    procedure SetName(const Value: String);
-//    procedure SetUrl(const Value: String);
   public
     destructor Destroy; override;
     procedure Clear;
     procedure SaveToFile(FileName: String);
 
-//    property Name: String read FName write SetName;
-
-    property Url: String read FUrl write FUrl; //SetUrl;
+    property Url: String read FUrl write FUrl;
 
     property Status: ThtUrlDocStatus read FStatus write FStatus;
     property DocType: ThtDocType read FDocType write FDocType;
@@ -268,7 +280,7 @@ type
   private
     procedure MakeDirOutput(AStream : TStream; const ADirName : String);
   protected
-    procedure Get(Doc: ThtUrlDoc); override;
+    procedure Get(ADoc: ThtUrlDoc); override;
   end;
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
@@ -288,7 +300,7 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtResourceConnection = class(ThtConnection)
   protected
-    procedure Get(Doc: ThtUrlDoc); override;
+    procedure Get(ADoc: ThtUrlDoc); override;
   end;
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
@@ -360,7 +372,7 @@ type
     procedure Terminated(Sender: TObject);
     procedure StartNext;
   public
-    constructor Create(Owner: TComponent); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function RunningCount: Integer;
     function WaitingCount: Integer;
@@ -836,12 +848,12 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-procedure ThtFileConnection.Get(Doc: ThtUrlDoc);
+procedure ThtFileConnection.Get(ADoc: ThtUrlDoc);
 var
   FileName, Ext : String;
   I : integer;
 begin
-  FileName := Doc.Url;
+  FileName := ADoc.Url;
 
   {remove any query string as it's not certain how to respond to a Form
    submit with a file protocol.  The user can add a response if desired.}
@@ -859,18 +871,18 @@ begin
   FileName := HTMLtoDOS(FileName);
   if DirectoryExists(FileName) then
   begin
-    MakeDirOutput(Doc.Stream, FileName);
-    Doc.DocType := HTMLType;
+    MakeDirOutput(ADoc.Stream, FileName);
+    ADoc.DocType := HTMLType;
   end
   else
   begin
-    Doc.Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+    ADoc.Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
     Ext := Lowercase(ExtractFileExt(FileName));
     if Length(Ext) > 0 then
       Delete(Ext, 1, 1);
-    Doc.DocType := FileExt2DocType(Ext);
+    ADoc.DocType := FileExt2DocType(Ext);
   end;
-  Doc.Status := ucsLoaded;
+  ADoc.Status := ucsLoaded;
 
 end;
 
@@ -897,14 +909,14 @@ end;
 { ThtResourceConnection }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-procedure ThtResourceConnection.Get(Doc: ThtUrlDoc);
+procedure ThtResourceConnection.Get(ADoc: ThtUrlDoc);
 var
    FileName, S, Ext: String;
    HResInfo: HRSRC;
    GoodType: PChar;
    I: Integer;
 begin
-  FileName := Doc.Url;
+  FileName := ADoc.Url;
 
   {remove any query string as it's not certain how to respond to a Form
    submit with a file protocol.  The user can add a response if desired.}
@@ -919,8 +931,8 @@ begin
   end;
 
   Ext := LowerCase(GetURLExtension(FileName));
-  Doc.DocType := FileExt2DocType(Ext);
-  case Doc.DocType of
+  ADoc.DocType := FileExt2DocType(Ext);
+  case ADoc.DocType of
     XHTMLType,
     HTMLType:  GoodType := 'HTML';
     ImgType:   GoodType := PChar(UpperCase(Ext));
@@ -942,10 +954,10 @@ begin
     end;
   end;
   if HResInfo = 0 then
-    // avoid Exception. Doc.Stream = nil is okay. Next access to it will create an empty TMemoryStream.
+    // avoid Exception. ADoc.Stream = nil is okay. Next access to it will create an empty TMemoryStream.
     // raise EResNotFound.Create('Can''t find resource: '+FileName);
   else
-    Doc.Stream := TResourceStream.Create(HInstance, FileName, GoodType);
+    ADoc.Stream := TResourceStream.Create(HInstance, FileName, GoodType);
 end;
 
 { ThtResourceConnector }
@@ -1018,7 +1030,7 @@ end;
 { ThtUrlDocLoaderThreadList }
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
-constructor ThtUrlDocLoaderThreadList.Create(Owner: TComponent);
+constructor ThtUrlDocLoaderThreadList.Create(AOwner: TComponent);
 begin
   inherited;
   FWaiting := TList.Create;

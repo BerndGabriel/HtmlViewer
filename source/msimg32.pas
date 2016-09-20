@@ -1,6 +1,7 @@
 {
-Version   11.3
-Copyright 2012 by J. Peter Mugaas
+Version   11.7
+Copyright 2012-2014 by J. Peter Mugaas
+Copyright 2015-2016 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -34,7 +35,7 @@ uses Windows;
 This is not done like a typical header for several reasons.
 
 1) We don't want to conflict with Embarcadero's Windows.pas header.
-2) We do not want to load a .DLL durring drawing code and that would happen if
+2) We do not want to load a .DLL during drawing code and that would happen if
 you loaded the .DLL when calling a function for the first time.
 3) Some Embarcadero's VCL versions will load the msimg32.dll so we do not want to
 reload it in those cases.
