@@ -12361,14 +12361,11 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       until Cnt >= NN;
 
   {$IFNDEF NoTabLink}
-      if Length(XP) <> 0 then
-      begin
-        Cnt := 0; {now check URLs}
-        repeat
-          Inc(Cnt, Fonts.GetFontObjAt(PStart - Buff + Cnt, Len, FO));
-          FO.AssignY(Y);
-        until Cnt >= NN;
-      end;
+      Cnt := 0; {now check URLs}
+      repeat
+        Inc(Cnt, Fonts.GetFontObjAt(PStart - Buff + Cnt, Len, FO));
+        FO.AssignY(Y);
+      until Cnt >= NN;
   {$ENDIF}
 
       LR.Start := PStart;
@@ -12379,7 +12376,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       TmpRt := IMgr.RightSide(Y);
       Tmp := IMgr.LeftIndent(Y);
       if PStart = Buff then
-        Tmp := Tmp + FirstLineIndent;
+        Inc(Tmp, FirstLineIndent);
 
       LRTextWidth := FindTextSize(Canvas, PStart, NN, True).cx;
       if LR.Shy then
