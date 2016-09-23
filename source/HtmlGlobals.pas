@@ -1185,34 +1185,21 @@ end;
 
 function StartProcess(const ApplicationName, Params: string; ShowWindow: Word): Boolean;
 {$ifdef LCL}
-{$if fpc_fullversion >= 20602}
-var
-  CommandLine: String;
-  Output: String;
-begin
-  CommandLine := ApplicationName;
-  if Pos(' ', CommandLine) > 0 then
-    CommandLine := '"' + CommandLine + '"';
-
-  if Length(Params) > 0 then
-    CommandLine := CommandLine + ' ' + Params;
-
-  Result := RunCommand(CommandLine, Output);
-end;
-{$else}
 var
   Process: TProcess;
   I: Integer;
 begin
+  // uses TProcess although Lazarus documentation prefers RunCommand
+  // as RunCommand does not start an asynchronous process.
   Process := TProcess.Create(nil);
   try
     Process.Executable := ApplicationName;
     Process.Parameters.Add(Params);
-    Process.Options := [];
     Process.InheritHandles := False;
     Process.ShowWindow := swoShow;
 
-    // Copy default environment variables including DISPLAY variable for GUI application to work
+    // Copy default environment variables
+    // including DISPLAY variable for GUI application to work
     for I := 1 to GetEnvironmentVariableCount do
       Process.Environment.Add(GetEnvironmentString(I));
 
@@ -1221,7 +1208,6 @@ begin
     Process.Free;
   end;
 end;
-{$ifend}
 {$else}
 var
   si: TStartupInfo;
