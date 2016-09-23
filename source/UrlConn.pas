@@ -32,6 +32,9 @@ unit UrlConn;
 interface
 
 uses
+{$ifdef VCL}
+  Windows,
+{$endif}
   Classes, Types, Contnrs, SysUtils, Forms,
   URLSubs, HtmlGlobals;
 

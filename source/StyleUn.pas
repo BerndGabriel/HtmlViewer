@@ -32,7 +32,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, HtmlMisc,
+  LclIntf, LclType, //HtmlMisc,
 {$else}
   Windows,
 {$endif}
@@ -2142,7 +2142,7 @@ procedure TProperties.Combine(Styles: TStyleList; Sym: TElemSymb;
     var
       I: Integer;
       A: TAttribute;
-      T: TElemSymb;
+//      T: TElemSymb;
     begin
       if (Attributes <> nil) and (Attributes.Count > 0) then
       begin
@@ -2961,7 +2961,7 @@ begin
           LVal := Props[I];
           if LVal = CurColor_Val then
             // 'currentColor'
-            MArray[I] := Props[ThtPropertyIndex.Color]
+            MArray[I] := Props[StyleUn.Color]
           else
             MArray[I] := ADefColor;
         end;

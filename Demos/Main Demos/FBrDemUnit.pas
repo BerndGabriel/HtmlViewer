@@ -218,7 +218,7 @@ type
     procedure BlankWindowRequest(Sender: TObject; const Target, URL: WideString);
     procedure FrameBrowserGetPostRequestEx(Sender: TObject; IsGet: Boolean;
       const URL, Query, EncType, RefererX: WideString; Reload: Boolean;
-      var NewURL: WideString; var DocType: ThtmlFileType;
+      var NewURL: WideString; var DocType: ThtDocType;
       var Stream: TStream);
     procedure GetImageRequest(Sender: TObject; const URL: WideString; var Stream: TStream);
     procedure HotSpotTargetClick(Sender: TObject; const Target, URL: WideString; var Handled: Boolean);
