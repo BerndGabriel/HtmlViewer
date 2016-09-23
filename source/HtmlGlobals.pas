@@ -42,11 +42,7 @@ uses
   Classes, SysUtils, Graphics, Controls,
 {$ifdef LCL}
   LclIntf, LclType, LCLVersion, Types, Messages,
-  StdCtrls, Buttons, Forms, Base64, Dialogs,
-{$ifdef MSWINDOWS}
-{$else}
-  Process,
-{$endif}
+  StdCtrls, Buttons, Forms, Base64, Dialogs, Process,
   HtmlMisc,
   WideStringsLcl,
   {$ifdef DebugIt}
@@ -86,6 +82,7 @@ uses
 const
 {$ifndef LCL}
   lcl_fullversion = 0;
+  fpc_fullversion = 0;
 {$endif}
 {$ifndef MSWindows}
   //Charsets defined in unit Windows:
@@ -1187,30 +1184,22 @@ end;
 {$endif LCL}
 
 function StartProcess(const ApplicationName, Params: string; ShowWindow: Word): Boolean;
-{$ifdef MSWindows}
+{$ifdef LCL}
+{$if fpc_fullversion >= 20602}
 var
-  si: TStartupInfo;
-  pi: TProcessInformation;
-  CommandLine: string;
+  CommandLine: String;
+  Output: String;
 begin
-  FillMemory(@si, SizeOf(si), 0);
-  FillMemory(@pi, SizeOf(pi), 0);
-  si.cb := SizeOf(si);
-  si.dwFlags := STARTF_USESHOWWINDOW;
-  si.wShowWindow := ShowWindow;
   CommandLine := ApplicationName;
   if Pos(' ', CommandLine) > 0 then
     CommandLine := '"' + CommandLine + '"';
+
   if Length(Params) > 0 then
     CommandLine := CommandLine + ' ' + Params;
-  UniqueString(CommandLine);
-  Result := CreateProcess(PChar(ApplicationName), PChar(CommandLine), nil, nil, False, 0, nil, nil, si, pi);
-  CloseHandle(pi.hProcess);
-  CloseHandle(pi.hThread);
+
+  Result := RunCommand(CommandLine, Output);
 end;
-{$endif}
-{$ifdef LCL}
-{$if lcl_fullversion < 2060200}
+{$else}
 var
   Process: TProcess;
   I: Integer;
@@ -1232,21 +1221,28 @@ begin
     Process.Free;
   end;
 end;
+{$ifend}
 {$else}
 var
-  CommandLine: String;
-  Output: String;
+  si: TStartupInfo;
+  pi: TProcessInformation;
+  CommandLine: string;
 begin
+  FillMemory(@si, SizeOf(si), 0);
+  FillMemory(@pi, SizeOf(pi), 0);
+  si.cb := SizeOf(si);
+  si.dwFlags := STARTF_USESHOWWINDOW;
+  si.wShowWindow := ShowWindow;
   CommandLine := ApplicationName;
   if Pos(' ', CommandLine) > 0 then
     CommandLine := '"' + CommandLine + '"';
-
   if Length(Params) > 0 then
     CommandLine := CommandLine + ' ' + Params;
-
-  Result := RunCommand(CommandLine, Output);
+  UniqueString(CommandLine);
+  Result := CreateProcess(PChar(ApplicationName), PChar(CommandLine), nil, nil, False, 0, nil, nil, si, pi);
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
 end;
-{$ifend}
 {$endif}
 
 { ThtBitmap }
