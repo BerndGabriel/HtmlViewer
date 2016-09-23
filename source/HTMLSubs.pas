@@ -77,7 +77,7 @@ uses
 {$endif}
   Messages, Graphics, Controls, ExtCtrls, Classes, SysUtils, Variants, Forms, Math, Contnrs, ComCtrls,
 {$ifdef LCL}
-  LclIntf, LclType, HtmlMisc, types,
+  LclIntf, LclType, Types, HtmlMisc,
 {$endif}
   HtmlGlobals,
   HtmlFonts,
@@ -2299,19 +2299,22 @@ begin
   else
   begin {Look back for the TFontObj with the TabControl}
     List := FSection.Document.LinkList;
-    I := List.IndexOf(Self);
-    if I >= 0 then
-      for J := I - 1 downto 0 do
-        if (Self.UrlTarget.ID = List[J].UrlTarget.ID) then
-        begin
-          if Assigned(List[J].TabControl) then
+    if List <> nil then
+    begin
+      I := List.IndexOf(Self);
+      if I >= 0 then
+        for J := I - 1 downto 0 do
+          if (Self.UrlTarget.ID = List[J].UrlTarget.ID) then
           begin
-            List[J].FYValue := Y;
-            break;
-          end;
-        end
-        else
-          Break;
+            if Assigned(List[J].TabControl) then
+            begin
+              List[J].FYValue := Y;
+              break;
+            end;
+          end
+          else
+            Break;
+    end;
   end;
 end;
 
@@ -2911,8 +2914,6 @@ var
   SubstImage: Boolean;
   HasBlueBox: Boolean;
   UName: ThtString;
-  MargArrayO: ThtVMarginArray;
-  AutoCount: Integer;
 begin
   ViewImages := Document.ShowImages;
   case FDisplay of
@@ -3170,10 +3171,10 @@ var
   Ofst: Integer;
   SaveColor: TColor;
   ARect: TRect;
-  SaveWidth: Integer;
-  SaveStyle: TPenStyle;
+//  SaveWidth: Integer;
+//  SaveStyle: TPenStyle;
   YY: Integer;
-  ORect, IRect: TRect;
+//  ORect, IRect: TRect;
 {$ifdef has_StyleElements}
   LStyle : TStyleElements;
 {$endif}
@@ -14539,25 +14540,18 @@ end;
 procedure TFormRadioButton.CreateWnd;
 begin
   inherited CreateWnd;
-  SendMessage(Handle, BM_SETCHECK, Integer(FChecked), 0);
+  inherited SetChecked(FChecked);
 end;
 
 procedure TFormRadioButton.SetChecked(Value: Boolean);
 begin
-  if GetKeyState(vk_Tab) < 0 then {ignore if tab key down}
+  if GetKeyState(VK_TAB) < 0 then {ignore if tab key down}
     Exit;
   if FChecked <> Value then
   begin
     FChecked := Value;
     TabStop := Value;
-    if HandleAllocated then
-      SendMessage(Handle, BM_SETCHECK, Integer(Checked), 0);
-    if Value then
-    begin
-      inherited Changed;
-      if not ClicksDisabled then
-        Click;
-    end;
+    inherited SetChecked(FChecked);
   end;
 end;
 

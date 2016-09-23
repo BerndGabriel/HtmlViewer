@@ -572,7 +572,7 @@ begin
           OldFrameSet.UnloadFiles;
           OldFrameSet.Visible := False;
         end;
-        Invalidate; //RePaint;
+        Invalidate;
       end;
     finally
       Doc.Free;
@@ -883,18 +883,6 @@ begin
       OldFrameSet.UnloadFiles;
       CurbrFrameSet.Visible := True;
       CurbrFrameSet.BringToFront;
-//      if Visible then
-//      begin
-//        SendMessage(Handle, wm_SetRedraw, 0, 0);
-//        try
-//          CurbrFrameSet.BringToFront;
-//        finally
-//          SendMessage(Handle, wm_SetRedraw, 1, 0);
-//          Repaint;
-//        end;
-//        CurbrFrameSet.Repaint;
-//      end;
-
       BumpHistory(OldFrameSet, OldPos);
     end
     else

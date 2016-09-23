@@ -1328,7 +1328,7 @@ begin
         OldFrameSet.Visible := False;
         OldFrameSet.DestroyHandle;
       end;
-      Invalidate; //RePaint;
+      Invalidate;
     end;
   except
     Source := OldName;
@@ -2802,7 +2802,9 @@ begin
         FCurFrameSet := OldFrameSet;
         raise;
       end;
-      CurFrameSet.BringToFront;
+      CurFrameSet.Visible := True;
+      if Visible then
+        CurFrameSet.BringToFront;
       OldFrameSet.Visible := False;
       OldFrameSet.UnloadFiles;
       BumpHistory(OldFrameSet, OldPos);
@@ -2817,7 +2819,7 @@ begin
   finally
     SendMessage(Handle, wm_SetRedraw, 1, 0);
     EndProcessing;
-    Repaint;
+    Invalidate;
   end;
 end;
 
@@ -3386,21 +3388,24 @@ begin
     FrameSet := FHistory.Objects[Value] as TFrameSetBase;
     if FrameSet <> CurFrameSet then
     begin
-      FrameSet1 := CurFrameSet; {swap framesets}
-      FCurFrameSet := FrameSet;
-      CurFrameSet.OldWidth := 0; {encourage recalc of internal layout}
-      CurFrameSet.Visible := False;
-      Self.InsertControl(CurFrameSet);
-      if CurFrameSet.Viewers.Count = 1 then
-        CurFrameSet.ReloadFiles(integer(FPosition[Value]))
-      else
-        CurFrameSet.ReloadFiles(-1);
-      SendMessage(Self.handle, wm_SetRedraw, 0, 0);
-      CurFrameSet.Visible := True;
-      SendMessage(Self.handle, wm_SetRedraw, 1, 0);
-      CurFrameSet.Repaint;
-      FrameSet1.Unloadfiles;
-      Self.RemoveControl(FrameSet1);
+      SendMessage(Handle, WM_SETREDRAW, 0, 0);
+      try
+        FrameSet1 := CurFrameSet; {swap framesets}
+        FCurFrameSet := FrameSet;
+        CurFrameSet.OldWidth := 0; {encourage recalc of internal layout}
+        CurFrameSet.Visible := False;
+        Self.InsertControl(CurFrameSet);
+        if CurFrameSet.Viewers.Count = 1 then
+          CurFrameSet.ReloadFiles(integer(FPosition[Value]))
+        else
+          CurFrameSet.ReloadFiles(-1);
+        CurFrameSet.Visible := True;
+        FrameSet1.Unloadfiles;
+        Self.RemoveControl(FrameSet1);
+      finally
+        SendMessage(Handle, WM_SETREDRAW, 1, 0);
+        Invalidate;
+      end;
     end
     else
     begin
@@ -4689,80 +4694,52 @@ end;
 procedure TFVBase.LoadFromStringInternal(const Text, Name, Dest: ThtString);
 var
   OldFrameSet: TFrameSetBase;
-  OldFile, S: ThtString;
+  S: ThtString;
   OldPos: integer;
   Tmp: TObject;
-  SameName: boolean;
 begin
   BeginProcessing;
   IOResult; {remove any pending file errors}
   try
-    OldFile := CurFrameSet.FCurrentFile;
     ProcessList.Clear;
     if Assigned(OnSoundRequest) then
       OnSoundRequest(Self, '', 0, True);
+    OldPos := 0;
+    if (CurFrameSet.Viewers.Count = 1) then
+    begin
+      Tmp := CurFrameSet.Viewers[0];
+      if Tmp is THtmlViewer then
+        OldPos := THtmlViewer(Tmp).Position;
+    end;
     if Name <> '' then
       S := Name
     else
       S := 'source://' + Text;
-    SameName := CompareText(OldFile, S) = 0;
-    if not SameName then
+    if CompareText(CurFrameSet.FCurrentFile, S) <> 0 then
     begin
       OldFrameSet := CurFrameSet;
       FCurFrameSet := GetFrameSetClass.Create(Self);
-      CurFrameSet.Align := alClient;
-      CurFrameSet.visible := False;
-      InsertControl(CurFrameSet);
-      CurFrameSet.SendToBack;
-      CurFrameSet.Visible := True;
-
       try
+        CurFrameSet.Align := alClient;
+        CurFrameSet.Parent := Self;
+        CurFrameSet.SendToBack;
         CurFrameSet.LoadFromString(Text, Name, Dest);
       except
-        RemoveControl(CurFrameSet);
         CurFrameSet.Free;
         FCurFrameSet := OldFrameSet;
         raise;
       end;
 
-      OldPos := 0;
-      if (OldFrameSet.Viewers.Count = 1) then
-      begin
-        Tmp := OldFrameSet.Viewers[0];
-        if Tmp is THtmlViewer then
-          OldPos := THtmlViewer(Tmp).Position;
-      end;
-      OldFrameSet.UnloadFiles;
       CurFrameSet.Visible := True;
       if Visible then
-      begin
-        SendMessage(Handle, wm_SetRedraw, 0, 0);
-        try
-          CurFrameSet.BringToFront;
-        finally
-          SendMessage(Handle, wm_SetRedraw, 1, 0);
-          Repaint;
-        end;
-        CurFrameSet.Repaint;
-      end;
+        CurFrameSet.BringToFront;
+      OldFrameSet.Visible := False;
+      OldFrameSet.UnloadFiles;
       BumpHistory(OldFrameSet, OldPos);
     end
     else
     begin {Same Name}
-      OldPos := 0;
-      if (CurFrameSet.Viewers.Count = 1) then
-      begin
-        Tmp := CurFrameSet.Viewers[0];
-        if Tmp is THtmlViewer then
-          OldPos := THtmlViewer(Tmp).Position;
-      end;
-      SendMessage(Handle, wm_SetRedraw, 0, 0);
-      try
-        CurFrameSet.LoadFromString(Text, Name, Dest);
-      finally
-        SendMessage(Handle, wm_SetRedraw, 1, 0);
-        Repaint;
-      end;
+      CurFrameSet.LoadFromString(Text, Name, Dest);
       BumpHistory2(OldPos); {not executed if exception occurs}
     end;
     AddVisitedLink(S + Dest);
