@@ -36,7 +36,7 @@ uses
 {$endif}
   Messages,
 {$ifdef LCL}
-  LclIntf, LclType, Types, HtmlMisc, LclProc,
+  LclIntf, LclType, Types, LclProc, HtmlMisc,
 {$endif}
 {$ifdef scrollbarInClasses}
   System.Classes,
@@ -410,7 +410,6 @@ var
   T: TAttribute;
   Multiple: boolean;
   PntPanel: TWinControl; //TPaintPanel;
-  Tmp: ThtFont;
 begin
   inherited Create(Parent,Position,L,Prop);
   CodePage := Prop.CodePage;

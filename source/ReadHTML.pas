@@ -4824,7 +4824,7 @@ begin
   if LCh = AmperChar then
   begin
   // A mask character. This introduces special characters and must be followed
-  // by a '#' ThtChar or one of the predefined (named) entities.
+  // by '#' or one of the predefined (named) entities.
     Collect := '';
     NextCh;
     case LCh of
@@ -4850,6 +4850,7 @@ begin
               NextCh;
             until False;
           end;
+
         else
           // Decimal digits given.
           repeat
@@ -4862,6 +4863,7 @@ begin
             NextCh;
           until False;
         end;
+
         if N > 0 then
         begin
           AddNumericChar(I, False);
