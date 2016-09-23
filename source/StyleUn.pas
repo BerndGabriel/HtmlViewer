@@ -32,7 +32,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, //HtmlMisc,
+  LclIntf, LclType, HtmlMisc,
 {$else}
   Windows,
 {$endif}

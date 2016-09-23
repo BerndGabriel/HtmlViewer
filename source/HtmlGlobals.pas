@@ -41,7 +41,7 @@ uses
 {$endif}
   Classes, SysUtils, Graphics, Controls,
 {$ifdef LCL}
-  LclIntf, LclType, Types, Messages,
+  LclIntf, LclType, LCLVersion, Types, Messages,
   StdCtrls, Buttons, Forms, Base64, Dialogs,
 {$ifdef MSWINDOWS}
 {$else}
@@ -1207,6 +1207,31 @@ begin
   Result := CreateProcess(PChar(ApplicationName), PChar(CommandLine), nil, nil, False, 0, nil, nil, si, pi);
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
+end;
+{$endif}
+{$ifdef LCL}
+{$if lcl_fullversion < 2060200}
+var
+  Process: TProcess;
+  I: Integer;
+begin
+  Process := TProcess.Create(nil);
+  try
+    Process.Executable := ApplicationName;
+    Process.Parameters.Add(Params);
+    Process.Options := [];
+    Process.InheritHandles := False;
+    Process.ShowWindow := swoShow;
+
+    // Copy default environment variables including DISPLAY variable for GUI application to work
+    for I := 1 to GetEnvironmentVariableCount do
+      Process.Environment.Add(GetEnvironmentString(I));
+
+    Process.Execute;
+  finally
+    Process.Free;
+  end;
+end;
 {$else}
 var
   CommandLine: String;
@@ -1215,11 +1240,14 @@ begin
   CommandLine := ApplicationName;
   if Pos(' ', CommandLine) > 0 then
     CommandLine := '"' + CommandLine + '"';
+
   if Length(Params) > 0 then
     CommandLine := CommandLine + ' ' + Params;
+
   Result := RunCommand(CommandLine, Output);
-{$endif}
 end;
+{$ifend}
+{$endif}
 
 { ThtBitmap }
 
