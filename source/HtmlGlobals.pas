@@ -77,6 +77,7 @@ uses
     {$endif}
   {$endif UseTNT}
 {$endif}
+  Clipbrd,
   Math;
 
 const
@@ -494,6 +495,9 @@ function ThemedColor(const AColor : TColor
 
 function TextEndsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
 function TextStartsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
+
+procedure CopyToClipBoardAsHtml(const Str: UTF8String);
+procedure CopyToClipBoardAsText(const Str: ThtString);
 
 implementation
 
@@ -1228,6 +1232,76 @@ begin
   Result := CreateProcess(PChar(ApplicationName), PChar(CommandLine), nil, nil, False, 0, nil, nil, si, pi);
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
+end;
+{$endif}
+
+//-- BG ---------------------------------------------------------- 26.09.2016 --
+procedure CopyToClipBoardAsHtml(const Str: UTF8String);
+// Put SOURCE on the clipboard, using FORMAT as the clipboard format
+const
+  HtmlClipboardFormat = 'HTML Format';
+var
+  CF_HTML: UINT;
+  Len: Integer;
+{$ifdef LCL}
+  Str1: UTF8String;
+{$else}
+  Mem: HGLOBAL;
+  Buf: PAnsiChar;
+{$endif}
+begin
+  CF_HTML := RegisterClipboardFormat(HtmlClipboardFormat); {not sure this is necessary}
+  Len := Length(Str);
+{$ifdef LCL}
+  Str1 := Str;
+  Clipboard.AddFormat(CF_HTML, Str1[1], Len);
+{$else}
+  Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len + 1);
+  try
+    Buf := GlobalLock(Mem);
+    try
+      Move(Str[1], Buf[0], Len);
+      Buf[Len] := #0;
+      SetClipboardData(CF_HTML, Mem);
+    finally
+      GlobalUnlock(Mem);
+    end;
+  except
+    GlobalFree(Mem);
+  end;
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 26.09.2016 --
+procedure CopyToClipboardAsText(const Str: ThtString);
+{$ifdef LCL}
+var
+  Utf8: Utf8String;
+begin
+  Utf8 := Utf8Encode(Str);
+  Clipboard.AsText := Utf8;
+end;
+{$else}
+var
+  Len: Integer;
+  Mem: HGLOBAL;
+  Wuf: PWideChar;
+begin
+  Len := Length(Str);
+  Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(WideChar));
+  try
+    Wuf := GlobalLock(Mem);
+    try
+      Move(Str[1], Wuf[0], Len * SizeOf(WideChar));
+      Wuf[Len] := #0;
+      // BG, 28.06.2012: use API method. The vcl clipboard does not support multiple formats.
+      SetClipboardData(CF_UNICODETEXT, Mem);
+    finally
+      GlobalUnlock(Mem);
+    end;
+  except
+    GlobalFree(Mem);
+  end;
 end;
 {$endif}
 

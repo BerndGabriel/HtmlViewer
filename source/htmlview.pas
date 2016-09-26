@@ -326,6 +326,7 @@ type
     function GetScrollPos: Integer;
     function GetSelLength: Integer;
     function GetSelText: UnicodeString;
+    function GetSelHtml: UTF8String;
     function GetViewImages: Boolean;
     function GetWordAtCursor(X, Y: Integer; var St, En: Integer; out AWord: UnicodeString): Boolean;
     procedure BackgroundChange(Sender: TObject);
@@ -545,6 +546,7 @@ type
     //property Processing: Boolean index vsProcessing read GetViewerStateBit; //BG, 25.11.2010: C++Builder fails handling enumeration indexed properties
     property PrintedSize: TPoint read FPrintedSize; // PrintedSize is available after calling Print().
     property SectionList: ThtDocument read FSectionList;
+    property SelHtml: UTF8String read GetSelHtml;
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read FCaretPos write SetSelStart;
     property SelText: UnicodeString read GetSelText;
@@ -4489,47 +4491,57 @@ begin
 end;
 
 procedure THtmlViewer.CopyToClipboard;
+var
+  Len: Integer;
+begin
+  Len := FSectionList.GetSelLength;
+  if Len = 0 then
+    Exit;
 
-  procedure CopyToClipboardAsHtml(HTML: ThtString; StSrc, EnSrc: Integer);
+  Clipboard.Open;
+  try
+    Clipboard.Clear;
 
-    procedure CopyToClipBoard(Utf8: AnsiString; Len: Integer);
-    // Put SOURCE on the clipboard, using FORMAT as the clipboard format
-  {$ifdef LCL}
-    var
-      CF_HTML: UINT;
-    begin
-      CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-      Clipboard.AddFormat(CF_HTML, Utf8, Len);
-    end;
-  {$else}
-    var
-      Mem: HGLOBAL;
-      Buf: PAnsiChar;
-      CF_HTML: UINT;
-    begin
-      CF_HTML := RegisterClipboardFormat('HTML Format'); {not sure this is necessary}
-      Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, Len + 1);
-      try
-        Buf := GlobalLock(Mem);
-        try
-          Move(Utf8[1], Buf[0], Len);
-          Buf[Len] := #0;
-          SetClipboardData(CF_HTML, Mem);
-        finally
-          GlobalUnlock(Mem);
-        end;
-      except
-        GlobalFree(Mem);
-      end;
-    end;
-  {$endif}
+    CopyToClipboardAsText(SelText);
+    CopyToClipBoardAsHtml(SelHtml);
 
+  finally
+    Clipboard.Close;
+  end;
+end;
+
+function THtmlViewer.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
+begin
+  if BufSize <= 0 then
+    Result := 0
+  else
+    Result := FSectionList.GetSelTextBuf(Buffer, BufSize);
+end;
+
+function THtmlViewer.GetSelText: UnicodeString;
+var
+  Len: Integer;
+begin
+  Len := FSectionList.GetSelLength;
+  if Len > 0 then
+  begin
+    SetString(Result, nil, Len);
+    FSectionList.GetSelTextBuf(Pointer(Result), Len + 1);
+  end
+  else
+    Result := '';
+end;
+
+//-- BG ---------------------------------------------------------- 26.09.2016 --
+function THtmlViewer.GetSelHtml: UTF8String;
+
+  function ToClipboardHtml(HTML: ThtString; StSrc, EnSrc: Integer): UTF8String;
     const
       // about clipboard format: http://msdn.microsoft.com/en-us/library/aa767917%28v=vs.85%29.aspx
       StartFrag: ThtString = '<!--StartFragment-->';
       EndFrag: ThtString = '<!--EndFragment-->';
 
-    function GetCopy(const HTML: ThtString): AnsiString;
+    function GetCopy(const HTML: ThtString): UTF8String;
     const
       PreliminaryHeader: ThtString =
         'Version:1.0'#13#10 +
@@ -4553,14 +4565,12 @@ procedure THtmlViewer.CopyToClipboard;
     var
       Header: ThtString;
       URLString: ThtString;
-      Utf8Header: AnsiString;
-      Utf8Html: AnsiString;
-
-      StartHTMLIndex,
-      EndHTMLIndex,
-      StartFragmentIndex,
+      Utf8Header: UTF8String;
+      Utf8Html: UTF8String;
+      StartHTMLIndex: Integer;
+      EndHTMLIndex: Integer;
+      StartFragmentIndex: Integer;
       EndFragmentIndex: Integer;
-
     begin
       // prepare header (without indexes yet):
       if CurrentFile = '' then
@@ -4687,8 +4697,6 @@ procedure THtmlViewer.CopyToClipboard;
 
   const
     DocType: ThtString = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">'#13#10;
-  var
-    Utf8String: AnsiString;
   begin
   {Truncate beyond EnSrc}
     HTML := Copy(HTML, 1, EnSrc - 1);
@@ -4708,23 +4716,17 @@ procedure THtmlViewer.CopyToClipboard;
   {Add Doctype tag at start and append the EndFrag ThtString}
     HTML := DocType + HTML + EndFrag;
   {Add the header to start}
-    Utf8String := GetCopy(HTML);
-    CopyToClipBoard(Utf8String, Length(Utf8String));
+    Result := GetCopy(HTML);
   end;
 
 var
-  Leng: Integer;
-  StSrc, EnSrc: Integer;
+  Len: Integer;
   HTML: ThtString;
+  StSrc, EnSrc: Integer;
 begin
-  Leng := FSectionList.GetSelLength;
-  if Leng = 0 then
-    Exit;
-  Clipboard.Open;
-  try
-    Clipboard.Clear;
-    FSectionList.CopyToClipboardA(Leng + 1);
-
+  Len := FSectionList.GetSelLength;
+  if Len > 0 then
+  begin
     HTML := DocumentSource;
     StSrc := FindSourcePos(FSectionList.SelB);
     EnSrc := FindSourcePos(FSectionList.SelE);
@@ -4753,29 +4755,7 @@ begin
     else
       Inc(EnSrc);
 
-    CopyToClipboardAsHtml(Html, StSrc, EnSrc);
-  finally
-    Clipboard.Close;
-  end;
-end;
-
-function THtmlViewer.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
-begin
-  if BufSize <= 0 then
-    Result := 0
-  else
-    Result := FSectionList.GetSelTextBuf(Buffer, BufSize);
-end;
-
-function THtmlViewer.GetSelText: UnicodeString;
-var
-  Len: Integer;
-begin
-  Len := FSectionList.GetSelLength;
-  if Len > 0 then
-  begin
-    SetString(Result, nil, Len);
-    FSectionList.GetSelTextBuf(Pointer(Result), Len + 1);
+    Result := ToClipboardHtml(Html, StSrc, EnSrc);
   end
   else
     Result := '';

@@ -300,7 +300,7 @@ type
     function PtInObject(X, Y: Integer; out Obj: TObject; out IX, IY: Integer): Boolean; virtual;
     function PtInDrawRect(X, Y: Integer; var IX, IY: Integer): Boolean; virtual;
     procedure AddSectionsToList; virtual;
-    procedure CopyToClipboard; virtual;
+    procedure CopySelectedText; virtual;
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); virtual;
   end;
 
@@ -439,7 +439,7 @@ type
     procedure Add(Item: TSectionBase; TagIndex: Integer); overload;
     procedure Add(var Section: TSection; TagIndex: Integer); overload;
     procedure AddSectionsToList;
-    procedure CopyToClipboard;
+    procedure CopySelectedText;
 {$ifdef UseFormTree}
     procedure FormTree(const Indent: ThtString; var Tree: ThtString);
 {$endif UseFormTree}
@@ -749,7 +749,7 @@ type
     procedure Allocate(N: Integer);
     procedure ChangeFont(Prop: TProperties);
     procedure CheckFree;
-    procedure CopyToClipboard; override;
+    procedure CopySelectedText; override;
     procedure Finish;
     procedure HRef(IsHRef: Boolean; List: ThtDocument; AnURL: TUrlTarget; Attributes: TAttributeList; Prop: TProperties);
     procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
@@ -845,7 +845,7 @@ type
     procedure AddSectionsToList; override;
     procedure CollapseAdjoiningMargins;
     procedure CollapseNestedMargins;
-    procedure CopyToClipboard; override;
+    procedure CopySelectedText; override;
     procedure DrawBlock(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
     procedure DrawSort;
     procedure DrawTheList(Canvas: TCanvas; const ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
@@ -1405,7 +1405,7 @@ type
     function FindStringR(From: Integer; const ToFind: UnicodeString; MatchCase: Boolean): Integer; override;
     function FindSourcePos(DocPos: Integer): Integer; override;
     function FindDocPos(SourcePos: Integer; Prev: Boolean): Integer; override;
-    procedure CopyToClipboard; override;
+    procedure CopySelectedText; override;
     property ColSpecs: TColSpecList read FColSpecs;
     property TableHeight: Integer read SectionHeight write SectionHeight;   {height of table itself, not incl caption}
   end;
@@ -1575,7 +1575,6 @@ type
     procedure CheckGIFList(Sender: TObject);
     procedure Clear; override;
     procedure ClearLists;
-    procedure CopyToClipboardA(Leng: Integer);
     procedure GetBackgroundImage;
     procedure HideControls;
     procedure InsertImage(const Src: ThtString; Stream: TStream; out Reformat: Boolean); overload;
@@ -1630,7 +1629,7 @@ type
 
     constructor Create(Parent: TCellBasic; L: TAttributeList; Prop: TProperties);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
-    procedure CopyToClipboard; override;
+    procedure CopySelectedText; override;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
   end;
@@ -4442,9 +4441,9 @@ begin
     end;
 end;
 
-{----------------TCellBasic.CopyToClipboard}
+{----------------TCellBasic.CopySelectedText}
 
-procedure TCellBasic.CopyToClipboard;
+procedure TCellBasic.CopySelectedText;
 var
   I: Integer;
   SLE, SLB: Integer;
@@ -4463,7 +4462,7 @@ begin
         Continue;
       if (SLE <= StartCurs) then
         Break;
-      CopyToClipboard;
+      CopySelectedText;
     end;
 end;
 
@@ -5129,15 +5128,15 @@ begin
   end;
 end;
 
-procedure TBlock.CopyToClipboard;
+procedure TBlock.CopySelectedText;
 begin
   case Display of
     pdNone:;
 {$ifdef DO_BLOCK_INLINE}
-    pdInline: inherited CopyToClipboard;
+    pdInline: inherited CopySelectedText;
 {$endif}
   else
-    MyCell.CopyToClipboard;
+    MyCell.CopySelectedText;
     if (Symbol = PSy) and (Document.SelE > MyCell.StartCurs + MyCell.Len) then
       Document.CB.AddTextCR('', 0);
   end;
@@ -7340,7 +7339,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 03.06.2012 --
-// extracted from CopyToClipboardA(), GetSelLength() and GetSelTextBuf().
+// extracted from CopyToClipboardAsText(), GetSelLength() and GetSelTextBuf().
 function ThtDocument.CopyToBuffer(Buffer: TSelTextCount): Integer;
 var
   I: Integer;
@@ -7355,19 +7354,13 @@ begin
           Continue;
         if SelE <= StartCurs then
           Break;
-        CopyToClipboard;
+        CopySelectedText;
       end;
     end;
     Result := CB.Terminate;
   finally
     FreeAndNil(CB);
   end;
-end;
-
-procedure ThtDocument.CopyToClipboardA(Leng: Integer);
-begin
-  if SelE > SelB then
-    CopyToBuffer(TClipBuffer.Create(Leng));
 end;
 
 function ThtDocument.GetSelLength: Integer;
@@ -10883,9 +10876,9 @@ begin
   Result := -1;
 end;
 
-{----------------THtmlTable.CopyToClipboard}
+{----------------THtmlTable.CopySelectedText}
 
-procedure THtmlTable.CopyToClipboard;
+procedure THtmlTable.CopySelectedText;
 var
   I, J: Integer;
   Row: TCellList;
@@ -10895,7 +10888,7 @@ begin
     Row := Rows[J];
     for I := 0 to Row.Count - 1 do
       if Row[I] is TCellObj then
-        TCellObj(Row[I]).Cell.CopyToClipboard;
+        TCellObj(Row[I]).Cell.CopySelectedText;
   end;
 end;
 
@@ -13430,9 +13423,9 @@ begin {TSection.Draw}
   end;
 end;
 
-{----------------TSection.CopyToClipboard}
+{----------------TSection.CopySelectedText}
 
-procedure TSection.CopyToClipboard;
+procedure TSection.CopySelectedText;
 var
   I, Strt, X1, X2: Integer;
   MySelB, MySelE: Integer;
@@ -14724,7 +14717,7 @@ begin
   System.Move(T.VSize, VSize, PtrSub(@BkGnd, @VSize) + Sizeof(BkGnd));
 end;
 
-procedure THorzLine.CopyToClipboard;
+procedure THorzLine.CopySelectedText;
 begin
   Document.CB.AddTextCR('', 0);
 end;
@@ -15496,7 +15489,7 @@ begin
   ZIndex := T.ZIndex;
 end;
 
-procedure TSectionBase.CopyToClipboard;
+procedure TSectionBase.CopySelectedText;
 begin
 end;
 

@@ -161,15 +161,6 @@ type
     function Terminate: Integer; override;
   end;
 
-  TClipBuffer = class(TSelTextBuf)
-  private
-    procedure CopyToClipboard;
-  public
-    constructor Create(Leng: Integer);
-    destructor Destroy; override;
-    function Terminate: Integer; override;
-  end;
-
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
@@ -1626,61 +1617,6 @@ function TSelTextBuf.Terminate: Integer;
 begin
   Buffer[Leng] := #0;
   Result := Leng + 1;
-end;
-
-{----------------ClipBuffer.Create}
-
-constructor TClipBuffer.Create(Leng: Integer);
-begin
-  inherited Create(nil, 0);
-  BufferLeng := Leng;
-  Getmem(Buffer, BufferLeng * 2);
-end;
-
-destructor TClipBuffer.Destroy;
-begin
-  if Assigned(Buffer) then
-    FreeMem(Buffer);
-  inherited Destroy;
-end;
-
-procedure TClipBuffer.CopyToClipboard;
-{$ifdef LCL}
-begin
-  Clipboard.AddFormat(CF_UNICODETEXT, Buffer[0], BufferLeng * sizeof(WIDECHAR));
-end;
-{$else}
-var
-  Len: Integer;
-  Mem: HGLOBAL;
-  Wuf: PWideChar;
-begin
-  Len := BufferLeng;
-  Mem := GlobalAlloc(GMEM_DDESHARE + GMEM_MOVEABLE, (Len + 1) * SizeOf(ThtChar));
-  try
-    Wuf := GlobalLock(Mem);
-    try
-      Move(Buffer[0], Wuf[0], Len * SizeOf(ThtChar));
-      Wuf[Len] := #0;
-      // BG, 28.06.2012: use API method. The vcl clipboard does not support multiple formats.
-      SetClipboardData(CF_UNICODETEXT, Mem);
-    finally
-      GlobalUnlock(Mem);
-    end;
-  except
-    GlobalFree(Mem);
-  end;
-end;
-{$endif}
-
-function TClipBuffer.Terminate: Integer;
-begin
-  Buffer[Leng] := #0;
-  Result := Leng + 1;
-  if IsWin32Platform then
-    Clipboard.AsText := Buffer
-  else
-    CopyToClipboard;
 end;
 
 { TMapArea }
