@@ -3002,7 +3002,7 @@ begin
 
   if not ViewImages or SubstImage then
   begin
-    if (SpecWidth >= 0) or (SpecHeight >= 0) then
+    if not SubstImage and ((SpecWidth >= 0) or (SpecHeight >= 0)) then
     begin {size to whatever is specified}
       AltWidth := ObjWidth;
       AltHeight := ObjHeight;
@@ -3251,7 +3251,7 @@ begin
 //      Inc(DrawYY, MargArray[BorderTopWidth]);
   end;
 
-  if not SubstImage or (AltHeight >= 16 + 8) and (AltWidth >= 16 + 8) then
+  if not SubstImage or ((AltHeight >= 16 + 8) and (AltWidth >= 16 + 8)) then
     Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage);
   Inc(DrawYY, Document.YOff);
   SetTextAlign(Canvas.Handle, TA_Top);
@@ -15341,30 +15341,28 @@ begin
   if MargArray[piWidth] <> IntNull then
   begin
     PercentWidth := False;
-    if MargArray[piWidth] = Auto then
-      SpecWidth := -1
-    else if (VarIsStr(MargArrayO[piWidth]))
-      and (System.Pos('%', MargArrayO[piWidth]) > 0) then
-    begin
-      PercentWidth := True;
-      SpecWidth := MulDiv(MargArray[piWidth], 100, DummyHtWd);
-    end
-    else
-      SpecWidth := MargArray[piWidth];
+    if MargArray[piWidth] <> Auto then
+      if (VarIsStr(MargArrayO[piWidth]))
+        and (System.Pos('%', MargArrayO[piWidth]) > 0) then
+      begin
+        PercentWidth := True;
+        SpecWidth := MulDiv(MargArray[piWidth], 100, DummyHtWd);
+      end
+      else
+        SpecWidth := MargArray[piWidth];
   end;
   if MargArray[piHeight] <> IntNull then
   begin
     PercentHeight := False;
-    if MargArray[piHeight] = Auto then
-      SpecHeight := -1
-    else if (VarIsStr(MargArrayO[piHeight]))
-      and (System.Pos('%', MargArrayO[piHeight]) > 0) then
-    begin
-      PercentHeight := True;
-      SpecHeight := MulDiv(MargArray[piHeight], 100, DummyHtWd);
-    end
-    else
-      SpecHeight := MargArray[piHeight];
+    if MargArray[piHeight] <> Auto then
+      if (VarIsStr(MargArrayO[piHeight]))
+        and (System.Pos('%', MargArrayO[piHeight]) > 0) then
+      begin
+        PercentHeight := True;
+        SpecHeight := MulDiv(MargArray[piHeight], 100, DummyHtWd);
+      end
+      else
+        SpecHeight := MargArray[piHeight];
   end;
 
   if Prop.GetVertAlign(Align) then
