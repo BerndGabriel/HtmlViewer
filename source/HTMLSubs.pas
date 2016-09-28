@@ -3635,7 +3635,7 @@ begin
   EmSize := Prop.EmSize;
   ExSize := Prop.ExSize;
   PercentWidth := (VarIsStr(MargArrayO[piWidth])) and (System.Pos('%', MargArrayO[piWidth]) > 0);
-  ConvInlineMargArray(MargArrayO, 100, 200, EmSize, ExSize, MargArray);
+  ConvInlineMargArray(MargArrayO, 100, 200, EmSize, ExSize, 4, MargArray);
 
   VSpaceT := 1;
   VSpaceB := 1;
@@ -5286,7 +5286,7 @@ var
   begin
     Result := ContentTop + MargArray[piHeight];
     if VarIsIntNull(MargArrayO[piHeight])
-      or (Self is TTableBlock and (Pos('%', VarToStr(MargArrayO[piHeight])) > 0))
+      or (Self is TTableBlock) // and (Pos('%', VarToStr(MargArrayO[piHeight])) > 0))
       or (VarToStr(MargArrayO[piHeight]) = 'auto')
     then
       Result := Max(Result, Max(ContentTop, ClientContentBot));
@@ -15326,8 +15326,7 @@ begin
   Prop.GetVMarginArray(MargArrayO);
   EmSize := Prop.EmSize;
   ExSize := Prop.ExSize;
-//  ConvInlineMargArray(MargArrayO, DummyHtWd, DummyHtWd, EmSize, ExSize, MargArray);
-  ConvMargArray(MargArrayO, DummyHtWd, DummyHtWd, EmSize, ExSize, BorderWidth, DummyAutoCount, MargArray);
+  ConvInlineMargArray(MargArrayO, DummyHtWd, DummyHtWd, EmSize, ExSize, BorderWidth, MargArray);
 
   if MargArray[MarginLeft] <> IntNull then
     HSpaceL := MargArray[MarginLeft];
