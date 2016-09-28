@@ -323,7 +323,7 @@ function VMargToMarg(const Value: Variant; Relative: Boolean; Base, EmSize, ExSi
 function ConvData(BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; AutoCount: Integer = 0): ThtConvData;
 procedure ConvMargProp(I: ThtPropIndices; const VM: ThtVMarginArray; var ConvData: ThtConvData; var M: ThtMarginArray);
 
-procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
+procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
 procedure ConvMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth: Integer; out AutoCount: Integer; var M: ThtMarginArray);
 procedure ConvMargArrayForCellPadding(const VM: ThtVMarginArray; EmSize, ExSize: Integer; var M: ThtMarginArray);
 procedure ConvVertMargins(const VM: ThtVMarginArray; var CD: ThtConvData; var M: ThtMarginArray);
@@ -1784,7 +1784,7 @@ begin
               else if VM[I] = 'thick' then
                 M[I] := 6
               else
-                M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, BorderWidth); {Auto will be 4}
+                M[I] := LengthConv(VM[I], False, Base(I), EmSize, ExSize, BorderWidth); {Auto will be 4}
             end
             else if (VarType(VM[I]) in varInt) then
             begin
@@ -2022,7 +2022,7 @@ end;
 {----------------ConvInlineMargArray}
 
 procedure ConvInlineMargArray(const VM: ThtVMarginArray; BaseWidth, BaseHeight, EmSize,
-  ExSize: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
+  ExSize, BorderWidth: Integer; {BStyle: ThtBorderStyle;} out M: ThtMarginArray);
  {$ifdef UseInline} inline; {$endif}
 {currently for images, form controls.  BaseWidth/Height and BStyle currently not supported}
 var
@@ -2086,7 +2086,7 @@ begin
               else if VM[I] = 'thick' then
                 M[I] := 6
               else
-                M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, 4); {Auto will be 4}
+                M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, BorderWidth); {Auto will be BorderWidth}
             end
             else if (VarType(VM[I]) in varInt) then
             begin
