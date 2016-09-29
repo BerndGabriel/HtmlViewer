@@ -177,6 +177,7 @@ type
     procedure DoP(const TermSet: TElemSymbSet);
     procedure DoScript(Ascript: TScriptEvent);
     procedure DoSound;
+    procedure DoStyle(var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: Boolean);
     procedure DoStyleLink;
     procedure DoTable;
     procedure DoText;
@@ -1606,7 +1607,7 @@ begin
 
     StyleSy:
       begin
-        DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
+        DoStyle(LCh, Doc, '', False);
         Next;
       end;
 
@@ -3180,7 +3181,7 @@ procedure THtmlParser.DoCommonSy;
 
                 StyleSy:
                   begin
-                    DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
+                    DoStyle(LCh, Doc, '', False);
                     Next;
                   end;
               end;
@@ -3554,7 +3555,7 @@ begin
 
     StyleSy:
       begin
-        DoStyle(PropStack.Document.Styles, LCh, Doc, '', False, FUseQuirksMode);
+        DoStyle(LCh, Doc, '', False);
         Next;
       end;
   else
@@ -3994,6 +3995,31 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 29.09.2016 --
+procedure THtmlParser.DoStyle(var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: Boolean);
+var
+  IsCss: Boolean;
+  I: Integer;
+begin
+  IsCss := True;
+  for I := 0 to  Attributes.Count - 1 do
+    with Attributes[I] do
+      case Which of
+        TypeSy:
+          IsCss := htLowerCase(Name) = 'text/css';
+      end;
+
+  if IsCss then
+    StylePars.DoStyle(PropStack.Document.Styles, C, Doc, APath, FromLink, FUseQuirksMode)
+  else if not IsXhtmlEndSy then
+  begin
+    GetCh; {make up for not having next character on entry}
+    repeat
+      Next;
+    until Sy in [StyleEndSy, EofSy];
+  end;
+end;
+
 procedure THtmlParser.DoStyleLink; {handle <link> for stylesheets}
 var
   Style: TBuffer;
@@ -4084,7 +4110,7 @@ begin
           Style := TBuffer.Create(Stream, Url);
           try
             C := SpcChar;
-            DoStyle(PropStack.Document.Styles, C, Style, Path, True, FUseQuirksMode);
+            DoStyle(C, Style, Path, True);
           finally
             Style.Free;
           end;
