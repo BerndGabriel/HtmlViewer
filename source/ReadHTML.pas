@@ -4011,7 +4011,7 @@ begin
 
   if IsCss then
     StylePars.DoStyle(PropStack.Document.Styles, C, Doc, APath, FromLink, FUseQuirksMode)
-  else if not IsXhtmlEndSy then
+  else if not IsXhtmlEndSy and not FromLink then
   begin
     GetCh; {make up for not having next character on entry}
     repeat
