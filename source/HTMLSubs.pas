@@ -2932,21 +2932,18 @@ begin
     if FImage = nil then
     begin
       TmpImage := nil;
-      //UName := htUpperCase(htTrim(Source));
-      UName := htTrim(Source);
+      UName := htTrim(FSource);
       if UName <> '' then
       begin
         if not Assigned(Document.GetBitmap) and not Assigned(Document.GetImage) then
-          FSource := Document.TheOwner.HtmlExpandFilename(Source)
+          FSource := htTrim(Document.TheOwner.HtmlExpandFilename(FSource))
         else if Assigned(Document.ExpandName) then
         begin
-          Document.ExpandName(Document.TheOwner, Source, Rslt);
-          FSource := Rslt;
+          Document.ExpandName(Document.TheOwner, FSource, Rslt);
+          FSource := htTrim(Rslt);
         end;
-        //UName := htUpperCase(htTrim(Source));
-        UName := htTrim(Source);
         if Document.MissingImages.IndexOf(UName) = -1 then
-          TmpImage := Document.GetTheImage(Source, Transparent, FromCache, Missing)
+          TmpImage := Document.GetTheImage(FSource, Transparent, FromCache, Missing)
         else
           Missing := True; {already in list, don't request it again}
       end;
@@ -5283,13 +5280,14 @@ var
   IB, Xin: Integer;
 
   function GetClientContentBot(ClientContentBot: Integer): Integer;
+  var
+    H: Integer;
   begin
-    Result := ContentTop + MargArray[piHeight];
-    if VarIsIntNull(MargArrayO[piHeight])
-      or (Self is TTableBlock) // and (Pos('%', VarToStr(MargArrayO[piHeight])) > 0))
-      or (VarToStr(MargArrayO[piHeight]) = 'auto')
-    then
-      Result := Max(Result, Max(ContentTop, ClientContentBot));
+    H := MargArray[piHeight];
+    if not VarIsIntNull(MargArrayO[piHeight]) then
+      if Pos('%', VarToStr(MargArrayO[piHeight])) > 0 then
+        H := LengthConv(MargArrayO[piHeight], False, ContainingBox.Bottom - ContainingBox.Top, EmSize, ExSize, 0);
+    Result := Max(H, Max(ContentTop, ClientContentBot));
   end;
 
   procedure DrawLogicAsBlock;
@@ -10315,9 +10313,9 @@ begin {THtmlTable.DrawLogic}
       CodeSite.SendFmtMsg('Stored TableWidth = %d, TableHeight = %d', [TableWidth, TableHeight]);
 {$endif}
     end;
+  finally
     MaxWidth := TableWidth;
     Result := TableHeight;
-  finally
     Dec(Document.TableNestLevel);
 {$ifdef JPM_DEBUGGING_LOGIC}
 {$ifdef JPM_DEBUGGING_LOGIC1}
@@ -13017,20 +13015,20 @@ var
 
                     end;
                     BottomP := TopP + FlObj.ClientHeight;
-                  end;
 
-                  if Start - Buff = BR.BStart then
-                  begin {border starts at image}
-                    BR.bRect.Top := TopP;
-                    BR.bRect.Left := CPx + FlObj.HSpaceL;
-                    if BR.BEnd = BR.BStart + 1 then {border ends with image also, rt side set by image width}
-                      BR.bRect.Right := BR.bRect.Left + FlObj.ClientWidth;
-                    BR.bRect.Bottom := BottomP;
-                  end
-                  else if Start - Buff <> BR.BEnd then
-                  begin {image is included in border and may effect the border top and bottom}
-                    BR.bRect.Top := Min(BR.bRect.Top, TopP);
-                    BR.bRect.Bottom := Max(BR.bRect.Bottom, BottomP);
+                    if Start - Buff = BR.BStart then
+                    begin {border starts at image}
+                      BR.bRect.Top := TopP;
+                      BR.bRect.Left := CPx + FlObj.HSpaceL;
+                      if BR.BEnd = BR.BStart + 1 then {border ends with image also, rt side set by image width}
+                        BR.bRect.Right := BR.bRect.Left + FlObj.ClientWidth;
+                      BR.bRect.Bottom := BottomP;
+                    end
+                    else if Start - Buff <> BR.BEnd then
+                    begin {image is included in border and may effect the border top and bottom}
+                      BR.bRect.Top := Min(BR.bRect.Top, TopP);
+                      BR.bRect.Bottom := Max(BR.bRect.Bottom, BottomP);
+                    end;
                   end;
                 end;
               end;
@@ -15307,7 +15305,6 @@ const
 var
   MargArrayO: ThtVMarginArray;
   Align: ThtAlignmentStyle;
-  DummyAutoCount: Integer;
 begin
   if Prop.GetVertAlign(Align) then
     VertAlign := Align;

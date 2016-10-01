@@ -911,6 +911,8 @@ begin
     else
       case I of
         MarginTop..BorderLeftStyle,
+        piMinHeight, piMinWidth,
+        piMaxHeight, piMaxWidth,
         piWidth, piHeight,
         piTop..piLeft:
           Props[I] := IntNull;

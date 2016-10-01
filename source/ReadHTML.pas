@@ -1458,7 +1458,7 @@ var
   IsInline: Boolean;
 begin
   case Sym of
-    DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy:
+    DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy, BlockQuoteSy:
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(Sym, Attributes);
@@ -1596,12 +1596,12 @@ begin
         end;
       until Sy <> FormSy; {in case <form> terminated by andother <form>}
 
-    BlockQuoteSy, AddressSy:
+    AddressSy:
       begin
         SectionList.Add(Section, TagIndex);
         Section := nil;
-        DoLists(Sy, TermSet + [BlockQuoteEndSy, AddressEndSy]);
-        if Sy in [BlockQuoteEndSy, AddressEndSy] then
+        DoLists(Sy, TermSet + [AddressEndSy]);
+        if Sy in [AddressEndSy] then
           Next;
       end;
 
