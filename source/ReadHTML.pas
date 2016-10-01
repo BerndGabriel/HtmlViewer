@@ -1947,10 +1947,10 @@ begin
     else
       SetJustify := NoJustify;
     PushNewProp(TableSy, Attributes);
-    Table := ThtmlTable.Create(SaveSectionList, Attributes, PropStack.Last);
-    NewBlock := TTableBlock.Create(SaveSectionList, Attributes, PropStack.Last, Table, TableLevel);
+    NewBlock := TTableBlock.Create(SaveSectionList, Attributes, PropStack.Last, TableLevel);
     if (NewBlock.Justify <> Centered) and not (NewBlock.Floating in [ALeft, ARight]) then
       NewBlock.Justify := SetJustify;
+    Table := NewBlock.Table;
     NewBlock.MyCell.Add(Table, TagIndex); {the only item in the cell}
     CombineBlock := TTableAndCaptionBlock.Create(SaveSectionList, Attributes, PropStack.Last, NewBlock); {will be needed if Caption found}
     CM := nil;

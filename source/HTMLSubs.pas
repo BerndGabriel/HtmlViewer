@@ -1309,7 +1309,7 @@ type
     Justify: ThtJustify;
     TableIndent: Integer;
 
-    constructor Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; ATable: THtmlTable; TableLevel: Integer);
+    constructor Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; TableLevel: Integer);
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
     function DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight, BlHt: Integer; IMgr: TIndentManager; var MaxWidth, Curs: Integer): Integer; override;
     function Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManager; X, XRef, YRef: Integer): Integer; override;
@@ -1339,6 +1339,7 @@ type
 
   THtmlTable = class(TSectionBase)
   private
+    FOwnerTableBlock: TTableBlock;
     TablePartRec: TTablePartRec;
     HeaderHeight, HeaderRowCount, FootHeight, FootStartRow, FootOffset: Integer;
     BodyBreak: Integer;
@@ -1359,7 +1360,7 @@ type
     procedure IncreaseWidthsRelatively(var Widths: TIntArray; StartIndex, EndIndex, Required, SpannedMultis: Integer; ExactRelation: Boolean);
     procedure IncreaseWidthsEvenly(WidthType: TWidthType; var Widths: TIntArray; StartIndex, EndIndex, Required, Spanned, Count: Integer);
     procedure Initialize; // add dummy cells, initialize cells, prepare arrays
-    procedure GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
+    procedure GetMinMaxWidths(Canvas: TCanvas);
   public
     Rows: TRowList;        {a list of TCellLists}
     // these fields are copied via Move() in CreateCopy. Don't add reference counted data like strings and arrays.
@@ -1389,7 +1390,7 @@ type
     Widths: TIntArray;       {holds calculated column widths}
     Heights: TIntArray;      {holds calculated row heights}
 
-    constructor Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties);
+    constructor Create(OwnerTableBlock: TTableBlock; Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties);
     constructor CreateCopy(OwnerCell: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
     procedure DoColumns(Count: Integer; const SpecWidth: TSpecWidth; VAlign: ThtAlignmentStyle; const Align: ThtString);
@@ -4932,6 +4933,10 @@ begin
     Min := Math.Max(MinCell, MargArray[piWidth]) + LeftSide + RightSide;
     Max := Math.Max(MaxCell, MargArray[piWidth]) + LeftSide + RightSide;
   end;
+  if (MargArray[piMinWidth] > 0) and (MargArray[piMinWidth] > Min) then
+    Min := MargArray[piMinWidth];
+  if (MargArray[piMaxWidth] > 0) and (MargArray[piMaxWidth] < Max) then
+    Max := MargArray[piMaxWidth];
 
 {$IFDEF JPM_DEBUGGING}
   finally
@@ -6180,8 +6185,7 @@ end;
 
 {----------------TTableBlock.Create}
 
-constructor TTableBlock.Create(
-  Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; ATable: THtmlTable; TableLevel: Integer);
+constructor TTableBlock.Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties; TableLevel: Integer);
 var
   I, AutoCount: Integer;
   BorderWidth: Integer;
@@ -6192,27 +6196,29 @@ begin
   CodeSite.EnterMethod(Self,'TTableBlock.Create');
    {$ENDIF}
 
+  Table := THtmlTable.Create(Self, Parent, Attr, Prop);
+
   // BG, 20.01.2013: translate table attributes to block property defaults:
   MyProps := TProperties.CreateCopy(Prop);
   TheProps := MyProps;
   try
-    if ATable.BorderColor <> clNone then
-      MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], ATable.BorderColor)
+    if Table.BorderColor <> clNone then
+      MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], Table.BorderColor)
     else
     begin
-      if ATable.HasBorderWidthAttr then
+      if Table.HasBorderWidthAttr then
         MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], clGray)
       else
         MyProps.SetPropertyDefaults([BorderBottomColor, BorderRightColor, BorderTopColor, BorderLeftColor], clNone);
     end;
 
-     MyProps.SetPropertyDefault(BorderSpacingHorz, ATable.CellSpacingHorz);
-     MyProps.SetPropertyDefault(BorderSpacingVert, ATable.CellSpacingVert);
+     MyProps.SetPropertyDefault(BorderSpacingHorz, Table.CellSpacingHorz);
+     MyProps.SetPropertyDefault(BorderSpacingVert, Table.CellSpacingVert);
 
-    if ATable.HasBorderWidthAttr then
-      MyProps.SetPropertyDefaults([BorderBottomWidth, BorderRightWidth, BorderTopWidth, BorderLeftWidth], ATable.brdWidthAttr);
+    if Table.HasBorderWidthAttr then
+      MyProps.SetPropertyDefaults([BorderBottomWidth, BorderRightWidth, BorderTopWidth, BorderLeftWidth], Table.brdWidthAttr);
 
-    case ATable.Frame of
+    case Table.Frame of
       tfBox, tfBorder:
         MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssOutset);
 
@@ -6252,8 +6258,8 @@ begin
         MyProps.SetPropertyDefaults([BorderBottomStyle, BorderTopStyle, BorderLeftStyle], bssNone);
       end;
     else
-      if ATable.HasBorderWidthAttr then
-        if ATable.brdWidthAttr > 0 then
+      if Table.HasBorderWidthAttr then
+        if Table.brdWidthAttr > 0 then
           MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssOutset)
         else
           MyProps.SetPropertyDefaults([BorderBottomStyle, BorderRightStyle, BorderTopStyle, BorderLeftStyle], bssNone);
@@ -6264,7 +6270,6 @@ begin
     MyProps.Free;
   end;
 
-  Table := ATable;
   Justify := NoJustify;
 
   for I := 0 to Attr.Count - 1 do
@@ -6506,7 +6511,7 @@ begin
         Result := WidthAttr - (MargArray[PaddingLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingRight] + MargArray[BorderRightWidth]);
       Table.tblWidthAttr := Result;
       Table.MinMaxWidth(Canvas, Min, Max);
-      Table.tblWidthAttr := Math.Max(Min, Result);
+      Table.tblWidthAttr := Math.Max(Min, Math.Min(Max, Result));
     end;
     Result := Table.tblWidthAttr;
   end
@@ -8950,12 +8955,13 @@ end;
 
 {----------------THtmlTable.Create}
 
-constructor THtmlTable.Create(Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties);
+constructor THtmlTable.Create(OwnerTableBlock: TTableBlock; Parent: TCellBasic; Attr: TAttributeList; Prop: TProperties);
 var
   I: Integer;
   A: TAttribute;
 begin
   inherited Create(Parent, Attr, Prop);
+  FOwnerTableBlock := OwnerTableBlock;
   if FDisplay = pdUnassigned then
     FDisplay := pdTable;
   Rows := TRowList.Create;
@@ -9421,8 +9427,9 @@ procedure THtmlTable.IncreaseWidthsEvenly(WidthType: TWidthType; var Widths: TIn
   StartIndex, EndIndex, Required, Spanned, Count: Integer);
 // Increases width of spanned columns of given type evenly.
 var
-  RemainingWidth, I: Integer;
+  RemainingWidth, I, N: Integer;
 begin
+  N := Count;
   RemainingWidth := Required;
   for I := EndIndex downto StartIndex do
     if ColumnSpecs[I] = WidthType then
@@ -9430,7 +9437,8 @@ begin
       begin
         Dec(Count);
         // MulDiv for each column instead of 1 precalculated width for all columns avoids round off errors.
-        Widths[I] := MulDiv(Widths[I], Required, Spanned);
+        Widths[I] := MulDiv(Max(1, Widths[I]), Required, Spanned);
+//        Inc(Widths[I], RemainingWidth - MulDiv(Required, Count, N));
         Dec(RemainingWidth, Widths[I]);
       end
       else
@@ -9443,7 +9451,7 @@ end;
 
 {----------------THtmlTable.GetWidths}
 
-procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas; TheWidth: Integer);
+procedure THtmlTable.GetMinMaxWidths(Canvas: TCanvas);
 // calculate MaxWidths and MinWidths of all columns.
 
   procedure UpdateColumnSpec(var Counts: TIntegerPerWidthType; var OldType: TWidthType; NewType: TWidthType);
@@ -9570,6 +9578,7 @@ begin
     MaxWidths[I] := 0;
     Percents[I] := 0;
     Multis[I] := 0;
+    ColumnSpecs[I] := wtNone;
     if I < J then
       with FColSpecs[I].FWidth do
       begin
@@ -9802,9 +9811,21 @@ end;
 procedure THtmlTable.MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer);
 begin
   Initialize; {in case it hasn't been done}
-  GetMinMaxWidths(Canvas, tblWidthAttr);
+  GetMinMaxWidths(Canvas);
   Min := Math.Max(Sum(MinWidths) + CellSpacingHorz, tblWidthAttr);
   Max := Math.Max(Sum(MaxWidths) + CellSpacingHorz, tblWidthAttr);
+
+  if FOwnerTableBlock.MargArray[piMinWidth] > 0 then
+  begin
+    Min := Math.Max(Min, FOwnerTableBlock.MargArray[piMinWidth]);
+    Max := Math.Max(Max, FOwnerTableBlock.MargArray[piMinWidth]);
+  end;
+
+  if FOwnerTableBlock.MargArray[piMaxWidth] > 0 then
+  begin
+    Min := Math.Min(Min, FOwnerTableBlock.MargArray[piMaxWidth]);
+    Max := Math.Min(Max, FOwnerTableBlock.MargArray[piMaxWidth]);
+  end;
 end;
 
 {----------------THtmlTable.DrawLogic}
@@ -9895,9 +9916,15 @@ function THtmlTable.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeigh
     Initialize;
 
     {Figure the width of each column}
-    GetMinMaxWidths(Canvas, NewWidth);
+    GetMinMaxWidths(Canvas);
+
     MinWidth := Sum(MinWidths);
+    if FOwnerTableBlock.MargArray[piMinWidth] > 0 then
+      MinWidth := Max(MinWidth, FOwnerTableBlock.MargArray[piMinWidth]);
+
     MaxWidth := Sum(MaxWidths);
+    if FOwnerTableBlock.MargArray[piMaxWidth] > 0 then
+      MaxWidth := Min(MaxWidth, FOwnerTableBlock.MargArray[piMaxWidth]);
 
     {fill in the Widths array}
     if MinWidth > NewWidth then
