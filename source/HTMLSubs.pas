@@ -9427,9 +9427,8 @@ procedure THtmlTable.IncreaseWidthsEvenly(WidthType: TWidthType; var Widths: TIn
   StartIndex, EndIndex, Required, Spanned, Count: Integer);
 // Increases width of spanned columns of given type evenly.
 var
-  RemainingWidth, I, N: Integer;
+  RemainingWidth, I: Integer;
 begin
-  N := Count;
   RemainingWidth := Required;
   for I := EndIndex downto StartIndex do
     if ColumnSpecs[I] = WidthType then
@@ -9437,8 +9436,7 @@ begin
       begin
         Dec(Count);
         // MulDiv for each column instead of 1 precalculated width for all columns avoids round off errors.
-        Widths[I] := MulDiv(Max(1, Widths[I]), Required, Spanned);
-//        Inc(Widths[I], RemainingWidth - MulDiv(Required, Count, N));
+        Widths[I] := MulDiv(Widths[I], Required, Spanned);
         Dec(RemainingWidth, Widths[I]);
       end
       else
@@ -11131,7 +11129,7 @@ procedure TSection.AddTokenObj(T: TTokenObj);
 var
   L, I, J: Integer;
   C: ThtTextWrap;
-  St, StU: WideString;
+  St, StU: ThtString;
   Small: Boolean;
   LastProps: TProperties;
 begin
@@ -12889,30 +12887,29 @@ var
   procedure DrawTheText(LineNo: Integer);
   var
     I, J, J1, J2, J3, J4,
-    //Index,
     Addon, TopP, BottomP, LeftT, Tmp, K: Integer;
     FlObj: TFloatingObj;
     FcObj: TFormControlObj;
     FO: TFontObj;
-    DC: HDC;
     ARect: TRect;
     Inverted, NewCP: Boolean;
-    Color: TColor;
+    ForeColor, BackColor: TColor;
+    BkMode: Integer;
     CPx, CPy, CP1x: Integer;
     BR: ThtBorderRec;
     LR: ThtLineRec;
     Start: PWideChar;
     Cnt, Descent: Integer;
-    St: UnicodeString;
+    St: ThtString;
 
-    function AddHyphen(P: PWideChar; N: Integer): UnicodeString;
+    function AddHyphen(P: PWideChar; N: Integer): ThtString;
     var
       I: Integer;
     begin
       SetLength(Result, N + 1);
       for I := 1 to N do
         Result[I] := P[I - 1];
-      Result[N + 1] := WideChar('-');
+      Result[N + 1] := ThtChar('-');
     end;
 
     function ChkInversion(Start: PWideChar; out Count: Integer): Boolean;
@@ -12983,7 +12980,13 @@ var
         end;
 
       FO.TheFont.AssignToCanvas(Canvas);
-      Canvas.Font.Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+      ForeColor := Canvas.Font.Color;
+      BackColor := FO.TheFont.bgColor;
+      if ForeColor <> clNone then
+         ForeColor := ThemedColor(ForeColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+      if BackColor <> clNone then
+         BackColor := ThemedColor(BackColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+      Canvas.Font.Color := ForeColor;
       if J2 = -1 then
       begin {it's an image or panel}
         if FlObj is TImageObj then
@@ -13206,44 +13209,44 @@ var
         J := Min(J, J3 - 1);
         I := Min(Cnt, J + 1);
 
+        BkMode := Opaque;
         if Inverted then
         begin
-          SetBkMode(Canvas.Handle, Opaque);
-          Canvas.Brush.Color := Canvas.Font.Color;
-          Canvas.Brush.Style := bsSolid;
-          if FO.TheFont.bgColor = clNone then
-          begin
-            Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-            Canvas.Font.Color := Color xor $FFFFFF;
-          end
+          if BackColor = clNone then
+            Canvas.Font.Color := ForeColor xor $FFFFFF
           else
-            Canvas.Font.Color := ThemedColor(FO.TheFont.bgColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-        end
-        else if FO.TheFont.BGColor = clNone then
-        begin
-          SetBkMode(Canvas.Handle, Transparent);
-          Canvas.Brush.Style := bsClear;
+            Canvas.Font.Color := BackColor;
+          BackColor := ForeColor;
         end
         else
+          if BackColor = clNone then
+            BkMode := Transparent;
+
+        if BkMode = Opaque then
         begin
-          SetBkMode(Canvas.Handle, Opaque);
+          Canvas.Brush.Color := BackColor;
           Canvas.Brush.Style := bsSolid;
-          Canvas.Brush.Color := ThemedColor(FO.TheFont.BGColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-        end;
+{$ifdef LCLgtk2}
+          // background is missing if Canvas.Brush.Color = GetBkColor(Canvas.Handle)
+          if Canvas.Brush.Color = GetBkColor(Canvas.Handle) then
+             Canvas.Brush.Color := Canvas.Brush.Color xor $010101;
+{$endif}
+        end
+        else
+          Canvas.Brush.Style := bsClear;
+        SetBkMode(Canvas.Handle, BkMode);
 
         if Document.Printing then
         begin
           if Document.PrintMonoBlack and
             (GetDeviceCaps(Canvas.Handle, NumColors) in [0..2]) then
           begin
-            Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-            if Color <> clWhite then
+            if Canvas.Font.Color <> clWhite then
               Canvas.Font.Color := clBlack; {Print black}
           end;
           if not Document.PrintTableBackground then
           begin
-            Color := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-            if (Color and $E0E0) = $E0E0 then
+            if (Canvas.Font.Color and $E0E0) = $E0E0 then
               Canvas.Font.Color := $2A0A0A0; {too near white or yellow, make it gray}
           end;
         end;
@@ -13327,7 +13330,7 @@ var
           if FO.Active then
           begin
             Canvas.Font.Color := clBlack; {black font needed for DrawFocusRect}
-            DC := Canvas.Handle; {Dummy call needed to make Delphi add font color change to handle}
+            Canvas.Handle; {Dummy call needed to make Delphi add font color change to handle}
             if Document.TheOwner.ShowFocusRect then //MK20091107
               Canvas.DrawFocusRect(ARect);
           end;
