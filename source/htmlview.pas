@@ -167,10 +167,10 @@ type
 
   ThvHistoryItem = class(THistoryItem)
   private
-    FFormData: TFreeList;
+    FFormData: TFormData;
   public
     destructor Destroy; override;
-    property FormData: TFreeList read FFormData write FFormData;
+    property FormData: TFormData read FFormData write FFormData;
   end;
 
   ThvHistory = class(THistory)
@@ -310,7 +310,7 @@ type
     function GetCursor: TCursor;
     function GetDocumentSource: ThtString;
     function GetFormControlList: TFormControlObjList;
-    function GetFormData: TFreeList;
+    function GetFormData: TFormData;
     function GetHScrollBarRange: Integer;
     function GetHScrollPos: Integer;
     function GetIDControl(const ID: ThtString): TIDObject;
@@ -348,7 +348,7 @@ type
     procedure SetBase(Value: ThtString);
     procedure SetBorderStyle(Value: THTMLBorderStyle);
     procedure SetCaretPos(Value: Integer);
-    procedure SetFormData(T: TFreeList);
+    procedure SetFormData(T: TFormData);
     procedure SetHistoryIndex(Value: Integer);
     procedure SetHScrollPos(Value: Integer);
     procedure SetIDDisplay(const ID: ThtString; Value: ThtDisplayStyle);
@@ -474,7 +474,7 @@ type
     function ShowFocusRect: Boolean; override;
     function XYToDisplayPos(X, Y: Integer): Integer;
     procedure AddVisitedLink(const S: ThtString);
-    procedure BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
+    procedure BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFormData; OldDocType: ThtmlFileType);
     procedure HistoryBack;
     procedure HistoryForward;
     procedure CheckVisitedLinks;
@@ -524,7 +524,7 @@ type
     property DocumentSource: ThtString read GetDocumentSource;
     property DocumentTitle: ThtString read FTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
-    property FormData: TFreeList read GetFormData write SetFormData;
+    property FormData: TFormData read GetFormData write SetFormData;
     property History: ThvHistory read FHistory;
     property HistoryIndex: Integer read GetHistoryIndex write SetHistoryIndex;
     property HScrollBarPosition: Integer read GetHScrollPos write SetHScrollPos;
@@ -701,7 +701,7 @@ type
   public
     Pos: Integer;
     FileType: ThtmlFileType;
-    FormData: TFreeList;
+    FormData: TFormData;
     destructor Destroy; override;
   end;
 
@@ -1096,7 +1096,7 @@ var
   OldFile, OldTitle: ThtString;
   OldPos: Integer;
   OldType: ThtmlFileType;
-  OldFormData: TFreeList;
+  OldFormData: TFormData;
 begin
   if IsProcessing then
     Exit;
@@ -2817,9 +2817,9 @@ var
 begin
   if HiWord(Value) = 0 then
     ScrollTo(LoWord(Value))
-  else if (Hiword(Value) - 1 < FSectionList.PositionList.Count) then
+  else if Hiword(Value) - 1 < FSectionList.PositionList.Count then
   begin
-    TopPos := TSectionBase(FSectionList.PositionList[HiWord(Value) - 1]).YPosition;
+    TopPos := FSectionList.PositionList[HiWord(Value) - 1].YPosition;
     ScrollTo(TopPos + LoWord(Value));
   end;
 end;
@@ -2903,7 +2903,7 @@ end;
 
 {----------------THtmlViewer.BumpHistory}
 
-procedure THtmlViewer.BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFreeList; OldDocType: ThtmlFileType);
+procedure THtmlViewer.BumpHistory(const OldFileName, OldTitle: ThtString; OldPos: Integer; OldFormData: TFormData; OldDocType: ThtmlFileType);
 var
   I: Integer;
   SameName: Boolean;
@@ -5058,15 +5058,18 @@ begin
     PaintPanel.OnDragOver := nil;
 end;
 
-function THtmlViewer.GetFormData: TFreeList;
+function THtmlViewer.GetFormData: TFormData;
 begin
-  if Assigned(SectionList) then
-    Result := SectionList.GetFormControlData
+  if Assigned(SectionList) and Assigned(SectionList.HtmlFormList) and (SectionList.HtmlFormList.Count > 0) then
+  begin
+    Result := TFormData.Create;
+    SectionList.GetFormControlData(Result);
+  end
   else
     Result := nil;
 end;
 
-procedure THtmlViewer.SetFormData(T: TFreeList);
+procedure THtmlViewer.SetFormData(T: TFormData);
 begin
   if Assigned(SectionList) and Assigned(T) then
     SectionList.SetFormControlData(T);

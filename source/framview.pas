@@ -36,7 +36,7 @@ uses
 {$else}
   Windows,
 {$endif}
-  SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math,
+  SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math, Contnrs,
   UrlConn,
   URLSubs,
   HtmlGlobals,
@@ -79,12 +79,12 @@ type
     FImageCache: ThtImageCache;
     FCursor: TCursor;
     FHistory, FTitleHistory: TStrings;
-    FHistoryIndex: integer;
+    FHistoryIndex: Integer;
     FOptions: TFrameViewerOptions;
     FPosition: TList;
     FProcessing, FViewerProcessing: Boolean;
     FViewerList: TStrings;
-    FViewImages: boolean;
+    FViewImages: Boolean;
     //
     FOnBlankWindowRequest: TWindowRequestEvent;
     FOnFileBrowse: TFileBrowseEvent;
@@ -95,19 +95,19 @@ type
     function GetFwdButtonEnabled: Boolean;
     function GetBackButtonEnabled: Boolean;
     procedure SetBase(Value: ThtString);
-    procedure SetCaretPos(Value: integer);
+    procedure SetCaretPos(Value: Integer);
     procedure SetCursor(Value: TCursor); reintroduce;
-    procedure SetHistoryIndex(Value: integer);
+    procedure SetHistoryIndex(Value: Integer);
     procedure SetOnFileBrowse(Handler: TFileBrowseEvent);
     procedure SetOnPrintHtmlFooter(Handler: THtmlPagePrinted);
     procedure SetOnPrintHtmlHeader(Handler: THtmlPagePrinted);
     procedure SetOnRightClick(Handler: TRightClickEvent);
     procedure SetOptions(Value: TFrameViewerOptions);
     procedure SetOurPalette(Value: HPalette);
-    procedure SetProcessing(Local, Viewer: boolean);
-    procedure SetSelLength(Value: integer);
-    procedure SetSelStart(Value: integer);
-    procedure SetViewImages(Value: boolean);
+    procedure SetProcessing(Local, Viewer: Boolean);
+    procedure SetSelLength(Value: Integer);
+    procedure SetSelStart(Value: Integer);
+    procedure SetViewImages(Value: Boolean);
   protected
     FBaseEx: ThtString;
     FURL: ThtString;
@@ -121,17 +121,17 @@ type
     function GetActiveViewer: THtmlViewer;
     function GetBase: ThtString;
     function GetBaseTarget: ThtString;
-    function GetCaretPos: integer;
+    function GetCaretPos: Integer;
     function GetCurrentFile: ThtString;
-    function GetCurViewer(I: integer): THtmlViewer;
-    function GetCurViewerCount: integer;
+    function GetCurViewer(I: Integer): THtmlViewer;
+    function GetCurViewerCount: Integer;
     function GetFrameSetClass: TFrameSetClass; virtual; abstract;
     function GetOurPalette: HPalette;
-    function GetProcessing: boolean;
-    function GetSelLength: integer;
-    function GetSelStart: integer;
+    function GetProcessing: Boolean;
+    function GetSelLength: Integer;
+    function GetSelStart: Integer;
     function GetSelText: UnicodeString;
-    function GetSelTextBuf(Buffer: PWideChar; BufSize: integer): integer;
+    function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
     function GetTitle: ThtString;
     function GetUseQuirksMode: Boolean; override;
@@ -142,17 +142,17 @@ type
     function HotSpotClickHandled(const FullUrl: ThtString; const Target: ThtString {= ''}): Boolean;
     procedure AddVisitedLink(const S: ThtString);
     procedure BeginProcessing; virtual;
-    procedure BumpHistory(OldFrameSet: TFrameSetBase; OldPos: integer);
-    procedure BumpHistory1(const FileName, Title: ThtString; OldPos: integer; ft: ThtmlFileType);
-    procedure BumpHistory2(OldPos: integer);
-    procedure CheckProcessing(Sender: TObject; ProcessingOn: boolean);
+    procedure BumpHistory(OldFrameSet: TFrameSetBase; OldPos: Integer);
+    procedure BumpHistory1(const FileName, Title: ThtString; OldPos: Integer; ft: ThtmlFileType);
+    procedure BumpHistory2(OldPos: Integer);
+    procedure CheckProcessing(Sender: TObject; ProcessingOn: Boolean);
     procedure CheckVisitedLinks; virtual; abstract;
     procedure ChkFree(Obj: TObject);
     procedure DoFormSubmitEvent(Sender: TObject; const Action, Target, EncType, Method: ThtString; Results: ThtStringList); virtual; abstract;
     procedure DoGetImage(Sender: TObject; const SRC: ThtString; var Stream: TStream); virtual;
     procedure DoURLRequest(Sender: TObject; const SRC: ThtString; var RStream: TStream); virtual; abstract;
     procedure EndProcessing; virtual;
-    procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: boolean); virtual; abstract;
+    procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: Boolean); virtual; abstract;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); virtual; abstract;
     procedure LoadFromStringInternal(const Text, Name, Dest: ThtString);
     procedure SetActiveColor(const Value: TColor); override;
@@ -160,14 +160,14 @@ type
     procedure SetDefBackground(const Value: TColor); override;
     procedure SetFontColor(const Value: TColor); override;
     procedure SetFontName(const Value: TFontName); override;
-    procedure SetFontSize(const Value: integer); override;
-    procedure SetHistoryMaxCount(const Value: integer); override;
+    procedure SetFontSize(const Value: Integer); override;
+    procedure SetHistoryMaxCount(const Value: Integer); override;
     procedure SetHotSpotColor(const Value: TColor); override;
-    procedure SetImageCacheCount(const Value: integer); override;
+    procedure SetImageCacheCount(const Value: Integer); override;
     procedure SetLoadCursor(const Value: TCursor); override;
-    procedure SetMarginHeight(const Value: integer); override;
-    procedure SetMarginWidth(const Value: integer); override;
-    procedure SetNoSelect(const Value: boolean); override;
+    procedure SetMarginHeight(const Value: Integer); override;
+    procedure SetMarginWidth(const Value: Integer); override;
+    procedure SetNoSelect(const Value: Boolean); override;
     procedure SetOnBitmapRequest(const Handler: TGetBitmapEvent); override;
     procedure SetOnBitmapRequested(const Handler: TGottenBitmapEvent); override;
     procedure SetOnDragDrop(const Value: TDragDropEvent); override;
@@ -200,26 +200,26 @@ type
     procedure SetPrintScale(const Value: double); override;
     procedure SetQuirksMode(const AValue: THtQuirksMode); override;
     procedure SetVisitedColor(const Value: TColor); override;
-    procedure SetVisitedMaxCount(const Value: integer); override;
+    procedure SetVisitedMaxCount(const Value: Integer); override;
 {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
 {$endif}
     property Base: ThtString read GetBase write SetBase;
     property BaseTarget: ThtString read GetBaseTarget;
     property CurFrameSet: TFrameSetBase read FCurFrameSet;
-    property CurViewer[I: integer]: THtmlViewer read GetCurViewer;
+    property CurViewer[I: Integer]: THtmlViewer read GetCurViewer;
   public
     constructor Create(AOwner: TComponent); override;
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     destructor Destroy; override;
     function CreateSubFrameSet(FrameSet: TObject): TObject; override;
-    function Find(const S: UnicodeString; MatchCase: boolean): boolean;
-    function FindEx(const S: UnicodeString; MatchCase, Reverse: boolean): boolean;
+    function Find(const S: UnicodeString; MatchCase: Boolean): Boolean;
+    function FindEx(const S: UnicodeString; MatchCase, Reverse: Boolean): Boolean;
     function ViewerFromTarget(const Target: ThtString): THtmlViewer;
 {$ifndef NoMetafile}
-    function NumPrinterPages(out WidthRatio: double): integer; overload;
-    function NumPrinterPages: integer; overload;
-    procedure Print(FromPage, ToPage: integer);
+    function NumPrinterPages(out WidthRatio: double): Integer; overload;
+    function NumPrinterPages: Integer; overload;
+    procedure Print(FromPage, ToPage: Integer);
 {$endif}
     function IsFrame(Doc: TBuffer): Boolean;
     procedure ParseFrame(FrameSet: TObject; Doc: TBuffer; const FName: ThtString; AMetaEvent: TMetaType);
@@ -239,23 +239,23 @@ type
     procedure SetFocus; override;
 
     property ActiveViewer: THtmlViewer read GetActiveViewer;
-    property CaretPos: integer read GetCaretPos write SetCaretPos;
+    property CaretPos: Integer read GetCaretPos write SetCaretPos;
     property CurrentFile: ThtString read GetCurrentFile;
     property DocumentTitle: ThtString read GetTitle;
     property History: TStrings read FHistory;
     property LinkAttributes: TStringList read FLinkAttributes;
     property LinkText: ThtString read FLinkText;
     property Palette: HPalette read GetOurPalette write SetOurPalette;
-    property Processing: boolean read GetProcessing;
-    property SelLength: integer read GetSelLength write SetSelLength;
-    property SelStart: integer read GetSelStart write SetSelStart;
+    property Processing: Boolean read GetProcessing;
+    property SelLength: Integer read GetSelLength write SetSelLength;
+    property SelStart: Integer read GetSelStart write SetSelStart;
     property SelText: UnicodeString read GetSelText;
 //    property Target: ThtString read GetTarget;
     property TitleHistory: TStrings read FTitleHistory;
     property URL: ThtString read FURL;
     property Viewers: TStrings read GetViewers;
-    property FwdButtonEnabled: boolean read GetFwdButtonEnabled;
-    property BackButtonEnabled: boolean read GetBackButtonEnabled;
+    property FwdButtonEnabled: Boolean read GetFwdButtonEnabled;
+    property BackButtonEnabled: Boolean read GetBackButtonEnabled;
   published
     property CharSet;
     property CodePage default DEFAULT_CHARSET;
@@ -269,7 +269,7 @@ type
     property DefPreFontName;
     property DefVisitedLinkColor;
     property fvOptions: TFrameViewerOptions read FOptions write SetOptions default [fvPrintTableBackground, fvPrintMonochromeBlack];
-    property HistoryIndex: integer read FHistoryIndex write SetHistoryIndex;
+    property HistoryIndex: Integer read FHistoryIndex write SetHistoryIndex;
     property HistoryMaxCount;
     property ImageCacheCount;
     property LoadCursor;
@@ -283,7 +283,7 @@ type
     property PrintMaxHPages;
     property PrintScale;
     property QuirksMode;
-    property ViewImages: boolean read FViewImages write SetViewImages default True;
+    property ViewImages: Boolean read FViewImages write SetViewImages default True;
     property VisitedMaxCount;
     //
     property OnBitmapRequest;
@@ -357,70 +357,81 @@ type
     FOwner: TSubFrameSetBase;
     FQuirksMode : THtQuirksMode;
   protected
-    UnLoaded: boolean;
+    UnLoaded: Boolean;
     LocalCharSet: TFontCharset;
     LocalCodePage: TBuffCodePage;
     procedure SetQuirksMode(const AValue: THtQuirksMode); virtual;
     procedure FVMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); virtual; abstract;
-    function CheckNoResize(out Lower, Upper: boolean): boolean; virtual; abstract;
+    function CheckNoResize(out Lower, Upper: Boolean): Boolean; virtual; abstract;
     procedure UnloadFiles; virtual; abstract;
 
+    procedure AddFrameNames; virtual; abstract;
+    procedure ClearFrameNames; virtual; abstract;
     procedure UpdateFrameList; virtual; abstract;
   public
     procedure LoadFiles(); virtual; abstract;
-    procedure ReLoadFiles(APosition: integer); virtual; abstract;
+    procedure ReLoadFiles(APosition: Integer); virtual; abstract;
     procedure Reload; override;
-    procedure InitializeDimensions(X, Y, Wid, Ht: integer); virtual; abstract;
+    procedure InitializeDimensions(X, Y, Wid, Ht: Integer); virtual; abstract;
     property LOwner: TSubFrameSetBase read FOwner;
     property MasterSet: TFrameSetBase read FMasterSet; {Points to top (master) TFrameSetBase}
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
+  end;
+
+  TFrameBaseList = class(TObjectList)
+  private
+    function Get(Index: Integer): TFrameBase; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: TFrameBase read Get; default;
   end;
 
   TViewerFrameBase = class(TFrameBase) {TViewerFrameBase holds a THtmlViewer or TSubFrameSetBase}
   protected
     FViewer: THtmlViewer; {the THtmlViewer it holds if any}
     FFrameSet: TSubFrameSetBase; {or the TSubFrameSetBase it holds}
-    NoScroll: boolean;
-    frMarginHeight, frMarginWidth: integer;
+    NoScroll: Boolean;
+    frMarginHeight, frMarginWidth: Integer;
     frHistory: TStringList;
-    frPositionHistory: TFreeList;
-    frHistoryIndex: integer;
+    frPositionHistory: TObjectList;
+    frHistoryIndex: Integer;
     RefreshTimer: TTimer;
     NextFile: ThtString;
   protected
 {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
 {$endif}
-    function CheckNoResize(out Lower, Upper: boolean): boolean; override;
+    function CheckNoResize(out Lower, Upper: Boolean): Boolean; override;
     function ExpandSourceName(const Base, Path, S: ThtString): ThtString; virtual; abstract;
     function GetSubFrameSetClass: TSubFrameSetClass; virtual; abstract;
+    procedure AddFrameNames; override;
+    procedure ClearFrameNames; override;
     procedure CreateViewer; virtual;
-    procedure frBumpHistory(const NewName: ThtString; NewPos, OldPos: integer; OldFormData: TFreeList);
-    procedure frBumpHistory1(const NewName: ThtString; Pos: integer);
-    procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: boolean); virtual; abstract;
-    procedure frSetHistoryIndex(Value: integer);
+    procedure frBumpHistory(const NewName: ThtString; NewPos, OldPos: Integer; OldFormData: TFormData);
+    procedure frBumpHistory1(const NewName: ThtString; Pos: Integer);
+    procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: Boolean); virtual; abstract;
+    procedure frSetHistoryIndex(Value: Integer);
     procedure FVMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); override;
     procedure FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
-    procedure RefreshEvent(Sender: TObject; Delay: integer; const URL: ThtString); virtual; abstract;
+    procedure RefreshEvent(Sender: TObject; Delay: Integer; const URL: ThtString); virtual; abstract;
     procedure RefreshTimerTimer(Sender: TObject); virtual; abstract;
-    procedure ReloadFile(const FName: ThtString; APosition: integer);
+    procedure ReloadFile(const FName: ThtString; APosition: Integer);
     procedure UnloadFiles; override;
     procedure UpdateFrameList; override;
   public
-    ViewerPosition: integer;
-    ViewerFormData: TFreeList;
+    ViewerPosition: Integer;
+    ViewerFormData: TFormData;
     Source, {Dos filename or URL for this frame}
       OrigSource, {Original Source name}
       Destination: ThtString; {Destination offset for this frame}
     WinName: ThtString; {window name, if any, for this frame}
-    NoReSize: boolean;
+    NoReSize: Boolean;
 
     constructor CreateIt(AOwner: TComponent; L: TAttributeList; Master: TFrameSetBase; const Path: ThtString); virtual;
     destructor Destroy; override;
-    procedure InitializeDimensions(X, Y, Wid, Ht: integer); override;
+    procedure InitializeDimensions(X, Y, Wid, Ht: Integer); override;
     procedure Repaint; override;
     procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
 
@@ -433,22 +444,22 @@ type
     FBase: ThtString;
     FBaseTarget: ThtString;
     FTitle: ThtString;
-    OuterBorder: integer;
-    BorderSize: integer;
+    OuterBorder: Integer;
+    BorderSize: Integer;
     FRefreshURL: ThtString;
-    FRefreshDelay: integer;
+    FRefreshDelay: Integer;
     RefreshTimer: TTimer;
     NextFile: ThtString;
     OldRect: TRect;
 
     function GetFrameClass: TViewerFrameClass; virtual; abstract;
-    function CheckNoResize(out Lower, Upper: boolean): boolean; override;
+    function CheckNoResize(out Lower, Upper: Boolean): Boolean; override;
     function GetRect: TRect;
-    function NearBoundary(X, Y: integer): boolean;
-    procedure AddFrameNames;
+    function NearBoundary(X, Y: Integer): Boolean;
+    procedure AddFrameNames; override;
     procedure Clear; virtual;
-    procedure ClearFrameNames;
-    procedure FindLineAndCursor(Sender: TObject; X, Y: integer);
+    procedure ClearFrameNames; override;
+    procedure FindLineAndCursor(Sender: TObject; X, Y: Integer);
     procedure FVMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
     procedure FVMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); override;
     procedure FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
@@ -458,18 +469,18 @@ type
     procedure SetRefreshTimer;
     procedure UpdateFrameList; override;
   public
-    First: boolean; {First time thru}
-    Rows: boolean; {set if row frameset, else column frameset}
-    List: TFreeList; {list of TFrames and TSubFrameSets in this TSubFrameSetBase}
+    First: Boolean; {First time thru}
+    Rows: Boolean; {set if row frameset, else column frameset}
+    List: TFrameBaseList; {list of TFrames and TSubFrameSets in this TSubFrameSetBase}
     Dim, {col width or row height as read.  Blanks may have been added}
       DimF, {col width or row height in pixels as calculated and displayed}
       Lines {pixel pos of lines, Lines[1]=0, Lines[DimCount]=width|height}
       : array[0..20] of SmallInt;
     Fixed {true if line not allowed to be dragged}
-      : array[0..20] of boolean;
-    DimCount: integer;
-    DimFTot: integer;
-    LineIndex: integer;
+      : array[0..20] of Boolean;
+    DimCount: Integer;
+    DimFTot: Integer;
+    LineIndex: Integer;
 
     constructor CreateIt(AOwner: TComponent; Master: TFrameSetBase); virtual;
     destructor Destroy; override;
@@ -477,9 +488,9 @@ type
     procedure Parsed(const Title, Base, BaseTarget: ThtString); virtual;
     procedure DoAttributes(L: TAttributeList);
     procedure LoadFiles(); override;
-    procedure ReLoadFiles(APosition: integer); override;
+    procedure ReLoadFiles(APosition: Integer); override;
     procedure UnloadFiles; override;
-    procedure InitializeDimensions(X, Y, Wid, Ht: integer); override;
+    procedure InitializeDimensions(X, Y, Wid, Ht: Integer); override;
     procedure CalcSizes(Sender: TObject);
     property Base: ThtString read FBase;
     property BaseTarget: ThtString read FBaseTarget;
@@ -494,11 +505,11 @@ type
     FrameNames: TStringList; {list of Window names and their TFrames}
     Frames: TList; {list of all the Frames contained herein}
     HotSet: TFrameBase; {owner of line we're moving}
-    NestLevel: integer;
-    OldWidth, OldHeight: integer;
+    NestLevel: Integer;
+    OldWidth, OldHeight: Integer;
     Viewers: TList; {list of all THtmlViewer pointers}
 
-    function RequestEvent: boolean; virtual; abstract;
+    function RequestEvent: Boolean; virtual; abstract;
     procedure ClearForwards;
     procedure StopTimers;
     procedure UpdateFrameList; override;
@@ -533,13 +544,13 @@ type
     function ExpandSourceName(const Base, Path, S: ThtString): ThtString; override;
     function GetSubFrameSetClass: TSubFrameSetClass; override;
     function MasterSet: TFrameSet; {$ifdef UseInline} inline; {$endif}
-    procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: boolean); override;
+    procedure frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: Boolean); override;
     procedure LoadFiles(PEV: PEventRec); reintroduce; overload;
-    procedure RefreshEvent(Sender: TObject; Delay: integer; const URL: ThtString); override;
+    procedure RefreshEvent(Sender: TObject; Delay: Integer; const URL: ThtString); override;
     procedure RefreshTimerTimer(Sender: TObject); override;
   public
     procedure LoadFiles(); overload; override;
-    procedure ReLoadFiles(APosition: integer); override;
+    procedure ReLoadFiles(APosition: Integer); override;
   end;
 
   TSubFrameSet = class(TSubFrameSetBase)
@@ -551,7 +562,7 @@ type
   protected
     function FrameViewer: TFrameViewer; {$ifdef UseInline} inline; {$endif}
     function GetFrameClass: TViewerFrameClass; override;
-    function RequestEvent: boolean; override;
+    function RequestEvent: Boolean; override;
     function TriggerEvent(const Src: ThtString; out NewName: ThtString; out Doc: TBuffer): Boolean;
     procedure LoadFromFile(const FName, Dest: ThtString);
     procedure RefreshTimerTimer(Sender: Tobject); override;
@@ -578,7 +589,7 @@ type
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     destructor Destroy; override;
     function HTMLExpandFilename(const Filename: ThtString): ThtString; virtual;
-    procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: boolean); override;
+    procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: Boolean); override;
     procedure Load(const SRC: ThtString); override;
     procedure LoadFromFile(const FileName: ThtString); override;
     //procedure LoadImageFile(const FName: ThtString); deprecated; // use LoadFromFile() instead
@@ -603,15 +614,22 @@ uses System.Types;
 {$endif}
 
 const
-  Sequence: integer = 10;
+  Sequence: Integer = 10;
 
 type
-  PositionObj = class(TObject)
+  TPositionObj = class
   public
-    Pos: integer;
-    Seq: integer;
-    FormData: TFreeList;
+    Pos: Integer;
+    Seq: Integer;
+    FormData: TFormData;
     destructor Destroy; override;
+  end;
+
+  TPositionObjList = class(TObjectList)
+  private
+    function Get(Index: Integer): TPositionObj; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: TPositionObj read Get; default;
   end;
 
 {----------------FileToString}
@@ -647,10 +665,29 @@ begin
 end;
 {$endif}
 
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+procedure TViewerFrameBase.AddFrameNames;
+begin
+  if Assigned(MasterSet) and (WinName <> '') and Assigned(MasterSet.FrameNames) then
+    MasterSet.FrameNames.AddObject(Uppercase(WinName), Self);
+end;
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+procedure TViewerFrameBase.ClearFrameNames;
+var
+  I: Integer;
+begin
+  if Assigned(MasterSet) and (WinName <> '')
+    and Assigned(MasterSet.FrameNames)
+    and MasterSet.FrameNames.Find(WinName, I)
+  then
+    MasterSet.FrameNames.Delete(I);
+end;
+
 constructor TViewerFrameBase.CreateIt(AOwner: TComponent; L: TAttributeList;
   Master: TFrameSetBase; const Path: ThtString);
 var
-  I: integer;
+  I: Integer;
   S: ThtString;
 begin
   inherited Create(AOwner);
@@ -696,14 +733,14 @@ begin
   OnMouseMove := FVMouseMove;
   OnMouseUp := FVMouseUp;
   frHistory := TStringList.Create;
-  frPositionHistory := TFreeList.Create;
+  frPositionHistory := TPositionObjList.Create;
 end;
 
 {----------------TViewerFrameBase.Destroy}
 
 destructor TViewerFrameBase.Destroy;
 var
-  I: integer;
+  I: Integer;
 begin
   if Assigned(MasterSet) then
   begin
@@ -739,7 +776,7 @@ begin
     FrameSet.CalcSizes(nil);
 end;
 
-procedure TfvFrame.RefreshEvent(Sender: TObject; Delay: integer; const URL: ThtString);
+procedure TfvFrame.RefreshEvent(Sender: TObject; Delay: Integer; const URL: ThtString);
 begin
   if not (fvMetaRefresh in MasterSet.FrameViewer.fvOptions) then
     Exit;
@@ -811,7 +848,7 @@ end;
 
 {----------------TViewerFrameBase.CheckNoResize}
 
-function TViewerFrameBase.CheckNoResize(out Lower, Upper: boolean): boolean;
+function TViewerFrameBase.CheckNoResize(out Lower, Upper: Boolean): Boolean;
 begin
   Result := NoResize;
   Lower := NoResize;
@@ -820,7 +857,7 @@ end;
 
 {----------------TViewerFrameBase.InitializeDimensions}
 
-procedure TViewerFrameBase.InitializeDimensions(X, Y, Wid, Ht: integer);
+procedure TViewerFrameBase.InitializeDimensions(X, Y, Wid, Ht: Integer);
 begin
   if Assigned(FrameSet) then
     FrameSet.InitializeDimensions(X, Y, Wid, Ht);
@@ -885,13 +922,12 @@ end;
 
 procedure TfvFrame.LoadFiles(PEV: PEventRec);
 var
-  Item: TFrameBase;
-  I: integer;
+  I: Integer;
   Upper, Lower: Boolean;
   EV: EventRec;
   Src: ThtString;
   Stream: TStream;
-  ft: THtmlFileType;
+  ft: ThtDocType;
   Ext: string;
 begin
   if ((Source <> '') or Assigned(PEV)) and (MasterSet.NestLevel < 4) then
@@ -949,10 +985,7 @@ begin
         with FrameSet do
         begin
           for I := 0 to List.Count - 1 do
-          begin
-            Item := TFrameBase(List.Items[I]);
-            Item.LoadFiles();
-          end;
+            List[I].LoadFiles();
           CheckNoresize(Lower, Upper);
           if FRefreshDelay > 0 then
             SetRefreshTimer;
@@ -972,7 +1005,9 @@ begin
             Ext := Lowercase(ExtractFileExt(Source));
             if Length(Ext) > 0 then
               Delete(Ext, 1, 1);
-            Viewer.LoadFromDocument(EV.Doc, Source, FileExt2DocType(Ext));
+            if copy(Ev.NewName, 1, 9) <> 'source://' then
+              ft := FileExt2DocType(Ext);
+            Viewer.LoadFromDocument(EV.Doc, Source, ft);
             Viewer.PositionTo(Destination);
           end
           else
@@ -1006,11 +1041,10 @@ end;
 
 {----------------TfvFrame.ReloadFiles}
 
-procedure TfvFrame.ReloadFiles(APosition: integer);
+procedure TfvFrame.ReloadFiles(APosition: Integer);
 var
-  Item: TFrameBase;
-  I: integer;
-  Upper, Lower: boolean;
+  I: Integer;
+  Upper, Lower: Boolean;
   EV: EventRec;
   ft: THtmlFileType;
 
@@ -1026,11 +1060,8 @@ begin
       with FrameSet do
       begin
         for I := 0 to List.Count - 1 do
-        begin
-          Item := TFrameBase(List.Items[I]);
-          Item.ReloadFiles(APosition);
-        end;
-        CheckNoresize(Lower, Upper);
+          List[I].ReloadFiles(APosition);
+        CheckNoResize(Lower, Upper);
       end;
     end
     else if Assigned(Viewer) then
@@ -1073,8 +1104,7 @@ end;
 
 procedure TViewerFrameBase.UnloadFiles;
 var
-  Item: TFrameBase;
-  I: integer;
+  I: Integer;
 begin
   if Assigned(RefreshTimer) then
     RefreshTimer.Enabled := False;
@@ -1083,10 +1113,7 @@ begin
     with FrameSet do
     begin
       for I := 0 to List.Count - 1 do
-      begin
-        Item := TFrameBase(List.Items[I]);
-        Item.UnloadFiles;
-      end;
+        List[I].UnloadFiles;
     end;
   end
   else if Assigned(Viewer) then
@@ -1105,20 +1132,20 @@ end;
 
 {----------------TViewerFrameBase.frLoadFromFile}
 
-procedure TfvFrame.frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: boolean);
+procedure TfvFrame.frLoadFromFile(const FName, Dest: ThtString; Bump, Reload: Boolean);
 {Note: if FName not '' and there is no RequestEvent, it has been HTML expanded
  and contains the path}
 var
-  OldPos: integer;
+  OldPos: Integer;
   HS, OldTitle, OldName: ThtString;
-  OldFormData: TFreeList;
-  SameName: boolean;
+  OldFormData: TFormData;
+  SameName: Boolean;
   OldViewer: THtmlViewer;
   OldFrameSet: TSubFrameSetBase;
   EV: EventRec;
-  Upper, Lower, FrameFile: boolean;
+  Upper, Lower, FrameFile: Boolean;
   Item: TFrameBase;
-  I: integer;
+  I: Integer;
   Stream: TStream;
   ft: THtmlFileType;
 begin
@@ -1187,7 +1214,7 @@ begin
           for I := 0 to List.Count - 1 do
           begin
             Item := TFrameBase(List.Items[I]);
-            if (Item is TViewerFrameBase) then
+            if Item is TViewerFrameBase then
               with TViewerFrameBase(Item) do
                 if CompareText(Source, OrigSource) <> 0 then
                 begin
@@ -1263,10 +1290,7 @@ begin
         with FrameSet do
         begin
           for I := 0 to List.Count - 1 do
-          begin
-            Item := TFrameBase(List.Items[I]);
-            Item.LoadFiles();
-          end;
+            List[I].LoadFiles();
           CheckNoresize(Lower, Upper);
           if FRefreshDelay > 0 then
             SetRefreshTimer;
@@ -1344,7 +1368,7 @@ end;
 
 {----------------TViewerFrameBase.ReloadFile}
 
-procedure TViewerFrameBase.ReloadFile(const FName: ThtString; APosition: integer);
+procedure TViewerFrameBase.ReloadFile(const FName: ThtString; APosition: Integer);
 {It's known that there is only a single viewer, the file is not being changed,
  only the position}
 begin
@@ -1354,18 +1378,18 @@ end;
 {----------------TViewerFrameBase.frBumpHistory}
 
 procedure TViewerFrameBase.frBumpHistory(const NewName: ThtString;
-  NewPos, OldPos: integer; OldFormData: TFreeList);
+  NewPos, OldPos: Integer; OldFormData: TFormData);
 {applies to TFrames which hold a THtmlViewer}{Viewer to Viewer}
 var
-  PO: PositionObj;
+  PO: TPositionObj;
 begin
   with frHistory do
   begin
     if (Count > 0) then
     begin
-      PositionObj(frPositionHistory[frHistoryIndex]).Pos := OldPos;
+      TPositionObjList(frPositionHistory)[frHistoryIndex].Pos := OldPos;
       if frHistory[frHistoryIndex] <> NewName then
-        PositionObj(frPositionHistory[frHistoryIndex]).FormData := OldFormData
+        TPositionObjList(frPositionHistory)[frHistoryIndex].FormData := OldFormData
       else
         OldFormData.Free;
     end
@@ -1374,7 +1398,7 @@ begin
     MasterSet.ClearForwards; {clear the history list forwards}
     frHistoryIndex := 0;
     InsertObject(0, NewName, FrameSet); {FrameSet may be Nil here}
-    PO := PositionObj.Create;
+    PO := TPositionObj.Create;
     PO.Pos := NewPos;
     PO.Seq := Sequence;
     Inc(Sequence);
@@ -1388,16 +1412,16 @@ end;
 
 {----------------TViewerFrameBase.frBumpHistory1}
 
-procedure TViewerFrameBase.frBumpHistory1(const NewName: ThtString; Pos: integer);
+procedure TViewerFrameBase.frBumpHistory1(const NewName: ThtString; Pos: Integer);
 {called from a fresh TViewerFrameBase.  History list is empty}
 var
-  PO: PositionObj;
+  PO: TPositionObj;
 begin
   with frHistory do
   begin
     frHistoryIndex := 0;
     InsertObject(0, NewName, FrameSet); {FrameSet may be Nil here}
-    PO := PositionObj.Create;
+    PO := TPositionObj.Create;
     PO.Pos := Pos;
     PO.Seq := Sequence;
     Inc(Sequence);
@@ -1411,7 +1435,7 @@ end;
 
 {----------------TViewerFrameBase.frSetHistoryIndex}
 
-procedure TViewerFrameBase.frSetHistoryIndex(Value: integer);
+procedure TViewerFrameBase.frSetHistoryIndex(Value: Integer);
 begin
   with frHistory do
     if (Value <> frHistoryIndex) and (Value >= 0) and (Value < Count) then
@@ -1419,11 +1443,11 @@ begin
       if Assigned(RefreshTimer) then
         RefreshTimer.Enabled := False; {cut off any timing underway}
       if Assigned(Viewer) then {current is Viewer}
-        with PositionObj(frPositionHistory[frHistoryIndex]) do
+        with TPositionObjList(frPositionHistory)[frHistoryIndex] do
         begin
           Pos := Viewer.Position; {save the old position}
         {note that frHistoryIndex can only change by 1}
-          PositionObj(frPositionHistory[frHistoryIndex]).FormData := Viewer.FormData;
+          FormData := Viewer.FormData;
         end
       else
       begin {Current is FrameSet}
@@ -1453,7 +1477,7 @@ begin
       begin
         if not Assigned(Viewer) then
           CreateViewer;
-        with PositionObj(frPositionHistory[Value]) do
+        with TPositionObjList(frPositionHistory)[Value] do
         begin
           if (Source <> Strings[Value]) then
             frLoadFromFile(Strings[Value], '', False, False);
@@ -1495,7 +1519,7 @@ begin
   if Self <> Master then
     BorderSize := Master.BorderSize;
   First := True;
-  List := TFreeList.Create;
+  List := TFrameBaseList.Create;
   OnResize := CalcSizes;
   OnMouseDown := FVMouseDown;
   OnMouseMove := FVMouseMove;
@@ -1513,41 +1537,20 @@ end;
 
 procedure TSubFrameSetBase.ClearFrameNames;
 var
-  I, J: integer;
+  I: Integer;
 begin
-  for J := 0 to List.Count - 1 do
-    if (TFrameBase(List[J]) is TViewerFrameBase) then
-    begin
-      with TViewerFrameBase(List[J]) do
-        if Assigned(MasterSet) and (WinName <> '')
-          and Assigned(MasterSet.FrameNames)
-          and MasterSet.FrameNames.Find(WinName, I) then
-          MasterSet.FrameNames.Delete(I);
-    end
-    else if (TFrameBase(List[J]) is TSubFrameSetBase) then
-      TSubFrameSetBase(List[J]).ClearFrameNames;
+  for I := 0 to List.Count - 1 do
+    List[I].ClearFrameNames;
 end;
 
 {----------------TSubFrameSetBase.AddFrameNames}
 
 procedure TSubFrameSetBase.AddFrameNames;
 var
-  J: integer;
-  Frame: TViewerFrameBase;
+  I: Integer;
 begin
-  for J := 0 to List.Count - 1 do
-    if (TFrameBase(List[J]) is TViewerFrameBase) then
-    begin
-      Frame := TViewerFrameBase(List[J]);
-      with Frame do
-        if Assigned(MasterSet) and (WinName <> '')
-          and Assigned(MasterSet.FrameNames) then
-        begin
-          MasterSet.FrameNames.AddObject(Uppercase(WinName), Frame);
-        end;
-    end
-    else if (TFrameBase(List[J]) is TSubFrameSetBase) then
-      TSubFrameSetBase(List[J]).AddFrameNames;
+  for I := 0 to List.Count - 1 do
+    List[I].AddFrameNames;
 end;
 
 {----------------TSubFrameSetBase.Destroy}
@@ -1586,7 +1589,7 @@ var
     EOL = CrChar;
   var
     Ch: ThtChar;
-    I, N: integer;
+    I, N: Integer;
 
     procedure GetCh;
     begin
@@ -1705,28 +1708,20 @@ end;
 
 procedure TSubFrameSetBase.LoadFiles;
 var
-  I: integer;
-  Item: TFrameBase;
+  I: Integer;
 begin
   for I := 0 to List.Count - 1 do
-  begin
-    Item := TFrameBase(List.Items[I]);
-    Item.LoadFiles();
-  end;
+    List[I].LoadFiles();
 end;
 
 {----------------TSubFrameSetBase.ReloadFiles}
 
-procedure TSubFrameSetBase.ReloadFiles(APosition: integer);
+procedure TSubFrameSetBase.ReloadFiles(APosition: Integer);
 var
-  I: integer;
-  Item: TFrameBase;
+  I: Integer;
 begin
   for I := 0 to List.Count - 1 do
-  begin
-    Item := TFrameBase(List.Items[I]);
-    Item.ReloadFiles(APosition);
-  end;
+    List[I].ReloadFiles(APosition);
   if (FRefreshDelay > 0) and Assigned(RefreshTimer) then
     SetRefreshTimer;
   Unloaded := False;
@@ -1736,16 +1731,12 @@ end;
 
 procedure TSubFrameSetBase.UnloadFiles;
 var
-  I: integer;
-  Item: TFrameBase;
+  I: Integer;
 begin
   if Assigned(RefreshTimer) then
     RefreshTimer.Enabled := False;
   for I := 0 to List.Count - 1 do
-  begin
-    Item := TFrameBase(List.Items[I]);
-    Item.UnloadFiles;
-  end;
+    List[I].UnloadFiles;
   if Assigned(MasterSet.FrameViewer.OnSoundRequest) then
     MasterSet.FrameViewer.OnSoundRequest(MasterSet, '', 0, True);
   Unloaded := True;
@@ -1756,7 +1747,7 @@ end;
 procedure TSubFrameSetBase.Parsed(const Title, Base, BaseTarget: ThtString);
 {called by the parser when </FrameSet> is encountered}
 var
-  I: integer;
+  I: Integer;
 begin
   if List.Count > DimCount then {a value left out}
   begin {fill in any blanks in Dim array}
@@ -1779,10 +1770,10 @@ end;
 
 {----------------TSubFrameSetBase.InitializeDimensions}
 
-procedure TSubFrameSetBase.InitializeDimensions(X, Y, Wid, Ht: integer);
+procedure TSubFrameSetBase.InitializeDimensions(X, Y, Wid, Ht: Integer);
 var
   I, Total, PixTot, PctTot, RelTot, Rel, Sum,
-    Remainder, PixDesired, PixActual: integer;
+    Remainder, PixDesired, PixActual: Integer;
 
 begin
   if Rows then
@@ -1837,10 +1828,10 @@ begin
   for I := 0 to List.Count - 1 do {intialize the dimensions of contained items}
   begin
     if Rows then
-      TFrameBase(List.Items[I]).InitializeDimensions(X, Y + Sum, Wid, DimF[I + 1])
+      List[I].InitializeDimensions(X      , Y + Sum, Wid        , DimF[I + 1])
     else
-      TFrameBase(List.Items[I]).InitializeDimensions(X + Sum, Y, DimF[I + 1], Ht);
-    Sum := Sum + DimF[I + 1];
+      List[I].InitializeDimensions(X + Sum, Y      , DimF[I + 1], Ht         );
+    Inc(Sum, DimF[I + 1]);
   end;
 end;
 
@@ -1849,7 +1840,7 @@ end;
 
 procedure TSubFrameSetBase.CalcSizes(Sender: TObject);
 var
-  I, Step, Sum, ThisTotal: integer;
+  I, Step, Sum, ThisTotal: Integer;
   ARect: TRect;
 begin
 {Note: this method gets called during Destroy as it's in the OnResize event.
@@ -1867,9 +1858,9 @@ begin
     begin
       Step := MulDiv(DimF[I + 1], ThisTotal, DimFTot);
       if Rows then
-        TFrameBase(List.Items[I]).SetBounds(ARect.Left, ARect.Top + Sum, ARect.Right - ARect.Left, Step)
+        List[I].SetBounds(ARect.Left, ARect.Top + Sum, ARect.Right - ARect.Left, Step)
       else
-        TFrameBase(List.Items[I]).SetBounds(ARect.Left + Sum, ARect.Top, Step, ARect.Bottom - Arect.Top);
+        List[I].SetBounds(ARect.Left + Sum, ARect.Top, Step, ARect.Bottom - Arect.Top);
       Sum := Sum + Step;
       Lines[I + 1] := Sum;
     end;
@@ -1878,7 +1869,7 @@ end;
 
 {----------------TSubFrameSetBase.NearBoundary}
 
-function TSubFrameSetBase.NearBoundary(X, Y: integer): boolean;
+function TSubFrameSetBase.NearBoundary(X, Y: Integer): Boolean;
 begin
   Result := (Abs(X) < 4) or (Abs(X - Width) < 4) or
     (Abs(Y) < 4) or (Abs(Y - Height) < 4);
@@ -1925,7 +1916,7 @@ procedure TSubFrameSetBase.FVMouseDown(Sender: TObject; Button: TMouseButton;
 var
   ACursor: TCursor;
   RP: record
-    case boolean of
+    case Boolean of
       True: (P1, P2: TPoint);
       False: (R: TRect);
   end;
@@ -1962,10 +1953,10 @@ end;
 
 {----------------TSubFrameSetBase.FindLineAndCursor}
 
-procedure TSubFrameSetBase.FindLineAndCursor(Sender: TObject; X, Y: integer);
+procedure TSubFrameSetBase.FindLineAndCursor(Sender: TObject; X, Y: Integer);
 var
   ACursor: TCursor;
-  Gap, ThisGap, Line, I: integer;
+  Gap, ThisGap, Line, I: Integer;
 begin
   if not Assigned(MasterSet.HotSet) then
   begin {here we change the cursor as mouse moves over lines,button up or down}
@@ -2022,7 +2013,7 @@ end;
 procedure TSubFrameSetBase.FVMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   if Button <> mbLeft then
     Exit;
@@ -2049,16 +2040,16 @@ end;
 
 {----------------TSubFrameSetBase.CheckNoResize}
 
-function TSubFrameSetBase.CheckNoResize(out Lower, Upper: boolean): boolean;
+function TSubFrameSetBase.CheckNoResize(out Lower, Upper: Boolean): Boolean;
 var
-  Lw, Up: boolean;
-  I: integer;
+  Lw, Up: Boolean;
+  I: Integer;
 begin
   Result := False;
   Lower := False;
   Upper := False;
   for I := 0 to List.Count - 1 do
-    with TFrameBase(List[I]) do
+    with List[I] do
       if CheckNoResize(Lw, Up) then
       begin
         Result := True; {sides are fixed}
@@ -2113,10 +2104,10 @@ end;
 
 procedure TSubFrameSetBase.UpdateFrameList;
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 0 to List.Count - 1 do
-    TFrameBase(List[I]).UpdateFrameList;
+    List[I].UpdateFrameList;
 end;
 
 {----------------TSubFrameSetBase.HandleMeta}
@@ -2250,7 +2241,7 @@ end;
 
 procedure TFrameSetBase.RePaint;
 var
-  I: integer;
+  I: Integer;
 begin
   if Assigned(Frames) then
     for I := 0 to Frames.Count - 1 do
@@ -2269,7 +2260,7 @@ end;
 
 {----------------TFrameSetBase.RequestEvent}
 
-function TFrameSet.RequestEvent: boolean;
+function TFrameSet.RequestEvent: Boolean;
 begin
   with FrameViewer do
     Result := Assigned(FOnStringsRequest) or Assigned(FOnStreamRequest)
@@ -2415,9 +2406,9 @@ end;
 
 procedure TFrameSet.LoadFromFile(const FName, Dest: ThtString);
 var
-  I: integer;
+  I: Integer;
   Frame: TfvFrame;
-  Lower, Upper: boolean;
+  Lower, Upper: Boolean;
   EV: EventRec;
   EventPointer: PEventRec;
   Stream: TStream;
@@ -2449,7 +2440,7 @@ begin
   begin {it's a Frameset html file}
     MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
     for I := 0 to List.Count - 1 do
-      TFrameBase(List[I]).LoadFiles;
+      List[I].LoadFiles;
     CalcSizes(Self);
     CheckNoresize(Lower, Upper);
     if FRefreshDelay > 0 then
@@ -2481,10 +2472,9 @@ end;
 //-- BG ---------------------------------------------------------- 23.09.2010 --
 procedure TFrameSetBase.LoadFromString(const Source, Name, Dest: ThtString);
 var
-  I: integer;
-  Item: TFrameBase;
+  I: Integer;
   Frame: TfvFrame;
-  Lower, Upper: boolean;
+  Lower, Upper: Boolean;
   EV: EventRec;
   PEV: PEventRec;
 begin
@@ -2503,10 +2493,7 @@ begin
       MasterSet.FrameViewer.ParseFrame(Self, EV.Doc, EV.NewName, HandleMeta);
       FreeAndNil(EV.Doc);
       for I := 0 to List.Count - 1 do
-      begin
-        Item := TFrameBase(List.Items[I]);
-        Item.LoadFiles();
-      end;
+        List[I].LoadFiles();
       CalcSizes(Self);
       CheckNoresize(Lower, Upper);
       if FRefreshDelay > 0 then
@@ -2558,7 +2545,7 @@ end;
 procedure TFrameSetBase.ClearForwards;
 {clear all the forward items in the history lists}
 var
-  I, J: integer;
+  I, J: Integer;
   Frame: TViewerFrameBase;
   AList: TList;
   Obj: TObject;
@@ -2704,7 +2691,7 @@ end;
 
 procedure TFVBase.Clear;
 var
-  I: integer;
+  I: Integer;
   Obj: TObject;
 begin
   if not Processing then
@@ -2770,7 +2757,7 @@ end;
 procedure TFrameViewer.LoadFromFileInternal(const FileName, Dest: ThtString);
 var
   OldFrameSet: TFrameSet;
-  OldPos: integer;
+  OldPos: Integer;
   Tmp: TObject;
 begin
   BeginProcessing;
@@ -2837,7 +2824,7 @@ end;
 
 procedure TFrameViewer.LoadTargetFromFile(const Target, FileName: ThtString);
 var
-  I: integer;
+  I: Integer;
   FrameTarget: TFrameBase;
   Name, Dest: ThtString;
 begin
@@ -2902,9 +2889,9 @@ end;
 
 {----------------TFrameViewer.GetFwdButtonEnabled}
 
-function TFVBase.GetFwdButtonEnabled: boolean;
+function TFVBase.GetFwdButtonEnabled: Boolean;
 var
-  I: integer;
+  I: Integer;
   Frame: TViewerFrameBase;
 begin
   Result := fHistoryIndex >= 1;
@@ -2923,9 +2910,9 @@ end;
 
 {----------------TFrameViewer.GetBackButtonEnabled}
 
-function TFVBase.GetBackButtonEnabled: boolean;
+function TFVBase.GetBackButtonEnabled: Boolean;
 var
-  I: integer;
+  I: Integer;
   Frame: TViewerFrameBase;
 begin
   Result := HistoryIndex <= fHistory.Count - 2;
@@ -2944,7 +2931,7 @@ end;
 
 procedure TFVBase.GoFwd;
 var
-  I, Smallest, Index: integer;
+  I, Smallest, Index: Integer;
   Frame, TheFrame: TViewerFrameBase;
 begin
   Smallest := 9999;
@@ -2954,7 +2941,7 @@ begin
     Frame := TViewerFrameBase(CurFrameSet.Frames[I]);
     with Frame do
       if frHistoryIndex >= 1 then
-        with PositionObj(frPositionHistory[frHistoryIndex - 1]) do
+        with TPositionObjList(frPositionHistory)[frHistoryIndex - 1] do
           if Seq < Smallest then
           begin
             Smallest := Seq;
@@ -2972,7 +2959,7 @@ end;
 
 procedure TFVBase.GoBack;
 var
-  I, Largest, Index: integer;
+  I, Largest, Index: Integer;
   Frame, TheFrame: TViewerFrameBase;
 begin
   Largest := -1;
@@ -2982,7 +2969,7 @@ begin
     Frame := TViewerFrameBase(CurFrameSet.Frames[I]);
     with Frame do
       if frHistoryIndex <= frHistory.Count - 2 then
-        with PositionObj(frPositionHistory[frHistoryIndex]) do
+        with TPositionObjList(frPositionHistory)[frHistoryIndex] do
           if Seq > Largest then
           begin
             Largest := Seq;
@@ -3000,7 +2987,7 @@ end;
 
 {----------------TFVBase.HotSpotClickHandled}
 
-function TFVBase.HotSpotClickHandled(const FullUrl: ThtString; const Target: ThtString): boolean;
+function TFVBase.HotSpotClickHandled(const FullUrl: ThtString; const Target: ThtString): Boolean;
 begin
   Result := False;
   if Assigned(OnHotSpotTargetClick) then
@@ -3009,9 +2996,9 @@ end;
 
 {----------------TFrameViewer.HotSpotClick}
 
-procedure TFrameViewer.HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: boolean);
+procedure TFrameViewer.HotSpotClick(Sender: TObject; const AnURL: ThtString; var Handled: Boolean);
 var
-  I: integer;
+  I: Integer;
   Viewer: THtmlViewer;
   FrameTarget: TFrameBase;
   S, Dest, Query, Target, ExpURL: ThtString;
@@ -3087,7 +3074,7 @@ begin
   end;
 end;
 
-function TFVBase.GetCurViewerCount: integer;
+function TFVBase.GetCurViewerCount: Integer;
 begin
   if CurFrameSet <> nil then
     Result := CurFrameSet.Viewers.Count
@@ -3095,7 +3082,7 @@ begin
     Result := 0;
 end;
 
-function TFVBase.GetCurViewer(I: integer): THtmlViewer;
+function TFVBase.GetCurViewer(I: Integer): THtmlViewer;
 begin
   Result := CurFrameSet.Viewers[I];
 end;
@@ -3117,7 +3104,7 @@ end;
 
 function TFVBase.GetViewerTarget(Viewer: THtmlViewer): ThtString;
 var
-  Done: boolean;
+  Done: Boolean;
   FSet: TSubFrameSetBase;
 begin
   Result := '';
@@ -3142,7 +3129,7 @@ end;
 
 function TFVBase.GetViewerBase(Viewer: THtmlViewer): ThtString;
 var
-  Done: boolean;
+  Done: Boolean;
   FSet: TSubFrameSetBase;
 begin
   Result := '';
@@ -3229,10 +3216,10 @@ end;
 
 {----------------TFrameViewer.BumpHistory}
 
-procedure TFVBase.BumpHistory(OldFrameSet: TFrameSetBase; OldPos: integer);
+procedure TFVBase.BumpHistory(OldFrameSet: TFrameSetBase; OldPos: Integer);
 {OldFrameSet never equals CurFrameSet when this method called}
 var
-  I: integer;
+  I: Integer;
   Obj: TObject;
 begin
   if (HistoryMaxCount > 0) and (CurFrameSet.FCurrentFile <> '') then
@@ -3279,10 +3266,10 @@ end;
 
 {----------------TFrameViewer.BumpHistory1}
 
-procedure TFvBase.BumpHistory1(const FileName, Title: ThtString; OldPos: integer; ft: ThtmlFileType);
+procedure TFvBase.BumpHistory1(const FileName, Title: ThtString; OldPos: Integer; ft: ThtmlFileType);
 {This variation called when CurFrameSet contains only a single viewer before and after the change}
 var
-  I: integer;
+  I: Integer;
   Obj: TObject;
 begin
   if (HistoryMaxCount > 0) and (Filename <> '') then
@@ -3322,10 +3309,10 @@ end;
 
 {----------------TFrameViewer.BumpHistory2}
 
-procedure TFvBase.BumpHistory2(OldPos: integer);
+procedure TFvBase.BumpHistory2(OldPos: Integer);
 {CurFrameSet has not changed when this method called}
 var
-  I: integer;
+  I: Integer;
   Obj: TObject;
 begin
   if (HistoryMaxCount > 0) and (CurFrameSet.FCurrentFile <> '') then
@@ -3365,7 +3352,7 @@ end;
 
 {----------------TFrameViewer.SetHistoryIndex}
 
-procedure TFVBase.SetHistoryIndex(Value: integer);
+procedure TFVBase.SetHistoryIndex(Value: Integer);
 var
   FrameSet, FrameSet1: TFrameSetBase;
   Tmp: TObject;
@@ -3396,7 +3383,7 @@ begin
         CurFrameSet.Visible := False;
         Self.InsertControl(CurFrameSet);
         if CurFrameSet.Viewers.Count = 1 then
-          CurFrameSet.ReloadFiles(integer(FPosition[Value]))
+          CurFrameSet.ReloadFiles(Integer(FPosition[Value]))
         else
           CurFrameSet.ReloadFiles(-1);
         CurFrameSet.Visible := True;
@@ -3411,7 +3398,7 @@ begin
     begin
       if (Tmp is THtmlViewer) then
         TViewerFrameBase(THtmlViewer(Tmp).FrameOwner).ReloadFile(FHistory[Value],
-          integer(FPosition[Value]));
+          Integer(FPosition[Value]));
     end;
 
     FHistoryIndex := Value;
@@ -3426,7 +3413,7 @@ end;
 procedure TFVBase.ChkFree(Obj: TObject);
 {Frees a TFrameSetBase only if it no longer exists in FHistory}
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 0 to FHistory.Count - 1 do
     if Obj = FHistory.Objects[I] then
@@ -3438,9 +3425,9 @@ end;
 
 procedure TFVBase.ClearHistory;
 var
-  I: integer;
+  I: Integer;
   Obj: TObject;
-  DidSomething: boolean;
+  DidSomething: Boolean;
 begin
   DidSomething := FHistory.Count > 0;
   for I := FHistory.Count - 1 downto 0 do
@@ -3469,7 +3456,7 @@ end;
 
 procedure TFVBase.SetOnProgress(const Handler: ThtProgressEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   with CurFrameSet do
@@ -3480,7 +3467,7 @@ end;
 
 procedure TFVBase.SetOnDragDrop(const Value: TDragDropEvent);
 var
-  I: integer;
+  I: Integer;
   E: TDragDropEvent;
 begin
   inherited;
@@ -3497,7 +3484,7 @@ end;
 
 procedure TFVBase.SetOnDragOver(const Value: TDragOverEvent);
 var
-  I: integer;
+  I: Integer;
   E: TDragOverEvent;
 begin
   inherited;
@@ -3514,7 +3501,7 @@ end;
 
 procedure TFVBase.SetOnBitmapRequested(const Handler: TGottenBitmapEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   with CurFrameSet do
@@ -3524,7 +3511,7 @@ end;
 
 procedure TFVBase.SetOnImageRequested(const Handler: TGottenImageEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   with CurFrameSet do
@@ -3534,7 +3521,7 @@ end;
 
 function TFVBase.ViewerFromTarget(const Target: ThtString): THtmlViewer;
 var
-  I: integer;
+  I: Integer;
 begin
   if Assigned(FCurFrameSet) and Assigned(CurFrameSet.FrameNames)
     and CurFrameSet.FrameNames.Find(Target, I)
@@ -3615,7 +3602,7 @@ end;
 
 procedure TFVBase.SetOptions(Value: TFrameViewerOptions);
 var
-  I: integer;
+  I: Integer;
 begin
   if (fvNoBorder in FOptions) <> (fvNoBorder in Value) then
     if fvNoBorder in Value then
@@ -3730,7 +3717,7 @@ end;
 
 procedure TFVBase.AddVisitedLink(const S: ThtString);
 var
-  I: integer;
+  I: Integer;
 begin
   if VisitedMaxCount = 0 then
     Exit;
@@ -3748,10 +3735,10 @@ end;
 
 procedure TFrameViewer.CheckVisitedLinks;
 var
-  I, J, K: integer;
+  I, J, K: Integer;
   S, S1, Src: ThtString;
   Viewer: THtmlViewer;
-  RequestEvent: boolean;
+  RequestEvent: Boolean;
 begin
   if VisitedMaxCount = 0 then
     Exit;
@@ -3815,7 +3802,7 @@ end;
 
 function TFVBase.GetViewers: TStrings;
 var
-  I: integer;
+  I: Integer;
   S: ThtString;
   AFrame: TViewerFrameBase;
   Viewer: THtmlViewer;
@@ -3850,9 +3837,9 @@ begin
   Result := FViewerList;
 end;
 
-procedure TFVBase.SetViewImages(Value: boolean);
+procedure TFVBase.SetViewImages(Value: Boolean);
 var
-  I: integer;
+  I: Integer;
 begin
   if (FViewImages <> Value) and not Processing then
   begin
@@ -3862,9 +3849,9 @@ begin
   end;
 end;
 
-procedure TFVBase.SetImageCacheCount(const Value: integer);
+procedure TFVBase.SetImageCacheCount(const Value: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   if (Value <> ImageCacheCount) and not Processing then
   begin
@@ -3876,7 +3863,7 @@ end;
 
 procedure TFVBase.SetLoadCursor(const Value: TCursor);
 var
-  I: integer;
+  I: Integer;
 begin
   if (Value <> LoadCursor) and not Processing then
   begin
@@ -3888,9 +3875,9 @@ end;
 
 {----------------TFVBase.SetNoSelect}
 
-procedure TFVBase.SetNoSelect(const Value: boolean);
+procedure TFVBase.SetNoSelect(const Value: Boolean);
 var
-  I: integer;
+  I: Integer;
 begin
   if Value <> NoSelect then
   begin
@@ -3902,7 +3889,7 @@ end;
 
 procedure TFVBase.SetOnBitmapRequest(const Handler: TGetBitmapEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3911,7 +3898,7 @@ end;
 
 procedure TFVBase.SetOnMeta(const Handler: TMetaType);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3921,7 +3908,7 @@ end;
 //-- BG ---------------------------------------------------------- 05.01.2010 --
 procedure TFVBase.SetOnLink(const Handler: TLinkType);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3931,7 +3918,7 @@ end;
 //-- BG ---------------------------------------------------------- 05.01.2010 --
 procedure TFVBase.SetOnScript(const Handler: TScriptEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3940,7 +3927,7 @@ end;
 
 procedure TFVBase.SetOnImageOver(const Handler: TImageOverEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3949,7 +3936,7 @@ end;
 
 procedure TFVBase.SetOnImageClick(const Handler: TImageClickEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3958,7 +3945,7 @@ end;
 
 procedure TFVBase.SetOnRightClick(Handler: TRightClickEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   FOnRightClick := Handler;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3967,7 +3954,7 @@ end;
 
 procedure TFVBase.SetOnObjectFocus(const Handler: ThtObjectEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3976,7 +3963,7 @@ end;
 
 procedure TFVBase.SetOnObjectBlur(const Handler: ThtObjectEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3985,7 +3972,7 @@ end;
 
 procedure TFVBase.SetOnObjectChange(const Handler: ThtObjectEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -3994,7 +3981,7 @@ end;
 
 procedure TFVBase.SetOnFileBrowse(Handler: TFileBrowseEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   FOnFileBrowse := Handler;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4003,7 +3990,7 @@ end;
 
 procedure TFVBase.SetOnObjectClick(const Handler: TObjectClickEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4012,7 +3999,7 @@ end;
 
 procedure TFVBase.SetOnMouseDouble(const Handler: TMouseEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4021,7 +4008,7 @@ end;
 
 procedure TFVBase.SetPrintMarginLeft(const Value: Double);
 var
-  I: integer;
+  I: Integer;
 begin
   if PrintMarginLeft <> Value then
   begin
@@ -4033,7 +4020,7 @@ end;
 
 procedure TFVBase.SetPrintMarginRight(const Value: Double);
 var
-  I: integer;
+  I: Integer;
 begin
   if PrintMarginRight <> Value then
   begin
@@ -4045,7 +4032,7 @@ end;
 
 procedure TFVBase.SetPrintMarginTop(const Value: Double);
 var
-  I: integer;
+  I: Integer;
 begin
   if PrintMarginTop <> Value then
   begin
@@ -4057,7 +4044,7 @@ end;
 
 procedure TFVBase.SetPrintMarginBottom(const Value: Double);
 var
-  I: integer;
+  I: Integer;
 begin
   if PrintMarginBottom <> Value then
   begin
@@ -4069,7 +4056,7 @@ end;
 
 procedure TFVBase.SetPrintScale(const Value: Double);
 var
-  I: integer;
+  I: Integer;
 begin
   if PrintScale <> Value then
   begin
@@ -4082,16 +4069,16 @@ end;
 //-- BG ---------------------------------------------------------- 25.10.2012 --
 procedure TFVBase.SetQuirksMode(const AValue: THtQuirksMode);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
     CurViewer[I].QuirksMode := AValue;
 end;
 
-procedure TFVBase.SetMarginWidth(const Value: integer);
+procedure TFVBase.SetMarginWidth(const Value: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   if MarginWidth <> Value then
   begin
@@ -4101,9 +4088,9 @@ begin
   end;
 end;
 
-procedure TFVBase.SetMarginHeight(const Value: integer);
+procedure TFVBase.SetMarginHeight(const Value: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   if MarginHeight <> Value then
   begin
@@ -4115,7 +4102,7 @@ end;
 
 procedure TFVBase.SetOnPrintHeader(const Handler: TPagePrinted);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4124,7 +4111,7 @@ end;
 
 procedure TFVBase.SetOnPrintFooter(const Handler: TPagePrinted);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4133,7 +4120,7 @@ end;
 
 procedure TFVBase.SetOnPrintHtmlHeader(Handler: THtmlPagePrinted);
 var
-  I: integer;
+  I: Integer;
 begin
   FOnPrintHtmlHeader := Handler;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4142,16 +4129,16 @@ end;
 
 procedure TFVBase.SetOnPrintHtmlFooter(Handler: THtmlPagePrinted);
 var
-  I: integer;
+  I: Integer;
 begin
   FOnPrintHtmlFooter := Handler;
   for I := 0 to GetCurViewerCount - 1 do
     CurViewer[I].OnPrintHtmlFooter := Handler;
 end;
 
-procedure TFVBase.SetVisitedMaxCount(const Value: integer);
+procedure TFVBase.SetVisitedMaxCount(const Value: Integer);
 var
-  I, J: integer;
+  I, J: Integer;
 begin
   if Value < 0 then
   begin
@@ -4182,7 +4169,7 @@ end;
 
 procedure TFVBase.SetDefBackground(const Value: TColor);
 var
-  I: integer;
+  I: Integer;
 begin
   if DefBackground <> Value then
   begin
@@ -4196,7 +4183,7 @@ end;
 {$ifdef has_StyleElements}
 procedure TFVBase.UpdateStyleElements;
 var
-  I: integer;
+  I: Integer;
 begin
   CurFrameSet.StyleElements := StyleElements;
     for I := 0 to GetCurViewerCount - 1 do
@@ -4207,7 +4194,7 @@ end;
 
 procedure TFVBase.SetFontName(const Value: TFontName);
 var
-  I: integer;
+  I: Integer;
 begin
   if CompareText(Value, DefFontName) <> 0 then
   begin
@@ -4219,7 +4206,7 @@ end;
 
 procedure TFVBase.SetPreFontName(const Value: TFontName);
 var
-  I: integer;
+  I: Integer;
 begin
   if CompareText(Value, DefPreFontName) <> 0 then
   begin
@@ -4229,9 +4216,9 @@ begin
   end;
 end;
 
-procedure TFVBase.SetFontSize(const Value: integer);
+procedure TFVBase.SetFontSize(const Value: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   if DefFontSize <> Value then
   begin
@@ -4243,7 +4230,7 @@ end;
 
 procedure TFVBase.SetFontColor(const Value: TColor);
 var
-  I: integer;
+  I: Integer;
 begin
   if DefFontColor <> Value then
   begin
@@ -4255,7 +4242,7 @@ end;
 
 procedure TFVBase.SetHotSpotColor(const Value: TColor);
 var
-  I: integer;
+  I: Integer;
 begin
   if DefHotSpotColor <> Value then
   begin
@@ -4267,7 +4254,7 @@ end;
 
 procedure TFVBase.SetActiveColor(const Value: TColor);
 var
-  I: integer;
+  I: Integer;
 begin
   if DefOverLinkColor <> Value then
   begin
@@ -4279,7 +4266,7 @@ end;
 
 procedure TFVBase.SetVisitedColor(const Value: TColor);
 var
-  I: integer;
+  I: Integer;
 begin
   if DefVisitedLinkColor <> Value then
   begin
@@ -4289,9 +4276,9 @@ begin
   end;
 end;
 
-procedure TFVBase.SetHistoryMaxCount(const Value: integer);
+procedure TFVBase.SetHistoryMaxCount(const Value: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   if (Value = HistoryMaxCount) or (Value < 0) then
     Exit;
@@ -4311,7 +4298,7 @@ end;
 
 procedure TFVBase.SetCursor(Value: TCursor);
 var
-  I: integer;
+  I: Integer;
 begin
   if Value = OldThickIBeamCursor then
     Value := crIBeam;
@@ -4325,7 +4312,7 @@ end;
 
 procedure TFVBase.SetOnPanelCreate(const Handler: TPanelCreateEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4334,7 +4321,7 @@ end;
 
 procedure TFVBase.SetOnPanelDestroy(const Handler: TPanelDestroyEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4343,7 +4330,7 @@ end;
 
 procedure TFVBase.SetOnPanelPrint(const Handler: TPanelPrintEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4352,7 +4339,7 @@ end;
 
 procedure TFVBase.SetOnParseBegin(const Handler: TParseEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4361,14 +4348,14 @@ end;
 
 procedure TFVBase.SetOnParseEnd(const Handler: TNotifyEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
     CurViewer[I].OnParseEnd := Handler;
 end;
 
-function TFVBase.GetSelLength: integer;
+function TFVBase.GetSelLength: Integer;
 var
   AViewer: THtmlViewer;
 begin
@@ -4379,7 +4366,7 @@ begin
     Result := 0;
 end;
 
-procedure TFVBase.SetSelLength(Value: integer);
+procedure TFVBase.SetSelLength(Value: Integer);
 var
   AViewer: THtmlViewer;
 begin
@@ -4388,7 +4375,7 @@ begin
     AViewer.SelLength := Value;
 end;
 
-function TFVBase.GetSelStart: integer;
+function TFVBase.GetSelStart: Integer;
 var
   AViewer: THtmlViewer;
 begin
@@ -4399,7 +4386,7 @@ begin
     Result := 0;
 end;
 
-procedure TFVBase.SetSelStart(Value: integer);
+procedure TFVBase.SetSelStart(Value: Integer);
 var
   AViewer: THtmlViewer;
 begin
@@ -4410,7 +4397,7 @@ end;
 
 procedure TFVBase.SetCharset(const Value: TFontCharset);
 var
-  I: integer;
+  I: Integer;
 begin
   if (Charset <> Value) then
   begin
@@ -4422,7 +4409,7 @@ end;
 
 procedure TFVBase.SetOnObjectTag(const Handler: TObjectTagEvent);
 var
-  I: integer;
+  I: Integer;
 begin
   inherited;
   for I := 0 to GetCurViewerCount - 1 do
@@ -4459,7 +4446,7 @@ end;
 
 //{----------------TFVBase.SetDither}
 //
-//procedure TFVBase.SetDither(Value: boolean);
+//procedure TFVBase.SetDither(Value: Boolean);
 //begin
 //  if (Value <> FDither) and (ColorBits = 8) then
 //  begin
@@ -4467,7 +4454,7 @@ end;
 //  end;
 //end;
 
-function TFVBase.GetCaretPos: integer;
+function TFVBase.GetCaretPos: Integer;
 var
   Vw: THtmlViewer;
 begin
@@ -4478,7 +4465,7 @@ begin
     Result := 0;
 end;
 
-procedure TFVBase.SetCaretPos(Value: integer);
+procedure TFVBase.SetCaretPos(Value: Integer);
 var
   Vw: THtmlViewer;
 begin
@@ -4498,7 +4485,7 @@ begin
     Result := '';
 end;
 
-function TFVBase.GetSelTextBuf(Buffer: PWideChar; BufSize: integer): integer;
+function TFVBase.GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
 var
   AViewer: THtmlViewer;
 begin
@@ -4555,14 +4542,14 @@ begin
     OnProcessing(Self, True);
 end;
 
-function TFVBase.GetProcessing: boolean;
+function TFVBase.GetProcessing: Boolean;
 begin
   Result := FProcessing or FViewerProcessing;
 end;
 
-procedure TFVBase.SetProcessing(Local, Viewer: boolean);
+procedure TFVBase.SetProcessing(Local, Viewer: Boolean);
 var
-  Change: boolean;
+  Change: Boolean;
 begin
   Change := (Local or Viewer <> FProcessing or FViewerProcessing);
   FProcessing := Local;
@@ -4571,7 +4558,7 @@ begin
     OnProcessing(Self, Local or Viewer);
 end;
 
-procedure TFVBase.CheckProcessing(Sender: TObject; ProcessingOn: boolean);
+procedure TFVBase.CheckProcessing(Sender: TObject; ProcessingOn: Boolean);
 begin
   with ProcessList do
   begin
@@ -4611,7 +4598,7 @@ end;
 
 {----------------TFVBase.Print}
 
-procedure TFVBase.Print(FromPage, ToPage: integer);
+procedure TFVBase.Print(FromPage, ToPage: Integer);
 var
   AViewer: THtmlViewer;
 begin
@@ -4622,7 +4609,7 @@ end;
 
 {----------------TFVBase.NumPrinterPages}
 
-function TFVBase.NumPrinterPages(out WidthRatio: double): integer;
+function TFVBase.NumPrinterPages(out WidthRatio: double): Integer;
 var
   AViewer: THtmlViewer;
 begin
@@ -4633,7 +4620,7 @@ begin
     Result := 0;
 end;
 
-function TFVBase.NumPrinterPages: integer;
+function TFVBase.NumPrinterPages: Integer;
 var
   Dummy: double;
 begin
@@ -4664,14 +4651,14 @@ end;
 
 {----------------TFVBase.Find}
 
-function TFVBase.Find(const S: UnicodeString; MatchCase: boolean): boolean;
+function TFVBase.Find(const S: UnicodeString; MatchCase: Boolean): Boolean;
 begin
   Result := FindEx(S, MatchCase, False);
 end;
 
 {----------------TFVBase.FindEx}
 
-function TFVBase.FindEx(const S: UnicodeString; MatchCase, Reverse: boolean): boolean;
+function TFVBase.FindEx(const S: UnicodeString; MatchCase, Reverse: Boolean): Boolean;
 var
   AViewer: THtmlViewer;
 begin
@@ -4695,7 +4682,7 @@ procedure TFVBase.LoadFromStringInternal(const Text, Name, Dest: ThtString);
 var
   OldFrameSet: TFrameSetBase;
   S: ThtString;
-  OldPos: integer;
+  OldPos: Integer;
   Tmp: TObject;
 begin
   BeginProcessing;
@@ -4749,9 +4736,9 @@ begin
   end;
 end;
 
-{----------------PositionObj}
+{TPositionObj}
 
-destructor PositionObj.Destroy;
+destructor TPositionObj.Destroy;
 begin
   FormData.Free;
   inherited;
@@ -4779,6 +4766,22 @@ end;
 procedure TFrameBase.SetQuirksMode(const AValue: THtQuirksMode);
 begin
   Self.FQuirksMode := AValue;
+end;
+
+{ TFrameBaseList }
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+function TFrameBaseList.Get(Index: Integer): TFrameBase;
+begin
+  Result := inherited Get(Index);
+end;
+
+{ TPositionObjList }
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+function TPositionObjList.Get(Index: Integer): TPositionObj;
+begin
+  Result := inherited Get(Index);
 end;
 
 end.

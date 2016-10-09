@@ -46,8 +46,8 @@ implementation
 {$R *.dfm}
 
 procedure TFormLiveHtml.DocumentSource1Click(Sender: TObject);
-var
-  SourceList: TStringList;
+//var
+//  SourceList: TStringList;
 begin
   Memo.Lines.Add(HtmlViewer.DocumentSource);
 //  SourceList := TStringList.Create;

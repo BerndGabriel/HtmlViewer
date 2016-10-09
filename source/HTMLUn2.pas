@@ -89,23 +89,10 @@ type
   TRowType = (THead, TBody, TFoot);
 
 //------------------------------------------------------------------------------
-
-  { Like TList but frees it's items. Use only descendents of TObject! }
-  //BG, 03.03.2011: what about TObjectList? All lists contain TObject derivates.
-  TFreeList = class(TList)
-  private
-    FOwnsObjects: Boolean;
-  protected
-    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
-  public
-    constructor Create(OwnsObjects: Boolean = True);
-  end;
-
-//------------------------------------------------------------------------------
 // tag attributes
 //------------------------------------------------------------------------------
 
-  TAttribute = class(TObject) {holds a tag attribute}
+  TAttribute = class {holds a tag attribute}
   public
     Which: TAttrSymb; {symbol of attribute such as HrefSy}
     WhichName: ThtString;
@@ -120,7 +107,7 @@ type
     property AsDouble: Double read DblValue;
   end;
 
-  TAttributeList = class(TFreeList) {a list of tag attributes,(TAttributes)}
+  TAttributeList = class(TObjectList) {a list of tag attributes,(TAttributes)}
   private
     SaveID: ThtString;
     function GetClass: ThtString;
@@ -143,7 +130,7 @@ type
 // copy to clipboard support
 //------------------------------------------------------------------------------
 
-  TSelTextCount = class(TObject)
+  TSelTextCount = class
   private
     Buffer: PWideChar;
     BufferLeng: Integer;
@@ -165,13 +152,15 @@ type
 //
 //------------------------------------------------------------------------------
 
+  TFontObjBaseList = class;
+
   {holds start and end point of URL text}
   TutText = record //BG, 03.03.2011: changed to record. no need to use a class
     Start: Integer;
     Last: Integer;
   end;
 
-  TUrlTarget = class(TObject)
+  TUrlTarget = class
   public
     URL: ThtString;
     Target: ThtString;
@@ -184,13 +173,13 @@ type
     procedure Assign(const AnUrl, ATarget: ThtString; L: TAttributeList; AStart: Integer); overload;
     procedure Assign(const UT: TUrlTarget); overload;
     procedure Clear;
-    procedure SetLast(List: TList {of TFontObjBase}; ALast: Integer);
+    procedure SetLast(List: TFontObjBaseList; ALast: Integer);
     property Start: Integer read utText.Start;
     property Last: Integer read utText.Last;
   end;
 
   // BG, 31.12.2011:
-  TMapArea = class(TObject)
+  TMapArea = class
   private
     FHRef: ThtString;
     FRegion: HRGN;
@@ -204,15 +193,15 @@ type
     property Title: ThtString read FTitle;
   end;
 
-  // BG, 31.12.2011: 
+  // BG, 31.12.2011:
   TMapAreaList = class(TObjectList)
   private
-    function GetArea(Index: Integer): TMapArea;
+    function GetArea(Index: Integer): TMapArea; {$ifdef UseInline} inline; {$endif}
   public
     property Items[Index: Integer]: TMapArea read GetArea; default;
   end;
 
-  TMapItem = class(TObject) {holds a client map info}
+  TMapItem = class {holds a client map info}
   private
     FAreas: TMapAreaList;
   public
@@ -223,16 +212,30 @@ type
     procedure AddArea(Attrib: TAttributeList);
   end;
 
-  TFontObjBase = class(TObject) {font information}
+  ThtMap = class(TObjectList)
+  private
+    function Get(Index: Integer): TMapItem; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: TMapItem read Get; default;
+  end;
+
+  TFontObjBase = class {font information}
   public
     UrlTarget: TUrlTarget;
+  end;
+
+  TFontObjBaseList = class(TObjectList)
+  private
+    function GetBase(Index: Integer): TFontObjBase; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: TFontObjBase read GetBase; default;
   end;
 
 //------------------------------------------------------------------------------
 // indentation manager
 //------------------------------------------------------------------------------
 
-  TIndentRec = class(TObject)
+  TIndentRec = class
   public
     X: Integer;   // left or right indentation relative to LfEdge.
     YT: Integer;  // top Y inclusive coordinate for this record relative to document top.
@@ -240,7 +243,14 @@ type
     ID: TObject;  // block level indicator for this record, 0 for not applicable
   end;
 
-  TIndentManager = class(TObject)
+  TIndentRecList = class(TObjectList)
+  private
+    function Get(Index: Integer): TIndentRec; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: TIndentRec read Get; default;
+  end;
+
+  TIndentManager = class
   private
     function LeftEdge(Y: Integer): Integer;
     function RightEdge(Y: Integer): Integer;
@@ -250,8 +260,8 @@ type
                         // TCell.Draw then may shift the block by setting LfEdge to X.
     Width: Integer;     // width of the block content area.
     ClipWidth: Integer; // clip width ???
-    L: TFreeList;       // list of left side indentations of type IndentRec.
-    R: TFreeList;       // list of right side indentations of type IndentRec.
+    L: TIndentRecList;  // list of left side indentations of type IndentRec.
+    R: TIndentRecList;  // list of right side indentations of type IndentRec.
     CurrentID: TObject; // the current block level (a TBlock pointer)
     LTopMin: Integer;
     RTopMin: Integer;
@@ -345,7 +355,7 @@ type
 // Most descendants are objects representing an HTML tag, except TChPosObj.
 //------------------------------------------------------------------------------
 
-  TIDObject = class(TObject)
+  TIDObject = class
   private
     function GetId(): ThtString; //>-- DZ
   protected
@@ -1338,20 +1348,6 @@ begin
   end;
 end;
 
-
-//-- BG ---------------------------------------------------------- 10.02.2013 --
-constructor TFreeList.Create(OwnsObjects: Boolean);
-begin
-  inherited Create;
-  FOwnsObjects := OwnsObjects;
-end;
-
-procedure TFreeList.Notify(Ptr: Pointer; Action: TListNotification);
-begin
-  if (Action = lnDeleted) and FOwnsObjects then
-    TObject(Ptr).Free;
-end;
-
 { TAttribute }
 
 constructor TAttribute.Create(ASym: TAttrSymb; const AValue: Double; const NameStr, ValueStr: ThtString; ACodePage: Integer);
@@ -1546,15 +1542,15 @@ begin
   utText.Last := -1;
 end;
 
-procedure TUrlTarget.SetLast(List: TList; ALast: Integer);
+procedure TUrlTarget.SetLast(List: TFontObjBaseList; ALast: Integer);
 var
   I: Integer;
 begin
   utText.Last := ALast;
-  if (List.Count > 0) then
+  if List.Count > 0 then
     for I := List.Count - 1 downto 0 do
-      if (ID = TFontObjBase(List[I]).UrlTarget.ID) then
-        TFontObjBase(List[I]).UrlTarget.utText.Last := ALast
+      if ID = List[I].UrlTarget.ID then
+        List[I].UrlTarget.utText.Last := ALast
       else
         Break;
 end;
@@ -1815,8 +1811,8 @@ end;
 constructor TIndentManager.Create;
 begin
   inherited Create;
-  R := TFreeList.Create;
-  L := TFreeList.Create;
+  R := TIndentRecList.Create;
+  L := TIndentRecList.Create;
 end;
 
 destructor TIndentManager.Destroy;
@@ -1859,7 +1855,7 @@ begin
   D := 0;
   for I := FirstLeftIndex to L.Count - 1 do
   begin
-    IR := L.Items[I];
+    IR := L[I];
     if IR.YT > Y then
     begin
       if IR.YT < Y + Height then
@@ -1872,7 +1868,7 @@ begin
   D := 0;
   for I := FirstRightIndex to R.Count - 1 do
   begin
-    IR := R.Items[I];
+    IR := R[I];
     if IR.YT > Y then
     begin
       if IR.YT < Y + Height then
@@ -1919,7 +1915,7 @@ begin
   MinX := 0;
   for I := 0 to L.Count - 1 do
   begin
-    IR := L.Items[I];
+    IR := L[I];
     if (Y >= IR.YT) and (Y < IR.YB) and (Result < IR.X) then
       if (IR.ID = nil) or (IR.ID = CurrentID) then
         Result := IR.X;
@@ -1950,7 +1946,7 @@ begin
   Result := MaxInt;
   for I := 0 to R.Count - 1 do
   begin
-    IR := R.Items[I];
+    IR := R[I];
     if (Y >= IR.YT) and (Y < IR.YB) and (Result > IR.X) then
       if (IR.ID = nil) or (IR.ID = CurrentID) then
         Result := IR.X;
@@ -1961,7 +1957,7 @@ begin
     MinX := 0;
     for I := L.Count - 1 downto 0 do
     begin
-      IR := L.Items[I];
+      IR := L[I];
       if IR.ID = CurrentID then
       begin
         MinX := IR.X;
@@ -1987,11 +1983,11 @@ var
 begin
   Result := 0;
   for I := 0 to L.Count - 1 do
-    with TIndentRec(L.Items[I]) do
+    with L[I] do
       if (ID = nil) and (YB > Result) then
         Result := YB;
   for I := 0 to R.Count - 1 do
-    with TIndentRec(R.Items[I]) do
+    with R[I] do
       if (ID = nil) and (YB > Result) then
         Result := YB;
 end;
@@ -2003,12 +1999,12 @@ var
 begin
   CL := -1;
   for I := 0 to L.Count - 1 do
-    with TIndentRec(L.Items[I]) do
+    with L[I] do
       if (ID = nil) and (YB > CL) then
         CL := YB;
   CR := -1;
   for I := 0 to R.Count - 1 do
-    with TIndentRec(R.Items[I]) do
+    with R[I] do
       if (ID = nil) and (YB > CR) then
         CR := YB;
   Inc(CL);
@@ -2036,7 +2032,7 @@ begin
     CL := Y;
     XL := Result; // valium for the compiler
     for I := L.Count - 1 downto 0 do
-      with TIndentRec(L.Items[I]) do
+      with L[I] do
       begin
         if ID = CurrentID then
         begin
@@ -2064,7 +2060,7 @@ begin
     CR := Y;
     XR := Result; // valium for the compiler
     for I := R.Count - 1 downto 0 do
-      with TIndentRec(R.Items[I]) do
+      with R[I] do
       begin
         if ID = CurrentID then
           break;
@@ -2139,7 +2135,7 @@ begin
     CL := Y;
     XL := Result; // valium for the compiler
     for I := L.Count - 1 downto 0 do
-      with TIndentRec(L.Items[I]) do
+      with L[I] do
       begin
         if ID = CurrentID then
           break;
@@ -2164,7 +2160,7 @@ begin
     CR := Y;
     XR := Result; // valium for the compiler
     for I := R.Count - 1 downto 0 do
-      with TIndentRec(R.Items[I]) do
+      with R[I] do
       begin
         if ID = CurrentID then
         begin
@@ -2229,12 +2225,12 @@ var
 begin
   CL := Y;
   for I := 0 to L.Count - 1 do
-    with TIndentRec(L.Items[I]) do
+    with L[I] do
       if not Assigned(ID) and (YB > Y) and ((YB < CL) or (CL = Y)) then
         CL := YB;
   CR := Y;
   for I := 0 to R.Count - 1 do
-    with TIndentRec(R.Items[I]) do
+    with R[I] do
       if not Assigned(ID) and (YB > Y) and ((YB < CR) or (CR = Y)) then
         CR := YB;
   if CL = Y then
@@ -3557,6 +3553,30 @@ begin
   UpdateColor;
 end;
 
+
+{ TIndentRecList }
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+function TIndentRecList.Get(Index: Integer): TIndentRec;
+begin
+  Result := inherited Get(Index);
+end;
+
+{ ThtMap }
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+function ThtMap.Get(Index: Integer): TMapItem;
+begin
+  Result := inherited Get(Index);
+end;
+
+{ TFontObjBaseList }
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+function TFontObjBaseList.GetBase(Index: Integer): TFontObjBase;
+begin
+  Result := inherited Get(Index);
+end;
 
 initialization
 {$ifdef UseGlobalObjectId}

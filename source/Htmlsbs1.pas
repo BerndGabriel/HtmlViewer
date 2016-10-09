@@ -81,7 +81,7 @@ type
     procedure SetClientTop(Value: Integer); override;
     procedure SetClientWidth(Value: Integer); override;
   public
-    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): Boolean; override;
     procedure Hide; override;
     procedure SetData(Index: Integer; const V: ThtString); override;
     procedure Show; override;
@@ -117,7 +117,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    function GetSubmission(Index: Integer; out S: ThtString): boolean; override;
+    function GetSubmission(Index: Integer; out S: ThtString): Boolean; override;
     procedure DrawInline1(Canvas: TCanvas; X1, Y1: Integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -147,7 +147,7 @@ type
   TOptionObj = class(TObject) {used by TListBoxFormControlObj for <option> information}
   public
     Value: ThtString; {<option>  Value=  }
-    Selected: boolean; {set if Selected found in <option>}
+    Selected: Boolean; {set if Selected found in <option>}
     Attributes: ThtStringList; {list of <option> attributes}
     destructor Destroy; override;
   end;
@@ -155,13 +155,13 @@ type
   ThtOptionStringList = class(ThtStringList)
   private
     function GetValue(Index: integer): ThtString;
-    function GetSelected(Index: integer): boolean;
-    procedure SetSelected(Index: integer; Value: boolean);
-    function GetAttribute(Index: integer; const AttrName: string): string;
+    function GetSelected(Index: integer): Boolean;
+    procedure SetSelected(Index: integer; Value: Boolean);
+    function GetAttribute(Index: integer; const AttrName: ThtString): ThtString;
   public
     property Value[Index: integer]: ThtString read GetValue;
-    property Selected[Index: integer]: boolean read GetSelected write SetSelected;
-    property AttributeValue[Index: integer; const AttrName: string]: string read GetAttribute;
+    property Selected[Index: integer]: Boolean read GetSelected write SetSelected;
+    property AttributeValue[Index: integer; const AttrName: ThtString]: ThtString read GetAttribute;
     destructor Destroy; override;
   end;
 
@@ -175,7 +175,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    procedure AddStr(const S: ThtString; Selected: boolean; Attr: ThtStringList; CodePage: integer);
+    procedure AddStr(const S: ThtString; Selected: Boolean; Attr: ThtStringList; CodePage: integer);
     property TheOptions: ThtOptionStringList read FOptions;
     property TheFont: TFont read FFont write FFont;
     {TheOptions is the original Options list for reseting.  It does not reflect
@@ -188,7 +188,7 @@ type
   private
     FControl: ThtListbox;
     EnterItems: integer;
-    EnterSelected: array[0..50] of boolean;
+    EnterSelected: array[0..50] of Boolean;
 {$IFDEF OpOnChange}
     procedure OptionalOnChange(Sender: TObject);
 {$ENDIF}
@@ -200,7 +200,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    function GetSubmission(Index: integer; out S: ThtString): boolean; override;
+    function GetSubmission(Index: integer; out S: ThtString): Boolean; override;
     procedure DrawInline1(Canvas: TCanvas; X1, Y1: integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -253,7 +253,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    function GetSubmission(Index: integer; out S: ThtString): boolean; override;
+    function GetSubmission(Index: integer; out S: ThtString): Boolean; override;
     procedure DrawInline1(Canvas: TCanvas; X1, Y1: integer); override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure ResetToValue; override;
@@ -282,7 +282,7 @@ type
     constructor Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties); override;
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); override;
     destructor Destroy; override;
-    function GetSubmission(Index: integer; out S: ThtString): boolean; override;
+    function GetSubmission(Index: integer; out S: ThtString): Boolean; override;
     procedure ProcessProperties(Prop: TProperties); override;
     procedure DrawInline1(Canvas: TCanvas; X1, Y1: integer); override;
     procedure AddStr(const S: ThtString);
@@ -318,7 +318,7 @@ begin
     Result := '';
 end;
 
-function ThtOptionStringList.GetSelected(Index: integer): boolean;
+function ThtOptionStringList.GetSelected(Index: integer): Boolean;
 begin
   if (Index >= 0) and (Index < Count) then
     Result := TOptionObj(Objects[Index]).Selected
@@ -326,13 +326,13 @@ begin
     Result := False;
 end;
 
-procedure ThtOptionStringList.SetSelected(Index: integer; Value: boolean);
+procedure ThtOptionStringList.SetSelected(Index: integer; Value: Boolean);
 begin
   if (Index >= 0) and (Index < Count) then
     TOptionObj(Objects[Index]).Selected := Value;
 end;
 
-function ThtOptionStringList.GetAttribute(Index: integer; const AttrName: string): string;
+function ThtOptionStringList.GetAttribute(Index: integer; const AttrName: ThtString): ThtString;
 begin
   if (Index >= 0) and (Index < Count) and Assigned(TOptionObj(Objects[Index]).Attributes) then
     Result := TOptionObj(Objects[Index]).Attributes.Values[AttrName]
@@ -354,10 +354,10 @@ constructor TTypedFormControlObj.Create(Parent: TCellBasic; Position: Integer; L
 var
   T: TAttribute;
 begin
-  inherited Create(Parent,Position,L,Prop);
-  if L.Find(TypeSy,T) then begin
-      FInputType := lowercase(T.Name);
-  end;
+  inherited Create(Parent, Position, L, Prop);
+  T := nil;
+  if L.Find(TypeSy, T) then
+      FInputType := htLowerCase(T.Name);
 end;
 
 constructor TTypedFormControlObj.CreateCopy(Parent: TCellBasic;
@@ -376,7 +376,8 @@ constructor TEditBaseFormControlObj.Create(Parent: TCellBasic;
 var
   T: TAttribute;
 begin
-  inherited Create(Parent,Position,L,Prop);
+  inherited Create(Parent, Position, L, Prop);
+  T := nil;
   if L.Find(MaxLengthSy, T) then
     FMaxLength := T.Value;
   if L.Find(PlaceholderSy, T) then
@@ -397,7 +398,7 @@ constructor TEditBaseFormControlObj.CreateCopy(Parent: TCellBasic;
 var
   T: TEditBaseFormControlObj absolute Source;
 begin
-  inherited CreateCopy(Parent,Source);
+  inherited CreateCopy(Parent, Source);
   FMaxLength := T.MaxLength;
   FPlaceholder := T.Placeholder;
   FSpellCheck := T.SpellCheck;
@@ -408,10 +409,11 @@ end;
 constructor TListBoxFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
-  Multiple: boolean;
+  Multiple: Boolean;
   PntPanel: TWinControl; //TPaintPanel;
 begin
-  inherited Create(Parent,Position,L,Prop);
+  inherited Create(Parent, Position, L, Prop);
+  T := nil;
   CodePage := Prop.CodePage;
   Multiple := L.Find(MultipleSy, T);
   PntPanel := Document.PPanel;
@@ -505,7 +507,7 @@ end;
 procedure TListBoxFormControlObj.ResetToValue;
 var
   I: Integer;
-  Tmp: boolean;
+  Tmp: Boolean;
 begin
   with FControl do
   begin
@@ -557,7 +559,7 @@ begin
   Result := FControl;
 end;
 
-function TListBoxFormControlObj.GetSubmission(Index: integer; out S: ThtString): boolean;
+function TListBoxFormControlObj.GetSubmission(Index: integer; out S: ThtString): Boolean;
 begin
   with FControl do
   begin
@@ -587,7 +589,7 @@ end;
 procedure TListBoxFormControlObj.DoOnChange;
 var
   I: integer;
-  Changed: boolean;
+  Changed: Boolean;
 begin
   Changed := False;
   with FControl do
@@ -651,7 +653,8 @@ var
   PntPanel: TWinControl; //TPaintPanel;
   T : TAttribute;
 begin
-  inherited Create(Parent,Position,L,Prop);
+  inherited Create(Parent, Position, L, Prop);
+  T := nil;
   CodePage := Prop.CodePage;
   PntPanel := Document.PPanel;
   FControl := ThtCombobox.Create(PntPanel);
@@ -754,7 +757,7 @@ begin
   Result := FControl;
 end;
 
-function TComboFormControlObj.GetSubmission(Index: integer; out S: ThtString): boolean;
+function TComboFormControlObj.GetSubmission(Index: integer; out S: ThtString): Boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -1006,7 +1009,7 @@ begin
   Result := FControl;
 end;
 
-function TTextAreaFormControlObj.GetSubmission(Index: integer; out S: ThtString): boolean;
+function TTextAreaFormControlObj.GetSubmission(Index: integer; out S: ThtString): Boolean;
 var
   I: integer;
 begin
@@ -1046,7 +1049,7 @@ end;
 
 { TOptionsFormControlObj }
 
-procedure TOptionsFormControlObj.AddStr(const S: ThtString; Selected: boolean;
+procedure TOptionsFormControlObj.AddStr(const S: ThtString; Selected: Boolean;
   Attr: ThtStringList; CodePage: integer);
 var
   Opt: TOptionObj;
@@ -1087,8 +1090,9 @@ constructor TOptionsFormControlObj.Create(Parent: TCellBasic; Position: Integer;
 var
   T: TAttribute;
 begin
-  inherited Create(Parent,Position,L,Prop);
+  inherited Create(Parent, Position, L, Prop);
   FOptions := ThtOptionStringList.Create;
+  T := nil;
   if L.Find(SizeSy, T) then
     LBSize := T.Value
   else
@@ -1138,7 +1142,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 16.01.2011 --
-function THiddenFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
+function THiddenFormControlObj.GetSubmission(Index: Integer; out S: ThtString): Boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -1238,6 +1242,7 @@ begin
   inherited Create(Parent, Position, L, Prop);
   CodePage := Prop.CodePage;
   EditSize := 15;
+  T := nil;
   if L.Find(SizeSy, T) then
   begin
     if T.Value > 0 then
@@ -1332,7 +1337,7 @@ begin
   Result := FControl;
 end;
 
-function TEditFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
+function TEditFormControlObj.GetSubmission(Index: Integer; out S: ThtString): Boolean;
 begin
   Result := Index = 0;
   if Result then
@@ -1491,7 +1496,7 @@ end;
 procedure TButtonFormControlObj.DrawInline1(Canvas: TCanvas; X1, Y1: Integer);
 var
   H2: Integer;
-  MonoBlack: boolean;
+  MonoBlack: Boolean;
 begin
   inherited DrawInline1(Canvas,X1,Y1);
   if IsCopy then
@@ -1587,10 +1592,11 @@ var
   T: TAttribute;
   PntPanel: TWinControl; //TPaintPanel;
 begin
-  inherited Create(Parent,Position,L,Prop);
+  inherited Create(Parent, Position, L, Prop);
   if Value = '' then
     Value := 'on';
   VertAlign := ABaseline;
+  T := nil;
   if L.Find(CheckedSy, T) then
     IsChecked := True;
   PntPanel := Document.PPanel;
@@ -1600,7 +1606,7 @@ begin
     Left := -4000; {so will be invisible until placed}
     Width := 13;
     Height := 13;
-    OnKeyDown := THtmlForm(MyForm).AKeyDown;
+    OnKeyDown := MyForm.AKeyDown;
     OnEnter := EnterEvent;
     OnExit := ExitEvent;
     OnMouseMove := HandleMouseMove;
@@ -1660,7 +1666,7 @@ begin
   Result := FControl;
 end;
 
-function TCheckBoxFormControlObj.GetSubmission(Index: Integer; out S: ThtString): boolean;
+function TCheckBoxFormControlObj.GetSubmission(Index: Integer; out S: ThtString): Boolean;
 begin
   Result := (Index = 0) and FControl.Checked;
   if Result then

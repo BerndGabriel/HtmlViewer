@@ -1208,6 +1208,7 @@ begin
       Process.Environment.Add(GetEnvironmentString(I));
 
     Process.Execute;
+    Result := True;
   finally
     Process.Free;
   end;

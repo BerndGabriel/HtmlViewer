@@ -37,7 +37,7 @@ uses
 {$else}
   Windows, Jpeg,
 {$endif}
-  Graphics, Forms, Controls,
+  Contnrs, Graphics, Forms, Controls,
   //Messages,
   //Variants,
   Types,
@@ -121,6 +121,13 @@ type
     property Height: Integer read GetImageHeight;
     property Width: Integer read GetImageWidth;
     property Animate: Boolean read GetAnimate write SetAnimate;
+  end;
+
+  ThtImageList = class(TObjectList)
+  private
+    function Get(Index: Integer): ThtImage; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: ThtImage read Get; default;
   end;
 
   TGetImageEvent = function(Sender: TObject; const Url: ThtString): ThtImage of object;
@@ -2577,6 +2584,14 @@ begin
   Color      := AColor;
   Transp     := ATransp;
   OwnsBitmap := AOwnsBitmap;
+end;
+
+{ ThtImageList }
+
+//-- BG ---------------------------------------------------------- 06.10.2016 --
+function ThtImageList.Get(Index: Integer): ThtImage;
+begin
+  Result := inherited Get(Index);
 end;
 
 initialization

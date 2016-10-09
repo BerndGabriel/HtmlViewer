@@ -1618,8 +1618,8 @@ end;
 
 type
   TCellManager = class(ThtStringList)
-    Table: ThtmlTable;
-    constructor Create(ATable: ThtmlTable);
+    Table: THtmlTable;
+    constructor Create(ATable: THtmlTable);
     function FindColNum(Row: Integer): Integer;
     procedure AddCell(Row: Integer; CellObj: TCellObj);
   end;
@@ -1631,7 +1631,7 @@ type
 }
 {----------------TCellManager.Create}
 
-constructor TCellManager.Create(ATable: ThtmlTable);
+constructor TCellManager.Create(ATable: THtmlTable);
 begin
   inherited Create;
   Table := ATable;
@@ -1696,8 +1696,8 @@ end;
 
 procedure THtmlParser.DoTable;
 
-  procedure DoColGroup(Table: ThtmlTable; ColOK: Boolean);
-  {reads the <colgroup> and <col> tags.  Put the info in ThtmlTable's Cols list}
+  procedure DoColGroup(Table: THtmlTable; ColOK: Boolean);
+  {reads the <colgroup> and <col> tags.  Put the info in THtmlTable's Cols list}
 
     procedure ReadColAttributes(var Spec: TSpecWidth; var Valign: ThtAlignmentStyle; var Align: ThtString; var Span: Integer);
 
@@ -1792,7 +1792,7 @@ procedure THtmlParser.DoTable;
   end;
 
 var
-  Table: ThtmlTable;
+  Table: THtmlTable;
   SaveSectionList, JunkSaveSectionList: TCellBasic;
   SaveStyle: TFontStyles;
   SaveNoBreak: Boolean;
@@ -2076,9 +2076,8 @@ begin
             begin
               if InHref then
                 DoAEnd;
-              if Assigned(PropStack.Document) then begin
+              if Assigned(PropStack.Document) then
                 PropStack.Document.CurrentStyle := SaveStyle;
-              end;
               NoBreak := False;
               AddSection;
               if Attributes.Find(AlignSy, T) then
@@ -2215,7 +2214,7 @@ begin
         CombineBlock.Free; {wasn't needed}
         SectionList.Add(NewBlock, TagIndex);
       end;
-      PopaProp(TableSy);
+      PopAProp(TableSy);
       if Assigned(PropStack.Document) then begin
         PropStack.Document.CurrentStyle := SaveStyle;
       end;
