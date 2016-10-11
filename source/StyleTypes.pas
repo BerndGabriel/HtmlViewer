@@ -444,27 +444,27 @@ type
 const
   CUnitInfo: array [ThtUnit] of ThtLengthUnitInfo = (
     // length units
-    (Name: '';   Factor: 1.00; IsAbsolute: True),
-    (Name: 'em'; Factor: 1.00; IsAbsolute: False),
-    (Name: 'ex'; Factor: 0.50; IsAbsolute: False),
-    (Name: '%' ; Factor: 0.01; IsAbsolute: False),
-    (Name: 'pt'; Factor: 0.75; IsAbsolute: True),
-    (Name: 'px'; Factor: 1.00; IsAbsolute: True),
-    (Name: 'pc'; Factor: 9.00; IsAbsolute: True),
-    (Name: 'in'; Factor: HTMLViewerPixelsPerInch       ; IsAbsolute: True),
-    (Name: 'cm'; Factor: HTMLViewerPixelsPerInch / 2.54; IsAbsolute: True),
-    (Name: 'mm'; Factor: HTMLViewerPixelsPerInch / 25.4; IsAbsolute: True),
+    (Name: '';          Factor: 1.00; Index:  0; IsAbsolute: True),
+    (Name: 'em';        Factor: 1.00; Index:  0; IsAbsolute: False),
+    (Name: 'ex';        Factor: 0.50; Index:  0; IsAbsolute: False),
+    (Name: '%' ;        Factor: 0.01; Index:  0; IsAbsolute: False),
+    (Name: 'pt';        Factor: 0.75; Index:  0; IsAbsolute: True),
+    (Name: 'px';        Factor: 1.00; Index:  0; IsAbsolute: True),
+    (Name: 'pc';        Factor: 9.00; Index:  0; IsAbsolute: True),
+    (Name: 'in';        Factor: HTMLViewerPixelsPerInch       ; Index: 0; IsAbsolute: True),
+    (Name: 'cm';        Factor: HTMLViewerPixelsPerInch / 2.54; Index: 0; IsAbsolute: True),
+    (Name: 'mm';        Factor: HTMLViewerPixelsPerInch / 25.4; Index: 0; IsAbsolute: True),
     // css font sizes
-    (Name: '';          Index:  3; IsAbsolute: True),
-    (Name: 'smaller';   Index: -1; IsAbsolute: False),
-    (Name: 'larger';    Index:  1; IsAbsolute: False),
-    (Name: 'xx-small';  Index:  0; IsAbsolute: True),
-    (Name: 'x-small';   Index:  1; IsAbsolute: True),
-    (Name: 'small';     Index:  2; IsAbsolute: True),
-    (Name: 'medium';    Index:  3; IsAbsolute: True),
-    (Name: 'large';     Index:  4; IsAbsolute: True),
-    (Name: 'x-large';   Index:  5; IsAbsolute: True),
-    (Name: 'xx-large';  Index:  6; IsAbsolute: True)
+    (Name: '';          Factor: 1.00; Index:  3; IsAbsolute: True),
+    (Name: 'smaller';   Factor: 1.00; Index: -1; IsAbsolute: False),
+    (Name: 'larger';    Factor: 1.00; Index:  1; IsAbsolute: False),
+    (Name: 'xx-small';  Factor: 1.00; Index:  0; IsAbsolute: True),
+    (Name: 'x-small';   Factor: 1.00; Index:  1; IsAbsolute: True),
+    (Name: 'small';     Factor: 1.00; Index:  2; IsAbsolute: True),
+    (Name: 'medium';    Factor: 1.00; Index:  3; IsAbsolute: True),
+    (Name: 'large';     Factor: 1.00; Index:  4; IsAbsolute: True),
+    (Name: 'x-large';   Factor: 1.00; Index:  5; IsAbsolute: True),
+    (Name: 'xx-large';  Factor: 1.00; Index:  6; IsAbsolute: True)
   );
 
 implementation
@@ -802,7 +802,7 @@ function StrToFontName(const Str: ThtString): ThtString;
   begin
     F := htLowerCase(Str);
     for I := 1 to AMax do
-      if htCompareString(F, Generic1[I]) = 0 then
+      if htCompareStr(F, Generic1[I]) = 0 then
       begin
         Str := Generic2[I];
         break;
@@ -867,7 +867,7 @@ var
 begin
   L := htLowerCase(Str);
   for I := low(I) to high(I) do
-    if htCompareString(CUnitInfo[I].Name, L) = 0 then
+    if htCompareStr(CUnitInfo[I].Name, L) = 0 then
     begin
       Result := True;
       LengthUnit := I;
@@ -885,7 +885,7 @@ var
 begin
   L := htLowerCase(Str);
   for I := low(I) to high(I) do
-    if htCompareString(CUnitInfo[I].Name, L) = 0 then
+    if htCompareStr(CUnitInfo[I].Name, L) = 0 then
     begin
       Result := True;
       FontSize := I;

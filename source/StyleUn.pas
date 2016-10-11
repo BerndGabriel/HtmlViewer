@@ -2845,7 +2845,7 @@ var
     end;
 
     for I := 1 to AMax do
-      if CompareText(Result, Generic1[I]) = 0 then
+      if htCompareText(Result, Generic1[I]) = 0 then
       begin
         Result := Generic2[I];
         break;
@@ -3150,6 +3150,7 @@ var
   Propty1: TProperties;
   I: Integer;
 begin
+  I := -1;
   if Find('table', I) then
   begin
     Propty1 := TProperties(Objects[I]);
@@ -3194,6 +3195,7 @@ begin
   {$endif}
   if TryStrToPropIndex(Prop, PropIndex) then
   begin
+    I := -1;
     if not Find(Selector, I) then
     begin
       NewProp := True;
@@ -3259,6 +3261,7 @@ procedure TStyleList.ModifyLinkColor(Pseudo: ThtString; AColor: TColor);
 var
   I: Integer;
 begin
+  I := -1;
   if Find('::' + Pseudo, I) then {the defaults}
     with TProperties(Objects[I]) do
       Props[Color] := AColor;
@@ -3809,6 +3812,7 @@ begin
   I := Pos('rgb', S);
   if (I = 0) and (S[1] <> '#') then
   begin
+    Idx := -1;
     if SortedColors.Find(S, Idx) then
     begin
       Color := PColor(SortedColors.Objects[Idx])^;

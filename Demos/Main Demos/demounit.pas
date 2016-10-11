@@ -200,8 +200,8 @@ type
     Histories: array [0 .. MaxHistories - 1] of TMenuItem;
     MediaCount: Integer;
     FoundObject: TImageObj;
-    NewWindowFile: string;
-    NextFile, PresentFile: string;
+    NewWindowFile: ThtString;
+    NextFile, PresentFile: ThtString;
     TimerCount: Integer;
     OldTitle: string;
     HintWindow: THintWindow;
@@ -320,7 +320,7 @@ end;
 procedure TForm1.HotSpotChange(Sender: TObject; const URL: ThtString);
 { mouse moved over or away from a hot spot.  Change the status line }
 var
-  Caption: string;
+  Caption: ThtString;
 begin
   Caption := '';
   if URL <> '' then
@@ -343,8 +343,7 @@ const
 {$endif}
 var
   PC: array [0 .. 255] of {$ifdef UNICODE} WideChar {$else} AnsiChar {$endif};
-  uURL, S, Params: ThtString;
-  Ext: string;
+  uURL, S, Params, Ext: ThtString;
   I, J, K: Integer;
 begin
   Handled := False;
@@ -627,11 +626,12 @@ begin
 end;
 
 procedure TForm1.wmDropFiles(var Message: TMessage);
+{$ifdef LCL}
+begin
+{$else}
 var
   S: string;
 begin
-{$ifdef LCL}
-{$else}
   setLength(S, 1024);
   setLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
@@ -709,7 +709,7 @@ end;
 
 procedure TForm1.ObjectClick(Sender, Obj: TObject; const OnClick: ThtString);
 var
-  S: String;
+  S: ThtString;
   CB: TCheckBoxFormControlObj absolute Obj;
   RB: TRadioButtonFormControlObj absolute Obj;
 begin
@@ -747,11 +747,11 @@ var
   I: Integer;
   Stream: TFileStream;
 begin
-  if CompareText(Command, 'Date') = 0 then
+  if htCompareText(Command, 'Date') = 0 then
     IncludedDocument := TBuffer.Create(DateToStr(Date)) { <!--#date --> }
-  else if CompareText(Command, 'Time') = 0 then
+  else if htCompareText(Command, 'Time') = 0 then
     IncludedDocument := TBuffer.Create(TimeToStr(Time)) { <!--#time --> }
-  else if CompareText(Command, 'Include') = 0 then
+  else if htCompareText(Command, 'Include') = 0 then
   begin { an include file <!--#include FILE="filename" --> }
     if (Params.Count >= 1) then
     begin
@@ -781,8 +781,7 @@ end;
 procedure TForm1.RightClick(Sender: TObject; Parameters: TRightClickParameters);
 var
   Pt: TPoint;
-  S, Dest: string;
-  I: Integer;
+  S, Dest: ThtString;
   HintWindow: ThtHintWindow;
   ARect: TRect;
 begin
@@ -793,15 +792,7 @@ begin
     CopyImageToClipboard.Enabled := (FoundObject <> Nil) and (FoundObject.Graphic <> Nil);
     if URL <> '' then
     begin
-      S := URL;
-      I := Pos('#', S);
-      if I >= 1 then
-      begin
-        Dest := System.Copy(S, I, 255); { local destination }
-        S := System.Copy(S, 1, I - 1); { the file name }
-      end
-      else
-        Dest := ''; { no local destination }
+      SplitDest(URL, S, Dest);
       if S = '' then
         S := Viewer.CurrentFile
       else
@@ -818,11 +809,9 @@ begin
       HintWindow := ThtHintWindow.Create(Self);
       try
         ARect := Rect(0, 0, 0, 0);
-        DrawTextW(HintWindow.Canvas.Handle, @CLickWord[1], Length(CLickWord),
-          ARect, DT_CALCRECT);
+        DrawTextW(HintWindow.Canvas.Handle, @CLickWord[1], Length(CLickWord), ARect, DT_CALCRECT);
         with ARect do
-          HintWindow.ActivateHint(Rect(Pt.X + 20, Pt.Y - (Bottom - Top) - 15,
-            Pt.X + 30 + Right, Pt.Y - 15), CLickWord);
+          HintWindow.ActivateHint(Rect(Pt.X + 20, Pt.Y - (Bottom - Top) - 15, Pt.X + 30 + Right, Pt.Y - 15), CLickWord);
         PopupMenu.Popup(Pt.X, Pt.Y);
       finally
         HintWindow.Free;
@@ -982,13 +971,13 @@ end;
 
 { HTML for print header and footer }
 const
-  HFText: string = '<html><head><style>' + 'body  {font: sans-serif 8pt;}' +
+  HFText: ThtString = '<html><head><style>' + 'body  {font: sans-serif 8pt;}' +
     '</style></head>' + '<body marginwidth="0">' +
     '<table border="0" cellspacing="2" cellpadding="1" width="100%">' + '<tr>' +
     '<td>#left</td><td align="right">#right</td>' + '</tr>' +
     '</table></body></html>';
 
-function ReplaceStr(Const S, FromStr, ToStr: string): string;
+function ReplaceStr(Const S, FromStr, ToStr: ThtString): ThtString;
 { replace FromStr with ToStr in string S.
   for Delphi 6, 7, AnsiReplaceStr may be used instead. }
 var
@@ -1006,7 +995,7 @@ end;
 procedure TForm1.ViewerPrintHTMLHeader(Sender: TObject; HFViewer: THTMLViewer;
   NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean);
 var
-  S: string;
+  S: ThtString;
 begin
   S := ReplaceStr(HFText, '#left', Viewer.DocumentTitle);
   S := ReplaceStr(S, '#right', Viewer.CurrentFile);
@@ -1016,7 +1005,7 @@ end;
 procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject; HFViewer: THTMLViewer;
   NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean);
 var
-  S: string;
+  S: ThtString;
 begin
   S := ReplaceStr(HFText, '#left', DateToStr(Date));
   S := ReplaceStr(S, '#right', 'Page ' + IntToStr(NumPage));

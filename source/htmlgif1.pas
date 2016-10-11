@@ -274,11 +274,11 @@ type
   private
     procedure ReadSignature;
     procedure ReadScreenDescriptor;
-    procedure ReadColorTable(Size: integer; var Table: integer);
+    procedure ReadColorTable(Size: integer; out Table: integer);
     procedure ReadImageDescriptor;
     procedure ReadDataBlockList(List: TList);
     procedure ReadExtension(var Done: boolean);
-    procedure ReadSourceInteger(size: integer; var value: integer);
+    procedure ReadSourceInteger(size: integer; out value: integer);
 
 // LZW encode and decode
 
@@ -782,7 +782,7 @@ end;
 { master color table list in TABLE }
 { if SIZE is <= 0, then there is no table, and the TABLE becomes -1 }
 
-procedure TGif.ReadColorTable(Size: integer; var Table: integer);
+procedure TGif.ReadColorTable(Size: integer; out Table: integer);
 var
   i, n: integer;
   r, g, b: byte;
@@ -1098,7 +1098,7 @@ end;
 { ---------------------------------------------------------------------------- }
 { read a 1 or 2-byte integer from the source stream }
 
-procedure TGif.ReadSourceInteger(size: integer; var value: integer);
+procedure TGif.ReadSourceInteger(size: integer; out value: integer);
 var
   b: byte;
   w: word;

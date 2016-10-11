@@ -57,6 +57,7 @@ type
   TBuffChar = ThtChar;      // the type of a wide char
   PBuffChar = PhtChar;
   TBuffString = ThtString;  // the type of a wide string
+  TBuffStringList = ThtStringList;  // the type of a wide string
 
   TBuffPointer = record
     case Integer of
@@ -158,17 +159,17 @@ type
 // one to register the converter. 
 
 // Add a name of a code page. Code pages can have many names, but each name names one code page only:
-procedure RegisterCodePageName(const CodePageName: string; CodePage: TBuffCodePage);
+procedure RegisterCodePageName(const CodePageName: TBuffString; CodePage: TBuffCodePage);
 // Remove a name of a code page:
-procedure UnregisterCodePageName(const CodePageName: string);
+procedure UnregisterCodePageName(const CodePageName: TBuffString);
 // Get code page by name:
-function StrToCodePage(const CodePageName: string): TBuffCodePage;
+function StrToCodePage(const CodePageName: TBuffString): TBuffCodePage;
 
 // Add a code page to unicode converter. Only one converter per code page is allowed,
 // but a converter may handle more than one code page:
 procedure RegisterCodePageToUnicodeConverter(
   CodePage: TBuffCodePage; Converter: TBuffConverterClass;
-  const ConverterName: string = ''; CharSet: TBuffCharSet = UNKNOWN_CHARSET);
+  const ConverterName: TBuffString = ''; CharSet: TBuffCharSet = UNKNOWN_CHARSET);
 // Remove a code page to unicode converter:
 procedure UnregisterCodePageToUnicodeConverter(CodePage: TBuffCodePage);
 // Get charset of code page:
@@ -183,16 +184,16 @@ type
 
   TBuffConvInfo = class
   private
-    FName: String;
+    FName:      TBuffString;
     FCodePage:  TBuffCodePage;
     FCharSet:   TBuffCharSet;
     FConverter: TBuffConverterClass;
   public
-    constructor Create(CodePage: TBuffCodePage; CharSet: TBuffCharSet; Converter: TBuffConverterClass; const Name: String);
+    constructor Create(CodePage: TBuffCodePage; CharSet: TBuffCharSet; Converter: TBuffConverterClass; const Name: TBuffString);
     property CharSet: TBuffCharSet read FCharSet;
     property CodePage: TBuffCodePage read FCodePage;
     property Converter: TBuffConverterClass read FConverter;
-    property Name: String read FName;
+    property Name: TBuffString read FName;
   end;
 
   TBuffConvInfoList = class(TList)
@@ -212,22 +213,22 @@ type
 
   TBuffCodePageName = class
   private
-    FName: string;
+    FName: TBuffString;
     FCodePage: TBuffCodePage;
   public
-    constructor Create(Name: string; CodePage: TBuffCodePage);
+    constructor Create(Name: TBuffString; CodePage: TBuffCodePage);
     property CodePage: TBuffCodePage read FCodePage;
-    property Name: string read FName;
+    property Name: TBuffString read FName;
   end;
 
-  TBuffCodePageNameList = class(TStringList)
+  TBuffCodePageNameList = class(TBuffStringList)
   private
     function GetItem(Index: Integer): TBuffCodePageName;
   public
     constructor Create;
     destructor Destroy; override;
     procedure Add(Info: TBuffCodePageName); reintroduce;
-    function IndexOf(const S: String): Integer; override;
+    function IndexOf(const S: TBuffString): Integer; override;
     property Items[Index: Integer]: TBuffCodePageName read GetItem; default;
   end;
 
@@ -246,7 +247,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.10.2012 --
-procedure RegisterCodePageName(const CodePageName: string; CodePage: TBuffCodePage);
+procedure RegisterCodePageName(const CodePageName: TBuffString; CodePage: TBuffCodePage);
 var
   CodePagesByName: TBuffCodePageNameList;
 begin
@@ -256,7 +257,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.10.2012 --
-procedure UnregisterCodePageName(const CodePageName: string);
+procedure UnregisterCodePageName(const CodePageName: TBuffString);
 var
   CodePagesByName: TBuffCodePageNameList;
   Index: Integer;
@@ -264,6 +265,7 @@ begin
   CodePagesByName := GetCodePageNameList;
   if CodePagesByName <> nil then
   begin
+    Index := -1;
     if not CodePagesByName.Find(CodePageName, Index) then
       Index := CodePagesByName.IndexOf(CodePageName);
     if Index >= 0 then
@@ -275,7 +277,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function StrToCodePageInfo(const CodePageName: string): TBuffCodePageName;
+function StrToCodePageInfo(const CodePageName: TBuffString): TBuffCodePageName;
 var
   CodePagesByName: TBuffCodePageNameList;
   Index: Integer;
@@ -284,6 +286,7 @@ begin
   Result := nil;
   if CodePagesByName <> nil then
   begin
+    Index := -1;
     if not CodePagesByName.Find(CodePageName, Index) then
       Index := CodePagesByName.IndexOf(CodePageName);
     if Index >= 0 then
@@ -292,7 +295,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.10.2012 --
-function StrToCodePage(const CodePageName: string): TBuffCodePage;
+function StrToCodePage(const CodePageName: TBuffString): TBuffCodePage;
 var
   Info: TBuffCodePageName;
 begin
@@ -314,7 +317,7 @@ end;
 //-- BG ---------------------------------------------------------- 12.10.2012 --
 procedure RegisterCodePageToUnicodeConverter(
   CodePage: TBuffCodePage; Converter: TBuffConverterClass;
-  const ConverterName: string = ''; CharSet: TBuffCharSet = UNKNOWN_CHARSET);
+  const ConverterName: TBuffString = ''; CharSet: TBuffCharSet = UNKNOWN_CHARSET);
 var
   Index: Integer;
   CodePageInfos: TBuffConvInfoList;
@@ -422,7 +425,7 @@ end;
 { TBuffConvInfo }
 
 //-- BG ---------------------------------------------------------- 12.10.2012 --
-constructor TBuffConvInfo.Create(CodePage: TBuffCodePage; CharSet: TBuffCharSet; Converter: TBuffConverterClass; const Name: String);
+constructor TBuffConvInfo.Create(CodePage: TBuffCodePage; CharSet: TBuffCharSet; Converter: TBuffConverterClass; const Name: TBuffString);
 begin
   inherited Create;
   FName := Name;
@@ -662,7 +665,7 @@ end;
 { TBuffCodePageName }
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-constructor TBuffCodePageName.Create(Name: string; CodePage: TBuffCodePage);
+constructor TBuffCodePageName.Create(Name: TBuffString; CodePage: TBuffCodePage);
 begin
   inherited Create;
   FName := Name;
@@ -1206,14 +1209,14 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 22.12.2010 --
-function TBuffCodePageNameList.IndexOf(const S: String): Integer;
+function TBuffCodePageNameList.IndexOf(const S: TBuffString): Integer;
 var
-  LS: string;
+  LS: TBuffString;
 begin
   Result := inherited IndexOf(S);
   if Result = -1 then
   begin
-    LS := LowerCase(S);
+    LS := htLowerCase(S);
     Result := Count - 1;
     while (Result >= 0) and (Pos(Strings[Result], LS) = 0) do
       Dec(Result);

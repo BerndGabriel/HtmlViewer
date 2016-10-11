@@ -1445,6 +1445,8 @@ end;
 
 {----------------PrintBitmap}
 
+{$ifdef LCL}
+{$else}
 type
   ThtAllocRec = class(TObject)
   public
@@ -1452,6 +1454,7 @@ type
     ASize: Integer;
     AHandle: HGLOBAL;
   end;
+{$endif}
 
 procedure PrintBitmap(Canvas: TCanvas; X, Y, W, H: Integer; Bitmap: TBitmap);
 {Y relative to top of display here}

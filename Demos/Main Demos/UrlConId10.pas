@@ -67,7 +67,7 @@ uses
 {$ifdef UseZLib}
   IdCompressorZLib,
 {$endif}
-  URLSubs, UrlConn;
+  URLSubs, UrlConn, HtmlGlobals;
 
 type
   THTTPConnection = class(ThtConnection)
@@ -80,7 +80,7 @@ type
     FComp: TIdCompressorZLib;
 {$endif}
     FUrlBase: string;
-    FAllow: String;
+    FAllow: ThtString;
     FNewLocation: string;
 
     FResponseText: string;
@@ -90,7 +90,7 @@ type
     FHeaderRequestData  : TStrings;
     FHeaderResponseData : TStrings;
     procedure HttpAuthorization(Sender: TObject; Authentication: TIdAuthentication; var Handled: Boolean);
-    procedure HttpRedirect(Sender: TObject; var Dest: String; var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
+    procedure HttpRedirect(Sender: TObject; var Dest: string; var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
     procedure HttpWorkBegin(Sender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
     procedure HttpWork(Sender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
     procedure HttpWorkEnd(Sender: TObject; AWorkMode: TWorkMode);
@@ -108,11 +108,11 @@ type
   ThtIndyHttpConnector = class(ThtProxyConnector)
   private
     FUserAgent: string;
-    FCookieFile: String;
+    FCookieFile: ThtString;
     FCookieManager: TIdCookieManager;
     function StoreUserAgent: Boolean;
   protected
-    class function GetDefaultProtocols: string; override;
+    class function GetDefaultProtocols: ThtString; override;
     class function GetVersion: string; override;
   public
     constructor Create(AOwner: TComponent); override;
@@ -120,11 +120,11 @@ type
     procedure LoadCookies;
     procedure SaveCookies;
 
-    function CreateConnection(const Protocol: String): ThtConnection; override;
+    function CreateConnection(const Protocol: ThtString): ThtConnection; override;
   published
     property OnGetAuthorization;
     property UserAgent: string read FUserAgent write FUserAgent stored StoreUserAgent;
-    property CookieFile: String read FCookieFile write FCookieFile;
+    property CookieFile: ThtString read FCookieFile write FCookieFile;
     property CookieManager: TIdCookieManager read FCookieManager;
   end;
 
@@ -184,7 +184,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtIndyHttpConnector.CreateConnection(const Protocol: String): ThtConnection;
+function ThtIndyHttpConnector.CreateConnection(const Protocol: ThtString): ThtConnection;
 var
   Connection: THTTPConnection absolute Result;
 begin
@@ -202,7 +202,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-class function ThtIndyHttpConnector.GetDefaultProtocols: string;
+class function ThtIndyHttpConnector.GetDefaultProtocols: ThtString;
 begin
   Result := 'http';
   if CanSSL then
@@ -243,7 +243,7 @@ var
     AURI : TIdURI;
     AValues : TStrings);
   var i : Integer;
-    s, LC, LA : String;
+    s, LC, LA : string;
     LCookie : TIdCookie;
   begin
     for i := 0 to AValues.Count - 1 do
@@ -402,7 +402,7 @@ var
   SendStream: TStringStream;
   Strings: TStringList;
   RedirectCount: Integer;
-  Url1, Query1, S: String;
+  Url1, Query1, S: ThtString;
 begin
   FHttp.Request.Referer := Doc.Referer;
   Url1 := Doc.Url;
@@ -523,7 +523,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 19.05.2016 --
-procedure THTTPConnection.HttpRedirect(Sender: TObject; var Dest: String;
+procedure THTTPConnection.HttpRedirect(Sender: TObject; var Dest: string;
   var NumRedirect: Integer; var Handled: boolean; var Method: TIdHTTPMethod);
 var
   OldProtocol: string;

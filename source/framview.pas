@@ -78,12 +78,12 @@ type
   private
     FImageCache: ThtImageCache;
     FCursor: TCursor;
-    FHistory, FTitleHistory: TStrings;
+    FHistory, FTitleHistory: ThtStringList;
     FHistoryIndex: Integer;
     FOptions: TFrameViewerOptions;
     FPosition: TList;
     FProcessing, FViewerProcessing: Boolean;
-    FViewerList: TStrings;
+    FViewerList: ThtStringList;
     FViewImages: Boolean;
     //
     FOnBlankWindowRequest: TWindowRequestEvent;
@@ -111,11 +111,11 @@ type
   protected
     FBaseEx: ThtString;
     FURL: ThtString;
-    FLinkAttributes: TStringList;
+    FLinkAttributes: ThtStringList;
     FLinkText: ThtString;
     FCurFrameSet: TFrameSetBase; {the TFrameSet being displayed}
     ProcessList: TList; {list of viewers that are processing}
-    Visited: TStringList; {visited URLs}
+    Visited: ThtStringList; {visited URLs}
     function CreateViewer(Owner: THtmlFrameBase): THtmlViewer; virtual;
     function CreateIFrameControl(Sender: TObject; Owner: TComponent): TViewerBase;
     function GetActiveViewer: THtmlViewer;
@@ -137,7 +137,7 @@ type
     function GetUseQuirksMode: Boolean; override;
     function GetViewerBase(Viewer: THtmlViewer): ThtString;
     function GetViewerClass: THtmlViewerClass; virtual;
-    function GetViewers: TStrings;
+    function GetViewers: ThtStringList;
     function GetViewerTarget(Viewer: THtmlViewer): ThtString;
     function HotSpotClickHandled(const FullUrl: ThtString; const Target: ThtString {= ''}): Boolean;
     procedure AddVisitedLink(const S: ThtString);
@@ -242,8 +242,8 @@ type
     property CaretPos: Integer read GetCaretPos write SetCaretPos;
     property CurrentFile: ThtString read GetCurrentFile;
     property DocumentTitle: ThtString read GetTitle;
-    property History: TStrings read FHistory;
-    property LinkAttributes: TStringList read FLinkAttributes;
+    property History: ThtStringList read FHistory;
+    property LinkAttributes: ThtStringList read FLinkAttributes;
     property LinkText: ThtString read FLinkText;
     property Palette: HPalette read GetOurPalette write SetOurPalette;
     property Processing: Boolean read GetProcessing;
@@ -251,9 +251,9 @@ type
     property SelStart: Integer read GetSelStart write SetSelStart;
     property SelText: UnicodeString read GetSelText;
 //    property Target: ThtString read GetTarget;
-    property TitleHistory: TStrings read FTitleHistory;
+    property TitleHistory: ThtStringList read FTitleHistory;
     property URL: ThtString read FURL;
-    property Viewers: TStrings read GetViewers;
+    property Viewers: ThtStringList read GetViewers;
     property FwdButtonEnabled: Boolean read GetFwdButtonEnabled;
     property BackButtonEnabled: Boolean read GetBackButtonEnabled;
   published
@@ -393,7 +393,7 @@ type
     FFrameSet: TSubFrameSetBase; {or the TSubFrameSetBase it holds}
     NoScroll: Boolean;
     frMarginHeight, frMarginWidth: Integer;
-    frHistory: TStringList;
+    frHistory: ThtStringList;
     frPositionHistory: TObjectList;
     frHistoryIndex: Integer;
     RefreshTimer: TTimer;
@@ -502,7 +502,7 @@ type
     FActive: THtmlViewer;  // the most recently active viewer
     FCurrentFile: ThtString;  // current filename or URL
     FFrameViewer: TFvBase;
-    FrameNames: TStringList; {list of Window names and their TFrames}
+    FrameNames: ThtStringList; {list of Window names and their TFrames}
     Frames: TList; {list of all the Frames contained herein}
     HotSet: TFrameBase; {owner of line we're moving}
     NestLevel: Integer;
@@ -669,7 +669,7 @@ end;
 procedure TViewerFrameBase.AddFrameNames;
 begin
   if Assigned(MasterSet) and (WinName <> '') and Assigned(MasterSet.FrameNames) then
-    MasterSet.FrameNames.AddObject(Uppercase(WinName), Self);
+    MasterSet.FrameNames.AddObject(htUpperCase(WinName), Self);
 end;
 
 //-- BG ---------------------------------------------------------- 06.10.2016 --
@@ -677,6 +677,7 @@ procedure TViewerFrameBase.ClearFrameNames;
 var
   I: Integer;
 begin
+  I := -1;
   if Assigned(MasterSet) and (WinName <> '')
     and Assigned(MasterSet.FrameNames)
     and MasterSet.FrameNames.Find(WinName, I)
@@ -722,17 +723,17 @@ begin
           NameSy: WinName := Name;
           NoResizeSy: NoResize := True;
           ScrollingSy:
-            if CompareText(Name, 'NO') = 0 then {auto and yes work the same}
+            if htCompareText(Name, 'NO') = 0 then {auto and yes work the same}
               NoScroll := True;
           MarginWidthSy: frMarginWidth := Value;
           MarginHeightSy: frMarginHeight := Value;
         end;
   if WinName <> '' then {add it to the Window name list}
-    (AOwner as TSubFrameSetBase).MasterSet.FrameNames.AddObject(Uppercase(WinName), Self);
+    (AOwner as TSubFrameSetBase).MasterSet.FrameNames.AddObject(htUpperCase(WinName), Self);
   OnMouseDown := FVMouseDown;
   OnMouseMove := FVMouseMove;
   OnMouseUp := FVMouseUp;
-  frHistory := TStringList.Create;
+  frHistory := ThtStringList.Create;
   frPositionHistory := TPositionObjList.Create;
 end;
 
@@ -744,6 +745,7 @@ var
 begin
   if Assigned(MasterSet) then
   begin
+    I := -1;
     if (WinName <> '')
       and Assigned(MasterSet.FrameNames) and MasterSet.FrameNames.Find(WinName, I)
       and (MasterSet.FrameNames.Objects[I] = Self) then
@@ -803,7 +805,7 @@ begin
   SplitDest(NextFile, S, D);
   if (MasterSet.Viewers.Count = 1) then {load a new FrameSet}
   begin
-    if CompareText(NextFile, MasterSet.FCurrentFile) = 0 then
+    if htCompareText(NextFile, MasterSet.FCurrentFile) = 0 then
       (MasterSet.FrameViewer as TFrameViewer).Reload
     else
       (MasterSet.FrameViewer as TFrameViewer).LoadFromFileInternal(S, D);
@@ -910,7 +912,7 @@ begin
     if Pos(':', Result) = 0 then
     begin
       if Base <> '' then
-        if CompareText(Base, 'DosPath') = 0 then
+        if htCompareText(Base, 'DosPath') = 0 then
           Result := ExpandFilename(Result)
         else
           Result := CombineDos(HTMLToDos(Base), Result)
@@ -928,7 +930,7 @@ var
   Src: ThtString;
   Stream: TStream;
   ft: ThtDocType;
-  Ext: string;
+  Ext: ThtString;
 begin
   if ((Source <> '') or Assigned(PEV)) and (MasterSet.NestLevel < 4) then
   begin
@@ -1002,7 +1004,7 @@ begin
         else
           if EV.Doc <> nil then
           begin
-            Ext := Lowercase(ExtractFileExt(Source));
+            Ext := htLowerCase(ExtractFileExt(Source));
             if Length(Ext) > 0 then
               Delete(Ext, 1, 1);
             if copy(Ev.NewName, 1, 9) <> 'source://' then
@@ -1157,7 +1159,7 @@ begin
     EV.NewName := OldName;
   Source := EV.NewName;
   HS := EV.NewName;
-  SameName := CompareText(Source, OldName) = 0;
+  SameName := htCompareText(Source, OldName) = 0;
 {if SameName, will not have to reload anything}
   ft := HTMLType;
   if not MasterSet.RequestEvent then
@@ -1216,7 +1218,7 @@ begin
             Item := TFrameBase(List.Items[I]);
             if Item is TViewerFrameBase then
               with TViewerFrameBase(Item) do
-                if CompareText(Source, OrigSource) <> 0 then
+                if htCompareText(Source, OrigSource) <> 0 then
                 begin
                   frLoadFromFile(OrigSource, '', True, False);
                 end;
@@ -1675,6 +1677,7 @@ var
 
 begin
 {read the row or column widths into the Dim array}
+  T := nil;
   if L.Find(RowsSy, T) then
   begin
     Rows := True;
@@ -1886,6 +1889,7 @@ begin
   Pt1 := ClientToScreen(Pt1);
   Pt2 := Point(ClientWidth, ClientHeight);
   Pt2 := ClientToScreen(Pt2);
+  Pt  := Point(0, 0);
   GetCursorPos(Pt);
   if Rows then
     Result := Rect(Pt1.X, Pt.Y - 1, Pt2.X, Pt.Y + 1)
@@ -2117,7 +2121,7 @@ var
   DelTime, I: Integer;
   CP: TBuffCodePage;
 begin
-  if CompareText(HttpEq, 'content-type') = 0 then
+  if htCompareText(HttpEq, 'content-type') = 0 then
   begin
     CP := StrToCodePage(Content);
     if CP <> CP_UNKNOWN then
@@ -2127,15 +2131,12 @@ begin
     end;
   end;
 
-  with MasterSet.FrameViewer do
-  begin
-    if Assigned(OnMeta) then
-      OnMeta(Sender, HttpEq, Name, Content);
-    if not (fvMetaRefresh in fvOptions) then
-      Exit;
-  end;
+  if Assigned(MasterSet.FrameViewer.OnMeta) then
+    MasterSet.FrameViewer.OnMeta(Sender, HttpEq, Name, Content);
+  if not (fvMetaRefresh in MasterSet.FrameViewer.fvOptions) then
+    Exit;
 
-  if CompareText(Lowercase(HttpEq), 'refresh') = 0 then
+  if htCompareText(htLowercase(HttpEq), 'refresh') = 0 then
   begin
     I := Pos(';', Content);
     if I > 0 then
@@ -2203,7 +2204,7 @@ begin
 {$endif}
   FTitle := '';
   FCurrentFile := '';
-  FrameNames := TStringList.Create;
+  FrameNames := ThtStringList.Create;
   FrameNames.Sorted := True;
   Viewers := TList.Create;
   Frames := TList.Create;
@@ -2602,16 +2603,16 @@ begin
   Height := 150;
   Width := 150;
   ProcessList := TList.Create;
-  FLinkAttributes := TStringList.Create;
+  FLinkAttributes := ThtStringList.Create;
   FViewImages := True;
   FImageCache := ThtImageCache.Create;
-  FHistory := TStringList.Create;
+  FHistory := ThtStringList.Create;
   FPosition := TList.Create;
-  FTitleHistory := TStringList.Create;
+  FTitleHistory := ThtStringList.Create;
   FCursor := crIBeam;
   TabStop := False;
   FOptions := [fvPrintTableBackground, fvPrintMonochromeBlack];
-  Visited := TStringList.Create;
+  Visited := ThtStringList.Create;
 
   FCurFrameSet := GetFrameSetClass.Create(Self);
   if fvNoBorder in FOptions then
@@ -2774,7 +2775,7 @@ begin
       if Tmp is THtmlViewer then
         OldPos := THtmlViewer(Tmp).Position;
     end;
-    if CompareText(CurFrameSet.FCurrentFile, FileName) <> 0 then
+    if htCompareText(CurFrameSet.FCurrentFile, FileName) <> 0 then
     begin
       OldFrameSet := CurFrameSet;
       FCurFrameSet := GetFrameSetClass.Create(Self);
@@ -2832,6 +2833,7 @@ begin
     Exit;
 
   SplitDest(FileName, Name, Dest);
+  I := -1;
   if CurFrameSet.FrameNames.Find(Target, I) then
   begin
     FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase);
@@ -2850,9 +2852,9 @@ begin
     end;
   end
   else if (Target = '') or
-    (CompareText(Target, '_top') = 0) or
-    (CompareText(Target, '_parent') = 0) or
-    (CompareText(Target, '_self') = 0)
+    (htCompareText(Target, '_top') = 0) or
+    (htCompareText(Target, '_parent') = 0) or
+    (htCompareText(Target, '_self') = 0)
   then
     LoadFromFileInternal(Name, Dest)
   else {_blank or unknown target}
@@ -3021,7 +3023,8 @@ begin
   if not HotSpotClickHandled(ExpURL, Target) then
   begin
     Handled := True;
-    if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
+    I := -1;
+    if (Target = '') or (htCompareText(Target, '_self') = 0) then {no target or _self target}
     begin
       FrameTarget := Viewer.FrameOwner as TViewerFrameBase;
       if not Assigned(FrameTarget) then
@@ -3029,9 +3032,9 @@ begin
     end
     else if CurFrameSet.FrameNames.Find(Target, I) then
       FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase)
-    else if CompareText(Target, '_top') = 0 then
+    else if htCompareText(Target, '_top') = 0 then
       FrameTarget := CurFrameSet
-    else if CompareText(Target, '_parent') = 0 then
+    else if htCompareText(Target, '_parent') = 0 then
     begin
       FrameTarget := (Viewer.FrameOwner as TViewerFrameBase).Owner as TFrameBase;
       while Assigned(FrameTarget) and not (FrameTarget is TViewerFrameBase)
@@ -3055,7 +3058,7 @@ begin
     FURL := AnURL;
     BeginProcessing;
     if (FrameTarget is TViewerFrameBase) and (CurFrameSet.Viewers.Count = 1) and (S <> '')
-      and (CompareText(S, CurFrameSet.FCurrentFile) <> 0) then
+      and (htCompareText(S, CurFrameSet.FCurrentFile) <> 0) then
       FrameTarget := CurFrameSet; {force a new FrameSet on name change}
     try
       if FrameTarget is TViewerFrameBase then
@@ -3160,7 +3163,7 @@ begin
   begin
     Viewer := ActiveViewer;
     BasePath := GetViewerBase(Viewer);
-    if CompareText(BasePath, 'DosPath') = 0 then {let Dos find the path}
+    if htCompareText(BasePath, 'DosPath') = 0 then {let Dos find the path}
     else
     begin
       if BasePath <> '' then
@@ -3523,6 +3526,7 @@ function TFVBase.ViewerFromTarget(const Target: ThtString): THtmlViewer;
 var
   I: Integer;
 begin
+  I := -1;
   if Assigned(FCurFrameSet) and Assigned(CurFrameSet.FrameNames)
     and CurFrameSet.FrameNames.Find(Target, I)
     and (CurFrameSet.FrameNames.Objects[I] <> nil)
@@ -3765,7 +3769,7 @@ begin
             S1 := Src + Url
           else
             S1 := URL;
-          if CompareText(S, S1) = 0 then
+          if htCompareText(S, S1) = 0 then
             Visited := True;
         end;
     end;
@@ -3800,7 +3804,7 @@ end;
 
 {----------------TFrameViewer.GetViewers:}
 
-function TFVBase.GetViewers: TStrings;
+function TFVBase.GetViewers: ThtStringList;
 var
   I: Integer;
   S: ThtString;
@@ -3809,7 +3813,7 @@ var
   Pt1, Pt2: TPoint;
 begin
   if not Assigned(FViewerList) then
-    FViewerList := TStringList.Create
+    FViewerList := ThtStringList.Create
   else
     FViewerList.Clear;
   for I := 0 to CurFrameSet.Viewers.Count - 1 do
@@ -4702,7 +4706,7 @@ begin
       S := Name
     else
       S := 'source://' + Text;
-    if CompareText(CurFrameSet.FCurrentFile, S) <> 0 then
+    if htCompareText(CurFrameSet.FCurrentFile, S) <> 0 then
     begin
       OldFrameSet := CurFrameSet;
       FCurFrameSet := GetFrameSetClass.Create(Self);

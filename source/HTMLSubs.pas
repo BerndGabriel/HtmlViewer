@@ -1693,8 +1693,6 @@ type
 //    procedure MinMaxWidth(Canvas: TCanvas; out Min, Max: Integer); override;
   end;
 
-function htCompareText(const T1, T2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
-
 var
   WaitStream: TMemoryStream;
   ErrorStream: TMemoryStream;
@@ -1810,7 +1808,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 18.01.2012 --
 procedure CountsPerType(
-  var CountsPerType: TIntegerPerWidthType;
+  out CountsPerType: TIntegerPerWidthType;
   const ColumnSpecs: TWidthTypeArray;
   StartIndex, EndIndex: Integer);
  {$ifdef UseInline} inline; {$endif}
@@ -1852,13 +1850,6 @@ begin
   for I := StartIndex to EndIndex do
     if ColumnSpecs[I] <> WidthType then
       Inc(Result, Widths[I]);
-end;
-
-//-- BG ---------------------------------------------------------- 10.12.2010 --
-function htCompareText(const T1, T2: ThtString): Integer;
- {$ifdef UseInline} inline; {$endif}
-begin
-  Result := WideCompareText(T1, T2);
 end;
 
 procedure InitializeFontSizes(Size: Integer);
@@ -1965,6 +1956,7 @@ function TSection.TryGetClear(var Clear: ThtClearStyle): Boolean;
 var
   T: TAttribute;
 begin
+  T := nil;
   Result := inherited TryGetClear(Clear);
   if not Result then
     if FAttributes <> nil then
@@ -2182,7 +2174,7 @@ end;
 //        //no more checks here. Attribute it set! amoSet: ;       // [name] : matches, if attr is set and has any value.
 //
 //        amoEquals:     // [name=value] : matches, if attr equals value.
-//          if htCompareString(Match.Value, Attribute.AsString) <> 0 then
+//          if htCompareStr(Match.Value, Attribute.AsString) <> 0 then
 //            break;
 //
 //        amoContains:   // [name~=value] : matches, if attr is a white space separated list of values and value is one of these values.
@@ -2733,6 +2725,7 @@ begin
       end;
 
   NoBorder := (BorderWidth = 0) and (not Prop.HasBorderStyle or not Prop.HasBorderWidth);
+  T := nil;
   if L.Find(TitleSy, T) then
     Title := T.Name; {has higher priority than Alt loaded above}
 end;
@@ -2962,7 +2955,7 @@ begin
           Document.ExpandName(Document.TheOwner, FSource, Rslt);
           FSource := htTrim(Rslt);
         end;
-        if Document.MissingImages.IndexOf(UName) = -1 then
+        if Document.MissingImages.IndexOf(FSource) = -1 then
           TmpImage := Document.GetTheImage(FSource, Transparent, FromCache, Missing)
         else
           Missing := True; {already in list, don't request it again}
@@ -2973,7 +2966,7 @@ begin
         if Missing then
         begin
           FImage := DefImage;
-          Document.MissingImages.AddObject(UName, Self); {add it even if it's there already}
+          Document.MissingImages.AddObject(FSource, Self); {add it even if it's there already}
         end
         else
         begin
@@ -3050,9 +3043,9 @@ begin
 end;
 
 {----------------TImageObj.DoDraw}
-var
-  LastExceptionMessage: String;
-  LastDdImage: ThtImage;
+//var
+//  LastExceptionMessage: String;
+//  LastDdImage: ThtImage;
 procedure TImageObj.DoDraw(Canvas: TCanvas; XX, Y: Integer; ddImage: ThtImage);
 {Y relative to top of display here}
 var
@@ -3078,11 +3071,11 @@ begin
       else
         ddImage.Draw(Canvas, XX, Y, W, H);
   except
-    on E: Exception do
-    begin
-      LastExceptionMessage := E.Message;
-      LastDdImage := ddImage;
-    end;
+    //on E: Exception do
+    //begin
+    //  LastExceptionMessage := E.Message;
+    //  LastDdImage := ddImage;
+    //end;
   end;
 end;
 
@@ -3416,7 +3409,7 @@ begin
     begin
       Ctrl := ControlList[I];
       if (Ctrl is TRadioButtonFormControlObj) and (Ctrl <> Radio) then
-        if CompareText(RadioButton.FName, S) = 0 then
+        if htCompareText(RadioButton.FName, S) = 0 then
         begin
           RadioButton.Checked := False;
           RadioButton.TabStop := False; {first check turns off other tabstops}
@@ -3441,7 +3434,7 @@ begin
       for I := ControlList.Count - 1 downto 0 do
       begin
         Ctrl := ControlList[I];
-        if (Ctrl is TRadioButtonFormControlObj) and SameText(Ctrl.FName, S) then
+        if (Ctrl is TRadioButtonFormControlObj) and htSameText(Ctrl.FName, S) then
         begin
           if B then
           begin
@@ -3456,7 +3449,7 @@ begin
       for I := 0 to ControlList.Count - 1 do
       begin
         Ctrl := ControlList[I];
-        if (Ctrl is TRadioButtonFormControlObj) and SameText(Ctrl.FName, S) then
+        if (Ctrl is TRadioButtonFormControlObj) and htSameText(Ctrl.FName, S) then
         begin
           if B then
           begin
@@ -3548,7 +3541,7 @@ begin
     FormControl.SetDataInit;
     Index := 0;
     for J := 0 to SL.Count - 1 do
-      if CompareText(FormControl.FName, SL.Names[J]) = 0 then
+      if htCompareText(FormControl.FName, SL.Names[J]) = 0 then
       begin
         K := Pos('=', SL[J]);
         if K > 0 then
@@ -3956,6 +3949,7 @@ begin
   PntPanel := Document.PPanel;
   FControl := TFormRadioButton.Create(PntPanel);
   VertAlign := ABaseline;
+  T := nil;
   if L.Find(CheckedSy, T) then
     IsChecked := True;
   with FControl do
@@ -3988,7 +3982,7 @@ begin
     begin
       Ctrl := TFormControlObj(MyForm.ControlList.Items[I]);
       if (Ctrl is TRadioButtonFormControlObj) and (RadioButtonFormControlObj.FControl <> FControl) then {skip the current radiobutton}
-        if CompareText(Ctrl.Name, Name) = 0 then {same group}
+        if htCompareText(Ctrl.Name, Name) = 0 then {same group}
           if not IsChecked then
           begin
           {if the current radiobutton is not checked and there are other radio buttons,
@@ -4549,6 +4543,7 @@ begin
   while I < TheCount do
   begin
     try
+      Sw := 0;
       Inc(H, Items[I].DrawLogic1(Canvas, 0, Y + H, 0, 0, Width, AHeight, BlHt, IMgr, Sw, Curs));
       ScrollWidth := Max(ScrollWidth, Sw);
       Inc(I);
@@ -5941,6 +5936,8 @@ begin
 
     if HideOverflow then
     begin
+      Rgn := 0;
+      SaveRgn := 0;
       if Floating = ANone then
         GetClippingRgn(Canvas, CnRect, Document.Printing, Rgn, SaveRgn)
       else
@@ -6056,14 +6053,14 @@ begin
     with Attributes[I] do
       case Which of
         AlignSy:
-          if CompareText(Name, 'CENTER') = 0 then
+          if htCompareText(Name, 'CENTER') = 0 then
             Justify := Centered
-          else if CompareText(Name, 'LEFT') = 0 then
+          else if htCompareText(Name, 'LEFT') = 0 then
           begin
             if FFloating = ANone then
               FFloating := ALeft;
           end
-          else if CompareText(Name, 'RIGHT') = 0 then
+          else if htCompareText(Name, 'RIGHT') = 0 then
           begin
             if FFloating = ANone then
               FFloating := ARight;
@@ -6292,16 +6289,16 @@ begin
       case Which of
 
         AlignSy:
-          if CompareText(Name, 'CENTER') = 0 then
+          if htCompareText(Name, 'CENTER') = 0 then
             Justify := Centered
-          else if CompareText(Name, 'LEFT') = 0 then
+          else if htCompareText(Name, 'LEFT') = 0 then
           begin
 //TODO: BG, 14.07.2013: The table block is not floating, but justified!
             if FFloating = ANone then
               FFloating := ALeft;
 //            Justify := Left;
           end
-          else if CompareText(Name, 'RIGHT') = 0 then
+          else if htCompareText(Name, 'RIGHT') = 0 then
           begin
 //TODO: BG, 14.07.2013: The table block is not floating, but justified!
             if FFloating = ANone then
@@ -6850,16 +6847,16 @@ function TBlockLI.Draw1(Canvas: TCanvas; const ARect: TRect; IMgr: TIndentManage
 
 const
   MaxNumb = 26;
-  LowerAlpha: ThtString = 'abcdefghijklmnopqrstuvwxyz';
-  HigherAlpha: ThtString = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  LowerRoman: array[1..MaxNumb] of ThtString = ('i', 'ii', 'iii', 'iv', 'v', 'vi',
+  LowerAlpha: string = 'abcdefghijklmnopqrstuvwxyz';
+  HigherAlpha: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  LowerRoman: array[1..MaxNumb] of string = ('i', 'ii', 'iii', 'iv', 'v', 'vi',
     'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii',
     'xviii', 'xix', 'xx', 'xxi', 'xxii', 'xxiii', 'xxiv', 'xxv', 'xxvi');
-  HigherRoman: array[1..MaxNumb] of ThtString = ('I', 'II', 'III', 'IV', 'V', 'VI',
+  HigherRoman: array[1..MaxNumb] of string = ('I', 'II', 'III', 'IV', 'V', 'VI',
     'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII',
     'XVIII', 'XIX', 'XX', 'XXI', 'XXII', 'XXIII', 'XXIV', 'XXV', 'XXVI');
 var
-  NStr: ThtString;
+  NStr: string;
   BkMode, TAlign: Integer;
   PenColor, BrushColor: TColor;
   PenStyle: TPenStyle;
@@ -7620,6 +7617,7 @@ var
   Rformat: Boolean;
   Obj: TObject;
 begin
+  Reformat := False;
   while J >= 0 do
   begin
     Obj := MissingImages.Objects[J];
@@ -7654,7 +7652,6 @@ begin
   Image := nil;
   Error := False;
   Reformat := False;
-  //UName := htUpperCase(htTrim(Src));
   UName := htTrim(Src);
   I := ImageCache.IndexOf(UName); {first see if the bitmap is already loaded}
   J := MissingImages.IndexOf(UName); {see if it's in missing image list}
@@ -8920,27 +8917,27 @@ end;
 function TryStrToTableFrame(const Str: ThtString; var Frame: TTableFrame): Boolean;
  {$ifdef UseInline} inline; {$endif}
 var
-  Upr: string;
+  Upr: ThtString;
 begin
   Upr := htUpperCase(Str);
   Result := True;
-  if CompareStr(Upr, 'VOID') = 0 then
+  if htCompareStr(Upr, 'VOID') = 0 then
     Frame := tfVoid
-  else if CompareStr(Upr, 'ABOVE') = 0 then
+  else if htCompareStr(Upr, 'ABOVE') = 0 then
     Frame := tfAbove
-  else if CompareStr(Upr, 'BELOW') = 0 then
+  else if htCompareStr(Upr, 'BELOW') = 0 then
     Frame := tfBelow
-  else if CompareStr(Upr, 'HSIDES') = 0 then
+  else if htCompareStr(Upr, 'HSIDES') = 0 then
     Frame := tfHSides
-  else if CompareStr(Upr, 'LHS') = 0 then
+  else if htCompareStr(Upr, 'LHS') = 0 then
     Frame := tfLhs
-  else if CompareStr(Upr, 'RHS') = 0 then
+  else if htCompareStr(Upr, 'RHS') = 0 then
     Frame := tfRhs
-  else if CompareStr(Upr, 'VSIDES') = 0 then
+  else if htCompareStr(Upr, 'VSIDES') = 0 then
     Frame := tfVSides
-  else if CompareStr(Upr, 'BOX') = 0 then
+  else if htCompareStr(Upr, 'BOX') = 0 then
     Frame := tfBox
-  else if CompareStr(Upr, 'BORDER') = 0 then
+  else if htCompareStr(Upr, 'BORDER') = 0 then
     Frame := tfBorder
   else
     Result := False;
@@ -8950,19 +8947,19 @@ end;
 function TryStrToTableRules(const Str: ThtString; var Rules: TTableRules): Boolean;
  {$ifdef UseInline} inline; {$endif}
 var
-  Upr: string;
+  Upr: ThtString;
 begin
   Upr := htUpperCase(Str);
   Result := True;
-  if CompareStr(Upr, 'NONE') = 0 then
+  if htCompareStr(Upr, 'NONE') = 0 then
     Rules := trNone
-  else if CompareStr(Upr, 'GROUPS') = 0 then
+  else if htCompareStr(Upr, 'GROUPS') = 0 then
     Rules := trGroups
-  else if CompareStr(Upr, 'ROWS') = 0 then
+  else if htCompareStr(Upr, 'ROWS') = 0 then
     Rules := trRows
-  else if CompareStr(Upr, 'COLS') = 0 then
+  else if htCompareStr(Upr, 'COLS') = 0 then
     Rules := trCols
-  else if CompareStr(Upr, 'ALL') = 0 then
+  else if htCompareStr(Upr, 'ALL') = 0 then
     Rules := trAll
   else
     Result := False;
@@ -8989,6 +8986,7 @@ begin
   BorderColorDark := clBtnShadow;
 
   // BG, 20.01.2013: process BorderSy before FrameSy and RulesSy as it implies defaults.
+  A := nil;
   HasBorderWidthAttr := Attr.Find(BorderSy, A);
   if HasBorderWidthAttr then
   begin
@@ -9058,6 +9056,7 @@ var
   HtmlTable: THtmlTable absolute Source;
 begin
   inherited CreateCopy(OwnerCell,Source);
+  FOwnerTableBlock := OwnerCell.FOwnerBlock as TTableBlock;
   Rows := TRowList.Create;
   for I := 0 to HtmlTable.Rows.Count - 1 do
     Rows.Add(TCellList.CreateCopy(OwnerCell.OwnerBlock, HtmlTable.Rows[I]));
@@ -11522,6 +11521,7 @@ begin
     InputSy:
     begin
       FCO := nil;
+      T := nil;
       if L.Find(TypeSy, T) then
       begin
         S := LowerCase(T.Name);
@@ -14123,11 +14123,11 @@ begin
     with L[I] do
       case Which of
         MaxSy:
-          Progress.Max := StrToIntDef( Name, 100 );
+          Progress.Max := StrToIntDef( string(Name), 100 );
 
         ValueSy:
         begin
-          Progress.Position := StrToIntDef( Name, 0 );
+          Progress.Position := StrToIntDef( string(Name), 0 );
           PositionSet := true;
         end;
       end;
@@ -14219,23 +14219,23 @@ begin
     with L[I] do
       case Which of
         HighSy:
-          Meter.High := StrToIntDef( Name, 100 );
+          Meter.High := StrToIntDef( string(Name), 100 );
 
         LowSy:
-          Meter.Low := StrToIntDef( Name, 0 );
+          Meter.Low := StrToIntDef( string(Name), 0 );
 
         MaxSy:
-          Meter.Max := StrToIntDef( Name, 100 );
+          Meter.Max := StrToIntDef( string(Name), 100 );
 
         MinSy:
-          Meter.Min := StrToIntDef( Name, 0 );
+          Meter.Min := StrToIntDef( string(Name), 0 );
 
         OptimumSy:
-          Meter.Optimum := StrToIntDef( Name, 50 );
+          Meter.Optimum := StrToIntDef( string(Name), 50 );
 
         ValueSy:
         begin
-          Meter.Position := StrToIntDef( Name, 0 );
+          Meter.Position := StrToIntDef( string(Name), 0 );
           //PositionSet := true;
         end;
       end;
@@ -14414,6 +14414,7 @@ function TBlockCell.DoLogicX(Canvas: TCanvas; X, Y, XRef, YRef, Width, AHeight, 
     for I := 0 to Count - 1 do
     begin
       SB := Items[I];
+      Sw := 0;
       Tmp := SB.DrawLogic1(Canvas, X, Y + Result, XRef, YRef, Width, AHeight, BlHt, IMgr, Sw, Curs);
       Inc(Result, Tmp);
       if OwnerBlock.HideOverflow then
@@ -15894,7 +15895,7 @@ begin
           frMarginHeight := Value;
 
         ScrollingSy:
-          NoScroll := CompareText(Name, 'NO') = 0; {auto and yes work the same}
+          NoScroll := htCompareText(Name, 'NO') = 0; {auto and yes work the same}
 
       end;
 
@@ -16255,8 +16256,8 @@ end;
 
 //-- BG ---------------------------------------------------------- 31.08.2013 --
 constructor TBlockBase.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
-var
-  T: TBlockBase absolute Source;
+//var
+//  T: TBlockBase absolute Source;
 begin
   inherited CreateCopy(Parent,Source);
 end;
@@ -16312,8 +16313,11 @@ begin
   Result := inherited TryGetClear(Clear);
   if not Result then
     if FAttributes <> nil then
+    begin
+      T := nil;
       if FAttributes.Find(ClearSy, T) then
         Result := TryStrToClearStyle(LowerCase(T.Name), Clear);
+    end;
 end;
 
 { ThtIndexObjList }

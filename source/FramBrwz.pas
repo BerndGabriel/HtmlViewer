@@ -43,7 +43,7 @@ uses
   HtmlSubs,
   HtmlView,
   Htmlun2,
-  ReadHTML,
+  //ReadHTML,
   URLSubs,
   FramView;
 
@@ -310,7 +310,7 @@ begin
             CreateViewer;
           Viewer.LoadFromString(
             '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source +
-            '<p>Cause: ' + E.Message); {load an error message}
+            '<p>Cause: ' + ThtString(E.Message)); {load an error message}
         end;
       end;
     finally
@@ -363,7 +363,7 @@ begin
         on E: Exception do
           Viewer.LoadFromString(
             '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source +
-            '<p>Cause: ' + E.Message); {load an error message}
+            '<p>Cause: ' + ThtString(E.Message)); {load an error message}
       end;
     end;
   Unloaded := False;
@@ -395,7 +395,7 @@ begin
   else
     URLBase := URLSubs.GetURLBase(S); {get new base}
   HS := S;
-  SameName := CompareText(S, OldName) = 0;
+  SameName := htCompareText(S, OldName) = 0;
 {if SameName, will not have to reload anything unless Reload set}
 
   if not SameName or Reload then
@@ -443,7 +443,7 @@ begin
               Item := TFrameBase(List.Items[I]);
               if (Item is TbrFrame) then
                 with TbrFrame(Item) do
-                  if CompareText(Source, OrigSource) <> 0 then
+                  if htCompareText(Source, OrigSource) <> 0 then
                     frLoadFromBrzFile(OrigSource, '', '', '', '', True, True, False);
             end;
           Exit;
@@ -827,7 +827,7 @@ begin
     ProcessList.Clear;
     if Assigned(OnSoundRequest) then
       OnSoundRequest(Self, '', 0, True);
-    SameName := CompareText(OldFile, S) = 0;
+    SameName := htCompareText(OldFile, S) = 0;
     if not SameName then
     begin
       if Assigned(OnViewerClear) then
@@ -964,7 +964,8 @@ begin
   if not Handled then
   begin
     Handled := True;
-    if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
+    I := -1;
+    if (Target = '') or (htCompareText(Target, '_self') = 0) then {no target or _self target}
     begin
       FrameTarget := Viewer.FrameOwner as TbrFrame;
       if not Assigned(FrameTarget) then
@@ -972,9 +973,9 @@ begin
     end
     else if CurbrFrameSet.FrameNames.Find(Target, I) then
       FrameTarget := CurbrFrameSet.FrameNames.Objects[I] as TFrameBase
-    else if CompareText(Target, '_top') = 0 then
+    else if htCompareText(Target, '_top') = 0 then
       FrameTarget := CurbrFrameSet
-    else if CompareText(Target, '_parent') = 0 then
+    else if htCompareText(Target, '_parent') = 0 then
     begin
       FrameTarget := (Viewer.FrameOwner as TbrFrame).Owner as TFrameBase;
       while Assigned(FrameTarget) and not (FrameTarget is TbrFrame)
@@ -998,7 +999,7 @@ begin
     FURL := AnURL;
     BeginProcessing;
     if (FrameTarget is TbrFrame) and (CurbrFrameSet.Viewers.Count = 1) and (S <> '')
-      and (CompareText(S, CurbrFrameSet.FCurrentFile) <> 0) then
+      and (htCompareText(S, CurbrFrameSet.FCurrentFile) <> 0) then
       FrameTarget := CurbrFrameSet; {force a new FrameSet on name change}
     try
       if FrameTarget is TbrFrame then
@@ -1084,7 +1085,7 @@ var
             htAppendChr(Result, Ch);
         else
           htAppendChr(Result, '%');
-          htAppendStr(Result, IntToHex(ord(Ch), 2));
+          htAppendStr(Result, IntToHex(Ord(Ch), 2));
         end;
       end;
     end;
@@ -1125,14 +1126,15 @@ begin
     if not UserHandled then
     begin
       Query := AssembleQuery;
+      I := -1;
 
-      if (Target = '') or (CompareText(Target, '_self') = 0) then {no target or _self target}
+      if (Target = '') or (htCompareText(Target, '_self') = 0) then {no target or _self target}
         FrameTarget := Viewer.FrameOwner as TbrFrame
       else if CurbrFrameSet.FrameNames.Find(Target, I) then
         FrameTarget := (CurbrFrameSet.FrameNames.Objects[I] as TbrFrame)
-      else if CompareText(Target, '_top') = 0 then
+      else if htCompareText(Target, '_top') = 0 then
         FrameTarget := CurbrFrameSet
-      else if CompareText(Target, '_parent') = 0 then
+      else if htCompareText(Target, '_parent') = 0 then
       begin
         FrameTarget := (Viewer.FrameOwner as TbrFrame).Owner as TFrameBase;
         while Assigned(FrameTarget) and not (FrameTarget is TbrFrame)
@@ -1159,13 +1161,13 @@ begin
       BeginProcessing;
       try
         if (FrameTarget is TbrFrame) and (CurbrFrameSet.Viewers.Count = 1) and (S <> '')
-          and (CompareText(S, CurbrFrameSet.FCurrentFile) <> 0) then
+          and (htCompareText(S, CurbrFrameSet.FCurrentFile) <> 0) then
           FrameTarget := CurbrFrameSet; {force a new FrameSet on name change}
         if S = '' then
           S := (Viewer.FrameOwner as TbrFrame).Source
         else if not IsFullURL(S) then
           S := CombineURL((Viewer.FrameOwner as TbrFrame).URLBase, S);
-        IsGet := CompareText(Method, 'get') = 0;
+        IsGet := htCompareText(Method, 'get') = 0;
         if FrameTarget is TbrFrame then
           TbrFrame(FrameTarget).frLoadFromBrzFile(S, Dest, Query, EncType, Viewer.CurrentFile, True, IsGet, True)
         else if FrameTarget is TbrFrameSet then
@@ -1204,7 +1206,7 @@ end;
 //-- BG ---------------------------------------------------------- 23.03.2012 --
 procedure TFrameBrowser.AssertCanPostRequest(const URL: ThtString);
 begin
-  if not SameText(Copy(URL, 1, 7), 'file://') then
+  if not htSameText(Copy(URL, 1, 7), 'file://') then
     if not Assigned(FOnGetPostRequest) and not Assigned(FOnGetPostRequestEx) then
       raise Exception.Create('Don''t know how to load an URL. Neither OnGetPostRequest nor OnGetPostRequestEx event handler defined.');
 end;
@@ -1236,7 +1238,7 @@ begin
               S1 := TbrFrame(Viewer.FrameOwner).Source + Url
             else
               S1 := CombineURL(TbrFrame(Viewer.FrameOwner).UrlBase, Url);
-            if CompareText(S, S1) = 0 then
+            if htCompareText(S, S1) = 0 then
               Visited := True;
           end;
         end;

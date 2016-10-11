@@ -811,6 +811,7 @@ var
   I: Integer;
 begin
   Ext := LowerCase(ExtractFileExt(S));
+  I := -1;
   if FileTypes.Find(Ext, I) then
     Result := PFileTypeRec(FileTypes.Objects[i]).FileType
   else
@@ -1841,7 +1842,7 @@ begin
           S1 := FCurrentFile + Url
         else
           S1 := HTMLExpandFilename(Url);
-        if CompareText(S, S1) = 0 then
+        if htCompareText(S, S1) = 0 then
           Visited := True;
       end;
   end;
@@ -2888,7 +2889,7 @@ begin
     if Pos('\', Result) = 1 then
       Result := ExpandFilename(Result)
     else if not IsAbsolutePath(Result) then
-      if CompareText(FBase, 'DosPath') = 0 then {let Dos find the path}
+      if htCompareText(FBase, 'DosPath') = 0 then {let Dos find the path}
       else if FBase <> '' then
         Result := CombineDos(HTMLToDos(FBase), Result)
       else
@@ -4981,7 +4982,7 @@ begin
   if Assigned(OnMeta) then
     OnMeta(Self, HttpEq, Name, Content);
   if Assigned(OnMetaRefresh) then
-    if CompareText(Lowercase(HttpEq), 'refresh') = 0 then
+    if htCompareText(htLowerCase(HttpEq), 'refresh') = 0 then
     begin
       I := Pos(';', Content);
       if I > 0 then
@@ -5080,6 +5081,7 @@ var
   I: Integer;
   OldPos: Integer;
 begin
+  I := -1;
   if FNameList.Find(NameID, I) then
     if FNameList.Objects[I] is TImageObj then
     begin
@@ -5101,6 +5103,7 @@ var
   Obj: TIDObject;
 begin
   Result := nil;
+  I := -1;
   with FSectionList.IDNameList do
     if Find(ID, I) then
     begin
@@ -5119,6 +5122,7 @@ var
   Obj: TIDObject;
 begin
   Result := pdUnassigned;
+  I := -1;
   with FSectionList.IDNameList do
     if Find(ID, I) then
     begin
@@ -5133,6 +5137,7 @@ var
   I: Integer;
   Obj: TIDObject;
 begin
+  I := -1;
   with FSectionList.IDNameList do
     if Find(ID, I) then
     begin

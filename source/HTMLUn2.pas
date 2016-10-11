@@ -1441,6 +1441,7 @@ var
   I: Integer;
 begin
   Result := '';
+  T := nil;
   if Find(ClassSy, T) then
   begin
     S := Lowercase(Trim(T.Name));
@@ -1467,6 +1468,7 @@ var
   T: TAttribute;
 begin
   Result := SaveID;
+  T := nil;
   if (Result = '') and Find(IDSy, T) then
   begin
     Result := Lowercase(T.Name);
@@ -1478,6 +1480,7 @@ function TAttributeList.GetTitle: ThtString;
 var
   T: TAttribute;
 begin
+  T := nil;
   if Find(TitleSy, T) then
     Result := T.Name
   else
@@ -2515,6 +2518,7 @@ var
   I: Integer;
   O: TIdObject;
 begin
+  I := -1;
   if Find(S, I) then
   begin
     try

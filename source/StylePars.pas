@@ -587,16 +587,16 @@ procedure THtmlStyleParser.ProcessPropertyOrShortHand(Prop, Value: ThtString; Is
   end;
 
 var
-  Value1: String;
+  Value1: ThtString;
   Index: TShortHand;
 begin
-  Value1 := LowerCaseUnquotedStr(Trim(Value)); // leave quotes on for font
+  Value1 := LowerCaseUnquotedStr(htTrim(Value)); // leave quotes on for font
   Value := RemoveQuotes(Value1);
-  Prop := LowerCase(Prop);
+  Prop := htLowerCase(Prop);
   if FindShortHand(Prop, Index) then
     ProcessShortHand(Index, Prop, Value, Value1, IsImportant)
   else if Prop = 'font-family' then
-    ProcessProperty(Prop, LowerCase(Value1), IsImportant)
+    ProcessProperty(Prop, htLowerCase(Value1), IsImportant)
   else
   begin
     if (LinkPath <> '') and (Pos('url(', Value) > 0) then
@@ -687,7 +687,7 @@ begin
   Count := N;
 end;
 
-procedure ExtractParn(var Src: ThtString; var Dest: array of ThtString; var Count: integer);
+procedure ExtractParn(var Src: ThtString; var Dest: array of ThtString; out Count: integer);
 {Look for strings in parenthesis like "url(....)" or rgb(...)".  Return these in
  Dest Array.  Return Src without the extracted ThtString}
 var
@@ -956,6 +956,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
     Values[shFamily] := '';
 
     // specified values
+    Index := normal;
     SplitString(Value, S, Count);
     for I := 0 to Count - 1 do
     begin

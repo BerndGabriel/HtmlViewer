@@ -184,6 +184,7 @@ var
   FontName: ThtString;
 begin
   FontName := htLowerCase(Font.Name);
+  I := -1;
   if not FFontsByName.Find(FontName, I) then
   begin
     I := FFontsByName.Add(FontName);
@@ -232,6 +233,7 @@ var
   I: Integer;
   Fonts: TObjectList;
 begin
+  I := -1;
   if FFontsByName.Find(htLowerCase(FontInfo.iName), I) then
   begin
     iHeight := -Round(FontInfo.iSize * Screen.PixelsPerInch / 72.0);

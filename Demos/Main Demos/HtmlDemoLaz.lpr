@@ -35,7 +35,6 @@ uses
   Interfaces,
   Forms,
   printer4lazarus,
-  DemoSubs in 'DemoSubs.pas',
   Fontdlg in 'Fontdlg.pas' {FontForm},
   Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},

@@ -159,7 +159,9 @@ type
   ThtStringList = TStringList;
   PhtChar = PChar;
 {$else}
+{$if fpc_fullversion < 30000}
   UnicodeString = WideString;
+{$ifend}
   ThtChar = WideChar;
   ThtString = WideString;
   ThtStrings = TWideStrings;
@@ -240,6 +242,16 @@ type
   ThtCanvas = class(TCanvas)
   public
     procedure htTextRect(const Rect: TRect; X, Y: Integer; const Text: ThtString);
+  end;
+
+  ThtGraphic = class(TGraphic)
+{$ifdef LCL}
+  private
+    FTransparent: Boolean;
+  protected
+    function GetTransparent: Boolean; override;
+    procedure SetTransparent(Value: Boolean); override;
+{$endif}
   end;
 
   { ThtBitmap }
@@ -453,10 +465,12 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
 procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
-function htCompareString(S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
-function htLowerCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-function htTrim(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
-function htUpperCase(Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htCompareStr(const S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
+function htCompareText(const S1, S2: ThtString): Integer; {$ifdef UseInline} inline; {$endif}
+function htSameText(const S1, S2: ThtString): Boolean; {$ifdef UseInline} inline; {$endif}
+function htLowerCase(const Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htTrim(const Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
+function htUpperCase(const Str: ThtString): ThtString; {$ifdef UseInline} inline; {$endif}
 // htPos(SubStr, S, Offst): find substring in S starting at Offset: (formerly known as PosX)
 function htPos(const SubStr, S: ThtString; Offset: Integer = 1): Integer;
 
@@ -487,7 +501,7 @@ procedure Circle(ACanvas : TCanvas; const X, Y, Rad: Integer); {$ifdef UseInline
 //alpha blend determination for Printers only
 function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
 
-procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);  {$ifdef UseInline} inline; {$endif}
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; out VSize : TSize);  {$ifdef UseInline} inline; {$endif}
 
 function ThemedColor(const AColor : TColor
   {$ifdef has_StyleElements};const AUseThemes : Boolean{$endif}
@@ -634,11 +648,13 @@ begin
 end;
 {$endif}
 
-procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; var VSize : TSize);
+procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; out VSize : TSize);
  {$ifdef UseInline} inline; {$endif}
 var
     Dummy: Integer;
 begin
+  VSize.cx := 0;
+  VSize.cy := 0;
   if not IsWin32Platform then
     GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, VSize)
   else
@@ -955,7 +971,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.03.2011 --
-function htCompareString(S1, S2: ThtString): Integer;
+function htCompareStr(const S1, S2: ThtString): Integer;
  {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef UNICODE}
@@ -965,8 +981,26 @@ begin
 {$endif}
 end;
 
+//-- BG ---------------------------------------------------------- 10.12.2010 --
+function htCompareText(const S1, S2: ThtString): Integer;
+ {$ifdef UseInline} inline; {$endif}
+begin
+{$ifdef UNICODE}
+  Result := CompareText(S1, S2);
+{$else}
+  Result := WideCompareText(S1, S2);
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 10.10.2016 --
+function htSameText(const S1, S2: ThtString): Boolean;
+ {$ifdef UseInline} inline; {$endif}
+begin
+  Result := htCompareText(S1, S2) = 0;
+end;
+
 //-- BG ---------------------------------------------------------- 28.01.2011 --
-function htLowerCase(Str: ThtString): ThtString;
+function htLowerCase(const Str: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
 begin
 {$ifdef UNICODE}
@@ -991,14 +1025,14 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 09.08.2011 --
-function htTrim(Str: ThtString): ThtString;
+function htTrim(const Str: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
 begin
   Result := Trim(Str);
 end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --
-function htUpperCase(Str: ThtString): ThtString;
+function htUpperCase(const Str: ThtString): ThtString;
  {$ifdef UseInline} inline; {$endif}
 begin
   {$ifdef UNICODE}
@@ -1302,6 +1336,26 @@ begin
     end;
   except
     GlobalFree(Mem);
+  end;
+end;
+{$endif}
+
+{ ThtGraphic }
+
+{$ifdef LCL}
+//-- BG ---------------------------------------------------------- 10.10.2016 --
+function ThtGraphic.GetTransparent: Boolean;
+begin
+  Result := FTransparent;
+end;
+
+//-- BG ---------------------------------------------------------- 10.10.2016 --
+procedure ThtGraphic.SetTransparent(Value: Boolean);
+begin
+  if FTransparent <> Value then
+  begin
+    FTransparent := Value;
+    Changed(Self);
   end;
 end;
 {$endif}

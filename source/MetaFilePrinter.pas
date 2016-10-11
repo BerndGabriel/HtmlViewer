@@ -60,7 +60,7 @@ type
   HENHMETAFILE = longint;
 {$endif}
 
-  TMetafile = class(TGraphic)
+  TMetafile = class(ThtGraphic)
   private
     FImageHandle: HENHMETAFILE;
     FImageMMWidth: Integer;      // are in 0.01 mm logical pixels

@@ -1,4 +1,4 @@
-{
+﻿{
 Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2016 by HtmlViewer Team
@@ -206,7 +206,7 @@ type
     { Private declarations }
     Histories: array[0..MaxHistories-1] of TMenuItem;
     FoundObject: TImageObj;
-    NewWindowFile: string;
+    NewWindowFile: ThtString;
 {$ifdef MsWindows}
   {$ifdef LCL}
   {$else}
@@ -378,7 +378,7 @@ begin
     else
       Params := '';
     S := (Sender as TFrameViewer).HTMLExpandFileName(S);
-    Ext := Uppercase(ExtractFileExt(S));
+    Ext := htUpperCase(ExtractFileExt(S));
     if Ext = '.WAV' then
     begin
       Handled := True;
@@ -485,7 +485,7 @@ procedure TForm1.HistoryChange(Sender: TObject);
 {This event occurs when something changes history list}
 var
   I: integer;
-  Cap: string;
+  Cap: ThtString;
 begin
   with FrameViewer do
   begin
@@ -614,18 +614,9 @@ end;
 
 procedure TForm1.WindowRequest(Sender: TObject; const Target, URL: ThtString);
 var
-  S, Dest: string;
-  I: integer;
+  S, Dest: ThtString;
 begin
-  S := URL;
-  I := Pos('#', S);
-  if I >= 1 then
-    begin
-      Dest := System.Copy(S, I, 255);  {local destination}
-      S := System.Copy(S, 1, I-1);     {the file name}
-    end
-  else
-    Dest := '';    {no local destination}
+  SplitDest(Url, S, Dest);
   S := FrameViewer.HTMLExpandFileName(S);
   if FileExists(S) then
     try
@@ -753,7 +744,6 @@ begin
       finally
         Free;
       end;
-    //MessageDlg(OnClick, mtCustom, [mbOK], 0);
 end;
 
 procedure TForm1.FrameViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);
@@ -763,18 +753,18 @@ var
   I: integer;
   Stream: TFileStream;
 begin
-  if CompareText(Command, 'Date') = 0 then
+  if htCompareText(Command, 'Date') = 0 then
     IncludedDocument := TBuffer.Create(DateToStr(Date)) { <!--#date --> }
-  else if CompareText(Command, 'Time') = 0 then
+  else if htCompareText(Command, 'Time') = 0 then
     IncludedDocument := TBuffer.Create(TimeToStr(Time))   { <!--#time -->  }
-  else if CompareText(Command, 'Include') = 0 then
+  else if htCompareText(Command, 'Include') = 0 then
   begin   {an include file <!--#include FILE="filename" -->  }
     if (Params.count >= 1) then
     begin
-      I := Pos('file=', Lowercase(Params[0]));
+      I := Pos('file=', htLowerCase(Params[0]));
       if I > 0 then
       begin
-        Filename := copy(Params[0], 6, Length(Params[0])-5);
+        Filename := Copy(Params[0], 6, Length(Params[0])-5);
         try
           if FileExists(Filename) then
           begin
@@ -791,55 +781,51 @@ end;
 procedure TForm1.FrameViewerRightClick(Sender: TObject; Parameters: TRightClickParameters);
 var
   Pt: TPoint;
-  S, Dest: string;
-  I: integer;
+  S, Dest: ThtString;
   Viewer: ThtmlViewer;
   HintWindow: ThtHintWindow;
   ARect: TRect;
 begin
-Viewer := Sender as ThtmlViewer;
-with Parameters do
+  Viewer := Sender as ThtmlViewer;
+  with Parameters do
   begin
-  FoundObject := Image;
-  ViewImage.Enabled := (FoundObject <> Nil) and (FoundObject.Image <> Nil);
-  CopyImageToClipboard.Enabled := (FoundObject <> Nil) and (FoundObject.Graphic <> Nil);
+    FoundObject := Image;
+    ViewImage.Enabled := (FoundObject <> Nil) and (FoundObject.Image <> Nil);
+    CopyImageToClipboard.Enabled := (FoundObject <> Nil) and
+      (FoundObject.Graphic <> Nil);
 
-  if URL <> '' then
+    if URL <> '' then
     begin
-    S := URL;
-    I := Pos('#', S);
-    if I >= 1 then
-      begin
-      Dest := System.Copy(S, I, 255);  {local destination}
-      S := System.Copy(S, 1, I-1);     {the file name}
-      end
-    else
-      Dest := '';    {no local destination}
-    if S = '' then S := Viewer.CurrentFile
-      else S := Viewer.HTMLExpandFileName(S);
-    NewWindowFile := S+Dest;
-    OpenInNewWindow.Enabled := FileExists(S);
+      SplitDest(URL, S, Dest);
+      if Length(S) = 0 then
+        S := Viewer.CurrentFile
+      else
+        S := Viewer.HTMLExpandFileName(S);
+      NewWindowFile := S + Dest;
+      OpenInNewWindow.Enabled := FileExists(S);
     end
-  else OpenInNewWindow.Enabled := False;
+    else
+      OpenInNewWindow.Enabled := False;
 
-  GetCursorPos(Pt);
-  if Length(CLickWord) > 0 then
+    GetCursorPos(Pt);
+    if Length(CLickWord) > 0 then
     begin
-    HintWindow := ThtHintWindow.Create(Self);   
-    try
-      ARect := Rect(0,0,0,0);
-      DrawTextW(HintWindow.Canvas.Handle, @ClickWord[1], Length(ClickWord), ARect, DT_CALCRECT);
-      with ARect do
-        HintWindow.ActivateHint(Rect(Pt.X+20, Pt.Y-(Bottom-Top)-15, Pt.x+30+Right, Pt.Y-15), ClickWord);
-      PopupMenu.Popup(Pt.X, Pt.Y);
-    finally
-      HintWindow.Free;
+      HintWindow := ThtHintWindow.Create(Self);
+      try
+        ARect := Rect(0, 0, 0, 0);
+        DrawTextW(HintWindow.Canvas.Handle, @CLickWord[1], Length(CLickWord), ARect, DT_CALCRECT);
+        with ARect do
+          HintWindow.ActivateHint(Rect(Pt.X + 20, Pt.Y - (Bottom - Top) - 15, Pt.X + 30 + Right, Pt.Y - 15), CLickWord);
+        PopupMenu.Popup(Pt.X, Pt.Y);
+      finally
+        HintWindow.Free;
       end;
     end
-  else PopupMenu.Popup(Pt.X, Pt.Y);
+    else
+      PopupMenu.Popup(Pt.X, Pt.Y);
   end;
 end;
-  
+
 procedure TForm1.OpenInNewWindowClick(Sender: TObject);
 begin
   StartProcess(ParamStr(0), '"' + NewWindowFile + '"');
@@ -885,7 +871,7 @@ end;
 
 procedure TForm1.FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 var
-  TitleStr: string;
+  TitleStr: ThtString;
 begin
 if not Timer1.Enabled and Assigned(ActiveControl) and ActiveControl.Focused
          and (Sender is ThtmlViewer) then  
@@ -997,7 +983,7 @@ const
     '</tr>'+
     '</table></body></html>';
 
-function ReplaceStr(Const S, FromStr, ToStr: ThtString): string;
+function ReplaceStr(const S, FromStr, ToStr: ThtString): ThtString;
 {replace FromStr with ToStr in string S.
  for Delphi 6, 7, AnsiReplaceStr may be used instead.}
 var
@@ -1089,7 +1075,7 @@ var
   Viewer: TViewerBase;
   QuirksModeMenuItem: TMenuItem;
   IsDetectedQuirksMode: Boolean;
-  QuirksModePanelCaption: String;
+  QuirksModePanelCaption: string;
 begin
   ReloadButton.Enabled := FrameViewer.CurrentFile <> '';
 
@@ -1133,7 +1119,7 @@ begin
     IsDetectedQuirksMode := Viewer.QuirksMode = qmDetect;
   end;
 
-  QuirksModePanelCaption := ReplaceStr(QuirksModePanelCaption, '&', '');
+  QuirksModePanelCaption := StringReplace(QuirksModePanelCaption, '&', '', []);
   QuirksModePanel.Caption := QuirksModePanelCaption;
   if IsDetectedQuirksMode then
   begin

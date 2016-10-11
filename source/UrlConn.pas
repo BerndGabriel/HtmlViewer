@@ -72,7 +72,7 @@ type
     FConnectors: TList;
     function GetCount: Integer;
     function GetConnector(Index: Integer): ThtConnector;
-    function GetConnectorForProtocol(const Protocol: String): ThtConnector;
+    function GetConnectorForProtocol(const Protocol: ThtString): ThtConnector;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
@@ -82,15 +82,15 @@ type
     procedure RegisterConnector(Connector: ThtConnector);
     procedure UnregisterConnector(Connector: ThtConnector);
 
-    function GetAllProtocols: String;
-    function CreateConnection(const Protocol: String): ThtConnection;
-    function TryCreateConnection(const Protocol: String; var Connection: ThtConnection): Boolean;
-    function IndexOfProtocol(const Protocol: String): Integer;
+    function GetAllProtocols: ThtString;
+    function CreateConnection(const Protocol: ThtString): ThtConnection;
+    function TryCreateConnection(const Protocol: ThtString; var Connection: ThtConnection): Boolean;
+    function IndexOfProtocol(const Protocol: ThtString): Integer;
 
     property Count: Integer read GetCount;
     property Items[Index: Integer]: ThtConnector read GetConnector; default;
   published
-    property AllProtocols: String read GetAllProtocols;
+    property AllProtocols: ThtString read GetAllProtocols;
   end;
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ type
 // - GetVersion()
 //     to tell the application the ThtConnector's implementor and version and
 //
-// - CreateConnection(const Protocol: String)
+// - CreateConnection(const Protocol: ThtString)
 //     which actually creates the connection for the given protocol.
 //
 // In case the connection may need authorization publish OnGetAuthorization
@@ -118,27 +118,27 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtConnector = class(TComponent)
   private
-    FProtocols: String;
+    FProtocols: ThtString;
     FOnGetAuthorization: ThtGetAuthorizationEvent;
     FConnectionManager: ThtConnectionManager;
 
-    procedure SetProtocols(const Value: String);
+    procedure SetProtocols(const Value: ThtString);
     function StoreProtocols: Boolean;
     procedure SetConnectionManger(const Value: ThtConnectionManager);
   protected
-    class function GetDefaultProtocols: String; virtual; abstract;
-    class function GetVersion: String; virtual; abstract;
+    class function GetDefaultProtocols: ThtString; virtual; abstract;
+    class function GetVersion: string; virtual; abstract;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     function GetAuthorization(Connection: ThtConnection; TryRealm: Boolean): Boolean; virtual;
     property OnGetAuthorization: ThtGetAuthorizationEvent read FOnGetAuthorization write FOnGetAuthorization;
   public
     constructor Create(AOwner: TComponent); override;
 
-    function CreateConnection(const Protocol: String): ThtConnection; virtual; abstract;
-    function SupportsProtocol(const Protocol: String): Boolean;
+    function CreateConnection(const Protocol: ThtString): ThtConnection; virtual; abstract;
+    function SupportsProtocol(const Protocol: ThtString): Boolean;
   published
-    property Version: String read GetVersion;
-    property Protocols: String read FProtocols write SetProtocols stored StoreProtocols;
+    property Version: string read GetVersion;
+    property Protocols: ThtString read FProtocols write SetProtocols stored StoreProtocols;
     property ConnectionManager: ThtConnectionManager read FConnectionManager write SetConnectionManger;
   end;
 
@@ -171,11 +171,11 @@ type
 
     FSessionId: Integer;
     FAborted: Boolean;
-    FRealm: String;
-    FPassword: String;
-    FUsername: String;
+    FRealm: ThtString;
+    FPassword: ThtString;
+    FUsername: ThtString;
     FBasicAuthentication: Boolean;
-    FReasonPhrase: String;
+    FReasonPhrase: ThtString;
     FReceivedSize: Int64;
     FExpectedSize: Int64;
 
@@ -186,18 +186,18 @@ type
   public
     constructor Create;
 
-    function CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: String): ThtUrlDoc; virtual;
+    function CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: ThtString): ThtUrlDoc; virtual;
     procedure LoadDoc(Doc: ThtUrlDoc);
     procedure Abort; virtual;
 
     property Aborted: Boolean read FAborted write FAborted;
-    property Realm: String read FRealm write FRealm;
-    property Password: String read FPassword write FPassword;
-    property Username: String read FUsername write FUsername;
+    property Realm: ThtString read FRealm write FRealm;
+    property Password: ThtString read FPassword write FPassword;
+    property Username: ThtString read FUsername write FUsername;
     property BasicAuthentication: Boolean read FBasicAuthentication write FBasicAuthentication;
 
     function IsProcessing: Boolean; // Must not be virtual! Checks Self just like Free does.
-    function ReasonPhrase: String; virtual;
+    function ReasonPhrase: ThtString; virtual;
 
     property SessionId   : Integer      read FSessionId;
     property Doc         : ThtUrlDoc    read FDoc;
@@ -223,36 +223,36 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtUrlDoc = class(TObject)
   private
-    FUrl: String;
-    FNewUrl: String;
-    FReferer: String;
-    FQuery: String;
-    FQueryEncType: String;
+    FUrl: ThtString;
+    FNewUrl: ThtString;
+    FReferer: ThtString;
+    FQuery: ThtString;
+    FQueryEncType: ThtString;
     FStream: TStream;
     FPostIt: Boolean;
     FStatus: ThtUrlDocStatus;
     FDocType: ThtDocType;
     function GetStream: TStream;
-    procedure SetNewUrl(const Value: String);
+    procedure SetNewUrl(const Value: ThtString);
     procedure SetStream(const Value: TStream);
     function GetStreamSize: Int64;
   public
     destructor Destroy; override;
     procedure Clear;
-    procedure SaveToFile(FileName: String);
+    procedure SaveToFile(FileName: ThtString);
 
-    property Url: String read FUrl write FUrl;
+    property Url: ThtString read FUrl write FUrl;
 
     property Status: ThtUrlDocStatus read FStatus write FStatus;
     property DocType: ThtDocType read FDocType write FDocType;
     property Stream: TStream read GetStream write SetStream;
     property StreamSize: Int64 read GetStreamSize;
 
-    property NewUrl: String read FNewUrl write SetNewUrl;
+    property NewUrl: ThtString read FNewUrl write SetNewUrl;
     property PostIt: Boolean read FPostIt write FPostIt;
-    property Referer: String read FReferer write FReferer;
-    property Query: String read FQuery write FQuery;
-    property QueryEncType: String read FQueryEncType write FQueryEncType;
+    property Referer: ThtString read FReferer write FReferer;
+    property Query: ThtString read FQuery write FQuery;
+    property QueryEncType: ThtString read FQueryEncType write FQueryEncType;
   end;
 
 //------------------------------------------------------------------------------
@@ -262,15 +262,15 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtProxyConnector = class(ThtConnector)
   private
-    FProxyServer: String;
-    FProxyPort: String;
-    FProxyUsername: String;
-    FProxyPassword: String;
+    FProxyServer: ThtString;
+    FProxyPort: ThtString;
+    FProxyUsername: ThtString;
+    FProxyPassword: ThtString;
   published
-    property ProxyServer  : String read FProxyServer   write FProxyServer;
-    property ProxyPort    : String read FProxyPort     write FProxyPort;
-    property ProxyUsername: String read FProxyUsername write FProxyUsername;
-    property ProxyPassword: String read FProxyPassword write FProxyPassword;
+    property ProxyServer  : ThtString read FProxyServer   write FProxyServer;
+    property ProxyPort    : ThtString read FProxyPort     write FProxyPort;
+    property ProxyUsername: ThtString read FProxyUsername write FProxyUsername;
+    property ProxyPassword: ThtString read FProxyPassword write FProxyPassword;
   end;
 
 //------------------------------------------------------------------------------
@@ -281,7 +281,7 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtFileConnection = class(ThtConnection)
   private
-    procedure MakeDirOutput(AStream : TStream; const ADirName : String);
+    procedure MakeDirOutput(AStream : TStream; const ADirName : ThtString);
   protected
     procedure Get(ADoc: ThtUrlDoc); override;
   end;
@@ -289,10 +289,10 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtFileConnector = class(ThtConnector)
   protected
-    class function GetDefaultProtocols: string; override;
+    class function GetDefaultProtocols: ThtString; override;
     class function GetVersion: string; override;
   public
-    function CreateConnection(const Protocol: String): ThtConnection; override;
+    function CreateConnection(const Protocol: ThtString): ThtConnection; override;
   end;
 
 //------------------------------------------------------------------------------
@@ -309,10 +309,10 @@ type
   //-- BG -------------------------------------------------------- 18.05.2016 --
   ThtResourceConnector = class(ThtConnector)
   protected
-    class function GetDefaultProtocols: string; override;
+    class function GetDefaultProtocols: ThtString; override;
     class function GetVersion: string; override;
   public
-    function CreateConnection(const Protocol: String): ThtConnection; override;
+    function CreateConnection(const Protocol: ThtString): ThtConnection; override;
   end;
 
 //------------------------------------------------------------------------------
@@ -388,8 +388,8 @@ type
 
 //------------------------------------------------------------------------------
 
-function ContentType2DocType(const AContentType: String): ThtDocType;
-function FileExt2DocType(const AExt: String): ThtDocType;
+function ContentType2DocType(const AContentType: ThtString): ThtDocType;
+function FileExt2DocType(const AExt: ThtString): ThtDocType;
 
 //------------------------------------------------------------------------------
 implementation
@@ -401,9 +401,9 @@ var
   GNextSessionId: Integer;
 
 //-- BG ---------------------------------------------------------- 29.08.2007 --
-function ContentType2DocType(const AContentType: String): ThtDocType;
+function ContentType2DocType(const AContentType: ThtString): ThtDocType;
 var
-  ContentType: String;
+  ContentType: ThtString;
 begin
   ContentType := LowerCase(AContentType);
   if (Pos('text/html', ContentType) > 0) or (Pos('text/css', ContentType) > 0) then
@@ -420,9 +420,9 @@ end;
 
 
 //-- BG ---------------------------------------------------------- 25.08.2007 --
-function FileExt2DocType(const AExt: String): ThtDocType;
+function FileExt2DocType(const AExt: ThtString): ThtDocType;
 var
-  Ext: String;
+  Ext: ThtString;
 begin
   Ext := ',' + LowerCase(AExt) +',';
   // get type
@@ -471,7 +471,7 @@ begin
 end;
 
 ////-- BG ---------------------------------------------------------- 18.05.2016 --
-//procedure ThtUrlDoc.SetName(const Value: String);
+//procedure ThtUrlDoc.SetName(const Value: ThtString);
 //begin
 //  FName := Value;
 //  if Length(FUrl) = 0 then
@@ -479,7 +479,7 @@ end;
 //end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-procedure ThtUrlDoc.SetNewUrl(const Value: String);
+procedure ThtUrlDoc.SetNewUrl(const Value: ThtString);
 begin
   FNewUrl := Value;
   if Length(FNewUrl) = 0 then
@@ -497,7 +497,7 @@ begin
 end;
 
 ////-- BG ---------------------------------------------------------- 18.05.2016 --
-//procedure ThtUrlDoc.SetUrl(const Value: String);
+//procedure ThtUrlDoc.SetUrl(const Value: ThtString);
 //begin
 //  FUrl := Value;
 //  if Length(FName) = 0 then
@@ -505,7 +505,7 @@ end;
 //end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-procedure ThtUrlDoc.SaveToFile(FileName: String);
+procedure ThtUrlDoc.SaveToFile(FileName: ThtString);
 var
   FileStream: TFileStream;
 begin
@@ -536,7 +536,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnection.CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: String): ThtUrlDoc;
+function ThtConnection.CreateUrlDoc(PostIt: Boolean; const URL, Query, QueryEncType, Referer: ThtString): ThtUrlDoc;
 begin
   Result := ThtUrlDoc.Create;
   Result.PostIt := PostIt;
@@ -579,7 +579,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnection.ReasonPhrase: String;
+function ThtConnection.ReasonPhrase: ThtString;
 begin
   Result := FReasonPhrase;
 end;
@@ -630,7 +630,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-procedure ThtConnector.SetProtocols(const Value: String);
+procedure ThtConnector.SetProtocols(const Value: ThtString);
 begin
   FProtocols := LowerCase(Value);
 end;
@@ -642,7 +642,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnector.SupportsProtocol(const Protocol: String): Boolean;
+function ThtConnector.SupportsProtocol(const Protocol: ThtString): Boolean;
 begin
   // enclosed in ',' to exactly (and not partially) match single protocol entry
   // and an item of a comma separated list.
@@ -652,7 +652,7 @@ end;
 { ThtConnectionManager }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnectionManager.GetAllProtocols: String;
+function ThtConnectionManager.GetAllProtocols: ThtString;
 var
   Index: Integer;
 begin
@@ -673,7 +673,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnectionManager.CreateConnection(const Protocol: String): ThtConnection;
+function ThtConnectionManager.CreateConnection(const Protocol: ThtString): ThtConnection;
 begin
   Result := GetConnectorForProtocol(Protocol).CreateConnection(Protocol);
 end;
@@ -696,7 +696,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnectionManager.GetConnectorForProtocol(const Protocol: String): ThtConnector;
+function ThtConnectionManager.GetConnectorForProtocol(const Protocol: ThtString): ThtConnector;
 var
   Index: Integer;
 begin
@@ -717,7 +717,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnectionManager.IndexOfProtocol(const Protocol: String): Integer;
+function ThtConnectionManager.IndexOfProtocol(const Protocol: ThtString): Integer;
 begin
   Result := Count - 1;
   while Result >= 0 do
@@ -751,7 +751,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtConnectionManager.TryCreateConnection(const Protocol: String; var Connection: ThtConnection): Boolean;
+function ThtConnectionManager.TryCreateConnection(const Protocol: ThtString; var Connection: ThtConnection): Boolean;
 var
   Index: Integer;
 begin
@@ -770,7 +770,7 @@ end;
 { ThtFileConnection }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-procedure ThtFileConnection.MakeDirOutput(AStream: TStream; const ADirName: String);
+procedure ThtFileConnection.MakeDirOutput(AStream: TStream; const ADirName: ThtString);
 {This is for generating HTML from a directory listing including
 special dir entries.  Note that I realize a lot of the markup is probably
 unnecessary but it's a good idea to include it anyway to encourage
@@ -778,11 +778,11 @@ good HTML habits.}
 var
   F : TSearchRec;
   TimeStamp: TDateTime;
-  Name: String;
-  Size: String;
-  Text: TStringList;
+  Name: ThtString;
+  Size: ThtString;
+  Text: ThtStringList;
 begin
-  Text := TStringList.Create;
+  Text := ThtStringList.Create;
   try
     Text.Add('<!DOCTYPE html>');
     Text.Add('<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">');
@@ -853,7 +853,7 @@ end;
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtFileConnection.Get(ADoc: ThtUrlDoc);
 var
-  FileName, Ext : String;
+  FileName, Ext : ThtString;
   I : integer;
 begin
   FileName := ADoc.Url;
@@ -880,7 +880,7 @@ begin
   else
   begin
     ADoc.Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
-    Ext := Lowercase(ExtractFileExt(FileName));
+    Ext := htLowerCase(ExtractFileExt(FileName));
     if Length(Ext) > 0 then
       Delete(Ext, 1, 1);
     ADoc.DocType := FileExt2DocType(Ext);
@@ -892,13 +892,13 @@ end;
 { ThtFileConnector }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtFileConnector.CreateConnection(const Protocol: String): ThtConnection;
+function ThtFileConnector.CreateConnection(const Protocol: ThtString): ThtConnection;
 begin
   Result := ThtFileConnection.Create;
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-class function ThtFileConnector.GetDefaultProtocols: string;
+class function ThtFileConnector.GetDefaultProtocols: ThtString;
 begin
   Result := 'file';
 end;
@@ -911,12 +911,22 @@ end;
 
 { ThtResourceConnection }
 
+function htFindResource(HInstance: HModule; const FileName, GoodType: ThtString): HRSRC;
+  {$ifdef UseInline} inline; {$endif}
+begin
+{$ifdef LCL}
+  Result := FindResource(HInstance, string(FileName), string(GoodType));
+{$else}
+  Result := FindResource(HInstance, PChar(FileName), PChar(GoodType));
+{$endif}
+end;
+
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtResourceConnection.Get(ADoc: ThtUrlDoc);
+
 var
-   FileName, S, Ext: String;
+   FileName, S, Ext, GoodType: ThtString;
    HResInfo: HRSRC;
-   GoodType: PChar;
    I: Integer;
 begin
   FileName := ADoc.Url;
@@ -938,20 +948,20 @@ begin
   case ADoc.DocType of
     XHTMLType,
     HTMLType:  GoodType := 'HTML';
-    ImgType:   GoodType := PChar(UpperCase(Ext));
+    ImgType:   GoodType := UpperCase(Ext);
     TextType:  GoodType := 'TEXT';
   else
     GoodType := '';
   end;
-  HResInfo := FindResource(HInstance, PChar(FileName), GoodType);
+  HResInfo := htFindResource(HInstance, FileName, GoodType);
   if HResInfo = 0 then
   begin    {try without the extension if can't find it with extension}
-    I := htPos('.' + Ext, LowerCase(FileName));
+    I := Pos('.' + Ext, htLowerCase(FileName));
     if I >= 0 then
     begin
       S := FileName;
       SetLength(S, I - 1);
-      HResInfo := FindResource(HInstance, PChar(S), GoodType);
+      HResInfo := htFindResource(HInstance, S, GoodType);
       if HResInfo <> 0 then
         FileName := S;
     end;
@@ -960,19 +970,19 @@ begin
     // avoid Exception. ADoc.Stream = nil is okay. Next access to it will create an empty TMemoryStream.
     // raise EResNotFound.Create('Can''t find resource: '+FileName);
   else
-    ADoc.Stream := TResourceStream.Create(HInstance, FileName, GoodType);
+    ADoc.Stream := TResourceStream.Create(HInstance, FileName, PChar({$ifdef LCL}string(GoodType){$else}GoodType{$endif}));
 end;
 
 { ThtResourceConnector }
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-function ThtResourceConnector.CreateConnection(const Protocol: String): ThtConnection;
+function ThtResourceConnector.CreateConnection(const Protocol: ThtString): ThtConnection;
 begin
   Result := ThtResourceConnection.Create;
 end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
-class function ThtResourceConnector.GetDefaultProtocols: string;
+class function ThtResourceConnector.GetDefaultProtocols: ThtString;
 begin
   Result := 'res';
 end;

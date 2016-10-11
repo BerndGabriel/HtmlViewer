@@ -792,7 +792,7 @@ var
           'A'..'F': Result := Ord(Chr) - Ord('A') + 10;
           'a'..'f': Result := Ord(Chr) - Ord('a') + 10;
         else
-          raise EConvertError.Create('Invalid escape character: ''' + Chr + '''');
+          raise EConvertError.Create('Invalid escape character: ''' + Char(Chr) + '''');
         end;
       end;
 

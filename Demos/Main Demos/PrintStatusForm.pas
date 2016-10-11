@@ -81,6 +81,7 @@ begin
             CopyCount := Copies;
             try
               Copies := 1; // otherwise the printer might produce copies as well.
+              Dummy := False;
               StatusForm.Print(Viewer, Printer, FromPage, EndPage, CopyCount, Dummy);
             finally
               Copies := CopyCount; // remember copy count next time the dialog is opened again.

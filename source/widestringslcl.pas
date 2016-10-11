@@ -1093,7 +1093,7 @@ end;
 procedure TWideStringList.Put(Index: integer; const S: WideString);
 begin
   if Sorted then
-    raise Exception.Create('List is sorter in TucStringList.Put.');
+    raise Exception.Create('List is sorted in TWideStringList.Put.');
   CheckError(Index);
   Changing;
   Flist^[Index].FString := S;
@@ -1118,13 +1118,13 @@ begin
   begin
     GetMem(NewList, NewCapacity * SizeOf(TWideStringItem));
     if NewList = nil then
-      raise Exception.Create('NewList is Nil in TucStringList.SetCapacity.');
+      raise Exception.Create('NewList is Nil in TWideStringList.SetCapacity.');
     if Assigned(FList) then
     begin
       MSize := FCapacity * Sizeof(TWideStringItem);
       System.Move(FList^, NewList^, MSize);
-      FillWord(PWideChar(NewList)[MSize], (NewCapacity - FCapacity) * WordRatio, 0);
-      FreeMem(Flist, MSize);
+      FillQWord(PChar(NewList)[MSize], (NewCapacity - FCapacity) * (SizeOf(TWideStringItem) div SizeOf(QWord)), 0);
+      FreeMem(FList, MSize);
     end;
     Flist := NewList;
     FCapacity := NewCapacity;
@@ -1174,9 +1174,9 @@ begin
     Result := FCount
   else
   if Find(S, Result) then
-    case DUplicates of
-      DupIgnore: Exit;
-      DupError: raise Exception.Create('WideString list does not allow duplicates.');
+    case Duplicates of
+      dupIgnore: Exit;
+      dupError: raise Exception.Create('TWideStringList.Duplicates does not allow duplicates.');
     end;
   InsertItem(Result, S);
 end;

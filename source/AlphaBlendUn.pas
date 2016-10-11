@@ -42,7 +42,7 @@ procedure TransparentCircle(ACanvas : TCanvas; const AX, AY, ARad: Integer; cons
 procedure TransparentEllipse(ACanvas : TCanvas; const ALeftX, ALeftY, ARightX, ARightY : Integer; const AOpacity : Byte); {$ifdef UseInline} inline; {$endif}
 procedure TransparentRectangle(ACanvas : TCanvas; const ALeftX, ALeftY, ARightX, ARightY : Integer; const AOpacity : Byte); {$ifdef UseInline} inline; {$endif}
 procedure TransparentDrawFocusRect(ACanvas : TCanvas; ARect : TRect; const AOpacity : Byte);    {$ifdef UseInline} inline; {$endif}
-procedure TransparentWrapTextW(ACanvas : TCanvas; const AX, AY, AWidth, AHeight : Integer; const AStr : String; const AOpacity : Byte); {$ifdef UseInline} inline; {$endif}
+procedure TransparentWrapTextW(ACanvas : TCanvas; const AX, AY, AWidth, AHeight : Integer; const AStr : ThtString; const AOpacity : Byte); {$ifdef UseInline} inline; {$endif}
 function TransparentExtTextOutW(ACanvas : TCanvas; X, Y: Integer; Options: Longint;
   Rect: PRect; Str: PWideChar; Count: Longint; Dx: PInteger; const AOpacity : Byte): BOOL; {$ifdef UseInline} inline; {$endif}
 procedure TransparentFillRect(ACanvas : TCanvas; ARect : TRect; const AOpacity : Byte);  {$ifdef UseInline} inline; {$endif}
@@ -276,7 +276,7 @@ begin
   end;
 end;
 
-procedure TransparentWrapTextW(ACanvas : TCanvas; const AX, AY, AWidth, AHeight : Integer; const AStr : String; const AOpacity : Byte);
+procedure TransparentWrapTextW(ACanvas : TCanvas; const AX, AY, AWidth, AHeight : Integer; const AStr : ThtString; const AOpacity : Byte);
 var
   LB : Graphics.TBitmap;
 begin

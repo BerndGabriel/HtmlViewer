@@ -45,6 +45,9 @@ uses
 {$ifdef HasGDIPlus}
   GDIPAPI,
 {$endif}
+{$ifdef LCL}
+  LCLType,
+{$endif}
   Windows, ActiveX, SysUtils, Graphics, Classes, ClipBrd,
   HtmlGlobals;
 
@@ -66,11 +69,14 @@ const
 {$endif}
 
 type
-  ThtGpImage = class(TGraphic)
+
+  { ThtGpImage }
+
+  ThtGpImage = class(ThtGraphic)
   private
-    fWidth, fHeight: Cardinal;
-    fFilename: string;
-    fBitmap: TBitmap;
+    FWidth, FHeight: Cardinal;
+    FFilename: string;
+    FBitmap: TBitmap;
   protected
     fHandle: GpImage;
     function GetEmpty: Boolean; override;
@@ -83,11 +89,16 @@ type
     destructor Destroy; override;
 
     function GetBitmap: TBitmap;
-    procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE); {$ifndef LCL} override; {$endif}
+{$ifdef LCL}
+    procedure LoadFromClipboardFormat(FormatID: TClipboardFormat); override;
+    procedure SaveToClipboardFormat(FormatID: TClipboardFormat); override;
+{$else}
+    procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE); override;
+    procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE); override;
+{$endif}
     procedure LoadFromFile(const Filename: String{; TmpFile: boolean = False}); override;
     procedure LoadFromStream(IStr: IStream); reintroduce; overload;
     procedure LoadFromStream(Stream: TStream); overload; override;
-    procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE); {$ifndef LCL} override; {$endif}
     procedure SaveToFile(const Filename: string); override;
     procedure SaveToStream(Stream: TStream); override;
   end;
@@ -138,7 +149,7 @@ implementation
 
   type
     ARGB = DWORD;
-    GpColor = ARGB;
+//    GpColor = ARGB;
     NotificationHookProc = function (out token : ULONG) : GpStatus stdcall;
     NotificationUnhookProc = procedure (token : ULONG) stdcall;
 
@@ -163,9 +174,9 @@ implementation
 
     GpUnit = Integer; //enumeration
     GpMatrixOrder = Integer;
-    InterpolationMode = Integer;
-    TInterpolationMode = InterpolationMode;
-    PGpImageAttributes = Pointer;
+//    InterpolationMode = Integer;
+//    TInterpolationMode = InterpolationMode;
+//    PGpImageAttributes = Pointer;
     ImageAbort = function : BOOL stdcall;
     DrawImageAbort = ImageAbort;
 
@@ -198,29 +209,29 @@ const
   PixelFormatIndexed   = $00010000; // Indexes into a palette
   PixelFormatGDI       = $00020000; // Is a GDI-supported format
   PixelFormatAlpha     = $00040000; // Has an alpha component
-  PixelFormatPAlpha    = $00080000; // Pre-multiplied alpha
+  //PixelFormatPAlpha    = $00080000; // Pre-multiplied alpha
   PixelFormatExtended  = $00100000; // Extended color 16 bits/channel
   PixelFormatCanonical = $00200000;
 
-  PixelFormatUndefined = 0;
-  PixelFormatDontCare  = 0;
-
-  PixelFormat1bppIndexed = (1 or ( 1 shl 8) or PixelFormatIndexed or PixelFormatGDI);
-  PixelFormat4bppIndexed = (2 or ( 4 shl 8) or PixelFormatIndexed or PixelFormatGDI);
-  PixelFormat8bppIndexed = (3 or ( 8 shl 8) or PixelFormatIndexed or PixelFormatGDI);
-  PixelFormat16bppGrayScale = (4 or (16 shl 8) or PixelFormatExtended);
-  PixelFormat16bppRGB555 = (5 or (16 shl 8) or PixelFormatGDI);
-  PixelFormat16bppRGB565 = (6 or (16 shl 8) or PixelFormatGDI);
-  PixelFormat16bppARGB1555 = (7 or (16 shl 8) or PixelFormatAlpha or PixelFormatGDI);
-  PixelFormat24bppRGB = (8 or (24 shl 8) or PixelFormatGDI);
-  PixelFormat32bppRGB = (9 or (32 shl 8) or PixelFormatGDI);
+  //PixelFormatUndefined = 0;
+  //PixelFormatDontCare  = 0;
+  //
+  //PixelFormat1bppIndexed = (1 or ( 1 shl 8) or PixelFormatIndexed or PixelFormatGDI);
+  //PixelFormat4bppIndexed = (2 or ( 4 shl 8) or PixelFormatIndexed or PixelFormatGDI);
+  //PixelFormat8bppIndexed = (3 or ( 8 shl 8) or PixelFormatIndexed or PixelFormatGDI);
+  //PixelFormat16bppGrayScale = (4 or (16 shl 8) or PixelFormatExtended);
+  //PixelFormat16bppRGB555 = (5 or (16 shl 8) or PixelFormatGDI);
+  //PixelFormat16bppRGB565 = (6 or (16 shl 8) or PixelFormatGDI);
+  //PixelFormat16bppARGB1555 = (7 or (16 shl 8) or PixelFormatAlpha or PixelFormatGDI);
+  //PixelFormat24bppRGB = (8 or (24 shl 8) or PixelFormatGDI);
+  //PixelFormat32bppRGB = (9 or (32 shl 8) or PixelFormatGDI);
   PixelFormat32bppARGB   = (10 or (32 shl 8) or PixelFormatAlpha or PixelFormatGDI or PixelFormatCanonical);
-  PixelFormat32bppPARGB  = (11 or (32 shl 8) or PixelFormatAlpha or PixelFormatPAlpha or PixelFormatGDI);
-  PixelFormat48bppRGB  = (12 or (48 shl 8) or PixelFormatExtended);
-  PixelFormat64bppARGB = (13 or (64 shl 8) or PixelFormatAlpha or PixelFormatCanonical or PixelFormatExtended);
-  PixelFormat64bppPARGB = (14 or (64 shl 8) or PixelFormatAlpha or PixelFormatPAlpha or PixelFormatExtended);
-  PixelFormat32bppCMYK = (15 or (32 shl 8));
-  PixelFormatMax = 16;
+  //PixelFormat32bppPARGB  = (11 or (32 shl 8) or PixelFormatAlpha or PixelFormatPAlpha or PixelFormatGDI);
+  //PixelFormat48bppRGB  = (12 or (48 shl 8) or PixelFormatExtended);
+  //PixelFormat64bppARGB = (13 or (64 shl 8) or PixelFormatAlpha or PixelFormatCanonical or PixelFormatExtended);
+  //PixelFormat64bppPARGB = (14 or (64 shl 8) or PixelFormatAlpha or PixelFormatPAlpha or PixelFormatExtended);
+  //PixelFormat32bppCMYK = (15 or (32 shl 8));
+  //PixelFormatMax = 16;
 
   var
     GdiplusStartup: function(out Token: ULONG; const Input : PGdiplusStartupInput; const Output: PGdiplusStartupOutput): GpStatus stdcall;
@@ -237,7 +248,7 @@ const
 
     // GpBitmap methods
 
-    GdipCreateBitmapFromStream: function(stream: ISTREAM; out bitmap: GpBitmap): GpStatus stdcall;
+    //GdipCreateBitmapFromStream: function(stream: ISTREAM; out bitmap: GpBitmap): GpStatus stdcall;
     GdipCreateBitmapFromScan0: function(width, height, stride: Integer; pixelformat: PixelFormat; scan0: Pointer; out bitmap: GpBitmap): GpStatus stdcall;
     GdipCreateBitmapFromGraphics: function(width, height: Integer; target: GpGraphics; out bitmap: GpBitmap): GpStatus; stdcall;
     //GdipCreateHBITMAPFromBitmap: function(bitmap: GpBitmap; out hbmReturn: HBITMAP; background: TARGB): GpStatus stdcall;
@@ -311,23 +322,8 @@ resourcestring
 procedure GDICheck(const AProc : String; const AErr : GpStatus);
 begin
   if AErr <> Ok then
-    raise EGDIPlus.CreateFmt('%s GDI error %s', [AProc, GetStatus(AErr)]);
+    raise EGDIPlus.CreateFmt(SGDIError, [AProc, GetStatus(AErr)]);
 end;
-
-////-- BG ---------------------------------------------------------- 01.04.2012 --
-//function IStreamFromStream(Stream: TStream): IStream;
-//// thanks to Sérgio Alexandre for this method.
-//var
-//  Handle: HGLOBAL;
-//  Ptr: Pointer absolute Handle;
-//begin
-//  Handle := GlobalAlloc(GPTR, Stream.Size);
-//  if Handle <> 0 then
-//  begin
-//    Stream.Read(Ptr^, Stream.Size);
-//    CreateStreamOnHGlobal(Handle, True, Result);
-//  end;
-//end;
 
 { ThtGpGraphics }
 
@@ -468,12 +464,18 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 31.08.2015 --
-procedure ThtGpImage.LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE);
+procedure ThtGpImage.LoadFromClipboardFormat(
+{$ifdef LCL}
+  FormatID: TClipboardFormat
+{$else}
+  AFormat: Word; AData: THandle; APalette: HPALETTE
+{$endif}
+);
 begin
   GDICheck('ThtGpImage.LoadFromClipboardFormat', NotImplemented );
 end;
 
-procedure ThtGpImage.LoadFromFile(const Filename: string{; TmpFile: boolean = False});
+procedure ThtGpImage.LoadFromFile(const Filename: String);
 var
   err: GpStatus;
 begin
@@ -494,6 +496,7 @@ end;
 
 //-- BG ---------------------------------------------------------- 01.04.2012 --
 procedure ThtGpImage.LoadFromStream(Stream: TStream);
+// thanks to Sérgio Alexandre for this method.
 var
   Handle: HGLOBAL;
   Ptr: Pointer absolute Handle;
@@ -509,7 +512,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 31.08.2015 --
-procedure ThtGpImage.SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE);
+procedure ThtGpImage.SaveToClipboardFormat(
+{$ifdef LCL}
+  FormatID: TClipboardFormat
+{$else}
+  var AFormat: Word; var AData: THandle; var APalette: HPALETTE
+{$endif}
+);
 begin
   GDICheck('ThtGpImage.SaveToClipboardFormat', NotImplemented );
 end;
@@ -622,7 +631,7 @@ begin
       @GdipDrawImageRectI := GetProcAddress(LibHandle, 'GdipDrawImageRectI');
       @GdipLoadImageFromFile := GetProcAddress(LibHandle, 'GdipLoadImageFromFile');
       @GdipLoadImageFromStream := GetProcAddress(LibHandle, 'GdipLoadImageFromStream');
-      @GdipCreateBitmapFromStream := GetProcAddress(LibHandle, 'GdipCreateBitmapFromStream');
+      //@GdipCreateBitmapFromStream := GetProcAddress(LibHandle, 'GdipCreateBitmapFromStream');
       @GdipDisposeImage := GetProcAddress(LibHandle, 'GdipDisposeImage');
       @GdipGetImageWidth := GetProcAddress(LibHandle, 'GdipGetImageWidth');
       @GdipGetImageHeight := GetProcAddress(LibHandle, 'GdipGetImageHeight');
