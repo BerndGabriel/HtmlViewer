@@ -201,17 +201,13 @@
         <UnitName Value="UrlConn"/>
       </Item39>
     </Files>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="2">
       <Item1>
         <PackageName Value="printer4lazarus"/>
       </Item1>
       <Item2>
         <PackageName Value="LCL"/>
       </Item2>
-      <Item3>
-        <PackageName Value="FCL"/>
-        <MinVersion Major="1" Valid="True"/>
-      </Item3>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>
