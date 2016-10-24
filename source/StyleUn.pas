@@ -77,7 +77,7 @@ var
   PreFontConv: array[1..7] of Double;
 
 type
-  // Notice: in TPropertyIndex order of rectangle properties required:
+  // Notice: in ThtPropertyIndex order of rectangle properties required:
   //
   //  Top, Right, Bottom, Left.
   //
@@ -193,8 +193,9 @@ type
     constructor Create(const AUseQuirksMode : Boolean); overload; // for use in style list only
     constructor Create(APropStack: TPropStack; const AUseQuirksMode : Boolean); overload; // for use in property stack
     constructor CreateCopy(ASource: TProperties);
-
     destructor Destroy; override;
+    function Clone: TProperties; virtual;
+
     function BorderStyleNotBlank: Boolean;
     function Collapse: Boolean;
     function GetBackgroundColor: TColor;
@@ -798,6 +799,16 @@ constructor TProperties.Create(const AUseQuirksMode : Boolean);
 begin
   Create;
   FUseQuirksMode := AUseQuirksMode;
+end;
+
+//-- BG ---------------------------------------------------------- 21.10.2016 --
+function TProperties.Clone: TProperties;
+begin
+  Result := TProperties.CreateCopy(Self);
+
+  Result.Props := Props;
+  Result.Originals := Originals;
+  Result.Important := Important;
 end;
 
 //-- BG ---------------------------------------------------------- 20.01.2013 --

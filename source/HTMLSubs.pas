@@ -235,6 +235,8 @@ type
   public
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const ID: ThtString);
     constructor CreateCopy(Parent: TCellBasic; Source: THtmlNode); virtual;
+    destructor Destroy; override;
+
     //constructor Create(Parent: THtmlNode; Tag: TElemSymb; Attributes: TAttributeList; const Properties: TResultingProperties);
     function IsInFlow: Boolean; {$ifdef UseInline} inline; {$endif}
     function IndexOf(Child: THtmlNode): Integer; virtual;
@@ -1914,8 +1916,10 @@ begin
     FOwnerBlock := FOwnerCell.OwnerBlock;
     FDocument := FOwnerCell.Document;
   end;
-  FAttributes := Attributes;
-  FProperties := Properties;
+  if Attributes <> nil then
+    FAttributes := Attributes.Clone;
+  if Properties <> nil then
+    FProperties := Properties.Clone;
 // defaults are set automatically as Ord() of these defaults is 0:
 //  FDisplay := pdUnassigned;
 //  FFloating := aNone;
@@ -1943,6 +1947,36 @@ begin
   end;
 end;
 
+//-- BG ---------------------------------------------------------- 24.03.2011 --
+constructor THtmlNode.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
+begin
+  inherited Create( Source.HtmlId );
+  FOwnerCell := Parent;
+  begin
+    FOwnerBlock := FOwnerCell.OwnerBlock;
+    FDocument   := FOwnerCell.Document;
+  end;
+  FAttributes   := Source.FAttributes;
+  FProperties   := Source.FProperties;
+  FClearing     := Source.FClearing;
+  FDisplay      := Source.FDisplay;
+  FPositioning  := Source.FPositioning;
+  FPositions    := Source.FPositions;
+  FFloating     := Source.FFloating;
+  FIndent       := Source.FIndent;
+end;
+
+//-- BG ---------------------------------------------------------- 21.10.2016 --
+destructor THtmlNode.Destroy;
+begin
+  if not IsCopy then
+  begin
+    FAttributes.Free;
+    FProperties.Free;
+  end;
+  inherited;
+end;
+
 //-- BG ---------------------------------------------------------- 24.02.2016 --
 function THtmlNode.TryGetClear(var Clear: ThtClearStyle): Boolean;
 begin
@@ -1962,26 +1996,6 @@ begin
     if FAttributes <> nil then
       if FAttributes.Find(ClearSy, T) then
         Result := TryStrToClearStyle(LowerCase(T.Name), Clear);
-end;
-
-
-//-- BG ---------------------------------------------------------- 24.03.2011 --
-constructor THtmlNode.CreateCopy(Parent: TCellBasic; Source: THtmlNode);
-begin
-  inherited Create( Source.HtmlId );
-  FOwnerCell := Parent;
-  begin
-    FOwnerBlock := FOwnerCell.OwnerBlock;
-    FDocument   := FOwnerCell.Document;
-  end;
-  FAttributes   := Source.FAttributes;
-  FProperties   := Source.FProperties;
-  FClearing     := Source.FClearing;
-  FDisplay      := Source.FDisplay;
-  FPositioning  := Source.FPositioning;
-  FPositions    := Source.FPositions;
-  FFloating     := Source.FFloating;
-  FIndent       := Source.FIndent;
 end;
 
 ////-- BG ---------------------------------------------------------- 23.03.2011 --
