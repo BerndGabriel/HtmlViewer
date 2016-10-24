@@ -34,6 +34,9 @@ uses
 {$ifdef VCL}
   Windows,  // needed to expand inline function htUpCase
 {$endif}
+{$ifdef LCL}
+  variants,
+{$endif}
   Classes, Graphics, SysUtils,
   HtmlGlobals, HtmlBuffer, URLSubs, StyleUn, StyleTypes;
 
