@@ -42,6 +42,8 @@ uses
 type
   EParseError = class(Exception);
 
+  ThtTermCharKind = (tckNone, tckGood, tckBad);
+
   { THtmlStyleParser }
 
   THtmlStyleParser = class
@@ -77,7 +79,7 @@ type
   public
     constructor Create(const AUseQuirksMode : Boolean);
     destructor Destroy; override;
-    procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: boolean);
+    procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; FromLink: boolean);
   end;
 
   THtmlStyleAttrParser = class(THtmlStyleParser)
@@ -89,9 +91,9 @@ type
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
 
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; AFromLink: Boolean; const AUseQuirksMode: Boolean);
-procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
-function SortContextualItems(S: ThtString): ThtString;
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; AFromLink, AUseQuirksMode: Boolean);
+procedure ParsePropertyStr(const PropertyStr: ThtString; Propty: TProperties);
+function SortContextualItems(const S: ThtString): ThtString;
 
 implementation
 
@@ -99,13 +101,13 @@ const
   NeedPound = True;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; AFromLink: Boolean; const AUseQuirksMode: Boolean);
+procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; AFromLink, AUseQuirksMode: Boolean);
 var
   Parser: THtmlStyleTagParser;
 begin
   Parser := THtmlStyleTagParser.Create(AUseQuirksMode);
   try
-    Parser.DoStyle(Styles, C, Doc, APath, AFromLink);
+    Parser.DoStyle(Styles, C, Doc, APath, AMedia, AFromLink);
   finally
     Parser.Free;
   end;
@@ -125,7 +127,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
-procedure ParsePropertyStr(PropertyStr: ThtString; Propty: TProperties);
+procedure ParsePropertyStr(const PropertyStr: ThtString; Propty: TProperties);
 var
   Doc: TBuffer;
 begin
@@ -231,6 +233,19 @@ begin
 end;
 
 
+//-- BG ---------------------------------------------------------- 02.03.2016 --
+function GetTermCharKind(LCh: ThtChar; const GoodTermChars, BadTermChars: ThtString): ThtTermCharKind;
+begin
+  if Pos(LCh, GoodTermChars) > 0 then
+    Result := tckGood
+  else if Pos(LCh, BadTermChars) > 0 then
+    Result := tckBad
+  else if LCh = EofChar then
+    Result := tckBad
+  else
+    Result := tckNone;
+end;
+
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleParser.GetCollection(const GoodTermChars, BadTermChars: ThtString);
 //Read a series of property/value pairs such as "Text-Align: Center;" between
@@ -298,21 +313,6 @@ var
     InString := False;
   end;
 
-type
-  ThtTermCharKind = (tckNone, tckGood, tckBad);
-
-  function GetTermCharKind(LCh: ThtChar): ThtTermCharKind;
-  begin
-    if Pos(LCh, GoodTermChars) > 0 then
-      Result := tckGood
-    else if Pos(LCh, BadTermChars) > 0 then
-      Result := tckBad
-    else if LCh = EofChar then
-      Result := tckBad
-    else
-      Result := tckNone;
-  end;
-
 var
   Prop, Value, Important: ThtString;
   ImportantSepPos: Integer;
@@ -336,7 +336,7 @@ begin
 
         SetLength(Value, 0);
         { The ';' inside a quotation should not end a CSS value.  }
-        while not ((LCh = ';') and (Top = EofChar)) and (GetTermCharKind(LCh) = tckNone) do
+        while not ((LCh = ';') and (Top = EofChar)) and (GetTermCharKind(LCh, GoodTermChars, BadTermChars) = tckNone) do
         begin
           case LCh of
             '"', '''':
@@ -404,7 +404,7 @@ begin
 
     // Skip trailing ';' or any erroneous/unknown syntax observing the rules
     // for matching pairs of (), [], {}, "", and '' until and including next ';'
-    TermCharKind := GetTermCharKind(LCh);
+    TermCharKind := GetTermCharKind(LCh, GoodTermChars, BadTermChars);
     while LCh <> EofChar do
     begin
       case TermCharKind of
@@ -476,7 +476,7 @@ begin
         end;
       end;
       GetCh(True);
-      TermCharKind := GetTermCharKind(LCh);
+      TermCharKind := GetTermCharKind(LCh, GoodTermChars, BadTermChars);
     end;
   until TermCharKind <> tckNone;
 end;
@@ -1124,7 +1124,7 @@ end;
 
 {----------------SortContextualItems}
 
-function SortContextualItems(S: ThtString): ThtString;
+function SortContextualItems(const S: ThtString): ThtString;
 {Put a ThtString of contextual items in a standard form for comparison purposes.
  div.ghi#def:hover.abc
    would become
@@ -1205,35 +1205,297 @@ begin
   inherited;
 end;
 
-//-- BG ---------------------------------------------------------- 29.12.2010 --
-procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: Boolean);
+//-- BG ---------------------------------------------------------- 24.10.2016 --
+procedure GetMediaQueries(const MediaQuery: ThtString; out Queries: ThtMediaQueries);
 var
-  AvailableMedia: ThtMediaTypes;
+  ICh, NCh: Integer;
+  LCh: ThtChar;
+
+  function PeekCh: ThtChar;
+  begin
+    if ICh <= NCh then
+      Result := MediaQuery[ICh]
+    else
+      Result := EofChar;
+  end;
+
+  procedure GetCh;
+  begin
+    if ICh < NCh then
+    begin
+      Inc(ICh);
+      LCh := MediaQuery[ICh];
+    end
+    else
+      LCh := EofChar;
+  end;
+
+  procedure SkipWhiteSpace;
+  begin
+    if ICh < NCh then
+      ICh := StyleUn.SkipWhiteSpace(MediaQuery, ICh, NCh);
+    if ICh < NCh then
+      LCh := MediaQuery[ICh]
+    else
+      LCh := EofChar;
+  end;
+
+  //-- BG ---------------------------------------------------------- 13.03.2011 --
+  function GetIdentifier(out Identifier: ThtString): Boolean;
+  begin
+    // http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-identifier
+
+    // can contain only the characters [a-zA-Z0-9] and ISO 10646 characters U+00A0 and higher,
+    // plus the hyphen (-) and the underscore (_);
+    // Identifiers can also contain escaped characters and any ISO 10646 character as a numeric code
+    // (see next item). For instance, the identifier "B&W?" may be written as "B\&W\?" or "B\26 W\3F".
+
+    Result := True;
+    SetLength(Identifier, 0);
+
+    // they cannot start with a digit, two hyphens, or a hyphen followed by a digit.
+    case LCh of
+      '0'..'9':
+        Result := False;
+
+      '-':
+      begin
+        case PeekCh of
+          '0'..'9', '-':
+            Result := False;
+        else
+          SetLength(Identifier, Length(Identifier) + 1);
+          Identifier[Length(Identifier)] := LCh;
+          GetCh;
+        end;
+      end;
+    end;
+
+    // loop through all allowed charaters:
+    while Result do
+    begin
+      case LCh of
+        'A'..'Z', 'a'..'z', '0'..'9', '-', '_': ;
+      else
+        if LCh < #$A0 then
+          break;
+      end;
+      SetLength(Identifier, Length(Identifier) + 1);
+      Identifier[Length(Identifier)] := LCh;
+      GetCh;
+    end;
+
+    if Result then
+      Result := Length(Identifier) > 0;
+  end;
+
+  function GetExpression(out Value: ThtString; const GoodTermChars, BadTermChars: ThtString): Boolean;
+  begin
+    repeat
+      case GetTermCharKind(LCh, GoodTermChars, BadTermChars) of
+        tckGood:
+          begin
+            GetCh;
+            Result := True;
+            break;
+          end;
+
+        tckBad:
+          begin
+            Result := false;
+            break;
+          end;
+      else
+        // tckNone:
+        SetLength(Value, Length(Value) + 1);
+        Value[Length(Value)] := LCh;
+        GetCh;
+      end;
+    until False;
+  end;
+
+  function TryGetMediaQuery(out Query: ThtMediaQuery): Boolean;
+  var
+    Identifier, IdentLow, X: ThtString;
+    IsIdentifier, NeedsAnd: Boolean;
+    Expression: ThtMediaExpression;
+    I: Integer;
+  begin
+    Result := False;
+    SetLength(Query.Expressions, 0);
+
+    SkipWhiteSpace;
+    IsIdentifier := GetIdentifier(Identifier);
+
+    // optional: 'not' or 'only'
+    Query.Negated := False;
+    if IsIdentifier then
+    begin
+      IdentLow := htLowerCase(Identifier);
+
+      Query.Negated := IdentLow = 'not';
+      if Query.Negated or (IdentLow = 'only') then
+      begin
+        SkipWhiteSpace;
+        IsIdentifier := GetIdentifier(Identifier);
+        if IsIdentifier then
+          IdentLow := htLowerCase(Identifier);
+      end;
+    end;
+
+    // optional: media type
+    Query.MediaType := mtAll;
+    NeedsAnd := IsIdentifier;
+    if IsIdentifier then
+    begin
+      // This identifier identifies a media type
+      if not TryStrToMediaType(Identifier, Query.MediaType) then
+        // media type is unknown thus query must evaluate to false:
+        Query.Negated := True; // 'media type is not mtAll' will always evaluate to false!
+
+      SkipWhiteSpace;
+      IsIdentifier := GetIdentifier(Identifier);
+      if IsIdentifier then
+        IdentLow := htLowerCase(Identifier);
+
+      // At this point Query is valid: [ONLY | NOT]? S* media_type
+      Result := True;
+    end;
+
+    // optional: media features expressions separated by 'and'
+    repeat
+      // if there is an identifier it must be 'and'
+      if IsIdentifier then
+      begin
+        Result := IdentLow = 'and';
+        if not Result then
+          break;
+        NeedsAnd := False;
+        IsIdentifier := False;
+        SkipWhiteSpace;
+      end;
+
+      case LCh of
+        '(': // media feature expression
+          begin
+            Result := False;
+            if NeedsAnd then
+              // Required 'and' was missing!
+              break;
+
+            // Get feature
+            GetCh;
+            SkipWhiteSpace;
+            IsIdentifier := GetIdentifier(Identifier);
+            if not IsIdentifier then
+              // no feature name
+              break;
+            IdentLow := htLowerCase(Identifier);
+
+            if not TryStrToMediaFeature(IdentLow, Expression.Feature, Expression.Oper) then
+            begin
+              Expression.Oper := moUnknown;
+              Expression.Feature := mfUnknown;
+            end;
+
+            VarClear(Expression.Expression);
+            SkipWhiteSpace;
+            case LCh of
+              ':':
+                begin
+                  GetCh;
+                  SkipWhiteSpace;
+                  Result := GetExpression(X, ')', ',{<');
+                  if not Result then
+                    Break;
+                  Expression.Expression := X;
+                end;
+
+              ')':
+                begin
+                  GetCh;
+                  SkipWhiteSpace;
+                  Expression.Oper := moIs;
+                  Result := True;
+                end;
+            else
+              break;
+            end;
+
+            I := Length(Query.Expressions);
+            SetLength(Query.Expressions, I + 1);
+            Query.Expressions[I] := Expression;
+            NeedsAnd := True;
+
+            SkipWhiteSpace;
+            IsIdentifier := GetIdentifier(Identifier);
+            if not IsIdentifier then
+              // no feature name
+              break;
+            IdentLow := htLowerCase(Identifier);
+          end;
+
+        ',',
+        '{',
+        '<',
+        EofChar:
+          break;
+      end;
+    until False;
+  end;
+
+var
+  Identifier, IdentLow: ThtString;
+  MediaType: ThtMediaType;
+  I: Integer;
+begin
+  NCh := Length(MediaQuery);
+  ICh := 0;
+  GetCh;
+
+  I := 0;
+  repeat
+    Inc(I);
+    SetLength(Queries, I);
+    if not TryGetMediaQuery(Queries[I - 1]) then
+      break;
+    if LCh = ',' then
+      GetCh;
+  until False;
+  Dec(I);
+
+  if I = 0 then
+  begin
+    // if no Queries, then all media
+    Queries[0].Negated := False;
+    Queries[0].MediaType := mtAll;
+    SetLength(Queries[0].Expressions, 0);
+  end
+  else
+    SetLength(Queries, I);
+end;
+
+//-- BG ---------------------------------------------------------- 29.12.2010 --
+procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; FromLink: Boolean);
+
+  //TODO -oBG, 02.03.2016: match with media properties
+  //TODO -oBG, 02.03.2016: remember relevant styles and reapply in case media properties changed
+  function MediaMatches(const Queries: ThtMediaQueries): Boolean;
+  var
+    I: Integer;
+    QueryMediaType: ThtMediaType;
+  begin
+    for I := Low(Queries) to High(Queries) do
+      if (Queries[I].MediaType in [mtAll, mtScreen]) xor Queries[I].Negated then
+      begin
+        Result := True;
+        exit;
+      end;
+    Result := False;
+  end;
 
   procedure ReadAt;
   {read @import and @media}
-
-    function GetMediaTypes: ThtMediaTypes;
-    var
-      Identifier: ThtString;
-      MediaType: ThtMediaType;
-    begin
-      Result := [];
-      SkipWhiteSpace;
-      if not GetIdentifier(Identifier) then
-        exit;
-      repeat
-        if TryStrToMediaType(Identifier, MediaType) then
-          Include(Result, MediaType);
-        SkipWhiteSpace;
-        if LCh <> ',' then
-          break;
-        GetCh;
-        SkipWhiteSpace;
-        if not GetIdentifier(Identifier) then
-          break;
-      until False;
-    end;
 
     procedure SkipRule(Depth: Integer);
     begin
@@ -1261,15 +1523,27 @@ var
 
     procedure DoMedia;
     var
-      Media: ThtMediaTypes;
+      Media: ThtString;
+      Queries: ThtMediaQueries;
     begin
-      Media := GetMediaTypes;
-      if Media = [] then
-        Include(Media, mtAll);
+      repeat
+        case LCh of
+          '{',
+          ';',
+          '<',
+          EofChar:
+            break;
+        else
+          htAppendChr(Media, LCh);
+        end;
+        GetCh;
+      until False;
+
+      GetMediaQueries(Media, Queries);
       case LCh of
         '{':
         begin
-          if Media * AvailableMedia <> [] then
+          if MediaMatches(Queries) then
           begin {parse @media screen}
             GetCh;
             repeat
@@ -1307,8 +1581,8 @@ var
     procedure DoImport;
     var
       Result: Boolean;
-      URL: ThtString;
-      Media: ThtMediaTypes;
+      URL, Media: ThtString;
+      Queries: ThtMediaQueries;
     begin
       Result := False;
       SkipWhiteSpace;
@@ -1335,10 +1609,20 @@ var
 
       if Result then
       begin
-        Media := GetMediaTypes;
-        if Media = [] then
-          Include(Media, mtAll);
-        if Media * AvailableMedia <> [] then
+        repeat
+          case LCh of
+            ';',
+            '<',
+            EofChar:
+              break;
+          else
+            htAppendChr(Media, LCh);
+          end;
+          GetCh;
+        until False;
+
+        GetMediaQueries(Media, Queries);
+        if MediaMatches(Queries) then
           // TODO -oBG, 13.03.2011: read style sheet from import
           // The import style sheet parser must return the list of rulesets.
           // I must insert the imported rulesets at the beginning of my list of rulesets
@@ -1371,89 +1655,98 @@ var
   end;
 
 var
-  MayCloseCommment: Boolean;
+  MayCloseCommment, OK: Boolean;
   Pos: Integer;
+  Queries: ThtMediaQueries;
 begin
-  Self.Doc := Doc;
-  Self.Styles := Styles;
-  try
-    AvailableMedia := [mtAll, mtScreen];
-    LinkPath := APath;
+  Ok := Length(AMedia) = 0;
+  if not OK then
+  begin
+    GetMediaQueries(AMedia, Queries);
+    OK := MediaMatches(Queries);
+  end;
+  if OK then
+  begin {parse @media screen}
+    Self.Doc := Doc;
+    Self.Styles := Styles;
+    try
+      LinkPath := APath;
 
-    // param C is the '>' of the opening <style> tag. Just ignore it.
-    repeat
-      GetCh;
-      case LCh of
-        ' ', '<', '!', '-', '>':
-          // skip HTML comment opener '<!--' and closer '-->' immediately following the <style> tag.
-          continue;
-      else
-        break;
-      end;
-    until false;
-
-    // read the styles up to single HTML comment closer or start of a HTML tag
-    repeat
-      case LCh of
-        ' ', '-', '>':
-          GetCh;
-
-        EOFChar:
+      // param C is the '>' of the opening <style> tag. Just ignore it.
+      repeat
+        GetCh;
+        case LCh of
+          ' ', '<', '!', '-', '>':
+            // skip HTML comment opener '<!--' and closer '-->' immediately following the <style> tag.
+            continue;
+        else
           break;
+        end;
+      until false;
 
-        '@':
-          ReadAt;
+      // read the styles up to single HTML comment closer or start of a HTML tag
+      repeat
+        case LCh of
+          ' ', '-', '>':
+            GetCh;
 
-        '<':
-        begin
-          Pos := Doc.Position;
-          GetCh;
-          case LCh of
-            '!', '-':
-            begin
-              MayCloseCommment := False;
-              repeat
-                GetCh;
-                case LCh of
-                  EOFChar:
-                    break;
+          EOFChar:
+            break;
 
-                  '-':
-                    MayCloseCommment := True;
+          '@':
+            ReadAt;
 
-                  '>':
-                  begin
-                    if MayCloseCommment then
+          '<':
+          begin
+            Pos := Doc.Position;
+            GetCh;
+            case LCh of
+              '!', '-':
+              begin
+                MayCloseCommment := False;
+                repeat
+                  GetCh;
+                  case LCh of
+                    EOFChar:
                       break;
+
+                    '-':
+                      MayCloseCommment := True;
+
+                    '>':
+                    begin
+                      if MayCloseCommment then
+                        break;
+                      MayCloseCommment := False;
+                    end;
+                  else
                     MayCloseCommment := False;
                   end;
-                else
-                  MayCloseCommment := False;
-                end;
-              until false;
-            end;
+                until false;
+              end;
 
-          else
-            if not FromLink then
-            begin
-              Doc.Position := Pos;
-              LCh := '<';
-              break;
+            else
+              if not FromLink then
+              begin
+                Doc.Position := Pos;
+                LCh := '<';
+                break;
+              end;
             end;
           end;
-        end;
 
-      else
-        // read a style
-        Selectors.Clear;
-        GetSelectors;
-        GetCollection;
-      end;
-    until false;
-    C := LCh;
-  finally
-    Self.Styles := nil;
-    Self.Doc := nil;
+        else
+          // read a style
+          Selectors.Clear;
+          GetSelectors;
+          GetCollection;
+        end;
+      until false;
+      C := LCh;
+    finally
+      Self.Styles := nil;
+      Self.Doc := nil;
+    end;
   end;
 end;
 
@@ -1485,7 +1778,6 @@ var
    number which serves to sort entries by time parsed.}
   var
     I, Cnt: integer;
-    //Tmp: ThtString;
 
     function DoSort(St: ThtString): ThtString;
     begin
@@ -1534,7 +1826,6 @@ var
       if S <> '' then
         Result := DoSort(S) + ' ' + Result;
       I := Pos(' ', Result);
-      // Str(Cnt, Tmp);
       Insert(IntToStr(Cnt) + Styles.GetSeqNo, Result, I + 1);
     end
     else
@@ -1609,9 +1900,6 @@ end;
 
 //-- BG ---------------------------------------------------------- 29.12.2010 --
 procedure THtmlStyleAttrParser.ParseProperties(Doc: TBuffer; Propty: TProperties);
-//var
-//  Prop, Value: ThtString;
-//  IsImportant: Boolean;
 begin
   Self.Doc := Doc;
   Self.Propty := Propty;

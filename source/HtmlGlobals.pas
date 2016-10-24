@@ -478,6 +478,10 @@ function IsAlpha(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function IsDigit(Ch: ThtChar): Boolean; {$ifdef UseInline} inline; {$endif}
 function RemoveQuotes(const S: ThtString): ThtString;
 
+function htStringArrayToStr(const StrArray: ThtStringArray; Separator: ThtChar): ThtString;
+function htSameStringArray(const A1, A2: ThtStringArray): Boolean;
+procedure htSortStringArray(A: ThtStringArray);
+
 //{$ifdef UnitConstsMissing}
 //const
 //  SOutOfResources	= 'Out of system resources';
@@ -997,6 +1001,73 @@ function htSameText(const S1, S2: ThtString): Boolean;
  {$ifdef UseInline} inline; {$endif}
 begin
   Result := htCompareText(S1, S2) = 0;
+end;
+
+//-- BG ---------------------------------------------------------- 22.10.2016 --
+function htStringArrayToStr(const StrArray: ThtStringArray; Separator: ThtChar): ThtString;
+var
+  I: Integer;
+begin
+  SetLength(Result, 0);
+  for I := Low(StrArray) to high(StrArray) do
+  begin
+    if Length(Result) > 0 then
+      htAppendChr(Result, Separator);
+    htAppendStr(Result, StrArray[I]);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+function htSameStringArray(const A1, A2: ThtStringArray): Boolean;
+var
+  I, N: Integer;
+begin
+  N := Length(A1);
+  Result := N = Length(A2);
+  if Result then
+    for I := 0 To N - 1 do
+      if htCompareStr(A1[I], A2[I]) <> 0 then
+      begin
+        Result := False;
+        break;
+      end;
+end;
+
+//-- BG ---------------------------------------------------------- 20.03.2011 --
+procedure htSortStringArray(A: ThtStringArray);
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J: Integer;
+    P, T: ThtString;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := A[(L + R) shr 1];
+      repeat
+        while htCompareStr(A[I], P) < 0 do
+          Inc(I);
+        while htCompareStr(A[J], P) > 0 do
+          Dec(J);
+        if I <= J then
+        begin
+          T := A[I];
+          A[I] := A[J];
+          A[J] := T;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then
+        QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+
+begin
+  if length(A) > 1 then
+    QuickSort(Low(A), High(A));
 end;
 
 //-- BG ---------------------------------------------------------- 28.01.2011 --

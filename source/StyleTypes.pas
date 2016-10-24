@@ -328,7 +328,6 @@ type
     mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
     mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
   );
-  ThtMediaTypes = set of ThtMediaType;
 
 const
   CMediaTypes: array[ThtMediaType] of ThtString = (
@@ -343,23 +342,79 @@ const
     'tty',
     'tv'
   );
-  AllMediaTypes: ThtMediaTypes = [
-    //mtAll,        // Suitable for all devices.
-    mtBraille,    // Intended for braille tactile feedback devices.
-    mtEmbossed,   // Intended for paged braille printers.
-    mtHandheld,   // Intended for handheld devices (typically small screen, limited bandwidth).
-    mtPrint,      // Intended for paged material and for documents viewed on screen in print preview mode. Please consult the section on paged media for information about formatting issues that are specific to paged media.
-    mtProjection, // Intended for projected presentations, for example projectors. Please consult the section on paged media for information about formatting issues that are specific to paged media.
-    mtScreen,     // Intended primarily for color computer screens.
-    mtSpeech,     // Intended for speech synthesizers. Note: CSS2 had a similar media type called 'aural' for this purpose. See the appendix on aural style sheets for details.
-    mtTty,        // Intended for media using a fixed-pitch character grid (such as teletypes, terminals, or portable devices with limited display capabilities). Authors should not use pixel units with the "tty" media type.
-    mtTv          // Intended for television-type devices (low resolution, color, limited-scrollability screens, sound available).
-  ];
 
-function MediaTypesToStr(const MediaTypes: ThtMediaTypes): ThtString;
-function TranslateMediaTypes(const MediaTypes: ThtMediaTypes): ThtMediaTypes;
+type
+  ThtMediaOperator = (
+    moUnknown,
+    moIs,         // Is true
+    moEq,         //  =
+    moLe,         // <=
+    moGe);        // >=
+
+type
+  ThtMediaFeature = (
+    mfUnknown,
+    mfWidth,
+    mfHeight,
+    mfOrientation,
+    mfAspectRatio,
+    mfDeviceWidth,
+    mfDeviceHeight,
+    mfDeviceAspectRatio,
+    mfColor,
+    mfColorIndex,
+    mfMonochrome,
+    mfResolution,
+    mfScan,
+    mfGrid
+  );
+
+const
+  CMediaFeatures: array[ThtMediaFeature] of record
+    Name: ThtString;
+  end = (
+    (Name:''                    ),
+    (Name:'width'               ),
+    (Name:'height'              ),
+    (Name:'orientation'         ),
+    (Name:'aspect-ratio'        ),
+    (Name:'device-width'        ),
+    (Name:'device-height'       ),
+    (Name:'device-aspect-ratio' ),
+    (Name:'color'               ),
+    (Name:'color-index'         ),
+    (Name:'monochrome'          ),
+    (Name:'resolution'          ),
+    (Name:'scan'                ),
+    (Name:'grid'                )
+  );
+
+//------------------------------------------------------------------------------
+// media queries
+//------------------------------------------------------------------------------
+
+type
+
+  ThtMediaExpression = record
+    Oper: ThtMediaOperator;
+    Feature: ThtMediaFeature;
+    Expression: Variant;
+  end;
+
+  ThtMediaExpressions = array of ThtMediaExpression;
+
+  ThtMediaQuery = record
+    MediaType: ThtMediaType;
+    Negated: Boolean;
+    Expressions: ThtMediaExpressions;
+  end;
+
+  ThtMediaQueries = array of ThtMediaQuery;
+
+function MediaQueryToStr(const MediaQuery: ThtMediaQuery): ThtString;
+function MediaQueriesToStr(const MediaQueries: ThtMediaQueries): ThtString;
 function TryStrToMediaType(const Str: ThtString; out MediaType: ThtMediaType): Boolean;
-function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: ThtMediaTypes): Boolean;
+function TryStrToMediaFeature(const Str: ThtString; out Feature: ThtMediaFeature; out Oper: ThtMediaOperator): Boolean;
 
 function StrToFontName(const Str: ThtString): ThtString;
 function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double): Double; overload;
@@ -499,31 +554,46 @@ begin
   Result[reBottom] := Bottom;
 end;
 
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-function MediaTypesToStr(const MediaTypes: ThtMediaTypes): ThtString;
- {$ifdef UseInline} inline; {$endif}
+//-- BG ---------------------------------------------------------- 22.10.2016 --
+function MediaQueryToStr(const MediaQuery: ThtMediaQuery): ThtString;
 var
-  I: ThtMediaType;
+  I: Integer;
+  E: ThtString;
 begin
   SetLength(Result, 0);
-  for I := low(I) to high(I) do
-    if I in MediaTypes then
-    begin
-      if Length(Result) = 0 then
-        Result := CMediaTypes[I]
-      else
-        Result := Result + ', ' + CMediaTypes[I];
-    end;
+  with MediaQuery do
+  begin
+    if Negated then
+      Result := 'not ';
+    htAppendStr(Result, CMediaTypes[MediaType]);
+    for I := Low(Expressions) to High(Expressions) do
+      with Expressions[I] do
+      begin
+        E := Expression;
+        if Length(E) > 0 then
+          E := ':' + E;
+        E := CMediaFeatures[Feature].Name + E;
+        case Oper of
+           moGe: E := 'min-' + E;
+           moLe: E := 'max-' + E;
+        end;
+      end;
+  end;
 end;
 
-//-- BG ---------------------------------------------------------- 20.03.2011 --
-function TranslateMediaTypes(const MediaTypes: ThtMediaTypes): ThtMediaTypes;
- {$ifdef UseInline} inline; {$endif}
+//-- BG ---------------------------------------------------------- 22.10.2016 --
+function MediaQueriesToStr(const MediaQueries: ThtMediaQueries): ThtString;
+var
+  I: Integer;
 begin
-  if mtAll in MediaTypes then
-    Result := AllMediaTypes
-  else
-    Result := MediaTypes;
+  SetLength(Result, 0);
+  if MediaQueries <> nil then
+    for I := Low(MediaQueries) to High(MediaQueries) do
+    begin
+      if Length(Result) > 0 then
+        htAppendStr(Result, ', ');
+      htAppendStr(Result, MediaQueryToStr(MediaQueries[I]));
+    end;
 end;
 
 //-- BG ---------------------------------------------------------- 15.03.2011 --
@@ -532,38 +602,57 @@ function TryStrToMediaType(const Str: ThtString; out MediaType: ThtMediaType): B
 var
   I: ThtMediaType;
 begin
-  for I := low(I) to high(I) do
+  // case sensitive!
+  for I := Low(I) to High(I) do
     if CMediaTypes[I] = Str then
     begin
       Result := True;
       MediaType := I;
       exit;
     end;
-  Result := False;
+
+  Result := Str = 'aural';
+  if Result then
+    MediaType := mtSpeech;
 end;
 
-//-- BG ---------------------------------------------------------- 17.04.2011 --
-function TryStrToMediaTypes(const Str: ThtString; out MediaTypes: ThtMediaTypes): Boolean;
- {$ifdef UseInline} inline; {$endif}
+function TryStrToMediaFeature(const Str: ThtString; out Feature: ThtMediaFeature; out Oper: ThtMediaOperator): Boolean;
 var
-  I, J: Integer;
-  MediaType: ThtMediaType;
+  P: Integer;
+  O, F: ThtString;
+  I: ThtMediaFeature;
 begin
-  Result := False;
-  MediaTypes := [];
-  I := 1;
-  repeat
-    J := htPos(',', Str, I);
-    if J = 0 then
-      // no more commas, try the rest
-      J := Length(Str) + 1;
-    if TryStrToMediaType(htLowerCase(Trim(Copy(Str, I, J - I))), MediaType) then
+  P := Pos('-', Str);
+  if P = 0 then
+  begin
+    Oper := moEq;
+    F := Str;
+  end
+  else
+  begin
+    O := Copy(Str,     1, P - 1);
+    F := Copy(Str, P + 1, MaxInt);
+    if O = 'min' then
+      Oper := moGe
+    else if O = 'max' then
+      Oper := moLe
+    else
     begin
-      Include(MediaTypes, MediaType);
-      Result := True;
+      Oper := moUnknown;
+      F := Str;
     end;
-    I := J + 1;
-  until J > Length(Str);
+  end;
+
+  for I := Low(I) to High(I) do
+    if CMediaFeatures[I].Name = F then
+    begin
+      Result := True;
+      Feature := I;
+      exit;
+    end;
+
+  Feature := mfUnknown;
+  Result := False;
 end;
 
 //-- BG ---------------------------------------------------------- 16.04.2011 --

@@ -116,6 +116,7 @@ type
     function GetAttribute(Index: Integer): TAttribute; {$ifdef UseInline} inline; {$endif}
   public
     constructor CreateCopy(ASource: TAttributeList);
+    function Clone: TAttributeList; virtual;
     procedure Clear; override;
     function Find(const Name: ThtString; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function Find(Sy: TAttrSymb; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
@@ -1379,6 +1380,12 @@ procedure TAttributeList.Clear;
 begin
   inherited Clear;
   SaveID := '';
+end;
+
+//-- BG ---------------------------------------------------------- 21.10.2016 --
+function TAttributeList.Clone: TAttributeList;
+begin
+  Result := TAttributeList.CreateCopy(Self);
 end;
 
 //-- BG ---------------------------------------------------------- 27.01.2013 --

@@ -177,7 +177,7 @@ type
     procedure DoP(const TermSet: TElemSymbSet);
     procedure DoScript(Ascript: TScriptEvent);
     procedure DoSound;
-    procedure DoStyle(var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: Boolean);
+    procedure DoStyle(var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; FromLink: Boolean);
     procedure DoStyleLink;
     procedure DoTable;
     procedure DoText;
@@ -1611,7 +1611,7 @@ begin
 
     StyleSy:
       begin
-        DoStyle(LCh, Doc, '', False);
+        DoStyle(LCh, Doc, '', '', False);
         Next;
       end;
 
@@ -3191,7 +3191,7 @@ procedure THtmlParser.DoCommonSy;
 
                 StyleSy:
                   begin
-                    DoStyle(LCh, Doc, '', False);
+                    DoStyle(LCh, Doc, '', '', False);
                     Next;
                   end;
               end;
@@ -3573,7 +3573,7 @@ begin
 
     StyleSy:
       begin
-        DoStyle(LCh, Doc, '', False);
+        DoStyle(LCh, Doc, '', '', False);
         Next;
       end;
   else
@@ -4019,7 +4019,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 29.09.2016 --
-procedure THtmlParser.DoStyle(var C: ThtChar; Doc: TBuffer; const APath: ThtString; FromLink: Boolean);
+procedure THtmlParser.DoStyle(var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; FromLink: Boolean);
 var
   IsCss: Boolean;
   I: Integer;
@@ -4033,7 +4033,7 @@ begin
       end;
 
   if IsCss then
-    StylePars.DoStyle(PropStack.Document.Styles, C, Doc, APath, FromLink, FUseQuirksMode)
+    StylePars.DoStyle(PropStack.Document.Styles, C, Doc, APath, AMedia, FromLink, FUseQuirksMode)
   else if not IsXhtmlEndSy and not FromLink then
   begin
     GetCh; {make up for not having next character on entry}
@@ -4048,8 +4048,8 @@ var
   Style: TBuffer;
   C: ThtChar;
   I: Integer;
-  Url, Rel, Rev: ThtString;
-  OK: Boolean;
+  Url, Rel, Rev, Media: ThtString;
+  IsStyleSheet: Boolean;
   Request: TGetStreamEvent;
   Requested: TGottenStreamEvent;
   Stream: TStream;
@@ -4069,7 +4069,7 @@ var
   end;
 
 begin
-  OK := False;
+  IsStyleSheet := False;
   for I := 0 to Attributes.Count - 1 do
     with Attributes[I] do
       case Which of
@@ -4077,7 +4077,7 @@ begin
           begin
             Rel := Name;
             if htCompareText(Rel, 'stylesheet') = 0 then
-              OK := True;
+              IsStyleSheet := True;
           end;
 
         RevSy:
@@ -4087,21 +4087,16 @@ begin
           Url := Name;
 
         MediaSy:
-          //BG, 12.02.2011: currently we cannot distinguish media, therefore process 'screen' only.
-          if (Pos('screen', Name) = 0) and (Pos('all', Name) = 0) then
-          begin
-            OK := False;
-            break;
-          end;
+          Media := Name;
       end;
-  if OK and (Url <> '') then
+  if IsStyleSheet and (Url <> '') then
   begin
     Stream := nil;
     FreeStream := False;
     Requested := nil;
     try
       try
-        Viewer := (CallingObject as THtmlViewer);
+        Viewer := CallingObject as THtmlViewer;
         Request := Viewer.OnHtStreamRequest;
         Requested := Viewer.OnHtStreamRequested;
         if Assigned(Request) then
@@ -4133,7 +4128,8 @@ begin
           Style := TBuffer.Create(Stream, Url);
           try
             C := SpcChar;
-            DoStyle(C, Style, Path, True);
+
+            DoStyle(C, Style, Path, Media, True);
           finally
             Style.Free;
           end;
