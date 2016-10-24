@@ -410,6 +410,7 @@ type
   end;
 
   ThtMediaQueries = array of ThtMediaQuery;
+  ThtMediaQueryEvent = procedure(Sender: TObject; const MediaQuery: ThtMediaQuery; var MediaMatchesQuery: Boolean) of object;
 
 function MediaQueryToStr(const MediaQuery: ThtMediaQuery): ThtString;
 function MediaQueriesToStr(const MediaQueries: ThtMediaQueries): ThtString;

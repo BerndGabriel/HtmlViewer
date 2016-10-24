@@ -146,6 +146,7 @@ type
     SoundEvent: TSoundType;
     MetaEvent: TMetaType;
     LinkEvent: TLinkType;
+    MatchMediaQuery: ThtMediaQueryEvent;
 
     FUseQuirksMode : Boolean;
     FPropStack: THtmlPropStack;
@@ -203,7 +204,7 @@ type
     function ShouldUseQuirksMode: Boolean;
     function IsFrame(FrameViewer: TFrameViewerBase): Boolean;
     procedure ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObject; const FName: ThtString; AMetaEvent: TMetaType);
-    procedure ParseHtml(ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+    procedure ParseHtml(ASectionList: ThtDocument; AIncludeEvent: TIncludeType; ASoundEvent: TSoundType; AMetaEvent: TMetaType; ALinkEvent: TLinkType; AMatchMediaQuery: ThtMediaQueryEvent);
     procedure ParseText(ASectionList: ThtDocument);
     property Base: ThtString read FBase;
     property BaseTarget: ThtString read FBaseTarget;
@@ -4023,6 +4024,7 @@ procedure THtmlParser.DoStyle(var C: ThtChar; Doc: TBuffer; const APath, AMedia:
 var
   IsCss: Boolean;
   I: Integer;
+  Parser: THtmlStyleTagParser;
 begin
   IsCss := True;
   for I := 0 to  Attributes.Count - 1 do
@@ -4033,7 +4035,15 @@ begin
       end;
 
   if IsCss then
-    StylePars.DoStyle(PropStack.Document.Styles, C, Doc, APath, AMedia, FromLink, FUseQuirksMode)
+  begin
+    Parser := THtmlStyleTagParser.Create(FUseQuirksMode);
+    Parser.OnMatchMediaQuery := MatchMediaQuery;
+    try
+      Parser.DoStyle(PropStack.Document.Styles, C, Doc, APath, AMedia, FromLink);
+    finally
+      Parser.Free;
+    end;
+  end
   else if not IsXhtmlEndSy and not FromLink then
   begin
     GetCh; {make up for not having next character on entry}
@@ -4460,7 +4470,7 @@ end;
 //-- BG ---------------------------------------------------------- 27.12.2010 --
 procedure THtmlParser.ParseHtml(ASectionList: ThtDocument;
   AIncludeEvent: TIncludeType; ASoundEvent: TSoundType;
-  AMetaEvent: TMetaType; ALinkEvent: TLinkType);
+  AMetaEvent: TMetaType; ALinkEvent: TLinkType; AMatchMediaQuery: ThtMediaQueryEvent);
 {$IFNDEF NoTabLink}
 const
   MaxTab = 400; {maximum number of links before tabbing of links aborted}
@@ -4544,6 +4554,7 @@ begin
       SoundEvent := ASoundEvent;
       MetaEvent := AMetaEvent;
       LinkEvent := ALinkEvent;
+      MatchMediaQuery := AMatchMediaQuery;
       try
         GetCh; {get the reading started}
         //Next;

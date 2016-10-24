@@ -338,6 +338,7 @@ type
     procedure HTMLTimerTimer(Sender: TObject);
     procedure ImagesInsertedTimer(Sender: TObject);
     procedure Layout;
+    procedure MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMediaQuery; var MediaMatchesQuery: Boolean);
     procedure Parsed(const Title, Base, BaseTarget: ThtString);
     procedure ParseXHtml;
     procedure ParseHtml;
@@ -1025,7 +1026,7 @@ begin
   Parser := THtmlParser.Create(FDocument);
   try
     Parser.IsXHTML := True;
-    Parser.ParseHtml(FSectionList, OnInclude, OnSoundRequest, HandleMeta, OnLink);
+    Parser.ParseHtml(FSectionList, OnInclude, OnSoundRequest, HandleMeta, OnLink, MatchMediaQuery);
     Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
   finally
     Parser.Free;
@@ -1039,7 +1040,7 @@ var
 begin
   Parser := THtmlParser.Create(FDocument);
   try
-    Parser.ParseHtml(FSectionList, OnInclude, OnSoundRequest, HandleMeta, OnLink);
+    Parser.ParseHtml(FSectionList, OnInclude, OnSoundRequest, HandleMeta, OnLink, MatchMediaQuery);
     Parsed(Parser.Title, Parser.Base, Parser.BaseTarget);
   finally
     Parser.Free;
@@ -3568,6 +3569,98 @@ begin
   finally
     CopyList.Free;
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 24.10.2016 --
+procedure THtmlViewer.MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMediaQuery; var MediaMatchesQuery: Boolean);
+// Match MediaQuery against Self, resp. Screen.
+
+  function EvaluateExpression(const Expression: ThtMediaExpression): Boolean;
+  var
+    LowStr: ThtString;
+    IValue: Integer;
+
+    function Compared(A, B: Integer): Boolean;
+    begin
+      case Expression.Oper of
+        moLe: Result := A <= B;
+        moEq: Result := A  = B;
+        moGe: Result := A >= B;
+      end;
+    end;
+
+    function ComparedToNumber(Value: Integer; MaxValue: Integer = MaxInt): Boolean;
+    var
+      Num: Integer;
+    begin
+      if Expression.Oper = moIs then
+        Result := Value > 0
+      else
+        Result := TryStrToInt(Expression.Expression, Num) and (Num >= 0) and (Num <= MaxValue) and Compared(Value, Num);
+    end;
+
+    function ComparedToLength(Value, Base: Integer): Boolean;
+    var
+      Len: Integer;
+    begin
+      if Expression.Oper = moIs then
+        Result := Value > 0
+      else
+      begin
+        Len := Abs(Font.Size);
+        Len := LengthConv(Expression.Expression, False, Base, Len, Len div 2, -1);
+        Result := (Len >= 0) and Compared(Value, Len);
+      end;
+    end;
+
+  begin
+    case Expression.Feature of
+      mfWidth       : Result := ComparedToLength(Self.Width   , Self.Width   );
+      mfHeight      : Result := ComparedToLength(Self.Height  , Self.Height  );
+      mfDeviceWidth : Result := ComparedToLength(Screen.Width , Screen.Width );
+      mfDeviceHeight: Result := ComparedToLength(Screen.Height, Screen.Height);
+
+      mfOrientation :
+      begin
+        LowStr := htLowerCase(Expression.Expression);
+        if LowStr = 'landscape' then
+          Result := Self.Width > Self.Height
+        else if LowStr = 'portrait' then
+          Result := Self.Width <= Self.Height
+        else
+          Result := False;
+      end;
+
+      //TODO -oBG, 24.10.2016: get actual color values from Screen or PaintPanel.Canvas?
+
+      mfMonochrome  , // bits per (gray) pixel
+      mfColor       : // minimum bits per red, green, and blue of a pixel
+        Result := ComparedToNumber(8 {bits per color});
+
+      mfColorIndex  :
+        Result := ComparedToNumber(0 {number of palette entries});
+
+      mfGrid        :
+        Result := ComparedToNumber(0 {0 = bitmap, 1 = character grid like tty}, 1);
+    end;
+  end;
+
+var
+  I: Integer;
+  OK: Boolean;
+begin
+  OK := False;
+  if (MediaQuery.MediaType in [mtAll, mtScreen]) xor MediaQuery.Negated then
+  begin
+    for I := Low(MediaQuery.Expressions) to High(MediaQuery.Expressions) do
+    begin
+      OK := EvaluateExpression(MediaQuery.Expressions[I]);
+      if not OK then
+        break;
+    end;
+  end;
+  if OK then
+    MediaMatchesQuery := True;
 end;
 
 function THtmlViewer.CreateHeaderFooter: THtmlViewer;

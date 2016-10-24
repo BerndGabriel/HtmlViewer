@@ -3876,7 +3876,7 @@ begin
 end;
 
 //BG, 14.07.2010:
-function decodeSize(const Str: ThtString; out V: extended; out U: ThtString): Boolean;
+function DecodeSize(const Str: ThtString; out V: extended; out U: ThtString): Boolean;
  {$ifdef UseInline} inline; {$endif}
 var
   I, J, L: Integer;
@@ -3975,7 +3975,7 @@ var
   U: ThtString;
   i : Integer;
 begin
-  if decodeSize(Str, V, U) then
+  if DecodeSize(Str, V, U) then
   begin
     if U = 'in' then
       Result := V * 72.0
@@ -4033,18 +4033,17 @@ end;
 
 {----------------LengthConv}
 
-function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize,
-  Default: Integer): Integer;
+function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
  {$ifdef UseInline} inline; {$endif}
 {given a length ThtString, return the appropriate pixel value.  Base is the
  base value for percentage. EmSize, ExSize for units relative to the font.
  Relative makes a numerical entry relative to Base.
  Default returned if no match.}
 var
-  V: extended;
+  V: Extended;
   U: ThtString;
 begin
-  if decodeSize(Str, V, U) then
+  if DecodeSize(Str, V, U) then
   begin
     {U the units}
     if U = '' then

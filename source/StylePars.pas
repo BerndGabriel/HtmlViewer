@@ -70,6 +70,7 @@ type
 
   THtmlStyleTagParser = class(THtmlStyleParser)
   private
+    FOnMatchMediaQuery: ThtMediaQueryEvent;
     Selectors: ThtStringList;
     Styles: TStyleList;
     procedure GetCollection;
@@ -80,6 +81,7 @@ type
     constructor Create(const AUseQuirksMode : Boolean);
     destructor Destroy; override;
     procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; FromLink: boolean);
+    property OnMatchMediaQuery: ThtMediaQueryEvent read FOnMatchMediaQuery write FOnMatchMediaQuery;
   end;
 
   THtmlStyleAttrParser = class(THtmlStyleParser)
@@ -91,7 +93,6 @@ type
     procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
   end;
 
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; AFromLink, AUseQuirksMode: Boolean);
 procedure ParsePropertyStr(const PropertyStr: ThtString; Propty: TProperties);
 function SortContextualItems(const S: ThtString): ThtString;
 
@@ -99,19 +100,6 @@ implementation
 
 const
   NeedPound = True;
-
-//-- BG ---------------------------------------------------------- 26.12.2010 --
-procedure DoStyle(Styles: TStyleList; var C: ThtChar; Doc: TBuffer; const APath, AMedia: ThtString; AFromLink, AUseQuirksMode: Boolean);
-var
-  Parser: THtmlStyleTagParser;
-begin
-  Parser := THtmlStyleTagParser.Create(AUseQuirksMode);
-  try
-    Parser.DoStyle(Styles, C, Doc, APath, AMedia, AFromLink);
-  finally
-    Parser.Free;
-  end;
-end;
 
 //-- BG ---------------------------------------------------------- 26.12.2010 --
 procedure ParseProperties(Doc: TBuffer; Propty: TProperties);
@@ -1291,6 +1279,7 @@ var
 
   function GetExpression(out Value: ThtString; const GoodTermChars, BadTermChars: ThtString): Boolean;
   begin
+    Result := False;
     repeat
       case GetTermCharKind(LCh, GoodTermChars, BadTermChars) of
         tckGood:
@@ -1301,10 +1290,7 @@ var
           end;
 
         tckBad:
-          begin
-            Result := false;
-            break;
-          end;
+          break;
       else
         // tckNone:
         SetLength(Value, Length(Value) + 1);
@@ -1445,8 +1431,6 @@ var
   end;
 
 var
-  Identifier, IdentLow: ThtString;
-  MediaType: ThtMediaType;
   I: Integer;
 begin
   NCh := Length(MediaQuery);
@@ -1483,15 +1467,18 @@ procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: T
   function MediaMatches(const Queries: ThtMediaQueries): Boolean;
   var
     I: Integer;
-    QueryMediaType: ThtMediaType;
   begin
-    for I := Low(Queries) to High(Queries) do
-      if (Queries[I].MediaType in [mtAll, mtScreen]) xor Queries[I].Negated then
-      begin
-        Result := True;
-        exit;
-      end;
     Result := False;
+    for I := Low(Queries) to High(Queries) do
+    begin
+      if Assigned(FOnMatchMediaQuery) then
+        FOnMatchMediaQuery(Self, Queries[I], Result)
+      else
+        Result := (Queries[I].MediaType in [mtAll, mtScreen]) xor Queries[I].Negated;
+
+      if Result then
+        break;
+    end;
   end;
 
   procedure ReadAt;
