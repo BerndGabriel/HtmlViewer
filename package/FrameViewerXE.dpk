@@ -28,7 +28,6 @@ package FrameViewerXE;
 {$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
-{$DEFINE UseOwnGDIPlus}
 
 requires
   rtl,
