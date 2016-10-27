@@ -28,7 +28,7 @@ package FrameViewerXE;
 {$DESCRIPTION 'THtmlViewer, TFrameViewer, and TFrameBrowser'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
-{$DEFINE NoGDIPlus}
+{$DEFINE UseOwnGDIPlus}
 
 requires
   rtl,
@@ -73,6 +73,9 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
   UrlConn in '..\Source\UrlConn.pas',
-  vwPrint in '..\source\vwPrint.pas';
+  vwPrint in '..\source\vwPrint.pas',
+  hvGDIPAPI in '..\source\hvGDIPAPI.pas',
+  hvGDIPObj in '..\source\hvGDIPObj.pas',
+  hvGDIPUTIL in '..\source\hvGDIPUTIL.pas';
 
 end.

@@ -225,6 +225,12 @@
 { Define Aspects Of HtmlViewer }
 
 {$ifdef MSWindows}
+
+// Delphi XE contains the wrong GDIAPI units included with TeeChart. Use our replacement.
+{$ifdef ver220}
+{$define UseOwnGDIPlus}
+{$endif}
+
 {.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
         PNG images and provides support for TIFF images.
         If, for some reason the use of the gdiplus.dll is

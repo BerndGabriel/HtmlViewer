@@ -43,7 +43,11 @@ interface
 
 uses
 {$ifdef HasGDIPlus}
+  {$ifdef UseOwnGDIPlus}
+  hvGDIPAPI,
+  {$else}
   GDIPAPI,
+  {$endif}
 {$endif}
   Windows, ActiveX, SysUtils, Graphics, Classes, ClipBrd,
   HtmlGlobals;
@@ -127,8 +131,13 @@ implementation
 {$ifndef NoGDIPlus}
 
 {$ifdef HasGDIPlus}
+  {$ifdef UseOwnGDIPlus}
+  uses
+    hvGDIPOBJ, hvGDIPUTIL;
+  {$else}
   uses
     GDIPOBJ, GDIPUTIL;
+  {$endif}
 {$else HasGDIPlus}
   const
     GdiPlusLib = 'GdiPlus.dll';
