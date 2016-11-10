@@ -42,7 +42,7 @@ uses
   Dialogs, StdCtrls, IniFiles, Menus, SyncObjs;
 
 type
-  ThtLogSubject = (laDiag, laHttpHeader, laHttpScript);
+  ThtLogSubject = (laDiag, laHttpHeader, laHttpScript, laJavaScript);
   ThtLogSubjectSet = set of ThtLogSubject;
 
 {$ifdef UseVCLStyles}
