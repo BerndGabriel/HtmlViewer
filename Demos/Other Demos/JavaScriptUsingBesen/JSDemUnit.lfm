@@ -1,0 +1,308 @@
+object FormJSDemo: TFormJSDemo
+  Left = 837
+  Height = 505
+  Top = 177
+  Width = 762
+  Caption = 'JavaScript Demo'
+  ClientHeight = 485
+  ClientWidth = 762
+  Font.Height = -13
+  Font.Name = 'System'
+  Menu = MainMenu
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  Position = poDesktopCenter
+  LCLVersion = '1.6.0.4'
+  object FrameViewer: TFrameViewer
+    Left = 0
+    Height = 431
+    Top = 27
+    Width = 762
+    CharSet = DEFAULT_CHARSET
+    CodePage = 0
+    DefBackground = clWindow
+    DefHotSpotColor = clNavy
+    fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
+    HistoryIndex = 0
+    HistoryMaxCount = 6
+    ImageCacheCount = 6
+    NoSelect = False
+    PrintMarginBottom = 3
+    PrintMarginLeft = 2
+    PrintMarginRight = 2
+    PrintMarginTop = 2
+    PrintScale = 1
+    QuirksMode = qmDetect
+    OnBlankWindowRequest = WindowRequest
+    OnHistoryChange = HistoryChange
+    OnHotSpotTargetClick = HotSpotTargetClick
+    OnHotSpotTargetCovered = HotSpotTargetCovered
+    OnInclude = FrameViewerInclude
+    OnObjectClick = FrameViewerObjectClick
+    OnPrintHTMLFooter = ViewerPrintHTMLFooter
+    OnPrintHTMLHeader = ViewerPrintHTMLHeader
+    OnProcessing = ProcessingHandler
+    OnProgress = FrameViewerProgress
+    OnRightClick = FrameViewerRightClick
+    OnScript = FrameViewerScript
+    OnSoundRequest = SoundRequest
+    Align = alClient
+    TabOrder = 0
+    OnMouseMove = FrameViewerMouseMove
+    OnFormSubmit = SubmitEvent
+  end
+  object Panel1: TPanel
+    Left = 0
+    Height = 27
+    Top = 0
+    Width = 762
+    Align = alTop
+    BevelOuter = bvNone
+    BorderWidth = 2
+    ClientHeight = 27
+    ClientWidth = 762
+    TabOrder = 1
+    object ReloadButton: TButton
+      Left = 2
+      Height = 23
+      Top = 2
+      Width = 65
+      Align = alLeft
+      Caption = '&Reload'
+      Enabled = False
+      OnClick = ReloadClick
+      TabOrder = 0
+    end
+    object FwdButton: TButton
+      Left = 67
+      Height = 23
+      Top = 2
+      Width = 65
+      Align = alLeft
+      Caption = '&Fwd'
+      Enabled = False
+      OnClick = FwdButtonClick
+      TabOrder = 1
+    end
+    object BackButton: TButton
+      Left = 132
+      Height = 23
+      Top = 2
+      Width = 65
+      Align = alLeft
+      Caption = '&Back'
+      Enabled = False
+      OnClick = BackButtonClick
+      TabOrder = 2
+    end
+    object Edit2: TEdit
+      Left = 197
+      Height = 23
+      Top = 2
+      Width = 563
+      Align = alClient
+      TabOrder = 3
+    end
+  end
+  object Panel3: TPanel
+    Left = 0
+    Height = 27
+    Top = 458
+    Width = 762
+    Align = alBottom
+    Alignment = taLeftJustify
+    BevelOuter = bvNone
+    BorderWidth = 2
+    ClientHeight = 27
+    ClientWidth = 762
+    TabOrder = 2
+    object ProgressBar: TProgressBar
+      Left = 610
+      Height = 23
+      Top = 2
+      Width = 150
+      Align = alRight
+      TabOrder = 0
+      Visible = False
+    end
+    object InfoPanel: TPanel
+      Left = 89
+      Height = 23
+      Top = 2
+      Width = 521
+      Align = alClient
+      Alignment = taLeftJustify
+      BevelOuter = bvLowered
+      TabOrder = 1
+    end
+    object QuirksModePanel: TPanel
+      Left = 2
+      Height = 23
+      Top = 2
+      Width = 87
+      Align = alLeft
+      Alignment = taLeftJustify
+      BevelOuter = bvLowered
+      TabOrder = 2
+    end
+  end
+  object MainMenu: TMainMenu
+    left = 328
+    top = 72
+    object File1: TMenuItem
+      Caption = '&File'
+      OnClick = File1Click
+      object Open: TMenuItem
+        Caption = '&Open'
+        ShortCut = 114
+        OnClick = OpenClick
+      end
+      object SetPrintScale: TMenuItem
+        Caption = 'Set PrintScale'
+        OnClick = SetPrintScaleClick
+      end
+      object PrinterSetup: TMenuItem
+        Caption = 'Printer Setup...'
+        OnClick = PrinterSetupClick
+      end
+      object PrintPreview: TMenuItem
+        Caption = 'Print Pre&view...'
+        Enabled = False
+        OnClick = PrintPreviewClick
+      end
+      object Print1: TMenuItem
+        Caption = '&Print...'
+        OnClick = Print1Click
+      end
+      object N1: TMenuItem
+        Caption = '-'
+      end
+      object Exit1: TMenuItem
+        Caption = '&Exit'
+        OnClick = Exit1Click
+      end
+    end
+    object Edit1: TMenuItem
+      Caption = '&Edit'
+      OnClick = Edit1Click
+      object Find1: TMenuItem
+        Caption = '&Find'
+        ShortCut = 16454
+        OnClick = Find1Click
+      end
+      object CopyItem: TMenuItem
+        Caption = '&Copy'
+        ShortCut = 16451
+        OnClick = CopyItemClick
+      end
+      object N2: TMenuItem
+        Caption = '-'
+      end
+      object SelectAllItem: TMenuItem
+        Caption = '&Select All'
+        OnClick = SelectAllItemClick
+      end
+    end
+    object Options1: TMenuItem
+      Caption = '&Options'
+      object Showimages: TMenuItem
+        Caption = '&Show images'
+        Checked = True
+        OnClick = ShowimagesClick
+      end
+      object Fonts: TMenuItem
+        Caption = 'Default &Font/Colors'
+        OnClick = FontsClick
+      end
+      object mmiQuirksMode: TMenuItem
+        Caption = 'Quirks Mode'
+        object mmiQuirksModeStandards: TMenuItem
+          Caption = 'Standards'
+          RadioItem = True
+          OnClick = mmiQuirksModeStandardsClick
+        end
+        object mmiQuirksModeDetect: TMenuItem
+          Caption = 'Detect'
+          RadioItem = True
+          OnClick = mmiQuirksModeDetectClick
+        end
+        object mmiQuirksModeQuirks: TMenuItem
+          Caption = 'Quirks'
+          RadioItem = True
+          OnClick = mmiQuirksModeQuirksClick
+        end
+      end
+      object ShowLog: TMenuItem
+        Caption = 'Show Log'
+        OnClick = ShowLogClick
+      end
+      object N5: TMenuItem
+        Caption = '-'
+      end
+      object LogDiag: TMenuItem
+        Caption = 'Log Diagnostics'
+        OnClick = LogDiagClick
+      end
+      object LogScript: TMenuItem
+        Caption = 'Log JS Script'
+        OnClick = LogScriptClick
+      end
+    end
+    object HistoryMenuItem: TMenuItem
+      Caption = '&History'
+      Visible = False
+    end
+    object About1: TMenuItem
+      Caption = '&About'
+      OnClick = About1Click
+    end
+  end
+  object OpenDialog: TOpenDialog
+    DefaultExt = '.htm'
+    Filter = 'html files|*.htm;*.html|all files|*.*'
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
+    left = 272
+    top = 72
+  end
+  object FindDialog: TFindDialog
+    Options = [frDown, frHideWholeWord, frDisableWholeWord]
+    OnFind = FindDialogFind
+    left = 384
+    top = 72
+  end
+  object PopupMenu: TPopupMenu
+    left = 440
+    top = 72
+    object ViewImage: TMenuItem
+      Caption = '&View Image'
+      OnClick = ViewImageClick
+    end
+    object CopyImagetoclipboard: TMenuItem
+      Caption = '&Copy image to clipboard'
+      OnClick = CopyImagetoclipboardClick
+    end
+    object N3: TMenuItem
+      Caption = '-'
+    end
+    object OpenInNewWindow: TMenuItem
+      Caption = '&Open in new window'
+      OnClick = OpenInNewWindowClick
+    end
+  end
+  object Timer1: TTimer
+    Enabled = False
+    Interval = 200
+    OnTimer = Timer1Timer
+    left = 216
+    top = 72
+  end
+  object PrinterSetupDialog: TPrinterSetupDialog
+    left = 171
+    top = 144
+  end
+  object PrintDialog: TPrintDialog
+    left = 278
+    top = 144
+  end
+end

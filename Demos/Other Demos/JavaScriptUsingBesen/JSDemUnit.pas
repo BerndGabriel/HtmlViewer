@@ -75,7 +75,11 @@ uses
   BESEN,
   BESENConstants,
   BESENErrors,
+  BESENNumberUtils,
+  BESENObject,
+  BESENObjectPropertyDescriptor,
   BESENStringUtils,
+  BESENValue,
   BESENVersionConstants,
   //
   IniFiles,
@@ -254,6 +258,10 @@ type
 {$else}
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
 {$endif}
+    procedure JSInit;
+    procedure NativeAlert(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
+    procedure NativeConfirm(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
+    procedure NativePrompt(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
   protected
     procedure UpdateActions; override;
   public
@@ -294,8 +302,6 @@ begin
   FrameViewer.Touch.InteractiveGestures := [igPan];
 {$endif}
 
-  JavaScript := ThtScriptEngine.Create(COMPAT_JS);
-
   for I := 0 to MaxHistories-1 do
   begin      {create the MenuItems for the history list}
     Histories[I] := TMenuItem.Create(HistoryMenuItem);
@@ -310,6 +316,8 @@ begin
 
   FIniFilename := ChangeFileExt(Application.Exename, '.ini');
   LoadIniFile;
+
+  JSInit;
 
 {$ifdef LCL}
 {$else}
@@ -418,6 +426,80 @@ begin       {save only if this is the first instance}
   finally
     IniFile.Free;
   end;
+end;
+
+
+//-- BG ---------------------------------------------------------- 11.11.2016 --
+procedure TFormJSDemo.JSInit;
+var
+  ObjDocument, ObjNavigator, ObjWindow: TBESENObject;
+begin
+  JavaScript := ThtScriptEngine.Create(COMPAT_JS);
+
+  ObjWindow := JavaScript.ObjectGlobal;
+  ObjWindow.OverwriteData('window', BESENObjectValue(ObjWindow), [bopaWRITABLE,bopaCONFIGURABLE]);
+  ObjWindow.RegisterNativeFunction('alert'  , NativeAlert   , 1, []);
+  ObjWindow.RegisterNativeFunction('confirm', NativeConfirm , 1, []);
+  ObjWindow.RegisterNativeFunction('prompt' , NativePrompt  , 2, []);
+
+  ObjDocument := TBESENObject.Create(JavaScript, JavaScript.ObjectPrototype, false);
+  JavaScript.GarbageCollector.Add(ObjDocument);
+  ObjWindow.OverwriteData('document', BESENObjectValue(ObjDocument), [bopaWRITABLE,bopaCONFIGURABLE]);
+
+  ObjNavigator := TBESENObject.Create(JavaScript, JavaScript.ObjectPrototype, false);
+  JavaScript.GarbageCollector.Add(ObjNavigator);
+  ObjWindow.OverwriteData('navigator', BESENObjectValue(ObjNavigator), [bopaWRITABLE,bopaCONFIGURABLE]);
+  ObjNavigator.OverwriteData('userAgent', BESENStringValue('HtmlViewer, Version (V) ' + VersionNo + ', Copyright (C) 2016 by B.Gabriel'), [bopaWRITABLE,bopaCONFIGURABLE]);
+
+  LogForm.Log(JavaScript.ToStr(JavaScript.Eval('navigator.userAgent')));
+end;
+
+//-- BG ---------------------------------------------------------- 11.11.2016 --
+procedure TFormJSDemo.NativeAlert(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
+var
+  Message: ThtString;
+begin
+  if CountArguments > 0 then
+    Message := JavaScript.ToStr(Arguments^[0]^);
+
+{$ifdef LCL}
+  MessageDlg(Caption, Message, mtInformation, [mbOk], 0);
+{$else}
+  MessageBoxW(Handle, PWideChar(Message), PWideChar(Caption), MB_ICONINFORMATION + MB_OK);
+{$endif}
+  ResultValue.ValueType := bvtUNDEFINED;
+end;
+
+//-- BG ---------------------------------------------------------- 11.11.2016 --
+procedure TFormJSDemo.NativeConfirm(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
+var
+  Message: ThtString;
+  Result: Integer;
+begin
+  if CountArguments > 0 then
+    Message := JavaScript.ToStr(Arguments^[0]^);
+
+{$ifdef LCL}
+  Result := MessageDlg(Caption, Message, mtConfirmation, [mbYes, mbNo], 0);
+{$else}
+  Result := MessageBoxW(Handle, PWideChar(Message), PWideChar(Caption), MB_ICONQUESTION + MB_YESNO);
+{$endif}
+  ResultValue := BESENBooleanValue(Result = mrYes);
+end;
+
+//-- BG ---------------------------------------------------------- 11.11.2016 --
+procedure TFormJSDemo.NativePrompt(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
+var
+  Message, Result: ThtString;
+begin
+  if CountArguments > 0 then
+    Message := JavaScript.ToStr(Arguments^[0]^);
+
+  if CountArguments > 1 then
+    Result := JavaScript.ToStr(Arguments^[1]^);
+
+  Result := InputBox(Caption, Message, Result);
+  ResultValue := BESENStringValue(Result);
 end;
 
 procedure TFormJSDemo.FormShow(Sender: TObject);
@@ -1051,28 +1133,27 @@ procedure TFormJSDemo.FrameViewerMouseMove(Sender: TObject; Shift: TShiftState; 
 var
   TitleStr: ThtString;
 begin
-if not Timer1.Enabled and Assigned(ActiveControl) and ActiveControl.Focused
-         and (Sender is ThtmlViewer) then  
+  if not Timer1.Enabled and Assigned(ActiveControl) and ActiveControl.Focused and (Sender is ThtmlViewer) then
   begin
-  TitleViewer := ThtmlViewer(Sender);
-  TitleStr := TitleViewer.TitleAttr;
-  if TitleStr = '' then
-    OldTitle := ''
-  else if TitleStr <> OldTitle then
+    TitleViewer := THtmlViewer(Sender);
+    TitleStr := TitleViewer.TitleAttr;
+    if TitleStr = '' then
+      OldTitle := ''
+    else if TitleStr <> OldTitle then
     begin
-    TimerCount := 0;
-    Timer1.Enabled := True;
-    OldTitle := TitleStr;
+      TimerCount := 0;
+      Timer1.Enabled := True;
+      OldTitle := TitleStr;
     end;
   end;
 end;
 
 procedure TFormJSDemo.CloseAll;
 begin
-Timer1.Enabled := False;
-HintWindow.ReleaseHandle;
-HintVisible := False;
-TitleViewer := Nil;
+  Timer1.Enabled := False;
+  HintWindow.ReleaseHandle;
+  HintVisible := False;
+  TitleViewer := Nil;
 end;
 
 procedure TFormJSDemo.Timer1Timer(Sender: TObject);
