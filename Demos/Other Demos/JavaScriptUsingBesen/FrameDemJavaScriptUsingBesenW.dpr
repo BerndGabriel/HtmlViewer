@@ -44,7 +44,8 @@ uses
   Submit in '..\..\Main Demos\Submit.pas' {SubmitForm},
   JSDemUnit in 'JSDemUnit.pas' {FormJSDemo},
   PrintStatusForm in '..\..\Main Demos\PrintStatusForm.pas' {PrnStatusForm},
-  LogFormUnit in '..\..\Main Demos\LogFormUnit.pas' {LogForm};
+  LogFormUnit in '..\..\Main Demos\LogFormUnit.pas' {LogForm},
+  HtmlBesen in 'HtmlBesen.pas';
 
 {$R *.RES}
 

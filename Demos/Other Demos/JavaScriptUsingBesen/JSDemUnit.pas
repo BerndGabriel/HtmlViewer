@@ -72,15 +72,7 @@ uses
 {$else UseTNT}
   Submit,
 {$endif UseTNT}
-  BESEN,
-  BESENConstants,
-  BESENErrors,
-  BESENNumberUtils,
-  BESENObject,
-  BESENObjectPropertyDescriptor,
-  BESENStringUtils,
-  BESENValue,
-  BESENVersionConstants,
+  HtmlBesen,
   //
   IniFiles,
   HtmlGlobals,
@@ -102,9 +94,6 @@ const
   MaxHistories = 6;  {size of History list}
 
 type
-
-  ThtScriptEngine = class(TBesen)
-  end;
 
 // Delphi 6 form editor fails with conditionals in form declaration:
 {$ifdef UseTNT}
@@ -243,7 +232,7 @@ type
     TimerCount: Integer;
     OldTitle: ThtString;
     HintWindow: ThtHintWindow;
-    HintVisible: boolean;
+    HintVisible: Boolean;
     TitleViewer: THtmlViewer;
 {$ifdef UseTNT}
     TntLabel: TTntLabel;
@@ -259,9 +248,6 @@ type
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
 {$endif}
     procedure JSInit;
-    procedure NativeAlert(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
-    procedure NativeConfirm(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
-    procedure NativePrompt(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
   protected
     procedure UpdateActions; override;
   public
@@ -428,78 +414,11 @@ begin       {save only if this is the first instance}
   end;
 end;
 
-
 //-- BG ---------------------------------------------------------- 11.11.2016 --
 procedure TFormJSDemo.JSInit;
-var
-  ObjDocument, ObjNavigator, ObjWindow: TBESENObject;
 begin
-  JavaScript := ThtScriptEngine.Create(COMPAT_JS);
-
-  ObjWindow := JavaScript.ObjectGlobal;
-  ObjWindow.OverwriteData('window', BESENObjectValue(ObjWindow), [bopaWRITABLE,bopaCONFIGURABLE]);
-  ObjWindow.RegisterNativeFunction('alert'  , NativeAlert   , 1, []);
-  ObjWindow.RegisterNativeFunction('confirm', NativeConfirm , 1, []);
-  ObjWindow.RegisterNativeFunction('prompt' , NativePrompt  , 2, []);
-
-  ObjDocument := TBESENObject.Create(JavaScript, JavaScript.ObjectPrototype, false);
-  JavaScript.GarbageCollector.Add(ObjDocument);
-  ObjWindow.OverwriteData('document', BESENObjectValue(ObjDocument), [bopaWRITABLE,bopaCONFIGURABLE]);
-
-  ObjNavigator := TBESENObject.Create(JavaScript, JavaScript.ObjectPrototype, false);
-  JavaScript.GarbageCollector.Add(ObjNavigator);
-  ObjWindow.OverwriteData('navigator', BESENObjectValue(ObjNavigator), [bopaWRITABLE,bopaCONFIGURABLE]);
-  ObjNavigator.OverwriteData('userAgent', BESENStringValue('HtmlViewer, Version (V) ' + VersionNo + ', Copyright (C) 2016 by B.Gabriel'), [bopaWRITABLE,bopaCONFIGURABLE]);
-
+  JavaScript := ThtScriptEngine.Create(Self, LogForm);
   LogForm.Log(JavaScript.ToStr(JavaScript.Eval('navigator.userAgent')));
-end;
-
-//-- BG ---------------------------------------------------------- 11.11.2016 --
-procedure TFormJSDemo.NativeAlert(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
-var
-  Message: ThtString;
-begin
-  if CountArguments > 0 then
-    Message := JavaScript.ToStr(Arguments^[0]^);
-
-{$ifdef LCL}
-  MessageDlg(Caption, Message, mtInformation, [mbOk], 0);
-{$else}
-  MessageBoxW(Handle, PWideChar(Message), PWideChar(Caption), MB_ICONINFORMATION + MB_OK);
-{$endif}
-  ResultValue.ValueType := bvtUNDEFINED;
-end;
-
-//-- BG ---------------------------------------------------------- 11.11.2016 --
-procedure TFormJSDemo.NativeConfirm(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
-var
-  Message: ThtString;
-  Result: Integer;
-begin
-  if CountArguments > 0 then
-    Message := JavaScript.ToStr(Arguments^[0]^);
-
-{$ifdef LCL}
-  Result := MessageDlg(Caption, Message, mtConfirmation, [mbYes, mbNo], 0);
-{$else}
-  Result := MessageBoxW(Handle, PWideChar(Message), PWideChar(Caption), MB_ICONQUESTION + MB_YESNO);
-{$endif}
-  ResultValue := BESENBooleanValue(Result = mrYes);
-end;
-
-//-- BG ---------------------------------------------------------- 11.11.2016 --
-procedure TFormJSDemo.NativePrompt(const ThisArgument: TBESENValue; Arguments: PPBESENValues; CountArguments: Integer; var ResultValue: TBESENValue);
-var
-  Message, Result: ThtString;
-begin
-  if CountArguments > 0 then
-    Message := JavaScript.ToStr(Arguments^[0]^);
-
-  if CountArguments > 1 then
-    Result := JavaScript.ToStr(Arguments^[1]^);
-
-  Result := InputBox(Caption, Message, Result);
-  ResultValue := BESENStringValue(Result);
 end;
 
 procedure TFormJSDemo.FormShow(Sender: TObject);
@@ -540,7 +459,7 @@ begin
   end;
 end;
 
-procedure TFormJSDemo.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: boolean);
+procedure TFormJSDemo.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: Boolean);
 {This routine handles what happens when a hot spot is clicked.  The assumption
  is made that DOS filenames are being used. .EXE, .WAV, .MID, and .AVI files are
  handled here, but other file types could be easily added.
@@ -1047,43 +966,8 @@ end;
 
 //-- BG ---------------------------------------------------------- 10.11.2016 --
 procedure TFormJSDemo.FrameViewerScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
-var
-  MySrc, MyScript, MyMessage: string;
-  OldCursor: TCursor;
 begin
-  if Length(Script) > 0 then
-  begin
-    MySrc := Name;
-    MyScript := Script;
-  end
-  else if Length(Src) > 0 then
-  begin
-    MySrc := FrameViewer.HTMLExpandFilename(Src);
-    MyScript := BESENGetFileContent(MySrc);
-  end;
-
-  if Length(MyScript) > 0 then
-  begin
-    if LogForm.LogActive[laJavaScript] then
-      LogForm.Log('Executing ' + ContentType + ' "' + MySrc + '" ...');
-    try
-      OldCursor := Screen.Cursor;
-      Screen.Cursor := crHourGlass;
-      try
-        JavaScript.Execute(BESENConvertToUTF8(MyScript));
-      finally
-        Screen.Cursor := OldCursor;
-      end;
-      MyMessage := 'Done.';
-    except
-      on E: EBESENError do
-        MyMessage := E.Name + ': ' + E.Message;
-      on E: Exception do
-        MyMessage := 'Error: ' + E.Message;
-    end;
-    if LogForm.LogActive[laJavaScript] then
-      LogForm.Log(MyMessage);
-  end;
+  JavaScript.DoOnScript(Sender, Name, ContentType, Src, Script);
 end;
 
 procedure TFormJSDemo.OpenInNewWindowClick(Sender: TObject);
@@ -1105,7 +989,7 @@ var
   pf: TBegaHtmlPrintPreviewForm;
 {$endif UseOldPreviewForm}
   Viewer: ThtmlViewer;
-  Abort: boolean;
+  Abort: Boolean;
 begin
   Viewer := FrameViewer.ActiveViewer;
   if Viewer <> nil then
@@ -1258,7 +1142,7 @@ begin
 end;
 
 procedure TFormJSDemo.ViewerPrintHTMLHeader(Sender: TObject;
-  HFViewer: THTMLViewer; NumPage: Integer; LastPage: boolean; var XL, XR: Integer; var StopPrinting: Boolean);
+  HFViewer: THTMLViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean);
 var
   S: ThtString;
 begin
@@ -1268,7 +1152,7 @@ begin
 end;
 
 procedure TFormJSDemo.ViewerPrintHTMLFooter(Sender: TObject;
-  HFViewer: THTMLViewer; NumPage: Integer; LastPage: boolean; var XL, XR: Integer; var StopPrinting: Boolean);
+  HFViewer: THTMLViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean);
 var
   S: ThtString;
 begin
@@ -1292,7 +1176,7 @@ begin
   else
     Title := '';
 
-  Cap := 'FrameViewer ' + VersionNo + ' &  Besen ' + BESENVersion + ' Demo';
+  Cap := 'FrameViewer ' + VersionNo + ' &  Besen ' + JavaScript.VersionNo + ' Demo';
   if Title <> '' then
     Cap := Cap + ' - ' + Title;
 {$ifdef LCL}
@@ -1416,4 +1300,5 @@ begin
   end;
 end;
 {$endif}
+
 end.
