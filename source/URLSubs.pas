@@ -649,7 +649,7 @@ begin
   if FindSchemeSep(Src, I) then
   begin
     SchemeSpecific := Copy(Src, I + 1, MaxInt);
-    SetLength(Src, I);
+    SetLength(Src, I - 1);
   end
   else
   begin
@@ -668,7 +668,7 @@ begin
   I := 1;
   if FindSchemeSep(Src, I) then
   begin
-    Name := Copy(Src, 1, I);
+    Name := Copy(Src, 1, I - 1);
     SchemeSpecific := Copy(Src, I + 1, MaxInt);
   end
   else

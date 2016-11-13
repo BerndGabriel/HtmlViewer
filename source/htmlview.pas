@@ -228,6 +228,7 @@ type
     // constructed stuff
     FFrameOwner: THtmlFrameBase; {the TViewerFrameBase that holds this THtmlViewer}
     FVisited: ThtStringList; {visited URLs}
+    FObjects: TObjectList; // objects I must free (e.g. streams created in htStreamRequest)
 
     // stuff copied in CreateCopy
     FBase: ThtString;
@@ -451,7 +452,7 @@ type
     function GetSelTextBuf(Buffer: PWideChar; BufSize: Integer): Integer;
     function GetTextByIndices(AStart, ALast: Integer): UnicodeString;
     function GetURL(X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType;
-    function HtmlExpandFilename(const Filename: ThtString): ThtString; override;
+    function HtmlExpandFilename(const Filename: ThtString; const CurrentFilename: ThtString = ''): ThtString; override;
     procedure InsertImage(const Src: ThtString; Stream: TStream); overload;
     procedure InsertImage(const Src: ThtString; Bitmap: TBitmap; Transparent: ThtImageTransparency; Color: TColor = -1; OwnsBitmap: Boolean = False); overload;
     function MakeBitmap(YTop, FormatWidth, Width, Height: Integer): TBitmap;
@@ -489,6 +490,10 @@ type
     procedure htProgress(Percent: Integer); override;
     procedure htProgressEnd;
     procedure htProgressInit;
+
+    procedure htStreamRequest(var Url: ThtString; var Stream: TStream; out PathOfUrl: ThtString);
+    procedure htStreamRequested(const Url: ThtString; Stream: TStream);
+
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure Load(const Url: ThtString); override;
     //
@@ -725,7 +730,7 @@ const
     (FileExt: '.shtml'; FileType: HTMLType),
 
     (FileExt: '.xhtml'; FileType: XHtmlType),
-    (FileExt: '.xht';   FileType: XHTMLType),
+    (FileExt: '.xht';   FileType: XHtmlType),
 
     (FileExt: '.gif';   FileType: ImgType),
     (FileExt: '.jpg';   FileType: ImgType),
@@ -891,6 +896,7 @@ begin
 
   FHistory := ThvHistory.Create;
   FVisited := ThtStringList.Create;
+  FObjects := TObjectList.Create;
 
   FHTMLTimer := TTimer.Create(Self);
   FHTMLTimer.Enabled := False;
@@ -2879,22 +2885,28 @@ begin
   Invalidate;
 end;
 
-function THtmlViewer.HTMLExpandFilename(const Filename: ThtString): ThtString;
+function THtmlViewer.HTMLExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
+var
+  Scheme: ThtString;
+  Specific: ThtString;
 begin
   {pass http: and other protocols except for file:///}
-  if (Pos('://', Filename) > 1) and (Pos('file://', Lowercase(Filename)) = 0) then
+  SplitScheme(Filename, Scheme, Specific);
+  if (Length(Scheme) > 0) and (htCompareStr(Scheme, 'file') <> 0) then
     Result := Filename
   else
   begin
     Result := HTMLServerToDos(Filename, ServerRoot);
-    if Pos('\', Result) = 1 then
+    if (Length(Result) > 0) and (Result[1] = '\') then
       Result := ExpandFilename(Result)
-    else if not IsAbsolutePath(Result) then
-      if htCompareText(FBase, 'DosPath') = 0 then {let Dos find the path}
-      else if FBase <> '' then
-        Result := CombineDos(HTMLToDos(FBase), Result)
-      else
-        Result := ExpandFilename(ExtractFilePath(HTMLToDos(FCurrentFile)) + Result);
+    else if IsAbsolutePath(Result) then
+    else if htCompareText(FBase, 'DosPath') = 0 then {let Dos find the path}
+    else if Length(FBase) > 0 then
+      Result := CombineDos(HTMLToDos(FBase), Result)
+    else if Length(CurrentFilename) > 0 then
+      Result := ExpandFilename(ExtractFilePath(HTMLToDos(CurrentFilename)) + Result)
+    else
+      Result := ExpandFilename(ExtractFilePath(HTMLToDos(FCurrentFile)) + Result);
   end;
 
   //BG, 19.09.2010: Issue 7: Slow UNC Lookups for Images
@@ -4317,12 +4329,12 @@ end;
 //-- BG ---------------------------------------------------------- 20.11.2010 --
 function THtmlViewer.GetOnExpandName: TExpandNameEvent;
 begin
-  Result := FSectionList.ExpandName;
+  Result := FSectionList.OnExpandName;
 end;
 
 procedure THtmlViewer.SetOnExpandName(Handler: TExpandNameEvent);
 begin
-  FSectionList.ExpandName := Handler;
+  FSectionList.OnExpandName := Handler;
 end;
 
 //-- BG ---------------------------------------------------------- 20.11.2010 --
@@ -5311,6 +5323,53 @@ procedure THtmlViewer.htProgressEnd;
 begin
   if Assigned(OnProgress) then
     OnProgress(Self, psEnding, 100);
+end;
+
+//-- BG ---------------------------------------------------------- 13.11.2016 --
+procedure THtmlViewer.htStreamRequest(var Url: ThtString; var Stream: TStream; out PathOfUrl: ThtString);
+
+  procedure GetTheFile;
+  begin
+    Url := HTMLExpandFilename(Url);
+    PathOfUrl := ExtractFilePath(Url);
+    if FileExists(Url) then
+    begin
+      Stream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+      FObjects.Add(Stream);
+    end;
+  end;
+
+begin
+  if Assigned(OnHtStreamRequest) then
+  begin
+    if Assigned(OnExpandName) then
+    begin {currently set by TFrameBrowser only}
+      OnExpandName(Self, Url, Url);
+      PathOfUrl := GetURLBase(Url);
+      OnHtStreamRequest(Self, Url, Stream);
+    end
+    else
+    begin
+      PathOfUrl := ''; {for TFrameViewer requests, don't know path}
+      OnHtStreamRequest(Self, Url, Stream);
+      if not Assigned(Stream) then
+      begin {try it as a file}
+        GetTheFile;
+      end;
+    end;
+  end
+  else {assume it's a file}
+  begin
+    GetTheFile;
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 13.11.2016 --
+procedure THtmlViewer.htStreamRequested(const Url: ThtString; Stream: TStream);
+begin
+  if Assigned(OnHtStreamRequested) then
+    OnHtStreamRequested(Self, Url, Stream);
+//  FObjects.Remove(Stream);
 end;
 
 { TPaintPanel }

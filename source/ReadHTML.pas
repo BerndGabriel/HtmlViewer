@@ -4061,23 +4061,9 @@ var
   Url, Rel, Rev, Media: ThtString;
   IsStyleSheet: Boolean;
   Request: TGetStreamEvent;
-  Requested: TGottenStreamEvent;
   Stream: TStream;
   Viewer: THtmlViewer;
   Path: ThtString;
-  FreeStream: Boolean;
-
-  procedure GetTheFile;
-  begin
-    Url := Viewer.HTMLExpandFilename(Url);
-    Path := ExtractFilePath(Url);
-    if FileExists(Url) then
-    begin
-      Stream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
-      FreeStream := True;
-    end;
-  end;
-
 begin
   IsStyleSheet := False;
   for I := 0 to Attributes.Count - 1 do
@@ -4099,39 +4085,14 @@ begin
         MediaSy:
           Media := Name;
       end;
-  if IsStyleSheet and (Url <> '') then
+
+  if IsStyleSheet and (Length(Url) > 0) then
   begin
     Stream := nil;
-    FreeStream := False;
-    Requested := nil;
+    Viewer := CallingObject as THtmlViewer;
     try
+      Viewer.htStreamRequest(Url, Stream, Path);
       try
-        Viewer := CallingObject as THtmlViewer;
-        Request := Viewer.OnHtStreamRequest;
-        Requested := Viewer.OnHtStreamRequested;
-        if Assigned(Request) then
-        begin
-          if Assigned(Viewer.OnExpandName) then
-          begin {must be using TFrameBrowser}
-            Viewer.OnExpandName(Viewer, Url, Url);
-            Path := GetURLBase(Url);
-            Request(Viewer, Url, Stream);
-          end
-          else
-          begin
-            Path := ''; {for TFrameViewer requests, don't know path}
-            Request(Viewer, Url, Stream);
-            if not Assigned(Stream) then
-            begin {try it as a file}
-              GetTheFile;
-            end;
-          end;
-        end
-        else {assume it's a file}
-        begin
-          GetTheFile;
-        end;
-
         if Stream <> nil then
         begin
           Stream.Position := 0;
@@ -4144,13 +4105,10 @@ begin
             Style.Free;
           end;
         end;
-      except
+      finally
+        Viewer.htStreamRequested(Url, Stream);
       end;
-    finally
-      if FreeStream then
-        Stream.Free
-      else if Assigned(Requested) then //FreeStream only false, if RStream set and Request called
-        Requested(Viewer, Url, Stream);
+    except
     end;
   end;
   if Assigned(LinkEvent) then

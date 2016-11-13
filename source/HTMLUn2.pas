@@ -629,6 +629,8 @@ type
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); virtual;
     // Load(Url): Url might be an absolute Url or an absolute PathName or a relative Url/PathName.
     procedure Load(const Url: ThtString); virtual; abstract;
+    // HtmlExpandFilename(Filename, CurrentFilename): Try to get the absolute pathname of the given filename in the local filesystem
+    function HtmlExpandFilename(const Filename: ThtString; const CurrentFilename: ThtString = ''): ThtString; virtual; abstract;
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
     // set to determine if child objects should be in "quirks" mode
     property UseQuirksMode: Boolean read GetUseQuirksMode;
@@ -710,7 +712,6 @@ type
   THtmlViewerBase = class(TViewerBase)
   public
     TablePartRec: TTablePartRec;
-    function HtmlExpandFilename(const Filename: ThtString): ThtString; virtual; abstract;
     function ShowFocusRect: Boolean; virtual; abstract;
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;

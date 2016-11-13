@@ -588,7 +588,7 @@ type
   public
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     destructor Destroy; override;
-    function HTMLExpandFilename(const Filename: ThtString): ThtString; virtual;
+    function HTMLExpandFilename(const Filename: ThtString; const CurrentFilename: ThtString = ''): ThtString; override;
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: Boolean); override;
     procedure Load(const SRC: ThtString); override;
     procedure LoadFromFile(const FileName: ThtString); override;
@@ -786,7 +786,7 @@ begin
     NextFile := Source
   else
     NextFile := MasterSet.FrameViewer.HTMLExpandFilename(URL);
-  if not FileExists(NextFile) and not MasterSet.RequestEvent then
+  if not MasterSet.RequestEvent and not FileExists(NextFile) then
     Exit;
   if not Assigned(RefreshTimer) then
     RefreshTimer := TTimer.Create(Self);
@@ -805,10 +805,10 @@ begin
   SplitDest(NextFile, S, D);
   if (MasterSet.Viewers.Count = 1) then {load a new FrameSet}
   begin
-    if htCompareText(NextFile, MasterSet.FCurrentFile) = 0 then
-      (MasterSet.FrameViewer as TFrameViewer).Reload
+    if htCompareStr(NextFile, MasterSet.FCurrentFile) = 0 then
+      MasterSet.FrameViewer.Reload
     else
-      (MasterSet.FrameViewer as TFrameViewer).LoadFromFileInternal(S, D);
+      MasterSet.FrameViewer.LoadFromFileInternal(S, D);
   end
   else
     frLoadFromFile(S, D, True, True); {reload set}
@@ -2136,7 +2136,7 @@ begin
   if not (fvMetaRefresh in MasterSet.FrameViewer.fvOptions) then
     Exit;
 
-  if htCompareText(htLowercase(HttpEq), 'refresh') = 0 then
+  if htCompareText(HttpEq, 'refresh') = 0 then
   begin
     I := Pos(';', Content);
     if I > 0 then
@@ -2423,7 +2423,7 @@ begin
   EV.Doc := nil;
   if (ft in [ImgType, TextType]) or not TriggerEvent(FName, EV.NewName, EV.Doc) then
   begin
-    EV.NewName := ExpandFileName(FName);
+    EV.NewName := FName; //BG, 13.11.2016: FName should have been expanded before. // ExpandFileName(FName);
     Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
     try
       EV.Doc := TBuffer.Create(Stream, EV.NewName);
@@ -2775,7 +2775,7 @@ begin
       if Tmp is THtmlViewer then
         OldPos := THtmlViewer(Tmp).Position;
     end;
-    if htCompareText(CurFrameSet.FCurrentFile, FileName) <> 0 then
+    if htCompareStr(CurFrameSet.FCurrentFile, FileName) <> 0 then
     begin
       OldFrameSet := CurFrameSet;
       FCurFrameSet := GetFrameSetClass.Create(Self);
@@ -3153,29 +3153,16 @@ end;
 
 {----------------TFrameViewer.HTMLExpandFilename}
 
-function TFrameViewer.HTMLExpandFilename(const Filename: ThtString): ThtString;
+function TFrameViewer.HTMLExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
 var
-  BasePath: ThtString;
   Viewer: THtmlViewer;
 begin
   Result := HTMLServerToDos(Trim(Filename), ServerRoot);
   if not IsAbsolutePath(Result) then
   begin
     Viewer := ActiveViewer;
-    BasePath := GetViewerBase(Viewer);
-    if htCompareText(BasePath, 'DosPath') = 0 then {let Dos find the path}
-    else
-    begin
-      if BasePath <> '' then
-        Result := HTMLToDos(BasePath) + Result
-      else
-      begin
-        if Assigned(Viewer) then
-          Result := Viewer.HTMLExpandFilename(Result)
-        else
-          Result := ExtractFilePath(CurFrameSet.FCurrentFile) + Result;
-      end;
-    end;
+    if Viewer <> nil then
+      Result := Viewer.HTMLExpandFilename(Result, CurFrameSet.FCurrentFile);
   end;
 end;
 

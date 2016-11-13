@@ -1548,7 +1548,7 @@ type
     GottenBitmap: TGottenBitmapEvent; {for OnBitmapRequest Event}
     GetImage: TGetImageEvent; {for OnImageRequest Event}
     GottenImage: TGottenImageEvent; {for OnImageRequest Event}
-    ExpandName: TExpandNameEvent;
+    OnExpandName: TExpandNameEvent;
     ObjectClick: TObjectClickEvent;
     ObjectFocus: ThtObjectEvent;
     ObjectBlur: ThtObjectEvent;
@@ -2964,9 +2964,9 @@ begin
       begin
         if not Assigned(Document.GetBitmap) and not Assigned(Document.GetImage) then
           FSource := htTrim(Document.TheOwner.HtmlExpandFilename(FSource))
-        else if Assigned(Document.ExpandName) then
+        else if Assigned(Document.OnExpandName) then
         begin
-          Document.ExpandName(Document.TheOwner, FSource, Rslt);
+          Document.OnExpandName(Document.TheOwner, FSource, Rslt);
           FSource := htTrim(Rslt);
         end;
         if Document.MissingImages.IndexOf(FSource) = -1 then
@@ -7898,7 +7898,7 @@ var
   I: Integer;
   UName: ThtString;
 begin
-  UName := htUpperCase(htTrim(BackgroundImageName));
+  UName := htTrim(BackgroundImageName);
   if ShowImages and (UName <> '') then
     if BackgroundImage = nil then
     begin
@@ -7913,14 +7913,14 @@ begin
         Dummy1 := itrNone;
         if not Assigned(GetBitmap) and not Assigned(GetImage) then
           BackgroundImageName := TheOwner.HtmlExpandFilename(BackgroundImageName)
-        else if Assigned(ExpandName) then
+        else if Assigned(OnExpandName) then
         begin
-          ExpandName(TheOwner, BackgroundImageName, Rslt);
+          OnExpandName(TheOwner, BackgroundImageName, Rslt);
           BackgroundImageName := Rslt;
         end;
         BackgroundImage := GetTheImage(BackgroundImageName, Dummy1, FromCache, Delay); {might be Nil}
         if Delay then
-          MissingImages.AddObject(htUpperCase(htTrim(BackgroundImageName)), Self);
+          MissingImages.AddObject(htTrim(BackgroundImageName), Self);
         BackgroundImageLoaded := True;
       end;
       if (BackgroundImage <> nil) and not IsCopy then
@@ -15914,7 +15914,10 @@ begin
       end;
 
   CreateFrame;
-  UpdateFrame;
+  try
+    UpdateFrame;
+  except
+  end;
   SetWidth := FViewer.Width;
   SetHeight := FViewer.Height;
 end;
