@@ -283,7 +283,8 @@ type
     SectionHeight: Integer; // pixel height of section. = ContentBot - YDraw
     DrawHeight: Integer;    // floating image may overhang. = Max(ContentBot, DrawBot) - YDraw
     // X coordinates calculated in DrawLogic1() may be shifted in Draw1(), if section is centered or right aligned
-    DrawRect: TRect;        // where the section border starts and the content ends (calculated in DrawLogic1 or Draw1)
+    DrawRect: TRect;        // where the section border starts and the content ends relative to document origin (upper left corner)
+                            // DrawRect is calculated in DrawLogic1 or Draw1 and used in PtInDrawRect()
     TagClass: ThtString; {debugging aid}
 
     constructor Create(Parent: TCellBasic; Attributes: TAttributeList; Properties: TProperties; const TheId, TheClass: ThtString); overload;
@@ -3054,6 +3055,12 @@ begin
       ClientWidth  := AltWidth;
     end;
   end;
+
+
+  DrawRect.Left := DrawXX;
+  DrawRect.Top := DrawYY;
+  DrawRect.Right := DrawRect.Left + ClientWidth;
+  DrawRect.Bottom := DrawRect.Top + ClientHeight;
 end;
 
 {----------------TImageObj.DoDraw}
@@ -3278,6 +3285,12 @@ begin
   if not SubstImage or ((AltHeight >= 16 + 8) and (AltWidth >= 16 + 8)) then
     Self.DoDraw(Canvas, DrawXX + Ofst, DrawYY + Ofst, TmpImage);
   Inc(DrawYY, Document.YOff);
+
+  DrawRect.Left := DrawXX;
+  DrawRect.Top := DrawYY;
+  DrawRect.Right := DrawRect.Left + ClientWidth;
+  DrawRect.Bottom := DrawRect.Top + ClientHeight;
+
   SetTextAlign(Canvas.Handle, TA_Top);
   if SubstImage and (BorderWidth = 0) then
   begin
@@ -5867,9 +5880,9 @@ begin
   CnRect.Bottom := PdRect.Bottom - MargArray[PaddingBottom];
 
   //>-- DZ
-  DrawRect.Top    := MyRect.Top;
+  DrawRect.Top    := MyRect.Top + YOffset;
   DrawRect.Left   := MyRect.Left;
-  DrawRect.Bottom := MyRect.Bottom;
+  DrawRect.Bottom := MyRect.Bottom + YOffset;
   DrawRect.Right  := MyRect.Right;
 
   IT := Max(0, ARect.Top - 2 - PdRect.Top);
@@ -12893,7 +12906,7 @@ var
   //>-- DZ 19.09.2012
   procedure AdjustDrawRect( aTop, aLeft, aWidth, aHeight: Integer ); overload;
   begin
-     dec( aTop, Document.YOff );
+     //dec( aTop, Document.YOff );
 
      if DrawRect.Top > aTop then
        DrawRect.Top:= aTop;
@@ -13438,6 +13451,7 @@ var
 begin {TSection.Draw}
   Y := YDraw;
   Result := Y + SectionHeight;
+
   if (OwnerBlock <> nil) and (OwnerBlock.Positioning = posFixed) then
     YOffset := 0
   else
@@ -15338,7 +15352,10 @@ end;
 procedure TSizeableObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
 begin
   if not IsCopy then
+  begin
     DrawXX := X;
+    DrawYY := Y;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 21.09.2016 --
@@ -15446,16 +15463,21 @@ function TSizeableObj.PtInDrawRect(X, Y: Integer; var IX, IY: Integer): Boolean;
 var
   XO, YO, W, H: Integer;
 begin
-  // BG, 31.08.2013: deprecated. Method in base class does the same, doesn't it?
-  XO := X - DrawXX; {these are actual image, box if any is outside}
-  YO := Y - DrawYY;
-  W := ClientWidth - 2 * BorderWidth;
-  H := ClientHeight - 2 * BorderWidth;
-  Result := (XO >= 0) and (XO < W) and (YO >= 0) and (YO < H);
-  if Result then
+  if DrawRect.Left <> 999999999 then
+    Result := inherited PtInDrawRect(X, Y, IX, IY)
+  else
   begin
-    IX := XO;
-    IY := YO;
+    // BG, 31.08.2013: deprecated. Method in base class does the same, doesn't it?
+    XO := X - DrawXX; {these are actual image, box if any is outside}
+    YO := Y - DrawYY;
+    W := ClientWidth - 2 * BorderWidth;
+    H := ClientHeight - 2 * BorderWidth;
+    Result := (XO >= 0) and (XO < W) and (YO >= 0) and (YO < H);
+    if Result then
+    begin
+      IX := XO;
+      IY := YO;
+    end;
   end;
 end;
 
@@ -15656,7 +15678,7 @@ begin
   else
     // BG, 14.10.2012: why isn't there a Document.XOff representing the horizontal scroll position?
     // Dec(X, Document.XOff);
-    Dec(Y, Document.YOff);
+    //Dec(Y, Document.YOff);
     Result := (X >= DrawRect.Left) and (X < DrawRect.Right) and (Y >= DrawRect.Top) and (Y < DrawRect.Bottom);
     if Result then
     begin
@@ -16226,7 +16248,7 @@ begin
         AMap := ImgObj.IsMap;
         Posn := ImgObj.StartCurs;
         UMap := False;
-        ImageObj := TImageObj(Obj);
+        ImageObj := ImgObj;
         if ImgObj.UseMap then
           UMap := FindMap(ImgObj.Document.MapList, ImgObj.MapName);
         break;
