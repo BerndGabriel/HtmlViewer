@@ -110,7 +110,8 @@ end;
 //-- BG ---------------------------------------------------------- 13.11.2016 --
 procedure ThtScriptEngine.DoOnScript(Sender: TObject; const Name, ContentType, Src, Script: ThtString);
 var
-  MySrc, MySrcPathDummy, MyMessage: string;
+  MyMessage: string;
+  MySrc, MySrcPathDummy: ThtString;
   OldCursor: TCursor;
   HtmlViewer: THtmlViewer absolute Sender;
   Stream: TStream;
