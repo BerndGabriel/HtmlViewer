@@ -692,7 +692,11 @@ type
 //-- BG ---------------------------------------------------------- 12.05.2013 --
 procedure InitFileTypes;
 const
-  FileTypeDefinitions: array [1..19  {$IFNDEF NoMetafile}+2{$ENDIF !NoMetafile} {$IFNDEF NoGDIPlus}+2{$ENDIF !NoGDIPlus}] of TFileTypeRec = (
+  FileTypeDefinitions: array [1..19
+  {$ifdef UseJPeg2000}
+  + 3
+  {$endif}
+  {$IFNDEF NoMetafile}+2{$ENDIF !NoMetafile} {$IFNDEF NoGDIPlus}+2{$ENDIF !NoGDIPlus}] of TFileTypeRec = (
     (FileExt: '.htm';   FileType: HTMLType),
     (FileExt: '.html';  FileType: HTMLType),
 
@@ -715,7 +719,11 @@ const
     (FileExt: '.rle';   FileType: ImgType),
     (FileExt: '.dib';   FileType: ImgType),
     (FileExt: '.ico';   FileType: ImgType),
-
+    {$ifdef UseJPeg2000}
+    (FileExt: '.jp2';   FileType: ImgType),
+    (FileExt: '.j2k';   FileType: ImgType),
+     (FileExt: '.j2c';   FileType: ImgType),
+    {$endif}
     {$IFNDEF NoMetafile}
      (FileExt: '.emf';   FileType: ImgType),
       (FileExt: '.wmf';   FileType: ImgType),

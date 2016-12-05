@@ -36,6 +36,9 @@ uses
 {$else}
   Windows, Jpeg,
 {$endif}
+{$IFDEF UseJPeg2000}
+  Jpeg2000Bitmap,
+{$ENDIF}
   SysUtils, Classes, Graphics, Forms,
   Controls,
   //Messages,
@@ -82,7 +85,7 @@ type
 //------------------------------------------------------------------------------
   TGpObject = TObject;
 
-  ThtImageFormat = (itNone, itBmp, itIco, itCur, itGif, itPng, itJpg, {$IFNDEF NoGDIPlus} itTiff, {$ENDIF NoGDIPlus} itMetafile);
+  ThtImageFormat = (itNone, itBmp, itIco, itCur, itGif, itPng, itJpg, {$IFNDEF NoGDIPlus} itTiff, {$ENDIF NoGDIPlus} {$ifdef UseJPeg2000}itJPEG2K,{$endif}itMetafile);
   TTransparency = (NotTransp, LLCorner, TrGif, TrPng);
 
   //BG, 09.04.2011
@@ -159,8 +162,26 @@ type
     destructor Destroy; override;
     procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
   end;
+  // JPM 05.30.2015
+{$IFDEF UseJPeg2000}
 
-  //BG, 09.04.2011
+  THtJPeg2K = class(ThtImage)
+  private
+    FJP2: TJpeg2000Bitmap;
+    FBitmap: TBitmap;
+  protected
+    function GetBitmap: TBitmap; override;
+    function GetImageHeight: Integer; override;
+    function GetImageWidth: Integer; override;
+  public
+    constructor Create(AImage: TJpeg2000Bitmap);
+    destructor Destroy; override;
+    procedure Draw(Canvas: TCanvas; X, Y, W, H: Integer); override;
+    property JP2: TJpeg2000Bitmap read FJP2;
+  end;
+{$ENDIF}
+
+  // BG, 09.04.2011
   ThtGifImage = class(ThtImage)
   private
     FGif: TGifImage;
@@ -323,18 +344,19 @@ var
   Pos: Int64;
   Magic: DWord;
   WMagic: Word absolute Magic;
+  AMagic: array [0 .. sizeOf(DWord) - 1] of byte absolute Magic;
 begin
   Pos := Stream.Position;
   Stream.Position := 0;
   try
-    Stream.Read(Magic, sizeof(Magic));
+    Stream.Read(Magic, sizeOf(Magic));
     if Magic = $38464947 then
     begin
-//      Stream.Read(BMagic, sizeof(BMagic));
-//      if BMagic = Ord('9') then
-//        Result := Gif89
-//      else
-        Result := itGif;
+      // Stream.Read(BMagic, sizeof(BMagic));
+      // if BMagic = Ord('9') then
+      // Result := Gif89
+      // else
+      Result := itGif;
     end
     else if Magic = $474E5089 then
       Result := itPng
@@ -342,22 +364,40 @@ begin
       Result := itIco
     else if Magic = $00020000 then
       Result := itCur
+{$IFDEF UseJPeg2000}
+      // J2K Format signature
+    else if Magic = $51FF4FFF then
+      Result := itJPEG2K
+      // JP2 format signature
+    else if Magic = $0C000000 then
+    begin
+      Stream.Read(Magic, sizeOf(Magic));
+      if Magic <> $538988650 then
+        Result := itJPEG2K
+      else
+        Result := itNone;
+    end
+{$ENDIF}
     else
       case WMagic of
-        $4D42: Result := itBmp;
-        $D8FF: Result := itJpg;
-{$ifndef NoGDIPlus}
-         // .TIFF little endian (II - Intell)
-        $4949: if (Magic and $2A0000)=$2A0000 then
-                 Result := itTiff
-               else
-                 Result := itNone;
-         // .TIFF big endian (MM - Motorola)
-        $4D4D: if (Magic and $2A000000)=$2A000000 then
-                 Result := itTiff
-               else
-                 Result := itNone;
-{$endif !NoGDIPlus}
+        $4D42:
+          Result := itBmp;
+        $D8FF:
+          Result := itJpg;
+{$IFNDEF NoGDIPlus}
+        // .TIFF little endian (II - Intell)
+        $4949:
+          if (Magic and $2A0000) = $2A0000 then
+            Result := itTiff
+          else
+            Result := itNone;
+        // .TIFF big endian (MM - Motorola)
+        $4D4D:
+          if (Magic and $2A000000) = $2A000000 then
+            Result := itTiff
+          else
+            Result := itNone;
+{$ENDIF !NoGDIPlus}
       else
         Result := itNone;
       end;
@@ -571,6 +611,23 @@ var
     Result := nil;
   end;
 
+{$IFDEF UseJPeg2000}
+function LoadJP2K: THtJPeg2K;
+var
+jp: TJpeg2000Bitmap;
+begin
+jp := TJpeg2000Bitmap.Create;
+try
+  jp.LoadFromStream(Stream);
+  Bitmap := TBitmap.Create;
+  Bitmap.Assign(jp);
+  // Transparent := LLCorner;
+finally
+  jp.Free;
+end;
+Result := nil;
+end;
+{$ENDIF}
   function LoadIco: ThtImage;
   var
     Icon: TIcon;
@@ -609,9 +666,9 @@ begin
     ImageFormat := KindOfImage(Stream);
 
 {$ifndef NoGDIPlus}
-    if ImageFormat in [itGif] then
-    else if (ImageFormat in [itBmp]) {and (Transparent <> NotTransp)} then
-    else
+if not(ImageFormat in [itGif, itBmp{$ifdef UseJPeg2000}, itJPEG2K{$endif}]) then
+//    else if (ImageFormat in [itBmp]) {and (Transparent <> NotTransp)} then
+//    else
       try
         Result := LoadGpImage;
       except
@@ -621,12 +678,14 @@ begin
 
     if Result = nil then
       case ImageFormat of
-        itIco,
-        itCur: Result := LoadIco;
-        itGif: Result := LoadGif;
-        itPng: Result := LoadPng;
-        itJpg: Result := LoadJpeg;
-        itBmp: Result := LoadBmp;
+    itIco, itCur: Result := LoadIco;
+    itGif: Result := LoadGif;
+    itPng: Result := LoadPng;
+    itJpg: Result := LoadJpeg;
+    itBmp: Result := LoadBmp;
+{$IFDEF UseJPeg2000}
+    itJPEG2K: Result := LoadJP2K;
+{$ENDIF}
       end;
 
     if Result = nil then
@@ -2008,6 +2067,52 @@ function ThtGifImage.GetMask: TBitmap;
 begin
   Result := Gif.Mask;
 end;
+
+{$ifdef UseJPeg2000}
+
+function THtJPeg2K.GetBitmap: TBitmap;
+begin
+  if not Assigned(FBitmap) then begin
+    FBitmap.Assign( FJP2 );
+  end;
+  Result := FBitmap;
+end;
+
+function THtJPeg2K.GetImageHeight: Integer;
+begin
+  Result := FJP2.Height;
+end;
+
+function THtJPeg2K.GetImageWidth: Integer;
+begin
+  Result := FJP2.Width;
+end;
+
+constructor THtJPeg2K.Create(AImage: TJpeg2000Bitmap);
+begin
+  if AImage = nil then
+    raise EInvalidImage.Create('ThtBitmapImage requires an image');
+  inherited Create;
+  FJP2 := TJpeg2000Bitmap.Create;
+end;
+
+destructor THtJPeg2K.Destroy;
+begin
+  if Assigned(FJP2) then begin
+    FJP2.Free;
+  end;
+  if Assigned( FBitmap ) then begin
+    FBitmap.Free;
+  end;
+  inherited Destroy;
+end;
+
+procedure THtJPeg2K.Draw(Canvas: TCanvas; X, Y, W, H: Integer);
+begin
+   SetStretchBltMode(Canvas.Handle, COLORONCOLOR);
+end;
+
+{$endif}
 
 {$IFNDEF NoGDIPlus}
 
