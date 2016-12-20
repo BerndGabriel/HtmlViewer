@@ -36,7 +36,7 @@
   Copyright (c) 2007 by the Free Pascal development team
   member of the Free Pascal development team.
 
-  See the file COPYING.FPC, included in this [the Free Pascal]
+  See the file COPYING.FPC, included in the Free Pascal
   distribution, for details about the copyright.
 
   This program is distributed in the hope that it will be useful,
