@@ -241,7 +241,7 @@ type
     { Private declarations }
     URLBase: string;
     Histories: array[0..MaxHistories-1] of TMenuItem;
-    DiskCache: TDiskCache;
+    DiskCache: ThtDiskCache;
     CurrentLocalFile,
     DownLoadUrl: string;
     Reloading: Boolean;
@@ -411,7 +411,7 @@ begin
   end;
 
   Cache := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName)+'Cache');
-  DiskCache := TDiskCache.Create(Cache);
+  DiskCache := ThtDiskCache.Create(Cache);
   SaveDialog.InitialDir := Cache;
   StatusBarMain.Panels[0].Text := '';
 
@@ -951,16 +951,16 @@ procedure THTTPForm.LoadedAsync(Sender: ThtUrlDoc; Receiver: TObject);
 var
   Viewer: THtmlViewer absolute Receiver;
   CacheFileName: String;
-  Loaded: Boolean;
+  Error: Boolean;
 begin
-  Loaded := Sender.Status = ucsLoaded;
+  Error := Sender.Status <> ucsLoaded;
   if Receiver is THtmlViewer then
-    if Loaded then
-      Viewer.InsertImage(Sender.Url, Sender.Stream)
+    if Error then
+      Viewer.InsertImage(Sender.Url, TStream(nil))
     else
-      Viewer.InsertImage(Sender.Url, TStream(nil));
+      Viewer.InsertImage(Sender.Url, Sender.Stream);
 
-  CacheFileName := DiskCache.AddNameToCache(Sender.Url, Sender.NewUrl, Sender.DocType, Loaded);
+  CacheFileName := DiskCache.AddNameToCache(Sender.Url, Sender.NewUrl, Sender.DocType, Error);
   if Length(CacheFileName) > 0 then
     try
       Sender.SaveToFile(CacheFileName)

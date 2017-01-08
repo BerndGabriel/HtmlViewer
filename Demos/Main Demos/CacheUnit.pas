@@ -42,7 +42,9 @@ uses
   {$else}
     WinTypes, WinProcs,
   {$endif}
-  Messages, SysUtils, Classes, Controls, StdCtrls, Math, URLSubs;
+  Messages, SysUtils, Classes, Controls, StdCtrls, Math, Contnrs,
+  URLSubs,
+  HtmlGlobals;
 
 const
   MaxCacheEntries = 200;
@@ -51,21 +53,33 @@ var
   Seq: Integer = 10000;
 
 type
-  TDiskCache = class(TObject)
+  ThtDiskCacheItem = class(TObject)
+    FUrl: ThtString;
+    FNewUrl: ThtString;
+    FFileName: ThtString;
+    FDocType: ThtDocType;
+    constructor Create(const Url, NewUrl, FileName: ThtString; DocType: ThtDocType);
+  end;
+
+type
+  ThtDiskCacheFindResult = (dcfrNone, dcfrUrl, dcfrNewUrl);
+
+  ThtDiskCache = class(TObject)
   private
-    URLList, RedirectList, TypeList, FileList: TStringList;
-    Directory: string;
+    FItems: TObjectList;
+    FDirectory: string;
     procedure CheckSize;
     function MakeName(S: string): string;
     function SplitProtocol(var URL: string): string;
     procedure Erase(I: Integer);
     function IsCacheable(const Protocol: string): Boolean;
+    function Find(const S: string; var Index: Integer; var Item: ThtDiskCacheItem ): ThtDiskCacheFindResult;
   public
     constructor Create(const ADirectory: string);
     destructor Destroy; override;
-    function AddNameToCache(const URL, NewURL: string; DocType: ThtDocType; Error: boolean): string;
+    function AddNameToCache(const URL, NewURL: string; DocType: ThtDocType; Error: Boolean): string;
       {Given an URL, creates a filename and adds both to cachelist}
-    function GetCacheFilename(const URL: string; var Filename: string; var DocType: ThtDocType; var NewURL: string): boolean;
+    function GetCacheFilename(const URL: string; out Filename: string; out DocType: ThtDocType; out NewURL: string): Boolean;
     procedure RemoveFromCache(const URL: string);
     procedure EraseCache;
     procedure Flush;
@@ -78,169 +92,194 @@ uses
   FileCtrl;
 {$endif}
 
-constructor TDiskCache.Create(const ADirectory: string);
-var
-  F: TextFile;
-  I: integer;
-  S, S1, S2: string;
+//-- BG ---------------------------------------------------------- 21.12.2016 --
+constructor ThtDiskCacheItem.Create(const Url, NewUrl, FileName: ThtString; DocType: ThtDocType);
 begin
   inherited Create;
-  Directory := ADirectory;
-  if not DirectoryExists(Directory) then
-    ForceDirectories(Directory);
-  URLList := TStringList.Create;
-  TypeList := TStringList.Create;
-  FileList := TStringList.Create;
-  RedirectList := TStringList.Create;
-  if FileExists(Directory+CacheData) then
+  FUrl := Url;
+  FNewUrl := NewUrl;
+  FFileName := FileName;
+  FDocType := DocType;
+end;
+
+constructor ThtDiskCache.Create(const ADirectory: string);
+var
+  F: TextFile;
+  I, LineNo, FileSeq: Integer;
+  Sep: string;
+  S, Url, NewUrl, DocTypeAsString, FileName: string;
+  DocType: ThtDocType;
+begin
+  inherited Create;
+  FItems := TObjectList.Create;
+  FDirectory := ADirectory;
+  ForceDirectories(FDirectory);
+  if FileExists(FDirectory + CacheData) then
   begin
-    AssignFile(F, Directory+CacheData);
+    AssignFile(F, FDirectory + CacheData);
     Reset(F);
+    Sep := #9;
+    LineNo := 0;
     while not EOF(F) do
     begin
       ReadLn(F, S);
-      I := Pos(' ', S);
-      if I >= 0 then
+      Url := Trim(S);
+      I := Pos(Sep, Url);
+
+//      // backward compatibility. We changed the separator from SPACE to TAB
+//      if (I = 0) and (LineNo = 0) and (Pos(' ', Url) > 0) then
+//      begin
+//        Sep := ' ';
+//        I := Pos(Sep, Url);
+//      end;
+
+      if I > 0 then
       begin
-        S1 := Trim(Copy(S, 1, I-1));
-        S := Copy(S, I+1, Length(S)-I);
-        I := Pos(' ', S);
-        S2 := Trim(Copy(S, 1, I-1));
-        S := Copy(S, I+1, Length(S)-I);
-        I := Pos(' ', S);
-        if I >= 0 then
+        NewUrl := Trim(Copy(Url, I + 1, MaxInt));
+        SetLength(Url, I - 1);
+        I := Pos(Sep, NewUrl);
+        if I > 0 then
         begin
-          URLList.Add(S1);
-          RedirectList.Add(S2);
-          TypeList.Add(Trim(Copy(S, 1, I-1)));
-          FileList.Add(Trim(Copy(S, I+1, Length(S)-I)));
+          DocTypeAsString := Trim(Copy(NewUrl, I, MaxInt));
+          SetLength(NewUrl, I - 1);
+          I := Pos(Sep, DocTypeAsString);
+          if I > 0 then
+          begin
+            FileName := Trim(Copy(DocTypeAsString, I, MaxInt));
+            SetLength(DocTypeAsString, I - 1);
+            DocType := ThtDocType(StrToIntDef(DocTypeAsString, Ord(HTMLType)));
+            FileSeq := StrToIntDef(Copy(FileName, 2, 5), 10000);
+            if Seq <= FileSeq then
+              Seq := FileSeq + 1;
+            FItems.Add(ThtDiskCacheItem.Create(Url, NewUrl, FileName, DocType));
+          end;
         end;
       end;
+      Inc(LineNo);
     end;
-    with FileList do
-      if Count > 0 then
-        Seq := StrToIntDef(Copy(Strings[Count-1], 2, 5), 10000)+1;
     CloseFile(F);
   end;
 end;
 
-destructor TDiskCache.Destroy;
+destructor ThtDiskCache.Destroy;
 begin
-  URLList.Free;
-  TypeList.Free;
-  FileList.Free;
-  RedirectList.Free;
+  FItems.Free;
   inherited Destroy;
+end;
+
+//-- BG ---------------------------------------------------------- 21.12.2016 --
+function ThtDiskCache.Find(const S: string; var Index: Integer; var Item: ThtDiskCacheItem): ThtDiskCacheFindResult;
+var
+  I: Integer;
+begin
+  Result := dcfrNone;
+  for I := 0 to FItems.Count - 1 do
+    with ThtDiskCacheItem(FItems[I]) do
+      if FUrl = S then
+      begin
+        Index := I;
+        Item := ThtDiskCacheItem(FItems[I]);
+        Result := dcfrUrl;
+        Exit;
+      end
+      else if FNewUrl = S then
+      begin
+        Index := I;
+        Item := ThtDiskCacheItem(FItems[I]);
+        Result := dcfrNewUrl;
+        // continue search and prefer item with FUrl = S
+      end;
+
 end;
 
 //-- BG ---------------------------------------------------------- 20.05.2016 --
 // extracted from Destroy
-procedure TDiskCache.Flush;
+procedure ThtDiskCache.Flush;
 var
   F: TextFile;
   I: Integer;
 begin
-  AssignFile(F, Directory+CacheData);
+  AssignFile(F, FDirectory + CacheData);
   Rewrite(F);
-  for I := 0 to URLList.Count-1 do
-    WriteLn(F, URLList[I], ' ', RedirectList[I], ' ', TypeList[I], ' ', FileList[I]);
+  for I := 0 to FItems.Count-1 do
+    with ThtDiskCacheItem(FItems[I]) do
+      WriteLn(F, FUrl, #9, FNewUrl, #9, IntToStr(Ord(FDocType)), #9, FFileName);
   CloseFile(F);
 end;
 
-function TDiskCache.IsCacheable(const Protocol: string): Boolean;
+function ThtDiskCache.IsCacheable(const Protocol: string): Boolean;
 begin
-{$ifdef UseSSL}
-  Result := Pos('http', Protocol) > 0;  {cache only http's and https's}
-{$else}
-  Result := Protocol = 'http';
-{$endif}
+  Result := Pos('http', Protocol) = 1;  {cache only http's and https's}
 end;
 
-function TDiskCache.AddNameToCache(const URL, NewURL: string; DocType: ThtDocType; Error: boolean): string;
+function ThtDiskCache.AddNameToCache(const URL, NewURL: string; DocType: ThtDocType; Error: Boolean): string;
 var
-  I: Integer;
   S, P: string;
+  I: Integer;
+  Item: ThtDiskCacheItem;
 begin
   S := URL;
   P := SplitProtocol(S);
   SetLength(Result, 0);
   if IsCacheable(P) then
   begin
-    I := URLList.IndexOf(S);
-    if I >= 0 then
-      Result := FileList[I]
+    case Find(S, I, Item) of
+      dcfrUrl,
+      dcfrNewUrl:
+        Result := Item.FFileName;
     else
-    begin
       Result := MakeName(S);
       if Error then
         S := S + '*';   {so it won't be found in a lookup}
-      TypeList.Add(IntToStr(Ord(DocType)));
-      URLList.Add(S);
-      FileList.Add(Result);
-      if NewURL <> '' then
-        RedirectList.Add(NewURL)
+
+      if Length(NewURL) > 0 then
+        P := NewURL
       else
-        RedirectList.Add('*');
+        P := '*';
+      FItems.Add(ThtDiskCacheItem.Create(S, P, Result, DocType));
       CheckSize;
     end;
-    Result := Directory + Result;
+    Result := FDirectory + Result;
   end;
 end;
 
-function TDiskCache.GetCacheFilename(const URL: string; var Filename: string;
-         var DocType: ThtDocType; var NewURL: string): boolean;
+function ThtDiskCache.GetCacheFilename(const URL: string; out Filename: string; out DocType: ThtDocType; out NewURL: string): Boolean;
 var
-  I: Integer;
   S, P: string;
+  I: Integer;
+  Item: ThtDiskCacheItem;
 begin
-  NewURL := '';
   S := URL;
   P := SplitProtocol(S);
-  Result := IsCacheable(P);
+  Item := nil;
+  SetLength(NewURL, 0);
+  if IsCacheable(P) then
+    case Find(S, I, Item) of
+      dcfrUrl:
+        if Item.FNewUrl <> '*' then
+          NewURL := Item.FNewUrl;
+    end;
+
+  Result := Item <> nil;
   if Result then
   begin
-    I := URLList.IndexOf(S);
-    DocType := HTMLType;
-    Result := I >= 0;
-    if Result then
-    begin
-      Filename := Directory+FileList[I];
-      DocType := ThtDocType(StrToIntDef(TypeList[I], 0));
-      S := RedirectList[I];
-      if S <> '*' then
-        NewURL := S
-      else
-        NewURL := '';
-    end
-    else
-    begin  {try searching in the Redirect list.  The back button would generate this}
-      I := RedirectList.IndexOf(Lowercase(URL));
-      Result := I >= 0;
-      if Result then
-      begin
-        Filename := Directory+FileList[I];
-        DocType := ThtDocType(StrToIntDef(TypeList[I], 0));
-        NewUrl := '';
-      end
-      else
-        Filename := '';
-    end;
-  end;
-end;
-
-procedure TDiskCache.CheckSize;
-begin
-  while FileList.Count > MaxCacheEntries do
+    Filename := FDirectory + Item.FFileName;
+    DocType := Item.FDocType;
+  end
+  else
   begin
-    DeleteFile(Directory+FileList[0]);
-    FileList.Delete(0);
-    URLlist.Delete(0);
-    TypeList.Delete(0);
-    RedirectList.Delete(0);
+    SetLength(Filename, 0);
+    DocType := HTMLType;
   end;
 end;
 
-function TDiskCache.MakeName(S: string): string;
+procedure ThtDiskCache.CheckSize;
+begin
+  while FItems.Count > MaxCacheEntries do
+    Erase(0);
+end;
+
+function ThtDiskCache.MakeName(S: string): string;
 {S is lower case here}
 var
   I: Integer;
@@ -251,50 +290,57 @@ begin
   for I := Length(S) downto Max(1, Length(S)-5) do
     if S[I] = '.' then
     begin
-      Ext := Copy(S, I, 255);
-      Break;
+      Ext := Copy(S, I, MaxInt);
+      break;
     end;
-  GoodExt := (Ext <>'') and
-           ((Ext = '.htm') or (Ext = '.html') or (Ext = '.xhtml') or (Ext = '.xht') or
-            (Ext = '.gif') or (Ext = '.jpg') or
-            (Ext = '.png') or (Ext = '.bmp') or (Ext = '.txt') or (Ext = '.jpeg') or
-            (Ext = '.css'));
-  Result := 'm'+IntToStr(Seq);
+
+  for I := 2 to Length(Ext) do
+    if not IsAlpha(Ext[I]) then
+    begin
+      SetLength(Ext, I - 1);
+      break;
+    end;
+
+  GoodExt := Length(Ext) > 1;
+//           ((Ext = '.htm') or (Ext = '.html') or (Ext = '.xhtml') or (Ext = '.xht') or
+//            (Ext = '.gif') or (Ext = '.jpg') or
+//            (Ext = '.png') or (Ext = '.bmp') or (Ext = '.txt') or (Ext = '.jpeg') or
+//            (Ext = '.css'));
+  Result := 'm' + IntToStr(Seq);
   Inc(Seq);
   if GoodExt then
-    Result := Result+Ext;
+    Result := Result + Ext;
 end;
 
-procedure TDiskCache.Erase(I: Integer);
+procedure ThtDiskCache.Erase(I: Integer);
 begin
-  DeleteFile(Directory+FileList[I]);
-  FileList.Delete(I);
-  URLList.Delete(I);
-  TypeList.Delete(I);
-  RedirectList.Delete(I);
+  DeleteFile(FDirectory + ThtDiskCacheItem(FItems[I]).FFileName);
+  FItems.Delete(I);
 end;
 
-procedure TDiskCache.RemoveFromCache(const URL: string);
+procedure ThtDiskCache.RemoveFromCache(const URL: string);
 var
   I: Integer;
   S: string;
+  Item: ThtDiskCacheItem;
 begin
   S := URL;
   SplitProtocol(S);
-  I := URLList.IndexOf(S);
-  if I >= 0 then
-    Erase(I);
+  case Find(S, I, Item) of
+    dcfrUrl:
+      Erase(I);
+  end;
 end;
 
-procedure TDiskCache.EraseCache;
+procedure ThtDiskCache.EraseCache;
 var
   I: Integer;
 begin
-  for I := FileList.Count-1 downto 0 do
+  for I := FItems.Count-1 downto 0 do
     Erase(I);
 end;
 
-function TDiskCache.SplitProtocol(var URL: string): string;
+function ThtDiskCache.SplitProtocol(var URL: string): string;
 var
   I: Integer;
 begin
