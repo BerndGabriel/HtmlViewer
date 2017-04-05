@@ -2590,54 +2590,60 @@ procedure DrawOnePolygon(Canvas: TCanvas; P: THtBorderPointArray; Color: TColor;
  side (or part of a side) of a border.
  For single pixel thickness, drawing is done by lines for better printing}
 //BG, 22.08.2010: in print preview results are better without the single pixel exception.
-//type
-//  SideArray = array[0..3, 1..4] of Integer;
-//const
-//  AD: SideArray = ((0, 1, 0, 3),
-//    (0, 1, 1, 1),
-//    (2, 0, 2, 1),
-//    (1, 3, 3, 3));
-//  AP: SideArray = ((0, 1, 0, 3),
-//    (0, 1, 2, 1),
-//    (2, 0, 2, 2),
-//    (1, 3, 3, 3));
+{$ifdef BorderSinglePixelException}
+type
+  SideArray = array[0..3, 1..4] of Integer;
+const
+  AD: SideArray = ((0, 1, 0, 3),
+    (0, 1, 1, 1),
+    (2, 0, 2, 1),
+    (1, 3, 3, 3));
+  AP: SideArray = ((0, 1, 0, 3),
+    (0, 1, 2, 1),
+    (2, 0, 2, 2),
+    (1, 3, 3, 3));
+{$endif}
 var
   R: HRgn;
-//  OldWidth: Integer;
-//  OldStyle: TPenStyle;
-//  OldColor: TColor;
-//  Thickness: Integer;
-//  P1, P2: TPoint;
-//  I: SideArray;
+{$ifdef BorderSinglePixelException}
+  OldWidth: Integer;
+  OldStyle: TPenStyle;
+  OldColor: TColor;
+  Thickness: Integer;
+  P1, P2: TPoint;
+  I: SideArray;
+{$endif}
 begin
-//  if Side in [0, 2] then
-//    Thickness := Abs(P[2].X - P[1].X)
-//  else
-//    Thickness := Abs(P[1].Y - P[2].Y);
-//  if Thickness = 1 then
-//  begin
-//    with Canvas do
-//    begin
-//      OldColor := Pen.Color;
-//      OldStyle := Pen.Style;
-//      OldWidth := Pen.Width;
-//      Pen.Color := Color;
-//      Pen.Style := psSolid;
-//      Pen.Width := 1;
-//      if Printing then
-//        I := AP
-//      else
-//        I := AD;
-//      P1 := Point(P[I[Side, 1]].X, P[I[Side, 2]].Y);
-//      P2 := Point(P[I[Side, 3]].X, P[I[Side, 4]].Y);
-//      MoveTo(P1.X, P1.Y);
-//      LineTo(P2.X, P2.Y);
-//      Pen.Width := OldWidth;
-//      Pen.Style := OldStyle;
-//      Pen.Color := OldColor;
-//    end;
-//  end
-//  else
+{$ifdef BorderSinglePixelException}
+  if Side in [0, 2] then
+    Thickness := Abs(P[2].X - P[1].X)
+  else
+    Thickness := Abs(P[1].Y - P[2].Y);
+  if Thickness = 1 then
+  begin
+    with Canvas do
+    begin
+      OldColor := Pen.Color;
+      OldStyle := Pen.Style;
+      OldWidth := Pen.Width;
+      Pen.Color := Color;
+      Pen.Style := psSolid;
+      Pen.Width := 1;
+      if Printing then
+        I := AP
+      else
+        I := AD;
+      P1 := Point(P[I[Side, 1]].X, P[I[Side, 2]].Y);
+      P2 := Point(P[I[Side, 3]].X, P[I[Side, 4]].Y);
+      MoveTo(P1.X, P1.Y);
+      LineTo(P2.X, P2.Y);
+      Pen.Width := OldWidth;
+      Pen.Style := OldStyle;
+      Pen.Color := OldColor;
+    end;
+  end
+  else
+{$endif}
   begin
     R := CreatePolygonRgn(P, 4, Alternate);
     try

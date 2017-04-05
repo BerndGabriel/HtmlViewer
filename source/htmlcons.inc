@@ -237,6 +237,11 @@
         For applications where printing is unimportant or Win98/95/ME need not
         be supported, undefining this constant will allow Metafiles to be
         displayed.}
+{.$define BorderSinglePixelException} {Drawing 4 sided polygon the borders
+  with single pixel thickness, the drawing can be done by lines by defining this
+  constant. On print preview results are better without the single pixel exception,
+  but it does not work correctly on certain printers, so the default behaviour
+  can be overrules this way.}
 {$else}
   {$define NoGDIPlus}
   {$define NoMetaFile}
