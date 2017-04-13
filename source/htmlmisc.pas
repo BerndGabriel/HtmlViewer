@@ -59,7 +59,7 @@ uses
 {$ELSE}
   Types, Printers,
 {$ENDIF}
-  LclIntf, LMessages, LclType, LclProc, InterfaceBase,
+  LclVersion, LclIntf, LMessages, LclType, LclProc, InterfaceBase,
   GraphType, Graphics, Controls;
    {Important: Be sure to list LclType after SysUtils and Classes
      in order to use LclType's THandle declaration (32 or 64 bits)
@@ -161,7 +161,11 @@ type
   tagXFORM = XFORM;
   TXForm = tagXFORM;
 
+{$if lcl_fullversion >= 1060400}
+  TGCPResultsW = GCP_RESULTSW;
+{$else}
   TGCPResultsW = GCP_RESULTS;
+{$endif}
 
 //  OSVERSIONINFO = _OSVERSIONINFO;
 
