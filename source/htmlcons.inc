@@ -78,6 +78,7 @@
       {$define Compiler15_Plus}
       {$ifdef ver150}
       {$else}
+        {$define Compiler16_Plus}
         {$ifdef ver160}
         {$else}
           {$define Compiler17_Plus}
