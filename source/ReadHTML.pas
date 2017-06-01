@@ -1838,16 +1838,27 @@ var
   end;
 
   procedure AddSection;
+  var
+    wIdx: integer;
   begin
     if Assigned(SectionList) then
     begin
       if Assigned(Section) then
       begin
         // Do not add empty section
-        if Length(Section.XP) <> 0 then
-          SectionList.Add(Section, TagIndex)
-        else
-          Section.Free;
+     if Length(Section.XP) <> 0 then begin
+          SectionList.Add(Section, TagIndex);
+        end else begin
+          if (length(Section.Id) > 0) then begin
+             wIdx := PropStack.Document.IdNameList.IndexOf(Section.Id);
+             if ((wIdx <> -1) and (PropStack.Document.IdNameList.objects[wIdx] = Section)) then begin
+               PropStack.Document.IdNameList.Delete(wIdx);
+             end;
+             Section.Free;
+          end else begin
+             Section.Free;
+          end;
+        end;
         Section := nil;
       end;
       if CellObj.Cell = SectionList then
