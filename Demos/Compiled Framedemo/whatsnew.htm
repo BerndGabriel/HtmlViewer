@@ -20,6 +20,58 @@
 
 <!----------------------------------------------------------------------------->
 
+<h4 class="heading">Version 11.8</h4>
+<h5>Added</h5>
+<ul>
+  <li>Lazarus 1.6.4 Support
+  <li>Parsing media queries for @media, @import and link tags.
+    <ul>
+      <li>still processing styles for media 'screen' only
+      <li>matching media type and most features for screens
+      <li>new event method THtmlViewer.MatchMediaQuery() is passed to THtmlStyleTagParser via THtmlParser
+    </ul>
+  </li>
+  <li>Experimental project using Benjamin 'BeRo' Rosseaux's ECMA-script implementation <a href="https://github.com/BeRo1985/besen">TBesen.</a>
+    <ul>
+      <li>Experimental unit HtmlBesen with class ThtScriptEngine
+      <li>JavaScript: stubs for objects 'window', 'document', and 'navigator'
+      <li>JavaScript: methods window.alert(), window.confirm(), and window.prompt()
+    </ul>
+  </li>
+  <li>Methods THtmlViewer.htStreamRequest() and THtmlViewer.htStreamRequested()
+    <ul>
+      <li>get a stream from file or elsewhere if TFrameBrowser is used
+      <li>used in THtmlParser.DoStyleLink() to get stylesheets
+      <li>and in the new experimental HtmlBesen unit to get javascripts.
+    </ul>
+  </li>
+</ul>
+<h5>Enhanced</h5>
+<ul>
+  <li>Replaced TFreeList with TObjectList
+  <li>Some more type safe lists
+</ul>                                                                            
+<h5>Fixed</h5>                                                                   
+<ul>                                                                             
+  <li><a href="http://code.google.com/p/thtmlviewer/issues/detail?id=408"> Google Issue 408</a>: Parse style tags only if type="text/css" or type is not given.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/136">136</a>: THtmlViewer.CopyToClipboard not works in Fpc/Lazarus.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/137">137</a>: Almost fixed: Incorrect drawing selected text on Linux/GTK. At least more backgrounds are drawn correctly now.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/148">148</a>: Error display controls.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/149">149</a>: Error mapping table.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/150">150</a>: Error mapping table.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/154">154</a>: Entering to HtmlViewer control cause vertical scroll position reset.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/157">157</a>: Error mapping table.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/158">158</a>: Image border missing.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/163">163</a>: Error Image. 
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/166">166</a>: THtmlViewer.HTMLMouseMove bug with active scrollbar (PtInObject failing).
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/170">170</a>: Error image.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/177">177</a>: Memory leak in THtmlViewer constructor.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/184">184</a>: Exception on gettting objects attributes.
+ </ul>
+
+
+<!----------------------------------------------------------------------------->
+
 <h4 class="heading">Version 11.7</h4>
 <h5>Added</h5>
 <ul>
