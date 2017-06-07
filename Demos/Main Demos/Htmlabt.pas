@@ -202,9 +202,14 @@ begin
   Body :=
     '<body text="000080">' +
     '<center>' +
-    '<h1>' + ProgName + '</h1>' +
-    '<font color="Maroon">A demo program for the <b>' + CompName + '</b> component</font>' +
-    '<h3>Version ' + VersionNo + '</h3>' +
+    '<h1>' + ProgName + '</h1>';
+
+  if Length(CompName) > 0 then
+    Body := Body +
+      '<font color="Maroon">A demo program for the <b>' + CompName + '</b> component</font>' +
+      '<h3>Version ' + VersionNo + '</h3>';
+
+  Body := Body +
     Remarks +
     '</center>' +
     ConfigInfo +

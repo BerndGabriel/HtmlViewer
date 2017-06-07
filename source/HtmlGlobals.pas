@@ -118,19 +118,22 @@ const
 type
 {$IFNDEF DOTNET}
   {$IFNDEF FPC}
-     //needed so that in FreePascal, we can use pointers of different sizes
-    {$IFDEF WIN32}
-      PtrInt = LongInt;
-      PtrUInt = LongWord;
-    {$ENDIF}
-    {$IFDEF WIN64}
-      PtrInt = Int64;
-      PtrUInt = Int64;
-    {$ENDIF}
-    //NOTE:  The code below asumes a 32bit Linux architecture (such as target i386-linux)
-    {$IFDEF KYLIX}
-      PtrInt = LongInt;
-      PtrUInt = LongWord;
+    {$ifndef PtrInt_defined}
+      {$define PtrInt_defined}
+       //needed so that in FreePascal, we can use pointers of different sizes
+      {$IFDEF WIN32}
+        PtrInt = LongInt;
+        PtrUInt = LongWord;
+      {$ENDIF}
+      {$IFDEF WIN64}
+        PtrInt = Int64;
+        PtrUInt = Int64;
+      {$ENDIF}
+      //NOTE:  The code below asumes a 32bit Linux architecture (such as target i386-linux)
+      {$IFDEF KYLIX}
+        PtrInt = LongInt;
+        PtrUInt = LongWord;
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}

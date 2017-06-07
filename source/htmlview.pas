@@ -999,6 +999,7 @@ begin
   FSectionList.Free;
   FHistory.Free;
   FVisited.Free;
+  FObjects.Free;
   FLinkAttributes.Free;
   FDocument.Free;
   inherited Destroy;

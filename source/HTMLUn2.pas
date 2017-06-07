@@ -1395,8 +1395,9 @@ var
   I: Integer;
 begin
   inherited Create;
-  for I := 0 to Count - 1 do
-    Add(TAttribute.CreateCopy(Items[I]));
+  if ASource <> nil then
+    for I := 0 to ASource.Count - 1 do
+      Add(TAttribute.CreateCopy(ASource[I]));
 end;
 
 function TAttributeList.CreateStringList: ThtStringList;
