@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.8
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2017 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -588,7 +588,7 @@ type
   public
     constructor CreateCopy(Owner: TComponent; Source: TViewerBase); override;
     destructor Destroy; override;
-    function HTMLExpandFilename(const Filename: ThtString; const CurrentFilename: ThtString = ''): ThtString; override;
+    function HtmlExpandFilename(const Filename: ThtString; const CurrentFilename: ThtString = ''): ThtString; override;
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: Boolean); override;
     procedure Load(const SRC: ThtString); override;
     procedure LoadFromFile(const FileName: ThtString); override;
@@ -3153,7 +3153,7 @@ end;
 
 {----------------TFrameViewer.HTMLExpandFilename}
 
-function TFrameViewer.HTMLExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
+function TFrameViewer.HtmlExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
 var
   Viewer: THtmlViewer;
 begin

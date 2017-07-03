@@ -4060,7 +4060,6 @@ var
   I: Integer;
   Url, Rel, Rev, Media: ThtString;
   IsStyleSheet: Boolean;
-  Request: TGetStreamEvent;
   Stream: TStream;
   Viewer: THtmlViewer;
   Path: ThtString;

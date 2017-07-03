@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.8
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2017 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -3591,7 +3591,6 @@ procedure THtmlViewer.MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMedi
   function EvaluateExpression(const Expression: ThtMediaExpression): Boolean;
   var
     LowStr: ThtString;
-    IValue: Integer;
 
     function Compared(A, B: Integer): Boolean;
     begin
@@ -3599,6 +3598,8 @@ procedure THtmlViewer.MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMedi
         moLe: Result := A <= B;
         moEq: Result := A  = B;
         moGe: Result := A >= B;
+      else
+        Result := False;
       end;
     end;
 
@@ -3655,6 +3656,8 @@ procedure THtmlViewer.MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMedi
 
       mfGrid        :
         Result := ComparedToNumber(0 {0 = bitmap, 1 = character grid like tty}, 1);
+    else
+      Result := False;
     end;
   end;
 
@@ -5345,7 +5348,7 @@ begin
   begin
     if Assigned(OnExpandName) then
     begin {currently set by TFrameBrowser only}
-      OnExpandName(Self, Url, Url);
+      Self.OnExpandName(Self, Url, Url);  // 'Self.' avoids a compile error in Delphi 6
       PathOfUrl := GetURLBase(Url);
       OnHtStreamRequest(Self, Url, Stream);
     end
