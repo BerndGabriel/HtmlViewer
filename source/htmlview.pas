@@ -3584,6 +3584,45 @@ begin
   end;
 end;
 
+function THtmlViewer.CreateHeaderFooter: THtmlViewer;
+begin
+{
+  was: Result := THtmlViewer.Create(Nil);
+
+  If the html viewer itself is invisible and created parented this would
+  break. Better create the header and footer parented to support background
+  preparation.
+
+  2008-May-26 by Arvid Winkelsdorf
+}
+  Result := THtmlViewer.CreateParented(HWND(HWND_MESSAGE));
+  Result.Visible := False;
+  Result.Parent := Parent;
+  Result.DefBackground := DefBackground;
+  Result.DefFontName := DefFontName;
+  Result.DefFontSize := DefFontSize;
+  Result.DefFontColor := DefFontColor;
+  Result.CodePage := CodePage;
+  Result.MarginHeight := 0;
+
+  if FSectionList.UseQuirksMode then
+    Result.QuirksMode := qmQuirks
+  else
+    Result.QuirksMode := qmStandards;
+
+  with Result.FSectionList do
+  begin
+    PrintBackground := True;
+    PrintTableBackground := True;
+  end;
+
+  {$ifdef has_StyleElements}
+  Result.StyleElements := StyleElements;
+  {$endif}
+end;
+
+{$endif}
+
 //-- BG ---------------------------------------------------------- 24.10.2016 --
 procedure THtmlViewer.MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMediaQuery; var MediaMatchesQuery: Boolean);
 // Match MediaQuery against Self, resp. Screen.
@@ -3678,45 +3717,6 @@ begin
   if OK then
     MediaMatchesQuery := True;
 end;
-
-function THtmlViewer.CreateHeaderFooter: THtmlViewer;
-begin
-{
-  was: Result := THtmlViewer.Create(Nil);
-
-  If the html viewer itself is invisible and created parented this would
-  break. Better create the header and footer parented to support background
-  preparation.
-
-  2008-May-26 by Arvid Winkelsdorf
-}
-  Result := THtmlViewer.CreateParented(HWND(HWND_MESSAGE));
-  Result.Visible := False;
-  Result.Parent := Parent;
-  Result.DefBackground := DefBackground;
-  Result.DefFontName := DefFontName;
-  Result.DefFontSize := DefFontSize;
-  Result.DefFontColor := DefFontColor;
-  Result.CodePage := CodePage;
-  Result.MarginHeight := 0;
-
-  if FSectionList.UseQuirksMode then
-    Result.QuirksMode := qmQuirks
-  else
-    Result.QuirksMode := qmStandards;
-
-  with Result.FSectionList do
-  begin
-    PrintBackground := True;
-    PrintTableBackground := True;
-  end;
-
-  {$ifdef has_StyleElements}
-  Result.StyleElements := StyleElements;
-  {$endif}
-end;
-
-{$endif}
 
 //-- BG ---------------------------------------------------------- 16.11.2011 --
 function THtmlViewer.CreateIFrameControl: TViewerBase;
