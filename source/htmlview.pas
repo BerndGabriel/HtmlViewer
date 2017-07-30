@@ -377,6 +377,7 @@ type
     function GetHistoryIndex: Integer;
     procedure InsertImages;
     function GetDocumentCodePage: Integer;
+    procedure SetText(const Value: ThtString);
 {$ifdef HasGestures}
     procedure HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
 {$endif}
@@ -436,6 +437,7 @@ type
     procedure SetVisitedColor(const Value: TColor); override;
     procedure SetVisitedMaxCount(const Value: Integer); override;
     procedure Loaded; override;
+    function CanAutoSize(var NewWidth: Integer; var NewHeight: Integer): Boolean; override;
     property ScrollWidth: Integer read FScrollWidth;
   public
     constructor Create(Owner: TComponent); override;
@@ -521,13 +523,14 @@ type
     procedure StopTimers;
     procedure TriggerUrlAction;
     procedure ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
+    procedure UpdateSize;
     procedure UrlAction;
     property Base: ThtString read FBase write SetBase;
     property BaseTarget: ThtString read FBaseTarget;
     property CaretPos: Integer read FCaretPos write SetCaretPos;
     property CurrentFile: ThtString read FCurrentFile;
     property DocumentCodePage: Integer read GetDocumentCodePage;
-    property DocumentSource: ThtString read GetDocumentSource;
+//    property DocumentSource: ThtString read GetDocumentSource;
     property DocumentTitle: ThtString read FTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
     property FormData: TFormData read GetFormData write SetFormData;
@@ -593,6 +596,7 @@ type
     property QuirksMode;
     property ScrollBars: ThtScrollStyle read FScrollBars write SetScrollBars default ssBoth;
     property ServerRoot;
+    property Text: ThtString read GetDocumentSource write SetText;
     property ViewImages: Boolean read GetViewImages write SetViewImages default True;
     property VisitedMaxCount;
     //
@@ -647,6 +651,8 @@ type
     //
     property Align;
     property Anchors;
+    property AutoSize;
+    property Constraints;
 {$ifdef LCL}
     property Cursor default crIBeam;
 {$else}
@@ -1310,6 +1316,8 @@ begin
   finally
     SetProcessing(False);
   end;
+  if AutoSize then
+    UpdateSize;
   if (FRefreshDelay > 0) and Assigned(FOnMetaRefresh) then
     FOnMetaRefresh(Self, FRefreshDelay, FRefreshURL);
 end;
@@ -1375,12 +1383,12 @@ function THtmlViewer.GetScrollInfo(DocWidth, DocHeight: Integer): ThtScrollInfo;
 begin
   with Result do
   begin
-    if (FBorderStyle = htNone) and not (csDesigning in ComponentState) then
-    begin
-      BWidth2 := 0;
-      BWidth  := 0;
-    end
-    else
+//    if (FBorderStyle = htNone) and not (csDesigning in ComponentState) then
+//    begin
+//      BWidth2 := 0;
+//      BWidth  := 0;
+//    end
+//    else
     begin
       BWidth2 := BorderPanel.Width - BorderPanel.ClientWidth;
       BWidth  := BWidth2 div 2;
@@ -1450,19 +1458,30 @@ procedure THtmlViewer.DoScrollBars;
 
 var
   ScrollInfo: ThtScrollInfo;
-
+  PaintPanelRect: TRect;
 begin
   FScrollWidth := Min(ScrollWidth, MaxHScroll);
   ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
   with ScrollInfo do
   begin
-    BorderPanel.Visible := BWidth > 0;
+//    BorderPanel.Visible := BWidth > 0;
+    PaintPanelRect := Rect(BWidth, BWidth, HWidth, VHeight);
+    PaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
+  end;
+  if PaintPanelRect <> PaintPanel.BoundsRect then
+  begin
+    FScrollWidth := Min(ScrollWidth, MaxHScroll);
+    ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
+    with ScrollInfo do
+    begin
+//      BorderPanel.Visible := BWidth > 0;
+      PaintPanelRect := Rect(BWidth, BWidth, HWidth, VHeight);
+      PaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
+    end;
+  end;
 
-    PaintPanel.Left := BWidth;
-    PaintPanel.Top := BWidth;
-    PaintPanel.Width := HWidth;
-    PaintPanel.Height := VHeight;
-
+  with ScrollInfo do
+  begin
     HScrollBar.Visible := HBar;
     if HBar or (csDesigning in ComponentState) then
     begin
@@ -1482,6 +1501,32 @@ begin
     end;
     // always set scroll height for scrolling via mouse even without scrollbars.
     SetPageSizeAndMax(VScrollBar, Min(VHeight, FMaxVertical), FMaxVertical);
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 19.07.2017 --
+function THtmlViewer.CanAutoSize(var NewWidth, NewHeight: Integer): Boolean;
+var
+  ScrollInfo: ThtScrollInfo;
+begin
+  Result := True;
+  if not (csDesigning in ComponentState) or (MaxVertical > 0) and (ScrollWidth > 0) then
+  begin
+    ScrollInfo := GetScrollInfo(ScrollWidth, MaxVertical);
+
+    if Align in [alNone, alLeft, alRight] then
+    begin
+      NewWidth := ScrollWidth + ScrollInfo.BWidth2;
+      if VScrollBar.Visible then
+        Inc(NewWidth, VScrollBar.Width);
+    end;
+
+    if Align in [alNone, alTop, alBottom] then
+    begin
+      NewHeight := MaxVertical + ScrollInfo.BWidth2;
+      if HScrollBar.Visible then
+        Inc(NewHeight, HScrollBar.Width);
+    end;
   end;
 end;
 
@@ -1519,8 +1564,10 @@ procedure THtmlViewer.DoLogic;
 
 var
   SI, SI2, SI3: ThtScrollInfo;
+  WasDontDraw: Boolean;
 begin
   HandleNeeded;
+  WasDontDraw := vsDontDraw in FViewerState;
   Include(FViewerState, vsDontDraw);
   try
     SI := GetScrollInfo(0, 0);
@@ -1598,7 +1645,8 @@ begin
 
     DoScrollbars;
   finally
-    Exclude(FViewerState, vsDontDraw);
+    if not WasDontDraw then
+      Exclude(FViewerState, vsDontDraw);
   end;
 end;
 
@@ -2681,6 +2729,12 @@ begin
   if PaintPanel <> nil then
     PaintPanel.Color := Value;
   Invalidate;
+end;
+
+//-- BG ---------------------------------------------------------- 19.07.2017 --
+procedure THtmlViewer.SetText(const Value: ThtString);
+begin
+  LoadFromString(Value);
 end;
 
 procedure THtmlViewer.SetBorderStyle(Value: THTMLBorderStyle);
@@ -4837,7 +4891,7 @@ begin
   Len := FSectionList.GetSelLength;
   if Len > 0 then
   begin
-    HTML := DocumentSource;
+    HTML := Text;
     StSrc := FindSourcePos(FSectionList.SelB);
     EnSrc := FindSourcePos(FSectionList.SelE);
     if FDocument <> nil then
@@ -4926,6 +4980,17 @@ end;
 procedure THtmlViewer.UpdateImageCache;
 begin
   FSectionList.ImageCache.BumpAndCheck;
+end;
+
+//-- BG ---------------------------------------------------------- 30.07.2017 --
+procedure THtmlViewer.UpdateSize;
+begin
+  if AutoSize then
+  begin
+    HScrollBar.Visible := False;
+    VScrollBar.Visible := False;
+    SetBounds(Left, Top, ScrollWidth + 2, MaxVertical + 2);
+  end;
 end;
 
 procedure THtmlViewer.SetImageCacheCount(const Value: Integer);
@@ -5146,7 +5211,7 @@ var
 begin
   for I := 0 to FormControlList.count - 1 do
     FormControlList[I].Hide;
-  BorderPanel.BorderStyle := bsNone;
+  //BorderPanel.BorderStyle := bsNone;
   inherited Repaint;
 end;
 
