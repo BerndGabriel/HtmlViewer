@@ -308,9 +308,9 @@ begin
           FreeAndNil(FFrameSet);
           if not Assigned(Viewer) then
             CreateViewer;
-          Viewer.LoadFromString(
+          Viewer.Text :=
             '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source +
-            '<p>Cause: ' + ThtString(E.Message)); {load an error message}
+            '<p>Cause: ' + ThtString(E.Message); {load an error message}
         end;
       end;
     finally
@@ -361,9 +361,9 @@ begin
         ViewerFormData := nil;
       except
         on E: Exception do
-          Viewer.LoadFromString(
+          Viewer.Text :=
             '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source +
-            '<p>Cause: ' + ThtString(E.Message)); {load an error message}
+            '<p>Cause: ' + ThtString(E.Message); {load an error message}
       end;
     end;
   Unloaded := False;

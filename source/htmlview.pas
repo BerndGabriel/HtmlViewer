@@ -1456,6 +1456,11 @@ procedure THtmlViewer.DoScrollBars;
     end;
   end;
 
+  function SameRect(const A, B: TRect): Boolean;
+  begin
+    Result := (A.Left = B.Left) and (A.Right = B.Right) and (A.Top = B.Top) and (A.Bottom = B.Bottom);
+  end;
+
 var
   ScrollInfo: ThtScrollInfo;
   PaintPanelRect: TRect;
@@ -1468,7 +1473,7 @@ begin
     PaintPanelRect := Rect(BWidth, BWidth, HWidth, VHeight);
     PaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
   end;
-  if PaintPanelRect <> PaintPanel.BoundsRect then
+  if not SameRect(PaintPanelRect, PaintPanel.BoundsRect) then
   begin
     FScrollWidth := Min(ScrollWidth, MaxHScroll);
     ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);

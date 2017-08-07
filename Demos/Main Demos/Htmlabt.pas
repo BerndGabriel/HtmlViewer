@@ -214,7 +214,7 @@ begin
     '</center>' +
     ConfigInfo +
     '</body>';
-  Viewer.LoadFromString('<html>' + Head + Body + '</html>');
+  Viewer.Text := '<html>' + Head + Body + '</html>';
   if Viewer.ClientHeight < Viewer.MaxVertical then
     Height := Height + Viewer.MaxVertical - Viewer.ClientHeight;
 end;
@@ -230,7 +230,7 @@ begin
   Viewer.DefFontName := FontSans;
   Viewer.DefFontSize := 12;
   Viewer.DefFontColor := clBlack;
-  Viewer.LoadFromString('<body>' + Message + '</body>');
+  Viewer.Text := '<body>' + Message + '</body>';
 end;
 
 end.

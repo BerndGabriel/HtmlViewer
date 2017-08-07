@@ -121,7 +121,6 @@ type
     options1: TMenuItem;
     Panel1: TPanel;
     Panel2: TPanel;
-    Panel3: TPanel;
     PopupMenu: TPopupMenu;
     Print1: TMenuItem;
     PrinterSetup: TMenuItem;
@@ -272,7 +271,7 @@ begin
   HintWindow := ThtHintWindow.Create(Self);
   HintWindow.Color := $CCFFFF;
   UpdateCaption;
-
+  ReloadButton.Enabled := Viewer.Text <> '';
 {$ifdef LCL}
 {$else}
   Application.OnMessage := AppMessage;
@@ -411,8 +410,12 @@ begin
   with Viewer do
   begin
     ReloadButton.Enabled := False;
-    ReLoad;
-    ReloadButton.Enabled := CurrentFile <> '';
+    if CurrentFile <> '' then
+      ReLoad
+    else
+      Text := Text;
+    Viewer.Realign;
+    ReloadButton.Enabled := Text <> '';
     Viewer.SetFocus;
   end;
 end;
@@ -562,8 +565,8 @@ begin
   FwdButton.Enabled := Enabled and (Viewer.HistoryIndex > 0);
   BackButton.Enabled := Enabled and
     (Viewer.HistoryIndex < Viewer.History.Count - 1);
-  RepaintButton.Enabled := Enabled and (Viewer.CurrentFile <> '');
-  ReloadButton.Enabled := Enabled and (Viewer.CurrentFile <> '');
+  RepaintButton.Enabled := Enabled and (Viewer.Text <> '');
+  ReloadButton.Enabled := Enabled and (Viewer.Text <> '');
   Print1.Enabled := Enabled and (Viewer.CurrentFile <> '');
   Printpreview.Enabled := Print1.Enabled;
   Find1.Enabled := Print1.Enabled;
@@ -999,7 +1002,7 @@ var
 begin
   S := ReplaceStr(HFText, '#left', Viewer.DocumentTitle);
   S := ReplaceStr(S, '#right', Viewer.CurrentFile);
-  HFViewer.LoadFromString(S);
+  HFViewer.Text := S;
 end;
 
 procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject; HFViewer: THTMLViewer;
@@ -1009,7 +1012,7 @@ var
 begin
   S := ReplaceStr(HFText, '#left', DateToStr(Date));
   S := ReplaceStr(S, '#right', 'Page ' + IntToStr(NumPage));
-  HFViewer.LoadFromString(S);
+  HFViewer.Text := S;
 end;
 
 procedure TForm1.RepaintButtonClick(Sender: TObject);

@@ -24,7 +24,7 @@ uses
 {$ENDIF}
   Printers, PrintersDlgs,
   SysUtils, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Htmlview, URLSubs;
+  Forms, Dialogs, ExtCtrls, Menus, StdCtrls, Htmlview, URLSubs, HTMLUn2;
                                         
 type
   TForm1 = class(TForm)
@@ -234,7 +234,7 @@ var
   SL: TStringList;
   S: string;
 begin
-if HFViewer.DocumentSource = '' then
+if HFViewer.Text = '' then
   begin  {only need to load once}
   SL := TStringList.Create;
   try
@@ -267,10 +267,10 @@ const
 var
   S: string;
 begin
-{replace the marker strings with the date and page number}
-S := ReplaceStr(Text, '#date', DateToStr(Date));
-S := ReplaceStr(S, '#page', 'Page '+IntToStr(NumPage));
-HFViewer.LoadFromString(S);
+  {replace the marker strings with the date and page number}
+  S := ReplaceStr(Text, '#date', DateToStr(Date));
+  S := ReplaceStr(S, '#page', 'Page '+IntToStr(NumPage));
+  HFViewer.Text := S;
 end;
 
 end.
