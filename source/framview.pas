@@ -1023,7 +1023,7 @@ begin
       if not Assigned(Viewer) then
         CreateViewer;
       FreeAndNil(FFrameSet);
-      Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + EV.NewName); {load an error message}
+      Viewer.Text := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + EV.NewName; {load an error message}
     end;
     Dec(MasterSet.NestLevel);
   end
@@ -1052,7 +1052,7 @@ var
 
   procedure DoError;
   begin
-    Viewer.LoadFromString('<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source); {load an error message}
+    Viewer.Text := '<p><img src="qw%&.bmp" alt="Error"> Can''t load ' + Source; {load an error message}
   end;
 
 begin
@@ -2517,7 +2517,7 @@ begin
       Frame.Destination := Dest;
       Parsed('', '', '');
       CalcSizes(Self);
-      Frame.Loadfiles(PEV);
+      Frame.LoadFiles(PEV);
       // now Doc is owned by Frame. We must not free it.
       if PEV <> nil then
         EV.Doc := nil;
@@ -3612,6 +3612,7 @@ begin
 {$endif}
       CurFrameSet.BorderSize := 2;
     end;
+
   for I := 0 to CurFrameSet.Viewers.Count - 1 do
     with THtmlViewer(CurFrameSet.Viewers[I]) do
     begin

@@ -1514,12 +1514,14 @@ type
     FUseQuirksMode : Boolean;
     FPropStack: THtmlPropStack;
     FPageArea: TRect;
+    FPrinted: Boolean; {set if actually printed anything else but background}
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
     function CopyToBuffer(Buffer: TSelTextCount): Integer;
     procedure InsertMissingImage(const UName: ThtString; J: Integer; Error: Boolean; out Reformat: Boolean);
     procedure SetPageArea(const Value: TRect);
     function GetViewPort: TRect;
+    procedure SetPrinted(const Value: Boolean);
     {$ifdef has_StyleElements}
     procedure SetStyleElements(const AValue : TStyleElements);
     {$endif}
@@ -1643,6 +1645,7 @@ type
       ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property PropStack : THtmlPropStack read FPropStack write FPropStack;
+    property Printed: Boolean read FPrinted write SetPrinted;
 
     property NoBreak : Boolean read FNoBreak write FNoBreak;  {set when in <NoBr>}
     property ViewPort: TRect read GetViewPort;  {ViewPort is the APaintPanel's client rect, except while printing}
@@ -7581,8 +7584,12 @@ begin
   DrawList.Clear;
   try
     Result := inherited Draw(Canvas, ARect, ClipWidth, X, Y, XRef, YRef);
-    DrawList.DrawImages;
-    DrawList.Clear;
+    if DrawList.Count > 0 then
+    begin
+      DrawList.DrawImages;
+      DrawList.Clear;
+      Printed := True;
+    end;
   finally
     if OldPal <> 0 then
       SelectPalette(Canvas.Handle, OldPal, True);
@@ -7969,6 +7976,12 @@ end;
 procedure ThtDocument.SetPageArea(const Value: TRect);
 begin
   FPageArea := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 16.07.2017 --
+procedure ThtDocument.SetPrinted(const Value: Boolean);
+begin
+  FPrinted := Value;
 end;
 
 //------------------------------------------------------------------------------
@@ -11353,7 +11366,7 @@ begin
         if FO.Pos = Length(BuffS) then
           Inc(FO.Pos);
         BuffS := BuffS + ' ';
-        XP[Length(BuffS) - 1] := TagIndex;
+        //XP[Length(BuffS) - 1] := TagIndex;
       end;
     end;
   end;
@@ -13065,6 +13078,7 @@ var
 //            else
 //              FlObj.Positioning := posStatic;
             TImageObj(FlObj).DrawInline(Canvas, CPx + FlObj.HSpaceL, LR.DrawY, Y - Descent, FO);
+            Document.Printed := True;
           {see if there's an inline border for the image}
             if LR.FirstDraw and Assigned(LR.BorderList) then
               for K := 0 to LR.BorderList.Count - 1 do
@@ -13172,6 +13186,7 @@ var
           end;
 
           FlObj.DrawInline(Canvas, LeftT, TopP - YOffset, TopP - YOffset - Descent, FO);
+          Document.Printed := True;
 
         end;
       end
@@ -13236,6 +13251,7 @@ var
           end;
 
           FcObj.DrawInline(Canvas, LeftT, TopP, TopP - Descent, FO);
+          Document.Printed := True;
 
           if not (FcObj.Floating in [ALeft, ARight]) then
           begin
@@ -13354,6 +13370,7 @@ var
               ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil)
             end;
           end;
+          Document.Printed := True;
         {Put in a dummy caret to show character position}
           if Document.ShowDummyCaret and not Inverted
             and (MySelB = Start - Buff) then

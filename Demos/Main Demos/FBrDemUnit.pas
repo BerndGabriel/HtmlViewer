@@ -1258,12 +1258,12 @@ begin
     try
       Caption := 'Source of ''' + DocumentTitle(FrameBrowser.ActiveViewer) + '''';
 
-      mmoInfo.Lines.Text := FrameBrowser.ActiveViewer.DocumentSource;
+      mmoInfo.Lines.Text := FrameBrowser.ActiveViewer.Text;
       ShowModal;
     finally
       Free;
     end;
-//    FrameBrowser.ActiveViewer.LoadFromString(FrameBrowser.ActiveViewer.DocumentSource, DocumentTitle(FrameBrowser.ActiveViewer), TextType);
+//    FrameBrowser.ActiveViewer.LoadFromString(FrameBrowser.ActiveViewer.Text, DocumentTitle(FrameBrowser.ActiveViewer), TextType);
   end;
 end;
 

@@ -1005,7 +1005,7 @@ var
 begin
   S := ReplaceStr(HFText, '#left', FrameViewer.DocumentTitle);
   S := ReplaceStr(S, '#right', FrameViewer.CurrentFile);
-  HFViewer.LoadFromString(S);
+  HFViewer.Text := S;
 end;
 
 procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject;
@@ -1015,7 +1015,7 @@ var
 begin
   S := ReplaceStr(HFText, '#left', DateToStr(Date));
   S := ReplaceStr(S, '#right', 'Page '+IntToStr(NumPage));
-  HFViewer.LoadFromString(S);
+  HFViewer.Text := S;
 end;
 
 procedure TForm1.UpdateCaption;

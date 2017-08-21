@@ -33,8 +33,8 @@ uses
   System.UITypes,
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, StdCtrls, ComCtrls,
-  HtmlGlobals, StyleTypes, Htmlview, StyleUn, HTMLUn2, HtmlAbt;
+  ExtCtrls, Menus, StdCtrls, ComCtrls, Interfaces,
+  HtmlGlobals, StyleTypes, Htmlview, StyleUn, HTMLUn2, FrameViewer09, HtmlAbt;
 
 type
 {$ifdef FPC}
@@ -182,11 +182,12 @@ begin
   begin
     Position := Viewer.Position;
 {$ifdef Compiler16_Plus}
+    //BG, 19.06.2015: VCL version specific values in RichEdit.SelStart and RichEdit.SelLength
     Text := StringReplace(RichEdit.Text, #$0D#$0A, #$0A, [rfReplaceAll]);
 {$else}
-    Text := RichEdit.Text;    
-{$endif}    
-    Viewer.LoadFromString(Text);
+    Text := RichEdit.Text;
+{$endif}
+    Viewer.Text := Text;
     ViewerOK := True;
     Viewer.Position := Position;
     RichEditSelectionChange(Nil);
@@ -197,6 +198,7 @@ procedure TForm1.RichEditSelectionChange(Sender: TObject);
 {TRichEdit OnSelectionChange handler}
 var
   Pos1, Pos2, X, Y, VPos, SStr, SLen: integer;
+  CharSize: Integer;
 begin
   if ViewerOK then
   begin
@@ -204,14 +206,15 @@ begin
     SLen := RichEdit.SelLength;
     if SStr+SLen > Length(RichEdit.Text) then
        SLen := Length(RichEdit.Text)-SStr;
-    Pos1 := Viewer.FindDisplayPos(SStr*2, False);
+    CharSize := sizeof(ThtChar);
+    Pos1 := Viewer.FindDisplayPos(SStr*CharSize, False);
     if Pos1 < 0 then  {means it's past end}
-      Pos1 := Viewer.FindDisplayPos(SStr*2, True);
+      Pos1 := Viewer.FindDisplayPos(SStr*CharSize, True);
     if SLen <> 0 then
     begin
-      Pos2 := Viewer.FindDisplayPos((SStr+SLen)*2, False);
+      Pos2 := Viewer.FindDisplayPos((SStr+SLen)*CharSize, False);
       if Pos2 < 0 then
-        Pos2 := Viewer.FindDisplayPos((SStr+SLen-1)*2, False); {fix for above}
+        Pos2 := Viewer.FindDisplayPos((SStr+SLen-1)*CharSize, False); {fix for above}
     end
     else
       Pos2 := Pos1;

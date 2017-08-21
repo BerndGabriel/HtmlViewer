@@ -26,7 +26,11 @@ type
     DocumentSource1: TMenuItem;
     TestAsString1: TMenuItem;
     procedure MemoChange(Sender: TObject);
-    procedure HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: widestring);
+{$ifdef UNICODE}
+    procedure HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: string);
+{$else}
+    procedure HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: WideString);
+{$endif}
     procedure pmSelectAllClick(Sender: TObject);
     procedure pmCopyClick(Sender: TObject);
     procedure pmPasteClick(Sender: TObject);
@@ -46,20 +50,12 @@ implementation
 {$R *.dfm}
 
 procedure TFormLiveHtml.DocumentSource1Click(Sender: TObject);
-//var
-//  SourceList: TStringList;
 begin
-  Memo.Lines.Add(HtmlViewer.DocumentSource);
-//  SourceList := TStringList.Create;
-//  try
-//    SourceList.Text := HtmlViewer.DocumentSource;
-//    SourceList.SaveToFile(ChangeFileExt(Application.ExeName, '.log'));
-//  finally
-//    SourceList.Free;
-//  end;
+  Memo.Lines.Add(HtmlViewer.Text);
+//  Memo.Lines.SaveToFile(ChangeFileExt(Application.ExeName, '.log'));
 end;
 
-procedure TFormLiveHtml.HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: widestring);
+procedure TFormLiveHtml.HtmlViewerObjectClick(Sender, Obj: TObject; OnClick: ThtString);
 begin
   HtmlViewer.Clear;
 end;
@@ -76,7 +72,7 @@ end;
 procedure TFormLiveHtml.Loaded;
 begin
   inherited;
-  HtmlViewer.LoadFromString('Type or paste html text into the field below and see the results in this HtmlViewer.');
+  HtmlViewer.Text := 'Type or paste <u>html text</u> into the <b>field below</b> and see the results in <i>this HtmlViewer</i>.';
   Memo.Lines.Text := 'Type or paste html text into this field and see the results in the above HtmlViewer.';
   Memo.SelectAll;
   Caption := 'HtmlViewer ' + VersionNo + ' Live';
@@ -85,7 +81,7 @@ end;
 //-- BG ---------------------------------------------------------- 21.10.2012 --
 procedure TFormLiveHtml.MemoChange(Sender: TObject);
 begin
-  HtmlViewer.LoadFromString(Memo.Text);
+  HtmlViewer.Text := Memo.Text;
 end;
 
 //-- BG ---------------------------------------------------------- 12.09.2012 --
