@@ -1409,16 +1409,16 @@ type
     NumCols: Integer;       {Number columns in table}
     TableWidth: Integer;    {width of table}
     tblWidthAttr: Integer;  {Width attribute as entered}
-    CellPadding: Integer;
-    CellSpacingHorz, CellSpacingVert: Integer;
+    FCellPadding: Integer;
+    FCellSpacingHorz, FCellSpacingVert: Integer;
     BorderColorLight: TColor;
     BorderColorDark: TColor;
     EndList: Boolean;        {marker for copy}
     // end of Move()d fields
     DrawX: Integer;
     //DrawY: Integer;
-    BkGnd: Boolean;
-    BkColor: TColor;
+    FBkGnd: Boolean;
+    FBkColor: TColor;
     Widths: TIntArray;       {holds calculated column widths}
     Heights: TIntArray;      {holds calculated row heights}
     //
@@ -1454,6 +1454,11 @@ type
     procedure CopySelectedText; override;
     property ColSpecs: TColSpecList read FColSpecs;
     property TableHeight: Integer read SectionHeight write SectionHeight;   {height of table itself, not incl caption}
+    property CellPadding: Integer read FCellPadding;
+    property CellSpacingHorz: Integer read FCellSpacingHorz;
+    property CellSpacingVert: Integer read FCellSpacingVert;
+    property BkGnd: Boolean read FBkGnd;
+    property BkColor: TColor read FBkColor;
   end;
 
 //------------------------------------------------------------------------------
@@ -6532,8 +6537,8 @@ begin
 
   if BkGnd and (MargArray[BackgroundColor] = clNone) then
     MargArray[BackgroundColor] := BkColor;
-  Table.BkGnd := (MargArray[BackgroundColor] <> clNone) and not Assigned(BGImage);
-  Table.BkColor := MargArray[BackgroundColor]; {to be passed on to cells}
+  Table.FBkGnd := (MargArray[BackgroundColor] <> clNone) and not Assigned(BGImage);
+  Table.FBkColor := MargArray[BackgroundColor]; {to be passed on to cells}
 
   LeftSide := MargArray[MarginLeft] + MargArray[PaddingLeft] + MargArray[BorderLeftWidth];
   RightSide := MargArray[MarginRight] + MargArray[PaddingRight] + MargArray[BorderRightWidth];
@@ -9005,9 +9010,9 @@ begin
     FDisplay := pdTable;
   Rows := TRowList.Create;
 
-  CellPadding := 1;
-  CellSpacingHorz := 2;
-  CellSpacingVert := 2;
+  FCellPadding := 1;
+  FCellSpacingHorz := 2;
+  FCellSpacingVert := 2;
   BorderColor := clBtnFace;
   BorderColorLight := clBtnHighLight;
   BorderColorDark := clBtnShadow;
@@ -9047,12 +9052,12 @@ begin
 
         CellSpacingSy:
           begin
-            CellSpacingHorz := Min(40, Max(-1, Value));
-            CellSpacingVert := CellSpacingHorz;
+            FCellSpacingHorz := Min(40, Max(-1, Value));
+            FCellSpacingVert := CellSpacingHorz;
           end;
 
         CellPaddingSy:
-          CellPadding := Min(50, Max(0, Value));
+          FCellPadding := Min(50, Max(0, Value));
 
         BorderColorSy:
           TryStrToColor(Name, False, BorderColor);
@@ -9065,13 +9070,13 @@ begin
       end;
   if Prop.Collapse then
   begin
-    CellSpacingHorz := -1;
-    CellSpacingVert := -1;
+    FCellSpacingHorz := -1;
+    FCellSpacingVert := -1;
   end
   else if Prop.HasBorderSpacing then
   begin
-    CellSpacingHorz := Prop.GetBorderSpacingHorz;
-    CellSpacingVert := Prop.GetBorderSpacingVert;
+    FCellSpacingHorz := Prop.GetBorderSpacingHorz;
+    FCellSpacingVert := Prop.GetBorderSpacingVert;
   end;
 end;
 
@@ -9109,11 +9114,11 @@ begin
 
   if Document.PrintTableBackground then
   begin
-    BkGnd := HtmlTable.BkGnd;
-    BkColor := HtmlTable.BkColor;
+    FBkGnd := HtmlTable.BkGnd;
+    FBkColor := HtmlTable.BkColor;
   end
   else
-    BkGnd := False;
+    FBkGnd := False;
   TablePartRec := TTablePartRec.Create;
   TablePartRec.TablePart := Normal;
 end;
