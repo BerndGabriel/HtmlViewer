@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.8
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2017 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1601,7 +1601,7 @@ type
     ProgressStart: Integer;
     IsCopy: Boolean; {set when printing or making bitmap/metafile}
     NoOutput: Boolean;
-    TabOrderList: ThtStringList;
+    TabOrderList: TStringList;
     FirstPageItem: Boolean;
     StopTab: Boolean;
     InlineList: TObjectList; {actually TInlineList, a list of ThtInlineRec's}
@@ -2460,10 +2460,18 @@ begin
 end;
 
 destructor TFontObj.Destroy;
+var Index: Integer;
 begin
   FIArray.Free;
   TheFont.Free;
   UrlTarget.Free;
+  if FSection <> nil then
+    with FSection.Document.TabOrderList do
+    begin
+      Index := IndexOfObject(TabControl);
+      if Index >= 0 then
+        Delete(Index);
+    end;
   TabControl.Free;
   inherited Destroy;
 end;
@@ -7142,7 +7150,7 @@ begin
   Styles := THtmlStyleList.Create(Self);
   DrawList := TDrawList.Create;
   PositionList := TSectionBaseList.Create(False);
-  TabOrderList := ThtStringList.Create;
+  TabOrderList := TStringList.Create;
   TabOrderList.Sorted := True;
   TabOrderList.Duplicates := dupAccept;
   InLineList := TInlineList.Create(Self);
@@ -7441,6 +7449,7 @@ function ThtDocument.DoLogic(Canvas: TCanvas; Y: Integer; Width, AHeight, BlHt: 
 var
   I, J: Integer;
   Image: ThtImage;
+  Obj: TObject;
 begin
    {$IFDEF JPM_DEBUGGING}
   CodeSite.EnterMethod(Self,'ThtDocument.DoLogic');
@@ -7457,26 +7466,26 @@ begin
 
 {set up the tab order for form controls according to the TabIndex attributes}
   if Assigned(TabOrderList) and (TabOrderList.Count > 0) then
-    with TabOrderList do
+  begin
+    J := 0; {tab order starts with 0}
+    for I := 0 to TabOrderList.Count - 1 do {list is sorted into proper order}
     begin
-      J := 0; {tab order starts with 0}
-      for I := 0 to Count - 1 do {list is sorted into proper order}
+      Obj := TabOrderList.Objects[I];
+      if Obj is TFormControlObj then
       begin
-        if Objects[I] is TFormControlObj then
-        begin
-          TFormControlObj(Objects[I]).TabOrder := J;
-          Inc(J);
-        end
-        else if Objects[I] is ThtTabControl then
-        begin
-          ThtTabControl(Objects[I]).TabOrder := J;
-          Inc(J);
-        end
-        else
-          Assert(False, 'Unexpected item in TabOrderList');
-      end;
-      TabOrderList.Clear; {only need do this once}
+        TFormControlObj(Obj).TabOrder := J;
+        Inc(J);
+      end
+      else if Obj is ThtTabControl then
+      begin
+        ThtTabControl(Obj).TabOrder := J;
+        Inc(J);
+      end
+      else
+        Assert(False, 'Unexpected item in TabOrderList');
     end;
+    TabOrderList.Clear; {only need do this once}
+  end;
 
   Result := inherited DoLogic(Canvas, Y, Width, AHeight, BlHt, ScrollWidth, Curs);
 
