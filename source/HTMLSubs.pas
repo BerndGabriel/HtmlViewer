@@ -2466,12 +2466,14 @@ begin
   TheFont.Free;
   UrlTarget.Free;
   if FSection <> nil then
-    with FSection.Document.TabOrderList do
-    begin
-      Index := IndexOfObject(TabControl);
-      if Index >= 0 then
-        Delete(Index);
-    end;
+    if FSection.Document <> nil then
+      if FSection.Document.TabOrderList <> nil then
+        with FSection.Document.TabOrderList do
+        begin
+          Index := IndexOfObject(TabControl);
+          if Index >= 0 then
+            Delete(Index);
+        end;
   TabControl.Free;
   inherited Destroy;
 end;
