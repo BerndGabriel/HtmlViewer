@@ -1,8 +1,8 @@
 {
-Version   11.4
+Version   11.8
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2012 by Bernd Gabriel
+Copyright (c) 2011-2017 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -31,12 +31,9 @@ program FrameDem;
 
 uses
   Forms,
-  DemoSubs in 'DemoSubs.pas',
   Fontdlg in 'Fontdlg.pas' {FontForm},
-  Gopage in 'Gopage.pas' {GoPageForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
-  PrintStatusForm in 'PrintStatusForm.pas' {PrnStatusForm},
   SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
   FDemUnit in 'FDemUnit.pas' {Form1};
 
