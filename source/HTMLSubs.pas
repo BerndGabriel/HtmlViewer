@@ -7151,7 +7151,7 @@ begin
   MissingImages := ThtStringList.Create;
   MissingImages.Sorted := False;
   LinkList := TLinkList.Create;
-  PanelList := TPanelObjList.Create;
+  PanelList := TPanelObjList.Create(False);
   Styles := THtmlStyleList.Create(Self);
   DrawList := TDrawList.Create;
   PositionList := TSectionBaseList.Create(False);
@@ -7177,7 +7177,7 @@ begin
   AniList := ThtImageList.Create(False);
   MapList := ThtMap.Create;
   MissingImages := ThtStringList.Create;
-  PanelList := TPanelObjList.Create;
+  PanelList := TPanelObjList.Create(False);
   DrawList := TDrawList.Create;
   FDocument := Self;
   inherited CreateCopy(nil, T);
@@ -13534,7 +13534,9 @@ procedure TSection.CopySelectedText;
 var
   I, Strt, X1, X2: Integer;
   MySelB, MySelE: Integer;
+  TextAdded: Boolean;
 begin
+  TextAdded := False;
   MySelB := Document.SelB - StartCurs;
   MySelE := Document.SelE - StartCurs;
   for I := 0 to Lines.Count - 1 do
@@ -13554,8 +13556,10 @@ begin
       if (I = Lines.Count - 1) and (X2 = Ln) then
         Dec(X2);
       Document.CB.AddText(Start + X1, X2 - X1);
+      // Something was copied. Possibly add CR.
+      TextAdded := True;
     end;
-  if MySelE > Len then
+  if (MySelE > Len) and TextAdded then
     Document.CB.AddTextCR('', 0);
 end;
 
