@@ -3632,6 +3632,8 @@ begin
   NewBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
   SectionList.Add(NewBlock, TagIndex);
   SectionList := NewBlock.MyCell;
+  //BG, 17.01.2018: we need a section to remember initial attributes:
+  Section := TSection.Create(SectionList, Attributes, PropStack.Last, CurrentUrlTarget, True);
 
   SkipWhiteSpace;
   Next;
