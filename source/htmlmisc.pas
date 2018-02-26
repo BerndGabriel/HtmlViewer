@@ -59,7 +59,8 @@ uses
 {$ELSE}
   Types, Printers,
 {$ENDIF}
-  LclVersion, LclIntf, LMessages, LclType, LclProc, InterfaceBase,
+  LclVersion,
+  LclIntf, LMessages, LclType, LclProc, InterfaceBase,
   GraphType, Graphics, Controls;
    {Important: Be sure to list LclType after SysUtils and Classes
      in order to use LclType's THandle declaration (32 or 64 bits)
@@ -580,6 +581,11 @@ var
   htExpectsUTF8 : Boolean;  {True=widgetset expects to receive UTF8-encoded strings}
 
 implementation
+
+{$if lcl_fullversion >= 1080000}
+uses
+     LCLPlatformDef;
+{$endif}
 
  {These functions belong in LclIntf unit}
 

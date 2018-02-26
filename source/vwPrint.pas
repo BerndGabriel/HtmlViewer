@@ -42,11 +42,11 @@ interface
 uses
   {$ifdef FPC}
     RtlConsts,
+  LclType,
+  HtmlMisc,
     {$IFDEF MSWindows}
       WinUtilPrn,
     {$else}
-      LclType,
-      HtmlMisc,
     {$endif}
     LCLVersion,
   {$else}
@@ -111,7 +111,7 @@ type
     FAborted: Boolean;
     State: TvwPrinterState;
     DC: HDC;
-    DevMode: PDeviceMode;
+    DevMode: {$if lcl_fullversion >= 1080000} PDeviceModeW {$else} PDeviceMode {$ifend};
     DeviceMode: HGLOBAL;
     procedure SetState(Value: TvwPrinterState);
     function GetHandle: HDC;
@@ -390,20 +390,60 @@ end;
 
 procedure TvwPrinter.SetState(Value: TvwPrinterState);
 {$ifdef MsWindows}
-type
-  TCreateHandleFunc = function(DriverName, DeviceName, Output: PChar; InitData: PDeviceMode): HDC stdcall;
-var
-  CreateHandleFunc: TCreateHandleFunc;
-  Driver, Device, Port: array[0..100] of char;
+  function CreateDefaultPrinterHandle(CreateHandleFunc: TvwPrinterState): HDC;
 {$ifdef LCL}
-  PrnDev: TPrinterDevice;
+  var
+    PrnDev: TPrinterDevice;
+    Driver, Device, Port: {$if lcl_fullversion >= 1080000} WideString {$else} string {$ifend};
+  begin
+    PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
+    Device := PrnDev.Device;
+    Driver := PrnDev.Driver;
+    Port := PrnDev.Port;
+    {$if lcl_fullversion >= 1080000}
+      DevMode := PrnDev.DevModeW;
+      if CreateHandleFunc = psHandleDC then
+        Result := CreateDCW(PWideChar(Driver), PWideChar(Device), PWideChar(Port), DevMode)
+      else
+        Result := CreateICW(PWideChar(Driver), PWideChar(Device), PWideChar(Port), DevMode);
+    {$else}
+      DevMode := PrnDev.{$if lcl_fullversion >= 1020000} DevModeA {$else} DevMode {$ifend};
+      if CreateHandleFunc = psHandleDC then
+        Result := CreateDC(PChar(Driver), PChar(Device), PChar(Port), DevMode)
+      else
+        Result := CreateIC(PChar(Driver), PChar(Device), PChar(Port), DevMode);
+    {$ifend}
 {$else}
-  TmpDeviceMode: HGLOBAL;
+  var
+    TmpDeviceMode: HGLOBAL;
+    Driver, Device, Port: array[0..200] of {$ifdef UNICODE} WideChar {$else} char {$endif};
+  begin
+    Printers.Printer.GetPrinter(Device, Driver, Port, TmpDeviceMode);
+    if DeviceMode <> 0 then
+    begin
+      GlobalUnlock(DeviceMode);
+      GlobalFree(DeviceMode);
+    end;
+    DevMode := nil;
+    if TmpDeviceMode <> 0 then
+    begin
+      DeviceMode := CopyData(TmpDeviceMode);
+      if DeviceMode <> 0 then
+        DevMode := GlobalLock(DeviceMode);
+    end;
+    if CreateHandleFunc = psHandleDC then
+      Result := CreateDC(Driver, Device, Port, DevMode)
+    else
+      Result := CreateIC(Driver, Device, Port, DevMode);
 {$endif}
+  end;
+
+var
+  CreateHandleFunc: TvwPrinterState;
 begin
   if Value <> State then
   begin
-    CreateHandleFunc := nil;
+    CreateHandleFunc := psNoHandle;
     case Value of
       psNoHandle:
         begin
@@ -413,54 +453,30 @@ begin
           DeleteDC(DC);
           DC := 0;
         end;
+
       psHandleIC:
         if State <> psHandleDC then
-          CreateHandleFunc := CreateIC
+          CreateHandleFunc := psHandleIC
         else
+          // don't change the state from psHandleDC
           Exit;
+
       psHandleDC:
         begin
           if FCanvas <> nil then
             FCanvas.Handle := 0;
           if DC <> 0 then
             DeleteDC(DC);
-          CreateHandleFunc := CreateDC;
+          CreateHandleFunc := psHandleDC;
         end;
     end;
-    if Assigned(CreateHandleFunc) then
+    if CreateHandleFunc <> psNoHandle then
     begin
-{$ifdef LCL}
-      PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
-{$if lcl_fullversion >= 1020000}
-      DevMode := PrnDev.DevModeA;
-{$else}
-      DevMode := PrnDev.DevMode;
-{$ifend}
-      StrCopy(Device, PChar(PrnDev.Device));
-      StrCopy(Driver, PChar(PrnDev.Driver));
-      StrCopy(Port, PChar(PrnDev.Port));
-{$else}
-      Printers.Printer.GetPrinter(Device, Driver, Port, TmpDeviceMode);
-      if DeviceMode <> 0 then
-      begin
-        GlobalUnlock(DeviceMode);
-        GlobalFree(DeviceMode);
-      end;
-      DevMode := nil;
-      if TmpDeviceMode <> 0 then
-      begin
-        DeviceMode := CopyData(TmpDeviceMode);
-        if DeviceMode <> 0 then
-          DevMode := GlobalLock(DeviceMode);
-      end;
-{$endif}
-
-      DC := CreateHandleFunc(Driver, Device, Port, DevMode);
+      DC := CreateDefaultPrinterHandle(CreateHandleFunc);
       if DC = 0 then
         RaiseError(SInvalidPrinter);
       if FCanvas <> nil then
         FCanvas.Handle := DC;
-
     end;
     State := Value;
   end;
@@ -481,10 +497,9 @@ begin
 end;
 
 procedure TvwPrinter.BeginDoc;
-var
-  CTitle: array[0..31] of Char;
 {$ifdef MsWindows}
-  DocInfo: TDocInfo;
+var
+  DocInfo: TDocInfoW;
 {$endif}
 begin
   CheckPrinting(False);
@@ -495,19 +510,17 @@ begin
   FPageNumber := 1;
 
 {$ifdef MsWindows}
-  StrPLCopy(CTitle, Title, Length(CTitle) - 1);
   FillChar(DocInfo, SizeOf(DocInfo), 0);
   with DocInfo do
   begin
     cbSize := SizeOf(DocInfo);
-    lpszDocName := CTitle;
-    lpszOutput := nil;
+    lpszDocName := PWideChar(Title);
   end;
+  SetAbortProc(DC, AbortProc);
 {$endif}
   FPrinters.Put(DC, Self);
 {$ifdef MsWindows}
-  SetAbortProc(DC, AbortProc);
-  StartDoc(DC, DocInfo);
+  StartDocW(DC, {$ifdef LCL}@{$endif}DocInfo);
 {$endif}
   SetPrinting(True);
 {$ifdef MsWindows}
