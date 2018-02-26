@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.8
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -133,6 +133,12 @@ begin
 {$ENDIF}
 {$IFDEF Ver300}
     'Delphi 10 Seattle'
+{$ENDIF}
+{$IFDEF Ver310}
+    'Delphi 10.1 Berlin'
+{$ENDIF}
+{$IFDEF Ver320}
+    'Delphi 10.2 Tokyo'
 {$ENDIF}
 {$ifdef LCL}
     'Lazarus ' + lcl_version
