@@ -499,7 +499,7 @@ end;
 procedure TvwPrinter.BeginDoc;
 {$ifdef MsWindows}
 var
-  DocInfo: TDocInfoW;
+  DocInfo: {$if defined(LCL) and (lcl_fullversion < 1060000)} TDocInfo {$else} TDocInfoW {$ifend};
 {$endif}
 begin
   CheckPrinting(False);
@@ -514,7 +514,7 @@ begin
   with DocInfo do
   begin
     cbSize := SizeOf(DocInfo);
-    lpszDocName := PWideChar(Title);
+    lpszDocName := {$if defined(LCL) and (lcl_fullversion < 1060000)} PChar(Title) {$else} PWideChar(Title) {$ifend};;
   end;
   SetAbortProc(DC, AbortProc);
 {$endif}
