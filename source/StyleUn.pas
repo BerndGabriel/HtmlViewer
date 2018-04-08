@@ -1,4 +1,4 @@
-{
+﻿{
 Version   11.7
 Copyright (c) 1995-2008 by L. David Baldwin,
 Copyright (c) 2008-2016 by HtmlViewer Team
@@ -357,6 +357,8 @@ procedure ApplyBoxSettings(var AMarg : ThtMarginArray; const AUseQuirksMode : Bo
 function SkipWhiteSpace(const S: ThtString; I, L: Integer): Integer;
 function FontSizeConv(const Str: ThtString; OldSize, DefPointSize: Double; const AUseQuirksMode : Boolean): Double;
 function LengthConv(const Str: ThtString; Relative: Boolean; Base, EmSize, ExSize, Default: Integer): Integer;
+
+procedure CalcAutoMinMaxConstraints(W, H, MinW, MaxW, MinH, MaxH: Integer; out ResW, ResH: Integer);
 
 implementation
 uses
@@ -4077,6 +4079,121 @@ begin
   else
     // anything else but a number, maybe 'auto'
     Result := Default;
+end;
+
+procedure CalcAutoMinMaxConstraints(W, H, MinW, MaxW, MinH, MaxH: Integer; out ResW, ResH: Integer);
+// solving min/max constraint violations as described in CSS 2.1
+
+  procedure AdjustMinMax(var Min, Max: Integer);
+  begin
+    if Min < 0 then
+      Min := 0;
+    if Max < 0 then
+      Max := MaxInt;
+    if Max < Min then
+      Max := Min;
+  end;
+
+var
+  FacW, FacH: Double;
+begin
+  AdjustMinMax(MinW, MaxW);
+  AdjustMinMax(MinH, MaxH);
+
+{
+  if (w > max-width)
+    if (h < min-height)
+        max-width 	min-height
+    else if (h > max-height)
+      if (max-width/w > max-height/h)
+        max(max-height * w/h, min-width) 	max-height
+      else
+        max-width 	max(min-height, max-width * h/w)
+    else
+        max-width 	max(min-height, max-width * h/w)
+}
+  if W > MaxW then
+  begin
+    if H < MinH then
+    begin
+      ResW := MaxW;
+      ResH := MinH;
+      Exit;
+    end;
+
+    FacW := MaxW / W;
+    if H > MaxH then
+    begin
+      FacH := MaxH / H;
+      if FacW > FacH then
+      begin
+        ResH := MaxH;
+        ResW := Max(Round(FacH * W), MinW);
+        Exit;
+      end;
+    end;
+
+    ResW := MaxW;
+    ResH := Max(Round(FacW * H), MinH);
+    Exit;
+  end;
+
+{
+  if (w < min-width)
+    if (h > max-height)
+        min-width 	max-height
+    else if (h < min-height)
+      if (min-width/w <= min-height/h)
+        min(max-width, min-height * w/h) 	min-height
+      else
+        min-width 	min(min-width * h/w, max-height)
+    else
+       	min-width 	min(min-width * h/w, max-height)
+}
+  if W < MinW then
+  begin
+    if H > MaxH then
+    begin
+      ResW := MinW;
+      ResH := MaxH;
+      Exit;
+    end;
+
+    FacW := MinW / W;
+    if H < MinH then
+    begin
+      FacH := MinH / H;
+      if FacW <= FacH then
+      begin
+        ResH := MinH;
+        ResW := Min(Round(FacH * W), MaxW);
+        Exit;
+      end;
+    end;
+
+    ResW := MinW;
+    ResH := Min(Round(FacW * H), MaxH);
+    Exit;
+  end;
+
+  { h > max-height 	max(max-height * w/h, min-width) 	max-height }
+  if H > MaxH then
+  begin
+    ResH := MaxH;
+    ResW := Max((MaxH * W) div H, MinW);
+    Exit;
+  end;
+
+  { h < min-height 	min(min-height * w/h, max-width) 	min-height }
+  if H < MinH then
+  begin
+    ResH := MinH;
+    ResW := Min((MinH * W) div H, MaxW);
+    Exit
+  end;
+
+  ResW := W;
+  ResH := H;
 end;
 
 initialization
