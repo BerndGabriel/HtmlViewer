@@ -257,6 +257,7 @@ var
   tm: TTextmetric;
   DC: HDC;
   V: Variant;
+  GotTextMetrics: Boolean;
 begin
   SameFont := Find(Font);
   if SameFont = nil then
@@ -268,44 +269,48 @@ begin
     SameFont.Charset := Font.iCharSet;
     Add(SameFont);
 
-    // If this is a Symbol charset, then keep it that way.
-    // To check the font's real charset, use Default_Charset
-    SaveCharSet := SameFont.CharSet;
-    SameFont.CharSet := DEFAULT_CHARSET;
-    DC := GetDC(0);
-    try
+    GotTextMetrics := False;
+    if SameFont.Height <> 0 then
+    begin
+      DC := GetDC(0);
       Save := SelectObject(DC, SameFont.Handle);
       try
-        GetTextMetrics(DC, tm);
+        // If this is a Symbol charset, then keep it that way.
+        // To check the font's real charset, use Default_Charset
+        SaveCharSet := SameFont.CharSet;
+        SameFont.CharSet := DEFAULT_CHARSET;
+        GotTextMetrics := GetTextMetrics(DC, tm);
+        if GotTextMetrics then
+        begin
+          if tm.tmCharset = Symbol_Charset then
+            SameFont.Charset := Symbol_CharSet
+          else
+            SameFont.Charset := SaveCharSet;
+
+          {now get the info on the finalized font}
+          if SameFont.Charset <> Default_Charset then {else already have the textmetrics}
+            GetTextMetrics(DC, tm);
+        end
+        else
+          SameFont.Charset := SaveCharSet;
       finally
         SelectObject(DC, Save);
+        ReleaseDC(0, DC);
       end;
-      if tm.tmCharset = Symbol_Charset then
-        SameFont.Charset := Symbol_CharSet
-      else
-        SameFont.Charset := SaveCharSet;
-      {now get the info on the finalized font}
-      if SameFont.Charset <> Default_Charset then {else already have the textmetrics}
-      begin
-        Save := SelectObject(DC, SameFont.Handle);
-        try
-          GetTextMetrics(DC, tm);
-        finally
-          SelectObject(DC, Save);
-        end;
-      end;
-    finally
-      ReleaseDC(0, DC);
     end;
-    {calculate EmSize with current font rather than inherited}
-    SameFont.EmSize := tm.tmHeight - tm.tmInternalLeading;
-    SameFont.ExSize := SameFont.EmSize div 2; {apparently correlates with what browsers are doing}
-    SameFont.tmHeight := tm.tmHeight;
-    SameFont.tmDescent := tm.tmDescent;
-    SameFont.tmExternalLeading := tm.tmExternalLeading;
-    SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
-    SameFont.tmAveCharWidth := tm.tmAveCharWidth;
-    SameFont.tmCharset := tm.tmCharset;
+
+    if GotTextMetrics then
+    begin
+      {calculate EmSize with current font rather than inherited}
+      SameFont.EmSize := tm.tmHeight - tm.tmInternalLeading;
+      SameFont.ExSize := SameFont.EmSize div 2; {apparently correlates with what browsers are doing}
+      SameFont.tmHeight := tm.tmHeight;
+      SameFont.tmDescent := tm.tmDescent;
+      SameFont.tmExternalLeading := tm.tmExternalLeading;
+      SameFont.tmMaxCharWidth := tm.tmMaxCharWidth;
+      SameFont.tmAveCharWidth := tm.tmAveCharWidth;
+      SameFont.tmCharset := tm.tmCharset;
+    end;
   end;
 
   Result := ThtFont.Create;
