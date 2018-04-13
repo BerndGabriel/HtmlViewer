@@ -5343,11 +5343,16 @@ var
   var
     H: Integer;
   begin
-    H := MargArray[piHeight];
-    if not VarIsIntNull(MargArrayO[piHeight]) then
+    if VarIsIntNull(MargArrayO[piHeight]) then
+      Result := Max(ContentTop, ClientContentBot)
+    else
+    begin
       if Pos('%', VarToStr(MargArrayO[piHeight])) > 0 then
-        H := LengthConv(MargArrayO[piHeight], False, ContainingBox.Bottom - ContainingBox.Top, EmSize, ExSize, 0);
-    Result := Max(H, Max(ContentTop, ClientContentBot));
+        H := LengthConv(MargArrayO[piHeight], False, ContainingBox.Bottom - ContainingBox.Top, EmSize, ExSize, 0)
+      else
+        H := MargArray[piHeight];
+      Result := Max(H + ContentTop, ContentTop);
+    end;
   end;
 
   procedure DrawLogicAsBlock;
@@ -13343,7 +13348,7 @@ var
           NewCP := Addon <> 0;
         end;
 
-        if not Document.NoOutput then
+        if not Document.NoOutput and (Canvas.Font.Size <> 0) and (Canvas.Font.Color <> clNone) then
         begin
           Tmp := I;
           if Cnt - I <= 0 then
@@ -13351,6 +13356,7 @@ var
               ' ', BrkCh:
                 Dec(Tmp); {at end of line, don't show space or break}
             end;
+
           if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not OwnerBlock.HideOverflow then
           begin {so will clip in Table cells}
             ARect := Rect(IMgr.LfEdge, Y - LR.LineHt - LR.SpaceBefore - YOffset, X + IMgr.ClipWidth, Y - YOffset + 1);
@@ -13396,37 +13402,36 @@ var
             Canvas.Brush.Color := clWhite;
             Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
           end;
-        end;
 
-        if FO.Active or IsCopy and Assigned(Document.LinkDrawnEvent)
-          and (FO.UrlTarget.Url <> '') then
-        begin
-          Tmp := Y - Descent + FO.Descent + Addon - YOffset;
-          ARect := Rect(CPx, Tmp - FO.FontHeight, CP1x + 1, Tmp);
-          if FO.Active then
+          if FO.Active or IsCopy and Assigned(Document.LinkDrawnEvent)
+            and (FO.UrlTarget.Url <> '') then
           begin
-            Canvas.Font.Color := clBlack; {black font needed for DrawFocusRect}
-            Canvas.Handle; {Dummy call needed to make Delphi add font color change to handle}
-            if Document.TheOwner.ShowFocusRect then //MK20091107
-              Canvas.DrawFocusRect(ARect);
+            Tmp := Y - Descent + FO.Descent + Addon - YOffset;
+            ARect := Rect(CPx, Tmp - FO.FontHeight, CP1x + 1, Tmp);
+            if FO.Active then
+            begin
+              Canvas.Font.Color := clBlack; {black font needed for DrawFocusRect}
+              Canvas.Handle; {Dummy call needed to make Delphi add font color change to handle}
+              if Document.TheOwner.ShowFocusRect then //MK20091107
+                Canvas.DrawFocusRect(ARect);
+            end;
+            if Assigned(Document.LinkDrawnEvent) then
+              Document.LinkDrawnEvent(Document.TheOwner, Document.LinkPage,
+                FO.UrlTarget.Url, FO.UrlTarget.Target, ARect);
           end;
-          if Assigned(Document.LinkDrawnEvent) then
-            Document.LinkDrawnEvent(Document.TheOwner, Document.LinkPage,
-              FO.UrlTarget.Url, FO.UrlTarget.Target, ARect);
-        end;
-        CPx := CP1x;
+          CPx := CP1x;
 
-      {the following puts a dummy caret at the very end of text if it should be there}
-        if Document.ShowDummyCaret and not Inverted
-          and ((MySelB = Len) and (Document.SelB = Document.Len))
-          and (Cnt = I) and (LineNo = Lines.Count - 1) then
-        begin
-          Canvas.Pen.Color := Canvas.Font.Color;
-          Tmp := Y - Descent + FO.Descent + Addon - YOffset;
-          Canvas.Brush.Color := clWhite;
-          Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
+        {the following puts a dummy caret at the very end of text if it should be there}
+          if Document.ShowDummyCaret and not Inverted
+            and ((MySelB = Len) and (Document.SelB = Document.Len))
+            and (Cnt = I) and (LineNo = Lines.Count - 1) then
+          begin
+            Canvas.Pen.Color := Canvas.Font.Color;
+            Tmp := Y - Descent + FO.Descent + Addon - YOffset;
+            Canvas.Brush.Color := clWhite;
+            Canvas.Rectangle(CPx, Tmp, CPx + 1, Tmp - FO.FontHeight);
+          end;
         end;
-
       end;
       Dec(Cnt, I);
       Inc(Start, I);
