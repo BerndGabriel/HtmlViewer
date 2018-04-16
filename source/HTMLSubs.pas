@@ -848,6 +848,7 @@ type
 
     PRec: PtPositionRec; // background image position
     Visibility: ThtVisibilityStyle;
+    TopAuto: Boolean;
     BottomAuto: Boolean;
     BreakBefore, BreakAfter, KeepIntact: Boolean;
     HideOverflow: Boolean;
@@ -4320,31 +4321,54 @@ function TCellBasic.CheckLastBottomMargin: Boolean;
  set it to 0}
 var
   TB: TSectionBase;
-  I: Integer;
-  Done: Boolean;
+  Block: TBlock absolute TB;
+  I, J: Integer;
 begin
   Result := False;
-  I := Count - 1; {find the preceding block that isn't absolute positioning}
-  Done := False;
-  while (I >= 0) and not Done do
+
+  I := 0; {find first block that isn't absolute positioning}
+  while I < Count do
   begin
     TB := Items[I];
-    if (TB is TBlock) and (TBlock(TB).Positioning <> PosAbsolute) then
-      Done := True
-    else
-      Dec(I);
+    if TB is TSection and TSection(TB).BuffS.Trim.IsEmpty then
+    else if not (TB is TBlock) or (TBlock(TB).Positioning <> PosAbsolute) then
+        break;
+
+    Inc(I);
   end;
-  if I >= 0 then
+  if I < Count then
   begin
-    TB := Items[I];
     if TB is TBlock then
     begin
-      with TBlock(TB) do
-        if BottomAuto then
-        begin
-          MargArray[MarginBottom] := 0;
-          Result := True;
-        end;
+      if Block.TopAuto then
+      begin
+        Block.MargArray[MarginTop] := 0;
+//        Result := True;
+      end;
+//      if TB is TBlockLI then
+//        Result := TBlockLI(TB).MyCell.CheckLastBottomMargin;
+    end
+  end;
+
+  J := Count - 1; {find the preceding block that isn't absolute positioning}
+  while J >= I do
+  begin
+    TB := Items[J];
+    if TB is TSection and TSection(TB).BuffS.Trim.IsEmpty then
+    else if not (TB is TBlock) or (TBlock(TB).Positioning <> PosAbsolute) then
+      break;
+
+    Dec(J);
+  end;
+  if J >= 0 then
+  begin
+    if TB is TBlock then
+    begin
+      if Block.BottomAuto then
+      begin
+        Block.MargArray[MarginBottom] := 0;
+        Result := True;
+      end;
       if TB is TBlockLI then
         Result := TBlockLI(TB).MyCell.CheckLastBottomMargin;
     end;
@@ -4732,7 +4756,6 @@ end;
 procedure TBlock.CollapseAdjoiningMargins;
 {adjacent vertical margins need to be reduced}
 var
-  TopAuto: Boolean;
   TB: TSectionBase;
   Block: TBlock absolute TB;
   LastMargin, I: Integer;
@@ -5348,7 +5371,7 @@ var
     else
     begin
       if Pos('%', VarToStr(MargArrayO[piHeight])) > 0 then
-        H := LengthConv(MargArrayO[piHeight], False, ContainingBox.Bottom - ContainingBox.Top, EmSize, ExSize, 0)
+        H := LengthConv(MargArrayO[piHeight], False, AHeight, EmSize, ExSize, 0)
       else
         H := MargArray[piHeight];
       Result := Max(H + ContentTop, ContentTop);
