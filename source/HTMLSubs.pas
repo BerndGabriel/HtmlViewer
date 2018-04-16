@@ -11772,11 +11772,19 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 27.01.2012 --
-function CanWrapAfter(C: WideChar): Boolean;
+function CanWrapAfter(PC: PWideChar): Boolean;
  {$ifdef UseInline} inline; {$endif}
 begin
-  case C of
-    WideChar('-'), WideChar('/'), WideChar('?'):
+  case PC^ of
+    WideChar('-'):
+      case (PC+1)^ of
+        WideChar('0')..WideChar('9'):
+          Result := False;
+      else
+        Result := True;
+      end;
+
+    WideChar('/'), WideChar('?'):
       Result := True
   else
     Result := False;
@@ -11784,14 +11792,22 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 20.09.2010 --
-function CanWrap(C: WideChar): Boolean;
+function CanWrap(PC: PWideChar): Boolean;
  {$ifdef UseInline} inline; {$endif}
 begin
-  case C of
-    WideChar(' '), WideChar('-'), WideChar('/'), WideChar('?'), ImgPan, FmCtl, BrkCh:
+  case PC^ of
+    WideChar('-'):
+      case (PC+1)^ of
+        WideChar('0')..WideChar('9'):
+          Result := False;
+      else
+        Result := True;
+      end;
+
+    WideChar(' '), WideChar('/'), WideChar('?'), ImgPan, FmCtl, BrkCh:
       Result := True
   else
-    Result := WrapChar(C);
+    Result := WrapChar(PC^);
   end;
 end;
 
@@ -11906,7 +11922,7 @@ begin
     {find the next string of chars that can't be wrapped}
     begin
       SoftHyphen := False;
-      if CanWrap(P1^) and (Brk[I - 1] = twYes) then
+      if CanWrap(P1) and (Brk[I - 1] = twYes) then
       begin
         Inc(P1);
         Inc(I);
@@ -11920,9 +11936,9 @@ begin
             twSoft, twOptional:
               break;
           end;
-        until (P1^ = #0) or (CanWrap(P1^) and (Brk[I - 1] = twYes));
+        until (P1^ = #0) or (CanWrap(P1) and (Brk[I - 1] = twYes));
         SoftHyphen := Brk[I - 2] = twSoft;
-        if CanWrapAfter(P1^) then
+        if CanWrapAfter(P1) then
         begin
           Inc(P1);
           Inc(I);
@@ -12705,7 +12721,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
                 break;
 
             else
-              if CanWrap(P^) or WrapChar((P + 1)^) then
+              if CanWrap(P) or WrapChar((P + 1)^) then
                 break; // can wrap after this or before next char.
             end;
             Dec(P);
@@ -12720,7 +12736,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
             begin
               P := PStart + N - 1;
 
-              while (P <> Last) and not CanWrapAfter(P^) and not (Brk[P - Buff] in [twSoft, twOptional])
+              while (P <> Last) and not CanWrapAfter(P) and not (Brk[P - Buff] in [twSoft, twOptional])
               do
               begin
                 case Brk[P - Buff + 1] of
