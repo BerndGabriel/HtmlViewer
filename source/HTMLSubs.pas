@@ -4330,7 +4330,7 @@ begin
   while I < Count do
   begin
     TB := Items[I];
-    if TB is TSection and TSection(TB).BuffS.Trim.IsEmpty then
+    if TB is TSection and (Length(Trim(TSection(TB).BuffS)) = 0) then
     else if not (TB is TBlock) or (TBlock(TB).Positioning <> PosAbsolute) then
         break;
 
@@ -4354,7 +4354,7 @@ begin
   while J >= I do
   begin
     TB := Items[J];
-    if TB is TSection and TSection(TB).BuffS.Trim.IsEmpty then
+    if TB is TSection and (Length(Trim(TSection(TB).BuffS)) = 0) then
     else if not (TB is TBlock) or (TBlock(TB).Positioning <> PosAbsolute) then
       break;
 
@@ -6383,7 +6383,7 @@ begin
           BkGnd := TryStrToColor(Name, False, BkColor);
 
         BackgroundSy:
-          if not Assigned(BGImage) then
+          if not Assigned(BGImage) and (Length(Name) > 0) then
           begin
             BGImage := TImageObj.SimpleCreate(MyCell, Name);
             PRec.X.PosType := bpDim;
