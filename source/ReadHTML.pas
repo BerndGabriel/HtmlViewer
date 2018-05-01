@@ -1460,33 +1460,42 @@ var
   FormBlock, DivBlock: TBlock;
   FieldsetBlock: TFieldsetBlock;
   IsFieldsetLegend: Boolean;
+//TODO -oBG, 15.03.2014: support display:inline
+{$ifdef DO_PD_INLINE}
   IsInline: Boolean;
+{$endif}
 begin
   case Sym of
     DivSy, MainSy, HeaderSy, NavSy, SectionSy, ArticleSy, AsideSy, FooterSy, HGroupSy, BlockQuoteSy:
       begin
         SectionList.Add(Section, TagIndex);
         PushNewProp(Sym, Attributes);
-        IsInline := PropStack.Last.Display = pdInline;
         CheckForAlign;
 
+{$ifdef DO_PD_INLINE}
+        IsInline := PropStack.Last.Display = pdInline;
         if not IsInline then
         begin
+{$endif}
           DivBlock := TBlock.Create(SectionList, Attributes, PropStack.Last);
           SectionList.Add(DivBlock, TagIndex);
           SectionList := DivBlock.MyCell;
+{$ifdef DO_PD_INLINE}
         end
         else
           DivBlock := nil;
-        Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, not IsInline);
+{$endif}
+        Section := TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, SectionList.Count = 0);
         Next;
         DoBody([EndSymbFromSymb(Sym)] + TermSet);
         SectionList.Add(Section, TagIndex);
         if InHref then
           DoAEnd;
         PopAProp(Sym);
+{$ifdef DO_PD_INLINE}
         if not IsInline then
         begin
+{$endif}
           if SectionList.CheckLastBottomMargin then
           begin
             DivBlock.MargArray[MarginBottom] := ParagraphSpace;
@@ -1494,8 +1503,9 @@ begin
           end;
           DivBlock.CollapseNestedMargins;
           SectionList := DivBlock.OwnerCell;
+{$ifdef DO_PD_INLINE}
         end;
-
+{$endif}
         Section := nil; // TSection.Create(SectionList, nil, PropStack.Last, CurrentUrlTarget, False);
         if Sy = EndSymbFromSymb(Sym) then
           Next;
