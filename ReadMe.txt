@@ -2,8 +2,8 @@
 Welcome at GitHub.
 --------------------------------------------------------------------------------
 
-The current version is 11.7 in the default branch "HtmlViewer-11.7".
-The next version is growing up in branch "master".
+The current version is 11.8 in the default branch "HtmlViewer-11.8".
+The next version is growing up in branch "master". (You're currently viewing "master" branch.)
 
 Developers under Windows might want to use Tortoise-GIT or "Git Gui" to keep 
 their sources up-to-date.
