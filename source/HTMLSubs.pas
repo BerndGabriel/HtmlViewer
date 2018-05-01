@@ -3046,7 +3046,7 @@ begin
 
   if not ViewImages or SubstImage then
   begin
-    if not SubstImage and ((SpecWidth >= 0) or (SpecHeight >= 0)) then
+    if ClientSizeKnown or (not SubstImage and ((SpecWidth >= 0) or (SpecHeight >= 0))) then
     begin {size to whatever is specified}
       AltWidth := ObjWidth;
       AltHeight := ObjHeight;
