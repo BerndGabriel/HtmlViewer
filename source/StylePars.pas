@@ -1857,6 +1857,11 @@ begin
               GetCh;
             LCh := ' ';
           end;
+
+        '[', ']':
+            // not yet supported.
+            // skip and ignore style.
+            Ignore := True;
       else
         break;
       end;
