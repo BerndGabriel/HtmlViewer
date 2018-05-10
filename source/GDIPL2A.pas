@@ -347,13 +347,21 @@ begin
 end;
 
 procedure ThtGpGraphics.DrawImage(Image: THtGPImage; X, Y, Width, Height: Integer);
+var
+  IW, IH: Integer;
 begin
   if ((Image.Width <= 10) and (Width > Image.Width)) or ((Image.Height <= 10) and (Height > Image.Height)) then
     DrawSmallStretchedImage(Image, X, Y, Width, Height)
   else
     //BG, 22.11.2016: calling GdipDrawImageRectI() tents to skip the right and bottom parts of the image.
     //GDICheck('ThtGpGraphics.DrawImage', GdipDrawImageRectI(fGraphics, Image.fHandle, X, Y, Width, Height));
-    DrawImage(Image, X, Y, Width, Height, 0, 0, Image.Width + 1, Image.Height + 1);
+    IW := Image.Width;
+    if Width < IW then
+      Inc(IW);
+    IH := Image.Height;
+    if Height < IH then
+      Inc(IH);
+    DrawImage(Image, X, Y, Width, Height, 0, 0, IW, IH);
 end;
 
 procedure ThtGpGraphics.DrawSmallStretchedImage(Image: THtGPImage; X, Y, Width, Height: Integer);
