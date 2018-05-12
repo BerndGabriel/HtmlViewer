@@ -32,7 +32,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LCLVersion, LCLIntf, InterfaceBase,
+  LCLVersion, LCLIntf, InterfaceBase, LCLPlatformDef,
 {$endif}
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Buttons, ExtCtrls,
   HtmlGlobals, Htmlview, HTMLUn2, StdCtrls;
