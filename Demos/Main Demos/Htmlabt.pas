@@ -54,7 +54,7 @@ implementation
 {$if lcl_fullversion >= 1080000}
 uses
   LCLPlatformDef;
-{$endif}
+{$ifend}
 
 {$ifdef LCL}
   {$R *.lfm}
