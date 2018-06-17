@@ -24,8 +24,6 @@ object Form1: TForm1
     Top = 27
     Width = 1179
     Height = 782
-    CharSet = DEFAULT_CHARSET
-    CodePage = 0
     DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
