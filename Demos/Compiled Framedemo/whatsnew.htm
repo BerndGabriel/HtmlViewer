@@ -20,6 +20,32 @@
 
 <!----------------------------------------------------------------------------->
 
+<h4 class="heading">Version 11.9</h4>
+<h5>Added</h5>
+<ul>
+  <li>Lazarus 1.9 Support
+  <li>RAD Studio 10.2 Support
+  <li>Published Properties: THtmlViewer.AutoSize, THtmlViewer.Constraints and THtmlViewer.Text.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/219">219</a>: Support for max-width and max-height for images and panels.
+</ul>
+<h5>Enhanced</h5>
+<ul>
+  <li>Added published property THtmlViewer.Text replaces public property THtmlViewer.DocumentSource.
+  <li>Use published property THtmlViewer.Text instead of LoadFromString where appropriate.
+  <li>Allow enable/disable of the BorderSinglePixelException in function DrawOnePolygon via {$define BorderSinglePixelException}. (Pieter Polak)
+</ul>                                                                            
+<h5>Fixed</h5>                                                                   
+<ul>                                                                             
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/185">185</a>: Rendering not as expected: Collapse margins of &lt;td&gt; and first contained block like is done with last contained block and &lt;td&gt;
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/204">204</a>: Displaying a picture: Additional pixel due to #170 now only if destination is smaller than source.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/216">216</a>: Superscript or subscript on first paragraph char not correct.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/218">218</a>: Images with predefined width and height lead to display errors when using WaitStream.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/221">221</a>: Wrapping of negative numbers - do not break away minus from its digits.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/229">229</a>: Error table in small window: ignore conditional styles (with []) which are not supported.
+</ul>
+
+<!----------------------------------------------------------------------------->
+
 <h4 class="heading">Version 11.8</h4>
 <h5>Added</h5>
 <ul>
@@ -68,7 +94,6 @@
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/177">177</a>: Memory leak in THtmlViewer constructor.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/184">184</a>: Exception on gettting objects attributes.
  </ul>
-
 
 <!----------------------------------------------------------------------------->
 

@@ -1,7 +1,7 @@
 {
-Version   11.8
+Version   11.9
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2017 by HtmlViewer Team
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -57,7 +57,7 @@ uses
   HtmlSymb;
 
 const
-  VersionNo = '11.8';
+  VersionNo = '11.9';
   MaxHScroll = 100000; {max horizontal display in pixels}
   Tokenleng = 300;
   TopLim = -200; {drawing limits}
@@ -634,8 +634,8 @@ type
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
     // set to determine if child objects should be in "quirks" mode
     property UseQuirksMode: Boolean read GetUseQuirksMode;
-    property CodePage: Integer read FCodePage write SetCodePage;
-    property CharSet: TFontCharset read FCharSet write SetCharset;
+    property CodePage: Integer read FCodePage write SetCodePage default 0;
+    property CharSet: TFontCharset read FCharSet write SetCharset default DEFAULT_CHARSET;
     property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
     property DefFontColor: TColor read FFontColor write SetFontColor default clBtnText;
     property DefFontName: TFontName read FFontName write SetFontName stored StoreFontName;
