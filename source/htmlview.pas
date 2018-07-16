@@ -1,7 +1,7 @@
 {
-Version   11.8
+Version   11.9
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2017 by HtmlViewer Team
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -857,7 +857,7 @@ begin
 
   FPaintPanel := TPaintPanel.CreateIt(Self, Self);
   FPaintPanel.ParentFont := False;
-  FPaintPanel.Parent := self;
+  FPaintPanel.Parent := FBorderPanel; //Self;
   FPaintPanel.BevelOuter := bvNone;
   FPaintPanel.BevelInner := bvNone;
 {$ifndef LCL}
@@ -872,6 +872,7 @@ begin
   FPaintPanel.Touch := Touch;
   FPaintPanel.OnGesture := HtmlGesture;
 {$endif}
+
   FVScrollBar := TScrollBar.Create(Self);
   FVScrollBar.Kind := sbVertical;
   FVScrollBar.SmallChange := 16;
@@ -879,7 +880,7 @@ begin
   FVScrollBar.Visible := False;
   FVScrollBar.TabStop := False;
   sbWidth := FVScrollBar.Width;
-  FVScrollBar.Parent := Self;
+  FVScrollBar.Parent := FBorderPanel; //Self;
 
   FHScrollBar := TScrollBar.Create(Self);
   FHScrollBar.Kind := sbHorizontal;
@@ -887,7 +888,7 @@ begin
   FHScrollBar.OnScroll := ScrollHorz;
   FHScrollBar.Visible := False;
   FHScrollBar.TabStop := False;
-  FHScrollBar.Parent := Self;
+  FHScrollBar.Parent := FBorderPanel; //Self;
 
   FScrollBars := ssBoth;
 
