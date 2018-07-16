@@ -1,134 +1,140 @@
 object Form1: TForm1
   Left = 213
+  Height = 475
   Top = 177
   Width = 708
-  Height = 475
   Caption = 'Form1'
-  Font.Charset = DEFAULT_CHARSET
+  ClientHeight = 455
+  ClientWidth = 708
   Font.Color = clWindowText
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
-  Font.Style = []
   Menu = MainMenu1
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
+  LCLVersion = '1.8.2.0'
   object Panel1: TPanel
     Left = 0
-    Top = 0
-    Width = 700
     Height = 41
+    Top = 0
+    Width = 708
     Align = alTop
+    ClientHeight = 41
+    ClientWidth = 708
     TabOrder = 0
     object Button1: TButton
       Tag = 3
       Left = 246
+      Height = 25
       Top = 6
       Width = 25
-      Height = 25
       Caption = 'B'
-      TabOrder = 0
       OnClick = ButtonClick
+      TabOrder = 0
     end
     object Button2: TButton
       Tag = 1
       Left = 270
+      Height = 25
       Top = 6
       Width = 25
-      Height = 25
       Caption = 'I'
-      TabOrder = 1
       OnClick = ButtonClick
+      TabOrder = 1
     end
     object Button3: TButton
       Tag = 2
       Left = 294
+      Height = 25
       Top = 6
       Width = 25
-      Height = 25
       Caption = 'U'
-      TabOrder = 2
       OnClick = ButtonClick
+      TabOrder = 2
     end
   end
   object Panel: TPanel
     Left = 0
+    Height = 395
     Top = 41
-    Width = 700
-    Height = 369
+    Width = 708
     Align = alClient
     BevelOuter = bvNone
+    ClientHeight = 395
+    ClientWidth = 708
     TabOrder = 1
     object Splitter: TSplitter
-      Left = 0
-      Top = 207
-      Width = 700
-      Height = 5
       Cursor = crVSplit
+      Left = 0
+      Height = 5
+      Top = 209
+      Width = 708
       Align = alTop
       OnMoved = SplitterMoved
+      ResizeAnchor = akTop
     end
     object RichEdit: TMemo
       Left = 0
-      Top = 0
-      Width = 700
       Height = 209
+      Top = 0
+      Width = 708
       Align = alTop
-      Font.Charset = ANSI_CHARSET
+      Font.CharSet = ANSI_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
       Font.Name = 'Courier New'
-      Font.Style = []
+      OnChange = RichEdChange
       ParentFont = False
       ScrollBars = ssBoth
       TabOrder = 0
       WordWrap = False
-      OnChange = RichEdChange
     end
     object Panel2: TPanel
       Left = 0
-      Top = 212
-      Width = 700
-      Height = 155
+      Height = 181
+      Top = 214
+      Width = 708
       Align = alClient
       BevelOuter = bvLowered
       BevelWidth = 2
       Caption = 'Panel2'
+      ClientHeight = 181
+      ClientWidth = 708
       Color = clWindow
+      ParentColor = False
       TabOrder = 1
-      object Viewer: THTMLViewer
-        Left = 0
-        Top = 0
-        Width = 696
-        Height = 151
-        Cursor = 2
-        OnHotSpotCovered = ViewerHotSpotCovered
-        OnHotSpotClick = ViewerHotSpotClick
-        TabOrder = 0
-        Align = alClient
-        DefBackground = clWindow
+      object Viewer: THtmlViewer
+        Left = 2
+        Height = 177
+        Top = 2
+        Width = 704
         BorderStyle = htFocused
-        HistoryMaxCount = 0
+        DefBackground = clWindow
         DefFontName = 'Times New Roman'
         DefPreFontName = 'Courier New'
+        HistoryMaxCount = 0
+        HtOptions = [htShowDummyCaret]
         NoSelect = False
-        CharSet = DEFAULT_CHARSET
+        PrintMarginBottom = 2
         PrintMarginLeft = 2
         PrintMarginRight = 2
         PrintMarginTop = 2
-        PrintMarginBottom = 2
-        htOptions = [htShowDummyCaret]
+        PrintScale = 1
+        OnHotSpotClick = ViewerHotSpotClick
+        OnHotSpotCovered = ViewerHotSpotCovered
+        Align = alClient
+        TabOrder = 0
         OnMouseUp = ViewerMouseUp
       end
     end
   end
   object Panel3: TPanel
     Left = 0
-    Top = 410
-    Width = 700
     Height = 19
+    Top = 436
+    Width = 708
     Align = alBottom
     Alignment = taLeftJustify
     BevelInner = bvLowered
@@ -136,8 +142,8 @@ object Form1: TForm1
     TabOrder = 2
   end
   object MainMenu1: TMainMenu
-    Left = 400
-    Top = 8
+    left = 400
+    top = 8
     object File1: TMenuItem
       Caption = '&File'
       object New1: TMenuItem
@@ -194,11 +200,11 @@ object Form1: TForm1
     end
   end
   object OpenDialog: TOpenDialog
-    DefaultExt = 'htm'
+    DefaultExt = '.htm'
     Filter = 'HTML Files|*.htm; *.html|All Files|*.*'
-    Left = 440
+    left = 440
   end
   object SaveDialog1: TSaveDialog
-    Left = 472
+    left = 472
   end
 end

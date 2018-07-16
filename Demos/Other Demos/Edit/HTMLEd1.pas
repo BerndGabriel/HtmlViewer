@@ -1,7 +1,7 @@
 {
-Version   11.5
+Version   11.9
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2015 by HtmlViewer Team
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 The purpose of this demo is to illustrate the usage of FindDisplayPos,
 FindSourcePos, and DisplayPosToXY methods and SelStart, SelLength properties.
@@ -25,7 +25,7 @@ interface
 
 uses
 {$ifdef FPC}
-  LCLIntf, LCLType, LMessages, FileUtil, ShellAPI,
+  LCLVersion, LCLIntf, LCLType, LMessages, FileUtil, ShellAPI, Interfaces,
 {$else}
   ShellAPI, Windows,
 {$endif}
@@ -33,8 +33,8 @@ uses
   System.UITypes,
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, StdCtrls, ComCtrls, Interfaces,
-  HtmlGlobals, StyleTypes, Htmlview, StyleUn, HTMLUn2, FrameViewer09, HtmlAbt;
+  ExtCtrls, Menus, StdCtrls, ComCtrls,
+  HtmlGlobals, StyleTypes, Htmlview, StyleUn, HTMLUn2, HtmlAbt;
 
 type
 {$ifdef FPC}
@@ -187,7 +187,11 @@ begin
 {$else}
     Text := RichEdit.Text;
 {$endif}
+{$ifdef LCL}
+    Viewer.Text := UTF8Decode(Text);
+{$else}
     Viewer.Text := Text;
+{$endif}
     ViewerOK := True;
     Viewer.Position := Position;
     RichEditSelectionChange(Nil);
@@ -198,14 +202,16 @@ procedure TForm1.RichEditSelectionChange(Sender: TObject);
 {TRichEdit OnSelectionChange handler}
 var
   Pos1, Pos2, X, Y, VPos, SStr, SLen: integer;
+  Text: string;
   CharSize: Integer;
 begin
-  if ViewerOK then
+   if ViewerOK then
   begin
     SStr := RichEdit.SelStart;
     SLen := RichEdit.SelLength;
-    if SStr+SLen > Length(RichEdit.Text) then
-       SLen := Length(RichEdit.Text)-SStr;
+    Text := RichEdit.Text;
+    if SStr+SLen > Length(Text) then
+       SLen := Length(Text)-SStr;
     CharSize := sizeof(ThtChar);
     Pos1 := Viewer.FindDisplayPos(SStr*CharSize, False);
     if Pos1 < 0 then  {means it's past end}
@@ -459,11 +465,11 @@ end;
 //-- BG ---------------------------------------------------------- 08.01.2011 --
 procedure TForm1.LoadFile(Filename: String);
 begin
-{$ifdef LCL}
+{$if (lcl_fullversion > 0) and (lcl_fullversion < 1060400)}
   SetCurrentDirUTF8(ExtractFilePath(Filename));
 {$else}
   SetCurrentDir(ExtractFilePath(Filename));
-{$endif}
+{$ifend}
   CurrentFile := Filename;
   Caption := CurrentFile;
   RichEdit.Lines.LoadFromFile(Filename);
