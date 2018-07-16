@@ -6,9 +6,12 @@ interface
 
 uses
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Spin, Buttons,
-  StyleUn, HTMLUn2, Htmlview;
+  HtmlGlobals, StyleUn, HTMLUn2, Htmlview;
 
 type
+
+  { TFontForm }
+
   TFontForm = class(TForm)
     BackgroundColorButton: TSpeedButton;
     BackgroundColorComboBox: TComboBox;
@@ -39,7 +42,10 @@ type
     procedure BackgroundColorButtonClick(Sender: TObject);
     procedure FontNameButtonClick(Sender: TObject);
   private
-    Colors: TStringList;
+    FCustomFontColor: TColor;
+    FCustomBackgroundColor: TColor;
+    FCustomHotSpotColor: TColor;
+    Colors: ThtStringList;
     CustomColorIndex: Integer;
     InitialFontName: string;
     InitialFontSize: integer;
@@ -89,7 +95,7 @@ const
 function ColorOfIndex(Colors: TStrings; Index: Integer; DefaultColor: TColor): TColor;
 begin
   try
-    Result := TColor(Colors.Objects[Index]);
+    Result := PColor(Colors.Objects[Index])^
   except
     Result := DefaultColor;
   end;
@@ -97,12 +103,12 @@ end;
 
 function IndexOfColor(Colors: TStrings; Color: TColor; CustomColorIndex: Integer): Integer;
 begin
-  Result := Colors.IndexOfObject(TObject(Color));
-  if Result < 0 then
-  begin
-    Result := CustomColorIndex;
-    Colors.Objects[Result] := TObject(Color);
-  end;
+  for Result := 0 to Colors.Count - 1 do
+    if Color = PColor(Colors.Objects[Result])^ then
+      Exit;
+
+  Result := CustomColorIndex;
+  PColor(Colors.Objects[Result])^ := Color;
 end;
 
 procedure TFontForm.AnythingChanged(Sender: TObject);
@@ -153,15 +159,36 @@ begin
 end;
 
 procedure TFontForm.FormCreate(Sender: TObject);
+{$ifndef UNICODE}
+var
+   LColors: TStringList;
+   I: Integer;
+{$endif}
 begin
   FontNameComboBox.Items := Screen.Fonts;
-  Colors := TStringList.Create;
+  Colors := ThtStringList.Create;
   Colors.Assign(StyleUn.SortedColors);
   Colors.Sorted := True;
+  Colors.Sorted := False;
+
   CustomColorIndex := Colors.Add(CustomColor);
+{$ifndef UNICODE}
+  LColors := TStringList.Create;
+  for I := 0 to Colors.Count - 1 do
+      LColors.AddObject(Colors.Strings[I], Colors.Objects[I]);
+  FontColorComboBox.Items := LColors;
+  LinkColorComboBox.Items := LColors;
+  BackgroundColorComboBox.Items := LColors;
+  LColors.Free;
+{$else}
   FontColorComboBox.Items := Colors;
   LinkColorComboBox.Items := Colors;
   BackgroundColorComboBox.Items := Colors;
+{$endif}
+  FontColorComboBox.Items.Objects[CustomColorIndex] := @FCustomFontColor;
+  LinkColorComboBox.Items.Objects[CustomColorIndex] := @FCustomHotSpotColor;
+  BackgroundColorComboBox.Items.Objects[CustomColorIndex] := @FCustomBackgroundColor;
+
   LoadAgain;
 end;
 

@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.9
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -80,7 +80,11 @@ uses
   Htmlsbs1,
   Htmlabt,
   PrintStatusForm,
-  ImgForm, HTMLUn2, UrlSubs, HtmlView;
+  ImgForm,
+  HTMLUn2,
+  UrlSubs,
+  StyleUn,
+  HtmlView;
 
 const
   MaxHistories = 6; { size of History list }
@@ -497,7 +501,7 @@ begin
   try
     with FontForm do
     begin
-      FontName := Viewer.DefFontName;
+      FontName := ReadFontName(Viewer.DefFontName);
       FontColor := Viewer.DefFontColor;
       FontSize := Viewer.DefFontSize;
       HotSpotColor := Viewer.DefHotSpotColor;
