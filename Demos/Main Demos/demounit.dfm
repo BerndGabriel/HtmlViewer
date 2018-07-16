@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 657
-  Top = 269
-  ClientHeight = 422
-  ClientWidth = 597
+  Left = 498
+  Top = 188
+  Width = 772
+  Height = 561
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,8 +18,8 @@ object Form1: TForm1
   TextHeight = 16
   object Panel1: TPanel
     Left = 0
-    Top = 404
-    Width = 597
+    Top = 485
+    Width = 756
     Height = 18
     Align = alBottom
     Alignment = taLeftJustify
@@ -27,11 +27,13 @@ object Form1: TForm1
     BevelOuter = bvNone
     TabOrder = 0
     object ProgressBar: TProgressBar
-      Left = 334
+      Left = 606
       Top = 1
       Width = 149
-      Height = 17
+      Height = 16
       Align = alRight
+      Min = 0
+      Max = 100
       TabOrder = 0
       Visible = False
     end
@@ -39,7 +41,7 @@ object Form1: TForm1
   object Panel2: TPanel
     Left = 0
     Top = 0
-    Width = 597
+    Width = 756
     Height = 33
     Align = alTop
     BevelOuter = bvNone
@@ -97,8 +99,8 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 0
     Top = 33
-    Width = 597
-    Height = 371
+    Width = 756
+    Height = 452
     Align = alClient
     BevelInner = bvLowered
     BevelOuter = bvNone
@@ -107,8 +109,8 @@ object Form1: TForm1
     object Viewer: THtmlViewer
       Left = 1
       Top = 1
-      Width = 482
-      Height = 282
+      Width = 754
+      Height = 450
       BorderStyle = htFocused
       DefBackground = clWindow
       DefFontColor = clWindowText
@@ -118,11 +120,11 @@ object Form1: TForm1
       HistoryMaxCount = 6
       ImageCacheCount = 6
       NoSelect = False
-      PrintMarginBottom = 2.000000000000000000
-      PrintMarginLeft = 2.000000000000000000
-      PrintMarginRight = 2.000000000000000000
-      PrintMarginTop = 2.000000000000000000
-      PrintScale = 1.000000000000000000
+      PrintMarginBottom = 2
+      PrintMarginLeft = 2
+      PrintMarginRight = 2
+      PrintMarginTop = 2
+      PrintScale = 1
       QuirksMode = qmDetect
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange

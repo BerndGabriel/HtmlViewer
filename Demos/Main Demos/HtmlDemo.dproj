@@ -64,15 +64,11 @@
     <DelphiCompile Include="HtmlDemo.dpr">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="DemoSubs.pas" />
     <DCCReference Include="demounit.pas">
       <Form>Form1</Form>
     </DCCReference>
     <DCCReference Include="Fontdlg.pas">
       <Form>FontForm</Form>
-    </DCCReference>
-    <DCCReference Include="Gopage.pas">
-      <Form>GoPageForm</Form>
     </DCCReference>
     <DCCReference Include="Htmlabt.pas">
       <Form>AboutBox</Form>
@@ -80,16 +76,7 @@
     <DCCReference Include="ImgForm.pas">
       <Form>ImageForm</Form>
     </DCCReference>
-    <DCCReference Include="PreviewForm.pas">
-      <Form>PreviewForm</Form>
-    </DCCReference>
-    <DCCReference Include="PrintStatusForm.pas">
-      <Form>PrnStatusForm</Form>
-    </DCCReference>
-    <DCCReference Include="SUBMIT.PAS">
-      <Form>SubmitForm</Form>
-    </DCCReference>
-    <DCCReference Include="SubmitTnt.pas">
+    <DCCReference Include="SubmitTNT.PAS">
       <Form>SubmitFormTnt</Form>
     </DCCReference>
   </ItemGroup>

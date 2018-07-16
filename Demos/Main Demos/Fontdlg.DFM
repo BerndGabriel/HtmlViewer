@@ -1,8 +1,8 @@
 object FontForm: TFontForm
   Left = 622
   Top = 349
-  Width = 496
-  Height = 455
+  Width = 498
+  Height = 456
   BorderIcons = [biSystemMenu]
   Caption = 'Edit Default Font and Colors'
   Color = clBtnFace
@@ -19,13 +19,13 @@ object FontForm: TFontForm
   OnCreate = FormCreate
   OnShow = FormShow
   DesignSize = (
-    480
-    417)
+    482
+    418)
   PixelsPerInch = 96
   TextHeight = 16
   object FontColorLabel: TLabel
     Left = 8
-    Top = 332
+    Top = 325
     Width = 61
     Height = 16
     Anchors = [akLeft, akBottom]
@@ -33,7 +33,7 @@ object FontForm: TFontForm
   end
   object LinkColorLabel: TLabel
     Left = 8
-    Top = 364
+    Top = 357
     Width = 59
     Height = 16
     Anchors = [akLeft, akBottom]
@@ -41,7 +41,7 @@ object FontForm: TFontForm
   end
   object FontSizeLabel: TLabel
     Left = 8
-    Top = 303
+    Top = 296
     Width = 55
     Height = 16
     Anchors = [akLeft, akBottom]
@@ -50,7 +50,7 @@ object FontForm: TFontForm
   end
   object FontNameLabel: TLabel
     Left = 8
-    Top = 275
+    Top = 268
     Width = 66
     Height = 16
     Anchors = [akLeft, akBottom]
@@ -58,7 +58,7 @@ object FontForm: TFontForm
   end
   object BackgroundColorLabel: TLabel
     Left = 8
-    Top = 394
+    Top = 387
     Width = 73
     Height = 16
     Anchors = [akLeft, akBottom]
@@ -66,7 +66,7 @@ object FontForm: TFontForm
   end
   object FontColorButton: TSpeedButton
     Left = 235
-    Top = 328
+    Top = 321
     Width = 23
     Height = 22
     Anchors = [akLeft, akBottom]
@@ -75,7 +75,7 @@ object FontForm: TFontForm
   end
   object LinkColorButton: TSpeedButton
     Left = 235
-    Top = 360
+    Top = 353
     Width = 23
     Height = 22
     Anchors = [akLeft, akBottom]
@@ -84,7 +84,7 @@ object FontForm: TFontForm
   end
   object BackgroundColorButton: TSpeedButton
     Left = 235
-    Top = 392
+    Top = 385
     Width = 23
     Height = 22
     Anchors = [akLeft, akBottom]
@@ -92,8 +92,8 @@ object FontForm: TFontForm
     OnClick = BackgroundColorButtonClick
   end
   object OKButton: TButton
-    Left = 405
-    Top = 360
+    Left = 399
+    Top = 353
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -103,8 +103,8 @@ object FontForm: TFontForm
     TabOrder = 1
   end
   object Cancel: TButton
-    Left = 405
-    Top = 392
+    Left = 399
+    Top = 385
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -113,8 +113,8 @@ object FontForm: TFontForm
     TabOrder = 3
   end
   object ResetButton: TButton
-    Left = 405
-    Top = 328
+    Left = 399
+    Top = 321
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -124,7 +124,7 @@ object FontForm: TFontForm
   end
   object FontSizeEdit: TSpinEdit
     Left = 88
-    Top = 299
+    Top = 292
     Width = 65
     Height = 26
     Anchors = [akLeft, akBottom]
@@ -137,12 +137,9 @@ object FontForm: TFontForm
   object FontViewer: THtmlViewer
     Left = 8
     Top = 8
-    Width = 471
-    Height = 256
-    TabOrder = 4
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Width = 466
+    Height = 249
     BorderStyle = htSingle
-    CharSet = DEFAULT_CHARSET
     DefFontName = 'Times New Roman'
     DefPreFontName = 'Courier New'
     HistoryMaxCount = 0
@@ -155,11 +152,13 @@ object FontForm: TFontForm
     PrintScale = 1
     ScrollBars = ssVertical
     ViewImages = False
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    TabOrder = 4
   end
   object FontNameComboBox: TComboBox
     Left = 88
-    Top = 272
-    Width = 392
+    Top = 265
+    Width = 386
     Height = 24
     Style = csDropDownList
     Anchors = [akLeft, akRight, akBottom]
@@ -169,33 +168,36 @@ object FontForm: TFontForm
   end
   object FontColorComboBox: TComboBox
     Left = 88
-    Top = 328
+    Top = 321
     Width = 145
     Height = 24
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
+    DropDownCount = 32
     ItemHeight = 16
     TabOrder = 6
     OnChange = AnythingChanged
   end
   object LinkColorComboBox: TComboBox
     Left = 88
-    Top = 360
+    Top = 353
     Width = 145
     Height = 24
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
+    DropDownCount = 32
     ItemHeight = 16
     TabOrder = 7
     OnChange = AnythingChanged
   end
   object BackgroundColorComboBox: TComboBox
     Left = 88
-    Top = 392
+    Top = 385
     Width = 145
     Height = 24
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
+    DropDownCount = 32
     ItemHeight = 16
     TabOrder = 8
     OnChange = AnythingChanged

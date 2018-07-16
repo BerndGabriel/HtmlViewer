@@ -1,5 +1,5 @@
 {
-Version   11.8
+Version   11.9
 Copyright (c) 1995-2008 by L. David Baldwin,
 Copyright (c) 2008-2018 by HtmlViewer Team
 

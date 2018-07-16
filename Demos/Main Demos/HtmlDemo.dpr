@@ -34,8 +34,8 @@ uses
   Fontdlg in 'Fontdlg.pas' {FontForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
-  SubmitTnt in 'SubmitTnt.pas' {SubmitFormTnt},
-  DemoUnit in 'demounit.pas' {Form1};
+  SubmitTnt in 'SubmitTNT.PAS' {SubmitFormTnt},
+  demounit in 'demounit.pas' {Form1};
 
 {$R *.res}
 
