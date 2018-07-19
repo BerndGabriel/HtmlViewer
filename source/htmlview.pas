@@ -531,7 +531,7 @@ type
     property CurrentFile: ThtString read FCurrentFile;
     property DocumentCodePage: Integer read GetDocumentCodePage;
 //    property DocumentSource: ThtString read GetDocumentSource;
-    property DocumentTitle: ThtString read FTitle;
+    property DocumentTitle: ThtString read FTitle write FTitle;
     property FormControlList: TFormControlObjList read GetFormControlList;
     property FormData: TFormData read GetFormData write SetFormData;
     property History: ThvHistory read FHistory;
