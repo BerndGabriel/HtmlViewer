@@ -12,7 +12,7 @@ object Form1: TForm1
   Font.Style = []
   Menu = MainMenu
   OldCreateOrder = True
-  Position = poDesktopCenter
+  Position = poScreenCenter
   ShowHint = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
