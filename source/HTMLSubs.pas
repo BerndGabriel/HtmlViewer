@@ -1079,6 +1079,8 @@ type
 // some blocks
 //------------------------------------------------------------------------------
 
+  { THRBlock }
+
   THRBlock = class(TBlock)
   public
     Align: ThtJustify;
@@ -14937,11 +14939,12 @@ begin
   Result := inherited Draw1(Canvas, ARect, IMgr, X, XRef, YRef);
   YO := Y - Document.YOff;
   if (YO + SectionHeight >= ARect.Top) and (YO < ARect.Bottom) and (not Document.Printing or (Y < Document.PageBottom)) then
+  begin
+    Inc(X, Indent);
+    YT := YO;
+    XR := X + Width - 1;
     with Canvas do
     begin
-      Inc(X, Indent);
-      YT := YO;
-      XR := X + Width - 1;
       if Color <> clNone then
       begin
         Brush.Color := ThemedColor(Color {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif}) or $2000000;
@@ -14975,6 +14978,7 @@ begin
       end;
       Document.FirstPageItem := False; {items after this will not be first on page}
     end;
+  end;
 end;
 
 { THtmlPropStack }
