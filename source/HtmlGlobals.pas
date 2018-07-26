@@ -299,16 +299,23 @@ const
   FontSerif   = ThtString('Times New Roman');
   FontMono    = ThtString('Courier New');
   FontSans    = ThtString('Arial');
-  FontCursive = ThtString('Lucida Handwriting');
   FontHelvet  = ThtString('Arial');
-{$endif}
+  FontCursive = ThtString('Lucida Handwriting');
+{$endif MSWindows}
 {$ifdef Linux}
   FontSerif   = ThtString('Serif');
   FontMono    = ThtString('Monospace');
   FontSans    = ThtString('Sans');
   FontHelvet  = ThtString('Sans');
   FontCursive = ThtString('Sans');
-{$endif}
+{$endif Linux}
+{$ifdef Darwin}
+  FontSerif   = ThtString('Times');
+  FontMono    = ThtString('Courier');
+  FontSans    = ThtString('Helvetica');
+  FontHelvet  = ThtString('Helvetica');
+  FontCursive = ThtString('Apple Chancery');
+{$endif Darwin}
 
 {$ifdef LCL}
 const
