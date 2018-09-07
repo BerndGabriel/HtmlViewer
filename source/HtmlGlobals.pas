@@ -273,7 +273,7 @@ type
     procedure Assign(Source: TPersistent); override;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
     procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
-    property Mask: TBitmap read GetMask write SetMask;
+    property BitmapMask: TBitmap read GetMask write SetMask;
     property WithTransparentMask: Boolean read FTransparent write SetTransparentMask;
   end;
 

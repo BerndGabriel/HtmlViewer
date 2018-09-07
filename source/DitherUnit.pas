@@ -1776,7 +1776,7 @@ begin
     if Source is ThtBitmap then
     begin
       FBitmap.WithTransparentMask := ThtBitmap(Source).WithTransparentMask;
-      FBitmap.Mask := ThtBitmap(Source).Mask;
+      FBitmap.BitmapMask := ThtBitmap(Source).BitmapMask;
     end;
     Result := FBitmap;
   end;
