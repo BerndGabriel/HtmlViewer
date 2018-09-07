@@ -811,7 +811,7 @@ begin
 
         Text.Add('<tbody>');
         repeat
-{$ifndef TSearchRecHasNoTimestamp}
+{$ifdef TSearchRecHasNoTimestamp}
             TimeStamp := FileDateToDateTime(F.Time);
 {$else}
             TimeStamp := F.TimeStamp;
