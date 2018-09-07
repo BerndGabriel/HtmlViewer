@@ -1930,7 +1930,7 @@ active:
   kmax := 2;
   k := 0;
   base64count := 0;
-  i := 0; // valium for the compiler
+  {$IFNDEF Compiler32_Plus}i := 0;{$ENDIF} // valium for the compiler
   while c1 <> 0 do
   begin
     case c1 of
