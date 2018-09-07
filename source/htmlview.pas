@@ -4777,7 +4777,7 @@ function THtmlViewer.GetSelHtml: UTF8String;
       LTML: ThtString;
       C: ThtChar;
     begin
-      C := #0; // valium for Delphi 2009+
+      {$IFNDEF Compiler32_Plus}C := #0;{$ENDIF} // valium for Delphi 2009+
       LTML := htLowerCase(HTML);
       repeat
         I := Pos(Tag, LTML);
