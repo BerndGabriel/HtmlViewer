@@ -1062,7 +1062,7 @@ begin
     Thread := FWaiting[Index];
     Thread.Terminate;
     if Thread.Suspended then
-      Thread.Resume;
+      Thread.Suspended := False;
   end;
 
   for Index := FRunning.Count - 1 downto 0 do
@@ -1070,7 +1070,7 @@ begin
     Thread := FRunning[Index];
     Thread.Terminate;
     if Thread.Suspended then
-      Thread.Resume;
+      Thread.Suspended := False
   end;
 
   while (FWaiting.Count > 0) or (FRunning.Count > 0) do
@@ -1143,7 +1143,7 @@ begin
     Thread := FWaiting[0];
     FWaiting.Delete(0);
     FRunning.Add(Thread);
-    Thread.Resume;
+    Thread.Suspended := False
   end;
 end;
 
