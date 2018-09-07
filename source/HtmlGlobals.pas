@@ -268,7 +268,7 @@ type
     FMask: TBitmap;
     FTransparent: boolean;
   public
-    constructor Create(WithTransparentMask: Boolean = False); overload;
+    constructor Create(WithTransparentMask: Boolean = False); reintroduce; overload;
     destructor Destroy; override;
     procedure Assign(Source: TPersistent); override;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
