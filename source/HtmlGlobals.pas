@@ -82,8 +82,8 @@ uses
 
 const
 {$ifndef LCL}
-  lcl_fullversion = 0;
-  fpc_fullversion = 0;
+  lcl_fullversion = Integer(0);
+  fpc_fullversion = Integer(0);
 {$endif}
 {$ifndef MSWindows}
   //Charsets defined in unit Windows:
