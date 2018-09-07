@@ -237,7 +237,7 @@ type
   private
     FGraphic: TGraphic;
     FImage: ThtBitmapImage;
-    procedure Construct; deprecated;
+    procedure Construct; // deprecated; // ToDo -oOwner: This method is deprecated and private for more than 3 years. Either remove the deprecated attribute or point out how to resolve the deprecated warning.
   protected
     function GetBitmap: TBitmap; override;
     function GetGraphic: TGraphic; override;
