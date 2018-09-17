@@ -816,31 +816,43 @@ var
   procedure LoadPng;
 {$ifdef LCL}
   var
-    pngImage: TPortableNetworkGraphic;
+    PngImage: TPortableNetworkGraphic;
   begin
-    pngImage := TPortableNetworkGraphic.Create;
+    PngImage := TPortableNetworkGraphic.Create;
     try
-      pngImage.LoadFromStream(Stream);
+      PngImage.LoadFromStream(Stream);
       if ColorBits <= 8 then
-        pngImage.PixelFormat := pf8bit
+        PngImage.PixelFormat := pf8bit
       else
-        pngImage.PixelFormat := pf24bit;
+        PngImage.PixelFormat := pf24bit;
 
-      Bitmap := ThtBitmap.Create(pngImage.MaskHandleAllocated);
-      Bitmap.Assign(pngImage);
-      if pngImage.MaskHandleAllocated then
+      Bitmap := ThtBitmap.Create(PngImage.MaskHandleAllocated);
+      Bitmap.Assign(PngImage);
+      if PngImage.MaskHandleAllocated then
       begin
-        Bitmap.Mask.LoadFromBitmapHandles(pngImage.MaskHandle, 0);
+        Bitmap.Mask.LoadFromBitmapHandles(PngImage.MaskHandle, 0);
         Transparent := itrIntrinsic;
       end
       else
         Transparent := itrNone;
     finally
-      pngImage.Free;
+      PngImage.Free;
+    end;
+{$elseif defined(Compiler20_Plus)}
+  var
+    PngImage: TPngImage;
+  begin
+    PngImage := TPngImage.Create;
+    try
+      PngImage.LoadFromStream(Stream);
+      Result := ThtGraphicImage.Create(PngImage);
+    except
+      PngImage.Free;
+      raise;
     end;
 {$else}
   begin
-{$endif}
+{$ifend}
   end;
 
   procedure LoadJpeg;
