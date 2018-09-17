@@ -124,6 +124,7 @@ In "Source"
      StylePars.pas
      StyleTypes.pas
      StyleUn.pas
+     URLConn.pas
      URLSubs.pas
      vwPrint.pas
      HtmlMisc.pas                 Lazarus only
@@ -133,7 +134,7 @@ In "Source"
      HTMLCompEdit.pas             Designtime only
      FrameViewerReg.pas           Designtime only
 
-     FrameViewer09.lpk, .pas      Lazarus 09 .. 1.1 Package source file.  The younger Lazarus the better it supports HtmlViewer.
+     FrameViewer09.lpk, .pas      Lazarus Package source file.  		  Recommended Lazarus Version for best HtmlViewer support >= 1.2 (Win), >= 1.4 (Linux)
      FrameViewer6.dpk, .res       Delphi 6 Package source file.           Uses TntControls for better unicode support.
      FrameViewer7.dpk, .res       Delphi 7 Package source file.           Uses TntControls for better unicode support.
      FrameViewer2005.dpk, .res    Delphi 2005 Package source file.        Uses TntControls for better unicode support.
@@ -153,6 +154,9 @@ In "Source"
      DclFrameViewerXE4.dpk, .res  Delphi XE4 Designtime package source file.
      DclFrameViewerXE5.dpk, .res  Delphi XE5 Designtime package source file.
      DclFrameViewerXE6.dpk, .res  Delphi XE6 Designtime package source file.
+     DclFrameViewerXE7.dpk, .res  Delphi XE7 Designtime package source file.
+     DclFrameViewerXE8.dpk, .res  Delphi XE8 Designtime package source file.
+     DclFrameViewerXE9.dpk, .res  Delphi XE9 Designtime package source file.
      HtmlView.chm                 The help file (Sorry, but most of it is still version 9.45)
    
    Source code for the print preview dialog TBegaHtmlPrintPreviewForm
@@ -170,23 +174,38 @@ In "Demos\Main Demos"
      
    Source code for the demo programs
 
-     FrameDem.dpr, .res
-     FrameDemW.dpr, .res
-     FrameDemLaz.lpr, .res
-     HtmlDemo.dpr, .res
-     HtmlDemoW.dpr, .res
-     HtmlDemoLaz.lpr, .res
+     FrameDem.dpr, .res					FrameViewer demo using TNT Unicode Controls
+     FrameDemW.dpr, .res				FrameViewer demo using VCL Unicode (UTF-16) Controls
+     FrameDemLaz.lpr, .res				FrameViewer demo using LCL Unicode (UTF-8) Controls
+	 FrameBrowserDemoIcs.dpr, .res		FrameBrowser demo using ICS Components and VCL Unicode Controls
+	 FrameBrowserDemoId10.dpr, .res		FrameBrowser demo using Indy 10 Components and VCL Unicode Controls
+     HtmlDemo.dpr, .res					HtmlViewer demo using TNT Unicode Controls
+     HtmlDemoW.dpr, .res                HtmlViewer demo using VCL Unicode (UTF-16) Controls
+     HtmlDemoLaz.lpr, .res              HtmlViewer demo using LCL Unicode (UTF-8) Controls
+	 AuthorizeFormUnit.pas, .dfm, .lfm
+	 CacheUnit.pas
      demounit.pas, .dfm, .lfm
+	 DownloadFormUnit.pas, .dfm, .lfm
+	 fbHelpIcs7.res
+	 fbHelpIndy10.res
+	 FBrDemUnit.pas, .dfm, .lfm
      FDemUnit.pas, .dfm, .lfm
      FontDlg.pas, .dfm, .lfm
      GoPage.pas, .dfm, .lfm
      Grid.res
      Htmlabt.pas, .dfm, .lfm
      ImgForm.pas, .dfm, .lfm
+	 InfoFormUnit.pas, .dfm, .lfm
+	 LogFormUnit.pas, .dfm, .lfm
      manifest.res
+	 OptionsId10.inc
      PrintStatusForm.pas, .dfm, .lfm
+	 ProxyFormUnit.pas, .dfm, .lfm
      Submit.pas, .dfm, .lfm
      SubmitTNT.pas, .dfm
+	 UrlConIcs.pas
+	 UrlConId10.pas
+	 UrlConVclZip.pas
 
 In "Demos\Other Demos"     
 
@@ -331,7 +350,7 @@ World Wide Web: <a HREF="https://github.com/BerndGabriel/HtmlViewer">https://git
 </tr>
 </table>
 
-<p CLASS="heading"><a NAME="Copyright"></a>Copyright &copy; 1995-2008 by L. David Baldwin, 2008-2017 by HtmlViewer Team</p>
+<p CLASS="heading"><a NAME="Copyright"></a>Copyright &copy; 1995-2008 by L. David Baldwin, 2008-2018 by HtmlViewer Team</p>
 <p>Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
