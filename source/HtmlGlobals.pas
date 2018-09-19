@@ -82,8 +82,8 @@ uses
 
 const
 {$ifndef LCL}
-  lcl_fullversion = 0;
-  fpc_fullversion = 0;
+  lcl_fullversion = Integer(0);
+  fpc_fullversion = Integer(0);
 {$endif}
 {$ifndef MSWindows}
   //Charsets defined in unit Windows:
@@ -268,12 +268,12 @@ type
     FMask: TBitmap;
     FTransparent: boolean;
   public
-    constructor Create(WithTransparentMask: Boolean = False); overload;
+    constructor Create(WithTransparentMask: Boolean = False); reintroduce; overload;
     destructor Destroy; override;
     procedure Assign(Source: TPersistent); override;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
     procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
-    property Mask: TBitmap read GetMask write SetMask;
+    property BitmapMask: TBitmap read GetMask write SetMask;
     property WithTransparentMask: Boolean read FTransparent write SetTransparentMask;
   end;
 

@@ -13066,7 +13066,7 @@ var
     NewCP := True;
     CPy := Y + LR.DrawY;  //Todo: Someone needs to find a sensible default value.
     CPx := X + LR.LineIndent;
-    CP1x := CPx;
+    {$IFNDEF Compiler32_Plus}CP1x := CPx;{$ENDIF}
     LR.DrawY := Y - LR.LineHt;
     LR.DrawXX := CPx;
     AdjustDrawRect( LR.DrawY, LR.DrawXX, LR.DrawWidth, LR.LineHt ); //>-- DZ 19.09.2012

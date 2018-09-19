@@ -125,6 +125,14 @@
                                    {$define Compiler30_Plus}
                                    {$ifdef ver300}
                                    {$else}
+                                     {$define Compiler31_Plus}
+                                     {$ifdef ver310}
+                                     {$else}
+                                       {$define Compiler32_Plus}
+                                       {$ifdef ver320}
+                                       {$else}
+                                       {$endif}
+                                     {$endif}
                                    {$endif}
                                  {$endif}
                                {$endif}
