@@ -1,6 +1,6 @@
 {
-Version   11.7
-Copyright (c) 2008-2016 by HtmlViewer Team
+Version   11.9
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -155,6 +155,7 @@ type
     TWideStringList = class(TTntStringList);
   {$endif}
 {$endif}
+
 {$ifdef UNICODE}
   ThtChar = Char;
   ThtString = string;
@@ -162,15 +163,16 @@ type
   ThtStringList = TStringList;
   PhtChar = PChar;
 {$else}
-{$if fpc_fullversion < 30000}
-  UnicodeString = WideString;
-{$ifend}
+  {$if fpc_fullversion < 30000}
+    UnicodeString = WideString;
+  {$ifend}
   ThtChar = WideChar;
   ThtString = WideString;
   ThtStrings = TWideStrings;
   ThtStringList = TWideStringList;
   PhtChar = PWideChar;
 {$endif}
+
   ThtCharArray = array of ThtChar;
   ThtStringArray = array of ThtString;
   ThtIntegerArray = array of Integer;
@@ -472,6 +474,9 @@ function TransparentStretchBlt(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; MaskDC: HDC; MaskX,
   MaskY: Integer): Boolean;
 
+function htString(const Str: String): ThtString;
+function htStringToString(const Str: ThtString): String;
+
 procedure htAppendChr(var Dest: ThtString; C: ThtChar); {$ifdef UseInline} inline; {$endif}
 procedure htAppendStr(var Dest: ThtString; const S: ThtString); {$ifdef UseInline} inline; {$endif}
 procedure htSetString(var Dest: ThtString; Chr: PhtChar; Len: Integer); {$ifdef UseInline} inline; {$endif}
@@ -554,7 +559,7 @@ begin
     FCanvas.Handle := Message.DC;
     FCanvas.Font := Font;//FTextHintFont;
     FCanvas.Font.Color := clGrayText;
-    FCanvas.TextOut(1, 1, FTextHint);
+    FCanvas.TextOut(1, 1, {$ifdef LCL} UTF8Encode(FTextHint) {$else} FTextHint {$endif});
   end;
 end;
 {$endif}
@@ -584,7 +589,7 @@ begin
     FCanvas.Handle := Message.DC;
     FCanvas.Font := Font;//FTextHintFont;
     FCanvas.Font.Color := clGrayText;
-    FCanvas.TextOut(1, 1, FTextHint);
+    FCanvas.TextOut(1, 1, {$ifdef LCL} UTF8Encode(FTextHint) {$else} FTextHint {$endif});
   end;
 end;
 {$endif}
@@ -959,6 +964,25 @@ begin
   finally
     DeleteDC(MemDC);
   end;
+end;
+
+//-- BG ---------------------------------------------------------- 19.09.2018 --
+function htString(const Str: String): ThtString;
+begin
+{$ifdef LCL}
+  Result := UTF8Decode(Str);
+{$else}
+  Result := Str;
+{$endif}
+end;
+
+function htStringToString(const Str: ThtString): String;
+begin
+{$ifdef LCL}
+  Result := UTF8Encode(Str);
+{$else}
+  Result := Str;
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 27.03.2011 --

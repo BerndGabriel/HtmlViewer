@@ -1,6 +1,6 @@
 {
-Version   11.7
-Copyright (c) 2016 by HtmlViewer Team
+Version   11.9
+Copyright (c) 2016-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

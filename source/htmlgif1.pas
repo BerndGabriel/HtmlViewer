@@ -1947,7 +1947,7 @@ begin
   IntfImage := TLazIntfImage.Create(0,0,[]);
   try
     MskHandle := CreateBitmap(Bitmap.Width, Bitmap.Height, 1, 1, nil);
-    IntfImage.LoadFromBitmap(Bitmap.Mask.BitmapHandle, MskHandle);
+    IntfImage.LoadFromBitmap(Bitmap.BitmapMask.BitmapHandle, MskHandle);
     DeleteObject(MskHandle);
 
     stopx := IntfImage.Width - 1;

@@ -13,10 +13,6 @@ LogIt - set this to support a diagnostic window.
 
 {$define UseZLib}
 
-{$ifdef Compiler22_Plus}
-{$define TSearchRecHasNoTimestamp}
-{$endif}
-
 {$define LogIt}
 
 

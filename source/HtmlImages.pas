@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.9
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2018 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -814,7 +814,7 @@ var
   Bitmap: ThtBitmap;
 
   procedure LoadPng;
-{$ifdef LCL}
+{$if defined(LCL)}
   var
     PngImage: TPortableNetworkGraphic;
   begin
@@ -830,7 +830,7 @@ var
       Bitmap.Assign(PngImage);
       if PngImage.MaskHandleAllocated then
       begin
-        Bitmap.Mask.LoadFromBitmapHandles(PngImage.MaskHandle, 0);
+        Bitmap.BitmapMask.LoadFromBitmapHandles(PngImage.MaskHandle, 0);
         Transparent := itrIntrinsic;
       end
       else
