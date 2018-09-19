@@ -902,7 +902,7 @@ var
       Bitmap.LoadFromBitmapHandles(Icon.BitmapHandle, 0);
       if Transparent <> itrLLCorner then
       begin
-        Bitmap.Mask.LoadFromBitmapHandles(Icon.MaskHandle, 0);
+        Bitmap.BitmapMask.LoadFromBitmapHandles(Icon.MaskHandle, 0);
         Transparent := itrIntrinsic;
       end;
 {$endif}
