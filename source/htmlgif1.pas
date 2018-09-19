@@ -1964,7 +1964,7 @@ begin
 
     IntfImage.CreateBitmaps(ImgHandle, MskHandle);
     DeleteObject(ImgHandle);
-    Bitmap.Mask.BitmapHandle := MskHandle;
+    Bitmap.BitmapMask.BitmapHandle := MskHandle;
   finally
     IntfImage.Free;
     //Bitmap.Free;
@@ -2150,12 +2150,12 @@ begin
     if IsTransparent then
     begin
       Result.HandleType := bmDIB;
-      Result.Mask.LoadFromStream(MStream);
+      Result.BitmapMask.LoadFromStream(MStream);
 {$ifdef LCL}
       // setting to monochrome not yet implemented
       CreateMask(Result, clWhite);
 {$else}
-      Result.Mask.Monochrome := True; {crunch mask into a monochrome TBitmap}
+      Result.BitmapMask.Monochrome := True; {crunch mask into a monochrome TBitmap}
 {$endif}
     end;
     Stream.Free;

@@ -104,7 +104,7 @@ type
     procedure SetCurrentFrame(AFrame: Integer);
 
     procedure NextFrame(OldFrame: Integer);
-    procedure SetTransparent(AValue: Boolean);
+    procedure SetTransparent(AValue: Boolean); reintroduce;
 
   public
     ShowIt: Boolean;

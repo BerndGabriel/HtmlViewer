@@ -237,7 +237,7 @@ type
   private
     FGraphic: TGraphic;
     FImage: ThtBitmapImage;
-    procedure Construct; deprecated;
+    procedure Construct; // deprecated; // ToDo -oOwner: This method is deprecated and private for more than 3 years. Either remove the deprecated attribute or point out how to resolve the deprecated warning.
   protected
     function GetBitmap: TBitmap; override;
     function GetGraphic: TGraphic; override;
@@ -486,7 +486,7 @@ function ConvertImage(Bitmap: ThtBitmap): ThtBitmap;
     SelectObject(DC, OldBmp);
     DeleteDC(DC);
     Result := ThtBitmap.Create(Bitmap.WithTransparentMask);
-    Result.Mask := Bitmap.Mask;
+    Result.BitmapMask := Bitmap.BitmapMask;
     Bitmap.Free;
     Result.Handle := Hnd;
     if (ColorBits = 8) and (Result.Palette = 0) then
@@ -893,7 +893,7 @@ var
         Bitmap.Handle := IconInfo.hbmColor;
         if Transparent <> itrLLCorner then
         begin
-          Bitmap.Mask.Handle := IconInfo.hbmMask;
+          Bitmap.BitmapMask.Handle := IconInfo.hbmMask;
           Transparent := itrIntrinsic;
         end;
       end;
@@ -970,14 +970,14 @@ begin
     if Bitmap <> nil then
     begin
       Mask := nil;
-      if Bitmap.Mask = nil then
+      if Bitmap.BitmapMask = nil then
         if Transparent = itrLLCorner then
           Mask := GetImageMask(Bitmap, False, 0);
       Bitmap := ConvertImage(Bitmap);
       if Mask <> nil then
       begin
         Bitmap.WithTransparentMask := True;
-        Bitmap.Mask := Mask;
+        Bitmap.BitmapMask := Mask;
         Mask.Free;
       end;
       Result := ThtBitmapImage.Create(Bitmap, Transparent);
@@ -2126,7 +2126,7 @@ begin
   inherited Create(Tr);
   Bitmap := AImage;
   OwnsBitmap := AOwnsBitmap;
-  Mask := AImage.Mask;
+  Mask := AImage.BitmapMask;
   OwnsMask := False;
 end;
 
@@ -2326,7 +2326,7 @@ end;
 //-- BG ---------------------------------------------------------- 09.04.2011 --
 function ThtGifImage.GetMask: TBitmap;
 begin
-  Result := Gif.Mask;
+  Result := Gif.BitmapMask;
 end;
 
 //-- BG ---------------------------------------------------------- 02.09.2015 --
