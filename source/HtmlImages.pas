@@ -2003,7 +2003,8 @@ end;
 //-- BG ---------------------------------------------------------- 06.09.2015 --
 procedure ThtImage.PrintUnstretched(Canvas: TCanvas; X, Y, W, H, SrcX, SrcY: Integer; FillBackground: Boolean);
 begin
-  //TODO -oBG, 06.09.2015: print any kind of image unstretched
+  if Graphic <> nil then
+    Canvas.Draw(X, Y, Graphic);
 end;
 
 //-- BG ---------------------------------------------------------- 02.09.2015 --
