@@ -13462,6 +13462,7 @@ var
             ARect := Rect(CPx, Tmp - FO.FontHeight, CP1x + 1, Tmp);
             if FO.Active then
             begin
+              Canvas.Brush.Color := clWhite;
               Canvas.Font.Color := clBlack; {black font needed for DrawFocusRect}
               Canvas.Handle; {Dummy call needed to make Delphi add font color change to handle}
               if Document.TheOwner.ShowFocusRect then //MK20091107
