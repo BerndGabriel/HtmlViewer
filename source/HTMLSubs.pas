@@ -1884,8 +1884,9 @@ end;
 procedure THtmlNode.AfterConstruction;
 begin
   inherited AfterConstruction;
-  if (Length(ID) > 0) and (Document <> nil) and (Document.IDNameList <> nil) then
-    Document.IDNameList.AddObject(ID, Self);
+
+  if (Length(Id) > 0) and (Document <> nil) and (Document.IDNameList <> nil) then
+    Document.IDNameList.AddObject(Id, Self);
 end;
 
 //-- BG ---------------------------------------------------------- 07.09.2013 --
@@ -1980,7 +1981,17 @@ end;
 
 //-- BG ---------------------------------------------------------- 21.10.2016 --
 destructor THtmlNode.Destroy;
+var
+  Idx: Integer;
 begin
+  if (Length(Id) > 0) and (Document <> nil) and (Document.IDNameList <> nil) then
+    with Document.IdNameList do
+    begin
+      Idx := IndexOfObject(Self);
+      if Idx >= 0 then
+         Delete(Idx);
+    end;
+
   if not IsCopy then
   begin
     FAttributes.Free;
