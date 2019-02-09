@@ -4820,19 +4820,23 @@ function THtmlParser.GetEntityStr(CodePage: Integer): ThtString;
   var
     Buf: array[0..10] of ThtChar;
   begin
-    if I = 9 then
-      Result := SpcChar
-    else if I < ord(SpcChar) then {control ThtChar}
-      Result := '?' {is there an error symbol to use here?}
-    else if (I >= 127) and (I <= 159) and not ForceUnicode then
-    begin
-      {127 to 159 not valid Unicode}
-      if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) = 0 then
-        Buf[0] := ThtChar(I);
-      SetString(Result, Buf, 1);
-    end
+    case I of
+      9, 10, 13:
+        Result := SpcChar
     else
-      Result := WideChar(I);
+      if I < ord(SpcChar) then {control ThtChar}
+        Result := '?' {is there an error symbol to use here?}
+      else
+      if (I >= 127) and (I <= 159) and not ForceUnicode then
+      begin
+        {127 to 159 not valid Unicode}
+        if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) = 0 then
+          Buf[0] := ThtChar(I);
+        SetString(Result, Buf, 1);
+      end
+      else
+        Result := WideChar(I);
+    end;
   end;
 
 var
@@ -4971,19 +4975,22 @@ var
     var
       Buf: array[0..10] of ThtChar;
     begin
-      if I = 9 then
-        Result := SpcChar
-      else if I < ord(SpcChar) then {control ThtChar}
-        Result := '?' {is there an error symbol to use here?}
-      else if (I >= 127) and (I <= 159) and not ForceUnicode then
-      begin
-        {127 to 159 not valid Unicode}
-        if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) = 0 then
-          Buf[0] := ThtChar(I);
-        SetString(Result, Buf, 1);
-      end
+      case I of
+        9, 10, 13:
+          Result := SpcChar;
       else
-        Result := WideChar(I);
+        if I < ord(SpcChar) then {control ThtChar}
+          Result := '?' {is there an error symbol to use here?}
+        else if (I >= 127) and (I <= 159) and not ForceUnicode then
+        begin
+          {127 to 159 not valid Unicode}
+          if MultiByteToWideChar(CodePage, 0, @I, 1, @Buf, SizeOf(Buf)) = 0 then
+            Buf[0] := ThtChar(I);
+          SetString(Result, Buf, 1);
+        end
+        else
+          Result := WideChar(I);
+      end;
     end;
 
   var
