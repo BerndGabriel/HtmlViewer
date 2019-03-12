@@ -605,7 +605,7 @@ begin
   begin
     Viewer := Sender as THtmlViewer;
     if Pos('//', SRC) = 1 then
-      S := 'http:' + S
+      Rslt := 'http:' + S
     else if Viewer.Base <> '' then
       Rslt := CombineURL(ConvDosToHTML(Viewer.Base), S)
     else

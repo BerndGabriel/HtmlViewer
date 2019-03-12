@@ -979,7 +979,7 @@ begin
     {try without the extension if can't find it with extension}
     Ext := htLowerCase(GetURLExtension(FileName));
     I := Pos('.' + Ext, htLowerCase(FileName));
-    if I >= 0 then
+    if I > 0 then
     begin
       S := FileName;
       SetLength(S, I - 1);
