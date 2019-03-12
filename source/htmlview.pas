@@ -43,6 +43,7 @@ uses
 {$ifndef NoMetafile}
   MetaFilePrinter, vwPrint,
 {$endif}
+  UrlConn,
   URLSubs,
   HtmlGlobals,
   HtmlBuffer,
@@ -378,6 +379,9 @@ type
     procedure InsertImages;
     function GetDocumentCodePage: Integer;
     procedure SetText(const Value: ThtString);
+    procedure LoadFromUrl(const Url: ThtString; DocType: THtmlFileType);
+    procedure LoadResource(HInstance: THandle; const ResourceName: ThtString;
+      DocType: THtmlFileType);
 {$ifdef HasGestures}
     procedure HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
 {$endif}
@@ -503,6 +507,7 @@ type
     procedure LoadFromFile(const FileName: ThtString; DocType: THtmlFileType = HtmlType);
     procedure LoadFromStream(const AStream: TStream; const Reference: ThtString = ''; DocType: THtmlFileType = HtmlType);
     procedure LoadFromString(const S: ThtString; const Reference: ThtString = ''; DocType: THtmlFileType = HtmlType);
+    procedure LoadFromResource(HInstance: THandle; const ResourceName: ThtString; DocType: THtmlFileType = HtmlType);
 {$ifdef UseDeprecatedLoadMethods}
     // due to reduction of code duplications the following methods became obsolete:
     procedure LoadFromBuffer(Buffer: PChar; BufLenTChars: Integer; const Reference: ThtString = ''); deprecated; // use LoadFromString() instead
@@ -1097,8 +1102,9 @@ begin
       Name := ShortName
     else
 {$endif}
-    raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
+    raise EhtLoadError.CreateFmt('Can''t locate file ''%s''.', [Name]);
   end;
+
   Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
   try
     LoadStream(Name + Dest, Stream, ft);
@@ -1208,7 +1214,22 @@ end;
 procedure THtmlViewer.Load(const Url: ThtString);
 begin
   inherited;
-  LoadFromFile(Url);
+  LoadFromUrl(Url, HTMLType);
+end;
+
+//-- BG ---------------------------------------------------------- 11.03.2019 --
+procedure THtmlViewer.LoadFromUrl(const Url: ThtString; DocType: THtmlFileType);
+var
+  Scheme, Specific, ResType: ThtString;
+begin
+  SplitScheme(Url, Scheme, Specific);
+  if Scheme = 'res' then
+  begin
+    Specific := HTMLToRes(Url, ResType);
+    LoadFromResource(HInstance, Specific, DocType);
+  end
+  else
+    LoadFromFile(Url, DocType);
 end;
 
 //-- BG ---------------------------------------------------------- 01.01.2012 --
@@ -1350,6 +1371,65 @@ end;
 procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString; DocType: ThtmlFileType);
 begin
   LoadStream(Reference, AStream, DocType);
+end;
+
+//-- BG ---------------------------------------------------------- 10.03.2019 --
+procedure THtmlViewer.LoadResource(HInstance: THandle; const ResourceName: ThtString; DocType: THtmlFileType);
+var
+  Stream: TResourceStream;
+  Scheme, Name: ThtString;
+begin
+  SplitScheme(ResourceName, Scheme, Name);
+  if Scheme = '' then
+    Scheme := 'res:///';
+
+  Stream := ThtResourceConnection.CreateResourceStream(HInstance, Name, DocType);
+  if Stream <> nil then
+  begin
+    try
+      LoadStream(Scheme + Name, Stream, DocType);
+    finally
+      Stream.Free;
+    end;
+  end
+  else
+    raise EhtLoadError.CreateFmt('Can''t locate resource ''%s''.', [ResourceName]);
+end;
+
+//-- BG ---------------------------------------------------------- 10.03.2019 --
+procedure THtmlViewer.LoadFromResource(HInstance: THandle; const ResourceName: ThtString; DocType: THtmlFileType);
+var
+  OldFile, OldTitle: ThtString;
+  OldPos: Integer;
+  OldType: ThtmlFileType;
+  OldFormData: TFormData;
+  Stream: TResourceStream;
+begin
+  if IsProcessing then
+    Exit;
+{$ifdef FPC}
+  // in lazarus 1.4.0 with fpc 2.6.4
+  // htmlviewer will not draw properly if focused
+  RemoveFocus(false);
+{$endif}
+  if ResourceName <> '' then
+  begin
+    OldFile := FCurrentFile;
+    OldTitle := FTitle;
+    OldPos := Position;
+    OldType := FCurrentFileType;
+    OldFormData := GetFormData;
+    try
+      LoadResource(HInstance, ResourceName, DocType);
+      if (OldFile <> FCurrentFile) or (OldType <> FCurrentFileType) then
+        BumpHistory(OldFile, OldTitle, OldPos, OldFormData, OldType)
+      else
+        OldFormData.Free;
+    except
+      OldFormData.Free;
+      raise;
+    end;
+  end;
 end;
 
 //-- BG ---------------------------------------------------------- 23.03.2012 --
@@ -1548,13 +1628,24 @@ var
   LogicDoneNeg: array [0..3] of integer;
 
 procedure THtmlViewer.DoLoadHistoryItem(HI: ThvHistoryItem);
-var Handled: Boolean;
+var
+  Handled: Boolean;
+  Scheme, Specific, ResType: ThtString;
 begin
   Handled := False;
   if Assigned(FOnLoadHistoryItem) then
     FOnLoadHistoryItem(Self, HI, Handled);
   if not Handled then
-    LoadFile(HI.Url, HI.FileType);
+  begin
+    SplitScheme(HI.Url, Scheme, Specific);
+    if Scheme = 'res' then
+    begin
+      Specific := HTMLToRes(HI.Url, ResType);
+      LoadResource(HInstance, Specific, HI.FileType);
+    end
+    else
+      LoadFile(HI.Url, HI.FileType);
+  end;
 end;
 
 procedure THtmlViewer.DoLogic;
@@ -1825,7 +1916,7 @@ begin
         XHtmlType:
           if S <> FCurrentFile then
           begin
-            LoadFromFile(S + Dest, ft);
+            LoadFromUrl(S + Dest, ft);
             AddVisitedLink(S + Dest);
           end
           else if PositionTo(Dest) then {file already loaded, change position}
@@ -1833,7 +1924,7 @@ begin
 
         ImgType,
         TextType:
-          LoadFromFile(S + Dest, ft);
+          LoadFromUrl(S + Dest, ft);
       end;
     end;
     {Note: Self may not be valid here}
@@ -2948,12 +3039,37 @@ end;
 
 function THtmlViewer.HTMLExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
 var
-  Scheme: ThtString;
-  Specific: ThtString;
+  FileScheme: ThtString;
+  FileSpecific: ThtString;
+  CurrFile: ThtString;
+  CurrScheme: ThtString;
+  CurrSpecific: ThtString;
+  S: ThtString;
 begin
   {pass http: and other protocols except for file:///}
-  SplitScheme(Filename, Scheme, Specific);
-  if (Length(Scheme) > 0) and (htCompareStr(Scheme, 'file') <> 0) then
+  if Length(CurrentFilename) > 0 then
+    CurrFile := CurrentFilename
+  else
+    CurrFile := FCurrentFile;
+
+  SplitScheme(Filename, FileScheme, FileSpecific);
+  SplitScheme(CurrFile, CurrScheme, CurrSpecific);
+
+  if (Length(CurrScheme) > 0) and (htCompareStr(CurrScheme, 'file') <> 0) then
+  begin
+    Result := FileName;
+    if Pos('\', Result) > 0 then
+      Result := DosToHTML(Result);
+
+    if not IsFullUrl(Result) then
+    begin
+      if Pos('//', Result) = 1 then
+        Result := CurrScheme + ':' + Result
+      else
+        Result := CombineURL(GetURLBase(CurrFile), Result);
+    end;
+  end
+  else if (Length(FileScheme) > 0) and (htCompareStr(FileScheme, 'file') <> 0) then
     Result := Filename
   else
   begin
@@ -5087,7 +5203,7 @@ begin
   if FCurrentFile <> '' then
   begin
     Pos := Position;
-    LoadFromFile(FCurrentFile, FCurrentFileType);
+    LoadFromUrl(FCurrentFile, FCurrentFileType);
     Position := Pos;
   end;
 end;
@@ -5404,14 +5520,25 @@ end;
 procedure THtmlViewer.htStreamRequest(var Url: ThtString; var Stream: TStream; out PathOfUrl: ThtString);
 
   procedure GetTheFile;
+  var
+    Scheme, Specific, ResType: ThtString;
   begin
     Url := HTMLExpandFilename(Url);
-    PathOfUrl := ExtractFilePath(Url);
-    if FileExists(Url) then
+    SplitScheme(Url, Scheme, Specific);
+    if Scheme = 'res' then
     begin
-      Stream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
-      FObjects.Add(Stream);
+      Specific := HTMLToRes(Url, ResType);
+      Stream := ThtResourceConnection.CreateResourceStream(HInstance, Specific, FileExt2DocType(ResType) );
+    end
+    else
+    begin
+      PathOfUrl := ExtractFilePath(Url);
+      if FileExists(Url) then
+        Stream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
     end;
+
+    if Stream <> nil then
+      FObjects.Add(Stream);
   end;
 
 begin

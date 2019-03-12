@@ -304,6 +304,8 @@ type
   ThtResourceConnection = class(ThtConnection)
   protected
     procedure Get(ADoc: ThtUrlDoc); override;
+  public
+    class function CreateResourceStream(Instance: THandle; const ResourceName: ThtString; DocType: ThtDocType): TResourceStream;
   end;
 
   //-- BG -------------------------------------------------------- 18.05.2016 --
@@ -935,7 +937,7 @@ begin
    submit with a file protocol.  The user can add a response if desired.}
   SplitQuery(FileName);
   { skip protocol: accept both res:// and res:/// }
-  I :=  Pos('res://', LowerCase(FileName));
+  I :=  Pos('res://', htLowerCase(FileName));
   if I > 0 then
   begin
     Delete(FileName, I, 4+2);
@@ -943,19 +945,39 @@ begin
       Delete(FileName, 1, 1);
   end;
 
-  Ext := LowerCase(GetURLExtension(FileName));
+  Ext := htLowerCase(GetURLExtension(FileName));
   ADoc.DocType := FileExt2DocType(Ext);
-  case ADoc.DocType of
+  ADoc.Stream := CreateResourceStream(HInstance, FileName, ADoc.DocType);
+end;
+
+//-- BG ---------------------------------------------------------- 10.03.2019 --
+class function ThtResourceConnection.CreateResourceStream(Instance: THandle; const ResourceName: ThtString; DocType: ThtDocType): TResourceStream;
+var
+  I: Integer;
+  GoodType: ThtString;
+  HResInfo: HRSRC;
+  FileName, Ext, S: ThtString;
+begin
+  Result := nil;
+  FileName := ResourceName;
+
+  case DocType of
     XHTMLType,
-    HTMLType:  GoodType := 'HTML';
-    ImgType:   GoodType := UpperCase(Ext);
-    TextType:  GoodType := 'TEXT';
+    HTMLType:
+      GoodType := 'HTML';
+    ImgType:
+      GoodType := htUpperCase(GetURLExtension(FileName));
+    TextType:
+      GoodType := 'TEXT';
   else
     GoodType := '';
   end;
+
   HResInfo := htFindResource(HInstance, FileName, GoodType);
   if HResInfo = 0 then
-  begin    {try without the extension if can't find it with extension}
+  begin
+    {try without the extension if can't find it with extension}
+    Ext := htLowerCase(GetURLExtension(FileName));
     I := Pos('.' + Ext, htLowerCase(FileName));
     if I >= 0 then
     begin
@@ -966,11 +988,9 @@ begin
         FileName := S;
     end;
   end;
-  if HResInfo = 0 then
-    // avoid Exception. ADoc.Stream = nil is okay. Next access to it will create an empty TMemoryStream.
-    // raise EResNotFound.Create('Can''t find resource: '+FileName);
-  else
-    ADoc.Stream := TResourceStream.Create(HInstance, FileName, PChar({$ifdef LCL}string(GoodType){$else}GoodType{$endif}));
+
+  if HResInfo <> 0 then
+    Result := TResourceStream.Create(Instance, FileName, PChar({$ifdef LCL}string(GoodType){$else}GoodType{$endif}));
 end;
 
 { ThtResourceConnector }

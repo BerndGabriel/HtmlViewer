@@ -87,6 +87,7 @@ uses
   HtmlBuffer,
   HtmlSymb,
   StyleUn,
+  UrlSubs,
   HTMLGif2;
 
 type
@@ -7898,17 +7899,24 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtIm
   procedure GetTheFile(Name: ThtString);
   var
     Stream: TStream;
+    Scheme, Specific, ResType: ThtString;
   begin
     Name := TheOwner.HtmlExpandFilename(Name);
-    if FileExists(Name) then
+    SplitScheme(Name, Scheme, Specific);
+    if Scheme = 'res' then
     begin
+      Specific := HTMLToRes(Name, ResType);
+      Stream := TResourceStream.Create(HInstance, Specific, PChar({$ifdef LCL}string(ResType){$else}ResType{$endif}) );
+    end
+    else if FileExists(Name) then
       Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+
+    if Stream <> nil then
       try
         Result := LoadImageFromStream(Stream, Transparent);
       finally
         Stream.Free;
       end;
-    end;
   end;
 
 var
