@@ -932,8 +932,6 @@ type
 
   TFormControlObj = class(TFloatingObj)
   private
-    //FYValue: Integer;
-    //FAttributeList: ThtStringList;
     FName: ThtString;
     FID: ThtString;
     FTitle: ThtString;
@@ -1037,28 +1035,34 @@ type
   TFormRadioButton = class(ThtRadioButton)
   private
     IDName: ThtString;
-    FChecked: Boolean;
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
-  protected
-    function GetChecked: Boolean; override;
-    procedure CreateWnd; override;
-    procedure SetChecked(Value: Boolean); override;
-  published
-    property Checked: Boolean read GetChecked write SetChecked;
+  end;
+
+  // To isolate radio buttons from each other. THtmlForm.DoRadios() unchecks grouped buttons.
+  TFormRadioPanel = class(TWinControl)
   end;
 
   TRadioButtonFormControlObj = class(TFormControlObj)
   private
+    FPanel: TFormRadioPanel;
     FControl: TFormRadioButton;
     WasChecked: Boolean;
     function GetChecked: Boolean;
     procedure SetChecked(Value: Boolean);
   protected
+    function GetClientLeft: Integer; override;
+    function GetClientTop: Integer; override;
     function GetColor: TColor; //override;
     function GetControl: TWinControl; override;
     procedure DoOnChange; override;
     procedure SaveContents; override;
+    procedure SetClientHeight(Value: Integer); override;
+    procedure SetClientLeft(Value: Integer); override;
+    procedure SetClientTop(Value: Integer); override;
+    procedure SetClientWidth(Value: Integer); override;
     procedure SetColor(const Value: TColor); //override;
+    procedure SetTabOrder(Value: Integer); override;
+    procedure SetTabStop(Value: Boolean); override;
   public
     IsChecked: Boolean;
     //xMyCell: TCellBasic;
@@ -3465,6 +3469,7 @@ begin
   if Radio.FName <> '' then
   begin
     S := Radio.FName;
+
     for I := 0 to ControlList.Count - 1 do
     begin
       Ctrl := ControlList[I];
@@ -3996,7 +4001,7 @@ end;
 constructor TRadioButtonFormControlObj.Create(Parent: TCellBasic; Position: Integer; L: TAttributeList; Prop: TProperties);
 var
   T: TAttribute;
-  PntPanel: TWinControl; //TPaintPanel;
+  PntPanel: TWinControl; // TPaintPanel;
   Ctrl: TFormControlObj;
   RadioButtonFormControlObj: TRadioButtonFormControlObj absolute Ctrl;
   I: Integer;
@@ -4007,6 +4012,8 @@ begin
   inherited Create(Parent,Position,L,Prop);
   //xMyCell := ACell;
   PntPanel := Document.PPanel;
+  FPanel := TFormRadioPanel.Create(PntPanel);
+  FPanel.Parent := PntPanel;
   FControl := TFormRadioButton.Create(PntPanel);
   VertAlign := ABaseline;
   T := nil;
@@ -4014,24 +4021,26 @@ begin
     IsChecked := True;
   with FControl do
   begin
-    Left := -4000; {so will be invisible until placed}
+    FPanel.Left := -4000; {so will be invisible until placed}
+    FControl.Left := 0;
     if Screen.PixelsPerInch > 100 then
     begin
-      Width := 16;
-      Height := 16;
+      FPanel.Width := 16;
+      FPanel.Height := 16;
     end
     else
     begin
-      Width := 13;
-      Height := 14;
+      FPanel.Width := 13;
+      FPanel.Height := 14;
     end;
+    FControl.Align := alClient;
     IDName := Self.FName;
     OnEnter := EnterEvent;
     OnExit := ExitEvent;
     OnKeyDown := MyForm.AKeyDown;
     OnMouseMove := HandleMouseMove;
     Enabled := not Disabled;
-    Parent := PntPanel; {must precede Checked assignment}
+    Parent := FPanel; {must precede Checked assignment}
 
   {The Tabstop for the first radiobutton in a group will be set in case no
    radiobuttons that follow are checked.  This insures that the tab key can
@@ -4169,9 +4178,21 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
-function TRadioButtonFormControlObj.getChecked: Boolean;
+function TRadioButtonFormControlObj.GetChecked: Boolean;
 begin
   Result := FControl.Checked;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+function TRadioButtonFormControlObj.GetClientLeft: Integer;
+begin
+  Result := FPanel.Left;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+function TRadioButtonFormControlObj.GetClientTop: Integer;
+begin
+  Result := FPanel.Top;
 end;
 
 function TRadioButtonFormControlObj.GetSubmission(Index: Integer; out S: ThtString): Boolean;
@@ -4199,10 +4220,52 @@ begin
   FControl.Checked := Value;
 end;
 
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+procedure TRadioButtonFormControlObj.SetClientHeight(Value: Integer);
+begin
+  inherited;
+  FPanel.Height := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+procedure TRadioButtonFormControlObj.SetClientLeft(Value: Integer);
+begin
+  FPanel.Left := Value;
+  FControl.Left := 0;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+procedure TRadioButtonFormControlObj.SetClientTop(Value: Integer);
+begin
+  FPanel.Top := Value;
+  FControl.Top := 0;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+procedure TRadioButtonFormControlObj.SetClientWidth(Value: Integer);
+begin
+  inherited;
+  FPanel.Width := Value;
+end;
+
 //-- BG ---------------------------------------------------------- 16.01.2011 --
 procedure TRadioButtonFormControlObj.SetColor(const Value: TColor);
 begin
+  FPanel.Color := Value;
   FControl.Color := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+procedure TRadioButtonFormControlObj.SetTabOrder(Value: Integer);
+begin
+  FPanel.TabOrder := Value;
+end;
+
+//-- BG ---------------------------------------------------------- 29.04.2019 --
+procedure TRadioButtonFormControlObj.SetTabStop(Value: Boolean);
+begin
+  inherited;
+  FPanel.TabStop := Value;
 end;
 
 //-- BG ---------------------------------------------------------- 30.08.2013 --
@@ -7909,7 +7972,9 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtIm
       Stream := TResourceStream.Create(HInstance, Specific, PChar({$ifdef LCL}string(ResType){$else}ResType{$endif}) );
     end
     else if FileExists(Name) then
-      Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+      Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite)
+    else
+      Stream := nil;
 
     if Stream <> nil then
       try
@@ -14701,28 +14766,30 @@ end;
 
 {----------------TFormRadioButton.GetChecked:}
 
-function TFormRadioButton.GetChecked: Boolean;
-begin
-  Result := FChecked;
-end;
+//function TFormRadioButton.GetChecked: Boolean;
+//begin
+//  Result := FChecked;
+//end;
 
-procedure TFormRadioButton.CreateWnd;
-begin
-  inherited CreateWnd;
-  inherited SetChecked(FChecked);
-end;
+//procedure TFormRadioButton.CreateWnd;
+//begin
+//  inherited CreateWnd;
+//  inherited SetChecked(FInitiallyChecked);
+//end;
 
-procedure TFormRadioButton.SetChecked(Value: Boolean);
-begin
-  if GetKeyState(VK_TAB) < 0 then {ignore if tab key down}
-    Exit;
-  if FChecked <> Value then
-  begin
-    FChecked := Value;
-    TabStop := Value;
-    inherited SetChecked(FChecked);
-  end;
-end;
+//procedure TFormRadioButton.SetChecked(Value: Boolean);
+//var
+//  RadioGroup: TWinControl; // radio group panel
+//begin
+//  if GetKeyState(VK_TAB) < 0 then {ignore if tab key down}
+//    Exit;
+//  if FChecked <> Value then
+//  begin
+//    FChecked := Value;
+//    TabStop := Value;
+//    inherited SetChecked(FChecked);
+//  end;
+//end;
 
 procedure TFormRadioButton.WMGetDlgCode(var Message: TMessage);
 begin
@@ -15263,8 +15330,8 @@ begin
     with Items[I] do
       if not ShowIt and (TheControl <> nil) then
       begin
-        TheControl.Show; {makes it tab active}
-        TheControl.Left := -4000; {even if it can't be seen}
+        Show; {makes it tab active}
+        Left := -4000; {even if it can't be seen}
       end;
 end;
 
@@ -15276,7 +15343,7 @@ begin
   for I := 0 to Count - 1 do
     with Items[I] do
       if not ShowIt and (TheControl <> nil) then
-        TheControl.Hide; {hides and turns off tabs}
+        Hide; {hides and turns off tabs}
 end;
 
 //-- BG ---------------------------------------------------------- 15.01.2011 --
