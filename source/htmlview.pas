@@ -1403,7 +1403,6 @@ var
   OldPos: Integer;
   OldType: ThtmlFileType;
   OldFormData: TFormData;
-  Stream: TResourceStream;
 begin
   if IsProcessing then
     Exit;
@@ -2070,16 +2069,19 @@ procedure THtmlViewer.HTMLTimerTimer(Sender: TObject);
 var
   Pt: TPoint;
 begin
-  if not PaintPanel.HandleAllocated or (GetCursorPos(Pt) and (WindowFromPoint(Pt) <> PaintPanel.Handle)) then
+  if HTMLTimer.Enabled then
   begin
-    SectionList.CancelActives;
     HTMLTimer.Enabled := False;
-    if FURL <> '' then
+    if not PaintPanel.HandleAllocated or (GetCursorPos(Pt) and (WindowFromPoint(Pt) <> PaintPanel.Handle)) then
     begin
-      FURL := '';
-      FTarget := '';
-      if Assigned(FOnHotSpotCovered) then
-        FOnHotSpotCovered(Self, '');
+      SectionList.CancelActives;
+      if FURL <> '' then
+      begin
+        FURL := '';
+        FTarget := '';
+        if Assigned(FOnHotSpotCovered) then
+          FOnHotSpotCovered(Self, '');
+      end;
     end;
   end;
 end;
@@ -3044,7 +3046,6 @@ var
   CurrFile: ThtString;
   CurrScheme: ThtString;
   CurrSpecific: ThtString;
-  S: ThtString;
 begin
   {pass http: and other protocols except for file:///}
   if Length(CurrentFilename) > 0 then
