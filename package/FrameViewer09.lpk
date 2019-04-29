@@ -42,7 +42,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="39">
+    <Files Count="38">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -193,13 +193,9 @@
         <UnitName Value="vwPrint"/>
       </Item37>
       <Item38>
-        <Filename Value="..\source\widestringslcl.pas"/>
-        <UnitName Value="WideStringsLcl"/>
-      </Item38>
-      <Item39>
         <Filename Value="..\source\UrlConn.pas"/>
         <UnitName Value="UrlConn"/>
-      </Item39>
+      </Item38>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
@@ -218,7 +214,6 @@
     </UsageOptions>
     <PublishOptions>
       <Version Value="2"/>
-      <IgnoreBinaries Value="False"/>
     </PublishOptions>
   </Package>
 </CONFIG>

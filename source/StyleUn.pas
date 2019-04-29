@@ -2872,7 +2872,7 @@ begin
   S1 := NextFontName;
   while (S1 <> '') and not Done do
   begin
-    Done := Screen.Fonts.IndexOf(S1) >= 0;
+    Done := Screen.Fonts.IndexOf( htStringToString(S1) ) >= 0;
     if Done then
       Result := S1
     else
@@ -3144,7 +3144,7 @@ begin
   // With fixed width the sort order is:
   // 'ul 00012'
   // 'ul 00111'
-  Result := Format('%.5d', [SeqNo]);
+  Result := htString(Format('%.5d', [SeqNo]));
   Inc(SeqNo);
 end;
 
@@ -3519,7 +3519,7 @@ begin
     end;
     Properties.Props[MarginBottom] := Properties.Props[MarginTop];
     Properties.Props[FontWeight] := 'bolder';
-    AddObject('h' + IntToStr(HIndex), Properties);
+    AddObject( htString('h' + IntToStr(HIndex)), Properties);
   end;
 
   Properties := TProperties.Create;
@@ -3689,17 +3689,17 @@ var
     J := Pos(')', S);
     if (I > 0) and (J > 0) then
     begin
-      S := copy(S, 1, J - 1);
+      S := Copy(S, 1, J - 1);
       S := Trim(Copy(S, I + 1, 255));
       for K := hue to saturation do
       begin
         I := Pos(',', S);
-        A[K] := Trim(copy(S, 1, I - 1));
+        A[K] := Trim(Copy(S, 1, I - 1));
         S := Trim(Copy(S, I + 1, 255));
       end;
       I := Pos(',', S);
       if I > 0 then begin
-        A[luminance] := Trim(copy(S, 1, I - 1));
+        A[luminance] := Trim(Copy(S, 1, I - 1));
         S := Trim(Copy(S, I + 1, 255));
         VOpacity := OpacityFromStr(S);
       end else begin
@@ -3707,19 +3707,20 @@ var
         VOpacity := 255;
       end;
 
-      C[hue] := StrToIntDef(A[hue],0);
+      C[hue] := StrToIntDef( htStringToString(A[hue]), 0);
       while C[hue] >= 360 do begin
         C[hue] := C[hue] - 360;
       end;
       while C[hue] < 0 do begin
         C[hue] := C[hue] + 360;
       end;
+
       for K := saturation to luminance do begin
         I := Pos('%', A[K]);
         if I > 0 then begin
           Delete(A[K], I, 1);
         end;
-        C[K] := StrToIntDef(A[K],0);
+        C[K] := StrToIntDef( htStringToString(A[K]), 0);
         if C[K] > 100 then begin
           C[K] := 100;
         end;
@@ -3773,13 +3774,13 @@ var
         begin
           Delete(A[K], I, 1);
           try
-            C[K] := Round(StrToFloat(A[K]) * 2.55);
+            C[K] := Round( StrToFloat( htStringToString(A[K])) * 2.55);
           except
             C[K] := 0;
           end;
         end
         else
-          C[K] := StrToIntDef(A[K], 0);
+          C[K] := StrToIntDef( htStringToString(A[K]), 0);
         C[K] := Max(0, Min(255, C[K]));
       end;
       Color := (C[Blue] shl 16) or (C[Green] shl 8) or C[Red];
@@ -3858,7 +3859,7 @@ begin
       if Length(S) <= 3 then
         for I := Length(S) downto 1 do
           Insert(S[I], S, I); {Double each character}
-      Result := TryStrToInt('$' + S, Int);
+      Result := TryStrToInt('$' + htStringToString(S), Int);
       if Result then
       begin
       {ok, but bytes are backwards!}

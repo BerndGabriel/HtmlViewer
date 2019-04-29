@@ -1,4 +1,4 @@
-//unit WideStringsLcl;
+//unit unicodestringslcl;
 //
 //{$mode objfpc}{$H+}
 //
@@ -10,132 +10,132 @@
 {$ifdef SECTION_INTERFACE}
 type
 
-  TWideStrings = class;
+  TUnicodeStrings = class;
 
-  { TWideStringsEnumerator class }
+  { TUnicodeStringsEnumerator class }
 
-  TWideStringsEnumerator = class
+  TUnicodeStringsEnumerator = class
   private
-    FStrings: TWideStrings;
+    FStrings: TUnicodeStrings;
     FPosition: integer;
   public
-    constructor Create(AStrings: TWideStrings);
-    function GetCurrent: WideString;
+    constructor Create(AStrings: TUnicodeStrings);
+    function GetCurrent: UnicodeString;
     function MoveNext: boolean;
-    property Current: WideString read GetCurrent;
+    property Current: UnicodeString read GetCurrent;
   end;
 
   { TStrings class }
 
-  TWideStrings = class(TPersistent)
+  TUnicodeStrings = class(TPersistent)
   private
     FSpecialCharsInited: boolean;
-    FQuoteChar: WideChar;
-    FDelimiter: WideChar;
-    FNameValueSeparator: WideChar;
+    FQuoteChar: UnicodeChar;
+    FDelimiter: UnicodeChar;
+    FNameValueSeparator: UnicodeChar;
     FUpdateCount: integer;
     FAdapter: IStringsAdapter;
     FLBS: TTextLineBreakStyle;
     FStrictDelimiter: boolean;
-//    function GetCommaText: WideString;
-    function GetName(Index: integer): WideString;
-    function GetValue(const Name: WideString): WideString;
+//    function GetCommaText: UnicodeString;
+    function GetName(Index: integer): UnicodeString;
+    function GetValue(const Name: UnicodeString): UnicodeString;
     function GetLBS: TTextLineBreakStyle;
     procedure SetLBS(AValue: TTextLineBreakStyle);
     procedure ReadData(Reader: TReader);
-//    procedure SetCommaText(const Value: WideString);
+//    procedure SetCommaText(const Value: UnicodeString);
     procedure SetStringsAdapter(const Value: IStringsAdapter);
-    procedure SetValue(const Name, Value: WideString);
-    procedure SetDelimiter(c: WideChar);
-    procedure SetQuoteChar(c: WideChar);
-    procedure SetNameValueSeparator(c: WideChar);
+    procedure SetValue(const Name, Value: UnicodeString);
+    procedure SetDelimiter(c: UnicodeChar);
+    procedure SetQuoteChar(c: UnicodeChar);
+    procedure SetNameValueSeparator(c: UnicodeChar);
     procedure WriteData(Writer: TWriter);
   protected
     procedure DefineProperties(Filer: TFiler); override;
-    procedure Error(const Msg: WideString; Data: integer);
+    procedure Error(const Msg: UnicodeString; Data: integer);
 //    procedure Error(const Msg: pstring; Data: integer);
-    function Get(Index: integer): WideString; virtual; abstract;
+    function Get(Index: integer): UnicodeString; virtual; abstract;
     function GetCapacity: integer; virtual;
     function GetCount: integer; virtual; abstract;
     function GetObject(Index: integer): TObject; virtual;
-    function GetTextStr: WideString; virtual;
-    procedure Put(Index: integer; const S: WideString); virtual;
+    function GetTextStr: UnicodeString; virtual;
+    procedure Put(Index: integer; const S: UnicodeString); virtual;
     procedure PutObject(Index: integer; AObject: TObject); virtual;
     procedure SetCapacity(NewCapacity: integer); virtual;
-    procedure SetTextStr(const Value: WideString); virtual;
+    procedure SetTextStr(const Value: UnicodeString); virtual;
     procedure SetUpdateState(Updating: boolean); virtual;
     property UpdateCount: integer read FUpdateCount;
-    function DoCompareText(const s1, s2: WideString): PtrInt; virtual;
-//    function GetDelimitedText: WideString;
-//    procedure SetDelimitedText(const AValue: WideString);
-    function GetValueFromIndex(Index: integer): WideString;
-    procedure SetValueFromIndex(Index: integer; const Value: WideString);
+    function DoCompareText(const s1, s2: UnicodeString): PtrInt; virtual;
+//    function GetDelimitedText: UnicodeString;
+//    procedure SetDelimitedText(const AValue: UnicodeString);
+    function GetValueFromIndex(Index: integer): UnicodeString;
+    procedure SetValueFromIndex(Index: integer; const Value: UnicodeString);
     procedure CheckSpecialChars;
   public
     destructor Destroy; override;
-    function Add(const S: WideString): integer; virtual;
-    function AddObject(const S: WideString; AObject: TObject): integer; virtual;
-    procedure Append(const S: WideString);
-    procedure AddStrings(TheStrings: TWideStrings); virtual;
+    function Add(const S: UnicodeString): integer; virtual;
+    function AddObject(const S: UnicodeString; AObject: TObject): integer; virtual;
+    procedure Append(const S: UnicodeString);
+    procedure AddStrings(TheStrings: TUnicodeStrings); virtual;
     procedure Assign(Source: TPersistent); override;
     procedure BeginUpdate;
     procedure Clear; virtual; abstract;
     procedure Delete(Index: integer); virtual; abstract;
     procedure EndUpdate;
-//    function Equals(Obj: TObject): boolean; overload;
-    function Equals(TheStrings: TWideStrings): boolean; // overload;
+    function Equals(Obj: TObject): boolean; override;
+//    function Equals(TheStrings: TUnicodeStrings): boolean; // overload;
     procedure Exchange(Index1, Index2: integer); virtual;
-    function GetEnumerator: TWideStringsEnumerator;
-//    function GetText: PWideChar; virtual;
-    function IndexOf(const S: WideString): integer; virtual;
-    function IndexOfName(const Name: WideString): integer; virtual;
+    function GetEnumerator: TUnicodeStringsEnumerator;
+//    function GetText: PUnicodeChar; virtual;
+    function IndexOf(const S: UnicodeString): integer; virtual;
+    function IndexOfName(const Name: UnicodeString): integer; virtual;
     function IndexOfObject(AObject: TObject): integer; virtual;
-    procedure Insert(Index: integer; const S: WideString); virtual; abstract;
-    procedure InsertObject(Index: integer; const S: WideString; AObject: TObject);
-    procedure LoadFromFile(const FileName: WideString); virtual;
+    procedure Insert(Index: integer; const S: UnicodeString); virtual; abstract;
+    procedure InsertObject(Index: integer; const S: UnicodeString; AObject: TObject);
+    procedure LoadFromFile(const FileName: String); virtual;
     procedure LoadFromStream(Stream: TStream); virtual;
     procedure Move(CurIndex, NewIndex: integer); virtual;
-    procedure SaveToFile(const FileName: WideString); virtual;
+    procedure SaveToFile(const FileName: String); virtual;
     procedure SaveToStream(Stream: TStream); virtual;
-    procedure SetText(TheText: PWideChar); virtual;
-    procedure GetNameValue(Index: integer; Out AName, AValue: WideString);
-    function ExtractName(const S: WideString): WideString;
+    procedure SetText(TheText: PUnicodeChar); virtual;
+    procedure GetNameValue(Index: integer; Out AName, AValue: UnicodeString);
+    function ExtractName(const S: UnicodeString): UnicodeString;
     property TextLineBreakStyle: TTextLineBreakStyle read GetLBS write SetLBS;
-    property Delimiter: WideChar read FDelimiter write SetDelimiter;
-//    property DelimitedText: WideString read GetDelimitedText write SetDelimitedText;
+    property Delimiter: UnicodeChar read FDelimiter write SetDelimiter;
+//    property DelimitedText: UnicodeString read GetDelimitedText write SetDelimitedText;
     property StrictDelimiter: boolean read FStrictDelimiter write FStrictDelimiter;
-    property QuoteChar: WideChar read FQuoteChar write SetQuoteChar;
-    property NameValueSeparator: WideChar read FNameValueSeparator write SetNameValueSeparator;
-    property ValueFromIndex[Index: integer]: WideString
+    property QuoteChar: UnicodeChar read FQuoteChar write SetQuoteChar;
+    property NameValueSeparator: UnicodeChar read FNameValueSeparator write SetNameValueSeparator;
+    property ValueFromIndex[Index: integer]: UnicodeString
       read GetValueFromIndex write SetValueFromIndex;
     property Capacity: integer read GetCapacity write SetCapacity;
-//    property CommaText: WideString read GetCommaText write SetCommaText;
+//    property CommaText: UnicodeString read GetCommaText write SetCommaText;
     property Count: integer read GetCount;
-    property Names[Index: integer]: WideString read GetName;
+    property Names[Index: integer]: UnicodeString read GetName;
     property Objects[Index: integer]: TObject read GetObject write PutObject;
-    property Values[const Name: WideString]: WideString read GetValue write SetValue;
-    property Strings[Index: integer]: WideString read Get write Put; default;
-    property Text: WideString read GetTextStr write SetTextStr;
+    property Values[const Name: UnicodeString]: UnicodeString read GetValue write SetValue;
+    property Strings[Index: integer]: UnicodeString read Get write Put; default;
+    property Text: UnicodeString read GetTextStr write SetTextStr;
     property StringsAdapter: IStringsAdapter read FAdapter write SetStringsAdapter;
   end;
 
   ///
 
-  TWideStringList = class;
-  TWideStringListSortCompare = function(List: TWideStringList; Index1, Index2: Integer): Integer;
+  TUnicodeStringList = class;
+  TUnicodeStringListSortCompare = function(List: TUnicodeStringList; Index1, Index2: Integer): Integer;
 
-  PWideStringItem = ^TWideStringItem;
-  TWideStringItem = record
-    FString: WideString;
+  PUnicodeStringItem = ^TUnicodeStringItem;
+  TUnicodeStringItem = record
+    FString: UnicodeString;
     FObject: TObject;
   end;
 
-  PWideStringItemList = ^TWideStringItemList;
-  TWideStringItemList = array[0..MaxListSize] of TWideStringItem;
+  PUnicodeStringItemList = ^TUnicodeStringItemList;
+  TUnicodeStringItemList = array[0..MaxListSize] of TUnicodeStringItem;
 
-  TWideStringList = class(TWideStrings)
+  TUnicodeStringList = class(TUnicodeStrings)
   private
-    FList: PWideStringItemList;
+    FList: PUnicodeStringItemList;
     FCount: integer;
     FCapacity: integer;
     FOnChange: TNotifyEvent;
@@ -146,36 +146,36 @@ type
     FOwnsObjects: boolean;
     procedure ExchangeItems(Index1, Index2: integer);
     procedure Grow;
-    procedure QuickSort(L, R: integer; CompareFn: TWideStringListSortCompare);
+    procedure QuickSort(L, R: integer; CompareFn: TUnicodeStringListSortCompare);
     procedure SetSorted(Value: boolean);
     procedure SetCaseSensitive(b: boolean);
   protected
     procedure Changed; virtual;
     procedure Changing; virtual;
     procedure CheckError(Index: integer);
-    function Get(Index: integer): WideString; override;
+    function Get(Index: integer): UnicodeString; override;
     function GetCapacity: integer; override;
     function GetCount: integer; override;
     function GetObject(Index: integer): TObject; override;
-    procedure Put(Index: integer; const S: WideString); override;
+    procedure Put(Index: integer; const S: UnicodeString); override;
     procedure PutObject(Index: integer; AObject: TObject); override;
     procedure SetCapacity(NewCapacity: integer); override;
     procedure SetUpdateState(Updating: boolean); override;
-    procedure InsertItem(Index: integer; const S: WideString); virtual; overload;
-    procedure InsertItem(Index: integer; const S: WideString; O: TObject); virtual; overload;
-    function DoCompareText(const s1, s2: WideString): PtrInt; override;
+    procedure InsertItem(Index: integer; const S: UnicodeString); virtual; overload;
+    procedure InsertItem(Index: integer; const S: UnicodeString; O: TObject); virtual; overload;
+    function DoCompareText(const s1, s2: UnicodeString): PtrInt; override;
 
   public
     destructor Destroy; override;
-    function Add(const S: WideString): integer; override;
+    function Add(const S: UnicodeString): integer; override;
     procedure Clear; override;
     procedure Delete(Index: integer); override;
     procedure Exchange(Index1, Index2: integer); override;
-    function Find(const S: WideString; var Index: integer): boolean; virtual;
-    function IndexOf(const S: WideString): integer; override;
-    procedure Insert(Index: integer; const S: WideString); override;
+    function Find(const S: UnicodeString; var Index: integer): boolean; virtual;
+    function IndexOf(const S: UnicodeString): integer; override;
+    procedure Insert(Index: integer; const S: UnicodeString); override;
     procedure Sort; virtual;
-    procedure CustomSort(CompareFn: TWideStringListSortCompare); virtual;
+    procedure CustomSort(CompareFn: TUnicodeStringListSortCompare); virtual;
     property Duplicates: TDuplicates read FDuplicates write FDuplicates;
     property Sorted: boolean read FSorted write SetSorted;
     property CaseSensitive: boolean read FCaseSensitive write SetCaseSensitive;
@@ -196,29 +196,29 @@ Const
 {$ifdef SECTION_IMPLEMENTATION}
 
 {****************************************************************************}
-{*                        TWideStringsEnumerator                                *}
+{*                        TUnicodeStringsEnumerator                                *}
 {****************************************************************************}
 
-constructor TWideStringsEnumerator.Create(AStrings: TWideStrings);
+constructor TUnicodeStringsEnumerator.Create(AStrings: TUnicodeStrings);
 begin
   inherited Create;
   FStrings := AStrings;
   FPosition := -1;
 end;
 
-function TWideStringsEnumerator.GetCurrent: WideString;
+function TUnicodeStringsEnumerator.GetCurrent: UnicodeString;
 begin
   Result := FStrings[FPosition];
 end;
 
-function TWideStringsEnumerator.MoveNext: boolean;
+function TUnicodeStringsEnumerator.MoveNext: boolean;
 begin
   Inc(FPosition);
   Result := FPosition < FStrings.Count;
 end;
 
 {****************************************************************************}
-{*                             TWideStrings                                     *}
+{*                             TUnicodeStrings                                     *}
 {****************************************************************************}
 
 // Function to quote text. Should move maybe to sysutils !!
@@ -226,7 +226,7 @@ end;
 
 { //!! is used to mark unsupported things. }
 
-function QuoteString(const S: WideString; Quote: WideString): WideString;
+function QuoteString(const S: UnicodeString; Quote: UnicodeString): UnicodeString;
 var
   I, J: integer;
 begin
@@ -250,7 +250,7 @@ end;
   the special chars are needed.
 }
 
-procedure TWideStrings.CheckSpecialChars;
+procedure TUnicodeStrings.CheckSpecialChars;
 begin
   if not FSpecialCharsInited then
   begin
@@ -262,39 +262,39 @@ begin
   end;
 end;
 
-function TWideStrings.GetLBS: TTextLineBreakStyle;
+function TUnicodeStrings.GetLBS: TTextLineBreakStyle;
 begin
   CheckSpecialChars;
   Result := FLBS;
 end;
 
-procedure TWideStrings.SetLBS(AValue: TTextLineBreakStyle);
+procedure TUnicodeStrings.SetLBS(AValue: TTextLineBreakStyle);
 begin
   CheckSpecialChars;
   FLBS := AValue;
 end;
 
-procedure TWideStrings.SetDelimiter(c: WideChar);
+procedure TUnicodeStrings.SetDelimiter(c: UnicodeChar);
 begin
   CheckSpecialChars;
   FDelimiter := c;
 end;
 
-procedure TWideStrings.SetQuoteChar(c: WideChar);
+procedure TUnicodeStrings.SetQuoteChar(c: UnicodeChar);
 begin
   CheckSpecialChars;
   FQuoteChar := c;
 end;
 
-procedure TWideStrings.SetNameValueSeparator(c: WideChar);
+procedure TUnicodeStrings.SetNameValueSeparator(c: UnicodeChar);
 begin
   CheckSpecialChars;
   FNameValueSeparator := c;
 end;
 {
-function TWideStrings.GetCommaText: WideString;
+function TUnicodeStrings.GetCommaText: UnicodeString;
 var
-  C1, C2: WideChar;
+  C1, C2: UnicodeChar;
   FSD: boolean;
 begin
   CheckSpecialChars;
@@ -313,12 +313,12 @@ begin
   end;
 end;
 
-function TWideStrings.GetDelimitedText: WideString;
+function TUnicodeStrings.GetDelimitedText: UnicodeString;
 var
   I: integer;
-  p: PWideChar;
+  p: PUnicodeChar;
   c: set of Char;
-  S: WideString;
+  S: UnicodeString;
 begin
   CheckSpecialChars;
   Result := '';
@@ -329,11 +329,11 @@ begin
   for i := 0 to Count - 1 do
   begin
     S := Strings[i];
-    p := PWideChar(S);
+    p := PUnicodeChar(S);
     while not (p^ in c) do
       Inc(p);
     // strings in list may contain #0
-    if (p <> PWideChar(S) + length(S)) and not StrictDelimiter then
+    if (p <> PUnicodeChar(S) + length(S)) and not StrictDelimiter then
       Result := Result + QuoteString(S, QuoteChar)
     else
       Result := Result + S;
@@ -344,7 +344,7 @@ begin
     Result := QuoteChar + QuoteChar;
 end;
 }
-procedure TWideStrings.GetNameValue(Index: integer; Out AName, AValue: WideString);
+procedure TUnicodeStrings.GetNameValue(Index: integer; Out AName, AValue: UnicodeString);
 var
   L: longint;
 begin
@@ -360,7 +360,7 @@ begin
     AName := '';
 end;
 
-function TWideStrings.ExtractName(const s: WideString): WideString;
+function TUnicodeStrings.ExtractName(const s: UnicodeString): UnicodeString;
 var
   L: longint;
 begin
@@ -372,17 +372,17 @@ begin
     Result := '';
 end;
 
-function TWideStrings.GetName(Index: integer): WideString;
+function TUnicodeStrings.GetName(Index: integer): UnicodeString;
 var
-  V: WideString;
+  V: UnicodeString;
 begin
   GetNameValue(Index, Result, V);
 end;
 
-function TWideStrings.GetValue(const Name: WideString): WideString;
+function TUnicodeStrings.GetValue(const Name: UnicodeString): UnicodeString;
 var
   L: longint;
-  N: WideString;
+  N: UnicodeString;
 begin
   Result := '';
   L := IndexOfName(Name);
@@ -390,14 +390,14 @@ begin
     GetNameValue(L, N, Result);
 end;
 
-function TWideStrings.GetValueFromIndex(Index: integer): WideString;
+function TUnicodeStrings.GetValueFromIndex(Index: integer): UnicodeString;
 var
-  N: WideString;
+  N: UnicodeString;
 begin
   GetNameValue(Index, N, Result);
 end;
 
-procedure TWideStrings.SetValueFromIndex(Index: integer; const Value: WideString);
+procedure TUnicodeStrings.SetValueFromIndex(Index: integer; const Value: UnicodeString);
 begin
   if (Value = '') then
     Delete(Index)
@@ -409,21 +409,21 @@ begin
   end;
 end;
 
-procedure TWideStrings.ReadData(Reader: TReader);
+procedure TUnicodeStrings.ReadData(Reader: TReader);
 begin
   Reader.ReadListBegin;
   BeginUpdate;
   try
     Clear;
     while not Reader.EndOfList do
-      Add(Reader.ReadString);
+      Add(UTF8Decode(Reader.ReadString));
   finally
     EndUpdate;
   end;
   Reader.ReadListEnd;
 end;
 {
-procedure TWideStrings.SetDelimitedText(const AValue: WideString);
+procedure TUnicodeStrings.SetDelimitedText(const AValue: UnicodeString);
 var
   i, j: integer;
   aNotFirst: boolean;
@@ -459,12 +459,12 @@ begin
         // skip spaces
         while (i <= length(AValue)) and (Ord(AValue[i]) <= Ord(' ')) do
           Inc(i);
-        // read next WideString
+        // read next UnicodeString
         if i <= length(AValue) then
         begin
           if AValue[i] = FQuoteChar then
           begin
-            // next WideString is quoted
+            // next UnicodeString is quoted
             j := i + 1;
             while (j <= length(AValue)) and ((AValue[j] <> FQuoteChar) or
                 ((j + 1 <= length(AValue)) and (AValue[j + 1] = FQuoteChar))) do
@@ -480,7 +480,7 @@ begin
             i := j + 1;
           end
           else begin
-            // next WideString is not quoted
+            // next UnicodeString is not quoted
             j := i;
             while (j <= length(AValue)) and (Ord(AValue[j]) > Ord(' ')) and
               (AValue[j] <> FDelimiter) do
@@ -504,9 +504,9 @@ begin
   end;
 end;
 
-procedure TWideStrings.SetCommaText(const Value: WideString);
+procedure TUnicodeStrings.SetCommaText(const Value: UnicodeString);
 var
-  C1, C2: WideChar;
+  C1, C2: UnicodeChar;
 begin
   CheckSpecialChars;
   C1 := Delimiter;
@@ -521,11 +521,11 @@ begin
   end;
 end;
 }
-procedure TWideStrings.SetStringsAdapter(const Value: IStringsAdapter);
+procedure TUnicodeStrings.SetStringsAdapter(const Value: IStringsAdapter);
 begin
 end;
 
-procedure TWideStrings.SetValue(const Name, Value: WideString);
+procedure TUnicodeStrings.SetValue(const Name, Value: UnicodeString);
 var
   L: longint;
 begin
@@ -537,24 +537,24 @@ begin
     Strings[L] := Name + FNameValueSeparator + Value;
 end;
 
-procedure TWideStrings.WriteData(Writer: TWriter);
+procedure TUnicodeStrings.WriteData(Writer: TWriter);
 var
   i: integer;
 begin
   Writer.WriteListBegin;
   for i := 0 to Count - 1 do
-    Writer.WriteString(Strings[i]);
+    Writer.WriteString(UTF8Encode(Strings[i]));
   Writer.WriteListEnd;
 end;
 
-procedure TWideStrings.DefineProperties(Filer: TFiler);
+procedure TUnicodeStrings.DefineProperties(Filer: TFiler);
 var
   HasData: boolean;
 begin
   if Assigned(Filer.Ancestor) then
-    // Only serialize if WideString list is different from ancestor
-    if Filer.Ancestor.InheritsFrom(TWideStrings) then
-      HasData := not Equals(TWideStrings(Filer.Ancestor))
+    // Only serialize if UnicodeString list is different from ancestor
+    if Filer.Ancestor.InheritsFrom(TUnicodeStrings) then
+      HasData := not Equals(TUnicodeStrings(Filer.Ancestor))
     else
       HasData := True
   else
@@ -562,31 +562,31 @@ begin
   Filer.DefineProperty('Strings', ReadData, WriteData, HasData);
 end;
 
-procedure TWideStrings.Error(const Msg: WideString; Data: integer);
+procedure TUnicodeStrings.Error(const Msg: UnicodeString; Data: integer);
 begin
-  raise EStringListError.CreateFmt(Msg, [Data]) at get_caller_addr(get_frame);
+  raise EStringListError.CreateFmt(UTF8Encode(Msg), [Data]) at get_caller_addr(get_frame);
 end;
 
-//procedure TWideStrings.Error(const Msg: pstring; Data: integer);
+//procedure TUnicodeStrings.Error(const Msg: pstring; Data: integer);
 //begin
 //  raise EStringListError.CreateFmt(Msg^, [Data]) at get_caller_addr(get_frame);
 //end;
 
-function TWideStrings.GetCapacity: integer;
+function TUnicodeStrings.GetCapacity: integer;
 begin
   Result := Count;
 end;
 
-function TWideStrings.GetObject(Index: integer): TObject;
+function TUnicodeStrings.GetObject(Index: integer): TObject;
 begin
   Result := nil;
 end;
 
-function TWideStrings.GetTextStr: WideString;
+function TUnicodeStrings.GetTextStr: UnicodeString;
 var
-  P: PWideChar;
+  P: PUnicodeChar;
   I, L, NLS: longint;
-  S, NL: WideString;
+  S, NL: UnicodeString;
 begin
   CheckSpecialChars;
   // Determine needed place
@@ -606,7 +606,7 @@ begin
     S := Strings[I];
     L := Length(S);
     if L <> 0 then
-      System.Move(Pointer(S)^, P^, L * sizeof(WideChar));
+      System.Move(Pointer(S)^, P^, L * sizeof(UnicodeChar));
     P := P + L;
     for L := 1 to NLS do
     begin
@@ -616,7 +616,7 @@ begin
   end;
 end;
 
-procedure TWideStrings.Put(Index: integer; const S: WideString);
+procedure TUnicodeStrings.Put(Index: integer; const S: UnicodeString);
 var
   Obj: TObject;
 begin
@@ -625,19 +625,19 @@ begin
   InsertObject(Index, S, Obj);
 end;
 
-procedure TWideStrings.PutObject(Index: integer; AObject: TObject);
+procedure TUnicodeStrings.PutObject(Index: integer; AObject: TObject);
 begin
   // Empty.
 end;
 
-procedure TWideStrings.SetCapacity(NewCapacity: integer);
+procedure TUnicodeStrings.SetCapacity(NewCapacity: integer);
 begin
   // Empty.
 end;
 
-function GetNextLine(const Value: WideString; out S: WideString; var P: integer): boolean;
+function GetNextLine(const Value: UnicodeString; out S: UnicodeString; var P: integer): boolean;
 var
-  PS: PWideChar;
+  PS: PUnicodeChar;
   IP, L: integer;
 begin
   L := Length(Value);
@@ -651,7 +651,7 @@ begin
     Inc(P);
     Exit(True);
   end;
-  PS := PWideChar(Value) + P - 1;
+  PS := PUnicodeChar(Value) + P - 1;
   IP := P;
   while ((L - P) >= 0) and (not (PS^ in [#10, #13])) do
   begin
@@ -659,7 +659,7 @@ begin
     Inc(PS);
   end;
   SetLength(S, P - IP);
-  System.Move(Value[IP], Pointer(S)^, (P - IP) * sizeof(WideChar));
+  System.Move(Value[IP], Pointer(S)^, (P - IP) * sizeof(UnicodeChar));
   if (P <= L) and (Value[P] = #13) then
     Inc(P);
   if (P <= L) and (Value[P] = #10) then
@@ -667,9 +667,9 @@ begin
   Result := True;
 end;
 
-procedure TWideStrings.SetTextStr(const Value: WideString);
+procedure TUnicodeStrings.SetTextStr(const Value: UnicodeString);
 var
-  S: WideString;
+  S: UnicodeString;
   P: integer;
 begin
   try
@@ -683,33 +683,33 @@ begin
   end;
 end;
 
-procedure TWideStrings.SetUpdateState(Updating: boolean);
+procedure TUnicodeStrings.SetUpdateState(Updating: boolean);
 begin
 end;
 
-destructor TWideStrings.Destroy;
+destructor TUnicodeStrings.Destroy;
 begin
   inherited Destroy;
 end;
 
-function TWideStrings.Add(const S: WideString): integer;
+function TUnicodeStrings.Add(const S: UnicodeString): integer;
 begin
   Result := Count;
   Insert(Count, S);
 end;
 
-function TWideStrings.AddObject(const S: WideString; AObject: TObject): integer;
+function TUnicodeStrings.AddObject(const S: UnicodeString; AObject: TObject): integer;
 begin
   Result := Add(S);
   Objects[Result] := AObject;
 end;
 
-procedure TWideStrings.Append(const S: WideString);
+procedure TUnicodeStrings.Append(const S: UnicodeString);
 begin
   Add(S);
 end;
 
-procedure TWideStrings.AddStrings(TheStrings: TWideStrings);
+procedure TUnicodeStrings.AddStrings(TheStrings: TUnicodeStrings);
 var
   Runner: longint;
 begin
@@ -722,13 +722,13 @@ begin
   end;
 end;
 
-procedure TWideStrings.Assign(Source: TPersistent);
+procedure TUnicodeStrings.Assign(Source: TPersistent);
 var
-  S: TWideStrings;
+  S: TUnicodeStrings;
 begin
-  if Source is TWideStrings then
+  if Source is TUnicodeStrings then
   begin
-    S := TWideStrings(Source);
+    S := TUnicodeStrings(Source);
     BeginUpdate;
     try
       Clear;
@@ -746,47 +746,46 @@ begin
     inherited Assign(Source);
 end;
 
-procedure TWideStrings.BeginUpdate;
+procedure TUnicodeStrings.BeginUpdate;
 begin
   if FUpdateCount = 0 then
     SetUpdateState(True);
   Inc(FUpdateCount);
 end;
 
-procedure TWideStrings.EndUpdate;
+procedure TUnicodeStrings.EndUpdate;
 begin
   if FUpdateCount > 0 then
     Dec(FUpdateCount);
   if FUpdateCount = 0 then
     SetUpdateState(False);
 end;
-{
-function TWideStrings.Equals(Obj: TObject): boolean;
+
+function TUnicodeStrings.Equals(Obj: TObject): boolean;
+var
+  TheStrings: TUnicodeStrings absolute Obj;
+  Runner, Nr: longint;
 begin
-  if Obj is TWideStrings then
-    Result := Equals(TWideStrings(Obj))
+  if Obj is TUnicodeStrings then
+  begin
+    Nr := Self.Count;
+    Result := Nr = TheStrings.Count;
+    if Result then
+      for Runner := 0 to Nr - 1 do
+      begin
+        Result := Strings[Runner] = TheStrings[Runner];
+        if not Result then
+          Break;
+      end;
+  end
   else
     Result := inherited Equals(Obj);
 end;
-}
-function TWideStrings.Equals(TheStrings: TWideStrings): boolean;
-var
-  Runner, Nr: longint;
-begin
-  Result := False;
-  Nr := Self.Count;
-  if Nr <> TheStrings.Count then
-    exit;
-  for Runner := 0 to Nr - 1 do
-    if Strings[Runner] <> TheStrings[Runner] then
-      exit;
-  Result := True;
-end;
 
-procedure TWideStrings.Exchange(Index1, Index2: integer);
+procedure TUnicodeStrings.Exchange(Index1, Index2: integer);
 var
   Obj: TObject;
-  Str: WideString;
+  Str: UnicodeString;
 begin
   try
     beginUpdate;
@@ -801,22 +800,22 @@ begin
   end;
 end;
 
-function TWideStrings.GetEnumerator: TWideStringsEnumerator;
+function TUnicodeStrings.GetEnumerator: TUnicodeStringsEnumerator;
 begin
-  Result := TWideStringsEnumerator.Create(Self);
+  Result := TUnicodeStringsEnumerator.Create(Self);
 end;
 {
-function TWideStrings.GetText: PWideChar;
+function TUnicodeStrings.GetText: PUnicodeChar;
 begin
-  Result := StrNew(PWideChar(Self.Text));
+  Result := StrNew(PUnicodeChar(Self.Text));
 end;
 }
-function TWideStrings.DoCompareText(const s1, s2: WideString): PtrInt;
+function TUnicodeStrings.DoCompareText(const s1, s2: UnicodeString): PtrInt;
 begin
-  Result := CompareText(s1, s2);
+  Result := UnicodeCompareText(s1, s2);
 end;
 
-function TWideStrings.IndexOf(const S: WideString): integer;
+function TUnicodeStrings.IndexOf(const S: UnicodeString): integer;
 begin
   Result := 0;
   while (Result < Count) and (DoCompareText(Strings[Result], S) <> 0) do
@@ -825,10 +824,10 @@ begin
     Result := -1;
 end;
 
-function TWideStrings.IndexOfName(const Name: WideString): integer;
+function TUnicodeStrings.IndexOfName(const Name: UnicodeString): integer;
 var
   len: longint;
-  S: WideString;
+  S: UnicodeString;
 begin
   CheckSpecialChars;
   Result := 0;
@@ -843,7 +842,7 @@ begin
   Result := -1;
 end;
 
-function TWideStrings.IndexOfObject(AObject: TObject): integer;
+function TUnicodeStrings.IndexOfObject(AObject: TObject): integer;
 begin
   Result := 0;
   while (Result < Count) and (Objects[Result] <> AObject) do
@@ -852,14 +851,14 @@ begin
     Result := -1;
 end;
 
-procedure TWideStrings.InsertObject(Index: integer; const S: WideString; AObject: TObject);
+procedure TUnicodeStrings.InsertObject(Index: integer; const S: UnicodeString; AObject: TObject);
 
 begin
   Insert(Index, S);
   Objects[Index] := AObject;
 end;
 
-procedure TWideStrings.LoadFromFile(const FileName: WideString);
+procedure TUnicodeStrings.LoadFromFile(const FileName: String);
 var
   TheStream: TFileStream;
 begin
@@ -871,7 +870,7 @@ begin
   end;
 end;
 
-procedure TWideStrings.LoadFromStream(Stream: TStream);
+procedure TUnicodeStrings.LoadFromStream(Stream: TStream);
 {
    Borlands method is no good, since a pipe for
    instance doesn't have a size.
@@ -899,17 +898,17 @@ begin
         I := I shl 1;
     until BytesRead <> BufDelta;
     SetLength(Buffer, BufLen - BufDelta + BytesRead);
-    SetTextStr(Buffer);
+    SetTextStr(UTF8Decode(Buffer));
     SetLength(Buffer, 0);
   finally
     EndUpdate;
   end;
 end;
 
-procedure TWideStrings.Move(CurIndex, NewIndex: integer);
+procedure TUnicodeStrings.Move(CurIndex, NewIndex: integer);
 var
   Obj: TObject;
-  Str: WideString;
+  Str: UnicodeString;
 begin
   BeginUpdate;
   Obj := Objects[CurIndex];
@@ -919,7 +918,7 @@ begin
   EndUpdate;
 end;
 
-procedure TWideStrings.SaveToFile(const FileName: WideString);
+procedure TUnicodeStrings.SaveToFile(const FileName: String);
 var
   TheStream: TFileStream;
 begin
@@ -931,17 +930,17 @@ begin
   end;
 end;
 
-procedure TWideStrings.SaveToStream(Stream: TStream);
+procedure TUnicodeStrings.SaveToStream(Stream: TStream);
 var
-  S: WideString;
+  S: UnicodeString;
 begin
   S := Text;
   Stream.WriteBuffer(Pointer(S)^, Length(S));
 end;
 
-procedure TWideStrings.SetText(TheText: PWideChar);
+procedure TUnicodeStrings.SetText(TheText: PUnicodeChar);
 var
-  S: WideString;
+  S: UnicodeString;
 begin
   if TheText <> nil then
     S := TheText
@@ -951,10 +950,10 @@ begin
 end;
 
 {****************************************************************************}
-{*                             TWideStringList                                  *}
+{*                             TUnicodeStringList                                  *}
 {****************************************************************************}
 
-procedure TWideStringList.ExchangeItems(Index1, Index2: integer);
+procedure TUnicodeStringList.ExchangeItems(Index1, Index2: integer);
 var
   P1, P2: Pointer;
 begin
@@ -966,7 +965,7 @@ begin
   Pointer(Flist^[Index2].FObject) := P2;
 end;
 
-procedure TWideStringList.Grow;
+procedure TUnicodeStringList.Grow;
 var
   NC: integer;
 begin
@@ -980,7 +979,7 @@ begin
   SetCapacity(NC);
 end;
 
-procedure TWideStringList.QuickSort(L, R: integer; CompareFn: TWideStringListSortCompare);
+procedure TUnicodeStringList.QuickSort(L, R: integer; CompareFn: TUnicodeStringListSortCompare);
 var
   Pivot, vL, vR: integer;
 begin
@@ -1012,14 +1011,14 @@ begin
     QuickSort(Pivot + 1, R, CompareFn);
 end;
 
-procedure TWideStringList.InsertItem(Index: integer; const S: WideString);
+procedure TUnicodeStringList.InsertItem(Index: integer; const S: UnicodeString);
 begin
   Changing;
   if FCount = Fcapacity then
     Grow;
   if Index < FCount then
     System.Move(FList^[Index], FList^[Index + 1],
-      (FCount - Index) * SizeOf(TWideStringItem));
+      (FCount - Index) * SizeOf(TUnicodeStringItem));
   Pointer(Flist^[Index].Fstring) := nil;  // Needed to initialize...
   Flist^[Index].FString := S;
   Flist^[Index].Fobject := nil;
@@ -1027,14 +1026,14 @@ begin
   Changed;
 end;
 
-procedure TWideStringList.InsertItem(Index: integer; const S: WideString; O: TObject);
+procedure TUnicodeStringList.InsertItem(Index: integer; const S: UnicodeString; O: TObject);
 begin
   Changing;
   if FCount = Fcapacity then
     Grow;
   if Index < FCount then
     System.Move(FList^[Index], FList^[Index + 1],
-      (FCount - Index) * SizeOf(TWideStringItem));
+      (FCount - Index) * SizeOf(TUnicodeStringItem));
   Pointer(Flist^[Index].Fstring) := nil;  // Needed to initialize...
   Flist^[Index].FString := S;
   Flist^[Index].FObject := O;
@@ -1042,7 +1041,7 @@ begin
   Changed;
 end;
 
-procedure TWideStringList.SetSorted(Value: boolean);
+procedure TUnicodeStringList.SetSorted(Value: boolean);
 begin
   if FSorted <> Value then
   begin
@@ -1052,59 +1051,59 @@ begin
   end;
 end;
 
-procedure TWideStringList.Changed;
+procedure TUnicodeStringList.Changed;
 begin
   if (FUpdateCount = 0) then
     if Assigned(FOnChange) then
       FOnchange(Self);
 end;
 
-procedure TWideStringList.Changing;
+procedure TUnicodeStringList.Changing;
 begin
   if FUpdateCount = 0 then
     if Assigned(FOnChanging) then
       FOnchanging(Self);
 end;
 
-procedure TWideStringList.CheckError(Index: integer);
+procedure TUnicodeStringList.CheckError(Index: integer);
 begin
   if (Index < 0) or (Index >= Fcount) then
-    raise Exception.Create(Format('Index %d out of range in TWideStringList.', [Index]));
+    raise Exception.Create(Format('Index %d out of range in TUnicodeStringList.', [Index]));
 end;
 
-function TWideStringList.Get(Index: integer): WideString;
+function TUnicodeStringList.Get(Index: integer): UnicodeString;
 begin
   CheckError(Index);
   Result := Flist^[Index].FString;
 end;
 
-function TWideStringList.GetCapacity: integer;
+function TUnicodeStringList.GetCapacity: integer;
 begin
   Result := FCapacity;
 end;
 
-function TWideStringList.GetCount: integer;
+function TUnicodeStringList.GetCount: integer;
 begin
   Result := FCount;
 end;
 
-function TWideStringList.GetObject(Index: integer): TObject;
+function TUnicodeStringList.GetObject(Index: integer): TObject;
 begin
   CheckError(Index);
   Result := Flist^[Index].FObject;
 end;
 
-procedure TWideStringList.Put(Index: integer; const S: WideString);
+procedure TUnicodeStringList.Put(Index: integer; const S: UnicodeString);
 begin
   if Sorted then
-    raise Exception.Create('List is sorted in TWideStringList.Put.');
+    raise Exception.Create('List is sorted in TUnicodeStringList.Put.');
   CheckError(Index);
   Changing;
   Flist^[Index].FString := S;
   Changed;
 end;
 
-procedure TWideStringList.PutObject(Index: integer; AObject: TObject);
+procedure TUnicodeStringList.PutObject(Index: integer; AObject: TObject);
 begin
   CheckError(Index);
   Changing;
@@ -1112,7 +1111,7 @@ begin
   Changed;
 end;
 
-procedure TWideStringList.SetCapacity(NewCapacity: integer);
+procedure TUnicodeStringList.SetCapacity(NewCapacity: integer);
 var
   NewList: Pointer;
   MSize: longint;
@@ -1120,14 +1119,14 @@ begin
   Assert(NewCapacity >= 0);
   if NewCapacity > FCapacity then
   begin
-    GetMem(NewList, NewCapacity * SizeOf(TWideStringItem));
+    GetMem(NewList, NewCapacity * SizeOf(TUnicodeStringItem));
     if NewList = nil then
-      raise Exception.Create('NewList is Nil in TWideStringList.SetCapacity.');
+      raise Exception.Create('NewList is Nil in TUnicodeStringList.SetCapacity.');
     if Assigned(FList) then
     begin
-      MSize := FCapacity * Sizeof(TWideStringItem);
+      MSize := FCapacity * Sizeof(TUnicodeStringItem);
       System.Move(FList^, NewList^, MSize);
-      FillQWord(PChar(NewList)[MSize], (NewCapacity - FCapacity) * (SizeOf(TWideStringItem) div SizeOf(QWord)), 0);
+      FillQWord(PChar(NewList)[MSize], (NewCapacity - FCapacity) * (SizeOf(TUnicodeStringItem) div SizeOf(QWord)), 0);
       FreeMem(FList, MSize);
     end;
     Flist := NewList;
@@ -1141,8 +1140,8 @@ begin
       FList := nil;
     end
     else begin
-      GetMem(NewList, NewCapacity * SizeOf(TWideStringItem));
-      System.Move(FList^, NewList^, NewCapacity * SizeOf(TWideStringItem));
+      GetMem(NewList, NewCapacity * SizeOf(TUnicodeStringItem));
+      System.Move(FList^, NewList^, NewCapacity * SizeOf(TUnicodeStringItem));
       FreeMem(FList);
       FList := NewList;
     end;
@@ -1150,7 +1149,7 @@ begin
   end;
 end;
 
-procedure TWideStringList.SetUpdateState(Updating: boolean);
+procedure TUnicodeStringList.SetUpdateState(Updating: boolean);
 begin
   if Updating then
     Changing
@@ -1158,7 +1157,7 @@ begin
     Changed;
 end;
 
-destructor TWideStringList.Destroy;
+destructor TUnicodeStringList.Destroy;
 var
   I: longint;
 begin
@@ -1172,7 +1171,7 @@ begin
   inherited Destroy;
 end;
 
-function TWideStringList.Add(const S: WideString): integer;
+function TUnicodeStringList.Add(const S: UnicodeString): integer;
 begin
   if not Sorted then
     Result := FCount
@@ -1180,12 +1179,12 @@ begin
   if Find(S, Result) then
     case Duplicates of
       dupIgnore: Exit;
-      dupError: raise Exception.Create('TWideStringList.Duplicates does not allow duplicates.');
+      dupError: raise Exception.Create('TUnicodeStringList.Duplicates does not allow duplicates.');
     end;
   InsertItem(Result, S);
 end;
 
-procedure TWideStringList.Clear;
+procedure TUnicodeStringList.Clear;
 var
   I: longint;
 begin
@@ -1209,7 +1208,7 @@ begin
   Changed;
 end;
 
-procedure TWideStringList.Delete(Index: integer);
+procedure TUnicodeStringList.Delete(Index: integer);
 begin
   CheckError(Index);
   Changing;
@@ -1218,11 +1217,11 @@ begin
     FreeAndNil(Flist^[Index].FObject);
   Dec(FCount);
   if Index < FCount then
-    System.Move(Flist^[Index + 1], Flist^[Index], (Fcount - Index) * SizeOf(TWideStringItem));
+    System.Move(Flist^[Index + 1], Flist^[Index], (Fcount - Index) * SizeOf(TUnicodeStringItem));
   Changed;
 end;
 
-procedure TWideStringList.Exchange(Index1, Index2: integer);
+procedure TUnicodeStringList.Exchange(Index1, Index2: integer);
 begin
   CheckError(Index1);
   CheckError(Index2);
@@ -1231,7 +1230,7 @@ begin
   changed;
 end;
 
-procedure TWideStringList.SetCaseSensitive(b: boolean);
+procedure TUnicodeStringList.SetCaseSensitive(b: boolean);
 begin
   if b <> FCaseSensitive then
   begin
@@ -1241,15 +1240,15 @@ begin
   end;
 end;
 
-function TWideStringList.DoCompareText(const s1, s2: WideString): PtrInt;
+function TUnicodeStringList.DoCompareText(const s1, s2: UnicodeString): PtrInt;
 begin
   if FCaseSensitive then
-    Result := AnsiCompareStr(s1, s2)
+    Result := UnicodeCompareStr(s1, s2)
   else
-    Result := AnsiCompareText(s1, s2);
+    Result := UnicodeCompareText(s1, s2);
 end;
 
-function TWideStringList.Find(const S: WideString; var Index: integer): boolean;
+function TUnicodeStringList.Find(const S: UnicodeString; var Index: integer): boolean;
 var
   L, R, I: integer;
   CompareRes: PtrInt;
@@ -1277,7 +1276,7 @@ begin
   Index := L;
 end;
 
-function TWideStringList.IndexOf(const S: WideString): integer;
+function TUnicodeStringList.IndexOf(const S: UnicodeString): integer;
 begin
   if not Sorted then
     Result := inherited indexOf(S)
@@ -1287,16 +1286,16 @@ begin
     Result := -1;
 end;
 
-procedure TWideStringList.Insert(Index: integer; const S: WideString);
+procedure TUnicodeStringList.Insert(Index: integer; const S: UnicodeString);
 begin
   if Sorted then
     raise Exception.Create('Operation not allowed on sorted list');
   if (Index < 0) or (Index > Fcount) then
-    raise Exception.Create(Format('Index %d out of range in TWideStringList.', [Index]));
+    raise Exception.Create(Format('Index %d out of range in TUnicodeStringList.', [Index]));
   InsertItem(Index, S);
 end;
 
-procedure TWideStringList.CustomSort(CompareFn: TWideStringListSortCompare);
+procedure TUnicodeStringList.CustomSort(CompareFn: TUnicodeStringListSortCompare);
 begin
   if not Sorted and (FCount > 1) then
   begin
@@ -1306,17 +1305,18 @@ begin
   end;
 end;
 
-function StringListAnsiCompare(List: TWideStringList; Index1, Index: integer): integer;
+function StringListAnsiCompare(List: TUnicodeStringList; Index1, Index: integer): integer;
 begin
   Result := List.DoCompareText(List.FList^[Index1].FString,
     List.FList^[Index].FString);
 end;
 
-procedure TWideStringList.Sort;
+procedure TUnicodeStringList.Sort;
 begin
   CustomSort(@StringListAnsiCompare);
 end;
 
 {$endif}
+
 //end.
 

@@ -694,7 +694,7 @@ function GetFileType(const S: ThtString): THtmlFileType;
 var
   FileTypes: ThtStringList;
 
-function GetFileMask : String;
+function GetFileMask : ThtString;
 
 implementation
 
@@ -781,7 +781,7 @@ begin
 end;
 
 //-- JPM --------------------------------------------------------- 26.05.2013 --
-function GetFileMask : String;
+function GetFileMask : ThtString;
 var i : Integer;
 begin
   //HTML
@@ -791,7 +791,7 @@ begin
     if (PFileTypeRec(FileTypes.Objects[i]).FileType = HTMLType) or
      (PFileTypeRec(FileTypes.Objects[i]).FileType = XHTMLType) then
     begin
-      Result := Result + '*'+ FileTypes[i]+';';
+      Result := Result + '*' + FileTypes[i] + ';';
     end;
 
   end;
@@ -802,7 +802,7 @@ begin
   begin
     if (PFileTypeRec(FileTypes.Objects[i]).FileType = ImgType) then
     begin
-      Result := Result + '*'+ FileTypes[i]+';';
+      Result := Result + '*' + FileTypes[i] + ';';
     end;
 
   end;
@@ -813,7 +813,7 @@ begin
   begin
     if (PFileTypeRec(FileTypes.Objects[i]).FileType = TextType) then
     begin
-      Result := Result + '*'+ FileTypes[i]+';';
+      Result := Result + '*' + FileTypes[i] + ';';
     end;
   end;
   Delete(Result,Length(Result),1);
@@ -1105,7 +1105,7 @@ begin
     raise EhtLoadError.CreateFmt('Can''t locate file ''%s''.', [Name]);
   end;
 
-  Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+  Stream := TFileStream.Create( htStringToString(Name), fmOpenRead or fmShareDenyWrite);
   try
     LoadStream(Name + Dest, Stream, ft);
   finally
@@ -4726,7 +4726,7 @@ begin
 {$endif}
   UpdateImageCache;
   FSectionList.SetFonts(
-    DefFontName, DefPreFontName, DefFontSize, DefFontColor,
+    htString(DefFontName), htString(DefPreFontName), DefFontSize, DefFontColor,
     DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
     htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
     CodePage, CharSet, MarginHeight, MarginWidth);
@@ -4752,7 +4752,7 @@ begin
   FCurrentFileType := HTMLType;
 
   FSectionList.SetFonts(
-    DefFontName, DefPreFontName, DefFontSize, DefFontColor,
+    htString(DefFontName), htString(DefPreFontName), DefFontSize, DefFontColor,
     DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
     htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
     CodePage, CharSet, MarginHeight, MarginWidth);
@@ -4878,10 +4878,10 @@ function THtmlViewer.GetSelHtml: UTF8String;
       EndFragmentIndex    := StartHTMLIndex + Pos(AnsiString(EndFrag), Utf8Html) - 1;
 
       // insert indexes into header:        IndexLength must match the format width:
-      InsertAfter(Header, 'StartHTML:'    , Format('%.10d', [StartHTMLIndex]));
-      InsertAfter(Header, 'EndHTML:'      , Format('%.10d', [EndHTMLIndex]));
-      InsertAfter(Header, 'StartFragment:', Format('%.10d', [StartFragmentIndex]));
-      InsertAfter(Header, 'EndFragment:'  , Format('%.10d', [EndFragmentIndex]));
+      InsertAfter(Header, 'StartHTML:'    , htString(Format('%.10d', [StartHTMLIndex])));
+      InsertAfter(Header, 'EndHTML:'      , htString(Format('%.10d', [EndHTMLIndex])));
+      InsertAfter(Header, 'StartFragment:', htString(Format('%.10d', [StartFragmentIndex])));
+      InsertAfter(Header, 'EndFragment:'  , htString(Format('%.10d', [EndFragmentIndex])));
 
       // return the complete clipboard text
       Result := UTF8Encode(Header) + Utf8Html;
@@ -4940,8 +4940,8 @@ function THtmlViewer.GetSelHtml: UTF8String;
         I := Pos('<html>', L);
       if I <= 0 then
         I := 1;
-      S := '<style> body {font-size: ' + IntToStr(DefFontSize) + 'pt; font-family: "' +
-        DefFontName + '"; }</style>';
+      S := htString('<style> body {font-size: ' + IntToStr(DefFontSize) + 'pt; font-family: "' +
+        DefFontName + '"; }</style>');
       if not HeadFound then
         S := '<head>' + S + '</head>';
       Insert(S, HTML, I);
@@ -5283,9 +5283,9 @@ begin
     begin
       I := Pos(';', Content);
       if I > 0 then
-        DelTime := StrToIntDef(copy(Content, 1, I - 1), -1)
+        DelTime := StrToIntDef(copy(htStringToString(Content), 1, I - 1), -1)
       else
-        DelTime := StrToIntDef(Content, -1);
+        DelTime := StrToIntDef(htStringToString(Content), -1);
       if DelTime < 0 then
         Exit
       else if DelTime = 0 then
@@ -5535,7 +5535,7 @@ procedure THtmlViewer.htStreamRequest(var Url: ThtString; var Stream: TStream; o
     begin
       PathOfUrl := ExtractFilePath(Url);
       if FileExists(Url) then
-        Stream := TFileStream.Create(Url, fmOpenRead or fmShareDenyWrite);
+        Stream := TFileStream.Create( htStringToString(Url), fmOpenRead or fmShareDenyWrite);
     end;
 
     if Stream <> nil then

@@ -28,6 +28,7 @@ unit DemoUnit;
 
 {$include ..\..\source\htmlcons.inc}
 { A program to demonstrate the THtmlViewer component }
+{$R 'fbHelpIndy10.res' 'Resources\Indy10\fbHelpIndy10.rc'}
 
 interface
 
@@ -39,7 +40,7 @@ uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
+  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc,
 {$else}
   Windows, ShellAPI, MPlayer,
   {$IF CompilerVersion >= 15}
@@ -179,7 +180,17 @@ type
     procedure ViewerPrintHTMLHeader(Sender: TObject; HFViewer: THTMLViewer; NumPage: Integer; LastPage: Boolean; var XL, XR: Integer; var StopPrinting: Boolean);
     procedure ViewerProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Integer);
     procedure ViewimageClick(Sender: TObject);
-{$ifdef UNICODE}
+{$ifdef LCL}
+    procedure HotSpotChange(Sender: TObject; const URL: ThtString);
+    procedure HotSpotClick(Sender: TObject; const URL: ThtString; var Handled: Boolean);
+    procedure MetaRefreshEvent(Sender: TObject; Delay: Integer; const URL: ThtString);
+    procedure ObjectClick(Sender, Obj: TObject; const OnClick: ThtString);
+    procedure SoundRequest(Sender: TObject; const SRC: ThtString; Loop: Integer; Terminate: Boolean);
+    procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: ThtString; Results: ThtStringList);
+    procedure ViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);
+    procedure ViewerScript(Sender: TObject; const Name, ContentType, SRC, Script: ThtString);
+{$else}
+  {$ifdef UNICODE}
     procedure HotSpotChange(Sender: TObject; const URL: string);
     procedure HotSpotClick(Sender: TObject; const URL: string; var Handled: Boolean);
     procedure MetaRefreshEvent(Sender: TObject; Delay: Integer; const URL: String);
@@ -188,7 +199,7 @@ type
     procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure ViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out IncludedDocument: TBuffer);
     procedure ViewerScript(Sender: TObject; const Name, ContentType, SRC, Script: string);
-{$else}
+  {$else}
     procedure HotSpotChange(Sender: TObject; const URL: WideString);
     procedure HotSpotClick(Sender: TObject; const URL: WideString; var Handled: Boolean);
     procedure MetaRefreshEvent(Sender: TObject; Delay: Integer; const URL: WideString);
@@ -197,6 +208,7 @@ type
     procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: WideString; Results: TWideStringList);
     procedure ViewerInclude(Sender: TObject; const Command: WideString; Params: TWideStrings; out IncludedDocument: TBuffer);
     procedure ViewerScript(Sender: TObject; const Name, ContentType, SRC, Script: WideString);
+  {$endif}
 {$endif}
   private
     { Private declarations }
@@ -302,7 +314,9 @@ begin
       I := Pos('"', S);
     end;
     Viewer.LoadFromFile(Viewer.HtmlExpandFilename(S));
-  end;
+  end
+  else
+    Viewer.LoadFromResource(HINSTANCE, 'XLeft1', HTMLType);
 end;
 
 procedure TForm1.OpenFileClick(Sender: TObject);

@@ -53,6 +53,7 @@ interface
 
 uses
   ctypes,
+  Classes,
   SysUtils,
 {$IFDEF MSWINDOWS}
   Windows,
@@ -66,6 +67,17 @@ uses
      in order to use LclType's THandle declaration (32 or 64 bits)
      rather than THandle in SysUtils and Classes (=System.THandle,
      which apparently is always 32 bits).}
+
+{$macro on}
+{$define SECTION_INTERFACE}
+{$if fpc_fullversion < 30000}
+  {$include 'widestringslcl.pas'}
+  {$define HmString := WideString}
+{$else}
+  {$include 'unicodestringslcl.pas'}
+  {$define HmString := UnicodeString}
+{$endif}
+{$undef SECTION_INTERFACE}
 
 type
   TButtonStyle = (bsAutoDetect, bsWin31, bsNew);
@@ -587,6 +599,14 @@ uses
      LCLPlatformDef;
 {$endif}
 
+{$define SECTION_IMPLEMENTATION}
+{$if fpc_fullversion < 30000}
+  {$include 'widestringslcl.pas'}
+{$else}
+  {$include 'unicodestringslcl.pas'}
+{$endif}
+{$undef SECTION_IMPLEMENTATION}
+
  {These functions belong in LclIntf unit}
 
 function GetTickCount : DWORD;
@@ -699,7 +719,7 @@ begin
 {$ELSE}
 var
   s : string;
-  w : WideString;
+  w : HmString;
 begin
   if cchMultiByte < 0 then  {Null terminated?}
     s := lpMultiByteStr
@@ -721,7 +741,9 @@ begin
 {$ENDIF}
 end;
 
-function PWideCharToWideString(Str: PWideChar; Count: Integer): WideString;
+{$IFDEF MSWINDOWS}
+{$ELSE}
+function PWideCharToHmString(Str: PWideChar; Count: Integer): HmString;
 begin
   if Count < 0 then  {Null terminated?}
     Result := Str
@@ -733,13 +755,14 @@ begin
   end;
 end;
 
-function WideStringToString(const Str: WideString): String;
+function HmStringToString(const Str: HmString): String;
 begin
   if htExpectsUTF8 then
     Result := UTF8Encode(Str)  {Widgetset expects UTF8, so encode wide string as UTF8}
   else
     Result := Str;  {Just convert to ANSI}
 end;
+{$ENDIF}
 
 function WideCharToMultiByte(CodePage: UINT; dwFlags: DWORD;
                              lpWideCharStr: LPWSTR; cchWideChar: Integer;
@@ -752,10 +775,10 @@ begin
                                         lpDefaultChar, lpUsedDefaultChar);
 {$ELSE}
 var
-  w : WideString;
+  w : HmString;
   s : string;
 begin
-  w := PWideCharToWideString(lpWideCharStr, cchWideChar);
+  w := PWideCharToHmString(lpWideCharStr, cchWideChar);
   case CodePage of
     CP_UTF8:
       s := UTF8Encode(w);
@@ -776,7 +799,7 @@ end;
 //  Result := Windows.CharUpperBuffw(lpsz, cchLength);
 //{$ELSE}
 //var
-//  w : WideString;
+//  w : HmString;
 //begin
 //  SetLength(w, cchLength);
 //  Move(lpsz^, w[1], cchLength*2);
@@ -792,7 +815,7 @@ end;
 //  Result := Windows.CharLowerBuffw(lpsz, cchLength);
 //{$ELSE}
 //var
-//  w : WideString;
+//  w : HmString;
 //begin
 //  SetLength(w, cchLength);
 //  Move(lpsz^, w[1], cchLength*2);
@@ -818,7 +841,7 @@ begin
     Result := True;
     Exit;
   end;
-  s := WideStringToString(PWideCharToWideString(Str, Count));
+  s := HmStringToString(PWideCharToHmString(Str, Count));
   Result := LclIntf.GetTextExtentPoint32(DC, PChar(s), Length(s), Size);
 {$ENDIF}
 end;
@@ -987,7 +1010,7 @@ begin
     if (CurTextAlign and TA_BASELINE) <> 0 then
       Y := Y - (TM.tmHeight - TM.tmDescent);
   end;
-  s := WideStringToString(PWideCharToWideString(Str, Count));
+  s := HmStringToString(PWideCharToHmString(Str, Count));
   Result := TextOut(DC, X, Y, PChar(s), Length(s));
   {Note not calling LclIntf's TextOut}
 {$ENDIF}
@@ -1014,7 +1037,7 @@ begin
     if (CurTextAlign and TA_BASELINE) <> 0 then
       Y := Y - (TM.tmHeight - TM.tmDescent);
   end;
-  s := WideStringToString(PWideCharToWideString(Str, Count));
+  s := HmStringToString(PWideCharToHmString(Str, Count));
   Result := ExtTextOut(DC, X, Y, Options, Rect, PChar(s), Length(s), Dx);
   {Note not calling LclIntf's ExtTextOut}
 {$ENDIF}
@@ -1029,7 +1052,7 @@ begin
 var
   s : string;
 begin
-  s := WideStringToString(PWideCharToWideString(Str, Count));
+  s := HmStringToString(PWideCharToHmString(Str, Count));
   Result := LclIntf.DrawText(hDC, PChar(s), Length(s), lpRect, uFormat);
 {$ENDIF}
 end;
@@ -1085,7 +1108,7 @@ begin
 var
   s: String;
 begin
-  s := WideStringToString(PWideCharToWideString(Str, Count));
+  s := HmStringToString(PWideCharToHmString(Str, Count));
   Result := WidgetSet.GetTextExtentExPoint(DC, PChar(s), Length(s), p4, p5, p6, p7);
 {$ENDIF}
 end;

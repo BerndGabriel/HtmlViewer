@@ -38,7 +38,7 @@ uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc, WideStringsLcl,
+  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc,
 {$else}
   Windows, ShellAPI, MPlayer,
   {$if CompilerVersion >= 15}

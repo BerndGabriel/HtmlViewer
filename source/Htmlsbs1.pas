@@ -883,7 +883,7 @@ begin
   FControl.Parent := PntPanel;
   FControl.TextHint.Clear;
   if FPlaceholder <> '' then begin
-    FControl.TextHint.Add( FPlaceholder);
+    FControl.TextHint.Add( htStringToString(FPlaceholder));
   end;
   if FMaxLength <> 0 then begin
     FControl.MaxLength := FMaxLength;
@@ -945,7 +945,7 @@ begin
       SetTextAlign(Canvas.handle, TA_Left + TA_Top);
       ARect := Rect(X1 + Addon, Y1 + Addon, X1 + Width - 2 * Addon, Y1 + Height - 2 * Addon);
       for I := 0 to Min(Lines.Count - 1, Rows - 1) do
-        ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + I * H2, Lines[I]);
+        ThtCanvas(Canvas).htTextRect(ARect, X1 + Addon, Y1 + Addon + I * H2, htString(Lines[I]));
     end;
 end;
 
@@ -1251,7 +1251,7 @@ begin
     begin {see if it's comma delimited list}
       I := Min(System.Pos(',', T.Name), System.Pos(' ', T.Name));
       if I > 1 then
-        EditSize := StrToIntDef(copy(T.Name, 1, I - 1), 20);
+        EditSize := StrToIntDef(copy(htStringToString(T.Name), 1, I - 1), 20);
     end;
   end;
   PntPanel := Document.PPanel;
@@ -1266,7 +1266,7 @@ begin
     Font.Assign(Prop.Font);
     FHeight := Height; {Height can change when font assigned}
     tmAveCharWidth := Prop.Font.tmAveCharWidth;
-    Text := Value;
+    Text := htStringToString(Value);
 
     if FInputType= 'password'  then begin
       PassWordChar := '*';
@@ -1326,7 +1326,7 @@ begin
       SetBkMode(Canvas.Handle, {$ifdef FPC}Lcltype.{$endif}Transparent);
       Canvas.Brush.Style := bsClear;
       ARect := Rect(X1 + Addon, Y1, X1 + Width - (Addon div 2), Y1 + Height);
-      ThtCanvas(Canvas).htTextRect(ARect, ARect.Left, Y1 + (Height - H2) div 2 - 1, Text);
+      ThtCanvas(Canvas).htTextRect(ARect, ARect.Left, Y1 + (Height - H2) div 2 - 1, htString(Text));
     end;
   end;
 end;

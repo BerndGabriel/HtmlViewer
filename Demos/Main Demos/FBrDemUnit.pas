@@ -388,7 +388,7 @@ var
   m : TMenuItem;
 {$endif}
 begin
-  OpenDialog.Filter := GetFileMask;
+  OpenDialog.Filter := htStringToString(GetFileMask);
   FMetaInfo := TStringList.Create;
 {$ifdef has_StyleElements}
   TStyleManager.AnimationOnControls := True;

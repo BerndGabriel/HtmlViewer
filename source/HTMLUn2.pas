@@ -754,7 +754,7 @@ procedure WrapTextW(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; S: UnicodeString);
 
 // BG, 26.12.2011: new type TSpecWidth
 function SpecWidth(Value: Integer; VType: TWidthType): TSpecWidth;
-function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
+function ToSpecWidth(AsInteger: Integer; AsString: ThtString): TSpecWidth;
 
 //------------------------------------------------------------------------------
 // canvas methods
@@ -1327,7 +1327,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 26.12.2011 --
-function ToSpecWidth(AsInteger: Integer; AsString: string): TSpecWidth;
+function ToSpecWidth(AsInteger: Integer; AsString: ThtString): TSpecWidth;
 // Return a TSpecWidth prepared with values given in AsInteger *and* AsString.
 // AsString is used to evaluate the type while AsInteger is used to evaluate the value.
 // BG, 26.12.2011: Currently percentage is still converted to permille as done before Value became type Integer.
@@ -1756,7 +1756,7 @@ begin
               S1 := GetSubStr(S);
               while (S1 <> '') and (Cnt <= MAXCNT) do
               begin
-                Coords[Cnt] := StrToIntDef(S1, 0);
+                Coords[Cnt] := StrToIntDef( htStringToString(S1), 0);
                 S1 := GetSubStr(S);
                 Inc(Cnt);
               end;

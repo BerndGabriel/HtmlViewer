@@ -32,7 +32,7 @@ uses
 {$endif}
   Classes,
 {$ifdef LCL}
-  LclIntf, LclType, HtmlMisc, WideStringsLcl,
+  LclIntf, LclType, HtmlMisc,
 {$endif LCL}
   Controls, ExtCtrls, Graphics, Math,
   // own units

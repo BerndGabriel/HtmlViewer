@@ -862,7 +862,7 @@ function EncodeUrl(const Url: ThtString): ThtString;
 
   function CharToHex(Ch: ThtChar): ThtString;
   begin
-    Result := '%' + IntToHex(Ord(Ch), 2);
+    Result := htString('%' + IntToHex(Ord(Ch), 2));
   end;
 
 var

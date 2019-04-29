@@ -44,7 +44,6 @@ uses
   LclIntf, LclType, LCLVersion, Types, Messages,
   StdCtrls, Buttons, Forms, Base64, Dialogs, Process,
   HtmlMisc,
-  WideStringsLcl,
   {$ifdef DebugIt}
     {$message 'HtmlViewer uses LCL standard controls.'}
   {$endif}
@@ -163,14 +162,18 @@ type
   ThtStringList = TStringList;
   PhtChar = PChar;
 {$else}
+  ThtChar = WideChar;
+  PhtChar = PWideChar;
   {$if fpc_fullversion < 30000}
     UnicodeString = WideString;
+    ThtString = WideString;
+    ThtStrings = TWideStrings;
+    ThtStringList = TWideStringList;
+  {$else}
+    ThtString = UnicodeString;
+    ThtStrings = TUnicodeStrings;
+    ThtStringList = TUnicodeStringList;
   {$ifend}
-  ThtChar = WideChar;
-  ThtString = WideString;
-  ThtStrings = TWideStrings;
-  ThtStringList = TWideStringList;
-  PhtChar = PWideChar;
 {$endif}
 
   ThtCharArray = array of ThtChar;

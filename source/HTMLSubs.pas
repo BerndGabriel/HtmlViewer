@@ -3987,10 +3987,10 @@ begin
     if FName <> '' then
       S := FName + '.';
     if Index = 0 then
-      S := S + 'x=' + IntToStr(XPos)
+      S := S + 'x=' + htString(IntToStr(XPos))
     else
     begin {index = 1}
-      S := S + 'y=' + IntToStr(YPos);
+      S := S + 'y=' + htString(IntToStr(YPos));
       XPos := -1;
     end;
   end;
@@ -4051,7 +4051,7 @@ begin
     begin
       Ctrl := TFormControlObj(MyForm.ControlList.Items[I]);
       if (Ctrl is TRadioButtonFormControlObj) and (RadioButtonFormControlObj.FControl <> FControl) then {skip the current radiobutton}
-        if htCompareText(Ctrl.Name, Name) = 0 then {same group}
+        if htCompareText(Ctrl.Name, htString(Name)) = 0 then {same group}
           if not IsChecked then
           begin
           {if the current radiobutton is not checked and there are other radio buttons,
@@ -7743,7 +7743,7 @@ begin
   Styles.Initialize(Name, PreName, ASize, AColor, AHotspot, AVisitedColor,
     AActiveColor, LinkUnderLine, ACodePage, ACharSet, MarginHeight, MarginWidth);
   InitializeFontSizes(ASize);
-  PreFontName := PreName;
+  PreFontName := htStringToString(PreName);
   HotSpotColor := AHotSpot;
   LinkVisitedColor := AVisitedColor;
   LinkActiveColor := AActiveColor;
@@ -7939,8 +7939,8 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtIm
       // BTW: Internet Explorer 9 shows but does not save inline images at all.
       // Using StringReplace() here is a quick and dirty hack.
       // Better decode %encoded attribute values while reading the attributes.
-      Name := StringReplace(Name, '%0A', #$0A, [rfReplaceAll]);
-      Source := TStringStream.Create(Copy(Name, I + 8, MaxInt));
+      Name := htString(StringReplace(htStringToString(Name), '%0A', #$0A, [rfReplaceAll]));
+      Source := TStringStream.Create(Copy(htStringToString(Name), I + 8, MaxInt));
       try
         Stream := TMemoryStream.Create;
         try
@@ -7969,10 +7969,10 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtIm
     if Scheme = 'res' then
     begin
       Specific := HTMLToRes(Name, ResType);
-      Stream := TResourceStream.Create(HInstance, Specific, PChar({$ifdef LCL}string(ResType){$else}ResType{$endif}) );
+      Stream := TResourceStream.Create(HInstance, htStringToString(Specific), PChar({$ifdef LCL}string(ResType){$else}ResType{$endif}) );
     end
     else if FileExists(Name) then
-      Stream := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite)
+      Stream := TFileStream.Create( htStringToString(Name), fmOpenRead or fmShareDenyWrite)
     else
       Stream := nil;
 
@@ -13772,7 +13772,7 @@ begin
         UrlTarg := MakeCopy(FO.UrlTarget);
         Document.ActiveLink := FO;
         if IMap then
-          UrlTarg.Url := UrlTarg.Url + '?' + IntToStr(IX) + ',' + IntToStr(IY);
+          UrlTarg.Url := UrlTarg.Url + htString('?' + IntToStr(IX) + ',' + IntToStr(IY));
       end;
     end;
   end
@@ -14171,7 +14171,7 @@ begin
           begin
             AName := Name;
             try
-              Panel.Name := Name;
+              Panel.Name := htStringToString(Name);
             except {duplicate name will be ignored}
             end;
           end;

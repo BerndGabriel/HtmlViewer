@@ -4,6 +4,7 @@
 
 unit FrameViewer09;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
@@ -13,8 +14,7 @@ uses
   BuffConv, BuffConvArrays, HtmlSymb, BegaHtmlPrintPreviewForm, 
   BegaMetaFilePrinter, BegaPreview, BegaPreviewForm, BegaPreviewPanel, 
   BegaScrollBox, BegaZoom, GDIPL2A, HtmlCaches, HtmlFonts, HtmlImages, 
-  MetaFilePrinter, StyleTypes, vwPrint, WideStringsLcl, UrlConn, 
-  LazarusPackageIntf;
+  MetaFilePrinter, StyleTypes, vwPrint, UrlConn, LazarusPackageIntf;
 
 implementation
 

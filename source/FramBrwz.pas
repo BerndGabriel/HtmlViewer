@@ -925,7 +925,7 @@ begin
     if DocType <> OtherType then
     begin
       Stream := TMemoryStream.Create;
-      TMemoryStream(Stream).LoadFromFile(HTMLToDos(Source));
+      TMemoryStream(Stream).LoadFromFile( htStringToString(HTMLToDos(Source)));
     end;
   end;
 end;
@@ -1085,7 +1085,7 @@ var
             htAppendChr(Result, Ch);
         else
           htAppendChr(Result, '%');
-          htAppendStr(Result, IntToHex(Ord(Ch), 2));
+          htAppendStr(Result, htString(IntToHex(Ord(Ch), 2)));
         end;
       end;
     end;

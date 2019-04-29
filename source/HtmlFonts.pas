@@ -153,7 +153,7 @@ end;
 //-- BG ---------------------------------------------------------- 12.03.2011 --
 procedure ThtFont.Assign(const Info: ThtFontInfo);
 begin
-  Name := Info.iName;
+  Name := htStringToString(Info.iName);
   Height := -Round(Info.iSize * Screen.PixelsPerInch / 72);
   Style := Info.iStyle;
   bgColor := Info.ibgColor;
@@ -183,7 +183,7 @@ var
   I: Integer;
   FontName: ThtString;
 begin
-  FontName := htLowerCase(Font.Name);
+  FontName := htLowerCase(htString(Font.Name));
   I := -1;
   if not FFontsByName.Find(FontName, I) then
   begin
@@ -263,7 +263,7 @@ begin
   if SameFont = nil then
   begin
     SameFont := ThtFont.Create;
-    SameFont.Name := Font.iName;
+    SameFont.Name := htStringToString(Font.iName);
     SameFont.Height := -Round(Font.iSize * Screen.PixelsPerInch / 72);
     SameFont.Style := Font.iStyle;
     SameFont.Charset := Font.iCharSet;

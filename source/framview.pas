@@ -640,7 +640,7 @@ var
   Tmp: AnsiString;
 begin
   Result := '';
-  FS := TFileStream.Create(Name, fmOpenRead or fmShareDenyWrite);
+  FS := TFileStream.Create( htStringToString(Name), fmOpenRead or fmShareDenyWrite);
   try
     SetLength(Tmp, FS.Size);
     FS.ReadBuffer(Tmp[1], FS.Size * SizeOf(AnsiChar));
@@ -959,7 +959,7 @@ begin
           EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
           if FileExists(Ev.NewName) then
           begin
-            Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
+            Stream := TFileStream.Create( htStringToString(EV.NewName), fmOpenRead or fmShareDenyWrite);
             try
               EV.Doc := TBuffer.Create(Stream, EV.NewName);
             finally
@@ -1170,7 +1170,7 @@ begin
       EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
       if FileExists(Ev.NewName) then
       begin
-        Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
+        Stream := TFileStream.Create( htStringToString(EV.NewName), fmOpenRead or fmShareDenyWrite);
         try
           EV.Doc := TBuffer.Create(Stream, EV.NewName);
         finally
@@ -1630,7 +1630,7 @@ var
               htAppendChr(Numb, Ch);
               GetCh;
             end;
-            N := Max(1, StrToInt(Numb)); {no zeros}
+            N := Max(1, StrToInt( htStringToString(Numb) )); {no zeros}
             while True do
               case Ch of
                 '*', '%', ',', EOL:
@@ -2140,9 +2140,9 @@ begin
   begin
     I := Pos(';', Content);
     if I > 0 then
-      DelTime := StrToIntDef(copy(Content, 1, I - 1), -1)
+      DelTime := StrToIntDef( Copy( htStringToString(Content), 1, I - 1), -1)
     else
-      DelTime := StrToIntDef(Content, -1);
+      DelTime := StrToIntDef( htStringToString(Content), -1);
     if DelTime < 0 then
       Exit
     else if DelTime = 0 then
@@ -2314,7 +2314,7 @@ begin
       Result := NewName <> '';
       if Result then
       begin
-        Stream := TFileStream.Create(NewName, fmOpenRead or fmShareDenyWrite);
+        Stream := TFileStream.Create( htStringToString(NewName), fmOpenRead or fmShareDenyWrite);
         try
           Doc := TBuffer.Create(Stream, NewName);
         finally
@@ -2424,7 +2424,7 @@ begin
   if (ft in [ImgType, TextType]) or not TriggerEvent(FName, EV.NewName, EV.Doc) then
   begin
     EV.NewName := FName; //BG, 13.11.2016: FName should have been expanded before. // ExpandFileName(FName);
-    Stream := TFileStream.Create(EV.NewName, fmOpenRead or fmShareDenyWrite);
+    Stream := TFileStream.Create( htStringToString(EV.NewName), fmOpenRead or fmShareDenyWrite);
     try
       EV.Doc := TBuffer.Create(Stream, EV.NewName);
     finally
@@ -2748,7 +2748,7 @@ begin
       Name := ShortName
     else
 {$endif}
-    raise(EhtLoadError.Create('Can''t locate file: ' + Name));
+    raise(EhtLoadError.Create('Can''t locate file: ' + htStringToString(Name) ));
   end;
   LoadFromFileInternal(Name, Dest);
 end;
@@ -3779,7 +3779,7 @@ begin
     if Doc <> nil then
       Doc.AssignTo(UrlRequestStream)
     else
-      UrlRequestStream.LoadFromFile(NewName);
+      UrlRequestStream.LoadFromFile( htStringToString(NewName));
     RStream := UrlRequestStream;
   end;
 end;

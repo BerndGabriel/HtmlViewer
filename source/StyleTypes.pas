@@ -907,7 +907,7 @@ begin
   while GetNextSplitter(Str, Pos, FontName) do
   begin
     TranslateGenericFontName(FontName);
-    if Screen.Fonts.IndexOf(FontName) >= 0 then
+    if Screen.Fonts.IndexOf(htStringToString(FontName)) >= 0 then
     begin
       Result := FontName;
       break;

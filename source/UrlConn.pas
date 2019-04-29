@@ -513,7 +513,7 @@ var
 begin
   if (Status = ucsLoaded) and (FStream <> nil) then
   begin
-    FileStream := TFileStream.Create(Filename, fmCreate);
+    FileStream := TFileStream.Create( htStringToString(Filename), fmCreate);
     try
       FileStream.CopyFrom(Stream, 0);
     finally
@@ -802,7 +802,7 @@ begin
 
     Text.Add('<body>');
     Text.Add('<h1>' + ADirName + '</h1>');
-    if (FindFirst( IncludeTrailingPathDelimiter(ADirName) + '*.*', faAnyFile, F) = 0) then
+    if (FindFirst( IncludeTrailingPathDelimiter( htStringToString(ADirName)) + '*.*', faAnyFile, F) = 0) then
     begin
       try
         Text.Add('<table>');
@@ -825,17 +825,17 @@ begin
             else if F.Name = '..' then
               Name := ExtractFileDir(ADirName)
             else
-              Name := F.Name;
+              Name := htString(F.Name);
             Size := 'DIR';
           end
           else
           begin
-            Name := F.Name;
-            Size := IntToStr(F.Size);
+            Name := htString(F.Name);
+            Size := htString(IntToStr(F.Size));
           end;
           Text.Add(
             '<tr><th class="fn" scope="row"><a href="' + EncodeUrl(DosToHtml(Name))+'">' + Name + '</a></th>' +
-            '<td class="tm">' + DateTimeToStr( TimeStamp ) + '</td><td class="sz">' + Size + '</td></tr>');
+            '<td class="tm">' + htString( DateTimeToStr( TimeStamp )) + '</td><td class="sz">' + Size + '</td></tr>');
         until FindNext(F) <> 0;
         Text.Add('</tbody>');
 
@@ -881,7 +881,7 @@ begin
   end
   else
   begin
-    ADoc.Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+    ADoc.Stream := TFileStream.Create( htStringToString(FileName), fmOpenRead or fmShareDenyWrite);
     Ext := htLowerCase(ExtractFileExt(FileName));
     if Length(Ext) > 0 then
       Delete(Ext, 1, 1);
@@ -927,8 +927,7 @@ end;
 procedure ThtResourceConnection.Get(ADoc: ThtUrlDoc);
 
 var
-   FileName, S, Ext, GoodType: ThtString;
-   HResInfo: HRSRC;
+   FileName, Ext: ThtString;
    I: Integer;
 begin
   FileName := ADoc.Url;
@@ -990,7 +989,7 @@ begin
   end;
 
   if HResInfo <> 0 then
-    Result := TResourceStream.Create(Instance, FileName, PChar({$ifdef LCL}string(GoodType){$else}GoodType{$endif}));
+    Result := TResourceStream.Create(Instance, htStringToString(FileName), PChar({$ifdef LCL}string(GoodType){$else}GoodType{$endif}));
 end;
 
 { ThtResourceConnector }

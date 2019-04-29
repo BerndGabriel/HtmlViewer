@@ -167,7 +167,7 @@ begin
           LastCh := LCh;
           LCh := Doc.NextChar;
           if LCh = EofChar then
-            raise EParseError.Create('Unterminated comment in style file: ' + Doc.Name);
+            raise EParseError.Create('Unterminated comment in style file: ' + htStringToString(Doc.Name));
         until (LCh = '/') and (LastCh = '*');
         LCh := SpcChar;
       end;
@@ -967,7 +967,7 @@ procedure THtmlStyleParser.ProcessShortHand(Index: TShortHand; const Prop, OrigV
             end
             else
             {the following will pass 100pt, 100px, but not 100 or larger}
-              if StrToIntDef(S[I], -1) < 100 then
+              if StrToIntDef( htStringToString(S[I]), -1) < 100 then
                 Values[shSize] := S[I];
           end;
       else
@@ -1816,7 +1816,7 @@ var
       if S <> '' then
         Result := DoSort(S) + ' ' + Result;
       I := Pos(' ', Result);
-      Insert(IntToStr(Cnt) + Styles.GetSeqNo, Result, I + 1);
+      Insert( htString(IntToStr(Cnt)) + Styles.GetSeqNo, Result, I + 1);
     end
     else
       Result := DoSort(S);
