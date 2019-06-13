@@ -2660,9 +2660,14 @@ begin
     Exit;
   if Value <> FSectionList.ShowImages then
   begin
-    OldCursor := Screen.Cursor;
+    if LoadCursor <> crDefault then
+    begin
+      OldCursor := Screen.Cursor;
+      Screen.Cursor := LoadCursor;
+    end
+    else
+      OldCursor := crDefault; // valium for the compiler
     try
-      Screen.Cursor := crHourGlass;
       SetProcessing(True);
       FSectionList.ShowImages := Value;
       if FSectionList.Count > 0 then
