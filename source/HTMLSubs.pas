@@ -1787,7 +1787,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 17.01.2012 --
-function SubArray(const Arr, Minus: TIntArray): TIntArray; overload;
+function SubArray(const Arr, Minus: TIntArray): TIntArray;
  {$ifdef UseInline} inline; {$endif}
 // Return array with differences per index.
 var
