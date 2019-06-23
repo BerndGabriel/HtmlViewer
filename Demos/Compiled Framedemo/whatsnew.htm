@@ -27,7 +27,16 @@
   <li>RAD Studio 10.3 Support
   <li>Published Properties: THtmlViewer.AutoSize, THtmlViewer.Constraints and THtmlViewer.Text.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/219">219</a>: Support for max-width and max-height for images and panels.
-  <li>
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/257">257</a>: Please add LoadFromResourceName.
+	<ul>
+	  <li>Scheme/protocol 'res:///' in an URL or relative URLs without scheme/protocol referred by a document loaded from a resource let THtmlViewer load the document/image from a resource.
+	  <li>Tries to load 'files' with extensions htm, html, css, php, asp, shtml, xht, xhtml from resources of type HTML.
+	  <li>Tries to load 'files' with extensions txt, ini, sql from resources of type TEXT.
+	  <li>Tries to load image 'files' from resources of type = uppercase(extension). 
+	  <li>Method THtmlViewer.LoadFromResource() added.
+	  <li>Added: loading images from resource.
+	  <li>Added: loading hrefs from resource.
+    </ul>
 </ul>
 <h5>Enhanced</h5>
 <ul>
@@ -38,16 +47,17 @@
 </ul>                                                                            
 <h5>Fixed</h5>                                                                   
 <ul>                                                                             
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/185">185</a>: Rendering not as expected: Collapse margins of &lt;td&gt; and first contained block like is done with last contained block and &lt;td&gt;
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/185">185</a>: Rendering not as expected: Collapse margins of &lt;td&gt; and first contained block like is done with last contained block and &lt;td&gt;.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/204">204</a>: Displaying a picture: Additional pixel due to #170 now only if destination is smaller than source.
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/212">212</a>: Image URL not recognized as image
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/212">212</a>: Image URL not recognized as image.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/216">216</a>: Superscript or subscript on first paragraph char not correct.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/218">218</a>: Images with predefined width and height lead to display errors when using WaitStream.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/221">221</a>: Wrapping of negative numbers - do not break away minus from its digits.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/229">229</a>: Error table in small window: ignore conditional styles (with []) which are not supported.
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/243">243</a>: HR tag always paints itself all the way to the right. (Lazarus issue only)
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/246">246</a>: THtmlViewer show html work fine, but after click, it't show nothing
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/248">248</a>: RadioButton Cannot Group
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/243">243</a>: HR tag always paints itself all the way to the right. (Lazarus issue only).
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/246">245</a>: StyleEndSy not handled in ReadHTML.pas and triggers Assert exception.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/246">246</a>: THtmlViewer show html work fine, but after click, it't show nothing.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/248">248</a>: RadioButton Cannot Group.
 </ul>
 
 <!----------------------------------------------------------------------------->
