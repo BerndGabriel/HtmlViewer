@@ -1626,6 +1626,10 @@ begin
         Next;
       end;
 
+    StyleEndSy:
+      // Nothing to do
+      Next;
+
   else
     Next;
   end;
@@ -3205,6 +3209,10 @@ procedure THtmlParser.DoCommonSy;
                     DoStyle(LCh, Doc, '', '', False);
                     Next;
                   end;
+
+                StyleEndSy:
+                  // Nothing to do
+                  Next;
               end;
             end;
 
@@ -3587,6 +3595,10 @@ begin
         DoStyle(LCh, Doc, '', '', False);
         Next;
       end;
+
+    StyleEndSy:
+      // Nothing to do
+      Next;
   else
     begin
       Assert(False, 'DoCommon can''t handle <' + htStringToString(SymbToStr(Sy) + GreaterChar));
