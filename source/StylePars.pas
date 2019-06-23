@@ -1648,6 +1648,7 @@ var
   MayCloseCommment, OK: Boolean;
   Pos: Integer;
   Queries: ThtMediaQueries;
+  CommentState: (htsBefore, htsOpen, htsExcl, htsDash, htsInComment);
 begin
   Ok := Length(AMedia) = 0;
   if not OK then
@@ -1663,16 +1664,57 @@ begin
       LinkPath := APath;
 
       // param C is the '>' of the opening <style> tag. Just ignore it.
+      // skip HTML comment opener '<!--' immediately following the <style> tag.
+      Pos := Doc.Position;
+      CommentState := htsBefore;
       repeat
         GetCh;
         case LCh of
-          ' ', '<', '!', '-', '>':
-            // skip HTML comment opener '<!--' and closer '-->' immediately following the <style> tag.
+          ' ':
             continue;
+
+          '<':
+            if CommentState in [htsBefore] then
+            begin
+              CommentState := htsOpen;
+              continue;
+            end
+            else
+              break;
+
+          '!':
+            if CommentState in [htsOpen] then
+            begin
+              CommentState := htsExcl;
+              continue;
+            end
+            else
+              break;
+
+          '-':
+            if CommentState in [htsExcl, htsDash] then
+            begin
+              CommentState := htsDash;
+              continue;
+            end
+            else
+              break;
+
+          '>':
+            if CommentState in [htsDash] then
+              continue
+            else
+              break;
         else
           break;
         end;
       until false;
+
+      if CommentState in [htsOpen, htsExcl, htsDash] then
+      begin
+        Doc.Position := Pos;
+        LCh := '>';
+      end;
 
       // read the styles up to single HTML comment closer or start of a HTML tag
       repeat
