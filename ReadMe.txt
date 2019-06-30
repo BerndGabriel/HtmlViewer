@@ -2,7 +2,7 @@
 Welcome at GitHub.
 --------------------------------------------------------------------------------
 
-The current version is 11.8 in the default branch "HtmlViewer-11.8".
+The current version is 11.9 in the default branch "HtmlViewer-11.9".
 The next version is growing up in branch "master". (You're currently viewing "master" branch.)
 
 Developers under Windows might want to use Tortoise-GIT or "Git Gui" to keep 
@@ -109,7 +109,7 @@ Copyright (c) 1995 - 2008 by Anders Melander (DitherUnit.pas)
 Copyright (c) 1995 - 2008 by Ron Collins (HtmlGif1.pas)
 Copyright (c) 2008 - 2009 by Sebastian Zierer (Delphi 2009 Port)
 Copyright (c) 2008 - 2010 by Arvid Winkelsdorf (Fixes)
-Copyright (c) 2009 - 2016 by HtmlViewer Team 
+Copyright (c) 2009 - 2019 by HtmlViewer Team 
 
 See included License.txt
 
