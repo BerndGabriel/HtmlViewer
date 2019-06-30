@@ -1674,7 +1674,7 @@ begin
             continue;
 
           '<':
-            if CommentState in [htsBefore] then
+            if CommentState = htsBefore then
             begin
               CommentState := htsOpen;
               continue;
@@ -1683,7 +1683,7 @@ begin
               break;
 
           '!':
-            if CommentState in [htsOpen] then
+            if CommentState = htsOpen then
             begin
               CommentState := htsExcl;
               continue;
@@ -1692,19 +1692,21 @@ begin
               break;
 
           '-':
-            if CommentState in [htsExcl, htsDash] then
-            begin
-              CommentState := htsDash;
-              continue;
-            end
-            else
-              break;
+            case CommentState of
+              htsExcl:
+              begin
+                CommentState := htsDash;
+                continue;
+              end;
 
-          '>':
-            if CommentState in [htsDash] then
-              continue
+              htsDash:
+              begin
+                CommentState := htsInComment;
+                break;
+              end;
             else
               break;
+            end
         else
           break;
         end;
