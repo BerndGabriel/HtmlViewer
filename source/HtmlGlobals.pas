@@ -1602,12 +1602,12 @@ begin
       if FTransparent then
         TransparentStretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle, 0, 0, Width, Height,
+          Canvas.Handle, 0, 0, Self.Width, Self.Height,
           FMask.Canvas.Handle, 0, 0) {LDB}
       else
         StretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle, 0, 0, Width, Height,
+          Canvas.Handle, 0, 0, Self.Width, Self.Height,
           ACanvas.CopyMode);
     finally
       if RestorePalette then
