@@ -3884,6 +3884,7 @@ begin
   OK := False;
   if (MediaQuery.MediaType in [mtAll, mtScreen]) xor MediaQuery.Negated then
   begin
+	OK := True; // even there are no expressions, we force to re-init OK-value valid, because it matches
     for I := Low(MediaQuery.Expressions) to High(MediaQuery.Expressions) do
     begin
       OK := EvaluateExpression(MediaQuery.Expressions[I]);
