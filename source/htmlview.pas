@@ -1332,7 +1332,7 @@ begin
       end;
     finally
       Exclude(FViewerState, vsDontDraw);
-      if LoadCursor <> crNone then
+      if LoadCursor <> crDefault then
         Screen.Cursor := OldCursor;
     end;
   finally
@@ -2679,7 +2679,8 @@ begin
         Invalidate;
       end;
     finally
-      Screen.Cursor := OldCursor;
+      if LoadCursor <> crDefault then
+        Screen.Cursor := OldCursor;
       SetProcessing(False);
     end;
   end;
