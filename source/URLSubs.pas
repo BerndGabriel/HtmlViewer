@@ -38,7 +38,7 @@ uses
   HtmlGlobals;
 
 type
-  ThtDocType = (HTMLType, TextType, ImgType, XHtmlType, OtherType);
+  ThtDocType = (HTMLType, TextType, ImgType, XHtmlType, OtherType, AudioType, VideoType, PdfType);
 
 {***************************************************************************************************
  * URL processing methods
