@@ -2482,11 +2482,14 @@ begin
 end;
 
 destructor TFontObj.Destroy;
+{$ifndef NoTabLink}
 var Index: Integer;
+{$endif}
 begin
   FIArray.Free;
   TheFont.Free;
   UrlTarget.Free;
+{$ifndef NoTabLink}
   if FSection <> nil then
     if FSection.Document <> nil then
       if FSection.Document.TabOrderList <> nil then
@@ -2496,6 +2499,7 @@ begin
           if Index >= 0 then
             Delete(Index);
         end;
+{$endif}
   TabControl.Free;
   inherited Destroy;
 end;
