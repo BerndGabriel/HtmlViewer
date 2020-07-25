@@ -11149,6 +11149,8 @@ begin
 
   FO := TFontObj.Create(Self, Prop.Font, 0);
   FO.Title := Prop.PropTitle;
+  Prop.GetVertAlign(FO.SScript);
+
   if Assigned(AnURL) and (Length(AnURL.Url) > 0) then
   begin
     FO.CreateFIArray;
@@ -13463,12 +13465,12 @@ var
         SetTextAlign(Canvas.Handle, TA_BaseLine);
       {figure any offset for subscript or superscript}
         with FO do
-          if SScript = ANone then
-            Addon := 0
-          else if SScript = ASuper then
-            Addon := -(FontHeight div 3)
+          case SScript of
+            aSuper: Addon := -(FontHeight div 3);
+            aSub  : Addon := Descent div 2 + 1;
           else
-            Addon := Descent div 2 + 1;
+            Addon := 0;
+          end;
         NewCP := NewCP or (Addon <> 0);
       {calc a new CP if required}
         if NewCP then
