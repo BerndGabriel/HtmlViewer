@@ -4815,9 +4815,12 @@ begin
     if Entities.Find(Entity, I) then
     begin
       I := PEntity(Entities.Objects[I]).Value;
-      Collect := Copy(Collect, J + 1, MaxInt);
-      Result := True;
-      Exit;
+      if I <= 255 then // only these entities may be found without trailing ';'
+      begin
+        Collect := Copy(Collect, J + 1, MaxInt);
+        Result := True;
+        Exit;
+      end;
     end;
     Dec(J);
   end;
