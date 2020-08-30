@@ -89,12 +89,13 @@ type
 
     // the below properties are in MarginArrays
     BackgroundColor, BackgroundImage, BackgroundPosition, BackgroundRepeat, BackgroundAttachment,
-    piMinHeight, piMinWidth, piMaxHeight, piMaxWidth, BoxSizing,
+    BoxSizing,
     MarginTop, MarginRight, MarginBottom, MarginLeft,
     PaddingTop, PaddingRight, PaddingBottom, PaddingLeft,
     BorderTopWidth, BorderRightWidth, BorderBottomWidth, BorderLeftWidth,
     BorderTopColor, BorderRightColor, BorderBottomColor, BorderLeftColor,
     BorderTopStyle, BorderRightStyle, BorderBottomStyle, BorderLeftStyle,
+    piMinHeight, piMinWidth, piMaxHeight, piMaxWidth,
     piWidth, piHeight, piTop, piRight, piBottom, piLeft,
     BorderSpacingHorz, BorderSpacingVert,  //These two are internal
     // the above properties are in MarginArrays
@@ -134,12 +135,13 @@ const
 
     // these properties are in MarginArrays
     'background-color', 'background-image', 'background-position', 'background-repeat', 'background-attachment',
-    'min-height', 'min-width', 'max-height', 'max-width', 'box-sizing',
+    'box-sizing',
     'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
     'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
     'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
     'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
+    'min-height', 'min-width', 'max-height', 'max-width',
     'width', 'height', 'top', 'right', 'bottom', 'left',
     'thv-border-spacing-horz', 'thv-border-spacing-vert', //These two are for internal use only
 
@@ -1918,7 +1920,11 @@ begin
       piMaxWidth:
         begin
           if VarIsStr(VM[I]) then
-            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
+          begin
+            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto);
+            if Pos('%', VM[I]) > 0 then {include border in % heights}
+              M[I] := M[I] - M[BorderLeftWidth] - M[BorderRightWidth] - M[PaddingLeft] - M[PaddingRight];
+          end
           else if VarType(VM[I]) in varInt then
           begin
             if VM[I] = IntNull then
@@ -1933,7 +1939,11 @@ begin
       piWidth:
         begin
           if VarIsStr(VM[I]) then
-            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto)
+          begin
+            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto);
+            if Pos('%', VM[I]) > 0 then {include border in % heights}
+              M[I] := M[I] - M[BorderLeftWidth] - M[BorderRightWidth] - M[PaddingLeft] - M[PaddingRight];
+          end
           else if VarType(VM[I]) in varInt then
           begin
             if VM[I] = IntNull then

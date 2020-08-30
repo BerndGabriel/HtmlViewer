@@ -1734,7 +1734,7 @@ uses
   or defined(JPM_DEBUGGING_CREATE)
   or defined(JPM_DEBUGGING_LOGIC)
 }
- CodeSiteLogging,
+  CodeSiteLogging,
 {$ifend}
 {$IFNDEF NoGDIPlus}
   GDIPL2A,
@@ -5067,13 +5067,6 @@ begin
 
   ConvMargArray(AvailableWidth, AvailableHeight, AutoCount);
   //HideOverflow := HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20);
-  if HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20) then
-  begin
-    MinCell := MargArray[piWidth];
-    MaxCell := MinCell;
-  end
-  else
-    ContentMinMaxWidth(Canvas, MinCell, MaxCell, AvailableWidth, AvailableHeight);
   if MargArray[MarginLeft] = Auto then
     MargArray[MarginLeft] := 0;
   if MargArray[MarginRight] = Auto then
@@ -5082,6 +5075,13 @@ begin
     MargArray[piWidth] := 0;
   LeftSide := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
   RightSide := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
+  if HideOverflow and (MargArray[piWidth] <> Auto) and (MargArray[piWidth] > 20) then
+  begin
+    MinCell := MargArray[piWidth];
+    MaxCell := MinCell;
+  end
+  else
+    ContentMinMaxWidth(Canvas, MinCell, MaxCell, AvailableWidth - LeftSide - RightSide, AvailableHeight);
   if MargArray[piWidth] > 0 then
   begin
     Min := MargArray[piWidth] + LeftSide + RightSide;
