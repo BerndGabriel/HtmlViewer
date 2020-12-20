@@ -879,6 +879,10 @@ begin
   FPaintPanel.Parent := FBorderPanel; //Self;
   FPaintPanel.BevelOuter := bvNone;
   FPaintPanel.BevelInner := bvNone;
+{$ifdef LCL}
+	FPaintPanel.Align := alClient; // MV, 20.12.2020: issue 139. paint panel should fill available htmlviewer area
+	FPaintPanel.Color := DefBackground; // MV, 20.12.2020: issue 139. paint panel should accept default background color
+{$endif}
 {$ifndef LCL}
   FPaintPanel.Ctl3D := False;
 {$endif}
