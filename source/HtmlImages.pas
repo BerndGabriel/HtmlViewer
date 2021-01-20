@@ -2619,7 +2619,9 @@ initialization
   DefBitMap.LoadFromLazarusResource('DefaultBitmap');
   ErrorBitMap.LoadFromLazarusResource('ErrBitmap');
   ErrorBitMapMask.LoadFromLazarusResource('ErrBitmapMask');
+{$ifdef UseHandCursor}
   Screen.Cursors[HandCursor] := LoadCursorFromLazarusResource('Hand_Cursor');
+{$endif}
   Screen.Cursors[UpDownCursor] := LoadCursorFromLazarusResource('UPDOWNCURSOR');
   Screen.Cursors[UpOnlyCursor] := LoadCursorFromLazarusResource('UPONLYCURSOR');
   Screen.Cursors[DownOnlyCursor] := LoadCursorFromLazarusResource('DOWNONLYCURSOR');
@@ -2628,7 +2630,9 @@ initialization
   DefBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(DefaultBitmap));
   ErrorBitMap.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmap));
   ErrorBitMapMask.Handle := LoadBitmap(HInstance, MakeIntResource(ErrBitmapMask));
+{$ifdef UseHandCursor}
   Screen.Cursors[HandCursor] := LoadCursor(HInstance, MakeIntResource(Hand_Cursor));
+{$endif}
   Screen.Cursors[UpDownCursor] := LoadCursor(HInstance, 'UPDOWNCURSOR');
   Screen.Cursors[UpOnlyCursor] := LoadCursor(HInstance, 'UPONLYCURSOR');
   Screen.Cursors[DownOnlyCursor] := LoadCursor(HInstance, 'DOWNONLYCURSOR');
