@@ -42,7 +42,7 @@ uses
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages, 
-  Htmlsubs,
+  HTMLSubs,
   Htmlview,
   HtmlSymb,
   HTMLUn2,
