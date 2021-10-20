@@ -1729,6 +1729,8 @@ uses
   System.Types,
   System.UITypes,
   Vcl.Themes,
+  Vcl.GraphUtil,
+  StrUtils,
 {$endif}
 {$if defined(JPM_DEBUGGING)
   or defined(JPM_DEBUGGING_CREATE)
@@ -5940,6 +5942,75 @@ end;
 procedure TBlock.DrawBlock(Canvas: TCanvas; const ARect: TRect;
   IMgr: TIndentManager; X, Y, XRef, YRef: Integer);
 
+  procedure DrawBackground(R :TRect);
+
+    procedure ParseAndDrawLinearGradient(Value: String);
+
+      function GetAngle(FirstParam: String): Integer;
+      var
+        NumDeg: String;
+      begin
+        Result := 0;
+        if Pos('deg', FirstParam) > 0 then
+        begin
+          NumDeg := Copy(FirstParam, 1, Pos('deg', FirstParam)-1);
+          TryStrToInt(NumDeg, Result);
+        end
+        else
+        begin
+            if SameText('to right', FirstParam) then
+              Result := 90
+            else if SameText('to bottom', FirstParam) then
+              Result := 180
+            else if SameText('to left', FirstParam) then
+              Result := -90
+            else if SameText('to left top', FirstParam) then
+              Result := -45
+            else if SameText('to left bottom', FirstParam) then
+              Result := -135
+            else if SameText('to right top', FirstParam) then
+              Result := 45
+            else if SameText('to right bottom', FirstParam) then
+              Result := 135;
+        end;
+      end; // GetAngle
+
+    var
+      Angle, I, J: Integer;
+      ColorFrom, ColorTo: TColor;
+      a: TStringDynArray;
+    begin
+      I := Pos('(', Value);
+      J := Pos(')', Value);
+      if (I = 0) or (J = 0) then Exit;
+      a := SplitString(Copy(Value, I+1, J-I-1), ',');
+      if Length(a) = 3 then
+      begin
+        Angle := GetAngle(Trim(a[0]));
+        if not TryStrToColor(Trim(a[1]), False, ColorTo) then Exit;
+        if not TryStrToColor(Trim(a[2]), False, ColorFrom) then Exit;
+        if Angle = 0 then
+          GradientFillCanvas(Canvas, ColorFrom, ColorTo, R, gdVertical) // gdHorizontal
+        else if Angle = 180 then
+          GradientFillCanvas(Canvas, ColorTo, ColorFrom, R, gdVertical) // gdHorizontal
+      end
+      else // todo: parse <color-stop-list>
+        Exit;
+    end; // ParseAndDrawLinearGradient
+
+  var
+    V: Variant;
+  begin 
+    Canvas.FillRect(R);
+    V := FProperties.Props[BackgroundColor];
+    if VarIsNull(V) or (VarType(V) <> varUString) then Exit;
+
+    if StartsText('linear-gradient', V) then
+      ParseAndDrawLinearGradient(V);
+//  else if StartsText('radial-gradient', V) then
+//    ...
+  end; // DrawBackground
+
 var
   YOffset: Integer;
   XR, YB, RefX, RefY, TmpHt: Integer;
@@ -6079,7 +6150,7 @@ begin
             TiledImage.PrintUnstretched(Canvas, PdRect.Left, FT, IW, IH, 0, IT, HasBackgroundColor and Document.PrintBackground )
         else
           if not Document.Printing or Document.PrintBackground then
-            Canvas.FillRect(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
+            DrawBackground(Rect(PdRect.Left, FT, PdRect.Right, FT + IH));
       except
       end;
     end;
