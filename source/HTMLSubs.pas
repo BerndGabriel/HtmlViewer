@@ -1729,6 +1729,8 @@ uses
   System.Types,
   System.UITypes,
   Vcl.Themes,
+  Vcl.GraphUtil,
+  StrUtils,
 {$endif}
 {$if defined(JPM_DEBUGGING)
   or defined(JPM_DEBUGGING_CREATE)
