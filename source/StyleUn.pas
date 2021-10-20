@@ -3038,7 +3038,7 @@ begin
       else if Index = Color then
         Props[Index] := clBlack
       else
-        Props[Index] := clNone;
+        Props[Index] := PropValue;
 
     Visibility:
       if PropValue = 'visible' then
