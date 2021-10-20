@@ -590,7 +590,7 @@ begin
     ProcessProperty(Prop, htLowerCase(Value1), IsImportant)
   else
   begin
-    if (LinkPath <> '') and (Pos('url(', Value) > 0) then
+    if (LinkPath <> '') and (Pos('url(', Value) > 0) and (Pos('data:image/', Value) = 0) then
       Value := AddPath(Value);
     ProcessProperty(Prop, Value, IsImportant);
   end;

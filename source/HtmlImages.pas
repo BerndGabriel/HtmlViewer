@@ -846,6 +846,7 @@ var
     try
       PngImage.LoadFromStream(Stream);
       Result := ThtGraphicImage.Create(PngImage);
+      Result.Transp := itrIntrinsic;
     except
       PngImage.Free;
       raise;
