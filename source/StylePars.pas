@@ -538,6 +538,8 @@ end;
 function THtmlStyleParser.AddPath(const S: ThtString): ThtString;
 {for <link> styles, the path is relative to that of the stylesheet directory
  and must be added now}
+var
+  I: integer;
 begin
   Result := ReadUrl(S); {extract the info from url(....) }
   if (Pos('://', LinkPath) > 0) then {it's TFrameBrowser and URL}
@@ -547,9 +549,13 @@ begin
   end
   else
   begin
-    Result := HTMLToDos(Result);
-    if not IsAbsolutePath(Result) then
-      Result := CombineDos(LinkPath, Result);
+    I := 1;
+    if not FindSchemeSep(Result, I) or (htLowerCase(Copy(Result, 1, I)) = 'file:') then
+    begin
+      Result := HTMLToDos(Result);
+      if not IsAbsolutePath(Result) then
+        Result := CombineDos(LinkPath, Result);
+    end;
   end;
 {
 IMPORTANT!!!
@@ -1260,6 +1266,17 @@ var
           GetCh;
         end;
       end;
+
+//      '\':
+//      begin
+//        if PeekCh <> EofChar then
+//        begin
+//          GetCh;
+//          SetLength(Identifier, Length(Identifier) + 1);
+//          Identifier[Length(Identifier)] := LCh;
+//          GetCh;
+//        end;
+//      end;
     end;
 
     // loop through all allowed charaters:
@@ -1267,6 +1284,14 @@ var
     begin
       case LCh of
         'A'..'Z', 'a'..'z', '0'..'9', '-', '_': ;
+
+//        '\':
+//        begin
+//          if PeekCh = EofChar then
+//            break;
+//          GetCh;
+//        end;
+
       else
         if LCh < #$A0 then
           break;
@@ -1582,7 +1607,7 @@ procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: T
 
         'u':
           if GetIdentifier(URL) then
-            if LowerCase(URL) = 'url' then
+            if htLowerCase(URL) = 'url' then
               if LCh = '(' then
               begin
                 GetCh;
@@ -1636,7 +1661,7 @@ procedure THtmlStyleTagParser.DoStyle(Styles: TStyleList; var C: ThtChar; Doc: T
     GetCh; // skip the '@';
     if GetIdentifier(AtRule) then
     begin
-      AtRule := LowerCase(AtRule);
+      AtRule := htLowerCase(AtRule);
       if AtRule = 'media' then
         DoMedia
       else if AtRule = 'import' then
@@ -1915,7 +1940,7 @@ begin
     until false;
     if not Ignore then
     begin
-      S := FormatContextualSelector(Lowercase(Trim(S)), Sort);
+      S := FormatContextualSelector(htLowercase(Trim(S)), Sort);
       Selectors.Add(S);
     end;
     if LCh <> ',' then

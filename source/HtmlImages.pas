@@ -845,10 +845,16 @@ var
     PngImage := TPngImage.Create;
     try
       PngImage.LoadFromStream(Stream);
-      Result := ThtGraphicImage.Create(PngImage);
-    except
+      // As TPngImage cannot paint transparently on MetaFileCanvas in
+      // TransparencyMode = ptmBit we convert it to a Bitmap.
+      Bitmap := ThtBitmap.Create(PngImage.TransparencyMode = ptmBit);
+      Bitmap.Assign(PngImage);
+      // avoid ConvertImage:
+      Result := ThtGraphicImage.Create(Bitmap);
+      Result.Transp := itrIntrinsic;
+      Bitmap := nil;
+    finally
       PngImage.Free;
-      raise;
     end;
 {$else}
   begin

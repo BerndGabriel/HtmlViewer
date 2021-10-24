@@ -557,12 +557,18 @@ begin
   NewCanvas.Brush.Style := bsSolid;
   NewCanvas.Rectangle(0, 0, PaperWidth, PaperHeight);
 
+  NewCanvas.Brush.Style := bsClear;
   if FCurCanvas = nil then
   begin
     NewCanvas.Font.PixelsPerInch := Screen.PixelsPerInch;
     NewCanvas.Font.Name := FontSans;
     NewCanvas.Font.Size := 10;
-    NewCanvas.Brush.Style := bsClear;
+  end
+  else
+  begin
+    NewCanvas.Font.PixelsPerInch := FCurCanvas.Font.PixelsPerInch;
+    NewCanvas.Font.Name := FCurCanvas.Font.Name;
+    NewCanvas.Font.Size := FCurCanvas.Font.Size;
   end;
 
   FCurCanvas.Free;

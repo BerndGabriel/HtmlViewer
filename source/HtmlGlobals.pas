@@ -271,12 +271,12 @@ type
     procedure SetTransparentMask(AValue: Boolean);
   protected
     FMask: TBitmap;
-    FTransparent: boolean;
+    FTransparent: Boolean;
   public
     constructor Create(WithTransparentMask: Boolean = False); reintroduce; overload;
     destructor Destroy; override;
     procedure Assign(Source: TPersistent); override;
-    procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
+    procedure Draw(ACanvas: TCanvas; const DestRect: TRect); override;
     procedure StretchDraw(ACanvas: TCanvas; const DestRect, SrcRect: TRect);
     property BitmapMask: TBitmap read GetMask write SetMask;
     property WithTransparentMask: Boolean read FTransparent write SetTransparentMask;
@@ -1540,7 +1540,7 @@ begin
   end;
 end;
 
-procedure ThtBitmap.Draw(ACanvas: TCanvas; const Rect: TRect);
+procedure ThtBitmap.Draw(ACanvas: TCanvas; const DestRect: TRect);
 {$ifdef LCL}
 var
   UseMaskHandle: HBitmap;
@@ -1562,7 +1562,7 @@ begin
   ACanvas.Changing;
   DestDC := ACanvas.GetUpdatedHandle([csHandleValid]);
   StretchMaskBlt(
-    DestDC, Rect.Left, Rect.Top, Rect.Right - Rect.Left, Rect.Bottom - Rect.Top,
+    DestDC, DestRect.Left, DestRect.Top, DestRect.Right - DestRect.Left, DestRect.Bottom - DestRect.Top,
      SrcDC,         0,        0,                  Width,                 Height,
      UseMaskHandle, 0,        0, ACanvas.CopyMode);
   ACanvas.Changed;
@@ -1575,7 +1575,7 @@ var
   Pt: TPoint;
   BPP: Integer;
 begin
-  with Rect do
+  with DestRect do
   begin
     PaletteNeeded;
     OldPalette := 0;
@@ -1600,10 +1600,19 @@ begin
       SetStretchBltMode(ACanvas.Handle, STRETCH_DELETESCANS);
     try
       if FTransparent then
-        TransparentStretchBlt(
-          ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
-          Canvas.Handle, 0, 0, Self.Width, Self.Height,
-          FMask.Canvas.Handle, 0, 0) {LDB}
+      begin
+        if TransparentMode = tmFixed then
+          DrawTransparent( ACanvas, Rect(Left, Top, Right, Bottom), 255 )
+        else
+          TransparentStretchBlt(
+            ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
+            Canvas.Handle, 0, 0, Self.Width, Self.Height,
+            FMask.Canvas.Handle, 0, 0) {LDB}
+      end
+      else if AlphaFormat = afDefined then
+      begin
+        inherited;
+      end
       else
         StretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
@@ -1682,6 +1691,10 @@ begin
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
           Canvas.Handle, SrcRect.Left, SrcRect.Top, SrcRect.Right - SrcRect.Left, SrcRect.Bottom - SrcRect.Top,
           FMask.Canvas.Handle, SrcRect.Left, SrcRect.Top) {LDB}
+      else if AlphaFormat = afDefined then
+      begin
+        inherited;
+      end
       else
         StretchBlt(
           ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
