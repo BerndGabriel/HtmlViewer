@@ -1,7 +1,7 @@
 {
-Version   11.9
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2018 by Bernd Gabriel
+Copyright (c) 2008-2021 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -54,36 +54,38 @@ are covered by separate copyright notices located in those modules.
 
 { Identify Delphi Compiler Version:
 
-  #   Compiler          Version Compiler Defined Symbol
-  D26 Delphi 10.3 Rio     33    VER330
-  D25 Delphi 10.2 Tokyo   32    VER320
-  D24 Delphi 10.1 Berlin  31    VER310
-  D23 Delphi 10   Seattle 30    VER300
-  D22 Delphi XE8          29    VER290
-  D21 Delphi XE7          28    VER280
-  D20 Delphi XE6          27    VER270
-  D19 Delphi XE5          26    VER260
-  D18 Delphi XE4          25    VER250
-  D17 Delphi XE3          24    VER240
-  D16 Delphi XE2          23    VER230
-  D15 Delphi XE           22    VER220
-  D14 Delphi 2010         21    VER210
-  D12 Delphi 2009         20    VER200
-  D11 Delphi 2007         18.5  VER185
-  D10 Delphi 2006         18    VER180
-  D9  Delphi 2005         17    VER170
-  D8  Delphi 8            16    VER160
-  D7  Delphi 7            15    VER150
-  D6  Delphi 6            14    VER140
-      C++Builder 5              VER130 BCB
-  D5  Delphi 5                  VER130
-      C++Builder 4              VER125
-  D4  Delphi 4                  VER120
-      C++Builder 3              VER110
-  D3  Delphi 3                  VER100
-      C++Builder 1              VER93
-  D2  Delphi 2                  VER90
-  D1  Delphi 1                  VER80
+  #   Compiler      Version Compiler Defined Symbol Codename
+  D28 Delphi 11       35    VER350                  Alexandria
+  D27 Delphi 10.4     34    VER340                  Sydney
+  D26 Delphi 10.3     33    VER330                  Rio
+  D25 Delphi 10.2     32    VER320                  Tokyo
+  D24 Delphi 10.1     31    VER310                  Berlin
+  D23 Delphi 10       30    VER300                  Seattle
+  D22 Delphi XE8      29    VER290
+  D21 Delphi XE7      28    VER280
+  D20 Delphi XE6      27    VER270
+  D19 Delphi XE5      26    VER260
+  D18 Delphi XE4      25    VER250
+  D17 Delphi XE3      24    VER240
+  D16 Delphi XE2      23    VER230
+  D15 Delphi XE       22    VER220
+  D14 Delphi 2010     21    VER210
+  D12 Delphi 2009     20    VER200
+  D11 Delphi 2007     18.5  VER185
+  D10 Delphi 2006     18    VER180
+  D9  Delphi 2005     17    VER170
+  D8  Delphi 8        16    VER160
+  D7  Delphi 7        15    VER150
+  D6  Delphi 6        14    VER140
+      C++Builder 5          VER130 BCB
+  D5  Delphi 5              VER130
+      C++Builder 4          VER125
+  D4  Delphi 4              VER120
+      C++Builder 3          VER110
+  D3  Delphi 3              VER100
+      C++Builder 1          VER93
+  D2  Delphi 2              VER90
+  D1  Delphi 1              VER80
 
   Since Delphi 6 the version number can be found in the system constant System.CompilerVersion
 
@@ -93,7 +95,7 @@ are covered by separate copyright notices located in those modules.
 
   A complete list of version numbers can be found at:
 
-  http://docwiki.embarcadero.com/RADStudio/XE8/de/Compiler-Versionen
+  https://docwiki.embarcadero.com/RADStudio/Alexandria/en/Compiler_Versions
 }
 
   {$define VCL}
@@ -161,6 +163,14 @@ are covered by separate copyright notices located in those modules.
                                          {$define Compiler33_Plus}
                                          {$ifdef ver330}
                                          {$else}
+                                           {$define Compiler34_Plus}
+                                           {$ifdef ver340}
+                                           {$else}
+                                             {$define Compiler35_Plus}
+                                             {$ifdef ver350}
+                                             {$else}
+                                             {$endif}
+                                           {$endif}
                                          {$endif}
                                        {$endif}
                                      {$endif}
