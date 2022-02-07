@@ -1,7 +1,7 @@
 {
-Version   11.8
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2017 by HtmlViewer Team
+Copyright (c) 2008-2022 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -37,6 +37,9 @@ uses
   Windows,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, StdCtrls, ExtCtrls, Math, Contnrs,
+{$ifdef UseGenerics}
+  System.Generics.Collections,
+{$endif}
   UrlConn,
   URLSubs,
   HtmlGlobals,
@@ -380,12 +383,33 @@ type
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
   end;
 
+
+  TPositionObj = class
+  public
+    Pos: Integer;
+    Seq: Integer;
+    FormData: TFormData;
+    destructor Destroy; override;
+  end;
+
+{$ifdef UseGenerics}
+  TPositionObjList = class(TObjectList<TPositionObj>);
+  TFrameBaseList = class(TObjectList<TFrameBase>);
+{$else}
+  TPositionObjList = class(TObjectList)
+  private
+    function Get(Index: Integer): TPositionObj; {$ifdef UseInline} inline; {$endif}
+  public
+    property Items[Index: Integer]: TPositionObj read Get; default;
+  end;
+
   TFrameBaseList = class(TObjectList)
   private
     function Get(Index: Integer): TFrameBase; {$ifdef UseInline} inline; {$endif}
   public
     property Items[Index: Integer]: TFrameBase read Get; default;
   end;
+{$endif}
 
   TViewerFrameBase = class(TFrameBase) {TViewerFrameBase holds a THtmlViewer or TSubFrameSetBase}
   protected
@@ -394,7 +418,7 @@ type
     NoScroll: Boolean;
     frMarginHeight, frMarginWidth: Integer;
     frHistory: ThtStringList;
-    frPositionHistory: TObjectList;
+    frPositionHistory: TPositionObjList;
     frHistoryIndex: Integer;
     RefreshTimer: TTimer;
     NextFile: ThtString;
@@ -615,22 +639,6 @@ uses System.Types;
 
 const
   Sequence: Integer = 10;
-
-type
-  TPositionObj = class
-  public
-    Pos: Integer;
-    Seq: Integer;
-    FormData: TFormData;
-    destructor Destroy; override;
-  end;
-
-  TPositionObjList = class(TObjectList)
-  private
-    function Get(Index: Integer): TPositionObj; {$ifdef UseInline} inline; {$endif}
-  public
-    property Items[Index: Integer]: TPositionObj read Get; default;
-  end;
 
 {----------------FileToString}
 
@@ -4760,6 +4768,9 @@ begin
   Self.FQuirksMode := AValue;
 end;
 
+{$ifdef UseGenerics}
+{$else}
+
 { TFrameBaseList }
 
 //-- BG ---------------------------------------------------------- 06.10.2016 --
@@ -4775,5 +4786,7 @@ function TPositionObjList.Get(Index: Integer): TPositionObj;
 begin
   Result := inherited Get(Index);
 end;
+
+{$endif}
 
 end.

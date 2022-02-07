@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2022 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -45,6 +45,9 @@ uses
 {$endif}
   SysUtils,
   Graphics, Classes, Forms, Contnrs, Variants,
+{$ifdef UseGenerics}
+  System.Generics.Collections,
+{$endif}
   //
   HtmlGlobals,
   StyleTypes;
@@ -92,6 +95,12 @@ type
     procedure Assign(Source: TPersistent); overload; override;
     procedure AssignToCanvas(Canvas: TCanvas);
   end;
+
+{$ifdef UseGenerics}
+  ThtFontList = class(TObjectList<ThtFont>);
+{$else}
+  ThtFontList = class(TObjectList);
+{$endif}
 
   ThtFontCache = class
   private
@@ -188,9 +197,9 @@ begin
   if not FFontsByName.Find(FontName, I) then
   begin
     I := FFontsByName.Add(FontName);
-    FFontsByName.Objects[I] := TObjectList.Create(True);
+    FFontsByName.Objects[I] := ThtFontList.Create(True);
   end;
-  TObjectList(FFontsByName.Objects[I]).Add(Font);
+  ThtFontList(FFontsByName.Objects[I]).Add(Font);
 end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
@@ -231,13 +240,13 @@ var
 
 var
   I: Integer;
-  Fonts: TObjectList;
+  Fonts: ThtFontList;
 begin
   I := -1;
   if FFontsByName.Find(htLowerCase(FontInfo.iName), I) then
   begin
     iHeight := -Round(FontInfo.iSize * Screen.PixelsPerInch / 72.0);
-    Fonts := TObjectList(FFontsByName.Objects[I]);
+    Fonts := ThtFontList(FFontsByName.Objects[I]);
     for I := 0 to Fonts.Count - 1 do
     begin
       Result := ThtFont(Fonts[I]);

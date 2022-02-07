@@ -1,7 +1,7 @@
 {
-Version   11.9
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2018 by HtmlViewer Team
+Copyright (c) 2008-2022 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -45,6 +45,9 @@ uses
 {$endif}
 {$ifndef NoGDIPlus}
   GDIPL2A,
+{$endif}
+{$ifdef UseGenerics}
+  System.Generics.Collections,
 {$endif}
 {$ifdef METAFILEMISSING}
   MetaFilePrinter,
@@ -107,24 +110,38 @@ type
     property AsDouble: Double read DblValue;
   end;
 
+{$ifdef UseGenerics}
+  TAttributeList = class(TObjectList<TAttribute>) {a list of tag attributes}
+{$else}
   TAttributeList = class(TObjectList) {a list of tag attributes,(TAttributes)}
+{$endif}
   private
     SaveID: ThtString;
     function GetClass: ThtString;
     function GetID: ThtString;
     function GetTitle: ThtString;
+{$ifdef UseGenerics}
+{$else}
     function GetAttribute(Index: Integer): TAttribute; {$ifdef UseInline} inline; {$endif}
+{$endif}
   public
     constructor CreateCopy(ASource: TAttributeList);
     function Clone: TAttributeList; virtual;
+{$ifdef UseGenerics}
+    procedure Clear; virtual;
+{$else}
     procedure Clear; override;
+{$endif}
     function Find(const Name: ThtString; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function Find(Sy: TAttrSymb; var T: TAttribute): Boolean; overload; {$ifdef UseInline} inline; {$endif}
     function CreateStringList: ThtStringList;
     property TheClass: ThtString read GetClass;
     property TheID: ThtString read GetID;
     property TheTitle: ThtString read GetTitle;
+{$ifdef UseGenerics}
+{$else}
     property Items[Index: Integer]: TAttribute read GetAttribute; default;
+{$endif}
   end;
 
 //------------------------------------------------------------------------------
@@ -195,12 +212,16 @@ type
   end;
 
   // BG, 31.12.2011:
+{$ifdef UseGenerics}
+  TMapAreaList = class(TObjectList<TMapArea>);
+{$else}
   TMapAreaList = class(TObjectList)
   private
     function GetArea(Index: Integer): TMapArea; {$ifdef UseInline} inline; {$endif}
   public
     property Items[Index: Integer]: TMapArea read GetArea; default;
   end;
+{$endif}
 
   TMapItem = class {holds a client map info}
   private
@@ -213,24 +234,32 @@ type
     procedure AddArea(Attrib: TAttributeList);
   end;
 
+{$ifdef UseGenerics}
+  ThtMap = class(TObjectList<TMapItem>);
+{$else}
   ThtMap = class(TObjectList)
   private
     function Get(Index: Integer): TMapItem; {$ifdef UseInline} inline; {$endif}
   public
     property Items[Index: Integer]: TMapItem read Get; default;
   end;
+{$endif}
 
   TFontObjBase = class {font information}
   public
     UrlTarget: TUrlTarget;
   end;
 
+{$ifdef UseGenerics}
+  TFontObjBaseList = class(TObjectList<TFontObjBase>);
+{$else}
   TFontObjBaseList = class(TObjectList)
   private
     function GetBase(Index: Integer): TFontObjBase; {$ifdef UseInline} inline; {$endif}
   public
     property Items[Index: Integer]: TFontObjBase read GetBase; default;
   end;
+{$endif}
 
 //------------------------------------------------------------------------------
 // indentation manager
@@ -1438,10 +1467,13 @@ begin
   Result := False;
 end;
 
+{$ifdef UseGenerics}
+{$else}
 function TAttributeList.GetAttribute(Index: Integer): TAttribute;
 begin
   Result := Get(Index);
 end;
+{$endif}
 
 function TAttributeList.GetClass: ThtString;
 var
@@ -1643,6 +1675,9 @@ begin
   Result := PtInRegion(FRegion, X, Y);
 end;
 
+{$ifdef UseGenerics}
+{$else}
+
 { TMapAreaList }
 
 //-- BG ---------------------------------------------------------- 31.12.2011 --
@@ -1650,6 +1685,8 @@ function TMapAreaList.GetArea(Index: Integer): TMapArea;
 begin
   Result := Get(Index);
 end;
+
+{$endif}
 
 { TMapItem }
 
@@ -3581,6 +3618,9 @@ begin
   Result := inherited Get(Index);
 end;
 
+{$ifdef UseGenerics}
+{$else}
+
 { ThtMap }
 
 //-- BG ---------------------------------------------------------- 06.10.2016 --
@@ -3596,6 +3636,8 @@ function TFontObjBaseList.GetBase(Index: Integer): TFontObjBase;
 begin
   Result := inherited Get(Index);
 end;
+
+{$endif}
 
 initialization
 {$ifdef UseGlobalObjectId}

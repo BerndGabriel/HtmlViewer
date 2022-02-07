@@ -1,7 +1,7 @@
 {
 Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2021 by Bernd Gabriel
+Copyright (c) 2008-2022 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -212,6 +212,7 @@ are covered by separate copyright notices located in those modules.
   {$ifdef Compiler20_Plus}
     {$define TEditHasTextHint}
     {$define TComboBoxHasTextHint}
+    {.$define UseGenerics} // you may use generics
   {$endif}
 
   {$ifdef Compiler21_Plus}
@@ -227,6 +228,10 @@ are covered by separate copyright notices located in those modules.
   {$ifdef Compiler23_Plus}
   {$else}
     {$define UseASMx86}
+  {$endif}
+
+  {$ifdef Compiler34_Plus}
+    {$define UseGenerics} // you must use generics
   {$endif}
 
   { Set Delphi Compiler Switches }

@@ -1,8 +1,8 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2016 by Bernd Gabriel
+Copyright (c) 2011-2022 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -40,21 +40,24 @@ unit vwPrint;
 interface
 
 uses
-  {$ifdef FPC}
-    RtlConsts,
+{$ifdef FPC}
+  RtlConsts,
   LclType,
   HtmlMisc,
-    {$IFDEF MSWindows}
-      WinUtilPrn,
-    {$else}
-    {$endif}
-    LCLVersion,
+  {$IFDEF MSWindows}
+    WinUtilPrn,
   {$else}
-    Consts,
   {$endif}
-  {$ifdef MSWINDOWS}
-    Windows,
-  {$endif}
+  LCLVersion,
+{$else}
+  Consts,
+{$endif}
+{$ifdef MSWINDOWS}
+  Windows,
+{$endif}
+{$ifdef UseGenerics}
+  System.Generics.Collections,
+{$endif}
   SysUtils, Forms, Contnrs,
   Classes, Graphics, Printers,
   HtmlGlobals;
@@ -144,7 +147,11 @@ type
   // BG, 29.01.2012: allow multiple prints of several THtmlViewer components at a time.
   TMap = class(TObject)
   private
+{$ifdef UseGenerics}
+    FItems: TObjectList<TMapItem>;
+{$else}
     FItems: TObjectList;
+{$endif}
     function GetItem(Index: HDC): TMapItem;
     property Items[Index: HDC]: TMapItem read GetItem;
   public
@@ -193,7 +200,11 @@ end;
 constructor TMap.Create;
 begin
   inherited Create;
+{$ifdef UseGenerics}
+  FItems := TObjectList<TMapItem>.Create;
+{$else}
   FItems := TObjectList.Create;
+{$endif}
 end;
 
 //-- BG ---------------------------------------------------------- 29.01.2012 --

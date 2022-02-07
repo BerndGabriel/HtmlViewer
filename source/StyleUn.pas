@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2022 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -37,6 +37,9 @@ uses
   Windows,
 {$endif}
   Classes, Graphics, SysUtils, Math, Forms, Contnrs, Variants,
+{$ifdef UseGenerics}
+  System.Generics.Collections,
+{$endif}
   //
   HtmlBuffer,
   HtmlFonts,
@@ -284,12 +287,19 @@ type
     property DefPointSize : Double read FDefPointSize write FDefPointSize;
   end;
 
+{$ifdef UseGenerics}
+  TPropStack = class(TObjectList<TProperties>)
+{$else}
   TPropStack = class(TObjectList)
   private
     function GetProp(Index: Integer): TProperties; {$ifdef UseInline} inline; {$endif}
+{$endif}
   public
     function Last: TProperties; {$ifdef UseInline} inline; {$endif}
+{$ifdef UseGenerics}
+{$else}
     property Items[Index: Integer]: TProperties read GetProp; default;
+{$endif}
   end;
 
 type
@@ -3547,14 +3557,17 @@ end;
 
 { TPropStack }
 
+{$ifdef UseGenerics}
+{$else}
 function TPropStack.GetProp(Index: Integer): TProperties;
 begin
   Result := Get(Index); //TProperties(inherited Items[Index]);
 end;
+{$endif}
 
 function TPropStack.Last: TProperties;
 begin
-  Result := Get(Count - 1);
+  Result := TProperties(inherited Items[Count - 1]);
 end;
 
 const
