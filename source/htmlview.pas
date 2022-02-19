@@ -317,7 +317,7 @@ type
 {$ifndef NoMetafile}
     FPage: Integer;
     FWidthRatio: Double;
-    vwP: TvwPrinter;
+    vwP: ThtPrinter;
     function CreateHeaderFooter: THtmlViewer;
 {$endif}
     function GetCursor: TCursor;
@@ -480,7 +480,7 @@ type
     procedure OpenPrint;
     procedure ClosePrint;
     procedure AbortPrint;
-    procedure Print(FromPage: Integer = 1; ToPage: Integer = MaxInt; Prn: TvwPrinter = nil); overload;
+    procedure Print(FromPage: Integer = 1; ToPage: Integer = MaxInt; Prn: ThtPrinter = nil); overload;
     function PrintPreview(Prn: TMetaFilePrinter; NoOutput: Boolean = False; FromPage: Integer = 1; ToPage: Integer = MaxInt): Integer; virtual;
     // print or preview:
     function Print(Prn: ThtPrinter; FromPage: Integer; ToPage: Integer; Mode: ThtPrintPreviewMode = ppAuto): Integer; overload;
@@ -3943,7 +3943,7 @@ end;
 
 {$ifndef NoMetafile}
 
-procedure THtmlViewer.Print(FromPage, ToPage: Integer; Prn: TvwPrinter);
+procedure THtmlViewer.Print(FromPage, ToPage: Integer; Prn: ThtPrinter);
 var
   Done: Boolean;
 begin
@@ -3960,7 +3960,7 @@ begin
     Print(vwP, FromPage, ToPage, ppMultiPrint)
   else
   begin
-    Prn := TvwPrinter.Create;
+    Prn := TMetaFilePrinter.Create(Self);
     try
       Print(Prn, FromPage, ToPage, ppSinglePrint);
     finally
@@ -3974,7 +3974,7 @@ end;
 procedure THtmlViewer.OpenPrint;
 begin
   if vwP = nil then
-    vwP := TvwPrinter.Create;
+    vwP := TMetaFilePrinter.Create(Self);
 end;
 
 procedure THtmlViewer.ClosePrint;
@@ -4275,8 +4275,7 @@ begin
         if Margins.Bottom < 0 then
           Margins.Bottom := 0; { assume no bottom printing offset }
 
-        { which results in LowerRightPoint containing the BOTTOM and RIGHT unprintable area offset;
-          using these we modify the (logical, true) borders...}
+        { using these Margins we modify the (logical, true) borders...}
 
         Wx            := WDpi / XDpi;
         MLeftPrn      := Trunc(PrintMarginLeft / 2.54 * XDpi) - Margins.Left;
