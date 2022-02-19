@@ -60,79 +60,36 @@ uses
 {$endif}
   SysUtils, Forms, Contnrs,
   Classes, Graphics, Printers,
-  HtmlGlobals;
+  HtmlGlobals,
+  HtmlPrinter;
 
 type
+  TvwPrinterState = (psNoHandle, psHandleIC, psHandleDC);
 
-  // BG, 30.01.2012: base class for TvwPrinter and TMetaFilePrinter
-  // Allows merging the lengthy duplicate methods THtmlViewer.Print()
-  // and THtmlViewer.PrintPreview() at last.
-  ThtPrinter = class(TComponent)
+  TvwPrinter = class(ThtPrinter)
   private
-    FOffsetX: Integer;      // Physical Printable Area x margin
-    FOffsetY: Integer;      // Physical Printable Area y margin
-    FPaperHeight: Integer;  // Physical Height in device units
-    FPaperWidth: Integer;   // Physical Width in device units
-    FPgHeight: Integer;     // Vertical height in pixels
-    FPgWidth: Integer;      // Horizontal width in pixels
-    FPPIX: Integer;         // Logical pixels per inch in X
-    FPPIY: Integer;         // Logical pixels per inch in Y
-    FPrinting: Boolean;
-    FTitle: ThtString;         // Printed Document's Title
-    FAborted: Boolean;
+    FCanvas: TCanvas;
+    FPageNumber: Integer;
+    State: TvwPrinterState;
+    DC: HDC;
+{$ifdef MSWINDOWS}
+    DevMode: {$if lcl_fullversion >= 1080000} PDeviceModeW {$else} PDeviceMode {$ifend};
+{$endif}
+    DeviceMode: HGLOBAL;
+    procedure SetState(Value: TvwPrinterState);
+    function GetHandle: HDC;
   protected
-    function GetCanvas: TCanvas; virtual; abstract;
-    function GetPageNum: Integer; virtual; abstract;
-    procedure CheckPrinting(Value: Boolean);
-    procedure GetPrinterCapsOf(Printer: TPrinter);
-    procedure SetPrinting(Value: Boolean);
+    function GetCanvas: TCanvas; override;
+    function GetPageNum: Integer; override;
   public
-    procedure BeginDoc; virtual; abstract;
-    procedure NewPage; virtual; abstract;
-    procedure EndDoc; virtual; abstract;
-    procedure Abort; virtual; abstract;
-    procedure Assign(Source: TPersistent); override;
-    property Aborted: Boolean read FAborted;
-    property Canvas: TCanvas read GetCanvas;
-    property OffsetX: Integer read FOffsetX;
-    property OffsetY: Integer read FOffsetY;
-    property PageNumber: Integer read GetPageNum;
-    property PageHeight: Integer read FPgHeight;
-    property PageWidth: Integer read FPgWidth;
-    property PaperHeight: Integer read FPaperHeight;
-    property PaperWidth: Integer read FPaperWidth;
-    property PixelsPerInchX: Integer read FPPIX;
-    property PixelsPerInchY: Integer read FPPIY;
-    property Printing: Boolean read FPrinting; // becomes True in BeginDoc and back to False in EndDoc.
-    property Title: ThtString read FTitle write FTitle;
+    constructor Create; reintroduce; overload;
+    destructor Destroy; override;
+    procedure Abort; override;
+    procedure BeginDoc; override;
+    procedure EndDoc; override;
+    procedure NewPage; override;
+    property Handle: HDC read GetHandle;
   end;
-
-//  TvwPrinterState = (psNoHandle, psHandleIC, psHandleDC);
-//
-//  TvwPrinter = class(ThtPrinter)
-//  private
-//    FCanvas: TCanvas;
-//    FPageNumber: Integer;
-//    State: TvwPrinterState;
-//    DC: HDC;
-//{$ifdef MSWINDOWS}
-//    DevMode: {$if lcl_fullversion >= 1080000} PDeviceModeW {$else} PDeviceMode {$ifend};
-//{$endif}
-//    DeviceMode: HGLOBAL;
-//    procedure SetState(Value: TvwPrinterState);
-//    function GetHandle: HDC;
-//  protected
-//    function GetCanvas: TCanvas; override;
-//    function GetPageNum: Integer; override;
-//  public
-//    constructor Create; reintroduce; overload;
-//    destructor Destroy; override;
-//    procedure Abort; override;
-//    procedure BeginDoc; override;
-//    procedure EndDoc; override;
-//    procedure NewPage; override;
-//    property Handle: HDC read GetHandle;
-//  end;
 
 implementation
 
@@ -268,328 +225,266 @@ begin
   Result := nil;
 end;
 
-{ ThtPrinter }
+{ TPrinterCanvas }
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-procedure ThtPrinter.Assign(Source: TPersistent);
-var
-  Src: ThtPrinter absolute Source;
-begin
-  inherited;
-  if Source is ThtPrinter then
-  begin
-    FPPIX := Src.FPPIX;
-    FPPIY := Src.FPPIY;
-    FPaperWidth  := Src.FPaperWidth;
-    FPaperHeight := Src.FPaperHeight;
-    FOffsetX  := Src.FOffsetX;
-    FOffsetY  := Src.FOffsetY;
-    FPgHeight := Src.FPgHeight;
-    FPgWidth  := Src.FPgWidth;
+type
+  TPrinterCanvas = class(TCanvas)
+    vwPrinter: TvwPrinter;
+    constructor Create(APrinter: TvwPrinter);
+    procedure CreateHandle; override;
+    procedure Changing; override;
   end;
+
+constructor TPrinterCanvas.Create(APrinter: TvwPrinter);
+begin
+  inherited Create;
+  vwPrinter := APrinter;
 end;
 
-procedure ThtPrinter.CheckPrinting(Value: Boolean);
+procedure TPrinterCanvas.CreateHandle;
 begin
-  if Printing <> Value then
-    if Value then
-      RaiseError(SNotPrinting)
-    else
-      RaiseError(SPrinting);
+  vwPrinter.SetState(psHandleIC);
+  Handle := vwPrinter.DC;
 end;
 
-//-- BG ---------------------------------------------------------- 29.01.2012 --
-procedure ThtPrinter.GetPrinterCapsOf(Printer: TPrinter);
+procedure TPrinterCanvas.Changing;
 begin
-  if Printer.Printers.Count = 0 then
-    raise Exception.Create('Printer not available');
+  vwPrinter.CheckPrinting(True);
+  inherited Changing;
+end;
+
+{ TvwPrinter }
+
+constructor TvwPrinter.Create;
+begin
+  inherited Create(nil);
+end;
+
+destructor TvwPrinter.Destroy;
+begin
+  if Printing then
+    EndDoc;
+  SetState(psNoHandle);
+  FCanvas.Free;
+  inherited Destroy;
+end;
 
 {$ifdef LCL}
-  FPPIX := Printer.XDPI;
-  FPPIY := Printer.YDPI;
-  FPaperWidth := Printer.PaperSize.PaperRect.PhysicalRect.Right;
-  FPaperHeight := Printer.PaperSize.PaperRect.PhysicalRect.Bottom;
-  FOffsetX := Printer.PaperSize.PaperRect.WorkRect.Left;
-  FOffsetY := Printer.PaperSize.PaperRect.WorkRect.Top;
-  FPgHeight := Printer.PageHeight;
-  FPgWidth := Printer.PageWidth;
 {$else}
-  FPPIX := GetDeviceCaps(Printer.Handle, LOGPIXELSX);
-  FPPIY := GetDeviceCaps(Printer.Handle, LOGPIXELSY);
-  FPaperWidth := GetDeviceCaps(Printer.Handle, PHYSICALWIDTH);
-  FPaperHeight := GetDeviceCaps(Printer.Handle, PHYSICALHEIGHT);
-  FOffsetX := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETX);
-  FOffsetY := GetDeviceCaps(Printer.Handle, PHYSICALOFFSETY);
-  FPgHeight := Printer.PageHeight;
-  FPgWidth := Printer.PageWidth;
+function CopyData(Handle: HGLOBAL): HGLOBAL;
+var
+  Src, Dest: PByte;
+  Size: Integer;
+begin
+  if Handle <> 0 then
+  begin
+    Size := GlobalSize(Handle);
+    Result := GlobalAlloc(GHND, Size);
+    if Result <> 0 then
+    try
+      Src := GlobalLock(Handle);
+      Dest := GlobalLock(Result);
+      if (Src <> nil) and (Dest <> nil) then
+        Move(Src^, Dest^, Size);
+    finally
+      GlobalUnlock(Handle);
+      GlobalUnlock(Result);
+    end
+  end
+  else
+    Result := 0;
+end;
+{$endif LCL}
+
+procedure TvwPrinter.SetState(Value: TvwPrinterState);
+{$ifdef MsWindows}
+  function CreateDefaultPrinterHandle(CreateHandleFunc: TvwPrinterState): HDC;
+{$ifdef LCL}
+  var
+    PrnDev: TPrinterDevice;
+    Driver, Device, Port: {$if lcl_fullversion >= 1080000} WideString {$else} string {$ifend};
+  begin
+    PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
+    Device := PrnDev.Device;
+    Driver := PrnDev.Driver;
+    Port := PrnDev.Port;
+    {$if lcl_fullversion >= 1080000}
+      DevMode := PrnDev.DevModeW;
+      if CreateHandleFunc = psHandleDC then
+        Result := CreateDCW(PWideChar(Driver), PWideChar(Device), PWideChar(Port), DevMode)
+      else
+        Result := CreateICW(PWideChar(Driver), PWideChar(Device), PWideChar(Port), DevMode);
+    {$else}
+      DevMode := PrnDev.{$if lcl_fullversion >= 1020000} DevModeA {$else} DevMode {$ifend};
+      if CreateHandleFunc = psHandleDC then
+        Result := CreateDC(PChar(Driver), PChar(Device), PChar(Port), DevMode)
+      else
+        Result := CreateIC(PChar(Driver), PChar(Device), PChar(Port), DevMode);
+    {$ifend}
+{$else}
+  var
+    TmpDeviceMode: HGLOBAL;
+    Driver, Device, Port: array[0..200] of {$ifdef UNICODE} WideChar {$else} char {$endif};
+  begin
+    Printers.Printer.GetPrinter(Device, Driver, Port, TmpDeviceMode);
+    if DeviceMode <> 0 then
+    begin
+      GlobalUnlock(DeviceMode);
+      GlobalFree(DeviceMode);
+    end;
+    DevMode := nil;
+    if TmpDeviceMode <> 0 then
+    begin
+      DeviceMode := CopyData(TmpDeviceMode);
+      if DeviceMode <> 0 then
+        DevMode := GlobalLock(DeviceMode);
+    end;
+    if CreateHandleFunc = psHandleDC then
+      Result := CreateDC(Driver, Device, Port, DevMode)
+    else
+      Result := CreateIC(Driver, Device, Port, DevMode);
+{$endif}
+  end;
+
+var
+  CreateHandleFunc: TvwPrinterState;
+begin
+  if Value <> State then
+  begin
+    CreateHandleFunc := psNoHandle;
+    case Value of
+      psNoHandle:
+        begin
+          CheckPrinting(False);
+          if Assigned(FCanvas) then
+            FCanvas.Handle := 0;
+          DeleteDC(DC);
+          DC := 0;
+        end;
+
+      psHandleIC:
+        if State <> psHandleDC then
+          CreateHandleFunc := psHandleIC
+        else
+          // don't change the state from psHandleDC
+          Exit;
+
+      psHandleDC:
+        begin
+          if FCanvas <> nil then
+            FCanvas.Handle := 0;
+          if DC <> 0 then
+            DeleteDC(DC);
+          CreateHandleFunc := psHandleDC;
+        end;
+    end;
+    if CreateHandleFunc <> psNoHandle then
+    begin
+      DC := CreateDefaultPrinterHandle(CreateHandleFunc);
+      if DC = 0 then
+        RaiseError(SInvalidPrinter);
+      if FCanvas <> nil then
+        FCanvas.Handle := DC;
+    end;
+    State := Value;
+  end;
+{$else MsWindows}
+begin
+  raise Exception.Create('TvwPrinter.SetState() not yet implemented.');
+{$endif MsWindows}
+end;
+
+procedure TvwPrinter.Abort;
+begin
+  CheckPrinting(True);
+{$ifdef MsWindows}
+  AbortDoc(Canvas.Handle);
+{$endif}
+  SetAborted(True);
+  EndDoc;
+end;
+
+procedure TvwPrinter.BeginDoc;
+{$ifdef MsWindows}
+var
+  DocInfo: {$if defined(LCL) and (lcl_fullversion < 1060000)} TDocInfo {$else} TDocInfoW {$ifend};
+{$endif}
+begin
+  CheckPrinting(False);
+  SetState(psHandleDC);
+  GetPrinterCapsOf(Printer);
+  Canvas.Refresh;
+  SetAborted(False);
+  FPageNumber := 1;
+
+{$ifdef MsWindows}
+  FillChar(DocInfo, SizeOf(DocInfo), 0);
+  with DocInfo do
+  begin
+    cbSize := SizeOf(DocInfo);
+    lpszDocName := {$if defined(LCL) and (lcl_fullversion < 1060000)} PChar(Title) {$else} PWideChar(Title) {$ifend};;
+  end;
+  SetAbortProc(DC, AbortProc);
+{$endif}
+  FPrinters.Put(DC, Self);
+{$ifdef MsWindows}
+  StartDocW(DC, {$ifdef LCL}@{$endif}DocInfo);
+{$endif}
+  SetPrinting(True);
+{$ifdef MsWindows}
+  StartPage(DC);
 {$endif}
 end;
 
-procedure ThtPrinter.SetPrinting(Value: Boolean);
+procedure TvwPrinter.EndDoc;
 begin
-  FPrinting := Value;
+  CheckPrinting(True);
+{$ifdef MsWindows}
+  EndPage(DC);
+{$endif}
+  FPrinters.Remove(DC);
+{$ifdef MsWindows}
+  if not Aborted then
+    Windows.EndDoc(DC);
+{$endif}
+  SetPrinting(False);
+  SetAborted(False);
+  FPageNumber := 0;
+  if DeviceMode <> 0 then
+  begin
+    GlobalUnlock(DeviceMode);
+    GlobalFree(DeviceMode);
+  end;
 end;
 
-//{ TPrinterCanvas }
-//
-//type
-//  TPrinterCanvas = class(TCanvas)
-//    vwPrinter: TvwPrinter;
-//    constructor Create(APrinter: TvwPrinter);
-//    procedure CreateHandle; override;
-//    procedure Changing; override;
-//  end;
-//
-//constructor TPrinterCanvas.Create(APrinter: TvwPrinter);
-//begin
-//  inherited Create;
-//  vwPrinter := APrinter;
-//end;
-//
-//procedure TPrinterCanvas.CreateHandle;
-//begin
-//  vwPrinter.SetState(psHandleIC);
-//  Handle := vwPrinter.DC;
-//end;
-//
-//procedure TPrinterCanvas.Changing;
-//begin
-//  vwPrinter.CheckPrinting(True);
-//  inherited Changing;
-//end;
-//
-//{ TvwPrinter }
-//
-//constructor TvwPrinter.Create;
-//begin
-//  inherited Create(nil);
-//end;
-//
-//destructor TvwPrinter.Destroy;
-//begin
-//  if Printing then
-//    EndDoc;
-//  SetState(psNoHandle);
-//  FCanvas.Free;
-//  inherited Destroy;
-//end;
-//
-//{$ifdef LCL}
-//{$else}
-//function CopyData(Handle: HGLOBAL): HGLOBAL;
-//var
-//  Src, Dest: PByte;
-//  Size: Integer;
-//begin
-//  if Handle <> 0 then
-//  begin
-//    Size := GlobalSize(Handle);
-//    Result := GlobalAlloc(GHND, Size);
-//    if Result <> 0 then
-//    try
-//      Src := GlobalLock(Handle);
-//      Dest := GlobalLock(Result);
-//      if (Src <> nil) and (Dest <> nil) then
-//        Move(Src^, Dest^, Size);
-//    finally
-//      GlobalUnlock(Handle);
-//      GlobalUnlock(Result);
-//    end
-//  end
-//  else
-//    Result := 0;
-//end;
-//{$endif LCL}
-//
-//procedure TvwPrinter.SetState(Value: TvwPrinterState);
-//{$ifdef MsWindows}
-//  function CreateDefaultPrinterHandle(CreateHandleFunc: TvwPrinterState): HDC;
-//{$ifdef LCL}
-//  var
-//    PrnDev: TPrinterDevice;
-//    Driver, Device, Port: {$if lcl_fullversion >= 1080000} WideString {$else} string {$ifend};
-//  begin
-//    PrnDev := TPrinterDevice(Printer.Printers.Objects[Printer.PrinterIndex]);
-//    Device := PrnDev.Device;
-//    Driver := PrnDev.Driver;
-//    Port := PrnDev.Port;
-//    {$if lcl_fullversion >= 1080000}
-//      DevMode := PrnDev.DevModeW;
-//      if CreateHandleFunc = psHandleDC then
-//        Result := CreateDCW(PWideChar(Driver), PWideChar(Device), PWideChar(Port), DevMode)
-//      else
-//        Result := CreateICW(PWideChar(Driver), PWideChar(Device), PWideChar(Port), DevMode);
-//    {$else}
-//      DevMode := PrnDev.{$if lcl_fullversion >= 1020000} DevModeA {$else} DevMode {$ifend};
-//      if CreateHandleFunc = psHandleDC then
-//        Result := CreateDC(PChar(Driver), PChar(Device), PChar(Port), DevMode)
-//      else
-//        Result := CreateIC(PChar(Driver), PChar(Device), PChar(Port), DevMode);
-//    {$ifend}
-//{$else}
-//  var
-//    TmpDeviceMode: HGLOBAL;
-//    Driver, Device, Port: array[0..200] of {$ifdef UNICODE} WideChar {$else} char {$endif};
-//  begin
-//    Printers.Printer.GetPrinter(Device, Driver, Port, TmpDeviceMode);
-//    if DeviceMode <> 0 then
-//    begin
-//      GlobalUnlock(DeviceMode);
-//      GlobalFree(DeviceMode);
-//    end;
-//    DevMode := nil;
-//    if TmpDeviceMode <> 0 then
-//    begin
-//      DeviceMode := CopyData(TmpDeviceMode);
-//      if DeviceMode <> 0 then
-//        DevMode := GlobalLock(DeviceMode);
-//    end;
-//    if CreateHandleFunc = psHandleDC then
-//      Result := CreateDC(Driver, Device, Port, DevMode)
-//    else
-//      Result := CreateIC(Driver, Device, Port, DevMode);
-//{$endif}
-//  end;
-//
-//var
-//  CreateHandleFunc: TvwPrinterState;
-//begin
-//  if Value <> State then
-//  begin
-//    CreateHandleFunc := psNoHandle;
-//    case Value of
-//      psNoHandle:
-//        begin
-//          CheckPrinting(False);
-//          if Assigned(FCanvas) then
-//            FCanvas.Handle := 0;
-//          DeleteDC(DC);
-//          DC := 0;
-//        end;
-//
-//      psHandleIC:
-//        if State <> psHandleDC then
-//          CreateHandleFunc := psHandleIC
-//        else
-//          // don't change the state from psHandleDC
-//          Exit;
-//
-//      psHandleDC:
-//        begin
-//          if FCanvas <> nil then
-//            FCanvas.Handle := 0;
-//          if DC <> 0 then
-//            DeleteDC(DC);
-//          CreateHandleFunc := psHandleDC;
-//        end;
-//    end;
-//    if CreateHandleFunc <> psNoHandle then
-//    begin
-//      DC := CreateDefaultPrinterHandle(CreateHandleFunc);
-//      if DC = 0 then
-//        RaiseError(SInvalidPrinter);
-//      if FCanvas <> nil then
-//        FCanvas.Handle := DC;
-//    end;
-//    State := Value;
-//  end;
-//{$else MsWindows}
-//begin
-//  raise Exception.Create('TvwPrinter.SetState() not yet implemented.');
-//{$endif MsWindows}
-//end;
-//
-//procedure TvwPrinter.Abort;
-//begin
-//  CheckPrinting(True);
-//{$ifdef MsWindows}
-//  AbortDoc(Canvas.Handle);
-//{$endif}
-//  FAborted := True;
-//  EndDoc;
-//end;
-//
-//procedure TvwPrinter.BeginDoc;
-//{$ifdef MsWindows}
-//var
-//  DocInfo: {$if defined(LCL) and (lcl_fullversion < 1060000)} TDocInfo {$else} TDocInfoW {$ifend};
-//{$endif}
-//begin
-//  CheckPrinting(False);
-//  SetState(psHandleDC);
-//  GetPrinterCapsOf(Printer);
-//  Canvas.Refresh;
-//  FAborted := False;
-//  FPageNumber := 1;
-//
-//{$ifdef MsWindows}
-//  FillChar(DocInfo, SizeOf(DocInfo), 0);
-//  with DocInfo do
-//  begin
-//    cbSize := SizeOf(DocInfo);
-//    lpszDocName := {$if defined(LCL) and (lcl_fullversion < 1060000)} PChar(Title) {$else} PWideChar(Title) {$ifend};;
-//  end;
-//  SetAbortProc(DC, AbortProc);
-//{$endif}
-//  FPrinters.Put(DC, Self);
-//{$ifdef MsWindows}
-//  StartDocW(DC, {$ifdef LCL}@{$endif}DocInfo);
-//{$endif}
-//  SetPrinting(True);
-//{$ifdef MsWindows}
-//  StartPage(DC);
-//{$endif}
-//end;
-//
-//procedure TvwPrinter.EndDoc;
-//begin
-//  CheckPrinting(True);
-//{$ifdef MsWindows}
-//  EndPage(DC);
-//{$endif}
-//  FPrinters.Remove(DC);
-//{$ifdef MsWindows}
-//  if not Aborted then
-//    Windows.EndDoc(DC);
-//{$endif}
-//  SetPrinting(False);
-//  FAborted := False;
-//  FPageNumber := 0;
-//  if DeviceMode <> 0 then
-//  begin
-//    GlobalUnlock(DeviceMode);
-//    GlobalFree(DeviceMode);
-//  end;
-//end;
-//
-//procedure TvwPrinter.NewPage;
-//begin
-//  CheckPrinting(True);
-//{$ifdef MsWindows}
-//  EndPage(DC);
-//  StartPage(DC);
-//{$endif}
-//  Inc(FPageNumber);
-//  Canvas.Refresh;
-//end;
-//
-//function TvwPrinter.GetCanvas: TCanvas;
-//begin
-//  if FCanvas = nil then
-//    FCanvas := TPrinterCanvas.Create(Self);
-//  Result := FCanvas;
-//end;
-//
-//function TvwPrinter.GetHandle: HDC;
-//begin
-//  SetState(psHandleIC);
-//  Result := DC;
-//end;
-//
-//function TvwPrinter.GetPageNum: Integer;
-//begin
-//  Result := FPageNumber;
-//end;
+procedure TvwPrinter.NewPage;
+begin
+  CheckPrinting(True);
+{$ifdef MsWindows}
+  EndPage(DC);
+  StartPage(DC);
+{$endif}
+  Inc(FPageNumber);
+  Canvas.Refresh;
+end;
+
+function TvwPrinter.GetCanvas: TCanvas;
+begin
+  if FCanvas = nil then
+    FCanvas := TPrinterCanvas.Create(Self);
+  Result := FCanvas;
+end;
+
+function TvwPrinter.GetHandle: HDC;
+begin
+  SetState(psHandleIC);
+  Result := DC;
+end;
+
+function TvwPrinter.GetPageNum: Integer;
+begin
+  Result := FPageNumber;
+end;
 
 initialization
   FPrinters := TMap.Create;
