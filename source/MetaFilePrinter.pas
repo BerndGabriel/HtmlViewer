@@ -1,7 +1,8 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2016-2022 by Bernd Gabriel
 
 ***************************************************************
 *                                                             *
@@ -49,7 +50,7 @@ uses
   {$endif}
   Classes, Graphics, Printers, SysUtils, Forms,
   HtmlGlobals,
-  vwPrint;
+  HtmlPrinter;
 
 type
 
@@ -120,45 +121,15 @@ type
   end;
 {$endif}
 
-
-  TUnits = (unInches, unCentimeters);
-  TPageEvent = procedure(Sender: TObject; NumPage: Integer;
-    var StopPrinting: Boolean) of object;
-
-  TMetaFilePrinter = class(ThtPrinter)
-  protected
-    FPrinting: boolean;
-    FMFList: TList;
-    FCurCanvas: TCanvas;
-    FUnits: TUnits;
-    FConvFac: double;
-    FUsedPage: boolean;
-    FOnPageEvent: TPageEvent;
-
-    procedure FreeMetaFiles;
+  TMetaFilePrinter = class(ThtPagePrinter)
+  private
     function GetMetaFile(I: integer): TMetaFile;
-    procedure SetUnits(Val: TUnits);
-    function GetLastAvailPage: integer;
-
-    function GetCanvas: TCanvas; override;
-    function GetPageNum: integer; override;
+  protected
+    procedure CreatePage(var NextPage: TObject; var NextCanvas: TCanvas); override;
   public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-
-      // Printer Methods
-    procedure BeginDoc; override;
-    procedure NewPage; override;
-    procedure EndDoc; override;
-    procedure Abort; override;
-
     property MetaFiles[I: integer]: TMetaFile read GetMetaFile;
-    property Printing: boolean read FPrinting;
-    property LastAvailablePage: integer read GetLastAvailPage;
-  published
-    property Units: TUnits read FUnits write SetUnits;
-    property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
   end;
+
 {$endif NoMetaFile}
 
 implementation
@@ -460,142 +431,27 @@ end;
 
 // TMetaFilePrinter
 
-constructor TMetaFilePrinter.Create(AOwner: TComponent);
-begin
-  inherited;
-  FMFList := TList.Create;
-  FUnits := unInches;
-end;
-
-destructor TMetaFilePrinter.Destroy;
-begin
-  FreeMetaFiles;
-  FMFList.Free;
-  inherited;
-end;
-
-
-procedure TMetaFilePrinter.FreeMetaFiles;
+procedure TMetaFilePrinter.CreatePage(var NextPage: TObject; var NextCanvas: TCanvas);
 var
-  I: integer;
+  MetaFile: TMetaFile;
 begin
-  for I := 0 to FMFList.Count - 1 do
-    MetaFiles[I].Free;
-  FMFList.Clear;
-  FreeAndNil(FCurCanvas);
+  inherited;
+  MetaFile := TMetaFile.Create;
+  NextPage := MetaFile;
+
+{$IFNDEF NoGDIPlus}
+{$ifndef LCL}
+  if GDIPlusActive then
+    NextCanvas := TMetaFileCanvas.Create(MetaFile, Printer.Handle)
+  else
+{$endif LCL}
+{$ENDIF NoGDIPlus}
+    NextCanvas := TMetaFileCanvas.Create(MetaFile, 0);
 end;
 
 function TMetaFilePrinter.GetMetaFile(I: integer): TMetaFile;
 begin
-  Result := FMFList[I];
-end;
-
-procedure TMetaFilePrinter.SetUnits(Val: TUnits);
-begin
-  FUnits := Val;
-  case FUnits of
-    unInches: FConvFac := 1;
-    unCentimeters: FConvFac := INCH_TO_CM;
-  end;
-end;
-
-procedure TMetaFilePrinter.BeginDoc;
-begin
-  FPrinting := True;
-  FreeMetaFiles;
-
-  getPrinterCapsOf(Printer);
-
-  NewPage;
-end;
-
-procedure TMetaFilePrinter.EndDoc;
-var
-  I: integer;
-begin
-  FPrinting := False;
-  FCurCanvas.Free;
-  FCurCanvas := nil;
-
-   // in case NewPage was called but nothing drawn on it
-  if not FUsedPage then
-  begin
-    I := FMFList.Count - 1;
-    MetaFiles[FMFList.Count - 1].Free;
-    FMFList.Delete(I);
-  end;
-
-end;
-
-procedure TMetaFilePrinter.Abort;
-begin
-  FPrinting := False;
-  FreeAndNil(FCurCanvas);
-  FreeMetaFiles;
-end;
-
-procedure TMetaFilePrinter.NewPage;
-var
-  MetaFile: TMetaFile;
-  NewCanvas: TCanvas;
-  Done: boolean;
-begin
-  MetaFile := TMetaFile.Create;
-  FMFList.Add(MetaFile);
-
-{$IFNDEF NoGDIPlus}
-{$ifndef LCL}
-  if GDIPlusActive then                                  
-    NewCanvas := TMetaFileCanvas.Create(MetaFile, Printer.Handle)
-  else
-{$endif LCL}
-{$ENDIF NoGDIPlus}
-    NewCanvas := TMetaFileCanvas.Create(MetaFile, 0);
-   { fill the page with "whiteness" }
-  NewCanvas.Brush.Color := clWhite;
-  NewCanvas.Pen.Color := clWhite;
-  NewCanvas.Brush.Style := bsSolid;
-  NewCanvas.Rectangle(0, 0, PaperWidth, PaperHeight);
-
-  NewCanvas.Brush.Style := bsClear;
-  if FCurCanvas = nil then
-  begin
-    NewCanvas.Font.PixelsPerInch := Screen.PixelsPerInch;
-    NewCanvas.Font.Name := FontSans;
-    NewCanvas.Font.Size := 10;
-  end
-  else
-  begin
-    NewCanvas.Font.PixelsPerInch := FCurCanvas.Font.PixelsPerInch;
-    NewCanvas.Font.Name := FCurCanvas.Font.Name;
-    NewCanvas.Font.Size := FCurCanvas.Font.Size;
-  end;
-
-  FCurCanvas.Free;
-  FCurCanvas := NewCanvas;
-  FUsedPage := False;
-
-  if Assigned(FOnPageEvent) then
-  begin
-    Done := False;
-    FOnPageEvent(Self, FMFList.Count, Done);
-  end;
-end;
-
-function TMetaFilePrinter.GetPageNum: integer;
-begin
-  Result := FMFList.Count;
-end;
-
-function TMetaFilePrinter.GetLastAvailPage: integer;
-begin
-  Result := GetPageNum;
-end;
-
-function TMetaFilePrinter.GetCanvas: TCanvas;
-begin
-  Result := FCurCanvas;
-  FUsedPage := True;
+  Result := Pages[I] as TMetaFile;
 end;
 {$endif NoMetaFile}
 

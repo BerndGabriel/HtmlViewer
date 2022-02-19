@@ -1,5 +1,5 @@
 {-------------------------------------------------------------------------------
-Copyright (C) 2006-2012 by Bernd Gabriel.
+Copyright (C) 2006-2022 by Bernd Gabriel.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -34,7 +34,7 @@ uses
 {$ifdef LCL}
   LclIntf, LclType, LMessages,
 {$endif}
-  Dialogs, Controls, Forms, Graphics, Math, Printers, Types,
+  Dialogs, Controls, Forms, Graphics, Math, Printers, Types, Contnrs,
   //
   MetaFilePrinter;
 
@@ -58,10 +58,10 @@ type
 //------------------------------------------------------------------------------
 
   IBegaPrintable = interface
-    function getHeight: Integer;
-    function getWidth: Integer;
-    procedure beforeFirstPage(PageWidth, PageHeight: Integer; out PrintWidth, PrintHeight: Integer);
-    procedure print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer);
+    function GetHeight: Integer;
+    function GetWidth: Integer;
+    procedure BeforeFirstPage(PageWidth, PageHeight: Integer; out PrintWidth, PrintHeight: Integer);
+    procedure Print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer);
     property Height: Integer read getHeight;
     property Width: Integer read getWidth;
   end;
@@ -72,10 +72,10 @@ type
 
   TBegaPrintable = class(TInterfacedObject, IBegaPrintable)
   protected
-    function getHeight: Integer; virtual; abstract;
-    function getWidth: Integer; virtual; abstract;
-    procedure beforeFirstPage(PageWidth, PageHeight: Integer; out PrintWidth, PrintHeight: Integer); virtual;
-    procedure print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer); virtual; abstract;
+    function GetHeight: Integer; virtual; abstract;
+    function GetWidth: Integer; virtual; abstract;
+    procedure BeforeFirstPage(PageWidth, PageHeight: Integer; out PrintWidth, PrintHeight: Integer); virtual;
+    procedure Print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer); virtual; abstract;
   public
     property Height: Integer read getHeight;
     property Width: Integer read getWidth;
@@ -86,10 +86,10 @@ type
   private
     FControl: TControl;
   public
-    constructor create(ControlToPrint: TControl);
-    function getHeight: Integer; override;
-    function getWidth: Integer; override;
-    procedure print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer); override;
+    constructor Create(ControlToPrint: TControl);
+    function GetHeight: Integer; override;
+    function GetWidth: Integer; override;
+    procedure Print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer); override;
   end;
 
   //BG, 05.12.2006
@@ -97,10 +97,10 @@ type
   private
     FGraphic: TGraphic;
   public
-    constructor create(GraphicToPrint: TGraphic);
-    function getHeight: Integer; override;
-    function getWidth: Integer; override;
-    procedure print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer); override;
+    constructor Create(GraphicToPrint: TGraphic);
+    function GetHeight: Integer; override;
+    function GetWidth: Integer; override;
+    procedure Print(Canvas: TCanvas; var PrintedWidth, PrintedHeight: Integer); override;
   end;
 
 //------------------------------------------------------------------------------
@@ -112,29 +112,28 @@ type
   private
     FPrintScale: double;  // > 1 enlarges print/preview
     FPrintMargins: TRect; // in millimeters
-    FOwnsPages: Boolean;
-    function getPreviewPrintArea: TBegaRect;
-    function getPrintArea: TBegaRect; // in pixels
-    function getPrintMargins: TRect; // FPrintMargins in pixels
-    procedure doBeforeFirstPage(out PreviewArea: TBegaRect; out WDpi: Integer; out hrgnClip: HRGN);
-    function getPreviewPaperArea: TBegaRect;
-    function getPaperArea: TBegaRect;
-    function printer2preview(Value: TBegaRect): TBegaRect;
-    function printer2previewX(Value: Integer): Integer;
-    function printer2previewY(Value: Integer): Integer;
-    function getPageCount: Integer;
+    function GetPreviewPrintArea: TBegaRect;
+    function GetPrintArea: TBegaRect; // in pixels
+    function GetPrintMargins: TRect; // FPrintMargins in pixels
+    procedure DoBeforeFirstPage(out PreviewArea: TBegaRect; out WDpi: Integer; out hrgnClip: HRGN);
+    function GetPreviewPaperArea: TBegaRect;
+    function GetPaperArea: TBegaRect;
+    function Printer2Preview(Value: TBegaRect): TBegaRect;
+    function Printer2PreviewX(Value: Integer): Integer;
+    function Printer2PreviewY(Value: Integer): Integer;
+    function GetPageCount: Integer;
   public
     constructor Create(AOwner: TComponent); override;
-    function getPreviewArea(PrintArea: TBegaRect; WDpi: Integer): TBegaRect;
-    procedure addPage(Page: TMetaFile);
-    procedure addPages(Source: TBegaMetaFilePrinter; RemovePagesFromSource: Boolean);
-    procedure clear;
-    procedure copySettingsFrom(Source: TBegaMetaFilePrinter);
-    procedure preview(Printable: IBegaPrintable);
-    procedure print(Printable: IBegaPrintable; FirstPage: Integer = 1; LastPage: Integer = 9999);
-    procedure printDoc(Printer: TPrinter; FirstPage: Integer = 1; LastPage: Integer = 9999; Copies: Integer = 1);
-    procedure printTo(Printer: TPrinter; FirstPage: Integer = 1; LastPage: Integer = 9999);
-    procedure updatePrinterCaps;
+    function GetPreviewArea(PrintArea: TBegaRect; WDpi: Integer): TBegaRect;
+    procedure AddPage(Page: TMetaFile);
+    procedure AddPages(Source: TBegaMetaFilePrinter; RemovePagesFromSource: Boolean);
+    procedure Clear;
+    procedure CopySettingsFrom(Source: TBegaMetaFilePrinter);
+    procedure Preview(Printable: IBegaPrintable);
+    procedure Print(Printable: IBegaPrintable; FirstPage: Integer = 1; LastPage: Integer = 9999);
+    procedure PrintDoc(Printer: TPrinter; FirstPage: Integer = 1; LastPage: Integer = 9999; Copies: Integer = 1);
+    procedure PrintTo(Printer: TPrinter; FirstPage: Integer = 1; LastPage: Integer = 9999);
+    procedure UpdatePrinterCaps;
     property PageCount: Integer read getPageCount;
     property PaperArea: TBegaRect read getPaperArea; // in printer pixels
     property PrintArea: TBegaRect read getPrintArea; // in printer pixels
@@ -150,7 +149,7 @@ implementation
 
 { TBegaPrintable }
 
-procedure TBegaPrintable.beforeFirstPage(
+procedure TBegaPrintable.BeforeFirstPage(
   PageWidth, PageHeight: Integer;
   out PrintWidth, PrintHeight: Integer);
 begin
@@ -161,26 +160,26 @@ end;
 { TBegaPrintableControl }
 
 //- BG ----------------------------------------------------------- 11.03.2006 --
-constructor TBegaPrintableControl.create(ControlToPrint: TControl);
+constructor TBegaPrintableControl.Create(ControlToPrint: TControl);
 begin
   inherited create;
   FControl := ControlToPrint;
 end;
 
 //- BG ----------------------------------------------------------- 05.12.2006 --
-function TBegaPrintableControl.getHeight: Integer;
+function TBegaPrintableControl.GetHeight: Integer;
 begin
   Result := FControl.Height;
 end;
 
 //- BG ----------------------------------------------------------- 05.12.2006 --
-function TBegaPrintableControl.getWidth: Integer;
+function TBegaPrintableControl.GetWidth: Integer;
 begin
   Result := FControl.Width;
 end;
 
 //- BG ----------------------------------------------------------- 11.03.2006 --
-procedure TBegaPrintableControl.print(Canvas: TCanvas;
+procedure TBegaPrintableControl.Print(Canvas: TCanvas;
   var PrintedWidth, PrintedHeight: Integer);
 begin
   IntersectClipRect(Canvas.Handle, 0, 0, FControl.Width, FControl.Height);
@@ -194,26 +193,26 @@ type
   end;
 
 //- BG ----------------------------------------------------------- 04.12.2006 --
-constructor TBegaPrintableGraphic.create(GraphicToPrint: TGraphic);
+constructor TBegaPrintableGraphic.Create(GraphicToPrint: TGraphic);
 begin
-  inherited create;
+  inherited Create;
   FGraphic := GraphicToPrint;
 end;
 
 //- BG ----------------------------------------------------------- 05.12.2006 --
-function TBegaPrintableGraphic.getHeight: Integer;
+function TBegaPrintableGraphic.GetHeight: Integer;
 begin
   Result := FGraphic.Width;
 end;
 
 //- BG ----------------------------------------------------------- 05.12.2006 --
-function TBegaPrintableGraphic.getWidth: Integer;
+function TBegaPrintableGraphic.GetWidth: Integer;
 begin
   Result := FGraphic.Height;
 end;
 
 //- BG ----------------------------------------------------------- 04.12.2006 --
-procedure TBegaPrintableGraphic.print(Canvas: TCanvas; var PrintedWidth,
+procedure TBegaPrintableGraphic.Print(Canvas: TCanvas; var PrintedWidth,
   PrintedHeight: Integer);
 begin
   IntersectClipRect(Canvas.Handle, 0, 0, FGraphic.Width, FGraphic.Height);
@@ -223,58 +222,58 @@ end;
 { TBegaMetaFilePrinter }
 
 //- BG ----------------------------------------------------------- 20.04.2006 --
-procedure TBegaMetaFilePrinter.addPage(Page: TMetaFile);
+procedure TBegaMetaFilePrinter.AddPage(Page: TMetaFile);
 begin
-  FMFList.add(Page);
+  FPages.Add(Page);
 end;
 
 //- BG ----------------------------------------------------------- 20.04.2006 --
-procedure TBegaMetaFilePrinter.addPages(Source: TBegaMetaFilePrinter; RemovePagesFromSource: Boolean);
+procedure TBegaMetaFilePrinter.AddPages(Source: TBegaMetaFilePrinter; RemovePagesFromSource: Boolean);
 var
   NewCount: Integer;
   Index: Integer;
+  SourceOwnsObjects: Boolean;
 begin
-  NewCount := FMFList.Count + Source.FMFList.Count;
-  if FMFList.Capacity < NewCount then
-    FMFList.Capacity := NewCount;
-  for Index := 0 to Source.FMFList.Count - 1 do
-    FMFList.add(Source.FMFList[Index]);
-  FOwnsPages := RemovePagesFromSource;
+  NewCount := FPages.Count + Source.FPages.Count;
+  if FPages.Capacity < NewCount then
+    FPages.Capacity := NewCount;
+  for Index := 0 to Source.FPages.Count - 1 do
+    FPages.Add(Source.FPages[Index]);
+  FPages.OwnsObjects := RemovePagesFromSource;
   if RemovePagesFromSource then
-    Source.FMFList.clear;
-end;
-
-//- BG ----------------------------------------------------------- 29.04.2006 --
-procedure TBegaMetaFilePrinter.clear;
-begin
-  if FOwnsPages then
-    FreeMetaFiles
-  else
   begin
-    FMFList.clear;
-    FreeAndNil(FCurCanvas);
+    SourceOwnsObjects := Source.FPages.OwnsObjects;
+    Source.FPages.OwnsObjects := False;
+    Source.FPages.Clear;
+    Source.FPages.OwnsObjects := SourceOwnsObjects;
   end;
 end;
 
 //- BG ----------------------------------------------------------- 29.04.2006 --
-procedure TBegaMetaFilePrinter.copySettingsFrom(Source: TBegaMetaFilePrinter);
+procedure TBegaMetaFilePrinter.Clear;
+begin
+  FPages.Clear;
+  FreeAndNil(FCurCanvas);
+end;
+
+//- BG ----------------------------------------------------------- 29.04.2006 --
+procedure TBegaMetaFilePrinter.CopySettingsFrom(Source: TBegaMetaFilePrinter);
 begin
   FPrintScale := Source.FPrintScale;
   FPrintMargins := Source.FPrintMargins;
   //
-  assign(Source);
+  Assign(Source);
 end;
 
 //- BG ----------------------------------------------------------- 10.03.2006 --
-constructor TBegaMetaFilePrinter.create(AOwner: TComponent);
+constructor TBegaMetaFilePrinter.Create(AOwner: TComponent);
 begin
-  inherited create(AOwner);
+  inherited Create(AOwner);
   FPrintScale := 1.0;
   FPrintMargins.Left := 20;
   FPrintMargins.Right := 20;
   FPrintMargins.Top := 20;
   FPrintMargins.Bottom := 20;
-  FOwnsPages := True;
 
   try
     if Printer.Printers.Count > 0 then
@@ -290,16 +289,16 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 12.03.2006 --
-procedure TBegaMetaFilePrinter.doBeforeFirstPage(
+procedure TBegaMetaFilePrinter.DoBeforeFirstPage(
   out PreviewArea: TBegaRect;
   out WDpi: Integer;
   out hrgnClip: HRGN);
 var
   Area: TBegaRect;
 begin
-  Area := getPrintArea;
-  PreviewArea := printer2preview(Area);
-  WDpi := ceil(Screen.PixelsPerInch / PrintScale);
+  Area := GetPrintArea;
+  PreviewArea := Printer2Preview(Area);
+  WDpi := Ceil(Screen.PixelsPerInch / PrintScale);
   hrgnClip := CreateRectRgn(
     Area.Left,
     Area.Top,
@@ -308,13 +307,13 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 23.03.2007 --
-function TBegaMetaFilePrinter.getPageCount: Integer;
+function TBegaMetaFilePrinter.GetPageCount: Integer;
 begin
   Result := PageNumber;
 end;
 
 //- BG ----------------------------------------------------------- 24.03.2007 --
-function TBegaMetaFilePrinter.getPaperArea: TBegaRect;
+function TBegaMetaFilePrinter.GetPaperArea: TBegaRect;
 begin
   Result.Left := 0;
   Result.Top  := 0;
@@ -323,7 +322,7 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 12.03.2006 --
-function TBegaMetaFilePrinter.getPreviewArea(PrintArea: TBegaRect; WDpi: Integer): TBegaRect;
+function TBegaMetaFilePrinter.GetPreviewArea(PrintArea: TBegaRect; WDpi: Integer): TBegaRect;
 begin
   Result.Left   := MulDiv(PrintArea.Left  , WDpi, PixelsPerInchX);
   Result.Top    := MulDiv(PrintArea.Top   , WDpi, PixelsPerInchY);
@@ -332,33 +331,33 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 23.03.2007 --
-function TBegaMetaFilePrinter.getPreviewPaperArea: TBegaRect;
+function TBegaMetaFilePrinter.GetPreviewPaperArea: TBegaRect;
 begin
   // converts PrinterMargins given in mm to preview pixels
-  Result := printer2preview(PaperArea);
+  Result := Printer2Preview(PaperArea);
 end;
 
 //- BG ----------------------------------------------------------- 23.03.2007 --
-function TBegaMetaFilePrinter.getPreviewPrintArea: TBegaRect;
+function TBegaMetaFilePrinter.GetPreviewPrintArea: TBegaRect;
 begin
-  Result := printer2preview(PrintArea)
+  Result := Printer2Preview(PrintArea)
 end;
 
 //- BG ----------------------------------------------------------- 12.03.2006 --
-function TBegaMetaFilePrinter.getPrintArea: TBegaRect;
+function TBegaMetaFilePrinter.GetPrintArea: TBegaRect;
 var
   Margins: TRect;
 begin
   // printer area without margins in printer pixels
   Margins := getPrintMargins;
-  Result.Left   := max(Margins.Left, OffsetX);
-  Result.Top    := max(Margins.Top, OffsetY);
-  Result.Width  := min(max(PaperWidth - Result.Left - Margins.Right, 0), PageWidth);
-  Result.Height := min(max(PaperHeight - Result.Top  - Margins.Bottom, 0), PageHeight);
+  Result.Left   := Max(Margins.Left, OffsetX);
+  Result.Top    := Max(Margins.Top, OffsetY);
+  Result.Width  := Min(Max(PaperWidth - Result.Left - Margins.Right, 0), PageWidth);
+  Result.Height := Min(Max(PaperHeight - Result.Top  - Margins.Bottom, 0), PageHeight);
 end;
 
 //- BG ----------------------------------------------------------- 11.03.2006 --
-function TBegaMetaFilePrinter.getPrintMargins: TRect;
+function TBegaMetaFilePrinter.GetPrintMargins: TRect;
 begin
   // converts PrinterMargins given in mm to printer pixels
   Result.Left   := Floor(FPrintMargins.Left  / 25.4 * PixelsPerInchX);
@@ -368,10 +367,10 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 12.03.2006 --
-procedure TBegaMetaFilePrinter.preview(Printable: IBegaPrintable);
+procedure TBegaMetaFilePrinter.Preview(Printable: IBegaPrintable);
 var
   DC: HDC;
-  Done: boolean;
+  Done: Boolean;
   hrgnClip: HRGN;
   PreviewArea: TBegaRect;
   PrintedHeight: Integer;
@@ -386,8 +385,8 @@ begin
   hrgnClip := 0;
   BeginDoc;
   try
-    doBeforeFirstPage(PreviewArea, WDpi, hrgnClip);
-    Printable.beforeFirstPage(PreviewArea.Width, PreviewArea.Height, XPixels, YPixels);
+    DoBeforeFirstPage(PreviewArea, WDpi, hrgnClip);
+    Printable.BeforeFirstPage(PreviewArea.Width, PreviewArea.Height, XPixels, YPixels);
 
     Done := False;
     YOrigin := 0;
@@ -420,17 +419,17 @@ begin
         // notify that a page has been printed
         //Application.ProcessMessages;
         if Assigned(FOnPageEvent) then
-          FOnPageEvent(Self, FMFList.Count, Done);
+          FOnPageEvent(Self, FPages.Count, Done);
 
         // proceed to next page
         if PrintedWidth > 0 then
-          inc(XOrigin, min(PrintedWidth, PreviewArea.Width))
+          Inc(XOrigin, Min(PrintedWidth, PreviewArea.Width))
         else
           XOrigin := XPixels;
       end;
       // proceed to next page
       if PrintedHeight > 0 then
-        inc(YOrigin, min(PrintedHeight, PreviewArea.Height))
+        Inc(YOrigin, Min(PrintedHeight, PreviewArea.Height))
       else
         YOrigin := YPixels;
     end;
@@ -442,12 +441,12 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 12.03.2006 --
-procedure TBegaMetaFilePrinter.print(Printable: IBegaPrintable; FirstPage, LastPage: Integer);
+procedure TBegaMetaFilePrinter.Print(Printable: IBegaPrintable; FirstPage, LastPage: Integer);
 var
   CurrentCanvas: TCanvas;
   CurrentPage: Integer;
   DC: HDC;
-  Done: boolean;
+  Done: Boolean;
   hrgnClip: HRGN;
   NoPrintCanvas: TCanvas;
   PreviewArea: TBegaRect;
@@ -517,13 +516,13 @@ begin
         if CurrentPage >= LastPage then
           Done := True
         else if PrintedWidth > 0 then
-          inc(XOrigin, min(PrintedWidth, PreviewArea.Width))
+          Inc(XOrigin, Min(PrintedWidth, PreviewArea.Width))
         else
           XOrigin := XPixels;
       end;
       // proceed to next page
       if PrintedHeight > 0 then
-        inc(YOrigin, min(PrintedHeight, PreviewArea.Height))
+        Inc(YOrigin, Min(PrintedHeight, PreviewArea.Height))
       else
         YOrigin := YPixels;
     end;
@@ -536,14 +535,14 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 27.05.2006 --
-procedure TBegaMetaFilePrinter.printDoc(Printer: TPrinter; FirstPage, LastPage, Copies: Integer);
+procedure TBegaMetaFilePrinter.PrintDoc(Printer: TPrinter; FirstPage, LastPage, Copies: Integer);
 var
   Index: Integer;
 begin
   Printer.BeginDoc;
   try
     for Index := 1 to Copies do
-      printTo(Printer, FirstPage, LastPage);
+      PrintTo(Printer, FirstPage, LastPage);
     Printer.EndDoc;
   except
     Printer.Abort;
@@ -552,28 +551,28 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 24.03.2007 --
-function TBegaMetaFilePrinter.printer2preview(Value: TBegaRect): TBegaRect;
+function TBegaMetaFilePrinter.Printer2Preview(Value: TBegaRect): TBegaRect;
 begin
-  Result.Left   := printer2previewX(Value.Left);
-  Result.Top    := printer2previewY(Value.Top);
-  Result.Width  := printer2previewX(Value.Width);
-  Result.Height := printer2previewY(Value.Height);
+  Result.Left   := Printer2PreviewX(Value.Left);
+  Result.Top    := Printer2PreviewY(Value.Top);
+  Result.Width  := Printer2PreviewX(Value.Width);
+  Result.Height := Printer2PreviewY(Value.Height);
 end;
 
 //- BG ----------------------------------------------------------- 24.03.2007 --
-function TBegaMetaFilePrinter.printer2previewX(Value: Integer): Integer;
+function TBegaMetaFilePrinter.Printer2PreviewX(Value: Integer): Integer;
 begin
   Result := Round(Value * Screen.PixelsPerInch / (PrintScale * PixelsPerInchX));
 end;
 
 //- BG ----------------------------------------------------------- 24.03.2007 --
-function TBegaMetaFilePrinter.printer2previewY(Value: Integer): Integer;
+function TBegaMetaFilePrinter.Printer2PreviewY(Value: Integer): Integer;
 begin
   Result := Round(Value * Screen.PixelsPerInch / (PrintScale * PixelsPerInchY));
 end;
 
 //- BG ----------------------------------------------------------- 10.04.2006 --
-procedure TBegaMetaFilePrinter.printTo(Printer: TPrinter; FirstPage, LastPage: Integer);
+procedure TBegaMetaFilePrinter.PrintTo(Printer: TPrinter; FirstPage, LastPage: Integer);
 var
   CurrentPage: Integer;
   MetaFile: TMetafile;
@@ -581,11 +580,11 @@ var
   Area: TBegaRect;
 begin
   Area := self.PrintArea;
-  Area.Left := min(OffsetX, Area.Left);
-  Area.Top  := min(OffsetY, Area.Top);
+  Area.Left := Min(OffsetX, Area.Left);
+  Area.Top  := Min(OffsetY, Area.Top);
   Done := True;
-  if LastPage > FMFList.Count then
-    LastPage := FMFList.Count;
+  if LastPage > FPages.Count then
+    LastPage := FPages.Count;
   for CurrentPage := FirstPage to LastPage do
   begin
     MetaFile := MetaFiles[CurrentPage - 1];
@@ -611,9 +610,9 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 15.03.2006 --
-procedure TBegaMetaFilePrinter.updatePrinterCaps;
+procedure TBegaMetaFilePrinter.UpdatePrinterCaps;
 begin
-  getPrinterCapsOf(Printer);
+  GetPrinterCapsOf(Printer);
 end;
 
 {$endif NoMetaFile}

@@ -44,13 +44,14 @@ uses
   System.Generics.Collections,
 {$endif}
 {$ifndef NoMetafile}
-  MetaFilePrinter, vwPrint,
+  MetaFilePrinter,
 {$endif}
   UrlConn,
   URLSubs,
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages,
+  HtmlPrinter,
   HTMLUn2,
   ReadHTML,
   HTMLSubs,
