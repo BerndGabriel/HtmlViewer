@@ -73,6 +73,7 @@ contains
   StyleUn in '..\source\StyleUn.pas',
   URLSubs in '..\source\URLSubs.pas',
   UrlConn in '..\Source\UrlConn.pas',
-  HtmlPrinter in '..\source\HtmlPrinter.pas';
+  HtmlPrinter in '..\source\HtmlPrinter.pas',
+  vwPrint in '..\source\vwPrint.pas';
 
 end.

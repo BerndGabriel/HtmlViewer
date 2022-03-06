@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <PathDelim Value="\"/>
     <Name Value="FrameViewer09"/>
     <Type Value="RunAndDesignTime"/>
@@ -42,7 +42,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="11"/>
-    <Files Count="38">
+    <Files Count="39">
       <Item1>
         <Filename Value="..\source\DitherUnit.pas"/>
         <UnitName Value="DitherUnit"/>
@@ -196,7 +196,12 @@
         <Filename Value="..\source\UrlConn.pas"/>
         <UnitName Value="UrlConn"/>
       </Item38>
+      <Item39>
+        <Filename Value="..\source\HtmlPrinter.pas"/>
+        <UnitName Value="HtmlPrinter"/>
+      </Item39>
     </Files>
+    <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="3">
       <Item1>
         <PackageName Value="printer4lazarus"/>

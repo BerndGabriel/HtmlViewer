@@ -11,6 +11,7 @@ uses
   Windows,
 {$endif}
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, Buttons, Printers,
+  HtmlPrinter,
   vwPrint,
   MetaFilePrinter,
   HtmlView;

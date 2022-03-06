@@ -52,6 +52,7 @@ uses
   HtmlBuffer,
   HtmlImages,
   HtmlPrinter,
+  vwPrint,
   HTMLUn2,
   ReadHTML,
   HTMLSubs,
@@ -3961,7 +3962,7 @@ begin
     Print(vwP, FromPage, ToPage, ppMultiPrint)
   else
   begin
-    Prn := TMetaFilePrinter.Create(Self);
+    Prn := TvwPrinter.Create(Self);
     try
       Print(Prn, FromPage, ToPage, ppSinglePrint);
     finally
