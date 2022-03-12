@@ -1025,12 +1025,20 @@ begin
 
   if not IsWin32Platform then
   begin
+    if Width < Max then
+    begin
+      // speed up calculating long S, which obviously cannot fit into Width as
+      // characters usually are wider than 1 pixel.
+      SetLength(Ints, Width);
+      if GetTextExtentExPointW(DC, S, Width, Width, @Result, @Ints[0], Extent) then
+        if Result < Width then
+          Exit;
+
+        // Oh, Result = Width. Better continue and try the complete string:
+    end;
+
     SetLength(Ints, Max);
-    if GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent) then
-      if Result > 0 then
-        Extent.cx := Ints[Result - 1]
-      else
-        Extent.cx := 0;
+    GetTextExtentExPointW(DC, S, Max, Width, @Result, @Ints[0], Extent);
   end
   else {GetTextExtentExPointW not available in win98, 95}
   begin {optimize this by looking for Max to fit first -- it usually does}
