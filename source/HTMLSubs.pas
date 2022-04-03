@@ -2488,6 +2488,7 @@ begin
     Viewer.LinkAttributes.Text := UrlTarget.Attr;
     Viewer.LinkText := Viewer.GetTextByIndices(UrlTarget.Start, UrlTarget.Last);
     Viewer.TriggerUrlAction; {call to UrlAction via message}
+    Key := 0; {Key has been consumed}
   end
   else {send other keys to THtmlViewer}
     Viewer.KeyDown(Key, Shift);
@@ -2898,9 +2899,14 @@ begin
 end;
 
 destructor TImageObj.Destroy;
+var
+  I: Integer;
 begin
   if not IsCopy then
   begin
+    I := Document.IDNameList.IndexOfObject(Self);
+    if I >= 0 then
+      Document.IDNameList.Delete(I);
     if (Source <> '') and Assigned(OrigImage) then
       Document.ImageCache.DecUsage(htUpperCase(htTrim(Source)));
     if (Image is ThtGifImage) and ThtGifImage(Image).Gif.IsCopy then
@@ -3590,8 +3596,12 @@ begin
         begin
           if B then
           begin
-            ControlList[I].TheControl.SetFocus;
-            break;
+            with Ctrl as TRadioButtonFormControlObj do
+            begin
+              TheControl.SetFocus;
+              Checked := True;
+            end;
+            Break;
           end;
           if Ctrl.TheControl = Sender then
             B := True
@@ -3605,13 +3615,18 @@ begin
         begin
           if B then
           begin
-            ControlList[I].TheControl.SetFocus;
-            break;
+            with Ctrl as TRadioButtonFormControlObj do
+            begin
+              TheControl.SetFocus;
+              Checked := True;
+            end;
+            Break;
           end;
           if Ctrl.TheControl = Sender then
             B := True
         end;
       end;
+    Key := 0; {Key has been consumed}
   end
   else {send other keys to THtmlViewer}
     Document.TheOwner.KeyDown(Key, Shift);
