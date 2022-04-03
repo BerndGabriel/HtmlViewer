@@ -1260,6 +1260,8 @@ type
     FHzSpace: Integer;
     FVrSpace: Integer;
     FSpecWd: TSpecWidth; {Width attribute (percentage or absolute)}
+    FSpecWdMin: TSpecWidth;
+    FSpecWdMax: TSpecWidth;
     FSpecHt: TSpecWidth; {Height as specified}
     // END: this area is copied by move() in AssignTo()
     function GetCell: TCellObjCell; virtual; abstract;
@@ -1278,6 +1280,8 @@ type
 //    property SpecHtType: TWidthType read FSpecHt.VType write FSpecHt.VType; {Height as specified}
 //    property SpecHtValue: Double read FSpecHt.Value write FSpecHt.Value; {Height as specified}
     property SpecWd: TSpecWidth read FSpecWd write FSpecWd; {Width as specified}
+    property SpecWdMin: TSpecWidth read FSpecWdMin write FSpecWdMin;
+    property SpecWdMax: TSpecWidth read FSpecWdMax write FSpecWdMax;
 // BG, 12.01.2012: not C++-Builder compatible
 //    property SpecWdType: TWidthType read FSpecWd.VType write FSpecWd.VType; {Height as specified}
 //    property SpecWdValue: Double read FSpecWd.Value write FSpecWd.Value; {Height as specified}
@@ -5544,15 +5548,24 @@ var
   function GetClientContentBot(ClientContentBot: Integer): Integer;
   var
     H: Integer;
+    S: Variant;
   begin
-    if VarIsIntNull(MargArrayO[piHeight]) then
-      Result := Max(ContentTop, ClientContentBot)
+    S := MargArrayO[piHeight];
+    if VarIsIntNull(S) or VarIsAuto(S) then
+      H := Auto
     else
     begin
-      if Pos('%', VarToStr(MargArrayO[piHeight])) > 0 then
-        H := LengthConv(MargArrayO[piHeight], False, AHeight, EmSize, ExSize, 0)
+      if Pos('%', VarToStr(S)) > 0 then
+        H := LengthConv(S, False, AHeight, EmSize, ExSize, 0)
       else
         H := MargArray[piHeight];
+    end;
+
+    case H of
+      IntNull,
+      Auto:
+        Result := Max(ContentTop, ClientContentBot);
+    else
       Result := Max(H + ContentTop, ContentTop);
     end;
   end;
@@ -6728,10 +6741,11 @@ function TTableBlock.FindWidth(Canvas: TCanvas; AWidth, AHeight, AutoCount: Inte
 var
   LeftSide, RightSide: Integer;
   Min, Max, M, P: Integer;
+  LJustify: ThtJustify;
 begin
   if not HasCaption then
   begin
-    inherited FindWidth(Canvas, AWidth, AHeight, AUtoCount);
+    inherited FindWidth(Canvas, AWidth, AHeight, AutoCount);
 //    if MargArray[MarginLeft] = Auto then
 //      MargArray[MarginLeft] := 0;
 //    if MargArray[MarginRight] = Auto then
@@ -6797,22 +6811,35 @@ begin
   end;
   MargArray[piWidth] := Result;
 
-  if (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) and (Result + LeftSide + RightSide < AWidth) then
+  if Result + LeftSide + RightSide < AWidth then
   begin
-     M := AWidth - LeftSide - Result - RightSide;
-    case Justify of
-      Centered:
-      begin
-        MargArray[MarginLeft]  := M div 2;
-        MargArray[MarginRight] := M - MargArray[MarginLeft];
+    if (MargArray[MarginLeft] = 0) and (MargArray[MarginRight] = 0) then
+    begin
+      M := AWidth - LeftSide - Result - RightSide;
+      LJustify := Justify;
+      if LJustify = NoJustify then
+        if VarIsAuto(MargArrayO[MarginLeft]) then
+          if VarIsAuto(MargArrayO[MarginRight]) then
+            LJustify := Centered
+          else
+            LJustify := Right
+        else
+          if VarIsAuto(MargArrayO[MarginRight]) then
+            LJustify := Left;
+
+      case LJustify of
+        Centered:
+        begin
+          MargArray[MarginLeft]  := M div 2;
+          MargArray[MarginRight] := M - MargArray[MarginLeft];
+        end;
+
+        Right:
+          MargArray[MarginLeft] := M;
+
+        Left:
+          MargArray[MarginRight] := M;
       end;
-
-      Right:
-        MargArray[MarginLeft] := M;
-
-      Left:
-        MargArray[MarginRight] := M;
-
     end;
   end;
 end;
@@ -8483,6 +8510,10 @@ begin
     ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, 0, AutoCount, MargArray);
     if VarIsStr(MargArrayO[piWidth]) and (MargArray[piWidth] >= 0) then
       FSpecWd := ToSpecWidth(MargArray[piWidth], MargArrayO[piWidth]);
+    if VarIsStr(MargArrayO[piMinWidth]) and (MargArray[piMinWidth] >= 0) then
+      FSpecWdMin := ToSpecWidth(MargArray[piMinWidth], MargArrayO[piMinWidth]);
+    if VarIsStr(MargArrayO[piMaxWidth]) and (MargArray[piMaxWidth] >= 0) then
+      FSpecWdMax := ToSpecWidth(MargArray[piMaxWidth], MargArrayO[piMaxWidth]);
     if VarIsStr(MargArrayO[piHeight]) and (MargArray[piHeight] >= 0) then
       FSpecHt := ToSpecWidth(MargArray[piHeight], MargArrayO[piHeight]);
 
@@ -9928,6 +9959,25 @@ begin
           CellObj.Cell.MinMaxWidth(Canvas, CellMin, CellMax, 0, 0);
           CellPercent := 0;
           CellRel := 0;
+
+          with CellObj.SpecWdMin do
+          begin
+            case VType of
+              wtAbsolute:
+                if CellMin < Value then
+                  CellMin := Value;
+            end;
+          end;
+
+          with CellObj.SpecWdMax do
+          begin
+            case VType of
+              wtAbsolute:
+                if CellMax > Value then
+                  CellMax := Value;
+            end;
+          end;
+
           with CellObj.SpecWd do
           begin
             CellSpec := VType;
@@ -9941,13 +9991,13 @@ begin
                 //CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
                 //CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
                 CellMax := Value;   // CellMax should be at most  the given absolute value
-                CellMax := Max(CellMax, CellMin); // CellMax should be at least CellMin
               end;
 
               wtRelative:
                 CellRel := Value;
             end;
           end;
+          CellMax := Max(CellMax, CellMin); // CellMax should be at least CellMin
           Inc(CellMin, CellSpacingHorz + CellObj.HzSpace);
           Inc(CellMax, CellSpacingHorz + CellObj.HzSpace);
 

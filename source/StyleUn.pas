@@ -1655,7 +1655,12 @@ end;
 function VarIsAuto(const Value: Variant): Boolean;
  {$ifdef UseInline} inline; {$endif}
 begin
-  Result := (VarType(Value) in varInt) and (Value = Auto);
+  if VarType(Value) in varInt then
+    Result := Value = Auto
+  else if VarIsStr(Value) then
+    Result := Value = 'auto'
+  else
+    Result := False;
 end;
 
 //-- BG ---------------------------------------------------------- 05.10.2010 --
@@ -1823,8 +1828,7 @@ begin
           end;
         end;
 
-      piMinHeight, piMaxHeight,
-      piHeight:
+      piMinHeight, piMaxHeight:
         begin
           if VarIsStr(VM[I]) then
           begin
@@ -1841,6 +1845,25 @@ begin
           end
           else
             M[I] := 0;
+        end;
+
+      piHeight:
+        begin
+          if VarIsStr(VM[I]) then
+          begin
+            M[I] := LengthConv(VM[I], False, Base(I), EmSize, ExSize, Auto); {Auto will be Auto}
+            if Pos('%', VM[I]) > 0 then {include border in % heights}
+              M[I] := M[I] - M[BorderTopWidth] - M[BorderBottomWidth] - M[PaddingTop] - M[PaddingBottom];
+          end
+          else if VarType(VM[I]) in varInt then
+          begin
+            if VM[I] = IntNull then
+              M[I] := 0
+            else
+              M[I] := VM[I];
+          end
+          else
+            M[I] := Auto;
         end;
 
       PaddingTop..PaddingLeft,BorderSpacingHorz,BorderSpacingVert:
@@ -1950,9 +1973,14 @@ begin
         begin
           if VarIsStr(VM[I]) then
           begin
-            M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto);
-            if Pos('%', VM[I]) > 0 then {include border in % heights}
-              M[I] := M[I] - M[BorderLeftWidth] - M[BorderRightWidth] - M[PaddingLeft] - M[PaddingRight];
+            if VM[I] = 'auto' then
+              M[I] := Auto
+            else
+            begin
+              M[I] := LengthConv(VM[I], False, BaseWidth, EmSize, ExSize, Auto);
+              if Pos('%', VM[I]) > 0 then {include border in % heights}
+                M[I] := M[I] - M[BorderLeftWidth] - M[BorderRightWidth] - M[PaddingLeft] - M[PaddingRight];
+            end;
           end
           else if VarType(VM[I]) in varInt then
           begin
