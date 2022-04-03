@@ -1449,10 +1449,12 @@ var
             IdentLow := htLowerCase(Identifier);
           end;
 
-        ',',
-        '{',
-        '<',
-        EofChar:
+// breaking on any unexpected char avoids endless loop:
+//        ',',
+//        '{',
+//        '<',
+//        EofChar:
+        else
           break;
       end;
     until False;
