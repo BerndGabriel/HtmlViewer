@@ -4788,6 +4788,8 @@ begin
   FCurrentFile := '';
   FCurrentFileType := HTMLType;
 
+  FObjects.Clear;
+
   FSectionList.SetFonts(
     htString(DefFontName), htString(DefPreFontName), DefFontSize, DefFontColor,
     DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
