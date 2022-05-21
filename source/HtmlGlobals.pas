@@ -1601,9 +1601,11 @@ begin
     try
       if FTransparent then
       begin
+{$ifdef Compiler23_Plus}
         if TransparentMode = tmFixed then
           DrawTransparent( ACanvas, Rect(Left, Top, Right, Bottom), 255 )
         else
+{$endif}
           TransparentStretchBlt(
             ACanvas.Handle, Left, Top, Right - Left, Bottom - Top,
             Canvas.Handle, 0, 0, Self.Width, Self.Height,
