@@ -24,14 +24,6 @@ Note that the source modules HTMLGIF1.PAS, DITHERUNIT.PAS
 are covered by separate copyright notices located in those modules.
 }
 
-//{$IFDEF CONDITIONALEXPRESSIONS}
-//
-//
-//  // Must be at the top...
-//  {$IF CompilerVersion >= 24.0}
-//    {$LEGACYIFEND ON}
-//  {$IFEND}
-//{$ENDIF}
 {$ifdef FPC}
 
 { Identify FreePascal/Lazarus Compiler Version }

@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2022 by HtmlViewer Team
 
 *********************************************************
 *                                                       *
@@ -148,6 +148,7 @@ type
     LinkEvent: TLinkType;
     MatchMediaQuery: ThtMediaQueryEvent;
 
+    FPixelsPerInch: Integer;
     FUseQuirksMode : Boolean;
     FPropStack: THtmlPropStack;
     FNoBreak : Boolean;
@@ -210,6 +211,7 @@ type
     property BaseTarget: ThtString read FBaseTarget;
     property Title: ThtString read GetTitle;
     property UseQuirksMode : Boolean read FUseQuirksMode;
+    property PixelsPerInch: Integer read FPixelsPerInch;
     property PropStack: THtmlPropStack read FPropStack;
     property NoBreak : Boolean read FNoBreak write SetNoBreak;
     property IsXHTML : Boolean read FIsXHTML write FIsXHTML;
@@ -4415,11 +4417,12 @@ procedure THtmlParser.ParseInit(ASectionList: ThtDocument; AIncludeEvent: TInclu
 begin
   SectionList := ASectionList;
   FUseQuirksMode := ASectionList.UseQuirksMode;
+  FPixelsPerInch := ASectionList.PixelsPerInch;
   FPropStack.Document := ASectionList;
   CallingObject := ASectionList.TheOwner;
   IncludeEvent := AIncludeEvent;
   FPropStack.Clear;
-  FPropStack.Add(TProperties.Create(FPropStack,FUseQuirksMode));
+  FPropStack.Add(TProperties.Create(FPropStack, FUseQuirksMode, FPixelsPerInch));
   FPropStack[0].CopyDefault(FPropStack.Document.Styles.DefProp);
   FPropStack.SIndex := -1;
 
@@ -4647,7 +4650,7 @@ procedure THtmlParser.ParseFrame(FrameViewer: TFrameViewerBase; FrameSet: TObjec
   begin
     SetExit := False;
     PropStack.Clear;
-    PropStack.Add(TProperties.Create(FPropStack,FUseQuirksMode));
+    PropStack.Add(TProperties.Create(FPropStack, FUseQuirksMode, FPixelsPerInch));
     GetCh; {get the reading started}
     Next;
     repeat
@@ -4737,7 +4740,7 @@ function THtmlParser.IsFrame(FrameViewer: TFrameViewerBase): Boolean;
   begin
     Result := False;
     PropStack.Clear;
-    PropStack.Add(TProperties.Create(FPropStack, FUseQuirksMode ));
+    PropStack.Add(TProperties.Create(FPropStack, FUseQuirksMode, FPixelsPerInch));
     SetExit := False;
     GetCh; {get the reading started}
     Next;

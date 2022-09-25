@@ -128,9 +128,7 @@ type
   // properties can be applied to :link, :hover, :visited, etc.
   //
   private
-{$IFNDEF NoTabLink}
-    FSection: TSection; // only used if NoTabLink is not defined.
-{$ENDIF}
+    FSection: TSection; 
     FVisited, FHover: Boolean;
     Title: ThtString;
     FYValue: Integer;
@@ -1638,6 +1636,7 @@ type
     FPropStack: THtmlPropStack;
     FPageArea: TRect;
     FPrinted: Boolean; {set if actually printed anything else but background}
+    FPixelsPerInch: Integer;
     procedure AdjustFormControls;
     procedure AddSectionsToPositionList(Sections: TSectionBase);
     function CopyToBuffer(Buffer: TSelTextCount): Integer;
@@ -1773,6 +1772,7 @@ type
     property NoBreak : Boolean read FNoBreak write FNoBreak;  {set when in <NoBr>}
     property ViewPort: TRect read GetViewPort;  {ViewPort is the APaintPanel's client rect, except while printing}
     property PageArea: TRect write SetPageArea; {is the ViewPort while printing, set by THtmlViewer.Print}
+    property PixelsPerInch: Integer read FPixelsPerInch write FPixelsPerInch;
 
     {$ifdef has_StyleElements}
     property StyleElements : TStyleElements read FStyleElements write SetStyleElements;
@@ -2064,10 +2064,10 @@ begin
     FEmSize := FProperties.EmSize;
     FExSize := FProperties.ExSize;
     CD := ConvData(100, 100, FEmSize, FExSize, 0);
-    ConvMargProp(piTop   , MargArrayO, CD, MargArray);
-    ConvMargProp(piLeft  , MargArrayO, CD, MargArray);
-    ConvMargProp(piRight , MargArrayO, CD, MargArray);
-    ConvMargProp(piBottom, MargArrayO, CD, MargArray);
+    ConvMargProp(piTop   , MargArrayO, CD, MargArray, Document.PixelsPerInch);
+    ConvMargProp(piLeft  , MargArrayO, CD, MargArray, Document.PixelsPerInch);
+    ConvMargProp(piRight , MargArrayO, CD, MargArray, Document.PixelsPerInch);
+    ConvMargProp(piBottom, MargArrayO, CD, MargArray, Document.PixelsPerInch);
     FPositions[reTop   ] := MargArray[piTop   ];
     FPositions[reLeft  ] := MargArray[piLeft  ];
     FPositions[reRight ] := MargArray[piRight ];
@@ -2401,9 +2401,7 @@ type
 constructor TFontObj.Create(ASection: TSection; F: ThtFont; Position: Integer);
 begin
   inherited Create;
-{$ifndef NoTabLink}
   FSection := ASection;
-{$endif}
   TheFont := ThtFont.Create;
   TheFont.Assign(F);
   Pos := Position;
@@ -2548,7 +2546,7 @@ end;
 
 procedure TFontObj.ConvertFont(const FI: ThtFontInfo);
 begin
-  TheFont.Assign(FI);
+  TheFont.Assign(FI, FSection.Document.PixelsPerInch);
   FontChanged;
 end;
 
@@ -2691,7 +2689,7 @@ constructor TFontList.CreateCopy(ASection: TSection; T: TFontList);
 var
   I: Integer;
 begin
-  inherited create;
+  inherited Create;
   for I := 0 to T.Count - 1 do
     Add(TFontObj.CreateCopy(ASection, T.Items[I]));
 end;
@@ -3816,7 +3814,7 @@ begin
   EmSize := Prop.EmSize;
   ExSize := Prop.ExSize;
   PercentWidth := (VarIsStr(MargArrayO[piWidth])) and (System.Pos('%', MargArrayO[piWidth]) > 0);
-  ConvInlineMargArray(MargArrayO, 100, 200, EmSize, ExSize, 4, MargArray);
+  ConvInlineMargArray(MargArrayO, 100, 200, EmSize, ExSize, 4, MargArray, Document.PixelsPerInch);
 
   VSpaceT := 1;
   VSpaceB := 1;
@@ -4129,7 +4127,7 @@ begin
   begin
     FPanel.Left := -4000; {so will be invisible until placed}
     FControl.Left := 0;
-    if Screen.PixelsPerInch > 100 then
+    if FDocument.PixelsPerInch > 100 then
     begin
       FPanel.Width := 16;
       FPanel.Height := 16;
@@ -4275,7 +4273,7 @@ begin
     if Active and Document.TheOwner.ShowFocusRect then //MK20091107
     begin
       Canvas.Brush.Color := clWhite;
-      if Screen.PixelsPerInch > 100 then
+      if Document.PixelsPerInch > 100 then
         Canvas.DrawFocusRect(Rect(Left - 2, Top - 2, Left + 18, Top + 18))
       else
         Canvas.DrawFocusRect(Rect(Left - 3, Top - 2, Left + 16, Top + 16));
@@ -4946,7 +4944,7 @@ var
   CD: ThtConvData;
 begin
   CD := ConvData(100, 100 {width and height not known at this point},  EmSize, ExSize, BorderWidth);
-  ConvVertMargins(MargArrayO, CD, MargArray);
+  ConvVertMargins(MargArrayO, CD, MargArray, Document.PixelsPerInch);
   TopAuto := MarginTop in CD.IsAutoParagraph;
   BottomAuto := MarginBottom in CD.IsAutoParagraph;
   if (MargArray[PaddingTop] <> 0) or (MargArray[BorderTopWidth] <> 0) then {do nothing}
@@ -5100,7 +5098,7 @@ begin
   CodeSite.AddSeparator;
 {$ENDIF}
 
-  StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+  StyleUn.ConvMargArray(MargArrayO, BaseWidth, BaseHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray, Document.PixelsPerInch);
 
 {$IFDEF JPM_DEBUGGING_CONV}
   CodeSite.ExitMethod(Self,'TBlock.ConvMargArray');
@@ -5556,7 +5554,7 @@ var
     else
     begin
       if Pos('%', VarToStr(S)) > 0 then
-        H := LengthConv(S, False, AHeight, EmSize, ExSize, 0)
+        H := LengthConv(S, False, AHeight, EmSize, ExSize, 0, Document.PixelsPerInch)
       else
         H := MargArray[piHeight];
     end;
@@ -6610,7 +6608,7 @@ begin
 
 {need to see if width is defined in style}
   Percent := (VarIsStr(MargArrayO[piWidth])) and (Pos('%', MargArrayO[piWidth]) > 0);
-  StyleUn.ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+  StyleUn.ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, BorderWidth, AutoCount, MargArray, Document.PixelsPerInch);
   if MargArray[piWidth] > 0 then
   begin
     if Percent then
@@ -7279,7 +7277,7 @@ begin
   {$ENDIF}
   YDraw := Y;
   StartCurs := Curs;
-  StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray);
+  StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, BorderWidth, AutoCount, MargArray, Document.PixelsPerInch);
   if IsAuto(MargArray[MarginLeft]) then MargArray[MarginLeft] := 0;
   if IsAuto(MargArray[MarginRight]) then MargArray[MarginRight] := 0;
   ApplyBoxSettings(MargArray,Document.UseQuirksMode);
@@ -7869,6 +7867,7 @@ procedure ThtDocument.SetFonts(const Name, PreName: ThtString; ASize: Integer;
   AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor; LnksActive, LinkUnderLine: Boolean;
   ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
 begin
+  Styles.PixelsPerInch := PixelsPerInch;
   Styles.Initialize(Name, PreName, ASize, AColor, AHotspot, AVisitedColor,
     AActiveColor, LinkUnderLine, ACodePage, ACharSet, MarginHeight, MarginWidth);
   InitializeFontSizes(ASize);
@@ -8289,7 +8288,7 @@ begin
         Prop.GetVMarginArray(MargArrayO);
         EmSize := Prop.EmSize;
         ExSize := Prop.ExSize;
-        ConvMargArray(MargArrayO, 200, 200, EmSize, ExSize, 0{4}, Dummy1, MargArray);
+        ConvMargArray(MargArrayO, 200, 200, EmSize, ExSize, 0{4}, Dummy1, MargArray, PixelsPerInch);
       end;
     end
     else {this call has end information}
@@ -8507,7 +8506,7 @@ begin
       Prop.GetVMarginArray(MargArrayO);
     EmSize := Prop.EmSize;
     ExSize := Prop.ExSize;
-    ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, 0, AutoCount, MargArray);
+    ConvMargArray(MargArrayO, 100, 0, EmSize, ExSize, 0, AutoCount, MargArray, Cell.Document.PixelsPerInch);
     if VarIsStr(MargArrayO[piWidth]) and (MargArray[piWidth] >= 0) then
       FSpecWd := ToSpecWidth(MargArray[piWidth], MargArrayO[piWidth]);
     if VarIsStr(MargArrayO[piMinWidth]) and (MargArray[piMinWidth] >= 0) then
@@ -8531,7 +8530,7 @@ begin
     end;
 
   {In the following, Padding widths in percent aren't accepted}
-    ConvMargArrayForCellPadding(MargArrayO, EmSize, ExSize, MargArray);
+    ConvMargArrayForCellPadding(MargArrayO, EmSize, ExSize, MargArray, Cell.Document.PixelsPerInch);
     FPad.Top := MargArray[PaddingTop];
     FPad.Right := MargArray[PaddingRight];
     FPad.Bottom := MargArray[PaddingBottom];
@@ -15226,7 +15225,7 @@ var
   Tag: ThtString;
 begin
   Tag := SymbToStr(Sym);
-  NewProp := TProperties.Create(Self, Document.UseQuirksMode);
+  NewProp := TProperties.Create(Self, Document.UseQuirksMode, Document.PixelsPerInch);
   NewProp.PropSym := Sym;
   NewProp.Inherit(Tag, Last);
   Add(NewProp);
@@ -15298,7 +15297,7 @@ var
   PaddTop, Delta: Integer;
 begin
   inherited ConvMargArray(BaseWidth, BaseHeight,AutoCount);
-  MargArray[MarginTop] := VMargToMarg(MargArrayO[MarginTop], False, BaseHeight, EmSize, ExSize, 10);
+  MargArray[MarginTop] := VMargToMarg(MargArrayO[MarginTop], False, BaseHeight, EmSize, ExSize, 10, Document.PixelsPerInch);
   Delta := Legend.CellHeight - (MargArray[MarginTop] + MargArray[BorderTopWidth] + MargArray[PaddingTop]);
   if Delta > 0 then
   begin
@@ -15408,7 +15407,7 @@ begin
     end;
 
   else
-    StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, self.BorderWidth, AutoCount, MargArray);
+    StyleUn.ConvMargArray(MargArrayO, AWidth, AHeight, EmSize, ExSize, self.BorderWidth, AutoCount, MargArray, Document.PixelsPerInch);
     StyleUn.ApplyBoxSettings(MargArray,Document.UseQuirksMode);
     BorderWidth.Left := MargArray[MarginLeft] + MargArray[BorderLeftWidth] + MargArray[PaddingLeft];
     BorderWidth.Right := MargArray[MarginRight] + MargArray[BorderRightWidth] + MargArray[PaddingRight];
@@ -15536,7 +15535,7 @@ begin
     MargArrayO[piMaxHeight] := IntNull;
   end;
 
-  ConvInlineMargArray(MargArrayO, AvailableWidth, AvailableHeight, EmSize, ExSize, BorderWidth, MargArray);
+  ConvInlineMargArray(MargArrayO, AvailableWidth, AvailableHeight, EmSize, ExSize, BorderWidth, MargArray, Document.PixelsPerInch);
 
   if PercentWidth then
   begin
@@ -15768,7 +15767,7 @@ begin
   Prop.GetVMarginArray(MargArrayO);
   EmSize := Prop.EmSize;
   ExSize := Prop.ExSize;
-  ConvInlineMargArray(MargArrayO, DummyHtWd, DummyHtWd, EmSize, ExSize, BorderWidth, MargArray);
+  ConvInlineMargArray(MargArrayO, DummyHtWd, DummyHtWd, EmSize, ExSize, BorderWidth, MargArray, Document.PixelsPerInch);
 
   if MargArray[MarginLeft] <> IntNull then
     HSpaceL := MargArray[MarginLeft];

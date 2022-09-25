@@ -60,7 +60,7 @@ uses
   HtmlSymb;
 
 const
-  VersionNo = '11.9';
+  VersionNo = '11.10';
   MaxHScroll = 100000; {max horizontal display in pixels}
   Tokenleng = 300;
   TopLim = -200; {drawing limits}

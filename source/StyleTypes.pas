@@ -1,8 +1,8 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2016 by Bernd Gabriel
+Copyright (c) 2011-2022 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -418,9 +418,9 @@ function TryStrToMediaType(const Str: ThtString; out MediaType: ThtMediaType): B
 function TryStrToMediaFeature(const Str: ThtString; out Feature: ThtMediaFeature; out Oper: ThtMediaOperator): Boolean;
 
 function StrToFontName(const Str: ThtString): ThtString;
-function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double): Double; overload;
-function StrToFontSize(const Str: ThtString; const FontConv: ThtFontConv; Base, Default: Double): Double; overload;
-function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double; PixelsPerInch: Integer): Double; overload;
+function StrToFontSize(const Str: ThtString; const FontConv: ThtFontConv; Base, Default: Double; PixelsPerInch: Integer): Double; overload;
+function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double; PixelsPerInch: Integer): Double;
 
 function TryStrToAlignmentStyle(const Str: ThtString; out AlignmentStyle: ThtAlignmentStyle): Boolean;
 function TryStrToBoxSizing(const Str: ThtString; out ABoxSizing: ThtBoxSizing): Boolean;
@@ -473,14 +473,14 @@ procedure CalcBackgroundLocationAndTiling(const PRec: PtPositionRec; ARect: TRec
 const
 // CSS 2.1 defines a fixed ratio between pt and px at 96 dpi: 1px = 0.75pt.
 // (see http://www.w3.org/TR/2010/WD-CSS2-20101207/syndata.html#value-def-length for details).
-  HTMLViewerPixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
+//  HTMLViewerPixelsPerInch = 96.0; // fixed assumption in CSS 2.1 as lots of designs rely on it.
   HTMLViewerPointsPerInch = 72.0;
   //BG, 16.06.2015: Issue 399: StyleTypes.pas: Code improvement for C++Builder
   // HTMLViewerPointsPerPixel = HTMLViewerPointsPerInch / HTMLViewerPixelsPerInch;
   // produces idiotic "static const System::Extended HTMLViewerPointsPerPixel = 7.500000E-01;"
   // in StyleTypes.hpp which then produces "unused" warnings.
   // The following declaration produces just another #define:
-  HTMLViewerPointsPerPixel = 0.75; // HTMLViewerPointsPerInch / HTMLViewerPixelsPerInch;
+//  HTMLViewerPointsPerPixel = 0.75; // HTMLViewerPointsPerInch / HTMLViewerPixelsPerInch;
 
 type
   ThtLengthUnitInfo = record
@@ -499,17 +499,18 @@ type
 
 const
   CUnitInfo: array [ThtUnit] of ThtLengthUnitInfo = (
-    // length units
-    (Name: '';          Factor: 1.00; Index:  0; IsAbsolute: True),
-    (Name: 'em';        Factor: 1.00; Index:  0; IsAbsolute: False),
-    (Name: 'ex';        Factor: 0.50; Index:  0; IsAbsolute: False),
-    (Name: '%' ;        Factor: 0.01; Index:  0; IsAbsolute: False),
-    (Name: 'pt';        Factor: 0.75; Index:  0; IsAbsolute: True),
-    (Name: 'px';        Factor: 1.00; Index:  0; IsAbsolute: True),
-    (Name: 'pc';        Factor: 9.00; Index:  0; IsAbsolute: True),
-    (Name: 'in';        Factor: HTMLViewerPixelsPerInch       ; Index: 0; IsAbsolute: True),
-    (Name: 'cm';        Factor: HTMLViewerPixelsPerInch / 2.54; Index: 0; IsAbsolute: True),
-    (Name: 'mm';        Factor: HTMLViewerPixelsPerInch / 25.4; Index: 0; IsAbsolute: True),
+    // length units. Index = 0: constant Factor, Index = 1: Factor * PixelsPerInch.
+    (Name: '';          Factor: 1.00       ; Index: 0; IsAbsolute: True),
+    (Name: 'em';        Factor: 1.00       ; Index: 0; IsAbsolute: False),
+    (Name: 'ex';        Factor: 0.50       ; Index: 0; IsAbsolute: False),
+    (Name: '%' ;        Factor: 0.01       ; Index: 0; IsAbsolute: False),
+    (Name: 'pt';        Factor: 1.00 / 72.0; Index: 1; IsAbsolute: True),
+    (Name: 'px';        Factor: 1.00       ; Index: 0; IsAbsolute: True),
+    (Name: 'pc';        Factor: 9.00       ; Index: 0; IsAbsolute: True),
+    (Name: 'in';        Factor: 1.00       ; Index: 1; IsAbsolute: True),
+    (Name: 'cm';        Factor: 1.00 / 2.54; Index: 1; IsAbsolute: True),
+    (Name: 'mm';        Factor: 1.00 / 25.4; Index: 1; IsAbsolute: True),
+
     // css font sizes
     (Name: '';          Factor: 1.00; Index:  3; IsAbsolute: True),
     (Name: 'smaller';   Factor: 1.00; Index: -1; IsAbsolute: False),
@@ -985,7 +986,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double): Double;
+function StrToLength(const Str: ThtString; Relative: Boolean; Base, EmBase, Default: Double; PixelsPerInch: Integer): Double;
  {$ifdef UseInline} inline; {$endif}
 {
  Given a length string, return the appropriate pixel value.
@@ -1009,18 +1010,22 @@ begin
     end
     else if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
+      begin
+        if Index = 1 then
+          V := V * PixelsPerInch;
         if IsAbsolute then
           Result := V * Factor
         else if LU = luPercent then
           Result := V * Factor * Base
         else
-          Result := V * Factor * EmBase
+          Result := V * Factor * EmBase;
+      end
     else
   end;
 end;
 
 //------------------------------------------------------------------------------
-function StrToFontSize(const Str: ThtString; const FontConv: ThtFontConv; Base, Default: Double): Double;
+function StrToFontSize(const Str: ThtString; const FontConv: ThtFontConv; Base, Default: Double; PixelsPerInch: Integer): Double;
 {given a font-size ThtString, return the point size}
 
   function IncFontSize(Increment: ThtFontSizeIncrement): Double;
@@ -1093,10 +1098,14 @@ begin
   begin
     if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
+      begin
+        if Index = 1 then
+          V := V * PixelsPerInch;
         if IsAbsolute then
-          Result := V * Factor * HTMLViewerPointsPerPixel
+          Result := V * Factor * HTMLViewerPointsPerInch / PixelsPerInch
         else
           Result := V * Factor * Base;
+      end
   end
   else
   begin
@@ -1110,7 +1119,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double): Double;
+function StrToFontSize(const Str: ThtString; const FontConvBase: ThtFontConvBase; DefaultFontSize, Base, Default: Double; PixelsPerInch: Integer): Double;
 {given a font-size ThtString, return the point size}
 
   function IncFontSize(Increment: ThtFontSizeIncrement): Double;
@@ -1183,10 +1192,14 @@ begin
   begin
     if TryStrToLenthUnit(U, LU) then
       with CUnitInfo[LU] do
+      begin
+        if Index = 1 then
+          V := V * PixelsPerInch;
         if IsAbsolute then
-          Result := V * Factor * HTMLViewerPointsPerPixel
+          Result := V * Factor * HTMLViewerPointsPerInch / PixelsPerInch
         else
           Result := V * Factor * Base;
+      end;
   end
   else
   begin

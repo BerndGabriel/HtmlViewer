@@ -91,7 +91,7 @@ type
     EmSize: Integer;
     ExSize: Integer;
     constructor Create; {$ifdef LCL} override; {$endif}
-    procedure Assign(const Info: ThtFontInfo); reintroduce; overload;
+    procedure Assign(const Info: ThtFontInfo; PixelsPerInch: Integer); reintroduce; overload;
     procedure Assign(Source: TPersistent); overload; override;
     procedure AssignToCanvas(Canvas: TCanvas);
   end;
@@ -106,11 +106,12 @@ type
   private
     FFontsByName: ThtStringList;
     procedure Add(Font: ThtFont);
-    function Find(const FontInfo: ThtFontInfo): ThtFont;
+    function Find(const FontInfo: ThtFontInfo; PixelsPerInch: Integer): ThtFont;
   public
     constructor Create;
     destructor Destroy; override;
-    function GetFontLike(var Font: ThtFontInfo): ThtFont;
+    procedure Clear;
+    function GetFontLike(var Font: ThtFontInfo; PixelsPerInch: Integer): ThtFont;
   end;
 
 function AllMyFonts: ThtFontCache;
@@ -160,10 +161,10 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.03.2011 --
-procedure ThtFont.Assign(const Info: ThtFontInfo);
+procedure ThtFont.Assign(const Info: ThtFontInfo; PixelsPerInch: Integer);
 begin
   Name := htStringToString(Info.iName);
-  Height := -Round(Info.iSize * Screen.PixelsPerInch / 72);
+  Height := -Round(Info.iSize * (PixelsPerInch / 72.0));
   Style := Info.iStyle;
   bgColor := Info.ibgColor;
   Color := Info.iColor;
@@ -212,17 +213,24 @@ end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
 destructor ThtFontCache.Destroy;
+begin
+  Clear;
+  FFontsByName.Free;
+  inherited;
+end;
+
+//-- BG ---------------------------------------------------------- 19.09.2022 --
+procedure ThtFontCache.Clear;
 var
   I: Integer;
 begin
   for I := 0 to FFontsByName.Count - 1 do
     FFontsByName.Objects[I].Free;
-  FFontsByName.Free;
-  inherited;
+  FFontsByName.Clear;
 end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
-function ThtFontCache.Find(const FontInfo: ThtFontInfo): ThtFont;
+function ThtFontCache.Find(const FontInfo: ThtFontInfo; PixelsPerInch: Integer): ThtFont;
 var
   iHeight: Integer;
 
@@ -245,7 +253,7 @@ begin
   I := -1;
   if FFontsByName.Find(htLowerCase(FontInfo.iName), I) then
   begin
-    iHeight := -Round(FontInfo.iSize * Screen.PixelsPerInch / 72.0);
+    iHeight := -Round(FontInfo.iSize * (PixelsPerInch / 72.0));
     Fonts := ThtFontList(FFontsByName.Objects[I]);
     for I := 0 to Fonts.Count - 1 do
     begin
@@ -258,7 +266,7 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 30.01.2011 --
-function ThtFontCache.GetFontLike(var Font: ThtFontInfo): ThtFont;
+function ThtFontCache.GetFontLike(var Font: ThtFontInfo; PixelsPerInch: Integer): ThtFont;
 var
   SameFont: ThtFont;
   Save: HFONT;
@@ -268,12 +276,12 @@ var
   V: Variant;
   GotTextMetrics: Boolean;
 begin
-  SameFont := Find(Font);
+  SameFont := Find(Font, PixelsPerInch);
   if SameFont = nil then
   begin
     SameFont := ThtFont.Create;
     SameFont.Name := htStringToString(Font.iName);
-    SameFont.Height := -Round(Font.iSize * Screen.PixelsPerInch / 72);
+    SameFont.Height := -Round(Font.iSize * (PixelsPerInch / 72.0));
     SameFont.Style := Font.iStyle;
     SameFont.Charset := Font.iCharSet;
     Add(SameFont);
@@ -333,7 +341,7 @@ begin
   else if VarIsStr(V) then
     if V <> 'normal' then
     begin
-      Result.CharExtra := Round(StrToLength(V, False, Result.EmSize, Result.EmSize, 0));
+      Result.CharExtra := Round(StrToLength(V, False, Result.EmSize, Result.EmSize, 0, PixelsPerInch));
       Font.iCharExtra := Result.CharExtra;
     end;
 end;

@@ -48,6 +48,7 @@ uses
 {$endif}
   UrlConn,
   URLSubs,
+  HtmlFonts,
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages,
@@ -274,6 +275,9 @@ type
     FHistory: ThvHistory;
 
     // document related stuff
+{$ifndef Compiler31_Plus}
+    FCurrentPPI: Integer;
+{$endif}
     FSectionList: ThtDocument;
     FCurrentFile: ThtString;
     FCurrentFileType: ThtmlFileType;
@@ -395,6 +399,7 @@ type
     procedure LoadFromUrl(const Url: ThtString; DocType: THtmlFileType);
     procedure LoadResource(HInstance: THandle; const ResourceName: ThtString;
       DocType: THtmlFileType);
+    function GetPPI: Integer;
 {$ifdef HasGestures}
     procedure HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
 {$endif}
@@ -402,6 +407,7 @@ type
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
   protected
+    procedure ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif}); override;
 {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
 {$endif}
@@ -543,6 +549,7 @@ type
     procedure ToggleIDExpand(const URL: ThtString; var Handled: Boolean);
     procedure UpdateSize;
     procedure UrlAction;
+
     property Base: ThtString read FBase write SetBase;
     property BaseTarget: ThtString read FBaseTarget;
     property CaretPos: Integer read FCaretPos write SetCaretPos;
@@ -569,6 +576,7 @@ type
     property OnLinkDrawn: TLinkDrawnEvent read FOnLinkDrawn write FOnLinkDrawn;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
     property Palette: HPalette read GetOurPalette write SetOurPalette;
+    property PixelsPerInch: Integer read GetPPI;
     property Position: Integer read GetPosition write SetPosition;
     //property Processing: Boolean index vsProcessing read GetViewerStateBit; //BG, 25.11.2010: C++Builder fails handling enumeration indexed properties
     property PrintedSize: TPoint read FPrintedSize; // PrintedSize is available after calling Print().
@@ -869,6 +877,9 @@ begin
     FFrameOwner := THtmlFrameBase(Owner);
   ControlStyle := [csAcceptsControls, csCaptureMouse, csClickEvents, csSetCaption, csDoubleClicks];
   Include(FViewerState, vsCreating);
+{$ifndef Compiler31_Plus}
+  FCurrentPPI := Screen.PixelsPerInch;
+{$endif}
   Height := 150;
   Width := 150;
   SetCursor(crIBeam);
@@ -929,6 +940,7 @@ begin
   FSectionList.OnBackgroundChange := BackgroundChange;
   FSectionList.ShowImages := True;
   FSectionList.GetImage := DoGetImage;
+  FSectionList.PixelsPerInch := PixelsPerInch;
   FNameList := FSectionList.IDNameList;
 
   SetOptions([htPrintTableBackground, htPrintMonochromeBlack]);
@@ -2006,6 +2018,26 @@ begin
 //    assert(False, 'Viewer processing. Data may get lost!');
 end;
 
+//-- BG ------------------------------------------------------- 24.07.2022 --
+procedure THtmlViewer.ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif});
+begin
+  inherited;
+  if M <> D then
+  begin
+    try
+      AllMyFonts.Clear;
+      FSectionList.PixelsPerInch := PixelsPerInch;
+      Text := Text;
+    finally
+      {$ifdef Linux}
+        PaintPanel.Update;
+      {$else}
+        PaintPanel.Invalidate;
+      {$endif}
+    end;
+  end;
+end;
+
 {----------------THtmlViewer.CheckVisitedLinks}
 
 procedure THtmlViewer.CheckVisitedLinks;
@@ -3010,6 +3042,12 @@ begin
  HiWord = 0 is top of display}
 end;
 
+//-- BG ------------------------------------------------------- 19.09.2022 --
+function THtmlViewer.GetPPI: Integer;
+begin
+  Result := FCurrentPPI;
+end;
+
 procedure THtmlViewer.SetPosition(Value: Integer);
 var
   TopPos: Integer;
@@ -3875,7 +3913,7 @@ procedure THtmlViewer.MatchMediaQuery(Sender: TObject; const MediaQuery: ThtMedi
       else
       begin
         Len := Abs(Font.Size);
-        Len := LengthConv(Expression.Expression, False, Base, Len, Len div 2, -1);
+        Len := LengthConv(Expression.Expression, False, Base, Len, Len div 2, -1, PixelsPerInch);
         Result := (Len >= 0) and Compared(Value, Len);
       end;
     end;
@@ -4251,7 +4289,7 @@ begin
 
         YDpi := Prn.PixelsPerInchY;
         XDpi := Prn.PixelsPerInchX;
-        WDpi := Round(Screen.PixelsPerInch * PrintScale);
+        WDpi := Round(PixelsPerInch * PrintScale);
         ScaleX := 100.0 / YDpi;
         ScaleY := 100.0 / XDpi;
         PrintList.ScaleX := ScaleX;
