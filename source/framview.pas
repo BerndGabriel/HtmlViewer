@@ -204,6 +204,9 @@ type
     procedure SetQuirksMode(const AValue: THtQuirksMode); override;
     procedure SetVisitedColor(const Value: TColor); override;
     procedure SetVisitedMaxCount(const Value: Integer); override;
+{$ifdef DEBUG}
+    procedure SetName(const NewName: TComponentName); override;
+{$endif}
 {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
 {$endif}
@@ -2202,6 +2205,9 @@ constructor TFrameSetBase.Create(AOwner: TComponent);
 begin
   inherited CreateIt(AOwner, Self);
   FFrameViewer := AOwner as TFvBase;
+{$ifdef DEBUG}
+  Name := FFrameViewer.Name + '_FrameSetBase' + IntToHex(Integer(Self));
+{$endif}
   LocalCodePage := FrameViewer.CodePage;
   if fvNoBorder in FrameViewer.fvOptions then
     BorderSize := 0
@@ -3671,6 +3677,9 @@ end;
 function TFVBase.CreateViewer(Owner: THtmlFrameBase): THtmlViewer;
 begin
   Result := GetViewerClass.CreateCopy(Owner, Self); {the Viewer for the frame}
+{$ifdef DEBUG}
+  Result.Name := Name + '_Viewer' + IntToHex(Integer(Result));
+{$endif}
   Result.ViewImages := ViewImages;
   Result.SetImageCache(FImageCache);
   Result.HtOptions := FvOptionsToHtOptions(FOptions, Result.HtOptions);
@@ -3872,6 +3881,14 @@ begin
       CurViewer[I].LoadCursor := Value;
   end;
 end;
+
+{$ifdef DEBUG}
+procedure TFVBase.SetName(const NewName: TComponentName);
+begin
+  inherited;
+  FCurFrameSet.Name := NewName + '_CurFrameSet' + IntToHex(Integer(FCurFrameSet));
+end;
+{$endif}
 
 {----------------TFVBase.SetNoSelect}
 

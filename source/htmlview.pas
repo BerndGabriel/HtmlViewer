@@ -61,9 +61,9 @@ uses
   StyleUn;
 
 const
-  wm_FormSubmit = wm_User + 100;
-  wm_MouseScroll = wm_User + 102;
-  wm_UrlAction = wm_User + 103;
+  wm_FormSubmit = WM_USER + 100;
+  wm_MouseScroll = WM_USER + 102;
+  wm_UrlAction = WM_USER + 103;
 
 type
   EhtException = class(Exception);
@@ -275,9 +275,6 @@ type
     FHistory: ThvHistory;
 
     // document related stuff
-{$ifndef Compiler31_Plus}
-    FCurrentPPI: Integer;
-{$endif}
     FSectionList: ThtDocument;
     FCurrentFile: ThtString;
     FCurrentFileType: ThtmlFileType;
@@ -399,7 +396,7 @@ type
     procedure LoadFromUrl(const Url: ThtString; DocType: THtmlFileType);
     procedure LoadResource(HInstance: THandle; const ResourceName: ThtString;
       DocType: THtmlFileType);
-    function GetPPI: Integer;
+    procedure ScaleChanged;
 {$ifdef HasGestures}
     procedure HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
 {$endif}
@@ -408,6 +405,10 @@ type
     property PaintPanel: TPaintPanel read FPaintPanel;
   protected
     procedure ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif}); override;
+{$ifdef LCL}
+    procedure DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
+      const AXProportion, AYProportion: Double); override;
+{$endif}
 {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
 {$endif}
@@ -461,6 +462,9 @@ type
     procedure SetVisitedMaxCount(const Value: Integer); override;
     procedure Loaded; override;
     function CanAutoSize(var NewWidth: Integer; var NewHeight: Integer): Boolean; override;
+{$ifdef DEBUG}
+    procedure SetName(const NewName: TComponentName); override;
+{$endif}
     property ScrollWidth: Integer read FScrollWidth;
   public
     constructor Create(Owner: TComponent); override;
@@ -576,7 +580,6 @@ type
     property OnLinkDrawn: TLinkDrawnEvent read FOnLinkDrawn write FOnLinkDrawn;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
     property Palette: HPalette read GetOurPalette write SetOurPalette;
-    property PixelsPerInch: Integer read GetPPI;
     property Position: Integer read GetPosition write SetPosition;
     //property Processing: Boolean index vsProcessing read GetViewerStateBit; //BG, 25.11.2010: C++Builder fails handling enumeration indexed properties
     property PrintedSize: TPoint read FPrintedSize; // PrintedSize is available after calling Print().
@@ -877,9 +880,6 @@ begin
     FFrameOwner := THtmlFrameBase(Owner);
   ControlStyle := [csAcceptsControls, csCaptureMouse, csClickEvents, csSetCaption, csDoubleClicks];
   Include(FViewerState, vsCreating);
-{$ifndef Compiler31_Plus}
-  FCurrentPPI := Screen.PixelsPerInch;
-{$endif}
   Height := 150;
   Width := 150;
   SetCursor(crIBeam);
@@ -1156,7 +1156,7 @@ begin
   end;
 end;
 
-procedure THtmlViewer.LoadFromFile(const FileName: ThtString; DocType: ThtmlFileType);
+procedure THtmlViewer.LoadFromFile(const FileName: ThtString; DocType: THtmlFileType);
 var
   OldFile, OldTitle: ThtString;
   OldPos: Integer;
@@ -1310,6 +1310,8 @@ begin
     Include(FViewerState, vsDontDraw);
     try
       FRefreshDelay := 0;
+      AllMyFonts.Clear;
+      FSectionList.PixelsPerInch := PixelsPerInch;
       FSectionList.ProgressStart := 75;
       htProgressInit;
       try
@@ -1411,7 +1413,7 @@ end;
 
 {----------------THtmlViewer.LoadFromStream}
 
-procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString; DocType: ThtmlFileType);
+procedure THtmlViewer.LoadFromStream(const AStream: TStream; const Reference: ThtString; DocType: THtmlFileType);
 begin
   LoadStream(Reference, AStream, DocType);
 end;
@@ -1926,7 +1928,7 @@ begin
   UrlAction;
 end;
 
-procedure THtmlViewer.URLAction;
+procedure THtmlViewer.UrlAction;
 var
   S, Dest: ThtString;
   OldPos: Integer;
@@ -2023,20 +2025,27 @@ procedure THtmlViewer.ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiCh
 begin
   inherited;
   if M <> D then
+    ScaleChanged;
+end;
+
+{$ifdef LCL}
+//-- BG ------------------------------------------------------- 29.09.2022 --
+procedure THtmlViewer.DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
+  const AXProportion, AYProportion: Double);
+var
+  M, D: Integer;
+  P: TWinControl;
+begin
+  inherited DoAutoAdjustLayout(AMode, AXProportion, AYProportion);
+  D := FCurrentPPI;
+  M := Round(D * AYProportion);
+  if FCurrentPPI <> M then
   begin
-    try
-      AllMyFonts.Clear;
-      FSectionList.PixelsPerInch := PixelsPerInch;
-      Text := Text;
-    finally
-      {$ifdef Linux}
-        PaintPanel.Update;
-      {$else}
-        PaintPanel.Invalidate;
-      {$endif}
-    end;
+    FCurrentPPI := M;
+    ScaleChanged;
   end;
 end;
+{$endif}
 
 {----------------THtmlViewer.CheckVisitedLinks}
 
@@ -3042,10 +3051,18 @@ begin
  HiWord = 0 is top of display}
 end;
 
-//-- BG ------------------------------------------------------- 19.09.2022 --
-function THtmlViewer.GetPPI: Integer;
+//-- BG ------------------------------------------------------- 29.09.2022 --
+procedure THtmlViewer.ScaleChanged;
 begin
-  Result := FCurrentPPI;
+  try
+    Text := Text;
+  finally
+    {$ifdef Linux}
+      PaintPanel.Update;
+    {$else}
+      PaintPanel.Invalidate;
+    {$endif}
+  end;
 end;
 
 procedure THtmlViewer.SetPosition(Value: Integer);
@@ -3114,7 +3131,7 @@ begin
   Invalidate;
 end;
 
-function THtmlViewer.HTMLExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
+function THtmlViewer.HtmlExpandFilename(const Filename, CurrentFilename: ThtString): ThtString;
 var
   FileScheme: ThtString;
   FileSpecific: ThtString;
@@ -5163,6 +5180,17 @@ begin
   end;
 end;
 
+{$ifdef DEBUG}
+procedure THtmlViewer.SetName(const NewName: TComponentName);
+begin
+  inherited;
+  FBorderPanel.Name := NewName + '_BorderPanel';
+  FPaintPanel.Name := NewName + '_PaintPanel';
+  FHScrollBar.Name := NewName + '_HScrollBar';
+  FVScrollBar.Name := NewName + '_VScrollBar';
+end;
+{$endif}
+
 procedure THtmlViewer.SetNoSelect(const Value: Boolean);
 begin
   if Value <> NoSelect then
@@ -5387,7 +5415,7 @@ begin
     HistoryIndex := HistoryIndex - 1;
 end;
 
-procedure THtmlViewer.SetOptions(Value: ThtmlViewerOptions);
+procedure THtmlViewer.SetOptions(Value: THtmlViewerOptions);
 begin
   if Value <> FOptions then
   begin

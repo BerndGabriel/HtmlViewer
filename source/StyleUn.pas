@@ -3267,7 +3267,7 @@ begin
     if not Find(Selector, I) then
     begin
       NewProp := True;
-      Propty := TProperties.Create(); {newly created property}
+      Propty := TProperties.Create(UseQuirksMode, PixelsPerInch); {newly created property}
       Propty.DefPointSize := FDefFontSizeInPt;
     end
     else
@@ -3347,7 +3347,6 @@ var
   HIndex: Integer;
   Properties: TProperties;
   J: ListTypes;
-  //F: Double;
 
 begin
   Clear;
@@ -3481,7 +3480,7 @@ begin
   AddDuplicate('strong', Properties);
   if UseQuirksMode = False then begin
     AddDuplicate('th', Properties);
-    Properties := TProperties.Create;
+    Properties := TProperties.Create(UseQuirksMode, PixelsPerInch);
     Properties.Props[TextAlign] := 'none';
     AddObject('table', Properties);
   end;
@@ -3578,7 +3577,7 @@ begin
     AddObject( htString('h' + IntToStr(HIndex)), Properties);
   end;
 
-  Properties := TProperties.Create;
+  Properties := TProperties.Create(UseQuirksMode, PixelsPerInch);
   Properties.Props[FontStyle] := 'none';
   Properties.Props[BackgroundColor] := $00FFFF;
   Properties.Props[Color] := $000000;

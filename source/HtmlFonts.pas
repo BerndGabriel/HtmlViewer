@@ -91,7 +91,7 @@ type
     EmSize: Integer;
     ExSize: Integer;
     constructor Create; {$ifdef LCL} override; {$endif}
-    procedure Assign(const Info: ThtFontInfo; PixelsPerInch: Integer); reintroduce; overload;
+    procedure Assign(const Info: ThtFontInfo; APixelsPerInch: Integer); reintroduce; overload;
     procedure Assign(Source: TPersistent); overload; override;
     procedure AssignToCanvas(Canvas: TCanvas);
   end;
@@ -161,10 +161,13 @@ begin
 end;
 
 //-- BG ---------------------------------------------------------- 12.03.2011 --
-procedure ThtFont.Assign(const Info: ThtFontInfo; PixelsPerInch: Integer);
+procedure ThtFont.Assign(const Info: ThtFontInfo; APixelsPerInch: Integer);
 begin
   Name := htStringToString(Info.iName);
-  Height := -Round(Info.iSize * (PixelsPerInch / 72.0));
+  {$ifdef LCL}
+    PixelsPerInch := APixelsPerInch;
+  {$endif}
+  Height := -Round(Info.iSize * (APixelsPerInch / 72.0));
   Style := Info.iStyle;
   bgColor := Info.ibgColor;
   Color := Info.iColor;
@@ -253,7 +256,7 @@ begin
   I := -1;
   if FFontsByName.Find(htLowerCase(FontInfo.iName), I) then
   begin
-    iHeight := -Round(FontInfo.iSize * (PixelsPerInch / 72.0));
+    iHeight := -Round(FontInfo.iSize * PixelsPerInch / 72.0);
     Fonts := ThtFontList(FFontsByName.Objects[I]);
     for I := 0 to Fonts.Count - 1 do
     begin
@@ -280,10 +283,7 @@ begin
   if SameFont = nil then
   begin
     SameFont := ThtFont.Create;
-    SameFont.Name := htStringToString(Font.iName);
-    SameFont.Height := -Round(Font.iSize * (PixelsPerInch / 72.0));
-    SameFont.Style := Font.iStyle;
-    SameFont.Charset := Font.iCharSet;
+    SameFont.Assign(Font, PixelsPerInch);
     Add(SameFont);
 
     GotTextMetrics := False;

@@ -588,7 +588,15 @@ type
     FQuirksMode : THtQuirksMode;
     function StoreFontName: Boolean;
     function StorePreFontName: Boolean;
+    function GetPPI: Integer;
+{$ifndef Compiler31_Plus}
+    function FormPixelsPerInch: Integer;
+{$endif}
   protected
+{$ifndef Compiler31_Plus}
+    FCurrentPPI: Integer;
+    procedure SetParent(NewParent: TWinControl); override;
+{$endif}
     {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
     {$endif}
@@ -679,6 +687,7 @@ type
     property MarginHeight: Integer read FMarginHeight write SetMarginHeight default 5;
     property MarginWidth: Integer read FMarginWidth write SetMarginWidth default 10;
     property NoSelect: Boolean read FNoSelect write SetNoSelect;
+    property PixelsPerInch: Integer read GetPPI;
     property PrintMarginBottom: Double read FPrintMarginBottom write SetPrintMarginBottom;
     property PrintMarginLeft: Double read FPrintMarginLeft write SetPrintMarginLeft;
     property PrintMarginRight: Double read FPrintMarginRight write SetPrintMarginRight;
@@ -2981,6 +2990,9 @@ end;
 constructor TViewerBase.Create(AOwner: TComponent);
 begin
   inherited;
+{$ifndef Compiler31_Plus}
+  FCurrentPPI := FormPixelsPerInch;
+{$endif}
   PrintMarginLeft := 2.0;
   PrintMarginRight := 2.0;
   PrintMarginTop := 2.0;
@@ -3087,6 +3099,31 @@ begin
   OnGesture := Source.OnGesture;
 {$endif}
 end;
+
+{$ifndef Compiler31_Plus}
+//-- BG ------------------------------------------------------- 29.09.2022 --
+function TViewerBase.FormPixelsPerInch: Integer;
+var
+  P: TWinControl;
+begin
+  P := Parent;
+  while (P <> nil) and not (P is TCustomForm) do
+    P := P.Parent;
+
+  if P <> nil then
+    Result := TCustomForm(P).PixelsPerInch
+  else
+    Result := Screen.PixelsPerInch;
+end;
+
+//-- BG ------------------------------------------------------- 29.09.2022 --
+procedure TViewerBase.SetParent(NewParent: TWinControl);
+begin
+  inherited SetParent(NewParent);
+  if not (csDestroying in ComponentState) then
+    FCurrentPPI := FormPixelsPerInch;
+end;
+{$endif}
 
 procedure TViewerBase.SetActiveColor(const Value: TColor);
 begin
@@ -3385,6 +3422,12 @@ end;
 function TViewerBase.StoreFontName: Boolean;
 begin
   Result := FFontName <> htDefFontName;
+end;
+
+//-- BG ---------------------------------------------------------- 29.09.2022 --
+function TViewerBase.GetPPI: Integer;
+begin
+  Result := FCurrentPPI;
 end;
 
 function TViewerBase.StorePreFontName: Boolean;
