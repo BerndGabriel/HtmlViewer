@@ -396,7 +396,6 @@ type
     procedure LoadFromUrl(const Url: ThtString; DocType: THtmlFileType);
     procedure LoadResource(HInstance: THandle; const ResourceName: ThtString;
       DocType: THtmlFileType);
-    procedure ScaleChanged;
 {$ifdef HasGestures}
     procedure HtmlGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
 {$endif}
@@ -404,10 +403,9 @@ type
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
   protected
-    procedure ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif}); override;
+    procedure ScaleChanged; override;
 {$ifdef LCL}
-    procedure DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
-      const AXProportion, AYProportion: Double); override;
+    procedure SetPPI(Value: Integer); override;
 {$endif}
 {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
@@ -905,6 +903,8 @@ begin
   FPaintPanel.BevelInner := bvNone;
 {$ifndef LCL}
   FPaintPanel.Ctl3D := False;
+{$else}
+  FPaintPanel.Canvas.Font.PixelsPerInch := PixelsPerInch;
 {$endif}
   //FPaintPanel.OnPaint := HTMLPaint;
   FPaintPanel.OnMouseDown := HTMLMouseDown;
@@ -2020,30 +2020,12 @@ begin
 //    assert(False, 'Viewer processing. Data may get lost!');
 end;
 
-//-- BG ------------------------------------------------------- 24.07.2022 --
-procedure THtmlViewer.ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif});
-begin
-  inherited;
-  if M <> D then
-    ScaleChanged;
-end;
-
 {$ifdef LCL}
-//-- BG ------------------------------------------------------- 29.09.2022 --
-procedure THtmlViewer.DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
-  const AXProportion, AYProportion: Double);
-var
-  M, D: Integer;
-  P: TWinControl;
+//-- BG ------------------------------------------------------- 03.10.2022 --
+procedure THtmlViewer.SetPPI(Value: Integer);
 begin
-  inherited DoAutoAdjustLayout(AMode, AXProportion, AYProportion);
-  D := FCurrentPPI;
-  M := Round(D * AYProportion);
-  if FCurrentPPI <> M then
-  begin
-    FCurrentPPI := M;
-    ScaleChanged;
-  end;
+  inherited SetPPI(Value);
+  FPaintPanel.Canvas.Font.PixelsPerInch := Value;
 end;
 {$endif}
 

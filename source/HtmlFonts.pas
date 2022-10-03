@@ -146,6 +146,7 @@ procedure ThtFont.Assign(Source: TPersistent);
 begin
   if Source is ThtFont then
   begin
+    PixelsPerInch := ThtFont(Source).PixelsPerInch;
     bgColor := ThtFont(Source).bgColor;
     tmHeight := ThtFont(Source).tmHeight;
     tmDescent := ThtFont(Source).tmDescent;

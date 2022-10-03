@@ -35,7 +35,7 @@ uses
   Math,
 {$endif}
 {$ifdef LCL}
-  LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
+  LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc, Forms,
 {$else}
   Windows,
 {$endif}
@@ -595,7 +595,14 @@ type
   protected
 {$ifndef Compiler31_Plus}
     FCurrentPPI: Integer;
+    procedure SetPPI(Value: Integer); virtual;
     procedure SetParent(NewParent: TWinControl); override;
+{$endif}
+    procedure ScaleChanged; virtual; abstract;
+    procedure ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif}); override;
+{$ifdef LCL}
+    procedure DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
+      const AXProportion, AYProportion: Double); override;
 {$endif}
     {$ifdef has_StyleElements}
     procedure UpdateStyleElements; override;
@@ -668,6 +675,9 @@ type
     procedure Load(const Url: ThtString); virtual; abstract;
     // HtmlExpandFilename(Filename, CurrentFilename): Try to get the absolute pathname of the given filename in the local filesystem
     function HtmlExpandFilename(const Filename: ThtString; const CurrentFilename: ThtString = ''): ThtString; virtual; abstract;
+{$ifndef Compiler31_Plus}
+    function ParentForm: TCustomForm;
+{$endif}
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
     // set to determine if child objects should be in "quirks" mode
     property UseQuirksMode: Boolean read GetUseQuirksMode;
@@ -814,7 +824,7 @@ type
 implementation
 
 uses
-  Forms,  {$ifndef UseInline} Math, {$endif}
+  {$ifndef UseInline} Math, {$endif}
   {$ifdef UseVCLStyles}
   Vcl.Themes,
   {$endif}
@@ -3100,9 +3110,18 @@ begin
 {$endif}
 end;
 
+//-- BG ------------------------------------------------------- 24.07.2022 --
+procedure TViewerBase.ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif});
+begin
+  inherited;
+  if M <> D then
+    ScaleChanged;
+end;
+
 {$ifndef Compiler31_Plus}
-//-- BG ------------------------------------------------------- 29.09.2022 --
-function TViewerBase.FormPixelsPerInch: Integer;
+
+//-- BG ------------------------------------------------------- 03.10.2022 --
+function TViewerBase.ParentForm: TCustomForm;
 var
   P: TWinControl;
 begin
@@ -3110,10 +3129,26 @@ begin
   while (P <> nil) and not (P is TCustomForm) do
     P := P.Parent;
 
+  Result := TCustomForm(P);
+end;
+
+//-- BG ------------------------------------------------------- 29.09.2022 --
+function TViewerBase.FormPixelsPerInch: Integer;
+var
+  P: TWinControl;
+begin
+  P := ParentForm;
+
   if P <> nil then
     Result := TCustomForm(P).PixelsPerInch
   else
     Result := Screen.PixelsPerInch;
+end;
+
+//-- BG ------------------------------------------------------- 03.10.2022 --
+procedure TViewerBase.SetPPI(Value: Integer);
+begin
+  FCurrentPPI := Value;
 end;
 
 //-- BG ------------------------------------------------------- 29.09.2022 --
@@ -3121,7 +3156,24 @@ procedure TViewerBase.SetParent(NewParent: TWinControl);
 begin
   inherited SetParent(NewParent);
   if not (csDestroying in ComponentState) then
-    FCurrentPPI := FormPixelsPerInch;
+    SetPPI( FormPixelsPerInch );
+end;
+{$endif}
+
+{$ifdef LCL}
+//-- BG ------------------------------------------------------- 29.09.2022 --
+procedure TViewerBase.DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
+  const AXProportion, AYProportion: Double);
+var
+  NewPPI: Integer;
+begin
+  inherited DoAutoAdjustLayout(AMode, AXProportion, AYProportion);
+  NewPPI := Round(FCurrentPPI * AYProportion);
+  if FCurrentPPI <> NewPPI then
+  begin
+    FCurrentPPI := NewPPI;
+    ScaleChanged;
+  end;
 end;
 {$endif}
 

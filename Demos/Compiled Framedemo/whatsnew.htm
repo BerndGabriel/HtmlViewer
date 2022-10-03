@@ -20,6 +20,48 @@
 
 <!----------------------------------------------------------------------------->
 
+<h4 class="heading">Version 11.10</h4>
+<h5>Added</h5>
+<ul>
+  <li>Lazarus 2.2 Support
+  <li>RAD Studio 11 Alexandria Support
+  <li>unit HtmlPrinter.pas containing ThtPrinter (moved from vwPrint.pas) and ThtPagePrinter (extracted from TMetaFilePrinter as base class).
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/156">156</a>: Feature request - HandCursor (or LinkCursor).
+  <ul>
+    <li>Added to htmlcons.inc: $define UseHandCursor
+  </ul>
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/312">312</a>: DPI scaling THtmlViewer
+</ul>
+<h5>Enhanced</h5>
+<ul>
+</ul>                                                                            
+<h5>Fixed</h5>                                                                   
+<ul>
+  <li>FrameBrowser's URLExpandName() now respects Viewer.Base to get the correct scheme.
+  <li>Function TSection.FindCountThatFits() seems to freeze when checking very long strings with some non unicode chars.
+  <li>Crash when Document.IDNameList tries to delete an already deleted image again.
+  <li>memory leak THtmlViewer.FObjects.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/268">268</a>: Image-Rendering unexpected between 11.6 and 11.9.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/272">272</a>: Line-Height stops Vertical-Align from working.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/286">286</a>: Width of 100% in table column works wrong and content is passed into the neighbouring cell.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/294">294</a>: Build Error with Lazarus 2.0.10 in Linux (neither PDeviceModeW nor PDeviceMode is used for Linux).
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/298">298</a>: Transparent PNGs.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/304">303</a>: Unit name is not found in Linux.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/304">304</a>: Crash when hitting RETURN on a selected link.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/305">305</a>: TObjectList problem.
+    <ul>
+	   <li> In Sydney is no TObjectList.
+		<li> Using generic TObjectList<> instead.
+	 </ul>
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/306">306</a>: Center Tables not rendered.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/309">309</a>: Draw CSS-embedded images.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/314">314</a>: HTML not well rendered.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/316">316</a>: THtmlViewer.LoadHTML hangs when loading an html with css code that includes a media query on color scheme.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/318">318</a>: Master no longer builds on Delphi XE or earlier.
+</ul>
+
+<!----------------------------------------------------------------------------->
+
 <h4 class="heading">Version 11.9</h4>
 <h5>Added</h5>
 <ul>
@@ -55,7 +97,7 @@
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/221">221</a>: Wrapping of negative numbers - do not break away minus from its digits.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/229">229</a>: Error table in small window: ignore conditional styles (with []) which are not supported.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/243">243</a>: HR tag always paints itself all the way to the right. (Lazarus issue only).
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/246">245</a>: StyleEndSy not handled in ReadHTML.pas and triggers Assert exception.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/245">245</a>: StyleEndSy not handled in ReadHTML.pas and triggers Assert exception.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/246">246</a>: THtmlViewer show html work fine, but after click, it't show nothing.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/248">248</a>: RadioButton Cannot Group.
 </ul>

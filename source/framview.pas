@@ -32,7 +32,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, HtmlMisc,
+  LclIntf, LclType, HtmlMisc, Forms,
 {$else}
   Windows,
 {$endif}
@@ -204,6 +204,7 @@ type
     procedure SetQuirksMode(const AValue: THtQuirksMode); override;
     procedure SetVisitedColor(const Value: TColor); override;
     procedure SetVisitedMaxCount(const Value: Integer); override;
+    procedure ScaleChanged; override;
 {$ifdef DEBUG}
     procedure SetName(const NewName: TComponentName); override;
 {$endif}
@@ -361,7 +362,8 @@ type
   private
     FMasterSet: TFrameSetBase; {Points to top (master) TFrameSetBase}
     FOwner: TSubFrameSetBase;
-    FQuirksMode : THtQuirksMode;
+    FQuirksMode: THtQuirksMode;
+    function GetPixelsPerInch: Integer;
   protected
     UnLoaded: Boolean;
     LocalCharSet: TFontCharset;
@@ -383,7 +385,8 @@ type
     procedure InitializeDimensions(X, Y, Wid, Ht: Integer); virtual; abstract;
     property LOwner: TSubFrameSetBase read FOwner;
     property MasterSet: TFrameSetBase read FMasterSet; {Points to top (master) TFrameSetBase}
-    property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode;
+    property QuirksMode: THtQuirksMode read FQuirksMode write SetQuirksMode;
+    property PixelsPerInch: Integer read GetPixelsPerInch;
   end;
 
 
@@ -1080,6 +1083,18 @@ begin
     else if Assigned(Viewer) then
     begin
       Viewer.Base := MasterSet.FBase;
+{$ifdef Compiler31_Plus}
+      // If compiled with Delphi and we started on a monitor <> 96 DPI and we move
+      // to a 96 DPI monitor for the first time the viewer is not automatically
+      // scaled to 96 DPI:
+      if Viewer.PixelsPerInch <> PixelsPerInch then
+        Viewer.ScaleForPPI(PixelsPerInch);
+{$endif}
+{$ifdef LCL}
+      if Application.Scaled and Viewer.ParentForm.Scaled then
+        if Viewer.PixelsPerInch <> PixelsPerInch then
+          Viewer.AutoAdjustLayout(lapAutoAdjustForDPI, Viewer.PixelsPerInch, PixelsPerInch, 0, 0);
+{$endif}
       ft := GetFileType(Source);
       case ft of
         ImgType,
@@ -1524,13 +1539,15 @@ end;
 constructor TSubFrameSetBase.CreateIt(AOwner: TComponent; Master: TFrameSetBase);
 begin
   inherited Create(AOwner);
-  QuirksMode := Master.QuirksMode;
   FMasterSet := Master;
   if AOwner is TFrameBase then
     LocalCodePage := TFrameBase(AOwner).LocalCodePage;
-  OuterBorder := 0; {no border for subframesets}
   if Self <> Master then
+  begin
     BorderSize := Master.BorderSize;
+    QuirksMode := Master.QuirksMode;
+  end;
+  OuterBorder := 0; {no border for subframesets}
   First := True;
   List := TFrameBaseList.Create;
   OnResize := CalcSizes;
@@ -1616,10 +1633,16 @@ var
     end;
 
   begin
+{$ifdef DEBUG}
+    // For debugging we name our internal components.
+    // So we cannot use the name to control reading.
+    S := T.Name;
+{$else}
     if Name = '' then
       S := T.Name
     else
       Exit;
+{$endif}
     I := 1; DimCount := 0;
     repeat
       Inc(DimCount);
@@ -4657,6 +4680,13 @@ begin
     AViewer.CopyToClipboard;
 end;
 
+//-- BG ------------------------------------------------------- 03.10.2022 --
+procedure TFVBase.ScaleChanged;
+begin
+  inherited;
+  Reload;
+end;
+
 procedure TFVBase.SelectAll;
 var
   AViewer: THtmlViewer;
@@ -4780,9 +4810,15 @@ begin
       FMasterSet.FFrameViewer.Reload;
 end;
 
+//-- BG ---------------------------------------------------------- 03.10.2022 --
+function TFrameBase.GetPixelsPerInch: Integer;
+begin
+  Result := FMasterSet.FrameViewer.PixelsPerInch;
+end;
+
 procedure TFrameBase.SetQuirksMode(const AValue: THtQuirksMode);
 begin
-  Self.FQuirksMode := AValue;
+  FQuirksMode := AValue;
 end;
 
 {$ifdef UseGenerics}

@@ -87,6 +87,8 @@ uses
 
 const
   MaxHistories = 6;  {size of History list}
+  wm_ShowParam = WM_USER + 100;
+
 
 type
 // Delphi 6 form editor fails with conditionals in form declaration:
@@ -235,6 +237,7 @@ type
 {$endif}
     procedure UpdateCaption;
     procedure wmDropFiles(var Message: TMessage); message wm_DropFiles;
+    procedure wmShowParam(var Message: TMessage); message wm_ShowParam;
     procedure CloseAll;
 {$ifdef LCL}
 {$else}
@@ -316,27 +319,38 @@ begin
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
+begin
+  PostMessage(Handle, wm_ShowParam, 0, 0);
+end;
+
+procedure TForm1.wmShowParam(var Message: TMessage);
 var
-  S: string;
+  S: ThtString;
   I: integer;
 begin
-if (ParamCount >= 1) then
+  if (ParamCount >= 1) then
   begin            {Parameter is file to load}
-  S := CmdLine;
-  I := Pos('" ', S);
-  if I > 0 then
-    Delete(S, 1, I+1)  {delete EXE name in quotes}
-  else Delete(S, 1, Length(ParamStr(0)));  {in case no quote marks}
-  I := Pos('"', S);
-  while I > 0 do     {remove any quotes from parameter}
-    begin
-    Delete(S, I, 1);
+    S := CmdLine;
+    I := Pos('" ', S);
+    if I > 0 then
+      Delete(S, 1, I+1)  {delete EXE name in quotes}
+    else
+      Delete(S, 1, Length(ParamStr(0)));  {in case no quote marks}
     I := Pos('"', S);
+    while I > 0 do     {remove any quotes from parameter}
+    begin
+      Delete(S, I, 1);
+      I := Pos('"', S);
     end;
-  FrameViewer.LoadFromFile(HtmlToDos(Trim(S)));
+    S := HtmlToDos(Trim(S));
+    FrameViewer.LoadFromFile(S);
   end
-else if FileExists(ExtractFilePath(ParamStr(0))+'demo.htm') then
-  FrameViewer.LoadFromFile(ExtractFilePath(ParamStr(0))+'demo.htm');
+  else
+  begin
+    S := ExtractFilePath(ParamStr(0))+'demo.htm';
+    if FileExists(S) then
+      FrameViewer.LoadFromFile(S);
+  end;
 end;
 
 procedure TForm1.OpenClick(Sender: TObject);
@@ -353,7 +367,8 @@ begin
   end;
 end;
 
-procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target, URL: ThtString; var Handled: boolean);
+procedure TForm1.HotSpotTargetClick(Sender: TObject; const Target,
+  URL: ThtString; var Handled: Boolean);
 {This routine handles what happens when a hot spot is clicked.  The assumption
  is made that DOS filenames are being used. .EXE, .WAV, .MID, and .AVI files are
  handled here, but other file types could be easily added.
@@ -902,10 +917,11 @@ end;
 
 procedure TForm1.CloseAll;
 begin
-Timer1.Enabled := False;
-HintWindow.ReleaseHandle;
-HintVisible := False;
-TitleViewer := Nil;
+  Timer1.Enabled := False;
+  if HintWindow <> nil then
+    HintWindow.ReleaseHandle;
+  HintVisible := False;
+  TitleViewer := Nil;
 end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);
@@ -1009,8 +1025,9 @@ begin
   end;
 end;
 
-procedure TForm1.ViewerPrintHTMLHeader(Sender: TObject;
-  HFViewer: THTMLViewer; NumPage: Integer; LastPage: boolean; var XL, XR: integer; var StopPrinting: Boolean);
+procedure TForm1.ViewerPrintHTMLHeader(Sender: TObject; HFViewer: THTMLViewer;
+  NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
+  var StopPrinting: Boolean);
 var
   S: ThtString;
 begin
@@ -1019,8 +1036,9 @@ begin
   HFViewer.Text := S;
 end;
 
-procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject;
-  HFViewer: THTMLViewer; NumPage: Integer; LastPage: boolean; var XL, XR: integer; var StopPrinting: Boolean);
+procedure TForm1.ViewerPrintHTMLFooter(Sender: TObject; HFViewer: THTMLViewer;
+  NumPage: Integer; LastPage: Boolean; var XL, XR: Integer;
+  var StopPrinting: Boolean);
 var
   S: ThtString;
 begin
