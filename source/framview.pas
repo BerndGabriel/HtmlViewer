@@ -88,6 +88,7 @@ type
     FProcessing, FViewerProcessing: Boolean;
     FViewerList: ThtStringList;
     FViewImages: Boolean;
+    FText: ThtString;
     //
     FOnBlankWindowRequest: TWindowRequestEvent;
     FOnFileBrowse: TFileBrowseEvent;
@@ -111,6 +112,9 @@ type
     procedure SetSelLength(Value: Integer);
     procedure SetSelStart(Value: Integer);
     procedure SetViewImages(Value: Boolean);
+    procedure SetText(const Value: ThtString);
+    procedure CMParentColorChanged(var Message: TMessage); message CM_PARENTCOLORCHANGED;
+    procedure CMParentFontChanged(var Message: TMessage); message CM_PARENTFONTCHANGED;
   protected
     FBaseEx: ThtString;
     FURL: ThtString;
@@ -157,6 +161,7 @@ type
     procedure EndProcessing; virtual;
     procedure HotSpotClick(Sender: TObject; const AnURL: ThtString;var Handled: Boolean); virtual; abstract;
     procedure HotSpotCovered(Sender: TObject; const SRC: ThtString); virtual; abstract;
+    procedure Loaded; override;
     procedure LoadFromStringInternal(const Text, Name, Dest: ThtString);
     procedure SetActiveColor(const Value: TColor); override;
     procedure SetCharset(const Value: TFontCharset); override;
@@ -205,6 +210,7 @@ type
     procedure SetVisitedColor(const Value: TColor); override;
     procedure SetVisitedMaxCount(const Value: Integer); override;
     procedure ScaleChanged; override;
+    procedure StyleChanged; override;
 {$ifdef DEBUG}
     procedure SetName(const NewName: TComponentName); override;
 {$endif}
@@ -240,6 +246,7 @@ type
     procedure GoFwd;
     procedure LoadFromFile(const Name: ThtString); virtual; abstract;
     procedure LoadFromString(const Text: ThtString; const Name: ThtString = ''; const Dest: ThtString = '');
+    procedure Retext;
     procedure Reload;
     procedure Repaint; override;
     procedure SelectAll;
@@ -290,6 +297,7 @@ type
     property PrintMaxHPages;
     property PrintScale;
     property QuirksMode;
+    property Text: ThtString read FText write SetText;
     property ViewImages: Boolean read FViewImages write SetViewImages default True;
     property VisitedMaxCount;
     //
@@ -335,6 +343,9 @@ type
     property Anchors;
     property Enabled;
     property Height default 150;
+    property ParentColor;
+    property ParentFont;
+    property ParentShowHint;
     property PopupMenu;
     property ShowHint;
     property TabOrder;
@@ -960,10 +971,10 @@ begin
       begin
         EV := PEV^;
       end
-      else if copy(Source, 1, 9) = 'source://' then
+      else if Copy(Source, 1, 9) = 'source://' then
       begin
         EV.NewName := Source;
-        Src := copy(Source, 10, MaxInt);
+        Src := Copy(Source, 10, MaxInt);
         EV.Doc := TBuffer.Create(Src, EV.NewName);
       end
       else
@@ -1021,8 +1032,10 @@ begin
             Ext := htLowerCase(ExtractFileExt(Source));
             if Length(Ext) > 0 then
               Delete(Ext, 1, 1);
-            if copy(Ev.NewName, 1, 9) <> 'source://' then
-              ft := FileExt2DocType(Ext);
+            if Copy(Ev.NewName, 1, 9) <> 'source://' then
+              ft := FileExt2DocType(Ext)
+            else if ft = OtherType then
+              ft := HTMLType;
             Viewer.LoadFromDocument(EV.Doc, Source, ft);
             Viewer.PositionTo(Destination);
           end
@@ -1063,6 +1076,7 @@ var
   Upper, Lower: Boolean;
   EV: EventRec;
   ft: THtmlFileType;
+  Src: ThtString;
 
   procedure DoError;
   begin
@@ -1111,8 +1125,16 @@ begin
               Viewer.LoadFromDocument(EV.Doc, '')
             else
               Viewer.LoadFromFile(EV.NewName, ft)
+          else if Copy(Source, 1, 9) = 'source://' then
+          begin
+            EV.NewName := Source;
+            Src := Copy(Source, 10, MaxInt);
+            EV.Doc := TBuffer.Create(Src, EV.NewName);
+            Viewer.LoadFromDocument(EV.Doc, '');
+          end
           else
             Viewer.LoadFromFile(Source, ft);
+
           if APosition < 0 then
             Viewer.Position := ViewerPosition
           else
@@ -2918,8 +2940,27 @@ begin
   BeginProcessing;
   try
     ProcessList.Clear;
-    CurFrameSet.UnloadFiles;
-    CurFrameSet.ReloadFiles(-1);
+    if CurFrameSet.List.Count = 0 then
+      LoadFromStringInternal( FText, '', '' )
+    else
+    begin
+      CurFrameSet.UnloadFiles;
+      CurFrameSet.ReloadFiles(-1);
+    end;
+    CheckVisitedLinks;
+  finally
+    EndProcessing;
+  end;
+end;
+
+procedure TFVBase.Retext;
+begin
+  BeginProcessing;
+  try
+//    ProcessList.Clear;
+//    CurFrameSet.UnloadFiles;
+//    CurFrameSet.ReloadFiles(-1);
+    Text := Text;
     CheckVisitedLinks;
   finally
     EndProcessing;
@@ -3479,6 +3520,28 @@ begin
   FHistoryIndex := 0;
   if DidSomething and Assigned(OnHistoryChange) then
     OnHistoryChange(Self);
+end;
+
+//-- BG ------------------------------------------------------- 10.12.2022 --
+procedure TFVBase.CMParentColorChanged(var Message: TMessage);
+var
+  I: Integer;
+begin
+  for I := 0 to GetCurViewerCount - 1 do
+    CurViewer[I].ParentColor := ParentColor;
+
+  inherited;
+end;
+
+//-- BG ------------------------------------------------------- 10.12.2022 --
+procedure TFVBase.CMParentFontChanged(var Message: TMessage);
+var
+  I: Integer;
+begin
+  for I := 0 to GetCurViewerCount - 1 do
+    CurViewer[I].ParentFont := ParentFont;
+
+  inherited;
 end;
 
 procedure TFVBase.SetOnProgress(const Handler: ThtProgressEvent);
@@ -4207,6 +4270,12 @@ begin
   end;
 end;
 
+procedure TFVBase.StyleChanged;
+begin
+  inherited;
+  // abstract method and we have nothing to here.
+end;
+
 procedure TFVBase.SetDefBackground(const Value: TColor);
 var
   I: Integer;
@@ -4216,7 +4285,9 @@ begin
     inherited;
     for I := 0 to GetCurViewerCount - 1 do
       CurViewer[I].DefBackground := Value;
-    Color := Value;
+
+    if not ParentColor then
+      Color := Value;
   end;
 end;
 
@@ -4435,6 +4506,14 @@ begin
     AViewer.SelStart := Value;
 end;
 
+procedure TFVBase.SetText(const Value: ThtString);
+begin
+  if csLoading in ComponentState then
+    FText := Value
+  else
+    LoadFromString(Value);
+end;
+
 procedure TFVBase.SetCharset(const Value: TFontCharset);
 var
   I: Integer;
@@ -4562,14 +4641,15 @@ var
   AViewer: THtmlViewer;
 begin
   AViewer := GetActiveViewer;
-  if Assigned(AViewer) and AViewer.CanFocus then
-  try
-    AViewer.SetFocus;
-  except {just in case}
-    inherited SetFocus;
-  end
-  else
-    inherited SetFocus;
+  if Showing then
+    if Assigned(AViewer) and AViewer.Showing and AViewer.CanFocus then
+      try
+        AViewer.SetFocus;
+      except {just in case}
+        inherited SetFocus;
+      end
+    else
+      inherited SetFocus;
 end;
 
 {----------------TFVBase.SetProcessing}
@@ -4716,6 +4796,13 @@ begin
     Result := False;
 end;
 
+procedure TFVBase.Loaded;
+begin
+  inherited;
+
+  if Length(FText) <> 0 then
+    LoadFromString(FText);
+end;
 
 //-- BG ---------------------------------------------------------- 23.09.2010 --
 procedure TFVBase.LoadFromString(const Text, Name, Dest: ThtString);
@@ -4779,6 +4866,7 @@ begin
     AddVisitedLink(S + Dest);
     CheckVisitedLinks;
   finally
+    FText := Text;
     EndProcessing;
   end;
 end;

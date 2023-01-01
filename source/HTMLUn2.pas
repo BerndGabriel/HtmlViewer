@@ -586,18 +586,22 @@ type
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
     FQuirksMode : THtQuirksMode;
+    FInCMParentColorChanged: Integer;
     function StoreFontName: Boolean;
     function StorePreFontName: Boolean;
     function GetPPI: Integer;
 {$ifndef Compiler31_Plus}
     function FormPixelsPerInch: Integer;
 {$endif}
+    procedure CMParentColorChanged(var Message: TMessage); message CM_PARENTCOLORCHANGED;
+    procedure CMParentFontChanged(var Message: TMessage); message CM_PARENTFONTCHANGED;
   protected
 {$ifndef Compiler31_Plus}
     FCurrentPPI: Integer;
     procedure SetPPI(Value: Integer); virtual;
     procedure SetParent(NewParent: TWinControl); override;
 {$endif}
+    procedure StyleChanged; virtual; abstract;
     procedure ScaleChanged; virtual; abstract;
     procedure ChangeScale(M, D: Integer{$ifdef Compiler31_Plus}; isDpiChange: Boolean{$endif}); override;
 {$ifdef LCL}
@@ -683,7 +687,7 @@ type
     property UseQuirksMode: Boolean read GetUseQuirksMode;
     property CodePage: Integer read FCodePage write SetCodePage default 0;
     property CharSet: TFontCharset read FCharSet write SetCharset default DEFAULT_CHARSET;
-    property DefBackground: TColor read FBackground write SetDefBackground default clBtnFace;
+    property DefBackground: TColor read FBackGround write SetDefBackground default clBtnFace;
     property DefFontColor: TColor read FFontColor write SetFontColor default clBtnText;
     property DefFontName: TFontName read FFontName write SetFontName stored StoreFontName;
     property DefFontSize: Integer read FFontSize write SetFontSize default 12;
@@ -3048,6 +3052,8 @@ begin
   LoadCursor := Source.LoadCursor;
   NoSelect := Source.NoSelect;
   ServerRoot := Source.ServerRoot;
+  ParentColor := Source.ParentColor;
+  ParentFont := Source.ParentFont;
 
   MarginHeight := Source.MarginHeight;
   MarginWidth := Source.MarginWidth;
@@ -3096,18 +3102,52 @@ begin
   OnScript := Source.OnScript;
   OnSoundRequest := Source.OnSoundRequest;
 
-  Cursor := Cursor;
-  OnKeyDown := OnKeyDown;
-  OnKeyPress := OnKeyPress;
-  OnKeyUp := OnKeyUp;
-  OnMouseDown := OnMouseDown;
-  OnMouseMove := OnMouseMove;
-  OnMouseUp := OnMouseUp;
+  Cursor := Source.Cursor;
+  ParentColor := Source.ParentColor;
+  ParentFont := Source.ParentFont;
+  ParentShowHint := Source.ParentShowHint;
+  OnKeyDown := Source.OnKeyDown;
+  OnKeyPress := Source.OnKeyPress;
+  OnKeyUp := Source.OnKeyUp;
+  OnMouseDown := Source.OnMouseDown;
+  OnMouseMove := Source.OnMouseMove;
+  OnMouseUp := Source.OnMouseUp;
 
 {$ifdef HasGestures}
   Touch := Source.Touch;
   OnGesture := Source.OnGesture;
 {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 06.12.2022 --
+procedure TViewerBase.CMParentColorChanged(var Message: TMessage);
+var
+  OldColor: TColor;
+  LName: string;
+  LClassName: string;
+begin
+  if csLoading in ComponentState then Exit;
+  LName := Name;
+  lClassName := ClassName;
+
+  OldColor := Color;
+  Inc(FInCMParentColorChanged); // in FPC inherited produces recursive calls to CMParentColorChanged
+  inherited;
+  if FInCMParentColorChanged = 1 then
+  begin
+    if not ParentColor then
+      Color := FBackGround;
+    if OldColor <> Color then
+      StyleChanged;
+  end;
+  Dec(FInCMParentColorChanged);
+end;
+
+procedure TViewerBase.CMParentFontChanged(var Message: TMessage);
+begin
+  if csLoading in ComponentState then Exit;
+  inherited;
+  StyleChanged;
 end;
 
 //-- BG ------------------------------------------------------- 24.07.2022 --
@@ -3194,7 +3234,15 @@ end;
 
 procedure TViewerBase.SetDefBackground(const Value: TColor);
 begin
-  FBackground := Value;
+  if FBackGround <> Value then
+  begin
+    FBackGround := Value;
+    if not ParentColor then
+    begin
+      Color := FBackGround;
+      StyleChanged;
+    end;
+  end;
 end;
 
 procedure TViewerBase.SetOnBitmapRequest(const Value: TGetBitmapEvent);

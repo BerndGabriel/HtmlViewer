@@ -27,6 +27,7 @@ object HTTPForm: THTTPForm
     Height = 194
     CharSet = ANSI_CHARSET
     CodePage = 0
+    DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
@@ -34,12 +35,13 @@ object HTTPForm: THTTPForm
     HistoryIndex = 0
     HistoryMaxCount = 0
     NoSelect = False
-    PrintMarginBottom = 3
-    PrintMarginLeft = 2
-    PrintMarginRight = 2
-    PrintMarginTop = 2
-    PrintScale = 1
+    PrintMarginBottom = 3.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
     QuirksMode = qmDetect
+    Text = 'TFrameBrowser Demo'
     OnBlankWindowRequest = BlankWindowRequest
     OnHistoryChange = FrameBrowserHistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -53,8 +55,12 @@ object HTTPForm: THTTPForm
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
     Align = alClient
+    ParentColor = False
+    ParentFont = False
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
   end
   object CoolBar1: TCoolBar
@@ -429,7 +435,7 @@ object HTTPForm: THTTPForm
     Left = 24
     Top = 120
     Bitmap = {
-      494C01010D0011009C0011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100B00011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

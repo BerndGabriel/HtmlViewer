@@ -199,6 +199,8 @@ type
     procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure ViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out IncludedDocument: TBuffer);
     procedure ViewerScript(Sender: TObject; const Name, ContentType, SRC, Script: string);
+    procedure ViewerImageRequest(Sender: TObject; const SRC: string;
+      var Stream: TStream);
   {$else}
     procedure HotSpotChange(Sender: TObject; const URL: WideString);
     procedure HotSpotClick(Sender: TObject; const URL: WideString; var Handled: Boolean);
@@ -315,11 +317,13 @@ begin
     end;
     Viewer.LoadFromFile(Viewer.HtmlExpandFilename(S));
   end
-  else
-    Viewer.LoadFromResource(HINSTANCE, 'XLeft1', HTMLType);
+//  else
+//    Viewer.LoadFromResource(HINSTANCE, 'XLeft1', HTMLType);
 end;
 
 procedure TForm1.OpenFileClick(Sender: TObject);
+var
+  TheSize: TSize;
 begin
   if Viewer.CurrentFile <> '' then
     OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
@@ -330,6 +334,7 @@ begin
   begin
     Update;
     Viewer.LoadFromFile(OpenDialog.Filename);
+    TheSize := Viewer.FullDisplaySize(Viewer.ClientWidth);
     UpdateCaption;
   end;
 end;
@@ -372,9 +377,7 @@ begin
   if (I <= 2) or (J > 0) then
   begin { apparently the URL is a filename }
     S := URL;
-    K := Pos(' ', S); { look for parameters }
-    if K = 0 then
-      K := Pos('?', S); { could be '?x,y' , etc }
+    K := Pos('?', S);  {look for parameters, could be '?x,y' , etc}
     if K > 0 then
     begin
       Params := Copy(S, K + 1, 255); { save any parameters }
@@ -383,7 +386,7 @@ begin
     else
       Params := '';
     S := (Sender as THTMLViewer).HtmlExpandFilename(S);
-    Ext := UpperCase(ExtractFileExt(S));
+    Ext := htUpperCase(ExtractFileExt(S));
     if Ext = '.WAV' then
     begin
       Handled := True;
@@ -392,24 +395,19 @@ begin
 {$endif}
     end
     else if Ext = '.EXE' then
-    begin
-      Handled := StartProcess(S, Params);
-    end
+      Handled := StartProcess(S, Params)
     else if (Ext = '.MID') or (Ext = '.AVI') then
       Handled := OpenDocument(S);
     { else ignore other extensions }
-    Edit1.Text := URL;
-    Exit;
-  end;
-
-  I := Pos('MAILTO:', uURL) + Pos('HTTP://', uURL) + Pos('HTTPS://', uURL);
-  if I > 0 then
+  end
+  else
   begin
-    Handled := OpenDocument(URL);
-    Exit;
+    I := Pos('MAILTO:', uURL) + Pos('HTTP://', uURL) + Pos('HTTPS://', uURL);
+    if I > 0 then
+      Handled := OpenDocument(URL);
   end;
 
-  Edit1.Text := URL; { other protocall }
+  Edit1.Text := URL; { other protocoll }
 end;
 
 procedure TForm1.ShowImagesClick(Sender: TObject);
@@ -761,6 +759,12 @@ begin
   // MessageDlg(OnClick, mtCustom, [mbOK], 0);
 end;
 
+procedure TForm1.ViewerImageRequest(Sender: TObject; const SRC: string;
+  var Stream: TStream);
+begin
+  //
+end;
+
 procedure TForm1.ViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);
 { OnInclude handler }
 var
@@ -920,7 +924,8 @@ end;
 procedure TForm1.CloseAll;
 begin
   Timer1.Enabled := False;
-  HintWindow.ReleaseHandle;
+  if HintWindow <> nil then
+    HintWindow.ReleaseHandle;
   HintVisible := False;
 end;
 
@@ -1046,7 +1051,7 @@ begin
     Title := Viewer.DocumentTitle
   else if Viewer.URL <> '' then
     Title := Viewer.URL
-  else if Viewer.CurrentFile <> '' then
+  else if (Viewer.CurrentFile <> '') and (Copy(Viewer.CurrentFile, 1, 7) <> 'source:') then
     Title := Viewer.CurrentFile
   else
     Title := '';

@@ -5,9 +5,10 @@ object AboutBox: TAboutBox
   Caption = 'About'
   ClientHeight = 226
   ClientWidth = 374
-  Color = clBtnFace
+  Color = clWindow
   Constraints.MinHeight = 265
   Constraints.MinWidth = 375
+  Ctl3D = False
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
@@ -15,6 +16,9 @@ object AboutBox: TAboutBox
   Font.Style = []
   OldCreateOrder = True
   Position = poOwnerFormCenter
+  DesignSize = (
+    374
+    226)
   PixelsPerInch = 96
   TextHeight = 16
   object BitBtn1: TBitBtn
@@ -30,7 +34,7 @@ object AboutBox: TAboutBox
   object Viewer: THtmlViewer
     Left = 8
     Top = 8
-    Width = 367
+    Width = 358
     Height = 179
     BorderStyle = htNone
     HistoryMaxCount = 0
@@ -42,9 +46,12 @@ object AboutBox: TAboutBox
     PrintMarginTop = 2.000000000000000000
     PrintScale = 1.000000000000000000
     ScrollBars = ssNone
+    Text = ''
     ViewImages = False
     Anchors = [akLeft, akTop, akRight, akBottom]
     Enabled = False
     TabOrder = 1
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
   end
 end

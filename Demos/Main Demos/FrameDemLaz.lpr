@@ -33,18 +33,20 @@ program FrameDemLaz;
 
 uses
   Interfaces,
-  Forms,
+  Forms, HighDPIInit,
   Printer4Lazarus,
   Fontdlg in 'Fontdlg.pas' {FontForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
   Submit in 'Submit.pas' {SubmitForm},
-  FDemUnit in 'FDemUnit.PAS' {Form1};
+  FDemUnit in 'FDemUnit.PAS';
 
 {$R *.res}
 
 begin
+  Application.Title:='';
   Application.Initialize;
+  Application.Scaled:=True;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.

@@ -35,7 +35,7 @@ interface
 
 uses
 {$ifdef LCL}
-  LclIntf, LclType, LMessages, types, FPimage, HtmlMisc,
+  LclIntf, LclType, LclVersion, LMessages, types, FPimage, HtmlMisc,
 {$else}
   Windows,
 {$endif}
@@ -249,6 +249,7 @@ type
     FBase: ThtString;
     FBaseEx: ThtString;
     FBaseTarget: ThtString;
+    FText: ThtString;
     FBorderStyle: THTMLBorderStyle;
     FScrollBars: ThtScrollStyle;
     FOptions: THtmlViewerOptions;
@@ -402,8 +403,10 @@ type
     property HTMLTimer: TTimer read FHTMLTimer;
     property BorderPanel: TPanel read FBorderPanel;
     property PaintPanel: TPaintPanel read FPaintPanel;
+    procedure InitSectionList;
   protected
     procedure ScaleChanged; override;
+    procedure StyleChanged; override;
 {$ifdef LCL}
     procedure SetPPI(Value: Integer); override;
 {$endif}
@@ -539,8 +542,9 @@ type
     procedure LoadTextStrings(Strings: ThtStrings); deprecated; // use LoadFromString() instead.
 {$endif}
     //
-    procedure Reformat;
-    procedure Reload;
+    procedure Reformat; // reformat current text  (e.g. after width changed)
+    procedure Retext;   // reload current text    (e.g. after scale, default font or background color changed)
+    procedure Reload;   // reload current file    (e.g. after file content changed)
     procedure Repaint; override;
     procedure ReplaceImage(const NameID: ThtString; NewImage: TStream);
     procedure ScrollXY(const Delta: TSize);
@@ -688,6 +692,9 @@ type
     property Enabled;
     property Height default 150;
     property Name;
+    property ParentColor;
+    property ParentFont;
+    property ParentShowHint;
     property PopupMenu;
     property ShowHint;
     property TabOrder;
@@ -901,6 +908,7 @@ begin
   FPaintPanel.Parent := FBorderPanel; //Self;
   FPaintPanel.BevelOuter := bvNone;
   FPaintPanel.BevelInner := bvNone;
+  FPaintPanel.Align := alClient; // MV, 20.12.2020: issue 139. paint panel should fill available htmlviewer area
 {$ifndef LCL}
   FPaintPanel.Ctl3D := False;
 {$else}
@@ -988,6 +996,7 @@ begin
 
   if Owner is THtmlFrameBase then
     FFrameOwner := THtmlFrameBase(Owner);
+
   if Source is THtmlViewer then
   begin
     Self.QuirksMode := Viewer.QuirksMode;
@@ -1166,9 +1175,11 @@ begin
   if IsProcessing then
     Exit;
 {$ifdef FPC}
-  // in lazarus 1.4.0 with fpc 2.6.4
-  // htmlviewer will not draw properly if focused
-  RemoveFocus(false);
+  {$if lcl_fullversion < 1050000}
+    // in lazarus 1.4.0 with fpc 2.6.4
+    // htmlviewer will not draw properly if focused
+    RemoveFocus(false);
+  {$ifend}
 {$endif}
   if Filename <> '' then
   begin
@@ -1248,6 +1259,13 @@ end;
 {----------------THtmlViewer.LoadFromString}
 procedure THtmlViewer.LoadFromString(const S: ThtString; const Reference: ThtString; DocType: THtmlFileType);
 begin
+{$ifdef FPC}
+  {$if lcl_fullversion < 1050000}
+    // in lazarus 1.4.0 with fpc 2.6.4
+    // htmlviewer will not draw properly if focused
+    RemoveFocus(false);
+  {$ifend}
+{$endif}
   LoadString(S, Reference, DocType);
 end;
 
@@ -1264,9 +1282,22 @@ end;
 procedure THtmlViewer.LoadFromUrl(const Url: ThtString; DocType: THtmlFileType);
 var
   Scheme, Specific, ResType: ThtString;
+  I, L: Integer;
 begin
   SplitScheme(Url, Scheme, Specific);
-  if Scheme = 'res' then
+  if Scheme = 'source' then // 'source://'
+  begin
+    I := 1;
+    L := Length(Specific);
+    while (I <= L) and (Specific[I] = '/') do
+      Inc(I);
+    if I > 1 then
+      Specific := Copy(Specific, I, L);
+    if DocType = OtherType then
+      DocType := HTMLType;
+    LoadFromString( Specific, '', DocType );
+  end
+  else if Scheme = 'res' then // 'res:///'
   begin
     Specific := HTMLToRes(Url, ResType);
     LoadFromResource(HInstance, Specific, DocType);
@@ -1284,9 +1315,11 @@ begin
   if IsProcessing then
     Exit;
 {$ifdef FPC}
-  // in lazarus 1.4.0 with fpc 2.6.4
-  // htmlviewer will not draw properly if focused
-  RemoveFocus(false);
+  {$if lcl_fullversion < 1050000}
+    // in lazarus 1.4.0 with fpc 2.6.4
+    // htmlviewer will not draw properly if focused
+    RemoveFocus(false);
+  {$ifend}
 {$endif}
   SplitDest(DocName, Name, Dest);
   case DocType of
@@ -1393,6 +1426,8 @@ end;
 procedure THtmlViewer.Loaded;
 begin
   inherited;
+  FPaintPanel.Color := Color; // MV, 20.12.2020: issue 139. paint panel should accept default background color
+
 {$ifdef HasGestures}
   FPaintPanel.Touch := Touch;
   if Assigned(OnGesture) then
@@ -1400,6 +1435,8 @@ begin
   else
     FPaintPanel.OnGesture := HtmlGesture;
 {$endif}
+//  if Length(FText) <> 0 then
+    LoadFromString(FText);
 end;
 
 {----------------THtmlViewer.LoadString}
@@ -1452,9 +1489,11 @@ begin
   if IsProcessing then
     Exit;
 {$ifdef FPC}
-  // in lazarus 1.4.0 with fpc 2.6.4
-  // htmlviewer will not draw properly if focused
-  RemoveFocus(false);
+  {$if lcl_fullversion < 1050000}
+    // in lazarus 1.4.0 with fpc 2.6.4
+    // htmlviewer will not draw properly if focused
+    RemoveFocus(false);
+  {$ifend}
 {$endif}
   if ResourceName <> '' then
   begin
@@ -1592,6 +1631,7 @@ var
 begin
   FScrollWidth := Min(ScrollWidth, MaxHScroll);
   ScrollInfo := GetScrollInfo(ScrollWidth, FMaxVertical);
+  PaintPanel.Align := alNone;
   with ScrollInfo do
   begin
 //    BorderPanel.Visible := BWidth > 0;
@@ -1973,6 +2013,49 @@ begin
     end;
     {Note: Self may not be valid here}
   end;
+end;
+
+//-- BG ------------------------------------------------------- 06.12.2022 --
+// Extracted from THtmlViewer.InitLoad and THtmlViewer.Clear
+procedure THtmlViewer.InitSectionList;
+var
+  LDefFontName: string;
+  LDefFontSize: Integer;
+  LDefFontColor: Integer;
+  LDefBackgroundColor: Integer;
+begin
+  if ParentFont then
+  begin
+    LDefFontName := Font.Name;
+    LDefFontSize := Font.Size;
+    LDefFontColor := Font.Color;
+  end
+  else
+  begin
+    LDefFontName := DefFontName;
+    LDefFontSize := DefFontSize;
+    LDefFontColor := DefFontColor;
+  end;
+
+  if ParentColor then
+  begin
+    LDefBackgroundColor := Color;
+    FPaintPanel.ParentColor := True;
+  end
+  else
+  begin
+    LDefBackgroundColor := DefBackground;
+    FPaintPanel.Color := DefBackground;
+  end;
+
+  FSectionList.SetFonts(
+    htString(LDefFontName), htString(DefPreFontName),
+    LDefFontSize, LDefFontColor,
+    DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor,
+    LDefBackgroundColor,
+    htOverLinksActive in FOptions,
+    not (htNoLinkUnderline in FOptions),
+    CodePage, CharSet, MarginHeight, MarginWidth);
 end;
 
 {----------------THtmlViewer.AddVisitedLink}
@@ -2893,7 +2976,18 @@ end;
 //-- BG ---------------------------------------------------------- 19.07.2017 --
 procedure THtmlViewer.SetText(const Value: ThtString);
 begin
-  LoadFromString(Value);
+  if csLoading in ComponentState then
+    FText := Value
+  else
+  begin
+{$ifdef LCL}
+    FText := Value;
+    FPaintPanel.Color := Color;
+    LoadFromString(Value);
+{$else}
+    LoadFromString(Value);
+{$endif}
+  end;
 end;
 
 procedure THtmlViewer.SetBorderStyle(Value: THTMLBorderStyle);
@@ -3033,11 +3127,12 @@ begin
  HiWord = 0 is top of display}
 end;
 
-//-- BG ------------------------------------------------------- 29.09.2022 --
+//-- BG ---------------------------------------------------------- 29.09.2022 --
 procedure THtmlViewer.ScaleChanged;
 begin
+  inherited;
   try
-    Text := Text;
+    Retext;
   finally
     {$ifdef Linux}
       PaintPanel.Update;
@@ -3362,6 +3457,21 @@ begin
   FImagesInserted.Enabled := False;
 end;
 
+//-- BG ---------------------------------------------------------- 10.12.2022 --
+procedure THtmlViewer.StyleChanged;
+begin
+  inherited;
+  try
+    Retext;
+  finally
+    {$ifdef Linux}
+      PaintPanel.Update;
+    {$else}
+      PaintPanel.Invalidate;
+    {$endif}
+  end;
+end;
+
 function THtmlViewer.GetCursor: TCursor;
 begin
   Result := inherited Cursor;
@@ -3389,7 +3499,7 @@ begin
     FDocument.Position := Pos;
   end
   else
-    Result := '';
+    Result := FText;
 end;
 
 procedure THtmlViewer.SetCursor(Value: TCursor);
@@ -4799,11 +4909,8 @@ begin
   FSectionList.StyleElements := Self.StyleElements;
 {$endif}
   UpdateImageCache;
-  FSectionList.SetFonts(
-    htString(DefFontName), htString(DefPreFontName), DefFontSize, DefFontColor,
-    DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
-    htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
-    CodePage, CharSet, MarginHeight, MarginWidth);
+
+  InitSectionList;
 end;
 
 {----------------THtmlViewer.Clear}
@@ -4827,11 +4934,8 @@ begin
 
   FObjects.Clear;
 
-  FSectionList.SetFonts(
-    htString(DefFontName), htString(DefPreFontName), DefFontSize, DefFontColor,
-    DefHotSpotColor, DefVisitedLinkColor, DefOverLinkColor, DefBackground,
-    htOverLinksActive in FOptions, not (htNoLinkUnderline in FOptions),
-    CodePage, CharSet, MarginHeight, MarginWidth);
+  InitSectionList;
+
   FBase := '';
   FBaseEx := '';
   FBaseTarget := '';
@@ -5284,7 +5388,7 @@ end;
 
 {----------------THtmlViewer.Reload}
 
-procedure THtmlViewer.Reload; {reload the last file}
+procedure THtmlViewer.Reload; {reload the current file}
 var
   Pos: Integer;
 begin
@@ -5296,7 +5400,23 @@ begin
   end;
 end;
 
-{----------------THtmlViewer.GetOurPalette:}
+{----------------THtmlViewer.Retext}
+
+//-- BG ------------------------------------------------------- 10.12.2022 --
+procedure THtmlViewer.Retext; {reload the current text}
+var
+  Pos, Sel, Len: Integer;
+begin
+  Pos := Position;
+  Sel := SelStart;
+  Len := SelLength;
+  Text := Text;
+  Position := Pos;
+  SelStart := Sel;
+  SelLength := Len;
+end;
+
+{----------------THtmlViewer.GetOurPalette}
 
 function THtmlViewer.GetOurPalette: HPalette;
 begin

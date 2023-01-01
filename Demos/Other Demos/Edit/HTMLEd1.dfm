@@ -1,9 +1,9 @@
 object Form1: TForm1
   Left = 496
   Top = 218
-  Width = 708
-  Height = 475
   Caption = 'Form1'
+  ClientHeight = 416
+  ClientWidth = 692
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -21,7 +21,7 @@ object Form1: TForm1
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 700
+    Width = 692
     Height = 41
     Align = alTop
     TabOrder = 0
@@ -59,15 +59,15 @@ object Form1: TForm1
   object Panel: TPanel
     Left = 0
     Top = 41
-    Width = 700
-    Height = 361
+    Width = 692
+    Height = 356
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
     object Splitter: TSplitter
       Left = 0
       Top = 209
-      Width = 700
+      Width = 692
       Height = 5
       Cursor = crVSplit
       Align = alTop
@@ -76,27 +76,29 @@ object Form1: TForm1
     object RichEdit: TRichEdit
       Left = 0
       Top = 0
-      Width = 700
+      Width = 692
       Height = 209
       Align = alTop
       Font.Charset = ANSI_CHARSET
       Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Courier New'
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
       Font.Style = []
+      ParentColor = True
       ParentFont = False
       PlainText = True
       ScrollBars = ssBoth
       TabOrder = 0
       WordWrap = False
+      Zoom = 100
       OnChange = RichEdChange
       OnSelectionChange = RichEditSelectionChange
     end
     object Panel2: TPanel
       Left = 0
       Top = 214
-      Width = 700
-      Height = 147
+      Width = 692
+      Height = 142
       Align = alClient
       BevelOuter = bvLowered
       BevelWidth = 2
@@ -106,33 +108,35 @@ object Form1: TForm1
       object Viewer: THtmlViewer
         Left = 2
         Top = 2
-        Width = 696
-        Height = 143
-        TabOrder = 0
-        Align = alClient
+        Width = 688
+        Height = 138
         BorderStyle = htFocused
-        CharSet = DEFAULT_CHARSET
-        DefBackground = clWindow
+        DefBackground = clInfoBk
         DefFontName = 'Times New Roman'
         DefPreFontName = 'Courier New'
         HistoryMaxCount = 0
         HtOptions = [htShowDummyCaret]
         NoSelect = False
-        PrintMarginBottom = 2
-        PrintMarginLeft = 2
-        PrintMarginRight = 2
-        PrintMarginTop = 2
-        PrintScale = 1
-        OnMouseUp = ViewerMouseUp
+        PrintMarginBottom = 2.000000000000000000
+        PrintMarginLeft = 2.000000000000000000
+        PrintMarginRight = 2.000000000000000000
+        PrintMarginTop = 2.000000000000000000
+        PrintScale = 1.000000000000000000
+        Text = ''
         OnHotSpotClick = ViewerHotSpotClick
         OnHotSpotCovered = ViewerHotSpotCovered
+        Align = alClient
+        TabOrder = 0
+        OnMouseUp = ViewerMouseUp
+        Touch.InteractiveGestures = [igPan]
+        Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
       end
     end
   end
   object Panel3: TPanel
     Left = 0
-    Top = 402
-    Width = 700
+    Top = 397
+    Width = 692
     Height = 19
     Align = alBottom
     Alignment = taLeftJustify

@@ -14,7 +14,7 @@ object AboutBox: TAboutBox
   Font.Height = -13
   Font.Name = 'System'
   Position = poOwnerFormCenter
-  LCLVersion = '1.4.4.0'
+  LCLVersion = '2.2.0.4'
   object BitBtn1: TBitBtn
     Left = 292
     Height = 25
@@ -30,7 +30,7 @@ object AboutBox: TAboutBox
     Left = 8
     Height = 218
     Top = 8
-    Width = 368
+    Width = 360
     BorderStyle = htNone
     HistoryMaxCount = 0
     HtOptions = []

@@ -37,6 +37,7 @@ program FrameDemW;
 {A program to demonstrate the TFrameViewer component}
 
 uses
+  HighDPIInit in '..\..\..\bega\BegaViewer\HighDPIInit.pas',
   Forms,
   FontDlg in 'FontDlg.pas' {FontForm},
   HtmlAbt in 'HtmlAbt.pas' {AboutBox},

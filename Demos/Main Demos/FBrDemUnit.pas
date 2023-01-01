@@ -55,7 +55,7 @@ uses
     {$endif}
   {$ifend}
   {$IF CompilerVersion >= 30}
-      System.ImageList,
+//      System.ImageList,
   {$IFEND}
 {$endif}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
@@ -82,7 +82,7 @@ uses
 {$ifdef UseIcs}
   UrlConIcs,
 {$endif}
-  CacheUnit;
+  CacheUnit, System.ImageList;
 const
   MaxHistories = 15;  {size of History list}
   wm_LoadURL = wm_User+124;
@@ -444,20 +444,6 @@ begin
 
   AStream := TMemoryStream.Create;
 
-  FrameBrowser.HistoryMaxCount := MaxHistories;  {defines size of history list}
-
-  for I := 0 to MaxHistories-1 do
-  begin      {create the MenuItems for the history list}
-    Histories[I] := TMenuItem.Create(HistoryMenuItem);
-    HistoryMenuItem.Insert(I, Histories[I]);
-    with Histories[I] do
-    begin
-      Visible := False;
-      OnClick := HistoryClick;
-      Tag := I;
-    end;
-  end;
-
 {$ifdef LCL}
   // OnClick also handles clicks on dropdown button.
   UrlComboBox.OnEditingDone := UrlComboBox.OnClick;
@@ -485,6 +471,21 @@ begin
   HttpConnector.OnGetAuthorization := ConnectorsGetAuthorization;
   HttpConnector.ProxyPort := '80';
   HttpConnector.CookieFile := Cache + CookieFile;
+
+  // needs HttpConnector <> nil:
+  FrameBrowser.HistoryMaxCount := MaxHistories;  {defines size of history list}
+
+  for I := 0 to MaxHistories-1 do
+  begin      {create the MenuItems for the history list}
+    Histories[I] := TMenuItem.Create(HistoryMenuItem);
+    HistoryMenuItem.Insert(I, Histories[I]);
+    with Histories[I] do
+    begin
+      Visible := False;
+      OnClick := HistoryClick;
+      Tag := I;
+    end;
+  end;
 
   FIniFilename := ChangeFileExt(Application.Exename, '.ini');
   LoadIniFile;
@@ -618,7 +619,7 @@ begin
     Result := Viewer.DocumentTitle
   else if Viewer.URL <> '' then
     Result := Viewer.URL
-  else if Viewer.CurrentFile <> '' then
+  else if (Viewer.CurrentFile <> '') and (Copy(Viewer.CurrentFile, 1, 7) <> 'source:') then
     Result := Viewer.CurrentFile
   else
     Result := '';
@@ -631,7 +632,7 @@ begin
     Result := Viewer.DocumentTitle
   else if Viewer.URL <> '' then
     Result := Viewer.URL
-  else if Viewer.CurrentFile <> '' then
+  else if (Viewer.CurrentFile <> '') and (Copy(Viewer.CurrentFile, 1, 7) <> 'source:') then
     Result := Viewer.CurrentFile
   else
     Result := '';
@@ -639,10 +640,12 @@ end;
 
 procedure THTTPForm.UpdateCaption;
 var
-  Title, Cap: ThtString;
+  Title, Version, Cap: ThtString;
 begin
   Title := DocumentTitle(FrameBrowser);
-  Cap := 'FrameBrowser/' + HttpConnector.Version + ' Demo';
+  if HttpConnector <> nil then
+    Version := HttpConnector.Version;
+  Cap := 'FrameBrowser/' + Version + ' Demo';
   if Title <> '' then
     Cap := Cap + ' - ' + Title;
 {$ifdef LCL}
@@ -995,18 +998,19 @@ begin
   {Enable and caption the appropriate history menuitems}
     HistoryMenuItem.Visible := History.Count > 0;
     for I := 0 to MaxHistories-1 do
-      with Histories[I] do
-        if I < History.Count then
-        Begin
-          Cap := History.Strings[I];  {keep local file name}
-          if TitleHistory[I] <> '' then
-            Cap := Cap + '--' + TitleHistory[I];
-          Caption := copy(Cap, 1, 80);
-          Visible := True;
-          Checked := I = HistoryIndex;
-        end
-        else
-          Histories[I].Visible := False;
+      if Histories[I] <> nil then
+        with Histories[I] do
+          if I < History.Count then
+          begin
+            Cap := History.Strings[I];  {keep local file name}
+            if TitleHistory[I] <> '' then
+              Cap := Cap + '--' + TitleHistory[I];
+            Caption := copy(Cap, 1, 80);
+            Visible := True;
+            Checked := I = HistoryIndex;
+          end
+          else
+            Histories[I].Visible := False;
     UpdateCaption;
     FrameBrowser.SetFocus;
   end;
@@ -1630,11 +1634,14 @@ var
   Viewer: THtmlViewer;
   Url: String;
 begin
+  if csLoading in ComponentState then
+    Exit;
+
   if Sender is THtmlViewer then
   begin
     Exit;
-    Viewer := Sender as THtmlViewer;
-    Url := Viewer.CurrentFile;
+//    Viewer := Sender as THtmlViewer;
+//    Url := Viewer.CurrentFile;
   end
   else if Sender is TFrameBrowser then
   begin
@@ -1653,12 +1660,12 @@ begin
       BackButton.Enabled := FrameBrowser.BackButtonEnabled;
       ReloadButton.Enabled := FrameBrowser.CurrentFile <> '';
       CheckEnableControls;
-    end;
+    end
   end
   else
     Exit;
 
-  if LogForm.LogActive[laDiag] then
+  if (LogForm <> nil) and (LogForm.LogActive[laDiag]) then
     if ProcessingOn then
       LogForm.Log(What[ProcessingOn, Viewer <> nil] + ' Processing: ' + Url)
     else

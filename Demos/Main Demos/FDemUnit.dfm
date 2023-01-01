@@ -1,15 +1,11 @@
 object Form1: TForm1
   Left = 705
   Top = 161
-  Width = 1187
-  Height = 887
   Caption = 'Frame Demo'
+  ClientHeight = 759
+  ClientWidth = 1171
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'System'
-  Font.Style = []
+  ParentFont = True
   Menu = MainMenu
   OldCreateOrder = True
   Position = poScreenCenter
@@ -18,13 +14,14 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   PixelsPerInch = 96
-  TextHeight = 16
+  TextHeight = 13
   object FrameViewer: TFrameViewer
     Left = 0
     Top = 27
-    Width = 1179
-    Height = 782
-    DefBackground = clWindow
+    Width = 1171
+    Height = 705
+    CodePage = 0
+    DefBackground = clInfoBk
     DefFontName = 'Times New Roman'
     DefHotSpotColor = clNavy
     DefPreFontName = 'Courier New'
@@ -33,11 +30,12 @@ object Form1: TForm1
     HistoryMaxCount = 6
     ImageCacheCount = 6
     NoSelect = False
-    PrintMarginBottom = 3
-    PrintMarginLeft = 2
-    PrintMarginRight = 2
-    PrintMarginTop = 2
-    PrintScale = 1
+    PrintMarginBottom = 3.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
+    Text = 'Hello World<pre>Hello Monospace</pre>'
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -51,21 +49,25 @@ object Form1: TForm1
     OnRightClick = FrameViewerRightClick
     OnSoundRequest = SoundRequest
     Align = alClient
+    ParentColor = False
+    ParentFont = False
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnFormSubmit = SubmitEvent
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 1179
+    Width = 1171
     Height = 27
     Align = alTop
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 1
     DesignSize = (
-      1179
+      1171
       27)
     object ReloadButton: TButton
       Left = 2
@@ -103,8 +105,8 @@ object Form1: TForm1
     object Edit2: TEdit
       Left = 200
       Top = 2
-      Width = 985
-      Height = 24
+      Width = 977
+      Height = 21
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 3
     end
@@ -114,14 +116,16 @@ object Form1: TForm1
     Top = 115
     Width = 253
     Height = 30
+    DoubleBuffered = True
     Visible = False
+    ParentDoubleBuffered = False
     TabOrder = 2
     OnNotify = MediaPlayerNotify
   end
   object Panel3: TPanel
     Left = 0
-    Top = 809
-    Width = 1179
+    Top = 732
+    Width = 1171
     Height = 27
     Align = alBottom
     Alignment = taLeftJustify
@@ -129,20 +133,18 @@ object Form1: TForm1
     BorderWidth = 2
     TabOrder = 3
     object ProgressBar: TProgressBar
-      Left = 1027
+      Left = 1019
       Top = 2
       Width = 150
       Height = 23
       Align = alRight
-      Min = 0
-      Max = 100
       TabOrder = 0
       Visible = False
     end
     object InfoPanel: TPanel
       Left = 89
       Top = 2
-      Width = 938
+      Width = 930
       Height = 23
       Align = alClient
       Alignment = taLeftJustify
@@ -161,7 +163,7 @@ object Form1: TForm1
   end
   object MainMenu: TMainMenu
     Left = 360
-    Top = 72
+    Top = 40
     object File1: TMenuItem
       Caption = '&File'
       OnClick = File1Click
@@ -223,9 +225,17 @@ object Form1: TForm1
         Checked = True
         OnClick = ShowimagesClick
       end
-      object Fonts: TMenuItem
+      object mmiDefaultFont: TMenuItem
         Caption = 'Default &Font/Colors'
-        OnClick = FontsClick
+        OnClick = mmiDefaultFontClick
+      end
+      object mmiParentFont: TMenuItem
+        Caption = 'Parent Font'
+        OnClick = mmiParentFontClick
+      end
+      object mmiParentColor: TMenuItem
+        Caption = 'Parent Color'
+        OnClick = mmiParentColorClick
       end
       object mmiQuirksMode: TMenuItem
         Caption = 'Quirks Mode'

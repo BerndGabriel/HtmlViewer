@@ -1,27 +1,26 @@
 object Form1: TForm1
-  Left = 876
+  Left = 617
   Height = 505
-  Top = 178
+  Top = 284
   Width = 762
   Caption = 'Frame Demo'
   ClientHeight = 485
   ClientWidth = 762
   Font.Height = -13
   Font.Name = 'System'
-  Menu = MainMenu1
+  Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  Position = poDesktopCenter
-  LCLVersion = '1.6.0.4'
+  Position = poDefault
+  LCLVersion = '2.2.0.4'
   object FrameViewer: TFrameViewer
     Left = 0
     Height = 431
     Top = 27
     Width = 762
-    CharSet = DEFAULT_CHARSET
     CodePage = 0
-    DefBackground = clWindow
+    DefBackground = 8450288
     DefHotSpotColor = clNavy
     fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintMonochromeBlack, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
     HistoryIndex = 0
@@ -34,6 +33,7 @@ object Form1: TForm1
     PrintMarginTop = 2
     PrintScale = 1
     QuirksMode = qmDetect
+    Text = 'Hello World<pre>Hello Monospace</pre>'
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -47,6 +47,8 @@ object Form1: TForm1
     OnRightClick = FrameViewerRightClick
     OnSoundRequest = SoundRequest
     Align = alClient
+    ParentColor = False
+    ParentFont = False
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
     OnFormSubmit = SubmitEvent
@@ -146,9 +148,9 @@ object Form1: TForm1
       TabOrder = 2
     end
   end
-  object MainMenu1: TMainMenu
-    left = 328
-    top = 72
+  object MainMenu: TMainMenu
+    Left = 328
+    Top = 72
     object File1: TMenuItem
       Caption = '&File'
       OnClick = File1Click
@@ -210,9 +212,17 @@ object Form1: TForm1
         Checked = True
         OnClick = ShowimagesClick
       end
-      object Fonts: TMenuItem
+      object mmiDefaultFont: TMenuItem
         Caption = 'Default &Font/Colors'
-        OnClick = FontsClick
+        OnClick = mmiDefaultFontClick
+      end
+      object mmiParentFont: TMenuItem
+        Caption = 'ParentFont'
+        OnClick = mmiParentFontClick
+      end
+      object mmiParentColor: TMenuItem
+        Caption = 'ParentColor'
+        OnClick = mmiParentColorClick
       end
       object mmiQuirksMode: TMenuItem
         Caption = 'Quirks Mode'
@@ -246,18 +256,18 @@ object Form1: TForm1
     DefaultExt = '.htm'
     Filter = 'html files|*.htm;*.html|all files|*.*'
     Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
-    left = 272
-    top = 72
+    Left = 272
+    Top = 72
   end
   object FindDialog: TFindDialog
     Options = [frDown, frHideWholeWord, frDisableWholeWord]
     OnFind = FindDialogFind
-    left = 384
-    top = 72
+    Left = 384
+    Top = 72
   end
   object PopupMenu: TPopupMenu
-    left = 440
-    top = 72
+    Left = 440
+    Top = 72
     object ViewImage: TMenuItem
       Caption = '&View Image'
       OnClick = ViewImageClick
@@ -278,15 +288,15 @@ object Form1: TForm1
     Enabled = False
     Interval = 200
     OnTimer = Timer1Timer
-    left = 216
-    top = 72
+    Left = 216
+    Top = 72
   end
   object PrinterSetupDialog: TPrinterSetupDialog
-    left = 171
-    top = 144
+    Left = 171
+    Top = 144
   end
   object PrintDialog: TPrintDialog
-    left = 278
-    top = 144
+    Left = 278
+    Top = 144
   end
 end

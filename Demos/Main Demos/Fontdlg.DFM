@@ -1,18 +1,14 @@
 object FontForm: TFontForm
   Left = 622
   Top = 349
-  Width = 498
-  Height = 456
   BorderIcons = [biSystemMenu]
   Caption = 'Edit Default Font and Colors'
+  ClientHeight = 417
+  ClientWidth = 482
   Color = clBtnFace
   Constraints.MinHeight = 455
   Constraints.MinWidth = 355
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   OldCreateOrder = True
   Position = poMainFormCenter
   ShowHint = True
@@ -20,30 +16,30 @@ object FontForm: TFontForm
   OnShow = FormShow
   DesignSize = (
     482
-    418)
+    417)
   PixelsPerInch = 96
-  TextHeight = 16
+  TextHeight = 13
   object FontColorLabel: TLabel
     Left = 8
     Top = 325
-    Width = 61
-    Height = 16
+    Width = 50
+    Height = 13
     Anchors = [akLeft, akBottom]
     Caption = '&Font Color'
   end
   object LinkColorLabel: TLabel
     Left = 8
     Top = 357
-    Width = 59
-    Height = 16
+    Width = 46
+    Height = 13
     Anchors = [akLeft, akBottom]
     Caption = '&Link Color'
   end
   object FontSizeLabel: TLabel
     Left = 8
     Top = 296
-    Width = 55
-    Height = 16
+    Width = 44
+    Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Font &Size'
     FocusControl = FontSizeEdit
@@ -51,16 +47,16 @@ object FontForm: TFontForm
   object FontNameLabel: TLabel
     Left = 8
     Top = 268
-    Width = 66
-    Height = 16
+    Width = 52
+    Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Font &Name'
   end
   object BackgroundColorLabel: TLabel
     Left = 8
     Top = 387
-    Width = 73
-    Height = 16
+    Width = 56
+    Height = 13
     Anchors = [akLeft, akBottom]
     Caption = '&Background'
   end
@@ -126,7 +122,7 @@ object FontForm: TFontForm
     Left = 88
     Top = 292
     Width = 65
-    Height = 26
+    Height = 22
     Anchors = [akLeft, akBottom]
     MaxValue = 24
     MinValue = 6
@@ -145,24 +141,28 @@ object FontForm: TFontForm
     HistoryMaxCount = 0
     HtOptions = []
     NoSelect = True
-    PrintMarginBottom = 2
-    PrintMarginLeft = 2
-    PrintMarginRight = 2
-    PrintMarginTop = 2
-    PrintScale = 1
+    PrintMarginBottom = 2.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
     ScrollBars = ssVertical
+    Text = ''
     ViewImages = False
     Anchors = [akLeft, akTop, akRight, akBottom]
+    ParentColor = False
+    ParentFont = False
     TabOrder = 4
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
   end
   object FontNameComboBox: TComboBox
     Left = 88
     Top = 265
     Width = 386
-    Height = 24
+    Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akRight, akBottom]
-    ItemHeight = 16
     TabOrder = 5
     OnClick = AnythingChanged
   end
@@ -170,11 +170,10 @@ object FontForm: TFontForm
     Left = 88
     Top = 321
     Width = 145
-    Height = 24
+    Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
     DropDownCount = 32
-    ItemHeight = 16
     TabOrder = 6
     OnChange = AnythingChanged
   end
@@ -182,11 +181,10 @@ object FontForm: TFontForm
     Left = 88
     Top = 353
     Width = 145
-    Height = 24
+    Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
     DropDownCount = 32
-    ItemHeight = 16
     TabOrder = 7
     OnChange = AnythingChanged
   end
@@ -194,16 +192,14 @@ object FontForm: TFontForm
     Left = 88
     Top = 385
     Width = 145
-    Height = 24
+    Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
     DropDownCount = 32
-    ItemHeight = 16
     TabOrder = 8
     OnChange = AnythingChanged
   end
   object ColorDialog: TColorDialog
-    Ctl3D = True
     Left = 136
     Top = 176
   end
@@ -213,8 +209,6 @@ object FontForm: TFontForm
     Font.Height = -16
     Font.Name = 'MS Sans Serif'
     Font.Style = []
-    MinFontSize = 0
-    MaxFontSize = 0
     Left = 176
     Top = 176
   end

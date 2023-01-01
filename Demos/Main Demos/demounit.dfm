@@ -1,9 +1,10 @@
 object Form1: TForm1
   Left = 498
   Top = 188
-  Width = 772
-  Height = 561
-  Color = clBtnFace
+  ClientHeight = 502
+  ClientWidth = 756
+  Color = clWindow
+  Ctl3D = False
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
@@ -18,7 +19,7 @@ object Form1: TForm1
   TextHeight = 16
   object Panel1: TPanel
     Left = 0
-    Top = 485
+    Top = 484
     Width = 756
     Height = 18
     Align = alBottom
@@ -32,8 +33,6 @@ object Form1: TForm1
       Width = 149
       Height = 16
       Align = alRight
-      Min = 0
-      Max = 100
       TabOrder = 0
       Visible = False
     end
@@ -50,7 +49,7 @@ object Form1: TForm1
       Left = 246
       Top = 4
       Width = 337
-      Height = 24
+      Height = 22
       TabStop = False
       ReadOnly = True
       TabOrder = 3
@@ -100,7 +99,7 @@ object Form1: TForm1
     Left = 0
     Top = 33
     Width = 756
-    Height = 452
+    Height = 451
     Align = alClient
     BevelInner = bvLowered
     BevelOuter = bvNone
@@ -110,9 +109,9 @@ object Form1: TForm1
       Left = 1
       Top = 1
       Width = 754
-      Height = 450
+      Height = 449
       BorderStyle = htFocused
-      DefBackground = clWindow
+      DefBackground = clInfoBk
       DefFontColor = clWindowText
       DefFontName = 'Times New Roman'
       DefOverLinkColor = clFuchsia
@@ -120,16 +119,18 @@ object Form1: TForm1
       HistoryMaxCount = 6
       ImageCacheCount = 6
       NoSelect = False
-      PrintMarginBottom = 2
-      PrintMarginLeft = 2
-      PrintMarginRight = 2
-      PrintMarginTop = 2
-      PrintScale = 1
+      PrintMarginBottom = 2.000000000000000000
+      PrintMarginLeft = 2.000000000000000000
+      PrintMarginRight = 2.000000000000000000
+      PrintMarginTop = 2.000000000000000000
+      PrintScale = 1.000000000000000000
       QuirksMode = qmDetect
+      Text = 'Hello World<pre>Hello Monospace</pre>'
       OnFormSubmit = SubmitEvent
       OnHistoryChange = HistoryChange
       OnHotSpotClick = HotSpotClick
       OnHotSpotCovered = HotSpotChange
+      OnImageRequest = ViewerImageRequest
       OnInclude = ViewerInclude
       OnMetaRefresh = MetaRefreshEvent
       OnObjectClick = ObjectClick
@@ -141,16 +142,22 @@ object Form1: TForm1
       OnScript = ViewerScript
       OnSoundRequest = SoundRequest
       Align = alClient
+      ParentColor = False
+      ParentFont = False
       TabOrder = 0
       TabStop = True
       OnMouseMove = ViewerMouseMove
+      Touch.InteractiveGestures = [igPan]
+      Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
       object MediaPlayer: TMediaPlayer
         Left = 336
         Top = 40
         Width = 253
         Height = 30
+        DoubleBuffered = True
         Visible = False
-        TabOrder = 3
+        ParentDoubleBuffered = False
+        TabOrder = 1
         OnNotify = MediaPlayerNotify
       end
     end
