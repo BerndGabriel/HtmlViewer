@@ -41,7 +41,7 @@ object HTTPForm: THTTPForm
     PrintMarginTop = 2.000000000000000000
     PrintScale = 1.000000000000000000
     QuirksMode = qmDetect
-    Text = 'TFrameBrowser Demo'
+    Text = ''
     OnBlankWindowRequest = BlankWindowRequest
     OnHistoryChange = FrameBrowserHistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -55,8 +55,6 @@ object HTTPForm: THTTPForm
     OnScript = FrameBrowserScript
     OnViewerClear = ViewerClear
     Align = alClient
-    ParentColor = False
-    ParentFont = False
     TabOrder = 0
     OnMouseMove = FrameBrowserMouseMove
     Touch.InteractiveGestures = [igPan]
@@ -382,13 +380,13 @@ object HTTPForm: THTTPForm
     Filter = 
       'html files|*.htm;*.html|image files|*.bmp;*.gif;*.jpg;*.jpeg;*.p' +
       'ng|text files|*.txt|all files|*.*'
-    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist]
+    Options = [ofHideReadOnly, ofPathMustExist, ofFileMustExist, ofEnableSizing]
     Left = 168
     Top = 56
   end
   object SaveDialog: TSaveDialog
     Filter = 'All Files|*.*'
-    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofNoReadOnlyReturn]
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofNoReadOnlyReturn, ofEnableSizing]
     Left = 96
     Top = 56
   end
@@ -435,7 +433,7 @@ object HTTPForm: THTTPForm
     Left = 24
     Top = 120
     Bitmap = {
-      494C01010D001100B00011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010D001100C00011001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000440000004400000001002000000000004048
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

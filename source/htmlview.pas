@@ -1,7 +1,7 @@
 {
 Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2022 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -61,9 +61,10 @@ uses
   StyleUn;
 
 const
-  wm_FormSubmit = WM_USER + 100;
-  wm_MouseScroll = WM_USER + 102;
-  wm_UrlAction = WM_USER + 103;
+  wm_FormSubmit   = WM_USER + 100;
+  wm_Retext       = WM_USER + 101;
+  wm_MouseScroll  = WM_USER + 102;
+  wm_UrlAction    = WM_USER + 103;
 
 type
   EhtException = class(Exception);
@@ -206,6 +207,8 @@ type
 
   TLoadHistoryItem = procedure(Sender: TObject; HI: ThvHistoryItem; var Handled: Boolean) of object;
 
+  ThtRetextMode = (rtmNone, rtmRetext, rtmNewText);
+
   //TODO -oBG, 16.08.2015: split THtmlViewer into ThtBase and THtmlViewer.
   //
   // ThtBase (or a derivate of it) will be the control that TFVBase will create
@@ -274,6 +277,7 @@ type
     // status info
     FViewerState: THtmlViewerState;
     FHistory: ThvHistory;
+    FMustRetext: ThtRetextMode;
 
     // document related stuff
     FSectionList: ThtDocument;
@@ -388,6 +392,7 @@ type
     procedure WMFormSubmit(var Message: TMessage); message WM_FormSubmit;
     procedure WMGetDlgCode(var Message: TMessage); message WM_GETDLGCODE;
     procedure WMMouseScroll(var Message: TMessage); message WM_MouseScroll;
+    procedure WMRetext(var Message: TMessage); message wm_Retext;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure WMUrlAction(var Message: TMessage); message WM_UrlAction;
     function GetHistoryIndex: Integer;
@@ -541,10 +546,12 @@ type
     procedure LoadTextFromString(const S: ThtString); deprecated; // use LoadFromString() instead.
     procedure LoadTextStrings(Strings: ThtStrings); deprecated; // use LoadFromString() instead.
 {$endif}
-    //
-    procedure Reformat; // reformat current text  (e.g. after width changed)
-    procedure Retext;   // reload current text    (e.g. after scale, default font or background color changed)
-    procedure Reload;   // reload current file    (e.g. after file content changed)
+    // update current content:
+    procedure Reformat; // reformat current text (e.g. after width changed). Calls Layout again.
+    procedure Retext(Value: ThtRetextMode); overload; // send a message to reload current text soon (e.g. after scale, default font or background color changed)
+    procedure Retext; overload; // reload current text according to FMustRetext (e.g set by Retext(Value: ThtRetextMode);
+    procedure Reload;   // reload current file (e.g. after file content changed)
+
     procedure Repaint; override;
     procedure ReplaceImage(const NameID: ThtString; NewImage: TStream);
     procedure ScrollXY(const Delta: TSize);
@@ -692,8 +699,8 @@ type
     property Enabled;
     property Height default 150;
     property Name;
-    property ParentColor;
-    property ParentFont;
+    property ParentColor default False;
+    property ParentFont default False;
     property ParentShowHint;
     property PopupMenu;
     property ShowHint;
@@ -887,6 +894,8 @@ begin
   Include(FViewerState, vsCreating);
   Height := 150;
   Width := 150;
+  ParentColor := False;
+  ParentFont := False;
   SetCursor(crIBeam);
 
   FBorderPanel := TPanel.Create(Self);
@@ -1435,8 +1444,7 @@ begin
   else
     FPaintPanel.OnGesture := HtmlGesture;
 {$endif}
-//  if Length(FText) <> 0 then
-    LoadFromString(FText);
+  LoadFromString(FText);
 end;
 
 {----------------THtmlViewer.LoadString}
@@ -1557,13 +1565,13 @@ begin
       BWidth2 := BorderPanel.Width - BorderPanel.ClientWidth;
       BWidth  := BWidth2 div 2;
     end;
-    HWidth  := Width  - BWidth2;
-    VHeight := Height - BWidth2;
+    HWidth  := Max(Width  - BWidth2, 0);
+    VHeight := Max(Height - BWidth2, 0);
 
     case FScrollBars of
       ssVertical:
       begin
-        VBar := (htShowVScroll in htOptions) or (DocHeight > VHeight);
+        VBar := (HWidth > sbWidth) and ((htShowVScroll in htOptions) or (DocHeight > VHeight));
         if VBar then
           Dec(HWidth, sbWidth);
         HBar := False;
@@ -1572,21 +1580,21 @@ begin
       ssHorizontal:
       begin
         VBar := False;
-        HBar := DocWidth > HWidth;
+        HBar := (VHeight > sbWidth) and (DocWidth > HWidth);
         if HBar then
           Dec(VHeight, sbWidth);
       end;
 
       ssBoth:
       begin
-        VBar := (htShowVScroll in htOptions) or (DocHeight > VHeight);
+        VBar := (HWidth > sbWidth) and ((htShowVScroll in htOptions) or (DocHeight > VHeight));
         if VBar then
           Dec(HWidth, sbWidth);
-        HBar := DocWidth > HWidth;
+        HBar := (VHeight > sbWidth) and (DocWidth > HWidth);
         if HBar then
         begin
           Dec(VHeight, sbWidth);
-          if not VBar and (DocHeight > VHeight) then
+          if not VBar and (HWidth > sbWidth) and (DocHeight > VHeight) then
           begin
             VBar := True;
             Dec(HWidth, sbWidth);
@@ -1636,7 +1644,7 @@ begin
   begin
 //    BorderPanel.Visible := BWidth > 0;
     PaintPanelRect := Rect(BWidth, BWidth, HWidth, VHeight);
-    PaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
+    FPaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
   end;
   if not SameRect(PaintPanelRect, PaintPanel.BoundsRect) then
   begin
@@ -1646,7 +1654,7 @@ begin
     begin
 //      BorderPanel.Visible := BWidth > 0;
       PaintPanelRect := Rect(BWidth, BWidth, HWidth, VHeight);
-      PaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
+      FPaintPanel.SetBounds(BWidth, BWidth, HWidth, VHeight);
     end;
   end;
 
@@ -2976,17 +2984,22 @@ end;
 //-- BG ---------------------------------------------------------- 19.07.2017 --
 procedure THtmlViewer.SetText(const Value: ThtString);
 begin
-  if csLoading in ComponentState then
-    FText := Value
-  else
+//  if csLoading in ComponentState then
+//    FText := Value
+//  else
+//  begin
+//{$ifdef LCL}
+//    FText := Value;
+//    FPaintPanel.Color := Color;
+//    LoadFromString(Value);
+//{$else}
+//    LoadFromString(Value);
+//{$endif}
+//  end;
+  if FText <> Value then
   begin
-{$ifdef LCL}
     FText := Value;
-    FPaintPanel.Color := Color;
-    LoadFromString(Value);
-{$else}
-    LoadFromString(Value);
-{$endif}
+    Retext(rtmNewText);
   end;
 end;
 
@@ -3132,7 +3145,7 @@ procedure THtmlViewer.ScaleChanged;
 begin
   inherited;
   try
-    Retext;
+    Retext(rtmRetext);
   finally
     {$ifdef Linux}
       PaintPanel.Update;
@@ -3462,7 +3475,7 @@ procedure THtmlViewer.StyleChanged;
 begin
   inherited;
   try
-    Retext;
+    Retext(rtmRetext);
   finally
     {$ifdef Linux}
       PaintPanel.Update;
@@ -3567,11 +3580,11 @@ begin
   {Calculate where the tiled background images go}
     CalcBackgroundLocationAndTiling(PRec, ARect, XOff, YOff, IW, IH, BW, BH, X, Y, X2, Y2);
 
-    DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, BW, BH, PaintPanel.Color);
+    DrawBackground(ACanvas, ARect, X, Y, X2, Y2, Image, BW, BH, ThemedColorToRGB( PaintPanel.Color, htseClient ));
   end
   else
   begin {no background image, show color only}
-    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, PaintPanel.Color);
+    DrawBackground(ACanvas, ARect, 0, 0, 0, 0, nil, 0, 0, ThemedColorToRGB( PaintPanel.Color, htseClient ));
   end;
 end;
 
@@ -3597,7 +3610,7 @@ procedure THtmlViewer.DoBackground2(ACanvas: TCanvas; ALeft, ATop, AWidth, AHeig
       OldPal := SelectPalette(DC, ThePalette, False);
       RealizePalette(DC);
 //      ACanvas.Brush.Color := BGColor or PalRelative;
-      ACanvas.Brush.Color := ThemedColor(BGColor {$ifdef has_StyleElements},seClient in StyleElements {$endif}) or PalRelative;
+      ACanvas.Brush.Color := ThemedColorToRGB(BGColor, htseClient) or PalRelative;
       OldBrush := SelectObject(DC, ACanvas.Brush.Handle);
       OldBack := SetBkColor(DC, clWhite);
       OldFore := SetTextColor(DC, clBlack);
@@ -3826,7 +3839,7 @@ var
 
   procedure PaintBackground(Canvas: TCanvas; Top, Bot: Integer);
   begin
-    Canvas.Brush.Color := ThemedColor(CopyList.Background{$ifdef has_StyleElements},seClient in StyleElements {$endif});
+    Canvas.Brush.Color := ThemedColorToRGB(CopyList.Background, htseClient);
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(Rect(0, Top, Width + 1, Bot));
   end;
@@ -5402,18 +5415,40 @@ end;
 
 {----------------THtmlViewer.Retext}
 
+//-- BG ------------------------------------------------------- 01.01.2023 --
+procedure THtmlViewer.Retext(Value: ThtRetextMode);
+begin
+  if FMustRetext < Value then
+    FMustRetext := Value;
+  if HandleAllocated then
+    PostMessage(Handle, wm_Retext, 0, 0)
+end;
+
+//-- BG ------------------------------------------------------- 01.01.2023 --
+procedure THtmlViewer.WMRetext(var Message: TMessage);
+begin
+  Retext;
+end;
+
 //-- BG ------------------------------------------------------- 10.12.2022 --
 procedure THtmlViewer.Retext; {reload the current text}
 var
   Pos, Sel, Len: Integer;
 begin
-  Pos := Position;
-  Sel := SelStart;
-  Len := SelLength;
-  Text := Text;
-  Position := Pos;
-  SelStart := Sel;
-  SelLength := Len;
+  if FMustRetext <> rtmNone then
+  begin
+    Pos := Position;
+    Sel := SelStart;
+    Len := SelLength;
+    case FMustRetext of
+      rtmRetext: LoadFromString(Text);
+      rtmNewText: LoadFromString(FText);
+    end;
+    FMustRetext := rtmNone;
+    Position := Pos;
+    SelStart := Sel;
+    SelLength := Len;
+  end;
 end;
 
 {----------------THtmlViewer.GetOurPalette}
@@ -5834,9 +5869,9 @@ begin
       SelectObject(MemDC, Bm);
       SetWindowOrgEx(MemDC, X, Y, nil);
       Canvas2.Font := Font;
-      Canvas2.Font.Color := ThemedColor(Font.Color{$ifdef has_StyleElements},seFont in StyleElements {$endif});
+      Canvas2.Font.Color := FViewer.ThemedColorToRGB(Font.Color, htseFont);
       Canvas2.Handle := MemDC;
-      Canvas2.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements {$endif});
+      Canvas2.Brush.Color := FViewer.ThemedColorToRGB(Color, htseClient);
       Canvas2.Brush.Style := bsSolid;
       FViewer.DrawBorder;
       FViewer.HTMLPaint(Canvas2, Rect);
@@ -5859,7 +5894,7 @@ begin
 //  of frameviewer, if some images have to be shown
 //  (Happened in FrameDemo on page 'samples' with images pengbrew and pyramids).
   Canvas.Font := Font;
-  Canvas.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements {$endif});
+  Canvas.Brush.Color := FViewer.ThemedColorToRGB(Color, htseClient);
   Canvas.Brush.Style := bsSolid;
   FViewer.DrawBorder;
   FViewer.HTMLPaint(Canvas, Canvas.ClipRect);

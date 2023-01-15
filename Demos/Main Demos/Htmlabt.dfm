@@ -12,7 +12,7 @@ object AboutBox: TAboutBox
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
-  Font.Name = 'System'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = True
   Position = poOwnerFormCenter
@@ -50,6 +50,8 @@ object AboutBox: TAboutBox
     ViewImages = False
     Anchors = [akLeft, akTop, akRight, akBottom]
     Enabled = False
+    ParentColor = True
+    ParentFont = True
     TabOrder = 1
     Touch.InteractiveGestures = [igPan]
     Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]

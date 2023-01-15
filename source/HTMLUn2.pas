@@ -1,7 +1,7 @@
 {
 Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2022 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -586,7 +586,6 @@ type
     FOnScript: TScriptEvent;
     FOnSoundRequest: TSoundType;
     FQuirksMode : THtQuirksMode;
-    FInCMParentColorChanged: Integer;
     function StoreFontName: Boolean;
     function StorePreFontName: Boolean;
     function GetPPI: Integer;
@@ -596,6 +595,7 @@ type
     procedure CMParentColorChanged(var Message: TMessage); message CM_PARENTCOLORCHANGED;
     procedure CMParentFontChanged(var Message: TMessage); message CM_PARENTFONTCHANGED;
   protected
+    FInCMParentColorChanged: Integer;
 {$ifndef Compiler31_Plus}
     FCurrentPPI: Integer;
     procedure SetPPI(Value: Integer); virtual;
@@ -682,6 +682,9 @@ type
 {$ifndef Compiler31_Plus}
     function ParentForm: TCustomForm;
 {$endif}
+    function ThemedColor(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+    function ThemedColorToRGB(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+
     property QuirksMode : THtQuirksMode read FQuirksMode write SetQuirksMode default qmStandards;
     // set to determine if child objects should be in "quirks" mode
     property UseQuirksMode: Boolean read GetUseQuirksMode;
@@ -815,12 +818,12 @@ function ToSpecWidth(AsInteger: Integer; AsString: ThtString): TSpecWidth;
 function CalcClipRect(Canvas: TCanvas; const Rect: TRect; Printing: boolean): TRect;
 procedure GetClippingRgn(Canvas: TCanvas; const ARect: TRect; Printing: boolean; var Rgn, SaveRgn: HRgn);
 
-procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
-procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor
-  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
-  const S: ThtBorderStyleArray; BGround: TColor; Print: boolean
-  {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
+procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);
+procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer;
+  Raised, PrintMonoBlack, Disabled: Boolean; Color: TColor; ThemedColor: ThtThemedColor);
+procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect;
+  const C: ThtColorArray; const S: ThtBorderStyleArray;
+  BGround: TColor; Print: Boolean; ThemedColor: ThtThemedColor);
 
 type
   THtBorderPointArray = array[0..3] of TPoint;
@@ -1280,8 +1283,7 @@ begin
     GetTextExtentPoint32W(DC, P, N, Result); {win95, 98 ME}
 end;
 
-procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor
- {$ifdef has_StyleElements};const AStyleElements : TStyleElements{$endif});
+procedure FillRectWhite(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Color: TColor);
  {$ifdef UseInline} inline; {$endif}
 var
   OldBrushStyle: TBrushStyle;
@@ -1291,8 +1293,7 @@ begin
   begin
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
-    Brush.Color := ThemedColor(Color
-      {$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+    Brush.Color := Color;
     Brush.Style := bsSolid;
     FillRect(Rect(X1, Y1, X2, Y2));
     Brush.Color := OldBrushColor;
@@ -1300,13 +1301,7 @@ begin
   end;
 end;
 
-{$ifdef has_StyleElements}
-procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor;
-  const AStyleElements : TStyleElements);
-{$else}
-procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: boolean; Color: TColor);
-{$endif}
- {$ifdef UseInline} inline; {$endif}
+procedure DrawFormControlRect(Canvas: TCanvas; X1, Y1, X2, Y2: Integer; Raised, PrintMonoBlack, Disabled: Boolean; Color: TColor; ThemedColor: ThtThemedColor);
 {Draws lowered rectangles for form control printing}
 var
   OldStyle: TPenStyle;
@@ -1324,13 +1319,13 @@ begin
     OldStyle := Pen.Style;
     OldBrushStyle := Brush.Style; {save style first}
     OldBrushColor := Brush.Color;
-    if not MonoBlack then 
+    if not MonoBlack then
     begin
       if Disabled then
-        Brush.Color := ThemedColor(clBtnFace{$ifdef has_StyleElements},seClient in AStyleElements{$endif})
+        Brush.Color := ThemedColor(clBtnFace, htseClient)
       else
-        Brush.Color := ThemedColor(color{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
-    end 
+        Brush.Color := ThemedColor(Color, htseClient);
+    end
     else
       Brush.Color := clBlack;//color;
     Brush.Style := bsSolid;
@@ -1348,19 +1343,19 @@ begin
     begin
       Pen.Width := 2;
       if Raised then
-        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in AStyleElements{$endif})//clSilver
+        Pen.Color := ThemedColor(clBtnHighlight, htseClient)
       else
-        Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+        Pen.Color := ThemedColor(clBtnShadow, htseClient);
     end;
     MoveTo(X1, Y2);
     LineTo(X1, Y1);
     LineTo(X2, Y1);
-    if not MonoBlack then 
+    if not MonoBlack then
     begin
       if Raised then
-        Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seClient in AStyleElements{$endif})
+        Pen.Color := ThemedColor(clBtnShadow, htseClient)
       else
-        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in AStyleElements{$endif});//clSilver;
+        Pen.Color := ThemedColor(clBtnHighlight, htseClient);
     end
     else
       Pen.Color := clSilver;
@@ -2729,17 +2724,9 @@ begin
 end;
 
 {----------------DrawBorder}
- {$ifdef has_StyleElements}
-
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
-  const S: ThtBorderStyleArray; BGround: TColor; Print: boolean;
-  const AStyleElements : TStyleElements);
-
- {$else}
-procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect; const C: ThtColorArray;
-  const S: ThtBorderStyleArray; BGround: TColor; Print: boolean);
-  {$endif}
- {$ifdef UseInline} inline; {$endif}
+procedure DrawBorder(Canvas: TCanvas; ORect, IRect: TRect;
+  const C: ThtColorArray; const S: ThtBorderStyleArray;
+  BGround: TColor; Print: Boolean; ThemedColor: ThtThemedColor);
 {Draw the 4 sides of a border.  The sides may be of different styles or colors.
  The side indices, 0,1,2,3, represent left, top, right, bottom.
  ORect is the outside rectangle of the border, IRect the inside Rectangle.
@@ -2854,7 +2841,7 @@ begin
     CombineRgn(OuterRegion, OuterRegion, InnerRegion, RGN_DIFF);
     Brush := TBrush.Create;
     try
-      Brush.Color := ThemedColor(BGround{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
+      Brush.Color := ThemedColor(BGround, htseClient) or PalRelative;
       Brush.Style := bsSolid;
       FillRgn(Canvas.Handle, OuterRegion, Brush.Handle);
     finally
@@ -2872,7 +2859,7 @@ begin
   try
     for I := 0 to 3 do
     begin
-      Color := ThemedColor(C[I]{$ifdef has_StyleElements},seClient in AStyleElements{$endif});
+      Color := ThemedColor(C[I], htseClient);
       case S[I] of
         bssSolid, bssInset, bssOutset:
         begin
@@ -3119,6 +3106,44 @@ begin
 {$endif}
 end;
 
+//-- BG ---------------------------------------------------------- 08.01.2023 --
+function TViewerBase.ThemedColor(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+begin
+  Result := AColor;
+{$ifdef LCL}
+  if Result = clDefault then
+    case AStyleElement of
+      htseClient: Result := GetDefaultColor(dctBrush);
+      htseFont  : Result := GetDefaultColor(dctFont);
+    end;
+{$endif}
+
+{$ifdef UseVCLStyles}
+{$ifdef has_StyleElements}
+  case AStyleElement of
+    htseFont:
+      if (seFont in StyleElements) and TStyleManager.IsCustomStyleActive then
+        Result := StyleServices.GetSystemColor(Result);
+    htseClient:
+      if (seClient in StyleElements) and TStyleManager.IsCustomStyleActive then
+        Result := StyleServices.GetSystemColor(Result);
+    htseBorder:
+      if (seBorder in StyleElements) and TStyleManager.IsCustomStyleActive then
+        Result := StyleServices.GetSystemColor(Result);
+  end;
+{$else}
+    if TStyleManager.IsCustomStyleActive then
+      Result := StyleServices.GetSystemColor(Result);
+{$endif}
+{$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 08.01.2023 --
+function TViewerBase.ThemedColorToRGB(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+begin
+  Result := ColorToRGB( ThemedColor( AColor, AStyleElement ));
+end;
+
 //-- BG ---------------------------------------------------------- 06.12.2022 --
 procedure TViewerBase.CMParentColorChanged(var Message: TMessage);
 var
@@ -3130,14 +3155,14 @@ begin
   LName := Name;
   lClassName := ClassName;
 
-  OldColor := Color;
-  Inc(FInCMParentColorChanged); // in FPC inherited produces recursive calls to CMParentColorChanged
-  inherited;
+  OldColor := ThemedColorToRGB(Color, htseClient);
+  Inc(FInCMParentColorChanged); // in FPC inherited produces recursive calls to CMParentColorChanged when ParentColor changed to tr
   if FInCMParentColorChanged = 1 then
   begin
+    inherited;
     if not ParentColor then
       Color := FBackGround;
-    if OldColor <> Color then
+    if OldColor <> ThemedColorToRGB(Color, htseClient) then
       StyleChanged;
   end;
   Dec(FInCMParentColorChanged);

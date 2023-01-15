@@ -1,7 +1,7 @@
 {
-Version   11.7
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin,
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -482,18 +482,18 @@ begin
     ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
     if FControl.BorderStyle <> bsNone then
     begin
-      DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, Document.PrintMonoBlack, False, FControl.Color {$ifdef has_StyleElements}, Document.StyleElements{$endif});
+      DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, Document.PrintMonoBlack, False, FControl.Color, Document.ThemedColorToRGB);
       Addon := 4;
     end
     else
     begin
-      FillRectWhite(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, FControl.Color {$ifdef has_StyleElements}, Document.StyleElements{$endif});
+      FillRectWhite(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, Document.ThemedColorToRGB(FControl.Color, htseClient));
       Addon := 2;
     end;
 
     Canvas.Brush.Style := bsClear;
     Canvas.Font := FControl.Font;
-    Canvas.Font.Color := ThemedColor( FControl.Font.Color{$ifdef has_StyleElements}, seFont in Document.StyleElements{$endif});
+    Canvas.Font.Color := Document.ThemedColorToRGB( FControl.Font.Color, htseFont);
     H2 := Abs(Canvas.Font.Height);
     SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
     InflateRect(ARect, -Addon, -Addon);
@@ -532,7 +532,7 @@ begin
   with FControl do
   begin
     Canvas.Font := Font;
-    Canvas.Font.Color := ThemedColor( Canvas.Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+    Canvas.Font.Color := Document.ThemedColorToRGB( Canvas.Font.Color, htseFont);
 
     if LBSize = -1 then
       LBSize := Max(1, Min(8, TheOptions.Count));
@@ -721,10 +721,10 @@ begin
   if IsCopy then
   begin
     ARect := Rect(X1, Y1, X1 + FControl.Width, Y1 + FControl.Height);
-    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, Document.PrintMonoBlack, False, FControl.Color{$ifdef has_StyleElements}, Document.StyleElements{$endif});
+    DrawFormControlRect(Canvas, ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, False, Document.PrintMonoBlack, False, FControl.Color, Document.ThemedColorToRGB);
     Canvas.Brush.Style := bsClear;
     Canvas.Font := FControl.Font;
-    Canvas.Font.Color := ThemedColor(FControl.Font.Color{$ifdef has_StyleElements}, seFont in Document.StyleElements{$endif});
+    Canvas.Font.Color := Document.ThemedColorToRGB(FControl.Font.Color, htseFont);
     SetTextAlign(Canvas.Handle, TA_Left + TA_Top);
     InflateRect(ARect, -4, -4);
     Inc(ARect.Bottom, 5);
@@ -931,12 +931,12 @@ begin
     begin
       if BorderStyle <> bsNone then
       begin
-        DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, FControl.Color{$ifdef has_StyleElements}, Document.StyleElements{$endif});
+        DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, FControl.Color, Document.ThemedColorToRGB);
         Addon := 4;
       end
       else
       begin
-        FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, FControl.Color {$ifdef has_StyleElements}, Document.StyleElements{$endif});
+        FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, Document.ThemedColorToRGB(FControl.Color, htseClient));
         Addon := 2;
       end;
       Canvas.Brush.Style := bsClear;
@@ -1319,9 +1319,9 @@ begin
       Canvas.Font := Font;
       H2 := Abs(Font.Height);
       if BorderStyle <> bsNone then
-        DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, Color{$ifdef has_StyleElements},Document.StyleElements{$endif})
+        DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, False, Color, Document.ThemedColorToRGB)
       else
-        FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, Color {$ifdef has_StyleElements}, Document.StyleElements{$endif});
+        FillRectWhite(Canvas, X1, Y1, X1 + Width, Y1 + Height, Document.ThemedColorToRGB( Color, htseClient ));
       SetTextAlign(Canvas.handle, TA_Left);
       SetBkMode(Canvas.Handle, {$ifdef FPC}Lcltype.{$endif}Transparent);
       Canvas.Brush.Style := bsClear;
@@ -1523,8 +1523,8 @@ begin
       begin
         Canvas.Brush.Style := bsClear;
         Canvas.Font := Font;
-        Canvas.Font.Color := ThemedColor(Font.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
-        DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, True, Document.PrintMonoBlack, False, clWhite{$ifdef has_StyleElements},Document.StyleElements{$endif});
+        Canvas.Font.Color := Document.ThemedColorToRGB(Font.Color, htseFont);
+        DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, True, Document.PrintMonoBlack, False, clWhite, Document.ThemedColorToRGB);
         H2 := Canvas.TextHeight('A');
         SetTextAlign(Canvas.handle, TA_Center + TA_Top);
         ThtCanvas(Canvas).htTextRect(Rect(X1, Y1, X1 + Width, Y1 + Height), X1 + (Width div 2), Y1 + (Height - H2) div 2, Value);
@@ -1633,7 +1633,7 @@ begin
   if IsCopy then
     with FControl do
     begin
-      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, Disabled, clWhite{$ifdef has_StyleElements},Document.StyleElements{$endif});
+      DrawFormControlRect(Canvas, X1, Y1, X1 + Width, Y1 + Height, False, Document.PrintMonoBlack, Disabled, clWhite, Document.ThemedColorToRGB);
       if Checked then
         with Canvas do
         begin

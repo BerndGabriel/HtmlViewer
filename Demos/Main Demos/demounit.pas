@@ -1,7 +1,7 @@
 {
-Version   11.9
+Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2018 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -325,8 +325,10 @@ procedure TForm1.OpenFileClick(Sender: TObject);
 var
   TheSize: TSize;
 begin
-  if Viewer.CurrentFile <> '' then
-    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile);
+  if (Viewer.CurrentFile <> '') and (Copy(Viewer.CurrentFile, 1, 9) <> 'source://') then
+    OpenDialog.InitialDir := ExtractFilePath(Viewer.CurrentFile)
+  else
+    OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
   OpenDialog.Filter := 'HTML Files (*.htm,*.html)|*.htm;*.html' +
     '|Text Files (*.txt)|*.txt' + '|All Files (*.*)|*.*';
   OpenDialog.FilterIndex := 1;
@@ -429,7 +431,7 @@ begin
     if CurrentFile <> '' then
       ReLoad
     else
-      Text := Text;
+      ReText;
     Viewer.Realign;
     ReloadButton.Enabled := Text <> '';
     Viewer.SetFocus;
@@ -1051,7 +1053,7 @@ begin
     Title := Viewer.DocumentTitle
   else if Viewer.URL <> '' then
     Title := Viewer.URL
-  else if (Viewer.CurrentFile <> '') and (Copy(Viewer.CurrentFile, 1, 7) <> 'source:') then
+  else if (Viewer.CurrentFile <> '') and (Copy(Viewer.CurrentFile, 1, 9) <> 'source://') then
     Title := Viewer.CurrentFile
   else
     Title := '';

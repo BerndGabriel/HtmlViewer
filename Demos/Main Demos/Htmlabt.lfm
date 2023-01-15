@@ -7,7 +7,7 @@ object AboutBox: TAboutBox
   Caption = 'About'
   ClientHeight = 265
   ClientWidth = 375
-  Color = clBtnFace
+  Color = clWindow
   Constraints.MinHeight = 265
   Constraints.MinWidth = 375
   Font.Color = clWindowText

@@ -1,6 +1,6 @@
 {
-Version   11.9
-Copyright (c) 2008-2018 by HtmlViewer Team
+Version   11.10
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -245,6 +245,14 @@ type
 {$else}
   ThtScrollStyle = TScrollStyle;
 {$endif}
+
+  ThtStyleElement = (
+    htseFont,
+    htseClient,
+    htseBorder
+  );
+
+  ThtThemedColor = function (AColor: TColor; AStyleElement: ThtStyleElement): TColor  of object;
 
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)
@@ -525,9 +533,9 @@ function CanPrintAlpha(ADC : HDC) : Boolean; {$ifdef UseInline} inline; {$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; out VSize : TSize);  {$ifdef UseInline} inline; {$endif}
 
-function ThemedColor(const AColor : TColor
-  {$ifdef has_StyleElements};const AUseThemes : Boolean{$endif}
-  ): TColor; {$ifdef UseInline} inline; {$endif} //overload;
+//function ThemedColor_(const AColor : TColor
+//  {$ifdef has_StyleElements};const AUseThemes : Boolean{$endif}
+//  ): TColor; {$ifdef UseInline} inline; {$endif}
 
 function TextEndsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
 function TextStartsWith(const SubStr, S : ThtString) : Boolean; {$ifdef UseInline} inline; {$endif}
@@ -642,33 +650,32 @@ begin
   end;
 end;
 
-{$ifdef has_StyleElements}
-function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
-begin
-  if AUseThemes and TStyleManager.IsCustomStyleActive then begin
-    Result := StyleServices.GetSystemColor(AColor);
-  end else begin
-    Result := AColor;
-  end;
-  Result := ColorToRGB(Result);
-end;
-{$else}
-
-function ThemedColor(const AColor : TColor): TColor;
- {$ifdef UseInline} inline; {$endif}
-begin
-{$ifdef UseVCLStyles}
-  if TStyleManager.IsCustomStyleActive then begin
-    Result := StyleServices.GetSystemColor(AColor);
-  end else begin
-    Result := AColor;
-  end;
-  Result := ColorToRGB(Result);
-{$else}
-  Result := ColorToRGB(AColor);
-{$endif}
-end;
-{$endif}
+//{$ifdef has_StyleElements}
+//function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
+//begin
+//  if AUseThemes and TStyleManager.IsCustomStyleActive then begin
+//    Result := StyleServices.GetSystemColor(AColor);
+//  end else begin
+//    Result := AColor;
+//  end;
+//  Result := ColorToRGB(Result);
+//end;
+//{$else}
+//function ThemedColor(const AColor : TColor): TColor;
+// {$ifdef UseInline} inline; {$endif}
+//begin
+//{$ifdef UseVCLStyles}
+//  if TStyleManager.IsCustomStyleActive then begin
+//    Result := StyleServices.GetSystemColor(AColor);
+//  end else begin
+//    Result := AColor;
+//  end;
+//  Result := ColorToRGB(Result);
+//{$else}
+//  Result := ColorToRGB(AColor);
+//{$endif}
+//end;
+//{$endif}
 
 procedure GetTSize(DC: HDC; P : PWideChar; N : Integer; out VSize : TSize);
  {$ifdef UseInline} inline; {$endif}
@@ -693,7 +700,7 @@ function Darker(Color : TColor): TColor; {$ifdef UseInline} inline; {$endif}
 var
   Red, Green, Blue: Byte;
 begin
-  Result := ColorToRGB(Color); //ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+  Result := ColorToRGB(Color);
   Red   := DarkerColors[Byte(Result       )];
   Green := DarkerColors[Byte(Result shr  8)];
   Blue  := DarkerColors[Byte(Result shr 16)];
@@ -705,7 +712,7 @@ function Lighter(Color : TColor) : TColor; {$ifdef UseInline} inline; {$endif}
 var
   Red, Green, Blue: Byte;
 begin
-  Result := ColorToRGB(Color); // ThemedColor(Color{$ifdef has_StyleElements},AUseThemes{$endif});
+  Result := ColorToRGB(Color);
   Red   := LighterColors[Byte(Result       )];
   Green := LighterColors[Byte(Result shr  8)];
   Blue  := LighterColors[Byte(Result shr 16)];

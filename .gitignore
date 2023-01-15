@@ -50,3 +50,5 @@ Demos/Other Demos/*/cache
 package/lib
 package/XE2BCB
 *eay*.dll
+/Demos/Compiled Framedemo/Cache
+**.hpp

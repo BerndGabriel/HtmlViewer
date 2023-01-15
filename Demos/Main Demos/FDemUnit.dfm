@@ -5,7 +5,11 @@ object Form1: TForm1
   ClientHeight = 759
   ClientWidth = 1171
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'Tahoma'
+  Font.Style = []
   Menu = MainMenu
   OldCreateOrder = True
   Position = poScreenCenter
@@ -14,17 +18,16 @@ object Form1: TForm1
   OnDestroy = FormDestroy
   OnShow = FormShow
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 16
   object FrameViewer: TFrameViewer
     Left = 0
     Top = 27
     Width = 1171
     Height = 705
     CodePage = 0
-    DefBackground = clInfoBk
-    DefFontName = 'Times New Roman'
+    DefBackground = clWindow
+    DefFontColor = clWindowText
     DefHotSpotColor = clNavy
-    DefPreFontName = 'Courier New'
     fvOptions = [fvMetaRefresh, fvNoBorder, fvOverLinksActive, fvPrintTableBackground, fvPrintBackground, fvShowVScroll]
     HistoryIndex = 0
     HistoryMaxCount = 6
@@ -35,7 +38,7 @@ object Form1: TForm1
     PrintMarginRight = 2.000000000000000000
     PrintMarginTop = 2.000000000000000000
     PrintScale = 1.000000000000000000
-    Text = 'Hello World<pre>Hello Monospace</pre>'
+    Text = 'Hello Serif<pre>Hello Monospace</pre>'
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -49,8 +52,6 @@ object Form1: TForm1
     OnRightClick = FrameViewerRightClick
     OnSoundRequest = SoundRequest
     Align = alClient
-    ParentColor = False
-    ParentFont = False
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
     Touch.InteractiveGestures = [igPan]
@@ -105,8 +106,8 @@ object Form1: TForm1
     object Edit2: TEdit
       Left = 200
       Top = 2
-      Width = 977
-      Height = 21
+      Width = 969
+      Height = 24
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 3
     end

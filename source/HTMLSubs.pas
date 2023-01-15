@@ -1,7 +1,7 @@
 {
 Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2022 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -720,8 +720,7 @@ type
     OpenStart, OpenEnd: Boolean;
     BRect: TRect;
     MargArray: ThtMarginArray;
-    procedure DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: Boolean
-      {$ifdef has_StyleElements}; const AStyleElements : TStyleElements{$endif}); //overload;
+    procedure DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: Boolean; ThemedColorToRGB: ThtThemedColor );
   end;
 
 {$ifdef UseGenerics}
@@ -1765,6 +1764,9 @@ type
     procedure SetFonts(const Name, PreName: ThtString; ASize: Integer;
       AColor, AHotSpot, AVisitedColor, AActiveColor, ABackground: TColor; LnksActive, LinkUnderLine: Boolean;
       ACodePage: TBuffCodePage; ACharSet: TFontCharSet; MarginHeight, MarginWidth: Integer);
+    function ThemedColor(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+    function ThemedColorToRGB(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+
     property UseQuirksMode : Boolean read FUseQuirksMode write FUseQuirksMode;
     property PropStack : THtmlPropStack read FPropStack write FPropStack;
     property Printed: Boolean read FPrinted write SetPrinted;
@@ -3235,8 +3237,7 @@ end;
 {----------------TImageObj.Draw}
 
 //-- BG ---------------------------------------------------------- 12.06.2010 --
-procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);  {$ifdef UseInline} inline; {$endif}
- {$ifdef UseInline} inline; {$endif}
+procedure GetRaisedColors(SectionList: ThtDocument; Canvas: TCanvas; out Light, Dark: TColor);
 var
   White, BlackBorder: Boolean;
 begin
@@ -3249,12 +3250,12 @@ begin
   end
   else
   begin
-    White := SectionList.Printing or (ThemedColor(SectionList.Background{$ifdef has_StyleElements},seFont in SectionList.StyleElements{$endif}) = clWhite);
-    Dark := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seFont in SectionList.StyleElements{$endif} );
+    White := SectionList.Printing or (SectionList.ThemedColorToRGB( SectionList.Background, htseFont) = clWhite);
+    Dark := SectionList.ThemedColorToRGB(clBtnShadow, htseFont);
     if White then
       Light := clSilver
     else
-      Light := ThemedColor(clBtnHighLight{$ifdef has_StyleElements},seFont in SectionList.StyleElements{$endif});
+      Light := SectionList.ThemedColorToRGB(clBtnHighLight, htseFont);
   end;
 end;
 
@@ -3303,11 +3304,13 @@ end;
 procedure RaisedRectColor(Canvas: TCanvas;
   const ORect, IRect: TRect;
   const Colors: ThtColorArray;
-  Styles: ThtBorderStyleArray); overload;
-  {$ifdef UseInline} inline; {$endif}
+  Styles: ThtBorderStyleArray;
+  ThemedColorToRGB: ThtThemedColor
+); overload;
+{$ifdef UseInline} inline; {$endif}
 {Draws colored raised or lowered rectangles for table borders}
 begin
-  DrawBorder(Canvas, ORect, IRect, Colors, Styles, clNone, False{$ifdef has_StyleElements},[seClient,seFont,seBorder]{$endif});
+  DrawBorder(Canvas, ORect, IRect, Colors, Styles, clNone, False, ThemedColorToRGB);
 end;
 
 procedure RaisedRect(SectionList: ThtDocument; Canvas: TCanvas;
@@ -3321,7 +3324,9 @@ begin
     Rect(X1, Y1, X2, Y2),
     Rect(X1 + W, Y1 + W, X2 - W, Y2 - W),
     htRaisedColors(SectionList, Canvas, Raised),
-    htStyles(bssSolid, bssSolid, bssSolid, bssSolid));
+    htStyles(bssSolid, bssSolid, bssSolid, bssSolid),
+    SectionList.ThemedColorToRGB
+  );
 end;
 
 procedure TImageObj.DrawInline(Canvas: TCanvas; X, Y, YBaseline: Integer; FO: TFontObj);
@@ -3337,16 +3342,16 @@ var
 //  SaveStyle: TPenStyle;
   YY: Integer;
 //  ORect, IRect: TRect;
-{$ifdef has_StyleElements}
-  LStyle : TStyleElements;
-{$endif}
+//{$ifdef has_StyleElements}
+//  LStyle : TStyleElements;
+//{$endif}
 begin
   ViewImages := Document.ShowImages;
   Dec(Y, Document.YOff);
   Dec(YBaseLine, Document.YOff);
-{$ifdef has_StyleElements}
-  LStyle := Document.StyleElements;
-{$endif}
+//{$ifdef has_StyleElements}
+//  LStyle := Document.StyleElements;
+//{$endif}
 
   if ViewImages then
     TmpImage := Image
@@ -3426,7 +3431,7 @@ begin
   SetTextAlign(Canvas.Handle, TA_Top);
   if SubstImage and (BorderWidth = 0) then
   begin
-    Canvas.Font.Color := ThemedColor(FO.TheFont.Color{$ifdef has_StyleElements},seFont in LStyle  {$endif});
+    Canvas.Font.Color := Document.ThemedColorToRGB(FO.TheFont.Color, htseFont);
   {calc the offset from the image's base to the alt= text baseline}
     case VertAlign of
       ATop, ANone:
@@ -3456,7 +3461,7 @@ begin
 //      SaveColor := Pen.Color;
 //      SaveWidth := Pen.Width;
 //      SaveStyle := Pen.Style;
-      Font.Color := ThemedColor(FO.TheFont.Color{$ifdef has_StyleElements},seFont in Document.StyleElements {$endif});
+      Font.Color := Document.ThemedColorToRGB(FO.TheFont.Color, htseFont);
 //      Pen.Color := Font.Color;
 //      Pen.Width := BorderSize;
 //      Pen.Style := psInsideFrame;
@@ -4227,7 +4232,7 @@ begin
       MonoBlack := Document.PrintMonoBlack and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and
         (GetDeviceCaps(Handle, PLANES) = 1);
       if Disabled and not MonoBlack then
-        Brush.Color := ThemedColor(clBtnFace {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif})
+        Brush.Color := Document.ThemedColorToRGB(clBtnFace, htseClient)
       else
         Brush.Color := clWhite;
       Pen.Color := clWhite;
@@ -4242,11 +4247,11 @@ begin
       else
       begin
         Pen.Width := 2;
-        Pen.Color := ThemedColor(clBtnShadow {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+        Pen.Color := Document.ThemedColorToRGB(clBtnShadow, htseClient);
       end;
       Arc(X1, Y1, XW, YH, XW, Y1, X1, YH);
       if not MonoBlack then
-        Pen.Color := ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});//clSilver;
+        Pen.Color := Document.ThemedColorToRGB(clBtnHighlight, htseClient);
       Arc(X1, Y1, XW, YH, X1, YH, XW, Y1);
       if Checked then
       begin
@@ -6180,7 +6185,7 @@ begin
         if HasBackgroundColor {and (not Document.Printing or Document.PrintBackground)} then
         begin {color the Padding Region}
           Canvas.Brush.Style := bsSolid;
-          Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]{$ifdef has_StyleElements},seClient in Document.StyleElements{$endif}) or PalRelative;
+          Canvas.Brush.Color := Document.ThemedColorToRGB(MargArray[BackgroundColor], htseClient) or PalRelative;
         end
         else
           Canvas.Brush.Style := bsClear;
@@ -6255,7 +6260,7 @@ begin
       DrawBorder(Canvas, ORect, IRect,
         htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
         htStyles(ThtBorderStyle(MargArray[BorderLeftStyle]), ThtBorderStyle(MargArray[BorderTopStyle]), ThtBorderStyle(MargArray[BorderRightStyle]), ThtBorderStyle(MargArray[BorderBottomStyle])),
-        MargArray[BackgroundColor], Document.Printing{$ifdef has_StyleElements}, Document.StyleElements {$endif})
+        MargArray[BackgroundColor], Document.Printing, Document.ThemedColorToRGB)
 end;
 
 procedure TBlock.DrawTheList(Canvas: TCanvas; const ARect: TRect; ClipWidth, X, XRef, YRef: Integer);
@@ -7166,7 +7171,7 @@ begin
           NStr := IntToStr(ListNumb);
         end;
         Canvas.Font := ListFont;
-        Canvas.Font.Color := ThemedColor(ListFont.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+        Canvas.Font.Color := Document.ThemedColorToRGB(ListFont.Color, htseFont);
         NStr := NStr + '.';
         BkMode := SetBkMode(Canvas.Handle, Transparent);
         TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
@@ -7179,12 +7184,12 @@ begin
         begin
           PenColor := Pen.Color;
           PenStyle := Pen.Style;
-          Pen.Color := ThemedColor(ListFont.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+          Pen.Color := Document.ThemedColorToRGB(ListFont.Color, htseFont);
           Pen.Style := psSolid;
           BrushStyle := Brush.Style;
           BrushColor := Brush.Color;
           Brush.Style := bsSolid;
-          Brush.Color := ThemedColor(ListFont.Color{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+          Brush.Color := Document.ThemedColorToRGB(ListFont.Color, htseFont);
           case ListStyleType of
             lbCircle:
               begin
@@ -7584,6 +7589,39 @@ begin
   YOff := Y;
   YOffChange := True;
   HideControls;
+end;
+
+//-- BG ---------------------------------------------------------- 08.01.2023 --
+function ThtDocument.ThemedColor(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+begin
+  if TheOwner <> nil then
+    Result := TheOwner.ThemedColor( AColor, AStyleElement )
+  else
+  begin
+    Result := AColor;
+{$ifdef has_StyleElements}
+    case AStyleElement of
+      htseFont:
+        if (seFont in StyleElements) and TStyleManager.IsCustomStyleActive then
+          Result := StyleServices.GetSystemColor(Result);
+      htseClient:
+        if (seClient in StyleElements) and TStyleManager.IsCustomStyleActive then
+          Result := StyleServices.GetSystemColor(Result);
+      htseBorder:
+        if (seBorder in StyleElements) and TStyleManager.IsCustomStyleActive then
+          Result := StyleServices.GetSystemColor(Result);
+    end;
+{$endif}
+  end;
+end;
+
+//-- BG ---------------------------------------------------------- 08.01.2023 --
+function ThtDocument.ThemedColorToRGB(AColor: TColor; AStyleElement: ThtStyleElement): TColor;
+begin
+  if TheOwner <> nil then
+    Result := TheOwner.ThemedColorToRGB( AColor, AStyleElement )
+  else
+    Result := ColorToRGB( ThemedColor( AColor, AStyleElement ));
 end;
 
 procedure ThtDocument.Clear;
@@ -8770,7 +8808,7 @@ begin
 
     if Cell.BkGnd then
     begin
-      Canvas.Brush.Color := ThemedColor(Cell.BkColor {$ifdef has_StyleElements},seClient in Cell.Document.StyleElements{$endif}) or PalRelative;
+      Canvas.Brush.Color := Cell.Document.ThemedColorToRGB(Cell.BkColor, htseClient) or PalRelative;
       Canvas.Brush.Style := bsSolid;
       if not Cell.IsCopy or not ImgOK then
       begin
@@ -8865,7 +8903,7 @@ begin
       DrawBorder(Canvas, Rect(BL, BT, BR, BB), Rect(PL, PT, PR, PB),
         htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
         htStyles(ThtBorderStyle(MargArray[BorderLeftStyle]), ThtBorderStyle(MargArray[BorderTopStyle]), ThtBorderStyle(MargArray[BorderRightStyle]), ThtBorderStyle(MargArray[BorderBottomStyle])),
-        MargArray[BackgroundColor], Cell.Document.Printing{$ifdef has_StyleElements},Cell.Document.StyleElements{$endif});
+        MargArray[BackgroundColor], Cell.Document.Printing, Cell.Document.ThemedColorToRGB);
     except
     end;
 end;
@@ -13344,9 +13382,9 @@ var
       ForeColor := Canvas.Font.Color;
       BackColor := FO.TheFont.bgColor;
       if ForeColor <> clNone then
-         ForeColor := ThemedColor(ForeColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+         ForeColor := Document.ThemedColorToRGB(ForeColor, htseFont);
       if BackColor <> clNone then
-         BackColor := ThemedColor(BackColor{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+         BackColor := Document.ThemedColorToRGB(BackColor, htseFont);
       Canvas.Font.Color := ForeColor;
       if J2 = -1 then
       begin {it's an image or panel}
@@ -13760,7 +13798,7 @@ var
         for K := 0 to BorderList.Count - 1 do
         begin
           BR := BorderList[K];
-          BR.DrawTheBorder(Canvas, XOffset, YOffSet, Document.Printing{$ifdef has_StyleElements}, Document.StyleElements{$endif});
+          BR.DrawTheBorder(Canvas, XOffset, YOffSet, Document.Printing, Document.ThemedColorToRGB);
         end;
       DrawTheText(I); {draw the text, etc., in this line}
       Inc(Y, SpaceAfter);
@@ -14987,8 +15025,7 @@ end;
 
 {----------------ThtBorderRec.DrawTheBorder}
 
-procedure ThtBorderRec.DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: Boolean
-      {$ifdef has_StyleElements}; const AStyleElements : TStyleElements {$endif});
+procedure ThtBorderRec.DrawTheBorder(Canvas: TCanvas; XOffset, YOffSet: Integer; Printing: Boolean; ThemedColorToRGB: ThtThemedColor);
 var
   IRect, ORect: TRect;
 begin
@@ -15004,7 +15041,7 @@ begin
 
   if MargArray[BackgroundColor] <> clNone then
   begin
-    Canvas.Brush.Color := ThemedColor(MargArray[BackgroundColor]{$ifdef has_StyleElements},seClient in AStyleElements{$endif}) or PalRelative;
+    Canvas.Brush.Color := ThemedColorToRGB(MargArray[BackgroundColor], htseClient) or PalRelative;
     Canvas.Brush.Style := bsSolid;
     Canvas.FillRect(IRect);
   end;
@@ -15017,7 +15054,7 @@ begin
   DrawBorder(Canvas, ORect, IRect,
     htColors(MargArray[BorderLeftColor], MargArray[BorderTopColor], MargArray[BorderRightColor], MargArray[BorderBottomColor]),
     htStyles(ThtBorderStyle(MargArray[BorderLeftStyle]), ThtBorderStyle(MargArray[BorderTopStyle]), ThtBorderStyle(MargArray[BorderRightStyle]), ThtBorderStyle(MargArray[BorderBottomStyle])),
-    MargArray[BackgroundColor], Printing{$ifdef has_StyleElements},AStyleElements{$endif})
+    MargArray[BackgroundColor], Printing, ThemedColorToRGB)
 end;
 
 {----------------TPage.Draw1}
@@ -15182,7 +15219,7 @@ begin
     begin
       if Color <> clNone then
       begin
-        Brush.Color := ThemedColor(Color {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif}) or $2000000;
+        Brush.Color := Document.ThemedColorToRGB(Color, htseClient) or $2000000;
         Brush.Style := bsSolid;
         FillRect(Rect(X, YT, XR + 1, YT + VSize));
       end
@@ -15191,7 +15228,7 @@ begin
         if UseDefBorder then begin
           with Document do
           begin
-            White := Printing or (ThemedColor(Background{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif}) = clWhite);
+            White := Printing or (Document.ThemedColorToRGB(Background, htseFont) = clWhite);
             BlackBorder := NoShade or (Printing and (GetDeviceCaps(Handle, BITSPIXEL) = 1) and (GetDeviceCaps(Handle, PLANES) = 1));
           end;
           if BlackBorder then
@@ -15199,14 +15236,14 @@ begin
           else if White then
             Pen.Color := clSilver
           else
-            Pen.Color := ThemedColor(clBtnHighLight {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+            Pen.Color := Document.ThemedColorToRGB(clBtnHighLight, htseClient);
           MoveTo(XR, YT);
           LineTo(XR, YT + VSize - 1);
           LineTo(X, YT + VSize - 1);
           if BlackBorder then
             Pen.Color := clBlack
           else
-            Pen.Color := ThemedColor(clBtnShadow{$ifdef has_StyleElements},seFont in Document.StyleElements{$endif});
+            Pen.Color := Document.ThemedColorToRGB(clBtnShadow, htseFont);
           LineTo(X, YT);
           LineTo(XR, YT);
         end;
@@ -16217,8 +16254,8 @@ begin
     OldBrushStyle := Canvas.Brush.Style; {save style first}
     OldBrushColor := Canvas.Brush.Color;
     OldPenColor := Canvas.Pen.Color;
-    Canvas.Pen.Color := ThemedColor(FO.TheFont.Color {$ifdef has_StyleElements},seFont in Document.StyleElements{$endif} );
-    Canvas.Brush.Color := ThemedColor(BackgroundColor {$ifdef has_StyleElements},seClient in Document.StyleElements{$endif});
+    Canvas.Pen.Color := Document.ThemedColorToRGB(FO.TheFont.Color, htseFont);
+    Canvas.Brush.Color := Document.ThemedColorToRGB(BackgroundColor, htseClient);
     Canvas.Brush.Style := bsSolid;
     try
       // paint a rectangular placeholder

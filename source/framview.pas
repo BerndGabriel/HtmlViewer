@@ -1,7 +1,7 @@
 {
 Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2022 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -343,8 +343,8 @@ type
     property Anchors;
     property Enabled;
     property Height default 150;
-    property ParentColor;
-    property ParentFont;
+    property ParentColor default False;
+    property ParentFont default False;
     property ParentShowHint;
     property PopupMenu;
     property ShowHint;
@@ -2661,6 +2661,8 @@ begin
   inherited Create(AOwner);
   Height := 150;
   Width := 150;
+  ParentColor := False;
+  ParentFont := False;
   ProcessList := TList.Create;
   FLinkAttributes := ThtStringList.Create;
   FViewImages := True;
@@ -3527,8 +3529,9 @@ procedure TFVBase.CMParentColorChanged(var Message: TMessage);
 var
   I: Integer;
 begin
-  for I := 0 to GetCurViewerCount - 1 do
-    CurViewer[I].ParentColor := ParentColor;
+  if FInCMParentColorChanged = 0 then // in FPC inherited produces recursive calls to CMParentColorChanged when ParentColor changed to tr
+    for I := 0 to GetCurViewerCount - 1 do
+      CurViewer[I].ParentColor := ParentColor;
 
   inherited;
 end;
