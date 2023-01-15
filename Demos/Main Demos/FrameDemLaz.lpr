@@ -33,7 +33,7 @@ program FrameDemLaz;
 
 uses
   Interfaces,
-  Forms, HighDPIInit,
+  Forms, {HighDPIInit,}
   Printer4Lazarus,
   Fontdlg in 'Fontdlg.pas' {FontForm},
   Htmlabt in 'Htmlabt.pas' {AboutBox},
