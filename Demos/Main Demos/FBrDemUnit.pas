@@ -1201,16 +1201,12 @@ procedure THTTPForm.wmDropFiles(var Message: TMessage);
 {handles dragging of file into browser window}
 var
   S: string;
-  Count: integer;
 begin
-  Count := DragQueryFile(Message.WParam, 0, @S[1], 200);
-  SetLength(S, Count);
+  SetLength(S, 1024);
+  SetLength(S, DragQueryFile(Message.WParam, 0, @S[1], 1024));
   DragFinish(Message.WParam);
-  if Count >0 then
-  begin
-    LoadURL('file:///'+DosToHTMLNoSharp(S));
-    CurrentLocalFile := FrameBrowser.CurrentFile;
-  end;
+  LoadURL('file:///'+DosToHTMLNoSharp(S));
+  CurrentLocalFile := FrameBrowser.CurrentFile;
   Message.Result := 0;
 end;
 {$endif}

@@ -3,6 +3,7 @@ object Form1: TForm1
   Height = 505
   Top = 284
   Width = 762
+  AllowDropFiles = True
   Caption = 'Frame Demo'
   ClientHeight = 485
   ClientWidth = 762
@@ -11,6 +12,7 @@ object Form1: TForm1
   Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnDropFiles = FormDropFiles
   OnShow = FormShow
   Position = poDefault
   LCLVersion = '2.2.0.4'

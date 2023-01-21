@@ -158,6 +158,7 @@ type
     procedure File1Click(Sender: TObject);
     procedure Find1Click(Sender: TObject);
     procedure FindDialogFind(Sender: TObject);
+    procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
     procedure mmiDefaultFontClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -678,6 +679,12 @@ begin
     FrameViewer.LoadFromFile(S);
 {$endif}
   Message.Result := 0;
+end;
+
+procedure TForm1.FormDropFiles(Sender: TObject; const FileNames: array of string);
+begin
+  // Dropping File in LCL
+  FrameViewer.LoadFromFile(FileNames[0]);
 end;
 
 procedure TForm1.CopyImagetoClipboardClick(Sender: TObject);
