@@ -6,7 +6,8 @@ Contents file=HtmlView.hhc
 Default topic=html\contents.htm
 Display compile progress=Yes
 Full-text search=Yes
-Language=0x409 Englisch (USA)
+Index file=C:\v50\pascal\HtmlViewer\HtmlHelp\HTMLVIEW.hhk
+Language=0x409 Englisch (Vereinigte Staaten)
 Title=THtmlViewer Components
 
 
@@ -41,7 +42,6 @@ html\defprefontname_property.htm
 html\defvisitedlinkcolor_property.htm
 html\displaypostoxy_method.htm
 html\dither_property.htm
-html\documentsource_property.htm
 html\dostohtml_function.htm
 html\event_thtmlvieweronhotspotclick.htm
 html\event_thtmlvieweronhotspotcovered.htm
@@ -135,6 +135,8 @@ html\onstringsrequest_event.htm
 html\onviewerclear_event.htm
 html\openprint__abortprint__and_closeprint_methods.htm
 html\palette_property.htm
+html\parentcolor_property.htm
+html\parentfont_property.htm
 html\peekchar_tbuffer_method.htm
 html\position_tbuffer_property.htm
 html\positionto_method.htm
@@ -169,13 +171,13 @@ html\tframebrowser_properties.htm
 html\tframeviewer_component.htm
 html\tframeviewer_events.htm
 html\tframeviewer_methods.htm
-html\tframeviewerproperties.htm
+html\tframeviewer_properties.htm
 html\tfreelist.htm
 html\things_you_should_know.htm
 html\thtmlviewer_component.htm
 html\thtmlviewer_events.htm
 html\thtmlviewer_methods.htm
-html\thtmlviewerproperties.htm
+html\thtmlviewer_properties.htm
 html\titleattr_property.htm
 html\titlehistory_property.htm
 html\type_tbuffcodepage.htm
@@ -234,6 +236,11 @@ html\xytodisplaypos_method.htm
 images\smallcheck.gif
 images\v114.png
 images\v115.png
+images\v116.png
+images\v117.png
+images\v118.png
+images\v119.png
+images\v1110.png
 images\v945.png
 
 [ALIAS]
