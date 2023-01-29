@@ -1,7 +1,7 @@
 {
 Version   11.10
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2022 by HtmlViewer Team
+Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -143,20 +143,22 @@ end;
 {----------------TMyFont.Assign}
 
 procedure ThtFont.Assign(Source: TPersistent);
+var
+  SourceFont: ThtFont absolute Source;
 begin
   if Source is ThtFont then
   begin
-    PixelsPerInch := ThtFont(Source).PixelsPerInch;
-    bgColor := ThtFont(Source).bgColor;
-    tmHeight := ThtFont(Source).tmHeight;
-    tmDescent := ThtFont(Source).tmDescent;
-    tmExternalLeading := ThtFont(Source).tmExternalLeading;
-    tmAveCharWidth := ThtFont(Source).tmAveCharWidth;
-    tmMaxCharWidth := ThtFont(Source).tmMaxCharWidth;
-    tmCharset := ThtFont(Source).tmCharset;
-    CharExtra := ThtFont(Source).CharExtra;
-    EmSize := ThtFont(Source).EmSize;
-    ExSize := ThtFont(Source).ExSize;
+    PixelsPerInch := SourceFont.PixelsPerInch;
+    bgColor := SourceFont.bgColor;
+    tmHeight := SourceFont.tmHeight;
+    tmDescent := SourceFont.tmDescent;
+    tmExternalLeading := SourceFont.tmExternalLeading;
+    tmAveCharWidth := SourceFont.tmAveCharWidth;
+    tmMaxCharWidth := SourceFont.tmMaxCharWidth;
+    tmCharset := SourceFont.tmCharset;
+    CharExtra := SourceFont.CharExtra;
+    EmSize := SourceFont.EmSize;
+    ExSize := SourceFont.ExSize;
   end;
   inherited Assign(Source);
 end;

@@ -1,6 +1,6 @@
 {
-HtmlViewer Version 11.7
-Copyright (c) 2010-2016 by Bernd Gabriel
+HtmlViewer Version 11.10
+Copyright (c) 2010-2023 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -99,7 +99,7 @@ type
   // Although loading files via ThtStringList.LoadFromFile(FileName) produces WideChars,
   // these WideChars may not be coded correctly, if the file is not a unicode file.
   // For those cases you can apply a CodePage to the TBuffString versions of Convert()/Create().
-  // Or you can used the PByte versions with the InitialCodePage parameters and set InitialCodePage to CP_UTF16LE.
+  // Or you can use the PByte versions with the InitialCodePage parameters and set InitialCodePage to CP_UTF16LE.
   //
   // Avoid passing such raw ThtStringList.Text to HtmlViewer.
   // HtmlViewer assumes correct unicode in ThtString.

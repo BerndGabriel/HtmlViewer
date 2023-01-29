@@ -1277,9 +1277,6 @@ function GetTextExtent(DC: HDC; P: PWideChar; N: Integer): TSize;
 var
   Dummy: Integer;
 begin
-  if not IsWin32Platform then
-    GetTextExtentExPointW(DC, P, N, 0, @Dummy, nil, Result)
-  else
     GetTextExtentPoint32W(DC, P, N, Result); {win95, 98 ME}
 end;
 

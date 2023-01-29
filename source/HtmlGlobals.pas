@@ -297,6 +297,7 @@ const
   FfChar      = ThtChar(#12);
   CrChar      = ThtChar(#13);
   SpcChar     = ThtChar(' ');
+  NbSpcChar   = ThtChar(#160);  // Unbreakable Space, Unicode value for Html entity &nbsp;
   DotChar     = ThtChar('.');
   LessChar    = ThtChar('<');
   MinusChar   = ThtChar('-');
@@ -726,7 +727,7 @@ var
 begin
   Result := 0;
   for I := 0 to ACount - 2 do {-2 so as not to count end spaces}
-    if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
+    if ((PStart + I)^ = SpcChar) or ((PStart + I)^ = NbSpcChar) then
       Inc(Result);
 end;
 
