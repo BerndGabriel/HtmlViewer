@@ -40,6 +40,7 @@ uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
+  Types,
   LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc,
 {$else}
   Windows, ShellAPI, MPlayer,
@@ -155,6 +156,7 @@ type
     procedure FontsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
     procedure FormShow(Sender: TObject);
     procedure FwdBackClick(Sender: TObject);
     procedure HistoryChange(Sender: TObject);
@@ -199,8 +201,6 @@ type
     procedure SubmitEvent(Sender: TObject; Const AnAction, Target, EncType, Method: String; Results: TStringList);
     procedure ViewerInclude(Sender: TObject; const Command: String; Params: TStrings; out IncludedDocument: TBuffer);
     procedure ViewerScript(Sender: TObject; const Name, ContentType, SRC, Script: string);
-    procedure ViewerImageRequest(Sender: TObject; const SRC: string;
-      var Stream: TStream);
   {$else}
     procedure HotSpotChange(Sender: TObject; const URL: WideString);
     procedure HotSpotClick(Sender: TObject; const URL: WideString; var Handled: Boolean);
@@ -662,6 +662,12 @@ begin
   Message.Result := 0;
 end;
 
+procedure TForm1.FormDropFiles(Sender: TObject; const FileNames: array of string);
+begin
+  // Dropping File in LCL
+  Viewer.LoadFromFile(FileNames[0]);
+end;
+
 procedure TForm1.MediaPlayerNotify(Sender: TObject);
 begin
 {$ifndef LCL}
@@ -759,12 +765,6 @@ begin
         Free;
       end;
   // MessageDlg(OnClick, mtCustom, [mbOK], 0);
-end;
-
-procedure TForm1.ViewerImageRequest(Sender: TObject; const SRC: string;
-  var Stream: TStream);
-begin
-  //
 end;
 
 procedure TForm1.ViewerInclude(Sender: TObject; const Command: ThtString; Params: ThtStrings; out IncludedDocument: TBuffer);

@@ -3529,7 +3529,7 @@ procedure TFVBase.CMParentColorChanged(var Message: TMessage);
 var
   I: Integer;
 begin
-  if FInCMParentColorChanged = 0 then // in FPC inherited produces recursive calls to CMParentColorChanged when ParentColor changed to tr
+  if FInCMParentColorChanged = 0 then // in FPC inherited produces recursive calls to CMParentColorChanged when ParentColor changed to true
     for I := 0 to GetCurViewerCount - 1 do
       CurViewer[I].ParentColor := ParentColor;
 

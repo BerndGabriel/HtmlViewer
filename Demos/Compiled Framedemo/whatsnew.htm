@@ -23,17 +23,20 @@
 <h4 class="heading">Version 11.10</h4>
 <h5>Added</h5>
 <ul>
-  <li>Lazarus 2.2 Support
+  <li>Lazarus 2.2 Support (Windows, Linux)
   <li>RAD Studio 11 Alexandria Support
+  <li>Properties ParentColor and ParentFont.
   <li>unit HtmlPrinter.pas containing ThtPrinter (moved from vwPrint.pas) and ThtPagePrinter (extracted from TMetaFilePrinter as base class).
+  <li>THtmlViewer.Load()/THtmlViewer.LoadFromUrl()/TfvFrame.LoadFiles()/TfvFrame.ReloadFiles() accept scheme 'source://' followed by HTML text.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/156">156</a>: Feature request - HandCursor (or LinkCursor).
   <ul>
     <li>Added to htmlcons.inc: $define UseHandCursor
   </ul>
-  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/312">312</a>: DPI scaling THtmlViewer
 </ul>
 <h5>Enhanced</h5>
 <ul>
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/255">255</a>: DPI inconsistency
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/312">312</a>: DPI scaling THtmlViewer  
 </ul>                                                                            
 <h5>Fixed</h5>                                                                   
 <ul>
@@ -41,6 +44,7 @@
   <li>Function TSection.FindCountThatFits() seems to freeze when checking very long strings with some non unicode chars.
   <li>Crash when Document.IDNameList tries to delete an already deleted image again.
   <li>memory leak THtmlViewer.FObjects.
+  <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/139">139</a>: Incorrect drawing of THtmlViewer at design time in Lazarus.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/268">268</a>: Image-Rendering unexpected between 11.6 and 11.9.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/272">272</a>: Line-Height stops Vertical-Align from working.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/286">286</a>: Width of 100% in table column works wrong and content is passed into the neighbouring cell.
@@ -50,7 +54,7 @@
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/304">304</a>: Crash when hitting RETURN on a selected link.
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/305">305</a>: TObjectList problem.
     <ul>
-	   <li> In Sydney is no TObjectList.
+	   <li> Sydney has no classic TObjectList.
 		<li> Using generic TObjectList<> instead.
 	 </ul>
   <li><a href="http://github.com/BerndGabriel/HtmlViewer/issues/306">306</a>: Center Tables not rendered.

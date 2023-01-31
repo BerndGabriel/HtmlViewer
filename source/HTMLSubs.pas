@@ -1857,7 +1857,6 @@ uses
 {$endif}
   Htmlsbs1;
 
-
 //-- BG ---------------------------------------------------------- 14.01.2012 --
 function Sum(const Arr: TIntArray; StartIndex, EndIndex: Integer): Integer; overload;
  {$ifdef UseInline} inline; {$endif}
@@ -12636,7 +12635,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       begin
         Result := 0;
         for I := 0 to NN - 2 do {-2 so as not to count end spaces}
-          if ((PStart + I)^ = ' ') or ((PStart + I)^ = #160) then
+          if ((PStart + I)^ = SpcChar) or ((PStart + I)^ = NbSpcChar) then
             Inc(Result);
       end;
 
@@ -13300,6 +13299,8 @@ var
     Start: PWideChar;
     Cnt, Descent: Integer;
     St: ThtString;
+    Dx: array of Integer;
+    pDx: PInteger;
 
     function AddHyphen(P: PWideChar; N: Integer): ThtString;
     var
@@ -13309,6 +13310,69 @@ var
       for I := 1 to N do
         Result[I] := P[I - 1];
       Result[N + 1] := ThtChar('-');
+    end;
+
+    function CharacterJustification(P: PWideChar; N: Integer): Integer;
+    var
+      Fit: Integer;
+      Size: TSize;
+      Ratio: Double;
+      Width: Integer;
+      Offset: Integer;
+      Extra: Integer;
+      Spaces: Integer;
+      Inserted: Integer;
+      PEnd: PWideChar;
+    begin
+      if (LR.Spaces = 0) or (LR.Extra = 0) then
+      begin
+        pDx := nil;
+        // TextExtent:
+        Result := GetTextExtent(Canvas.Handle, P, N).cx;
+      end
+      else
+      begin
+        SetLength(Dx, N);
+        pDx := @Dx[0];
+        GetTextExtentExPointW(Canvas.Handle, P, N, LR.DrawWidth, @Fit, pDx, Size);
+
+        // pDx, resp Dx contants the width of Fit partial strings. Dx[0] width of P[0], Dx[1] width of P[0] and P[1], ...
+        // To justify output in ExtTextOut it needs offsets from one character to the next one: Dx[0] is offset from P[0] to P[1], ...
+        Width := 0;
+        Spaces := 0;
+        Inserted := 0;
+        Ratio := LR.Extra / LR.Spaces;
+        PEnd := @P[N];
+        while P <> PEnd do
+        begin
+          Offset := pDx^ - Width; // remove length of previous partial string
+
+          // insert additional pixels at spaces
+          case P^ of
+            SpcChar,
+            NbSpcChar:
+            begin
+              Inc(Spaces);
+
+              // add rounded number of pixels:
+              Extra := Floor(Spaces * Ratio + 1E-6) - Inserted;
+              Inc(Inserted, Extra);
+              Inc(Offset, Extra);
+            end;
+          end;
+
+          Width := pDx^;
+          pDx^ := Offset;
+          Inc(pDx);
+          Inc(P);
+        end;
+
+        // Reset pDx for ExtTextOut().
+        pDx := @Dx[0];
+
+        // TextExtent:
+        Result := Size.cx + Inserted;
+      end;
     end;
 
     function ChkInversion(Start: PWideChar; out Count: Integer): Boolean;
@@ -13687,31 +13751,28 @@ var
           end
           else
           begin
-            if LR.Spaces = 0 then
-              SetTextJustification(Canvas.Handle, 0, 0)
-            else
-              SetTextJustification(Canvas.Handle, LR.Extra, LR.Spaces);
+            SetTextJustification(Canvas.Handle, 0, 0);
             if not IsWin95 then {use TextOutW}
             begin
               if (Cnt - I <= 0) and LR.Shy then
               begin
                 St := AddHyphen(Start, Tmp);
-                TextOutW(Canvas.Handle, CPx, CPy, PWideChar(St), Length(St));
-                CP1x := CPx + GetTextExtent(Canvas.Handle, PWideChar(St), Length(St)).cx;
+                CP1x := CPx + CharacterJustification(PWideChar(St), Length(St));
+                ExtTextOutW(Canvas.Handle, CPx, CPy, 0, nil, PWideChar(St), Length(St), pDx);
               end
               else
               begin
-                TextOutW(Canvas.Handle, CPx, CPy, Start, Tmp);
-                CP1x := CPx + GetTextExtent(Canvas.Handle, Start, Tmp).cx;
+                CP1x := CPx + CharacterJustification(Start, Tmp);
+                ExtTextOutW(Canvas.Handle, CPx, CPy, 0, nil, Start, Tmp, pDx);
               end
             end
             else
             begin {Win95}
             {Win95 has bug which extends text underline for proportional font in TextOutW.
              Use clipping to clip the extra underline.}
-              CP1x := CPx + GetTextExtent(Canvas.Handle, Start, Tmp).cx;
+              CP1x := CPx + CharacterJustification(Start, Tmp);
               ARect := Rect(CPx, Y - LR.LineHt - LR.SpaceBefore - YOffset, CP1x, Y - YOffset + 1);
-              ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil)
+              ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, pDx);
             end;
           end;
           Document.Printed := True;

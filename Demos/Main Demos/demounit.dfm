@@ -122,7 +122,6 @@ object Form1: TForm1
     OnHistoryChange = HistoryChange
     OnHotSpotClick = HotSpotClick
     OnHotSpotCovered = HotSpotChange
-    OnImageRequest = ViewerImageRequest
     OnInclude = ViewerInclude
     OnMetaRefresh = MetaRefreshEvent
     OnObjectClick = ObjectClick
