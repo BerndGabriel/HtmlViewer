@@ -36,7 +36,7 @@ uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
 {$ifdef LCL}
-  LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc,
+  LclIntf, LclType, LMessages, PrintersDlgs, FPImage, HtmlMisc,
 {$else}
   Windows, ShellAPI, MPlayer,
   {$if CompilerVersion >= 15}
@@ -273,7 +273,8 @@ uses
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
-  I: integer;
+  I: Integer;
+  Info: string;
 begin
   Left := Left div 2;
   Top := Top div 2;
@@ -311,9 +312,11 @@ begin
   TntLabel.Parent := InfoPanel;
 {$endif}
   if sizeof(char) = 1 then
-    Edit2.Text := 'Program uses single byte characters.'
+    Info := 'Program uses single byte characters.'
   else
-    Edit2.Text := 'Program uses unicode characters.';
+    Info := 'Program uses unicode characters.';
+  Info := Info + ' Screen.PPI = ' + IntToStr(Screen.PixelsPerInch);
+  Edit2.Text := Info;
   UpdateCaption;
 
 {$ifdef LCL}
