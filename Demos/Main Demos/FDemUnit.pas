@@ -220,6 +220,8 @@ type
     procedure mmiQuirksModeQuirksClick(Sender: TObject);
     procedure mmiParentFontClick(Sender: TObject);
     procedure mmiParentColorClick(Sender: TObject);
+    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+      NewDPI: Integer);
   private
     { Private declarations }
     Histories: array[0..MaxHistories-1] of TMenuItem;
@@ -272,6 +274,18 @@ uses
   {$ifend}
 {$endif}
 
+procedure TForm1.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI, NewDPI: Integer);
+var
+  Info: string;
+begin
+  if sizeof(char) = 1 then
+    Info := 'Program uses single byte characters.'
+  else
+    Info := 'Program uses unicode characters.';
+  Info := Info + ' New Monitor.PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
+  Edit2.Text := Info;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 var
   I: Integer;
@@ -316,7 +330,7 @@ begin
     Info := 'Program uses single byte characters.'
   else
     Info := 'Program uses unicode characters.';
-  Info := Info + ' Screen.PPI = ' + IntToStr(Screen.PixelsPerInch);
+  Info := Info + ' Monitor.PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
   Edit2.Text := Info;
   UpdateCaption;
 
