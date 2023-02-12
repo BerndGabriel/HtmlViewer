@@ -1244,7 +1244,8 @@ begin
   if (FCodePage = CP_UTF16LE) and (FInitalCodePage = CP_UTF16LE) then
   begin
     SetLength(Result, Bytes div 2);
-    System.Move(FPos.BytePtr^, Result[1], Bytes);
+    if Length(Result) > 0 then
+      System.Move(FPos.BytePtr^, Result[1], Bytes);
   end
   else
   begin
