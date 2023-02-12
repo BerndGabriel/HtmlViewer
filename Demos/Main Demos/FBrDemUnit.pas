@@ -58,7 +58,7 @@ uses
 //      System.ImageList,
   {$IFEND}
 {$endif}
-  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Math, ImageList,
   Menus, StdCtrls, Buttons, ExtCtrls, IniFiles, ImgList, ComCtrls, ToolWin,
 {$ifndef MultiMediaMissing}
   mmSystem,
@@ -74,15 +74,22 @@ uses
   BegaZoom,
   BegaHtmlPrintPreviewForm,
 {$endif UseOldPreviewForm}
-  HtmlGlobals, HTMLUn2, HTMLSubs, URLSubs, UrlConn,
-  HtmlView, FramView, FramBrwz,
+  HtmlDemoUtils,
+  HtmlGlobals,
+  HTMLUn2,
+  HTMLSubs,
+  URLSubs,
+  UrlConn,
+  HtmlView,
+  FramView,
+  FramBrwz,
 {$ifdef UseIndy10}
   UrlConId10,
 {$endif}
 {$ifdef UseIcs}
   UrlConIcs,
 {$endif}
-  CacheUnit, System.ImageList;
+  CacheUnit;
 const
   MaxHistories = 15;  {size of History list}
   wm_LoadURL = wm_User+124;
@@ -383,11 +390,15 @@ end;
 {----------------THTTPForm.FormCreate}
 procedure THTTPForm.FormCreate(Sender: TObject);
 var
-  I: integer;
+  DX, DY: Double;
+  I: Integer;
+  Styles: TStringList;
 {$ifdef UseVCLStyles}
   m : TMenuItem;
 {$endif}
 begin
+  BoundsRect := htGetNiceFormSize( Monitor, PixelsPerInch );
+
   OpenDialog.Filter := htStringToString(GetFileMask);
   FMetaInfo := TStringList.Create;
 {$ifdef has_StyleElements}
@@ -397,18 +408,6 @@ begin
   FrameBrowser.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
   FrameBrowser.Touch.InteractiveGestures := [igPan];
 {$endif}
-  Top := Top div 2;
-  if Screen.Width <= 800 then   {make window fit appropriately}
-  begin
-    Left := Left div 2;
-    Width := (Screen.Width * 9) div 10;
-    Height := (Screen.Height * 7) div 8;
-  end
-  else
-  begin
-    Width := 850;
-    Height := 600;
-  end;
 
   Cache := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName)+'Cache');
   DiskCache := ThtDiskCache.Create(Cache);
@@ -430,14 +429,24 @@ begin
   VCLStyles1 := TMenuItem.Create(Options1);
   VCLStyles1.Caption := '&VCL Styles';
   Options1.Add(VCLStyles1);
-  if   TStyleManager.Enabled then begin
-    for i := Low(TStyleManager.StyleNames) to High(TStyleManager.StyleNames) do begin
-      m := TMenuItem.Create(VCLStyles1);
-      m.Caption := TStyleManager.StyleNames[i];
-      m.Tag := i;
-      m.OnClick := VCLStyleClick;
-      m.RadioItem := True;
-      VCLStyles1.Add(m);
+  if TStyleManager.Enabled then
+  begin
+    Styles := TStringList.Create(dupIgnore, True, False);
+    try
+      for i := Low(TStyleManager.StyleNames) to High(TStyleManager.StyleNames) do
+        Styles.AddObject( TStyleManager.StyleNames[i], TObject(i) );
+
+      for i := 0 to Styles.Count - 1 do
+      begin
+        m := TMenuItem.Create(VCLStyles1);
+        m.Caption := Styles.Strings[i];
+        m.Tag := Integer(Styles.Objects[i]);
+        m.OnClick := VCLStyleClick;
+        m.RadioItem := True;
+        VCLStyles1.Add(m);
+      end;
+    finally
+      Styles.Free;
     end;
   end;
 {$endif}
@@ -511,14 +520,15 @@ var
   IniFile: TIniFile;
   SL: TStringList;
   I, J, LTop, LLeft, LWidth, LHeight: Integer;
-
+  Rect: TRect;
 begin
   IniFile := TIniFile.Create(FIniFileName);
   try
-    Top    := IniFile.ReadInteger('HTTPForm', 'Top'   , Top   );
-    Left   := IniFile.ReadInteger('HTTPForm', 'Left'  , Left  );
-    Width  := IniFile.ReadInteger('HTTPForm', 'Width' , Width );
-    Height := IniFile.ReadInteger('HTTPForm', 'Height', Height);
+    Rect.Top    := IniFile.ReadInteger('HTTPForm', 'Top'           , Top     );
+    Rect.Left   := IniFile.ReadInteger('HTTPForm', 'Left'          , Left    );
+    Rect.Width  := IniFile.ReadInteger('HTTPForm', 'Width'         , Width   );
+    Rect.Height := IniFile.ReadInteger('HTTPForm', 'Height'        , Height  );
+    BoundsRect  := Rect;
 
     GetImagesAsyncly.Checked := IniFile.ReadBool('Options', 'GetImagesAsyncly', GetImagesAsyncly.Checked);
 
@@ -574,16 +584,16 @@ var
 begin       {save only if this is the first instance}
   IniFile := TIniFile.Create(FIniFileName);
   try
-    IniFile.WriteInteger('HTTPForm', 'Top'   , Top);
-    IniFile.WriteInteger('HTTPForm', 'Left'  , Left);
-    IniFile.WriteInteger('HTTPForm', 'Width' , Width);
-    IniFile.WriteInteger('HTTPForm', 'Height', Height);
+    IniFile.WriteInteger('HTTPForm', 'Top'          , Top           );
+    IniFile.WriteInteger('HTTPForm', 'Left'         , Left          );
+    IniFile.WriteInteger('HTTPForm', 'Width'        , Width         );
+    IniFile.WriteInteger('HTTPForm', 'Height'       , Height        );
 
     IniFile.WriteBool('Options', 'GetImagesAsyncly', GetImagesAsyncly.Checked);
 
-    IniFile.WriteInteger('LogForm', 'Top'   , LogForm.Top);
-    IniFile.WriteInteger('LogForm', 'Left'  , LogForm.Left);
-    IniFile.WriteInteger('LogForm', 'Width' , LogForm.Width);
+    IniFile.WriteInteger('LogForm', 'Top'   , LogForm.Top   );
+    IniFile.WriteInteger('LogForm', 'Left'  , LogForm.Left  );
+    IniFile.WriteInteger('LogForm', 'Width' , LogForm.Width );
     IniFile.WriteInteger('LogForm', 'Height', LogForm.Height);
 
     IniFile.WriteBool('LogForm', 'ShowLogWindow' , ShowLog.Checked  );

@@ -34,7 +34,7 @@ interface
 
 uses
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
+  ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg, Math,
 {$ifdef LCL}
   LclIntf, LclType, LMessages, PrintersDlgs, FPImage, HtmlMisc,
 {$else}
@@ -70,6 +70,7 @@ uses
 {$else UseTNT}
   Submit,
 {$endif UseTNT}
+  HtmlDemoUtils,
   HtmlGlobals,
   HtmlBuffer,
   URLSubs,
@@ -220,8 +221,6 @@ type
     procedure mmiQuirksModeQuirksClick(Sender: TObject);
     procedure mmiParentFontClick(Sender: TObject);
     procedure mmiParentColorClick(Sender: TObject);
-    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
-      NewDPI: Integer);
   private
     { Private declarations }
     Histories: array[0..MaxHistories-1] of TMenuItem;
@@ -250,6 +249,9 @@ type
 {$else}
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
 {$endif}
+{$if defined(LCL) or defined(Compiler32_Plus)}
+    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI, NewDPI: Integer);
+{$ifend}
   protected
     procedure UpdateActions; override;
   public
@@ -274,6 +276,7 @@ uses
   {$ifend}
 {$endif}
 
+{$if defined(LCL) or defined(Compiler32_Plus)}
 procedure TForm1.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI, NewDPI: Integer);
 var
   Info: string;
@@ -282,24 +285,27 @@ begin
     Info := 'Program uses single byte characters.'
   else
     Info := 'Program uses unicode characters.';
-  Info := Info + ' New Monitor.PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
+  Info := Info + ' New Form.PixelsPerInch = ' + IntToStr(PixelsPerInch);
+  Info := Info + ', Monitor.PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
   Edit2.Text := Info;
 end;
+{$ifend}
 
 procedure TForm1.FormCreate(Sender: TObject);
 var
   I: Integer;
   Info: string;
 begin
-  Left := Left div 2;
-  Top := Top div 2;
-  Width := (Screen.Width * 8) div 10;
-  Height := (Screen.Height * 6) div 8;
+  BoundsRect := htGetNiceFormSize( Monitor, PixelsPerInch );
 
   FrameViewer.HistoryMaxCount := MaxHistories;  {defines size of history list}
 {$ifdef HasGestures}
   FrameViewer.Touch.InteractiveGestureOptions := [{igoPanSingleFingerHorizontal,} igoPanSingleFingerVertical, igoPanInertia];
   FrameViewer.Touch.InteractiveGestures := [igPan];
+{$endif}
+
+{$ifdef Compiler32_Plus}
+  OnAfterMonitorDpiChanged := FormAfterMonitorDpiChanged;
 {$endif}
 
   for I := 0 to MaxHistories-1 do
@@ -313,10 +319,6 @@ begin
       Tag := I;
     end;
   end;
-{$ifdef LCL}
-{$else}
-  DragAcceptFiles(Handle, True);
-{$endif}
   HintWindow := ThtHintWindow.Create(Self);
   HintWindow.Color := $CCFFFF;
 
@@ -330,12 +332,16 @@ begin
     Info := 'Program uses single byte characters.'
   else
     Info := 'Program uses unicode characters.';
-  Info := Info + ' Monitor.PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
+{$if defined(LCL) or defined(Compiler22_Plus)}
+  Info := Info + ' Form.PixelsPerInch = ' + IntToStr(PixelsPerInch);
+  Info := Info + ', Monitor.PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
   Edit2.Text := Info;
+{$ifend}
   UpdateCaption;
 
 {$ifdef LCL}
 {$else}
+  DragAcceptFiles(Handle, True);
   Application.OnMessage := AppMessage;
 {$endif}
 end;

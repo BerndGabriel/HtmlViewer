@@ -1,20 +1,18 @@
 object Form1: TForm1
-  Left = 498
+  Left = 598
   Height = 658
-  Top = 188
+  Top = 226
   Width = 985
   AllowDropFiles = True
   ClientHeight = 638
   ClientWidth = 985
   Color = clWindow
-  Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'Tahoma'
   Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnDropFiles = FormDropFiles
   OnShow = FormShow
+  ParentFont = True
   Position = poDefault
   LCLVersion = '2.2.0.4'
   object Panel1: TPanel

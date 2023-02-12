@@ -1,26 +1,25 @@
 object Form1: TForm1
   Left = 617
   Height = 505
-  Top = 284
+  Top = 328
   Width = 762
   AllowDropFiles = True
   Caption = 'Frame Demo'
-  ClientHeight = 242
-  ClientWidth = 381
-  Font.Height = -13
-  Font.Name = 'System'
+  ClientHeight = 485
+  ClientWidth = 762
   Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnDropFiles = FormDropFiles
   OnShow = FormShow
+  ParentFont = True
   Position = poScreenCenter
   LCLVersion = '2.2.0.4'
   object FrameViewer: TFrameViewer
     Left = 0
-    Height = 188
+    Height = 431
     Top = 27
-    Width = 381
+    Width = 762
     CodePage = 0
     DefBackground = clWindow
     DefFontColor = clWindowText
@@ -58,12 +57,12 @@ object Form1: TForm1
     Left = 0
     Height = 27
     Top = 0
-    Width = 381
+    Width = 762
     Align = alTop
     BevelOuter = bvNone
     BorderWidth = 2
     ClientHeight = 27
-    ClientWidth = 381
+    ClientWidth = 762
     TabOrder = 1
     object ReloadButton: TButton
       Left = 2
@@ -102,7 +101,7 @@ object Form1: TForm1
       Left = 197
       Height = 23
       Top = 2
-      Width = 182
+      Width = 563
       Align = alClient
       TabOrder = 3
     end
@@ -110,17 +109,17 @@ object Form1: TForm1
   object Panel3: TPanel
     Left = 0
     Height = 27
-    Top = 215
-    Width = 381
+    Top = 458
+    Width = 762
     Align = alBottom
     Alignment = taLeftJustify
     BevelOuter = bvNone
     BorderWidth = 2
     ClientHeight = 27
-    ClientWidth = 381
+    ClientWidth = 762
     TabOrder = 2
     object ProgressBar: TProgressBar
-      Left = 229
+      Left = 610
       Height = 23
       Top = 2
       Width = 150
@@ -132,7 +131,7 @@ object Form1: TForm1
       Left = 89
       Height = 23
       Top = 2
-      Width = 140
+      Width = 521
       Align = alClient
       Alignment = taLeftJustify
       BevelOuter = bvLowered

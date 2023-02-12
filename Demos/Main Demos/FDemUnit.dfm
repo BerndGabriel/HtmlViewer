@@ -2,27 +2,26 @@ object Form1: TForm1
   Left = 705
   Top = 161
   Caption = 'Frame Demo'
-  ClientHeight = 759
-  ClientWidth = 1171
+  ClientHeight = 714
+  ClientWidth = 1155
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'Tahoma'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   Menu = MainMenu
   Position = poScreenCenter
   ShowHint = True
-  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  TextHeight = 16
+  TextHeight = 15
   object FrameViewer: TFrameViewer
     Left = 0
     Top = 27
-    Width = 1171
-    Height = 705
+    Width = 1155
+    Height = 660
     CodePage = 0
     DefBackground = clWindow
     DefFontColor = clWindowText
@@ -53,21 +52,22 @@ object Form1: TForm1
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
-    Touch.InteractiveGestures = [igPan]
-    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnFormSubmit = SubmitEvent
+    ExplicitWidth = 1151
+    ExplicitHeight = 659
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 1171
+    Width = 1155
     Height = 27
     Align = alTop
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 1
+    ExplicitWidth = 1151
     DesignSize = (
-      1171
+      1155
       27)
     object ReloadButton: TButton
       Left = 2
@@ -105,10 +105,11 @@ object Form1: TForm1
     object Edit2: TEdit
       Left = 200
       Top = 2
-      Width = 969
-      Height = 24
+      Width = 939
+      Height = 23
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 3
+      ExplicitWidth = 935
     end
   end
   object MediaPlayer: TMediaPlayer
@@ -124,32 +125,36 @@ object Form1: TForm1
   end
   object Panel3: TPanel
     Left = 0
-    Top = 732
-    Width = 1171
+    Top = 687
+    Width = 1155
     Height = 27
     Align = alBottom
     Alignment = taLeftJustify
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 3
+    ExplicitTop = 686
+    ExplicitWidth = 1151
     object ProgressBar: TProgressBar
-      Left = 1019
+      Left = 1003
       Top = 2
       Width = 150
       Height = 23
       Align = alRight
       TabOrder = 0
       Visible = False
+      ExplicitLeft = 999
     end
     object InfoPanel: TPanel
       Left = 89
       Top = 2
-      Width = 930
+      Width = 914
       Height = 23
       Align = alClient
       Alignment = taLeftJustify
       BevelOuter = bvLowered
       TabOrder = 1
+      ExplicitWidth = 910
     end
     object QuirksModePanel: TPanel
       Left = 2

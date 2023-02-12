@@ -208,6 +208,12 @@ var
 begin
   inherited Create(Owner);
   inherited Loaded;
+
+{$ifdef HasGestures}
+  Viewer.Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia];
+  Viewer.Touch.InteractiveGestures := [igPan];
+{$endif}
+
   Viewer.DefFontName := FontSans;
   Viewer.DefFontSize := 9;
   Viewer.DefFontColor := clNavy;

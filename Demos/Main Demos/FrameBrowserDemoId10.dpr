@@ -31,6 +31,7 @@ program FrameBrowserDemoId10W;
 {$include htmlcons.inc}
 
 uses
+  HighDPIInit in '..\..\..\bega\BegaViewer\HighDPIInit.pas',
   {$ifdef FPC}
   Interfaces,
   {$endif }
@@ -43,7 +44,8 @@ uses
   ProxyFormUnit in 'ProxyFormUnit.pas' {ProxyForm},
   UrlConId10 in 'UrlConId10.pas',
   UrlConVclZip in 'UrlConVclZip.pas',
-  DownloadFormUnit in 'DownloadFormUnit.pas' {DownloadForm};
+  DownloadFormUnit in 'DownloadFormUnit.pas' {DownloadForm},
+  HtmlDemoUtils in 'HtmlDemoUtils.pas';
 
 {$R *.res}
 

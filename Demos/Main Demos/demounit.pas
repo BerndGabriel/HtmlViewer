@@ -27,8 +27,8 @@ are covered by separate copyright notices located in those modules.
 unit DemoUnit;
 
 {$include ..\..\source\htmlcons.inc}
+
 { A program to demonstrate the THtmlViewer component }
-{$R 'fbHelpIndy10.res' 'Resources\Indy10\fbHelpIndy10.rc'}
 
 interface
 
@@ -38,7 +38,7 @@ uses
   System.UITypes,
 {$endif}
   SysUtils, Messages, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg,
+  ExtCtrls, Menus, Clipbrd, ComCtrls, StdCtrls, Fontdlg, Math,
 {$ifdef LCL}
   Types,
   LclIntf, LclType, PrintersDlgs, FPImage, HtmlMisc,
@@ -75,6 +75,7 @@ uses
 {$else UseTNT}
   Submit,
 {$endif UseTNT}
+  HtmlDemoUtils,
   HtmlGlobals,
   HtmlBuffer,
   HtmlImages,
@@ -232,6 +233,9 @@ type
 {$else}
     procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
 {$endif}
+{$if defined(LCL) or defined(Compiler32_Plus)}
+    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI, NewDPI: Integer);
+{$ifend}
   public
     { Public declarations }
   end;
@@ -255,12 +259,26 @@ uses
   System.UITypes;
 {$endif}
 
+{$if defined(LCL) or defined(Compiler32_Plus)}
+procedure TForm1.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI, NewDPI: Integer);
+var
+  Info: string;
+begin
+  if sizeof(char) = 1 then
+    Info := 'Program uses single byte characters.'
+  else
+    Info := 'Program uses unicode characters.';
+  Info := Info + ' New PixelsPerInch = ' + IntToStr(PixelsPerInch);
+  Edit1.Text := Info;
+end;
+{$ifend}
+
 procedure TForm1.FormCreate(Sender: TObject);
 var
   I: Integer;
+  Info: string;
 begin
-  if Screen.Width <= 640 then
-    Position := poDefault; { keeps form on screen better }
+  BoundsRect := htGetNiceFormSize( Monitor, PixelsPerInch );
 
   OpenDialog.InitialDir := ExtractFilePath(ParamStr(0));
 
@@ -271,6 +289,11 @@ begin
     igoPanSingleFingerVertical, igoPanInertia];
   Viewer.Touch.InteractiveGestures := [igPan];
 {$endif}
+
+{$ifdef Compiler32_Plus}
+  OnAfterMonitorDpiChanged := FormAfterMonitorDpiChanged;
+{$endif}
+
   for I := 0 to MaxHistories - 1 do
   begin { create the MenuItems for the history list }
     Histories[I] := TMenuItem.Create(HistoryMenuItem);
@@ -282,16 +305,24 @@ begin
       Tag := I;
     end;
   end;
+
+  HintWindow := ThtHintWindow.Create(Self);
+  HintWindow.Color := $CCFFFF;
+
+  if sizeof(char) = 1 then
+    Info := 'Program uses single byte characters.'
+  else
+    Info := 'Program uses unicode characters.';
+{$if defined(LCL) or defined(Compiler22_Plus)}
+  Info := Info + ' PixelsPerInch = ' + IntToStr(Monitor.PixelsPerInch);
+  Edit1.Text := Info;
+{$ifend}
+  UpdateCaption;
+  ReloadButton.Enabled := Viewer.Text <> '';
+
 {$ifdef LCL}
 {$else}
   DragAcceptFiles(Handle, True);
-{$endif}
-  HintWindow := ThtHintWindow.Create(Self);
-  HintWindow.Color := $CCFFFF;
-  UpdateCaption;
-  ReloadButton.Enabled := Viewer.Text <> '';
-{$ifdef LCL}
-{$else}
   Application.OnMessage := AppMessage;
 {$endif}
 end;
@@ -585,7 +616,7 @@ begin
     (Viewer.HistoryIndex < Viewer.History.Count - 1);
   RepaintButton.Enabled := Enabled and (Viewer.Text <> '');
   ReloadButton.Enabled := Enabled and (Viewer.Text <> '');
-  Print1.Enabled := Enabled and (Viewer.CurrentFile <> '');
+  Print1.Enabled := Enabled and (Viewer.Text <> '');
   Printpreview.Enabled := Print1.Enabled;
   Find1.Enabled := Print1.Enabled;
   SelectAllItem.Enabled := Print1.Enabled;

@@ -1,58 +1,61 @@
 object Form1: TForm1
   Left = 498
   Top = 188
-  ClientHeight = 658
-  ClientWidth = 985
+  ClientHeight = 640
+  ClientWidth = 975
   Color = clWindow
   Ctl3D = False
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'Tahoma'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   Menu = MainMenu
-  OldCreateOrder = True
+  Position = poDesigned
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 16
+  TextHeight = 15
   object Panel1: TPanel
     Left = 0
-    Top = 640
-    Width = 985
+    Top = 622
+    Width = 975
     Height = 18
     Align = alBottom
     Alignment = taLeftJustify
     BevelInner = bvLowered
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitTop = 621
+    ExplicitWidth = 971
     object ProgressBar: TProgressBar
-      Left = 835
+      Left = 825
       Top = 1
       Width = 149
       Height = 16
       Align = alRight
       TabOrder = 0
       Visible = False
+      ExplicitLeft = 821
     end
   end
   object Panel2: TPanel
     Left = 0
     Top = 0
-    Width = 985
+    Width = 975
     Height = 33
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
+    ExplicitWidth = 971
     DesignSize = (
-      985
+      975
       33)
     object Edit1: TEdit
       Left = 246
       Top = 4
-      Width = 738
-      Height = 22
+      Width = 728
+      Height = 21
       TabStop = False
       Anchors = [akLeft, akTop, akRight, akBottom]
       ReadOnly = True
@@ -102,8 +105,8 @@ object Form1: TForm1
   object Viewer: THtmlViewer
     Left = 0
     Top = 33
-    Width = 985
-    Height = 607
+    Width = 975
+    Height = 589
     BorderStyle = htSingle
     DefBackground = clWindow
     DefFontColor = clWindowText
@@ -136,8 +139,8 @@ object Form1: TForm1
     TabOrder = 2
     TabStop = True
     OnMouseMove = ViewerMouseMove
-    Touch.InteractiveGestures = [igPan]
-    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
+    ExplicitWidth = 971
+    ExplicitHeight = 588
     object MediaPlayer: TMediaPlayer
       Left = 336
       Top = 40

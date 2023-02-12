@@ -29,6 +29,7 @@ are covered by separate copyright notices located in those modules.
 program FrameBrowserDemoIcsW;
 
 uses
+  HighDPIInit in '..\..\..\bega\BegaViewer\HighDPIInit.pas',
   Forms,
   ProxyFormUnit in 'ProxyFormUnit.pas' {ProxyForm},
   LogFormUnit in 'LogFormUnit.pas' {LogForm},
@@ -39,7 +40,10 @@ uses
   UrlConVclZip in 'UrlConVclZip.pas',
   UrlConIcs in 'UrlConIcs.pas',
   AuthorizeFormUnit in 'AuthorizeFormUnit.pas' {AuthorizeForm},
-  DownloadFormUnit in 'DownloadFormUnit.pas' {DownloadForm};
+  DownloadFormUnit in 'DownloadFormUnit.pas' {DownloadForm},
+  HtmlDemoUtils in 'HtmlDemoUtils.pas',
+  Vcl.Themes,
+  Vcl.Styles;
 
 {$R *.RES}
 

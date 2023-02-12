@@ -39,10 +39,12 @@ program HtmlDemoW;
 uses
   Forms,
   FontDlg in 'FontDlg.pas' {FontForm},
-  HtmlAbt in 'HtmlAbt.pas' {AboutBox},
+  Htmlabt in 'Htmlabt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
   Submit in 'Submit.pas' {SubmitForm},
-  DemoUnit in 'DemoUnit.pas' {Form1};
+  DemoUnit in 'DemoUnit.pas' {Form1},
+  HtmlDemoUtils in 'HtmlDemoUtils.pas',
+  HighDPIInit in '..\..\..\bega\BegaViewer\HighDPIInit.pas';
 
 {$R *.res}
 

@@ -43,7 +43,8 @@ uses
   HtmlAbt in 'HtmlAbt.pas' {AboutBox},
   ImgForm in 'ImgForm.pas' {ImageForm},
   Submit in 'Submit.pas' {SubmitForm},
-  FDemUnit in 'FDemUnit.pas' {Form1};
+  FDemUnit in 'FDemUnit.pas' {Form1},
+  HtmlDemoUtils in 'HtmlDemoUtils.pas';
 
 {$R *.RES}
 
