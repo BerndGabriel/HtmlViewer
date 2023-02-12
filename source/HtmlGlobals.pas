@@ -42,7 +42,7 @@ uses
   Classes, SysUtils, Graphics, Controls,
 {$ifdef LCL}
   LclIntf, LclType, LCLVersion, Types, Messages,
-  StdCtrls, Buttons, Forms, Base64, Dialogs, Process,
+  StdCtrls, Buttons, Base64, Dialogs, Process,
   HtmlMisc,
   {$ifdef DebugIt}
     {$message 'HtmlViewer uses LCL standard controls.'}
@@ -76,6 +76,7 @@ uses
     {$endif}
   {$endif UseTNT}
 {$endif}
+  Forms,
   Clipbrd,
   Math;
 
@@ -253,6 +254,12 @@ type
   );
 
   ThtThemedColor = function (AColor: TColor; AStyleElement: ThtStyleElement): TColor  of object;
+
+  //BG, 05.02.2023: don't add virtual methods or fields. It is only used to access protected stuff of TCustomForm.
+  ThtCustomForm = class(TCustomForm)
+  public
+    property PixelsPerInch;
+  end;
 
   //BG, 10.12.2010: don't add virtual methods or fields. It is only used to access protected stuff of TCanvas.
   ThtCanvas = class(TCanvas)

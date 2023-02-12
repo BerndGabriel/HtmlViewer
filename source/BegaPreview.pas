@@ -1,5 +1,5 @@
 {-------------------------------------------------------------------------------
-Copyright (C) 2006-2014 by Bernd Gabriel.
+Copyright (C) 2006-2023 by Bernd Gabriel.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -173,47 +173,47 @@ type
     FOptions: TBegaPreviewOptions;
     FZoom: double;
     Moving: Boolean;
-    function getContentSize(out ContentSize: TBegaSize): Boolean;
-    function getLastAvailablePage: Integer;
-    function getPage(Index: Integer): TMetafile;
-    function getPageCount: Integer;
-    function getVisiblePageCount: Integer;
+    function GetContentSize(out ContentSize: TBegaSize): Boolean;
+    function GetLastAvailablePage: Integer;
+    function GetPage(Index: Integer): TMetafile;
+    function GetPageCount: Integer;
+    function GetVisiblePageCount: Integer;
     function PixelsPerInch: Integer;
-    procedure printPages(FirstPage, LastPage, Copies: Integer);
-    procedure setCurrentPage(Val: integer);
-    procedure setOptions(const Value: TBegaPreviewOptions);
-    procedure setContentZoomMode(Zoom: TBegaZoomMode);
-    procedure setPreviewZoomMode(Zoom: TBegaZoomMode);
+    procedure PrintPages(FirstPage, LastPage, Copies: Integer);
+    procedure SetCurrentPage(Val: integer);
+    procedure SetOptions(const Value: TBegaPreviewOptions);
+    procedure SetContentZoomMode(Zoom: TBegaZoomMode);
+    procedure SetPreviewZoomMode(Zoom: TBegaZoomMode);
     property LastAvailablePage: Integer read getLastAvailablePage; // due to visible page count
     property VisiblePageCount: Integer read getVisiblePageCount;
     property Zoom: Double read FZoom write FZoom;
-    function getContentZoomMode: TBegaZoomMode;
-    function getPreviewZoomMode: TBegaZoomMode;
-    function getCurrentPage: Integer;
+    function GetContentZoomMode: TBegaZoomMode;
+    function GetPreviewZoomMode: TBegaZoomMode;
+    function GetCurrentPage: Integer;
   protected
     procedure Loaded; override;
     //
-    function buttonEnabled(Button: TBegaPreviewOption): Boolean; virtual;
-    // doGetSize() calculates size of all pages, which enables content zoom.
-    function canGetContentSize: Boolean; virtual;
-    procedure doGetContentSize(var Done: Boolean; out Width, Height: Integer); virtual;
-    // doCreatePageMenu() populates MFPrinter with pages
-    procedure doCreatePageMenu(var Done: Boolean); virtual;
-    // doCreatePages() populates MFPrinter with pages
-    procedure doCreatePages(var Done: Boolean); virtual;
-    // doPrintPages() prints pages of MFPrinter or do you prefer printing elsehow?
-    procedure doPrintPages(var Done: Boolean); virtual;
-    // doPrinterSetup(): override or use OnPrinterSetup to reduce number of printer setup dialogs:
-    procedure doPrinterSetup(var Done, Changed: Boolean); virtual;
+    function ButtonEnabled(Button: TBegaPreviewOption): Boolean; virtual;
+    // DoGetSize() calculates size of all pages, which enables content zoom.
+    function CanGetContentSize: Boolean; virtual;
+    procedure DoGetContentSize(var Done: Boolean; out Width, Height: Integer); virtual;
+    // DoCreatePageMenu() populates MFPrinter with pages
+    procedure DoCreatePageMenu(var Done: Boolean); virtual;
+    // DoCreatePages() populates MFPrinter with pages
+    procedure DoCreatePages(var Done: Boolean); virtual;
+    // DoPrintPages() prints pages of MFPrinter or do you prefer printing elsehow?
+    procedure DoPrintPages(var Done: Boolean); virtual;
+    // DoPrinterSetup(): override or use OnPrinterSetup to reduce number of printer setup dialogs:
+    procedure DoPrinterSetup(var Done, Changed: Boolean); virtual;
     //
-    procedure doAllOnOne(var Done: Boolean); virtual;
+    procedure DoAllOnOne(var Done: Boolean); virtual;
     //
-    procedure doOpenInExcel(var Done: Boolean); virtual;
+    procedure DoOpenInExcel(var Done: Boolean); virtual;
     //
-    procedure updateBox;
-    procedure updateContentZoom;
-    procedure updatePage;
-    procedure updatePageMenu;
+    procedure UpdateBox;
+    procedure UpdateContentZoom;
+    procedure UpdatePage;
+    procedure UpdatePageMenu;
     property CurrentPage: Integer read getCurrentPage write SetCurrentPage; // 1..n
     property MFPrinter: TBegaMetaFilePrinter read FMFPrinter;
     property OnAllOnOne: TBegaAllOnOneEvent read FOnAllOnOne write FOnAllOnOne;
@@ -234,8 +234,8 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    procedure createPages;
-    procedure updateActions;
+    procedure CreatePages;
+    procedure UpdateActions;
   end;
 
   //BG, 20.04.2006: split: TBegaPreviewFrame
@@ -255,7 +255,7 @@ type
     property PreviewZoomMode;
   end;
 
-procedure loadPreviewCursors;
+procedure LoadPreviewCursors;
 
 {$endif NoMetaFile}
 {$endif NoFlatScrollbars}
@@ -277,9 +277,16 @@ uses
   {$R ZoomAndHandCursor.res}
 {$endif}
 
+type
+  //BG, 05.02.2023: don't add virtual methods or fields. It is only used to access protected stuff of TCustomForm.
+  TBegaCustomForm = class(TCustomForm)
+  public
+    property PixelsPerInch;
+  end;
+
 //- BG ----------------------------------------------------------- 04.11.2006 --
 var PreviewCursorsLoaded: Boolean;
-procedure loadPreviewCursors;
+procedure LoadPreviewCursors;
 begin
   if not PreviewCursorsLoaded then
   begin
@@ -292,7 +299,7 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 04.11.2006 --
-function zoom2ZoomMode(Zoom: Double): TBegaZoomMode;
+function Zoom2ZoomMode(Zoom: Double): TBegaZoomMode;
 begin
   case round(Zoom * 100) of
      25: Result := zm25;
@@ -310,39 +317,39 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 25.05.2006 --
-function TBegaCustomPreviewFrame.buttonEnabled(
+function TBegaCustomPreviewFrame.ButtonEnabled(
   Button: TBegaPreviewOption): Boolean;
 begin
   Result := Button in PreviewOptions;
 end;
 
 //- BG ----------------------------------------------------------- 20.04.2006 --
-function TBegaCustomPreviewFrame.canGetContentSize: Boolean;
+function TBegaCustomPreviewFrame.CanGetContentSize: Boolean;
 begin
-  Result := assigned(FOnGetContentSize);
+  Result := Assigned(FOnGetContentSize);
 end;
 
 //- BG ----------------------------------------------------------- 15.03.2006 --
 procedure TBegaCustomPreviewFrame.ContentFitHeightClick(Sender: TObject);
 begin
   ContentZoomBox.ItemIndex := 1;
-  updateContentZoom;
-  createPages;
+  UpdateContentZoom;
+  CreatePages;
 end;
 
 //- BG ----------------------------------------------------------- 15.03.2006 --
 procedure TBegaCustomPreviewFrame.ContentFitWidthClick(Sender: TObject);
 begin
   ContentZoomBox.ItemIndex := 2;
-  updateContentZoom;
-  createPages;
+  UpdateContentZoom;
+  CreatePages;
 end;
 
 //- BG ----------------------------------------------------------- 14.03.2006 --
 procedure TBegaCustomPreviewFrame.ContentZoomBoxChange(Sender: TObject);
 begin
-  updateContentZoom;
-  createPages;
+  UpdateContentZoom;
+  CreatePages;
 end;
 
 //- BG ----------------------------------------------------------- 21.02.2006 --
@@ -354,53 +361,57 @@ begin
   ZoomBox.ItemIndex := 0;
   ContentZoomBox.ItemIndex := 6;
   UnitsBox.ItemIndex := 0;
-  loadPreviewCursors;
-//  ZoomingClick(Zooming);
+  LoadPreviewCursors;
   FMFPrinter := TBegaMetaFilePrinter.Create(Self);
-  updateActions;
+  //FMFPrinter.PreviewPixelsPerInch := PixelsPerInch;
+  //PreviewPanel.MFPrinter := FMFPrinter;
+  UpdateActions;
 end;
 
 //- BG ----------------------------------------------------------- 21.02.2006 --
-procedure TBegaCustomPreviewFrame.createPages;
+procedure TBegaCustomPreviewFrame.CreatePages;
 var
   Done: Boolean;
 begin
   Done := False;
-  MFPrinter.updatePrinterCaps;
-  MFPrinter.clear;
-  doCreatePages(Done);
+{$ifdef LCL}
+  MFPrinter.PreviewPixelsPerInch := PixelsPerInch;
+{$endif}
+  MFPrinter.UpdatePrinterCaps;
+  MFPrinter.Clear;
+  DoCreatePages(Done);
   if Done then
   begin
-    updateBox;
-    updatePageMenu;
+    UpdateBox;
+    UpdatePageMenu;
     CurrentPage := 1;
   end;
-  updatePage;
-  updateActions;
+  UpdatePage;
+  UpdateActions;
 end;
 
 //- BG ----------------------------------------------------------- 06.03.2006 --
 destructor TBegaCustomPreviewFrame.Destroy;
 begin
-  MFPrinter.free;
+  MFPrinter.Free;
   inherited;
 end;
 
 //- BG ----------------------------------------------------------- 22.12.2006 --
-procedure TBegaCustomPreviewFrame.doAllOnOne(var Done: Boolean);
+procedure TBegaCustomPreviewFrame.DoAllOnOne(var Done: Boolean);
 begin
-  if assigned(FOnAllOnOne) then
+  if Assigned(FOnAllOnOne) then
     FOnAllOnOne(self, AllOnOne.Down);
   // there is no default 'all' action
 end;
 
 //- BG ----------------------------------------------------------- 26.04.2006 --
-procedure TBegaCustomPreviewFrame.doCreatePageMenu(var Done: Boolean);
+procedure TBegaCustomPreviewFrame.DoCreatePageMenu(var Done: Boolean);
 var
   Index: Integer;
 begin
   cboxPage.Clear;
-  if assigned(FOnGetPageTitle) then
+  if Assigned(FOnGetPageTitle) then
     for Index := 1 to PageCount do
       cboxPage.Items.Add(FOnGetPageTitle(self, Index))
   else
@@ -411,25 +422,25 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 06.03.2006 --
-procedure TBegaCustomPreviewFrame.doCreatePages(var Done: Boolean);
+procedure TBegaCustomPreviewFrame.DoCreatePages(var Done: Boolean);
 begin
-  if assigned(FOnCreatePages) then
+  if Assigned(FOnCreatePages) then
     FOnCreatePages(self, MFPrinter, Done);
   // there is no default page generation
 end;
 
 //- BG ----------------------------------------------------------- 14.03.2006 --
-procedure TBegaCustomPreviewFrame.doGetContentSize(var Done: Boolean; out Width, Height: Integer);
+procedure TBegaCustomPreviewFrame.DoGetContentSize(var Done: Boolean; out Width, Height: Integer);
 begin
-  if assigned(FOnGetContentSize) then
+  if Assigned(FOnGetContentSize) then
     Done := FOnGetContentSize(self, MFPrinter, Width, Height)
   // there is no default content size calculation
 end;
 
 //- BG ----------------------------------------------------------- 22.12.2006 --
-procedure TBegaCustomPreviewFrame.doOpenInExcel(var Done: Boolean);
+procedure TBegaCustomPreviewFrame.DoOpenInExcel(var Done: Boolean);
 begin
-  if assigned(FOnOpenInExcel) then
+  if Assigned(FOnOpenInExcel) then
   begin
     Done := True;
     FOnOpenInExcel(self);
@@ -438,12 +449,12 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 15.03.2006 --
-procedure TBegaCustomPreviewFrame.doPrinterSetup(var Done, Changed: Boolean);
+procedure TBegaCustomPreviewFrame.DoPrinterSetup(var Done, Changed: Boolean);
 begin
-  if assigned(FOnPrinterSetup) then
+  if Assigned(FOnPrinterSetup) then
   begin
     Done := True;
-    FOnPrinterSetup(self, Changed);
+    FOnPrinterSetup(Self, Changed);
   end;
   if not Done then
   begin
@@ -453,7 +464,7 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 06.03.2006 --
-procedure TBegaCustomPreviewFrame.doPrintPages(var Done: Boolean);
+procedure TBegaCustomPreviewFrame.DoPrintPages(var Done: Boolean);
 var
   FirstPage, LastPage, Copies: Integer;
 begin
@@ -489,10 +500,10 @@ begin
         Copies := 1
       else
         Copies := PrintDialog.Copies;
-      if assigned(FOnPrintPages) then
+      if Assigned(FOnPrintPages) then
         FOnPrintPages(self, MFPrinter, FirstPage, LastPage, Copies)
       else
-        printPages(FirstPage, LastPage, Copies);
+        PrintPages(FirstPage, LastPage, Copies);
     end;
   end;
 end;
@@ -518,17 +529,18 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 20.04.2006 --
-function TBegaCustomPreviewFrame.getContentSize(
+function TBegaCustomPreviewFrame.GetContentSize(
   out ContentSize: TBegaSize): Boolean;
 begin
   Result := False;
+//  MFPrinter.PreviewPixelsPerInch := PixelsPerInch;
   ContentSize.Width := 0;
   ContentSize.Height := 0;
-  doGetContentSize(Result, ContentSize.Width, ContentSize.Height);
+  DoGetContentSize(Result, ContentSize.Width, ContentSize.Height);
 end;
 
 //- BG ----------------------------------------------------------- 03.11.2006 --
-function TBegaCustomPreviewFrame.getContentZoomMode: TBegaZoomMode;
+function TBegaCustomPreviewFrame.GetContentZoomMode: TBegaZoomMode;
 var
   Index: Integer;
 begin
@@ -540,31 +552,31 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 08.11.2006 --
-function TBegaCustomPreviewFrame.getCurrentPage: Integer;
+function TBegaCustomPreviewFrame.GetCurrentPage: Integer;
 begin
   Result := PreviewPanel.FirstPage + 1;
 end;
 
 //- BG ----------------------------------------------------------- 28.04.2006 --
-function TBegaCustomPreviewFrame.getLastAvailablePage: Integer;
+function TBegaCustomPreviewFrame.GetLastAvailablePage: Integer;
 begin
   Result := PageCount - VisiblePageCount + 1;
 end;
 
 //- BG ----------------------------------------------------------- 27.04.2006 --
-function TBegaCustomPreviewFrame.getPage(Index: Integer): TMetafile;
+function TBegaCustomPreviewFrame.GetPage(Index: Integer): TMetafile;
 begin
   Result := MFPrinter.MetaFiles[Index];
 end;
 
 //- BG ----------------------------------------------------------- 26.04.2006 --
-function TBegaCustomPreviewFrame.getPageCount: Integer;
+function TBegaCustomPreviewFrame.GetPageCount: Integer;
 begin
   Result := MFPrinter.LastAvailablePage;
 end;
 
 //- BG ----------------------------------------------------------- 03.11.2006 --
-function TBegaCustomPreviewFrame.getPreviewZoomMode: TBegaZoomMode;
+function TBegaCustomPreviewFrame.GetPreviewZoomMode: TBegaZoomMode;
 var
   Index: Integer;
 begin
@@ -576,7 +588,7 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 08.04.2006 --
-function TBegaCustomPreviewFrame.getVisiblePageCount: Integer;
+function TBegaCustomPreviewFrame.GetVisiblePageCount: Integer;
 begin
   Result := PagesPerRow.Value;
   if RowsPerPreview.Value > 1 then
@@ -599,7 +611,7 @@ end;
 procedure TBegaCustomPreviewFrame.Loaded;
 begin
   inherited;
-  PreviewPanel.MFPrinter := MFPrinter;
+//  PreviewPanel.MFPrinter := MFPrinter;
 end;
 
 //- BG ----------------------------------------------------------- 06.03.2006 --
@@ -639,34 +651,29 @@ function TBegaCustomPreviewFrame.PixelsPerInch: Integer;
 var
   Form: TCustomForm;
 begin
-  if csDesigning in ComponentState then
-  begin
-    Result := Screen.PixelsPerInch;
-    exit;
-  end;
-  Form := GetParentForm(self);
-  if Form is TForm then
-    Result := TForm(Form).PixelsPerInch
-{$ifndef LCL}
-  else if Form is TCustomActiveForm then
-    Result := TCustomActiveForm(Form).PixelsPerInch
-{$endif LCL}
+{$if defined(LCL) or not defined(Compiler31_Plus)}
+  Form := GetParentForm(Self);
+  if Form <> nil then
+    Result := {$ifndef LCL}TBegaCustomForm{$endif}(Form).PixelsPerInch
   else
     Result := Screen.PixelsPerInch;
+{$else}
+  Result := FCurrentPPI;
+{$ifend}
 end;
 
 //- BG ----------------------------------------------------------- 05.11.2006 --
 procedure TBegaCustomPreviewFrame.PreviewBoxResize(Sender: TObject);
 begin
-  updateBox;
+  UpdateBox;
 end;
 
 //- BG ----------------------------------------------------------- 05.11.2006 --
 procedure TBegaCustomPreviewFrame.PreviewPanelUpdatePreview(
   Sender: TBegaCustomPreviewPanel; var Width, Height: Integer);
 begin
-  Width := max(Width, PreviewBox.ClientWidth);
-  Height := max(Height, PreviewBox.ClientHeight);
+  Width := Max(Width, PreviewBox.ClientWidth);
+  Height := Max(Height, PreviewBox.ClientHeight);
 
   {Make sure the scroll bars are hidden if not needed}
   if (Width <= PreviewBox.ClientWidth) and (Height <= PreviewBox.ClientHeight) then
@@ -694,7 +701,7 @@ var
   Done: Boolean;
 begin
   Done := False;
-  doPrintPages(Done);
+  DoPrintPages(Done);
 end;
 
 //- BG ----------------------------------------------------------- 15.03.2006 --
@@ -704,24 +711,24 @@ var
 begin
   Done := False;
   Changed := False;
-  doPrinterSetup(Done, Changed);
+  DoPrinterSetup(Done, Changed);
   if Changed then
   begin
     MFPrinter.updatePrinterCaps;
-    updateContentZoom;
-    createPages;
+    UpdateContentZoom;
+    CreatePages;
   end;
 end;
 
 //- BG ----------------------------------------------------------- 27.05.2006 --
-procedure TBegaCustomPreviewFrame.printPages(FirstPage, LastPage, Copies: Integer);
+procedure TBegaCustomPreviewFrame.PrintPages(FirstPage, LastPage, Copies: Integer);
 var
   OldCursor: TCursor;
 begin
   OldCursor := Screen.Cursor;
   Screen.Cursor := crHourGlass;
   try
-    MFPrinter.printDoc(Printer, FirstPage, LastPage, Copies);
+    MFPrinter.PrintDoc(Printer, FirstPage, LastPage, Copies);
   finally
     Screen.Cursor := OldCursor;
   end;
@@ -733,23 +740,23 @@ var
   Edited: Boolean;
 begin
   Edited := False;
-  if assigned(FOnEditReportProperties) then
+  if Assigned(FOnEditReportProperties) then
     FOnEditReportProperties(self, Edited);
   if Edited then
-    updatePage;
+    UpdatePage;
 end;
 
 //- BG ----------------------------------------------------------- 06.04.2006 --
 procedure TBegaCustomPreviewFrame.SaveFileClick(Sender: TObject);
 begin
-  if assigned(FOnSaveFile) then
+  if Assigned(FOnSaveFile) then
     FOnSaveFile(self);
 end;
 
 //- BG ----------------------------------------------------------- 06.04.2006 --
 procedure TBegaCustomPreviewFrame.SendMailClick(Sender: TObject);
 begin
-  if assigned(FOnSendMail) then
+  if Assigned(FOnSendMail) then
     FOnSendMail(self);
 end;
 
@@ -760,39 +767,39 @@ begin
   begin
     cboxPage.ItemIndex := Val - 1;
     PreviewPanel.FirstPage := Val - 1;
-    updateActions;
+    UpdateActions;
   end;
 end;
 
 //- BG ----------------------------------------------------------- 03.11.2006 --
-procedure TBegaCustomPreviewFrame.setContentZoomMode(Zoom: TBegaZoomMode);
+procedure TBegaCustomPreviewFrame.SetContentZoomMode(Zoom: TBegaZoomMode);
 begin
   ContentZoomBox.ItemIndex := ord(Zoom);
   ContentZoomBoxChange(ContentZoomBox);
 end;
 
 //- BG ----------------------------------------------------------- 06.04.2006 --
-procedure TBegaCustomPreviewFrame.setOptions(const Value: TBegaPreviewOptions);
+procedure TBegaCustomPreviewFrame.SetOptions(const Value: TBegaPreviewOptions);
 begin
   if FOptions <> Value then
   begin
     FOptions := Value;
-    updateActions;
+    UpdateActions;
   end;
 end;
 
 //- BG ----------------------------------------------------------- 03.11.2006 --
-procedure TBegaCustomPreviewFrame.setPreviewZoomMode(Zoom: TBegaZoomMode);
+procedure TBegaCustomPreviewFrame.SetPreviewZoomMode(Zoom: TBegaZoomMode);
 begin
-  ZoomBox.ItemIndex := ord(Zoom);
+  ZoomBox.ItemIndex := Ord(Zoom);
   ZoomBoxChange(ZoomBox);
 end;
 
 //------------------------------------------------------------------------------
 procedure TBegaCustomPreviewFrame.UnitsBoxChange(Sender: TObject);
 begin
-  if Grid.down then
-    updatePage;
+  if Grid.Down then
+    UpdatePage;
 end;
 
 //- BG ----------------------------------------------------------- 06.03.2006 --
@@ -814,7 +821,7 @@ begin
   PreviewZoomLabel.Caption := Format('Preview zoom %1.0n', [Zoom * 100]) + '%';
   LastDocPage := PageCount;
   LastAvlPage := LastAvailablePage;
-  LastVisPage := min(CurrentPage + VisiblePageCount - 1, LastDocPage);
+  LastVisPage := Min(CurrentPage + VisiblePageCount - 1, LastDocPage);
   FirstPage.Enabled := CurrentPage > 1;
   PrevPage.Enabled  := FirstPage.Enabled;
   if CurrentPage <= 0 then
@@ -823,39 +830,42 @@ begin
     CurrentPageLabel.Caption := Format('Page %d of %d', [CurrentPage, LastDocPage])
   else
     CurrentPageLabel.Caption := Format('Pages %d..%d of %d', [CurrentPage, LastVisPage, LastDocPage]);
-  NextPage.Enabled  := CurrentPage < LastAvlPage;
-  LastPage.Enabled  := NextPage.Enabled;
-  cboxPage.Enabled := LastAvlPage > 1;
-//    if CurrentPage <= 0 then
-//      cboxPage.ItemIndex := 0
-//    else
-//      cboxPage.ItemIndex := CurrentPage - 1;
+  NextPage.Enabled    := CurrentPage < LastAvlPage;
+  LastPage.Enabled    := NextPage.Enabled;
+  cboxPage.Enabled    := LastAvlPage > 1;
 
-  SendMail.Visible    := assigned(FOnSendMail);
-  SendMail.Enabled    := buttonEnabled(poSendMailEnabled);
-  SaveFile.Visible    := assigned(FOnSaveFile);
-  SaveFile.Enabled    := buttonEnabled(poSaveFileEnabled);
-  OpenInExcel.Visible := assigned(FOnOpenInExcel);
-  OpenInExcel.Enabled := buttonEnabled(poOpenInExcelEnabled);
-  AllOnOne.Visible    := assigned(FOnAllOnOne);
-  AllOnOne.Enabled    := buttonEnabled(poAllOnOneEnabled);
-  ReportProperties.Visible := assigned(FOnEditReportProperties);
-  ReportProperties.Enabled := buttonEnabled(poEditReportPropertiesEnabled);
-  PrinterSetup.Enabled       := buttonEnabled(poPrinterSetupEnabled);
-  Print.Enabled       := buttonEnabled(poPrintEnabled);
+  SendMail.Visible    := Assigned(FOnSendMail);
+  SendMail.Enabled    := ButtonEnabled(poSendMailEnabled);
 
-  ContentZoomSeparator.Visible := canZoomContent;
-  ContentZoomBoxLabel.Visible := canZoomContent;
-  ContentZoomBox.Visible := canZoomContent;
-  ContentFitHeight.Visible := canZoomContent;
-  ContentFitWidth.Visible := canZoomContent;
-  ContentFitHeight.Enabled := canGetContentSize;
-  ContentFitWidth.Enabled := canGetContentSize;
-  ContentFitHeight.Down := ContentZoomBox.ItemIndex = 1;
-  ContentFitWidth.Down := ContentZoomBox.ItemIndex = 2;
+  SaveFile.Visible    := Assigned(FOnSaveFile);
+  SaveFile.Enabled    := ButtonEnabled(poSaveFileEnabled);
+
+  OpenInExcel.Visible := Assigned(FOnOpenInExcel);
+  OpenInExcel.Enabled := ButtonEnabled(poOpenInExcelEnabled);
+
+  AllOnOne.Visible    := Assigned(FOnAllOnOne);
+  AllOnOne.Enabled    := ButtonEnabled(poAllOnOneEnabled);
+
+  ReportProperties.Visible  := Assigned(FOnEditReportProperties);
+  ReportProperties.Enabled  := ButtonEnabled(poEditReportPropertiesEnabled);
+
+  PrinterSetup.Enabled      := ButtonEnabled(poPrinterSetupEnabled);
+  Print.Enabled             := ButtonEnabled(poPrintEnabled);
+
+  ContentZoomSeparator.Visible  := canZoomContent;
+  ContentZoomBoxLabel.Visible   := canZoomContent;
+  ContentZoomBox.Visible        := canZoomContent;
+
+  ContentFitHeight.Visible  := canZoomContent;
+  ContentFitHeight.Enabled  := canGetContentSize;
+  ContentFitHeight.Down     := ContentZoomBox.ItemIndex = 1;
+
+  ContentFitWidth.Visible   := canZoomContent;
+  ContentFitWidth.Enabled   := canGetContentSize;
+  ContentFitWidth.Down      := ContentZoomBox.ItemIndex = 2;
 
   FitHeight.Down  := ZoomBox.ItemIndex = 1;
-  FitWidth.Down := ZoomBox.ItemIndex = 2;
+  FitWidth.Down   := ZoomBox.ItemIndex = 2;
 
   Panning.Enabled := PreviewBox.VertScrollBar.Visible or PreviewBox.HorzScrollBar.Visible or (PreviewPanel.Left <> 0) or (PreviewPanel.Top <> 0);
   if not Panning.Enabled then
@@ -866,13 +876,13 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 06.11.2006 --
-procedure TBegaCustomPreviewFrame.updateBox;
+procedure TBegaCustomPreviewFrame.UpdateBox;
 var
-  z: double;
-  WidthInInch: double;
-  HeightInInch: double;
+  z: Double;
+  WidthInInch: Double;
+  HeightInInch: Double;
 
-  function calcZoomFactor(
+  function CalcZoomFactor(
     PreviewPixelCount: Integer;
     PreviewBorderPixelCount: Integer;
     PreviewPixelsBetweenPages: Integer;
@@ -880,13 +890,13 @@ var
     PageCount: Integer;
     PaperSizeInInch: double): double;
   begin
-    Result := (PreviewPixelCount - 2 * PreviewBorderPixelCount - (max(0, PageCount - 1)) * PreviewPixelsBetweenPages)
+    Result := (PreviewPixelCount - 2 * PreviewBorderPixelCount - (Max(0, PageCount - 1)) * PreviewPixelsBetweenPages)
       / (PreviewPixelsPerInch * PaperSizeInInch * PageCount);
   end;
 
-  function calcZoomFactorX(): double;
+  function CalcZoomFactorX: Double;
   begin
-    Result := calcZoomFactor(
+    Result := CalcZoomFactor(
       PreviewBox.ClientWidth,
       PreviewPanel.BorderWidth,
       PreviewPanel.InnerWidth,
@@ -895,9 +905,9 @@ var
       WidthInInch);
   end;
 
-  function calcZoomFactorY(): double;
+  function CalcZoomFactorY: Double;
   begin
-    Result := calcZoomFactor(
+    Result := CalcZoomFactor(
       PreviewBox.ClientHeight,
       PreviewPanel.BorderWidth,
       PreviewPanel.InnerWidth,
@@ -920,9 +930,9 @@ begin
   if ZoomBox.ItemIndex = -1 then
     ZoomBox.ItemIndex := 0;
   case ZoomBox.ItemIndex of
-    0: z := min(calcZoomFactorX, calcZoomFactorY);
-    1: z := calcZoomFactorY;
-    2: z := calcZoomFactorX; 
+    0: z := Min(CalcZoomFactorX, CalcZoomFactorY);
+    1: z := CalcZoomFactorY;
+    2: z := CalcZoomFactorX;
     3: z := 0.25;
     4: z := 0.50;
     5: z := 0.75;
@@ -936,15 +946,16 @@ begin
     z := Zoom;
   end;
   Zoom := z;
+
   PreviewPanel.MFPrinter := MFPrinter;
-  PreviewPanel.updatePreview(
-    trunc(PixelsPerInch * z * WidthInInch),
-    trunc(PixelsPerInch * z * HeightInInch));
-  updateActions;
+  PreviewPanel.UpdatePreview(
+    Trunc(PixelsPerInch * z * WidthInInch),
+    Trunc(PixelsPerInch * z * HeightInInch));
+  UpdateActions;
 end;
 
 //- BG ----------------------------------------------------------- 15.03.2006 --
-procedure TBegaCustomPreviewFrame.updateContentZoom;
+procedure TBegaCustomPreviewFrame.UpdateContentZoom;
 var
   z: Double;
   PreviewArea: TBegaRect;
@@ -954,22 +965,22 @@ begin
   case ContentZoomBox.ItemIndex of
     0: // fit to size
     begin
-      PreviewArea := MFPrinter.getPreviewArea(MFPrinter.PrintArea, Screen.PixelsPerInch);
-      if getContentSize(ContentSize) then
-        z := min(
+      PreviewArea := MFPrinter.GetPreviewArea(MFPrinter.PrintArea, Screen.PixelsPerInch);
+      if GetContentSize(ContentSize) then
+        z := Min(
           PreviewArea.Height / ContentSize.Height,
           PreviewArea.Width / ContentSize.Width);
     end;
     1: // fit to height
     begin
-      PreviewArea := MFPrinter.getPreviewArea(MFPrinter.PrintArea, Screen.PixelsPerInch);
-      if getContentSize(ContentSize) then
+      PreviewArea := MFPrinter.GetPreviewArea(MFPrinter.PrintArea, Screen.PixelsPerInch);
+      if GetContentSize(ContentSize) then
         z := PreviewArea.Height / ContentSize.Height;
     end;
     2: // fit to width
     begin
-      PreviewArea := MFPrinter.getPreviewArea(MFPrinter.PrintArea, Screen.PixelsPerInch);
-      if getContentSize(ContentSize) then
+      PreviewArea := MFPrinter.GetPreviewArea(MFPrinter.PrintArea, Screen.PixelsPerInch);
+      if GetContentSize(ContentSize) then
         z := PreviewArea.Width / ContentSize.Width;
     end;
     3: z := 0.25;
@@ -985,28 +996,28 @@ begin
   end;
 
   MFPrinter.PrintScale := z;
-  updateActions;
+  UpdateActions;
 end;
 
 //- BG ----------------------------------------------------------- 21.02.2006 --
-procedure TBegaCustomPreviewFrame.updatePage;
+procedure TBegaCustomPreviewFrame.UpdatePage;
 begin
-  PreviewPanel.invalidate;
+  PreviewPanel.Invalidate;
 end;
 
 //- BG ----------------------------------------------------------- 26.04.2006 --
-procedure TBegaCustomPreviewFrame.updatePageMenu;
+procedure TBegaCustomPreviewFrame.UpdatePageMenu;
 var
   Done: Boolean;
 begin
   Done := False;
-  doCreatePageMenu(Done);
+  DoCreatePageMenu(Done);
 end;
 
 //------------------------------------------------------------------------------
 procedure TBegaCustomPreviewFrame.ZoomBoxChange(Sender: TObject);
 begin
-  updateBox;
+  UpdateBox;
 end;
 
 //------------------------------------------------------------------------------
@@ -1034,12 +1045,12 @@ begin
      Zoom := Zoom * ZOOMFACTOR;
     if (ssRight in Shift) and (Zoom > 0.01) then
      Zoom := Zoom / ZOOMFACTOR;
-    ZoomBox.ItemIndex := ord(zoom2ZoomMode(Zoom));
+    ZoomBox.ItemIndex := Ord(zoom2ZoomMode(Zoom));
 
-    updateBox;
+    UpdateBox;
 
-    PreviewBox.HorzScrollBar.Position := round(sx * PreviewPanel.Width) - PreviewBox.Width div 2;
-    PreviewBox.VertScrollBar.Position := round(sy * PreviewPanel.Height) - PreviewBox.Height div 2;
+    PreviewBox.HorzScrollBar.Position := Round(sx * PreviewPanel.Width) - PreviewBox.Width div 2;
+    PreviewBox.VertScrollBar.Position := Round(sy * PreviewPanel.Height) - PreviewBox.Height div 2;
   end
   else if Panning.Down then
   begin
@@ -1115,7 +1126,7 @@ end;
 procedure TBegaCustomPreviewFrame.RowsPerPreviewChange(Sender: TObject);
 begin
   PreviewPanel.RowCount := RowsPerPreview.Value;
-  updateBox;
+  UpdateBox;
 end;
 
 //- BG ----------------------------------------------------------- 22.12.2006 --
@@ -1124,9 +1135,9 @@ var
   Done: Boolean;
 begin
   Done := False;
-  doAllOnOne(done);
+  DoAllOnOne(done);
   if Done then
-    updatePage;
+    UpdatePage;
 end;
 
 //- BG ----------------------------------------------------------- 22.12.2006 --
@@ -1135,7 +1146,7 @@ var
   Done: Boolean;
 begin
   Done := False;
-  doOpenInExcel(done);
+  DoOpenInExcel(done);
 end;
 
 {$endif NoMetaFile}

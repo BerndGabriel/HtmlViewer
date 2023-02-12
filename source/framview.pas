@@ -2251,7 +2251,11 @@ begin
   inherited CreateIt(AOwner, Self);
   FFrameViewer := AOwner as TFvBase;
 {$ifdef DEBUG}
+  {$if defined(LCL) or defined(Compiler22_Plus)}
   Name := FFrameViewer.Name + '_FrameSetBase' + IntToHex(Integer(Self));
+  {$else}
+  Name := FFrameViewer.Name + '_FrameSetBase' + IntToHex(Integer(Self), 8);
+  {$ifend}
 {$endif}
   LocalCodePage := FrameViewer.CodePage;
   if fvNoBorder in FrameViewer.fvOptions then
@@ -3767,7 +3771,11 @@ function TFVBase.CreateViewer(Owner: THtmlFrameBase): THtmlViewer;
 begin
   Result := GetViewerClass.CreateCopy(Owner, Self); {the Viewer for the frame}
 {$ifdef DEBUG}
+  {$if defined(LCL) or defined(Compiler22_Plus)}
   Result.Name := Name + '_Viewer' + IntToHex(Integer(Result));
+  {$else}
+  Result.Name := Name + '_Viewer' + IntToHex(Integer(Result), 8);
+  {$ifend}
 {$endif}
   Result.ViewImages := ViewImages;
   Result.SetImageCache(FImageCache);
@@ -3975,7 +3983,11 @@ end;
 procedure TFVBase.SetName(const NewName: TComponentName);
 begin
   inherited;
+  {$if defined(LCL) or defined(Compiler22_Plus)}
   FCurFrameSet.Name := NewName + '_CurFrameSet' + IntToHex(Integer(FCurFrameSet));
+  {$else}
+  FCurFrameSet.Name := NewName + '_CurFrameSet' + IntToHex(Integer(FCurFrameSet), 8);
+  {$ifend}
 end;
 {$endif}
 
@@ -4767,7 +4779,10 @@ end;
 procedure TFVBase.ScaleChanged;
 begin
   inherited;
-  Reload;
+
+  // while loading we will set the Text in Loaded;
+  if not(csLoading in ComponentState) then
+    Reload;
 end;
 
 procedure TFVBase.SelectAll;

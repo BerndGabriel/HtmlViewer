@@ -35,11 +35,12 @@ uses
   Math,
 {$endif}
 {$ifdef LCL}
-  LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc, Forms,
+  LclIntf, IntfGraphics, FpImage, LclType, LResources, LMessages, HtmlMisc,
 {$else}
   Windows,
 {$endif}
-  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages, Variants, Types, ComCtrls,
+  SysUtils, Contnrs, Classes, Graphics, ClipBrd, Controls, ExtCtrls, Messages,
+  Variants, Types, ComCtrls, Forms,
 {$ifdef Compiler20_Plus}
   CommCtrl,
 {$endif}
@@ -1274,8 +1275,6 @@ end;
 
 function GetTextExtent(DC: HDC; P: PWideChar; N: Integer): TSize;
  {$ifdef UseInline} inline; {$endif}
-var
-  Dummy: Integer;
 begin
     GetTextExtentPoint32W(DC, P, N, Result); {win95, 98 ME}
 end;
@@ -3184,25 +3183,19 @@ end;
 
 //-- BG ------------------------------------------------------- 03.10.2022 --
 function TViewerBase.ParentForm: TCustomForm;
-var
-  P: TWinControl;
 begin
-  P := Parent;
-  while (P <> nil) and not (P is TCustomForm) do
-    P := P.Parent;
-
-  Result := TCustomForm(P);
+  Result := GetParentForm(Self);
 end;
 
 //-- BG ------------------------------------------------------- 29.09.2022 --
 function TViewerBase.FormPixelsPerInch: Integer;
 var
-  P: TWinControl;
+  P: TCustomForm;
 begin
   P := ParentForm;
 
   if P <> nil then
-    Result := TCustomForm(P).PixelsPerInch
+    Result := {$ifndef LCL}ThtCustomForm{$endif}(P).PixelsPerInch
   else
     Result := Screen.PixelsPerInch;
 end;

@@ -1,5 +1,5 @@
 {-------------------------------------------------------------------------------
-Copyright (C) 2006-2012 by Bernd Gabriel.
+Copyright (C) 2006-2023 by Bernd Gabriel.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -47,14 +47,14 @@ type
   private
     FFrameViewer: TFVBase; // TFrameViewer or TFrameBrowser
     FHtmlViewer: THtmlViewer;
-    function canPrint: Boolean;
+    function CanPrint: Boolean;
     function CurrentViewer: THtmlViewer;
     function PreviewGetSize(Sender: TObject; MFPrinter: TBegaMetaFilePrinter; out Width, Height: Integer): Boolean;
     procedure PreviewCreatePages(Sender: TObject; MFPrinter: TBegaMetaFilePrinter; var Done: Boolean);
     procedure PreviewPrintPages(Sender: TObject; MFPrinter: TBegaMetaFilePrinter; FirstPage, LastPage, Copies: Integer);
-    procedure setFrameViewer(const Value: TFVBase);
-    procedure setHtmlViewer(const Value: THtmlViewer);
-    procedure updateEvents;
+    procedure SetFrameViewer(const Value: TFVBase);
+    procedure SetHtmlViewer(const Value: THtmlViewer);
+    procedure UpdateEvents;
   public
     property FrameViewer: TFVBase read FFrameViewer write setFrameViewer;
     property HtmlViewer: THtmlViewer read FHtmlViewer write setHtmlViewer;
@@ -158,26 +158,26 @@ begin
 end;
 
 //- BG ----------------------------------------------------------- 26.03.2007 --
-procedure TBegaHtmlPrintPreviewForm.setFrameViewer(const Value: TFVBase);
+procedure TBegaHtmlPrintPreviewForm.SetFrameViewer(const Value: TFVBase);
 begin
   FFrameViewer := Value;
   FHtmlViewer := nil;
-  updateEvents;
+  UpdateEvents;
   Preview.createPages;
 end;
 
 //- BG ----------------------------------------------------------- 26.03.2007 --
-procedure TBegaHtmlPrintPreviewForm.setHtmlViewer(
+procedure TBegaHtmlPrintPreviewForm.SetHtmlViewer(
   const Value: THtmlViewer);
 begin
   FFrameViewer := nil;
   FHtmlViewer := Value;
-  updateEvents;
+  UpdateEvents;
   Preview.createPages;
 end;
 
 //- BG ----------------------------------------------------------- 27.03.2007 --
-procedure TBegaHtmlPrintPreviewForm.updateEvents;
+procedure TBegaHtmlPrintPreviewForm.UpdateEvents;
 begin
   if CurrentViewer <> nil then
   begin

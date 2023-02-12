@@ -1,6 +1,6 @@
 {-------------------------------------------------------------------------------
 Version   11.10
-Copyright (C) 2022 by Bernd Gabriel.
+Copyright (C) 2022-2023 by Bernd Gabriel.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -91,6 +91,8 @@ type
 
   // BG, 19.02.2022 extracted from TMetafilePrinter
   ThtPagePrinter = class(ThtPrinter)
+  private
+    FPreviewPixelsPerInch: Integer;
   protected
 {$ifdef UseGenerics}
     FPages: TObjectList<TObject>;
@@ -124,6 +126,7 @@ type
     property Pages[I: Integer]: TObject read GetPage;
     //property Printing: boolean read FPrinting;
     property LastAvailablePage: Integer read GetLastAvailPage;
+    property PreviewPixelsPerInch: Integer read FPreviewPixelsPerInch write FPreviewPixelsPerInch;
   published
     property Units: TUnits read FUnits write SetUnits;
     property OnPageEvent: TPageEvent read FOnPageEvent write FOnPageEvent;
@@ -216,6 +219,7 @@ begin
   FPages := TObjectList.Create;
 {$endif}
   FUnits := unInches;
+  FPreviewPixelsPerInch := Screen.PixelsPerInch;
 end;
 
 destructor ThtPagePrinter.Destroy;
@@ -293,7 +297,7 @@ begin
   NextCanvas.Brush.Style := bsClear;
   if FCurCanvas = nil then
   begin
-    NextCanvas.Font.PixelsPerInch := Screen.PixelsPerInch;
+    NextCanvas.Font.PixelsPerInch := PreviewPixelsPerInch;
     NextCanvas.Font.Name := FontSans;
     NextCanvas.Font.Size := 10;
     FCurCanvas := NextCanvas;
