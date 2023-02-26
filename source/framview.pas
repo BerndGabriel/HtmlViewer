@@ -811,7 +811,7 @@ begin
     NextFile := Source
   else
     NextFile := MasterSet.FrameViewer.HTMLExpandFilename(URL);
-  if not MasterSet.RequestEvent and not FileExists(NextFile) then
+  if not MasterSet.RequestEvent and not htFileExists(NextFile) then
     Exit;
   if not Assigned(RefreshTimer) then
     RefreshTimer := TTimer.Create(Self);
@@ -982,7 +982,7 @@ begin
         if not MasterSet.TriggerEvent(Source, EV.NewName, EV.Doc) then
         begin
           EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
-          if FileExists(Ev.NewName) then
+          if htFileExists(Ev.NewName) then
           begin
             Stream := TFileStream.Create( htStringToString(EV.NewName), fmOpenRead or fmShareDenyWrite);
             try
@@ -1216,7 +1216,7 @@ begin
     if not MasterSet.TriggerEvent(Source, EV.NewName, EV.Doc) then
     begin
       EV.NewName := MasterSet.FrameViewer.HTMLExpandFilename(Source);
-      if FileExists(Ev.NewName) then
+      if htFileExists(Ev.NewName) then
       begin
         Stream := TFileStream.Create( htStringToString(EV.NewName), fmOpenRead or fmShareDenyWrite);
         try
@@ -2219,7 +2219,7 @@ end;
 procedure TSubFrameSetBase.SetRefreshTimer;
 begin
   NextFile := HTMLToDos(FRefreshURL);
-  if not FileExists(NextFile) then
+  if not htFileExists(NextFile) then
     Exit;
   if not Assigned(RefreshTimer) then
     RefreshTimer := TTimer.Create(Self);
@@ -2480,6 +2480,9 @@ var
 begin
   Clear;
   NestLevel := 0;
+  if not htFileExists(FName) then
+    Exit;
+
   ft := HTMLType;
   if not MasterSet.RequestEvent then
     ft := GetFileType(FName);
@@ -2797,24 +2800,14 @@ end;
 procedure TFrameViewer.LoadFromFile(const FileName: ThtString);
 var
   Name, Dest: ThtString;
-{$ifdef FPC}
-  ShortName: ThtString;
-{$endif}
 begin
   if Processing then
-    exit;
+    Exit;
+
   SplitDest(FileName, Name, Dest);
-  if not FileExists(Name) then
-  begin
-{$ifdef FPC}
-    // BG, 24.04.2014: workaround for non ansi file names:
-    ShortName := ExtractShortPathName(UTF8Decode(Name));
-    if FileExists(ShortName) then
-      Name := ShortName
-    else
-{$endif}
+  if not htFileExists(Name) then
     raise(EhtLoadError.Create('Can''t locate file: ' + htStringToString(Name) ));
-  end;
+
   LoadFromFileInternal(Name, Dest);
 end;
 
@@ -2903,7 +2896,7 @@ begin
   begin
     FrameTarget := (CurFrameSet.FrameNames.Objects[I] as TViewerFrameBase);
 
-    if not FileExists(Name) and not Assigned(OnStreamRequest) then
+    if not htFileExists(Name) and not Assigned(OnStreamRequest) then
       raise EhtLoadError.CreateFmt('Can''t locate ''%s''.', [Name]);
 
     BeginProcessing;

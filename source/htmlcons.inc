@@ -26,7 +26,11 @@ are covered by separate copyright notices located in those modules.
 
 {$ifdef FPC}
 
-{ Identify FreePascal/Lazarus Compiler Version }
+{ Identify FreePascal/Lazarus Compiler Version:
+
+    const lcl_fullversion = ((lcl_major * 100 + lcl_minor) * 100 + lcl_release) * 100 + lcl_patch;
+
+}
 
   {$define LCL}
   {$mode delphi}
@@ -38,10 +42,17 @@ are covered by separate copyright notices located in those modules.
 
   {$define HasStrictDelimiter}
 
-  {$define ver100_plus}
-  {$define ver120_plus}
+  {.$define ver100_plus}
+  {.$define ver120_plus}
 
   {$define TSearchRecHasNoTimestamp}
+
+  { Compiler Features }
+
+  {$ifdef LCLQt5}
+    {$define OwnPaintPanelDoubleBuffering}
+  {$endif}
+
 {$else}
 
 { Identify Delphi Compiler Version:
@@ -63,6 +74,9 @@ are covered by separate copyright notices located in those modules.
   D15 Delphi XE       22    VER220
   D14 Delphi 2010     21    VER210
   D12 Delphi 2009     20    VER200
+
+  unsupported Versions:
+
   D11 Delphi 2007     18.5  VER185
   D10 Delphi 2006     18    VER180
   D9  Delphi 2005     17    VER170
@@ -81,9 +95,7 @@ are covered by separate copyright notices located in those modules.
 
   Since Delphi 6 the version number can be found in the system constant System.CompilerVersion
 
-  NOTICE: HtmlViewer no longer supports versions before Delphi 6
-  BG, 20.11.2010: HtmlViewer sources use neither ver100_plus nor ver120_plus any more.
-  We keep the defines alive for custom code which might still use them.
+  NOTICE: HtmlViewer 11.10 no longer supports versions before Delphi 2009
 
   A complete list of version numbers can be found at:
 
@@ -93,8 +105,8 @@ are covered by separate copyright notices located in those modules.
   {$define VCL}
   {$define Windows}
   {$ifdef CONDITIONALEXPRESSIONS} {Delphi 6 and up}
-    {$define ver100_plus}
-    {$define ver120_plus}
+    {.$define ver100_plus}
+    {.$define ver120_plus}
     {$ifdef ver140}
     {$else}
       {$define Delphi7_Plus}
@@ -135,41 +147,41 @@ are covered by separate copyright notices located in those modules.
                             {$ifdef ver260}
                             {$else}
                               {$define Compiler27_Plus}
-                             {$ifdef ver270}
-                             {$else}
-                               {$define Compiler28_Plus}
-                               {$ifdef ver280}
-                               {$else}
-                                 {$define Compiler29_Plus}
-                                 {$ifdef ver290}
-                                 {$else}
-                                   {$define Compiler30_Plus}
-                                   {$ifdef ver300}
-                                   {$else}
-                                     {$define Compiler31_Plus}
-                                     {$ifdef ver310}
-                                     {$else}
-                                       {$define Compiler32_Plus}
-                                       {$ifdef ver320}
-                                       {$else}
-                                         {$define Compiler33_Plus}
-                                         {$ifdef ver330}
-                                         {$else}
-                                           {$define Compiler34_Plus}
-                                           {$ifdef ver340}
-                                           {$else}
-                                             {$define Compiler35_Plus}
-                                             {$ifdef ver350}
-                                             {$else}
-                                             {$endif}
-                                           {$endif}
-                                         {$endif}
-                                       {$endif}
-                                     {$endif}
-                                   {$endif}
-                                 {$endif}
-                               {$endif}
-                             {$endif}
+                              {$ifdef ver270}
+                              {$else}
+                                {$define Compiler28_Plus}
+                                {$ifdef ver280}
+                                {$else}
+                                  {$define Compiler29_Plus}
+                                  {$ifdef ver290}
+                                  {$else}
+                                    {$define Compiler30_Plus}
+                                    {$ifdef ver300}
+                                    {$else}
+                                      {$define Compiler31_Plus}
+                                      {$ifdef ver310}
+                                      {$else}
+                                        {$define Compiler32_Plus}
+                                        {$ifdef ver320}
+                                        {$else}
+                                          {$define Compiler33_Plus}
+                                          {$ifdef ver330}
+                                          {$else}
+                                            {$define Compiler34_Plus}
+                                            {$ifdef ver340}
+                                            {$else}
+                                              {$define Compiler35_Plus}
+                                              {$ifdef ver350}
+                                              {$else}
+                                              {$endif}
+                                            {$endif}
+                                          {$endif}
+                                        {$endif}
+                                      {$endif}
+                                    {$endif}
+                                  {$endif}
+                                {$endif}
+                              {$endif}
                             {$endif}
                           {$endif}
                         {$endif}
@@ -183,6 +195,10 @@ are covered by separate copyright notices located in those modules.
           {$endif}
         {$endif}
       {$endif}
+    {$endif}
+    {$ifndef Compiler20_Plus}
+      // Might still work or not. Oldest tested version is 2009.
+      {$message 'Delphi versions before 2009 are no longer supported.'}
     {$endif}
   {$else}
     {$message 'Sorry, but Delphi versions before 6 are not supported.'}
@@ -319,6 +335,7 @@ are covered by separate copyright notices located in those modules.
         simulates the way IExplorer does it, issuing the OnChange event
         immediately when a change is made.}
 
+{$ifndef OwnPaintPanelDoubleBuffering} // required for some compiler versions
 {.$define OwnPaintPanelDoubleBuffering}
         {Issue 57: Delphi 7? or Russian? Locale? + XP-Manifest produce misplaced
         button captions, which I (BG) cannot reproduce with D6, D2007 or D2009.
@@ -326,6 +343,7 @@ are covered by separate copyright notices located in those modules.
         This switch reactivates the manual double buffering in TPaintPanel.Paint(), which
         was removed with r118.
         Due to several redraw errors with Delphi, OwnPaintPanelDoubleBuffering now is always set for Delphi.}
+{$endif}
 
 {$define HalfToneStretching}
         {This makes use of a better stretching methode provided by Windows: HALFTONE.

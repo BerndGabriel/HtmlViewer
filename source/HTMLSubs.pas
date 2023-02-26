@@ -8136,7 +8136,7 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtIm
       Specific := HTMLToRes(Name, ResType);
       Stream := TResourceStream.Create(HInstance, htStringToString(Specific), PChar({$ifdef LCL}string(ResType){$else}ResType{$endif}) );
     end
-    else if FileExists(Name) then
+    else if htFileExists(Name) then
       Stream := TFileStream.Create( htStringToString(Name), fmOpenRead or fmShareDenyWrite)
     else
       Stream := nil;

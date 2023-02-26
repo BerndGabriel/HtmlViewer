@@ -1145,26 +1145,14 @@ procedure THtmlViewer.LoadFile(const FileName: ThtString; ft: ThtmlFileType);
 var
   Dest, Name: ThtString;
   Stream: TStream;
-{$ifdef FPC}
-  ShortName: ThtString;
-{$endif}
 begin
   IOResult; {eat up any pending errors}
   SplitDest(FileName, Name, Dest);
   if Name <> '' then
     Name := ExpandFileName(Name);
-  //FCurrentFile := Name; //BG, 03.04.2011: issue 83: Failure to set FCurrentFile
-  if not FileExists(Name) then
-  begin
-{$ifdef FPC}
-    //BG, 24.04.2014: workaround for non ansi file names:
-    ShortName := ExtractShortPathName(UTF8Decode(Name));
-    if FileExists(ShortName) then
-      Name := ShortName
-    else
-{$endif}
+
+  if not htFileExists(Name) then
     raise EhtLoadError.CreateFmt('Can''t locate file ''%s''.', [Name]);
-  end;
 
   Stream := TFileStream.Create( htStringToString(Name), fmOpenRead or fmShareDenyWrite);
   try
@@ -5776,7 +5764,7 @@ procedure THtmlViewer.htStreamRequest(var Url: ThtString; var Stream: TStream; o
     else
     begin
       PathOfUrl := ExtractFilePath(Url);
-      if FileExists(Url) then
+      if htFileExists(Url) then
         Stream := TFileStream.Create( htStringToString(Url), fmOpenRead or fmShareDenyWrite);
     end;
 

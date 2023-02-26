@@ -1285,7 +1285,7 @@ end;
 {$ENDIF}
 
 initialization
-  htExpectsUTF8 := WidgetSet.LCLPlatform in [lpCarbon, lpQt, lpGTK2, lpWin32];
+  htExpectsUTF8 := WidgetSet.LCLPlatform in [lpCarbon, lpQt, lpQt5, lpGTK2, lpWin32];
 {$IFNDEF NoFlatScrollbars}
   InitFlatSB;
 {$ENDIF}

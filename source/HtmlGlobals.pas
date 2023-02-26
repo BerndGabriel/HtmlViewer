@@ -516,6 +516,8 @@ function htStringArrayToStr(const StrArray: ThtStringArray; Separator: ThtChar):
 function htSameStringArray(const A1, A2: ThtStringArray): Boolean;
 procedure htSortStringArray(A: ThtStringArray);
 
+function htFileExists(const FName: ThtString): Boolean;
+
 //{$ifdef UnitConstsMissing}
 //const
 //  SOutOfResources	= 'Out of system resources';
@@ -1165,6 +1167,22 @@ begin
   {$else}
     Result := WideUpperCase(Str);
   {$endif}
+end;
+
+//-- BG ---------------------------------------------------------- 26.02.2023 --
+function htFileExists(const FName: ThtString): Boolean;
+var
+  Name: string;
+begin
+  Name := htStringToString(FName);
+  Result := FileExists(Name);
+  {$if defined(FPC) and (fpc_fullversion < 3020000)}
+    // Fix to disable LoadFromFile with folder path #290 (Alexey-T)
+    // DirectoryExists needed in Laz, because FPC 3.0.4 gets FileExists(s)=True
+    // for folder. It's changed in FPC 3.2.
+    if Result then
+      Result := not DirectoryExists(Name);
+  {$ifend}
 end;
 
 //-- BG ---------------------------------------------------------- 21.08.2011 --
