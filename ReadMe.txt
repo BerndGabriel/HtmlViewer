@@ -13,7 +13,7 @@ HtmlViewer 11
 --------------------------------------------------------------------------------
 
 The current version is HtmlViewer 11.10 in the default branch "HtmlViewer-11.10".
-The next version is growing up in branch "master". (You're currently viewing "master" branch.)
+The next version is growing up in branch "master".
 
 The HtmlViewer component set consists of the THtmlViewer, TFrameViewer,
 and TFrameBrowser components. All three are HTML document display components:
@@ -23,7 +23,7 @@ THtmlViewer
 - THtmlViewer displays single (non-frame) documents from file systems and resources.
 - It also forms the basis for the other two components.
 
-TFrameViewer (deprecated)
+TFrameViewer 
 - Displays both frame and single HTML documents.
 - TFrameViewer is oriented more for local file system use.
 
@@ -60,46 +60,38 @@ Some features:
 - Subscripts and superscripts
 - Unicode, UTF-8 and many single and multi byte character codes supported
 - DPI scaling
+- works with Delphi  2009   or newer, 32 and 64 Bit
+- works with Lazarus 1.2.x  or newer, 32 and 64 Bit, for Windows and Linux 
 
 While HTML documents are normally associated with the Internet, they are also
 very useful for displaying all kinds of textual material such as documentation,
 helpfiles, etc. Graphics are easily incorporated in these documents.
 
-For a detailed list and demonstration of features start FrameDem.exe.
+For a detailed list and demonstration of features start FrameDem.exe and try 
+some other demo programs.
 
 For a detailed list of changes and bugfixes per version start FrameDem.exe 
 and click "What's new" or see "./Demos/Compiled Framedemo/whatsnew.htm".
 
 --------------------------------------------------------------------------------
-
-Which HtmlViewer version should I use?
-
-HtmlViewer 11.x (recommended)
-- is a full UnicodeString version suitable for projects 
-  with most common codepages/charsets.
-- with Delphi 6..2007 requires the TntUnicodeControls.
-- works with Delphi  6      or newer (recommended at least 2009)
-- works with Lazarus 0.9.30 or newer (recommended at least 1.2.x)
-  for Windows, Linux and Raspbian
-- 32 and 64 Bit
-
 HtmlViewer 11.x is available at: https://sourceforge.net/projects/htmlviewer/
 HtmlViewer development is hosted at: https://github.com/BerndGabriel/HtmlViewer
+--------------------------------------------------------------------------------
 
-If you are using HtmlViewer 11 with Delphi 6..2007 you will need the
-TntUnicodeControls 2.3.0 or 2.2.1, which are available at:
+If you try to use HtmlViewer 11 with no longer supported Delphi 6..2007 you 
+will need the TntUnicodeControls 2.3.0 or 2.2.1, which are available at:
 
 http://www.yunqa.de/delphi/doku.php/products/tntunicodecontrols/index
 
 Please install them into your IDE.
---------------------------------------------------------
 
+--------------------------------------------------------
 Copyright (c) 1995 - 2008 by L. David Baldwin
-Copyright (c) 1995 - 2008 by Anders Melander (DitherUnit.pas)
-Copyright (c) 1995 - 2008 by Ron Collins (HtmlGif1.pas)
+Copyright (c) 1995 - 2023 by Anders Melander (DitherUnit.pas)
+Copyright (c) 1995 - 2023 by Ron Collins (HtmlGif1.pas)
 Copyright (c) 2008 - 2009 by Sebastian Zierer (Delphi 2009 Port)
 Copyright (c) 2008 - 2010 by Arvid Winkelsdorf (Fixes)
-Copyright (c) 2009 - 2022 by HtmlViewer Team 
+Copyright (c) 2009 - 2023 by HtmlViewer Team 
 
 See included License.txt
 --------------------------------------------------------------------------------
