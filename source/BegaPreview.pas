@@ -648,16 +648,17 @@ end;
 
 //------------------------------------------------------------------------------
 function TBegaCustomPreviewFrame.PixelsPerInch: Integer;
+{$if defined(LCL) or not defined(Compiler31_Plus)}
 var
   Form: TCustomForm;
 begin
-{$if defined(LCL) or not defined(Compiler31_Plus)}
   Form := GetParentForm(Self);
   if Form <> nil then
     Result := {$ifndef LCL}TBegaCustomForm{$endif}(Form).PixelsPerInch
   else
     Result := Screen.PixelsPerInch;
 {$else}
+begin
   Result := FCurrentPPI;
 {$ifend}
 end;
