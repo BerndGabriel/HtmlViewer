@@ -7174,7 +7174,7 @@ begin
         NStr := NStr + '.';
         BkMode := SetBkMode(Canvas.Handle, Transparent);
         TAlign := SetTextAlign(Canvas.Handle, TA_BASELINE);
-        Canvas.TextOut(X - 10 - Canvas.TextWidth(NStr), YB, NStr);
+        Canvas.TextOut(X - 10 - Canvas.TextWidth(NStr), YB + Canvas.Font.Height , NStr);
         SetTextAlign(Canvas.Handle, TAlign);
         SetBkMode(Canvas.Handle, BkMode);
       end
