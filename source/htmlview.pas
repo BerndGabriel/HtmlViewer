@@ -3172,6 +3172,7 @@ end;
 
 function THtmlViewer.GetScrollBarRange: Integer;
 begin
+  Retext;
   Result := FMaxVertical - PaintPanel.Height;
 end;
 
@@ -3197,6 +3198,7 @@ end;
 
 function THtmlViewer.GetHScrollBarRange: Integer;
 begin
+  Retext;
   Result := HScrollBar.Max - PaintPanel.Width;
 end;
 
