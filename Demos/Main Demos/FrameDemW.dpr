@@ -1,9 +1,8 @@
 {
-Version   11.7
+Version   11.11
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
-Copyright (c) 2011-2016 by Bernd Gabriel
-
+Copyright (c) 2011-2023 by Bernd Gabriel
 *********************************************************
 *                                                       *
 *           Thanks to Mike Lischke for his              *
@@ -35,6 +34,10 @@ are covered by separate copyright notices located in those modules.
 program FrameDemW;
 
 {A program to demonstrate the TFrameViewer component}
+
+
+
+{$R 'maindemo.res' 'Resources\maindemo.rc'}
 
 uses
   HighDPIInit in '..\..\..\bega\BegaViewer\HighDPIInit.pas',

@@ -1,5 +1,5 @@
 {
-Version   11.10
+Version   11.11
 Copyright (c) 2008-2023 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -517,6 +517,7 @@ function htSameStringArray(const A1, A2: ThtStringArray): Boolean;
 procedure htSortStringArray(A: ThtStringArray);
 
 function htFileExists(const FName: ThtString): Boolean;
+function htFindResource(Instance: HModule; const FileName, GoodType: ThtString): HRSRC; {$ifdef UseInline} inline; {$endif}
 
 //{$ifdef UnitConstsMissing}
 //const
@@ -1183,6 +1184,14 @@ begin
     if Result then
       Result := not DirectoryExists(Name);
   {$ifend}
+end;
+
+//-- BG ---------------------------------------------------------- 14.12.2023 --
+// moved from UrlConn.pas
+function htFindResource(Instance: HModule; const FileName, GoodType: ThtString): HRSRC;
+  {$ifdef UseInline} inline; {$endif}
+begin
+  Result := FindResource(Instance, PChar(htStringToString(FileName)), PChar(htStringToString(GoodType)));
 end;
 
 //-- BG ---------------------------------------------------------- 21.08.2011 --

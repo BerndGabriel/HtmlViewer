@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 705
   Top = 161
   Caption = 'Frame Demo'
-  ClientHeight = 714
-  ClientWidth = 1155
+  ClientHeight = 713
+  ClientWidth = 1151
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,8 +20,8 @@ object Form1: TForm1
   object FrameViewer: TFrameViewer
     Left = 0
     Top = 27
-    Width = 1155
-    Height = 660
+    Width = 1151
+    Height = 659
     CodePage = 0
     DefBackground = clWindow
     DefFontColor = clWindowText
@@ -36,7 +36,9 @@ object Form1: TForm1
     PrintMarginRight = 2.000000000000000000
     PrintMarginTop = 2.000000000000000000
     PrintScale = 1.000000000000000000
-    Text = 'Hello Serif<pre>Hello Monospace</pre>'
+    Text = 
+      '<img align=left src="res://OrphanCat.ico" alt="res://OrphanCat.i' +
+      'co">Hello Serif<pre>Hello Monospace</pre>'
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
@@ -52,22 +54,24 @@ object Form1: TForm1
     Align = alClient
     TabOrder = 0
     OnMouseMove = FrameViewerMouseMove
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnFormSubmit = SubmitEvent
-    ExplicitWidth = 1151
-    ExplicitHeight = 659
+    ExplicitWidth = 1147
+    ExplicitHeight = 658
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 1155
+    Width = 1151
     Height = 27
     Align = alTop
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 1
-    ExplicitWidth = 1151
+    ExplicitWidth = 1147
     DesignSize = (
-      1155
+      1151
       27)
     object ReloadButton: TButton
       Left = 2
@@ -105,11 +109,11 @@ object Form1: TForm1
     object Edit2: TEdit
       Left = 200
       Top = 2
-      Width = 939
+      Width = 919
       Height = 23
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 3
-      ExplicitWidth = 935
+      ExplicitWidth = 915
     end
   end
   object MediaPlayer: TMediaPlayer
@@ -125,36 +129,36 @@ object Form1: TForm1
   end
   object Panel3: TPanel
     Left = 0
-    Top = 687
-    Width = 1155
+    Top = 686
+    Width = 1151
     Height = 27
     Align = alBottom
     Alignment = taLeftJustify
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 3
-    ExplicitTop = 686
-    ExplicitWidth = 1151
+    ExplicitTop = 685
+    ExplicitWidth = 1147
     object ProgressBar: TProgressBar
-      Left = 1003
+      Left = 999
       Top = 2
       Width = 150
       Height = 23
       Align = alRight
       TabOrder = 0
       Visible = False
-      ExplicitLeft = 999
+      ExplicitLeft = 995
     end
     object InfoPanel: TPanel
       Left = 89
       Top = 2
-      Width = 914
+      Width = 910
       Height = 23
       Align = alClient
       Alignment = taLeftJustify
       BevelOuter = bvLowered
       TabOrder = 1
-      ExplicitWidth = 910
+      ExplicitWidth = 906
     end
     object QuirksModePanel: TPanel
       Left = 2

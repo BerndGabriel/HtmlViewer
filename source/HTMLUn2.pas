@@ -1,7 +1,8 @@
 {
-Version   11.10
+Version   11.11
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2023 by HtmlViewer Team
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2023 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -766,12 +767,17 @@ type
   end;
 
   THtmlViewerBase = class(TViewerBase)
+  private
+    FResourceInstance: HINST;
+    function GetResourceInstance: HINST;
+    procedure SetResourceInstance(Value: HINST);
   public
     TablePartRec: TTablePartRec;
     function ShowFocusRect: Boolean; virtual; abstract;
     procedure ControlMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); virtual; abstract;
     procedure htProgress(Percent: Integer); virtual; abstract;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    property ResourceInstance: HINST read GetResourceInstance write SetResourceInstance;
   end;
 
   TFrameViewerBase = class(TViewerBase)
@@ -3165,9 +3171,23 @@ begin
 end;
 
 procedure TViewerBase.CMParentFontChanged(var Message: TMessage);
+{$ifdef FPC}
+var
+  FD: TFontData;
+{$endif}
 begin
   if csLoading in ComponentState then Exit;
   inherited;
+{$ifdef FPC}
+  if (Font.Name = 'default') or (Font.Height = 0) then
+  begin
+    FD := GetFontData(Font.Handle);
+    if Font.Name = 'default' then
+       Font.Name := FD.Name;
+    if Font.Height = 0 then
+       Font.Height := FD.Height;
+  end;
+{$endif}
   StyleChanged;
 end;
 
@@ -3571,6 +3591,28 @@ end;
 
 { THtmlViewerBase }
 
+//-- BG ------------------------------------------------------- 14.12.2023 --
+function THtmlViewerBase.GetResourceInstance: HINST;
+begin
+  // HInstance is the module handle of frameviewer.bpl.
+  // As most probably the main program uses resources of its exe-file,
+  // get the module handle of the exe-file, if nothing else has been set:
+  Result := FResourceInstance;
+  if Result = 0 then
+{$ifdef LCL}
+    // There is no GetModuleHandle() in Lazarus.
+    Result := HInstance;
+{$else}
+    Result := GetModuleHandle(NIL);
+{$endif}
+end;
+
+//-- BG ------------------------------------------------------- 14.12.2023 --
+procedure THtmlViewerBase.SetResourceInstance(Value: HINST);
+begin
+  FResourceInstance := Value;
+end;
+
 //-- BG ---------------------------------------------------------- 12.09.2010 --
 procedure THtmlViewerBase.KeyDown(var Key: Word; Shift: TShiftState);
 begin
@@ -3752,7 +3794,7 @@ begin
   if value = FOptimum then
     FOptimum := value;
 
-  // no need to update color as Optimum value has no affect on color  
+  // no need to update color as Optimum value has no affect on color
   //UpdateColor;
 end;
 
@@ -3811,4 +3853,5 @@ initialization
   GlobalObjectIdCount := 0; //>-- DZ
 {$endif}
 end.
+
 

@@ -1,5 +1,5 @@
 {
-Version   11.10
+Version   11.11
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2010 by HtmlViewer Team
 Copyright (c) 2011-2023 by Bernd Gabriel
@@ -42,6 +42,7 @@ uses
   FDemUnit in 'FDemUnit.PAS';
 
 {$R *.res}
+{$R maindemo.res}
 
 begin
   Application.Title:='';

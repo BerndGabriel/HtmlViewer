@@ -1,7 +1,6 @@
 {
-Version   11.9
-Copyright (c) 2016-2018 by HtmlViewer Team
-
+Version   11.11
+Copyright (c) 2016-2023 by Bernd Gabriel
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
@@ -912,16 +911,6 @@ begin
 end;
 
 { ThtResourceConnection }
-
-function htFindResource(HInstance: HModule; const FileName, GoodType: ThtString): HRSRC;
-  {$ifdef UseInline} inline; {$endif}
-begin
-{$ifdef LCL}
-  Result := FindResource(HInstance, string(FileName), string(GoodType));
-{$else}
-  Result := FindResource(HInstance, PChar(FileName), PChar(GoodType));
-{$endif}
-end;
 
 //-- BG ---------------------------------------------------------- 18.05.2016 --
 procedure ThtResourceConnection.Get(ADoc: ThtUrlDoc);

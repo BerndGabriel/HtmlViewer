@@ -128,7 +128,7 @@ type
   // properties can be applied to :link, :hover, :visited, etc.
   //
   private
-    FSection: TSection; 
+    FSection: TSection;
     FVisited, FHover: Boolean;
     Title: ThtString;
     FYValue: Integer;
@@ -6997,7 +6997,7 @@ begin
                 2: FListStyleType := lbCircle;
                 0: FListStyleType := lbSquare;
               end;
-            end;  
+            end;
       end;
 
     OLSy:
@@ -7030,7 +7030,7 @@ begin
 
       OLSy, ULSy, DirSy, MenuSy, DLSy:
         MargArrayO[MarginLeft] := 0;
-        
+
     else
       MargArrayO[MarginLeft] := ListIndent;
     end;
@@ -8128,13 +8128,18 @@ function ThtDocument.GetTheImage(const BMName: ThtString; var Transparent: ThtIm
   var
     Stream: TStream;
     Scheme, Specific, ResType: ThtString;
+    Instance: HINST;
   begin
     Name := TheOwner.HtmlExpandFilename(Name);
     SplitScheme(Name, Scheme, Specific);
     if Scheme = 'res' then
     begin
       Specific := HTMLToRes(Name, ResType);
-      Stream := TResourceStream.Create(HInstance, htStringToString(Specific), PChar({$ifdef LCL}string(ResType){$else}ResType{$endif}) );
+      Instance := TheOwner.ResourceInstance;
+      if htFindResource(Instance, Specific, ResType) <> 0 then
+        Stream := TResourceStream.Create(Instance, htStringToString(Specific), PChar(htStringToString(ResType)))
+      else
+        Stream := nil;
     end
     else if htFileExists(Name) then
       Stream := TFileStream.Create( htStringToString(Name), fmOpenRead or fmShareDenyWrite)

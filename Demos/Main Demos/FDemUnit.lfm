@@ -14,7 +14,7 @@ object Form1: TForm1
   OnShow = FormShow
   ParentFont = True
   Position = poScreenCenter
-  LCLVersion = '2.2.0.4'
+  LCLVersion = '2.2.6.0'
   object FrameViewer: TFrameViewer
     Left = 0
     Height = 431
@@ -35,7 +35,7 @@ object Form1: TForm1
     PrintMarginTop = 2
     PrintScale = 1
     QuirksMode = qmDetect
-    Text = 'Hello World<pre>Hello Monospace</pre>'
+    Text = '<img align=left src="res://OrphanCat.ico" alt="res://OrphanCat.ico">Hello Serif<pre>Hello Monospace</pre>'
     OnBlankWindowRequest = WindowRequest
     OnHistoryChange = HistoryChange
     OnHotSpotTargetClick = HotSpotTargetClick
