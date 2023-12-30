@@ -4870,7 +4870,7 @@ begin
       Invalidate;
     end;
   end
-  else if Sender is TFontObj and not NoJump then
+  else if (Sender is TFontObj) and not NoJump then
   begin
     Y := TFontObj(Sender).DrawYY;
     Pos := VScrollBarPosition;
