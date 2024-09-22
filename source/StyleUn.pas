@@ -3871,11 +3871,12 @@ begin
   end;
 
   I := Pos('hsl',S);
-  if I > 0 then begin
+  if I > 0 then
+  begin
     Result := FindHSLColor(Copy(S, I + 3, 255));
     if Result then
     begin
-      LastS := S1;
+      LastS := S;
       LastColor := Color;
     end;
     exit;
