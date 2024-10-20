@@ -16683,14 +16683,19 @@ end;
 function TFloatingObjList.GetObjectAt(Posn: Integer; out Obj): Integer;
 var
   I: Integer;
+  FlObj: TFloatingObj absolute Obj;
 begin
   for I := 0 to Count - 1 do
   begin
     Result := Items[I].StartCurs - Posn;
     if Result >= 0 then
     begin
-      TFloatingObj(Obj) := Items[I];
-      Exit;
+      FlObj := Items[I];
+      if FlObj.Display <> pdNone then
+      begin
+        TFloatingObj(Obj) := FlObj;
+        Exit;
+      end;
     end;
   end;
 
