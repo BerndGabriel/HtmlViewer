@@ -1238,15 +1238,19 @@ type
   TIntegerPerWidthType = array [TWidthType] of Integer;
 
   TTableBlock = class;
+  TCellObj = class;
 
   TCellObjCell = class(TCell)
   private
+    FOwner: TCellObj;
     MyRect: TRect;
     Title: ThtString;
     Url, Target: ThtString;
   public
-    constructor CreateCopy(Parent: TBlock; T: TCellObjCell);
+    constructor Create(Owner: TCellObj; Parent: TTableBlock);
+    constructor CreateCopy(Owner: TCellObj; Parent: TBlock; T: TCellObjCell);
     function GetURL(Canvas: TCanvas; X, Y: Integer; out UrlTarg: TUrlTarget; out FormControl: TIDObject {TImageFormControlObj}; out ATitle: ThtString): ThtguResultType; override;
+    property Owner: TCellObj read FOwner;
   end;
 
   TCellObjBase = class(TObject)
@@ -2093,6 +2097,8 @@ begin
   FPositions    := Source.FPositions;
   FFloating     := Source.FFloating;
   FIndent       := Source.FIndent;
+  FEmSize       := Source.FEmSize;
+  FExSize       := Source.FExSize;
 end;
 
 //-- BG ---------------------------------------------------------- 21.10.2016 --
@@ -7417,6 +7423,7 @@ begin
   DrawList := TDrawList.Create;
   FDocument := Self;
   inherited CreateCopy(nil, T);
+  PixelsPerInch := T.PixelsPerInch;
   ScaleX := 1.0;
   ScaleY := 1.0;
 
@@ -8498,7 +8505,7 @@ begin
  CodeSite.EnterMethod(Self,'TCellObj.Create');
  {$endif}
   inherited Create;
-  FCell := TCellObjCell.Create(Parent);
+  FCell := TCellObjCell.Create(Self, Parent);
   if Assigned(Prop) then
     Cell.Title := Prop.PropTitle;
   ColSpan := 1;
@@ -8612,7 +8619,7 @@ end;
 constructor TCellObj.CreateCopy(Parent: TBlock; T: TCellObj);
 begin
   inherited Create;
-  FCell := TCellObjCell.CreateCopy(Parent, T.Cell);
+  FCell := TCellObjCell.CreateCopy(Self, Parent, T.Cell);
   T.AssignTo(Self);
 end;
 
@@ -10005,8 +10012,12 @@ begin
           begin
             case VType of
               wtAbsolute:
+              begin
                 if CellMin < Value then
                   CellMin := Value;
+                if CellMax < Value then
+                  CellMax := Value;
+              end;
             end;
           end;
 
@@ -10014,8 +10025,12 @@ begin
           begin
             case VType of
               wtAbsolute:
+              begin
+                if CellMin > Value then
+                  CellMin := Value;
                 if CellMax > Value then
                   CellMax := Value;
+              end;
             end;
           end;
 
@@ -10031,6 +10046,7 @@ begin
                 // BG, 07.10.2012: issue 55: wrong CellMax calculation
                 //CellMin := Max(CellMin, Value);   // CellMin should be at least the given absolute value
                 //CellMax := Min(CellMax, Value);   // CellMax should be at most  the given absolute value
+                CellMin := Value;
                 CellMax := Value;   // CellMax should be at most  the given absolute value
               end;
 
@@ -12375,6 +12391,9 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
   var MaxWidth, Curs: Integer): Integer;
 {returns height of the section}
 
+  var
+    HideOverflow: Boolean;
+
   function FindCountThatFits1(Canvas: TCanvas; Start: PWideChar; MaxChars, X, Y: Integer;
     IMgr: TIndentManager; var ImgY, ImgHt: Integer; var DoneFlObjPos: PWideChar): Integer;
   {Given a width, find the count of chars (<= Max) which will fit allowing for font changes.
@@ -12605,7 +12624,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
         Obj := Objects[I];
         Obj.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Obj.StartCurs), 0, 0);
         // BG, 28.08.2011:
-        if OwnerBlock.HideOverflow then
+        if HideOverflow then
         begin
           if Obj.ClientWidth > Width then
             Obj.ClientWidth := Width;
@@ -12878,7 +12897,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       Obj := Images[I];
       Obj.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Obj.StartCurs), Width, HtRef);
       // BG, 28.08.2011:
-      if OwnerBlock.HideOverflow then
+      if HideOverflow then
       begin
         if Obj.ClientWidth > Width then
           Obj.ClientWidth := Width;
@@ -12892,7 +12911,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
       Obj := FormControls[I];
       Obj.DrawLogicInline(Canvas, Fonts.GetFontObjAt(Obj.StartCurs), Width, HtRef);
       // BG, 28.08.2011:
-      if OwnerBlock.HideOverflow then
+      if HideOverflow then
       begin
         if Obj.ClientWidth > Width then
           Obj.ClientWidth := Width;
@@ -13103,7 +13122,7 @@ function TSection.DrawLogic1(Canvas: TCanvas; X, Y, XRef, YRef, AWidth, AHeight,
     end;
 
     // BG, 28.08.2011:
-    if OwnerBlock.HideOverflow then
+    if HideOverflow then
       if MaxWidth > Width then
         MaxWidth := Width;
 
@@ -13147,6 +13166,9 @@ begin {TSection.DrawLogic}
   StartCurs := Curs;
   Lines.Clear;
   TextWidth := 0;
+  HideOverflow := OwnerBlock.HideOverflow;
+  if OwnerCell is TCellObjCell then
+    HideOverflow := TCellObjCell(OwnerCell).Owner.HideOverflow;
 
   if WhiteSpaceStyle in [wsPre, wsNoWrap] then
   begin
@@ -13262,6 +13284,7 @@ function TSection.Draw1(Canvas: TCanvas; const ARect: TRect;
 var
   MySelB, MySelE: Integer;
   YOffset, Y, Desc: Integer;
+  HideOverflow: Boolean;
 
   //>-- DZ 19.09.2012
   procedure AdjustDrawRect( aTop, aLeft, aWidth, aHeight: Integer ); overload;
@@ -13748,7 +13771,7 @@ var
                 Dec(Tmp); {at end of line, don't show space or break}
             end;
 
-          if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not OwnerBlock.HideOverflow then
+          if (WhiteSpaceStyle in [wsPre, wsPreLine, wsNoWrap]) and not HideOverflow then
           begin {so will clip in Table cells}
             ARect := Rect(IMgr.LfEdge, Y - LR.LineHt - LR.SpaceBefore - YOffset, X + IMgr.ClipWidth, Y - YOffset + 1);
             ExtTextOutW(Canvas.Handle, CPx, CPy, ETO_CLIPPED, @ARect, Start, Tmp, nil);
@@ -13876,6 +13899,10 @@ var
   I: Integer;
   DC: HDC;
 begin {TSection.Draw}
+  HideOverflow := OwnerBlock.HideOverflow;
+  if OwnerCell is TCellObjCell then
+    HideOverflow := TCellObjCell(OwnerCell).Owner.HideOverflow;
+
   Y := YDraw;
   Result := Y + SectionHeight;
 
@@ -14825,11 +14852,20 @@ begin
   Result := inherited Draw(Canvas, ARect, ClipWidth, X, Y, XRef, YRef);
 end;
 
+{----------------TCellObjCell.Create}
+
+constructor TCellObjCell.Create(Owner: TCellObj; Parent: TTableBlock);
+begin
+  inherited Create(Parent);
+  FOwner := Owner;
+end;
+
 {----------------TCellObjCell.CreateCopy}
 
-constructor TCellObjCell.CreateCopy(Parent: TBlock; T: TCellObjCell);
+constructor TCellObjCell.CreateCopy(Owner: TCellObj; Parent: TBlock; T: TCellObjCell);
 begin
   inherited CreateCopy(Parent, T);
+  FOwner := Owner;
   MyRect := T.MyRect;
 end;
 
