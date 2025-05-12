@@ -7422,10 +7422,10 @@ begin
   PanelList := TPanelObjList.Create(False);
   DrawList := TDrawList.Create;
   FDocument := Self;
-  inherited CreateCopy(nil, T);
   PixelsPerInch := T.PixelsPerInch;
   ScaleX := 1.0;
   ScaleY := 1.0;
+  inherited CreateCopy(nil, T);
 
   UseQuirksMode := T.UseQuirksMode;
   {$ifdef has_StyleElements}
