@@ -11852,7 +11852,8 @@ function TSection.AddImage(L: TAttributeList; ACell: TCellBasic; Index: Integer;
 begin
   Result := TImageObj.Create(ACell, Len, L, Prop);
   Images.Add(Result);
-  AddChar(ImgPan, Index); {marker for image}
+  if Result.Display <> pdNone then
+    AddChar(ImgPan, Index); {marker for image}
 end;
 
 function TSection.AddPanel(L: TAttributeList; ACell: TCellBasic; Index: Integer; Prop: TProperties): TPanelObj;
@@ -13792,7 +13793,7 @@ var
               begin
                 CP1x := CPx + CharacterJustification(Start, Tmp);
                 ExtTextOutW(Canvas.Handle, CPx, CPy, 0, nil, Start, Tmp, pDx);
-              end
+              end;
             end
             else
             begin {Win95}
@@ -16953,4 +16954,3 @@ finalization
   ErrorStream.Free;
   WaitStream.Free;
 end.
-
