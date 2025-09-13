@@ -13793,7 +13793,7 @@ var
               begin
                 CP1x := CPx + CharacterJustification(Start, Tmp);
                 ExtTextOutW(Canvas.Handle, CPx, CPy, 0, nil, Start, Tmp, pDx);
-              end;
+              end
             end
             else
             begin {Win95}
@@ -16954,3 +16954,4 @@ finalization
   ErrorStream.Free;
   WaitStream.Free;
 end.
+
