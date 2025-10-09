@@ -5558,15 +5558,18 @@ var
     H: Integer;
     S: Variant;
   begin
-    S := MargArrayO[piHeight];
-    if VarIsIntNull(S) or VarIsAuto(S) then
-      H := Auto
-    else
+    H := Auto;
+    if HideOverflow then
     begin
-      if Pos('%', VarToStr(S)) > 0 then
-        H := LengthConv(S, False, AHeight, EmSize, ExSize, 0, Document.PixelsPerInch)
+      S := MargArrayO[piHeight];
+      if VarIsIntNull(S) or VarIsAuto(S) then
       else
-        H := MargArray[piHeight];
+      begin
+        if Pos('%', VarToStr(S)) > 0 then
+          H := LengthConv(S, False, AHeight, EmSize, ExSize, 0, Document.PixelsPerInch)
+        else
+          H := MargArray[piHeight];
+      end;
     end;
 
     case H of
