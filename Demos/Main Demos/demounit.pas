@@ -332,6 +332,7 @@ var
   S: string;
   I: Integer;
 begin
+  Viewer.Text := Font.Name;
   if (ParamCount >= 1) then
   begin { Parameter is file to load }
     S := CmdLine;

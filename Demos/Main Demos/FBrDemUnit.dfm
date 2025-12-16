@@ -57,8 +57,6 @@ object HTTPForm: THTTPForm
     Touch.InteractiveGestures = [igPan]
     Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
     OnGetPostRequestEx = FrameBrowserGetPostRequestEx
-    ExplicitWidth = 566
-    ExplicitHeight = 193
   end
   object CoolBar1: TCoolBar
     Left = 0
@@ -91,7 +89,7 @@ object HTTPForm: THTTPForm
         MinWidth = 155
         Width = 172
       end>
-    ExplicitWidth = 566
+    ExplicitWidth = 624
     object ToolBar2: TToolBar
       Left = 11
       Top = 0

@@ -618,7 +618,7 @@ end;
 
 var
   GDIPlusCount: integer;
-  InitToken: DWord;
+  InitToken: NativeUInt;
   Startup: GdiplusStartupInput;
 {$ifndef HasGDIPlus}
   LibHandle: THandle;

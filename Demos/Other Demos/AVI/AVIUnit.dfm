@@ -1,24 +1,25 @@
 object Form1: TForm1
   Left = 192
   Top = 116
-  Width = 638
-  Height = 477
   Caption = 'Form1'
+  ClientHeight = 439
+  ClientWidth = 626
+  Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OnCloseQuery = FormCloseQuery
-  PixelsPerInch = 96
   TextHeight = 13
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 630
+    Width = 626
     Height = 41
     Align = alTop
     TabOrder = 0
+    ExplicitWidth = 622
     object LoadButton: TButton
       Left = 16
       Top = 8
@@ -39,34 +40,41 @@ object Form1: TForm1
       OnClick = PlayButtonClick
     end
   end
-  object Viewer: THTMLViewer
+  object Viewer: THtmlViewer
     Left = 0
     Top = 41
-    Width = 630
-    Height = 409
-    TabOrder = 1
-    Align = alClient
-    DefBackground = clWindow
+    Width = 626
+    Height = 398
     BorderStyle = htFocused
-    HistoryMaxCount = 0
+    DefBackground = clWindow
     DefFontName = 'Times New Roman'
     DefPreFontName = 'Courier New'
+    HistoryMaxCount = 0
+    HtOptions = [htPrintTableBackground, htPrintMonochromeBlack, htShowVScroll]
     NoSelect = False
-    CharSet = DEFAULT_CHARSET
-    PrintMarginLeft = 2
-    PrintMarginRight = 2
-    PrintMarginTop = 2
-    PrintMarginBottom = 2
-    htOptions = [htPrintTableBackground, htPrintMonochromeBlack, htShowVScroll]
+    PrintMarginBottom = 2.000000000000000000
+    PrintMarginLeft = 2.000000000000000000
+    PrintMarginRight = 2.000000000000000000
+    PrintMarginTop = 2.000000000000000000
+    PrintScale = 1.000000000000000000
+    Text = ''
     OnPanelCreate = ViewerPanelCreate
     OnPanelDestroy = ViewerPanelDestroy
+    Align = alClient
+    TabOrder = 1
+    Touch.InteractiveGestures = [igPan]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia]
+    ExplicitWidth = 622
+    ExplicitHeight = 397
     object MediaPlayer: TMediaPlayer
       Left = 304
       Top = 160
       Width = 253
       Height = 30
+      DoubleBuffered = True
       Visible = False
-      TabOrder = 4
+      ParentDoubleBuffered = False
+      TabOrder = 1
     end
   end
 end

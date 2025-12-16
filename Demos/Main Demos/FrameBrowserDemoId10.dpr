@@ -1,7 +1,8 @@
 {
-Version   11.7
+Version   11.11
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2016 by HtmlViewer Team
+Copyright (c) 2008-2010 by HtmlViewer Team
+Copyright (c) 2011-2025 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -28,7 +29,7 @@ Thanks to the Indy Pit Crew for updating *Id9 to *Id10.
 
 program FrameBrowserDemoId10W;
 
-{$include htmlcons.inc}
+{$include ..\..\source\htmlcons.inc}
 
 uses
   HighDPIInit in '..\..\..\bega\BegaViewer\HighDPIInit.pas',

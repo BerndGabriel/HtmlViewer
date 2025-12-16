@@ -58,6 +58,8 @@ are covered by separate copyright notices located in those modules.
 { Identify Delphi Compiler Version:
 
   #   Compiler      Version Compiler Defined Symbol Codename
+      Delphi 13       37    VER370                  Florence
+      Delphi 12       36    VER360                  Athens
   D28 Delphi 11       35    VER350                  Alexandria
   D27 Delphi 10.4     34    VER340                  Sydney
   D26 Delphi 10.3     33    VER330                  Rio
@@ -109,7 +111,7 @@ are covered by separate copyright notices located in those modules.
     {.$define ver120_plus}
     {$ifdef ver140}
     {$else}
-      {$define Delphi7_Plus}
+      {.$define Delphi7_Plus}
       {$define Compiler15_Plus}
       {$ifdef ver150}
       {$else}
@@ -122,7 +124,7 @@ are covered by separate copyright notices located in those modules.
             {$define Compiler18_Plus}
             {$ifdef ver180}
             {$else}
-              {$define Compiler19_Plus}
+              {.$define Compiler19_Plus}
               {$ifdef ver185}
               {$else}
                 {$define Compiler20_Plus}
@@ -140,22 +142,22 @@ are covered by separate copyright notices located in those modules.
                         {$define Compiler24_Plus}
                         {$ifdef ver240}
                         {$else}
-                          {$define Compiler25_Plus}
+                          {.$define Compiler25_Plus}
                           {$ifdef ver250}
                           {$else}
-                            {$define Compiler26_Plus}
+                            {.$define Compiler26_Plus}
                             {$ifdef ver260}
                             {$else}
-                              {$define Compiler27_Plus}
+                              {.$define Compiler27_Plus}
                               {$ifdef ver270}
                               {$else}
                                 {$define Compiler28_Plus}
                                 {$ifdef ver280}
                                 {$else}
-                                  {$define Compiler29_Plus}
+                                  {.$define Compiler29_Plus}
                                   {$ifdef ver290}
                                   {$else}
-                                    {$define Compiler30_Plus}
+                                    {.$define Compiler30_Plus}
                                     {$ifdef ver300}
                                     {$else}
                                       {$define Compiler31_Plus}
@@ -164,15 +166,23 @@ are covered by separate copyright notices located in those modules.
                                         {$define Compiler32_Plus}
                                         {$ifdef ver320}
                                         {$else}
-                                          {$define Compiler33_Plus}
+                                          {.$define Compiler33_Plus}
                                           {$ifdef ver330}
                                           {$else}
                                             {$define Compiler34_Plus}
                                             {$ifdef ver340}
                                             {$else}
-                                              {$define Compiler35_Plus}
+                                              {.$define Compiler35_Plus}
                                               {$ifdef ver350}
                                               {$else}
+                                                {.$define Compiler36_Plus}
+                                                {$ifdef ver360}
+                                                {$else}
+                                                  {.$define Compiler37_Plus}
+                                                  {$ifdef ver370}
+                                                  {$else}
+                                                  {$endif}
+                                                {$endif}
                                               {$endif}
                                             {$endif}
                                           {$endif}
@@ -292,7 +302,7 @@ are covered by separate copyright notices located in those modules.
 { Define Aspects Of HtmlViewer }
 
 {$ifdef MSWindows}
-{$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
+{.$define NoGDIPlus} {The gdiplus.dll provides Alpha transparency support for
         PNG images and provides support for TIFF images.
         If, for some reason the use of the gdiplus.dll is
         undesirable, define "NoGDIPlus" by removing the '.'.}

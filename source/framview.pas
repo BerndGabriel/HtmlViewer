@@ -1,7 +1,7 @@
 {
-Version   11.10
+Version   11.11
 Copyright (c) 1995-2008 by L. David Baldwin
-Copyright (c) 2008-2023 by HtmlViewer Team
+Copyright (c) 2008-2025 by HtmlViewer Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1576,7 +1576,7 @@ begin
   OnMouseDown := FVMouseDown;
   OnMouseMove := FVMouseMove;
   OnMouseUp := FVMouseUp;
-{$IFDEF delphi7_plus}
+{$IFDEF Compiler15_Plus}
   ParentBackground := False;
 {$ENDIF}
   ParentColor := True;

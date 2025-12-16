@@ -1,9 +1,9 @@
 {
-Version   11.7
+Version   11.11
 Copyright (c) 1995-2008 by L. David Baldwin
 Copyright (c) 2008-2011 by HtmlViewer Team
 Copyright (c) 2012 by Angus Robertson delphi@magsys.co.uk
-Copyright (c) 2013-2016 by HtmlViewer Team
+Copyright (c) 2013-2025 by Bernd Gabriel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -38,12 +38,12 @@ uses
   FBrDemUnit in 'FBrDemUnit.pas' {HTTPForm},
   CacheUnit in 'CacheUnit.pas',
   UrlConVclZip in 'UrlConVclZip.pas',
-  UrlConIcs in 'UrlConIcs.pas',
   AuthorizeFormUnit in 'AuthorizeFormUnit.pas' {AuthorizeForm},
   DownloadFormUnit in 'DownloadFormUnit.pas' {DownloadForm},
   HtmlDemoUtils in 'HtmlDemoUtils.pas',
   Vcl.Themes,
-  Vcl.Styles;
+  Vcl.Styles,
+  UrlConIcs in 'UrlConIcs.pas';
 
 {$R *.RES}
 
