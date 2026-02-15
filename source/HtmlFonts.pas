@@ -116,6 +116,10 @@ type
 
 function AllMyFonts: ThtFontCache;
 
+var
+  // Added for Templot compatibility - controls HTML rendering DPI
+  html_dots_per_inch: Integer;
+
 implementation
 
 var
