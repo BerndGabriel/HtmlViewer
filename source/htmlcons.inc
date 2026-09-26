@@ -109,103 +109,33 @@ are covered by separate copyright notices located in those modules.
   {$ifdef CONDITIONALEXPRESSIONS} {Delphi 6 and up}
     {.$define ver100_plus}
     {.$define ver120_plus}
-    {$ifdef ver140}
-    {$else}
-      {.$define Delphi7_Plus}
-      {$define Compiler15_Plus}
-      {$ifdef ver150}
-      {$else}
-        {$define Compiler16_Plus}
-        {$ifdef ver160}
-        {$else}
-          {$define Compiler17_Plus}
-          {$ifdef ver170}
-          {$else}
-            {$define Compiler18_Plus}
-            {$ifdef ver180}
-            {$else}
-              {.$define Compiler19_Plus}
-              {$ifdef ver185}
-              {$else}
-                {$define Compiler20_Plus}
-                {$ifdef ver200}
-                {$else}
-                  {$define Compiler21_Plus}
-                  {$ifdef ver210}
-                  {$else}
-                    {$define Compiler22_Plus}
-                    {$ifdef ver220}
-                    {$else}
-                      {$define Compiler23_Plus}
-                      {$ifdef ver230}
-                      {$else}
-                        {$define Compiler24_Plus}
-                        {$ifdef ver240}
-                        {$else}
-                          {.$define Compiler25_Plus}
-                          {$ifdef ver250}
-                          {$else}
-                            {.$define Compiler26_Plus}
-                            {$ifdef ver260}
-                            {$else}
-                              {.$define Compiler27_Plus}
-                              {$ifdef ver270}
-                              {$else}
-                                {$define Compiler28_Plus}
-                                {$ifdef ver280}
-                                {$else}
-                                  {.$define Compiler29_Plus}
-                                  {$ifdef ver290}
-                                  {$else}
-                                    {.$define Compiler30_Plus}
-                                    {$ifdef ver300}
-                                    {$else}
-                                      {$define Compiler31_Plus}
-                                      {$ifdef ver310}
-                                      {$else}
-                                        {$define Compiler32_Plus}
-                                        {$ifdef ver320}
-                                        {$else}
-                                          {.$define Compiler33_Plus}
-                                          {$ifdef ver330}
-                                          {$else}
-                                            {$define Compiler34_Plus}
-                                            {$ifdef ver340}
-                                            {$else}
-                                              {.$define Compiler35_Plus}
-                                              {$ifdef ver350}
-                                              {$else}
-                                                {.$define Compiler36_Plus}
-                                                {$ifdef ver360}
-                                                {$else}
-                                                  {.$define Compiler37_Plus}
-                                                  {$ifdef ver370}
-                                                  {$else}
-                                                  {$endif}
-                                                {$endif}
-                                              {$endif}
-                                            {$endif}
-                                          {$endif}
-                                        {$endif}
-                                      {$endif}
-                                    {$endif}
-                                  {$endif}
-                                {$endif}
-                              {$endif}
-                            {$endif}
-                          {$endif}
-                        {$endif}
-                        {$LEGACYIFEND ON}
-                      {$endif}
-                    {$endif}
-                  {$endif}
-                {$endif}
-              {$endif}
-            {$endif}
-          {$endif}
-        {$endif}
-      {$endif}
-    {$endif}
+    {$if CompilerVersion >= 15} {$define Compiler15_Plus} {$ifend} {Delphi 7}
+    {$if CompilerVersion >= 16} {$define Compiler16_Plus} {$ifend} {Delphi 8}
+    {$if CompilerVersion >= 17} {$define Compiler17_Plus} {$ifend} {Delphi 2005}
+    {$if CompilerVersion >= 18} {$define Compiler18_Plus} {$ifend} {Delphi 2006}
+    {$if CompilerVersion >= 18.5} {.$define Compiler19_Plus} {$ifend} {Delphi 2007}
+    {$if CompilerVersion >= 20} {$define Compiler20_Plus} {$ifend} {Delphi 2009}
+    {$if CompilerVersion >= 21} {$define Compiler21_Plus} {$ifend} {Delphi 2010}
+    {$if CompilerVersion >= 22} {$define Compiler22_Plus} {$ifend} {Delphi XE}
+    {$if CompilerVersion >= 23} {$define Compiler23_Plus} {$ifend} {Delphi XE2}
+    {$if CompilerVersion >= 24} {$define Compiler24_Plus} {$ifend} {Delphi XE3}
+    {$if CompilerVersion >= 25} {$define Compiler25_Plus} {$ifend} {Delphi XE4}
+    {$if CompilerVersion >= 26} {.$define Compiler26_Plus} {$ifend} {Delphi XE5}
+    {$if CompilerVersion >= 27} {.$define Compiler27_Plus} {$ifend} {Delphi XE6}
+    {$if CompilerVersion >= 28} {$define Compiler28_Plus} {$ifend} {Delphi XE7}
+    {$if CompilerVersion >= 29} {.$define Compiler29_Plus} {$ifend} {Delphi XE8}
+    {$if CompilerVersion >= 30} {.$define Compiler30_Plus} {$ifend} {Delphi 10 Seattle}
+    {$if CompilerVersion >= 31} {$define Compiler31_Plus} {$ifend} {Delphi 10.1 Berlin}
+    {$if CompilerVersion >= 32} {$define Compiler32_Plus} {$ifend} {Delphi 10.2 Tokyo}
+    {$if CompilerVersion >= 33} {.$define Compiler33_Plus} {$ifend} {Delphi 10.3 Rio}
+    {$if CompilerVersion >= 34} {$define Compiler34_Plus} {$ifend} {Delphi 10.4 Sydney}
+    {$if CompilerVersion >= 35} {.$define Compiler35_Plus} {$ifend} {Delphi 11 Alexandria}
+    {$if CompilerVersion >= 36} {.$define Compiler36_Plus} {$ifend} {Delphi 12 Athens}
+    {$if CompilerVersion >= 37} {.$define Compiler37_Plus} {$ifend} {Delphi 13 Florence}
+
+    {$ifdef Compiler15_Plus} {.$define Delphi7_Plus} {$endif}
+    {$ifdef Compiler25_Plus} {$LEGACYIFEND ON} {$endif}
+
     {$ifndef Compiler20_Plus}
       // Might still work or not. Oldest tested version is 2009.
       {$message 'Delphi versions before 2009 are no longer supported.'}
