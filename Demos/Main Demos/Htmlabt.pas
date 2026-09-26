@@ -154,6 +154,17 @@ begin
 {$IFDEF Ver350}
     'Delphi 11 Alexandria'
 {$ENDIF}
+{$IFDEF Ver360}
+    'Delphi 12 Athens'
+{$ENDIF}
+{$IFDEF Ver370}
+    'Delphi 13 Florence'
+{$ENDIF}
+{$ifndef LCL}
+  {$if CompilerVersion > 37} // newer than the last version above; raise this when adding a new version
+    'Delphi (compiler version ' + FloatToStr(CompilerVersion) + ')'
+  {$ifend}
+{$endif}
 {$ifdef LCL}
     'Lazarus ' + lcl_version
 {$endif}

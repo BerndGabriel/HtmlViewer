@@ -13,7 +13,7 @@ uses
   LCLIntf, LCLType, LMessages,
 {$ENDIF}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, Menus, StdCtrls, Htmlview, HTMLSubs;  {ThvPanel defined in htmlsubs}
+  ExtCtrls, Menus, StdCtrls, Htmlview, HTMLSubs, HTMLUn2;  {ThvPanel defined in HTMLUn2}
 
 type
   TForm1 = class(TForm)
